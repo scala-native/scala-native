@@ -9,25 +9,25 @@ class ExternVarArgsTest {
   @Test def unboxesVarArgs(): Unit = {
     compileAndLoad(
       "Test.scala" ->
-        """import scala.scalanative.unsafe._
-          | 
-          |@extern trait FFI {
-          |  def printf(format: CString, args: Any*): Unit = extern
-          |}
-          |@extern object FFI extends FFI
-          |
-          |object Test{
-          |  def main(): Unit = {
-          |    def string: Ptr[Byte] = ???
-          |    def size: Ptr[Size] = ???
-          |    def long: Ptr[Long] = ???
-          |    def float: Ptr[Float] = ???
-          |    FFI.printf(c"", !(string + 1), string, !size, !long, long, !float)
-          |    val ffi: FFI = null
-          |    ffi.printf(c"", !(string + 1), string, !size, !long, long, !float)
-          |  }
-          |}
-          |""".stripMargin
+        """|import scala.scalanative.unsafe._
+           | 
+           |@extern trait FFI {
+           |  def printf(format: CString, args: Any*): Unit = extern
+           |}
+           |@extern object FFI extends FFI
+           |
+           |object Test{
+           |  def main(): Unit = {
+           |    def string: Ptr[Byte] = ???
+           |    def size: Ptr[Size] = ???
+           |    def long: Ptr[Long] = ???
+           |    def float: Ptr[Float] = ???
+           |    FFI.printf(c"", !(string + 1), string, !size, !long, long, !float)
+           |    val ffi: FFI = null
+           |    ffi.printf(c"", !(string + 1), string, !size, !long, long, !float)
+           |  }
+           |}
+           |""".stripMargin
     ) { defns =>
       val TestModule = nir.Global.Top("Test$")
       val MainMethod =

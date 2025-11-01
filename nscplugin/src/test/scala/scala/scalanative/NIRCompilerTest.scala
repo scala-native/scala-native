@@ -34,8 +34,8 @@ class NIRCompilerTest {
       "A.scala" -> "class A",
       "B.scala" -> "class B extends A",
       "C.scala" -> "trait C",
-      "D.scala" -> """class D extends B with C
-                     |object E""".stripMargin
+      "D.scala" -> """|class D extends B with C
+                      |object E""".stripMargin
     )
 
     NIRCompiler.withSources(sources) {
@@ -69,12 +69,12 @@ class NIRCompilerTest {
   @Test def externMethodWithoutResultType(): Unit = {
     // given
     val code =
-      """import scala.scalanative.unsafe.extern
-        |
-        |@extern
-        |object Dummy {
-        |  def foo() = extern
-        |}""".stripMargin
+      """|import scala.scalanative.unsafe.extern
+         |
+         |@extern
+         |object Dummy {
+         |  def foo() = extern
+         |}""".stripMargin
 
     // when
     assertThrows(
@@ -86,12 +86,12 @@ class NIRCompilerTest {
   @Test def externInValDefinition(): Unit = {
     // given
     val code =
-      """import scala.scalanative.unsafe.extern
-        |
-        |@extern
-        |object Dummy {
-        |  val foo: Int = extern
-        |}""".stripMargin
+      """|import scala.scalanative.unsafe.extern
+         |
+         |@extern
+         |object Dummy {
+         |  val foo: Int = extern
+         |}""".stripMargin
     // when
     val err = assertThrows(
       classOf[CompilationFailedException],
@@ -109,25 +109,25 @@ class NIRCompilerTest {
   @Test def externVarDefiniton(): Unit = {
     // given
     val code =
-      """import scala.scalanative.unsafe.extern
-        |
-        |@extern
-        |object Dummy {
-        |  var foo: Int = extern
-        |}""".stripMargin
+      """|import scala.scalanative.unsafe.extern
+         |
+         |@extern
+         |object Dummy {
+         |  var foo: Int = extern
+         |}""".stripMargin
     // when
     NIRCompiler(_.compile(code))
   }
 
   @Test def externMemberReferencingExtern(): Unit = {
     val code =
-      """import scala.scalanative.unsafe.extern
-          |
-          |@extern object Dummy {
-          |  def foo(): Int = extern
-          |  def bar(): Int = foo()
-          |}
-          |""".stripMargin
+      """|import scala.scalanative.unsafe.extern
+         |
+         |@extern object Dummy {
+         |  def foo(): Int = extern
+         |  def bar(): Int = foo()
+         |}
+         |""".stripMargin
 
     val err = assertThrows(
       classOf[CompilationFailedException],
@@ -142,49 +142,49 @@ class NIRCompilerTest {
 
   @Test def externMemberOverload(): Unit = {
     val code =
-      """import scala.scalanative.unsafe.extern
-          |
-          |@extern object Dummy {
-          |  def foo(v: Long): Int = extern
-          |  def foo(v: Int): Int = foo(v.toLong)
-          |}
-          |
-          |""".stripMargin
+      """|import scala.scalanative.unsafe.extern
+         |
+         |@extern object Dummy {
+         |  def foo(v: Long): Int = extern
+         |  def foo(v: Int): Int = foo(v.toLong)
+         |}
+         |
+         |""".stripMargin
 
     NIRCompiler(_.compile(code))
   }
 
   @Test def externExternTrait(): Unit = {
     val code =
-      """import scala.scalanative.unsafe.extern
-          |
-          |@extern trait Dummy {
-          |   var x: Int = extern
-          |   def foo(): Int = extern
-          |}
-          |
-          |@extern trait Dummy2 extends Dummy {
-          |  def bar(): Int = extern
-          |}
-          |
-          |@extern object Dummy extends Dummy
-          |@extern object Dummy2 extends Dummy2
-          |""".stripMargin
+      """|import scala.scalanative.unsafe.extern
+         |
+         |@extern trait Dummy {
+         |   var x: Int = extern
+         |   def foo(): Int = extern
+         |}
+         |
+         |@extern trait Dummy2 extends Dummy {
+         |  def bar(): Int = extern
+         |}
+         |
+         |@extern object Dummy extends Dummy
+         |@extern object Dummy2 extends Dummy2
+         |""".stripMargin
 
     NIRCompiler(_.compile(code))
   }
 
   @Test def mixExternObjectWithNonExternTrait(): Unit = {
     val code =
-      """
-      |import scala.scalanative.unsafe.extern
-      |
-      |trait Dummy {
-      |  def foo(): Int = ???
-      |}
-      |
-      |@extern object Dummy extends Dummy
-      |""".stripMargin
+      """|
+         |import scala.scalanative.unsafe.extern
+         |
+         |trait Dummy {
+         |  def foo(): Int = ???
+         |}
+         |
+         |@extern object Dummy extends Dummy
+         |""".stripMargin
     val err = assertThrows(
       classOf[CompilationFailedException],
       () => NIRCompiler(_.compile(code))
@@ -200,14 +200,14 @@ class NIRCompilerTest {
 
   @Test def mixExternObjectWithNonExternClass(): Unit = {
     val code =
-      """import scala.scalanative.unsafe.extern
-        |
-        |class Dummy {
-        |  def foo(): Int = ???
-        |}
-        |
-        |@extern object Dummy extends Dummy
-        |""".stripMargin
+      """|import scala.scalanative.unsafe.extern
+         |
+         |class Dummy {
+         |  def foo(): Int = ???
+         |}
+         |
+         |@extern object Dummy extends Dummy
+         |""".stripMargin
     val err = assertThrows(
       classOf[CompilationFailedException],
       () => NIRCompiler(_.compile(code))
@@ -224,14 +224,14 @@ class NIRCompilerTest {
 
   @Test def mixExternTraitWithNonExternObject(): Unit = {
     val code =
-      """import scala.scalanative.unsafe.extern
-          |
-          |@extern trait Dummy {
-          |  def foo(): Int = extern
-          |}
-          |
-          |object Dummy extends Dummy
-          |""".stripMargin
+      """|import scala.scalanative.unsafe.extern
+         |
+         |@extern trait Dummy {
+         |  def foo(): Int = extern
+         |}
+         |
+         |object Dummy extends Dummy
+         |""".stripMargin
     val err = assertThrows(
       classOf[CompilationFailedException],
       () => NIRCompiler(_.compile(code))
@@ -248,14 +248,14 @@ class NIRCompilerTest {
 
   @Test def mixExternTraitsWithNonExternClass(): Unit = {
     val code =
-      """import scala.scalanative.unsafe.extern
-          |
-          |@extern trait Dummy {
-          |  def foo(): Int = extern
-          |}
-          |
-          |class DummyImpl extends Dummy
-          |""".stripMargin
+      """|import scala.scalanative.unsafe.extern
+         |
+         |@extern trait Dummy {
+         |  def foo(): Int = extern
+         |}
+         |
+         |class DummyImpl extends Dummy
+         |""".stripMargin
     val err = assertThrows(
       classOf[CompilationFailedException],
       () => NIRCompiler(_.compile(code))
@@ -272,15 +272,15 @@ class NIRCompilerTest {
 
   @Test def allowImplicitClassInExtern(): Unit = NIRCompiler(
     _.compile(
-      """import scala.scalanative.unsafe.extern
-          |@extern object Dummy { 
-          |  implicit class Ext(val v: Int) { 
-          |    def convert(): Long = Dummy.implicitConvert(v) + Dummy.doConvert(v) 
-          |  }
-          |  implicit def implicitConvert(v: Int): Long = extern
-          |  def doConvert(v: Int): Long = extern
-          |}
-          |""".stripMargin
+      """|import scala.scalanative.unsafe.extern
+         |@extern object Dummy { 
+         |  implicit class Ext(val v: Int) { 
+         |    def convert(): Long = Dummy.implicitConvert(v) + Dummy.doConvert(v) 
+         |  }
+         |  implicit def implicitConvert(v: Int): Long = extern
+         |  def doConvert(v: Int): Long = extern
+         |}
+         |""".stripMargin
     )
   )
 
@@ -290,11 +290,11 @@ class NIRCompilerTest {
       () =>
         NIRCompiler(
           _.compile(
-            """import scala.scalanative.unsafe.extern
-              |@extern object Dummy {
-              |  implicit def implicitFunction: Long = 42
-              |}
-              |""".stripMargin
+            """|import scala.scalanative.unsafe.extern
+               |@extern object Dummy {
+               |  implicit def implicitFunction: Long = 42
+               |}
+               |""".stripMargin
           )
         )
     )
@@ -308,12 +308,17 @@ class NIRCompilerTest {
   @Test def applyExtern(): Unit = {
     val err = assertThrows(
       classOf[CompilationFailedException],
-      () => NIRCompiler(_.compile("""
-           |import scala.scalanative.unsafe._
-           |object Foo{
-           |  def foo(): Int = locally{ val x = extern; x }
-           |}
-           |""".stripMargin))
+      () =>
+        NIRCompiler(
+          _.compile(
+            """|
+               |import scala.scalanative.unsafe._
+               |object Foo{
+               |  def foo(): Int = locally{ val x = extern; x }
+               |}
+               |""".stripMargin
+          )
+        )
     )
     assertTrue(
       err
@@ -328,10 +333,10 @@ class NIRCompilerTest {
       () =>
         NIRCompiler(
           _.compile(
-            """import scala.scalanative.runtime.Intrinsics
-          |class Foo {
-          | val fieldRawPtr =  Intrinsics.classFieldRawPtr(this, "myField")
-          |}""".stripMargin
+            """|import scala.scalanative.runtime.Intrinsics
+               |class Foo {
+               | val fieldRawPtr =  Intrinsics.classFieldRawPtr(this, "myField")
+               |}""".stripMargin
           )
         )
     )
@@ -346,11 +351,11 @@ class NIRCompilerTest {
       () =>
         NIRCompiler(
           _.compile(
-            """import scala.scalanative.runtime.Intrinsics
-           |class Foo {
-           | val myField = 42
-           | val fieldRawPtr =  Intrinsics.classFieldRawPtr(this, "myField")
-           |}""".stripMargin
+            """|import scala.scalanative.runtime.Intrinsics
+               |class Foo {
+               | val myField = 42
+               | val fieldRawPtr =  Intrinsics.classFieldRawPtr(this, "myField")
+               |}""".stripMargin
           )
         )
     )
@@ -369,11 +374,11 @@ class NIRCompilerTest {
       () =>
         NIRCompiler(
           _.compile(
-            """import scala.scalanative.runtime.Intrinsics
-            |trait Foo { val myField = 42}
-            |class Bar extends Foo {
-            | val fieldRawPtr =  Intrinsics.classFieldRawPtr(this, "myField")
-            |}""".stripMargin
+            """|import scala.scalanative.runtime.Intrinsics
+               |trait Foo { val myField = 42}
+               |class Bar extends Foo {
+               | val fieldRawPtr =  Intrinsics.classFieldRawPtr(this, "myField")
+               |}""".stripMargin
           )
         )
     )
@@ -393,11 +398,11 @@ class NIRCompilerTest {
       () =>
         NIRCompiler(
           _.compile(
-            """import scala.scalanative.runtime.Intrinsics
-             |abstract class Foo { val myField = 42}
-             |class Bar extends Foo {
-             | val fieldRawPtr =  Intrinsics.classFieldRawPtr(this, "myField")
-             |}""".stripMargin
+            """|import scala.scalanative.runtime.Intrinsics
+               |abstract class Foo { val myField = 42}
+               |class Bar extends Foo {
+               | val fieldRawPtr =  Intrinsics.classFieldRawPtr(this, "myField")
+               |}""".stripMargin
           )
         )
     )
@@ -412,29 +417,38 @@ class NIRCompilerTest {
 
   @Test def genericExternMethod(): Unit = {
     // issue #2727
-    NIRCompiler(_.compile("""
-      |import scala.scalanative.unsafe._
-      |@extern
-      |object foo {
-      |  def baz[A](a: Ptr[A]): Unit = extern
-      |}
-      |
-      |object Test {
-      |  def main() = foo.baz(???)
-      |}
-      |""".stripMargin))
+    NIRCompiler(
+      _.compile(
+        """|
+           |import scala.scalanative.unsafe._
+           |@extern
+           |object foo {
+           |  def baz[A](a: Ptr[A]): Unit = extern
+           |}
+           |
+           |object Test {
+           |  def main() = foo.baz(???)
+           |}
+           |""".stripMargin
+      )
+    )
   }
 
   @Test def externMethodDefaultArgument(): Unit = {
     val err = assertThrows(
       classOf[CompilationFailedException],
-      () => NIRCompiler(_.compile("""
-      |import scala.scalanative.unsafe._
-      |@extern
-      |object foo {
-      |  def baz(a:Int = 1): Unit = extern
-      |}
-      |""".stripMargin))
+      () =>
+        NIRCompiler(
+          _.compile(
+            """|
+               |import scala.scalanative.unsafe._
+               |@extern
+               |object foo {
+               |  def baz(a:Int = 1): Unit = extern
+               |}
+               |""".stripMargin
+          )
+        )
     )
     assertTrue(
       err
@@ -448,13 +462,18 @@ class NIRCompilerTest {
   @Test def externMethodWithMixedDefaultArguments(): Unit = {
     val err = assertThrows(
       classOf[CompilationFailedException],
-      () => NIRCompiler(_.compile("""
-      |import scala.scalanative.unsafe._
-      |@extern
-      |object foo {
-      |  def baz(a: Double, b:Int = 1): Unit = extern
-      |}
-      |""".stripMargin))
+      () =>
+        NIRCompiler(
+          _.compile(
+            """|
+               |import scala.scalanative.unsafe._
+               |@extern
+               |object foo {
+               |  def baz(a: Double, b:Int = 1): Unit = extern
+               |}
+               |""".stripMargin
+          )
+        )
     )
 
     assertTrue(
@@ -467,13 +486,18 @@ class NIRCompilerTest {
   @Test def externMethodDefaultArguments(): Unit = {
     val err = assertThrows(
       classOf[CompilationFailedException],
-      () => NIRCompiler(_.compile("""
-      |import scala.scalanative.unsafe._
-      |@extern
-      |object foo {
-      |  def baz(a: Double=1.0, b:Int = 1): Unit = extern
-      |}
-      |""".stripMargin))
+      () =>
+        NIRCompiler(
+          _.compile(
+            """|
+               |import scala.scalanative.unsafe._
+               |@extern
+               |object foo {
+               |  def baz(a: Double=1.0, b:Int = 1): Unit = extern
+               |}
+               |""".stripMargin
+          )
+        )
     )
     assertTrue(
       err
@@ -490,20 +514,20 @@ class NIRCompilerTest {
       () =>
         NIRCompiler(
           _.compile(
-            """
-          |import scala.scalanative.unsafe._
-          |object Main {
-          |  val z = 12
-          |  def f(ptr: CFuncPtr1[CInt, CInt]): Unit = println(ptr(3))
-          |
-          |  def test(): Unit = {
-          |    val x = 10
-          |    f(CFuncPtr1.fromScalaFunction(y => x + y + z))
-          |  }
-          |
-          |  def main(args: Array[String]): Unit = test()
-          |}
-          |""".stripMargin
+            """|
+               |import scala.scalanative.unsafe._
+               |object Main {
+               |  val z = 12
+               |  def f(ptr: CFuncPtr1[CInt, CInt]): Unit = println(ptr(3))
+               |
+               |  def test(): Unit = {
+               |    val x = 10
+               |    f(CFuncPtr1.fromScalaFunction(y => x + y + z))
+               |  }
+               |
+               |  def main(args: Array[String]): Unit = test()
+               |}
+               |""".stripMargin
           )
         )
     )
@@ -519,21 +543,26 @@ class NIRCompilerTest {
   @Test def cFuncPtrWithLocalState2(): Unit = {
     val err = assertThrows(
       classOf[CompilationFailedException],
-      () => NIRCompiler(_.compile("""
-      |import scalanative.unsafe._
-      |
-      |object Test {
-      |  def main(args: Array[String]) = new Bug()
-      |}
-      |class Bug(){
-      |  def accessor: Int = data.##
-      |  var data: Option[String] = None
-      |  val nativeFunc = CFuncPtr1.fromScalaFunction{
-      |    (ptr: CString) =>
-      |      data = Some(fromCString(ptr))
-      |      println(s"native: $ptr - $accessor")
-      |  }
-      |}""".stripMargin))
+      () =>
+        NIRCompiler(
+          _.compile(
+            """|
+               |import scalanative.unsafe._
+               |
+               |object Test {
+               |  def main(args: Array[String]) = new Bug()
+               |}
+               |class Bug(){
+               |  def accessor: Int = data.##
+               |  var data: Option[String] = None
+               |  val nativeFunc = CFuncPtr1.fromScalaFunction{
+               |    (ptr: CString) =>
+               |      data = Some(fromCString(ptr))
+               |      println(s"native: $ptr - $accessor")
+               |  }
+               |}""".stripMargin
+          )
+        )
     )
     assertTrue(
       err
@@ -548,13 +577,13 @@ class NIRCompilerTest {
     try
       NIRCompiler(
         _.compile(
-          """import scala.scalanative.unsafe._
-              |object ExportInModule {
-              |  @exported
-              |  def foo(l: Int): Int = l
-              |  @exportAccessors()
-              |  val bar: Double = 0.42d
-              |}""".stripMargin
+          """|import scala.scalanative.unsafe._
+             |object ExportInModule {
+             |  @exported
+             |  def foo(l: Int): Int = l
+             |  @exportAccessors()
+             |  val bar: Double = 0.42d
+             |}""".stripMargin
         )
       )
     catch {
@@ -571,11 +600,11 @@ class NIRCompilerTest {
       () =>
         NIRCompiler(
           _.compile(
-            """import scala.scalanative.unsafe._
-            |class ExportInClass() {
-            |  @exported
-            |  def foo(l: Int): Int = l
-            |}""".stripMargin
+            """|import scala.scalanative.unsafe._
+               |class ExportInClass() {
+               |  @exported
+               |  def foo(l: Int): Int = l
+               |}""".stripMargin
           )
         )
     )
@@ -588,13 +617,13 @@ class NIRCompilerTest {
       () =>
         NIRCompiler(
           _.compile(
-            """import scala.scalanative.unsafe._
-          |class Wrapper() {
-          | object inner {
-          |   @exported
-          |   def foo(l: Int): Int = l
-          | }
-          |}""".stripMargin
+            """|import scala.scalanative.unsafe._
+               |class Wrapper() {
+               | object inner {
+               |   @exported
+               |   def foo(l: Int): Int = l
+               | }
+               |}""".stripMargin
           )
         )
     )
@@ -609,10 +638,10 @@ class NIRCompilerTest {
       () =>
         NIRCompiler(
           _.compile(
-            """import scala.scalanative.unsafe._
-          |object valuesNotAllowed {
-          |  @exported val foo: Int = 0
-          |}""".stripMargin
+            """|import scala.scalanative.unsafe._
+               |object valuesNotAllowed {
+               |  @exported val foo: Int = 0
+               |}""".stripMargin
           )
         )
     )
@@ -625,10 +654,10 @@ class NIRCompilerTest {
       () =>
         NIRCompiler(
           _.compile(
-            """import scala.scalanative.unsafe._
-          |object variableNotAllowed {
-          |  @exported var foo: Int = 0
-          |}""".stripMargin
+            """|import scala.scalanative.unsafe._
+               |object variableNotAllowed {
+               |  @exported var foo: Int = 0
+               |}""".stripMargin
           )
         )
     )
@@ -637,13 +666,13 @@ class NIRCompilerTest {
 
   // https://github.com/scala-native/scala-native/issues/3228
   @Test def externObjectFields(): Unit = NIRCompiler(_.compile {
-    """
-    |import scala.scalanative.unsafe._
-    |
-    |@extern
-    |object Foo {
-    |  final val bar = 42
-    |}""".stripMargin
+    """|
+       |import scala.scalanative.unsafe._
+       |
+       |@extern
+       |object Foo {
+       |  final val bar = 42
+       |}""".stripMargin
   })
 
   @Test def linktimeResolvedValsInBlocks(): Unit = {
@@ -652,21 +681,21 @@ class NIRCompilerTest {
       () =>
         linkWithProps(
           "props.scala" ->
-            """package scala.scalanative
-            |object props{
-            |   @scalanative.unsafe.resolvedAtLinktime
-            |   def linktimeProperty = {
-            |     val foo = 42
-            |     foo
-            |  }
-            |}""".stripMargin,
+            """|package scala.scalanative
+               |object props{
+               |   @scalanative.unsafe.resolvedAtLinktime
+               |   def linktimeProperty = {
+               |     val foo = 42
+               |     foo
+               |  }
+               |}""".stripMargin,
           "main.scala" ->
-            """import scala.scalanative.props._
-            |object Main {
-            |  def main(args: Array[String]): Unit = {
-            |    if(linktimeProperty != 42) ???
-            |  }
-            |}""".stripMargin
+            """|import scala.scalanative.props._
+               |object Main {
+               |  def main(args: Array[String]): Unit = {
+               |    if(linktimeProperty != 42) ???
+               |  }
+               |}""".stripMargin
         )
     )
     // Multiple errors
@@ -679,18 +708,18 @@ class NIRCompilerTest {
       () =>
         linkWithProps(
           "props.scala" ->
-            """package scala.scalanative
-            |object props{
-            |   @scalanative.unsafe.resolvedAtLinktime("foo")
-            |   def linktimeProperty: Boolean = true
-            |}""".stripMargin,
+            """|package scala.scalanative
+               |object props{
+               |   @scalanative.unsafe.resolvedAtLinktime("foo")
+               |   def linktimeProperty: Boolean = true
+               |}""".stripMargin,
           "main.scala" ->
-            """import scala.scalanative.props._
-            |object Main {
-            |  def main(args: Array[String]): Unit = {
-            |    if(linktimeProperty) ???
-            |  }
-            |}""".stripMargin
+            """|import scala.scalanative.props._
+               |object Main {
+               |  def main(args: Array[String]): Unit = {
+               |    if(linktimeProperty) ???
+               |  }
+               |}""".stripMargin
         )
     )
     assertTrue(
@@ -705,20 +734,20 @@ class NIRCompilerTest {
       classOf[CompilationFailedException],
       () =>
         linkWithProps(
-          "props.scala" -> """
-             |package scala.scalanative
-             |object props{
-             |   @scalanative.unsafe.resolvedAtLinktime("prop")
-             |   def linktimeProperty: Boolean = null.asInstanceOf[Boolean]
-             |}
-             |""".stripMargin,
-          "main.scala" -> """
-            |import scala.scalanative.props._
-            |object Main {
-            |  def main(args: Array[String]): Unit = {
-            |    if(linktimeProperty) ???
-            |  }
-            |}""".stripMargin
+          "props.scala" -> """|
+                              |package scala.scalanative
+                              |object props{
+                              |   @scalanative.unsafe.resolvedAtLinktime("prop")
+                              |   def linktimeProperty: Boolean = null.asInstanceOf[Boolean]
+                              |}
+                              |""".stripMargin,
+          "main.scala" -> """|
+                             |import scala.scalanative.props._
+                             |object Main {
+                             |  def main(args: Array[String]): Unit = {
+                             |    if(linktimeProperty) ???
+                             |  }
+                             |}""".stripMargin
         )
     )
     assertTrue(
@@ -734,18 +763,18 @@ class NIRCompilerTest {
       () =>
         linkWithProps(
           "props.scala" ->
-            """package scala.scalanative
-            |object props{
-            |   @scalanative.unsafe.resolvedAtLinktime(withName = null.asInstanceOf[String])
-            |   def linktimeProperty: Boolean = scala.scalanative.unsafe.resolved
-            |}""".stripMargin,
+            """|package scala.scalanative
+               |object props{
+               |   @scalanative.unsafe.resolvedAtLinktime(withName = null.asInstanceOf[String])
+               |   def linktimeProperty: Boolean = scala.scalanative.unsafe.resolved
+               |}""".stripMargin,
           "main.scala" ->
-            """import scala.scalanative.props._
-            |object Main {
-            |  def main(args: Array[String]): Unit = {
-            |    if(linktimeProperty) ???
-            |  }
-            |}""".stripMargin
+            """|import scala.scalanative.props._
+               |object Main {
+               |  def main(args: Array[String]): Unit = {
+               |    if(linktimeProperty) ???
+               |  }
+               |}""".stripMargin
         )
     )
     assertEquals(
@@ -760,18 +789,18 @@ class NIRCompilerTest {
       () =>
         linkWithProps(
           "props.scala" ->
-            """package scala.scalanative
-            |object props{
-            |   @scalanative.unsafe.resolvedAtLinktime("foo")
-            |   def linktimeProperty = scala.scalanative.unsafe.resolved
-            |}""".stripMargin,
+            """|package scala.scalanative
+               |object props{
+               |   @scalanative.unsafe.resolvedAtLinktime("foo")
+               |   def linktimeProperty = scala.scalanative.unsafe.resolved
+               |}""".stripMargin,
           "main.scala" ->
-            """import scala.scalanative.props._
-            |object Main {
-            |  def main(args: Array[String]): Unit = {
-            |    if(linktimeProperty) ???
-            |  }
-            |}""".stripMargin
+            """|import scala.scalanative.props._
+               |object Main {
+               |  def main(args: Array[String]): Unit = {
+               |    if(linktimeProperty) ???
+               |  }
+               |}""".stripMargin
         )
     )
     assertEquals(
@@ -786,22 +815,22 @@ class NIRCompilerTest {
       () =>
         linkWithProps(
           "props.scala" ->
-            """package scala.scalanative
-            |
-            |object props{
-            |   @scalanative.unsafe.resolvedAtLinktime("prop")
-            |   def linktimeProperty: Boolean = scala.scalanative.unsafe.resolved
-            |
-            |   def runtimeProperty = true
-            |}
-            |""".stripMargin,
-          "main.scala" -> """
-           |import scala.scalanative.props._
-           |object Main {
-           |  def main(args: Array[String]): Unit = {
-           |    if(linktimeProperty || runtimeProperty) ??? 
-           |  }
-           |}""".stripMargin
+            """|package scala.scalanative
+               |
+               |object props{
+               |   @scalanative.unsafe.resolvedAtLinktime("prop")
+               |   def linktimeProperty: Boolean = scala.scalanative.unsafe.resolved
+               |
+               |   def runtimeProperty = true
+               |}
+               |""".stripMargin,
+          "main.scala" -> """|
+                             |import scala.scalanative.props._
+                             |object Main {
+                             |  def main(args: Array[String]): Unit = {
+                             |    if(linktimeProperty || runtimeProperty) ??? 
+                             |  }
+                             |}""".stripMargin
         )
     )
     assertEquals(
@@ -812,12 +841,16 @@ class NIRCompilerTest {
 
   @Test def issue4044(): Unit = {
     // Unable to compile lazy val in trait
-    NIRCompiler(_.compile("""
-      |trait Source { 
-      |  lazy val (lineStarts, charCount, lineCount) = (1, 2, 3)
-      |}
-      | 
-      |class StringSource extends Source
-      |""".stripMargin))
+    NIRCompiler(
+      _.compile(
+        """|
+           |trait Source { 
+           |  lazy val (lineStarts, charCount, lineCount) = (1, 2, 3)
+           |}
+           | 
+           |class StringSource extends Source
+           |""".stripMargin
+      )
+    )
   }
 }

@@ -58,24 +58,24 @@ class LexicalScopesTest extends OptimizerSpec {
   @Test def scopesHierarchyDebug(): Unit = optimize(
     entry = "Test",
     sources = Map(
-      "Test.scala" -> """
-    |object Test {
-    |  def main(args: Array[String]): Unit = {
-    |    val a = args.size
-    |    val b = a + this.##
-    |    val result = {
-    |      val innerA = args.size + a
-    |      val innerB = innerA + b
-    |      val innerResult = {
-    |         val deep = innerA + innerB
-    |         deep * 42
-    |      }
-    |      innerA * innerB * innerResult
-    |     }
-    |    assert(result != 0)
-    |  }
-    |}
-    """.stripMargin
+      "Test.scala" -> """|
+                         |object Test {
+                         |  def main(args: Array[String]): Unit = {
+                         |    val a = args.size
+                         |    val b = a + this.##
+                         |    val result = {
+                         |      val innerA = args.size + a
+                         |      val innerB = innerA + b
+                         |      val innerResult = {
+                         |         val deep = innerA + innerB
+                         |         deep * 42
+                         |      }
+                         |      innerA * innerB * innerResult
+                         |     }
+                         |    assert(result != 0)
+                         |  }
+                         |}
+                         |""".stripMargin
     ),
     setupConfig = _.withMode(build.Mode.debug)
   ) {
@@ -118,24 +118,24 @@ class LexicalScopesTest extends OptimizerSpec {
   @Test def scopesHierarchyRelease(): Unit = optimize(
     entry = "Test",
     sources = Map(
-      "Test.scala" -> """
-    |object Test {
-    |  def main(args: Array[String]): Unit = {
-    |    val a = args.size
-    |    val b = a + this.##
-    |    val result = {
-    |      val innerA = args.size + a
-    |      val innerB = innerA + b
-    |      val innerResult = {
-    |         val deep = innerA + innerB
-    |         deep * 42
-    |      }
-    |      innerA * innerB * innerResult
-    |     }
-    |    assert(result != 0)
-    |  }
-    |}
-    """.stripMargin
+      "Test.scala" -> """|
+                         |object Test {
+                         |  def main(args: Array[String]): Unit = {
+                         |    val a = args.size
+                         |    val b = a + this.##
+                         |    val result = {
+                         |      val innerA = args.size + a
+                         |      val innerB = innerA + b
+                         |      val innerResult = {
+                         |         val deep = innerA + innerB
+                         |         deep * 42
+                         |      }
+                         |      innerA * innerB * innerResult
+                         |     }
+                         |    assert(result != 0)
+                         |  }
+                         |}
+                         |""".stripMargin
     )
   ) {
     case (config, result) =>
@@ -184,22 +184,22 @@ class LexicalScopesTest extends OptimizerSpec {
   @Test def inlinedCall(): Unit = optimize(
     entry = "Test",
     sources = Map(
-      "Test.scala" -> """
-    |object Test {
-    |  @scala.scalanative.annotation.alwaysinline
-    |  def calc(x: Int, y: Int): Int = {
-    |    val myMin = x min y
-    |    val myTmp = myMin * y + x
-    |    println(myTmp)
-    |    myTmp + 1
-    |  }
-    |  def main(args: Array[String]): Unit = {
-    |    val a = calc(42, args.size)
-    |    println(a + 1)
-    |    println(a.toString)
-    |  }
-    |}
-    """.stripMargin
+      "Test.scala" -> """|
+                         |object Test {
+                         |  @scala.scalanative.annotation.alwaysinline
+                         |  def calc(x: Int, y: Int): Int = {
+                         |    val myMin = x min y
+                         |    val myTmp = myMin * y + x
+                         |    println(myTmp)
+                         |    myTmp + 1
+                         |  }
+                         |  def main(args: Array[String]): Unit = {
+                         |    val a = calc(42, args.size)
+                         |    println(a + 1)
+                         |    println(a.toString)
+                         |  }
+                         |}
+                         |""".stripMargin
     ),
     setupConfig = _.withMode(build.Mode.releaseFast)
   ) {
@@ -228,24 +228,24 @@ class LexicalScopesTest extends OptimizerSpec {
   @Test def multipleInlinedCalls(): Unit = optimize(
     entry = "Test",
     sources = Map(
-      "Test.scala" -> """
-    |object Test {
-    |  @scala.scalanative.annotation.alwaysinline
-    |  def calc(x: Int, y: Int): Int = {
-    |    val myMin = x min y
-    |    val myTmp = myMin * y + x
-    |    println(myTmp)
-    |    myTmp + 1
-    |  }
-    |  def main(args: Array[String]): Unit = {
-    |    val a = calc(42, args.size)
-    |    val b = calc(24, this.##)
-    |    println(a + 1)
-    |    println(b + 1)
-    |    println(a.toString -> b.toString)
-    |  }
-    |}
-    """.stripMargin
+      "Test.scala" -> """|
+                         |object Test {
+                         |  @scala.scalanative.annotation.alwaysinline
+                         |  def calc(x: Int, y: Int): Int = {
+                         |    val myMin = x min y
+                         |    val myTmp = myMin * y + x
+                         |    println(myTmp)
+                         |    myTmp + 1
+                         |  }
+                         |  def main(args: Array[String]): Unit = {
+                         |    val a = calc(42, args.size)
+                         |    val b = calc(24, this.##)
+                         |    println(a + 1)
+                         |    println(b + 1)
+                         |    println(a.toString -> b.toString)
+                         |  }
+                         |}
+                         |""".stripMargin
     ),
     setupConfig = _.withMode(build.Mode.releaseFast)
   ) {

@@ -11,16 +11,16 @@ class ExternObjectWithImplicitClass {
   @Test def createsValidDefns(): Unit = {
     compileAndLoad(
       "Test.scala" ->
-        """import scala.scalanative.unsafe.extern
-          |@extern object Foo {
-          |  implicit class Ext(v: Int) {
-          |    def convert(): Long = Foo.implicitConvert(v) + Foo.doConvert(v)
-          |    def add(x: Int) = v + x
-          |  }
-          |  implicit def implicitConvert(v: Int): Long = extern
-          |  def doConvert(v: Int): Long = extern
-          |}
-          |""".stripMargin
+        """|import scala.scalanative.unsafe.extern
+           |@extern object Foo {
+           |  implicit class Ext(v: Int) {
+           |    def convert(): Long = Foo.implicitConvert(v) + Foo.doConvert(v)
+           |    def add(x: Int) = v + x
+           |  }
+           |  implicit def implicitConvert(v: Int): Long = extern
+           |  def doConvert(v: Int): Long = extern
+           |}
+           |""".stripMargin
     ) { defns =>
       val ExternModule = nir.Global.Top("Foo$")
       val ImplicitClass = nir.Global.Top("Foo$Ext")
@@ -45,16 +45,16 @@ class ExternObjectWithImplicitClass {
   @Test def createsValidDefnsForAnyVal(): Unit = {
     compileAndLoad(
       "Test.scala" ->
-        """import scala.scalanative.unsafe.extern
-          |@extern object Foo {
-          |  implicit class Ext(val v: Int) extends AnyVal {
-          |    def convert(): Long = Foo.implicitConvert(v) + Foo.doConvert(v)
-          |    def add(x: Int) = v + x
-          |  }
-          |  implicit def implicitConvert(v: Int): Long = extern
-          |  def doConvert(v: Int): Long = extern
-          |}
-          |""".stripMargin
+        """|import scala.scalanative.unsafe.extern
+           |@extern object Foo {
+           |  implicit class Ext(val v: Int) extends AnyVal {
+           |    def convert(): Long = Foo.implicitConvert(v) + Foo.doConvert(v)
+           |    def add(x: Int) = v + x
+           |  }
+           |  implicit def implicitConvert(v: Int): Long = extern
+           |  def doConvert(v: Int): Long = extern
+           |}
+           |""".stripMargin
     ) { defns =>
       val ExternModule = nir.Global.Top("Foo$")
       val ImplicitClass = nir.Global.Top("Foo$Ext")

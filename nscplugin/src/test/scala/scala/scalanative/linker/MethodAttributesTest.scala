@@ -9,17 +9,17 @@ class MethodAttributesTest {
   @Test def explicitLinkOrDefine(): Unit = {
     compileAndLoad(
       "Test.scala" ->
-        """
-          |import scala.scalanative.unsafe.{extern, link, define, linkCppRuntime}
-          |@link("common-lib")
-          |@define("common-define")
-          |@linkCppRuntime
-          |@extern object Foo {
-          |  @link("custom-lib") def withLink(): Int = extern
-          |  @define("custom-define") def withDefine(): Int = extern
-          |  def default(): Int = extern 
-          |}
-          """.stripMargin
+        """|
+           |import scala.scalanative.unsafe.{extern, link, define, linkCppRuntime}
+           |@link("common-lib")
+           |@define("common-define")
+           |@linkCppRuntime
+           |@extern object Foo {
+           |  @link("custom-lib") def withLink(): Int = extern
+           |  @define("custom-define") def withDefine(): Int = extern
+           |  def default(): Int = extern 
+           |}
+           |""".stripMargin
     ) { defns =>
       val Module = nir.Global.Top("Foo$")
       val WithLinkMethod = Module.member(nir.Sig.Extern("withLink"))

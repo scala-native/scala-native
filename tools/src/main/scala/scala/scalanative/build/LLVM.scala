@@ -207,7 +207,7 @@ private[scalanative] object LLVM {
     } catch {
       case ex: IOException if (outPath.toFile().exists()) =>
         throw new BuildException(
-          s"""Executable build module or `baseName` is named 'native'
+          s"""|Executable build module or `baseName` is named 'native'
               |which conflicts with the compiler `workDir`.
               |Please rename the build module or
               |use `withBaseName` to rename the executable.

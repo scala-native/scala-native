@@ -54,10 +54,10 @@ class ScalaNativeSBTRunner(
   override def banner: String = {
     import scala.scalanative.nir.Versions.{current => currentVersion}
 
-    super.banner.trim + s"""
-   |Scala Native version is: $currentVersion
-   |${options.show}
-   |""".stripMargin
+    super.banner.trim + s"""|
+                            |Scala Native version is: $currentVersion
+                            |${options.show}
+                            |""".stripMargin
   }
 
   override def runTest(testFile: File): TestState = {

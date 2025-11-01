@@ -309,20 +309,20 @@ object Config {
       def formatClassPath(cp: Seq[Path]) =
         cp.mkString("List(", "\n".padTo(22, ' '), ")")
 
-      s"""Config(
-        | - baseDir:          $baseDir
-        | - testConfig:       $testConfig
-        | - workDir:          $workDir
-        | - moduleName:       $moduleName
-        | - baseName:         $baseName
-        | - artifactName:     $artifactName
-        | - artifactPath:     $artifactPath
-        | - buildPath:        $buildPath
-        | - mainClass:        $mainClass
-        | - classPath:        ${formatClassPath(classPath)}
-        | - sourcesClasspath: ${formatClassPath(sourcesClassPath)}
-        | - compilerConfig:   $compilerConfig
-        |)""".stripMargin
+      s"""|Config(
+          | - baseDir:          $baseDir
+          | - testConfig:       $testConfig
+          | - workDir:          $workDir
+          | - moduleName:       $moduleName
+          | - baseName:         $baseName
+          | - artifactName:     $artifactName
+          | - artifactPath:     $artifactPath
+          | - buildPath:        $buildPath
+          | - mainClass:        $mainClass
+          | - classPath:        ${formatClassPath(classPath)}
+          | - sourcesClasspath: ${formatClassPath(sourcesClassPath)}
+          | - compilerConfig:   $compilerConfig
+          |)""".stripMargin
     }
 
   }

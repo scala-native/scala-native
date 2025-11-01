@@ -57,7 +57,7 @@ object SemanticsConfig {
 
     override def toString: String = show(indent = " ")
     override private[scalanative] def show(indent: String): String = {
-      s"""SemanticsConfig(
+      s"""|SemanticsConfig(
           |$indent- finalFields: ${finalFields}
           |$indent- strictExternCallSemantics: ${strictExternCallSemantics}
           |$indent)""".stripMargin

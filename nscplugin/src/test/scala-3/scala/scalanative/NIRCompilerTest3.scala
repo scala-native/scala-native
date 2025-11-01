@@ -19,21 +19,26 @@ class NIRCompilerTest3 {
   }
 
   @Test def topLevelExternMethods(): Unit = nativeCompilation(
-    """
-      |import scala.scalanative.unsafe.extern
-      |
-      |def foo(): Int = extern
-      |""".stripMargin
+    """|
+       |import scala.scalanative.unsafe.extern
+       |
+       |def foo(): Int = extern
+       |""".stripMargin
   )
 
   @Test def topLevelExternMethodNoResultType(): Unit = {
     val err = assertThrows(
       classOf[CompilationFailedException],
-      () => NIRCompiler(_.compile("""
-        |import scala.scalanative.unsafe.extern
-        |
-        |def foo() = extern
-        |""".stripMargin))
+      () =>
+        NIRCompiler(
+          _.compile(
+            """|
+               |import scala.scalanative.unsafe.extern
+               |
+               |def foo() = extern
+               |""".stripMargin
+          )
+        )
     )
     assertTrue(err.getMessage().contains("extern method foo needs result type"))
   }
@@ -41,11 +46,16 @@ class NIRCompilerTest3 {
   @Test def externInNonExternTopLevelDefn(): Unit = {
     val err = assertThrows(
       classOf[CompilationFailedException],
-      () => NIRCompiler(_.compile("""
-        |import scala.scalanative.unsafe.extern
-        |
-        |val foo: Int = extern
-        |""".stripMargin))
+      () =>
+        NIRCompiler(
+          _.compile(
+            """|
+               |import scala.scalanative.unsafe.extern
+               |
+               |val foo: Int = extern
+               |""".stripMargin
+          )
+        )
     )
     assertTrue(
       err.getMessage().contains("extern` cannot be used in val definition")
@@ -53,21 +63,26 @@ class NIRCompilerTest3 {
   }
 
   @Test def topLevelExternVar(): Unit = nativeCompilation(
-    """
-      |import scala.scalanative.unsafe.extern
-      |
-      |var foo: Int = extern
-      |""".stripMargin
+    """|
+       |import scala.scalanative.unsafe.extern
+       |
+       |var foo: Int = extern
+       |""".stripMargin
   )
 
   @Test def topLevelExternVarNoResultType(): Unit = {
     val err = assertThrows(
       classOf[CompilationFailedException],
-      () => NIRCompiler(_.compile("""
-        |import scala.scalanative.unsafe.extern
-        |
-        |var foo = extern
-        |""".stripMargin))
+      () =>
+        NIRCompiler(
+          _.compile(
+            """|
+               |import scala.scalanative.unsafe.extern
+               |
+               |var foo = extern
+               |""".stripMargin
+          )
+        )
     )
     assertTrue(
       err
@@ -79,12 +94,17 @@ class NIRCompilerTest3 {
   @Test def inlinedMethodUsingExtern(): Unit = {
     val err = assertThrows(
       classOf[CompilationFailedException],
-      () => NIRCompiler(_.compile("""
-           |import scala.scalanative.unsafe.*
-           |
-           |inline def foo(): Int = locally{ val x = extern; x }
-           |def x = foo()
-           |""".stripMargin))
+      () =>
+        NIRCompiler(
+          _.compile(
+            """|
+               |import scala.scalanative.unsafe.*
+               |
+               |inline def foo(): Int = locally{ val x = extern; x }
+               |def x = foo()
+               |""".stripMargin
+          )
+        )
     )
     assertTrue(
       err
@@ -99,12 +119,17 @@ class NIRCompilerTest3 {
   @Test def topLevelExportedExtern(): Unit = {
     val err = assertThrows(
       classOf[CompilationFailedException],
-      () => NIRCompiler(_.compile("""
-        |import scala.scalanative.unsafe.{extern, exported}
-        |
-        |@exported
-        |def foo: Int = extern
-        |""".stripMargin))
+      () =>
+        NIRCompiler(
+          _.compile(
+            """|
+               |import scala.scalanative.unsafe.{extern, exported}
+               |
+               |@exported
+               |def foo: Int = extern
+               |""".stripMargin
+          )
+        )
     )
     assertTrue(err.getMessage().startsWith(ErrorBothExternAndExported))
   }
@@ -112,29 +137,36 @@ class NIRCompilerTest3 {
   @Test def topLevelExportedAccessorExtern(): Unit = {
     val err = assertThrows(
       classOf[CompilationFailedException],
-      () => NIRCompiler(_.compile("""
-         |import scala.scalanative.unsafe.*
-         |
-         |@exportAccessors
-         |var foo: Int = extern
-         |""".stripMargin))
+      () =>
+        NIRCompiler(
+          _.compile(
+            """|
+               |import scala.scalanative.unsafe.*
+               |
+               |@exportAccessors
+               |var foo: Int = extern
+               |""".stripMargin
+          )
+        )
     )
     assertTrue(err.getMessage().startsWith(ErrorBothExternAndExported))
   }
 
   @Test def topLevelExports(): Unit = {
-    compileAndLoad("source.scala" -> """
-      |import scala.scalanative.unsafe.*
-      |
-      |@exported
-      |def foo: Int = 42
-      |
-      |@exportAccessors("my_get_bar")
-      |val bar: Long = 42L
-      |
-      |@exportAccessors("my_get_baz", "my_set_baz")
-      |var baz: Byte = 42
-      |""".stripMargin) { defns =>
+    compileAndLoad(
+      "source.scala" -> """|
+                           |import scala.scalanative.unsafe.*
+                           |
+                           |@exported
+                           |def foo: Int = 42
+                           |
+                           |@exportAccessors("my_get_bar")
+                           |val bar: Long = 42L
+                           |
+                           |@exportAccessors("my_get_baz", "my_set_baz")
+                           |var baz: Byte = 42
+                           |""".stripMargin
+    ) { defns =>
       val Owner = Global.Top("source$package$")
       val expected = Seq(
         Sig.Method("foo", Seq(Type.Int)),
@@ -155,53 +187,58 @@ class NIRCompilerTest3 {
   }
 
   @Test def inlineCFuncPtrFromScalaFunction(): Unit = nativeCompilation(
-    """
-        |import scala.scalanative.unsafe.*
-        |
-        |opaque type Visitor = CFuncPtr1[Int, Int]
-        |object Visitor:
-        |  inline def apply(inline f: Int => Int): Visitor = f
-        |
-        |@extern def useVisitor(x: Visitor): Unit = extern
-        |
-        |@main def test(n: Int): Unit = 
-        |  def callback(x: Int) = x*x + 2
-        |  val visitor: Visitor = (n: Int) => n * 10
-        |  useVisitor(Visitor(callback))
-        |  useVisitor(Visitor(_ * 10))
-        |  useVisitor(visitor)
-        | 
-        |""".stripMargin
+    """|
+       |import scala.scalanative.unsafe.*
+       |
+       |opaque type Visitor = CFuncPtr1[Int, Int]
+       |object Visitor:
+       |  inline def apply(inline f: Int => Int): Visitor = f
+       |
+       |@extern def useVisitor(x: Visitor): Unit = extern
+       |
+       |@main def test(n: Int): Unit = 
+       |  def callback(x: Int) = x*x + 2
+       |  val visitor: Visitor = (n: Int) => n * 10
+       |  useVisitor(Visitor(callback))
+       |  useVisitor(Visitor(_ * 10))
+       |  useVisitor(visitor)
+       | 
+       |""".stripMargin
   )
 
   @Test def opaqueTypes(): Unit = nativeCompilation(
-    """
-    |import scalanative.unsafe.*
-    |import scalanative.unsigned.*
-    |
-    |opaque type cmark_event_type = CUnsignedInt
-    |object cmark_event_type:
-    |  inline def define(inline a: Long): cmark_event_type = a.toUInt
-    |  val CMARK_EVENT_NONE = define(0)
-    |
-    |@main def hello(): Unit =
-    |  val evtype = cmark_event_type.CMARK_EVENT_NONE
-    |  test(evtype)
-    |
-    |def test(t: Any*): Unit = extern
-    |""".stripMargin
+    """|
+       |import scalanative.unsafe.*
+       |import scalanative.unsigned.*
+       |
+       |opaque type cmark_event_type = CUnsignedInt
+       |object cmark_event_type:
+       |  inline def define(inline a: Long): cmark_event_type = a.toUInt
+       |  val CMARK_EVENT_NONE = define(0)
+       |
+       |@main def hello(): Unit =
+       |  val evtype = cmark_event_type.CMARK_EVENT_NONE
+       |  test(evtype)
+       |
+       |def test(t: Any*): Unit = extern
+       |""".stripMargin
   )
 
   @Test def inlineExternFunction(): Unit = {
     val err = assertThrows(
       classOf[CompilationFailedException],
-      () => NIRCompiler(_.compile("""
-           |import scala.scalanative.unsafe.*
-           |
-           |@extern object Foo{
-           |   inline def foo(): Int = extern
-           |}
-           |""".stripMargin))
+      () =>
+        NIRCompiler(
+          _.compile(
+            """|
+               |import scala.scalanative.unsafe.*
+               |
+               |@extern object Foo{
+               |   inline def foo(): Int = extern
+               |}
+               |""".stripMargin
+          )
+        )
     )
     assertTrue(err.getMessage().contains("Extern method cannot be inlined"))
   }
@@ -209,13 +246,18 @@ class NIRCompilerTest3 {
   @Test def inlineExternFunctionInTrait(): Unit = {
     val err = assertThrows(
       classOf[CompilationFailedException],
-      () => NIRCompiler(_.compile("""
-           |import scala.scalanative.unsafe.*
-           |
-           |@extern trait Foo{
-           |   inline def foo(): Int = extern
-           |}
-           |""".stripMargin))
+      () =>
+        NIRCompiler(
+          _.compile(
+            """|
+               |import scala.scalanative.unsafe.*
+               |
+               |@extern trait Foo{
+               |   inline def foo(): Int = extern
+               |}
+               |""".stripMargin
+          )
+        )
     )
     assertTrue(err.getMessage().contains("Extern method cannot be inlined"))
   }
@@ -223,11 +265,16 @@ class NIRCompilerTest3 {
   @Test def inlineTopLevelExternFunction(): Unit = {
     val err = assertThrows(
       classOf[CompilationFailedException],
-      () => NIRCompiler(_.compile("""
-           |import scala.scalanative.unsafe.*
-           |
-           |@extern inline def foo(): Int = extern
-           |""".stripMargin))
+      () =>
+        NIRCompiler(
+          _.compile(
+            """|
+               |import scala.scalanative.unsafe.*
+               |
+               |@extern inline def foo(): Int = extern
+               |""".stripMargin
+          )
+        )
     )
     assertTrue(err.getMessage().contains("Extern method cannot be inlined"))
   }
@@ -235,11 +282,16 @@ class NIRCompilerTest3 {
   @Test def inlineExportedFunction(): Unit = {
     val err = assertThrows(
       classOf[CompilationFailedException],
-      () => NIRCompiler(_.compile("""
-           |import scala.scalanative.unsafe.*
-           |
-           |@exported inline def foo(): Int = 42
-           |""".stripMargin))
+      () =>
+        NIRCompiler(
+          _.compile(
+            """|
+               |import scala.scalanative.unsafe.*
+               |
+               |@exported inline def foo(): Int = 42
+               |""".stripMargin
+          )
+        )
     )
     assertTrue(err.getMessage().contains("Exported method cannot be inlined"))
   }
@@ -247,11 +299,16 @@ class NIRCompilerTest3 {
   @Test def inlineExportedField(): Unit = {
     val err = assertThrows(
       classOf[CompilationFailedException],
-      () => NIRCompiler(_.compile("""
-           |import scala.scalanative.unsafe.*
-           |
-           |@exportAccessors inline val foo: Int = 42
-           |""".stripMargin))
+      () =>
+        NIRCompiler(
+          _.compile(
+            """|
+               |import scala.scalanative.unsafe.*
+               |
+               |@exportAccessors inline val foo: Int = 42
+               |""".stripMargin
+          )
+        )
     )
     assertTrue(err.getMessage().contains("Exported field cannot be inlined"))
   }

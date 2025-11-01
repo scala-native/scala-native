@@ -9,30 +9,30 @@ import scalanative.nir.{Global, Rt, Sig, Type}
 
 class ServiceLoaderReachabilityTest extends LinkerSpec {
   val simpleServicesSources = Map(
-    "Test.scala" -> """
-        |trait Service
-        |class Foo extends Service
-        |object Foo
-        |class Bar extends Service
-        |class Baz extends Bar
-        |
-        |package impl {
-        | // Different service, should not be reachable
-        | trait Service
-        | class Baz extends Service
-        |}
-        |
-        |object Test{
-        |  def main(args: Array[String]): Unit = {
-        |    java.util.ServiceLoader.load(classOf[Service])
-        |  }
-        |}
-        """.stripMargin,
-    "META-INF/services/Service" -> s"""
-        |Foo
-        |Bar
-        |Baz
-        |""".stripMargin
+    "Test.scala" -> """|
+                       |trait Service
+                       |class Foo extends Service
+                       |object Foo
+                       |class Bar extends Service
+                       |class Baz extends Bar
+                       |
+                       |package impl {
+                       | // Different service, should not be reachable
+                       | trait Service
+                       | class Baz extends Service
+                       |}
+                       |
+                       |object Test{
+                       |  def main(args: Array[String]): Unit = {
+                       |    java.util.ServiceLoader.load(classOf[Service])
+                       |  }
+                       |}
+                       |""".stripMargin,
+    "META-INF/services/Service" -> s"""|
+                                       |Foo
+                                       |Bar
+                                       |Baz
+                                       |""".stripMargin
   )
 
   @Test def canFindNotLoadedServiceProviders(): Unit = link(
@@ -66,28 +66,28 @@ class ServiceLoaderReachabilityTest extends LinkerSpec {
   @Test def canFindMissingProviders(): Unit = link(
     "Test",
     simpleServicesSources ++ Map(
-      "Test.scala" -> """
-      |trait Service
-      |class Foo extends Service
-      |class Bar extends Service
-      |class Baz extends Bar
-      |
-      |package services {
-      | trait OtherService
-      |}
-      |
-      |object Test{
-      |  def main(args: Array[String]): Unit = {
-      |    java.util.ServiceLoader.load(classOf[Service])
-      |    java.util.ServiceLoader.loadInstalled(classOf[services.OtherService])
-      |  }
-      |}
-        """.stripMargin,
-      "META-INF/services/Service" -> s"""
-        |Foo
-        |Bar
-        |NotImplemented
-        |""".stripMargin
+      "Test.scala" -> """|
+                         |trait Service
+                         |class Foo extends Service
+                         |class Bar extends Service
+                         |class Baz extends Bar
+                         |
+                         |package services {
+                         | trait OtherService
+                         |}
+                         |
+                         |object Test{
+                         |  def main(args: Array[String]): Unit = {
+                         |    java.util.ServiceLoader.load(classOf[Service])
+                         |    java.util.ServiceLoader.loadInstalled(classOf[services.OtherService])
+                         |  }
+                         |}
+                         |""".stripMargin,
+      "META-INF/services/Service" -> s"""|
+                                         |Foo
+                                         |Bar
+                                         |NotImplemented
+                                         |""".stripMargin
     ),
     _.withServiceProviders(
       Map("Service" -> Seq("Foo", "NotImplemented", "NotFound"))

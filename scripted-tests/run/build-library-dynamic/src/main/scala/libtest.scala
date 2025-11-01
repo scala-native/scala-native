@@ -13,12 +13,14 @@ object libtest {
 
   @exported
   def sayHello(): Unit = {
-    println(s"""
-         |==============================
-         |Hello Scala Native from library
-         |==============================
-         |
-    """.stripMargin)
+    println(
+      s"""|
+          |==============================
+          |Hello Scala Native from library
+          |==============================
+          |
+          |""".stripMargin
+    )
   }
 
   @exported("add_longs")

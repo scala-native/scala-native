@@ -19,11 +19,13 @@ val ignoredFiles = {
 def patchTool(args: String*) =
   ParserForMethods(this).runOrThrow(args.toSeq, allowPositional = true)
 
-@main(doc = """Helper tool created for working with scalalib overrides / patches.
+@main(doc =
+  """Helper tool created for working with scalalib overrides / patches.
     Accepts one of following commands:
     - create   - Create diffs of Scala sources based on version in $overridesDir and fetched Scala sources
     - recreate - Create override files based on created diffs and fetched Scala sources
-    - prune    - Remove override files having associated .patch file""")
+    - prune    - Remove override files having associated .patch file"""
+)
 def main(
     @arg(doc = "Command to run [create, recreate, prune]")
     cmd: Command,
@@ -59,14 +61,16 @@ def main(
         )
     }
 
-  println(s"""
-      |Attempting to $cmd with config:
-      |Scala version: $scalaVersion
-      |Overrides dir: $overridesDirPath
-      |Sources dir:   $sourcesDir
-      |Denylisted: 
-      | - ${ignoredFiles.mkString("\n - ")}
-      |""".stripMargin)
+  println(
+    s"""|
+        |Attempting to $cmd with config:
+        |Scala version: $scalaVersion
+        |Overrides dir: $overridesDirPath
+        |Sources dir:   $sourcesDir
+        |Denylisted: 
+        | - ${ignoredFiles.mkString("\n - ")}
+        |""".stripMargin
+  )
 
   assert(os.exists(overridesDirPath), "Overrides dir does not exists")
 

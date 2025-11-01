@@ -14,47 +14,47 @@ class LinktimeConditionsSpec extends OptimizerSpec {
   val entry = "Main"
   val module = "Main$"
   private val props =
-    s"""package scala.scalanative
-       |import scala.scalanative.unsafe.{resolvedAtLinktime, resolved}
-       |
-       |object linktime {
-       |  @resolvedAtLinktime("int")
-       |  final def int: Int = resolved
-       |
-       |  @resolvedAtLinktime("bool")
-       |  final def bool: Boolean = resolved
-       |
-       |  @resolvedAtLinktime("welcomeMessage")
-       |  final def welcomeMessage: String = resolved
-       |
-       |  @resolvedAtLinktime("decimalSeparator")
-       |  def decimalSeparator: Char = resolved
-       |  @resolvedAtLinktime("float")
-       |  def float: Float = resolved
-       |
-       |  object inner{
-       |    @resolvedAtLinktime("inner.countFrom")
-       |    def countFrom: Long = resolved
-       |
-       |    @resolvedAtLinktime("secret.performance.multiplier")
-       |    def performanceMultiplier: Double = resolved
-       |  }
-       |}
-       |""".stripMargin
+    s"""|package scala.scalanative
+        |import scala.scalanative.unsafe.{resolvedAtLinktime, resolved}
+        |
+        |object linktime {
+        |  @resolvedAtLinktime("int")
+        |  final def int: Int = resolved
+        |
+        |  @resolvedAtLinktime("bool")
+        |  final def bool: Boolean = resolved
+        |
+        |  @resolvedAtLinktime("welcomeMessage")
+        |  final def welcomeMessage: String = resolved
+        |
+        |  @resolvedAtLinktime("decimalSeparator")
+        |  def decimalSeparator: Char = resolved
+        |  @resolvedAtLinktime("float")
+        |  def float: Float = resolved
+        |
+        |  object inner{
+        |    @resolvedAtLinktime("inner.countFrom")
+        |    def countFrom: Long = resolved
+        |
+        |    @resolvedAtLinktime("secret.performance.multiplier")
+        |    def performanceMultiplier: Double = resolved
+        |  }
+        |}
+        |""".stripMargin
 
-  val allPropsUsage = s"""
-                       |import scala.scalanative.linktime
-                       |object Main {
-                       |  def main(args: Array[String]): Unit = {
-                       |    linktime.int
-                       |    linktime.bool
-                       |    linktime.welcomeMessage
-                       |    linktime.decimalSeparator
-                       |    linktime.float
-                       |    linktime.inner.countFrom
-                       |    linktime.inner.performanceMultiplier
-                       |  }
-                       |}""".stripMargin
+  val allPropsUsage = s"""|
+                          |import scala.scalanative.linktime
+                          |object Main {
+                          |  def main(args: Array[String]): Unit = {
+                          |    linktime.int
+                          |    linktime.bool
+                          |    linktime.welcomeMessage
+                          |    linktime.decimalSeparator
+                          |    linktime.float
+                          |    linktime.inner.countFrom
+                          |    linktime.inner.performanceMultiplier
+                          |  }
+                          |}""".stripMargin
 
   case class Entry[T](propertyName: String, value: T, linktimeValue: nir.Val)
 
@@ -150,17 +150,17 @@ class LinktimeConditionsSpec extends OptimizerSpec {
     for (n <- pathsRange)
       doesNotLinkWithProps(
         "props.scala" -> props,
-        "main.scala" -> s"""
-                          |import scala.scalanative.linktime
-                          |object Main {
-                          |  ${pathStrings(pathsRange)}
-                          |
-                          |  def main(args: Array[String]): Unit = {
-                          |    if(linktime.int == 1) path1()
-                          |    else if (linktime.int == 2) path2()
-                          |    else path3()
-                          |  }
-                          |}""".stripMargin
+        "main.scala" -> s"""|
+                            |import scala.scalanative.linktime
+                            |object Main {
+                            |  ${pathStrings(pathsRange)}
+                            |
+                            |  def main(args: Array[String]): Unit = {
+                            |    if(linktime.int == 1) path1()
+                            |    else if (linktime.int == 2) path2()
+                            |    else path3()
+                            |  }
+                            |}""".stripMargin
       )("int" -> n) {
         case (_, result: ReachabilityAnalysis.Failure) =>
           assertTrue(
@@ -178,20 +178,20 @@ class LinktimeConditionsSpec extends OptimizerSpec {
       doesNotLinkWithProps(
         "props.scala" -> props,
         "main.scala" ->
-          s"""
-          |import scala.scalanative.linktime
-          |object Main {
-          |  ${pathStrings(pathsRange)}
-          |  def main(args: Array[String]): Unit = {
-          |    if($property != 0.0f) {
-          |       if($property <= 1.0f) path1()
-          |       else if($property < 2.9f) path2()
-          |       else if($property > 3.9f) path4()
-          |       else if($property >= 3.0f) path3()
-          |       else () // should be unreachable
-          |    } else path0()
-          |  }
-          |}""".stripMargin
+          s"""|
+              |import scala.scalanative.linktime
+              |object Main {
+              |  ${pathStrings(pathsRange)}
+              |  def main(args: Array[String]): Unit = {
+              |    if($property != 0.0f) {
+              |       if($property <= 1.0f) path1()
+              |       else if($property < 2.9f) path2()
+              |       else if($property > 3.9f) path4()
+              |       else if($property >= 3.0f) path3()
+              |       else () // should be unreachable
+              |    } else path0()
+              |  }
+              |}""".stripMargin
       )("float" -> n.toFloat) {
         case (_, result: ReachabilityAnalysis.Failure) =>
           assertTrue(
@@ -208,28 +208,28 @@ class LinktimeConditionsSpec extends OptimizerSpec {
     val pathsRange = 1.to(6)
     val compilationUnit = Map(
       "props.scala" -> props,
-      "props2.scala" -> """
-          |package scala.scalanative
-          |object props2{
-          |   @scalanative.unsafe.resolvedAtLinktime(withName = "prop.string")
-          |   def stringProp: String = scala.scalanative.unsafe.resolved
-          |}
-          |""".stripMargin,
+      "props2.scala" -> """|
+                           |package scala.scalanative
+                           |object props2{
+                           |   @scalanative.unsafe.resolvedAtLinktime(withName = "prop.string")
+                           |   def stringProp: String = scala.scalanative.unsafe.resolved
+                           |}
+                           |""".stripMargin,
       "main.scala" ->
-        s"""import scala.scalanative.props2._
-           |import scala.scalanative.linktime
-           |
-           |object Main {
-           |  ${pathStrings(pathsRange)}
-           |  def main(args: Array[String]): Unit = {
-           |    if($doubleField == -1.0 || $stringField == "one" || $longField == 1) path1()
-           |     else if($doubleField >= 1 && $longField <= 2 && $stringField == "2") path2()
-           |     else if(($doubleField == 3.0 && $longField == 3) || $stringField == "tri") path3()
-           |     else if(($stringField != "three" || $longField > 3) && $doubleField <= 4.0) path4()
-           |     else if(($stringField != null && $longField < 1234567890) && ($doubleField >= -12345.789 && $doubleField <= 12345.789)) path5()
-           |     else path6()
-           |  }
-           |}""".stripMargin
+        s"""|import scala.scalanative.props2._
+            |import scala.scalanative.linktime
+            |
+            |object Main {
+            |  ${pathStrings(pathsRange)}
+            |  def main(args: Array[String]): Unit = {
+            |    if($doubleField == -1.0 || $stringField == "one" || $longField == 1) path1()
+            |     else if($doubleField >= 1 && $longField <= 2 && $stringField == "2") path2()
+            |     else if(($doubleField == 3.0 && $longField == 3) || $stringField == "tri") path3()
+            |     else if(($stringField != "three" || $longField > 3) && $doubleField <= 4.0) path4()
+            |     else if(($stringField != null && $longField < 1234567890) && ($doubleField >= -12345.789 && $doubleField <= 12345.789)) path5()
+            |     else path6()
+            |  }
+            |}""".stripMargin
     )
 
     val cases: List[((Double, String, Long), Int)] = List(
@@ -269,27 +269,27 @@ class LinktimeConditionsSpec extends OptimizerSpec {
     )
 
     val compilationUnit = Map(
-      "props.scala" -> s"""
-           |package scala.scalanative
-           |object props{
-           |   @scalanative.unsafe.resolvedAtLinktime(withName = "prop.bool.1")
-           |   def $bool1: Boolean = scala.scalanative.unsafe.resolved
-           |
-           |   @scalanative.unsafe.resolvedAtLinktime(withName = "prop.bool.2")
-           |   def $bool2: Boolean = scala.scalanative.unsafe.resolved
-           |}""".stripMargin,
-      "main.scala" -> s"""
-        |import scala.scalanative.props._
-        |object Main {
-        |
-        |  ${pathStrings(pathsRange)}
-        |  def main(args: Array[String]): Unit = {
-        |    if($bool1 && $bool2 == true) path1()
-        |     else if($bool1 && !$bool2) path2()
-        |     else if($bool1 == false || $bool2) path3()
-        |     else path4()
-        |  }
-        |}""".stripMargin
+      "props.scala" -> s"""|
+                           |package scala.scalanative
+                           |object props{
+                           |   @scalanative.unsafe.resolvedAtLinktime(withName = "prop.bool.1")
+                           |   def $bool1: Boolean = scala.scalanative.unsafe.resolved
+                           |
+                           |   @scalanative.unsafe.resolvedAtLinktime(withName = "prop.bool.2")
+                           |   def $bool2: Boolean = scala.scalanative.unsafe.resolved
+                           |}""".stripMargin,
+      "main.scala" -> s"""|
+                          |import scala.scalanative.props._
+                          |object Main {
+                          |
+                          |  ${pathStrings(pathsRange)}
+                          |  def main(args: Array[String]): Unit = {
+                          |    if($bool1 && $bool2 == true) path1()
+                          |     else if($bool1 && !$bool2) path2()
+                          |     else if($bool1 == false || $bool2) path3()
+                          |     else path4()
+                          |  }
+                          |}""".stripMargin
     )
 
     for (((bool1, bool2), pathNumber) <- cases)
@@ -308,20 +308,20 @@ class LinktimeConditionsSpec extends OptimizerSpec {
   @Test def referenceLinktimeConditionAtRuntime(): Unit = {
     linkWithProps(
       "props.scala" ->
-        """package scala.scalanative
-            |
-            |object props{
-            |   @scalanative.unsafe.resolvedAtLinktime("prop")
-            |   def linktimeProperty: Boolean = scala.scalanative.unsafe.resolved
-            |}
-            |""".stripMargin,
-      "main.scala" -> """
-                          |import scala.scalanative.props._
-                          |object Main {
-                          |  def main(args: Array[String]): Unit = {
-                          |    println(linktimeProperty)
-                          |  }
-                          |}""".stripMargin
+        """|package scala.scalanative
+           |
+           |object props{
+           |   @scalanative.unsafe.resolvedAtLinktime("prop")
+           |   def linktimeProperty: Boolean = scala.scalanative.unsafe.resolved
+           |}
+           |""".stripMargin,
+      "main.scala" -> """|
+                         |import scala.scalanative.props._
+                         |object Main {
+                         |  def main(args: Array[String]): Unit = {
+                         |    println(linktimeProperty)
+                         |  }
+                         |}""".stripMargin
     )("prop" -> true) { (_, result) =>
       assertEquals(nir.Val.True, result.resolvedVals("prop"))
     }
@@ -330,22 +330,22 @@ class LinktimeConditionsSpec extends OptimizerSpec {
   @Test def inlineLinktimeValue(): Unit = {
     optimizeWithProps(
       "props.scala" ->
-        """package scala.scalanative
-          |
-          |object props{
-          |   @scalanative.unsafe.resolvedAtLinktime("prop")
-          |   def linktimeProperty: Boolean = scala.scalanative.unsafe.resolved
-          |}
-          |""".stripMargin,
-      "main.scala" -> """
-                        |import scala.scalanative.props._
-                        |object Main {
-                        |  @scalanative.annotation.alwaysinline
-                        |  def prop() = linktimeProperty
-                        |  def main(args: Array[String]): Unit = {
-                        |    println(prop())
-                        |  }
-                        |}""".stripMargin
+        """|package scala.scalanative
+           |
+           |object props{
+           |   @scalanative.unsafe.resolvedAtLinktime("prop")
+           |   def linktimeProperty: Boolean = scala.scalanative.unsafe.resolved
+           |}
+           |""".stripMargin,
+      "main.scala" -> """|
+                         |import scala.scalanative.props._
+                         |object Main {
+                         |  @scalanative.annotation.alwaysinline
+                         |  def prop() = linktimeProperty
+                         |  def main(args: Array[String]): Unit = {
+                         |    println(prop())
+                         |  }
+                         |}""".stripMargin
     )("prop" -> true) { (_, result) =>
       // Check if compiles and does not fail to optimize
       assertTrue(result.isSuccessful)
@@ -355,37 +355,37 @@ class LinktimeConditionsSpec extends OptimizerSpec {
   @Test def methodsBasedOnLinktimeValues(): Unit = {
     linkWithProps(
       "props.scala" ->
-        """package scala.scalanative
-          |
-          |object props{
-          |   @scalanative.unsafe.resolvedAtLinktime("os")
-          |   def os: String = scala.scalanative.unsafe.resolved
-          |
-          |   @scalanative.unsafe.resolvedAtLinktime
-          |   def isWindows: Boolean = os == "windows"
-          |
-          |   @scalanative.unsafe.resolvedAtLinktime
-          |   def isMac: Boolean = {
-          |     @scalanative.unsafe.resolvedAtLinktime
-          |     def vendor = "apple"
-          |
-          |     os == "darwin" && vendor == "apple"
-          |   }
-          |
-          |   @scalanative.unsafe.resolvedAtLinktime
-          |   def dynLibExt: String =
-          |     if(isWindows) ".dll"
-          |     else if(isMac) ".dylib"
-          |     else ".so"
-          |}
-          |""".stripMargin,
-      "main.scala" -> """
-          |import scala.scalanative.props._
-          |object Main {
-          |  def main(args: Array[String]): Unit = {
-          |    println(dynLibExt)
-          |  }
-          |}""".stripMargin
+        """|package scala.scalanative
+           |
+           |object props{
+           |   @scalanative.unsafe.resolvedAtLinktime("os")
+           |   def os: String = scala.scalanative.unsafe.resolved
+           |
+           |   @scalanative.unsafe.resolvedAtLinktime
+           |   def isWindows: Boolean = os == "windows"
+           |
+           |   @scalanative.unsafe.resolvedAtLinktime
+           |   def isMac: Boolean = {
+           |     @scalanative.unsafe.resolvedAtLinktime
+           |     def vendor = "apple"
+           |
+           |     os == "darwin" && vendor == "apple"
+           |   }
+           |
+           |   @scalanative.unsafe.resolvedAtLinktime
+           |   def dynLibExt: String =
+           |     if(isWindows) ".dll"
+           |     else if(isMac) ".dylib"
+           |     else ".so"
+           |}
+           |""".stripMargin,
+      "main.scala" -> """|
+                         |import scala.scalanative.props._
+                         |object Main {
+                         |  def main(args: Array[String]): Unit = {
+                         |    println(dynLibExt)
+                         |  }
+                         |}""".stripMargin
     )("os" -> "darwin") { (_, result) =>
       val Props = nir.Global.Top("scala.scalanative.props$")
       def calculatedVal(
@@ -445,10 +445,10 @@ class LinktimeConditionsSpec extends OptimizerSpec {
   private def pathStrings(range: Range) = {
     range
       .map { n =>
-        s"""
-         |@scalanative.annotation.stub
-         |def path$n(): Unit = ???
-         |""".stripMargin
+        s"""|
+            |@scalanative.annotation.stub
+            |def path$n(): Unit = ???
+            |""".stripMargin
       }
       .mkString("\n")
   }

@@ -27,12 +27,14 @@ import scala.util.chaining.scalaUtilChainingOps
       .call(cwd = scalaJSAbsPath, check = true, stdout = os.Pipe)
     out.out.text()
 
-  println(s"""
-  |ScalaNative base dir: $scalaNativeAbsPath
-  |ScalaJS     base dir: $scalaJSAbsPath
-  |Rel path:             ${relPath}       
-  |Porting ${sjsPath} into ${snPath}
-  """.stripMargin)
+  println(
+    s"""|
+        |ScalaNative base dir: $scalaNativeAbsPath
+        |ScalaJS     base dir: $scalaJSAbsPath
+        |Rel path:             ${relPath}       
+        |Porting ${sjsPath} into ${snPath}
+        |""".stripMargin
+  )
 
   assert(
     os.exists(scalaNativeAbsPath),

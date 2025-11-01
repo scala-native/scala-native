@@ -24,10 +24,10 @@ class StackallocTest {
       () =>
         NIRCompiler(
           _.compile(
-            """import scala.scalanative.unsafe._
-          |object Test {
-          |  val x = stackalloc()
-          |}""".stripMargin
+            """|import scala.scalanative.unsafe._
+               |object Test {
+               |  val x = stackalloc()
+               |}""".stripMargin
           )
         )
     )
@@ -36,11 +36,11 @@ class StackallocTest {
 
   @Test def inferredType(): Unit = NIRCompiler(
     _.compile(
-      """import scala.scalanative.unsafe._
-          |object Test {
-          |  val x: Ptr[Int] = stackalloc()
-          |  val y: Ptr[Ptr[_]] = stackalloc(10)
-          |}""".stripMargin
+      """|import scala.scalanative.unsafe._
+         |object Test {
+         |  val x: Ptr[Int] = stackalloc()
+         |  val y: Ptr[Ptr[_]] = stackalloc(10)
+         |}""".stripMargin
     )
   )
 
@@ -51,12 +51,12 @@ class StackallocTest {
       () =>
         NIRCompiler(
           _.compile(
-            """import scala.scalanative.unsafe._
-            |object Test {
-            |  def create[T]() = stackalloc[T]()
-            |  val x = create[Int]()
-            |  val y = create[String]()
-            |}""".stripMargin
+            """|import scala.scalanative.unsafe._
+               |object Test {
+               |  def create[T]() = stackalloc[T]()
+               |  val x = create[Int]()
+               |  val y = create[String]()
+               |}""".stripMargin
           )
         )
     )
@@ -67,12 +67,12 @@ class StackallocTest {
     assumeIsScala3()
     NIRCompiler(
       _.compile(
-        """import scala.scalanative.unsafe._
-          |object Test {
-          |  inline def create[T]() = stackalloc[T]()
-          |  val x = create[Int]()
-          |  val y = create[String]()
-          |}""".stripMargin
+        """|import scala.scalanative.unsafe._
+           |object Test {
+           |  inline def create[T]() = stackalloc[T]()
+           |  val x = create[Int]()
+           |  val y = create[String]()
+           |}""".stripMargin
       )
     )
   }
@@ -83,10 +83,10 @@ class StackallocTest {
       () =>
         NIRCompiler(
           _.compile(
-            """import scala.scalanative.unsafe._
-          |object Test {
-          |  val x = stackalloc[Any](10)
-          |}""".stripMargin
+            """|import scala.scalanative.unsafe._
+               |object Test {
+               |  val x = stackalloc[Any](10)
+               |}""".stripMargin
           )
         )
     )
@@ -99,10 +99,10 @@ class StackallocTest {
       () =>
         NIRCompiler(
           _.compile(
-            """import scala.scalanative.unsafe._
-          |object Test {
-          |  val x = stackalloc[Nothing](10)
-          |}""".stripMargin
+            """|import scala.scalanative.unsafe._
+               |object Test {
+               |  val x = stackalloc[Nothing](10)
+               |}""".stripMargin
           )
         )
     )
@@ -115,12 +115,12 @@ class StackallocTest {
       () =>
         NIRCompiler(
           _.compile(
-            """import scala.scalanative.unsafe._
-          |object Test {
-          |  type A = Any
-          |  type B = A
-          |  val x = stackalloc[B]()
-          |}""".stripMargin
+            """|import scala.scalanative.unsafe._
+               |object Test {
+               |  type A = Any
+               |  type B = A
+               |  val x = stackalloc[B]()
+               |}""".stripMargin
           )
         )
     )
@@ -134,11 +134,11 @@ class StackallocTest {
       () =>
         NIRCompiler(
           _.compile(
-            """import scala.scalanative.unsafe._
-          |object Test {
-          |  type A
-          |  val x = stackalloc[A]()
-          |}""".stripMargin
+            """|import scala.scalanative.unsafe._
+               |object Test {
+               |  type A
+               |  val x = stackalloc[A]()
+               |}""".stripMargin
           )
         )
     )

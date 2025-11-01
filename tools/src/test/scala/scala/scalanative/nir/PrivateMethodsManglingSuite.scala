@@ -9,62 +9,62 @@ class PrivateMethodsManglingSuite extends LinkerSpec {
 
   @Test def nestedManglingOfPrivateMethods(): Unit = {
     val sources = Map(
-      "A.scala" -> """
-		|package xyz
-		|abstract class A {
-		|  protected def encodeLoop(arg1: Int, arg2: String): String
-		|  final def encode(arg1: Int, arg2: String, arg3: Boolean): String = {
-		|    def loop(): String = {
-		|      if (arg3) "hello"
-		|      else encodeLoop(arg1, arg2)
-		|    }
-		|    loop()
-		|  }
-		|  private def foo(x: Int): Int = x + 1
-		|  def bar(x: Int): Int         = foo(x)
-		|}
-		|""".stripMargin,
-      "B.scala" -> """
-  		|package xyz
-  		|object B extends A {
-  		|  def encodeLoop(arg1: Int, arg2: String): String = {
-  		|    println("init_logic")
-  		|    val bool: Boolean = false
-  		|    def loop(): String = {
-  		|      if (bool) "asd" else arg2 * arg1
-  		|    }
-  		|    loop()
-  		|  }
-  		|  private def foo(x: Int): Int = x * 2
-  		|  def baz(x: Int): Int         = foo(x)
-  		|}
-		|""".stripMargin,
-      "C.scala" -> """
-  		|package foo
-  		|object B extends xyz.A {
-  		|  def encodeLoop(arg1: Int, arg2: String): String = {
-  		|    println("init_logic")
-  		|    val bool: Boolean = false
-  		|    def loop(): String = {
-  		|      if (bool) "asd" else arg2 * arg1
-  		|    }
-  		|    loop()
-  		|  }
-  		|  private def foo(x: Int): Int = x * 2
-  		|  def fooBar(x: Int): Int      = foo(x)
-  		|}
-		|""".stripMargin,
-      "Main.scala" -> """
-  		|object Main {
-  		|  def main(args: Array[String]): Unit = {
-  		|    xyz.B.encode(1, "asd", true)
-  		|    xyz.B.baz(1)
-  		|    foo.B.encode(1, "asd", true)
-  		|    foo.B.fooBar(1)
-  		|    xyz.B.bar(1)
-  		|  }
-  		|}
-		|""".stripMargin
+      "A.scala" -> """|
+                      |package xyz
+                      |abstract class A {
+                      |  protected def encodeLoop(arg1: Int, arg2: String): String
+                      |  final def encode(arg1: Int, arg2: String, arg3: Boolean): String = {
+                      |    def loop(): String = {
+                      |      if (arg3) "hello"
+                      |      else encodeLoop(arg1, arg2)
+                      |    }
+                      |    loop()
+                      |  }
+                      |  private def foo(x: Int): Int = x + 1
+                      |  def bar(x: Int): Int         = foo(x)
+                      |}
+                      |""".stripMargin,
+      "B.scala" -> """|
+                      |package xyz
+                      |object B extends A {
+                      |  def encodeLoop(arg1: Int, arg2: String): String = {
+                      |    println("init_logic")
+                      |    val bool: Boolean = false
+                      |    def loop(): String = {
+                      |      if (bool) "asd" else arg2 * arg1
+                      |    }
+                      |    loop()
+                      |  }
+                      |  private def foo(x: Int): Int = x * 2
+                      |  def baz(x: Int): Int         = foo(x)
+                      |}
+                      |""".stripMargin,
+      "C.scala" -> """|
+                      |package foo
+                      |object B extends xyz.A {
+                      |  def encodeLoop(arg1: Int, arg2: String): String = {
+                      |    println("init_logic")
+                      |    val bool: Boolean = false
+                      |    def loop(): String = {
+                      |      if (bool) "asd" else arg2 * arg1
+                      |    }
+                      |    loop()
+                      |  }
+                      |  private def foo(x: Int): Int = x * 2
+                      |  def fooBar(x: Int): Int      = foo(x)
+                      |}
+                      |""".stripMargin,
+      "Main.scala" -> """|
+                         |object Main {
+                         |  def main(args: Array[String]): Unit = {
+                         |    xyz.B.encode(1, "asd", true)
+                         |    xyz.B.baz(1)
+                         |    foo.B.encode(1, "asd", true)
+                         |    foo.B.fooBar(1)
+                         |    xyz.B.bar(1)
+                         |  }
+                         |}
+                         |""".stripMargin
     )
 
     val tops = Seq("xyz.B$", "xyz.A", "foo.B$").map(Global.Top(_))

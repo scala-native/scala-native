@@ -31,11 +31,13 @@ def checkFiles(scalaVersion: String): Unit = {
   def showRelPath(p: os.Path): String =
     s"${p.relativeTo(pwd)} ${if exists(p) then "" else "missing!!!"}"
 
-  println(s"""
-             |Scala version:       $scalaVersion
-             |Test defintions dir: ${showRelPath(partestTestsDir)}
-             |Partest sources dir: ${showRelPath(partestSourcesDir)}
-             |""".stripMargin)
+  println(
+    s"""|
+        |Scala version:       $scalaVersion
+        |Test defintions dir: ${showRelPath(partestTestsDir)}
+        |Partest sources dir: ${showRelPath(partestSourcesDir)}
+        |""".stripMargin
+  )
 
   if (Seq(partestTestsDir, partestSourcesDir).forall(exists(_))) ()
   else {

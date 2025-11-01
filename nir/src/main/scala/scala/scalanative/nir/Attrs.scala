@@ -186,25 +186,25 @@ final class Attrs private (
   }
 
   override def toString(): String =
-    s"""Attrs(
-       |  inlineHint = $inlineHint,
-       |  specialize = $specialize,
-       |  opt = $opt,
-       |  align = $align,
-       |  isExtern = $isExtern,
-       |  isBlocking = $isBlocking,
-       |  isDyn = $isDyn,
-       |  isStub = $isStub,
-       |  isAbstract = $isAbstract,
-       |  isVolatile = $isVolatile,
-       |  isFinal = $isFinal,
-       |  isSafePublish = $isSafePublish,
-       |  isLinktimeResolved = $isLinktimeResolved,
-       |  isUsingIntrinsics = $isUsingIntrinsics,
-       |  links = $links,
-       |  preprocessorDefinitions = $preprocessorDefinitions,
-       |  linkCppRuntime = $linkCppRuntime
-       |)""".stripMargin
+    s"""|Attrs(
+        |  inlineHint = $inlineHint,
+        |  specialize = $specialize,
+        |  opt = $opt,
+        |  align = $align,
+        |  isExtern = $isExtern,
+        |  isBlocking = $isBlocking,
+        |  isDyn = $isDyn,
+        |  isStub = $isStub,
+        |  isAbstract = $isAbstract,
+        |  isVolatile = $isVolatile,
+        |  isFinal = $isFinal,
+        |  isSafePublish = $isSafePublish,
+        |  isLinktimeResolved = $isLinktimeResolved,
+        |  isUsingIntrinsics = $isUsingIntrinsics,
+        |  links = $links,
+        |  preprocessorDefinitions = $preprocessorDefinitions,
+        |  linkCppRuntime = $linkCppRuntime
+        |)""".stripMargin
 
   override def hashCode(): Int = {
     import scala.util.hashing.MurmurHash3._

@@ -93,19 +93,23 @@ class MinimalRequiredSymbolsTest extends LinkerSpec {
       s"{debugMetadata=$withDebugMetadata, multithreading=$withMultithreading, targetTriple=$withTargetTriple}"
     val found = SymbolsCount(result.defns)
     if (found.total > expected.total) {
-      fail(s"""
-          |Found more symbols then expected, config=$mode:
-          |Expected at most: ${expected}
-          |Found:            ${found}
-          |Diff:             ${found - expected}
-          |""".stripMargin)
+      fail(
+        s"""|
+            |Found more symbols then expected, config=$mode:
+            |Expected at most: ${expected}
+            |Found:            ${found}
+            |Diff:             ${found - expected}
+            |""".stripMargin
+      )
     } else {
-      println(s"""
-          |Amount of found symbols in norm, config=$mode:
-          |Expected at most: ${expected}
-          |Found:            ${found}
-          |Diff:             ${found - expected}
-          |""".stripMargin)
+      println(
+        s"""|
+            |Amount of found symbols in norm, config=$mode:
+            |Expected at most: ${expected}
+            |Found:            ${found}
+            |Diff:             ${found - expected}
+            |""".stripMargin
+      )
     }
   }
 
@@ -114,11 +118,13 @@ class MinimalRequiredSymbolsTest extends LinkerSpec {
   ): Unit = link(
     entry = mainClass,
     setupConfig = setupConfig,
-    sources = Map(sourceFile -> s"""
-        |object $mainClass{
-        |  def main(args: Array[String]): Unit = ()
-        |}
-        """.stripMargin)
+    sources = Map(
+      sourceFile -> s"""|
+                        |object $mainClass{
+                        |  def main(args: Array[String]): Unit = ()
+                        |}
+                        |""".stripMargin
+    )
   ) { case (config, result) => fn(config, result) }
 
   case class SymbolsCount(types: Int, members: Int) {

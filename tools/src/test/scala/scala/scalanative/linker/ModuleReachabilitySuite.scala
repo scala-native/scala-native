@@ -6,11 +6,13 @@ import org.junit.Test
 
 class ModuleReachabilitySuite extends ReachabilitySuite {
 
-  val sources = Seq("""
+  val sources = Seq(
+    """
     object Module {
       def meth: Unit = ()
     }
-  """)
+  """
+  )
 
   val TestClsName = "Test"
   val TestModuleName = "Test$"
