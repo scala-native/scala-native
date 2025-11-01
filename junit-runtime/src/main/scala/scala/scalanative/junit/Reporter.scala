@@ -211,48 +211,36 @@ private[junit] final class Reporter(
       t: Throwable,
       testFileName: String
   ): Unit = {
-    val m0 = m
-    var m2 = m
-    var top = 0
-    var i = top
-    while (i <= m2) {
-      if (trace(i).toString.startsWith("org.junit.") ||
-          trace(i).toString.startsWith("org.hamcrest.")) {
-        if (i == top) {
-          top += 1
-        } else {
-          m2 = i - 1
-          var break = false
-          while (m2 > top && !break) {
-            val s = trace(m2).toString
-            if (!s.startsWith("java.lang.reflect.") &&
-                !s.startsWith("sun.reflect.")) {
-              break = true
-            } else {
-              m2 -= 1
-            }
-          }
-          i = m2 // break
-        }
-      }
-      i += 1
+    def isJunit(i: Int): Boolean = {
+      val cls = trace(i).getClassName
+      cls.startsWith("org.junit.") || cls.startsWith("org.hamcrest.")
     }
 
-    for (i <- top to m2) {
-      log(
-        _.error,
-        "    at " +
-          stackTraceElementToString(trace(i), testFileName)
-      )
+    def isReflect(i: Int): Boolean = {
+      val cls = trace(i).getClassName
+      cls.startsWith("java.lang.reflect.") || cls.startsWith("sun.reflect.")
     }
-    if (m0 != m2) {
+
+    var head = 0
+    while (head <= m && isJunit(head)) head += 1
+
+    var last = head
+    while (last < m && !isJunit(last + 1)) last += 1
+
+    while (last > head && isReflect(last)) last -= 1
+
+    for (i <- head to last) {
+      val msg = "    at " + stackTraceElementToString(trace(i), testFileName)
+      log(_.error, msg)
+    }
+    if (m > last) {
       // skip junit-related frames
       log(_.error, "    ...")
     } else if (framesInCommon != 0) {
       // skip frames that were in the previous trace too
       log(_.error, "    ... " + framesInCommon + " more")
     }
-    logStackTraceAsCause(trace, t.getCause, testFileName)
+    logStackTraceAsCause(trace, t.getCause(), testFileName)
   }
 
   private def logStackTraceAsCause(
