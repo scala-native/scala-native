@@ -5,7 +5,6 @@ import java.io.{FileDescriptor, IOException}
 import scala.annotation.tailrec
 
 import scala.scalanative.libc.{LibcExt, signal => csig}
-import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.posix
 import scala.scalanative.posix.{signal => psig}
 import scala.scalanative.unsafe._
@@ -53,20 +52,10 @@ private[process] object UnixProcess {
     getFileDescriptor(errfds, read = true)
   )(handle)
 
-  private[process] val useGen2 =
-    if (LinktimeInfo.is32BitPlatform) {
-      false
-    } else if (LinktimeInfo.isLinux) {
-      LinuxOsSpecific.hasPidfdOpen()
-    } else if ((LinktimeInfo.isMac) || (LinktimeInfo.isFreeBSD)) {
-      // Other BSDs should work but have not been exercised.
-      true
-    } else {
-      false
-    }
+  private[process] val useGen2 = EventWatcher.factoryOpt.isDefined
 
   def apply(pb: ProcessBuilder): GenericProcess = {
-    if (useGen2) UnixProcessGen2(pb) else UnixProcessGen1(pb)
+    EventWatcher.factoryOpt.fold(UnixProcessGen1(pb))(UnixProcessGen2(pb))
   }
 
   def getExitCodeFromWaitStatus(wstatus: Int): Int = {
@@ -97,6 +86,10 @@ private[process] object UnixProcess {
     if (f(rc)) throwWith(rc, msg)
     rc
   }
+
+  @inline
+  def throwIfNull[A <: AnyRef](obj: A, msg: => String): A =
+    throwIf(obj, msg)(_ eq null)
 
   @inline
   def throwOnError(rc: CInt, msg: => String): CInt =

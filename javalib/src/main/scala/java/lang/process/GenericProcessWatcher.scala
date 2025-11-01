@@ -6,7 +6,7 @@ import scala.util.Try
 
 import scala.scalanative.meta.LinktimeInfo
 
-private[process] object GenericProcessWatcher {
+private[process] object GenericProcessWatcher extends ProcessRegistry {
 
   import ju.concurrent._
 
@@ -52,16 +52,22 @@ private[process] object GenericProcessWatcher {
     else UnixProcessGen1.waitpidAny
 
   def claimAllCompleted(): Boolean = {
+    removeSomeProcesses(_.getValue().checkIfExited())
+  }
+
+  override def complete(pid: Long): Boolean = {
     var ok = false
-    removeSomeProcesses { entry =>
-      val remove = entry.getValue().checkIfExited()
-      ok ||= remove
-      remove
+    processes.computeIfPresent(
+      pid,
+      (_, ref) => {
+        ok = ref.checkIfExited()
+        if (ok) null else ref
     }
+    )
     ok
   }
 
-  def completeWith(pid: Long)(ec: => Int): Boolean = {
+  override def completeWith(pid: Long)(ec: => Int): Boolean = {
     val ref = processes.remove(pid)
     (ref ne null) && ref.setCachedExitCode(ec)
   }
@@ -71,9 +77,14 @@ private[process] object GenericProcessWatcher {
 
   private def removeSomeProcesses(
       f: ju.Map.Entry[jl.Long, GenericProcessHandle] => Boolean
-  ): Unit = {
+  ): Boolean = {
+    var ok = false
     val it = processes.entrySet().iterator()
-    while (it.hasNext()) if (f(it.next())) it.remove()
+    while (it.hasNext()) if (f(it.next())) {
+      ok = true
+      it.remove()
+    }
+    ok
   }
 
 }
