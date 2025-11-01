@@ -23,13 +23,15 @@ int scalanative_f_getown() { return F_GETOWN; }
 
 int scalanative_f_setown() { return F_SETOWN; }
 
-int scalanative_fd_cloexec() { return FD_CLOEXEC; }
-
 int scalanative_f_rdlck() { return F_RDLCK; }
 
 int scalanative_f_unlck() { return F_UNLCK; }
 
 int scalanative_f_wrlck() { return F_WRLCK; }
+
+int scalanative_fd_cloexec() { return FD_CLOEXEC; }
+
+int scalanative_o_cloexec() { return O_CLOEXEC; }
 
 int scalanative_o_creat() { return O_CREAT; }
 
