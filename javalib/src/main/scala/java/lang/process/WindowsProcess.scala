@@ -26,12 +26,10 @@ import WinBaseApi._
 import WinBaseApiOps._
 
 private[process] class WindowsProcessHandle(
-    _pid: DWord,
+    override val ipid: Int,
     handle: Handle,
     override val builder: ProcessBuilder
 ) extends GenericProcessHandle {
-  override final def pid(): Long = _pid.toLong
-
   override def supportsNormalTermination(): Boolean = false
 
   override protected def destroyImpl(force: Boolean): Boolean =
@@ -138,7 +136,7 @@ private[process] object WindowsProcess {
       CloseHandle(processInfo.thread)
 
       val handle = new WindowsProcessHandle(
-        processInfo.processId,
+        processInfo.processId.toInt,
         processInfo.process,
         builder
       )

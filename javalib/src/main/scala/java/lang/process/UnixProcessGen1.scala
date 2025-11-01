@@ -6,14 +6,14 @@ import scala.scalanative.posix
 import scala.scalanative.unsafe._
 
 private[process] class UnixProcessHandleGen1(
-    override protected val _pid: CInt,
+    override val ipid: Int,
     override val builder: ProcessBuilder
 ) extends UnixProcessHandle {
 
   override protected final def close(): Unit = {}
 
   override protected def getExitCodeImpl: Option[Int] = {
-    UnixProcess.waitpidNowNoECHILD(_pid)
+    UnixProcess.waitpidNowNoECHILD(ipid)
   }
 
   override def waitFor(): Boolean = {

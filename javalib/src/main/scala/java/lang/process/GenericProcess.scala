@@ -78,6 +78,9 @@ private[process] abstract class GenericProcess(val handle: GenericProcessHandle)
 // Represents ProcessHandle for process started by Scala Native runtime
 // Cannot be used with processes started by other programs
 private[process] abstract class GenericProcessHandle extends ProcessHandle {
+  override final def pid(): Long = ipid
+
+  val ipid: Int
   protected def getExitCodeImpl: Option[Int]
   protected def destroyImpl(force: Boolean): Boolean
   protected def waitForImpl(): Boolean

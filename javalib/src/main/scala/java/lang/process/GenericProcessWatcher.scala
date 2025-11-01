@@ -10,13 +10,14 @@ private[process] object GenericProcessWatcher {
 
   import ju.concurrent._
 
-  private val processes = new ConcurrentHashMap[jl.Long, GenericProcessHandle]
+  private val processes =
+    new ConcurrentHashMap[jl.Integer, GenericProcessHandle]
 
   private val lock = new locks.ReentrantLock()
   private val hasProcessesToWatch = lock.newCondition()
 
   def watchForTermination(handle: GenericProcessHandle): Unit = {
-    processes.put(handle.pid(), handle)
+    processes.put(handle.ipid, handle)
     assert(
       watcherThread.isAlive(),
       "GenericProcessWatcher watch thread is terminated"
@@ -61,7 +62,7 @@ private[process] object GenericProcessWatcher {
     ok
   }
 
-  def completeWith(pid: Long)(ec: => Int): Boolean = {
+  def completeWith(pid: Int)(ec: => Int): Boolean = {
     val ref = processes.remove(pid)
     (ref ne null) && ref.setCachedExitCode(ec)
   }
@@ -70,7 +71,7 @@ private[process] object GenericProcessWatcher {
     removeSomeProcesses(_.getValue().hasExited)
 
   private def removeSomeProcesses(
-      f: ju.Map.Entry[jl.Long, GenericProcessHandle] => Boolean
+      f: ju.Map.Entry[jl.Integer, GenericProcessHandle] => Boolean
   ): Unit = {
     val it = processes.entrySet().iterator()
     while (it.hasNext()) if (f(it.next())) it.remove()

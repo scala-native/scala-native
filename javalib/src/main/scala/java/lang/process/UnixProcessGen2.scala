@@ -37,7 +37,7 @@ import ju.concurrent.TimeUnit
  */
 
 private[process] class UnixProcessHandleGen2(pidFd: CInt)(
-    override protected val _pid: CInt,
+    override val ipid: CInt,
     override val builder: ProcessBuilder
 ) extends UnixProcessHandle {
 
@@ -53,7 +53,7 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
     if (pidFd != -1) unistd.close(pidFd)
 
   override protected def getExitCodeImpl: Option[Int] =
-    UnixProcess.waitpidNowNoECHILD(_pid)
+    UnixProcess.waitpidNowNoECHILD(ipid)
 
   override protected def waitForImpl(): Boolean = {
     /* wait until process exits, is interrupted in OS wait,  or forever,
@@ -107,7 +107,7 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
 
     val ok = UnixProcessHandleGen2.osWaitForImpl(this, timeout)
     if (ok) {
-      val ec = UnixProcess.waitpidNoECHILD(_pid, options = 0)
+      val ec = UnixProcess.waitpidNoECHILD(ipid, options = 0)
       ec.foreach(setCachedExitCode)
     }
     ok
@@ -202,7 +202,7 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
     // 'null' sigmask will retain all current signals.
     0 != UnixProcess.throwOnErrorRetryEINTR(_ != EBADF)(
       ppoll(fds, 1.toUSize, timeout.orNull, null),
-      s"waitFor pid=${_pid}, ppoll failed: ${LibcExt.strError()}"
+      s"waitFor pid=$ipid, ppoll failed: ${LibcExt.strError()}"
     )
   }
 
@@ -223,7 +223,7 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
 
     val kq = UnixProcess.throwOnErrorRetryEINTR(
       kqueue(),
-      s"waitFor pid=${_pid} kqueue failed"
+      s"waitFor pid=${ipid} kqueue failed"
     )
 
     val childExitEvent = stackalloc[kevent]()
@@ -234,7 +234,7 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
      * delivery.
      */
 
-    childExitEvent.ident = _pid.toUSize
+    childExitEvent.ident = ipid.toUSize
     childExitEvent.filter = EVFILT_PROC.toShort
     childExitEvent.flags = (EV_ADD | EV_DISPATCH).toUShort
     childExitEvent.fflags = (NOTE_EXIT | NOTE_EXITSTATUS).toUInt
@@ -248,7 +248,7 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
         1,
         timeout.orNull
       ),
-      s"wait pid=${_pid}, kevent failed"
+      s"wait pid=${ipid}, kevent failed"
     )
 
     unistd.close(kq) // Do not leak kq.

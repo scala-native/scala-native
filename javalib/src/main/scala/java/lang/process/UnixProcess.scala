@@ -11,13 +11,10 @@ import scala.scalanative.posix.{signal => psig}
 import scala.scalanative.unsafe._
 
 private[process] abstract class UnixProcessHandle extends GenericProcessHandle {
-  protected val _pid: CInt
-
-  override final def pid(): Long = _pid.toLong
   override final def supportsNormalTermination(): Boolean = true
 
   override protected final def destroyImpl(force: Boolean): Boolean =
-    psig.kill(_pid, if (force) psig.SIGKILL else csig.SIGTERM) == 0
+    psig.kill(ipid, if (force) psig.SIGKILL else csig.SIGTERM) == 0
 }
 
 private[process] object UnixProcess {
