@@ -4,20 +4,9 @@ import java.io.{FileDescriptor, IOException}
 
 import scala.annotation.tailrec
 
-import scala.scalanative.libc.{LibcExt, signal => csig}
+import scala.scalanative.libc.LibcExt
 import scala.scalanative.posix
-import scala.scalanative.posix.{signal => psig}
-import scala.scalanative.unsafe._
-
-private[process] abstract class UnixProcessHandle extends GenericProcessHandle {
-  protected val _pid: CInt
-
-  override final def pid(): Long = _pid.toLong
-  override final def supportsNormalTermination(): Boolean = true
-
-  override protected final def destroyImpl(force: Boolean): Boolean =
-    psig.kill(_pid, if (force) psig.SIGKILL else csig.SIGTERM) == 0
-}
+import scalanative.unsafe._
 
 private[process] object UnixProcess {
   import posix.errno._
@@ -51,12 +40,6 @@ private[process] object UnixProcess {
     getFileDescriptor(outfds, read = true),
     getFileDescriptor(errfds, read = true)
   )(handle)
-
-  private[process] val useGen2 = EventWatcher.factoryOpt.isDefined
-
-  def apply(pb: ProcessBuilder): GenericProcess = {
-    EventWatcher.factoryOpt.fold(UnixProcessGen1(pb))(UnixProcessGen2(pb))
-  }
 
   def getExitCodeFromWaitStatus(wstatus: Int): Int = {
     // https://tldp.org/LDP/abs/html/exitcodes.html

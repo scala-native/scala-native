@@ -16,7 +16,9 @@ private[process] object GenericProcessWatcher extends ProcessRegistry {
   private val hasProcessesToWatch = lock.newCondition()
 
   def watchForTermination(handle: GenericProcessHandle): Unit = {
-    processes.put(handle.pid(), handle)
+    val pid = handle.pid()
+    processes.put(pid, handle)
+    eventWatcher.add(pid)
     assert(
       watcherThread.isAlive(),
       "GenericProcessWatcher watch thread is terminated"
@@ -40,20 +42,19 @@ private[process] object GenericProcessWatcher extends ProcessRegistry {
           removeCompleted()
           while (processes.isEmpty())
             hasProcessesToWatch.await()
-          if (!reapSomeProcesses()) Thread.sleep(100) // ms
+          if (!eventWatcher.waitAndReapSome(0, None)(this))
+            Thread.sleep(100) // ms
         }
-      } finally lock.unlock()
+      } finally {
+        lock.unlock()
+        eventWatcher.close()
+      }
     }
 
-  // return true if something has been reaped
-  private val reapSomeProcesses: () => Boolean =
-    if (LinktimeInfo.isWindows) claimAllCompleted
-    else if (UnixProcess.useGen2) claimAllCompleted
-    else UnixProcessGen1.waitpidAny
-
-  def claimAllCompleted(): Boolean = {
-    removeSomeProcesses(_.getValue().checkIfExited())
-  }
+  private lazy val eventWatcher: EventWatcher =
+    EventWatcher.factoryOpt.map(_.create()).getOrElse {
+      if (LinktimeInfo.isWindows) AllEventWatcher else AnyEventWatcher
+    }
 
   override def complete(pid: Long): Boolean = {
     var ok = false
@@ -62,7 +63,7 @@ private[process] object GenericProcessWatcher extends ProcessRegistry {
       (_, ref) => {
         ok = ref.checkIfExited()
         if (ok) null else ref
-    }
+      }
     )
     ok
   }
@@ -85,6 +86,23 @@ private[process] object GenericProcessWatcher extends ProcessRegistry {
       it.remove()
     }
     ok
+  }
+
+  object AnyEventWatcher extends EventWatcher {
+    override def add(pid: Long): Unit = {}
+    override def close(): Unit = {}
+    override def waitAndReapSome(timeout: Long, unitOpt: Option[TimeUnit])(
+        pr: ProcessRegistry
+    ): Boolean = UnixProcessHandle.waitpidAny(pr)
+  }
+
+  object AllEventWatcher extends EventWatcher {
+    override def add(pid: Long): Unit = {}
+    override def close(): Unit = {}
+
+    override def waitAndReapSome(timeout: Long, unitOpt: Option[TimeUnit])(
+        pr: ProcessRegistry
+    ): Boolean = removeSomeProcesses(_.getValue().checkIfExited())
   }
 
 }

@@ -24,6 +24,23 @@ private[process] class EventWatcherFreeBSD extends EventWatcher {
   private val _kq =
     UnixProcess.throwOnErrorRetryEINTR(kqueue(), "kqueue failed")
 
+  private val (_rnotify, _wnotify) = {
+    val pipe = stackalloc[CInt](2)
+    UnixProcess.throwOnError(unistd.pipe(pipe), "notify pipe failed")
+    val rnotify = !(pipe + 0)
+    val wnotify = !(pipe + 1)
+    UnixProcess.throwOnErrorRetryEINTR(
+      fcntl.fcntl(rnotify, fcntl.F_SETFL, fcntl.O_NONBLOCK),
+      "failed to set NONBLOCK on notify pull pipe"
+    )
+    UnixProcess.throwOnErrorRetryEINTR(
+      fcntl.fcntl(wnotify, fcntl.F_SETFL, fcntl.O_NONBLOCK),
+      "failed to set NONBLOCK on notify push pipe"
+    )
+    add(rnotify.toUSize, EVFILT_READ, 0, 0)
+    (rnotify, wnotify)
+  }
+
   private val maxEvents = 1024
   private val eventsBuf: Ptr[kevent] = UnixProcess.throwIfNull(
     stdlib.malloc(sizeOf[kevent] * maxEvents).asInstanceOf[Ptr[kevent]],
@@ -31,6 +48,8 @@ private[process] class EventWatcherFreeBSD extends EventWatcher {
   )
 
   override def close(): Unit = {
+    unistd.close(_rnotify)
+    unistd.close(_wnotify)
     unistd.close(_kq)
     stdlib.free(eventsBuf)
   }
@@ -46,6 +65,9 @@ private[process] class EventWatcherFreeBSD extends EventWatcher {
       EV_DISPATCH, // deregisters upon delivery
       NOTE_EXIT | NOTE_EXITSTATUS
     )
+
+    // wake up kevent to wait on updated queue
+    pushNotifyEvent(pid)
   }
 
   override def waitAndReapSome(
@@ -80,6 +102,8 @@ private[process] class EventWatcherFreeBSD extends EventWatcher {
           }
           if ((elem.fflags.toInt & NOTE_EXIT) != 0)
             pr.complete(pid)
+        case EVFILT_READ =>
+          pullNotifyEvents()
         case _ =>
       }
     }
@@ -102,6 +126,28 @@ private[process] class EventWatcherFreeBSD extends EventWatcher {
     UnixProcess.throwOnErrorRetryEINTR(
       kevent(_kq, kev, 1, null, 0, null),
       s"kevent register [fd=$fd] failed"
+    )
+  }
+
+  private def pullNotifyEvents(): Unit = {
+    // handle notifications on the pipe: drain the pipe
+    val buf = stackalloc[Byte](64)
+    while ({
+      0 < UnixProcess.throwOnErrorRetryEINTR { e =>
+        e != EAGAIN && e != EWOULDBLOCK
+      }(
+        unistd.read(_rnotify, buf, 64.toUSize),
+        "kevent notify pull failed"
+      )
+    }) {} // rnotify is non-blocking
+  }
+
+  private def pushNotifyEvent(pid: Long): Unit = {
+    val buf = stackalloc[Byte]()
+    !buf = 1.toByte
+    UnixProcess.throwOnErrorRetryEINTR(e => e != EAGAIN && e != EWOULDBLOCK)(
+      unistd.write(_wnotify, buf, 1.toUSize),
+      s"kevent notify push [pid=$pid] failed"
     )
   }
 

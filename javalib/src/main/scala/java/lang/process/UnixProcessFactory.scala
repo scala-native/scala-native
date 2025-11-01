@@ -3,6 +3,7 @@ package java.lang.process
 import java.io.{File, IOException}
 import java.{util => ju}
 
+import scalanative.libc.LibcExt
 import scalanative.posix.errno._
 import scalanative.posix.spawn._
 import scalanative.posix.{fcntl, unistd}
@@ -11,72 +12,10 @@ import scalanative.unsigned._
 
 import ju.ArrayList
 import ju.ScalaOps._
-import ju.concurrent.TimeUnit
 
-/* Design Note:
- * 
- * This implementation is actively "Under Heavy Construction".
- * If you are thinking of making changes, please co-ordinate in
- * SN Issue #4508 or elsewhere. Thank you.
- * 
- * The comments in this file, especially block or design comments
- * have become out of sync with the implementation are almost certainly
- * a waste of time.
- *
- * If you attempt to trace code paths and say "this does not make sense",
- * "this can not be", "this is not thread-safe", or "this is neither
- * efficient nor a short code path" you are probably right.
- */
+private[process] object UnixProcessFactory {
 
-private[process] class UnixProcessHandleGen2(factory: EventWatcher.Factory)(
-    override protected val _pid: CInt,
-    override val builder: ProcessBuilder
-) extends UnixProcessHandle {
-
-  private val eventWatcher = factory.create()
-  eventWatcher.add(_pid)
-
-  /** Closes [[eventWatcher]], if any, used to monitor if the process has
-   *  exited.
-   *
-   *  @see
-   *    [[GenericProcessHandle.close]] for more details.
-   */
-  override protected final def close(): Unit =
-    eventWatcher.close()
-
-  override protected def getExitCodeImpl: Option[Int] =
-    UnixProcess.waitpidNowNoECHILD(_pid)
-
-  override protected def waitForImpl(): Boolean = {
-    /* wait until process exits, is interrupted in OS wait,  or forever,
-     * whichever comes first.
-     */
-    eventWatcher.waitAndReapSome(0, None)(GenericProcessWatcher)
-    true
-  }
-
-  override protected def waitForImpl(
-      timeoutArg: Long,
-      unit: TimeUnit
-  ): Boolean = {
-    eventWatcher.waitAndReapSome(timeoutArg, Some(unit))(GenericProcessWatcher)
-  }
-
-}
-
-private[process] object UnixProcessGen2 {
-
-  private def createHandle(factory: EventWatcher.Factory)(
-      pid: CInt,
-      builder: ProcessBuilder
-  ): UnixProcessHandleGen2 = {
-    new UnixProcessHandleGen2(factory)(pid, builder)
-  }
-
-  def apply(builder: ProcessBuilder)(
-      factory: EventWatcher.Factory
-  ): GenericProcess = Zone.acquire { implicit z =>
+  def apply(pb: ProcessBuilder): GenericProcess = Zone.acquire { implicit z =>
     /* If builder.directory is not null, it specifies a new working
      * directory for the process (chdir()).
      *
@@ -89,15 +28,13 @@ private[process] object UnixProcessGen2 {
      * directory.
      */
 
-    if (builder.isCwd)
-      spawnChild(builder)(createHandle(factory))
+    if (EventWatcher.factoryOpt.isDefined && pb.isCwd)
+      spawnChild(pb)
     else
-      forkChild(builder)(createHandle(factory))
+      forkChild(pb)
   }
 
-  def forkChild(builder: ProcessBuilder)(
-      f: (Int, ProcessBuilder) => UnixProcessHandle
-  )(implicit z: Zone): GenericProcess = {
+  def forkChild(builder: ProcessBuilder)(implicit z: Zone): GenericProcess = {
     var success = false
     val (infds, outfds, errfds) = createPipes(builder)
 
@@ -166,7 +103,7 @@ private[process] object UnixProcessGen2 {
       if (pid == 0) runChild()
       else {
         success = true
-        UnixProcess(f(pid, builder), infds, outfds, errfds)
+        UnixProcess(new UnixProcessHandle(pid, builder), infds, outfds, errfds)
       }
     } finally {
       if (!success) closePipes()
@@ -175,8 +112,6 @@ private[process] object UnixProcessGen2 {
 
   private def spawnChild(
       builder: ProcessBuilder
-  )(
-      f: (Int, ProcessBuilder) => UnixProcessHandle
   )(implicit z: Zone): GenericProcess = {
     val pidPtr = stackalloc[pid_t]()
 
@@ -280,7 +215,12 @@ private[process] object UnixProcessGen2 {
       UnixProcess.throwOnNonZero(status, "Unable to posix_spawn process")
 
       success = true
-      UnixProcess(f(!pidPtr, builder), infds, outfds, errfds)
+      UnixProcess(
+        new UnixProcessHandle(!pidPtr, builder),
+        infds,
+        outfds,
+        errfds
+      )
     } finally {
       if (!success) {
         def closePipe(pipe: Ptr[CInt]): Unit =

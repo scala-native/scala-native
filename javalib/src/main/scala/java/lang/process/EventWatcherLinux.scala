@@ -23,6 +23,15 @@ private[process] class EventWatcherLinux extends EventWatcher {
     "epoll_create failed"
   )
 
+  private val _eventfd = {
+    val fd = UnixProcess.throwOnError(
+      eventfd(0.toUInt, fcntl.O_CLOEXEC | fcntl.O_NONBLOCK),
+      "eventfd failed"
+    )
+    add(fd, EPOLLIN.toUInt, 0)
+    fd
+  }
+
   private val maxEvents = 1024
   private val eventsBuf: Ptr[epoll_event] = UnixProcess.throwIfNull(
     stdlib
@@ -32,6 +41,7 @@ private[process] class EventWatcherLinux extends EventWatcher {
   )
 
   override def close(): Unit = {
+    unistd.close(_eventfd)
     unistd.close(_epollfd)
   }
 
@@ -46,6 +56,9 @@ private[process] class EventWatcherLinux extends EventWatcher {
     )
 
     add(fd, EPOLLIN.toUInt, pid)
+
+    // wake up epoll to wait on updated queue
+    pushNotifyEvent(pid)
   }
 
   override def waitAndReapSome(
@@ -74,7 +87,10 @@ private[process] class EventWatcherLinux extends EventWatcher {
         unistd.close(fd)
       }
       Try {
-        reap()
+        if (fd == _eventfd)
+          pullNotifyEvents()
+        else
+          reap()
       }
     }
 
@@ -101,6 +117,23 @@ private[process] class EventWatcherLinux extends EventWatcher {
   private def del(fd: CInt): Unit = {
     val kev = stackalloc[epoll_event]()
     epoll_ctl(_epollfd, EPOLL_CTL_DEL, fd, kev)
+  }
+
+  private def pullNotifyEvents(): Unit = {
+    val buf = stackalloc[Byte](8)
+    UnixProcess.throwOnErrorRetryEINTR(e => e != EAGAIN && e != EWOULDBLOCK)(
+      unistd.read(_eventfd, buf, 8.toUSize),
+      "epoll notify pull failed"
+    )
+  }
+
+  private def pushNotifyEvent(pid: Long): Unit = {
+    val buf = stackalloc[Long]() // XXX: assumes Long is 8 bytes
+    !buf = 1L
+    UnixProcess.throwOnErrorRetryEINTR(e => e != EAGAIN && e != EWOULDBLOCK)(
+      unistd.write(_eventfd, buf, 8.toUSize),
+      s"epoll notify push [pid=$pid] failed"
+    )
   }
 
 }

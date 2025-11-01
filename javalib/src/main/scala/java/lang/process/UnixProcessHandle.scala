@@ -2,19 +2,26 @@ package java.lang.process
 
 import java.util.concurrent.{TimeUnit, TimeoutException}
 
+import scala.scalanative.libc.{signal => csig}
 import scala.scalanative.posix
+import scala.scalanative.posix.{signal => psig}
 import scala.scalanative.unsafe._
 
-private[process] class UnixProcessHandleGen1(
-    override protected val _pid: CInt,
+private[process] class UnixProcessHandle(
+    _pid: CInt,
     override val builder: ProcessBuilder
-) extends UnixProcessHandle {
+) extends GenericProcessHandle {
+
+  override final def pid(): Long = _pid.toLong
+  override final def supportsNormalTermination(): Boolean = true
+
+  override protected final def destroyImpl(force: Boolean): Boolean =
+    psig.kill(_pid, if (force) psig.SIGKILL else csig.SIGTERM) == 0
 
   override protected final def close(): Unit = {}
 
-  override protected def getExitCodeImpl: Option[Int] = {
+  override protected def getExitCodeImpl: Option[Int] =
     UnixProcess.waitpidNowNoECHILD(_pid)
-  }
 
   override def waitFor(): Boolean = {
     completion.get()
@@ -38,13 +45,7 @@ private[process] class UnixProcessHandleGen1(
 
 }
 
-private[process] object UnixProcessGen1 {
-
-  def apply(
-      builder: ProcessBuilder
-  ): GenericProcess = Zone.acquire { implicit z =>
-    UnixProcessGen2.forkChild(builder)(new UnixProcessHandleGen1(_, _))
-  }
+private[process] object UnixProcessHandle {
 
   /** Reap a child and, if it's one of ours, mark it as completed in the
    *  watcher.
@@ -56,11 +57,11 @@ private[process] object UnixProcessGen1 {
    *  it is not reaped, the next iteration of waitid will produce the same one
    *  again... and again.
    */
-  def waitpidAny(): Boolean = {
+  def waitpidAny(pr: ProcessRegistry): Boolean = {
     // no choice but to reap a child, whether it's ours or not
     val wstatus = stackalloc[Int]()
     val pid = posix.sys.wait.wait(wstatus)
-    pid != -1 && GenericProcessWatcher.completeWith(pid) {
+    pid != -1 && pr.completeWith(pid) {
       UnixProcess.getExitCodeFromWaitStatus(!wstatus)
     }
   }
