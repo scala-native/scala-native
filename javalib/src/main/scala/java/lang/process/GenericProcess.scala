@@ -179,7 +179,7 @@ private[process] abstract class GenericProcessHandle extends ProcessHandle {
 private[lang] object GenericProcess {
 
   def apply(pb: ProcessBuilder): GenericProcess = {
-    if (LinktimeInfo.isWindows) WindowsProcess(pb) else UnixProcess(pb)
+    if (LinktimeInfo.isWindows) WindowsProcess(pb) else UnixProcessFactory(pb)
   }
 
 }

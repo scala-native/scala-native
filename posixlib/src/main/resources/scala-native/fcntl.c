@@ -25,6 +25,8 @@ int scalanative_f_setown() { return F_SETOWN; }
 
 int scalanative_fd_cloexec() { return FD_CLOEXEC; }
 
+int scalanative_o_cloexec() { return O_CLOEXEC; }
+
 int scalanative_f_rdlck() { return F_RDLCK; }
 
 int scalanative_f_unlck() { return F_UNLCK; }
