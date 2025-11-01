@@ -1,6 +1,6 @@
 package java.lang.process
 
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{TimeUnit, TimeoutException}
 
 import scala.scalanative.posix
 import scala.scalanative.unsafe._
@@ -23,8 +23,12 @@ private[process] class UnixProcessHandleGen1(
 
   override def waitFor(timeout: scala.Long, unit: TimeUnit): Boolean =
     timeout > 0L && {
-      completion.get(timeout, unit)
-      true
+      try {
+        completion.get(timeout, unit)
+        true
+      } catch {
+        case _: TimeoutException => false
+      }
     }
 
   override protected def waitForImpl(): Boolean = false
