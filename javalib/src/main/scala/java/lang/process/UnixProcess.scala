@@ -2,6 +2,8 @@ package java.lang.process
 
 import java.io.{FileDescriptor, IOException}
 
+import scala.annotation.tailrec
+
 import scala.scalanative.libc.{LibcExt, signal => csig}
 import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.posix
@@ -19,6 +21,7 @@ private[process] abstract class UnixProcessHandle extends GenericProcessHandle {
 }
 
 private[process] object UnixProcess {
+  import posix.errno._
   import posix.sys.wait._
 
   def apply(
@@ -75,18 +78,53 @@ private[process] object UnixProcess {
 
   def waitpidNoECHILD(pid: pid_t, options: Int): Option[Int] = {
     val wstatus = stackalloc[Int]()
-    waitpid(pid, wstatus, options) match {
-      case 0  => None
-      case -1 =>
-        import posix.errno._
-        if (errno == EINTR) throw new InterruptedException()
-        else if (errno == ECHILD) None // see SN issues #4208 and #4348
-        else throw new IOException(s"waitpid failed: ${LibcExt.strError()}")
-      case _ => Some(getExitCodeFromWaitStatus(!wstatus))
-    }
+    val res = throwOnErrorRetryEINTR { e =>
+      e != ECHILD // see SN issues #4208 and #4348
+    }(waitpid(pid, wstatus, options), "waitpid failed")
+    if (res == 0 || res == -1) None
+    else Some(getExitCodeFromWaitStatus(!wstatus))
   }
 
   def waitpidNowNoECHILD(pid: pid_t): Option[Int] =
     waitpidNoECHILD(pid, WNOHANG)
+
+  def throwWith[A](rc: A, msg: => String): Nothing =
+    throw new IOException(
+      s"$msg [res=$rc, errno=$errno]: ${LibcExt.strError()}"
+    )
+
+  def throwIf[A](rc: A, msg: => String)(f: A => Boolean): A = {
+    if (f(rc)) throwWith(rc, msg)
+    rc
+  }
+
+  @inline
+  def throwOnError(rc: CInt, msg: => String): CInt =
+    throwIf(rc, msg)(_ == -1)
+
+  @inline
+  def throwOnNonZero(rc: CInt, msg: => String): CInt =
+    throwIf(rc, msg)(_ != 0)
+
+  @inline
+  def throwOnErrorRetryEINTR(rc: => CInt, msg: => String): CInt = {
+    throwOnErrorRetryEINTR(_ => true)(rc, msg)
+  }
+
+  @tailrec
+  def throwOnErrorRetryEINTR(
+      f: Int => Boolean
+  )(rc: => CInt, msg: => String): CInt = {
+    val res = rc
+    if (res != -1) res
+    else if (errno == EINTR) {
+      if (Thread.currentThread().isInterrupted())
+        throw new InterruptedException()
+      throwOnErrorRetryEINTR(f)(rc, msg)
+    } else {
+      if (f(errno)) throwWith(res, msg)
+      res
+    }
+  }
 
 }
