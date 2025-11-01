@@ -62,6 +62,9 @@ object fcntl {
   @name("scalanative_fd_cloexec")
   def FD_CLOEXEC: CInt = extern
 
+  @name("scalanative_o_cloexec")
+  def O_CLOEXEC: CInt = extern
+
   @name("scalanative_f_rdlck")
   def F_RDLCK: CInt = extern
 
