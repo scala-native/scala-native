@@ -363,6 +363,7 @@ object Build {
           if (ideScalaVersion == "2.12") Nil
           else noIDEExportSettings
         },
+        envVars ++= scala.sys.env.get("LLVM_BIN").map("LLVM_BIN" -> _).toMap,
         sbtPluginSettings,
         disabledDocsSettings,
         addSbtPlugin(Deps.SbtPlatformDeps),
