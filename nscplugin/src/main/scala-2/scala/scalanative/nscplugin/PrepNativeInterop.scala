@@ -207,9 +207,9 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
             if noEnclosingOwner is OwnerKind.EnumImpl =>
           reporter.warning(
             tree.pos,
-            """Couldn't transform call to Enumeration.Value.
-              |The resulting program is unlikely to function properly as this
-              |operation requires reflection.""".stripMargin
+            """|Couldn't transform call to Enumeration.Value.
+               |The resulting program is unlikely to function properly as this
+               |operation requires reflection.""".stripMargin
           )
           super.transform(tree)
 
@@ -217,18 +217,18 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
             if noEnclosingOwner is OwnerKind.EnumImpl =>
           reporter.warning(
             tree.pos,
-            """Passing null as name to Enumeration.Value
-              |requires reflection at runtime. The resulting
-              |program is unlikely to function properly.""".stripMargin
+            """|Passing null as name to Enumeration.Value
+               |requires reflection at runtime. The resulting
+               |program is unlikely to function properly.""".stripMargin
           )
           super.transform(tree)
 
         case ScalaEnumVal.NoName(_) if noEnclosingOwner is OwnerKind.EnumImpl =>
           reporter.warning(
             tree.pos,
-            """Calls to the non-string constructors of Enumeration.Val
-              |require reflection at runtime. The resulting
-              |program is unlikely to function properly.""".stripMargin
+            """|Calls to the non-string constructors of Enumeration.Val
+               |require reflection at runtime. The resulting
+               |program is unlikely to function properly.""".stripMargin
           )
           super.transform(tree)
 
@@ -236,9 +236,9 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
             if noEnclosingOwner is OwnerKind.EnumImpl =>
           reporter.warning(
             tree.pos,
-            """Passing null as name to a constructor of Enumeration.Val
-              |requires reflection at runtime. The resulting
-              |program is unlikely to function properly.""".stripMargin
+            """|Passing null as name to a constructor of Enumeration.Val
+               |requires reflection at runtime. The resulting
+               |program is unlikely to function properly.""".stripMargin
           )
           super.transform(tree)
 

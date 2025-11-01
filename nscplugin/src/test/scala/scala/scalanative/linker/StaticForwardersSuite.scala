@@ -11,20 +11,20 @@ class StaticForwardersSuite {
   @Test def generateStaticForwarders(): Unit = {
     compileAndLoad(
       "Test.scala" ->
-        """
-          |class Foo() {
-          |  def foo(): String = {
-          |    Foo.bar() + Foo.fooBar
-          |  }
-          |}
-          |object Foo {
-          |  def main(args: Array[String]): Unit  = {
-          |    val x = new Foo().foo()
-          |  }
-          |  def bar(): String = "bar"
-          |  def fooBar: String = "foo" + bar()
-          |}
-          """.stripMargin
+        """|
+           |class Foo() {
+           |  def foo(): String = {
+           |    Foo.bar() + Foo.fooBar
+           |  }
+           |}
+           |object Foo {
+           |  def main(args: Array[String]): Unit  = {
+           |    val x = new Foo().foo()
+           |  }
+           |  def bar(): String = "bar"
+           |  def fooBar: String = "foo" + bar()
+           |}
+           |""".stripMargin
     ) { defns =>
       val Class = nir.Global.Top("Foo")
       val Module = nir.Global.Top("Foo$")
@@ -54,14 +54,14 @@ class StaticForwardersSuite {
   @Test def generateStaticAccessor(): Unit = {
     compileAndLoad(
       "Test.scala" ->
-        """
-          |class Foo() {
-          |  val foo = "foo"
-          |}
-          |object Foo {
-          |  val bar = "bar"
-          |}
-          """.stripMargin
+        """|
+           |class Foo() {
+           |  val foo = "foo"
+           |}
+           |object Foo {
+           |  val bar = "bar"
+           |}
+           |""".stripMargin
     ) { defns =>
       val Class = nir.Global.Top("Foo")
       val Module = nir.Global.Top("Foo$")

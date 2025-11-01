@@ -15,13 +15,13 @@ class ExportedMembersReachabilityTest {
 
   @Test def generateModuleExportedMethods(): Unit = {
     compileAndLoad(
-      "Test.scala" -> s"""
-        |import scala.scalanative.unsafe._
-        |object lib {
-        |  @exported def foo(): Int = 42
-        |  @exported("native_function") def bar(v: Int): Long = v + 42L
-        |}
-        |""".stripMargin
+      "Test.scala" -> s"""|
+                          |import scala.scalanative.unsafe._
+                          |object lib {
+                          |  @exported def foo(): Int = 42
+                          |  @exported("native_function") def bar(v: Int): Long = v + 42L
+                          |}
+                          |""".stripMargin
     ) { defns =>
       val expected = Seq(
         nir.Sig.Method("foo", Seq(nir.Type.Int)),
@@ -35,16 +35,16 @@ class ExportedMembersReachabilityTest {
 
   @Test def generateModuleExportedFieldAccessors(): Unit = {
     compileAndLoad(
-      "Test.scala" -> s"""
-        |import scala.scalanative.unsafe._
-        |object lib {
-        |  @exportAccessors
-        |  val foo: CString = c"Hello world"
-        |
-        |  @exportAccessors("native_constant")
-        |  val bar: Long = 42L
-        |}
-        |""".stripMargin
+      "Test.scala" -> s"""|
+                          |import scala.scalanative.unsafe._
+                          |object lib {
+                          |  @exportAccessors
+                          |  val foo: CString = c"Hello world"
+                          |
+                          |  @exportAccessors("native_constant")
+                          |  val bar: Long = 42L
+                          |}
+                          |""".stripMargin
     ) { defns =>
       val expected = Seq(
         nir.Sig.Field("foo", nir.Sig.Scope.Private(Lib)),
@@ -60,19 +60,19 @@ class ExportedMembersReachabilityTest {
 
   @Test def generateModuleExportedVariableAccessors(): Unit = {
     compileAndLoad(
-      "Test.scala" -> s"""
-         |import scala.scalanative.unsafe._
-         |object lib {
-         |  @exportAccessors
-         |  var foo: CString = c"Hello world"
-         |
-         |  @exportAccessors("native_variable")
-         |  var bar: Long = 42L
-         |
-         |  @exportAccessors("native_get_baz", "native_set_baz")
-         |  var baz: Byte = 42.toByte
-         |}
-         |""".stripMargin
+      "Test.scala" -> s"""|
+                          |import scala.scalanative.unsafe._
+                          |object lib {
+                          |  @exportAccessors
+                          |  var foo: CString = c"Hello world"
+                          |
+                          |  @exportAccessors("native_variable")
+                          |  var bar: Long = 42L
+                          |
+                          |  @exportAccessors("native_get_baz", "native_set_baz")
+                          |  var baz: Byte = 42.toByte
+                          |}
+                          |""".stripMargin
     ) { defns =>
       val expected = Seq(
         // field 1

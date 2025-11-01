@@ -317,12 +317,14 @@ private[scalanative] object Lower {
       catch {
         case scala.util.control.NonFatal(error) =>
           logger.synchronized {
-            logger.error(s"""Dead code elimnation failed: ${error.getMessage()}
-            |Original defn: 
-            |${currentDefn.get.show}
-            |Lowered instructions: 
-            |${loweredInsts.zipWithIndex.map { case (inst, idx) => s"${idx.toString().padTo(4, ' ')}| ${inst.show}" }.mkString("\n")}
-            |""".stripMargin)
+            logger.error(
+              s"""|Dead code elimnation failed: ${error.getMessage()}
+                  |Original defn: 
+                  |${currentDefn.get.show}
+                  |Lowered instructions: 
+                  |${loweredInsts.zipWithIndex.map { case (inst, idx) => s"${idx.toString().padTo(4, ' ')}| ${inst.show}" }.mkString("\n")}
+                  |""".stripMargin
+            )
           }
           throw error
       }

@@ -9,9 +9,11 @@ import java.{util => ju}
 private[testinterface] final class ScalaNativeClassLoader
     extends ClassLoader(null) {
   private def nimp: Nothing = {
-    throw new NotImplementedError("""A ScalaNativeClassLoader is a dummy.
-        |Use scala.scalanative.reflect.Reflect
-        |to instantiate classes/objects.""".stripMargin)
+    throw new NotImplementedError(
+      """|A ScalaNativeClassLoader is a dummy.
+         |Use scala.scalanative.reflect.Reflect
+         |to instantiate classes/objects.""".stripMargin
+    )
   }
 
   override def clearAssertionStatus(): Unit = nimp

@@ -87,17 +87,17 @@ class Udp6SocketTest {
 
     try {
       val outData =
-        """
-          |"She moved through the fair" lyrics, Traditional, no copyright
-          |   I dreamed it last night
-          |   That my true love came in
-          |   So softly she entered
-          |   Her feet made no din
-          |   She came close beside me
-          |   And this she did say,
-          |   "It will not be long, love
-          |   Till our wedding day."
-          """.stripMargin
+        """|
+           |"She moved through the fair" lyrics, Traditional, no copyright
+           |   I dreamed it last night
+           |   That my true love came in
+           |   So softly she entered
+           |   Her feet made no din
+           |   She came close beside me
+           |   And this she did say,
+           |   "It will not be long, love
+           |   Till our wedding day."
+           |""".stripMargin
 
       val nBytesSent = sendto(
         outSocket,

@@ -112,7 +112,7 @@ object Commands {
           )
         )
       val setScriptedLaunchOpts =
-        s"""set sbtScalaNative/scriptedLaunchOpts := {
+        s"""|set sbtScalaNative/scriptedLaunchOpts := {
             |  (sbtScalaNative/scriptedLaunchOpts).value
             |   .filterNot(_.startsWith("-Dscala.version=")) :+
             |   "-Dscala.version=$version" :+

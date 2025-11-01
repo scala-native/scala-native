@@ -59,10 +59,12 @@ class CStringTest {
     {
       "greeting": "Hello world!"
     }""",
-      fromCString(c"""
+      fromCString(
+        c"""
     {
       "greeting": "Hello world!"
-    }""")
+    }"""
+      )
     )
 
     assertEquals("\u0020\\X20\u006a\u006b", fromCString(c"\x20\X20\x6a\x6B"))

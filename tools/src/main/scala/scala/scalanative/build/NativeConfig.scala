@@ -501,39 +501,39 @@ object NativeConfig {
             .mkString("\n")
         }
 
-      s"""NativeConfig(
-        | - baseName:                $baseName
-        | - clang:                   $clang
-        | - clangPP:                 $clangPP
-        | - linkingOptions:          ${showSeq(linkingOptions)}
-        | - compileOptions:          ${showSeq(compileOptions)}
-        | - cOptions:                ${showSeq(cOptions)}
-        | - cppOptions:              ${showSeq(cppOptions)}
-        | - targetTriple:            $targetTriple
-        | - GC:                      $gc
-        | - LTO:                     $lto
-        | - mode:                    $mode
-        | - buildTarget              $buildTarget
-        | - check:                   $check
-        | - checkFatalWarnings:      $checkFatalWarnings
-        | - checkFeatures            $checkFeatures
-        | - dump:                    $dump
-        | - sanitizer:               ${sanitizer.map(_.name).getOrElse("none")}
-        | - linkStubs:               $linkStubs
-        | - optimize                 $optimize
-        | - incrementalCompilation:  $useIncrementalCompilation
-        | - multithreading           $multithreading
-        | - linktimeProperties:      ${showMap(linktimeProperties)}
-        | - embedResources:          $embedResources
-        | - resourceIncludePatterns: ${showSeq(resourceIncludePatterns)}
-        | - resourceExcludePatterns: ${showSeq(resourceExcludePatterns)}
-        | - serviceProviders:        ${showMap(serviceProviders)}
-        | - optimizerConfig:         ${optimizerConfig.show(" " * 4)}
-        | - semanticsConfig:         ${semanticsConfig.show(" " * 4)}
-        | - sourceLevelDebuggingConfig: ${sourceLevelDebuggingConfig.show(
-          " " * 4
-        )}
-        |)""".stripMargin
+      s"""|NativeConfig(
+          | - baseName:                $baseName
+          | - clang:                   $clang
+          | - clangPP:                 $clangPP
+          | - linkingOptions:          ${showSeq(linkingOptions)}
+          | - compileOptions:          ${showSeq(compileOptions)}
+          | - cOptions:                ${showSeq(cOptions)}
+          | - cppOptions:              ${showSeq(cppOptions)}
+          | - targetTriple:            $targetTriple
+          | - GC:                      $gc
+          | - LTO:                     $lto
+          | - mode:                    $mode
+          | - buildTarget              $buildTarget
+          | - check:                   $check
+          | - checkFatalWarnings:      $checkFatalWarnings
+          | - checkFeatures            $checkFeatures
+          | - dump:                    $dump
+          | - sanitizer:               ${sanitizer.map(_.name).getOrElse("none")}
+          | - linkStubs:               $linkStubs
+          | - optimize                 $optimize
+          | - incrementalCompilation:  $useIncrementalCompilation
+          | - multithreading           $multithreading
+          | - linktimeProperties:      ${showMap(linktimeProperties)}
+          | - embedResources:          $embedResources
+          | - resourceIncludePatterns: ${showSeq(resourceIncludePatterns)}
+          | - resourceExcludePatterns: ${showSeq(resourceExcludePatterns)}
+          | - serviceProviders:        ${showMap(serviceProviders)}
+          | - optimizerConfig:         ${optimizerConfig.show(" " * 4)}
+          | - semanticsConfig:         ${semanticsConfig.show(" " * 4)}
+          | - sourceLevelDebuggingConfig: ${sourceLevelDebuggingConfig.show(
+           " " * 4
+         )}
+          |)""".stripMargin
     }
   }
 
@@ -554,10 +554,10 @@ object NativeConfig {
     }
     if (invalid.nonEmpty) {
       throw new BuildException(
-        s"""Link-time properties needs to be non-null primitives or non-empty string
-           |Invalid link-time properties:
-           |${invalid.mkString(" - ", "\n", "")}
-        """.stripMargin
+        s"""|Link-time properties needs to be non-null primitives or non-empty string
+            |Invalid link-time properties:
+            |${invalid.mkString(" - ", "\n", "")}
+            |""".stripMargin
       )
     }
   }

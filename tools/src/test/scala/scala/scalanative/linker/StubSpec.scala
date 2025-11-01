@@ -7,23 +7,23 @@ import org.junit.Test
 class StubSpec extends LinkerSpec {
 
   val entry = "Main"
-  val stubMethodSource = """object Main {
-                           |  def main(args: Array[String]): Unit =
-                           |    stubMethod
-                           |  @scala.scalanative.annotation.stub
-                           |  def stubMethod: Int = ???
-                           |}""".stripMargin
-  val stubClassSource = """@scalanative.annotation.stub class StubClass
+  val stubMethodSource = """|object Main {
+                            |  def main(args: Array[String]): Unit =
+                            |    stubMethod
+                            |  @scala.scalanative.annotation.stub
+                            |  def stubMethod: Int = ???
+                            |}""".stripMargin
+  val stubClassSource = """|@scalanative.annotation.stub class StubClass
                            |object Main {
                            |  def main(args: Array[String]): Unit =
                            |    new StubClass
                            |}""".stripMargin
-  val stubModuleSource = """@scalanative.annotation.stub object StubModule
-                           |object Main {
-                           |  def main(args: Array[String]): Unit = {
-                           |    val x = StubModule
-                           |  }
-                           |}""".stripMargin
+  val stubModuleSource = """|@scalanative.annotation.stub object StubModule
+                            |object Main {
+                            |  def main(args: Array[String]): Unit = {
+                            |    val x = StubModule
+                            |  }
+                            |}""".stripMargin
 
   @Test def ignoreMethods(): Unit = {
     doesNotLink(entry, stubMethodSource, _.withLinkStubs(false)) {

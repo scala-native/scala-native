@@ -58,20 +58,20 @@ class LocalNamesTest {
 
   // Ensure to use all the vals/vars, otherwise they might not be emmited by the compiler
   @Test def localNamesExistence(): Unit = compileAndLoad(
-    sources = "Test.scala" -> """
-    |object Test {
-    |  def main(args: Array[String]): Unit = {
-    |    var localVar = args.size
-    |    val localVal = localVar + this.##
-    |    val scoped = {
-    |      var innerVar = args.size
-    |      val innerVal = innerVar + 1
-    |      innerVal + localVal
-    |     }
-    |    assert(scoped != 0)
-    |  }
-    |}
-    """.stripMargin
+    sources = "Test.scala" -> """|
+                                 |object Test {
+                                 |  def main(args: Array[String]): Unit = {
+                                 |    var localVar = args.size
+                                 |    val localVal = localVar + this.##
+                                 |    val scoped = {
+                                 |      var innerVar = args.size
+                                 |      val innerVal = innerVar + 1
+                                 |      innerVal + localVal
+                                 |     }
+                                 |    assert(scoped != 0)
+                                 |  }
+                                 |}
+                                 |""".stripMargin
   ) { loaded =>
     def checkLocalNames(defns: Seq[nir.Defn]) =
       findDefinition(defns).foreach { defn =>
@@ -110,54 +110,55 @@ class LocalNamesTest {
   }
 
   @Test def opsNames(): Unit = compileAndLoad(
-    sources = "Test.scala" -> """
-    |import scala.scalanative.unsafe
-    |import scala.scalanative.unsafe._
-    |import scala.scalanative.runtime.Intrinsics
-    |import scala.scalanative.runtime.toRawPtr
-    |import scala.scalanative.unsigned._
-    |object Test {
-    |  class Foo()
-    |
-    |  @noinline def method(n: Int): String = n.toString
-    |  private var field: Int = _
-    |
-    |  def main(args: Array[String]): Unit = {
-    |    val call = Test.method(0)
-    |    val sizeOf = Intrinsics.sizeOf[Long]
-    |    val alignmentOf = Intrinsics.alignmentOf[Long]
-    |    val stackalloc = Intrinsics.stackalloc[Byte](sizeOf)
-    |    val elem = Intrinsics.elemRawPtr(stackalloc, alignmentOf)
-    |    val store = Intrinsics.storeInt(elem, 42)
-    |    val load = Intrinsics.loadInt(elem)
-    |    // val extract = ???
-    |    // val insert = ???
-    |    val bin = Intrinsics.remUInt(load, 4)
-    |    val comp = bin == 2
-    |    val conv = Intrinsics.castIntToFloat(bin)
-    |    assert(comp && conv == 4.0f)
-    |    // val fence = ???
-    |    val classalloc = new Foo()
-    |    val fieldStore = this.field = bin + classalloc.##
-    |    val fieldLoad = this.field
-    |    val field = Intrinsics.classFieldRawPtr[Test.type](this, "field")
-    |    // val method: Int => String = Test.method _
-    |    // val dynMethod = ???
-    |    val module = scala.Predef
-    |    val as = Test.asInstanceOf[Option[_]]
-    |    val is = as.isInstanceOf[Some[_]]
-    |    val copy = 42
-    |    val box: Any = 1.asInstanceOf[Integer]
-    |    val unbox: Int = box.asInstanceOf[Int]
-    |    var `var` = unbox + 1
-    |    val varStore = `var` = args.size
-    |    val varLoad = `var`
-    |    val arrayAlloc = new Array[Int](4)
-    |    val arrayStore = arrayAlloc(0) = varLoad
-    |    val arrayLoad = arrayAlloc(0)
-    |    val arrayLength = arrayAlloc.length
-    |  }
-    |}""".stripMargin
+    sources =
+      "Test.scala" -> """|
+                         |import scala.scalanative.unsafe
+                         |import scala.scalanative.unsafe._
+                         |import scala.scalanative.runtime.Intrinsics
+                         |import scala.scalanative.runtime.toRawPtr
+                         |import scala.scalanative.unsigned._
+                         |object Test {
+                         |  class Foo()
+                         |
+                         |  @noinline def method(n: Int): String = n.toString
+                         |  private var field: Int = _
+                         |
+                         |  def main(args: Array[String]): Unit = {
+                         |    val call = Test.method(0)
+                         |    val sizeOf = Intrinsics.sizeOf[Long]
+                         |    val alignmentOf = Intrinsics.alignmentOf[Long]
+                         |    val stackalloc = Intrinsics.stackalloc[Byte](sizeOf)
+                         |    val elem = Intrinsics.elemRawPtr(stackalloc, alignmentOf)
+                         |    val store = Intrinsics.storeInt(elem, 42)
+                         |    val load = Intrinsics.loadInt(elem)
+                         |    // val extract = ???
+                         |    // val insert = ???
+                         |    val bin = Intrinsics.remUInt(load, 4)
+                         |    val comp = bin == 2
+                         |    val conv = Intrinsics.castIntToFloat(bin)
+                         |    assert(comp && conv == 4.0f)
+                         |    // val fence = ???
+                         |    val classalloc = new Foo()
+                         |    val fieldStore = this.field = bin + classalloc.##
+                         |    val fieldLoad = this.field
+                         |    val field = Intrinsics.classFieldRawPtr[Test.type](this, "field")
+                         |    // val method: Int => String = Test.method _
+                         |    // val dynMethod = ???
+                         |    val module = scala.Predef
+                         |    val as = Test.asInstanceOf[Option[_]]
+                         |    val is = as.isInstanceOf[Some[_]]
+                         |    val copy = 42
+                         |    val box: Any = 1.asInstanceOf[Integer]
+                         |    val unbox: Int = box.asInstanceOf[Int]
+                         |    var `var` = unbox + 1
+                         |    val varStore = `var` = args.size
+                         |    val varLoad = `var`
+                         |    val arrayAlloc = new Array[Int](4)
+                         |    val arrayStore = arrayAlloc(0) = varLoad
+                         |    val arrayLoad = arrayAlloc(0)
+                         |    val arrayLength = arrayAlloc.length
+                         |  }
+                         |}""".stripMargin
   ) { loaded =>
     def checkLocalNames(defns: Seq[nir.Defn]) =
       findDefinition(defns)
@@ -228,20 +229,21 @@ class LocalNamesTest {
   }
 
   @Test def switchMatch(): Unit = compileAndLoad(
-    sources = "Test.scala" -> """
-    |import scala.annotation.switch
-    |object Test {
-    |  def main(args: Array[String]): Unit = {
-    |    val n = args.size
-    |    val switchResult = ((n % 3): @switch) match {
-    |      case 0 => n
-    |      case 1 => n * 42
-    |      case 2 => val a = n * 37; a
-    |    }
-    |    assert(switchResult != 0)
-    |  }
-    |}
-    """.stripMargin
+    sources =
+      "Test.scala" -> """|
+                         |import scala.annotation.switch
+                         |object Test {
+                         |  def main(args: Array[String]): Unit = {
+                         |    val n = args.size
+                         |    val switchResult = ((n % 3): @switch) match {
+                         |      case 0 => n
+                         |      case 1 => n * 42
+                         |      case 2 => val a = n * 37; a
+                         |    }
+                         |    assert(switchResult != 0)
+                         |  }
+                         |}
+                         |""".stripMargin
   ) { loaded =>
     def checkLocalNames(defns: Seq[nir.Defn]) =
       findDefinition(defns)
@@ -271,19 +273,19 @@ class LocalNamesTest {
   }
 
   @Test def matchMatch(): Unit = compileAndLoad(
-    sources = "Test.scala" -> """
-    |object Test {
-    |  def main(args: Array[String]): Unit = {
-    |    val n: Option[String] = args.headOption
-    |    val matchResult = n match {
-    |      case None => 1
-    |      case Some("") => 2
-    |      case Some(v) => val a = v.length; a
-    |    }
-    |    assert(matchResult != 0)
-    |  }
-    |}
-    """.stripMargin
+    sources = "Test.scala" -> """|
+                                 |object Test {
+                                 |  def main(args: Array[String]): Unit = {
+                                 |    val n: Option[String] = args.headOption
+                                 |    val matchResult = n match {
+                                 |      case None => 1
+                                 |      case Some("") => 2
+                                 |      case Some(v) => val a = v.length; a
+                                 |    }
+                                 |    assert(matchResult != 0)
+                                 |  }
+                                 |}
+                                 |""".stripMargin
   ) { loaded =>
     def checkLocalNames(defns: Seq[nir.Defn]) =
       findDefinition(defns)
@@ -315,28 +317,28 @@ class LocalNamesTest {
   }
 
   @Test def tryCatchFinalyBlocks(): Unit = compileAndLoad(
-    sources = "Test.scala" -> """
-    |object Test {
-    |  def main(args: Array[String]): Unit = {
-    |    val a = args.size
-    |    val b =
-    |      try {
-    |        val inTry = args(0).toInt
-    |        inTry + 1
-    |      }catch{
-    |        case ex1: Exception =>
-    |          val n = args(0)
-    |          n.size
-    |        case ex2: Throwable =>
-    |          val m = args.size
-    |          throw ex2
-    |      } finally {
-    |        val finalVal = "fooBar"
-    |        println(finalVal)
-    |      }
-    |  }
-    |}
-    """.stripMargin
+    sources = "Test.scala" -> """|
+                                 |object Test {
+                                 |  def main(args: Array[String]): Unit = {
+                                 |    val a = args.size
+                                 |    val b =
+                                 |      try {
+                                 |        val inTry = args(0).toInt
+                                 |        inTry + 1
+                                 |      }catch{
+                                 |        case ex1: Exception =>
+                                 |          val n = args(0)
+                                 |          n.size
+                                 |        case ex2: Throwable =>
+                                 |          val m = args.size
+                                 |          throw ex2
+                                 |      } finally {
+                                 |        val finalVal = "fooBar"
+                                 |        println(finalVal)
+                                 |      }
+                                 |  }
+                                 |}
+                                 |""".stripMargin
   ) { loaded =>
     findDefinition(loaded).foreach { implicit defn =>
       assertContainsAll(
@@ -352,14 +354,14 @@ class LocalNamesTest {
 
   // TODO
   // @Test def identReference(): Unit = compileAndLoad(
-  //   sources = "Test.scala" -> """
+  //   sources = "Test.scala" -> """|
   //   |object Test {
   //   |  def main(args: Array[String]): Unit = {
   //   |    val n: Option[String] = args.headOption
   //   |    val x = n
   //   |  }
   //   |}
-  //   """.stripMargin
+  //   |""".stripMargin
   // ) { loaded =>
   //   def checkLocalNames(defns: Seq[Defn]) =
   //     findDefinition(defns)

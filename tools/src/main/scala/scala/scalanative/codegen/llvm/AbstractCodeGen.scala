@@ -1024,12 +1024,14 @@ private[codegen] abstract class AbstractCodeGen(
           Lower.GCYieldPointTrapName.sig.unmangled: @unchecked
         touch(Lower.GCYieldPointTrapName)
         str {
-          if (useOpaquePointers) s"""
-          |  %_${trap.id} = load ptr, ptr @${safepointTrapField}
-          |  %_${fresh().id} = load volatile ptr, ptr %_${trap.id}""".stripMargin
-          else s"""
-          |  %_${trap.id} = load i8**, i8*** bitcast(i8** @$safepointTrapField to i8***)
-          |  %_${fresh().id} = load volatile i8*, i8** %_${trap.id}""".stripMargin
+          if (useOpaquePointers)
+            s"""|
+                |  %_${trap.id} = load ptr, ptr @${safepointTrapField}
+                |  %_${fresh().id} = load volatile ptr, ptr %_${trap.id}""".stripMargin
+          else
+            s"""|
+                |  %_${trap.id} = load i8**, i8*** bitcast(i8** @$safepointTrapField to i8***)
+                |  %_${fresh().id} = load volatile i8*, i8** %_${trap.id}""".stripMargin
         }
 
       case nir.Val.Global(pointee: nir.Global.Member, _)

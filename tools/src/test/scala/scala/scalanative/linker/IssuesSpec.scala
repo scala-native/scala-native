@@ -40,16 +40,16 @@ class IssuesSpec extends LinkerSpec {
     val fqcn = s"$packageName.$mainClass".replace("`", "")
     checkNoLinkageErrors(
       mainClass = fqcn,
-      source = s"""package $packageName
-      |object `$mainClass`{
-      |  def main(args: Array[String]) = ()
-      |}
-      |""".stripMargin
+      source = s"""|package $packageName
+                   |object `$mainClass`{
+                   |  def main(args: Array[String]) = ()
+                   |}
+                   |""".stripMargin
     )
   }
 
   @Test def issue2880LambadHandling(): Unit = checkNoLinkageErrors {
-    """
+    """|
     |object Test {
     |  trait ContextCodec[In, Out] {
     |    def decode(in: In, shouldFailFast: Boolean): Out
@@ -66,28 +66,30 @@ class IssuesSpec extends LinkerSpec {
   }
 
   @Test def externTraitsPrimitveTypesSignatures(): Unit = {
-    testLinked(s"""
-      |import scala.scalanative.unsafe._
-      |import scala.scalanative.unsigned._
-      |
-      |@extern trait string {
-      |  def memset(dest: Ptr[Byte], ch: Int, count: USize): Ptr[Byte] = extern
-      |}
-      |@extern object string extends string
-      |
-      |object Test {
-      |  def main(args: Array[String]): Unit = {
-      |     val privilegeSetLength = stackalloc[USize]()
-      |     val privilegeSet: Ptr[Byte] = stackalloc[Byte](!privilegeSetLength)
-      |
-      |     // real case
-      |     string.memset(privilegeSet, 0, !privilegeSetLength)
-      |
-      |     // possible case
-      |     def str: string = ???
-      |     str.memset(privilegeSet, 0, !privilegeSetLength)
-      |  }
-      |}""".stripMargin) { result =>
+    testLinked(
+      s"""|
+          |import scala.scalanative.unsafe._
+          |import scala.scalanative.unsigned._
+          |
+          |@extern trait string {
+          |  def memset(dest: Ptr[Byte], ch: Int, count: USize): Ptr[Byte] = extern
+          |}
+          |@extern object string extends string
+          |
+          |object Test {
+          |  def main(args: Array[String]): Unit = {
+          |     val privilegeSetLength = stackalloc[USize]()
+          |     val privilegeSet: Ptr[Byte] = stackalloc[Byte](!privilegeSetLength)
+          |
+          |     // real case
+          |     string.memset(privilegeSet, 0, !privilegeSetLength)
+          |
+          |     // possible case
+          |     def str: string = ???
+          |     str.memset(privilegeSet, 0, !privilegeSetLength)
+          |  }
+          |}""".stripMargin
+    ) { result =>
       val Memset = nir.Sig.Extern("memset")
       val StringMemset = nir.Global.Top("string").member(Memset)
       val decls = result.defns
@@ -110,20 +112,22 @@ class IssuesSpec extends LinkerSpec {
   }
 
   @Test def externTraitExternFieldAttributes(): Unit = {
-    testLinked(s"""
-         |import scala.scalanative.unsafe._
-         |
-         |@extern trait lib {
-         |  var field: CInt = extern
-         |}
-         |@extern object lib extends lib
-         |
-         |object Test {
-         |  def main(args: Array[String]): Unit = {
-         |     val read = lib.field
-         |     lib.field = 42
-         |  }
-         |}""".stripMargin) { result =>
+    testLinked(
+      s"""|
+          |import scala.scalanative.unsafe._
+          |
+          |@extern trait lib {
+          |  var field: CInt = extern
+          |}
+          |@extern object lib extends lib
+          |
+          |object Test {
+          |  def main(args: Array[String]): Unit = {
+          |     val read = lib.field
+          |     lib.field = 42
+          |  }
+          |}""".stripMargin
+    ) { result =>
       val Field = nir.Sig.Extern("field")
       val LibField = nir.Global.Top("lib").member(Field)
       val decls = result.defns
@@ -136,25 +140,27 @@ class IssuesSpec extends LinkerSpec {
   }
 
   @Test def externTraitBlockingMethodAttributes(): Unit = {
-    testLinked(s"""
-      |import scala.scalanative.unsafe._
-      |
-      |@extern object lib {
-      |  @blocking def sync(): CInt = extern
-      |  def async(): CInt = extern
-      |}
-      |
-      |@extern @blocking object syncLib{
-      |  def foo(): CInt = extern
-      |}
-      |
-      |object Test {
-      |  def main(args: Array[String]): Unit = {
-      |     val a = lib.sync()
-      |     val b = lib.async()
-      |     val c = syncLib.foo()
-      |  }
-      |}""".stripMargin) { result =>
+    testLinked(
+      s"""|
+          |import scala.scalanative.unsafe._
+          |
+          |@extern object lib {
+          |  @blocking def sync(): CInt = extern
+          |  def async(): CInt = extern
+          |}
+          |
+          |@extern @blocking object syncLib{
+          |  def foo(): CInt = extern
+          |}
+          |
+          |object Test {
+          |  def main(args: Array[String]): Unit = {
+          |     val a = lib.sync()
+          |     val b = lib.async()
+          |     val c = syncLib.foo()
+          |  }
+          |}""".stripMargin
+    ) { result =>
       val Lib = nir.Global.Top("lib$")
       val SyncLib = nir.Global.Top("syncLib$")
       val LibSync = Lib.member(nir.Sig.Extern("sync"))
@@ -176,7 +182,7 @@ class IssuesSpec extends LinkerSpec {
 
   // https://github.com/scala-native/scala-native/issues/4039
   @Test def issue4039(): Unit = checkNoLinkageErrors {
-    """
+    """|
     |object Test {
     |  def main(args: Array[String]): Unit = {
     |    Seq.empty[Nothing].forall(_ == Int.box(0))
