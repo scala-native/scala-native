@@ -1,20 +1,16 @@
 package java.lang.process
 
 import java.io.{File, IOException}
-import java.lang.process.BsdOsSpecific.Extern.{kevent, kqueue}
-import java.lang.process.BsdOsSpecific._
-import java.lang.process.LinuxOsSpecific.Extern.{pidfd_open, ppoll}
 import java.{util => ju}
 
 import scala.annotation.tailrec
 
+import scalanative.libc.LibcExt
 import scalanative.meta.LinktimeInfo
 import scalanative.posix.errno._
 import scalanative.posix.poll._
 import scalanative.posix.pollOps._
 import scalanative.posix.spawn._
-import scalanative.posix.string.strerror
-import scalanative.posix.sys.wait._
 import scalanative.posix.time.timespec
 import scalanative.posix.timeOps.timespecOps
 import scalanative.posix.{fcntl, pollEvents, unistd}
@@ -57,13 +53,13 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
     if (pidFd != -1) unistd.close(pidFd)
 
   override protected def getExitCodeImpl: Option[Int] =
-    waitpidImplNoECHILD(_pid, options = WNOHANG)
+    UnixProcess.waitpidNowNoECHILD(_pid)
 
   override protected def waitForImpl(): Boolean = {
     /* wait until process exits, is interrupted in OS wait,  or forever,
      * whichever comes first.
      */
-    while (!osWaitForImpl(None) && !hasExited) {}
+    while (!waitAndReapChild(None) && !hasExited) {}
     true
   }
 
@@ -80,7 +76,7 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
     fillTimespec(timeout, unit, ts)
     @tailrec
     def waitWithRepeat(): Boolean = {
-      val ok = osWaitForImpl(Some(ts))
+      val ok = waitAndReapChild(Some(ts))
       hasExited || !ok && {
         val remainingNanos = deadline - System.nanoTime()
         remainingNanos >= 0 && {
@@ -92,41 +88,7 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
     waitWithRepeat()
   }
 
-  private def waitpidImplNoECHILD(pid: pid_t, options: Int): Option[Int] = {
-    val wstatus = stackalloc[Int]()
-
-    val waitStatus = waitpid(pid, wstatus, options)
-
-    if (waitStatus == -1) {
-      if (errno == EINTR) {
-        throw new InterruptedException()
-      } else if (errno == ECHILD) {
-        /* See extensive discussion in SN Issue #4208 and identical
-         * closely related #4208.
-         */
-
-        // OK if no exchange, someone else already reaped the process.
-        Some(1)
-      } else {
-        val msg = s"waitpid failed: ${fromCString(strerror(errno))}"
-        throw new IOException(msg)
-      }
-    } else if (waitStatus > 0) {
-      // Cache exitStatus as long as we already have it in hand.
-      val decoded =
-        if (WIFEXITED(!wstatus)) WEXITSTATUS(!wstatus)
-        else if (WIFSIGNALED(!wstatus)) 128 + WTERMSIG(!wstatus)
-        else {
-          1 // Catchall for general errors
-          // https://tldp.org/LDP/abs/html/exitcodes.html
-        }
-
-      // OK if no exchange, someone else already reaped the process.
-      Some(decoded)
-    } else None
-  }
-
-  private def askZombiesForTheirExitStatus(): Unit = {
+  private def waitAndReapChild(timeout: Option[Ptr[timespec]]): Boolean = try {
     /* This method is simple, but the __long__ explanation it requires
      * belongs in one place, not in each of its callers.
      *
@@ -143,8 +105,15 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
      *  just reported as having exited is a fussy busy-wait timing loop.
      */
 
-    val ec = waitpidImplNoECHILD(_pid, options = 0)
-    setCachedExitCode(ec.getOrElse(1))
+    val ok = UnixProcessHandleGen2.osWaitForImpl(this, timeout)
+    if (ok) {
+      val ec = UnixProcess.waitpidNoECHILD(_pid, options = 0)
+      ec.foreach(setCachedExitCode)
+    }
+    ok
+  } catch {
+    case _: InterruptedException if !Thread.currentThread().isInterrupted() =>
+      false
   }
 
   // corral handling timevalue conversion details, fill ts.
@@ -221,29 +190,12 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
     }
   }
 
-  private def osWaitForImpl(timeout: Option[Ptr[timespec]]): Boolean = try {
-    // caller should have returned before here if cachedExitValue is known.
-    if (hasExited) {
-      // Another waitFor() has reaped exitValue; nothing to do here.
-    } else if (LinktimeInfo.isLinux) {
-      linuxWaitForImpl(timeout)
-    } else if (LinktimeInfo.isMac || LinktimeInfo.isFreeBSD) {
-      bsdWaitForImpl(timeout)
-    } else {
-      /* Should never get here. Earlier dispatch should have called
-       * UnixProcessGen1.
-       */
-      throw new IOException("unsuported Platform")
-    }
-    true
-  } catch {
-    case _: InterruptedException if !Thread.currentThread().isInterrupted() =>
-      false
-  }
-
   /* Linux - ppoll()
+   * Return true if the call shouldn't be tried again.
    */
-  private def linuxWaitForImpl(timeout: Option[Ptr[timespec]]): Unit = {
+  private def linuxWaitForImpl(timeout: Option[Ptr[timespec]]): Boolean = {
+    import LinuxOsSpecific.Extern._
+
     // epoll() is not used in this method since only one fd is involved.
 
     val fds = stackalloc[struct_pollfd](1)
@@ -256,17 +208,20 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
     if (ppollStatus < 0) {
       // handled in the caller
       if (errno == EINTR) throw new InterruptedException()
-      throw new IOException(
-        s"waitFor pid=${_pid}, ppoll failed: ${fromCString(strerror(errno))}"
-      )
-    } else if (ppollStatus > 0) {
-      askZombiesForTheirExitStatus()
-    }
+      if (errno != EBADF)
+        throw new IOException(
+          s"waitFor pid=${_pid}, ppoll failed: ${LibcExt.strError()}"
+        )
+      true // not really but someone closed it so we shouldn't poll again
+    } else ppollStatus > 0
   }
 
   /* macOS & FreeBSD -- kevent
+   * Return true if the call shouldn't be tried again.
    */
-  private def bsdWaitForImpl(timeout: Option[Ptr[timespec]]): Unit = {
+  private def bsdWaitForImpl(timeout: Option[Ptr[timespec]]): Boolean = {
+    import BsdOsSpecific._
+    import BsdOsSpecific.Extern._
 
     /* Design Note:
      *     This first implementation creates a kqueue() on each & every
@@ -282,37 +237,29 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
     if (kq == -1) {
       if (errno == EINTR) throw new InterruptedException()
       throw new IOException(
-        s"waitFor pid=${_pid} kqueue failed: ${fromCString(strerror(errno))}"
+        s"waitFor pid=${_pid} kqueue failed: ${LibcExt.strError()}"
       )
     }
 
-    /* Some Scala non-idiomatic sleight of hand is going on here to
-     * ease implementation. Scala 3 has union types, but other versions
-     * do not.  "struct kevent" and "struct kevent64_s" overlay exactly in
-     * the fields of interest here. In C and Scala 3 they could be a union.
-     * Here the former is declared as the latter and later cast because
-     * it is easier to access the field names of the latter; fewer casts
-     * and contortions.
-     */
-    val childExitEvent = stackalloc[kevent64_s]()
-    val eventResult = stackalloc[kevent64_s]()
+    val childExitEvent = stackalloc[kevent]()
+    val eventResult = stackalloc[kevent]()
 
     /* event will eventually be deleted when child pid closes.
      * EV_DISPATCH hints that the event can be deleted immediately after
      * delivery.
      */
 
-    childExitEvent._1 = _pid.toUSize
-    childExitEvent._2 = EVFILT_PROC.toShort
-    childExitEvent._3 = (EV_ADD | EV_DISPATCH).toUShort
-    childExitEvent._4 = (NOTE_EXIT | NOTE_EXITSTATUS).toUInt
+    childExitEvent.ident = _pid.toUSize
+    childExitEvent.filter = EVFILT_PROC.toShort
+    childExitEvent.flags = (EV_ADD | EV_DISPATCH).toUShort
+    childExitEvent.fflags = (NOTE_EXIT | NOTE_EXITSTATUS).toUInt
 
     val status =
       kevent(
         kq,
-        childExitEvent.asInstanceOf[Ptr[kevent]],
+        childExitEvent,
         1,
-        eventResult.asInstanceOf[Ptr[kevent]],
+        eventResult,
         1,
         timeout.orNull
       )
@@ -322,12 +269,27 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
     if (status < 0) {
       if (errno == EINTR) throw new InterruptedException()
       throw new IOException(
-        s"wait pid=${_pid}, kevent failed: ${fromCString(strerror(errno))}"
+        s"wait pid=${_pid}, kevent failed: ${LibcExt.strError()}"
       )
-    } else if (status > 0) {
-      askZombiesForTheirExitStatus()
-    }
+    } else status > 0
   }
+}
+
+private[process] object UnixProcessHandleGen2 {
+
+  private val osWaitForImpl
+      : (UnixProcessHandleGen2, Option[Ptr[timespec]]) => Boolean =
+    if (LinktimeInfo.isLinux) {
+      { (ref, to) => ref.linuxWaitForImpl(to) }
+    } else if (LinktimeInfo.isMac || LinktimeInfo.isFreeBSD) {
+      { (ref, to) => ref.bsdWaitForImpl(to) }
+    } else {
+      /* Should never get here. Earlier dispatch should have called
+       * UnixProcessGen1.
+       */
+      throw new IOException("unsuported Platform")
+    }
+
 }
 
 private[process] object UnixProcessGen2 {
@@ -338,9 +300,10 @@ private[process] object UnixProcessGen2 {
   ): UnixProcessHandleGen2 = {
     val pidFd =
       if (LinktimeInfo.isLinux) {
+        import LinuxOsSpecific.Extern._
         val fd = pidfd_open(pid, 0.toUInt)
         if (fd == -1) {
-          val msg = s"pidfd_open($pid) failed: ${fromCString(strerror(errno))}"
+          val msg = s"pidfd_open($pid) failed: ${LibcExt.strError()}"
           throw new IOException(msg)
         }
         fd
@@ -375,66 +338,77 @@ private[process] object UnixProcessGen2 {
   def forkChild(builder: ProcessBuilder)(
       f: (Int, ProcessBuilder) => UnixProcessHandle
   )(implicit z: Zone): GenericProcess = {
+    var success = false
     val (infds, outfds, errfds) = createPipes(builder)
 
-    val cmd = builder.command()
-    val binaries = binaryPaths(builder.environment(), cmd.get(0))
-    val argv = nullTerminate(cmd)
-    val envp = nullTerminate(builder.getEnvironmentAsList())
+    def closePipe(pipe: Ptr[CInt]): Unit =
+      if (pipe ne null) {
+        unistd.close(!(pipe + 0))
+        unistd.close(!(pipe + 1))
+      }
 
-    unistd.fork() match {
-      case -1 =>
-        throw new IOException("Unable to fork process")
+    def closePipes(): Unit = {
+      closePipe(infds)
+      closePipe(outfds)
+      closePipe(errfds)
+    }
 
-      case 0 =>
-        if (!builder.isCwd)
-          unistd.chdir(toCString(builder.directory().toString()))
+    def runChild(): Nothing = {
+      val cmd = builder.command()
+      val binaries = binaryPaths(builder.environment(), cmd.get(0))
+      val argv = nullTerminate(cmd)
+      val envp = nullTerminate(builder.getEnvironmentAsList())
 
-        setupChildFDS(!infds, builder.redirectInput(), unistd.STDIN_FILENO)
+      if (!builder.isCwd)
+        unistd.chdir(toCString(builder.directory().toString()))
+
+      setupChildFDS(!infds, builder.redirectInput(), unistd.STDIN_FILENO)
+      setupChildFDS(
+        !(outfds + 1),
+        builder.redirectOutput(),
+        unistd.STDOUT_FILENO
+      )
+      if (builder.redirectErrorStream())
+        dup2(unistd.STDOUT_FILENO, unistd.STDERR_FILENO, "pipe")
+      else
         setupChildFDS(
-          !(outfds + 1),
-          builder.redirectOutput(),
-          unistd.STDOUT_FILENO
+          !(errfds + 1),
+          builder.redirectError(),
+          unistd.STDERR_FILENO
         )
-        if (builder.redirectErrorStream())
-          dup2(unistd.STDOUT_FILENO, unistd.STDERR_FILENO, "pipe")
-        else
-          setupChildFDS(
-            !(errfds + 1),
-            builder.redirectError(),
-            unistd.STDERR_FILENO
-          )
 
-        def closePipe(pipe: Ptr[CInt]): Unit =
-          if (pipe ne null) {
-            unistd.close(!(pipe + 0))
-            unistd.close(!(pipe + 1))
-          }
+      closePipes()
 
-        closePipe(infds)
-        closePipe(outfds)
-        closePipe(errfds)
-
-        binaries.foreach { b =>
-          val bin = toCString(b)
-          if (unistd.execve(bin, argv, envp) == -1 && errno == ENOEXEC) {
-            val al = new ArrayList[String](3)
-            al.add("/bin/sh"); al.add("-c")
-            al.add(cmd.scalaOps.mkString(sep = " "))
-            val newArgv = nullTerminate(al)
-            unistd.execve(c"/bin/sh", newArgv, envp)
-          }
+      binaries.foreach { b =>
+        val bin = toCString(b)
+        if (unistd.execve(bin, argv, envp) == -1 && errno == ENOEXEC) {
+          val al = new ArrayList[String](3)
+          al.add("/bin/sh"); al.add("-c")
+          al.add(cmd.scalaOps.mkString(sep = " "))
+          val newArgv = nullTerminate(al)
+          unistd.execve(c"/bin/sh", newArgv, envp)
         }
+      }
 
-        /* execve failed. FreeBSD "man" recommends fast exit.
-         * Linux says nada.
-         * Code 127 is "Command not found", the convention for exec failure.
-         */
-        unistd._exit(127)
-        throw new IOException(s"Failed to create process for command: $cmd")
+      /* execve failed. FreeBSD "man" recommends fast exit.
+       * Linux says nada.
+       * Code 127 is "Command not found", the convention for exec failure.
+       */
+      unistd._exit(127)
+      throw new IOException(s"Failed to create process for command: $cmd")
+    }
 
-      case pid =>
+    try {
+      val pid = unistd.fork()
+      if (pid == -1)
+        throw new IOException("Unable to fork process")
+      if (pid == 0) runChild()
+      else {
+        success = true
         UnixProcess(f(pid, builder), infds, outfds, errfds)
+      }
+    } finally {
+      if (!success) closePipes()
     }
   }
 
@@ -442,8 +416,6 @@ private[process] object UnixProcessGen2 {
       builder: ProcessBuilder
   )(implicit z: Zone): GenericProcess = {
     val pidPtr = stackalloc[pid_t]()
-
-    val (infds, outfds, errfds) = createPipes(builder)
 
     val cmd = builder.command()
     val argv = nullTerminate(cmd)
@@ -469,91 +441,102 @@ private[process] object UnixProcessGen2 {
       "posix_spawn_file_actions_init"
     )
 
-    val unixProcess =
-      try {
+    var success = false
+    val (infds, outfds, errfds) = createPipes(builder)
+
+    try {
+      setupSpawnFDS(
+        fileActions,
+        !infds,
+        builder.redirectInput(),
+        unistd.STDIN_FILENO
+      )
+
+      setupSpawnFDS(
+        fileActions,
+        !(outfds + 1),
+        builder.redirectOutput(),
+        unistd.STDOUT_FILENO
+      )
+
+      if (builder.redirectErrorStream())
+        dup2Spawn(
+          fileActions,
+          unistd.STDOUT_FILENO,
+          unistd.STDERR_FILENO,
+          "pipe"
+        )
+      else
         setupSpawnFDS(
           fileActions,
-          !infds,
-          builder.redirectInput(),
-          unistd.STDIN_FILENO
+          !(errfds + 1),
+          builder.redirectError(),
+          unistd.STDERR_FILENO
         )
 
-        setupSpawnFDS(
-          fileActions,
-          !(outfds + 1),
-          builder.redirectOutput(),
-          unistd.STDOUT_FILENO
-        )
+      def closeSpawn(fd: CInt): Unit = throwOnError(
+        posix_spawn_file_actions_addclose(fileActions, fd),
+        s"posix_spawn_file_actions_addclose fd: $fd"
+      )
 
-        if (builder.redirectErrorStream())
-          dup2Spawn(
-            fileActions,
-            unistd.STDOUT_FILENO,
-            unistd.STDERR_FILENO,
-            "pipe"
-          )
-        else
-          setupSpawnFDS(
-            fileActions,
-            !(errfds + 1),
-            builder.redirectError(),
-            unistd.STDERR_FILENO
-          )
+      def closePipe(pipe: Ptr[CInt]): Unit =
+        if (pipe ne null) {
+          closeSpawn(!(pipe + 0))
+          closeSpawn(!(pipe + 1))
+        }
 
-        def closeSpawn(fd: CInt): Unit = throwOnError(
-          posix_spawn_file_actions_addclose(fileActions, fd),
-          s"posix_spawn_file_actions_addclose fd: $fd"
-        )
+      closePipe(infds)
+      closePipe(outfds)
+      closePipe(errfds)
 
+      /* This will exec binary executables.
+       * Some shells (bash, ???) will also execute scripts with initial
+       * shebang (#!).
+       */
+      def spawn(exec: String, argv: Ptr[CString]): CInt = posix_spawn(
+        pidPtr,
+        toCString(exec),
+        fileActions,
+        null, // attrp
+        argv,
+        envp
+      )
+
+      var status = ENOEXEC
+      val execIter = binaryPaths(builder.environment(), cmd.get(0))
+
+      while (status == ENOEXEC && execIter.hasNext)
+        status = spawn(execIter.next(), argv)
+
+      if (status == ENOEXEC) { // try falling back to shell script
+        val shCmd = "/bin/sh"
+        val fallbackCmd = Array(shCmd, "-c", cmd.scalaOps.mkString(sep = " "))
+        status = spawn(shCmd, nullTerminate(ju.Arrays.asList(fallbackCmd)))
+      }
+
+      if (status != 0) {
+        val msg = LibcExt.strError(status)
+        throw new IOException(s"Unable to posix_spawn process: $msg")
+      }
+
+      success = true
+      UnixProcess(createHandle(!pidPtr, builder), infds, outfds, errfds)
+    } finally {
+      if (!success) {
         def closePipe(pipe: Ptr[CInt]): Unit =
           if (pipe ne null) {
-            closeSpawn(!(pipe + 0))
-            closeSpawn(!(pipe + 1))
+            unistd.close(!(pipe + 0))
+            unistd.close(!(pipe + 1))
           }
-
         closePipe(infds)
         closePipe(outfds)
         closePipe(errfds)
-
-        /* This will exec binary executables.
-         * Some shells (bash, ???) will also execute scripts with initial
-         * shebang (#!).
-         */
-        def spawn(exec: String, argv: Ptr[CString]): CInt = posix_spawn(
-          pidPtr,
-          toCString(exec),
-          fileActions,
-          null, // attrp
-          argv,
-          envp
-        )
-
-        var status = ENOEXEC
-        val execIter = binaryPaths(builder.environment(), cmd.get(0))
-
-        while (status == ENOEXEC && execIter.hasNext)
-          status = spawn(execIter.next(), argv)
-
-        if (status == ENOEXEC) { // try falling back to shell script
-          val shCmd = "/bin/sh"
-          val fallbackCmd = Array(shCmd, "-c", cmd.scalaOps.mkString(sep = " "))
-          status = spawn(shCmd, nullTerminate(ju.Arrays.asList(fallbackCmd)))
-        }
-
-        if (status != 0) {
-          val msg = fromCString(strerror(status))
-          throw new IOException(s"Unable to posix_spawn process: $msg")
-        }
-
-        UnixProcess(createHandle(!pidPtr, builder), infds, outfds, errfds)
-      } finally {
-        throwOnError(
-          posix_spawn_file_actions_destroy(fileActions),
-          "posix_spawn_file_actions_destroy"
-        )
       }
-
-    unixProcess
+      throwOnError(
+        posix_spawn_file_actions_destroy(fileActions),
+        "posix_spawn_file_actions_destroy"
+      )
+    }
   }
 
   private[process] def throwOnError(rc: CInt, msg: => String): CInt = {

@@ -1,18 +1,25 @@
 package java.lang.process
 
-import java.util.concurrent._
+import java.{lang => jl, util => ju}
+
+import scala.util.Try
+
+import scala.scalanative.meta.LinktimeInfo
 
 private[process] object GenericProcessWatcher {
-  private val watchedProcesses = ConcurrentHashMap.newKeySet[GenericProcess]
+
+  import ju.concurrent._
+
+  private val processes = new ConcurrentHashMap[jl.Long, GenericProcessHandle]
 
   private val lock = new locks.ReentrantLock()
   private val hasProcessesToWatch = lock.newCondition()
 
-  def watchForTermination(handle: GenericProcess): Unit = {
-    watchedProcesses.add(handle)
+  def watchForTermination(handle: GenericProcessHandle): Unit = {
+    processes.put(handle.pid(), handle)
     assert(
       watcherThread.isAlive(),
-      "Process termination watch thread is terminated"
+      "GenericProcessWatcher watch thread is terminated"
     )
     // If we cannot lock it means that watcher thread is already executing, no need to wake it up
     if (lock.tryLock()) {
@@ -25,20 +32,48 @@ private[process] object GenericProcessWatcher {
     .ofPlatform()
     .daemon(true)
     .group(ThreadGroup.System)
-    .name("ScalaNative-ProcessTerminationWatcher")
+    .name("ScalaNative-GenericProcessWatcher")
     .startInternal { () =>
       lock.lock()
       try {
-        while (true) try {
-          while (watchedProcesses.isEmpty())
+        while (true) Try {
+          removeCompleted()
+          while (processes.isEmpty())
             hasProcessesToWatch.await()
-          watchedProcesses.forEach { ref =>
-            if (ref.handle.checkIfExited())
-              watchedProcesses.remove(ref)
-          }
-          Thread.sleep(100 /*ms*/ )
-        } catch { case scala.util.control.NonFatal(_) => () }
+          if (!reapSomeProcesses()) Thread.sleep(100) // ms
+        }
       } finally lock.unlock()
     }
+
+  // return true if something has been reaped
+  private val reapSomeProcesses: () => Boolean =
+    if (LinktimeInfo.isWindows) claimAllCompleted
+    else if (UnixProcess.useGen2) claimAllCompleted
+    else UnixProcessGen1.waitpidAny
+
+  def claimAllCompleted(): Boolean = {
+    var ok = false
+    removeSomeProcesses { entry =>
+      val remove = entry.getValue().checkIfExited()
+      ok ||= remove
+      remove
+    }
+    ok
+  }
+
+  def completeWith(pid: Long)(ec: => Int): Boolean = {
+    val ref = processes.remove(pid)
+    (ref ne null) && ref.setCachedExitCode(ec)
+  }
+
+  def removeCompleted(): Unit =
+    removeSomeProcesses(_.getValue().hasExited)
+
+  private def removeSomeProcesses(
+      f: ju.Map.Entry[jl.Long, GenericProcessHandle] => Boolean
+  ): Unit = {
+    val it = processes.entrySet().iterator()
+    while (it.hasNext()) if (f(it.next())) it.remove()
+  }
 
 }

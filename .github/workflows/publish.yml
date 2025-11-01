@@ -107,7 +107,19 @@ jobs:
           git push origin -f ${LAST_PUBLISHED_TAG}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+          
+  build_docs:
+    name: Trigger documentation build
+    runs-on: ubuntu-latest
+    needs: [save_tag]
+    steps:
+      - name: Trigger Read the Docs build
+        shell: bash
+        run: | 
+          curl -X POST \
+            -H "Authorization: Token ${{ secrets.RTD_TOKEN }}" \
+            https://app.readthedocs.org/api/v3/projects/scala-native/versions/latest/builds/
+      
   dispatch:
     name: Dispatch trigger builds for dependant projects
     runs-on: ubuntu-latest

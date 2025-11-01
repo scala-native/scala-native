@@ -1,19 +1,19 @@
 package java.nio.channels
 
 import java.io.{File, FileDescriptor, IOException}
-import java.nio.channels.FileChannel.MapMode
 import java.nio.file.{Files, WindowsException}
 import java.nio.{ByteBuffer, MappedByteBuffer, MappedByteBufferImpl}
 import java.util.Objects
 
 import scala.scalanative.libc.errno.errno
+import scala.scalanative.libc.{LibcExt, stdio}
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.nio.fs.unix.UnixException
 import scala.scalanative.posix.fcntl._
 import scala.scalanative.posix.fcntlOps._
-import scala.scalanative.posix.sys.stat
 import scala.scalanative.posix.sys.statOps._
-import scala.scalanative.posix.{string, unistd}
+import scala.scalanative.posix.sys.{ioctl, stat}
+import scala.scalanative.posix.unistd
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.windows
@@ -22,7 +22,6 @@ import scala.scalanative.windows.FileApiExt._
 import scala.scalanative.windows.MinWinBaseApi._
 import scala.scalanative.windows.MinWinBaseApiOps._
 import scala.scalanative.windows._
-import scalanative.libc.stdio
 
 private[java] final class FileChannelImpl(
     fd: FileDescriptor,
@@ -67,7 +66,7 @@ private[java] final class FileChannelImpl(
 
   private def throwPosixException(functionName: String): Unit = {
     if (!isWindows) {
-      val errnoString = fromCString(string.strerror(errno))
+      val errnoString = LibcExt.strError()
       throw new IOException(s"${functionName} failed: ${errnoString}")
     }
   }
@@ -177,7 +176,7 @@ private[java] final class FileChannelImpl(
 
     ensureOpen()
 
-    if (mode ne MapMode.READ_ONLY) {
+    if (mode ne FileChannel.MapMode.READ_ONLY) {
       // FileChannel.open() has previously rejected READ + APPEND combination.
       if (!openForWriting)
         throw new NonWritableChannelException
@@ -288,6 +287,9 @@ private[java] final class FileChannelImpl(
     read(buffer, position())
   }
 
+  private def getFileName(orElse: => String = ""): String =
+    file.fold(orElse)(_.toString())
+
   private[java] def read(buffer: Array[Byte], offset: Int, count: Int): Int = {
     if (buffer == null) {
       throw new NullPointerException
@@ -301,41 +303,41 @@ private[java] final class FileChannelImpl(
 
     // we use the runtime knowledge of the array layout to avoid
     // intermediate buffer, and write straight into the array memory
-    val buf = buffer.at(offset)
     if (isWindows) {
-      def fail() = throw WindowsException.onPath(file.fold("")(_.toString))
+      val readBytes = stackalloc[DWord]()
 
-      def tryRead(count: Int)(fallback: => Int) = {
-        val readBytes = stackalloc[windows.DWord]()
-        if (ReadFile(fd.handle, buf, count.toUInt, readBytes, null)) {
-          (!readBytes).toInt match {
-            case 0     => -1 // EOF
-            case bytes => bytes
-          }
-        } else fallback
+      def readAll(off: Int, len: Int): Int = {
+        if (ReadFile(fd.handle, buffer.at(off), len.toUInt, readBytes, null))
+          (!readBytes).toInt
+        else {
+          val error = ErrorHandlingApi.GetLastError()
+          if (error == ErrorCodes.ERROR_BROKEN_PIPE) 0
+          else throw WindowsException.onPathWithLastEror(getFileName(), error)
+        }
       }
 
-      tryRead(count)(fallback = {
-        ErrorHandlingApi.GetLastError() match {
-          case ErrorCodes.ERROR_BROKEN_PIPE =>
-            // Pipe was closed, but it still can contain some unread data
-            available() match {
-              case 0     => -1 // EOF
-              case count => tryRead(count)(fallback = fail())
-            }
-
-          case _ =>
-            fail()
+      // readAll blocks until everything is read
+      // but we are OK with less so we need to see what's available
+      val avail = if (file.isEmpty) available() else count
+      if (avail > 0) {
+        val readCount = readAll(offset, avail.min(count))
+        if (readCount == 0) -1 else readCount
+      } else {
+        val readCount = readAll(offset, 1)
+        if (readCount == 0) -1 // EOF
+        else {
+          val toRead = if (count == 1) 0 else available()
+          if (toRead <= 0) 1
+          else 1 + readAll(offset + 1, toRead.min(count - 1))
         }
-      })
-
+      }
     } else {
-      val readCount = unistd.read(fd.fd, buf, count.toUInt)
+      val readCount = unistd.read(fd.fd, buffer.at(offset), count.toUInt)
       if (readCount == 0) {
         -1 // end of file
       } else if (readCount < 0) {
         // negative value (typically -1) indicates that read failed
-        throw UnixException(file.fold("")(_.toString), errno)
+        throw UnixException(getFileName(), errno)
       } else {
         // successfully read readCount bytes
         readCount
@@ -604,9 +606,7 @@ private[java] final class FileChannelImpl(
           val hasSucceded =
             WriteFile(fd.handle, buf, count.toUInt, null, null)
           if (!hasSucceded) {
-            throw WindowsException.onPath(
-              file.fold("<file descriptor>")(_.toString)
-            )
+            throw WindowsException.onPath(getFileName("<file descriptor>"))
           }
 
           count // Windows will fail on partial write, so nWritten == count
@@ -616,7 +616,7 @@ private[java] final class FileChannelImpl(
 
           if (writeCount < 0) {
             // negative value (typically -1) indicates that write failed
-            throw UnixException(file.fold("")(_.toString), errno)
+            throw UnixException(getFileName(), errno)
           }
 
           writeCount // may be < requested count
@@ -746,8 +746,7 @@ private[java] final class FileChannelImpl(
    *
    *       A "skip()" should be a fast update of existing memory. Conceptually,
    *       and by JDK definition FileChannel "read()"s may block transferring
-   *       bytes from slow storage to memory. Where is io_uring() when
-   *       you need it?
+   *       bytes from slow storage to memory.
    *
    *    3) The value returned is exactly the "estimate" portion of the JDK
    *       description:
@@ -756,31 +755,37 @@ private[java] final class FileChannelImpl(
    *         size of the file in the interval between when "available()"
    *         returns and "read()" is called.
    *
-   *       - This method is defined in FileChannel#available as returning
-   *         an Int. This also matches the use above in the Windows
-   *         implementation of the private method
-   *         "read(buffer: Array[Byte], offset: Int, count: Int)"
-   *         Trace the count argument logic.
-   *
-   *         FileChannel defines "position()" and "size()" as Long values.
-   *         For large files and positions < Integer.MAX_VALUE,
-   *         The Long difference "lastPosition - currentPosition" might well
-   *         be greater than Integer.MAX_VALUE. In that case, the .toInt
-   *         truncation will return the low estimate of Integer.MAX_VALUE
-   *         not the true (Long) value. Matches the specification, but gotcha!
+   *         FileChannel reads() after such truncation may violate the
+   *         description & contract by blocking for significant amounts
+   *         of time
+   * 
+   *         Lifting this restriction is not easy and is left as an
+   *         exercise for the reader.
    */
 
-  // local API extension
+  // local API extension, but follows description of FileInputStream#available
   private[java] def available(): Int = {
     ensureOpen()
 
-    val currentPosition = position()
-    val lastPosition = size()
-
-    val nAvailable =
-      if (currentPosition >= lastPosition) 0
-      else lastPosition - currentPosition
-
-    nAvailable.toInt
+    if (!isWindows) {
+      val res = stackalloc[CInt]()
+      val resByte = res.asInstanceOf[Ptr[scala.Byte]]
+      val failed = ioctl.ioctl(fd.fd, ioctl.FIONREAD, resByte) == -1
+      if (failed) 0 else Math.max(!res, 0)
+    } else if (file.isEmpty) { // pipe
+      val availableTotal = stackalloc[DWord]()
+      val failed = !NamedPipeApi.PeekNamedPipe(
+        pipe = fd.handle,
+        buffer = null,
+        bufferSize = 0.toUInt,
+        bytesRead = null,
+        totalBytesAvailable = availableTotal,
+        bytesLeftThisMessage = null
+      )
+      if (failed) 0
+      else Math.min((!availableTotal).toLong, Int.MaxValue).toInt
+    } else {
+      Math.clamp((size() - position()), 0, Int.MaxValue)
+    }
   }
 }

@@ -2,6 +2,7 @@ package java.lang.process
 
 import scala.scalanative.posix.time.timespec
 import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 
 object BsdOsSpecific {
   // Beware: FreeBSD and other BSD layouts have not been tested.
@@ -30,28 +31,64 @@ object BsdOsSpecific {
 
   // Beware: BSD layouts other than macOS & FreeBSD have not been tested.
 
-// format: off
-
+  // scalafmt: { align.preset = more }
   type kevent = CStruct6[
-    Ptr[CUnsignedInt],	// ident 	/* identifier for this event */
-    CShort, 		// filter 	/* filter for event */
-    CUnsignedShort, 	// flags 	/* action flags for kqueue */
-    CUnsignedInt, 	// fflags 	/* filter flag value */
-    Ptr[CInt],	 	// data		/* filter data value */
-    Ptr[Byte] 		// void *udata 	/* opaque user data identifier */
-    ]
-
-  type kevent64_s = CStruct7[
-    CUnsignedLongInt, 	// ident 	/* identifier for this event */
-    CShort, 		// filter 	/* filter for event */
-    CUnsignedShort, 	// flags 	/* action flags for kqueue */
-    CUnsignedInt, 	// fflags 	/* filter flag value */
-    CLongInt, 	        // data 	/* filter data value */
-    CUnsignedLongInt,   // udata 	/* opaque user data identifier */
-    Ptr[CUnsignedLongInt] // ext[2]	/* filter-specific extensions */
+    USize,          // ident       /* identifier for this event: uintptr_t */
+    CShort,         // filter      /* filter for event */
+    CUnsignedShort, // flags       /* action flags for kqueue */
+    CUnsignedInt,   // fflags      /* filter flag value */
+    Size,           // data        /* filter data value: intptr_t */
+    Ptr[Byte]       // void *udata 	/* opaque user data identifier */
   ]
 
-// format: on
+  implicit class keventOps(val ptr: Ptr[kevent]) extends AnyVal {
+    def ident  = ptr._1
+    def filter = ptr._2
+    def flags  = ptr._3
+    def fflags = ptr._4
+    def data   = ptr._5
+    def udata  = ptr._6
+
+    def ident_=(v: USize): Unit          = ptr._1 = v
+    def filter_=(v: CShort): Unit        = ptr._2 = v
+    def flags_=(v: CUnsignedShort): Unit = ptr._3 = v
+    def fflags_=(v: CUnsignedInt): Unit  = ptr._4 = v
+    def data_=(v: Size): Unit            = ptr._5 = v
+    def udata_=(v: Ptr[Byte]): Unit      = ptr._6 = v
+  }
+
+  type kevent64_s = CStruct8[
+    CUnsignedLongInt, // ident 	/* identifier for this event */
+    CShort,           // filter /* filter for event */
+    CUnsignedShort,   // flags 	/* action flags for kqueue */
+    CUnsignedInt,     // fflags /* filter flag value */
+    CLongInt,         // data 	/* filter data value */
+    CUnsignedLongInt, // udata 	/* opaque user data identifier */
+    CUnsignedLongInt, // ext[1]	/* filter-specific extensions */
+    CUnsignedLongInt  // ext[2]	/* filter-specific extensions */
+  ]
+
+  implicit class kevent64Ops(val ptr: Ptr[kevent64_s]) extends AnyVal {
+    def ident  = ptr._1
+    def filter = ptr._2
+    def flags  = ptr._3
+    def fflags = ptr._4
+    def data   = ptr._5
+    def udata  = ptr._6
+    def ext1   = ptr._7
+    def ext2   = ptr._8
+
+    def ident_=(v: CUnsignedLongInt): Unit = ptr._1 = v
+    def filter_=(v: CShort): Unit          = ptr._2 = v
+    def flags_=(v: CUnsignedShort): Unit   = ptr._3 = v
+    def fflags_=(v: CUnsignedInt): Unit    = ptr._4 = v
+    def data_=(v: CLongInt): Unit          = ptr._5 = v
+    def udata_=(v: CUnsignedLongInt): Unit = ptr._6 = v
+    def ext1_=(v: CUnsignedLongInt): Unit  = ptr._7 = v
+    def ext2_=(v: CUnsignedLongInt): Unit  = ptr._8 = v
+  }
+
+  // scalafmt: { align.preset = none }
 
   /*
    * Filter types

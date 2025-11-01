@@ -29,8 +29,10 @@ class RandomAccessFile private (
     )
   def this(name: String, mode: String) = this(new File(name), mode)
 
-  private lazy val in = new DataInputStream(new FileInputStream(fd))
-  private lazy val out = new DataOutputStream(new FileOutputStream(fd))
+  private lazy val in =
+    new DataInputStream(new FileInputStream(fd, Some(file)))
+  private lazy val out =
+    new DataOutputStream(new FileOutputStream(fd, Some(file)))
   private lazy val channel =
     new FileChannelImpl(
       fd,

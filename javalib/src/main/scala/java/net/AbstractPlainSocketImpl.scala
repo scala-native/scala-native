@@ -2,13 +2,11 @@ package java.net
 
 import java.io.{FileDescriptor, IOException, InputStream, OutputStream}
 
+import scala.scalanative.libc.LibcExt
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.posix.arpa.inet
-import scala.scalanative.posix.netdb._
-import scala.scalanative.posix.netdbOps._
 import scala.scalanative.posix.netinet.inOps._
 import scala.scalanative.posix.netinet.{in, tcp}
-import scala.scalanative.posix.string.strerror
 import scala.scalanative.posix.sys.ioctl._
 import scala.scalanative.posix.sys.socket
 import scala.scalanative.posix.sys.socket.{SHUT_RD, SHUT_RDWR, SHUT_WR}
@@ -22,7 +20,6 @@ import scala.scalanative.unsigned._
 import scala.scalanative.windows.WinSocketApi._
 import scala.scalanative.windows.WinSocketApiExt._
 import scala.scalanative.windows._
-import scalanative.libc.string.memcpy
 
 import posixErrno._
 
@@ -350,7 +347,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
           else if (how == SHUT_WR) "output"
           else "input and output"
         throw new SocketException(
-          s"Error while shutting down socket's $side: ${fromCString(strerror(errno))}"
+          s"Error while shutting down socket's $side: ${LibcExt.strError()}"
         )
     }
   }
