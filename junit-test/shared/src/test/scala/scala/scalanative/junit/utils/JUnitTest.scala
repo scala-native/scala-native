@@ -62,19 +62,32 @@ abstract class JUnitTest {
         if (recordOutput) {
           val lines = out.map(Output.serialize)
           JUnitTestPlatformImpl.writeLines(lines, file)
+          None
         } else {
           val lines = JUnitTestPlatformImpl.readLines(file)
           val want = lines.map(Output.deserialize)
 
-          if (want != out) {
-            fail(s"Bad output (args: $args)\n\nWant:\n${want
-                .mkString("\n")}\n\nGot:\n${out.mkString("\n")}\n\n")
-          }
+          if (want != out)
+            Some(
+              s"""|Bad output (args: [${args.mkString(", ")}])
+                  |
+                  |Want:
+                  |${want.mkString("\n")}
+                  |
+                  |Got:
+                  |${out.mkString("\n")}
+                  |
+                  |""".stripMargin
+            )
+          else None
         }
       }
     }
 
-    Future.sequence(futs).map(_ => ())
+    Future.sequence(futs).map { errOpts =>
+      val errs = errOpts.flatten
+      if (errs.nonEmpty) fail(errs.mkString)
+    }
   }
 
   private def runTests(args: List[String]): Future[List[Output]] = {
