@@ -1,6 +1,8 @@
 package java.lang.process
 
+import scala.scalanative.libc.stdint
 import scala.scalanative.posix.time.timespec
+//
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 
@@ -31,14 +33,17 @@ object BsdOsSpecific {
 
   // Beware: BSD layouts other than macOS & FreeBSD have not been tested.
 
+  type intptr_t = stdint.intptr_t
+  type uintptr_t = stdint.uintptr_t
+
   // scalafmt: { align.preset = more }
   type kevent = CStruct6[
-    USize,          // ident       /* identifier for this event: uintptr_t */
+    uintptr_t,      // ident       /* identifier for this event: uintptr_t */
     CShort,         // filter      /* filter for event */
     CUnsignedShort, // flags       /* action flags for kqueue */
     CUnsignedInt,   // fflags      /* filter flag value */
-    Size,           // data        /* filter data value: intptr_t */
-    Ptr[Byte]       // void *udata 	/* opaque user data identifier */
+    intptr_t,       // data        /* filter data value: intptr_t */
+    CVoidPtr        // void *udata 	/* opaque user data identifier */
   ]
 
   implicit class keventOps(val ptr: Ptr[kevent]) extends AnyVal {
@@ -49,12 +54,23 @@ object BsdOsSpecific {
     def data   = ptr._5
     def udata  = ptr._6
 
-    def ident_=(v: USize): Unit          = ptr._1 = v
+    def ident_=(v: uintptr_t): Unit      = ptr._1 = v
     def filter_=(v: CShort): Unit        = ptr._2 = v
     def flags_=(v: CUnsignedShort): Unit = ptr._3 = v
     def fflags_=(v: CUnsignedInt): Unit  = ptr._4 = v
-    def data_=(v: Size): Unit            = ptr._5 = v
-    def udata_=(v: Ptr[Byte]): Unit      = ptr._6 = v
+    def data_=(v: intptr_t): Unit        = ptr._5 = v
+    def udata_=(v: CVoidPtr): Unit       = ptr._6 = v
+
+    /* Convenience methods for common conversions hide and rely upon
+     * some abstraction layer jumping illicit knowledge that CSSize is
+     * a typedef for CSize.
+     */
+
+    def ident_=(v: CInt): Unit         = ptr._1 = v.toCSize
+    def ident_=(v: CUnsignedInt): Unit = ptr._1 = v.toInt.toCSize
+
+    def data_=(v: CInt): Unit         = ptr._1 = v.toCSize
+    def data_=(v: CUnsignedInt): Unit = ptr._1 = v.toInt.toCSize
   }
 
   type kevent64_s = CStruct8[
