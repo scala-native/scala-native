@@ -121,7 +121,7 @@ jobs:
             junitTestOutputsNative${{env.project-version}}/test;
             scalaPartestJunitTests${{env.project-version}}/test
         run: |
-          export LLVM_BIN="$(brew --prefix llvm@19)/bin"
+          export LLVM_BIN="$(brew --prefix llvm)/bin"
           $LLVM_BIN/clang --version
           sbt -J-Xmx5G "${TEST_COMMAND}"
 
@@ -141,7 +141,7 @@ jobs:
 
       - name: Test scripted
         run: |
-          export LLVM_BIN=$(brew --prefix llvm@15)/bin
+          export LLVM_BIN=$(brew --prefix llvm)/bin
           sbt "test-scripted ${{matrix.scala}}"
 
   test-llvm-versions:
@@ -151,7 +151,7 @@ jobs:
       fail-fast: false
       matrix:
         scala: [3]
-        llvm: [14, 15, 16, 17, 18, latest] # Last 3 stable versions. 15 is tested by default,  latest version == 19
+        llvm: [14, 15, 16, 17, 18, 19, 20, latest] # Latest version == 21
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/macos-setup-env
