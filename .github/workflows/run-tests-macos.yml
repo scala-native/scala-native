@@ -142,6 +142,7 @@ jobs:
       - name: Test scripted
         run: |
           export LLVM_BIN=$(brew --prefix llvm)/bin
+          $LLVM_BIN/clang --version
           sbt "test-scripted ${{matrix.scala}}"
 
   test-llvm-versions:
