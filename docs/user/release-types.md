@@ -72,6 +72,13 @@
 	   def scalaNativeVersion = "0.5.10-20251101-14920c7-SNAPSHOT"
 	   
      } 
-   ```
+     ```
 
+   * To determine that the desired SNAPSHOT is being used:
+     ```
+     $ # Or Mill equivalent
+     sbt> show libraryDependencies 
+     ...
+     [info] * org.scala-native:javalib:0.5.10-20251101-14920c7-SNAPSHOT
+     ```
 Continue to [lib](../lib/communitylib.md)
