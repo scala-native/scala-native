@@ -85,11 +85,11 @@ object SourceLevelDebuggingConfig {
     override private[scalanative] def show(indent: String): String = {
       val state = if (enabled) "Enabled" else "Disabled"
       val sourceRoots = customSourceRoots.mkString("[", ", ", "]")
-      s"""SourceLevelDebuggingConfig[${state}]
-        |$indent- customSourceRoots:       ${sourceRoots}
-        |$indent- generateFunctionSourcePositions: $generateFunctionSourcePositions
-        |$indent- generateLocalVariables:  $generateLocalVariables
-        |$indent)""".stripMargin
+      s"""|SourceLevelDebuggingConfig[${state}]
+          |$indent- customSourceRoots:       ${sourceRoots}
+          |$indent- generateFunctionSourcePositions: $generateFunctionSourcePositions
+          |$indent- generateLocalVariables:  $generateLocalVariables
+          |$indent)""".stripMargin
     }
   }
 }

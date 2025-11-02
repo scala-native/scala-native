@@ -39,13 +39,13 @@ class UdpSocketTest {
 
     try {
       val outData =
-        """
-          |Four Freedoms -
-          |   Freedom of speech
-          |   Freedom of worship
-          |   Freedom from want
-          |   Freedom from fear
-          """.stripMargin
+        """|
+           |Four Freedoms -
+           |   Freedom of speech
+           |   Freedom of worship
+           |   Freedom from want
+           |   Freedom from fear
+           |""".stripMargin
 
       val nBytesSent = sendto(
         outSocket,

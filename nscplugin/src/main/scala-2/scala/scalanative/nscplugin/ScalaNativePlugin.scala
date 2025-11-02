@@ -75,21 +75,23 @@ class ScalaNativePlugin(val global: Global) extends Plugin {
     true // this plugin is always enabled
   }
 
-  override val optionsHelp: Option[String] = Some(s"""
-      |  -P:$name:genStaticForwardersForNonTopLevelObjects
-      |     Generate static forwarders for non-top-level objects.
-      |     This option should be used by codebases that implement JDK classes.
-      |     When used together with -Xno-forwarders, this option has no effect.
-      |  -P:$name:forceStrictFinalFields
-      |     Treat all final fields as if they we're marked with @safePublish.
-      |     This option should be used by codebased that rely heavily on Java Final Fields semantics
-      |     It should not be required by most of normal Scala code.
-      |  -P:$name:positionRelativizationPaths
-      |     Change the source file positions in generated outputs based on list of provided paths.
-      |     It would strip the prefix of the source file if it matches given path.
-      |     Non-absolute paths would be ignored.
-      |     Multiple paths should be separated by a single semicolon ';' character.
-      |     If none of the patches matches path would be relative to -sourcepath if defined or -sourceroot otherwise.
-      """.stripMargin)
+  override val optionsHelp: Option[String] = Some(
+    s"""|
+        |  -P:$name:genStaticForwardersForNonTopLevelObjects
+        |     Generate static forwarders for non-top-level objects.
+        |     This option should be used by codebases that implement JDK classes.
+        |     When used together with -Xno-forwarders, this option has no effect.
+        |  -P:$name:forceStrictFinalFields
+        |     Treat all final fields as if they we're marked with @safePublish.
+        |     This option should be used by codebased that rely heavily on Java Final Fields semantics
+        |     It should not be required by most of normal Scala code.
+        |  -P:$name:positionRelativizationPaths
+        |     Change the source file positions in generated outputs based on list of provided paths.
+        |     It would strip the prefix of the source file if it matches given path.
+        |     Non-absolute paths would be ignored.
+        |     Multiple paths should be separated by a single semicolon ';' character.
+        |     If none of the patches matches path would be relative to -sourcepath if defined or -sourceroot otherwise.
+        |""".stripMargin
+  )
 
 }

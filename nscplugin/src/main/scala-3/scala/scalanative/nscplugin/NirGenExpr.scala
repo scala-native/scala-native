@@ -351,11 +351,11 @@ trait NirGenExpr(using Context) {
         val paramTypes = funSym.info.paramInfoss.flatten.drop(env.size)
         assert(
           sigTypes.size == paramTypes.size,
-          s"""Amount of parameters in NIR and AST differ: 
-            |NIR: ${sigTypes}
-            |AST: ${paramTypes}
-            |Env: ${env.map(_.tpe)}
-            |Sym: ${funSym.showFullName}""".stripMargin
+          s"""|Amount of parameters in NIR and AST differ:
+              |NIR: ${sigTypes}
+              |AST: ${paramTypes}
+              |Env: ${env.map(_.tpe)}
+              |Sym: ${funSym.showFullName}""".stripMargin
         )
 
         def genBody = {

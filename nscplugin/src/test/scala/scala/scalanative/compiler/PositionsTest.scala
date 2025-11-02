@@ -11,19 +11,19 @@ import scala.scalanative.linker.compileAndLoad
 class PositionsTest {
 
   @Test def sourcePositions(): Unit = compileAndLoad(
-    "Test.scala" -> """class TopLevel()
-    |object Foo {
-    |  var field: Int = 42
-    |  def defn: Unit = println("Hello World")
-    |  def defn2: Unit = {
-    |    val x: Any = 10
-    |    def innerDefn(x: Any) = {
-    |      println("foo")
-    |    }
-    |    innerDefn(x)
-    |  }
-    |}
-    """.stripMargin
+    "Test.scala" -> """|class TopLevel()
+                       |object Foo {
+                       |  var field: Int = 42
+                       |  def defn: Unit = println("Hello World")
+                       |  def defn2: Unit = {
+                       |    val x: Any = 10
+                       |    def innerDefn(x: Any) = {
+                       |      println("foo")
+                       |    }
+                       |    innerDefn(x)
+                       |  }
+                       |}
+                       |""".stripMargin
   ) { loaded =>
     val TopLevel = nir.Global.Top("TopLevel")
     val Foo = nir.Global.Top("Foo")

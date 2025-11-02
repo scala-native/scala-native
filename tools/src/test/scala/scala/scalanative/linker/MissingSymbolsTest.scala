@@ -22,25 +22,27 @@ class MissingSymbolsTest extends LinkerSpec {
   @Test def missingSymbolStacktrace(): Unit = {
     doesNotLink(
       entry = mainClass,
-      Map(sourceFile -> s"""
-        |object Foo{
-        |  def getTimeString(): String = Bar.getTimeString()
-        |}
-        |
-        |object Bar{
-        |  def getTimeString(): String = {
-        |    val time = java.sql.Time.valueOf("")
-        |    val time2 = new java.sql.Time(0L)
-        |    ???
-        |  }
-        |}
-        |
-        |object $mainClass{
-        | def main(args: Array[String]): Unit = {
-        |   val unreachable = Foo.getTimeString()
-        | }
-        |}
-        """.stripMargin)
+      Map(
+        sourceFile -> s"""|
+                          |object Foo{
+                          |  def getTimeString(): String = Bar.getTimeString()
+                          |}
+                          |
+                          |object Bar{
+                          |  def getTimeString(): String = {
+                          |    val time = java.sql.Time.valueOf("")
+                          |    val time2 = new java.sql.Time(0L)
+                          |    ???
+                          |  }
+                          |}
+                          |
+                          |object $mainClass{
+                          | def main(args: Array[String]): Unit = {
+                          |   val unreachable = Foo.getTimeString()
+                          | }
+                          |}
+                          |""".stripMargin
+      )
     ) {
       case (config, result) =>
         assertEquals("unreachable", 3, result.unreachable.size)
@@ -90,14 +92,16 @@ class MissingSymbolsTest extends LinkerSpec {
   @Test def unreachableInTypeParent(): Unit = {
     doesNotLink(
       entry = mainClass,
-      Map(sourceFile -> s"""
-        |object $mainClass{
-        | def main(args: Array[String]): Unit = {
-        |   class Foo(n: Long) extends java.sql.Time(n)
-        |   val x = new Foo(0L)
-        | }
-        |}
-        """.stripMargin)
+      Map(
+        sourceFile -> s"""|
+                          |object $mainClass{
+                          | def main(args: Array[String]): Unit = {
+                          |   class Foo(n: Long) extends java.sql.Time(n)
+                          |   val x = new Foo(0L)
+                          | }
+                          |}
+                          |""".stripMargin
+      )
     ) {
       case (config, result) =>
         assertEquals("unreachable", 2, result.unreachable.size)
@@ -126,14 +130,16 @@ class MissingSymbolsTest extends LinkerSpec {
   @Test def unreachableDelayedMethod(): Unit = {
     doesNotLink(
       entry = mainClass,
-      Map(sourceFile -> s"""
-        |object $mainClass{
-        |  def main(args: Array[String]): Unit = {
-        |    val theFields = this.getClass().getDeclaredFields
-        |    println(theFields)
-        |  }
-        |}
-        """.stripMargin)
+      Map(
+        sourceFile -> s"""|
+                          |object $mainClass{
+                          |  def main(args: Array[String]): Unit = {
+                          |    val theFields = this.getClass().getDeclaredFields
+                          |    println(theFields)
+                          |  }
+                          |}
+                          |""".stripMargin
+      )
     ) {
       case (config, result) =>
         // Testing if is able to get non-empty backtrace.
@@ -150,19 +156,21 @@ class MissingSymbolsTest extends LinkerSpec {
   @Test def unsupportedFeature(): Unit = {
     doesNotLink(
       entry = mainClass,
-      Map(sourceFile -> s"""
-        |object $mainClass{
-        |  import scala.scalanative.meta.LinktimeInfo._
-        |  def doUnsupported() = {
-        |    if(isWindows && isLinux && isMac) // mutal exclusion, would always yield false
-        |      scala.scalanative.runtime.UnsupportedFeature.threads
-        |    println("unreachable")
-        |  }
-        |  def main(args: Array[String]): Unit = {
-        |    doUnsupported()
-        |  }
-        |}
-        """.stripMargin)
+      Map(
+        sourceFile -> s"""|
+                          |object $mainClass{
+                          |  import scala.scalanative.meta.LinktimeInfo._
+                          |  def doUnsupported() = {
+                          |    if(isWindows && isLinux && isMac) // mutal exclusion, would always yield false
+                          |      scala.scalanative.runtime.UnsupportedFeature.threads
+                          |    println("unreachable")
+                          |  }
+                          |  def main(args: Array[String]): Unit = {
+                          |    doUnsupported()
+                          |  }
+                          |}
+                          |""".stripMargin
+      )
     ) {
       case (config, result) =>
         assertTrue(result.unreachable.isEmpty)

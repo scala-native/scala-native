@@ -25,11 +25,11 @@ class ExportedMembersTest {
       () =>
         NIRCompiler(
           _.compile(
-            """import scala.scalanative.unsafe._
-          |class ExportInClass() {
-          |  @exported
-          |  def foo(l: Int): Int = 42
-          |}""".stripMargin
+            """|import scala.scalanative.unsafe._
+               |class ExportInClass() {
+               |  @exported
+               |  def foo(l: Int): Int = 42
+               |}""".stripMargin
           )
         )
     )
@@ -42,13 +42,13 @@ class ExportedMembersTest {
       () =>
         NIRCompiler(
           _.compile(
-            """import scala.scalanative.unsafe._
-          |class Wrapper() {
-          | object inner {
-          |   @exported
-          |   def foo(l: Int): Int = 42
-          | }
-          |}""".stripMargin
+            """|import scala.scalanative.unsafe._
+               |class Wrapper() {
+               | object inner {
+               |   @exported
+               |   def foo(l: Int): Int = 42
+               | }
+               |}""".stripMargin
           )
         )
     )
@@ -61,10 +61,10 @@ class ExportedMembersTest {
       () =>
         NIRCompiler(
           _.compile(
-            """import scala.scalanative.unsafe._
-          |object lib {
-          | @exported private def foo(l: Int): Int = 42
-          |}""".stripMargin
+            """|import scala.scalanative.unsafe._
+               |object lib {
+               | @exported private def foo(l: Int): Int = 42
+               |}""".stripMargin
           )
         )
     )
@@ -77,14 +77,14 @@ class ExportedMembersTest {
       () =>
         NIRCompiler(
           _.compile(
-            """import scala.scalanative.unsafe._
-         |object lib {
-         | @exportAccessors
-         | private val foo: Int = 42
-         |
-         | // Without this in Scala 3 foo would be defined as val in <init> method
-         | def bar = this.foo
-         |}""".stripMargin
+            """|import scala.scalanative.unsafe._
+               |object lib {
+               | @exportAccessors
+               | private val foo: Int = 42
+               |
+               | // Without this in Scala 3 foo would be defined as val in <init> method
+               | def bar = this.foo
+               |}""".stripMargin
           )
         )
     )
@@ -97,10 +97,10 @@ class ExportedMembersTest {
       () =>
         NIRCompiler(
           _.compile(
-            """import scala.scalanative.unsafe._
-         |object lib {
-         | @exportAccessors protected val foo: Int = 42
-         |}""".stripMargin
+            """|import scala.scalanative.unsafe._
+               |object lib {
+               | @exportAccessors protected val foo: Int = 42
+               |}""".stripMargin
           )
         )
     )
@@ -113,10 +113,10 @@ class ExportedMembersTest {
       () =>
         NIRCompiler(
           _.compile(
-            """import scala.scalanative.unsafe._
-          |object lib {
-          | @exportAccessors protected var foo: Int = 42
-          |}""".stripMargin
+            """|import scala.scalanative.unsafe._
+               |object lib {
+               | @exportAccessors protected var foo: Int = 42
+               |}""".stripMargin
           )
         )
     )
@@ -129,10 +129,10 @@ class ExportedMembersTest {
       () =>
         NIRCompiler(
           _.compile(
-            """import scala.scalanative.unsafe._
-          |object lib {
-          | @exportAccessors protected var foo: Int = 42
-          |}""".stripMargin
+            """|import scala.scalanative.unsafe._
+               |object lib {
+               | @exportAccessors protected var foo: Int = 42
+               |}""".stripMargin
           )
         )
     )
@@ -145,10 +145,10 @@ class ExportedMembersTest {
       () =>
         NIRCompiler(
           _.compile(
-            """import scala.scalanative.unsafe._
-         |object lib {
-         | @exported protected def foo(l: Int): Int = 42
-         |}""".stripMargin
+            """|import scala.scalanative.unsafe._
+               |object lib {
+               | @exported protected def foo(l: Int): Int = 42
+               |}""".stripMargin
           )
         )
     )
@@ -161,11 +161,11 @@ class ExportedMembersTest {
       () =>
         NIRCompiler(
           _.compile(
-            """import scala.scalanative.unsafe._
-         |object lib {
-         | @exported def foo(l: Int): Int = 42
-         | @exported("foo") def bar(r: Int): Int = r
-         |}""".stripMargin
+            """|import scala.scalanative.unsafe._
+               |object lib {
+               | @exported def foo(l: Int): Int = 42
+               | @exported("foo") def bar(r: Int): Int = r
+               |}""".stripMargin
           )
         )
     )
@@ -178,10 +178,10 @@ class ExportedMembersTest {
       () =>
         NIRCompiler(
           _.compile(
-            """import scala.scalanative.unsafe._
-         |object lib {
-         | @exported val foo: Int = 42
-         |}""".stripMargin
+            """|import scala.scalanative.unsafe._
+               |object lib {
+               | @exported val foo: Int = 42
+               |}""".stripMargin
           )
         )
     )
@@ -194,10 +194,10 @@ class ExportedMembersTest {
       () =>
         NIRCompiler(
           _.compile(
-            """import scala.scalanative.unsafe._
-          |object lib {
-          | @exportAccessors def foo(): Int = 42
-          |}""".stripMargin
+            """|import scala.scalanative.unsafe._
+               |object lib {
+               | @exportAccessors def foo(): Int = 42
+               |}""".stripMargin
           )
         )
     )

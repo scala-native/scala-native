@@ -59,10 +59,10 @@ object Settings {
         Files.createDirectories(prePush.getParent)
         Files.write(
           prePush,
-          """#!/bin/sh
-          |set -eux
-          |CHECK_MODIFIED_ONLY=1 ./scripts/check-lint.sh
-          |""".stripMargin.getBytes()
+          """|#!/bin/sh
+             |set -eux
+             |CHECK_MODIFIED_ONLY=1 ./scripts/check-lint.sh
+             |""".stripMargin.getBytes()
         )
         prePush.toFile.setExecutable(true)
       }
@@ -385,10 +385,10 @@ object Settings {
   lazy val disabledTestsSettings = {
     def testsTaskUnsupported[T] = Def.task[T] {
       throw new MessageOnlyException(
-        s"""Usage of this task in ${(thisProject / name).value} project is not supported in this build.
-             |To run tests use explicit syntax containing name of project: <project_name>/<task>.
-             |You can also use one of predefined aliases: test-all, test-tools, test-runtime, test-scripted.
-             |""".stripMargin
+        s"""|Usage of this task in ${(thisProject / name).value} project is not supported in this build.
+            |To run tests use explicit syntax containing name of project: <project_name>/<task>.
+            |You can also use one of predefined aliases: test-all, test-tools, test-runtime, test-scripted.
+            |""".stripMargin
       )
     }
 

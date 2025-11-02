@@ -27,16 +27,16 @@ case class ScalaNativePartestOptions private (
   )
 
   def show: String =
-    s"""Scala Native options are:
-       |- optimized:       $optimize
-       |- mode:            $buildMode
-       |- gc:              $gc
-       |- lto:             $lto
-       |- showDiff:        $showDiff
-       |- testFilter:      ${testFilter.descr}
-       |- precompile libs: $shouldPrecompileLibraries
-       |- parallel tests:  ${parallelism.getOrElse("default")}
-       |""".stripMargin
+    s"""|Scala Native options are:
+        |- optimized:       $optimize
+        |- mode:            $buildMode
+        |- gc:              $gc
+        |- lto:             $lto
+        |- showDiff:        $showDiff
+        |- testFilter:      ${testFilter.descr}
+        |- precompile libs: $shouldPrecompileLibraries
+        |- parallel tests:  ${parallelism.getOrElse("default")}
+        |""".stripMargin
 }
 
 object ScalaNativePartestOptions {
