@@ -88,7 +88,7 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
     waitWithRepeat()
   }
 
-  private def waitAndReapChild(timeout: Option[Ptr[timespec]]): Boolean = try {
+  private def waitAndReapChild(timeout: Option[Ptr[timespec]]): Boolean = {
     /* This method is simple, but the __long__ explanation it requires
      * belongs in one place, not in each of its callers.
      *
@@ -111,9 +111,6 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
       ec.foreach(setCachedExitCode)
     }
     ok
-  } catch {
-    case _: InterruptedException if !Thread.currentThread().isInterrupted() =>
-      false
   }
 
   // corral handling timevalue conversion details, fill ts.
@@ -203,17 +200,10 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
     (fds + 0).events = (pollEvents.POLLIN | pollEvents.POLLRDNORM).toShort
 
     // 'null' sigmask will retain all current signals.
-    val ppollStatus = ppoll(fds, 1.toUSize, timeout.orNull, null)
-
-    if (ppollStatus < 0) {
-      // handled in the caller
-      if (errno == EINTR) throw new InterruptedException()
-      if (errno != EBADF)
-        throw new IOException(
-          s"waitFor pid=${_pid}, ppoll failed: ${LibcExt.strError()}"
-        )
-      true // not really but someone closed it so we shouldn't poll again
-    } else ppollStatus > 0
+    0 != UnixProcess.throwOnErrorRetryEINTR(_ != EBADF)(
+      ppoll(fds, 1.toUSize, timeout.orNull, null),
+      s"waitFor pid=${_pid}, ppoll failed: ${LibcExt.strError()}"
+    )
   }
 
   /* macOS & FreeBSD -- kevent
@@ -232,14 +222,10 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
      *     happy.
      */
 
-    val kq = kqueue()
-
-    if (kq == -1) {
-      if (errno == EINTR) throw new InterruptedException()
-      throw new IOException(
-        s"waitFor pid=${_pid} kqueue failed: ${LibcExt.strError()}"
-      )
-    }
+    val kq = UnixProcess.throwOnErrorRetryEINTR(
+      kqueue(),
+      s"waitFor pid=${_pid} kqueue failed"
+    )
 
     val childExitEvent = stackalloc[kevent]()
     val eventResult = stackalloc[kevent]()
@@ -254,7 +240,7 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
     childExitEvent.flags = (EV_ADD | EV_DISPATCH).toUShort
     childExitEvent.fflags = (NOTE_EXIT | NOTE_EXITSTATUS).toUInt
 
-    val status =
+    val status = UnixProcess.throwOnErrorRetryEINTR(
       kevent(
         kq,
         childExitEvent,
@@ -262,16 +248,13 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
         eventResult,
         1,
         timeout.orNull
-      )
+      ),
+      s"wait pid=${_pid}, kevent failed"
+    )
 
     unistd.close(kq) // Do not leak kq.
 
-    if (status < 0) {
-      if (errno == EINTR) throw new InterruptedException()
-      throw new IOException(
-        s"wait pid=${_pid}, kevent failed: ${LibcExt.strError()}"
-      )
-    } else status > 0
+    status > 0
   }
 }
 
@@ -399,9 +382,10 @@ private[process] object UnixProcessGen2 {
     }
 
     try {
-      val pid = unistd.fork()
-      if (pid == -1)
-        throw new IOException("Unable to fork process")
+      val pid = UnixProcess.throwOnError(
+        unistd.fork(),
+        "Unable to fork process"
+      )
       if (pid == 0) runChild()
       else {
         success = true
@@ -436,7 +420,7 @@ private[process] object UnixProcessGen2 {
 
     // posix_spawn_file_actions_t takes 80 bytes, so do not stackalloc.
     val fileActions = alloc[posix_spawn_file_actions_t]()
-    throwOnError(
+    UnixProcess.throwOnNonZero(
       posix_spawn_file_actions_init(fileActions),
       "posix_spawn_file_actions_init"
     )
@@ -474,7 +458,7 @@ private[process] object UnixProcessGen2 {
           unistd.STDERR_FILENO
         )
 
-      def closeSpawn(fd: CInt): Unit = throwOnError(
+      def closeSpawn(fd: CInt): Unit = UnixProcess.throwOnNonZero(
         posix_spawn_file_actions_addclose(fileActions, fd),
         s"posix_spawn_file_actions_addclose fd: $fd"
       )
@@ -514,10 +498,7 @@ private[process] object UnixProcessGen2 {
         status = spawn(shCmd, nullTerminate(ju.Arrays.asList(fallbackCmd)))
       }
 
-      if (status != 0) {
-        val msg = LibcExt.strError(status)
-        throw new IOException(s"Unable to posix_spawn process: $msg")
-      }
+      UnixProcess.throwOnNonZero(status, "Unable to posix_spawn process")
 
       success = true
       UnixProcess(createHandle(!pidPtr, builder), infds, outfds, errfds)
@@ -532,18 +513,10 @@ private[process] object UnixProcessGen2 {
         closePipe(outfds)
         closePipe(errfds)
       }
-      throwOnError(
+      UnixProcess.throwOnNonZero(
         posix_spawn_file_actions_destroy(fileActions),
         "posix_spawn_file_actions_destroy"
       )
-    }
-  }
-
-  private[process] def throwOnError(rc: CInt, msg: => String): CInt = {
-    if (rc != 0) {
-      throw new IOException(s"$msg Error code: $rc, Error number: $errno")
-    } else {
-      rc
     }
   }
 
@@ -564,7 +537,10 @@ private[process] object UnixProcessGen2 {
     if (redirect.`type`() != ProcessBuilder.Redirect.Type.PIPE) null
     else {
       val fds = alloc[CInt](2)
-      throwOnError(unistd.pipe(fds), s"Couldn't create $what pipe.")
+      UnixProcess.throwOnError(
+        unistd.pipe(fds),
+        s"Couldn't create $what pipe."
+      )
       fds
     }
 
@@ -583,10 +559,10 @@ private[process] object UnixProcessGen2 {
       oldfd: CInt,
       newfd: CInt,
       what: String
-  ): Unit = {
-    if (unistd.dup2(oldfd, newfd) == -1)
-      throw new IOException(s"Couldn't duplicate $what file descriptor $errno")
-  }
+  ): Unit = UnixProcess.throwOnErrorRetryEINTR(
+    unistd.dup2(oldfd, newfd),
+    s"Couldn't duplicate $what file descriptor"
+  )
 
   private def setupChildFDS(
       childFd: => CInt,
@@ -596,9 +572,10 @@ private[process] object UnixProcessGen2 {
     def openWith(flags: CInt, what: String): Unit = {
       val file = redirect.file()
       val mode = getModeFromOpenFlags(flags)
-      val fd = fcntl.open(getFileNameCString(file), flags, mode)
-      if (fd < 0)
-        throw new IOException(s"Unable to open $what file $file ($errno)")
+      val fd = UnixProcess.throwOnErrorRetryEINTR(
+        fcntl.open(getFileNameCString(file), flags, mode),
+        s"Unable to open $what file $file"
+      )
       dup2(fd, procFd, what)
       unistd.close(fd)
     }
@@ -621,13 +598,10 @@ private[process] object UnixProcessGen2 {
       oldfd: CInt,
       newfd: CInt,
       what: String
-  ): Unit = {
-    val status = posix_spawn_file_actions_adddup2(fileActions, oldfd, newfd)
-    if (status != 0)
-      throw new IOException(
-        s"Could not adddup2 $what file descriptor $newfd: $status"
-      )
-  }
+  ): Unit = UnixProcess.throwOnNonZero(
+    posix_spawn_file_actions_adddup2(fileActions, oldfd, newfd),
+    s"Could not adddup2 $what file descriptor $newfd"
+  )
 
   private def setupSpawnFDS(
       fileActions: Ptr[posix_spawn_file_actions_t],
@@ -640,12 +614,10 @@ private[process] object UnixProcessGen2 {
       val file = redirect.file()
       val f = getFileNameCString(file)
       val mode = getModeFromOpenFlags(flags)
-      val status =
-        posix_spawn_file_actions_addopen(fileActions, procFd, f, flags, mode)
-      if (status != 0)
-        throw new IOException(
-          s"Could not addopen $what fd=$procFd file=$file: $status"
-        )
+      UnixProcess.throwOnNonZero(
+        posix_spawn_file_actions_addopen(fileActions, procFd, f, flags, mode),
+        s"Could not addopen $what fd=$procFd file=$file"
+      )
     }
 
     redirect.`type`() match {
