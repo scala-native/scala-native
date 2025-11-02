@@ -14,7 +14,7 @@ jobs:
   test-runtime:
     name: Test runtime
     if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
-    runs-on: macos-13
+    runs-on: macos-15
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
@@ -50,7 +50,7 @@ jobs:
   test-runtime-ext:
     name: Test runtime extension
     if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
-    runs-on: macos-13
+    runs-on: macos-15
     needs: [test-runtime]
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
@@ -121,14 +121,14 @@ jobs:
             junitTestOutputsNative${{env.project-version}}/test;
             scalaPartestJunitTests${{env.project-version}}/test
         run: |
-          export LLVM_BIN="$(brew --prefix llvm@19)/bin"
+          export LLVM_BIN="$(brew --prefix llvm)/bin"
           $LLVM_BIN/clang --version
           sbt -J-Xmx5G "${TEST_COMMAND}"
 
   run-scripted-tests:
     name: Scripted tests
     if: github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
-    runs-on: macos-13
+    runs-on: macos-15
     strategy:
       fail-fast: false
       matrix:
@@ -138,20 +138,22 @@ jobs:
       - uses: ./.github/actions/macos-setup-env
         with:
           scala-version: ${{matrix.scala}}
+          llvm-version: latest
 
       - name: Test scripted
         run: |
-          export LLVM_BIN=$(brew --prefix llvm@15)/bin
+          export LLVM_BIN=$(brew --prefix llvm)/bin
+          $LLVM_BIN/clang --version
           sbt "test-scripted ${{matrix.scala}}"
 
   test-llvm-versions:
     if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
-    runs-on: macos-13
+    runs-on: macos-15
     strategy:
       fail-fast: false
       matrix:
         scala: [3]
-        llvm: [14, 15, 16, 17, 18, latest] # Last 3 stable versions. 15 is tested by default,  latest version == 19
+        llvm: [14, 15, 16, 17, 18, 19, 20, latest] # Latest version == 21
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/macos-setup-env
