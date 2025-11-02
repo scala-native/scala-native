@@ -1,7 +1,5 @@
 package java.io
 
-import java.util.Arrays
-import java.util.concurrent.ConcurrentLinkedDeque
 import java.{util => ju}
 
 import scala.annotation.tailrec
@@ -127,7 +125,7 @@ abstract class InputStream extends Closeable {
       if (totalBytesRead == len)
         buffer
       else if (totalBytesRead < len)
-        Arrays.copyOfRange(buffer, 0, totalBytesRead)
+        ju.Arrays.copyOfRange(buffer, 0, totalBytesRead)
       else { // should never happen
         throw new IOException(
           s"total bytes read ${totalBytesRead} > len argument ${len}"
@@ -136,17 +134,7 @@ abstract class InputStream extends Closeable {
     }
 
     def readLargeN(len: Int): Array[Byte] = {
-      /* The byteStore is not expected to be accessed concurrently.
-       * ConcurrentedLinkedDeque is used here because the Scala Native JSR-166
-       * code is newer, more studied, and likely to execute faster
-       * than the SN LinkedListDequeue implementation. FUD, not measurement.
-       *
-       * Using a Deque rather than, say, a ByteArrayOutputStream may briefly
-       * exceed the JDK documented upper bound of (2 * len) for memory
-       * usage. Given that we are in large N territory here, it is highly
-       * likely to reduce the number of data copies.
-       */
-      val byteStore = new ConcurrentLinkedDeque[Array[Byte]]
+      val byteStore = new ju.ArrayList[Array[Byte]](64) // not tiny nor wasteful
 
       var totalBytesRead = 0
       var lastChunkSize = 0
