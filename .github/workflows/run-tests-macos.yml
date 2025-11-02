@@ -138,6 +138,7 @@ jobs:
       - uses: ./.github/actions/macos-setup-env
         with:
           scala-version: ${{matrix.scala}}
+          llvm-version: latest
 
       - name: Test scripted
         run: |
