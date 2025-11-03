@@ -45,11 +45,24 @@
    project files and are not stand-alone and sufficient.
 
    * sbt project/plugins.sbt:
+
+     * projects using sbt version 1.11.0 or later can use
+
+     ```
+     resolvers += Resolver.sonatypeCentralSnapshots
+     ```
+
+     * earlier sbt versions use (also works for current sbt versions)
+
      ```
        resolvers +=
          "YourNameHere" at
            "https://central.sonatype.com/repository/maven-snapshots/"
 
+     ```
+   * In either case, add the plugin
+
+     ```
        addSbtPlugin("org.scala-native" %% "sbt-scala-native" %
                "0.5.10-20251101-14920c7-SNAPSHOT")
      ```
