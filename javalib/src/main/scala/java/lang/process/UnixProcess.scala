@@ -88,23 +88,29 @@ private[process] object UnixProcess {
   def waitpidNowNoECHILD(pid: pid_t): Option[Int] =
     waitpidNoECHILD(pid, WNOHANG)
 
-  def throwWith[A](rc: A, msg: => String): Nothing =
+  def throwWith[A](rc: A, errnum: Int, msg: => String): Nothing =
     throw new IOException(
-      s"$msg [res=$rc, errno=$errno]: ${LibcExt.strError()}"
+      s"$msg [res=$rc, errno=$errnum]: ${LibcExt.strError(errnum)}"
     )
 
-  def throwIf[A](rc: A, msg: => String)(f: A => Boolean): A = {
-    if (f(rc)) throwWith(rc, msg)
+  def throwWith[A](rc: A, msg: => String): Nothing =
+    throwWith(rc, errno, msg)
+
+  def throwIf[A](rc: A, errnum: => Int, msg: => String)(f: A => Boolean): A = {
+    if (f(rc)) throwWith(rc, errnum, msg)
     rc
   }
+
+  def throwIf[A](rc: A, msg: => String)(f: A => Boolean): A =
+    throwIf(rc, errno, msg)(f)
 
   @inline
   def throwOnError(rc: CInt, msg: => String): CInt =
     throwIf(rc, msg)(_ == -1)
 
   @inline
-  def throwOnNonZero(rc: CInt, msg: => String): CInt =
-    throwIf(rc, msg)(_ != 0)
+  def throwOnErrnum(rc: CInt, msg: => String): CInt =
+    throwIf(rc, rc, msg)(_ != 0)
 
   @inline
   def throwOnErrorRetryEINTR(rc: => CInt, msg: => String): CInt = {
