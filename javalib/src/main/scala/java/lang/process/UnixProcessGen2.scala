@@ -420,7 +420,7 @@ private[process] object UnixProcessGen2 {
 
     // posix_spawn_file_actions_t takes 80 bytes, so do not stackalloc.
     val fileActions = alloc[posix_spawn_file_actions_t]()
-    UnixProcess.throwOnNonZero(
+    UnixProcess.throwOnErrnum(
       posix_spawn_file_actions_init(fileActions),
       "posix_spawn_file_actions_init"
     )
@@ -458,7 +458,7 @@ private[process] object UnixProcessGen2 {
           unistd.STDERR_FILENO
         )
 
-      def closeSpawn(fd: CInt): Unit = UnixProcess.throwOnNonZero(
+      def closeSpawn(fd: CInt): Unit = UnixProcess.throwOnErrnum(
         posix_spawn_file_actions_addclose(fileActions, fd),
         s"posix_spawn_file_actions_addclose fd: $fd"
       )
@@ -498,7 +498,7 @@ private[process] object UnixProcessGen2 {
         status = spawn(shCmd, nullTerminate(ju.Arrays.asList(fallbackCmd)))
       }
 
-      UnixProcess.throwOnNonZero(status, "Unable to posix_spawn process")
+      UnixProcess.throwOnErrnum(status, "Unable to posix_spawn process")
 
       success = true
       UnixProcess(createHandle(!pidPtr, builder), infds, outfds, errfds)
@@ -513,7 +513,7 @@ private[process] object UnixProcessGen2 {
         closePipe(outfds)
         closePipe(errfds)
       }
-      UnixProcess.throwOnNonZero(
+      UnixProcess.throwOnErrnum(
         posix_spawn_file_actions_destroy(fileActions),
         "posix_spawn_file_actions_destroy"
       )
@@ -598,7 +598,7 @@ private[process] object UnixProcessGen2 {
       oldfd: CInt,
       newfd: CInt,
       what: String
-  ): Unit = UnixProcess.throwOnNonZero(
+  ): Unit = UnixProcess.throwOnErrnum(
     posix_spawn_file_actions_adddup2(fileActions, oldfd, newfd),
     s"Could not adddup2 $what file descriptor $newfd"
   )
@@ -614,7 +614,7 @@ private[process] object UnixProcessGen2 {
       val file = redirect.file()
       val f = getFileNameCString(file)
       val mode = getModeFromOpenFlags(flags)
-      UnixProcess.throwOnNonZero(
+      UnixProcess.throwOnErrnum(
         posix_spawn_file_actions_addopen(fileActions, procFd, f, flags, mode),
         s"Could not addopen $what fd=$procFd file=$file"
       )
