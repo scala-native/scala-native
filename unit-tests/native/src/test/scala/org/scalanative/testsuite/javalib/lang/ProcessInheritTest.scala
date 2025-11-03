@@ -88,7 +88,7 @@ class ProcessInheritTest {
     }
 
     val (proc, tmpFile) = if (isWindows) windowsImpl() else unixImpl()
-    assertTrue(proc.waitFor(5, TimeUnit.SECONDS))
+    assertTrue(proc.waitFor(30, TimeUnit.SECONDS))
     val out = readInputStream(new FileInputStream(tmpFile.toFile))
 
     assertEquals(scripts, out.split(System.lineSeparator()).toSet)

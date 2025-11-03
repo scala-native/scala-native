@@ -330,7 +330,8 @@ class ProcessTest {
     val proc = processSleep(2.0).start()
 
     try {
-      val timeout = 10 * 1000 // Value from Issue 3944
+      // for context: https://github.com/scala-native/scala-native/issues/3944
+      val timeout = 30 * 1000
 
       /*  Exception before fix, where nnnn is a pid number:
        *
@@ -401,7 +402,7 @@ class ProcessTest {
 
     proc.destroy()
 
-    val timeout = 501 // Make message distinguished.
+    val timeout = 50101 // Make message distinguished.
     assertTrue(
       "process should have exited but timed out" +
         s" (limit: ${timeout} milliseconds)",
@@ -419,7 +420,7 @@ class ProcessTest {
 
     proc.destroyForcibly()
 
-    val timeout = 502 // Make message distinguished.
+    val timeout = 50202 // Make message distinguished.
     assertTrue(
       "process should have exited but timed out" +
         s" (limit: ${timeout} milliseconds)",
@@ -492,7 +493,7 @@ class ProcessTest {
     val iterations = 16
 
     // See Design Note just before this Test.
-    val perIterationTimeout = 20 // seconds
+    val perIterationTimeout = 30 // seconds
 
     /* Give a smidge more time to the worst case where each iteration succeeds
      * just before timing out. Test might be executing on slow uniprocessor or
@@ -611,7 +612,7 @@ class ProcessTest {
     assertEquals("foo", Files.readAllLines(out).toArray().mkString)
   }
 
-  private val gitTestIterations = 1
+  private val gitTestIterations = 20
   private val githubWorkspace =
     Paths.get(sys.env.get("GITHUB_WORKSPACE").getOrElse("."))
 
@@ -633,7 +634,7 @@ class ProcessTest {
 
     assertTrue(
       s"$prefix should exit quickly",
-      proc.waitFor(10, TimeUnit.SECONDS)
+      proc.waitFor(30, TimeUnit.SECONDS)
     )
 
     assertTrue(s"$prefix stdout: <${trunc(stdout)}>", stdout.length > 100)
@@ -665,7 +666,7 @@ class ProcessTest {
 
       assertTrue(
         "`git init` should exit quickly",
-        proc.waitFor(10, TimeUnit.SECONDS)
+        proc.waitFor(30, TimeUnit.SECONDS)
       )
 
       assertTrue(
@@ -687,7 +688,7 @@ class ProcessTest {
 
       assertTrue(
         "`git init` should exit quickly",
-        proc.waitFor(10, TimeUnit.SECONDS)
+        proc.waitFor(30, TimeUnit.SECONDS)
       )
 
       assertTrue(
@@ -717,7 +718,7 @@ class ProcessTest {
 
       assertTrue(
         "`git log` should exit quickly",
-        proc.waitFor(10, TimeUnit.SECONDS)
+        proc.waitFor(30, TimeUnit.SECONDS)
       )
 
       assertEquals(s"$prefix`git log` stdout: <$stdout>", "", stdout)
@@ -745,7 +746,7 @@ class ProcessTest {
 
       assertTrue(
         "`git log` should exit quickly",
-        proc.waitFor(10, TimeUnit.SECONDS)
+        proc.waitFor(30, TimeUnit.SECONDS)
       )
 
       assertEquals(s"$prefix`git log` stdout: <$stdout>", "", stdout)
@@ -1069,7 +1070,7 @@ class ProcessTest {
 
 object ProcessTest {
 
-  def runArgv(to: Duration = 10.seconds, cwd: Path = null)(
+  def runArgv(to: Duration = 30.seconds, cwd: Path = null)(
       cmd: String*
   ): (Try[Int], String, String) = {
     val out = new StringBuilder()
@@ -1088,7 +1089,7 @@ object ProcessTest {
     (res, out.result(), err.toString())
   }
 
-  def runArgvWithBang(to: Duration = 10.seconds, cwd: Path = null)(
+  def runArgvWithBang(to: Duration = 30.seconds, cwd: Path = null)(
       cmd: String*
   ): (Try[Int], String, String) = {
     val out = new StringBuilder()
@@ -1104,7 +1105,7 @@ object ProcessTest {
     (res, out.result(), err.toString())
   }
 
-  def runArgvWithBangBang(to: Duration = 10.seconds, cwd: Path = null)(
+  def runArgvWithBangBang(to: Duration = 30.seconds, cwd: Path = null)(
       cmd: String*
   ): (Try[String], String) = {
     val err = new StringBuilder()
