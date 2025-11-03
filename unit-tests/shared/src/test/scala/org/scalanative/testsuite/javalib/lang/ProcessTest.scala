@@ -665,19 +665,19 @@ class ProcessTest {
       val stderr = Source.fromInputStream(proc.getErrorStream).mkString
 
       assertTrue(
-        "`git init` should exit quickly",
+        s"$prefix`git init` should exit quickly",
         proc.waitFor(30, TimeUnit.SECONDS)
       )
 
       assertTrue(
-        s"`git init` stdout: <$stdout>",
+        s"$prefix`git init` stdout: <$stdout>",
         stdout.startsWith("Initialized empty Git repository in ")
       )
 
       assertEquals(s"$prefix`git init` stderr: <$stderr>", "", stderr)
 
-      assertTrue(prefix + "`git init` exited", !proc.isAlive)
-      assertEquals(prefix + "`git init` exit code", 0, proc.exitValue())
+      assertTrue(s"$prefix`git init` exited", !proc.isAlive)
+      assertEquals(s"$prefix`git init` exit code", 0, proc.exitValue())
     }
 
     // run init the second time
@@ -687,23 +687,23 @@ class ProcessTest {
       val stderr = Source.fromInputStream(proc.getErrorStream).mkString
 
       assertTrue(
-        "`git init` should exit quickly",
+        s"$prefix`git init` should exit quickly",
         proc.waitFor(30, TimeUnit.SECONDS)
       )
 
       assertTrue(
-        s"`git init` stdout: <$stdout>",
+        s"$prefix`git init` stdout: <$stdout>",
         stdout.startsWith("Reinitialized existing Git repository in ")
       )
 
       assertEquals(
-        s"`git init` stderr: <$stderr>",
+        s"$prefix`git init` stderr: <$stderr>",
         "warning: re-init: ignored --initial-branch=main\n",
         stderr
       )
 
-      assertTrue(prefix + "`git init` exited", !proc.isAlive)
-      assertEquals(prefix + "`git init` exit code", 0, proc.exitValue())
+      assertTrue(s"$prefix`git init` exited", !proc.isAlive)
+      assertEquals(s"$prefix`git init` exit code", 0, proc.exitValue())
     }
 
     // run log, hoping it fails
@@ -717,20 +717,20 @@ class ProcessTest {
       val stderr = Source.fromInputStream(proc.getErrorStream).mkString
 
       assertTrue(
-        "`git log` should exit quickly",
+        s"$prefix`git log` should exit quickly",
         proc.waitFor(30, TimeUnit.SECONDS)
       )
 
       assertEquals(s"$prefix`git log` stdout: <$stdout>", "", stdout)
 
       assertEquals(
-        s"`git log` stderr: <$stderr>",
+        s"$prefix`git log` stderr: <$stderr>",
         "fatal: your current branch 'main' does not have any commits yet\n",
         stderr
       )
 
-      assertTrue(prefix + "`git log` exited", !proc.isAlive)
-      assertEquals(prefix + "`git log` exit code", 128, proc.exitValue())
+      assertTrue(s"$prefix`git log` exited", !proc.isAlive)
+      assertEquals(s"$prefix`git log` exit code", 128, proc.exitValue())
     }
 
     // run log, hoping it fails, this time specifying directory in ProcessBuilder
@@ -745,20 +745,20 @@ class ProcessTest {
       val stderr = Source.fromInputStream(proc.getErrorStream).mkString
 
       assertTrue(
-        "`git log` should exit quickly",
+        s"$prefix`git log` should exit quickly",
         proc.waitFor(30, TimeUnit.SECONDS)
       )
 
       assertEquals(s"$prefix`git log` stdout: <$stdout>", "", stdout)
 
       assertEquals(
-        s"`git log` stderr: <$stderr>",
+        s"$prefix`git log` stderr: <$stderr>",
         "fatal: your current branch 'main' does not have any commits yet\n",
         stderr
       )
 
-      assertTrue(prefix + "`git log` exited", !proc.isAlive)
-      assertEquals(prefix + "`git log` exit code", 128, proc.exitValue())
+      assertTrue(s"$prefix`git log` exited", !proc.isAlive)
+      assertEquals(s"$prefix`git log` exit code", 128, proc.exitValue())
     }
 
   }
@@ -794,8 +794,8 @@ class ProcessTest {
     locally {
       val (res, stdout, stderr) = ProcessTest.runArgv()(argvInit: _*)
       res match {
-        case Success(x) => assertEquals(prefix + "`git init` exit code", 0, x)
-        case Failure(x) => fail(prefix + "`git init` failed: " + x)
+        case Success(x) => assertEquals(s"$prefix`git init` exit code", 0, x)
+        case Failure(x) => fail(s"$prefix`git init` failed: " + x)
       }
 
       assertTrue(
@@ -810,17 +810,17 @@ class ProcessTest {
     locally {
       val (res, stdout, stderr) = ProcessTest.runArgv()(argvInit: _*)
       res match {
-        case Success(x) => assertEquals(prefix + "`git init` exit code", 0, x)
-        case Failure(x) => fail(prefix + "`git init` failed: " + x)
+        case Success(x) => assertEquals(s"$prefix`git init` exit code", 0, x)
+        case Failure(x) => fail(s"$prefix`git init` failed: " + x)
       }
 
       assertTrue(
-        s"`git init` stdout: <$stdout>",
+        s"$prefix`git init` stdout: <$stdout>",
         stdout.startsWith("Reinitialized existing Git repository in ")
       )
 
       assertEquals(
-        s"`git init` stderr: <$stderr>",
+        s"$prefix`git init` stderr: <$stderr>",
         "warning: re-init: ignored --initial-branch=main\n",
         stderr
       )
@@ -831,13 +831,13 @@ class ProcessTest {
       val (res, stdout, stderr) =
         ProcessTest.runArgv()("git", "-C", dir.toString, "log")
       res match {
-        case Success(x) => assertEquals(prefix + "`git log` exit code", 128, x)
-        case Failure(x) => fail(prefix + "`git log` failed: " + x)
+        case Success(x) => assertEquals(s"$prefix`git log` exit code", 128, x)
+        case Failure(x) => fail(s"$prefix`git log` failed: " + x)
       }
 
       assertEquals(s"$prefix`git log` stdout: <$stdout>", "", stdout)
       assertEquals(
-        s"`git log` stderr: <$stderr>",
+        s"$prefix`git log` stderr: <$stderr>",
         "fatal: your current branch 'main' does not have any commits yet\n",
         stderr
       )
@@ -847,13 +847,13 @@ class ProcessTest {
     locally {
       val (res, stdout, stderr) = ProcessTest.runArgv(cwd = dir)("git", "log")
       res match {
-        case Success(x) => assertEquals(prefix + "`git log` exit code", 128, x)
-        case Failure(x) => fail(prefix + "`git log` failed: " + x)
+        case Success(x) => assertEquals(s"$prefix`git log` exit code", 128, x)
+        case Failure(x) => fail(s"$prefix`git log` failed: " + x)
       }
 
       assertEquals(s"$prefix`git log` stdout: <$stdout>", "", stdout)
       assertEquals(
-        s"`git log` stderr: <$stderr>",
+        s"$prefix`git log` stderr: <$stderr>",
         "fatal: your current branch 'main' does not have any commits yet\n",
         stderr
       )
@@ -893,8 +893,8 @@ class ProcessTest {
       val (res, stdout, stderr) =
         ProcessTest.runArgvWithBang()(argvInit: _*)
       res match {
-        case Success(x) => assertEquals(prefix + "`git init` exit code", 0, x)
-        case Failure(x) => fail(prefix + "`git init` failed: " + x)
+        case Success(x) => assertEquals(s"$prefix`git init` exit code", 0, x)
+        case Failure(x) => fail(s"$prefix`git init` failed: " + x)
       }
 
       assertTrue(
@@ -910,17 +910,17 @@ class ProcessTest {
       val (res, stdout, stderr) =
         ProcessTest.runArgvWithBang()(argvInit: _*)
       res match {
-        case Success(x) => assertEquals(prefix + "`git init` exit code", 0, x)
-        case Failure(x) => fail(prefix + "`git init` failed: " + x)
+        case Success(x) => assertEquals(s"$prefix`git init` exit code", 0, x)
+        case Failure(x) => fail(s"$prefix`git init` failed: " + x)
       }
 
       assertTrue(
-        s"`git init` stdout: <$stdout>",
+        s"$prefix`git init` stdout: <$stdout>",
         stdout.startsWith("Reinitialized existing Git repository in ")
       )
 
       assertEquals(
-        s"`git init` stderr: <$stderr>",
+        s"$prefix`git init` stderr: <$stderr>",
         "warning: re-init: ignored --initial-branch=main\n",
         stderr
       )
@@ -931,13 +931,13 @@ class ProcessTest {
       val (res, stdout, stderr) =
         ProcessTest.runArgvWithBang()("git", "-C", dir.toString, "log")
       res match {
-        case Success(x) => assertEquals(prefix + "`git log` exit code", 128, x)
-        case Failure(x) => fail(prefix + "`git log` failed: " + x)
+        case Success(x) => assertEquals(s"$prefix`git log` exit code", 128, x)
+        case Failure(x) => fail(s"$prefix`git log` failed: " + x)
       }
 
       assertEquals(s"$prefix`git log` stdout: <$stdout>", "", stdout)
       assertEquals(
-        s"`git log` stderr: <$stderr>",
+        s"$prefix`git log` stderr: <$stderr>",
         "fatal: your current branch 'main' does not have any commits yet\n",
         stderr
       )
@@ -948,13 +948,13 @@ class ProcessTest {
       val (res, stdout, stderr) =
         ProcessTest.runArgvWithBang(cwd = dir)("git", "log")
       res match {
-        case Success(x) => assertEquals(prefix + "`git log` exit code", 128, x)
-        case Failure(x) => fail(prefix + "`git log` failed: " + x)
+        case Success(x) => assertEquals(s"$prefix`git log` exit code", 128, x)
+        case Failure(x) => fail(s"$prefix`git log` failed: " + x)
       }
 
       assertEquals(s"$prefix`git log` stdout: <$stdout>", "", stdout)
       assertEquals(
-        s"`git log` stderr: <$stderr>",
+        s"$prefix`git log` stderr: <$stderr>",
         "fatal: your current branch 'main' does not have any commits yet\n",
         stderr
       )
@@ -994,10 +994,10 @@ class ProcessTest {
       res match {
         case Success(x) =>
           assertTrue(
-            s"`git init` stdout: <$x>",
+            s"$prefix`git init` stdout: <$x>",
             x.startsWith("Initialized empty Git repository in ")
           )
-        case Failure(x) => fail(prefix + "`git init` failed: " + x)
+        case Failure(x) => fail(s"$prefix`git init` failed: " + x)
       }
 
       assertEquals(s"$prefix`git init` stderr: <$stderr>", "", stderr)
@@ -1009,14 +1009,14 @@ class ProcessTest {
       res match {
         case Success(x) =>
           assertTrue(
-            s"`git init` stdout: <$x>",
+            s"$prefix`git init` stdout: <$x>",
             x.startsWith("Reinitialized existing Git repository in ")
           )
-        case Failure(x) => fail(prefix + "`git init` failed: " + x)
+        case Failure(x) => fail(s"$prefix`git init` failed: " + x)
       }
 
       assertEquals(
-        s"`git init` stderr: <$stderr>",
+        s"$prefix`git init` stderr: <$stderr>",
         "warning: re-init: ignored --initial-branch=main\n",
         stderr
       )
@@ -1027,17 +1027,17 @@ class ProcessTest {
       val (res, stderr) =
         ProcessTest.runArgvWithBangBang()("git", "-C", dir.toString, "log")
       res match {
-        case Success(x) => fail(prefix + "`git log` succeeded: " + x)
+        case Success(x) => fail(s"$prefix`git log` succeeded: " + x)
         case Failure(x) =>
           assertEquals(
-            s"`git log` failed: <$x>",
+            s"$prefix`git log` failed: <$x>",
             "Nonzero exit value: 128",
             x.getMessage()
           )
       }
 
       assertEquals(
-        s"`git log` stderr: <$stderr>",
+        s"$prefix`git log` stderr: <$stderr>",
         "fatal: your current branch 'main' does not have any commits yet\n",
         stderr
       )
@@ -1048,17 +1048,17 @@ class ProcessTest {
       val (res, stderr) =
         ProcessTest.runArgvWithBangBang(cwd = dir)("git", "log")
       res match {
-        case Success(x) => fail(prefix + "`git log` succeeded: " + x)
+        case Success(x) => fail(s"$prefix`git log` succeeded: " + x)
         case Failure(x) =>
           assertEquals(
-            s"`git log` failed: <$x>",
+            s"$prefix`git log` failed: <$x>",
             "Nonzero exit value: 128",
             x.getMessage()
           )
       }
 
       assertEquals(
-        s"`git log` stderr: <$stderr>",
+        s"$prefix`git log` stderr: <$stderr>",
         "fatal: your current branch 'main' does not have any commits yet\n",
         stderr
       )
