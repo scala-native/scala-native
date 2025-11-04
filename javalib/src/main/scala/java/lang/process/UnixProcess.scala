@@ -57,7 +57,7 @@ private[process] object UnixProcess {
     if (LinktimeInfo.is32BitPlatform) {
       false
     } else if (LinktimeInfo.isLinux) {
-      LinuxOsSpecific.hasPidfdOpen()
+      scala.scalanative.linux.pidfd.has_pidfd_open()
     } else if ((LinktimeInfo.isMac) || (LinktimeInfo.isFreeBSD)) {
       // Other BSDs should work but have not been exercised.
       true

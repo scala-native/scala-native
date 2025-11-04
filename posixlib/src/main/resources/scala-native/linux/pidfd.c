@@ -1,6 +1,6 @@
-#if (defined(SCALANATIVE_COMPILE_ALWAYS) ||                                    \
-     defined(__SCALANATIVE_JAVALIB_SYS_LINUX_SYSCALL)) &&                      \
-    defined(__linux__)
+#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_POSIX_PIDFD)
+
+#ifdef __linux__
 
 #if __has_include(<sys/syscall.h>) // Should almost always be true
 #include <sys/syscall.h>
@@ -38,7 +38,7 @@
 #include <unistd.h>
 
 // pidfd_open was first introduced in Linux 5.3. Be sure to check return status.
-int scalanative_linux_pidfd_open(pid_t pid, unsigned int flags) {
+int scalanative_pidfd_open(pid_t pid, unsigned int flags) {
 #if (SYS_pidfd_open <= 0)
     return -1;
 #else
@@ -46,7 +46,7 @@ int scalanative_linux_pidfd_open(pid_t pid, unsigned int flags) {
 #endif
 }
 
-bool scalanative_linux_has_pidfd_open() {
+bool scalanative_has_pidfd_open() {
 #if (SYS_pidfd_open <= 0)
     return false; // SYS_pidfd_open not in syscall.h, so probably not in this
                   // kernel
@@ -59,10 +59,13 @@ bool scalanative_linux_has_pidfd_open() {
      */
     int pid = getpid(); // self
 
-    int pidfd = scalanative_linux_pidfd_open(pid, 0);
+    int pidfd = scalanative_pidfd_open(pid, 0);
     close(pidfd);
 
     return pidfd > 0;
 #endif
 }
+
 #endif // __linux__
+
+#endif // __SCALANATIVE_POSIX_PIDFD_OPEN

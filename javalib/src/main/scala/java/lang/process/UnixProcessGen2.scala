@@ -191,7 +191,7 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
    * Return true if the call shouldn't be tried again.
    */
   private def linuxWaitForImpl(timeout: Option[Ptr[timespec]]): Boolean = {
-    import LinuxOsSpecific.Extern._
+    import scalanative.linux.ppoll._
 
     // epoll() is not used in this method since only one fd is involved.
 
@@ -283,7 +283,7 @@ private[process] object UnixProcessGen2 {
   ): UnixProcessHandleGen2 = {
     val pidFd =
       if (LinktimeInfo.isLinux) {
-        import LinuxOsSpecific.Extern._
+        import scalanative.linux.pidfd._
         val fd = pidfd_open(pid, 0.toUInt)
         if (fd == -1) {
           val msg = s"pidfd_open($pid) failed: ${LibcExt.strError()}"
