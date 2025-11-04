@@ -210,8 +210,7 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
    * Return true if the call shouldn't be tried again.
    */
   private def bsdWaitForImpl(timeout: Option[Ptr[timespec]]): Boolean = {
-    import BsdOsSpecific._
-    import BsdOsSpecific.Extern._
+    import scalanative.bsd.kevent._
 
     /* Design Note:
      *     This first implementation creates a kqueue() on each & every
