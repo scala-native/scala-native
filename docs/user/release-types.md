@@ -28,4 +28,70 @@
    currently, but not guaranteed to stay, 3 months. For complex reasons,
    there is no easy way to list prior SNAPSHOT releases.
 
+
+### Using Latest releases   
+
+   This information is provided as a working example. It  is correct as
+   of publication but highly subject
+   to unannounced change, particularly sbt and mill details.
+
+   Latest releases are published to:
+     "https://central.sonatype.com/repository/maven-snapshots/"
+
+   A project needs to have specified a resolver for that repository.
+   See the original sbt and mill documentation for the latest details
+
+   These snippets are intended to be merged into complete example or existing 
+   project files and are not stand-alone and sufficient.
+
+   * sbt project/plugins.sbt:
+
+     * projects using sbt version 1.11.0 or later can use
+
+     ```
+     resolvers += Resolver.sonatypeCentralSnapshots
+     ```
+
+     * earlier sbt versions use (also works for current sbt versions)
+
+     ```
+       resolvers +=
+         "YourNameHere" at
+           "https://central.sonatype.com/repository/maven-snapshots/"
+
+     ```
+   * In either case, add the plugin
+
+     ```
+       addSbtPlugin("org.scala-native" %% "sbt-scala-native" %
+               "0.5.10-20251101-14920c7-SNAPSHOT")
+     ```
+
+   * mill (1.0.6) build.mill:
+     ```
+     import coursier.maven.MavenRepository
+
+     object `<yourPackageHere>` extends ScalaNativeModule {
+
+       // Earlier Mill versions used T.task
+
+       def repositoriesTask = Task.Anon { super.repositoriesTask() ++ Seq(
+            MavenRepository(
+              "https://central.sonatype.com/repository/maven-snapshots/"
+            )
+           )
+       }
+	   
+	   def scalaNativeVersion = "0.5.10-20251101-14920c7-SNAPSHOT"
+	   
+     } 
+     ```
+
+   * To determine that the desired SNAPSHOT is being used:
+     ```
+     $ # Or Mill equivalent
+     sbt> show libraryDependencies 
+     ...
+     [info] * org.scala-native:javalib:0.5.10-20251101-14920c7-SNAPSHOT
+     ```
 Continue to [lib](../lib/communitylib.md)
