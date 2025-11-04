@@ -381,11 +381,18 @@ private[process] object UnixProcessGen2 {
       throw new IOException(s"Failed to create process for command: $cmd")
     }
 
+    @tailrec
+    def fork(attempt: Int = 0): Int = {
+      val pid = unistd.fork()
+      if (pid == -1 && errno == EAGAIN && attempt < 4) {
+        // start with 16ms, end with 128ms
+        Thread.sleep(2 << (attempt + 4))
+        fork(attempt + 1)
+      } else pid
+    }
+
     try {
-      val pid = UnixProcess.throwOnError(
-        unistd.fork(),
-        "Unable to fork process"
-      )
+      val pid = UnixProcess.throwOnError(fork(0), "Unable to fork process")
       if (pid == 0) runChild()
       else {
         success = true
@@ -477,14 +484,22 @@ private[process] object UnixProcessGen2 {
        * Some shells (bash, ???) will also execute scripts with initial
        * shebang (#!).
        */
-      def spawn(exec: String, argv: Ptr[CString]): CInt = posix_spawn(
-        pidPtr,
-        toCString(exec),
-        fileActions,
-        null, // attrp
-        argv,
-        envp
-      )
+      @tailrec
+      def spawn(exec: String, argv: Ptr[CString], attempt: Int = 0): CInt = {
+        val status = posix_spawn(
+          pidPtr,
+          toCString(exec),
+          fileActions,
+          null, // attrp
+          argv,
+          envp
+        )
+        if (status == EAGAIN && attempt < 4) {
+          // start with 16ms, end with 128ms
+          Thread.sleep(2 << (attempt + 4))
+          spawn(exec, argv, attempt + 1)
+        } else status
+      }
 
       var status = ENOEXEC
       val execIter = binaryPaths(builder.environment(), cmd.get(0))
