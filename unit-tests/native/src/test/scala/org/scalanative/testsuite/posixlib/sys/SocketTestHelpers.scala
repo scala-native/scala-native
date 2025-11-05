@@ -306,7 +306,7 @@ object SocketTestHelpers {
     } else {
       val fds = stackalloc[struct_pollfd](1)
       (fds + 0).fd = fd
-      (fds + 0).events = pollEvents.POLLIN | pollEvents.POLLRDNORM
+      (fds + 0).events = (pollEvents.POLLIN | pollEvents.POLLRDNORM).toShort
 
       errno = 0
 

@@ -1,9 +1,10 @@
 package scala.scalanative
 package posix
 
-import scalanative.unsafe._
+import unsafe._
 
 @extern
+@define("__SCALANATIVE_POSIX_POLL")
 object poll {
 
   // See Usage note below. Valid values capped by FOPEN_MAX in underlying OS.
@@ -65,33 +66,61 @@ object poll {
 
 }
 
+@extern
+@define("__SCALANATIVE_POSIX_POLL")
 object pollEvents {
 
-  final val POLLIN = 0x001 // Data ready to be read
-  final val POLLPRI = 0x002 // Urgent data ready to be read
-  final val POLLOUT = 0x004 // Writing now will not block
+  @name("scalanative_pollin")
+  def POLLIN: CInt = extern // Data ready to be read
+
+  @name("scalanative_pollpri")
+  def POLLPRI: CInt = extern // Urgent data ready to be read
+
+  @name("scalanative_pollout")
+  def POLLOUT: CInt = extern // Writing now will not block
 
   // XOpen events
-  final val POLLRDNORM = 0x040 // Normal data may be read
-  final val POLLRDBAND = 0x080 // Priority data may be read
-  final val POLLWRNORM = 0x100 // Writing now will not block
-  final val POLLWRBAND = 0x200 // Priority data may be written
+
+  @name("scalanative_pollrdnorm")
+  def POLLRDNORM: CInt = extern // Normal data may be read
+
+  @name("scalanative_pollrdband")
+  def POLLRDBAND: CInt = extern // Priority data may be read
+
+  @name("scalanative_pollwrnorm")
+  def POLLWRNORM: CInt = extern // Writing now will not block
+
+  @name("scalanative_pollwrband")
+  def POLLWRBAND: CInt = extern // Priority data may be written
 
   // Always checked in revents
-  final val POLLERR = 0x008 // Error condition
-  final val POLLHUP = 0x010 // Hung up
-  final val POLLNVAL = 0x020 // Invalid polling request
+
+  @name("scalanative_pollerr")
+  def POLLERR: CInt = extern // Error condition
+
+  @name("scalanative_pollhup")
+  def POLLHUP: CInt = extern // Hung up
+
+  @name("scalanative_pollnval")
+  def POLLNVAL: CInt = extern // Invalid polling request
+
 }
 
 object pollOps {
   import poll._
 
+  // scalafmt: { align.preset = more }
+
   implicit class pollOps(val ptr: Ptr[struct_pollfd]) extends AnyVal {
-    def fd: CInt = ptr._1
-    def events: pollEvent_t = ptr._2
+    def fd: CInt             = ptr._1
+    def events: pollEvent_t  = ptr._2
     def revents: pollEvent_t = ptr._3
-    def fd_=(v: CInt): Unit = ptr._1 = v
-    def events_=(v: pollEvent_t): Unit = ptr._2 = v
+
+    def fd_=(v: CInt): Unit             = ptr._1 = v
+    def events_=(v: pollEvent_t): Unit  = ptr._2 = v
     def revents_=(v: pollEvent_t): Unit = ptr._3 = v
   }
+
+  // scalafmt: { align.preset = none }
+
 }

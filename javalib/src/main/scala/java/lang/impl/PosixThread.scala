@@ -207,7 +207,7 @@ private[java] class PosixThread(
     if (!thread.isInterrupted()) try {
       val fds = stackalloc[struct_pollfd]()
       fds.fd = !pipefd.at(0)
-      fds.events = POLLIN
+      fds.events = POLLIN.toShort
 
       try
         while (millis > 0) {
