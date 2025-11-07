@@ -91,7 +91,7 @@ private[net] class UnixPlainSocketImpl extends AbstractPlainSocketImpl {
 
     pollFd.fd = fd.fd
     pollFd.revents = 0
-    pollFd.events = POLLIN
+    pollFd.events = POLLIN.toShort
 
     val pollRes = poll(pollFd, nAlloc, timeout)
     val revents = pollFd.revents
