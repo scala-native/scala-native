@@ -1,7 +1,7 @@
 package java.lang.process
 
 import java.io.{FileDescriptor, InputStream, OutputStream}
-import java.util.concurrent.{CompletableFuture, TimeUnit}
+import java.util.concurrent.{CompletableFuture, Executor, TimeUnit}
 import java.util.stream.Stream
 import java.util.{Optional, function}
 
@@ -123,20 +123,25 @@ private[process] abstract class GenericProcessHandle extends ProcessHandle {
   protected final def checkAndSetExitCode(): Boolean =
     getExitCodeImpl.exists(setCachedExitCode)
 
+  private val onExitExecutor: Executor =
+    if (LinktimeInfo.isMultithreadingEnabled) completion.defaultExecutor()
+    else new Executor { def execute(command: Runnable): Unit = command.run() }
+
   def onExitApply[A <: AnyRef](
       fn: function.Function[java.lang.Integer, A]
   ): CompletableFuture[A] =
-    completion.thenApplyAsync(fn)
+    completion.thenApplyAsync(fn, onExitExecutor)
 
   def onExitHandleSync[A <: AnyRef](
       fn: function.BiFunction[java.lang.Integer, Throwable, A]
   ): CompletableFuture[A] =
-    completion.handle(fn)
+    if (LinktimeInfo.isMultithreadingEnabled) completion.handle(fn)
+    else onExitHandleAsync(fn)
 
   def onExitHandleAsync[A <: AnyRef](
       fn: function.BiFunction[java.lang.Integer, Throwable, A]
   ): CompletableFuture[A] =
-    completion.handleAsync(fn)
+    completion.handleAsync(fn, onExitExecutor)
 
   override def parent(): Optional[ProcessHandle] = Optional.empty()
 
