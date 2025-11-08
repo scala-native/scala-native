@@ -197,7 +197,7 @@ object pollOps {
 
   // scalafmt: { align.preset = more }
 
-  implicit class pollFdOps(val ptr: Ptr[struct_pollfd]) extends AnyVal {
+  implicit class pollOps(val ptr: Ptr[struct_pollfd]) extends AnyVal {
     def fd: CInt             = ptr._1
     def events: pollEvent_t  = ptr._2
     def revents: pollEvent_t = ptr._3
