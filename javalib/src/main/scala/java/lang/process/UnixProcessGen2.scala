@@ -13,7 +13,7 @@ import scalanative.posix.pollOps._
 import scalanative.posix.spawn._
 import scalanative.posix.time.timespec
 import scalanative.posix.timeOps.timespecOps
-import scalanative.posix.{fcntl, pollEvents, unistd}
+import scalanative.posix.{fcntl, unistd}
 import scalanative.unsafe._
 import scalanative.unsigned._
 
@@ -197,7 +197,7 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
 
     val fds = stackalloc[struct_pollfd](1)
     (fds + 0).fd = pidFd
-    (fds + 0).events = (pollEvents.POLLIN | pollEvents.POLLRDNORM).toShort
+    (fds + 0).events = (POLLIN | POLLRDNORM).toShort
 
     // 'null' sigmask will retain all current signals.
     0 != UnixProcess.throwOnErrorRetryEINTR(_ != EBADF)(
