@@ -226,18 +226,25 @@ private[process] class UnixProcessHandleGen2(pidFd: CInt)(
       s"waitFor pid=${_pid} kqueue failed"
     )
 
-    val childExitEvent = stackalloc[kevent]()
-    val eventResult = stackalloc[kevent]()
+    val keventSize: CSize = scalanative_kevent_size()
+    val childExitEvent = stackalloc[Byte](keventSize)
+    val eventResult = stackalloc[Byte](keventSize)
 
     /* event will eventually be deleted when child pid closes.
      * EV_DISPATCH hints that the event can be deleted immediately after
      * delivery.
      */
 
-    childExitEvent.ident = _pid.toUSize
-    childExitEvent.filter = EVFILT_PROC.toShort
-    childExitEvent.flags = (EV_ADD | EV_DISPATCH).toUShort
-    childExitEvent.fflags = (NOTE_EXIT | NOTE_EXITSTATUS).toUInt
+    scalanative_kevent_set(
+      childExitEvent,
+      0,
+      _pid.toUSize,
+      EVFILT_PROC.toShort,
+      (EV_ADD | EV_DISPATCH).toUShort,
+      (NOTE_EXIT | NOTE_EXITSTATUS).toUInt,
+      0,
+      null
+    )
 
     val status = UnixProcess.throwOnErrorRetryEINTR(
       kevent(
