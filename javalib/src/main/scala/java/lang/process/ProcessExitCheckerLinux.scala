@@ -2,7 +2,10 @@ package java.lang.process
 
 import java.util.concurrent.TimeUnit
 
+import scala.util.Try
+
 import scala.scalanative.annotation.alwaysinline
+import scala.scalanative.libc.LibcExt
 import scala.scalanative.linux
 import scala.scalanative.posix._
 import scala.scalanative.unsafe._
@@ -30,6 +33,7 @@ private[process] object ProcessExitCheckerLinux
       pidfd_open(pid, 0.toUInt),
       s"pidfd_open($pid) failed"
     )
+    Console.err.println(s"EXIT CHECKER: pidfd_open: fd=$pidfd for pid=$pid")
     if (pidfd < 0) None else Some(pidfd)
   }
 
@@ -84,12 +88,15 @@ private[process] object ProcessExitCheckerLinux
       pr: ProcessRegistry
   ) extends ProcessExitChecker.Multi {
 
-    private val _epollfd = UnixFileDescriptorAtomic(
+    private val _epollfd = UnixFileDescriptorAtomic({
+      Console.err.println(
+        s"EXIT CHECKER: epoll_create1: cloexec=$EPOLL_CLOEXEC [fdclo=${fcntl.FD_CLOEXEC} oclo=${fcntl.O_CLOEXEC}]"
+      )
       UnixProcess.throwOnError(
         epoll_create1(EPOLL_CLOEXEC),
         "epoll_create failed"
       )
-    )
+    })
 
     @alwaysinline def epollfd: Int = _epollfd.get()
 
@@ -119,7 +126,13 @@ private[process] object ProcessExitCheckerLinux
      *  immediately after epoll_wait returns it.
      */
     private def closePidFd(pidfd: CInt): Unit = {
+      Console.err.println(
+        s"EXIT CHECKER: epoll_ctl: fd=${_epollfd} DEL pidfd=$pidfd starting"
+      )
       val res = epoll_ctl(epollfd, EPOLL_CTL_DEL, pidfd, null)
+      Console.err.println(
+        s"EXIT CHECKER: epoll_ctl: fd=${_epollfd} DEL pidfd=$pidfd finished res=$res [${LibcExt.strError()}]"
+      )
       unistd.close(pidfd)
       UnixProcess.throwOnError { e =>
         e != errno.EBADF && e != errno.ENOENT
@@ -143,8 +156,15 @@ private[process] object ProcessExitCheckerLinux
       val timeoutMillis = unitOpt.fold(-1) { unit =>
         Math.clamp(unit.toMillis(timeout), 0, Int.MaxValue)
       }
+
+      Console.err.println(
+        s"EXIT CHECKER: epoll_wait: fd=${_epollfd} starting maxEvents=$maxEvents"
+      )
       val res = UnixProcess.retryEINTR(
         epoll_wait(epollfd, eventsBuf, maxEvents, timeoutMillis)
+      )
+      Console.err.println(
+        s"EXIT CHECKER: epoll_wait: fd=${_epollfd} finished numEvents=$res"
       )
 
       var idx = 0
@@ -154,8 +174,14 @@ private[process] object ProcessExitCheckerLinux
         scalanative_epoll_event_get(eventsBuf, idx, ptrEvent, ptrData)
         idx += 1
         val (fd, pid) = from64((!ptrData).toLong)
-        reapWhenNotRunning(pid)
-        closePidFd(fd)
+        Try {
+          scalanative_epoll_debug_event_at(eventsBuf, idx)
+          Console.err.println(
+            s"EXIT CHECKER: idx=$idx from64: fd=$fd pid=$pid [i64=${!ptrData}] [evt=${!ptrEvent}]"
+          )
+          reapWhenNotRunning(pid)
+          closePidFd(fd)
+        }
       }
 
       res > 0
@@ -173,7 +199,25 @@ private[process] object ProcessExitCheckerLinux
         events.toUInt,
         to64(fd = pidfd, pid = pid).toULong
       )
-      epoll_ctl(epollfd, EPOLL_CTL_ADD, pidfd, kev)
+      scalanative_epoll_debug_event(kev)
+      scalanative_epoll_debug_event_at(kev, 0)
+
+      val ptrEvents = stackalloc[UInt]()
+      val ptrData = stackalloc[ULong]()
+      scalanative_epoll_event_get(kev, 0, ptrEvents, ptrData)
+
+      val (unpackedfd, unpackedpid) = from64((!ptrData).toLong)
+      val unpackedok =
+        unpackedfd == pidfd && unpackedpid == pid && !ptrEvents == events
+
+      Console.err.println(
+        s"EXIT CHECKER: epoll_ctl: fd=${_epollfd} ADD pidfd=$pidfd pid=$pid starting [unpacked=$unpackedok fd=$unpackedfd pid=$unpackedpid evt=$events] packed: evt=${!ptrEvents} data=${"%016x".format((!ptrData).toLong)}"
+      )
+      val res = epoll_ctl(epollfd, EPOLL_CTL_ADD, pidfd, kev)
+      Console.err.println(
+        s"EXIT CHECKER: epoll_ctl: fd=${_epollfd} ADD pidfd=$pidfd pid=$pid finished res=$res"
+      )
+      res
     }
 
   }
@@ -186,7 +230,11 @@ private[process] object ProcessExitCheckerLinux
   private def from64(i64: Long): (CInt, Int) =
     ((i64 >>> 32).toInt, i64.toInt)
 
-  private def reapWhenNotRunning(pid: Int)(implicit pr: ProcessRegistry) =
-    UnixProcess.waitpidAndComplete(pid, hang = false)
+  private def reapWhenNotRunning(pid: Int)(implicit pr: ProcessRegistry) = {
+    Console.err.println(s"EXIT CHECKER: waitpid: pid=$pid starting")
+    val res = UnixProcess.waitpidAndComplete(pid, hang = false)
+    Console.err.println(s"EXIT CHECKER: waitpid: pid=$pid finished res=$res")
+    res
+  }
 
 }

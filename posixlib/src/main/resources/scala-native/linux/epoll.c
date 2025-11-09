@@ -44,6 +44,19 @@ void scalanative_epoll_event_get(struct epoll_event *ev, int idx,
         *data64 = evidx->data.u64;
 }
 
+#include <stdio.h>
+
+void scalanative_epoll_debug_event(struct epoll_event *ev) {
+    fprintf(stderr,
+            "event: events=%u, data.u64=%llx, data.fd=%d, data.ptr=%p\n",
+            ev->events, (unsigned long long)ev->data.u64, ev->data.fd,
+            ev->data.ptr);
+}
+
+void scalanative_epoll_debug_event_at(struct epoll_event *ev, int idx) {
+    scalanative_epoll_debug_event(ev + idx);
+}
+
 #endif // __linux__
 
 #endif // __SCALANATIVE_POSIX_EPOLL

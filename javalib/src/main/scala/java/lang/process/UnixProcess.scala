@@ -57,12 +57,20 @@ private[process] object UnixProcess {
   ): Either[Int, (pid_t, Int)] = {
     val wstatus = stackalloc[Int]()
     val options = if (hang) 0 else WNOHANG
+    Console.err.println(
+      s"EXIT CHECKER: waitpid($pid, hang=$hang) starting"
+    )
     val res = throwOnErrorRetryEINTR { e =>
       e != ECHILD // see SN issues #4208 and #4348
     }(waitpid(pid, wstatus, options), "waitpid failed")
-    if (res == 0) Left(0) // no error
-    else if (res == -1) Left(errno) // ECHILD
-    else Right(res -> getExitCodeFromWaitStatus(!wstatus))
+    val out =
+      if (res == 0) Left(0) // no error
+      else if (res == -1) Left(errno) // ECHILD
+      else Right(res -> getExitCodeFromWaitStatus(!wstatus))
+    Console.err.println(
+      s"EXIT CHECKER: waitpid($pid) finished: $out [res=$res status=${!wstatus}]"
+    )
+    out
   }
 
   def waitpidAndComplete(pid: pid_t, timeout: Long, unit: TimeUnit)(implicit

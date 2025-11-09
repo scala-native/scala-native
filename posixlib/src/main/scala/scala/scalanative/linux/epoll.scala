@@ -8,6 +8,7 @@ package linux
 
 import posix._
 import unsafe._
+import unsigned._
 
 @extern
 @define("__SCALANATIVE_POSIX_EPOLL")
@@ -76,5 +77,9 @@ object epoll {
       events: Ptr[uint32_t],
       data: Ptr[uint64_t]
   ): Unit = extern
+
+  def scalanative_epoll_debug_event(ev: Ptr[Byte]): Unit = extern
+  def scalanative_epoll_debug_event_at(ev: Ptr[Byte], idx: Int): Unit =
+    extern
 
 }
