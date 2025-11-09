@@ -501,9 +501,13 @@ class ProcessTest {
      * false failures. The full timeout should be infrequent and Heisenbugs
      * are costly.
      */
-    val totalTimeout = (iterations + 1) + perIterationTimeout // seconds
+    val totalTimeout = 2 * iterations + perIterationTimeout // seconds
 
     val tasks = for (n <- 0 until iterations) yield Future {
+      val deadline =
+        System.nanoTime() + TimeUnit.SECONDS.toNanos(perIterationTimeout)
+      def remainingMillis: Long = (deadline - System.nanoTime()) / 1000
+
       val proc = processForScript(Scripts.hello).start()
       val expectedResponse = "hello"
 
@@ -555,22 +559,24 @@ class ProcessTest {
        * pipe code paths before and after child exit differ.
        */
       t.start()
-
-      val pwfTimeout = perIterationTimeout
-      val procWaitForStatus = proc.waitFor(pwfTimeout, TimeUnit.SECONDS)
+      t.join(Math.max(1, remainingMillis)) // 0 is forever
 
       /* ??? If these assertions fail, will the message ever make it all the
        * way back to the Test runner and be reported? Perhaps.
        */
 
       assertTrue(
-        s"child.waitFor exceeded timeout seconds: ${pwfTimeout}",
-        procWaitForStatus
+        s"child.waitFor exceeded timeout seconds: $perIterationTimeout",
+        proc.waitFor(remainingMillis, TimeUnit.MILLISECONDS)
       )
 
       assertEquals("child exit value", 0, proc.exitValue())
 
-      t.join()
+      assertFalse(
+        s"input thread still alive after $perIterationTimeout seconds",
+        t.isAlive
+      )
+
       done
     }
 
