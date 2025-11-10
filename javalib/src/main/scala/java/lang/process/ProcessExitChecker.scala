@@ -38,7 +38,7 @@ private[process] object ProcessExitChecker {
 
   val factoryOpt: Option[Factory] =
     if (LinktimeInfo.isWindows) None
-    else unixFactoryOpt
+    else unixFactoryOpt.orElse(Some(ProcessExitCheckerWaitpid))
 
   private def unixFactoryOpt: Option[Factory] =
     if (LinktimeInfo.is32BitPlatform) None // TODO: wonder why

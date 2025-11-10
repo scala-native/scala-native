@@ -44,12 +44,6 @@ private[process] object UnixProcess {
     getFileDescriptor(errfds, read = true)
   )(handle)
 
-  private[process] val useGen2 = ProcessExitChecker.factoryOpt.isDefined
-
-  def apply(pb: ProcessBuilder): GenericProcess = {
-    ProcessExitChecker.factoryOpt.fold(UnixProcessGen1(pb))(UnixProcessGen2(pb))
-  }
-
   def getExitCodeFromWaitStatus(wstatus: Int): Int = {
     // https://tldp.org/LDP/abs/html/exitcodes.html
     if (WIFEXITED(wstatus)) WEXITSTATUS(wstatus)
@@ -69,6 +63,25 @@ private[process] object UnixProcess {
     if (res == 0) Left(0) // no error
     else if (res == -1) Left(errno) // ECHILD
     else Right(res -> getExitCodeFromWaitStatus(!wstatus))
+  }
+
+  def waitpidAndComplete(pid: pid_t, timeout: Long, unit: TimeUnit)(implicit
+      pr: ProcessRegistry
+  ): Boolean = {
+    // busy-wait, waitpid has no timeout
+    val deadline = System.nanoTime() + Math.max(0, unit.toNanos(timeout))
+
+    @tailrec
+    def iter(): Boolean = UnixProcess.waitpidNoECHILD(pid) match {
+      case Left(x) =>
+        x != 0 || {
+          val remaining = deadline - System.nanoTime()
+          remaining > 0 && { Thread.sleep(Math.min(remaining, 100)); iter() }
+        }
+      case Right((pid, x)) => pr.completeWith(pid)(x); true
+    }
+
+    iter()
   }
 
   def waitpidAndComplete(pid: pid_t, hang: Boolean)(implicit

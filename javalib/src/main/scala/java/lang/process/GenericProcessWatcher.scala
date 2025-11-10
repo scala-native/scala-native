@@ -15,14 +15,15 @@ private[process] object GenericProcessWatcher {
   def watchForTermination(handle: GenericProcessHandle): Unit =
     Processes.add(handle)
 
-  @alwaysinline
-  def processRegistry: ProcessRegistry = Processes.pr
-
   private object Processes {
     private val processes = new ConcurrentHashMap[jl.Long, GenericProcessHandle]
 
     private val lock = new locks.ReentrantLock()
     private val todo: locks.Condition = lock.newCondition()
+
+    private val exitChecker: ProcessExitChecker.Multi =
+      ProcessExitChecker.factoryOpt
+        .fold[ProcessExitChecker.Multi](AllProcessExitChecker)(_.createMulti)
 
     implicit val pr: ProcessRegistry = new ProcessRegistry {
       override def completeWith(pid: Long)(ec: Int): Unit =
@@ -30,8 +31,19 @@ private[process] object GenericProcessWatcher {
     }
 
     def add(handle: GenericProcessHandle): Unit = {
-      processes.put(handle.pid(), handle)
-      signal()
+      val pid = handle.pid()
+      // add to processes first, before registering with exit checker
+      // otherwise, exit checker might try to complete a quick exit and fail
+      processes.put(pid, handle)
+      if (exitChecker.addOrReap(handle))
+        signal()
+      else {
+        processes.remove(pid)
+        if (!handle.checkIfExited())
+          throw new RuntimeException(
+            s"Failed to register $pid for exit checking"
+          )
+      }
     }
 
     protected final def signal(): Unit = {
@@ -50,6 +62,7 @@ private[process] object GenericProcessWatcher {
       .daemon(true)
       .group(ThreadGroup.System)
       .name("ScalaNative-GenericProcessWatcher")
+      .priority((Thread.NORM_PRIORITY + Thread.MAX_PRIORITY) / 2)
       .startInternal(Task)
 
     private object Task extends Runnable {
@@ -59,18 +72,12 @@ private[process] object GenericProcessWatcher {
           while (true) Try {
             removeProcessesIf(_.hasExited)
             while (processes.isEmpty()) todo.await()
-            if (!reapSomeProcesses()) Thread.sleep(100) // ms
+            if (!exitChecker.waitAndReapSome(0, None)) Thread.sleep(100) // ms
           }
         } finally
           lock.unlock()
       }
     }
-
-    // return true if something has been reaped
-    private val reapSomeProcesses: () => Boolean =
-      if (LinktimeInfo.isWindows) claimAllCompleted
-      else if (UnixProcess.useGen2) claimAllCompleted
-      else UnixProcessGen1.waitpidAny
 
     @alwaysinline
     def claimAllCompleted(): Boolean =
@@ -97,6 +104,15 @@ private[process] object GenericProcessWatcher {
       }
     }
     ok
+  }
+
+  object AllProcessExitChecker extends ProcessExitChecker.Multi {
+    override def addOrReap(handle: GenericProcessHandle): Boolean = true
+    override def close(): Unit = {}
+    override def waitAndReapSome(
+        timeout: Long,
+        unitOpt: Option[TimeUnit]
+    ): Boolean = Processes.claimAllCompleted()
   }
 
 }
