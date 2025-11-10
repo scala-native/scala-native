@@ -16,14 +16,18 @@ private[process] object GenericProcessWatcher {
     Processes.add(handle)
 
   @alwaysinline
-  def completeWith(pid: Long)(ec: => Int): Boolean =
-    Processes.complete(pid, ec)
+  def processRegistry: ProcessRegistry = Processes.pr
 
   private object Processes {
     private val processes = new ConcurrentHashMap[jl.Long, GenericProcessHandle]
 
     private val lock = new locks.ReentrantLock()
     private val todo: locks.Condition = lock.newCondition()
+
+    implicit val pr: ProcessRegistry = new ProcessRegistry {
+      override def completeWith(pid: Long)(ec: Int): Unit =
+        complete(pid, ec)
+    }
 
     def add(handle: GenericProcessHandle): Unit = {
       processes.put(handle.pid(), handle)
@@ -72,9 +76,9 @@ private[process] object GenericProcessWatcher {
     def claimAllCompleted(): Boolean =
       removeProcessesIf(_.checkIfExited())
 
-    def complete(pid: Long, ec: => Int): Boolean = {
+    def complete(pid: Long, ec: Int): Unit = {
       val ref = processes.remove(pid)
-      (ref ne null) && ref.setCachedExitCode(ec)
+      if (ref ne null) ref.setCachedExitCode(ec)
     }
 
     @alwaysinline
