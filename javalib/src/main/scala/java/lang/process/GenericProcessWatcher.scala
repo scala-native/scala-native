@@ -4,6 +4,7 @@ import java.{lang => jl, util => ju}
 
 import scala.util.Try
 
+import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.meta.LinktimeInfo
 
 private[process] object GenericProcessWatcher {
@@ -59,7 +60,7 @@ private[process] object GenericProcessWatcher {
     .name("ScalaNative-GenericProcessWatcher")
     .startInternal { () =>
       while (true) Try {
-        removeCompleted()
+        removeProcessesIf(_.hasExited)
         while (processes.isEmpty()) processesMutex.acquire(1)
         if (!reapSomeProcesses()) Thread.sleep(100) // ms
       }
@@ -71,35 +72,35 @@ private[process] object GenericProcessWatcher {
     else if (UnixProcess.useGen2) claimAllCompleted
     else UnixProcessGen1.waitpidAny
 
-  def claimAllCompleted(): Boolean = {
-    var ok = false
-    removeSomeProcesses { entry =>
-      val remove = entry.getValue().checkIfExited()
-      ok ||= remove
-      remove
-    }
-    ok
-  }
+  @alwaysinline
+  def claimAllCompleted(): Boolean = removeProcessesIf(_.checkIfExited())
+
+  @alwaysinline
+  def removeProcessesIf(f: GenericProcessHandle => Boolean): Boolean =
+    removeIf(processes.values())(f)
 
   def completeWith(pid: Long)(ec: => Int): Boolean = {
     val ref = processes.remove(pid)
     (ref ne null) && ref.setCachedExitCode(ec)
   }
 
-  def removeCompleted(): Unit =
-    removeSomeProcesses(_.getValue().hasExited)
-
-  private def removeSomeProcesses(
-      f: ju.Map.Entry[jl.Long, GenericProcessHandle] => Boolean
-  ): Unit = {
-    val it = processes.entrySet().iterator()
-    while (it.hasNext())
-      try if (f(it.next())) it.remove()
+  private def removeIf[A](coll: ju.Collection[A])(f: A => Boolean): Boolean = {
+    var ok = false
+    val it = coll.iterator()
+    while (it.hasNext()) {
+      val ref = it.next()
+      try
+        if (f(ref)) {
+          ok = true
+          it.remove()
+        }
       catch {
         case ex: Throwable if !ex.isInstanceOf[InterruptedException] =>
           System.err.println("[GenericProcessWatcher] failure:")
           ex.printStackTrace()
       }
+    }
+    ok
   }
 
 }
