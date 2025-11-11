@@ -35,7 +35,7 @@ private[net] class WindowsPlainDatagramSocketImpl
     val broadcastPrt = stackalloc[CInt]()
     !broadcastPrt = 1
     if (unixSocket.setsockopt(
-          fileHandle.toInt,
+          fileHandle.fd,
           unixSocket.SOL_SOCKET,
           unixSocket.SO_BROADCAST,
           broadcastPrt.asInstanceOf[Ptr[Byte]],
