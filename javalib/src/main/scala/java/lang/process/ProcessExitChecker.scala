@@ -15,7 +15,20 @@ private[process] trait ProcessExitChecker {
 
 private[process] object ProcessExitChecker {
 
+  trait Multi extends ProcessExitChecker {
+
+    /** If the process is running, register it and return true.
+     *
+     *  If the process isn't running, reap the process and return false.
+     *
+     *  Make sure to add it to the process registry before checker can reap this
+     *  process and call `complete` on the registry.
+     */
+    def addOrReap(handle: GenericProcessHandle): Boolean
+  }
+
   trait Factory {
+    def createMulti(implicit pr: ProcessRegistry): Multi
 
     /** @return None if process has exited */
     def createSingle(pid: Int)(implicit
