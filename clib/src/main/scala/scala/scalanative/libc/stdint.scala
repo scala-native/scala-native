@@ -7,6 +7,16 @@ import scala.scalanative.unsafe._
 // A very partial implementation. May it grow to completeness with time.
 
 @extern private[scalanative] trait stdint {
+
+  type int16_t = CShort
+  type uint16_t = CUnsignedShort
+
+  type int32_t = CInt
+  type uint32_t = CUnsignedInt
+
+  type int64_t = CLongLong
+  type uint64_t = CUnsignedLongLong
+
   // intmax_t and uintmax_t are not always equivalent to `long long`,
   // but they are usually `long long` in common data models.
   type intmax_t = CLongLong
