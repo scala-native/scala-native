@@ -2,6 +2,7 @@ package java.lang.process
 
 import java.util.concurrent.TimeUnit
 
+import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.linux
 import scala.scalanative.posix._
 import scala.scalanative.unsafe._
@@ -83,14 +84,16 @@ private[process] object ProcessExitCheckerLinux
       pr: ProcessRegistry
   ) extends ProcessExitChecker.Multi {
 
-    private val _epollfd =
+    private val _epollfd = UnixFileDescriptorAtomic(
       UnixProcess.throwOnError(
         epoll_create1(EPOLL_CLOEXEC),
         "epoll_create failed"
       )
+    )
 
-    private def closeWithEpollFD(): Unit =
-      unistd.close(_epollfd)
+    @alwaysinline def epollfd: Int = _epollfd.get()
+
+    private def closeWithEpollFD(): Unit = _epollfd.close()
 
     private val eventsBuf: Ptr[Byte] = {
       val buf = stdlib.calloc(maxEvents.toCSize, epollEventSize)
@@ -116,7 +119,7 @@ private[process] object ProcessExitCheckerLinux
      *  immediately after epoll_wait returns it.
      */
     private def closePidFd(pidfd: CInt): Unit = {
-      val res = epoll_ctl(_epollfd, EPOLL_CTL_DEL, pidfd, null)
+      val res = epoll_ctl(epollfd, EPOLL_CTL_DEL, pidfd, null)
       unistd.close(pidfd)
       UnixProcess.throwOnError { e =>
         e != errno.EBADF && e != errno.ENOENT
@@ -141,7 +144,7 @@ private[process] object ProcessExitCheckerLinux
         Math.clamp(unit.toMillis(timeout), 0, Int.MaxValue)
       }
       val res = UnixProcess.retryEINTR(
-        epoll_wait(_epollfd, eventsBuf, maxEvents, timeoutMillis)
+        epoll_wait(epollfd, eventsBuf, maxEvents, timeoutMillis)
       )
 
       var idx = 0
@@ -170,7 +173,7 @@ private[process] object ProcessExitCheckerLinux
         events.toUInt,
         to64(fd = pidfd, pid = pid).toULong
       )
-      epoll_ctl(_epollfd, EPOLL_CTL_ADD, pidfd, kev)
+      epoll_ctl(epollfd, EPOLL_CTL_ADD, pidfd, kev)
     }
 
   }
