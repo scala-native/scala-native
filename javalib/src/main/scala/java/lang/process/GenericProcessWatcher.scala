@@ -18,9 +18,6 @@ private[process] object GenericProcessWatcher {
   private object Processes {
     private val processes = new ConcurrentHashMap[jl.Long, GenericProcessHandle]
 
-    private val lock = new locks.ReentrantLock()
-    private val todo: locks.Condition = lock.newCondition()
-
     private val exitChecker: ProcessExitChecker.Multi =
       ProcessExitChecker.factoryOpt
         .fold[ProcessExitChecker.Multi](AllProcessExitChecker)(_.createMulti)
@@ -35,26 +32,13 @@ private[process] object GenericProcessWatcher {
       // add to processes first, before registering with exit checker
       // otherwise, exit checker might try to complete a quick exit and fail
       processes.put(pid, handle)
-      if (exitChecker.addOrReap(handle))
-        signal()
-      else {
+      if (!exitChecker.addOrReap(handle)) {
         processes.remove(pid)
         if (!handle.checkIfExited())
           throw new RuntimeException(
             s"Failed to register $pid for exit checking"
           )
       }
-    }
-
-    protected final def signal(): Unit = {
-      assert(
-        watcherThread.isAlive(),
-        "GenericProcessWatcher watch thread is terminated"
-      )
-      // If we cannot lock it means that watcher thread is already executing, no need to wake it up
-      if (lock.tryLock())
-        try todo.signal()
-        finally lock.unlock()
     }
 
     private final val watcherThread: Thread = Thread
@@ -67,15 +51,10 @@ private[process] object GenericProcessWatcher {
 
     private object Task extends Runnable {
       override def run(): Unit = {
-        lock.lock()
-        try {
-          while (true) Try {
-            removeProcessesIf(_.hasExited)
-            while (processes.isEmpty()) todo.await()
-            if (!exitChecker.waitAndReapSome(0, None)) Thread.sleep(100) // ms
-          }
-        } finally
-          lock.unlock()
+        while (true) Try {
+          removeProcessesIf(_.hasExited)
+          if (!exitChecker.waitAndReapSome(0, None)) Thread.sleep(100) // ms
+        }
       }
     }
 
