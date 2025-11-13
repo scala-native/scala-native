@@ -24,24 +24,18 @@ final class FileDescriptor private[java] (
     readOnly = true
   )
 
-  // ScalaNative private construcors
-  private[java] def this(fd: Int) =
-    this(FileHandle(fd), readOnly = false)
-
-  private[java] def this(fd: Int, readOnly: Boolean) =
+  // ScalaNative private constructors
+  private[java] def this(fd: Int, readOnly: Boolean = false) =
     this(FileHandle(fd), readOnly)
 
   override def toString(): String =
     s"FileDescriptor($fd, readOnly=$readOnly)"
 
   /* Unix file descriptor underlying value */
-  @alwaysinline
-  private[java] def fd: Int = fileHandle.toInt
+  @alwaysinline private[java] def fd: Int = fileHandle.fd
 
   /* Windows file handler underlying value */
-  @alwaysinline
-  private[java] def handle: Handle =
-    fromRawPtr[Byte](Intrinsics.castLongToRawPtr(fileHandle))
+  @alwaysinline private[java] def handle: Handle = fileHandle.handle
 
   def sync(): Unit = {
     def throwSyncFailed(): Unit = {
@@ -71,13 +65,13 @@ final class FileDescriptor private[java] (
     }
   }
 
-  def valid(): Boolean = fileHandle != FileHandle.Invalid
+  @alwaysinline def valid(): Boolean = fileHandle.valid()
 
   // Not in the Java API. Called by java.nio.channels.FileChannelImpl.scala
   private[java] def close(): Unit = {
-    if (isWindows) CloseHandle(handle)
-    else unistd.close(fd)
+    val prevHandle = fileHandle
     fileHandle = FileHandle.Invalid
+    prevHandle.close()
   }
 
 }
@@ -85,14 +79,26 @@ final class FileDescriptor private[java] (
 object FileDescriptor {
   // Universal type allowing to store references to both Unix integer based,
   // and Windows pointer based file handles
-  private[java] type FileHandle = Long
+  private[java] class FileHandle(val value: Long) extends AnyVal {
+    /* Unix file descriptor underlying value */
+    @alwaysinline def fd: Int = value.toInt
+
+    /* Windows file handler underlying value */
+    @alwaysinline def handle: Handle =
+      fromRawPtr[Byte](Intrinsics.castLongToRawPtr(value))
+
+    def close(): Unit =
+      if (valid())
+        if (isWindows) CloseHandle(handle) else unistd.close(fd)
+
+    @alwaysinline def valid(): Boolean = value != FileHandle.Invalid.value
+  }
+
   private[java] object FileHandle {
-    def apply(handle: Handle): FileHandle = handle.toLong
-    def apply(unixFd: Int): FileHandle = unixFd.toLong
-    @alwaysinline
-    def Invalid =
-      if (isWindows) FileHandle(INVALID_HANDLE_VALUE)
-      else FileHandle(-1)
+    def apply(handle: Handle): FileHandle = new FileHandle(handle.toLong)
+    def apply(unixFd: Int): FileHandle = new FileHandle(unixFd.toLong)
+    val Invalid: FileHandle =
+      if (isWindows) FileHandle(INVALID_HANDLE_VALUE) else FileHandle(-1)
   }
 
   private[java] val none: FileDescriptor = new FileDescriptor()
