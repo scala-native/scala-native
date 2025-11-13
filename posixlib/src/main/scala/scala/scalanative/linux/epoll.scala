@@ -6,12 +6,14 @@ package linux
  * https://man7.org/linux/man-pages/man2/epoll_create1.2.html
  */
 
+import posix._
 import unsafe._
-import unsigned._
 
 @extern
 @define("__SCALANATIVE_POSIX_EPOLL")
 object epoll {
+
+  import stdint._
 
   @name("scalanative_epoll_cloexec")
   def EPOLL_CLOEXEC: CInt = extern
@@ -41,9 +43,6 @@ object epoll {
   @name("scalanative_epolloneshot")
   def EPOLLONESHOT: CInt = extern
 
-  type epoll_data_t = CStruct1[CLongLong] // 64-bit
-  type epoll_event = CStruct2[UInt, epoll_data_t]
-
   def epoll_create(size: CInt): CInt = extern
   def epoll_create1(flags: CInt): CInt = extern
 
@@ -51,39 +50,31 @@ object epoll {
       epfd: CInt,
       op: CInt,
       fd: CInt,
-      event: Ptr[epoll_event]
+      event: CVoidPtr
   ): CInt = extern
 
   @blocking
   def epoll_wait(
       epfd: CInt,
-      events: Ptr[epoll_event],
+      events: CVoidPtr,
       maxevents: CInt,
       timeoutMillis: CInt
   ): CInt = extern
 
-  // scalafmt: { align.preset = more }
+  def scalanative_epoll_event_size(): CSize = extern
 
-  implicit class dataOps(val ref: epoll_data_t) extends AnyVal {
-    def ptr = ref._1.toPtr[Byte]
-    def fd  = ref._1.toInt
-    def u32 = ref._1.toUInt
-    def u64 = ref._1.toULong
+  def scalanative_epoll_event_set(
+      ev: CVoidPtr,
+      idx: CInt,
+      events: uint32_t,
+      data: uint64_t
+  ): Unit = extern
 
-    def ptr_=(v: CVoidPtr): Unit = ref._1 = v.toLong
-    def fd_=(v: CInt): Unit      = ref._1 = v.toLong
-    def u32_=(v: UInt): Unit     = ref._1 = v.toLong
-    def u64_=(v: ULong): Unit    = ref._1 = v.toLong
-  }
-
-  implicit class eventOps(val ptr: Ptr[epoll_event]) extends AnyVal {
-    def events = ptr._1
-    def data   = ptr._2
-
-    def events_=(v: UInt): Unit       = ptr._1 = v
-    def data_=(v: epoll_data_t): Unit = ptr._2 = v
-  }
-
-  // scalafmt: { align.preset = none }
+  def scalanative_epoll_event_get(
+      ev: CVoidPtr,
+      idx: CInt,
+      events: Ptr[uint32_t],
+      data: Ptr[uint64_t]
+  ): Unit = extern
 
 }

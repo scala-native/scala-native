@@ -2,6 +2,7 @@
 
 #ifdef __linux__
 
+#include <stddef.h>
 #include <sys/epoll.h>
 
 int scalanative_epoll_cloexec() { return EPOLL_CLOEXEC; }
@@ -24,6 +25,24 @@ int scalanative_epolloneshot() { return EPOLLONESHOT; }
 // int scalanative_epollwakeup() { return EPOLLWAKEUP; }
 // linux 4.5
 // int scalanative_epollexclusive() { return EPOLLEXCLUSIVE; }
+
+size_t scalanative_epoll_event_size() { return sizeof(struct epoll_event); }
+
+void scalanative_epoll_event_set(struct epoll_event *ev, int idx,
+                                 uint32_t events, uint64_t data64) {
+    struct epoll_event *evidx = ev + idx;
+    evidx->events = events;
+    evidx->data.u64 = data64;
+}
+
+void scalanative_epoll_event_get(struct epoll_event *ev, int idx,
+                                 uint32_t *events, uint64_t *data64) {
+    struct epoll_event *evidx = ev + idx;
+    if (NULL != events)
+        *events = evidx->events;
+    if (NULL != data64)
+        *data64 = evidx->data.u64;
+}
 
 #endif // __linux__
 
