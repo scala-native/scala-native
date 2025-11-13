@@ -93,7 +93,13 @@ private[process] object GenericProcessWatcher {
       f: ju.Map.Entry[jl.Long, GenericProcessHandle] => Boolean
   ): Unit = {
     val it = processes.entrySet().iterator()
-    while (it.hasNext()) if (f(it.next())) it.remove()
+    while (it.hasNext())
+      try if (f(it.next())) it.remove()
+      catch {
+        case ex: Throwable if !ex.isInstanceOf[InterruptedException] =>
+          System.err.println("[GenericProcessWatcher] failure:")
+          ex.printStackTrace()
+      }
   }
 
 }
