@@ -16,6 +16,7 @@
  *   https://wiki.netbsd.org/tutorials/kqueue_tutorial/
  */
 
+#include <stddef.h>
 #include <sys/event.h>
 
 int scalanative_kevent_evfilt_read() { return EVFILT_READ; }
@@ -43,6 +44,38 @@ int scalanative_kevent_ev_error() { return EV_ERROR; }
 
 int scalanative_kevent_note_exit() { return NOTE_EXIT; }
 int scalanative_kevent_note_exitstatus() { return NOTE_EXITSTATUS; }
+
+size_t scalanative_kevent_size() { return sizeof(struct kevent); }
+
+void scalanative_kevent_set(struct kevent *ev, int idx, uintptr_t ident,
+                            int16_t filter, uint16_t flags, uint32_t fflags,
+                            intptr_t data, void *udata) {
+    struct kevent *evidx = ev + idx;
+    evidx->ident = ident;
+    evidx->filter = filter;
+    evidx->flags = flags;
+    evidx->fflags = fflags;
+    evidx->data = data;
+    evidx->udata = udata;
+}
+
+void scalanative_kevent_get(struct kevent *ev, int idx, uintptr_t *ident,
+                            int16_t *filter, uint16_t *flags, uint32_t *fflags,
+                            intptr_t *data, void **udata) {
+    struct kevent *evidx = ev + idx;
+    if (NULL != ident)
+        *ident = evidx->ident;
+    if (NULL != filter)
+        *filter = evidx->filter;
+    if (NULL != flags)
+        *flags = evidx->flags;
+    if (NULL != fflags)
+        *fflags = evidx->fflags;
+    if (NULL != data)
+        *data = evidx->data;
+    if (NULL != udata)
+        *udata = evidx->udata;
+}
 
 #endif // HAVE_KQUEUE
 

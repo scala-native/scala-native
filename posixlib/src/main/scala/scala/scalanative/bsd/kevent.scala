@@ -3,27 +3,12 @@ package bsd
 
 import posix._
 import unsafe._
-import unsigned._
 
 @extern
 @define("__SCALANATIVE_POSIX_KEVENT")
 object kevent {
 
-  type intptr_t = stdint.intptr_t
-  type uintptr_t = stdint.uintptr_t
-
-  // scalafmt: { align.preset = more }
-
-  type kevent = CStruct6[
-    uintptr_t,      // ident       /* identifier for this event: uintptr_t */
-    CShort,         // filter      /* filter for event */
-    CUnsignedShort, // flags       /* action flags for kqueue */
-    CUnsignedInt,   // fflags      /* filter flag value */
-    intptr_t,       // data        /* filter data value: intptr_t */
-    CVoidPtr        // void *udata /* opaque user data identifier */
-  ]
-
-  // scalafmt: { align.preset = none }
+  import stdint._
 
   @name("scalanative_kevent_evfilt_read")
   def EVFILT_READ: CInt = extern
@@ -65,42 +50,35 @@ object kevent {
   @blocking
   def kevent(
       kq: CInt,
-      changelist: Ptr[kevent],
+      changelist: CVoidPtr,
       nchanges: CInt,
-      eventlist: Ptr[kevent],
+      eventlist: CVoidPtr,
       nevents: CInt,
       timeout: Ptr[time.timespec]
   ): CInt = extern
 
-  // scalafmt: { align.preset = more }
+  def scalanative_kevent_size(): CSize = extern
 
-  implicit class keventOps(val ptr: Ptr[kevent]) extends AnyVal {
-    def ident  = ptr._1
-    def filter = ptr._2
-    def flags  = ptr._3
-    def fflags = ptr._4
-    def data   = ptr._5
-    def udata  = ptr._6
+  def scalanative_kevent_set(
+      ev: CVoidPtr,
+      idx: CInt,
+      ident: uintptr_t,
+      filter: int16_t,
+      flags: uint16_t,
+      fflags: uint32_t,
+      data: intptr_t,
+      udata: CVoidPtr
+  ): Unit = extern
 
-    def ident_=(v: uintptr_t): Unit      = ptr._1 = v
-    def filter_=(v: CShort): Unit        = ptr._2 = v
-    def flags_=(v: CUnsignedShort): Unit = ptr._3 = v
-    def fflags_=(v: CUnsignedInt): Unit  = ptr._4 = v
-    def data_=(v: intptr_t): Unit        = ptr._5 = v
-    def udata_=(v: CVoidPtr): Unit       = ptr._6 = v
-
-    /* Convenience methods for common conversions hide and rely upon
-     * some abstraction layer jumping illicit knowledge that CSSize is
-     * a typedef for CSize.
-     */
-
-    def ident_=(v: CInt): Unit         = ptr._1 = v.toCSize
-    def ident_=(v: CUnsignedInt): Unit = ptr._1 = v.toInt.toCSize
-
-    def data_=(v: CInt): Unit         = ptr._1 = v.toCSize
-    def data_=(v: CUnsignedInt): Unit = ptr._1 = v.toInt.toCSize
-  }
-
-  // scalafmt: { align.preset = none }
+  def scalanative_kevent_get(
+      ev: CVoidPtr,
+      idx: CInt,
+      ident: Ptr[uintptr_t],
+      filter: Ptr[int16_t],
+      flags: Ptr[uint16_t],
+      fflags: Ptr[uint32_t],
+      data: Ptr[intptr_t],
+      udata: Ptr[CVoidPtr]
+  ): Unit = extern
 
 }
