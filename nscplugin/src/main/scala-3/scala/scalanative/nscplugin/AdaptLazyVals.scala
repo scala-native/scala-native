@@ -25,9 +25,8 @@ class AdaptLazyVals(defnNir: NirDefinitions) {
   def defn(using Context) = LazyValsDefns.get
 
   private val compilerUsesVarHandles = ScalaVersion.current match {
-    // bug in 3.8.0-RC1 nightlies, no version property set
-    case AnyScalaVersion => true
-    case version => version >= SpecificScalaVersion(3, 8, 0, ScalaBuild.Final)
+    case SpecificScalaVersion(3, minor, _, _) => minor >= 8
+    case _                                    => false
   }
 
   private def isLazyFieldOffset(name: Name) =
