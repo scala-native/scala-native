@@ -78,9 +78,7 @@ private[process] object GenericProcessWatcher {
 
     // return true if something has been reaped
     private val reapSomeProcesses: () => Boolean =
-      if (LinktimeInfo.isWindows) claimAllCompleted
-      else if (UnixProcess.useGen2) claimAllCompleted
-      else UnixProcessGen1.waitpidAny
+      PlatformProcess.reapSomeProcesses.getOrElse(claimAllCompleted _)
 
     @alwaysinline
     def claimAllCompleted(): Boolean = removeProcessesIf(_.checkIfExited())

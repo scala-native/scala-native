@@ -2,14 +2,6 @@ package java.lang.process
 
 import java.io._
 
-import scala.scalanative.annotation.stub
-import scala.scalanative.meta.LinktimeInfo.isWindows
-import scala.scalanative.posix.sys.ioctl._
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
-import scala.scalanative.windows.DWord
-import scala.scalanative.windows.NamedPipeApi.PeekNamedPipe
-
 /* Used to set up input/output streams for a child process spawned by
  * a ProcessBuilder using the Redirect info for the stream.
  */
