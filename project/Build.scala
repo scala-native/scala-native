@@ -158,49 +158,10 @@ object Build {
       scalacOptions --= ignoredScalaDeprecations(scalaVersion.value)
     )
 
-  private val withSharedCrossPlatformSources = {
-    def sharedSourceDirs(
-        scalaVersion: String,
-        baseDirectory: File,
-        subDir: String
-    ) = {
-      // baseDirectory = project/jvm/.<scala-version>
-      val base = baseDirectory.getParentFile().getParentFile() / "src" / subDir
-      val common = base / "scala"
-      CrossVersion.partialVersion(scalaVersion) match {
-        case Some((2, 12)) =>
-          Seq(base / "scala", base / "scala-2", base / "scala-2.12")
-        case Some((2, 13)) =>
-          Seq(
-            base / "scala",
-            base / "scala-2",
-            base / "scala-2.13",
-            base / "scala-2.13+"
-          )
-        case Some((3, _)) =>
-          Seq(base / "scala", base / "scala-3", base / "scala-2.13+")
-        case _ => sys.error(s"Unsupported Scala version: ${scalaVersion}")
-      }
-    }
-    Def.settings(
-      Compile / unmanagedSourceDirectories ++= sharedSourceDirs(
-        scalaVersion.value,
-        baseDirectory.value,
-        "main"
-      ),
-      Test / unmanagedSourceDirectories ++= sharedSourceDirs(
-        scalaVersion.value,
-        baseDirectory.value,
-        "test"
-      )
-    )
-  }
-
   // NIR compiler
   lazy val util = MultiScalaProject("util", platform = MultiScalaProject.Native, idNoSuffix = true)
     .settings(
-      toolSettings,
-      withSharedCrossPlatformSources
+      toolSettings
     )
     .withNativeCompilerPlugin
     .withScalaStandardLibrary
@@ -208,8 +169,7 @@ object Build {
   lazy val utilJVM =
     MultiScalaProject("util", platform = MultiScalaProject.JVM)
       .settings(
-        toolSettings,
-        withSharedCrossPlatformSources
+        toolSettings
       )
 
   lazy val nir = MultiScalaProject("nir", platform = MultiScalaProject.Native, idNoSuffix = true)
@@ -1212,7 +1172,6 @@ object Build {
       project
         .settings(
           toolSettings,
-          withSharedCrossPlatformSources,
           // Running tests in parallel results in `FileSystemAlreadyExistsException`
           Test / parallelExecution := false
         )

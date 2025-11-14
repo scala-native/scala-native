@@ -207,8 +207,12 @@ object MultiScalaProject {
     val sharedBase = base.getOrElse(file(name))
     val idWithSuffix = if (idNoSuffix) name else name + platform.nameSuffix
     val nameWithSuffix = if (nameSuffix) idWithSuffix else name
-    val platformBase =
-      if (platform == NoPlatform) sharedBase else sharedBase / platform.subdir
+    val (platformBase, bases) =
+      if (platform == NoPlatform) (sharedBase, Seq(sharedBase))
+      else {
+        val platformBase = sharedBase / platform.subdir
+        (platformBase, Seq(sharedBase, platformBase))
+      }
 
     val projects = for {
       (major, minors) <- scalaCrossVersions
@@ -228,6 +232,7 @@ object MultiScalaProject {
         crossScalaVersions := minors,
         sourceDirectory :=
           srcDir((ThisBuild / baseDirectory).value, platformBase),
+        sharedSourceDirs(bases),
         noIDEExportSettings
       )
     }
@@ -240,5 +245,29 @@ object MultiScalaProject {
   }
 
   private def srcDir(root: File, base: File) = root / base.getPath / "src"
+
+  private def sharedSourceDirsForConfig(
+      bases: Seq[File],
+      subdir: String,
+      conf: Configuration
+  ) = {
+    conf / unmanagedSourceDirectories ++= {
+      val dirs =
+        bases.map(x => srcDir((ThisBuild / baseDirectory).value, x) / subdir)
+      val vers = CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, 12)) => Seq("2", "2.12")
+        case Some((2, 13)) => Seq("2", "2.13", "2.13+")
+        case Some((3, _))  => Seq("3", "2.13+")
+        case _ => sys.error(s"Unsupported Scala version: ${scalaVersion}")
+      }
+      ("scala" +: vers.map("scala-" + _)).flatMap(v => dirs.map(_ / v))
+    }
+  }
+
+  private def sharedSourceDirs(bases: Seq[File]) =
+    Def.settings(
+      sharedSourceDirsForConfig(bases, "main", Compile),
+      sharedSourceDirsForConfig(bases, "test", Test)
+    )
 
 }
