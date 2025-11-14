@@ -283,7 +283,7 @@ object termios {
 /** Allow using C names to access 'termios' structure fields.
  */
 object termiosOps {
-  import termios.*
+  import termios._
 
   implicit class termiosStructOps(private val ptr: Ptr[termios])
       extends AnyVal {

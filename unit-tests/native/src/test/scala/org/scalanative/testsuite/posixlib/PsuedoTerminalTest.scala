@@ -6,11 +6,11 @@ import org.junit.Test
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scalanative.meta.LinktimeInfo.isWindows
-import scalanative.posix.fcntl.*
-import scalanative.posix.stddef.*
+import scalanative.posix.fcntl._
+import scalanative.posix.stddef._
 import scalanative.posix.stdio
-import scalanative.posix.stdlib.*
-import scalanative.posix.termios.*
+import scalanative.posix.stdlib._
+import scalanative.posix.termios._
 
 /** Used to test terminal in CI env where real devices are not available. Simple
  *  POSIX pseudoterminal test using termios Modern terminology: primary
@@ -50,7 +50,7 @@ class PsuedoTerminalTest {
     assertFalse("tcgetattr failed", tcgetattr(secondary_fd, tio) < 0)
 
     /* Modify attributes: disable echo and canonical mode */
-    tio.c_lflag = tio.c_lflag & ~(ECHO | ICANON) // &=
+    // tio.c_lflag = tio.c_lflag & ~(ECHO | ICANON) // &=
     // tio.c_cc(VMIN) = 1
     // tio.c_cc(VTIME) = 0
 
