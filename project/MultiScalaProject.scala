@@ -9,9 +9,9 @@ import Keys._
 import MyScalaNativePlugin.{enableExperimentalCompiler, ideScalaVersion}
 
 final case class MultiScalaProject private (
-    val name: String,
+    name: String,
     private val projects: Map[String, Project],
-    val dependsOnSourceInIDE: Boolean
+    dependsOnSourceInIDE: Boolean
 ) extends CompositeProject {
   import MultiScalaProject._
 
@@ -172,34 +172,23 @@ object MultiScalaProject {
       case _        => id + major.replace('.', '_')
     }
 
-  def apply(id: String): MultiScalaProject =
-    apply(id, id, file(id), Nil)
-
-  def apply(id: String, base: File): MultiScalaProject =
-    apply(id, id, base, Nil)
-
-  def apply(
-      id: String,
-      name: String,
-      base: File
-  ): MultiScalaProject = apply(id, name, base, Nil)
-
-  def apply(
-      id: String,
-      base: File,
-      additionalIDEScalaVersions: List[String]
-  ): MultiScalaProject =
-    apply(id, id, base, additionalIDEScalaVersions)
-
   /** @param additionalIDEScalaVersions
    *    Allowed values: 3, 3-next, 2.13, 2.12.
    */
   def apply(
-      id: String,
       name: String,
-      base: File,
-      additionalIDEScalaVersions: List[String]
+      base: File = null,
+      additionalIDEScalaVersions: List[String] = Nil,
+      platform: String = null,
+      platformToName: Boolean = true
   ): MultiScalaProject = {
+    val sharedBase = if (base != null) base else file(name)
+    val idPrefix =
+      if (platform == null || !platformToName || platform == "native") name
+      else name + platform.toUpperCase(java.util.Locale.ROOT)
+    val platformBase =
+      if (platform == null) sharedBase else sharedBase / platform
+
     val projects = for {
       (major, minors) <- scalaCrossVersions
     } yield {
@@ -209,13 +198,15 @@ object MultiScalaProject {
         else NoIDEExport.noIDEExportSettings
 
       major -> Project(
-        id = projectID(id, major),
-        base = new File(base, "." + major)
+        id = projectID(idPrefix, major),
+        base = platformBase / ("." + major)
       ).settings(
         Settings.commonSettings,
         Keys.name := Settings.projectName(name),
         scalaVersion := scalaVersions(major),
         crossScalaVersions := minors,
+        sourceDirectory :=
+          srcDir((ThisBuild / baseDirectory).value, platformBase),
         noIDEExportSettings
       )
     }
@@ -224,8 +215,9 @@ object MultiScalaProject {
       name,
       projects,
       dependsOnSourceInIDE = additionalIDEScalaVersions.nonEmpty
-    ).settings(
-      sourceDirectory := baseDirectory.value.getParentFile / "src"
     )
   }
+
+  private def srcDir(root: File, base: File) = root / base.getPath / "src"
+
 }
