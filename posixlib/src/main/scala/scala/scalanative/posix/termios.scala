@@ -23,14 +23,14 @@ object termios {
   type cc_t = CUnsignedChar
   type speed_t = CUnsignedInt
   type NCCS = Digit2[_2, _0]
-  type c_cc = CArray[cc_t, NCCS]
+  type cc_t_arr = CArray[cc_t, NCCS]
 
   type termios = CStruct7[
     tcflag_t, /* c_iflag - input flags   */
     tcflag_t, /* c_oflag - output flags  */
     tcflag_t, /* c_cflag - control flags */
     tcflag_t, /* c_lflag - local flags   */
-    c_cc, /* cc_t c_cc[NCCS] - control chars */
+    cc_t_arr, /* cc_t c_cc[NCCS] - control chars */
     speed_t, /* c_ispeed - input speed   */
     speed_t /* c_ospeed - output speed  */
   ]
@@ -278,4 +278,29 @@ object termios {
   @name("scalanative_termios_tcoon")
   def TCOON: CInt = extern
 
+}
+
+/** Allow using C names to access 'termios' structure fields.
+ */
+object termiosOps {
+  import termios.*
+
+  implicit class termiosStructOps(private val ptr: Ptr[termios])
+      extends AnyVal {
+    def c_iflag: tcflag_t = ptr._1
+    def c_oflag: tcflag_t = ptr._2
+    def c_cflag: tcflag_t = ptr._3
+    def c_lflag: tcflag_t = ptr._4
+    def c_cc: cc_t_arr = ptr._5
+    def c_ispeed: speed_t = ptr._6
+    def c_ospeed: speed_t = ptr._7
+
+    def c_iflag_=(v: tcflag_t): Unit = ptr._1 = v
+    def c_oflag_=(v: tcflag_t): Unit = ptr._2 = v
+    def c_cflag_=(v: tcflag_t): Unit = ptr._3 = v
+    def c_lflag_=(v: tcflag_t): Unit = ptr._4 = v
+    def c_cc_=(v: cc_t_arr): Unit = ptr._5 = v
+    def c_ispeed_=(v: speed_t): Unit = ptr._6 = v
+    def c_ospeed_=(v: speed_t): Unit = ptr._7 = v
+  }
 }

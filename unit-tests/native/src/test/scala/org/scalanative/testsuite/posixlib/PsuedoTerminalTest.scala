@@ -1,0 +1,175 @@
+package org.scalanative.testsuite.posixlib
+
+import org.junit.Assert._
+import org.junit.Test
+
+import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
+import scalanative.meta.LinktimeInfo.isWindows
+import scalanative.posix.fcntl.*
+import scalanative.posix.stddef.*
+import scalanative.posix.stdio
+import scalanative.posix.stdlib.*
+import scalanative.posix.termios.*
+
+/** Used to test terminal in CI env where real devices are not available. Simple
+ *  POSIX pseudoterminal test using termios Modern terminology: primary
+ *  (controller) / secondary (session)
+ */
+class PsuedoTerminalTest {
+
+  @Test def testPt(): Unit = if (!isWindows) {
+    var primary_fd: CInt = -1
+    var secondary_fd: CInt = -1
+    var secondary_name = stackalloc[CChar]()
+    secondary_name = null // NULL is CVoidPtr not CString
+    val tio = stackalloc[termios]()
+
+    /* Open a new pseudoterminal primary (controller) side */
+    primary_fd = posix_openpt(O_RDWR | O_NOCTTY)
+    assertFalse("posix_openpt failed", primary_fd < 0)
+    assertFalse(
+      "grantpt/unlockpt failed",
+      (grantpt(primary_fd) < 0 || unlockpt(primary_fd) < 0)
+    )
+
+    secondary_name = ptsname(primary_fd)
+    assertFalse("ptsname failed", secondary_name == null)
+
+    stdio.printf(
+      c"Opened PTY pair: primary=%d, secondary=%s\n",
+      primary_fd,
+      secondary_name
+    )
+
+    /* Open the secondary side */
+    secondary_fd = open(secondary_name, O_RDWR | O_NOCTTY);
+    assertFalse("open(secondary) failed", secondary_fd < 0)
+
+    /* Get current terminal attributes */
+    assertFalse("tcgetattr failed", tcgetattr(secondary_fd, tio) < 0)
+
+    /* Modify attributes: disable echo and canonical mode */
+    tio.c_lflag = tio.c_lflag & ~(ECHO | ICANON) // &=
+    // tio.c_cc(VMIN) = 1
+    // tio.c_cc(VTIME) = 0
+
+    // assertFalse("tcsetattr failed", tcsetattr(secondary_fd, TCSANOW, tio) < 0)
+
+    // stdio.printf(c"Termios configured: ECHO and ICANON disabled\n")
+
+    assertTrue(true)
+  }
+
+//   /*
+//    * test_termios_pty.c
+//    * Simple POSIX pseudoterminal test using termios
+//    * Modern terminology: primary (controller) / secondary (session)
+//    *
+//  * Build: gcc -Wall -O2 test_termios_pty.c -o test_termios_pty
+//    */
+
+// #define _XOPEN_SOURCE 600
+// #include <stdio.h>
+// #include <stdlib.h>
+// #include <fcntl.h>
+// #include <unistd.h>
+// #include <termios.h>
+// #include <string.h>
+// #include <errno.h>
+
+// int main(void) {
+//     int primary_fd = -1, secondary_fd = -1;
+//     char *secondary_name = NULL;
+//     struct termios tio;
+
+//     /* Open a new pseudoterminal primary (controller) side */
+//     primary_fd = posix_openpt(O_RDWR | O_NOCTTY);
+//     if (primary_fd < 0) {
+//         perror("posix_openpt");
+//         return 1;
+//     }
+
+//     if (grantpt(primary_fd) < 0 || unlockpt(primary_fd) < 0) {
+//         perror("grantpt/unlockpt");
+//         close(primary_fd);
+//         return 1;
+//     }
+
+//     secondary_name = ptsname(primary_fd);
+//     if (!secondary_name) {
+//         perror("ptsname");
+//         close(primary_fd);
+//         return 1;
+//     }
+
+//     printf("Opened PTY pair: primary=%d, secondary=%s\n", primary_fd, secondary_name);
+
+//     /* Open the secondary side */
+//     secondary_fd = open(secondary_name, O_RDWR | O_NOCTTY);
+//     if (secondary_fd < 0) {
+//         perror("open(secondary)");
+//         close(primary_fd);
+//         return 1;
+//     }
+
+//     /* Get current terminal attributes */
+//     if (tcgetattr(secondary_fd, &tio) < 0) {
+//         perror("tcgetattr");
+//         close(secondary_fd);
+//         close(primary_fd);
+//         return 1;
+//     }
+
+//     /* Modify attributes: disable echo and canonical mode */
+//     tio.c_lflag &= ~(ECHO | ICANON);
+//     tio.c_cc[VMIN] = 1;
+//     tio.c_cc[VTIME] = 0;
+
+//     if (tcsetattr(secondary_fd, TCSANOW, &tio) < 0) {
+//         perror("tcsetattr");
+//         close(secondary_fd);
+//         close(primary_fd);
+//         return 1;
+//     }
+
+//     printf("Termios configured: ECHO and ICANON disabled\n");
+
+//     /* Write from primary to secondary */
+//     const char *msg = "Hello from primary!\n";
+//     if (write(primary_fd, msg, strlen(msg)) < 0) {
+//         perror("write(primary)");
+//     }
+
+//     /* Read from secondary */
+//     char buf[128];
+//     ssize_t n = read(secondary_fd, buf, sizeof(buf) - 1);
+//     if (n > 0) {
+//         buf[n] = '\0';
+//         printf("Secondary received: %s", buf);
+//     } else if (n < 0) {
+//         perror("read(secondary)");
+//     }
+
+//     /* Write from secondary to primary */
+//     const char *reply = "Reply from secondary.\n";
+//     if (write(secondary_fd, reply, strlen(reply)) < 0) {
+//         perror("write(secondary)");
+//     }
+
+//     /* Read from primary */
+//     n = read(primary_fd, buf, sizeof(buf) - 1);
+//     if (n > 0) {
+//         buf[n] = '\0';
+//         printf("Primary received: %s", buf);
+//     } else if (n < 0) {
+//         perror("read(primary)");
+//     }
+
+//     close(secondary_fd);
+//     close(primary_fd);
+//     printf("PTY test complete.\n");
+//     return 0;
+// }
+
+}
