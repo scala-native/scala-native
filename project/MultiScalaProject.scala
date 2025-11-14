@@ -9,9 +9,9 @@ import Keys._
 import MyScalaNativePlugin.{enableExperimentalCompiler, ideScalaVersion}
 
 final case class MultiScalaProject private (
-    val name: String,
+    name: String,
     private val projects: Map[String, Project],
-    val dependsOnSourceInIDE: Boolean
+    dependsOnSourceInIDE: Boolean
 ) extends CompositeProject {
   import MultiScalaProject._
 
@@ -149,6 +149,27 @@ object ScopedMultiScalaProject {
 }
 
 object MultiScalaProject {
+
+  sealed trait Platform {
+    def subdir: String
+    def nameSuffix: String
+  }
+
+  object Native extends Platform {
+    override def subdir: String = "native"
+    override def nameSuffix: String = "Native"
+  }
+
+  object JVM extends Platform {
+    override def subdir: String = "jvm"
+    override def nameSuffix: String = "JVM"
+  }
+
+  object NoPlatform extends Platform {
+    override def subdir: String = ""
+    override def nameSuffix: String = ""
+  }
+
   private def strictMapValues[K, U, V](v: Map[K, U])(f: U => V): Map[K, V] =
     v.map(v => (v._1, f(v._2)))
 
@@ -172,34 +193,23 @@ object MultiScalaProject {
       case _        => id + major.replace('.', '_')
     }
 
-  def apply(id: String): MultiScalaProject =
-    apply(id, id, file(id), Nil)
-
-  def apply(id: String, base: File): MultiScalaProject =
-    apply(id, id, base, Nil)
-
-  def apply(
-      id: String,
-      name: String,
-      base: File
-  ): MultiScalaProject = apply(id, name, base, Nil)
-
-  def apply(
-      id: String,
-      base: File,
-      additionalIDEScalaVersions: List[String]
-  ): MultiScalaProject =
-    apply(id, id, base, additionalIDEScalaVersions)
-
   /** @param additionalIDEScalaVersions
    *    Allowed values: 3, 3-next, 2.13, 2.12.
    */
   def apply(
-      id: String,
       name: String,
-      base: File,
-      additionalIDEScalaVersions: List[String]
+      base: Option[File] = None,
+      additionalIDEScalaVersions: List[String] = Nil,
+      platform: Platform = NoPlatform,
+      idNoSuffix: Boolean = false,
+      nameSuffix: Boolean = false
   ): MultiScalaProject = {
+    val sharedBase = base.getOrElse(file(name))
+    val idWithSuffix = if (idNoSuffix) name else name + platform.nameSuffix
+    val nameWithSuffix = if (nameSuffix) idWithSuffix else name
+    val platformBase =
+      if (platform == NoPlatform) sharedBase else sharedBase / platform.subdir
+
     val projects = for {
       (major, minors) <- scalaCrossVersions
     } yield {
@@ -209,23 +219,26 @@ object MultiScalaProject {
         else NoIDEExport.noIDEExportSettings
 
       major -> Project(
-        id = projectID(id, major),
-        base = new File(base, "." + major)
+        id = projectID(idWithSuffix, major),
+        base = platformBase / ("." + major)
       ).settings(
         Settings.commonSettings,
-        Keys.name := Settings.projectName(name),
+        Keys.name := Settings.projectName(nameWithSuffix),
         scalaVersion := scalaVersions(major),
         crossScalaVersions := minors,
+        sourceDirectory :=
+          srcDir((ThisBuild / baseDirectory).value, platformBase),
         noIDEExportSettings
       )
     }
 
     new MultiScalaProject(
-      name,
+      nameWithSuffix,
       projects,
       dependsOnSourceInIDE = additionalIDEScalaVersions.nonEmpty
-    ).settings(
-      sourceDirectory := baseDirectory.value.getParentFile / "src"
     )
   }
+
+  private def srcDir(root: File, base: File) = root / base.getPath / "src"
+
 }

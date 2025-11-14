@@ -148,8 +148,8 @@ The build has roughly five groups of sub-projects as follows:
 
     > -   `junitPlugin (junit-plugin)`
     > -   `junitRuntime (junit-runtime)`
-    > -   `junitTestOutputsJVM (junit-test/output-jvm)`
-    > -   `junitTestOutputsNative (junit-test/output-native)`
+    > -   `junitTestOutputsJVM (junit-test/jvm)`
+    > -   `junitTestOutputsNative (junit-test/native)`
     > -   `junitAsyncJVM (junit-async/jvm)`
     > -   `junitAsyncNative (junit-async/native)`
 
