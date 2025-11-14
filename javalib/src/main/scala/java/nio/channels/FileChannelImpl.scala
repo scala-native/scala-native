@@ -141,11 +141,47 @@ private[java] final class FileChannelImpl(
     new FileLockImpl(this, position, size, true, fd)
   }
 
-  override protected def implCloseChannel(): Unit = {
-    if (!isOpen()) {
-      fd.close()
-      if (deleteFileOnClose && file.isDefined) Files.delete(file.get.toPath())
-    }
+  /* Buckle up, buckaroos!
+   *
+   * This implementation relies on two pre-conditions by contract.
+   * Condition descriptions are from Java 25 API documentation.
+   *
+   *   - AbstractInterruptibleChannel#close is the sole caller. That method
+   *     ensures the condition:
+   * 
+   *       This method is only invoked if the channel has not yet been
+   *       closed, and it is never invoked more than once.
+   * 
+   *   - nio.channels.Channel#close is higher up the call chain. It
+   *     requires:
+   * 
+   *       This method may be invoked at any time. If some other thread has
+   *       already invoked it, however, then another invocation will block
+   *       until the first invocation is complete, after which it will
+   *       return without effect.
+   *
+   *      This means implCloseChannel is executing in a synchronized block
+   *      including closing the operating system fd. Yes, that is a
+   *      long span across os I/O.
+   *
+   * Note well:
+   *
+   *  This implementation does not comply with the requirement in
+   *  AbstractInterruptibleChannel:
+   * 
+   *    An implementation of this method must arrange for any other thread
+   *    that is blocked in an I/O operation upon this channel to return
+   *    immediately, either by throwing an exception or by returning
+   *    normally.
+   *
+   *  Someday, somebody will trip over this non-compliance.
+   */
+
+  protected def implCloseChannel(): Unit = {
+    fd.close()
+
+    if (deleteFileOnClose && file.isDefined)
+      Files.delete(file.get.toPath())
   }
 
   override def map(

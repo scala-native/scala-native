@@ -67,7 +67,18 @@ final class FileDescriptor private[java] (
 
   @alwaysinline def valid(): Boolean = fileHandle.valid()
 
-  // Not in the Java API. Called by java.nio.channels.FileChannelImpl.scala
+  /* Not in the Java public API, but implied as JDK internal.
+   *
+   * java.nio.channels.FileChannelImpl#implCloseChannel is the sole
+   * caller of this method.
+   *
+   * See the documentation of that method for details. The short story is
+   * that it calls this method only once and then within a synchronized block.
+   *
+   * This means there are no data visibility issues when the potentially shared
+   * this.fileHandle is changed.
+   */
+
   private[java] def close(): Unit = {
     val prevHandle = fileHandle
     fileHandle = FileHandle.Invalid
