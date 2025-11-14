@@ -108,7 +108,6 @@ object Build {
   // Compiler plugins
   lazy val nscPlugin: MultiScalaProject = MultiScalaProject(
     "nscplugin",
-    file("nscplugin"),
     additionalIDEScalaVersions = List("2.13")
   ).withBuildInfo(Test)
     .settings(
@@ -198,7 +197,7 @@ object Build {
   }
 
   // NIR compiler
-  lazy val util = MultiScalaProject("util", file("util/native"))
+  lazy val util = MultiScalaProject("util", platform = "native")
     .settings(
       toolSettings,
       withSharedCrossPlatformSources
@@ -207,13 +206,13 @@ object Build {
     .withScalaStandardLibrary
 
   lazy val utilJVM =
-    MultiScalaProject(id = "utilJVM", name = "util", file("util/jvm"))
+    MultiScalaProject("util", platform = "jvm")
       .settings(
         toolSettings,
         withSharedCrossPlatformSources
       )
 
-  lazy val nir = MultiScalaProject("nir", file("nir/native"))
+  lazy val nir = MultiScalaProject("nir", platform = "native")
     .mapBinaryVersions {
       // Scaladoc for Scala 2.12 is not compliant with normal compiler (see nscPlugin)
       case "2.12" => _.settings(disabledDocsSettings)
@@ -226,7 +225,7 @@ object Build {
     .dependsOn(util)
     .dependsOn(testInterface % "test", junitRuntime % "test")
 
-  lazy val nirJVM = MultiScalaProject("nirJVM", "nir", file("nir/jvm"))
+  lazy val nirJVM = MultiScalaProject("nir", platform = "jvm")
     .settings(
       libraryDependencies ++= Deps.JUnitJvm
     )
@@ -244,7 +243,7 @@ object Build {
     "3-next" -> Map("scalalib" -> "scala3lib")
   )
 
-  lazy val tools = MultiScalaProject("tools", file("tools/native"))
+  lazy val tools = MultiScalaProject("tools", platform = "native")
     .settings(
       // Multiple check warnings due to usage of self-types
       nativeConfig ~= { _.withCheckFatalWarnings(false) },
@@ -271,7 +270,7 @@ object Build {
     }
 
   lazy val toolsJVM =
-    MultiScalaProject(id = "toolsJVM", name = "tools", file("tools/jvm"))
+    MultiScalaProject("tools", platform = "jvm")
       .settings(
         libraryDependencies ++= Deps.JUnitJvm,
         Test / fork := true
@@ -690,7 +689,7 @@ object Build {
       .dependsOn(auxlib)
 
   // Tests ------------------------------------------------
-  lazy val tests = MultiScalaProject("tests", file("unit-tests") / "native")
+  lazy val tests = MultiScalaProject("tests", file("unit-tests"), platform = "native")
     .settings(
       noPublishSettings,
       testsCommonSettings,
@@ -730,7 +729,7 @@ object Build {
     )
 
   lazy val testsJVM =
-    MultiScalaProject("testsJVM", file("unit-tests/jvm"))
+    MultiScalaProject("tests", file("unit-tests"), platform = "jvm")
       .withBuildInfo(Test)
       .settings(
         noPublishSettings,
@@ -744,7 +743,7 @@ object Build {
       .dependsOn(junitAsyncJVM % "test")
 
   lazy val testsExt =
-    MultiScalaProject("testsExt", file("unit-tests-ext/native"))
+    MultiScalaProject("testsExt", file("unit-tests-ext"), platform = "native")
       .settings(noPublishSettings)
       .settings(
         // Setting only used to ensure that compiler does not crash when reporting deprecated options
@@ -766,7 +765,7 @@ object Build {
       )
 
   lazy val testsExtJVM =
-    MultiScalaProject("testsExtJVM", file("unit-tests-ext/jvm"))
+    MultiScalaProject("testsExt", file("unit-tests-ext"), platform = "jvm")
       .settings(
         noPublishSettings,
         testsExtCommonSettings,
@@ -867,10 +866,7 @@ object Build {
       .dependsOn(testInterfaceSbtDefs)
 
   lazy val junitTestOutputsNative =
-    MultiScalaProject(
-      "junitTestOutputsNative",
-      file("junit-test/output-native")
-    )
+    MultiScalaProject("junitTestOutputsNative", file("junit-test"), platform = "output-native", appendPlatform = false)
       .settings(commonJUnitTestOutputsSettings)
       .withNativeCompilerPlugin
       .withJUnitPlugin
@@ -881,7 +877,7 @@ object Build {
       )
 
   lazy val junitTestOutputsJVM =
-    MultiScalaProject("junitTestOutputsJVM", file("junit-test/output-jvm"))
+    MultiScalaProject("junitTestOutputsJVM", file("junit-test"), platform = "output-jvm", appendPlatform = false)
       .settings(
         commonJUnitTestOutputsSettings,
         libraryDependencies ++= Deps.JUnitJvm
@@ -889,7 +885,7 @@ object Build {
       .dependsOn(junitAsyncJVM % "test")
 
   lazy val junitAsyncNative =
-    MultiScalaProject("junitAsyncNative", file("junit-async/native"))
+    MultiScalaProject("junitAsyncNative", file("junit-async"), platform = "native")
       .settings(
         Compile / publishArtifact := false
       )
@@ -898,7 +894,7 @@ object Build {
       .dependsOn(javalib)
 
   lazy val junitAsyncJVM =
-    MultiScalaProject("junitAsyncJVM", file("junit-async/jvm"))
+    MultiScalaProject("junitAsync", file("junit-async"), platform = "jvm")
       .settings(
         publishArtifact := false
       )
