@@ -1,7 +1,7 @@
 package java.lang.process
 
 import java.io.{FileDescriptor, InputStream, OutputStream}
-import java.util.concurrent.{CompletableFuture, TimeUnit}
+import java.util.concurrent.{CompletableFuture, TimeUnit, TimeoutException}
 import java.util.stream.Stream
 import java.util.{Optional, function}
 
@@ -174,12 +174,33 @@ private[process] abstract class GenericProcessHandle extends ProcessHandle {
     ((31 * this.pid().##) * 31) + processInfo.createdAt.##
   override def toString: String =
     s"Process[pid=${pid()}, exitValue=${getCachedExitCode.getOrElse("\"not exited\"")}"
+
+  protected object ProcessExitCheckerCompletion
+      extends ProcessExitChecker.Factory
+      with ProcessExitChecker {
+    override def createSingle(pid: Int)(implicit
+        pr: ProcessRegistry
+    ): ProcessExitChecker = this
+
+    override def close(): Unit = {}
+    override def waitAndReapSome(
+        timeout: Long,
+        unitOpt: Option[TimeUnit]
+    ): Boolean =
+      unitOpt.fold { completion.get(); true } { unit =>
+        timeout > 0L && {
+          try { completion.get(timeout, unit); true }
+          catch { case _: TimeoutException => false }
+        }
+      }
+  }
+
 }
 
 private[lang] object GenericProcess {
 
   def apply(pb: ProcessBuilder): GenericProcess = {
-    if (LinktimeInfo.isWindows) WindowsProcess(pb) else UnixProcess(pb)
+    if (LinktimeInfo.isWindows) WindowsProcess(pb) else UnixProcessFactory(pb)
   }
 
 }
