@@ -5,304 +5,18 @@ import java.{util => ju}
 
 import scala.annotation.tailrec
 
-import scalanative.libc.LibcExt
-import scalanative.meta.LinktimeInfo
 import scalanative.posix.errno._
-import scalanative.posix.poll._
-import scalanative.posix.pollOps._
 import scalanative.posix.spawn._
-import scalanative.posix.time.timespec
-import scalanative.posix.timeOps.timespecOps
-import scalanative.posix.{fcntl, pollEvents, unistd}
+import scalanative.posix.{fcntl, unistd}
 import scalanative.unsafe._
 import scalanative.unsigned._
 
 import ju.ArrayList
 import ju.ScalaOps._
-import ju.concurrent.TimeUnit
 
-/* Design Note:
- * 
- * This implementation is actively "Under Heavy Construction".
- * If you are thinking of making changes, please co-ordinate in
- * SN Issue #4508 or elsewhere. Thank you.
- * 
- * The comments in this file, especially block or design comments
- * have become out of sync with the implementation are almost certainly
- * a waste of time.
- *
- * If you attempt to trace code paths and say "this does not make sense",
- * "this can not be", "this is not thread-safe", or "this is neither
- * efficient nor a short code path" you are probably right.
- */
+private[process] object UnixProcessFactory {
 
-private[process] class UnixProcessHandleGen2(pidFd: UnixFileDescriptorAtomic)(
-    override protected val _pid: CInt,
-    override val builder: ProcessBuilder
-) extends UnixProcessHandle {
-
-  /** Closes [[pidFd]], if any, used to monitor if the process has exited.
-   *
-   *  @see
-   *    [[GenericProcessHandle.close]] for more details.
-   */
-  override protected final def close(): Unit = pidFd.close()
-
-  override protected def getExitCodeImpl: Option[Int] =
-    UnixProcess.waitpidNowNoECHILD(_pid)
-
-  override protected def waitForImpl(): Boolean = {
-    /* wait until process exits, is interrupted in OS wait,  or forever,
-     * whichever comes first.
-     */
-    while (!waitAndReapChild(None) && !hasExited) {}
-    true
-  }
-
-  override protected def waitForImpl(
-      timeoutArg: Long,
-      unit: TimeUnit
-  ): Boolean = {
-    // Java allows negative timeouts. Simplify timeout math; treat as 0.
-    val timeout = Math.max(timeoutArg, 0L)
-
-    val deadline = System.nanoTime() + unit.toNanos(timeout)
-    // wait until process exits or times out.
-    val ts = stackalloc[timespec]()
-    fillTimespec(timeout, unit, ts)
-    @tailrec
-    def waitWithRepeat(): Boolean = {
-      val ok = waitAndReapChild(Some(ts))
-      hasExited || !ok && {
-        val remainingNanos = deadline - System.nanoTime()
-        remainingNanos >= 0 && {
-          fillTimespec(remainingNanos, TimeUnit.NANOSECONDS, ts)
-          waitWithRepeat()
-        }
-      }
-    }
-    waitWithRepeat()
-  }
-
-  private def waitAndReapChild(timeout: Option[Ptr[timespec]]): Boolean = {
-    /* This method is simple, but the __long__ explanation it requires
-     * belongs in one place, not in each of its callers.
-     *
-     * USE THIS METHOD __ONLY_IMMEDIATELY_AFTER_ kevent/ppoll says
-     * the child process has exited.  Otherwise it can hang/block indefinitely,
-     * causing much sadness and rending of garments.
-     *
-     *  Explicitly allow HANG in "options".
-     *  macOS appears to allow a tiny (millisecond?) delay between when
-     *  kevent reports a child exit transition and when waitpid() on that
-     *  process reports the child as exited.  This delay is not seen on Linux.
-     *
-     *  The alternative to allowing HANG on a process which kevent/ppoll has
-     *  just reported as having exited is a fussy busy-wait timing loop.
-     */
-
-    val ok = UnixProcessHandleGen2.osWaitForImpl(this, timeout)
-    if (ok) {
-      val ec = UnixProcess.waitpidNoECHILD(_pid, options = 0)
-      ec.foreach(setCachedExitCode)
-    }
-    ok
-  }
-
-  // corral handling timevalue conversion details, fill ts.
-  private def fillTimespec(
-      timeout: scala.Long,
-      unit: TimeUnit,
-      ts: Ptr[timespec]
-  ): Unit = {
-    // Precondition: caller has ensured that timeout >= 0.
-
-    /* The longest representation the C structure will accommodate is
-     * java.lang.Long.MAX_VALUE seconds and 999,999 nanos.
-     *
-     * Certain combinations of the timeout & unit arguments and specified
-     * conversion will result in saturation and Java returning
-     * java.lang.Long.MAX_VALUE.
-     *
-     * The math below will only accommodate java.lang.Long.MAX_VALUE seconds
-     * and 0 nanos. Perhaps during that time a better solution will be found.
-     */
-
-    /* Arguments 'timeout: scala.Long' and 'unit: TimeUnit' allow a greater
-     * range of values than the underlying operating data structure:
-     * C struct timespec. 'timespec' allows only java.lang.Long.MAX_VALUE
-     * seconds and 999,999,999 nanos. Note the restriction on the range
-     * of nanoseconds.
-     *
-     * TimeUnits of TimeUnit.SECOND or larger will always have zero
-     * nanoseconds. Some combinations of timeout and unit will
-     * saturate (overflow) the timspec.tv_sec field.
-     * Consider: java.lang.Long.MAX_VALUE and TimeUnit.DAYS.
-     *
-     * TimeUnits smaller than TimeUnit.SECOND may have  effective
-     * tv nanoseconds. Consider: 1999 and TimeUnit.MILLISECONDS.
-     * The operating system(s) require the timespec to be normalized.
-     * That is, the tv_nsec field must be between 0 and 999,999,999.
-     * That is, represent less than a second, full seconds go into the
-     * tv_sec field.
-     *
-     * The math below is more complicated that the 'usual' algorithm
-     * one might expect because it accounts for saturation and normalization.
-     * NOT:
-     *  tv.tv_nsec =
-     *      (unit.toNanos(timeout) - TimeUnit.SECONDS.toNanos(seconds)).toSize
-     */
-
-    ts.tv_sec = unit.toSeconds(timeout).toSize
-
-    /* To the devo or reviewer reading the code down the line and asking
-     * "These are known compile time constants, why not use 1_000 and such?".
-     *
-     * SN currently supports Scala 2.12, which does not allow underscores
-     * in numeric literals: 1_000. Scala versions 2.13 and above do.
-     * The complier should optimize the math of the constants at compile time
-     * but the code looks strange.
-     *
-     * If there is a reason to touch this code once Scala 2.12 is no longer
-     * supported, the literals with underbars expected by contemporary
-     * eyes can be introduced.
-     */
-
-    ts.tv_nsec = {
-      val modulus = unit match {
-        case _ if (unit == TimeUnit.MILLISECONDS) =>
-          1000L
-        case _ if (unit == TimeUnit.MICROSECONDS) =>
-          1000L * 1000
-        case _ if (unit == TimeUnit.NANOSECONDS) =>
-          1000L * 1000 * 1000
-        case _ => 1L // For all i: Int, (i % 1) == 0, which propagates through.
-      }
-
-      unit.toNanos(timeout % modulus).toSize
-    }
-  }
-
-  /* Linux - ppoll()
-   * Return true if the call shouldn't be tried again.
-   */
-  private def linuxWaitForImpl(timeout: Option[Ptr[timespec]]): Boolean = {
-    import scalanative.linux.ppoll._
-
-    // epoll() is not used in this method since only one fd is involved.
-
-    val fds = stackalloc[struct_pollfd](1)
-    (fds + 0).fd = pidFd.get()
-    (fds + 0).events = (pollEvents.POLLIN | pollEvents.POLLRDNORM).toShort
-
-    // 'null' sigmask will retain all current signals.
-    0 != UnixProcess.throwOnErrorRetryEINTR(_ != EBADF)(
-      ppoll(fds, 1.toUSize, timeout.orNull, null),
-      s"waitFor pid=${_pid}, ppoll failed: ${LibcExt.strError()}"
-    )
-  }
-
-  /* macOS & FreeBSD -- kevent
-   * Return true if the call shouldn't be tried again.
-   */
-  private def bsdWaitForImpl(timeout: Option[Ptr[timespec]]): Boolean = {
-    import scalanative.bsd.kevent._
-
-    /* Design Note:
-     *     This first implementation creates a kqueue() on each & every
-     *     waitFor() invocation.  An obvious evolution is to create one
-     *     kqueue per class instance and reuse it. The trick would be to
-     *     ensure that it gets closed when the instance is no longer used.
-     *     Things would have to be set up so that Linux systems would stay
-     *     happy.
-     */
-
-    val kq = UnixProcess.throwOnErrorRetryEINTR(
-      kqueue(),
-      s"waitFor pid=${_pid} kqueue failed"
-    )
-
-    val keventSize: CSize = scalanative_kevent_size()
-    val childExitEvent = stackalloc[Byte](keventSize)
-    val eventResult = stackalloc[Byte](keventSize)
-
-    /* event will eventually be deleted when child pid closes.
-     * EV_DISPATCH hints that the event can be deleted immediately after
-     * delivery.
-     */
-
-    scalanative_kevent_set(
-      childExitEvent,
-      0,
-      _pid.toUSize,
-      EVFILT_PROC.toShort,
-      (EV_ADD | EV_DISPATCH).toUShort,
-      (NOTE_EXIT | NOTE_EXITSTATUS).toUInt,
-      0,
-      null
-    )
-
-    val status = UnixProcess.throwOnErrorRetryEINTR(
-      kevent(
-        kq,
-        childExitEvent,
-        1,
-        eventResult,
-        1,
-        timeout.orNull
-      ),
-      s"wait pid=${_pid}, kevent failed"
-    )
-
-    unistd.close(kq) // Do not leak kq.
-
-    status > 0
-  }
-}
-
-private[process] object UnixProcessHandleGen2 {
-
-  private val osWaitForImpl
-      : (UnixProcessHandleGen2, Option[Ptr[timespec]]) => Boolean =
-    if (LinktimeInfo.isLinux) {
-      { (ref, to) => ref.linuxWaitForImpl(to) }
-    } else if (LinktimeInfo.isMac || LinktimeInfo.isFreeBSD) {
-      { (ref, to) => ref.bsdWaitForImpl(to) }
-    } else {
-      /* Should never get here. Earlier dispatch should have called
-       * UnixProcessGen1.
-       */
-      throw new IOException("unsuported Platform")
-    }
-
-}
-
-private[process] object UnixProcessGen2 {
-
-  private def createHandle(
-      pid: CInt,
-      builder: ProcessBuilder
-  ): UnixProcessHandleGen2 = {
-    val pidFd = UnixFileDescriptorAtomic(
-      if (LinktimeInfo.isLinux) {
-        import scalanative.linux.pidfd._
-        val fd = pidfd_open(pid, 0.toUInt)
-        if (fd == -1) {
-          val msg = s"pidfd_open($pid) failed: ${LibcExt.strError()}"
-          throw new IOException(msg)
-        }
-        fd
-      } else {
-        -1
-      }
-    )
-
-    new UnixProcessHandleGen2(pidFd)(pid, builder)
-  }
-
-  def apply(
-      builder: ProcessBuilder
-  ): GenericProcess = Zone.acquire { implicit z =>
+  def apply(pb: ProcessBuilder): GenericProcess = Zone.acquire { implicit z =>
     /* If builder.directory is not null, it specifies a new working
      * directory for the process (chdir()).
      *
@@ -315,15 +29,11 @@ private[process] object UnixProcessGen2 {
      * directory.
      */
 
-    if (builder.isCwd)
-      spawnChild(builder)
-    else
-      forkChild(builder)(createHandle)
+    val needSpawn = pb.isCwd && ProcessExitChecker.unixFactoryOpt.isDefined
+    if (needSpawn) spawnChild(pb) else forkChild(pb)
   }
 
-  def forkChild(builder: ProcessBuilder)(
-      f: (Int, ProcessBuilder) => UnixProcessHandle
-  )(implicit z: Zone): GenericProcess = {
+  def forkChild(builder: ProcessBuilder)(implicit z: Zone): GenericProcess = {
     var success = false
     val (infds, outfds, errfds) = createPipes(builder)
 
@@ -399,7 +109,8 @@ private[process] object UnixProcessGen2 {
       if (pid == 0) runChild()
       else {
         success = true
-        UnixProcess(f(pid, builder), infds, outfds, errfds)
+        val handle = new UnixProcessHandle(pid)(builder)
+        UnixProcess(handle, infds, outfds, errfds)
       }
     } finally {
       if (!success) closePipes()
@@ -519,7 +230,8 @@ private[process] object UnixProcessGen2 {
       UnixProcess.throwOnErrnum(status, "Unable to posix_spawn process")
 
       success = true
-      UnixProcess(createHandle(!pidPtr, builder), infds, outfds, errfds)
+      val handle = new UnixProcessHandle(!pidPtr)(builder)
+      UnixProcess(handle, infds, outfds, errfds)
     } finally {
       if (!success) {
         def closePipe(pipe: Ptr[CInt]): Unit =

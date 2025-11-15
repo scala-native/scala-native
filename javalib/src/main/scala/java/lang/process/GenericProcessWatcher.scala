@@ -79,8 +79,8 @@ private[process] object GenericProcessWatcher {
     // return true if something has been reaped
     private val reapSomeProcesses: () => Boolean =
       if (LinktimeInfo.isWindows) claimAllCompleted
-      else if (UnixProcess.useGen2) claimAllCompleted
-      else UnixProcessGen1.waitpidAny
+      else if (ProcessExitChecker.unixFactoryOpt.isDefined) claimAllCompleted
+      else () => ProcessExitCheckerWaitpid.waitAndReap(-1, 0, None)
 
     @alwaysinline
     def claimAllCompleted(): Boolean = removeProcessesIf(_.checkIfExited())
@@ -90,9 +90,11 @@ private[process] object GenericProcessWatcher {
       removeIf(processes.values())(f)
   }
 
-  def completeWith(pid: Long)(ec: => Int): Boolean = {
-    val ref = Processes.remove(pid)
-    (ref ne null) && ref.setCachedExitCode(ec)
+  implicit val processRegistry: ProcessRegistry = new ProcessRegistry {
+    override def completeWith(pid: Long)(ec: Int): Unit = {
+      val ref = Processes.remove(pid)
+      if (ref ne null) ref.setCachedExitCode(ec)
+    }
   }
 
   private def removeIf[A](coll: ju.Collection[A])(f: A => Boolean): Boolean = {
