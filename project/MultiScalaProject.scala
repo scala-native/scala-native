@@ -9,9 +9,9 @@ import Keys._
 import MyScalaNativePlugin.{enableExperimentalCompiler, ideScalaVersion}
 
 final case class MultiScalaProject private (
-    val name: String,
+    name: String,
     private val projects: Map[String, Project],
-    val dependsOnSourceInIDE: Boolean
+    dependsOnSourceInIDE: Boolean
 ) extends CompositeProject {
   import MultiScalaProject._
 
@@ -172,34 +172,31 @@ object MultiScalaProject {
       case _        => id + major.replace('.', '_')
     }
 
-  def apply(id: String): MultiScalaProject =
-    apply(id, id, file(id), Nil)
-
-  def apply(id: String, base: File): MultiScalaProject =
-    apply(id, id, base, Nil)
-
-  def apply(
-      id: String,
-      name: String,
-      base: File
-  ): MultiScalaProject = apply(id, name, base, Nil)
-
-  def apply(
-      id: String,
-      base: File,
-      additionalIDEScalaVersions: List[String]
-  ): MultiScalaProject =
-    apply(id, id, base, additionalIDEScalaVersions)
-
   /** @param additionalIDEScalaVersions
    *    Allowed values: 3, 3-next, 2.13, 2.12.
    */
   def apply(
-      id: String,
       name: String,
-      base: File,
-      additionalIDEScalaVersions: List[String]
+      rootOpt: File = null,
+      additionalIDEScalaVersions: List[String] = Nil,
+      idOpt: String = null,
+      platform: String = null,
+      appendPlatform: Boolean = true
   ): MultiScalaProject = {
+    val root = Option(rootOpt).getOrElse(file(name))
+    val id = Option(idOpt).getOrElse(platform match {
+      case "native" | null => name
+      case p               =>
+        if (appendPlatform) name + p.toUpperCase(java.util.Locale.ROOT)
+        else name
+    })
+    val (base, bases) = Option(platform).fold {
+      (root, Seq(root))
+    } { p =>
+      val base = root / p
+      (base, Seq(root, base))
+    }
+
     val projects = for {
       (major, minors) <- scalaCrossVersions
     } yield {
@@ -210,12 +207,14 @@ object MultiScalaProject {
 
       major -> Project(
         id = projectID(id, major),
-        base = new File(base, "." + major)
+        base = base / ("." + major)
       ).settings(
         Settings.commonSettings,
         Keys.name := Settings.projectName(name),
         scalaVersion := scalaVersions(major),
         crossScalaVersions := minors,
+        sourceDirectory := (ThisBuild / baseDirectory).value / base.getPath / "src",
+        sharedSourceDirs(bases),
         noIDEExportSettings
       )
     }
@@ -224,8 +223,56 @@ object MultiScalaProject {
       name,
       projects,
       dependsOnSourceInIDE = additionalIDEScalaVersions.nonEmpty
-    ).settings(
-      sourceDirectory := baseDirectory.value.getParentFile / "src"
     )
   }
+
+  private def alternateScalaVersionSubdirs(scalaVersion: String): Seq[String] =
+    CrossVersion.partialVersion(scalaVersion) match {
+      case Some((2, 12)) => Seq("scala", "scala-2", "scala-2.12")
+      case Some((2, 13)) => Seq("scala", "scala-2", "scala-2.13", "scala-2.13+")
+      case Some((3, _))  => Seq("scala", "scala-3", "scala-2.13+")
+      case _ => sys.error(s"Unsupported Scala version: ${scalaVersion}")
+    }
+
+  private def sharedSourceDirsForConfig(
+      bases: Seq[File],
+      subdir: String,
+      conf: Configuration
+  ) = {
+    conf / unmanagedSourceDirectories ++= {
+      val root = (ThisBuild / baseDirectory).value
+      alternateScalaVersionSubdirs(scalaVersion.value)
+        .flatMap { ver => bases.map(root / _.getPath / "src" / subdir / ver) }
+    }
+  }
+
+  private def sharedSourceDirs(initialBases: Seq[File]) = {
+    val bases = initialBases ++ getPlatformSourceDirs(initialBases)
+    Def.settings(
+      sharedSourceDirsForConfig(bases, "main", Compile),
+      sharedSourceDirsForConfig(bases, "test", Test)
+    )
+  }
+
+  private def getPlatformSourceDirs(bases: Seq[File]): Seq[File] = {
+    val builder = Seq.newBuilder[File]
+
+    def platformDir(platform: String): Unit =
+      bases.foreach(builder += _ / platform)
+
+    def platformDirs(platforms: String*): Unit =
+      platforms.foreach(platformDir)
+
+    val osName = sys.props("os.name").toLowerCase
+    if (osName.startsWith("win")) platformDir("windows")
+    else {
+      platformDir("unix")
+      if (osName.contains("linux")) platformDir("linux")
+      else if (osName.contains("mac")) platformDirs("macos", "bsd")
+      else if (osName.contains("freebsd")) platformDirs("freebsd", "bsd")
+    }
+
+    builder.result()
+  }
+
 }
