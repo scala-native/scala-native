@@ -70,9 +70,6 @@ final class Matcher private (private var _pattern: Pattern) {
   // The append position: where the next append should start.
   private var _appendPos: Int = _
 
-  // Is there a current match?
-  private var _hasMatch: Boolean = _
-
   // Have we found the submatches (groups) of the current match?
   // group[0], group[1] are set regardless.
   private var _hasGroups: Boolean = _
@@ -80,8 +77,9 @@ final class Matcher private (private var _pattern: Pattern) {
   // The anchor flag to use when repeating the match to find subgroups.
   private var _anchorFlag: Int = _
 
-  private var _lastMatchStart = 0
-  private var _lastMatchEnd = 0
+  // if there's a current match, these must be non-negative
+  private var _lastMatchStart = -1
+  private var _lastMatchEnd = -1
 
   private var _regionStart = 0
   private var _regionEnd = 0
@@ -91,7 +89,7 @@ final class Matcher private (private var _pattern: Pattern) {
     this(pattern)
     _inputSequence = input
     _inputLength = input.length()
-    _regionEnd = _inputSequence.length
+    _regionEnd = _inputLength
   }
 
   // Returns the {@code Pattern} associated with this {@code Matcher}.
@@ -103,12 +101,11 @@ final class Matcher private (private var _pattern: Pattern) {
   // @return the {@code Matcher} itself, for chained method calls
   def reset(): Matcher = {
     _appendPos = 0
-    _hasMatch = false
     _hasGroups = false
-    _lastMatchStart = 0
-    _lastMatchEnd = 0
+    _lastMatchStart = -1
+    _lastMatchEnd = -1
     _regionStart = 0
-    _regionEnd = _inputSequence.length
+    _regionEnd = _inputLength
     this
   }
 
@@ -130,12 +127,22 @@ final class Matcher private (private var _pattern: Pattern) {
   // Returns the start position of the most recent match.
   //
   // @throws IllegalStateException if there is no match
-  def start(): Int = start(0)
+  def start(): Int = {
+    checkHasMatch()
+    _lastMatchStart
+  }
 
   // Returns the end position of the most recent match.
   //
   // @throws IllegalStateException if there is no match
-  def end(): Int = end(0)
+  def end(): Int = {
+    checkHasMatch()
+    _lastMatchEnd
+  }
+
+  // maps relative position within region to absolute
+  private def abspos(offset: Int): Int =
+    if (offset < 0) offset else offset + _regionStart
 
   // Returns the start position of a subgroup of the most recent match.
   //
@@ -145,7 +152,7 @@ final class Matcher private (private var _pattern: Pattern) {
   //   if {@code group < 0} or {@code group > groupCount()}
   def start(group: Int): Int = {
     loadGroup(group)
-    _groups(2 * group)
+    abspos(_groups(2 * group))
   }
 
   // Returns the end position of a subgroup of the most recent match.
@@ -156,7 +163,7 @@ final class Matcher private (private var _pattern: Pattern) {
   //   if {@code group < 0} or {@code group > groupCount()}
   def end(group: Int): Int = {
     loadGroup(group)
-    _groups(2 * group + 1)
+    abspos(_groups(2 * group + 1))
   }
 
   private def getNamedGroupOrThrow(key: String, msg: String): Int = {
@@ -225,6 +232,7 @@ final class Matcher private (private var _pattern: Pattern) {
       throw new IndexOutOfBoundsException("start > end")
     }
 
+    // XXX: should we reset here?
     _regionStart = start
     _regionEnd = end
     this
@@ -264,12 +272,15 @@ final class Matcher private (private var _pattern: Pattern) {
   // @return the number of subgroups the overall match (group 0) does not count
   def groupCount(): Int = _groupCount
 
+  private def checkHasMatch(): Unit =
+    if (_lastMatchEnd < 0) {
+      throw new IllegalStateException("No match found")
+    }
+
   // Helper: finds subgroup information if needed for group.
   private def loadGroup(group: Int): Unit = {
 
-    if (!_hasMatch) {
-      throw new IllegalStateException("No match found")
-    }
+    checkHasMatch()
 
     if ((group < 0) || (group > _groupCount)) {
       throw new IndexOutOfBoundsException(s"No group ${group}")
@@ -286,14 +297,12 @@ final class Matcher private (private var _pattern: Pattern) {
     // If we don't, they evaluate to new String[] {"ab", "a", "b", null}
     // We know it won't affect the total matched because the previous call
     // to match included the extra character, and it was not matched then.
-    var end = _groups(1) + 1
-    if (end > _inputLength) {
-      end = _inputLength
-    }
+    val end = _regionEnd.min(_lastMatchEnd + 1)
 
     val ok = _pattern.re2.match_(
       _inputSequence,
-      _groups(0),
+      _lastMatchStart,
+      _regionStart,
       end,
       _anchorFlag,
       _groups,
@@ -364,13 +373,10 @@ final class Matcher private (private var _pattern: Pattern) {
   // @return true if it finds a match
   def find(): Boolean = {
     // find() respects the region and does not change it.
-    var start = _regionStart
-    if (_hasMatch) {
-      start = _groups(1)
-      if (_groups(0) == _groups(1)) { // empty match - nudge forward
-        start += 1
-      }
-    }
+    val start =
+      if (_regionStart > _lastMatchEnd) _regionStart
+      else if (_lastMatchEnd > _lastMatchStart) _lastMatchEnd
+      else _lastMatchEnd + 1 // empty match - nudge forward
     genMatch(start, RE2.UNANCHORED)
   }
 
@@ -396,6 +402,7 @@ final class Matcher private (private var _pattern: Pattern) {
     val ok = _pattern.re2.match_(
       _inputSequence,
       startByte,
+      _regionStart,
       _regionEnd,
       anchor,
       _groups,
@@ -404,11 +411,10 @@ final class Matcher private (private var _pattern: Pattern) {
     if (!ok) {
       false
     } else {
-      _hasMatch = true
       _hasGroups = false
       _anchorFlag = anchor
-      _lastMatchStart = start()
-      _lastMatchEnd = end()
+      _lastMatchStart = abspos(_groups(0))
+      _lastMatchEnd = abspos(_groups(1))
       true
     }
   }
