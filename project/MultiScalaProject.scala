@@ -246,10 +246,33 @@ object MultiScalaProject {
     }
   }
 
-  private def sharedSourceDirs(bases: Seq[File]) =
+  private def sharedSourceDirs(initialBases: Seq[File]) = {
+    val bases = initialBases ++ getPlatformSourceDirs(initialBases)
     Def.settings(
       sharedSourceDirsForConfig(bases, "main", Compile),
       sharedSourceDirsForConfig(bases, "test", Test)
     )
+  }
+
+  private def getPlatformSourceDirs(bases: Seq[File]): Seq[File] = {
+    val builder = Seq.newBuilder[File]
+
+    def platformDir(platform: String): Unit =
+      bases.foreach(builder += _ / platform)
+
+    def platformDirs(platforms: String*): Unit =
+      platforms.foreach(platformDir)
+
+    val osName = sys.props("os.name").toLowerCase
+    if (osName.startsWith("win")) platformDir("windows")
+    else {
+      platformDir("unix")
+      if (osName.contains("linux")) platformDir("linux")
+      else if (osName.contains("mac")) platformDirs("macos", "bsd")
+      else if (osName.contains("freebsd")) platformDirs("freebsd", "bsd")
+    }
+
+    builder.result()
+  }
 
 }
