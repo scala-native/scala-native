@@ -24,8 +24,7 @@ private[process] abstract class GenericProcess(val handle: GenericProcessHandle)
   handle.onExitHandle((_, _) => { inputStream.drain(); null })
   handle.onExitHandle((_, _) => { errorStream.drain(); null })
 
-  if (LinktimeInfo.isMultithreadingEnabled)
-    GenericProcessWatcher.watchForTermination(handle)
+  GenericProcessWatcher.watchForTermination(handle)
 
   override def getInputStream(): InputStream = inputStream
   override def getErrorStream(): InputStream = errorStream
@@ -170,13 +169,7 @@ private[process] abstract class GenericProcessHandle extends ProcessHandle {
   override def toString: String =
     s"Process[pid=${pid()}, exitValue=${getCachedExitCode.getOrElse("\"not exited\"")}"
 
-  protected object ProcessExitCheckerCompletion
-      extends ProcessExitChecker.Factory
-      with ProcessExitChecker {
-    override def createSingle(pid: Int)(implicit
-        pr: ProcessRegistry
-    ): ProcessExitChecker = this
-
+  protected object ProcessExitCheckerCompletion extends ProcessExitChecker {
     override def close(): Unit = {}
     override def waitAndReapSome(
         timeout: Long,
