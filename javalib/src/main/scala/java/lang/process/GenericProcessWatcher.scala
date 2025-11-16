@@ -6,13 +6,17 @@ import scala.util.Try
 
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.meta.LinktimeInfo
+import scala.scalanative.unsafe.resolvedAtLinktime
 
 private[process] object GenericProcessWatcher {
+
+  @resolvedAtLinktime()
+  def isEnabled: Boolean = LinktimeInfo.isMultithreadingEnabled
 
   import ju.concurrent._
 
   @alwaysinline def watchForTermination(handle: GenericProcessHandle): Unit =
-    Processes.add(handle)
+    if (isEnabled) Processes.add(handle)
 
   private object Processes {
     private val processes = new ConcurrentHashMap[jl.Long, GenericProcessHandle]
