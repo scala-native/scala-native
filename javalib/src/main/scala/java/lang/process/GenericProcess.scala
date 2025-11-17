@@ -20,12 +20,11 @@ private[process] abstract class GenericProcess(val handle: GenericProcessHandle)
   private val errorStream =
     PipeIO[PipeIO.Stream](fdErr, handle.builder.redirectError())
 
-  handle.onExitHandleSync((_, _) => { outputStream.close(); null })
-  handle.onExitHandleAsync((_, _) => { inputStream.drain(); null })
-  handle.onExitHandleAsync((_, _) => { errorStream.drain(); null })
+  handle.onExitHandle((_, _) => { outputStream.close(); null })
+  handle.onExitHandle((_, _) => { inputStream.drain(); null })
+  handle.onExitHandle((_, _) => { errorStream.drain(); null })
 
-  if (LinktimeInfo.isMultithreadingEnabled)
-    GenericProcessWatcher.watchForTermination(handle)
+  GenericProcessWatcher.watchForTermination(handle)
 
   override def getInputStream(): InputStream = inputStream
   override def getErrorStream(): InputStream = errorStream
@@ -80,8 +79,6 @@ private[process] abstract class GenericProcess(val handle: GenericProcessHandle)
 private[process] abstract class GenericProcessHandle extends ProcessHandle {
   protected def getExitCodeImpl: Option[Int]
   protected def destroyImpl(force: Boolean): Boolean
-  protected def waitForImpl(): Boolean
-  protected def waitForImpl(timeout: scala.Long, unit: TimeUnit): Boolean
 
   /** Closes any resources associated with a running process.
    *
@@ -91,12 +88,28 @@ private[process] abstract class GenericProcessHandle extends ProcessHandle {
    *  Currently, [[close]] is called only by [[setCachedExitCode]] upon
    *  successful reaping of the terminated child.
    */
-  protected def close(): Unit
+  protected def close(): Unit = exitChecker.close()
 
   val builder: ProcessBuilder
 
   private val processInfo: GenericProcessInfo = GenericProcessInfo(builder)
   protected val completion = new CompletableFuture[java.lang.Integer]()
+
+  /* Make sure we have exactly one entity calling waitpid on a process.
+   * Reasons are having fewer kernel interactions, plus an unlikely but
+   * theoretically possible scenario whereby by the time a second waiter
+   * attempts to waitpid (hoping for an ECHILD), a completely new child
+   * had been forked with the same pid. */
+  protected val exitChecker: ProcessExitChecker =
+    if (GenericProcessWatcher.isEnabled)
+      ProcessExitCheckerCompletion // use GenericProcessWatcher
+    else {
+      implicit val processRegistry: ProcessRegistry = new ProcessRegistry {
+        override def completeWith(pid: Long)(ec: Int): Unit =
+          setCachedExitCode(ec)
+      }
+      ProcessExitChecker.factory.createSingle(this)
+    }
 
   override final def isAlive(): Boolean = !hasExited
 
@@ -128,12 +141,7 @@ private[process] abstract class GenericProcessHandle extends ProcessHandle {
   ): CompletableFuture[A] =
     completion.thenApplyAsync(fn)
 
-  def onExitHandleSync[A <: AnyRef](
-      fn: function.BiFunction[java.lang.Integer, Throwable, A]
-  ): CompletableFuture[A] =
-    completion.handle(fn)
-
-  def onExitHandleAsync[A <: AnyRef](
+  def onExitHandle[A <: AnyRef](
       fn: function.BiFunction[java.lang.Integer, Throwable, A]
   ): CompletableFuture[A] =
     completion.handleAsync(fn)
@@ -150,9 +158,11 @@ private[process] abstract class GenericProcessHandle extends ProcessHandle {
     hasExited || destroyImpl(force = force)
 
   private def waitForWith(check: => Boolean) = hasExited || check && hasExited
-  def waitFor(): Boolean = waitForWith(waitForImpl())
+  def waitFor(): Boolean = waitForWith(exitChecker.waitAndReapSome(0, None))
   def waitFor(timeout: scala.Long, unit: TimeUnit): Boolean =
-    waitForWith(timeout > 0L && waitForImpl(timeout, unit))
+    waitForWith(
+      timeout > 0L && exitChecker.waitAndReapSome(timeout, Some(unit))
+    )
 
   override def onExit(): CompletableFuture[ProcessHandle] =
     onExitApply(_ => this: ProcessHandle)
@@ -175,13 +185,7 @@ private[process] abstract class GenericProcessHandle extends ProcessHandle {
   override def toString: String =
     s"Process[pid=${pid()}, exitValue=${getCachedExitCode.getOrElse("\"not exited\"")}"
 
-  protected object ProcessExitCheckerCompletion
-      extends ProcessExitChecker.Factory
-      with ProcessExitChecker {
-    override def createSingle(pid: Int)(implicit
-        pr: ProcessRegistry
-    ): ProcessExitChecker = this
-
+  protected object ProcessExitCheckerCompletion extends ProcessExitChecker {
     override def close(): Unit = {}
     override def waitAndReapSome(
         timeout: Long,
@@ -200,7 +204,7 @@ private[process] abstract class GenericProcessHandle extends ProcessHandle {
 private[lang] object GenericProcess {
 
   def apply(pb: ProcessBuilder): GenericProcess = {
-    if (LinktimeInfo.isWindows) WindowsProcess(pb) else UnixProcessFactory(pb)
+    if (LinktimeInfo.isWindows) WindowsProcessFactory(pb) else UnixProcessFactory(pb)
   }
 
 }
