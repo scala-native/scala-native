@@ -13,8 +13,8 @@ import scala.scalanative.windows._
 import HandleApi._
 
 private[process] class WindowsProcessHandle(
-    _pid: DWord,
-    handle: Handle,
+    private val _pid: DWord,
+    private val handle: Handle,
     override val builder: ProcessBuilder
 ) extends GenericProcessHandle {
   override final def pid(): Long = _pid.toLong
@@ -26,21 +26,19 @@ private[process] class WindowsProcessHandle(
 
   override protected def close(): Unit = CloseHandle(handle)
 
+  private val exitChecker = {
+    implicit val pr: ProcessRegistry = new ProcessRegistry {
+      override def completeWith(pid: Long)(ec: Int): Unit =
+        setCachedExitCode(ec)
+    }
+    WindowsProcessHandle.ProcessExitCheckerFactory.createSingle(this)
+  }
+
   override protected def waitForImpl(): Boolean =
-    osWaitForImpl(Constants.Infinite)
+    exitChecker.waitAndReapSome(0, None)
 
   override protected def waitForImpl(timeout: Long, unit: TimeUnit): Boolean =
-    osWaitForImpl(unit.toMillis(timeout).toUInt)
-
-  private def osWaitForImpl(timeoutMillis: DWord): Boolean =
-    SynchApi.WaitForSingleObject(handle, timeoutMillis) match {
-      case SynchApiExt.WAIT_TIMEOUT => false
-      case SynchApiExt.WAIT_FAILED  =>
-        if (!hasExited)
-          throw WindowsException("Failed to wait on process handle")
-        true // someone may have closed the handle
-      case _ => checkAndSetExitCode(); true
-    }
+    exitChecker.waitAndReapSome(timeout, Some(unit))
 
   override protected def getExitCodeImpl: Option[Int] = {
     val exitCode: Ptr[DWord] = stackalloc[DWord]()
@@ -48,6 +46,44 @@ private[process] class WindowsProcessHandle(
       val code = !exitCode
       if (code != ProcessThreadsApiExt.STILL_ACTIVE) Some(code.toInt) else None
     } else None
+  }
+
+}
+
+object WindowsProcessHandle {
+
+  object ProcessExitCheckerFactory extends ProcessExitChecker.Factory {
+
+    override def createSingle(
+        handle: GenericProcessHandle
+    )(implicit pr: ProcessRegistry): ProcessExitChecker =
+      new Single(handle.asInstanceOf[WindowsProcessHandle])
+
+    override def createMulti(implicit
+        pr: ProcessRegistry
+    ): ProcessExitChecker.Multi = throw new UnsupportedOperationException()
+
+    private class Single(handle: WindowsProcessHandle)
+        extends ProcessExitChecker {
+      override def close(): Unit = {}
+
+      override def waitAndReapSome(
+          timeout: Long,
+          unitOpt: Option[TimeUnit]
+      ): Boolean = {
+        val timeoutMillis = unitOpt
+          .fold(Constants.Infinite)(_.toMillis(timeout).toUInt)
+        SynchApi.WaitForSingleObject(handle.handle, timeoutMillis) match {
+          case SynchApiExt.WAIT_TIMEOUT => false
+          case SynchApiExt.WAIT_FAILED  =>
+            if (!handle.hasExited)
+              throw WindowsException("Failed to wait on process handle")
+            true // someone may have closed the handle
+          case _ => handle.checkIfExited()
+        }
+      }
+    }
+
   }
 
 }
