@@ -4,9 +4,13 @@ import java.util.concurrent.{CompletableFuture, TimeUnit, TimeoutException}
 import java.util.stream.Stream
 import java.util.{Optional, function}
 
+import scala.scalanative.javalib.io.ObjectHandle
+
 // Represents ProcessHandle for process started by Scala Native runtime
 // Cannot be used with processes started by other programs
-private[process] abstract class GenericProcessHandle extends ProcessHandle {
+private[process] abstract class GenericProcessHandle(
+    protected val processId: ObjectHandle
+) extends ProcessHandle {
   protected def getExitCodeImpl: Option[Int]
   protected def destroyImpl(force: Boolean): Boolean
   protected def waitForImpl(): Boolean
