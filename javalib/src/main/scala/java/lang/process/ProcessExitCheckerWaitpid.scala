@@ -9,10 +9,10 @@ private[process] object ProcessExitCheckerWaitpid
       pr: ProcessRegistry
   ): ProcessExitChecker.Multi = new Multi
 
-  override def createSingle(pid: Int)(implicit
+  override def createSingle(handle: GenericProcessHandle)(implicit
       pr: ProcessRegistry
   ): ProcessExitChecker =
-    new Single(pid)
+    new Single(handle.pid().toInt)
 
   private class Single(pid: Int)(implicit pr: ProcessRegistry)
       extends ProcessExitChecker {

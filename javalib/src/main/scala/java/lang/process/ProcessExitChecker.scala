@@ -31,7 +31,7 @@ private[process] object ProcessExitChecker {
     def createMulti(implicit pr: ProcessRegistry): Multi
 
     /** @return None if process has exited */
-    def createSingle(pid: Int)(implicit
+    def createSingle(handle: GenericProcessHandle)(implicit
         pr: ProcessRegistry
     ): ProcessExitChecker
   }

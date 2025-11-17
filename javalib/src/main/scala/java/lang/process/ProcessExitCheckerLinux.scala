@@ -15,13 +15,15 @@ private[process] object ProcessExitCheckerLinux
   import linux.pidfd._
   import linux.ppoll._
 
-  override def createSingle(pid: Int)(implicit
+  override def createSingle(handle: GenericProcessHandle)(implicit
       pr: ProcessRegistry
-  ): ProcessExitChecker =
+  ): ProcessExitChecker = {
+    val pid = handle.pid().toInt
     getPidFd(pid).fold {
       reapWhenNotRunning(pid)
-      ProcessExitCheckerWaitpid.createSingle(pid)
+      ProcessExitCheckerWaitpid.createSingle(handle)
     }(fd => new Single(pid, UnixFileDescriptorAtomic(fd)))
+  }
 
   // XXX: this watcher is NOT thread-safe, must be used from single thread
   override def createMulti(implicit

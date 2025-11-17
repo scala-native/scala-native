@@ -22,7 +22,7 @@ private[process] class UnixProcessHandle(_pid: CInt)(
           override def completeWith(pid: Long)(ec: Int): Unit =
             setCachedExitCode(ec)
         }
-        factory.createSingle(_pid)
+        factory.createSingle(this)
       }
   }.getOrElse(ProcessExitCheckerCompletion)
 
