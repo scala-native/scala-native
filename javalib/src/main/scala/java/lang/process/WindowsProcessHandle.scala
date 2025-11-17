@@ -24,23 +24,10 @@ private[process] class WindowsProcessHandle(
   override protected def destroyImpl(force: Boolean): Boolean =
     ProcessThreadsApi.TerminateProcess(handle, 1.toUInt)
 
-  override protected def close(): Unit = CloseHandle(handle)
-
-  private val exitChecker =
-    if (GenericProcessWatcher.isEnabled) ProcessExitCheckerCompletion
-    else {
-      implicit val pr: ProcessRegistry = new ProcessRegistry {
-        override def completeWith(pid: Long)(ec: CInt): Unit =
-          setCachedExitCode(ec)
-      }
-      WindowsProcessHandle.ProcessExitCheckerFactory.createSingle(this)
-    }
-
-  override protected def waitForImpl(): Boolean =
-    exitChecker.waitAndReapSome(0, None)
-
-  override protected def waitForImpl(timeout: Long, unit: TimeUnit): Boolean =
-    exitChecker.waitAndReapSome(timeout, Some(unit))
+  override protected def close(): Unit = {
+    CloseHandle(handle)
+    super.close()
+  }
 
   override protected def getExitCodeImpl: Option[Int] = {
     val exitCode: Ptr[DWord] = stackalloc[DWord]()

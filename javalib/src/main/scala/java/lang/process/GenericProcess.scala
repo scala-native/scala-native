@@ -79,8 +79,6 @@ private[process] abstract class GenericProcess(val handle: GenericProcessHandle)
 private[process] abstract class GenericProcessHandle extends ProcessHandle {
   protected def getExitCodeImpl: Option[Int]
   protected def destroyImpl(force: Boolean): Boolean
-  protected def waitForImpl(): Boolean
-  protected def waitForImpl(timeout: scala.Long, unit: TimeUnit): Boolean
 
   /** Closes any resources associated with a running process.
    *
@@ -90,12 +88,28 @@ private[process] abstract class GenericProcessHandle extends ProcessHandle {
    *  Currently, [[close]] is called only by [[setCachedExitCode]] upon
    *  successful reaping of the terminated child.
    */
-  protected def close(): Unit
+  protected def close(): Unit = exitChecker.close()
 
   val builder: ProcessBuilder
 
   private val processInfo: GenericProcessInfo = GenericProcessInfo(builder)
   protected val completion = new CompletableFuture[java.lang.Integer]()
+
+  /* Make sure we have exactly one entity calling waitpid on a process.
+   * Reasons are having fewer kernel interactions, plus an unlikely but
+   * theoretically possible scenario whereby by the time a second waiter
+   * attempts to waitpid (hoping for an ECHILD), a completely new child
+   * had been forked with the same pid. */
+  protected val exitChecker: ProcessExitChecker =
+    if (GenericProcessWatcher.isEnabled)
+      ProcessExitCheckerCompletion // use GenericProcessWatcher
+    else {
+      implicit val processRegistry: ProcessRegistry = new ProcessRegistry {
+        override def completeWith(pid: Long)(ec: Int): Unit =
+          setCachedExitCode(ec)
+      }
+      ProcessExitChecker.factory.createSingle(this)
+    }
 
   override final def isAlive(): Boolean = !hasExited
 
@@ -144,9 +158,11 @@ private[process] abstract class GenericProcessHandle extends ProcessHandle {
     hasExited || destroyImpl(force = force)
 
   private def waitForWith(check: => Boolean) = hasExited || check && hasExited
-  def waitFor(): Boolean = waitForWith(waitForImpl())
+  def waitFor(): Boolean = waitForWith(exitChecker.waitAndReapSome(0, None))
   def waitFor(timeout: scala.Long, unit: TimeUnit): Boolean =
-    waitForWith(timeout > 0L && waitForImpl(timeout, unit))
+    waitForWith(
+      timeout > 0L && exitChecker.waitAndReapSome(timeout, Some(unit))
+    )
 
   override def onExit(): CompletableFuture[ProcessHandle] =
     onExitApply(_ => this: ProcessHandle)
