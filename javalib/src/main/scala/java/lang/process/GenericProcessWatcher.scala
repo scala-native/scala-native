@@ -51,18 +51,16 @@ private[process] object GenericProcessWatcher {
         compareAndSetState(1, 0) // if was open, close it, else block
     }
 
-    private val exitChecker: ProcessExitChecker.Multi =
-      ProcessExitChecker.factoryOpt.fold[ProcessExitChecker.Multi](
-        AllProcessExitChecker
-      ) { factory =>
-        implicit val processRegistry: ProcessRegistry = new ProcessRegistry {
-          override def completeWith(pid: Long)(ec: Int): Unit = {
-            val ref = remove(pid)
-            if (ref ne null) ref.setCachedExitCode(ec)
-          }
+    private val exitChecker: ProcessExitChecker.Multi = {
+      implicit val processRegistry: ProcessRegistry = new ProcessRegistry {
+        override def completeWith(pid: Long)(ec: Int): Unit = {
+          val ref = remove(pid)
+          if (ref ne null)
+            if (ec >= 0) ref.setCachedExitCode(ec) else ref.checkIfExited()
         }
-        factory.createMulti
       }
+      ProcessExitChecker.factory.createMulti
+    }
 
     def add(handle: GenericProcessHandle): Unit = {
       val pid = handle.pid()

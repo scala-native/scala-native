@@ -14,17 +14,16 @@ private[process] class UnixProcessHandle(_pid: CInt)(
    * theoretically possible scenario whereby by the time a second waiter
    * attempts to waitpid (hoping for an ECHILD), a completely new child
    * had been forked with the same pid. */
-  private val exitChecker: ProcessExitChecker = {
-    if (GenericProcessWatcher.isEnabled) None // use GenericProcessWatcher
-    else
-      ProcessExitChecker.factoryOpt.map { factory =>
-        implicit val processRegistry: ProcessRegistry = new ProcessRegistry {
-          override def completeWith(pid: Long)(ec: Int): Unit =
-            setCachedExitCode(ec)
-        }
-        factory.createSingle(this)
+  private val exitChecker: ProcessExitChecker =
+    if (GenericProcessWatcher.isEnabled)
+      ProcessExitCheckerCompletion // use GenericProcessWatcher
+    else {
+      implicit val processRegistry: ProcessRegistry = new ProcessRegistry {
+        override def completeWith(pid: Long)(ec: Int): Unit =
+          setCachedExitCode(ec)
       }
-  }.getOrElse(ProcessExitCheckerCompletion)
+      ProcessExitChecker.factory.createSingle(this)
+    }
 
   override final def pid(): Long = _pid.toLong
   override final def supportsNormalTermination(): Boolean = true

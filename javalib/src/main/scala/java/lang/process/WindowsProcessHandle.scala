@@ -26,13 +26,15 @@ private[process] class WindowsProcessHandle(
 
   override protected def close(): Unit = CloseHandle(handle)
 
-  private val exitChecker = {
-    implicit val pr: ProcessRegistry = new ProcessRegistry {
-      override def completeWith(pid: Long)(ec: Int): Unit =
-        setCachedExitCode(ec)
+  private val exitChecker =
+    if (GenericProcessWatcher.isEnabled) ProcessExitCheckerCompletion
+    else {
+      implicit val pr: ProcessRegistry = new ProcessRegistry {
+        override def completeWith(pid: Long)(ec: CInt): Unit =
+          setCachedExitCode(ec)
+      }
+      WindowsProcessHandle.ProcessExitCheckerFactory.createSingle(this)
     }
-    WindowsProcessHandle.ProcessExitCheckerFactory.createSingle(this)
-  }
 
   override protected def waitForImpl(): Boolean =
     exitChecker.waitAndReapSome(0, None)
@@ -61,7 +63,7 @@ object WindowsProcessHandle {
 
     override def createMulti(implicit
         pr: ProcessRegistry
-    ): ProcessExitChecker.Multi = throw new UnsupportedOperationException()
+    ): ProcessExitChecker.Multi = new Multi
 
     private class Single(handle: WindowsProcessHandle)
         extends ProcessExitChecker {
@@ -81,6 +83,44 @@ object WindowsProcessHandle {
             true // someone may have closed the handle
           case _ => handle.checkIfExited()
         }
+      }
+    }
+
+    private class Multi(implicit pr: ProcessRegistry)
+        extends ProcessExitChecker.Multi {
+      import ProcessMonitorApi._
+
+      private val iocp: Handle = ProcessMonitorQueueCreate()
+
+      /** If the process is running, register it and return true.
+       *
+       *  If the process isn't running, reap the process and return false.
+       *
+       *  Make sure to add it to the process registry before checker can reap
+       *  this process and call `complete` on the registry.
+       */
+      override def addOrReap(handle: GenericProcessHandle): Boolean = {
+        val wh = handle.asInstanceOf[WindowsProcessHandle]
+        val ok = ProcessMonitorQueueRegister(
+          iocp = iocp,
+          process = wh.handle,
+          pid = wh._pid
+        )
+        if (!ok) handle.checkIfExited()
+        ok
+      }
+
+      override def close(): Unit = CloseHandle(iocp)
+
+      override def waitAndReapSome(
+          timeout: Long,
+          unitOpt: Option[TimeUnit]
+      ): Boolean = {
+        val timeoutMillis = unitOpt
+          .fold(Constants.Infinite)(_.toMillis(timeout).toUInt)
+        val pid =
+          ProcessMonitorQueuePull(iocp = iocp, timeoutMillis = timeoutMillis)
+        pid != -1 && { pr.completeWith(pid.toLong)(-1); true }
       }
     }
 
