@@ -1,7 +1,5 @@
 package java.lang.process
 
-import java.util.concurrent.TimeUnit
-
 import scala.scalanative.javalib.io.ObjectHandle
 import scala.scalanative.libc.{signal => csig}
 import scala.scalanative.posix.{signal => psig}
@@ -10,22 +8,6 @@ import scala.scalanative.unsafe.CInt
 private[process] class UnixProcessHandle(_pid: CInt)(
     override val builder: ProcessBuilder
 ) extends GenericProcessHandle(ObjectHandle(_pid)) {
-  /* Make sure we have exactly one entity calling waitpid on a process.
-   * Reasons are having fewer kernel interactions, plus an unlikely but
-   * theoretically possible scenario whereby by the time a second waiter
-   * attempts to waitpid (hoping for an ECHILD), a completely new child
-   * had been forked with the same pid. */
-  private val exitChecker: ProcessExitChecker = {
-    if (GenericProcessWatcher.isEnabled) None // use GenericProcessWatcher
-    else
-      ProcessExitChecker.factoryOpt.map { factory =>
-        implicit val processRegistry: ProcessRegistry = new ProcessRegistry {
-          override def completeWith(pid: Long)(ec: Int): Unit =
-            setCachedExitCode(ec)
-        }
-        factory.createSingle(processId)
-      }
-  }.getOrElse(ProcessExitCheckerCompletion)
 
   override final def pid(): Long = _pid.toLong
   override final def supportsNormalTermination(): Boolean = true
@@ -38,14 +20,5 @@ private[process] class UnixProcessHandle(_pid: CInt)(
       case Right((_, ec)) => Some(ec)
       case _              => None
     }
-
-  override protected def waitForImpl(): Boolean =
-    exitChecker.waitAndReapSome(0, None)
-
-  override protected def waitForImpl(timeout: Long, unit: TimeUnit): Boolean =
-    exitChecker.waitAndReapSome(timeout, Some(unit))
-
-  override protected final def close(): Unit =
-    exitChecker.close()
 
 }
