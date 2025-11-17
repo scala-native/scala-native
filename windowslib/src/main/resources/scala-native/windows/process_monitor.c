@@ -5,7 +5,6 @@
 
 typedef struct _ProcessMonitorQueueEntry {
     HANDLE iocp;
-    HANDLE wait;
     DWORD pid;
 } ProcessMonitorQueueEntry;
 
@@ -17,8 +16,6 @@ static VOID CALLBACK
 ProcessMonitorQueueEntryCallback(PVOID lpParameter, BOOLEAN TimerOrWaitFired) {
     ProcessMonitorQueueEntry *pw = (ProcessMonitorQueueEntry *)lpParameter;
     PostQueuedCompletionStatus(pw->iocp, 0, (ULONG_PTR)pw->pid, NULL);
-    if (pw->wait)
-        UnregisterWaitEx(pw->wait, INVALID_HANDLE_VALUE);
     free(pw);
 }
 
@@ -30,10 +27,11 @@ __declspec(dllexport) BOOL
         return FALSE;
 
     pw->iocp = iocp;
-    pw->wait = NULL;
     pw->pid = pid;
 
-    BOOL ok = RegisterWaitForSingleObject(&pw->wait, process,
+    HANDLE hWait = NULL; // won't need it, WT_EXECUTEONLYONCE will clean up
+
+    BOOL ok = RegisterWaitForSingleObject(&hWait, process,
                                           ProcessMonitorQueueEntryCallback, pw,
                                           INFINITE, WT_EXECUTEONLYONCE);
     if (!ok)
