@@ -13,9 +13,9 @@ object termios {
 
   // types
 
-  /** POSIX specifies that the types are unsigned. macOS defines them as below
-   *  but Linux defines the `tcflag_t` and `speed_t` as `unsigned int`. An
-   *  option would be a uint32_t since unsigned int is 32bit and 64bit on those
+  /** POSIX specifies that the types are unsigned. Linux defines the `tcflag_t`
+   *  and `speed_t` as `unsigned int` but macOS defines unsigned long. An option
+   *  would be a uint32_t since unsigned int is 32bit and 64bit on those
    *  systems. Using the Linux size is sufficient for the flags but some magic
    *  would be needed to align the `termios` struct.
    */

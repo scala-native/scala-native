@@ -3,14 +3,19 @@ package org.scalanative.testsuite.posixlib
 import org.junit.Assert._
 import org.junit.Test
 
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
 import scalanative.meta.LinktimeInfo.isWindows
 import scalanative.posix.fcntl._
 import scalanative.posix.stddef._
 import scalanative.posix.stdio
 import scalanative.posix.stdlib._
+import scalanative.posix.string.strlen
+import scalanative.posix.sys.types.ssize_t
 import scalanative.posix.termios._
+import scalanative.posix.termiosOps._
+import scalanative.posix.unistd._
+import scalanative.unsafe.Nat._
+import scalanative.unsafe._
+import scalanative.unsigned._
 
 /** Used to test terminal in CI env where real devices are not available. Simple
  *  POSIX pseudoterminal test using termios Modern terminology: primary
@@ -27,15 +32,14 @@ class PsuedoTerminalTest {
 
     /* Open a new pseudoterminal primary (controller) side */
     primary_fd = posix_openpt(O_RDWR | O_NOCTTY)
-    assertFalse("posix_openpt failed", primary_fd < 0)
+    assertFalse("posix_openpt", primary_fd < 0)
     assertFalse(
       "grantpt/unlockpt failed",
       (grantpt(primary_fd) < 0 || unlockpt(primary_fd) < 0)
     )
 
     secondary_name = ptsname(primary_fd)
-    assertFalse("ptsname failed", secondary_name == null)
-
+    assertFalse("ptsname", secondary_name == null)
     stdio.printf(
       c"Opened PTY pair: primary=%d, secondary=%s\n",
       primary_fd,
@@ -44,19 +48,65 @@ class PsuedoTerminalTest {
 
     /* Open the secondary side */
     secondary_fd = open(secondary_name, O_RDWR | O_NOCTTY);
-    assertFalse("open(secondary) failed", secondary_fd < 0)
+    assertFalse("open(secondary)", secondary_fd < 0)
 
     /* Get current terminal attributes */
-    assertFalse("tcgetattr failed", tcgetattr(secondary_fd, tio) < 0)
+    assertFalse("tcgetattr", tcgetattr(secondary_fd, tio) < 0)
+
+    val echo = if ((tio.c_lflag & ECHO.toUInt) == 0) c"on" else c"off"
+    val icanon = if ((tio.c_lflag & ICANON.toUInt) == 0) c"on" else c"off"
+
+    stdio.printf(c"ECHO: %s\n", echo)
+    stdio.printf(c"ICANON: %s\n", icanon)
 
     /* Modify attributes: disable echo and canonical mode */
-    // tio.c_lflag = tio.c_lflag & ~(ECHO | ICANON) // &=
-    // tio.c_cc(VMIN) = 1
-    // tio.c_cc(VTIME) = 0
+    tio.c_lflag = tio.c_lflag & ~(ECHO.toUInt | ICANON.toUInt)
+    tio.c_cc(VMIN) = 1.toUByte
+    tio.c_cc(VTIME) = 0.toUByte
 
-    // assertFalse("tcsetattr failed", tcsetattr(secondary_fd, TCSANOW, tio) < 0)
+    assertFalse("tcsetattr", tcsetattr(secondary_fd, TCSANOW, tio) < 0)
+    stdio.printf(c"Termios configured: ECHO and ICANON disabled\n")
 
-    // stdio.printf(c"Termios configured: ECHO and ICANON disabled\n")
+    /* Write from primary to secondary */
+    val msg = c"Hello from primary!\n"
+    assertFalse(
+      "write(primary)",
+      write(primary_fd, msg, strlen(msg)) < 0
+    )
+
+    /* Read from secondary */
+    type _128 = Digit3[_1, _2, _8]
+    val buf = stackalloc[CArray[CChar, _128]]()
+    val bufSize = 128.toCSize - 1.toCSize
+    var n = read(secondary_fd, buf, bufSize)
+    if (n > 0) {
+      !(buf.at(n)) = '\u0000' // '\0'
+      stdio.printf(c"Secondary received: %s", buf)
+    } else {
+      assertFalse("read(secondary)", n < 0)
+    }
+    // n could be 0
+
+    /* Write from secondary to primary */
+    val reply = c"Reply from secondary.\n"
+    assertFalse(
+      "write(secondary)",
+      write(secondary_fd, reply, strlen(reply)) < 0
+    )
+
+    /* Read from primary */
+    n = read(primary_fd, buf, bufSize)
+    if (n > 0) {
+      !(buf.at(n)) = '\u0000'
+      stdio.printf(c"Primary received: %s", buf);
+    } else {
+      assertFalse("read(primary)", n < 0)
+    }
+    // n could be 0
+
+    close(secondary_fd);
+    close(primary_fd);
+    stdio.printf(c"PTY test complete.\n");
 
     assertTrue(true)
   }
