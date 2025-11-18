@@ -21,7 +21,7 @@ import scalanative.unsigned._
  *  POSIX pseudoterminal test using termios Modern terminology: primary
  *  (controller) / secondary (session)
  */
-class PsuedoTerminalTest {
+class PseudoTerminalTest {
 
   @Test def testPt(): Unit = if (!isWindows) {
     var primary_fd: CInt = -1
@@ -78,7 +78,6 @@ class PsuedoTerminalTest {
 
     stdio.printf(c"ECHO: %s\n", echo)
     stdio.printf(c"ICANON: %s\n", icanon)
-
 
     /* Write from primary to secondary */
     val msg = c"Hello from primary!\n"
