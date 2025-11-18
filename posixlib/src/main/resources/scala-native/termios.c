@@ -196,5 +196,79 @@ int scalanative_termios_tcion() { return TCION; }
 int scalanative_termios_tcooff() { return TCOOFF; }
 int scalanative_termios_tcoon() { return TCOON; }
 
+/* macOS and Linux uses different sizes for `termios` struct.
+ * POSIX says unsigned types and Linux using unsigned int
+ * and macOS uses unsigned long for `tcflag_t`and `speed_t`.
+ *
+ * Since Scala needs the types upfront we use the smaller
+ * unsigned int since that is a sufficient size. Here we define
+ */
+
+#define NCCS_L 19 // use Linux size
+
+struct scalanative_termios {
+    unsigned int c_iflag;
+    unsigned int c_oflag;
+    unsigned int c_cflag;
+    unsigned int c_lflag;
+    cc_t c_cc[NCCS_L];
+    unsigned int c_ispeed;
+    unsigned int c_ospeed;
+};
+
+#if defined(__APPLE__)
+
+void scalanative_termios_copy_to_host(struct scalanative_termios *termios_sn,
+                                      struct termios *termios) {
+    termios->c_iflag = termios_sn->c_iflag;
+    termios->c_oflag = termios_sn->c_oflag;
+    termios->c_cflag = termios_sn->c_cflag;
+    termios->c_lflag = termios_sn->c_lflag;
+    for (int i = 0; i < NCCS_L; i++) {
+        termios->c_cc[i] = termios_sn->c_cc[i];
+    }
+    termios->c_ispeed = termios_sn->c_ispeed;
+    termios->c_ospeed = termios_sn->c_ospeed;
+}
+void scalanative_termios_copy_to_sn(struct scalanative_termios *termios_sn,
+                                    struct termios *termios) {
+    termios_sn->c_iflag = termios->c_iflag;
+    termios_sn->c_oflag = termios->c_oflag;
+    termios_sn->c_cflag = termios->c_cflag;
+    termios_sn->c_lflag = termios->c_lflag;
+    for (int i = 0; i < NCCS_L; i++) {
+        termios_sn->c_cc[i] = termios->c_cc[i];
+    }
+    termios_sn->c_ispeed = termios->c_ispeed;
+    termios_sn->c_ospeed = termios->c_ospeed;
+}
+
+#endif
+
+// special functions
+int scalanative_termios_tcgetattr(int fd, struct scalanative_termios *tio_sn) {
+#if defined(__APPLE__)
+    struct termios tio;
+    scalanative_termios_copy_to_host(tio_sn, &tio);
+    int res = tcgetattr(fd, &tio);
+    scalanative_termios_copy_to_sn(tio_sn, &tio);
+    return res;
+#else
+    return tcgetattr(fd, (struct termios *)tio_sn);
+#endif
+}
+int scalanative_termios_tcsetattr(int fd, int optionalActions,
+                                  struct scalanative_termios *tio_sn) {
+#if defined(__APPLE__)
+    struct termios tio;
+    scalanative_termios_copy_to_host(tio_sn, &tio);
+    int res = tcsetattr(fd, optionalActions, &tio);
+    scalanative_termios_copy_to_sn(tio_sn, &tio);
+    return res;
+#else
+    return tcsetattr(fd, optionalActions, (struct termios *)tio_sn);
+#endif
+}
+
 #endif // Unix or Mac OS
 #endif

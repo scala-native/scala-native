@@ -53,8 +53,8 @@ class PsuedoTerminalTest {
     /* Get current terminal attributes */
     assertFalse("tcgetattr", tcgetattr(secondary_fd, tio) < 0)
 
-    val echo = if ((tio.c_lflag & ECHO.toUInt) == 0) c"on" else c"off"
-    val icanon = if ((tio.c_lflag & ICANON.toUInt) == 0) c"on" else c"off"
+    var echo = if ((tio.c_lflag & ECHO.toUInt) != 0) c"on" else c"off"
+    var icanon = if ((tio.c_lflag & ICANON.toUInt) != 0) c"on" else c"off"
 
     stdio.printf(c"ECHO: %s\n", echo)
     stdio.printf(c"ICANON: %s\n", icanon)
@@ -64,8 +64,21 @@ class PsuedoTerminalTest {
     tio.c_cc(VMIN) = 1.toUByte
     tio.c_cc(VTIME) = 0.toUByte
 
+    echo = if ((tio.c_lflag & ECHO.toUInt) != 0) c"on" else c"off"
+    icanon = if ((tio.c_lflag & ICANON.toUInt) != 0) c"on" else c"off"
+
+    stdio.printf(c"ECHO: %s\n", echo)
+    stdio.printf(c"ICANON: %s\n", icanon)
+
     assertFalse("tcsetattr", tcsetattr(secondary_fd, TCSANOW, tio) < 0)
     stdio.printf(c"Termios configured: ECHO and ICANON disabled\n")
+
+    echo = if ((tio.c_lflag & ECHO.toUInt) != 0) c"on" else c"off"
+    icanon = if ((tio.c_lflag & ICANON.toUInt) != 0) c"on" else c"off"
+
+    stdio.printf(c"ECHO: %s\n", echo)
+    stdio.printf(c"ICANON: %s\n", icanon)
+
 
     /* Write from primary to secondary */
     val msg = c"Hello from primary!\n"

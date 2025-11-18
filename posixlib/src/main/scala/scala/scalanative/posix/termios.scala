@@ -22,7 +22,7 @@ object termios {
   type tcflag_t = CUnsignedInt
   type cc_t = CUnsignedChar
   type speed_t = CUnsignedInt
-  type NCCS = Digit2[_2, _0]
+  type NCCS = Digit2[_1, _9] // 19 on Linux, 20 on macOS
   type cc_t_arr = CArray[cc_t, NCCS]
 
   type termios = CStruct7[
@@ -44,9 +44,11 @@ object termios {
   def tcdrain(fd: CInt): CInt = extern
   def tcflow(fd: CInt, action: CInt): CInt = extern
   def tcflush(fd: CInt, queueSelector: CInt): CInt = extern
+  @name("scalanative_termios_tcgetattr")
   def tcgetattr(fd: CInt, termios_p: Ptr[termios]): CInt = extern
   def tcgetsid(i: CInt): pid_t = extern
   def tcsendbreak(fd: CInt, duration: CInt): CInt = extern
+  @name("scalanative_termios_tcsetattr")
   def tcsetattr(
       fd: CInt,
       optionalActions: CInt,
@@ -55,7 +57,7 @@ object termios {
 
   // symbolic constants for use as subscripts for the array c_cc
 
-  @name("scalanative_termios_veof")
+  @name("scalanative_termios_copy_to_sn(tio_sn, &tio);veof")
   def VEOF: CInt = extern
   @name("scalanative_termios_veol")
   def VEOL: CInt = extern
