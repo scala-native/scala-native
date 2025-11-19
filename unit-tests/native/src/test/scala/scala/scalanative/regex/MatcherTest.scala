@@ -247,6 +247,11 @@ class MatcherTest {
       re2jAppendReplacement(m, "what$2ever${bag}")
     )
 
+    assertEquals(
+      "whatbbarrrrr1ever",
+      re2jAppendReplacement(m, "what$21ever")
+    )
+
     assertThrows(
       "No match available",
       classOf[IllegalStateException],
@@ -295,6 +300,11 @@ class MatcherTest {
     assertEquals(
       "whatbbarrrrreverbag",
       re2jAppendReplacement(m, "what$2ever${bag}")
+    )
+
+    assertEquals(
+      "whatbbarrrrr1ever",
+      re2jAppendReplacement(m, "what$21ever")
     )
 
     assertThrows(
