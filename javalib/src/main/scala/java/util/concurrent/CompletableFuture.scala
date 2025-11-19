@@ -18,6 +18,7 @@ import scala.scalanative.annotation.alwaysinline
 // import java.lang.invoke.VarHandle
 import scala.scalanative.libc.stdatomic.AtomicRef
 import scala.scalanative.libc.stdatomic.memory_order.memory_order_release
+import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
 import scala.scalanative.runtime.fromRawPtr
 
@@ -79,7 +80,10 @@ object CompletableFuture {
   /* ------------- Async task preliminaries -------------- */
   trait AsynchronousCompletionTask
 
-  private val USE_COMMON_POOL: Boolean = ForkJoinPool.getCommonPoolParallelism() > 1
+  private val USE_COMMON_POOL: Boolean =
+    if (!LinktimeInfo.isMultithreadingEnabled) false
+    else ForkJoinPool.commonPool().getParallelism() > 1
+
   private val ASYNC_POOL: Executor =
     if (USE_COMMON_POOL) ForkJoinPool.commonPool()
     else new ThreadPerTaskExecutor
@@ -87,7 +91,7 @@ object CompletableFuture {
   private[concurrent] final class ThreadPerTaskExecutor extends Executor {
     override def execute(r: Runnable): Unit = {
       Objects.requireNonNull(r)
-      new Thread(r).start()
+      if (LinktimeInfo.isMultithreadingEnabled) new Thread(r).start() else r.run()
     }
   }
 
