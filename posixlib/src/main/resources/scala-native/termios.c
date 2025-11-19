@@ -197,11 +197,13 @@ int scalanative_termios_tcooff() { return TCOOFF; }
 int scalanative_termios_tcoon() { return TCOON; }
 
 /* macOS and Linux uses different sizes for `termios` struct.
- * POSIX says unsigned types and Linux using unsigned int
- * and macOS uses unsigned long for `tcflag_t`and `speed_t`.
+ * POSIX says unsigned types and Linux uses `unsigned int`
+ * and macOS uses `unsigned long` for `tcflag_t`and `speed_t`.
  *
  * Since Scala needs the types upfront we use the smaller
- * unsigned int since that is a sufficient size. Here we define
+ * `unsigned int` because that is a sufficient size.
+ *
+ * cc_t is `unsigned char` on both so we don't control it
  */
 
 #define NCCS_L 19 // use Linux size
@@ -243,6 +245,20 @@ void scalanative_termios_copy_to_sn(struct scalanative_termios *termios_sn,
 }
 
 // @name functions
+
+// Linux speed_t is unsigned int
+unsigned int scalanative_termios_cfgetispeed(struct scalanative_termios *tio_sn) {
+    return 0;
+}
+unsigned int scalanative_termios_cfgetospeed(struct scalanative_termios *tio_sn) {
+    return 0;
+}
+int scalanative_termios_cfsetispeed(struct scalanative_termios *tio_sn, unsigned int speed) {
+    return 0;
+}
+int scalanative_termios_cfsetospeed(struct scalanative_termios *tio_sn, unsigned int speed) {
+    return 0;
+}
 int scalanative_termios_tcgetattr(int fd, struct scalanative_termios *tio_sn) {
     struct termios tio;
     scalanative_termios_copy_to_host(tio_sn, &tio);
