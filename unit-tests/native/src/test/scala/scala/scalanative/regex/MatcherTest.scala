@@ -247,8 +247,9 @@ class MatcherTest {
       re2jAppendReplacement(m, "what$2ever${bag}")
     )
 
-    assertEquals(
-      "whatbbarrrrr1ever",
+    assertThrows(
+      "`$21` exceeds number of groups (5)",
+      classOf[IndexOutOfBoundsException],
       re2jAppendReplacement(m, "what$21ever")
     )
 
@@ -302,8 +303,9 @@ class MatcherTest {
       re2jAppendReplacement(m, "what$2ever${bag}")
     )
 
-    assertEquals(
-      "whatbbarrrrr1ever",
+    assertThrows(
+      "`$21` exceeds number of groups (5)",
+      classOf[IndexOutOfBoundsException],
       re2jAppendReplacement(m, "what$21ever")
     )
 
