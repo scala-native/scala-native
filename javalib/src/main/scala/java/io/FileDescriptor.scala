@@ -38,31 +38,15 @@ final class FileDescriptor private[java] (
   @alwaysinline private[java] def handle: Handle = fileHandle.handle
 
   def sync(): Unit = {
-    def throwSyncFailed(): Unit = {
-      throw new SyncFailedException("sync failed")
+    def isStdOrInvalidFileDescriptor: Boolean =
+      if (isWindows) !valid() || this == in || this == out || this == err
+      else fd <= 2
+
+    val failed = isStdOrInvalidFileDescriptor || !readOnly && {
+      if (isWindows) !FlushFileBuffers(handle) else unistd.fsync(fd) != 0
     }
 
-    def isStdOrInvalidFileDescriptor: Boolean = {
-      if (isWindows) {
-        handle == INVALID_HANDLE_VALUE ||
-        this == FileDescriptor.in ||
-        this == FileDescriptor.out ||
-        this == FileDescriptor.err
-      } else fd <= 2
-    }
-
-    if (isStdOrInvalidFileDescriptor) throwSyncFailed()
-    else {
-      if (!readOnly) {
-        val hasSucceded =
-          if (isWindows) FlushFileBuffers(handle)
-          else unistd.fsync(fd) == 0
-
-        if (!hasSucceded) {
-          throwSyncFailed()
-        }
-      }
-    }
+    if (failed) throw new SyncFailedException("sync failed")
   }
 
   @alwaysinline def valid(): Boolean = fileHandle.valid()
