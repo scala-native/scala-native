@@ -58,6 +58,20 @@ abstract class InputStream extends Closeable {
     readNBytes(Integer.MAX_VALUE)
   }
 
+  private def readNBytesImpl(buffer: Array[Byte], off: Int, len: Int): Int = {
+    var totalBytesRead = 0
+
+    while (totalBytesRead < len && {
+          val nRead = read(buffer, off + totalBytesRead, len - totalBytesRead)
+          val ok = nRead != -1
+          if (ok)
+            totalBytesRead += nRead
+          ok
+        }) {}
+
+    totalBytesRead
+  }
+
   /** Java 9
    */
   def readNBytes(buffer: Array[Byte], off: Int, len: Int): Int = {
@@ -70,25 +84,7 @@ abstract class InputStream extends Closeable {
       )
     }
 
-    if (len == 0) 0
-    else {
-      var totalBytesRead = 0
-      var remaining = len
-      var offset = off
-
-      while (remaining > 0) {
-        val nRead = read(buffer, offset, remaining)
-
-        if (nRead == -1) remaining = 0 // EOF
-        else {
-          totalBytesRead += nRead
-          remaining -= nRead
-          offset += nRead
-        }
-      }
-
-      totalBytesRead
-    }
+    readNBytesImpl(buffer, off, len)
   }
 
   /* Design Note:
@@ -130,19 +126,7 @@ abstract class InputStream extends Closeable {
 
       // caller has dispatched on argument, so OK to allocate size blindly.
       val buffer = new Array[Byte](len)
-
-      var totalBytesRead = 0
-      var remaining = len
-
-      while (remaining > 0) {
-        val nRead = read(buffer, totalBytesRead, remaining)
-
-        if (nRead == -1) remaining = 0 // EOF
-        else {
-          remaining -= nRead
-          totalBytesRead += nRead
-        }
-      }
+      val totalBytesRead = readNBytesImpl(buffer, 0, len)
 
       if (totalBytesRead == len)
         buffer
