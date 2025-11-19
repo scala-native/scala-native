@@ -8,12 +8,12 @@ import scala.scalanative.posix.{fcntl, unistd}
 import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
+import scala.scalanative.windows.ConsoleApiExt
 import scala.scalanative.windows.FileApi._
 import scala.scalanative.windows.FileApiExt._
 import scala.scalanative.windows.HandleApi._
 import scala.scalanative.windows.HandleApiExt._
 import scala.scalanative.windows.winnt.AccessRights._
-import scala.scalanative.windows.{ConsoleApiExt, DWord}
 
 final class FileDescriptor private[java] (
     private var fileHandle: FileHandle,
@@ -27,6 +27,9 @@ final class FileDescriptor private[java] (
   // ScalaNative private constructors
   private[java] def this(fd: Int, readOnly: Boolean = false) =
     this(FileHandle(fd), readOnly)
+
+  private[java] def this(fh: Handle, readOnly: Boolean) =
+    this(FileHandle(fh), readOnly)
 
   override def toString(): String =
     s"FileDescriptor($fd, readOnly=$readOnly)"
@@ -98,26 +101,23 @@ object FileDescriptor {
 
   private[java] val none: FileDescriptor = new FileDescriptor()
 
-  val in: FileDescriptor = {
-    val handle =
-      if (isWindows) FileHandle(ConsoleApiExt.stdIn)
-      else FileHandle(unistd.STDIN_FILENO)
-    new FileDescriptor(handle, readOnly = false)
-  }
+  val in: FileDescriptor =
+    if (isWindows)
+      new FileDescriptor(ConsoleApiExt.stdIn, readOnly = true)
+    else
+      new FileDescriptor(unistd.STDIN_FILENO, readOnly = true)
 
-  val out: FileDescriptor = {
-    val handle =
-      if (isWindows) FileHandle(ConsoleApiExt.stdOut)
-      else FileHandle(unistd.STDOUT_FILENO)
-    new FileDescriptor(handle, readOnly = false)
-  }
+  val out: FileDescriptor =
+    if (isWindows)
+      new FileDescriptor(ConsoleApiExt.stdOut, readOnly = false)
+    else
+      new FileDescriptor(unistd.STDOUT_FILENO, readOnly = false)
 
-  val err: FileDescriptor = {
-    val handle =
-      if (isWindows) FileHandle(ConsoleApiExt.stdErr)
-      else FileHandle(unistd.STDERR_FILENO)
-    new FileDescriptor(handle, readOnly = false)
-  }
+  val err: FileDescriptor =
+    if (isWindows)
+      new FileDescriptor(ConsoleApiExt.stdErr, readOnly = false)
+    else
+      new FileDescriptor(unistd.STDERR_FILENO, readOnly = false)
 
   private[io] def openReadOnly(file: File): FileDescriptor =
     Zone.acquire { implicit z =>
