@@ -2,13 +2,13 @@ package java.net
 
 import java.io.{FileDescriptor, IOException}
 
-import scala.annotation.tailrec
-
+import scala.scalanative.javalib.io.ObjectHandle
 import scala.scalanative.posix.errno._
 import scala.scalanative.posix.sys.{socket => unixSocket}
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.windows._
+
 private[net] class WindowsPlainDatagramSocketImpl
     extends AbstractPlainDatagramSocketImpl {
   import WinSocketApi._
@@ -29,13 +29,13 @@ private[net] class WindowsPlainDatagramSocketImpl
       throw new IOException(s"Couldn't create a socket: ${WSAGetLastError()}")
     }
 
-    val fileHandle = FileDescriptor.FileHandle(socket)
+    val fileHandle = ObjectHandle(socket)
 
     // enable broadcast by default
     val broadcastPrt = stackalloc[CInt]()
     !broadcastPrt = 1
     if (unixSocket.setsockopt(
-          fileHandle.fd,
+          fileHandle.asInt,
           unixSocket.SOL_SOCKET,
           unixSocket.SO_BROADCAST,
           broadcastPrt.asInstanceOf[Ptr[Byte]],
