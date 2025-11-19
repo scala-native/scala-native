@@ -20,12 +20,11 @@ private[process] abstract class GenericProcess(val handle: GenericProcessHandle)
   private val errorStream =
     PipeIO[PipeIO.Stream](fdErr, handle.builder.redirectError())
 
-  handle.onExitHandleSync((_, _) => { outputStream.close(); null })
-  handle.onExitHandleAsync((_, _) => { inputStream.drain(); null })
-  handle.onExitHandleAsync((_, _) => { errorStream.drain(); null })
+  handle.onExitHandle((_, _) => { outputStream.close(); null })
+  handle.onExitHandle((_, _) => { inputStream.drain(); null })
+  handle.onExitHandle((_, _) => { errorStream.drain(); null })
 
-  if (LinktimeInfo.isMultithreadingEnabled)
-    GenericProcessWatcher.watchForTermination(handle)
+  GenericProcessWatcher.watchForTermination(handle)
 
   override def getInputStream(): InputStream = inputStream
   override def getErrorStream(): InputStream = errorStream
@@ -128,12 +127,7 @@ private[process] abstract class GenericProcessHandle extends ProcessHandle {
   ): CompletableFuture[A] =
     completion.thenApplyAsync(fn)
 
-  def onExitHandleSync[A <: AnyRef](
-      fn: function.BiFunction[java.lang.Integer, Throwable, A]
-  ): CompletableFuture[A] =
-    completion.handle(fn)
-
-  def onExitHandleAsync[A <: AnyRef](
+  def onExitHandle[A <: AnyRef](
       fn: function.BiFunction[java.lang.Integer, Throwable, A]
   ): CompletableFuture[A] =
     completion.handleAsync(fn)
@@ -175,13 +169,7 @@ private[process] abstract class GenericProcessHandle extends ProcessHandle {
   override def toString: String =
     s"Process[pid=${pid()}, exitValue=${getCachedExitCode.getOrElse("\"not exited\"")}"
 
-  protected object ProcessExitCheckerCompletion
-      extends ProcessExitChecker.Factory
-      with ProcessExitChecker {
-    override def createSingle(pid: Int)(implicit
-        pr: ProcessRegistry
-    ): ProcessExitChecker = this
-
+  protected object ProcessExitCheckerCompletion extends ProcessExitChecker {
     override def close(): Unit = {}
     override def waitAndReapSome(
         timeout: Long,

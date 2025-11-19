@@ -1,21 +1,23 @@
 package java.lang.process
 
-import java.util.concurrent.{TimeUnit, TimeoutException}
+import java.util.concurrent.TimeUnit
 
 import scala.scalanative.libc.{signal => csig}
-import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.posix.{signal => psig}
 import scala.scalanative.unsafe.CInt
 
 private[process] class UnixProcessHandle(_pid: CInt)(
     override val builder: ProcessBuilder
 ) extends GenericProcessHandle {
+  /* Make sure we have exactly one entity calling waitpid on a process.
+   * Reasons are having fewer kernel interactions, plus an unlikely but
+   * theoretically possible scenario whereby by the time a second waiter
+   * attempts to waitpid (hoping for an ECHILD), a completely new child
+   * had been forked with the same pid. */
   private val exitChecker: ProcessExitChecker = {
-    ProcessExitChecker.factoryOpt
-      .filterNot(
-        _ == ProcessExitCheckerWaitpid && LinktimeInfo.isMultithreadingEnabled
-      )
-      .map { factory =>
+    if (GenericProcessWatcher.isEnabled) None // use GenericProcessWatcher
+    else
+      ProcessExitChecker.factoryOpt.map { factory =>
         implicit val processRegistry: ProcessRegistry = new ProcessRegistry {
           override def completeWith(pid: Long)(ec: Int): Unit =
             setCachedExitCode(ec)

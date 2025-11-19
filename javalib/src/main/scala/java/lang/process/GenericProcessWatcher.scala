@@ -6,13 +6,17 @@ import scala.util.Try
 
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.meta.LinktimeInfo
+import scala.scalanative.unsafe.resolvedAtLinktime
 
 private[process] object GenericProcessWatcher {
+
+  @resolvedAtLinktime()
+  def isEnabled: Boolean = LinktimeInfo.isMultithreadingEnabled
 
   import ju.concurrent._
 
   @alwaysinline def watchForTermination(handle: GenericProcessHandle): Unit =
-    Processes.add(handle)
+    if (isEnabled) Processes.add(handle)
 
   private object Processes {
     private val processes = new ConcurrentHashMap[jl.Long, GenericProcessHandle]
@@ -47,13 +51,37 @@ private[process] object GenericProcessWatcher {
         compareAndSetState(1, 0) // if was open, close it, else block
     }
 
+    private val exitChecker: ProcessExitChecker.Multi =
+      ProcessExitChecker.factoryOpt.fold[ProcessExitChecker.Multi](
+        AllProcessExitChecker
+      ) { factory =>
+        implicit val processRegistry: ProcessRegistry = new ProcessRegistry {
+          override def completeWith(pid: Long)(ec: Int): Unit = {
+            val ref = remove(pid)
+            if (ref ne null) ref.setCachedExitCode(ec)
+          }
+        }
+        factory.createMulti
+      }
+
     def add(handle: GenericProcessHandle): Unit = {
-      processes.put(handle.pid(), handle)
-      assert(
-        watcherThread.isAlive(),
-        "GenericProcessWatcher watch thread is terminated"
-      )
-      processesMutex.release(1)
+      val pid = handle.pid()
+      // add to processes first, before registering with exit checker
+      // otherwise, exit checker might try to complete a quick exit and fail
+      processes.put(pid, handle)
+      if (exitChecker.addOrReap(handle)) {
+        assert(
+          watcherThread.isAlive(),
+          "GenericProcessWatcher watch thread is terminated"
+        )
+        processesMutex.release(1)
+      } else {
+        processes.remove(pid)
+        if (!handle.checkIfExited())
+          throw new RuntimeException(
+            s"Failed to register $pid for exit checking"
+          )
+      }
     }
 
     @alwaysinline
@@ -71,16 +99,10 @@ private[process] object GenericProcessWatcher {
         while (true) Try {
           removeProcessesIf(_.hasExited)
           while (processes.isEmpty()) processesMutex.acquire(1)
-          if (!reapSomeProcesses()) Thread.sleep(100) // ms
+          if (!exitChecker.waitAndReapSome(0, None)) Thread.sleep(100) // ms
         }
       }
     }
-
-    // return true if something has been reaped
-    private val reapSomeProcesses: () => Boolean =
-      if (LinktimeInfo.isWindows) claimAllCompleted
-      else if (ProcessExitChecker.unixFactoryOpt.isDefined) claimAllCompleted
-      else () => ProcessExitCheckerWaitpid.waitAndReap(-1, 0, None)
 
     @alwaysinline
     def claimAllCompleted(): Boolean = removeProcessesIf(_.checkIfExited())
@@ -88,13 +110,6 @@ private[process] object GenericProcessWatcher {
     @alwaysinline
     def removeProcessesIf(f: GenericProcessHandle => Boolean): Boolean =
       removeIf(processes.values())(f)
-  }
-
-  implicit val processRegistry: ProcessRegistry = new ProcessRegistry {
-    override def completeWith(pid: Long)(ec: Int): Unit = {
-      val ref = Processes.remove(pid)
-      if (ref ne null) ref.setCachedExitCode(ec)
-    }
   }
 
   private def removeIf[A](coll: ju.Collection[A])(f: A => Boolean): Boolean = {
@@ -114,6 +129,15 @@ private[process] object GenericProcessWatcher {
       }
     }
     ok
+  }
+
+  object AllProcessExitChecker extends ProcessExitChecker.Multi {
+    override def addOrReap(handle: GenericProcessHandle): Boolean = true
+    override def close(): Unit = {}
+    override def waitAndReapSome(
+        timeout: Long,
+        unitOpt: Option[TimeUnit]
+    ): Boolean = Processes.claimAllCompleted()
   }
 
 }
