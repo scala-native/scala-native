@@ -42,12 +42,16 @@ private[process] class WindowsProcessHandle(
 
 object WindowsProcessHandle {
 
-  object ProcessExitCheckerFactory extends ProcessExitChecker.Factory {
+  object ProcessExitCheckerFactory extends ProcessExitChecker.MultiFactory {
 
     override def createSingle(processId: ObjectHandle)(implicit
         pr: ProcessRegistry
     ): ProcessExitChecker =
       new Single(processId.asHandle)
+
+    override def createMulti(implicit
+        pr: ProcessRegistry
+    ): ProcessExitChecker.Multi = new Multi
 
     private class Single(handle: Handle)(implicit pr: ProcessRegistry)
         extends ProcessExitChecker {
@@ -71,6 +75,45 @@ object WindowsProcessHandle {
             true // someone may have closed the handle
           case _ => checkIfExited()
         }
+      }
+    }
+
+    private class Multi(implicit pr: ProcessRegistry)
+        extends ProcessExitChecker.Multi {
+      import ProcessMonitorApi._
+
+      private val iocp: Handle = ProcessMonitorQueueCreate()
+
+      /** If the process is running, register it and return true.
+       *
+       *  If the process isn't running, reap the process and return false.
+       *
+       *  Make sure to add it to the process registry before checker can reap
+       *  this process and call `complete` on the registry.
+       */
+      override def addOrReap(handle: GenericProcessHandle): Boolean = {
+        val wh = handle.asInstanceOf[WindowsProcessHandle]
+        val ok = ProcessMonitorQueueRegister(
+          iocp = iocp,
+          process = wh.handle,
+          pid = wh._pid
+        )
+        if (!ok) handle.checkIfExited()
+        ok
+      }
+
+      override def close(): Unit = CloseHandle(iocp)
+
+      override def waitAndReapSome(
+          timeout: Long,
+          unitOpt: Option[TimeUnit]
+      ): Boolean = {
+        val pid = ProcessMonitorQueuePull(
+          iocp = iocp,
+          timeoutMillis =
+            unitOpt.fold(Constants.Infinite)(_.toMillis(timeout).toUInt)
+        ).toInt
+        pid != -1 && { pr.completeWith(pid)(-1); true }
       }
     }
 
