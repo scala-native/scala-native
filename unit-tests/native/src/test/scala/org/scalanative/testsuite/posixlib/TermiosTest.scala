@@ -21,8 +21,8 @@ class TermiosTest {
     }
   }
 
-  @Test def testSetRawMode(): Unit = if (!isWindows) {
-    setRawMode()
+  @Test def testSetRawMode_4143(): Unit = if (!isWindows) {
+    setRawMode() // failed here
     assertTrue(true)
   }
 
