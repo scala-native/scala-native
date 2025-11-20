@@ -60,7 +60,7 @@ class PseudoTerminalTest {
       assertFalse("tcgetattr", tcgetattr(secondary_fd, tio) < 0)
 
       /* Modify attributes: disable echo and canonical mode */
-      tio.c_lflag = tio.c_lflag & ~(ECHO.toUInt | ICANON.toUInt)
+      tio.c_lflag = tio.c_lflag & ~(ECHO | ICANON).toUInt
       tio.c_cc(VMIN) = 1.toUByte
       tio.c_cc(VTIME) = 0.toUByte
 

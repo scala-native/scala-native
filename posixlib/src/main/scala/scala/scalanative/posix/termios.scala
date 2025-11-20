@@ -36,10 +36,13 @@ object termios {
   ]
 
   // functions
-
+  @name("scalanative_termios_cfgetispeed")
   def cfgetispeed(termios_p: Ptr[termios]): speed_t = extern
+  @name("scalanative_termios_cfgetospeed")
   def cfgetospeed(termios_p: Ptr[termios]): speed_t = extern
+  @name("scalanative_termios_cfsetispeed")
   def cfsetispeed(termios_p: Ptr[termios], speed: speed_t): CInt = extern
+  @name("scalanative_termios_cfsetospeed")
   def cfsetospeed(termios_p: Ptr[termios], speed: speed_t): CInt = extern
   def tcdrain(fd: CInt): CInt = extern
   def tcflow(fd: CInt, action: CInt): CInt = extern
