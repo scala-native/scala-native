@@ -249,7 +249,8 @@ void scalanative_termios_copy_to_sn(struct scalanative_termios *termios_sn,
 // @name functions
 
 // Linux speed_t is unsigned int
-unsigned int scalanative_termios_cfgetispeed(struct scalanative_termios *tio_sn) {
+unsigned int
+scalanative_termios_cfgetispeed(struct scalanative_termios *tio_sn) {
     struct termios tio;
     scalanative_termios_copy_to_host(tio_sn, &tio);
     int res = cfgetispeed(&tio);
@@ -257,7 +258,8 @@ unsigned int scalanative_termios_cfgetispeed(struct scalanative_termios *tio_sn)
     assert(res <= UINT_MAX && "unsigned long value exceeds unsigned int range");
     return (unsigned int)res;
 }
-unsigned int scalanative_termios_cfgetospeed(struct scalanative_termios *tio_sn) {
+unsigned int
+scalanative_termios_cfgetospeed(struct scalanative_termios *tio_sn) {
     struct termios tio;
     scalanative_termios_copy_to_host(tio_sn, &tio);
     int res = cfgetospeed(&tio);
@@ -265,14 +267,16 @@ unsigned int scalanative_termios_cfgetospeed(struct scalanative_termios *tio_sn)
     assert(res <= UINT_MAX && "unsigned long value exceeds unsigned int range");
     return (unsigned int)res;
 }
-int scalanative_termios_cfsetispeed(struct scalanative_termios *tio_sn, unsigned int speed) {
+int scalanative_termios_cfsetispeed(struct scalanative_termios *tio_sn,
+                                    unsigned int speed) {
     struct termios tio;
     scalanative_termios_copy_to_host(tio_sn, &tio);
     int res = cfsetispeed(&tio, speed);
     scalanative_termios_copy_to_sn(tio_sn, &tio);
     return res;
 }
-int scalanative_termios_cfsetospeed(struct scalanative_termios *tio_sn, unsigned int speed) {
+int scalanative_termios_cfsetospeed(struct scalanative_termios *tio_sn,
+                                    unsigned int speed) {
     struct termios tio;
     scalanative_termios_copy_to_host(tio_sn, &tio);
     int res = cfsetospeed(&tio, speed);
