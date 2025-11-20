@@ -253,7 +253,7 @@ unsigned int
 scalanative_termios_cfgetispeed(struct scalanative_termios *tio_sn) {
     struct termios tio;
     scalanative_termios_copy_to_host(tio_sn, &tio);
-    int res = cfgetispeed(&tio);
+    unsigned long res = cfgetispeed(&tio);
     scalanative_termios_copy_to_sn(tio_sn, &tio);
     assert(res <= UINT_MAX && "unsigned long value exceeds unsigned int range");
     return (unsigned int)res;
@@ -262,7 +262,7 @@ unsigned int
 scalanative_termios_cfgetospeed(struct scalanative_termios *tio_sn) {
     struct termios tio;
     scalanative_termios_copy_to_host(tio_sn, &tio);
-    int res = cfgetospeed(&tio);
+    unsigned long res = cfgetospeed(&tio);
     scalanative_termios_copy_to_sn(tio_sn, &tio);
     assert(res <= UINT_MAX && "unsigned long value exceeds unsigned int range");
     return (unsigned int)res;
