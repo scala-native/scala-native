@@ -248,6 +248,12 @@ class MatcherTest {
     )
 
     assertThrows(
+      "`$21` exceeds number of groups (5)",
+      classOf[IndexOutOfBoundsException],
+      re2jAppendReplacement(m, "what$21ever")
+    )
+
+    assertThrows(
       "No match available",
       classOf[IllegalStateException],
       re2jAppendReplacement(m, "what$2ever${no-final-brace ")
@@ -295,6 +301,12 @@ class MatcherTest {
     assertEquals(
       "whatbbarrrrreverbag",
       re2jAppendReplacement(m, "what$2ever${bag}")
+    )
+
+    assertThrows(
+      "`$21` exceeds number of groups (5)",
+      classOf[IndexOutOfBoundsException],
+      re2jAppendReplacement(m, "what$21ever")
     )
 
     assertThrows(

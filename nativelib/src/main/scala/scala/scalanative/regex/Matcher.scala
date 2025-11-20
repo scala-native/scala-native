@@ -449,40 +449,36 @@ final class Matcher private (private var _pattern: Pattern) {
     val e = _lastMatchEnd
 
     if (_appendPos < s) {
-      sb.append(substring(_appendPos, s))
+      sb.append(_inputSequence, _appendPos, s)
     }
     _appendPos = e
     var last = 0
+    @inline def appendFromLast(idx: Int): Unit =
+      if (last < idx) sb.append(replacement, last, idx)
     var i = 0
     val m = replacement.length()
     while (i < m - 1) {
       if (replacement.charAt(i) == '\\') {
-        if (last < i) {
-          sb.append(replacement.substring(last, i))
-        }
+        appendFromLast(i)
         i += 1
         last = i
       } else if (replacement.charAt(i) == '$') {
         var c = replacement.charAt(i + 1)
         if ('0' <= c && c <= '9') {
+          appendFromLast(i)
           var n = c - '0'
-          if (last < i) {
-            sb.append(replacement.substring(last, i))
-          }
           i += 2
-          var break = false
-          while (!break && i < m) {
-            c = replacement.charAt(i)
-            if (c < '0' || c > '9' || n * 10 + c - '0' > _groupCount) {
-              break = true
-            } else {
-              n = n * 10 + c - '0'
-              i += 1
-            }
+          while (i < m && {
+                c = replacement.charAt(i)
+                c >= '0' && c <= '9'
+              }) {
+            n = n * 10 + c - '0'
+            i += 1
           }
-          if (n > _groupCount) {
-            throw new IndexOutOfBoundsException("n > number of groups: " + n)
-          }
+          if (n > _groupCount)
+            throw new IndexOutOfBoundsException(
+              s"`$$$n` exceeds number of groups (${_groupCount})"
+            )
           val group = this.group(n)
           if (group != null) {
             sb.append(group)
@@ -490,34 +486,25 @@ final class Matcher private (private var _pattern: Pattern) {
           last = i
           i -= 1
         } else if (c == '{') {
-          if (last < i) {
-            sb.append(replacement.substring(last, i))
-          }
-          i += 1 // '{'
-          var j = i + 1
-          while (j < replacement.length && replacement.charAt(
-                j
-              ) != '}' && replacement
-                .charAt(j) != ' ') {
-            j += 1
-          }
-          if (j == replacement.length || replacement.charAt(j) == ' ') {
-            throw new IllegalStateException("No match available")
-          }
-          val groupName = replacement.substring(i + 1, j)
+          appendFromLast(i)
+          i += 2 // after '${'
+          val off = i
+          while ({
+            if (i >= replacement.length || replacement.charAt(i) == ' ')
+              throw new IllegalStateException("No match available")
+            replacement.charAt(i) != '}'
+          }) i += 1
+          val groupName = replacement.substring(off, i)
           // JVM uses slightly different Exception message for non-extant
           // named group in replacement string.
           val gid = getNamedGroupOrThrow(groupName, "No match available")
           sb.append(this.group(gid))
-          i += 1 // '}'
-          last = j + 1
+          last = i + 1 // after '}'
         }
       }
       i += 1
     }
-    if (last < m) {
-      sb.append(replacement.substring(last, m))
-    }
+    appendFromLast(m)
     this
   }
 
@@ -527,7 +514,7 @@ final class Matcher private (private var _pattern: Pattern) {
   // @param sb the {@link StringBuffer} to append to
   // @return the argument {@code sb}, for method chaining
   def appendTail(sb: StringBuffer): StringBuffer = {
-    sb.append(substring(_appendPos, _inputLength))
+    sb.append(_inputSequence, _appendPos, _inputLength)
     sb
   }
 
