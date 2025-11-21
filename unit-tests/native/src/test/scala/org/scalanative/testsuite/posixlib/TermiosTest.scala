@@ -35,6 +35,8 @@ class TermiosTest {
       if (verbose) stdio.printf(c"Raw default ispeed: %d\n", sp)
       val res = cfsetispeed(tio, B9600.toUInt)
       if (verbose) stdio.printf(c"Raw set result: %d\n", res)
+      val res1 = tcsetattr(1, TCSAFLUSH, attrs)
+      if (verbose) stdio.printf(c"Raw setattr: %d\n", res1)
       val newsp = cfgetispeed(tio)
       if (verbose) stdio.printf(c"Raw after ispeed: %d\n", newsp)
       assertTrue("raw cfgetispeed", newsp == 9600)
