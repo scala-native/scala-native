@@ -3,6 +3,7 @@
     (defined(__APPLE__) && defined(__MACH__))
 #include <assert.h>
 #include <limits.h>
+#include <stdio.h>
 #include <termios.h>
 #if defined(__FreeBSD__)
 #define COMPAT_43TTY
@@ -252,6 +253,10 @@ void scalanative_termios_copy_to_sn(struct scalanative_termios *termios_sn,
 unsigned int
 scalanative_termios_cfgetispeed(struct scalanative_termios *tio_sn) {
     struct termios tio;
+    printf("size of termios_sn %lu\n", sizeof(struct scalanative_termios));
+    printf("alignment of termios_sn %lu\n", _Alignof(struct scalanative_termios));
+    printf("size of termios %lu\n", sizeof(struct termios));
+    printf("alignment of termios %lu\n", _Alignof(struct termios));
     scalanative_termios_copy_to_host(tio_sn, &tio);
     unsigned long res = cfgetispeed(&tio);
     scalanative_termios_copy_to_sn(tio_sn, &tio);

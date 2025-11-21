@@ -4,13 +4,14 @@ import org.junit.Assert._
 import org.junit.Test
 
 import scala.scalanative.libc.stdio
+import scala.scalanative.meta.LinktimeInfo.isWindows
+import scala.scalanative.posix.termios
+import scala.scalanative.posix.termios._
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
-import scalanative.meta.LinktimeInfo.isWindows
-import scalanative.posix.termios._
 
 class TermiosTest {
-  val verbose = false
+  val verbose = true
 
   def setRawMode(): Unit = {
     Zone.acquire { implicit z =>
@@ -46,6 +47,16 @@ class TermiosTest {
       if (verbose) stdio.printf(c"ospeed: %d\n", br)
       assertTrue("cfgetospeed", br == 38400)
     }
+  }
+
+  @Test def testCheckStructSize(): Unit = if (!isWindows) {
+    val ss = sizeof[termios]
+    if (verbose) stdio.printf(c"termios sizeof: %d\n", ss)
+
+    val a = alignmentof[termios]
+    if (verbose) stdio.printf(c"termios alignmentof: %d\n", a)
+
+    assertTrue(true)
   }
 
 }
