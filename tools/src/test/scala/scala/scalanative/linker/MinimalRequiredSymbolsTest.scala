@@ -21,16 +21,16 @@ class MinimalRequiredSymbolsTest extends LinkerSpec {
   def isScala2_12 = ScalaNativeBuildInfo.scalaVersion.startsWith("2.12")
 
   @Test def default(): Unit = checkMinimalRequiredSymbols()(expected =
-    if (isScala3) SymbolsCount(types = 622, members = 3056)
-    else if (isScala2_13) SymbolsCount(types = 597, members = 3064)
-    else SymbolsCount(types = 694, members = 4212)
+    if (isScala3) SymbolsCount(types = 622, members = 3058)
+    else if (isScala2_13) SymbolsCount(types = 597, members = 3066)
+    else SymbolsCount(types = 694, members = 4214)
   )
 
   @Test def debugMetadata(): Unit =
     checkMinimalRequiredSymbols(withDebugMetadata = true)(expected =
-      if (isScala3) SymbolsCount(types = 622, members = 3056)
-      else if (isScala2_13) SymbolsCount(types = 597, members = 3064)
-      else SymbolsCount(types = 694, members = 4212)
+      if (isScala3) SymbolsCount(types = 622, members = 3058)
+      else if (isScala2_13) SymbolsCount(types = 597, members = 3066)
+      else SymbolsCount(types = 694, members = 4214)
     )
 
   // Only MacOS and Linux DWARF metadata currently
@@ -50,16 +50,16 @@ class MinimalRequiredSymbolsTest extends LinkerSpec {
       withDebugMetadata = true,
       withTargetTriple = "x86_64-pc-linux-gnu"
     )(expected =
-      if (isScala3) SymbolsCount(types = 1095, members = 7032)
-      else if (isScala2_13) SymbolsCount(types = 1054, members = 7105)
-      else SymbolsCount(types = 1044, members = 7354)
+      if (isScala3) SymbolsCount(types = 1095, members = 7042)
+      else if (isScala2_13) SymbolsCount(types = 1054, members = 7111)
+      else SymbolsCount(types = 1044, members = 7362)
     )
 
   @Test def multithreading(): Unit =
     checkMinimalRequiredSymbols(withMultithreading = true)(expected =
       if (isScala3) SymbolsCount(types = 1073, members = 6674)
-      else if (isScala2_13) SymbolsCount(types = 1041, members = 6755)
-      else SymbolsCount(types = 995, members = 6826)
+      else if (isScala2_13) SymbolsCount(types = 1041, members = 6757)
+      else SymbolsCount(types = 995, members = 6828)
     )
 
   private def checkMinimalRequiredSymbols(
