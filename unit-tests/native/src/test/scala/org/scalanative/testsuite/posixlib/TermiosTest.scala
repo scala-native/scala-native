@@ -13,18 +13,33 @@ import scala.scalanative.unsigned._
 class TermiosTest {
   val verbose = true
 
-  def setRawMode(): Unit = {
-    Zone.acquire { implicit z =>
-      val attrs = alloc[termios]()
-      tcgetattr(1, attrs)
-      attrs._4 = attrs._4 & ~(ECHO | ICANON).toUInt
-      tcsetattr(1, TCSAFLUSH, attrs)
-    }
+  def setRawMode()(implicit z: Zone): Ptr[termios] = {
+    val attrs = alloc[termios]()
+    tcgetattr(1, attrs)
+    attrs._4 = attrs._4 & ~(ECHO | ICANON).toUInt
+    tcsetattr(1, TCSAFLUSH, attrs)
+    attrs
   }
 
   @Test def testSetRawMode_4143(): Unit = if (!isWindows) {
-    setRawMode() // failed here
-    assertTrue(true)
+    Zone.acquire { implicit z =>
+      val tio = setRawMode() // bug failed here
+      assertTrue(true)
+    }
+  }
+
+  @Test def testGetDefaultISpeed(): Unit = if (!isWindows) {
+    Zone.acquire { implicit z =>
+      val tio = setRawMode() // bug failed here
+      val sp = cfgetispeed(tio)
+      if (verbose) stdio.printf(c"Raw default ispeed: %d\n", sp)
+      val res = cfsetispeed(tio, B9600.toUInt)
+      if (verbose) stdio.printf(c"Raw set result: %d\n", res)
+      val newsp = cfgetispeed(tio)
+      if (verbose) stdio.printf(c"Raw after ispeed: %d\n", newsp)
+      assertTrue("raw cfgetispeed", newsp == 9600)
+      assertTrue(true)
+    }
   }
 
   @Test def testCfgetsetispeed(): Unit = if (!isWindows) {
