@@ -254,7 +254,8 @@ unsigned int
 scalanative_termios_cfgetispeed(struct scalanative_termios *tio_sn) {
     struct termios tio;
     printf("size of termios_sn %lu\n", sizeof(struct scalanative_termios));
-    printf("alignment of termios_sn %lu\n", _Alignof(struct scalanative_termios));
+    printf("alignment of termios_sn %lu\n",
+           _Alignof(struct scalanative_termios));
     printf("size of termios %lu\n", sizeof(struct termios));
     printf("alignment of termios %lu\n", _Alignof(struct termios));
     scalanative_termios_copy_to_host(tio_sn, &tio);
