@@ -22,7 +22,7 @@ object termios {
   type tcflag_t = CUnsignedInt
   type cc_t = CUnsignedChar
   type speed_t = CUnsignedInt
-  type NCCS = Digit2[_1, _9] // 19 on Linux, 20 on macOS
+  type NCCS = Digit2[_2, _0] // 20 on macOS
   type cc_t_arr = CArray[cc_t, NCCS]
 
   type termios = CStruct7[

@@ -208,7 +208,7 @@ int scalanative_termios_tcoon() { return TCOON; }
  * cc_t is `unsigned char` on both so we don't control it
  */
 
-#define NCCS_L 19 // use Linux size
+#define NCCS_L 20 // use macOS size, Linux 32 or 19 in kernel
 
 struct scalanative_termios {
     unsigned int c_iflag;
