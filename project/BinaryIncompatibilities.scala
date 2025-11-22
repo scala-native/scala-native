@@ -53,6 +53,7 @@ object BinaryIncompatibilities {
     exclude[ReversedMissingMethodProblem]("scala.scalanative.runtime.NativeThread#Companion.defaultOSStackSize"),
     exclude[Problem]("scala.scalanative.runtime._Class.*"),
     exclude[Problem]("scala.scalanative.runtime.unwind.*"),
+    exclude[DirectMissingMethodProblem]("scala.scalanative.unsafe.package.toCWideStringImpl"),
   )
   final val CLib: Filters = Nil
 

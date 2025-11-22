@@ -111,7 +111,7 @@ class CStringTest {
   }
 
   @Test def toCStringNullReturnsNullIssue1796(): Unit = {
-    Zone.acquire { implicit z => assertNull(toCString(null)) }
+    Zone.acquire { implicit z => assertNull(toCString(null: String)) }
   }
 
   @Test def testToCString(): Unit = {
