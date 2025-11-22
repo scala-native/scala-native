@@ -449,7 +449,7 @@ final class Matcher private (private var _pattern: Pattern) {
     val e = _lastMatchEnd
 
     if (_appendPos < s) {
-      sb.append(substring(_appendPos, s))
+      sb.append(_inputSequence, _appendPos, s)
     }
     _appendPos = e
     var last = 0
@@ -458,7 +458,7 @@ final class Matcher private (private var _pattern: Pattern) {
     while (i < m - 1) {
       if (replacement.charAt(i) == '\\') {
         if (last < i) {
-          sb.append(replacement.substring(last, i))
+          sb.append(replacement, last, i)
         }
         i += 1
         last = i
@@ -467,7 +467,7 @@ final class Matcher private (private var _pattern: Pattern) {
         if ('0' <= c && c <= '9') {
           var n = c - '0'
           if (last < i) {
-            sb.append(replacement.substring(last, i))
+            sb.append(replacement, last, i)
           }
           i += 2
           var break = false
@@ -491,7 +491,7 @@ final class Matcher private (private var _pattern: Pattern) {
           i -= 1
         } else if (c == '{') {
           if (last < i) {
-            sb.append(replacement.substring(last, i))
+            sb.append(replacement, last, i)
           }
           i += 1 // '{'
           var j = i + 1
@@ -516,7 +516,7 @@ final class Matcher private (private var _pattern: Pattern) {
       i += 1
     }
     if (last < m) {
-      sb.append(replacement.substring(last, m))
+      sb.append(replacement, last, m)
     }
     this
   }
@@ -527,7 +527,7 @@ final class Matcher private (private var _pattern: Pattern) {
   // @param sb the {@link StringBuffer} to append to
   // @return the argument {@code sb}, for method chaining
   def appendTail(sb: StringBuffer): StringBuffer = {
-    sb.append(substring(_appendPos, _inputLength))
+    sb.append(_inputSequence, _appendPos, _inputLength)
     sb
   }
 
