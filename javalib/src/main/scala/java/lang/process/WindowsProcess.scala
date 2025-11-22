@@ -127,10 +127,7 @@ private[process] object WindowsProcess {
 
     if (created) {
       def toFileDescriptor(handle: Handle, readOnly: Boolean) =
-        new FileDescriptor(
-          FileDescriptor.FileHandle(handle),
-          readOnly = readOnly
-        )
+        new FileDescriptor(handle, readOnly = readOnly)
 
       CloseHandle(inRead)
       CloseHandle(outWrite)
