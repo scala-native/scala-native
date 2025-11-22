@@ -48,12 +48,3 @@ runs:
         wget https://apt.llvm.org/llvm.sh
         chmod +x llvm.sh
         (yes "" || true) | sudo ./llvm.sh ${{ inputs.llvm-version }}
-        
-    # Loads cache with dependencies created in test-tools job
-    - name: Cache dependencies
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.cache/coursier
-          ~/.sbt/boot
-        key: ${{ runner.os }}-deps-${{ inputs.scala-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
