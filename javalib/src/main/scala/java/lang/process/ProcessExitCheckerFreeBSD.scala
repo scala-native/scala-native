@@ -13,16 +13,16 @@ import scala.scalanative.unsigned._
 import ju.concurrent.TimeUnit
 
 private[process] object ProcessExitCheckerFreeBSD
-    extends ProcessExitChecker.Factory {
+    extends ProcessExitChecker.MultiFactory {
 
   import bsd.kevent._
 
   private val keventSize = scalanative_kevent_size()
 
-  override def createSingle(pid: CInt)(implicit
+  override def createSingle(handle: GenericProcessHandle)(implicit
       pr: ProcessRegistry
   ): ProcessExitChecker =
-    new Single(pid)
+    new Single(handle.pid().toInt)
 
   // XXX: this watcher is NOT thread-safe, must be used from single thread
   override def createMulti(implicit

@@ -3,16 +3,16 @@ package java.lang.process
 import java.util.concurrent.TimeUnit
 
 private[process] object ProcessExitCheckerWaitpid
-    extends ProcessExitChecker.Factory {
+    extends ProcessExitChecker.MultiFactory {
 
   override def createMulti(implicit
       pr: ProcessRegistry
   ): ProcessExitChecker.Multi = new Multi
 
-  override def createSingle(pid: Int)(implicit
+  override def createSingle(handle: GenericProcessHandle)(implicit
       pr: ProcessRegistry
   ): ProcessExitChecker =
-    new Single(pid)
+    new Single(handle.pid().toInt)
 
   private class Single(pid: Int)(implicit pr: ProcessRegistry)
       extends ProcessExitChecker {
