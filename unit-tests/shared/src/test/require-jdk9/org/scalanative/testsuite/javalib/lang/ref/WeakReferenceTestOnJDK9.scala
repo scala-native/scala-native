@@ -1,6 +1,7 @@
 package org.scalanative.testsuite.javalib.lang.ref
 
 import java.lang.ref._
+import java.util.concurrent.atomic
 
 import scala.annotation.tailrec
 
@@ -13,6 +14,8 @@ import org.scalanative.testsuite.utils.Platform
 // "AfterGC" tests are very sensitive to optimizations,
 // both by Scala Native and LLVM.
 class WeakReferenceTestOnJDK9 {
+
+  private val cleaner = Cleaner.create()
 
   case class A()
   class SubclassedWeakRef[A](a: A, referenceQueue: ReferenceQueue[A])
@@ -34,6 +37,14 @@ class WeakReferenceTestOnJDK9 {
     val weakRef = factory(allocStrongRef, referenceQueue)
     assertNotNull("get() should return object reference", weakRef.get())
     weakRef
+  }
+
+  @noinline def allocCleaned(): atomic.AtomicBoolean = {
+    val flag = new atomic.AtomicBoolean(false)
+    val action: Runnable = () => flag.set(true)
+    cleaner.register(allocStrongRef, action)
+    assertEquals("should not be cleaned", false, flag.get())
+    flag
   }
 
   @deprecated @Test def addsToReferenceQueueAfterGC(): Unit = {
@@ -98,6 +109,10 @@ class WeakReferenceTestOnJDK9 {
     val weakRef1 = allocWeakRef(refQueue, new WeakReference(_, _))
     val weakRef2 = allocWeakRef(refQueue, new WeakReference(_, _))
     val weakRef3 = allocWeakRef(refQueue, new SubclassedWeakRef(_, _))
+
+    val ref4Cleaned = allocCleaned()
+    assertEquals("ref4 cleaned", false, ref4Cleaned.get())
+
     val weakRefList = List(weakRef1, weakRef2, weakRef3)
     // Clobber the stack from possible stale references to allocated objects
     def recurse(n: Int): Unit =
@@ -129,6 +144,15 @@ class WeakReferenceTestOnJDK9 {
     }
     allDistinct(List(a, b, c))
     assertEquals("pool not null", null, refQueue.poll())
+
+    assertCollected(
+      "ref4",
+      if (ref4Cleaned.get()) null else ref4Cleaned,
+      _ => "not cleaned",
+      ref4Cleaned.get(),
+      "not cleaned",
+      timeoutSeconds = 300
+    )
   }
 
   @Test def clear(): Unit = {
