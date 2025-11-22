@@ -34,6 +34,9 @@ object mman {
   @name("scalanative_prot_none")
   def PROT_NONE: CInt = extern
 
+  @name("scalanative_map_failed")
+  def MAP_FAILED: CVoidPtr = extern
+
   @name("scalanative_map_shared")
   def MAP_SHARED: CInt = extern
 
