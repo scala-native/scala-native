@@ -242,7 +242,7 @@ private[nio] object MappedByteBufferImpl {
       fd = fd.fd,
       offset = offset.toSize
     )
-    if (ptr.toInt == -1) failMapping()
+    if (ptr == MAP_FAILED) failMapping()
 
     new MappedByteBufferData(mode, ptr, size, pagePosition, None)
   }

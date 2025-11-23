@@ -9,6 +9,8 @@ int scalanative_prot_read() { return PROT_READ; }
 int scalanative_prot_write() { return PROT_WRITE; }
 int scalanative_prot_none() { return PROT_NONE; }
 
+void *scalanative_map_failed() { return MAP_FAILED; }
+
 int scalanative_map_shared() { return MAP_SHARED; }
 int scalanative_map_private() { return MAP_PRIVATE; }
 int scalanative_map_fixed() { return MAP_FIXED; }
