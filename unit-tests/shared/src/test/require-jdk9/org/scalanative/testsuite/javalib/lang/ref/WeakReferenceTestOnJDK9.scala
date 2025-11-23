@@ -8,15 +8,9 @@ import org.junit.Test
 
 import org.scalanative.testsuite.utils.Platform
 
-import scala.scalanative.annotation.nooptimize
-import scala.scalanative.buildinfo.ScalaNativeBuildInfo
-import scala.scalanative.meta.LinktimeInfo.isWeakReferenceSupported
-import scala.scalanative.runtime.GC
-import scala.scalanative.unsafe._
-
 // "AfterGC" tests are very sensitive to optimizations,
 // both by Scala Native and LLVM.
-class WeakReferenceTest {
+class WeakReferenceTestOnJDK9 {
 
   case class A()
   class SubclassedWeakRef[A](a: A, referenceQueue: ReferenceQueue[A])
@@ -25,21 +19,22 @@ class WeakReferenceTest {
   def gcAssumption(): Unit = {
     assumeTrue(
       "WeakReferences work only on Commix and Immix GC",
-      isWeakReferenceSupported
+      Platform.isWeakReferenceSupported
     )
   }
 
-  @nooptimize @noinline def allocWeakRef(
+  @noinline def allocStrongRef = A()
+
+  @noinline def allocWeakRef(
       referenceQueue: ReferenceQueue[A],
       factory: (A, ReferenceQueue[A]) => WeakReference[A]
   ): WeakReference[A] = {
-    @nooptimize @noinline def allocA = A()
-    val weakRef = factory(allocA, referenceQueue)
+    val weakRef = factory(allocStrongRef, referenceQueue)
     assertNotNull("get() should return object reference", weakRef.get())
     weakRef
   }
 
-  @deprecated @nooptimize @Test def addsToReferenceQueueAfterGC(): Unit = {
+  @deprecated @Test def addsToReferenceQueueAfterGC(): Unit = {
     assumeFalse(
       "In the CI Scala 3 sometimes SN fails to clean weak references in some of Windows build configurations",
       sys.env.contains("CI") && Platform.isWindows
@@ -82,9 +77,11 @@ class WeakReferenceTest {
     val weakRef2 = allocWeakRef(refQueue, new WeakReference(_, _))
     val weakRef3 = allocWeakRef(refQueue, new SubclassedWeakRef(_, _))
     val weakRefList = List(weakRef1, weakRef2, weakRef3)
-    // Zero-memory the stack from possible stale references to allocated objects
-    val dummy = stackalloc[Long](128)
-    assert(dummy != null)
+    // Clobber the stack from possible stale references to allocated objects
+    def recurse(n: Int): Unit =
+      if (n > 0) recurse(n - 1)
+      else ()
+    recurse(10000)
 
     System.gc()
     def newDeadline() = System.currentTimeMillis() + 60 * 1000
@@ -118,12 +115,12 @@ class WeakReferenceTest {
     val a = A()
     val weakRef = new WeakReference(a, refQueue)
 
-    assertEquals(refQueue.poll(), null)
+    assertEquals("queue empty before clear", refQueue.poll(), null)
+    assertEquals("weakref was non-null before clear", weakRef.get(), a)
 
     weakRef.clear()
-    assertEquals(weakRef.get(), null)
-    assertEquals(refQueue.poll(), weakRef)
-    assertEquals(refQueue.poll(), null)
+    assertEquals("queue empty after clear", refQueue.poll(), null)
+    assertEquals("weakref was null after clear", weakRef.get(), null)
   }
 
   @Test def enqueue(): Unit = {
@@ -131,12 +128,13 @@ class WeakReferenceTest {
     val a = A()
     val weakRef = new WeakReference(a, refQueue)
 
-    assertEquals(refQueue.poll(), null)
+    assertEquals("queue empty before enqueue", refQueue.poll(), null)
+    assertEquals("weakref was non-null before enqueue", weakRef.get(), a)
 
     weakRef.enqueue()
-    assertEquals(weakRef.get(), a)
-    assertEquals(refQueue.poll(), weakRef)
-    assertEquals(refQueue.poll(), null)
+    assertEquals("queue had weakref after enqueue", refQueue.poll(), weakRef)
+    assertEquals("queue had only weakref after enqueue", refQueue.poll(), null)
+    assertEquals("weakref was null after enqueue", weakRef.get(), null)
   }
 
 }

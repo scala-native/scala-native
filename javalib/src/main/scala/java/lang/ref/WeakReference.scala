@@ -31,19 +31,19 @@ class WeakReference[T](
 
   override def get(): T = _gc_modified_referent
 
-  override def enqueue(): Boolean =
+  override def enqueue(): Boolean = {
+    clear()
     if (!enqueued && queue != null) {
       queue.enqueue(this)
       enqueued = true
       true
     } else false
+  }
 
   override def isEnqueued(): Boolean = enqueued
 
-  override def clear(): Unit = {
+  override def clear(): Unit =
     _gc_modified_referent = null.asInstanceOf[T]
-    enqueue()
-  }
 
   override private[ref] def dequeue(): Reference[T] = {
     enqueued = false
