@@ -258,7 +258,7 @@ object MultiScalaProject {
         case Some((2, 12)) => Seq("2", "2.12")
         case Some((2, 13)) => Seq("2", "2.13", "2.13+")
         case Some((3, _))  => Seq("3", "2.13+")
-        case _ => sys.error(s"Unsupported Scala version: ${scalaVersion}")
+        case _ => sys.error(s"Unsupported Scala version: ${scalaVersion.value}")
       }
       ("scala" +: vers.map("scala-" + _)).flatMap(v => dirs.map(_ / v))
     }

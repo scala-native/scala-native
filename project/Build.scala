@@ -673,16 +673,6 @@ object Build {
               )
             )
           )
-      },
-      Test / unmanagedSourceDirectories ++= {
-        val base = (Test / sourceDirectory).value
-        scalaVersionsDependendent(scalaVersion.value)(Seq.empty[File]) {
-          case (2, n) if n >= 12 =>
-            Seq(
-              base / "scala-2",
-              base / "scala-2.12+"
-            )
-        }
       }
     )
     .withBuildInfo(Test)
