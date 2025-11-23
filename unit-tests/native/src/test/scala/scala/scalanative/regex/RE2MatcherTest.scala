@@ -36,7 +36,7 @@ class RE2MatcherTest {
     ApiTestUtils.testReplaceAll(
       "abcdefghijklmnopqrstuvwxyz123",
       "(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)",
-      "$10$20",
+      "$10$2\\0",
       "jb0wo0123"
     )
     ApiTestUtils.testReplaceAll(
@@ -80,7 +80,7 @@ class RE2MatcherTest {
     ApiTestUtils.testReplaceFirst(
       "abcdefghijklmnopqrstuvwxyz123",
       "(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)(.)",
-      "$10$20",
+      "$10$2\\0",
       "jb0nopqrstuvwxyz123"
     )
     ApiTestUtils.testReplaceFirst(

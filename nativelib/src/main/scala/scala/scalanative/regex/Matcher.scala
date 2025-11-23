@@ -473,7 +473,7 @@ final class Matcher private (private var _pattern: Pattern) {
           var break = false
           while (!break && i < m) {
             c = replacement.charAt(i)
-            if (c < '0' || c > '9' || n * 10 + c - '0' > _groupCount) {
+            if (c < '0' || c > '9') {
               break = true
             } else {
               n = n * 10 + c - '0'
@@ -493,24 +493,22 @@ final class Matcher private (private var _pattern: Pattern) {
           if (last < i) {
             sb.append(replacement, last, i)
           }
-          i += 1 // '{'
-          var j = i + 1
-          while (j < replacement.length && replacement.charAt(
-                j
-              ) != '}' && replacement
-                .charAt(j) != ' ') {
-            j += 1
+          i += 2 // after '${'
+          val off = i
+          while (i < replacement.length &&
+              replacement.charAt(i) != '}' &&
+              replacement.charAt(i) != ' ') {
+            i += 1
           }
-          if (j == replacement.length || replacement.charAt(j) == ' ') {
+          if (i == replacement.length || replacement.charAt(i) == ' ') {
             throw new IllegalStateException("No match available")
           }
-          val groupName = replacement.substring(i + 1, j)
+          val groupName = replacement.substring(off, i)
           // JVM uses slightly different Exception message for non-extant
           // named group in replacement string.
           val gid = getNamedGroupOrThrow(groupName, "No match available")
           sb.append(this.group(gid))
-          i += 1 // '}'
-          last = j + 1
+          last = i + 1 // after '}'
         }
       }
       i += 1
