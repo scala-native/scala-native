@@ -29,7 +29,7 @@ typedef long int suseconds_t;
 // Being robust to such a change is well worth the code smell of this
 // large block comment. Miserere mei peccatoris.
 //
-#error("Probable size mismatch with static fd_set type in select.scala ")
+#error "Probable size mismatch with static fd_set type in select.scala."
 #endif
 
 #define FDBITS (8 * sizeof(long))

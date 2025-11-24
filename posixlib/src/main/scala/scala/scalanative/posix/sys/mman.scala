@@ -5,6 +5,13 @@ package sys
 import scala.scalanative.posix.sys.types._
 import scala.scalanative.unsafe._
 
+/** POSIX mman.h for Scala
+ *
+ *  @see
+ *    The Open Group Base Specifications
+ *    [[https://pubs.opengroup.org/onlinepubs/9799919799 Issue 8, 2024]]
+ *    edition.
+ */
 @extern
 @define("__SCALANATIVE_POSIX_SYS_MMAN")
 object mman {
@@ -22,6 +29,12 @@ object mman {
   @blocking
   def msync(addr: CVoidPtr, length: size_t, flags: CInt): CInt = extern
 
+  // Return value
+  @name("scalanative_map_failed")
+  def MAP_FAILED: CVoidPtr = extern
+
+  // Symbolic "constants", roughly in POSIX declaration order
+
   @name("scalanative_prot_exec")
   def PROT_EXEC: CInt = extern
 
@@ -34,8 +47,11 @@ object mman {
   @name("scalanative_prot_none")
   def PROT_NONE: CInt = extern
 
-  @name("scalanative_map_failed")
-  def MAP_FAILED: CVoidPtr = extern
+  @name("scalanative_map_anon")
+  def MAP_ANON: CInt = extern
+
+  @name("scalanative_map_anonymous")
+  def MAP_ANONYMOUS: CInt = extern
 
   @name("scalanative_map_shared")
   def MAP_SHARED: CInt = extern
@@ -46,6 +62,7 @@ object mman {
   @name("scalanative_map_fixed")
   def MAP_FIXED: CInt = extern
 
+  // Windows non-POSIX extensions
   @name("scalanative_ms_async")
   def MS_ASYNC: CInt = extern
 
