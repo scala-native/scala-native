@@ -25,7 +25,7 @@ jobs:
       matrix:
         scala: [2.12, 2.13, 3]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
@@ -38,7 +38,7 @@ jobs:
     if: github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: 3
@@ -57,7 +57,7 @@ jobs:
       matrix:
         scala: [2.12, 2.13, 3, 3-next]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
@@ -78,7 +78,7 @@ jobs:
       matrix:
         scala: [3, 2.13, 2.12, 3-next]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
@@ -130,7 +130,7 @@ jobs:
           #   lto: full
           #   gc: commix
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
@@ -161,7 +161,7 @@ jobs:
         scala: [3]
         build-mode: [debug]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
@@ -187,7 +187,7 @@ jobs:
       matrix:
         scala: [3]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
@@ -210,7 +210,7 @@ jobs:
         scala: [3]
         llvm: [14, 15, 16, 17, 18, 19] # Last 3 stable versions + available future versions
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
@@ -233,7 +233,7 @@ jobs:
       matrix:
         scala: [2.13]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
