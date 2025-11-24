@@ -29,6 +29,7 @@ int scalanative_map_shared() { return MAP_SHARED; }
 int scalanative_map_private() { return MAP_PRIVATE; }
 int scalanative_map_fixed() { return MAP_FIXED; }
 
+// XSI|SIO 'constants' for msync()
 int scalanative_ms_sync() { return MS_SYNC; }
 int scalanative_ms_async() { return MS_ASYNC; }
 int scalanative_ms_invalidate() { return MS_INVALIDATE; }
