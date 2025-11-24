@@ -3,13 +3,10 @@ package java.lang.ref
 import java.util.concurrent.locks.LockSupport
 
 import scala.annotation.tailrec
-import scala.util.control.NonFatal
 
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.libc.stdatomic._
-import scala.scalanative.meta.LinktimeInfo.{
-  isMultithreadingEnabled, isWeakReferenceSupported
-}
+import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
 import scala.scalanative.runtime.fromRawPtr
 import scala.scalanative.runtime.javalib.Proxy
@@ -90,25 +87,30 @@ private[java] object WeakReferenceRegistry {
       }
     )
 
-  if (isWeakReferenceSupported) {
+  if (LinktimeInfo.isWeakReferenceSupported) {
     Proxy.GC_setWeakReferencesCollectedCallback { () =>
-      if (isMultithreadingEnabled) LockSupport.unpark(referenceHandlerThread)
-      else handleCollectedReferences()
+      if (LinktimeInfo.isMultithreadingEnabled)
+        LockSupport.unpark(referenceHandlerThread)
+      else
+        handleCollectedReferences()
     }
   }
 
-  private[ref] def add(weakRef: WeakReference[_]): Unit =
-    if (isWeakReferenceSupported) {
-      assert(weakRef.nextReference == null)
-      val prevHeadPtr = stackalloc[WeakReference[_]]()
-      !prevHeadPtr = null
-      while (!atomic_compare_exchange_weak(
-            weakRefsHeadPtr,
-            prevHeadPtr,
-            weakRef
-          )) {
-        weakRef.nextReference = !prevHeadPtr
-      }
+  private[ref] def add(weakRef: WeakReference[_]): Unit = {
+    assert(weakRef.nextReference == null)
+    if (!LinktimeInfo.isWeakReferenceSupported)
+      throw new UnsupportedOperationException(
+        "Can't create WeakReference, not supported by this GC"
+      )
+    val prevHeadPtr = stackalloc[WeakReference[_]]()
+    !prevHeadPtr = null
+    while (!atomic_compare_exchange_weak(
+          weakRefsHeadPtr,
+          prevHeadPtr,
+          weakRef
+        )) {
+      weakRef.nextReference = !prevHeadPtr
     }
+  }
 
 }
