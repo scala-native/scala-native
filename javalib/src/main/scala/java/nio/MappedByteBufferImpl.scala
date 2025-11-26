@@ -200,12 +200,12 @@ private[nio] object MappedByteBufferImpl {
     )
     if (ptr == null) failMapping()
 
-    new MappedByteBufferData(
+    MappedByteBufferData(
       mode = mode,
       mapAddress = ptr,
       length = size,
       pagePosition = pagePosition,
-      windowsMappingHandle = Some(mappingHandle)
+      windowsMappingHandle = mappingHandle
     )
   }
 
@@ -244,7 +244,7 @@ private[nio] object MappedByteBufferImpl {
     )
     if (ptr == MAP_FAILED) failMapping()
 
-    new MappedByteBufferData(mode, ptr, size, pagePosition, None)
+    MappedByteBufferData(mode, ptr, size, pagePosition)
   }
 
   private def mapData(

@@ -11,56 +11,20 @@ import scala.scalanative.unsigned._
 import scala.scalanative.windows.HandleApi._
 import scala.scalanative.windows.MemoryApi._
 
-// Finalization object used to unmap file after GC.
-private class MappedByteBufferFinalizer(
-    weakRef: WeakReference[_ >: Null <: AnyRef],
-    ptr: Ptr[Byte],
-    size: Int,
-    windowsMappingHandle: Option[Handle]
-) {
-
-  WeakReferenceRegistry.addHandler(weakRef, apply)
-
-  def apply(): Unit = {
-    if (isWindows) {
-      UnmapViewOfFile(ptr)
-      CloseHandle(windowsMappingHandle.get)
-    } else {
-      munmap(ptr, size.toUInt)
-    }
-  }
-}
-
 // The part that results in finalization after dereferencing.
 // We cannot include this directly in MappedByteBuffer implementations,
 // as they can change classes via views (fe. MappedByteBuffer can become IntBuffer)
 // on runtime.
-private[nio] class MappedByteBufferData(
+private[nio] class MappedByteBufferData private (
     val mode: MapMode,
     mapAddress: Ptr[Byte],
     val length: Int,
     /** Offset from mapped address (page boundary) to start of requested data */
-    val pagePosition: Int,
-    val windowsMappingHandle: Option[Handle]
+    val pagePosition: Int
 ) {
   val data: Ptr[Byte] =
     if (mapAddress != null) mapAddress + pagePosition
     else null
-
-  // Finalization. Unmapping is done on garbage collection, like on JVM.
-//  private val selfWeakReference = new WeakReference(this)
-
-  if (mapAddress != null) {
-    // Finalization. Unmapping is done on garbage collection, like on JVM.
-    val selfWeakReference = new WeakReference(this)
-
-    new MappedByteBufferFinalizer(
-      selfWeakReference,
-      mapAddress,
-      length,
-      windowsMappingHandle
-    )
-  }
 
   def force(): Unit = {
     if (mode eq MapMode.READ_WRITE) {
@@ -100,10 +64,31 @@ object MappedByteBufferData {
    * keep the compiler happy; it can be any Byte, zero seemed to make the
    * most sense. Fielder's choice redux.
    */
-  def empty = new MappedByteBufferData(MapMode.READ_ONLY, null, 0, 0, None) {
+  def empty = new MappedByteBufferData(MapMode.READ_ONLY, null, 0, 0) {
     override def force(): Unit = () // do nothing
     override def update(index: Int, value: Byte): Unit = () // do nothing
     override def apply(index: Int): Byte = 0 // Should never reach here
+  }
+
+  def apply(
+      mode: MapMode,
+      mapAddress: Ptr[Byte],
+      length: Int,
+      pagePosition: Int,
+      windowsMappingHandle: Handle = null // required for Windows
+  ): MappedByteBufferData = {
+    def clean() =
+      if (isWindows) {
+        UnmapViewOfFile(mapAddress)
+        CloseHandle(windowsMappingHandle)
+      } else {
+        munmap(mapAddress, length.toUInt)
+      }
+    val ref =
+      new MappedByteBufferData(mode, mapAddress, length, pagePosition)
+    // Finalization. Unmapping is done on garbage collection, like on JVM.
+    WeakReferenceRegistry.addHandler(new WeakReference(ref), clean)
+    ref
   }
 
 }
