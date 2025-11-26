@@ -869,7 +869,7 @@ class UsingTestOld {
 object UsingTestOld {
   @BeforeClass def checkRuntime(): Unit = {
     import org.scalanative.testsuite.utils.Platform
-    // Implementation has changed in Scala 2.13.17, backported to 3.8.0
+    // Implementation has changed in Scala 2.13.18, backported to 3.8.0
     // scalalib_3 is built against scalalib_2.13 using the last Scala version
     // instead of the one defined in natural scala3_library_3 dependenies
     def hasCompliantScalaVersion =
