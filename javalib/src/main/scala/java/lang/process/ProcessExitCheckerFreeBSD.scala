@@ -6,6 +6,7 @@ import scala.annotation.tailrec
 
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.bsd
+import scala.scalanative.javalib.io.ObjectHandle
 import scala.scalanative.posix._
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
@@ -13,16 +14,16 @@ import scala.scalanative.unsigned._
 import ju.concurrent.TimeUnit
 
 private[process] object ProcessExitCheckerFreeBSD
-    extends ProcessExitChecker.Factory {
+    extends ProcessExitChecker.MultiFactory {
 
   import bsd.kevent._
 
   private val keventSize = scalanative_kevent_size()
 
-  override def createSingle(pid: CInt)(implicit
+  override def createSingle(procesId: ObjectHandle)(implicit
       pr: ProcessRegistry
   ): ProcessExitChecker =
-    new Single(pid)
+    new Single(procesId.asInt)
 
   // XXX: this watcher is NOT thread-safe, must be used from single thread
   override def createMulti(implicit
