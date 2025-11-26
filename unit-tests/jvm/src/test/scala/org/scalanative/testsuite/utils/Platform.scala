@@ -57,4 +57,5 @@ object Platform {
   final val hasArm64SignalQuirk = false
 
   final val isMultithreadingEnabled = true
+  final val isWeakReferenceSupported = true
 }
