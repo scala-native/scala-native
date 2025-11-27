@@ -2,6 +2,8 @@ package org.scalanative.testsuite.javalib.lang.ref
 
 import java.lang.ref._
 
+import scala.annotation.tailrec
+
 import org.junit.Assert._
 import org.junit.Assume._
 import org.junit.Test
@@ -40,35 +42,55 @@ class WeakReferenceTestOnJDK9 {
       sys.env.contains("CI") && Platform.isWindows
     )
 
+    @noinline def assertCollected(
+        clue: String,
+        fOuterRef: => AnyRef,
+        fOuterClue: AnyRef => String,
+        fInnerDone: => Boolean,
+        fInnerClue: => String,
+        timeoutSeconds: Int = 60
+    ): Unit = {
+      val deadline = System.currentTimeMillis() + timeoutSeconds * 1000L
+      @tailrec def loopOuter(): Unit = {
+        val outer = fOuterRef
+        if (outer ne null) {
+          if (System.currentTimeMillis() >= deadline)
+            fail(s"$clue - WeakReference not collected (${fOuterClue(outer)}")
+
+          // Give GC something to collect
+          locally {
+            val _ = Seq.fill(1000)(new Object {})
+          }
+          System.gc()
+          Thread.sleep(200)
+          loopOuter()
+        }
+      }
+      loopOuter()
+      var iter = 0
+      while ({
+        Thread.sleep(100)
+        !fInnerDone
+      }) {
+        if (iter >= 10)
+          fail(s"$clue - WeakReference not collected ($fInnerClue)")
+        iter += 1
+      }
+    }
+
     @noinline def assertEventuallyIsCollected(
         clue: String,
-        ref: WeakReference[_],
-        deadline: Long
+        ref: WeakReference[_ <: AnyRef],
+        timeoutSeconds: Int = 60
     ): Unit = {
-      ref.get() match {
-        case null =>
-          val waitForEnqueue = 0
-            .until(10)
-            .iterator
-            .map(_ => Thread.sleep(100))
-            .takeWhile(_ => !ref.isEnqueued())
-            .foreach(_ => ())
-          assertTrue("collected but not enqueued", ref.isEnqueued())
-        case v =>
-          if (System.currentTimeMillis() < deadline) {
-            // Give GC something to collect
-            locally {
-              val _ = Seq.fill(1000)(new Object {})
-            }
-            System.gc()
-            Thread.sleep(200)
-            assertEventuallyIsCollected(clue, ref, deadline)
-          } else {
-            fail(
-              s"$clue - expected that WeakReference would be collected, but it contains value ${v}"
-            )
-          }
-      }
+      assertCollected(
+        clue,
+        ref.get(),
+        x => s"value $x",
+        ref.isEnqueued(),
+        "not enqueued",
+        timeoutSeconds
+      )
     }
 
     gcAssumption()
@@ -84,10 +106,9 @@ class WeakReferenceTestOnJDK9 {
     recurse(10000)
 
     System.gc()
-    def newDeadline() = System.currentTimeMillis() + 60 * 1000
-    assertEventuallyIsCollected("weakRef1", weakRef1, deadline = newDeadline())
-    assertEventuallyIsCollected("weakRef2", weakRef2, deadline = newDeadline())
-    assertEventuallyIsCollected("weakRef3", weakRef3, deadline = newDeadline())
+    assertEventuallyIsCollected("weakRef1", weakRef1)
+    assertEventuallyIsCollected("weakRef2", weakRef2)
+    assertEventuallyIsCollected("weakRef3", weakRef3)
 
     assertEquals("weakRef1", null, weakRef1.get())
     assertEquals("weakRef2", null, weakRef2.get())
