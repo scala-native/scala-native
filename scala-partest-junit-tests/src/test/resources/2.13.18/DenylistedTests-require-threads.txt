@@ -1,0 +1,2 @@
+scala/collection/convert/MapWrapperTest.scala
+scala/collection/concurrent/TrieMapTest.scala
