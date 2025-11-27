@@ -12,7 +12,8 @@ final class Cleaner private {
    */
   def register(ref: AnyRef, action: Runnable): Cleaner.Cleanable = {
     val cleanable = new Cleaner.CleanableImpl(action)
-    WeakReferenceRegistry.addHandler(new WeakReference(ref), cleanable.clean)
+    // registers itself in WeakReferenceRegistry
+    new WeakReference(ref) { postGCHandler = cleanable.clean }
     cleanable
   }
 

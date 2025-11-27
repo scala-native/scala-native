@@ -1,7 +1,7 @@
 package java.nio
 
 import java.io.IOException
-import java.lang.ref.{WeakReference, WeakReferenceRegistry}
+import java.lang.ref.Cleaner
 import java.nio.channels.FileChannel.MapMode
 
 import scala.scalanative.meta.LinktimeInfo.isWindows
@@ -70,6 +70,8 @@ object MappedByteBufferData {
     override def apply(index: Int): Byte = 0 // Should never reach here
   }
 
+  private val cleaner = Cleaner.create()
+
   def apply(
       mode: MapMode,
       mapAddress: Ptr[Byte],
@@ -77,7 +79,7 @@ object MappedByteBufferData {
       pagePosition: Int,
       windowsMappingHandle: Handle = null // required for Windows
   ): MappedByteBufferData = {
-    def clean() =
+    val clean: Runnable = () =>
       if (isWindows) {
         UnmapViewOfFile(mapAddress)
         CloseHandle(windowsMappingHandle)
@@ -87,7 +89,7 @@ object MappedByteBufferData {
     val ref =
       new MappedByteBufferData(mode, mapAddress, length, pagePosition)
     // Finalization. Unmapping is done on garbage collection, like on JVM.
-    WeakReferenceRegistry.addHandler(new WeakReference(ref), clean)
+    cleaner.register(ref, clean)
     ref
   }
 
