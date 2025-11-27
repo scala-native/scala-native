@@ -703,7 +703,7 @@ object Build {
       .settings(
         // Setting only used to ensure that compiler does not crash when reporting deprecated options
         scalacOptions += "-P:scalanative:mapSourceURI:path->unused",
-        scalacOptions -= "-Xfatal-warnings",
+        scalacOptions --= Seq("-Xfatal-warnings", "-Werror"),
         nativeConfig ~= {
           _.withLinkStubs(true)
         },
