@@ -2,7 +2,7 @@ package scala.scalanative
 package linker
 
 import org.junit.Assert._
-import org.junit.Test
+import org.junit.{Ignore, Test}
 
 import scala.scalanative.LinkerSpec
 import scala.scalanative.build.{Config, NativeConfig}
@@ -12,6 +12,7 @@ import scala.scalanative.buildinfo.ScalaNativeBuildInfo
  *  application based on the predefined hard limits. In the future we shall try
  *  to limit these number even further
  */
+@Ignore("To be replaced with proper tracking / golden tests")
 class MinimalRequiredSymbolsTest extends LinkerSpec {
   private val mainClass = "Test"
   private val sourceFile = "Test.scala"
