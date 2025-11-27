@@ -13,7 +13,7 @@ final class Cleaner private {
   def register(ref: AnyRef, action: Runnable): Cleaner.Cleanable = {
     val cleanable = new Cleaner.CleanableImpl(action)
     // registers itself in WeakReferenceRegistry
-    new WeakReference(ref) { postGCHandler = cleanable.clean }
+    new Cleaner.CleanableReference(ref, cleanable)
     cleanable
   }
 
@@ -39,6 +39,14 @@ object Cleaner {
         "Can't create Cleaner with a ThreadFactory"
       )
     create()
+  }
+
+  private class CleanableReference(ref: AnyRef, cleanable: Cleanable)
+      extends WeakReference[AnyRef](ref) {
+    override def clear(): Unit = {
+      super.clear()
+      cleanable.clean()
+    }
   }
 
   private class CleanableImpl(action: Runnable) extends Cleanable {
