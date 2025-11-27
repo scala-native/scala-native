@@ -89,7 +89,7 @@ object Settings {
       .partialVersion(scalaVersion.value)
       .fold(Seq.empty[String]) {
         // -Xfatal-warnings is deprecated, but -Werror is not available in older Scala versions
-        case (2, 12) =>
+        case (2, _) =>
           Seq("-Xfatal-warnings", "-encoding", "utf8")
         case _ =>
           Seq("-Werror", "-encoding:utf8")
