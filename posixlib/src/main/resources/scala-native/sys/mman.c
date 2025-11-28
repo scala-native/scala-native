@@ -21,8 +21,7 @@ int scalanative_map_anonymous() { return MAP_ANONYMOUS; }
 int scalanative_map_anon() { return MAP_ANON; }
 int scalanative_map_anonymous() { return MAP_ANON; }
 #else
-// #error "Neither MAP_ANONYMOUS nor MAP_ANON is defined."
-#error Neither MAP_ANONYMOUS nor MAP_ANON is defined.
+#error "Neither MAP_ANONYMOUS nor MAP_ANON is defined."
 #endif
 
 int scalanative_map_shared() { return MAP_SHARED; }
