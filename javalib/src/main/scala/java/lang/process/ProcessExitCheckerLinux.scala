@@ -3,25 +3,28 @@ package java.lang.process
 import java.util.concurrent.TimeUnit
 
 import scala.scalanative.annotation.alwaysinline
+import scala.scalanative.javalib.io.ObjectHandle
 import scala.scalanative.linux
 import scala.scalanative.posix._
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 
 private[process] object ProcessExitCheckerLinux
-    extends ProcessExitChecker.Factory {
+    extends ProcessExitChecker.MultiFactory {
 
   import linux.epoll._
   import linux.pidfd._
   import linux.ppoll._
 
-  override def createSingle(pid: Int)(implicit
+  override def createSingle(procesId: ObjectHandle)(implicit
       pr: ProcessRegistry
-  ): ProcessExitChecker =
+  ): ProcessExitChecker = {
+    val pid = procesId.asInt
     getPidFd(pid).fold {
       reapWhenNotRunning(pid)
-      ProcessExitCheckerWaitpid.createSingle(pid)
+      ProcessExitCheckerWaitpid.createSingle(procesId)
     }(fd => new Single(pid, UnixFileDescriptorAtomic(fd)))
+  }
 
   // XXX: this watcher is NOT thread-safe, must be used from single thread
   override def createMulti(implicit

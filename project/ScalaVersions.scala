@@ -19,7 +19,7 @@ package build
 object ScalaVersions {
   // Versions of Scala used for publishing compiler plugins
   val crossScala212 = crossScalaVersions("2.12", 14 to 20)
-  val crossScala213 = crossScalaVersions("2.13", 8 to 17)
+  val crossScala213 = crossScalaVersions("2.13", 8 to 18)
   val crossScala3 = List(
     extraCrossScalaVersion("3.").toList,
     scala3RCVersions,
@@ -35,7 +35,7 @@ object ScalaVersions {
 
   // Tested in scheduled nightly CI to check compiler plugins
   // List maintains only upcoming releases, removed from the list after reaching stable status
-  lazy val scala3RCVersions = List("3.8.0-RC1")
+  lazy val scala3RCVersions = List("3.8.0-RC2")
 
   // Scala versions used for publishing libraries
   val scala212: String = crossScala212.last
@@ -47,7 +47,7 @@ object ScalaVersions {
   val scala213PublishVersion = crossScala213.head
 
   // List of nightly version can be found here: https://repo.scala-lang.org/ui/native/maven-nightlies/org/scala-lang/scala3-compiler_3
-  val scala3Nightly = "3.8.0-RC1-bin-20251114-d221ef5-NIGHTLY"
+  val scala3Nightly = "3.8.1-RC1-bin-20251127-fd2172d-NIGHTLY"
 
   // minimum version rationale:
   //   1.5 is required for Scala 3 and

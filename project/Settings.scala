@@ -84,11 +84,16 @@ object Settings {
     scalacOptions ++= Seq(
       "-deprecation",
       "-unchecked",
-      "-feature",
-      "-Xfatal-warnings",
-      "-encoding",
-      "utf8"
-    ),
+      "-feature"
+    ) ++ CrossVersion
+      .partialVersion(scalaVersion.value)
+      .fold(Seq.empty[String]) {
+        // -Xfatal-warnings is deprecated, but -Werror is not available in older Scala versions
+        case (2, _) =>
+          Seq("-Xfatal-warnings", "-encoding", "utf8")
+        case _ =>
+          Seq("-Werror", "-encoding:utf8")
+      },
     javaReleaseSettings,
     mimaSettings,
     docsSettings,
@@ -355,7 +360,7 @@ object Settings {
           // Scala 3, becouse null.isInstanceOf[String] warning cannot be supressed
           scalaVersion.value.startsWith("3.") ||
           // Scala Native - due to specific warnings for unsafe ops in IssuesTest
-          !moduleName.value.contains("jvm")) Seq("-Xfatal-warnings")
+          !moduleName.value.contains("jvm")) Seq("-Werror", "-Xfatal-warnings")
       else Nil
     },
     Test / testOptions ++= Seq(
@@ -618,7 +623,7 @@ object Settings {
     publishSettings(None),
     mavenPublishSettings,
     exportJars := true,
-    scalacOptions --= Seq("-deprecation", "-Xfatal-warnings"),
+    scalacOptions --= Seq("-deprecation", "-Werror", "-Xfatal-warnings"),
     scalacOptions ++= ignoredScalaDeprecations(scalaVersion.value),
     disableMimaSettings
   )
@@ -771,7 +776,7 @@ object Settings {
         scalaNativeCompilerOptions(
           s"positionRelativizationPaths:${crossTarget.value / "patched"};${(fetchScalaSource / artifactPath).value}"
         ),
-      scalacOptions --= Seq("-deprecation", "-Xfatal-warnings"),
+      scalacOptions --= Seq("-deprecation", "-Werror", "-Xfatal-warnings"),
       // Scala.js original comment modified to clarify issue is Scala.js.
       /* Work around for https://github.com/scala-js/scala-js/issues/2649
        * We would like to always use `update`, but
@@ -1020,7 +1025,7 @@ object Settings {
       Tests.Argument(TestFrameworks.JUnit, "-a", "-s"),
       Tests.Filter(_.endsWith("Assertions"))
     ),
-    Test / scalacOptions --= Seq("-deprecation", "-Xfatal-warnings"),
+    Test / scalacOptions --= Seq("-deprecation", "-Werror", "-Xfatal-warnings"),
     Test / scalacOptions += "-deprecation:false"
   )
 

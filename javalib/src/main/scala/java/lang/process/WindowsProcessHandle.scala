@@ -6,6 +6,7 @@ import java.util.concurrent.TimeUnit
 // Required only for cross-compilation with Scala 2
 import scala.language.existentials
 
+import scala.scalanative.javalib.io.ObjectHandle
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.windows._
@@ -16,7 +17,7 @@ private[process] class WindowsProcessHandle(
     _pid: DWord,
     handle: Handle,
     override val builder: ProcessBuilder
-) extends GenericProcessHandle {
+) extends GenericProcessHandle(ObjectHandle(handle)) {
   override final def pid(): Long = _pid.toLong
 
   override def supportsNormalTermination(): Boolean = false

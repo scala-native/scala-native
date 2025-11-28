@@ -2,17 +2,19 @@ package java.lang.process
 
 import java.util.concurrent.TimeUnit
 
+import scala.scalanative.javalib.io.ObjectHandle
+
 private[process] object ProcessExitCheckerWaitpid
-    extends ProcessExitChecker.Factory {
+    extends ProcessExitChecker.MultiFactory {
 
   override def createMulti(implicit
       pr: ProcessRegistry
   ): ProcessExitChecker.Multi = new Multi
 
-  override def createSingle(pid: Int)(implicit
+  override def createSingle(procesId: ObjectHandle)(implicit
       pr: ProcessRegistry
   ): ProcessExitChecker =
-    new Single(pid)
+    new Single(procesId.asInt)
 
   private class Single(pid: Int)(implicit pr: ProcessRegistry)
       extends ProcessExitChecker {
