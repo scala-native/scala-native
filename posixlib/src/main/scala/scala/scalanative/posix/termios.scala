@@ -60,7 +60,7 @@ object termios {
 
   // symbolic constants for use as subscripts for the array c_cc
 
-  @name("scalanative_termios_copy_to_sn(tio_sn, &tio);veof")
+  @name("scalanative_termios_veof")
   def VEOF: CInt = extern
   @name("scalanative_termios_veol")
   def VEOL: CInt = extern

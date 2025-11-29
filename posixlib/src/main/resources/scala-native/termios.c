@@ -3,7 +3,6 @@
     (defined(__APPLE__) && defined(__MACH__))
 #include <assert.h>
 #include <limits.h>
-#include <stdio.h>
 #include <termios.h>
 #if defined(__FreeBSD__)
 #define COMPAT_43TTY
