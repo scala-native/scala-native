@@ -123,11 +123,4 @@ private[java] object WeakReferenceRegistry {
       }
     }
 
-  // Scala Native javalib exclusive functionality.
-  // Can be used to emulate finalize for javalib classes where necessary.
-  private[java] def addHandler(
-      weakRef: WeakReference[_],
-      handler: Function0[Unit]
-  ): Unit =
-    if (isWeakReferenceSupported) { weakRef.postGCHandler = handler }
 }
