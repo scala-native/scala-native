@@ -61,7 +61,8 @@ object BinaryIncompatibilities {
     exclude[DirectMissingMethodProblem]("scala.scalanative.posix.spawn.posix_spawn_file_actions_open"), // wrong name
     exclude[Problem]("scala.scalanative.posix.string.stroll"), // remove typo 
     exclude[Problem]("scala.scalanative.posix.string.stroll_l"), // remove typo
-    exclude[Problem]("scala.scalanative.posix.string.strcpy") // libc not CX
+    exclude[Problem]("scala.scalanative.posix.string.strcpy"), // libc not CX
+    exclude[Problem]("scala.scalanative.posix.termios*") // maybe can be more specific
   )
 
   final val WindowsLib: Filters = Nil

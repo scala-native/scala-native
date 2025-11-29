@@ -1,6 +1,8 @@
 #if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_POSIX_TERMIOS)
 #if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
+#include <assert.h>
+#include <limits.h>
 #include <termios.h>
 #if defined(__FreeBSD__)
 #define COMPAT_43TTY
@@ -195,6 +197,107 @@ int scalanative_termios_tcioff() { return TCIOFF; }
 int scalanative_termios_tcion() { return TCION; }
 int scalanative_termios_tcooff() { return TCOOFF; }
 int scalanative_termios_tcoon() { return TCOON; }
+
+/* macOS and Linux uses different sizes for `termios` struct.
+ * POSIX says unsigned types and Linux uses `unsigned int`
+ * and macOS uses `unsigned long` for `tcflag_t`and `speed_t`.
+ *
+ * Since Scala needs the types upfront we use the smaller
+ * `unsigned int` because that is a sufficient size.
+ *
+ * cc_t is `unsigned char` on both so we don't control it
+ */
+
+#define NCCS_L 20 // use macOS size, Linux 32 or 19 in kernel
+
+struct scalanative_termios {
+    unsigned int c_iflag;
+    unsigned int c_oflag;
+    unsigned int c_cflag;
+    unsigned int c_lflag;
+    cc_t c_cc[NCCS_L];
+    unsigned int c_ispeed;
+    unsigned int c_ospeed;
+};
+
+void scalanative_termios_copy_to_host(struct scalanative_termios *termios_sn,
+                                      struct termios *termios) {
+    termios->c_iflag = termios_sn->c_iflag;
+    termios->c_oflag = termios_sn->c_oflag;
+    termios->c_cflag = termios_sn->c_cflag;
+    termios->c_lflag = termios_sn->c_lflag;
+    for (int i = 0; i < NCCS_L; i++) {
+        termios->c_cc[i] = termios_sn->c_cc[i];
+    }
+    termios->c_ispeed = termios_sn->c_ispeed;
+    termios->c_ospeed = termios_sn->c_ospeed;
+}
+
+void scalanative_termios_copy_to_sn(struct scalanative_termios *termios_sn,
+                                    struct termios *termios) {
+    termios_sn->c_iflag = termios->c_iflag;
+    termios_sn->c_oflag = termios->c_oflag;
+    termios_sn->c_cflag = termios->c_cflag;
+    termios_sn->c_lflag = termios->c_lflag;
+    for (int i = 0; i < NCCS_L; i++) {
+        termios_sn->c_cc[i] = termios->c_cc[i];
+    }
+    termios_sn->c_ispeed = termios->c_ispeed;
+    termios_sn->c_ospeed = termios->c_ospeed;
+}
+
+// @name functions
+
+// Linux speed_t is unsigned int
+unsigned int
+scalanative_termios_cfgetispeed(struct scalanative_termios *tio_sn) {
+    struct termios tio;
+    scalanative_termios_copy_to_host(tio_sn, &tio);
+    unsigned long res = cfgetispeed(&tio);
+    scalanative_termios_copy_to_sn(tio_sn, &tio);
+    assert(res <= UINT_MAX && "unsigned long value exceeds unsigned int range");
+    return (unsigned int)res;
+}
+unsigned int
+scalanative_termios_cfgetospeed(struct scalanative_termios *tio_sn) {
+    struct termios tio;
+    scalanative_termios_copy_to_host(tio_sn, &tio);
+    unsigned long res = cfgetospeed(&tio);
+    scalanative_termios_copy_to_sn(tio_sn, &tio);
+    assert(res <= UINT_MAX && "unsigned long value exceeds unsigned int range");
+    return (unsigned int)res;
+}
+int scalanative_termios_cfsetispeed(struct scalanative_termios *tio_sn,
+                                    unsigned int speed) {
+    struct termios tio;
+    scalanative_termios_copy_to_host(tio_sn, &tio);
+    int res = cfsetispeed(&tio, speed);
+    scalanative_termios_copy_to_sn(tio_sn, &tio);
+    return res;
+}
+int scalanative_termios_cfsetospeed(struct scalanative_termios *tio_sn,
+                                    unsigned int speed) {
+    struct termios tio;
+    scalanative_termios_copy_to_host(tio_sn, &tio);
+    int res = cfsetospeed(&tio, speed);
+    scalanative_termios_copy_to_sn(tio_sn, &tio);
+    return res;
+}
+int scalanative_termios_tcgetattr(int fd, struct scalanative_termios *tio_sn) {
+    struct termios tio;
+    scalanative_termios_copy_to_host(tio_sn, &tio);
+    int res = tcgetattr(fd, &tio);
+    scalanative_termios_copy_to_sn(tio_sn, &tio);
+    return res;
+}
+int scalanative_termios_tcsetattr(int fd, int optionalActions,
+                                  struct scalanative_termios *tio_sn) {
+    struct termios tio;
+    scalanative_termios_copy_to_host(tio_sn, &tio);
+    int res = tcsetattr(fd, optionalActions, &tio);
+    scalanative_termios_copy_to_sn(tio_sn, &tio);
+    return res;
+}
 
 #endif // Unix or Mac OS
 #endif
