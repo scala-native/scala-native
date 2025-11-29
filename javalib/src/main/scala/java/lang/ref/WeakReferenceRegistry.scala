@@ -43,18 +43,6 @@ private[java] object WeakReferenceRegistry {
         if (null != current.get()) head
         else {
           current.enqueue()
-          val handler = current.postGCHandler
-          if (handler != null) {
-            current.postGCHandler = null
-            try handler()
-            catch {
-              case NonFatal(err) =>
-                val thread = Thread.currentThread()
-                thread
-                  .getUncaughtExceptionHandler()
-                  .uncaughtException(thread, err)
-            }
-          }
           if (prev == null) next
           else {
             prev.nextReference = next
