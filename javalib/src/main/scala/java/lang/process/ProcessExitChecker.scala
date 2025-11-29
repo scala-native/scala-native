@@ -49,8 +49,8 @@ private[process] object ProcessExitChecker {
       Some(ProcessExitCheckerFreeBSD) // Other BSDs should work but untested
     else None
 
-  val factoryOpt: Option[Factory] =
-    if (LinktimeInfo.isWindows) None
-    else unixFactoryOpt.orElse(Some(ProcessExitCheckerWaitpid))
+  val factory: Factory =
+    if (LinktimeInfo.isWindows) WindowsProcessHandle.ProcessExitCheckerFactory
+    else unixFactoryOpt.getOrElse(ProcessExitCheckerWaitpid)
 
 }
