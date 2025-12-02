@@ -12,7 +12,8 @@ class ReferenceQueue[T] {
 
   private def dequeue(): Reference[T] = {
     val entry = underlying.dequeue()
-    entry.dequeue()
+    entry.markDequeued()
+    entry
   }
 
   def poll(): Reference[T] =

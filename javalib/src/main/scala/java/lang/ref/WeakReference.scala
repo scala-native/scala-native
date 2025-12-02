@@ -43,9 +43,7 @@ class WeakReference[T](
   override def clear(): Unit =
     _gc_modified_referent = null.asInstanceOf[T]
 
-  override private[ref] def dequeue(): Reference[T] = {
+  override private[ref] def markDequeued(): Unit =
     enqueued = false
-    this
-  }
 
 }
