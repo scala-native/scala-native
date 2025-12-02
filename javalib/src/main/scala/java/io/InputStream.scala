@@ -17,24 +17,24 @@ abstract class InputStream extends Closeable {
 
     if (len == 0) 0
     else {
-      var bytesWritten = 0
-      var next = 0
-
-      while (bytesWritten < len && next != -1) {
-        next =
-          if (bytesWritten == 0) read()
-          else {
-            try read()
-            catch { case _: IOException => -1 }
-          }
-        if (next != -1) {
+      var next = read()
+      if (next == -1) -1
+      else {
+        var bytesWritten = 0
+        while ({
           b(off + bytesWritten) = next.toByte
           bytesWritten += 1
-        }
+          bytesWritten < len && {
+            try {
+              next = read()
+              next != -1
+            } catch {
+              case _: IOException => false
+            }
+          }
+        }) {}
+        bytesWritten
       }
-
-      if (bytesWritten <= 0) -1
-      else bytesWritten
     }
   }
 
