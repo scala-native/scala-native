@@ -3,6 +3,7 @@
 package scala.scalanative
 package regex
 
+import java.nio.CharBuffer
 import java.util.Map
 import java.{lang => jl}
 
@@ -47,9 +48,7 @@ final class Matcher private (private var _pattern: Pattern) {
     // Amortized _groupCount is likely to be small, say 1, 2, or n < 5, so
     // calling out to memset() is unlikely to be worth the overhead.
 
-    for (i <- 0 until _groups.length) {
-      _groups(i) = -1
-    }
+    _groups.indices.foreach(_groups(_) = -1)
   }
 
   private def createGroups(nGroups: Int): Array[Int] = {
@@ -70,9 +69,6 @@ final class Matcher private (private var _pattern: Pattern) {
   // The append position: where the next append should start.
   private var _appendPos: Int = _
 
-  // Is there a current match?
-  private var _hasMatch: Boolean = _
-
   // Have we found the submatches (groups) of the current match?
   // group[0], group[1] are set regardless.
   private var _hasGroups: Boolean = _
@@ -80,8 +76,9 @@ final class Matcher private (private var _pattern: Pattern) {
   // The anchor flag to use when repeating the match to find subgroups.
   private var _anchorFlag: Int = _
 
-  private var _lastMatchStart = 0
-  private var _lastMatchEnd = 0
+  // if there's a current match, these must be non-negative
+  private var _lastMatchStart = -1
+  private var _lastMatchEnd = -1
 
   private var _regionStart = 0
   private var _regionEnd = 0
@@ -91,7 +88,7 @@ final class Matcher private (private var _pattern: Pattern) {
     this(pattern)
     _inputSequence = input
     _inputLength = input.length()
-    _regionEnd = _inputSequence.length
+    _regionEnd = _inputLength
   }
 
   // Returns the {@code Pattern} associated with this {@code Matcher}.
@@ -102,13 +99,16 @@ final class Matcher private (private var _pattern: Pattern) {
   //
   // @return the {@code Matcher} itself, for chained method calls
   def reset(): Matcher = {
+    reset(0, _inputLength)
+  }
+
+  private def reset(regionStart: Int, regionEnd: Int): Matcher = {
     _appendPos = 0
-    _hasMatch = false
     _hasGroups = false
-    _lastMatchStart = 0
-    _lastMatchEnd = 0
-    _regionStart = 0
-    _regionEnd = _inputSequence.length
+    _lastMatchStart = -1
+    _lastMatchEnd = -1
+    _regionStart = regionStart
+    _regionEnd = regionEnd
     this
   }
 
@@ -124,18 +124,27 @@ final class Matcher private (private var _pattern: Pattern) {
     _inputSequence = input
     _inputLength = input.length()
     reset()
-    this
   }
 
   // Returns the start position of the most recent match.
   //
   // @throws IllegalStateException if there is no match
-  def start(): Int = start(0)
+  def start(): Int = {
+    checkHasMatch()
+    _regionStart + _lastMatchStart
+  }
 
   // Returns the end position of the most recent match.
   //
   // @throws IllegalStateException if there is no match
-  def end(): Int = end(0)
+  def end(): Int = {
+    checkHasMatch()
+    _regionStart + _lastMatchEnd
+  }
+
+  // maps relative position within region to absolute
+  private def abspos(offset: Int): Int =
+    if (offset < 0) offset else offset + _regionStart
 
   // Returns the start position of a subgroup of the most recent match.
   //
@@ -145,7 +154,7 @@ final class Matcher private (private var _pattern: Pattern) {
   //   if {@code group < 0} or {@code group > groupCount()}
   def start(group: Int): Int = {
     loadGroup(group)
-    _groups(2 * group)
+    abspos(_groups(2 * group))
   }
 
   // Returns the end position of a subgroup of the most recent match.
@@ -156,7 +165,7 @@ final class Matcher private (private var _pattern: Pattern) {
   //   if {@code group < 0} or {@code group > groupCount()}
   def end(group: Int): Int = {
     loadGroup(group)
-    _groups(2 * group + 1)
+    abspos(_groups(2 * group + 1))
   }
 
   private def getNamedGroupOrThrow(key: String, msg: String): Int = {
@@ -225,14 +234,17 @@ final class Matcher private (private var _pattern: Pattern) {
       throw new IndexOutOfBoundsException("start > end")
     }
 
-    _regionStart = start
-    _regionEnd = end
-    this
+    reset(start, end)
   }
 
   def regionEnd(): Int = _regionEnd
 
   def regionStart(): Int = _regionStart
+
+  private def regionLength: Int = _regionEnd - _regionStart
+
+  private def inputRegion: CharSequence =
+    CharBuffer.wrap(_inputSequence, _regionStart, _regionEnd)
 
   // Returns the most recent match.
   //
@@ -264,12 +276,15 @@ final class Matcher private (private var _pattern: Pattern) {
   // @return the number of subgroups the overall match (group 0) does not count
   def groupCount(): Int = _groupCount
 
+  private def checkHasMatch(): Unit =
+    if (_lastMatchEnd < 0) {
+      throw new IllegalStateException("No match found")
+    }
+
   // Helper: finds subgroup information if needed for group.
   private def loadGroup(group: Int): Unit = {
 
-    if (!_hasMatch) {
-      throw new IllegalStateException("No match found")
-    }
+    checkHasMatch()
 
     if ((group < 0) || (group > _groupCount)) {
       throw new IndexOutOfBoundsException(s"No group ${group}")
@@ -286,14 +301,11 @@ final class Matcher private (private var _pattern: Pattern) {
     // If we don't, they evaluate to new String[] {"ab", "a", "b", null}
     // We know it won't affect the total matched because the previous call
     // to match included the extra character, and it was not matched then.
-    var end = _groups(1) + 1
-    if (end > _inputLength) {
-      end = _inputLength
-    }
+    val end = (_lastMatchEnd + 1).min(regionLength)
 
     val ok = _pattern.re2.match_(
-      _inputSequence,
-      _groups(0),
+      inputRegion,
+      _lastMatchStart,
       end,
       _anchorFlag,
       _groups,
@@ -311,7 +323,7 @@ final class Matcher private (private var _pattern: Pattern) {
   def regionSpansInput(): Boolean =
     (_regionStart == 0) && (_regionEnd == _inputLength)
 
-  def anchoredAtStartRegion(): Boolean = (this.start() == regionStart())
+  def anchoredAtStartRegion(): Boolean = _lastMatchStart == 0
 
   // Note the (this.end() == 0) clause. It handles certain reluctant/lazy
   // patterns, such as "X??" (zero or more, prefer zero.). The underlying
@@ -319,7 +331,7 @@ final class Matcher private (private var _pattern: Pattern) {
   // rather than JVM semantics. A corner case, but a sharp one.
 
   def anchoredAtEndRegion(): Boolean =
-    (this.end() == regionEnd()) || (this.end() == 0)
+    _lastMatchEnd == 0 || _lastMatchEnd == regionLength
 
   def anchoredAtBothRegion(): Boolean =
     anchoredAtStartRegion() && anchoredAtEndRegion()
@@ -340,7 +352,7 @@ final class Matcher private (private var _pattern: Pattern) {
     if (regionSpansInput()) {
       genMatch(0, RE2.ANCHOR_BOTH)
     } else {
-      genMatch(_regionStart, RE2.UNANCHORED) && anchoredAtBothRegion()
+      genMatch(0, RE2.UNANCHORED) && anchoredAtBothRegion()
     }
   }
 
@@ -352,7 +364,7 @@ final class Matcher private (private var _pattern: Pattern) {
     if (regionSpansInput()) {
       genMatch(0, RE2.ANCHOR_START)
     } else {
-      genMatch(_regionStart, RE2.UNANCHORED) && anchoredAtStartRegion()
+      genMatch(0, RE2.UNANCHORED) && anchoredAtStartRegion()
     }
   }
 
@@ -364,13 +376,9 @@ final class Matcher private (private var _pattern: Pattern) {
   // @return true if it finds a match
   def find(): Boolean = {
     // find() respects the region and does not change it.
-    var start = _regionStart
-    if (_hasMatch) {
-      start = _groups(1)
-      if (_groups(0) == _groups(1)) { // empty match - nudge forward
-        start += 1
-      }
-    }
+    val start =
+      if (_lastMatchEnd > _lastMatchStart) _lastMatchEnd
+      else _lastMatchEnd + 1 // no match, or empty match - nudge forward
     genMatch(start, RE2.UNANCHORED)
   }
 
@@ -394,9 +402,9 @@ final class Matcher private (private var _pattern: Pattern) {
   // Helper: does match starting at start, with RE2 anchor flag.
   private def genMatch(startByte: Int, anchor: Int): Boolean = {
     val ok = _pattern.re2.match_(
-      _inputSequence,
+      inputRegion,
       startByte,
-      _regionEnd,
+      regionLength,
       anchor,
       _groups,
       1
@@ -404,11 +412,10 @@ final class Matcher private (private var _pattern: Pattern) {
     if (!ok) {
       false
     } else {
-      _hasMatch = true
       _hasGroups = false
       _anchorFlag = anchor
-      _lastMatchStart = start()
-      _lastMatchEnd = end()
+      _lastMatchStart = _groups(0)
+      _lastMatchEnd = _groups(1)
       true
     }
   }
@@ -416,7 +423,7 @@ final class Matcher private (private var _pattern: Pattern) {
   // Helper: return substring for [start, end).
   def substring(start: Int, end: Int): String =
     // This is fast for both StringBuilder and String.
-    _inputSequence.subSequence(start, end).toString()
+    _inputSequence.subSequence(start, end).toString
 
   // Helper for Pattern: return input length.
   def inputLength(): Int =
@@ -445,8 +452,9 @@ final class Matcher private (private var _pattern: Pattern) {
   // @throws IndexOutOfBoundsException if replacement refers to an invalid group
   // @throws IllegalArgumentException if replacement has unclosed named group
   def appendReplacement(sb: StringBuffer, replacement: String): Matcher = {
-    val s = _lastMatchStart
-    val e = _lastMatchEnd
+    checkHasMatch()
+    val s = abspos(_lastMatchStart)
+    val e = abspos(_lastMatchEnd)
 
     if (_appendPos < s) {
       sb.append(_inputSequence, _appendPos, s)

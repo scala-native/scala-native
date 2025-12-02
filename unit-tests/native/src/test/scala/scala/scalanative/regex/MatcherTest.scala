@@ -332,4 +332,68 @@ class MatcherTest {
     assertTrue(decStr == "000000")
     assertTrue(expStr == null)
   }
+
+  @Test def multilineWithRegionLF(): Unit = {
+
+    val p = Pattern.compile("^( *)([*] *)?.*$", Pattern.MULTILINE)
+
+    val text = """|/** foo
+                  | * bar
+                  | baz */
+                  |""".stripMargin
+
+    // with region
+    val mr = p.matcher(text)
+    mr.region(2, text.length - 2)
+
+    // without region
+    val mR = p.matcher(text.substring(2, text.length - 2))
+
+    // first line
+    assertTrue(mr.find())
+    assertEquals(
+      (2, 7, 2, 2, 2, 4),
+      (mr.start(), mr.end(), mr.start(1), mr.end(1), mr.start(2), mr.end(2))
+    )
+
+    // first line
+    assertTrue(mR.find())
+    assertEquals(
+      (0, 5, 0, 0, 0, 2),
+      (mR.start(), mR.end(), mR.start(1), mR.end(1), mR.start(2), mR.end(2))
+    )
+
+    // second line
+    assertTrue(mr.find())
+    assertEquals(
+      (8, 14, 8, 9, 9, 11),
+      (mr.start(), mr.end(), mr.start(1), mr.end(1), mr.start(2), mr.end(2))
+    )
+
+    // second line
+    assertTrue(mR.find())
+    assertEquals(
+      (6, 12, 6, 7, 7, 9),
+      (mR.start(), mR.end(), mR.start(1), mR.end(1), mR.start(2), mR.end(2))
+    )
+
+    // third line
+    assertTrue(mr.find())
+    assertEquals(
+      (15, 21, 15, 16, -1, -1),
+      (mr.start(), mr.end(), mr.start(1), mr.end(1), mr.start(2), mr.end(2))
+    )
+
+    // third line
+    assertTrue(mR.find())
+    assertEquals(
+      (13, 19, 13, 14, -1, -1),
+      (mR.start(), mR.end(), mR.start(1), mR.end(1), mR.start(2), mR.end(2))
+    )
+
+    // no more
+    assertFalse(mr.find())
+    assertFalse(mR.find())
+  }
+
 }
