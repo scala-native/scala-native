@@ -52,8 +52,8 @@ private[process] object UnixProcessFactory {
     def runChild(): Nothing = {
       val cmd = builder.command()
       val binaries = binaryPaths(builder.environment(), cmd.get(0))
-      val argv = nullTerminate(cmd)
-      val envp = nullTerminate(builder.getEnvironmentAsList())
+      val argv = toUnixArgvLike(cmd)
+      val envp = toUnixArgvLike(builder.getEnvironmentAsList())
 
       if (!builder.isCwd)
         unistd.chdir(toCString(builder.directory().toString()))
@@ -81,7 +81,7 @@ private[process] object UnixProcessFactory {
           val al = new ArrayList[String](3)
           al.add("/bin/sh"); al.add("-c")
           al.add(cmd.scalaOps.mkString(sep = " "))
-          val newArgv = nullTerminate(al)
+          val newArgv = toUnixArgvLike(al)
           unistd.execve(c"/bin/sh", newArgv, envp)
         }
       }
@@ -123,8 +123,8 @@ private[process] object UnixProcessFactory {
     val pidPtr = stackalloc[pid_t]()
 
     val cmd = builder.command()
-    val argv = nullTerminate(cmd)
-    val envp = nullTerminate(builder.getEnvironmentAsList())
+    val argv = toUnixArgvLike(cmd)
+    val envp = toUnixArgvLike(builder.getEnvironmentAsList())
 
     /* Maintainers:
      *     There is a performance optimization in the walkPath() method
@@ -224,7 +224,7 @@ private[process] object UnixProcessFactory {
       if (status == ENOEXEC) { // try falling back to shell script
         val shCmd = "/bin/sh"
         val fallbackCmd = Array(shCmd, "-c", cmd.scalaOps.mkString(sep = " "))
-        status = spawn(shCmd, nullTerminate(ju.Arrays.asList(fallbackCmd)))
+        status = spawn(shCmd, toUnixArgvLike(ju.Arrays.asList(fallbackCmd)))
       }
 
       UnixProcess.throwOnErrnum(status, "Unable to posix_spawn process")
@@ -250,14 +250,26 @@ private[process] object UnixProcessFactory {
     }
   }
 
-  private def nullTerminate(
+  /* unix-like operating systems define argv and envp as arrays of
+   * pointers to char, where the final element is a null pointer.
+   *
+   * This method converts a List[String] representing elements for either
+   * argv or envp to a form which can be passed directly to posix_spawn or
+   * one of the exec* C functions. That is, a C pointer_to/array_of
+   * pointers to char.
+   * 
+   * Most noticeably, it _does_not_ return a Scala Native CArray[T, N <: Nat].
+   */
+
+  private def toUnixArgvLike(
       list: java.util.List[String]
   )(implicit z: Zone) = {
     val res: Ptr[CString] = alloc[CString]((list.size() + 1))
     val li = list.listIterator()
-    while (li.hasNext()) {
+    while (li.hasNext())
       !(res + li.nextIndex()) = toCString(li.next())
-    }
+
+    !(res + list.size()) = null // NULL ptr, not NUL character (ASCII 0)
     res
   }
 
