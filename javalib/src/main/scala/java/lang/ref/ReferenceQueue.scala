@@ -3,32 +3,34 @@ package java.lang.ref
 import scala.collection.mutable
 
 class ReferenceQueue[T] {
-  private val underlying = mutable.Queue[Reference[T]]()
-  private[ref] def enqueue(reference: Reference[T]): Unit =
+  private type Ref = Reference[_ <: T]
+  private val underlying = mutable.Queue[Ref]()
+
+  private[ref] def enqueue(reference: Ref): Unit =
     synchronized {
       underlying += reference
       notifyAll()
     }
 
-  private def dequeue(): Reference[T] = {
+  private def dequeue(): Ref = {
     val entry = underlying.dequeue()
     entry.markDequeued()
     entry
   }
 
-  def poll(): Reference[T] =
+  def poll(): Ref =
     synchronized {
       if (underlying.isEmpty) null else dequeue()
     }
 
-  def remove(): Reference[_ <: T] = remove(None)
-  def remove(timeout: Long): Reference[_ <: T] = {
+  def remove(): Ref = remove(None)
+  def remove(timeout: Long): Ref = {
     if (timeout < 0) throw new IllegalArgumentException()
     remove(if (timeout == 0) None else Some(timeout))
   }
 
-  private def remove(timeout: Option[Long]): Reference[_ <: T] =
-    synchronized[Reference[_ <: T]] {
+  private def remove(timeout: Option[Long]): Ref =
+    synchronized {
       def now() = System.currentTimeMillis()
       val deadlineOpt = timeout.map(now() + _)
 
