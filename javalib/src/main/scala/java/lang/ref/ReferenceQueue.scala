@@ -10,15 +10,15 @@ class ReferenceQueue[T] {
       notifyAll()
     }
 
-  def poll(): Reference[T] = {
-    synchronized[Reference[T]] {
-      underlying
-        .dequeueFirst(_ => true)
-        .map(_.dequeue())
-        .orNull
-        .asInstanceOf[Reference[T]]
-    }
+  private def dequeue(): Reference[T] = {
+    val entry = underlying.dequeue()
+    entry.dequeue()
   }
+
+  def poll(): Reference[T] =
+    synchronized {
+      if (underlying.isEmpty) null else dequeue()
+    }
 
   def remove(): Reference[_ <: T] = remove(None)
   def remove(timeout: Long): Reference[_ <: T] = {
@@ -29,15 +29,18 @@ class ReferenceQueue[T] {
   private def remove(timeout: Option[Long]): Reference[_ <: T] =
     synchronized[Reference[_ <: T]] {
       def now() = System.currentTimeMillis()
-      val hasTimeout = timeout.isDefined
-      val deadline = now() + timeout.getOrElse(0L)
-      def timeoutExceeded(current: Long): Boolean =
-        hasTimeout && current > deadline
+      val deadlineOpt = timeout.map(now() + _)
 
-      while (underlying.isEmpty && !timeoutExceeded(now())) {
-        if (hasTimeout) wait((deadline - now()).min(0L))
-        else wait()
+      while (underlying.isEmpty) {
+        deadlineOpt match {
+          case Some(deadline) =>
+            val remaining = deadline - now()
+            if (remaining < 0) return null // timed out
+            wait(remaining)
+          case None =>
+            wait()
+        }
       }
-      poll()
+      dequeue()
     }
 }
