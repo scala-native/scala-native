@@ -266,10 +266,11 @@ private[process] object UnixProcessFactory {
   )(implicit z: Zone) = {
     val res: Ptr[CString] = alloc[CString]((list.size() + 1))
     val li = list.listIterator()
-    while (li.hasNext())
-      !(res + li.nextIndex()) = toCString(li.next())
 
-    !(res + list.size()) = null // NULL ptr, not NUL character (ASCII 0)
+    while (li.hasNext())
+      res.update(li.nextIndex(), toCString(li.next()))
+
+    res.update(li.nextIndex(), null) // NULL ptr, not NUL character (ASCII 0)
     res
   }
 
