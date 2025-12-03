@@ -118,10 +118,6 @@ abstract class InputStream extends Closeable {
        * When the caller has guessed correctly and len bytes are available,
        * only one copy is needed.  When less than len bytes
        * are available, a second is necessary.
-       *
-       * readLargeN() is likely to call readSmallN() with an exact match
-       * len argument one or more times for each call which triggers
-       * the second copy.
        */
 
       // caller has dispatched on argument, so OK to allocate size blindly.
@@ -153,30 +149,34 @@ abstract class InputStream extends Closeable {
       val byteStore = new ConcurrentLinkedDeque[Array[Byte]]
 
       var totalBytesRead = 0
-      var remaining = len
+      var lastChunkSize = 0
+      var lastChunk: Array[Byte] = null
 
-      while (remaining > 0) {
-        val bufferSize = Math.min(remaining, streamChunkSize)
-        val buffer = readSmallN(bufferSize)
-
-        val nRead = buffer.size
-
-        if (nRead == 0) remaining = 0 /* EOF */
-        else {
-          remaining -= nRead
-          totalBytesRead += nRead
-          byteStore.addLast(buffer)
+      while ({
+        val bufferSize = Math.min(len - totalBytesRead, streamChunkSize)
+        bufferSize > 0 && {
+          val buffer = new Array[Byte](bufferSize)
+          val nRead = readNBytesImpl(buffer, 0, bufferSize)
+          val ok = nRead != 0
+          if (ok) {
+            lastChunk = buffer
+            lastChunkSize = nRead
+          }
+          ok
         }
+      }) {
+        totalBytesRead += lastChunkSize
+        byteStore.addLast(lastChunk)
       }
 
       val result = new Array[Byte](totalBytesRead)
 
       var resultPos = 0
-      byteStore.forEach(b => {
-        val n = b.size
+      byteStore.forEach { b =>
+        val n = if (b eq lastChunk) lastChunkSize else b.length
         System.arraycopy(b, 0, result, resultPos, n)
         resultPos += n
-      })
+      }
 
       result
     }
