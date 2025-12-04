@@ -43,6 +43,9 @@ private[runtime] object StackTrace {
     def emptyStackTrace = scala.Array.emptyLongArray
 
     val thread = NativeThread.currentNativeThread
+    if (null eq thread)
+      return emptyStackTrace
+
     if (thread.isFillingStackTrace)
       return emptyStackTrace
 
@@ -136,6 +139,8 @@ private[runtime] object StackTrace {
       .asInstanceOf[scala.Array[StackTraceElement]]
     // Used to prevent filling stacktraces inside `currentStackTrace` which might lead to infinite loop
     val thread = NativeThread.currentNativeThread
+    if (null eq thread)
+      return emptyStackTrace
     if (thread.isFillingStackTrace)
       return emptyStackTrace
     if (LinktimeInfo.asanEnabled)
