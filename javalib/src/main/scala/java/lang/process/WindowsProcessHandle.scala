@@ -32,10 +32,21 @@ private[process] class WindowsProcessHandle(
 
   override protected def getExitCodeImpl: Option[Int] = {
     val exitCode: Ptr[DWord] = stackalloc[DWord]()
+    Console.err.println(
+      s"XXX WindowsProcessHandle.getExitCodeImpl get exit code for ${_pid}"
+    )
     if (ProcessThreadsApi.GetExitCodeProcess(handle, exitCode)) {
       val code = !exitCode
+      Console.err.println(
+        s"XXX WindowsProcessHandle.getExitCodeImpl got exit code $code for ${_pid}"
+      )
       if (code != ProcessThreadsApiExt.STILL_ACTIVE) Some(code.toInt) else None
-    } else None
+    } else {
+      Console.err.println(
+        s"XXX WindowsProcessHandle.getExitCodeImpl NO exit code for ${_pid}"
+      )
+      None
+    }
   }
 
 }
@@ -93,11 +104,15 @@ object WindowsProcessHandle {
        */
       override def addOrReap(handle: GenericProcessHandle): Boolean = {
         val wh = handle.asInstanceOf[WindowsProcessHandle]
+        Console.err.println(
+          s"XXX Multi.addOrReap registering handle: ${wh._pid}"
+        )
         val ok = ProcessMonitorQueueRegister(
           iocp = iocp,
           process = wh.handle,
           pid = wh._pid
         )
+        Console.err.println(s"XXX Multi.addOrReap registered $ok: ${wh._pid}")
         if (!ok) handle.checkIfExited()
         ok
       }
@@ -108,12 +123,16 @@ object WindowsProcessHandle {
           timeout: Long,
           unitOpt: Option[TimeUnit]
       ): Boolean = {
+        Console.err.println(s"XXX Multi.waitAndReapSome pulling")
         val pid = ProcessMonitorQueuePull(
           iocp = iocp,
           timeoutMillis =
             unitOpt.fold(Constants.Infinite)(_.toMillis(timeout).toUInt)
         ).toInt
-        pid != -1 && { pr.completeWith(pid)(-1); true }
+        Console.err.println(s"XXX Multi.waitAndReapSome pulled $pid")
+        val ok = pid != -1 && { pr.completeWith(pid)(-1); true }
+        Console.err.println(s"XXX Multi.waitAndReapSome completed $pid: $ok")
+        ok
       }
     }
 
