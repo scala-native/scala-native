@@ -70,9 +70,9 @@ private[process] object UnixProcessFactory {
 
       // send error message up child stderr
       if (!builder.isCwd) {
-        val newCwd = toCString(builder.directory().toString())
+        val newCwd = builder.directory().toString()
         UnixProcess.throwOnError(
-          unistd.chdir(newCwd),
+          unistd.chdir(toCString(newCwd)),
           s"Unable to change working directory to: ${newCwd}"
         )
       }
