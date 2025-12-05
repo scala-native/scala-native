@@ -275,18 +275,13 @@ object ScalaNativePluginInternal {
       val env = (run / envVars).value.toSeq
       val logger = streams.value.log
       val binary = nativeLink.value.getAbsolutePath
-      val args = spaceDelimited("<arg>").parsed
+      val args = binary +: spaceDelimited("<arg>").parsed
 
-      logger.running(binary +: args)
+      logger.running(args)
 
       val exitCode = {
-        // It seems that previously used Scala Process has some bug leading
-        // to possible ignoring of inherited IO and termination of wrapper
-        // thread with an exception. We use java.lang ProcessBuilder instead
-        val proc = new ProcessBuilder()
-          .command((Seq(binary) ++ args): _*)
-          .inheritIO()
-        env.foreach((proc.environment().put(_, _)).tupled)
+        val proc = new ProcessBuilder(args: _*).inheritIO()
+        env.foreach((proc.environment.put _).tupled)
         proc.start().waitFor()
       }
 
