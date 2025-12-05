@@ -22,7 +22,7 @@ private[process] object UnixProcessFactory {
      *
      * POSIX 2018 gives no way to change the working directory in
      * file_actions, so the legacy fork() path must be taken.
-     * POXIX 2023 should allow changing the working directory.
+     * POSIX 2023 should allow changing the working directory.
      */
 
     val needSpawn = pb.isCwd && ProcessExitChecker.unixFactoryOpt.isDefined
