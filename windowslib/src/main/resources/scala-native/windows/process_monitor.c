@@ -16,38 +16,35 @@ __declspec(dllexport) HANDLE ProcessMonitorQueueCreate(void) {
 
 static VOID CALLBACK
 ProcessMonitorQueueEntryCallback(PVOID lpParameter, BOOLEAN TimerOrWaitFired) {
-    ProcessMonitorQueueEntry *pw = (ProcessMonitorQueueEntry *)lpParameter;
-    PostQueuedCompletionStatus(pw->iocp, 0, (ULONG_PTR)pw->pid,
-                               (LPOVERLAPPED)pw->wait);
-    CloseHandle(pw->proc); // close the process handle copy
-    free(pw);
+    ProcessMonitorQueueEntry *entry = (ProcessMonitorQueueEntry *)lpParameter;
+    PostQueuedCompletionStatus(entry->iocp, 0, 0, (LPOVERLAPPED)entry);
 }
 
 __declspec(dllexport) BOOL
     ProcessMonitorQueueRegister(HANDLE iocp, HANDLE process, DWORD pid) {
-    ProcessMonitorQueueEntry *pw =
+    ProcessMonitorQueueEntry *entry =
         (ProcessMonitorQueueEntry *)malloc(sizeof(ProcessMonitorQueueEntry));
-    if (!pw)
+    if (!entry)
         return FALSE;
 
-    pw->iocp = iocp;
-    pw->proc = NULL;
-    pw->wait = NULL;
-    pw->pid = pid;
+    entry->iocp = iocp;
+    entry->proc = NULL;
+    entry->wait = NULL;
+    entry->pid = pid;
 
     // won't depend on the original process handle
     if (!DuplicateHandle(GetCurrentProcess(), process, GetCurrentProcess(),
-                         &pw->proc, 0, FALSE, DUPLICATE_SAME_ACCESS)) {
-        free(pw);
+                         &entry->proc, 0, FALSE, DUPLICATE_SAME_ACCESS)) {
+        free(entry);
         return FALSE;
     }
 
-    BOOL ok = RegisterWaitForSingleObject(&pw->wait, pw->proc,
-                                          ProcessMonitorQueueEntryCallback, pw,
-                                          INFINITE, WT_EXECUTEONLYONCE);
+    BOOL ok = RegisterWaitForSingleObject(&entry->wait, entry->proc,
+                                          ProcessMonitorQueueEntryCallback,
+                                          entry, INFINITE, WT_EXECUTEONLYONCE);
     if (!ok) {
-        CloseHandle(pw->proc);
-        free(pw);
+        CloseHandle(entry->proc);
+        free(entry);
     }
 
     return ok;
@@ -59,16 +56,19 @@ __declspec(dllexport) DWORD
     ULONG_PTR key;
     LPOVERLAPPED overlapped;
 
-    BOOL ok =
-        GetQueuedCompletionStatus(iocp, &bytes, &key, &overlapped, timeoutMs);
+    GetQueuedCompletionStatus(iocp, &bytes, &key, &overlapped, timeoutMs);
 
-    if (!ok && overlapped == NULL)
+    if (overlapped == NULL)
         return (DWORD)-1;
 
-    if (overlapped != NULL)
-        UnregisterWait((HANDLE)overlapped);
+    ProcessMonitorQueueEntry *entry = (ProcessMonitorQueueEntry *)overlapped;
+    UnregisterWait(entry->wait);
+    CloseHandle(entry->proc); // close the process handle copy
 
-    return (DWORD)key; // returns the PID that completed
+    DWORD pid = entry->pid;
+    free(entry);
+
+    return pid;
 }
 
 #endif
