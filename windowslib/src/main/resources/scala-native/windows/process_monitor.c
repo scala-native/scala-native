@@ -7,7 +7,7 @@
 typedef struct _ProcessMonitorQueueEntry {
     HANDLE iocp;
     HANDLE proc;
-    HANDLE wait;
+    PTP_WAIT wait;
     DWORD pid;
 } ProcessMonitorQueueEntry;
 
@@ -16,13 +16,25 @@ __declspec(dllexport) HANDLE ProcessMonitorQueueCreate(void) {
 }
 
 static VOID CALLBACK
-ProcessMonitorQueueEntryCallback(PVOID lpParameter, BOOLEAN TimerOrWaitFired) {
-    ProcessMonitorQueueEntry *entry = (ProcessMonitorQueueEntry *)lpParameter;
+ProcessMonitorQueueEntryCallback(PTP_CALLBACK_INSTANCE instance, PVOID ctx,
+                                 PTP_WAIT wait, TP_WAIT_RESULT waitResult) {
+    (void)instance;
+    (void)wait;
+    (void)waitResult; // unused
+
+    if (NULL == ctx) {
+        fprintf(stderr, "XXX ProcessMonitorQueueEntryCallback received NULL\n");
+        return;
+    }
+
+    ProcessMonitorQueueEntry *entry = (ProcessMonitorQueueEntry *)ctx;
     fprintf(stderr, "XXX ProcessMonitorQueueEntryCallback received: %lu\n",
             entry->pid);
-    PostQueuedCompletionStatus(entry->iocp, 0, 0, (LPOVERLAPPED)entry);
+    BOOL ok =
+        PostQueuedCompletionStatus(entry->iocp, 0, 0, (LPOVERLAPPED)entry);
     fprintf(stderr, "XXX ProcessMonitorQueueEntryCallback send status\n",
             entry->pid);
+    (void)ok;
 }
 
 __declspec(dllexport) BOOL
@@ -34,7 +46,6 @@ __declspec(dllexport) BOOL
 
     entry->iocp = iocp;
     entry->proc = NULL;
-    entry->wait = NULL;
     entry->pid = pid;
 
     fprintf(stderr, "XXX ProcessMonitorQueueRegister starting: %lu\n",
@@ -50,18 +61,27 @@ __declspec(dllexport) BOOL
     fprintf(stderr,
             "XXX ProcessMonitorQueueRegister duplicated process handle\n");
 
-    BOOL ok = RegisterWaitForSingleObject(&entry->wait, entry->proc,
-                                          ProcessMonitorQueueEntryCallback,
-                                          entry, INFINITE, WT_EXECUTEONLYONCE | WT_EXECUTELONGFUNCTION);
-
-    fprintf(stderr, "XXX ProcessMonitorQueueRegister registered: %d\n", ok);
-
-    if (!ok) {
+    /* Create a threadpool wait object whose callback contexts to our entry */
+    entry->wait =
+        CreateThreadpoolWait(ProcessMonitorQueueEntryCallback, entry, NULL);
+    if (entry->wait == NULL) {
+        fprintf(
+            stderr,
+            "XXX ProcessMonitorQueueRegister failed to create threadpool\n");
         CloseHandle(entry->proc);
         free(entry);
+        return FALSE;
     }
 
-    return ok;
+    fprintf(stderr, "XXX ProcessMonitorQueueRegister created threadpool\n");
+
+    /* Arm the wait on the process handle. The callback will run when the handle
+     * is signaled. */
+    SetThreadpoolWait(entry->wait, entry->proc, NULL);
+
+    fprintf(stderr, "XXX ProcessMonitorQueueRegister set threadpool\n");
+
+    return TRUE;
 }
 
 __declspec(dllexport) DWORD
@@ -81,9 +101,16 @@ __declspec(dllexport) DWORD
 
     ProcessMonitorQueueEntry *entry = (ProcessMonitorQueueEntry *)overlapped;
 
-    fprintf(stderr, "XXX ProcessMonitorQueuePull unregister wait: %lu\n",
+    fprintf(stderr, "XXX ProcessMonitorQueuePull cancel wait: %lu\n",
             entry->pid);
-    UnregisterWaitEx(entry->wait, INVALID_HANDLE_VALUE);
+    /* Cancel any future waits for this object */
+    SetThreadpoolWait(entry->wait, NULL, NULL);
+
+    /* Close the threadpool wait object and wait for any running callbacks to
+     * finish */
+    fprintf(stderr, "XXX ProcessMonitorQueuePull close threadpool wait: %lu\n",
+            entry->pid);
+    CloseThreadpoolWait(entry->wait);
 
     fprintf(stderr, "XXX ProcessMonitorQueuePull close process handle: %lu\n",
             entry->pid);
