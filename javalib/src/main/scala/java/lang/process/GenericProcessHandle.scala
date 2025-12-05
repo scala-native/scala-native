@@ -5,6 +5,7 @@ import java.util.stream.Stream
 import java.util.{Optional, function}
 
 import scala.scalanative.javalib.io.ObjectHandle
+import scala.scalanative.meta.LinktimeInfo
 
 // Represents ProcessHandle for process started by Scala Native runtime
 // Cannot be used with processes started by other programs
@@ -132,13 +133,23 @@ private[process] abstract class GenericProcessHandle(
     override def waitAndReapSome(
         timeout: Long,
         unitOpt: Option[TimeUnit]
-    ): Boolean =
-      unitOpt.fold { completion.get(); true } { unit =>
+    ): Boolean = {
+      if (LinktimeInfo.isWindows)
+        Console.err.println(
+          s"XXX ProcessExitCheckerCompletion.waitAndReapSome waiting"
+        )
+      val ok = unitOpt.fold { completion.get(); true } { unit =>
         timeout > 0L && {
           try { completion.get(timeout, unit); true }
           catch { case _: TimeoutException => false }
         }
       }
+      if (LinktimeInfo.isWindows)
+        Console.err.println(
+          s"XXX ProcessExitCheckerCompletion.waitAndReapSome done: $ok"
+        )
+      ok
+    }
   }
 
 }
