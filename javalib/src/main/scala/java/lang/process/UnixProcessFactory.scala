@@ -22,11 +22,7 @@ private[process] object UnixProcessFactory {
      *
      * POSIX 2018 gives no way to change the working directory in
      * file_actions, so the legacy fork() path must be taken.
-     * POXIX 2023 should allow changing the working directory.
-     *
-     * Checking for ".", which callers tend to specify, is an optimization
-     * to elide changing directory to what is already the working
-     * directory.
+     * POSIX 2023 should allow changing the working directory.
      */
 
     val needSpawn = pb.isCwd && ProcessExitChecker.unixFactoryOpt.isDefined
@@ -55,9 +51,6 @@ private[process] object UnixProcessFactory {
       val argv = nullTerminate(cmd)
       val envp = nullTerminate(builder.getEnvironmentAsList())
 
-      if (!builder.isCwd)
-        unistd.chdir(toCString(builder.directory().toString()))
-
       setupChildFDS(!infds, builder.redirectInput(), unistd.STDIN_FILENO)
       setupChildFDS(
         !(outfds + 1),
@@ -74,6 +67,15 @@ private[process] object UnixProcessFactory {
         )
 
       closePipes()
+
+      // send error message up child stderr
+      if (!builder.isCwd) {
+        val newCwd = builder.directory().toString()
+        UnixProcess.throwOnError(
+          unistd.chdir(toCString(newCwd)),
+          s"Unable to change working directory to: ${newCwd}"
+        )
+      }
 
       binaries.foreach { b =>
         val bin = toCString(b)
@@ -125,19 +127,6 @@ private[process] object UnixProcessFactory {
     val cmd = builder.command()
     val argv = nullTerminate(cmd)
     val envp = nullTerminate(builder.getEnvironmentAsList())
-
-    /* Maintainers:
-     *     There is a performance optimization in the walkPath() method
-     *     of spawnFollowPath() which relies upon this parent being able
-     *     to "see" the same set of PATH files and their attributes
-     *     as the child. This is a valid assumption through Java 19
-     *     as ProceesBuilder specifies no way to change process ids
-     *     or groups.
-     *
-     *     If Java develops this capability in the future,
-     *     please consider that optimization when changing fileActions,
-     *     particularly POSIX_SPAWN_RESETIDS and POSIX_SPAWN_SETPGROUP.
-     */
 
     // posix_spawn_file_actions_t takes 80 bytes, so do not stackalloc.
     val fileActions = alloc[posix_spawn_file_actions_t]()
@@ -253,6 +242,7 @@ private[process] object UnixProcessFactory {
   private def nullTerminate(
       list: java.util.List[String]
   )(implicit z: Zone) = {
+    // alloc() clears memory. So last entry is a null ptr, matching argv type.
     val res: Ptr[CString] = alloc[CString]((list.size() + 1))
     val li = list.listIterator()
     while (li.hasNext()) {

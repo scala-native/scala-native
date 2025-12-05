@@ -72,7 +72,7 @@ class ProcessTest {
     checkPathOverride(pb)
   }
 
-  // Exercise the fork() path in UnixProcessGen2
+  // Exercise the fork() path in UnixProcessFactory.
   @Test def dirOverride(): Unit = {
     assumeNotJVMCompliant()
     assumeFalse("Not tested in Windows", isWindows)
