@@ -13,7 +13,7 @@ abstract class InputStream extends Closeable {
 
   def read(b: Array[Byte], off: Int, len: Int): Int = {
     if (off < 0 || len < 0 || len > b.length - off)
-      throw new IndexOutOfBoundsException
+      throwReadBounds(b, off, len)
 
     if (len == 0) 0
     else {
@@ -72,17 +72,18 @@ abstract class InputStream extends Closeable {
     totalBytesRead
   }
 
+  private def throwReadBounds(b: Array[Byte], off: Int, len: Int): Unit = {
+    throw new IndexOutOfBoundsException(
+      s"Range [$off, ${off + len}) out of bounds for length ${b.length}"
+    )
+  }
+
   /** Java 9
    */
   def readNBytes(buffer: Array[Byte], off: Int, len: Int): Int = {
     ju.Objects.requireNonNull(buffer)
-
-    if ((off < 0) || (len < 0) || (len > buffer.length - off)) {
-      val range = s"Range [${off}, ${off} + ${len})"
-      throw new IndexOutOfBoundsException(
-        s"${range} out of bounds for length ${buffer.length}"
-      )
-    }
+    if (len < 0)
+      throwReadBounds(buffer, off, len) // others are checked by read()
 
     readNBytesImpl(buffer, off, len)
   }
