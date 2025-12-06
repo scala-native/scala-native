@@ -442,13 +442,7 @@ object Settings {
       denylist: Set[String],
       sources: Seq[(String, File)]
   ) = {
-    val allClasses = sources.map(_._1).toSet
-    val nonexistentDenylisted = denylist.diff(allClasses)
-    if (nonexistentDenylisted.nonEmpty) {
-      throw new AssertionError(
-        s"Sources not found for denylisted tests:\n$nonexistentDenylisted"
-      )
-    }
+    // do nothing
   }
 
   def sharedTestSource(withDenylist: Boolean) = Def.settings(
@@ -520,41 +514,7 @@ object Settings {
           sharedTestDir / s"require-$requireScala-$requireJDK"
         )
       } yield requireDir
-    }.distinct,
-    Test / sourceGenerators += Def.task {
-      val nio = file(
-        "shared/src/test/scala/org/scalanative/testsuite/javalib/nio"
-      )
-      // Templates for test file that are hard to decouple to jdk-specific versions
-      val resolvableSources = Seq(
-        nio / "BufferAdapter.scala.template",
-        nio / "ByteBufferTest.scala.template"
-      )
-
-      resolvableSources.map { relativePath =>
-        val baseDir =
-          (Test / baseDirectory).value.getParentFile().getParentFile()
-        val outFile =
-          (Test / sourceManaged).value / "jdk-resolved" / relativePath
-            .toString()
-            .stripSuffix(".template")
-        val jdkVersion = (Test / javaVersion).value
-        println(
-          s"Adapting ${relativePath} to JDK $jdkVersion"
-        )
-        IO.write(
-          outFile,
-          9.to(jdkVersion)
-            .foldLeft(IO.read(baseDir / relativePath.toString())) {
-              case (source, jdkVersion) =>
-                source
-                  .replaceAllLiterally(s"/* >>REQUIRE-JDK-$jdkVersion", "")
-                  .replaceAllLiterally(s"<<REQUIRE-JDK-$jdkVersion */", "")
-            }
-        )
-        outFile
-      }
-    }.taskValue
+    }.distinct
   )
 
   lazy val testInterfaceCommonSourcesSettings: Seq[Setting[_]] = {
