@@ -134,6 +134,10 @@ __declspec(dllexport) BOOL
 
             PostQueuedCompletionStatus(entry->iocp, 0, 0, (LPOVERLAPPED)entry);
         }
+    } else {
+        LONG refcount = ProcessMonitorQueueEntryDecrementRefCount(entry);
+        if (refcount == 0)
+            PostQueuedCompletionStatus(entry->iocp, 0, 0, (LPOVERLAPPED)entry);
     }
 
     return TRUE;
