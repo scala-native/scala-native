@@ -118,6 +118,7 @@ __declspec(dllexport) BOOL
     // check if exited before it was registered
     // return TRUE regardless, to read status from the queue
     DWORD exitCode;
+    BOOL notify;
     if (GetExitCodeProcess(entry->proc, &exitCode) &&
         exitCode != STILL_ACTIVE) {
         ProcessMonitorQueueEntryCloseThreadPoolWait(entry);
@@ -128,17 +129,17 @@ __declspec(dllexport) BOOL
          * 1: callback has fired, consumer will do its job
          * 0: callback has fired, consumer has too but didn't do anything
          */
-        if (refcount != 1) {
+        notify = refcount != 1;
+        if (notify) {
             if (refcount == 2)
                 ProcessMonitorQueueEntryDecrementRefCount(entry);
-
-            PostQueuedCompletionStatus(entry->iocp, 0, 0, (LPOVERLAPPED)entry);
         }
     } else {
         LONG refcount = ProcessMonitorQueueEntryDecrementRefCount(entry);
-        if (refcount == 0)
-            PostQueuedCompletionStatus(entry->iocp, 0, 0, (LPOVERLAPPED)entry);
+        notify = refcount == 0;
     }
+    if (notify)
+        PostQueuedCompletionStatus(entry->iocp, 0, 0, (LPOVERLAPPED)entry);
 
     return TRUE;
 }
