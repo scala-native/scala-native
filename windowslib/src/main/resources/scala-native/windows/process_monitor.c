@@ -24,28 +24,25 @@ ProcessMonitorQueueEntryDecrementRefCount(ProcessMonitorQueueEntry *entry) {
 static VOID CALLBACK
 ProcessMonitorQueueEntryCallback(PTP_CALLBACK_INSTANCE instance, PVOID ctx,
                                  PTP_WAIT wait, TP_WAIT_RESULT waitResult) {
-    (void)instance;
-    (void)wait;
-    (void)waitResult; // unused
-
     if (NULL == ctx) {
         fprintf(stderr, "XXX ProcessMonitorQueueEntryCallback received NULL\n");
         return;
     }
 
     ProcessMonitorQueueEntry *entry = (ProcessMonitorQueueEntry *)ctx;
-    fprintf(stderr, "XXX ProcessMonitorQueueEntryCallback received: %lu\n",
-            entry->pid);
-
     LONG refcount = ProcessMonitorQueueEntryDecrementRefCount(entry);
+
+    fprintf(
+        stderr,
+        "XXX ProcessMonitorQueueEntryCallback received (refcount=%lu): %lu\n",
+        refcount, entry->pid);
 
     BOOL ok =
         PostQueuedCompletionStatus(entry->iocp, 0, 0, (LPOVERLAPPED)entry);
     fprintf(stderr,
-            "XXX ProcessMonitorQueueEntryCallback send status (refcount=%lu): "
+            "XXX ProcessMonitorQueueEntryCallback send status (ok=%lu): "
             "%lu\n",
-            refcount, entry->pid);
-    (void)ok;
+            ok, entry->pid);
 }
 
 static VOID
@@ -118,24 +115,26 @@ __declspec(dllexport) BOOL
     // check if exited before it was registered
     // return TRUE regardless, to read status from the queue
     DWORD exitCode;
-    BOOL notify;
-    if (GetExitCodeProcess(entry->proc, &exitCode) &&
-        exitCode != STILL_ACTIVE) {
+    BOOL hasExited =
+        GetExitCodeProcess(entry->proc, &exitCode) && exitCode != STILL_ACTIVE;
+    if (hasExited)
         ProcessMonitorQueueEntryCloseThreadPoolWait(entry);
 
-        LONG refcount = ProcessMonitorQueueEntryDecrementRefCount(entry);
-        /* if refcount is:
-         * 2: callback not fired and will not
-         * 1: callback has fired, consumer will do its job
-         * 0: callback has fired, consumer has too but didn't do anything
-         */
+    LONG refcount = ProcessMonitorQueueEntryDecrementRefCount(entry);
+    /* if refcount is:
+     * 2: callback not fired and will not if the process has exited
+     * 1: callback has fired, consumer will do its job
+     * 0: callback has fired, consumer has too but didn't do anything
+     */
+
+    BOOL notify;
+    if (hasExited) {
         notify = refcount != 1;
         if (notify) {
-            if (refcount == 2)
+            if (refcount == 2) // do it for the callback
                 ProcessMonitorQueueEntryDecrementRefCount(entry);
         }
     } else {
-        LONG refcount = ProcessMonitorQueueEntryDecrementRefCount(entry);
         notify = refcount == 0;
     }
     if (notify)
