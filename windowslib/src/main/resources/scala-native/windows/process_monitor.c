@@ -118,8 +118,9 @@ __declspec(dllexport) BOOL
     BOOL hasExited =
         GetExitCodeProcess(entry->proc, &exitCode) && exitCode != STILL_ACTIVE;
     if (hasExited) {
-        fprintf(stderr, "XXX ProcessMonitorQueueRegister exited early: %lul\n",
-                entry->pid);
+        fprintf(stderr,
+                "XXX ProcessMonitorQueueRegister exited early (%u): %lu\n",
+                exitCode, entry->pid);
         ProcessMonitorQueueEntryCloseThreadPoolWait(entry);
     }
 
@@ -140,10 +141,11 @@ __declspec(dllexport) BOOL
     } else {
         notify = refcount == 0;
     }
+    fprintf(
+        stderr,
+        "XXX ProcessMonitorQueueRegister exited=%d notify=%d ref=%lu: %lul\n",
+        hasExited, notify, refcount, entry->pid);
     if (notify) {
-        fprintf(stderr,
-                "XXX ProcessMonitorQueueRegister notify ref=%lu: %lul\n",
-                refcount, entry->pid);
         PostQueuedCompletionStatus(entry->iocp, 0, 0, (LPOVERLAPPED)entry);
     }
 
