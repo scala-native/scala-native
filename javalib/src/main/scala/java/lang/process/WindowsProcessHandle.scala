@@ -130,9 +130,10 @@ object WindowsProcessHandle {
             unitOpt.fold(Constants.Infinite)(_.toMillis(timeout).toUInt)
         ).toInt
         Console.err.println(s"XXX Multi.waitAndReapSome pulled $pid")
-        val ok = pid != -1 && { pr.completeWith(pid)(-1); true }
-        Console.err.println(s"XXX Multi.waitAndReapSome completed $pid: $ok")
-        ok
+        if (pid != -1)
+          pr.completeWith(pid)(-1)
+        Console.err.println(s"XXX Multi.waitAndReapSome completed $pid")
+        true
       }
     }
 
