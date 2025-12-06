@@ -32,22 +32,37 @@ private[process] class WindowsProcessHandle(
 
   override protected def getExitCodeImpl: Option[Int] = {
     val exitCode: Ptr[DWord] = stackalloc[DWord]()
+    Console.err.println(
+      s"XXX WindowsProcessHandle.getExitCodeImpl get exit code for ${_pid}"
+    )
     if (ProcessThreadsApi.GetExitCodeProcess(handle, exitCode)) {
       val code = !exitCode
+      Console.err.println(
+        s"XXX WindowsProcessHandle.getExitCodeImpl got exit code $code for ${_pid}"
+      )
       if (code != ProcessThreadsApiExt.STILL_ACTIVE) Some(code.toInt) else None
-    } else None
+    } else {
+      Console.err.println(
+        s"XXX WindowsProcessHandle.getExitCodeImpl NO exit code for ${_pid}"
+      )
+      None
+    }
   }
 
 }
 
 object WindowsProcessHandle {
 
-  object ProcessExitCheckerFactory extends ProcessExitChecker.Factory {
+  object ProcessExitCheckerFactory extends ProcessExitChecker.MultiFactory {
 
     override def createSingle(processId: ObjectHandle)(implicit
         pr: ProcessRegistry
     ): ProcessExitChecker =
       new Single(processId.asHandle)
+
+    override def createMulti(implicit
+        pr: ProcessRegistry
+    ): ProcessExitChecker.Multi = new Multi
 
     private class Single(handle: Handle)(implicit pr: ProcessRegistry)
         extends ProcessExitChecker {
@@ -71,6 +86,54 @@ object WindowsProcessHandle {
             true // someone may have closed the handle
           case _ => checkIfExited()
         }
+      }
+    }
+
+    private class Multi(implicit pr: ProcessRegistry)
+        extends ProcessExitChecker.Multi {
+      import ProcessMonitorApi._
+
+      private val iocp: Handle = ProcessMonitorQueueCreate()
+
+      /** If the process is running, register it and return true.
+       *
+       *  If the process isn't running, reap the process and return false.
+       *
+       *  Make sure to add it to the process registry before checker can reap
+       *  this process and call `complete` on the registry.
+       */
+      override def addOrReap(handle: GenericProcessHandle): Boolean = {
+        val wh = handle.asInstanceOf[WindowsProcessHandle]
+        Console.err.println(
+          s"XXX Multi.addOrReap registering handle: ${wh._pid}"
+        )
+        val ok = ProcessMonitorQueueRegister(
+          iocp = iocp,
+          process = wh.handle,
+          pid = wh._pid
+        )
+        Console.err.println(s"XXX Multi.addOrReap registered $ok: ${wh._pid}")
+        if (!ok) handle.checkIfExited()
+        ok
+      }
+
+      override def close(): Unit = CloseHandle(iocp)
+
+      override def waitAndReapSome(
+          timeout: Long,
+          unitOpt: Option[TimeUnit]
+      ): Boolean = {
+        Console.err.println(s"XXX Multi.waitAndReapSome pulling")
+        val pid = ProcessMonitorQueuePull(
+          iocp = iocp,
+          timeoutMillis =
+            unitOpt.fold(Constants.Infinite)(_.toMillis(timeout).toUInt)
+        ).toInt
+        Console.err.println(s"XXX Multi.waitAndReapSome pulled $pid")
+        if (pid != -1)
+          pr.completeWith(pid)(-1)
+        Console.err.println(s"XXX Multi.waitAndReapSome completed $pid")
+        true
       }
     }
 
