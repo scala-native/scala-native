@@ -40,7 +40,7 @@ ProcessMonitorQueueEntryCallback(PTP_CALLBACK_INSTANCE instance, PVOID ctx,
     BOOL ok =
         PostQueuedCompletionStatus(entry->iocp, 0, 0, (LPOVERLAPPED)entry);
     fprintf(stderr,
-            "XXX ProcessMonitorQueueEntryCallback send status (ok=%lu): "
+            "XXX ProcessMonitorQueueEntryCallback send status (ok=%d): "
             "%lu\n",
             ok, entry->pid);
 }
@@ -117,8 +117,11 @@ __declspec(dllexport) BOOL
     DWORD exitCode;
     BOOL hasExited =
         GetExitCodeProcess(entry->proc, &exitCode) && exitCode != STILL_ACTIVE;
-    if (hasExited)
+    if (hasExited) {
+        fprintf(stderr, "XXX ProcessMonitorQueueRegister exited early: %lul\n",
+                entry->pid);
         ProcessMonitorQueueEntryCloseThreadPoolWait(entry);
+    }
 
     LONG refcount = ProcessMonitorQueueEntryDecrementRefCount(entry);
     /* if refcount is:
@@ -137,8 +140,12 @@ __declspec(dllexport) BOOL
     } else {
         notify = refcount == 0;
     }
-    if (notify)
+    if (notify) {
+        fprintf(stderr,
+                "XXX ProcessMonitorQueueRegister notify ref=%lu: %lul\n",
+                refcount, entry->pid);
         PostQueuedCompletionStatus(entry->iocp, 0, 0, (LPOVERLAPPED)entry);
+    }
 
     return TRUE;
 }
@@ -159,7 +166,10 @@ __declspec(dllexport) DWORD
         return (DWORD)-1;
 
     ProcessMonitorQueueEntry *entry = (ProcessMonitorQueueEntry *)overlapped;
-    if (ProcessMonitorQueueEntryDecrementRefCount(entry) > 0)
+    LONG refcount = ProcessMonitorQueueEntryDecrementRefCount(entry);
+    fprintf(stderr, "XXX ProcessMonitorQueuePull received ref=%lu: %lu\n",
+            refcount, entry->pid);
+    if (refcount > 0)
         return (DWORD)-1;
 
     ProcessMonitorQueueEntryCloseThreadPoolWait(entry);
