@@ -243,7 +243,7 @@ private[process] object UnixProcessFactory {
       list: java.util.List[String]
   )(implicit z: Zone) = {
     // calloc() clears memory. So last entry is a null ptr, matching argv type.
-    val res: Ptr[CString] = alloc[CString]((list.size() + 1))
+    val res: Ptr[CString] = calloc[CString]((list.size() + 1))
     val li = list.listIterator()
     while (li.hasNext()) {
       !(res + li.nextIndex()) = toCString(li.next())
