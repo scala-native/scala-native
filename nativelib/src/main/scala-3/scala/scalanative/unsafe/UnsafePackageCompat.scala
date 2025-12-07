@@ -53,7 +53,7 @@ private[scalanative] trait UnsafePackageCompat {
    *  Prefer 'calloc*()' over 'alloc*()'equivalent. Issue #4700
    */
   inline def calloc[T]()(using zone: Zone): Ptr[T] =
-    calloc[T](sizeof[T])
+    calloc[T](toRawSize(1))
 
   /** Heap allocate and zero-initialize n values using current implicit
    *  allocator.
