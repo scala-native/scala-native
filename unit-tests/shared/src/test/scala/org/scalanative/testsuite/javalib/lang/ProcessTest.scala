@@ -49,7 +49,7 @@ class ProcessTest {
   }
 
   /* 'pathOverride()' and 'pathPrefixOverride()' test that SN does
-   * what JDK does.  The do not check that SN does not do what
+   * what JDK does.  They do not check that SN does not do what
    * JDK does not do.  See SN Issue 4705.
    */
 
