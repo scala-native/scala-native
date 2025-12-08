@@ -633,7 +633,7 @@ class ProcessTest {
   private val githubWorkspace =
     Paths.get(sys.env.get("GITHUB_WORKSPACE").getOrElse("."))
 
-  /* testGitLSFilesUsing* tests use a document git feature the ';/'
+  /* testGitLSFilesUsing* tests use a documented git feature the ':/'
    * argument to cause files to be listed from the project root
    * rather than the current working directory.
    * 
