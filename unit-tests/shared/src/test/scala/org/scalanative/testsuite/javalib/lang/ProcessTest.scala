@@ -48,33 +48,40 @@ class ProcessTest {
     assertEquals("1", out)
   }
 
+  /* 'pathOverride()' and 'pathPrefixOverride()' test that SN does
+   * what JDK does.  They do not check that SN does not do what
+   * JDK does not do.  See SN Issue 4705.
+   */
+
   @Test def pathOverride(): Unit = {
-    assumeNotJVMCompliant()
     assumeFalse(
       "Not possible in Windows, would use dir keyword anyway",
       isWindows
     )
 
-    val pb = new ProcessBuilder("ls", resourceDir)
+    /* JVM follows parent PATH when invoking binaries.
+     * If that binary is a shell and and envp is null, the parent PATH
+     * will be used in the shell, elsewise any PATH in the child envp.
+     */
+    val pb = new ProcessBuilder("/bin/sh", "-c", "ls", resourceDir)
     pb.environment.put("PATH", resourceDir)
     checkPathOverride(pb)
   }
 
   @Test def pathPrefixOverride(): Unit = {
-    assumeNotJVMCompliant()
     assumeFalse(
       "Not possible in Windows, would use dir keyword anyway",
       isWindows
     )
 
-    val pb = new ProcessBuilder("ls", resourceDir)
+    // JVM only follows PATH when invoking shells, not for binary executables.
+    val pb = new ProcessBuilder("/bin/sh", "-c", "ls", resourceDir)
     pb.environment.put("PATH", s"$resourceDir:${pb.environment.get("PATH")}")
     checkPathOverride(pb)
   }
 
   // Exercise the fork() path in UnixProcessFactory.
   @Test def dirOverride(): Unit = {
-    assumeNotJVMCompliant()
     assumeFalse("Not tested in Windows", isWindows)
 
     val pb = new ProcessBuilder("./ls")
