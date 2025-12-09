@@ -661,7 +661,7 @@ class ProcessTest {
     val prefix =
       s"[iter=$iter ${new java.io.File(".").getAbsolutePath}] `git ls-files`"
 
-    // run git ls-files --full-names :/ on project root source
+    // run git ls-files --full-name :/ on project root source
     val proc = processForCommand("git", "ls-files", "--full-name", ":/")
       .redirectOutput(ProcessBuilder.Redirect.PIPE)
       .redirectError(ProcessBuilder.Redirect.PIPE)
@@ -807,7 +807,7 @@ class ProcessTest {
     val prefix =
       s"[iter=$iter ${new java.io.File(".").getAbsolutePath}] `git ls-files`"
 
-    // run git ls-files --full-names :/ on project root source
+    // run git ls-files --full-name :/ on project root source
     val argv = Seq("git", "ls-files", "--full-name", ":/")
     val (res, stdout, stderr) =
       ProcessTest.runArgv(10.seconds, githubWorkspace)(argv: _*)
@@ -904,7 +904,7 @@ class ProcessTest {
     val prefix =
       s"[iter=$iter ${new java.io.File(".").getAbsolutePath}] `git ls-files`"
 
-    // run git ls-files --full-names :/ on project root source
+    // run git ls-files --full-name :/ on project root source
     val argv = Seq("git", "ls-files", "--full-name", ":/")
     val (res, stdout, stderr) =
       ProcessTest.runArgvWithBang(60.seconds, githubWorkspace)(argv: _*)
@@ -1004,7 +1004,7 @@ class ProcessTest {
     val prefix =
       s"[iter=$iter ${new java.io.File(".").getAbsolutePath}] `git ls-files`"
 
-    // run git ls-files --full-names :/ on project root source
+    // run git ls-files --full-name :/ on project root source
     val argv = Seq("git", "ls-files", "--full-name", ":/")
     val (res, stderr) =
       ProcessTest.runArgvWithBangBang(60.seconds, githubWorkspace)(argv: _*)
