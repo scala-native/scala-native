@@ -3,13 +3,10 @@ package java.lang.ref
 import java.util.concurrent.locks.LockSupport
 
 import scala.annotation.tailrec
-import scala.util.control.NonFatal
 
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.libc.stdatomic._
-import scala.scalanative.meta.LinktimeInfo.{
-  isMultithreadingEnabled, isWeakReferenceSupported
-}
+import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
 import scala.scalanative.runtime.fromRawPtr
 import scala.scalanative.runtime.javalib.Proxy
@@ -78,27 +75,32 @@ private[java] object WeakReferenceRegistry {
     }
   }
 
-  private lazy val referenceHandlerThread = Thread
-    .ofPlatform()
-    .daemon()
-    .group(ThreadGroup.System)
-    .name("GC-WeakReferenceHandler")
-    .startInternal(() =>
-      while (true) {
-        handleCollectedReferences()
-        LockSupport.park()
-      }
-    )
+  private object Multithreaded {
+    private val referenceHandlerThread = Thread
+      .ofPlatform()
+      .daemon()
+      .group(ThreadGroup.System)
+      .name("GC-WeakReferenceHandler")
+      .startInternal(() =>
+        while (true) {
+          handleCollectedReferences()
+          LockSupport.park()
+        }
+      )
 
-  if (isWeakReferenceSupported) {
+    def unpark(): Unit =
+      LockSupport.unpark(referenceHandlerThread)
+  }
+
+  if (LinktimeInfo.isWeakReferenceSupported) {
     Proxy.GC_setWeakReferencesCollectedCallback { () =>
-      if (isMultithreadingEnabled) LockSupport.unpark(referenceHandlerThread)
+      if (LinktimeInfo.isMultithreadingEnabled) Multithreaded.unpark()
       else handleCollectedReferences()
     }
   }
 
   private[ref] def add(weakRef: WeakReference[_]): Unit =
-    if (isWeakReferenceSupported) {
+    if (LinktimeInfo.isWeakReferenceSupported) {
       assert(weakRef.nextReference == null)
       val prevHeadPtr = stackalloc[WeakReference[_]]()
       !prevHeadPtr = null
