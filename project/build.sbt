@@ -24,6 +24,7 @@ addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.4.8")
 
 libraryDependencies += "org.eclipse.jgit" % "org.eclipse.jgit.pgm" % "5.13.3.202401111512-r"
 libraryDependencies += "me.bechberger" % "ap-loader-all" % "4.2-10"
+libraryDependencies += "com.indoorvivants" %% "fxprof-tracer" % "0.0.2"
 
 // scalacOptions used to bootstrap to sbt prompt.
 // In particular, no "-Xfatal-warnings"

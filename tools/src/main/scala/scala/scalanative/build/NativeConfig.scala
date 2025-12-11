@@ -59,6 +59,9 @@ sealed trait NativeConfig {
   /** Shall linker dump intermediate NIR after every phase? */
   def dump: Boolean
 
+  /** TODO */
+  def buildTracing: Boolean
+
   /** Should sanitizer implemention be used? */
   def sanitizer: Option[Sanitizer]
 
@@ -220,6 +223,9 @@ sealed trait NativeConfig {
   /** Create a new config with given dump value. */
   def withDump(value: Boolean): NativeConfig
 
+  /** TODO */
+  def withBuildTracing(value: Boolean): NativeConfig
+
   /** Create a new config with given sanitizer enabled. */
   def withSanitizer(value: Sanitizer): NativeConfig = withSanitizer(Some(value))
 
@@ -314,6 +320,7 @@ object NativeConfig {
       checkFatalWarnings = false,
       checkFeatures = true,
       dump = false,
+      buildTracing = false,
       sanitizer = None,
       linkStubs = false,
       optimize = true,
@@ -346,6 +353,7 @@ object NativeConfig {
       checkFatalWarnings: Boolean,
       checkFeatures: Boolean,
       dump: Boolean,
+      buildTracing: Boolean,
       sanitizer: Option[Sanitizer],
       linkStubs: Boolean,
       optimize: Boolean,
@@ -419,6 +427,9 @@ object NativeConfig {
 
     def withDump(value: Boolean): NativeConfig =
       copy(dump = value)
+
+    def withBuildTracing(value: Boolean): NativeConfig =
+      copy(buildTracing = value)
 
     def withSanitizer(value: Option[Sanitizer]): NativeConfig =
       copy(sanitizer = value)
