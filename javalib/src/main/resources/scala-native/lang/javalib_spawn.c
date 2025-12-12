@@ -23,7 +23,7 @@ bool hasFileActionsAddChdir() {
 #endif
 
     /* musl has had the _np form in git since 2019-08-30.
-     * Enabling its use here is left as an exercise for a musl devotee.
+     * Enabling its use is left as an exercise for a musl devotee.
      */
 
 #elif defined(__APPLE__)
