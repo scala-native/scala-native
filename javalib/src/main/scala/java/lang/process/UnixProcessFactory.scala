@@ -17,17 +17,12 @@ import ju.ScalaOps._
 private[process] object UnixProcessFactory {
 
   def apply(pb: ProcessBuilder): GenericProcess = Zone.acquire { implicit z =>
-    /* If builder.directory is not null, it specifies a new working
-     * directory for the process (chdir()).
-     *
-     * POSIX 2018 gives no way to change the working directory in
-     * file_actions, so the legacy fork() path must be taken.
-     * POSIX 2023 should allow changing the working directory.
-     */
 
-    val needSpawn = pb.isCwd && ProcessExitChecker.unixFactoryOpt.isDefined
-    if (needSpawn) spawnChild(pb) else forkChild(pb)
+    spawnChild(pb) // Always
   }
+
+  /* forkChild() code can be removed when always spawning has proven itself.
+   */
 
   def forkChild(builder: ProcessBuilder)(implicit z: Zone): GenericProcess = {
     var success = false
@@ -182,6 +177,12 @@ private[process] object UnixProcessFactory {
       closePipe(infds)
       closePipe(outfds)
       closePipe(errfds)
+
+      if (!builder.isCwd)
+        Javalib_Spawn.fileActionsAddChdir(
+          fileActions,
+          toCString(builder.directory().toString)
+        )
 
       /* This will exec binary executables.
        * Some shells (bash, ???) will also execute scripts with initial
@@ -384,5 +385,16 @@ private[process] object UnixProcessFactory {
       }
     }
   }
+
+}
+
+@extern
+@define("__SCALANATIVE_JAVALIB_SPAWN")
+private[process] object Javalib_Spawn {
+
+  def fileActionsAddChdir(
+      actions: Ptr[posix_spawn_file_actions_t],
+      newCwd: CString
+  ): Unit = extern
 
 }
