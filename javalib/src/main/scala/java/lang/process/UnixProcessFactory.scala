@@ -15,13 +15,19 @@ import ju.ArrayList
 import ju.ScalaOps._
 
 private[process] object UnixProcessFactory {
+  val useSpawn = Javalib_Spawn.hasFileActionsAddChdir()
 
   def apply(pb: ProcessBuilder): GenericProcess = Zone.acquire { implicit z =>
-
-    spawnChild(pb) // Always
+    if (useSpawn) spawnChild(pb)
+    else forkChild(pb)
   }
 
-  /* forkChild() code can be removed when always spawning has proven itself.
+  /* Fork supports older operating systems. See javalib_spawn.c for details.
+   *
+   * Note well:
+   *   The Fork path has a known defect when the ProcessBuilder current
+   *   working directory is changed. The child process intermittently
+   *   does not terminate (i.e. a zero CPU hang or, perhaps, a high CPU loop).
    */
 
   def forkChild(builder: ProcessBuilder)(implicit z: Zone): GenericProcess = {
@@ -391,6 +397,8 @@ private[process] object UnixProcessFactory {
 @extern
 @define("__SCALANATIVE_JAVALIB_SPAWN")
 private[process] object Javalib_Spawn {
+
+  def hasFileActionsAddChdir(): Boolean = extern
 
   def fileActionsAddChdir(
       actions: Ptr[posix_spawn_file_actions_t],
