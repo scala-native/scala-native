@@ -18,12 +18,14 @@ bool hasFileActionsAddChdir() {
 
 #elif defined(__linux__)
 #if defined(__GLIBC__)
-    if (__GLIBC__ >= 2 && __GLIBC_MINOR >= 29)
-        result = true;
+#if (__GLIBC__ >= 2 && __GLIBC_MINOR >= 29)
+    result = true;
+#endif
 #endif
 
-    // musl has had the _np form in git since 2019-08-30.
-    // Enabling its use is left as an exercise for a musl devotee.
+    /* musl has had the _np form in git since 2019-08-30.
+     * Enabling its use is left as an exercise for a musl devotee.
+     */
 
 #elif defined(__APPLE__)
 #include <Availability.h>
