@@ -30,7 +30,7 @@ bool hasFileActionsAddChdir() {
 #elif defined(__APPLE__)
 #include <Availability.h>
 
-#if (__MAC_OS_X_VERSION_MAX_ALLOWED >= 110100000) 
+#if (__MAC_OS_X_VERSION_MAX_ALLOWED >= 110100000)
     result = true;
 #endif
 
