@@ -22,7 +22,8 @@ private[process] object UnixProcessFactory {
     else forkChild(pb)
   }
 
-  /* Fork supports older operating systems. See javalib_spawn.c for details.
+  /* Fork supports older and/or 32 bit operating systems.
+   * See javalib_spawn.c for details.
    *
    * Note well:
    *   The Fork path has a known defect when the ProcessBuilder current
