@@ -543,7 +543,7 @@ private[util] class ReverseOrderSortedSetView[E](underlying: SortedSet[E])
   def comparator(): java.util.Comparator[_ >: E] = {
     val ulCmp = underlying.comparator()
 
-    // explicit type required by at least Scala 2.12.20, Scala 3 does not need.
+    // explicit type required by at least Scala 2.12.21, Scala 3 does not need.
     val cmp: ju.Comparator[_ >: E] =
       if (ulCmp != null) ulCmp
       else NaturalComparator
