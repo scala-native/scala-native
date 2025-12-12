@@ -18,7 +18,7 @@ bool hasFileActionsAddChdir() {
 
 #elif defined(__linux__)
 #if defined(__GLIBC__)
-#if (__GLIBC__ >= 2 && __GLIBC_MINOR >= 29)
+#if ((__GLIBC__ > 2) || (__GLIBC__ == 2 && __GLIBC_MINOR >= 29))
     result = true;
 #endif
 #endif
