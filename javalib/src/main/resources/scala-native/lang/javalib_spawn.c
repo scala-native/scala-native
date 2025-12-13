@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <unistd.h>
 
+#include <stdio.h> // FIXME
+
 #undef SCALANATIVE_JAVALIB_HAVE_POSIX_CHDIR
 
 bool hasFileActionsAddChdir() {
@@ -21,14 +23,15 @@ bool hasFileActionsAddChdir() {
     // False
 
 #elif defined(__linux__)
-#if defined(__GLIBC__)
-#if ((__GLIBC__ > 2) || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 29))
-    result = true;
 
-    extern int posix_spawn_file_actions_addchdir_np(
-        posix_spawn_file_actions_t * __actions, const char *path);
+#if ((__GLIBC__ == 2 && __GLIBC_MINOR__ >= 29) || (__GLIBC__ > 2))
+    result = true;
 #endif
-#endif
+
+    printf("\n\n");
+    printf("javalib_spawn  __GLIBC__: %d __GLIBC_MINOR__ %d\n", __GLIBC__,
+           __GLIBC_MINOR__);
+    printf("\n\n");
 
     /* musl has the _np form in its git repository since 2019-08-30.
      * Enabling its use is left as an exercise for a musl devotee.
@@ -80,6 +83,9 @@ void fileActionsAddChdir(posix_spawn_file_actions_t *actions, char *newCwd) {
 #if defined(SCALANATIVE_JAVALIB_HAVE_POSIX_CHDIR)
     posix_spawn_file_actions_addchdir(actions, newCwd);
 #else
+    extern int posix_spawn_file_actions_addchdir_np(
+        posix_spawn_file_actions_t * __actions, const char *path);
+
     posix_spawn_file_actions_addchdir_np(actions, newCwd);
 #endif // to _np or not to _np
 #endif // only 64 bit support
