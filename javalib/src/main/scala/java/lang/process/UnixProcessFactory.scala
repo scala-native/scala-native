@@ -15,19 +15,22 @@ import ju.ArrayList
 import ju.ScalaOps._
 
 private[process] object UnixProcessFactory {
+  val haveSpawnAddChdir = Javalib_Spawn.hasFileActionsAddChdir()
 
   def apply(pb: ProcessBuilder): GenericProcess = Zone.acquire { implicit z =>
-    /* If builder.directory is not null, it specifies a new working
-     * directory for the process (chdir()).
-     *
-     * POSIX 2018 gives no way to change the working directory in
-     * file_actions, so the legacy fork() path must be taken.
-     * POSIX 2023 should allow changing the working directory.
-     */
-
-    val needSpawn = pb.isCwd && ProcessExitChecker.unixFactoryOpt.isDefined
-    if (needSpawn) spawnChild(pb) else forkChild(pb)
+    if (haveSpawnAddChdir || pb.isCwd) spawnChild(pb)
+    else forkChild(pb)
   }
+
+  /* Fork supports 32 bit systems and/or older operating systems when
+   * changing working directory.
+   * See javalib_spawn.c for details.
+   *
+   * Note well:
+   *   The Fork path has a known defect when the ProcessBuilder current
+   *   working directory is changed. The child process intermittently
+   *   does not terminate (i.e. a zero CPU hang or, perhaps, a high CPU loop).
+   */
 
   def forkChild(builder: ProcessBuilder)(implicit z: Zone): GenericProcess = {
     var success = false
@@ -134,6 +137,13 @@ private[process] object UnixProcessFactory {
       posix_spawn_file_actions_init(fileActions),
       "posix_spawn_file_actions_init"
     )
+
+    // Do early; affects all subsequent file_actions in child.
+    if (!builder.isCwd)
+      Javalib_Spawn.fileActionsAddChdir(
+        fileActions,
+        toCString(builder.directory().toString)
+      )
 
     var success = false
     val (infds, outfds, errfds) = createPipes(builder)
@@ -384,5 +394,18 @@ private[process] object UnixProcessFactory {
       }
     }
   }
+
+}
+
+@extern
+@define("__SCALANATIVE_JAVALIB_SPAWN")
+private[process] object Javalib_Spawn {
+
+  def hasFileActionsAddChdir(): Boolean = extern
+
+  def fileActionsAddChdir(
+      actions: Ptr[posix_spawn_file_actions_t],
+      newCwd: CString
+  ): Unit = extern
 
 }
