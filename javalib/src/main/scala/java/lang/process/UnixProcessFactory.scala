@@ -15,14 +15,15 @@ import ju.ArrayList
 import ju.ScalaOps._
 
 private[process] object UnixProcessFactory {
-  val useSpawn = Javalib_Spawn.hasFileActionsAddChdir()
+  val haveSpawnAddChdir = Javalib_Spawn.hasFileActionsAddChdir()
 
   def apply(pb: ProcessBuilder): GenericProcess = Zone.acquire { implicit z =>
-    if (useSpawn) spawnChild(pb)
+    if (haveSpawnAddChdir || pb.isCwd) spawnChild(pb)
     else forkChild(pb)
   }
 
-  /* Fork supports older and/or 32 bit operating systems.
+  /* Fork supports 32 bit systems and/or older operating systems when
+   * changing working directory.
    * See javalib_spawn.c for details.
    *
    * Note well:
