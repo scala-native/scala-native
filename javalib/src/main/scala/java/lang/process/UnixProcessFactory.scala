@@ -138,6 +138,13 @@ private[process] object UnixProcessFactory {
       "posix_spawn_file_actions_init"
     )
 
+    // Do early; affects all subsequent file_actions in child.
+    if (!builder.isCwd)
+      Javalib_Spawn.fileActionsAddChdir(
+        fileActions,
+        toCString(builder.directory().toString)
+      )
+
     var success = false
     val (infds, outfds, errfds) = createPipes(builder)
 
@@ -185,12 +192,6 @@ private[process] object UnixProcessFactory {
       closePipe(infds)
       closePipe(outfds)
       closePipe(errfds)
-
-      if (!builder.isCwd)
-        Javalib_Spawn.fileActionsAddChdir(
-          fileActions,
-          toCString(builder.directory().toString)
-        )
 
       /* This will exec binary executables.
        * Some shells (bash, ???) will also execute scripts with initial

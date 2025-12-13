@@ -17,8 +17,8 @@ bool hasFileActionsAddChdir() {
 #define SCALANATIVE_JAVALIB_HAVE_POSIX_CHDIR 1
     result = true;
 
-#elif defined(__ILP32__)
-    // False
+    // #elif defined(__ILP32__)
+    // False. Not implemented due to lack of access to a 32 bit system.
 
 #elif defined(__linux__)
 
@@ -71,7 +71,7 @@ bool hasFileActionsAddChdir() {
 }
 
 void fileActionsAddChdir(posix_spawn_file_actions_t *actions, char *newCwd) {
-#if !defined(__ILP32__) // Support 64 bit systems only
+    // #if !defined(__ILP32__) // Support 64 bit systems only
 #if defined(SCALANATIVE_JAVALIB_HAVE_POSIX_CHDIR)
     posix_spawn_file_actions_addchdir(actions, newCwd);
 #else
@@ -80,6 +80,6 @@ void fileActionsAddChdir(posix_spawn_file_actions_t *actions, char *newCwd) {
 
     posix_spawn_file_actions_addchdir_np(actions, newCwd);
 #endif // to _np or not to _np
-#endif // only 64 bit support
+    // #endif // only 64 bit support
 }
 #endif
