@@ -72,12 +72,13 @@ sealed trait NativeConfig {
   def useIncrementalCompilation: Boolean
 
   /** Shall be compiled with multithreading support. If equal to `None` the
-   *  toolchain would detect if program uses system threads - when not thrads
-   *  are not used, the program would be linked without multihreading support.
+   *  toolchain detects if program uses system threads.
    */
   def multithreading: Option[Boolean]
 
-  /*  Was multhithreadinng explicitly select, if not default to true */
+  /*  Was multithreading explicitly selected? If not default to 'true' and
+   *  rely upon toolchain to detect and reset if system threads are not used.
+   */
   private[scalanative] def multithreadingSupport: Boolean =
     multithreading.getOrElse(true)
 
@@ -501,6 +502,8 @@ object NativeConfig {
             .mkString("\n")
         }
 
+      val mtStateString = multithreading.getOrElse("detect")
+
       s"""|NativeConfig(
           | - baseName:                $baseName
           | - clang:                   $clang
@@ -522,7 +525,7 @@ object NativeConfig {
           | - linkStubs:               $linkStubs
           | - optimize                 $optimize
           | - incrementalCompilation:  $useIncrementalCompilation
-          | - multithreading           $multithreading
+          | - multithreading           $mtStateString 
           | - linktimeProperties:      ${showMap(linktimeProperties)}
           | - embedResources:          $embedResources
           | - resourceIncludePatterns: ${showSeq(resourceIncludePatterns)}
