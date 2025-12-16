@@ -42,9 +42,7 @@ private[scalanative] object ScalaNative {
     forceQuickCheck = true
   )(Future {
     val mtSupport = config.compilerConfig.multithreading
-      .getOrElse(
-        "detect  Start 'true' and allow toolchain to disable if not used."
-      )
+      .getOrElse("detect")
     val linkingMsg = s"Linking (multithreadingEnabled=${mtSupport})"
     config.logger.time(linkingMsg) {
       Link(config, entries)

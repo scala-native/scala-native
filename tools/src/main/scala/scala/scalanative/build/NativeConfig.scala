@@ -71,9 +71,38 @@ sealed trait NativeConfig {
   /** Shall we use the incremental compilation? */
   def useIncrementalCompilation: Boolean
 
-  /** Shall be compiled with multithreading support. If equal to `None` the
-   *  toolchain detects if program uses system threads.
+   // format: off
+  /** Shall be compiled with multithreading support.
+   *
+   *  'show ThisBuild/nativeConfig' will display one of three values.
+   *  The default 'detect' setting is appropriate for almost all cases.
+   *
+   *  * 'detect' - The toolchain will start linking using 'true'.
+   *               If by the end no use of system threads is found, the
+   *               toolchain will re-link using 'false' to reduce
+   *               synchronization overhead.
+   *
+   *               `nativeConfig` is initialized to this value and
+   *               there is no easy way to set it once changed.
+   *
+   *  * 'false'  - Never link with multithreading enabled.
+   *
+   *              Note Well:
+   *
+   *                + This setting is not tested in Scala Native Continuous
+   *                  integration.
+   *
+   *                + Some Scala Native classes, such as `java.lang.Process*`
+   *                  require multithreading and may fail to link with this
+   *                  setting.
+   *
+   *                + Code using `Future`s may link but encounter runtime
+   *                  problems.
+   *
+   *  * 'true'   - Always link with multithreading enabled.
+   * 
    */
+  // format: on
   def multithreading: Option[Boolean]
 
   /*  Was multithreading explicitly selected? If not default to 'true' and
@@ -502,8 +531,6 @@ object NativeConfig {
             .mkString("\n")
         }
 
-      val mtStateString = multithreading.getOrElse("detect")
-
       s"""|NativeConfig(
           | - baseName:                $baseName
           | - clang:                   $clang
@@ -525,7 +552,7 @@ object NativeConfig {
           | - linkStubs:               $linkStubs
           | - optimize                 $optimize
           | - incrementalCompilation:  $useIncrementalCompilation
-          | - multithreading           $mtStateString 
+          | - multithreading           ${multithreading.getOrElse("detect")}
           | - linktimeProperties:      ${showMap(linktimeProperties)}
           | - embedResources:          $embedResources
           | - resourceIncludePatterns: ${showSeq(resourceIncludePatterns)}
