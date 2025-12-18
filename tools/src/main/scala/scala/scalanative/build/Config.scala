@@ -70,6 +70,9 @@ sealed trait Config {
   /** The logger used by the toolchain. */
   def logger: Logger
 
+  /** The logger used by the toolchain. */
+  def buildTracing: Boolean
+
   /** The [[NativeConfig]] that is used by the developer to control settings. */
   def compilerConfig: NativeConfig
 
@@ -101,6 +104,9 @@ sealed trait Config {
 
   /** Create a new config with the given logger. */
   def withLogger(value: Logger): Config
+
+  /** Create a new config with the given tracer. */
+  def withBuildTracing(value: Boolean): Config
 
   /** Create a [[Config]] with a new [[NativeConfig]]. */
   def withCompilerConfig(value: NativeConfig): Config
@@ -205,6 +211,10 @@ sealed trait Config {
       val enabledLTO = compilerConfig.lto != build.LTO.none
       !disabled && (enabled || enabledLTO)
     }
+
+  private[scalanative] lazy val tracing: Tracing =
+    if (buildTracing) Tracing.real(baseDir, logger) else Tracing.noop
+
 }
 
 /** Factory to create [[#empty]] [[Config]] objects */
@@ -221,7 +231,8 @@ object Config {
       mainClass = None,
       classPath = Seq.empty,
       sourcesClassPath = Seq.empty,
-      compilerConfig = NativeConfig.empty
+      compilerConfig = NativeConfig.empty,
+      buildTracing = false
     )(Logger.default)
 
   private final case class Impl(
@@ -231,7 +242,8 @@ object Config {
       mainClass: Option[String],
       classPath: Seq[Path],
       sourcesClassPath: Seq[Path],
-      compilerConfig: NativeConfig
+      compilerConfig: NativeConfig,
+      buildTracing: Boolean
   )(implicit
       val logger: Logger // Exclude logger from hashCode calculation https://stackoverflow.com/questions/10373715/scala-ignore-case-class-field-for-equals-hascode
   ) extends Config {
@@ -262,6 +274,9 @@ object Config {
 
     override def withLogger(value: Logger): Config =
       copy()(value)
+
+    override def withBuildTracing(value: Boolean): Config =
+      copy(buildTracing = value)(logger)
 
     override lazy val workDir: Path =
       baseDir.resolve(s"native$nameSuffix")
@@ -322,6 +337,7 @@ object Config {
           | - classPath:        ${formatClassPath(classPath)}
           | - sourcesClasspath: ${formatClassPath(sourcesClassPath)}
           | - compilerConfig:   $compilerConfig
+          | - buildTracing:     $buildTracing
           |)""".stripMargin
     }
 
