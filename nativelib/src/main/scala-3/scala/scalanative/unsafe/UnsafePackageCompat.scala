@@ -26,27 +26,48 @@ private[scalanative] trait UnsafePackageCompat {
   inline def ssizeof[T]: CSSize = fromRawSize(Intrinsics.sizeOf[T])
 
   /** Heap allocate and zero-initialize value using current implicit allocator.
+   *
+   *  Alias for preferred 'calloc*()' equivalent. Issue #4700
    */
-  inline def alloc[T]()(using zone: Zone): Ptr[T] = {
-    val size = sizeof[T]
-    val ptr = zone.alloc(size)
-    ffi.memset(ptr, 0, size)
-    ptr.asInstanceOf[Ptr[T]]
-  }
+  inline def alloc[T]()(using zone: Zone): Ptr[T] =
+    calloc[T]()
 
   /** Heap allocate and zero-initialize n values using current implicit
    *  allocator.
+   *
+   *  Alias for preferred 'calloc*()' equivalent.
    */
   inline def alloc[T](inline n: CSize)(using zone: Zone): Ptr[T] =
-    alloc[T](toRawSize(n))
+    calloc[T](toRawSize(n))
+
+  /** Heap allocate and zero-initialize n values using current implicit
+   *  allocator.
+   *
+   *  Alias for preferred 'calloc*()' equivalent.
+   */
+  inline def alloc[T](inline n: Int)(using zone: Zone): Ptr[T] =
+    calloc[T](validateSize(n))
+
+  /** Heap allocate and zero-initialize value using current implicit allocator.
+   *
+   *  Prefer 'calloc*()' over 'alloc*()'equivalent. Issue #4700
+   */
+  inline def calloc[T]()(using zone: Zone): Ptr[T] =
+    calloc[T](toRawSize(1))
 
   /** Heap allocate and zero-initialize n values using current implicit
    *  allocator.
    */
-  inline def alloc[T](inline n: Int)(using zone: Zone): Ptr[T] =
-    alloc[T](validateSize(n))
+  inline def calloc[T](inline n: CSize)(using zone: Zone): Ptr[T] =
+    calloc[T](toRawSize(n))
 
-  private[UnsafePackageCompat] inline def alloc[T](
+  /** Heap allocate and zero-initialize n values using current implicit
+   *  allocator.
+   */
+  inline def calloc[T](inline n: Int)(using zone: Zone): Ptr[T] =
+    calloc[T](validateSize(n))
+
+  private[UnsafePackageCompat] inline def calloc[T](
       inline elements: RawSize
   )(using zone: Zone): Ptr[T] = {
     val elemSize = Intrinsics.sizeOf[T]
