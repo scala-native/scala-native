@@ -59,7 +59,7 @@ class ThreadTest {
   }
 
   @Test def sleepShouldThrowWithNegativeMillis(): Unit = {
-    val sleepForMillis = -98
+    val sleepForMillis = -97
 
     assertThrows(
       classOf[IllegalArgumentException],
