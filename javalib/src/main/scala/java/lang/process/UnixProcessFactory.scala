@@ -22,14 +22,23 @@ private[process] object UnixProcessFactory {
     else forkChild(pb)
   }
 
-  /* Fork supports 32 bit systems and/or older operating systems when
-   * changing working directory.
-   * See javalib_spawn.c for details.
+  /* forkChild supports 32 bit systems and/or older operating systems when
+   * changing working directory. See javalib_spawn.c for details.
    *
    * Note well:
-   *   The Fork path has a known defect when the ProcessBuilder current
-   *   working directory is changed. The child process intermittently
+   *   The Fork path has a known, to some, defect when the ProcessBuilder
+   *   current working directory is changed. The child process intermittently
    *   does not terminate (i.e. a zero CPU hang or, perhaps, a high CPU loop).
+   *
+   *   - The 'os-lib' project report of a reproducible case is captured
+   *     in Scala Native Issue #4619.
+   * 
+   *   - The 'kyo' hang captured in Issue #4615 may be another instance.
+   *
+   *   - The 'scalafmt' reported in #4481 may also be an instance.
+   *
+   *   - See also discussion about efforts to find root causes for these
+   *     Issue in Issue #4620.
    */
 
   def forkChild(builder: ProcessBuilder)(implicit z: Zone): GenericProcess = {
