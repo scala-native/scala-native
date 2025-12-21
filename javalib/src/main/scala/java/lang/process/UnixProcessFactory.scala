@@ -15,7 +15,7 @@ import ju.ArrayList
 import ju.ScalaOps._
 
 private[process] object UnixProcessFactory {
-  val haveSpawnAddChdir = Javalib_Spawn.hasFileActionsAddChdir()
+  val haveSpawnAddChdir = JavalibSpawn.hasFileActionsAddChdir()
 
   def apply(pb: ProcessBuilder): GenericProcess = Zone.acquire { implicit z =>
     if (haveSpawnAddChdir || pb.isCwd) spawnChild(pb)
@@ -140,7 +140,7 @@ private[process] object UnixProcessFactory {
 
     // Do early; affects all subsequent file_actions in child.
     if (!builder.isCwd)
-      Javalib_Spawn.fileActionsAddChdir(
+      JavalibSpawn.fileActionsAddChdir(
         fileActions,
         toCString(builder.directory().toString)
       )
@@ -399,7 +399,7 @@ private[process] object UnixProcessFactory {
 
 @extern
 @define("__SCALANATIVE_JAVALIB_SPAWN")
-private[process] object Javalib_Spawn {
+private[process] object JavalibSpawn {
 
   def hasFileActionsAddChdir(): Boolean = extern
 

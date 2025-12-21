@@ -2,6 +2,8 @@
 
 #include <spawn.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include <unistd.h>
 
 #undef SCALANATIVE_JAVALIB_HAVE_POSIX_CHDIR
@@ -77,7 +79,8 @@ bool hasFileActionsAddChdir() {
 }
 
 void fileActionsAddChdir(posix_spawn_file_actions_t *actions, char *newCwd) {
-#if !defined(__ILP32__) // Support 64 bit systems only
+#if defined(__LP64__) // Support known & tested 64 bit systems only
+
 #if defined(SCALANATIVE_JAVALIB_HAVE_POSIX_CHDIR)
     posix_spawn_file_actions_addchdir(actions, newCwd);
 #else
@@ -85,7 +88,22 @@ void fileActionsAddChdir(posix_spawn_file_actions_t *actions, char *newCwd) {
         posix_spawn_file_actions_t * __actions, const char *path);
 
     posix_spawn_file_actions_addchdir_np(actions, newCwd);
+
 #endif // to _np or not to _np
-#endif // only 64 bit support
+
+#else // 32 bit & untested 64 bit
+
+    /* Should never get here.
+     *
+     * hasFileActionsAddChdir() above reports
+     * 'false' for 32 bit & untested systems. Appears caller either
+     * did not check or ignored that result.
+     */
+
+    fprintf(stderr, "\n\n\nScala Native does not support "
+                    "posix_spawn_file_actions on this architecture\n\n");
+    exit(EXIT_FAILURE);
+
+#endif // 32 bit & untested 64 bit
 }
 #endif
