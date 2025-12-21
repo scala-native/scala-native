@@ -80,7 +80,7 @@ class ProcessTest {
     checkPathOverride(pb)
   }
 
-  // Exercise the fork() path in UnixProcessFactory.
+  // Exercise posix_spawn_file_actions_addchdir() path in UnixProcessFactory.
   @Test def dirOverride(): Unit = {
     assumeFalse("Not tested in Windows", isWindows)
 
