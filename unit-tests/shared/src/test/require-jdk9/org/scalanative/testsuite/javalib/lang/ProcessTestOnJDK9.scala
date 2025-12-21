@@ -23,9 +23,8 @@ import Platform._
 
 object ProcessTestOnJDK9 {
   @BeforeClass
-  def checkRuntime(): Unit = {
+  def checkRuntime(): Unit =
     assumeTrue(isMultithreadingEnabled)
-  }
 }
 
 class ProcessTestOnJDK9 {
@@ -152,13 +151,20 @@ class ProcessTestOnJDK9 {
   }
 
   private def runPingWith(redirect: ProcessBuilder.Redirect): String = {
+    /* See "ping' as timing hack" description in ProcessTest.scala
+     * No "-4" IPv4 option on macOS.
+     */
     val argv =
       if (Platform.isWindows) Seq("ping", "-n", "2", "127.0.0.1")
-      else Seq("ping", "-c", "2", "-i", "10", "127.0.0.1")
+      else Seq("ping", "-c", "2", "-i", "4", "127.0.0.1")
+    // Send a packet to IPv4 localhost. Four seconds later, send a second.
+
     val proc: Process =
       processForCommand(argv: _*).redirectOutput(redirect).start()
+
     val stdout =
       new String(proc.getInputStream.readAllBytes(), StandardCharsets.UTF_8)
+
     proc.waitFor()
     stdout
   }
