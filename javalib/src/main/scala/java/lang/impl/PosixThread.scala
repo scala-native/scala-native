@@ -201,6 +201,31 @@ private[java] class PosixThread(
     else sleepNonInterruptible(millis, 0)
   }
 
+  /* Design Notes:
+   *
+   * Almost always only one trip will be taken through the do-while loop.
+   * Spurious wake-ups and other conditions can cause repeated trips.
+   *
+   * 1. 'Thread.interrupt()' is the Java idiomatic way to disrupt another
+   *    thread which is sleeping. 'LockSupport.unpark()' exists and is
+   *    public. If one knew or guessed that Thread.sleep() was implemented
+   *    in terms of 'park()', a determined user could try 'unpark'ing
+   *    the sleeping thread. The Java description of 'Thread.sleep()'
+   *    does not describe the effects of 'LockSupport.unpark()', so
+   *    this code treats those calls as spurious wake-ups.
+   *
+   *
+   * 2. There is an obscure scenario which can cause the first 'park()' to
+   *    return immediately, requiring at least a second trip through
+   *    the loop.
+   *
+   *    Consider a thread which is about to 'park()' but which has
+   *    been interrupted and then that interrupt has been cleared. The
+   *    interrupt will have set the 'counter' variable for a pending
+   *    'unpark()' to 1. This will cause the next 'park()' to return
+   *    immediately. That was hard to trace and harder to describe.
+   *    May you never encounter it or know if you have.
+   */
   private def sleepInterruptible(millis: Long): Unit = {
     val deadline = {
       val dl = System.currentTimeMillis() + millis
@@ -213,6 +238,10 @@ private[java] class PosixThread(
 
       !thread.isInterrupted() &&
         (deadline - System.currentTimeMillis() >= 0L)
+
+      /* 'false' indicates deadline passed or park() was interrupted.
+       * 'true' indicates premature or spurious wake-up, so loop again.
+       */
     }) ()
   }
 
