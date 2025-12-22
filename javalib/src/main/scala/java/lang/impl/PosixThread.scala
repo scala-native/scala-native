@@ -194,8 +194,8 @@ private[java] class PosixThread(
   }
 
   def sleep(millis: Long): Unit = {
-    /* By construction & convention, only public caller in Thread.scala has
-     * filtered out zero and negative millis.
+    /* The only public caller is in Thread.scala. By contract & construction,
+     * it has already filtered out zero and negative nanos.
      */
     if (isMultithreadingEnabled) sleepInterruptible(millis)
     else sleepNonInterruptible(millis, 0)
@@ -266,8 +266,8 @@ private[java] class PosixThread(
   }
 
   def sleepNanos(nanos: Int): Unit = {
-    /* By construction & convention, only public caller in Thread.scala has
-     * filtered out zero and negative nanos.
+    /* The only public caller is in Thread.scala. By contract & construction,
+     * it has already filtered out zero and negative nanos.
      */
     val millis = nanos / NanosInMillisecond
     val remainingNanos = nanos % NanosInMillisecond
