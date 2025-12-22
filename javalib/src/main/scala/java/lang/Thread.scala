@@ -572,17 +572,26 @@ object Thread {
   def sleep(millis: scala.Long, nanos: Int): Unit = {
     if (millis < 0)
       throw new IllegalArgumentException("millis must be >= 0")
+
     if (nanos < 0 || nanos > 999999)
-      throw new IllegalArgumentException("nanos value out of range")
+      throw new IllegalArgumentException(
+        s"nanos value: ${nanos} is not in range [0, 999999]"
+      )
+
     val nativeThread = nativeCompanion.currentNativeThread()
 
     def doSleep(millis: scala.Long, nanos: Int) = {
-      if (millis == 0) nativeThread.sleepNanos(nanos)
-      else
-        nativeThread.sleep(nanos match {
-          case 0 => millis
-          case _ => millis + 1
-        })
+      /* In the modal call pattern, either millis or nanos are zero.
+       * The 'two sleep' call sequence should be rare and
+       * preserves the full range of millis by avoiding possible
+       * overflow converting millis to nanos and calling only sleepNanos().
+       */
+
+      if (millis > 0)
+        nativeThread.sleep(millis)
+
+      if (nanos > 0) // callee will check thread.isInterrupted
+        nativeThread.sleepNanos(nanos)
     }
 
     if (isMultithreadingEnabled) doSleep(millis, nanos)
@@ -597,7 +606,8 @@ object Thread {
       }
     } else doSleep(millis, nanos)
 
-    if (interrupted()) throw new InterruptedException()
+    if (interrupted())
+      throw new InterruptedException()
   }
 
   @alwaysinline def `yield`(): Unit =

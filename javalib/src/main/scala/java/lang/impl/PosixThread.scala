@@ -1,5 +1,7 @@
 package java.lang.impl
 
+import java.{lang => jl}
+
 import scala.annotation._
 
 import scala.scalanative.annotation._
@@ -35,8 +37,16 @@ private[java] class PosixThread(
   )
 
   private lazy val _state = new scala.Array[scala.Byte](StateSize)
-  @volatile private[impl] var sleepInterruptEvent: CInt = UnsetEvent
+
+  /* 'counter' and 'conditionIdx' are guarded by 'def lock' declared
+   * far below. One must hold that lock before accessing either.
+   */
+
+  /* unpark() backlog - can have values zero or one.
+   * When non-zero, next park() will return immediately.
+   */
   @volatile private var counter: Int = 0
+
   // index of currently used condition
   @volatile private var conditionIdx = ConditionUnset
 
@@ -110,29 +120,26 @@ private[java] class PosixThread(
   }
 
   override def interrupt(): Unit = if (isMultithreadingEnabled) {
-    // for LockSupport.park
     this.unpark()
-    // for Thread.sleep
-    if (sleepInterruptEvent != UnsetEvent) {
-      val eventSize = 8.toUInt
-      val buf = stackalloc[Byte](eventSize)
-      !buf = 1
-      write(sleepInterruptEvent, buf, eventSize)
-    }
   }
 
   override protected def park(
       time: Long,
       isAbsolute: Boolean
   ): Unit = if (isMultithreadingEnabled) {
+
     // fast-path check, return if can skip parking
     if (counterAtomic.exchange(0) > 0) return
+
     // Avoid parking if there's an interrupt pending
     if (thread.isInterrupted()) return
+
     // Don't wait at all
     if (time < 0 || (isAbsolute && time == 0)) return
+
     val absTime = stackalloc[timespec]()
     if (time > 0) toAbsoluteTime(absTime, time, isAbsolute)
+
     // Interference with ongoing unpark
     if (pthread_mutex_trylock(lock) != 0) return
 
@@ -186,43 +193,56 @@ private[java] class PosixThread(
     }
   }
 
-  override def sleep(millis: Long): Unit =
+  def sleep(millis: Long): Unit = {
+    /* The only public caller is in Thread.scala. By contract & construction,
+     * it has already filtered out zero and negative nanos.
+     */
     if (isMultithreadingEnabled) sleepInterruptible(millis)
     else sleepNonInterruptible(millis, 0)
+  }
 
-  private def sleepInterruptible(_millis: Long): Unit = {
-    var millis = _millis
-    if (millis <= 0) return
-    val deadline = System.currentTimeMillis() + millis
-
-    import scala.scalanative.posix.pollOps._
-    import scala.scalanative.posix.pollEvents._
-
-    type PipeFDs = CArray[CInt, Nat._2]
-    val pipefd = stackalloc[PipeFDs](1)
-    checkStatus("create sleep interrupt event") {
-      pipe(pipefd.at(0))
+  /* Design Notes:
+   *
+   * Almost always only one trip will be taken through the do-while loop.
+   * Spurious wake-ups and other conditions can cause repeated trips.
+   *
+   * 1. 'Thread.interrupt()' is the Java idiomatic way to disrupt another
+   *    thread which is sleeping. 'LockSupport.unpark()' exists and is
+   *    public. If one knew or guessed that Thread.sleep() was implemented
+   *    in terms of 'park()', a determined user could try 'unpark'ing
+   *    the sleeping thread. The Java description of 'Thread.sleep()'
+   *    does not describe the effects of 'LockSupport.unpark()', so
+   *    this code treats those calls as spurious wake-ups.
+   *
+   *
+   * 2. There is an obscure scenario which can cause the first 'park()' to
+   *    return immediately, requiring at least a second trip through
+   *    the loop.
+   *
+   *    Consider a thread which is about to 'park()' but which has
+   *    been interrupted and then that interrupt has been cleared. The
+   *    interrupt will have set the 'counter' variable for a pending
+   *    'unpark()' to 1. This will cause the next 'park()' to return
+   *    immediately. That was hard to trace and harder to describe.
+   *    May you never encounter it or know if you have.
+   */
+  private def sleepInterruptible(millis: Long): Unit = {
+    val deadline = {
+      val dl = System.currentTimeMillis() + millis
+      if (dl > 0) dl
+      else jl.Long.MAX_VALUE // overflow, so saturate to end of time.
     }
-    this.sleepInterruptEvent = !pipefd.at(1)
-    if (!thread.isInterrupted()) try {
-      val fds = stackalloc[struct_pollfd]()
-      fds.fd = !pipefd.at(0)
-      fds.events = POLLIN.toShort
 
-      try
-        while (millis > 0) {
-          state = State.ParkedWaitingTimed
-          poll(fds, 1.toUInt, (millis min Int.MaxValue).toInt)
-          state = State.Running
-          if (Thread.interrupted()) throw new InterruptedException()
+    while ({
+      park(deadline, isAbsolute = true)
 
-          millis = deadline - System.currentTimeMillis()
-        }
-      finally this.sleepInterruptEvent = UnsetEvent
-    } finally {
-      close(!pipefd.at(0))
-      close(!pipefd.at(1))
-    }
+      !thread.isInterrupted() &&
+        (deadline - System.currentTimeMillis() >= 0L)
+
+      /* 'false' indicates deadline passed or park() was interrupted.
+       * 'true' indicates premature or spurious wake-up, so loop again.
+       */
+    }) ()
   }
 
   private def sleepNonInterruptible(
@@ -245,7 +265,10 @@ private[java] class PosixThread(
     state = State.Running
   }
 
-  override def sleepNanos(nanos: Int): Unit = {
+  def sleepNanos(nanos: Int): Unit = {
+    /* The only public caller is in Thread.scala. By contract & construction,
+     * it has already filtered out zero and negative nanos.
+     */
     val millis = nanos / NanosInMillisecond
     val remainingNanos = nanos % NanosInMillisecond
     if (millis > 0) sleepInterruptible(millis)

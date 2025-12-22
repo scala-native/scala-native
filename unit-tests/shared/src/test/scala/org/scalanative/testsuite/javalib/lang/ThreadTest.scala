@@ -13,6 +13,7 @@ import java.lang._
 import org.junit.Assert._
 import org.junit.Test
 
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform._
 
 import scala.scalanative.junit.utils.AssumesHelper._
@@ -55,6 +56,15 @@ class ThreadTest {
     assertTrue(Thread.interrupted())
     assertFalse(t.isInterrupted())
     assertFalse(Thread.interrupted())
+  }
+
+  @Test def sleepShouldThrowWithNegativeMillis(): Unit = {
+    val sleepForMillis = -99
+
+    assertThrows(
+      classOf[IllegalArgumentException],
+      Thread.sleep(sleepForMillis)
+    )
   }
 
   @Test def sleepShouldSuspendForAtLeastSpecifiedMillis(): Unit = {
