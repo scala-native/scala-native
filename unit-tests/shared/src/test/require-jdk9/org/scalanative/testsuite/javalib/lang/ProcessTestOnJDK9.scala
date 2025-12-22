@@ -151,13 +151,9 @@ class ProcessTestOnJDK9 {
   }
 
   private def runPingWith(redirect: ProcessBuilder.Redirect): String = {
-    /* See "ping' as timing hack" description in ProcessTest.scala
-     * No "-4" IPv4 option on macOS.
-     */
-    val argv =
-      if (Platform.isWindows) Seq("ping", "-n", "2", "127.0.0.1")
-      else Seq("ping", "-c", "2", "-i", "4", "127.0.0.1")
-    // Send a packet to IPv4 localhost. Four seconds later, send a second.
+    // Send one packet to IPv4 localhost and return child output.
+    val countOption = if (Platform.isWindows) "-n" else "-c"
+    val argv = Seq("ping", countOption, "1", "127.0.0.1")
 
     val proc: Process =
       processForCommand(argv: _*).redirectOutput(redirect).start()
