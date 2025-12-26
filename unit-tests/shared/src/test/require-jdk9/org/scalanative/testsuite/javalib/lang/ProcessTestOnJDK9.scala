@@ -68,7 +68,7 @@ class ProcessTestOnJDK9 {
 
   // copy from ProcessTest
   private def processForDestruction(): Process = {
-    /* Endure child process stays alive long enough to generate
+    /* Ensure child process stays alive long enough to generate
      * either info() or be 'destroy'ed.
      */
     val proc = processForCommand("ping", "-c", "2", "-i", "10", "127.0.0.1")
