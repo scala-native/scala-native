@@ -155,7 +155,7 @@ class ProcessTestOnJDK9 {
   }
 
   private def runPingWith(redirect: ProcessBuilder.Redirect): String = {
-    // Child sends one ping packet to IPv4 localhost and returns the output.
+    // Child sends one ping packet to IPv4 localhost; then returns the output.
     val countOption = if (Platform.isWindows) "-n" else "-c"
     val argv = Seq("ping", countOption, "1", "127.0.0.1")
 
