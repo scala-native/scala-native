@@ -165,7 +165,7 @@ class ProcessTestOnJDK9 {
     val stdout =
       new String(proc.getInputStream.readAllBytes(), StandardCharsets.UTF_8)
 
-    proc.waitFor(10, TimeUnit.SECONDS) // Report any unexpected exit latency.
+    proc.waitFor(5, TimeUnit.SECONDS) // Report any unexpected exit latency.
     stdout
   }
 
