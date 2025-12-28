@@ -81,26 +81,27 @@ class NativeCompilerTest:
   @Test def inlineMacroWithLazyVals(): Unit = {
     compileAll(
       "Test.scala" -> "@main def run(): Unit = Macros.foo()",
-      "Macros.scala" -> """|
-                           |import scala.quoted.*
-                           |object Macros:
-                           |  def foo_impl()(using q: Quotes): Expr[Unit] = '{
-                           |     ${val x = ReflectionUtils(quotes).Mirror(); '{()} }
-                           |     println()
-                           |   }
-                           |
-                           |  inline def foo(): Unit = ${foo_impl()}
-                           |end Macros
-                           |
-                           |class ReflectionUtils[Q <: Quotes](val q: Q) {
-                           |  given q.type = q // Internally defined as lazy val, leading to problems
-                           |  import q.reflect._
-                           |
-                           |  case class Mirror(arg: String)
-                           |  object Mirror{
-                           |    def apply(): Mirror = Mirror("foo")
-                           |  }
-                           |}""".stripMargin
+      "Macros.scala" ->
+        """|
+           |import scala.quoted.*
+           |object Macros:
+           |  def foo_impl()(using q: Quotes): Expr[Unit] = '{
+           |     ${val x = ReflectionUtils(quotes).Mirror(); '{()} }
+           |     println()
+           |   }
+           |
+           |  inline def foo(): Unit = ${foo_impl()}
+           |end Macros
+           |
+           |class ReflectionUtils[Q <: Quotes](val q: Q) {
+           |  given q.type = q // Internally defined as lazy val, leading to problems
+           |  import q.reflect._
+           |
+           |  case class Mirror(arg: String)
+           |  object Mirror{
+           |    def apply(): Mirror = Mirror("foo")
+           |  }
+           |}""".stripMargin
     )
   }
 
@@ -142,77 +143,82 @@ class NativeCompilerTest:
   @Test def issue3231MultiLevelExport(): Unit = {
     // Exporting extern function should work for recursive exports
     compileAll(
-      "level_1.scala" -> s"""|
-                             |package issue.level1
-                             |
-                             |import scala.scalanative.unsafe.extern
-                             |
-                             |@extern
-                             |private[issue] object extern_functions:
-                             |  def test(bla: Int, args: Any*): Unit = extern
-                             |
-                             |export extern_functions.* // should comppile
-                             |
-                             |""".stripMargin,
-      "level_2.scala" -> s"""|
-                             |package issue.level2
-                             |
-                             |export _root_.issue.level1.test
-                             |
-                             |""".stripMargin,
-      "level_3.scala" -> s"""|
-                             |package issue.level3
-                             |
-                             |export _root_.issue.level2.test
-                             |
-                             |""".stripMargin,
-      "level_4.scala" -> s"""|
-                             |package issue.level4
-                             |
-                             |export _root_.issue.level3.test
-                             |
-                             |""".stripMargin
+      "level_1.scala" ->
+        s"""|
+            |package issue.level1
+            |
+            |import scala.scalanative.unsafe.extern
+            |
+            |@extern
+            |private[issue] object extern_functions:
+            |  def test(bla: Int, args: Any*): Unit = extern
+            |
+            |export extern_functions.* // should comppile
+            |
+            |""".stripMargin,
+      "level_2.scala" ->
+        s"""|
+            |package issue.level2
+            |
+            |export _root_.issue.level1.test
+            |
+            |""".stripMargin,
+      "level_3.scala" ->
+        s"""|
+            |package issue.level3
+            |
+            |export _root_.issue.level2.test
+            |
+            |""".stripMargin,
+      "level_4.scala" ->
+        s"""|
+            |package issue.level4
+            |
+            |export _root_.issue.level3.test
+            |
+            |""".stripMargin
     )
   }
 
   // https://github.com/scala-native/scala-native/issues/3726
   @Test def issue3726(): Unit = compileAll(
-    "Test.scala" -> s"""|
-                        |import _root_.scala.scalanative.unsafe.*
-                        |
-                        |object structs:
-                        |  opaque type MyStruct = CStruct1[CInt]
-                        |  object MyStruct:
-                        |    given _tag: Tag[MyStruct] = ???
-                        |    extension (struct: MyStruct)
-                        |      def field: CInt = struct._1
-                        |      def field_=(value: CInt): Unit = !struct.at1 = value
-                        |
-                        |object all:
-                        |  export structs.MyStruct
-                        |
-                        |object nested:
-                        |  export all.MyStruct
-                        |
-                        |def Test1 = {
-                        |  import structs.*
-                        |  val myStruct = stackalloc[MyStruct]()
-                        |  (!myStruct).field = 2
-                        |  println((!myStruct).field)
-                        |}
-                        |
-                        |def Test2 = {
-                        |  import all.*
-                        |  val myStruct = stackalloc[MyStruct]()
-                        |  (!myStruct).field = 2
-                        |  println((!myStruct).field)
-                        |}
-                        |
-                        |def Test3 = {
-                        |  import nested.*
-                        |  val myStruct = stackalloc[MyStruct]()
-                        |  (!myStruct).field = 2
-                        |  println((!myStruct).field)
-                        |}
-                        |""".stripMargin
+    "Test.scala" ->
+      s"""|
+          |import _root_.scala.scalanative.unsafe.*
+          |
+          |object structs:
+          |  opaque type MyStruct = CStruct1[CInt]
+          |  object MyStruct:
+          |    given _tag: Tag[MyStruct] = ???
+          |    extension (struct: MyStruct)
+          |      def field: CInt = struct._1
+          |      def field_=(value: CInt): Unit = !struct.at1 = value
+          |
+          |object all:
+          |  export structs.MyStruct
+          |
+          |object nested:
+          |  export all.MyStruct
+          |
+          |def Test1 = {
+          |  import structs.*
+          |  val myStruct = stackalloc[MyStruct]()
+          |  (!myStruct).field = 2
+          |  println((!myStruct).field)
+          |}
+          |
+          |def Test2 = {
+          |  import all.*
+          |  val myStruct = stackalloc[MyStruct]()
+          |  (!myStruct).field = 2
+          |  println((!myStruct).field)
+          |}
+          |
+          |def Test3 = {
+          |  import nested.*
+          |  val myStruct = stackalloc[MyStruct]()
+          |  (!myStruct).field = 2
+          |  println((!myStruct).field)
+          |}
+          |""".stripMargin
   )
