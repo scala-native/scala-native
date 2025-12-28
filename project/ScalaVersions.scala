@@ -47,7 +47,7 @@ object ScalaVersions {
   val scala213PublishVersion = crossScala213.head
 
   // List of nightly version can be found here: https://repo.scala-lang.org/ui/native/maven-nightlies/org/scala-lang/scala3-compiler_3
-  val scala3Nightly = "3.8.1-RC1-bin-20251212-ba45875-NIGHTLY"
+  val scala3Nightly = "3.8.1-RC1-bin-20251228-e73ff2c-NIGHTLY"
 
   // minimum version rationale:
   //   1.5 is required for Scala 3 and
