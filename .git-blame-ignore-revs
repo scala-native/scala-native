@@ -40,3 +40,6 @@ e4adc94d8a1805a00fcc2b3aee8c089fbde954ef
 
 # scalafmt: rewrite and sort imports (#4533)
 89998701011afca723af08cebca345d7aac94a72
+
+# Scala Steward: Reformat with scalafmt 3.10.3
+a04251d4687bcea8d35d94fa77bc21c7a024b78b
