@@ -34,8 +34,9 @@ class NIRCompilerTest {
       "A.scala" -> "class A",
       "B.scala" -> "class B extends A",
       "C.scala" -> "trait C",
-      "D.scala" -> """|class D extends B with C
-                      |object E""".stripMargin
+      "D.scala" ->
+        """|class D extends B with C
+           |object E""".stripMargin
     )
 
     NIRCompiler.withSources(sources) {
@@ -734,20 +735,22 @@ class NIRCompilerTest {
       classOf[CompilationFailedException],
       () =>
         linkWithProps(
-          "props.scala" -> """|
-                              |package scala.scalanative
-                              |object props{
-                              |   @scalanative.unsafe.resolvedAtLinktime("prop")
-                              |   def linktimeProperty: Boolean = null.asInstanceOf[Boolean]
-                              |}
-                              |""".stripMargin,
-          "main.scala" -> """|
-                             |import scala.scalanative.props._
-                             |object Main {
-                             |  def main(args: Array[String]): Unit = {
-                             |    if(linktimeProperty) ???
-                             |  }
-                             |}""".stripMargin
+          "props.scala" ->
+            """|
+               |package scala.scalanative
+               |object props{
+               |   @scalanative.unsafe.resolvedAtLinktime("prop")
+               |   def linktimeProperty: Boolean = null.asInstanceOf[Boolean]
+               |}
+               |""".stripMargin,
+          "main.scala" ->
+            """|
+               |import scala.scalanative.props._
+               |object Main {
+               |  def main(args: Array[String]): Unit = {
+               |    if(linktimeProperty) ???
+               |  }
+               |}""".stripMargin
         )
     )
     assertTrue(
@@ -824,13 +827,14 @@ class NIRCompilerTest {
                |   def runtimeProperty = true
                |}
                |""".stripMargin,
-          "main.scala" -> """|
-                             |import scala.scalanative.props._
-                             |object Main {
-                             |  def main(args: Array[String]): Unit = {
-                             |    if(linktimeProperty || runtimeProperty) ??? 
-                             |  }
-                             |}""".stripMargin
+          "main.scala" ->
+            """|
+               |import scala.scalanative.props._
+               |object Main {
+               |  def main(args: Array[String]): Unit = {
+               |    if(linktimeProperty || runtimeProperty) ??? 
+               |  }
+               |}""".stripMargin
         )
     )
     assertEquals(
