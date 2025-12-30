@@ -59,7 +59,7 @@ object Array {
 
   def getLength(array: AnyRef): Int = array match {
     // yes, this is kind of stupid, but that's how it is
-    case array: Array[?] => array.asInstanceOf[NativeArray[_]].length
+    case array: Array[_] => array.asInstanceOf[NativeArray[_]].length
     case null            => throw new NullPointerException()
     case _ => throw new IllegalArgumentException("argument type mismatch")
   }
