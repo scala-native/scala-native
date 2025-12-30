@@ -1,4 +1,4 @@
---- 3.8.0-RC4/scala/reflect/Selectable.scala
+--- 3.8.0-RC1-bin-20251017-96aff06-NIGHTLY/scala/reflect/Selectable.scala
 +++ overrides-3/scala/reflect/Selectable.scala
 @@ -18,16 +18,17 @@
     */
@@ -12,7 +12,7 @@
 +    )
 +
    // The Scala.js codegen relies on this method being final for correctness
-   /** Selects member with given name. */
+   /** Select member with given name */
    final def selectDynamic(name: String): Any =
 -    val rcls = selectedValue.getClass
 -    try
@@ -24,7 +24,7 @@
 +    unreachable("selectDynamic")
  
    // The Scala.js codegen relies on this method being final for correctness
-   /** Selects method and applies to arguments.
+   /** Select method and apply to arguments.
 @@ -36,10 +37,7 @@
     *  @param args       The arguments to pass to the selected method
     */

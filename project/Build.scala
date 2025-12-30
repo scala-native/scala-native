@@ -541,51 +541,59 @@ object Build {
                   // Keep in sync with Scala 3 compiler logic
                   // https://github.com/scala/scala3/blob/eb1bb7350a99208d9ced9863a996850316d583f7/project/ScalaLibraryPlugin.scala#L116
                   val overridenFiles = Set(
-                    "scala/Tuple1.nir",
-                    "scala/Tuple2.nir",
-                    "scala/collection/DoubleStepper.nir",
-                    "scala/collection/IntStepper.nir",
-                    "scala/collection/LongStepper.nir",
-                    "scala/collection/immutable/DoubleVectorStepper.nir",
-                    "scala/collection/immutable/IntVectorStepper.nir",
-                    "scala/collection/immutable/LongVectorStepper.nir",
-                    "scala/jdk/DoubleAccumulator.nir",
-                    "scala/jdk/IntAccumulator.nir",
-                    "scala/jdk/LongAccumulator.nir",
-                    "scala/jdk/FunctionWrappers$FromJavaDoubleBinaryOperator.nir",
-                    "scala/jdk/FunctionWrappers$FromJavaBooleanSupplier.nir",
-                    "scala/jdk/FunctionWrappers$FromJavaDoubleConsumer.nir",
-                    "scala/jdk/FunctionWrappers$FromJavaDoublePredicate.nir",
-                    "scala/jdk/FunctionWrappers$FromJavaDoubleSupplier.nir",
-                    "scala/jdk/FunctionWrappers$FromJavaDoubleToIntFunction.nir",
-                    "scala/jdk/FunctionWrappers$FromJavaDoubleToLongFunction.nir",
-                    "scala/jdk/FunctionWrappers$FromJavaIntBinaryOperator.nir",
-                    "scala/jdk/FunctionWrappers$FromJavaDoubleUnaryOperator.nir",
-                    "scala/jdk/FunctionWrappers$FromJavaIntPredicate.nir",
-                    "scala/jdk/FunctionWrappers$FromJavaIntConsumer.nir",
-                    "scala/jdk/FunctionWrappers$FromJavaIntSupplier.nir",
-                    "scala/jdk/FunctionWrappers$FromJavaIntToDoubleFunction.nir",
-                    "scala/jdk/FunctionWrappers$FromJavaIntToLongFunction.nir",
-                    "scala/jdk/FunctionWrappers$FromJavaIntUnaryOperator.nir",
-                    "scala/jdk/FunctionWrappers$FromJavaLongBinaryOperator.nir",
-                    "scala/jdk/FunctionWrappers$FromJavaLongConsumer.nir",
-                    "scala/jdk/FunctionWrappers$FromJavaLongPredicate.nir",
-                    "scala/jdk/FunctionWrappers$FromJavaLongSupplier.nir",
-                    "scala/jdk/FunctionWrappers$FromJavaLongToDoubleFunction.nir",
-                    "scala/jdk/FunctionWrappers$FromJavaLongToIntFunction.nir",
-                    "scala/jdk/FunctionWrappers$FromJavaLongUnaryOperator.nir",
-                    "scala/collection/ArrayOps$ReverseIterator.nir",
-                    "scala/runtime/NonLocalReturnControl.nir",
-                    "scala/util/Sorting.nir",
-                    "scala/util/Sorting$.nir" // Contains @specialized annotation
+                    "scala/Tuple1",
+                    "scala/Tuple2",
+                    "scala/collection/Stepper",
+                    "scala/collection/DoubleStepper",
+                    "scala/collection/IntStepper",
+                    "scala/collection/LongStepper",
+                    "scala/collection/immutable/DoubleVectorStepper",
+                    "scala/collection/immutable/IntVectorStepper",
+                    "scala/collection/immutable/LongVectorStepper",
+                    "scala/collection/immutable/Range",
+                    "scala/jdk/DoubleAccumulator",
+                    "scala/jdk/IntAccumulator",
+                    "scala/jdk/LongAccumulator",
+                    "scala/jdk/FunctionWrappers$FromJavaDoubleBinaryOperator",
+                    "scala/jdk/FunctionWrappers$FromJavaBooleanSupplier",
+                    "scala/jdk/FunctionWrappers$FromJavaDoubleConsumer",
+                    "scala/jdk/FunctionWrappers$FromJavaDoublePredicate",
+                    "scala/jdk/FunctionWrappers$FromJavaDoubleSupplier",
+                    "scala/jdk/FunctionWrappers$FromJavaDoubleToIntFunction",
+                    "scala/jdk/FunctionWrappers$FromJavaDoubleToLongFunction",
+                    "scala/jdk/FunctionWrappers$FromJavaIntBinaryOperator",
+                    "scala/jdk/FunctionWrappers$FromJavaDoubleUnaryOperator",
+                    "scala/jdk/FunctionWrappers$FromJavaIntPredicate",
+                    "scala/jdk/FunctionWrappers$FromJavaIntConsumer",
+                    "scala/jdk/FunctionWrappers$FromJavaIntSupplier",
+                    "scala/jdk/FunctionWrappers$FromJavaIntToDoubleFunction",
+                    "scala/jdk/FunctionWrappers$FromJavaIntToLongFunction",
+                    "scala/jdk/FunctionWrappers$FromJavaIntUnaryOperator",
+                    "scala/jdk/FunctionWrappers$FromJavaLongBinaryOperator",
+                    "scala/jdk/FunctionWrappers$FromJavaLongConsumer",
+                    "scala/jdk/FunctionWrappers$FromJavaLongPredicate",
+                    "scala/jdk/FunctionWrappers$FromJavaLongSupplier",
+                    "scala/jdk/FunctionWrappers$FromJavaLongToDoubleFunction",
+                    "scala/jdk/FunctionWrappers$FromJavaLongToIntFunction",
+                    "scala/jdk/FunctionWrappers$FromJavaLongUnaryOperator",
+                    "scala/collection/ArrayOps$ReverseIterator",
+                    "scala/runtime/NonLocalReturnControl",
+                    "scala/util/Sorting"
                   )
-
+                  def normalizedPath(path: String) =
+                    path.toString().replace("\\", "/").stripSuffix(".class").stripSuffix(".nir")
                   val mappingOverrides = newMappings.collect {
-                    case mapping @ (_, path) if overridenFiles.contains(path) => path -> mapping
+                    // Only Override Some Very Specific Files
+                    case mapping @ (_, file) if {
+                          val path = normalizedPath(file)
+                          overridenFiles.exists(s => path == s || path.startsWith(s + '$'))
+                        } =>
+                      file -> mapping
                   }.toMap
+                  val unmappedPaths = overridenFiles -- mappingOverrides.keySet.map(normalizedPath)
                   assert(
-                    mappingOverrides.keySet == overridenFiles,
-                    s"Some specialized files are missing: ${overridenFiles -- mappingOverrides.keySet}"
+                    unmappedPaths.isEmpty,
+                    s"Some specialized files are missing: ${unmappedPaths.mkString(", ")}"
                   )
                   val currentPaths = currentMappings.map(_._2).toSet
                   val scala213ExtraFiles = newMappings.filter {
