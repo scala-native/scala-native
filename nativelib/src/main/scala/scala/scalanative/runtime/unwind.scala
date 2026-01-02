@@ -19,9 +19,9 @@ private[runtime] object unwind {
       offset: RawPtr
   ): CInt = extern
 
-  /** Look up procedure name by instruction pointer address.
-   *  Unlike get_proc_name, this doesn't require the cursor to be at the
-   *  correct stack frame position - it looks up the symbol by address directly.
+  /** Look up procedure name by instruction pointer address. Unlike
+   *  get_proc_name, this doesn't require the cursor to be at the correct stack
+   *  frame position - it looks up the symbol by address directly.
    */
   @name("scalanative_unwind_get_proc_name_by_ip")
   def get_proc_name_by_ip(

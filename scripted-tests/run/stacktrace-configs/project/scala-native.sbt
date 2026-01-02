@@ -7,4 +7,3 @@
     )
   else addSbtPlugin("org.scala-native" % "sbt-scala-native" % pluginVersion)
 }
-

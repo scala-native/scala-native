@@ -3,17 +3,17 @@ import scala.scalanative.meta.LinktimeInfo
 /** Test that stack traces work correctly across different build configurations.
  *
  *  This tests both:
- *  1. Eager stack trace capture (Windows, 32-bit platforms)
- *  2. Lazy stack trace materialization (64-bit POSIX) where:
- *     - fillInStackTrace() captures raw instruction pointers
- *     - getStackTrace() materializes them to StackTraceElements later
+ *    1. Eager stack trace capture (Windows, 32-bit platforms)
+ *    2. Lazy stack trace materialization (64-bit POSIX) where:
+ *       - fillInStackTrace() captures raw instruction pointers
+ *       - getStackTrace() materializes them to StackTraceElements later
  *
  *  Symbol resolution varies by configuration:
- *  - With source-level debugging: DWARF-based symbol lookup
- *  - Without source-level debugging: dladdr (POSIX) / SymFromAddrW (Windows)
+ *    - With source-level debugging: DWARF-based symbol lookup
+ *    - Without source-level debugging: dladdr (POSIX) / SymFromAddrW (Windows)
  *
- *  In debug mode: all methods should be present in stack trace
- *  In release mode: LLVM may inline functions, so only key methods are required
+ *  In debug mode: all methods should be present in stack trace In release mode:
+ *  LLVM may inline functions, so only key methods are required
  */
 object Main {
   def main(args: Array[String]): Unit = {
@@ -25,11 +25,17 @@ object Main {
 
   def printConfiguration(): Unit = {
     println("=== Stack Trace Test Configuration ===")
-    println(s"  OS: ${if (LinktimeInfo.isLinux) "Linux" else if (LinktimeInfo.isMac) "macOS" else if (LinktimeInfo.isWindows) "Windows" else "Other"}")
-    println(s"  Architecture: ${if (LinktimeInfo.is32BitPlatform) "32-bit" else "64-bit"}")
+    println(s"  OS: ${if (LinktimeInfo.isLinux) "Linux"
+      else if (LinktimeInfo.isMac) "macOS"
+      else if (LinktimeInfo.isWindows) "Windows"
+      else "Other"}")
+    println(s"  Architecture: ${if (LinktimeInfo.is32BitPlatform) "32-bit"
+      else "64-bit"}")
     println(s"  Debug mode: ${LinktimeInfo.debugMode}")
     println(s"  Release mode: ${LinktimeInfo.releaseMode}")
-    println(s"  Source-level debugging: ${LinktimeInfo.sourceLevelDebuging.generateFunctionSourcePositions}")
+    println(
+      s"  Source-level debugging: ${LinktimeInfo.sourceLevelDebuging.generateFunctionSourcePositions}"
+    )
     println("======================================")
   }
 
@@ -62,7 +68,15 @@ object Main {
 
     // In debug mode all methods should be present; in release mode LLVM may inline
     val expectedMethods =
-      if (LinktimeInfo.debugMode) Set("verifyStackTrace", "level3", "level2", "level1", "testBasicStackTrace", "main")
+      if (LinktimeInfo.debugMode)
+        Set(
+          "verifyStackTrace",
+          "level3",
+          "level2",
+          "level1",
+          "testBasicStackTrace",
+          "main"
+        )
       else Set("verifyStackTrace")
 
     val ourMethodNames = ourMethods.map(_.getMethodName).toSet
@@ -70,12 +84,14 @@ object Main {
     assert(
       missingMethods.isEmpty,
       s"Expected methods missing: ${missingMethods.mkString(", ")}\n" +
-      s"Found: ${ourMethodNames.mkString(", ")}\n" +
-      s"Full stack trace:\n${stacktrace.map(e => s"  ${e.getClassName}.${e.getMethodName}").mkString("\n")}"
+        s"Found: ${ourMethodNames.mkString(", ")}\n" +
+        s"Full stack trace:\n${stacktrace.map(e => s"  ${e.getClassName}.${e.getMethodName}").mkString("\n")}"
     )
 
     // Verify the C entry point exists (it's <none>.main, not filtered into ourMethods)
-    val hasCEntryPoint = stacktrace.exists(e => e.getClassName == "<none>" && e.getMethodName == "main")
+    val hasCEntryPoint = stacktrace.exists(e =>
+      e.getClassName == "<none>" && e.getMethodName == "main"
+    )
     assert(
       hasCEntryPoint,
       s"Expected 'main' C entry point in stack trace, got:\n${stacktrace.map(e => s"  ${e.getClassName}.${e.getMethodName}").mkString("\n")}"
@@ -92,11 +108,13 @@ object Main {
     } catch {
       case e: RuntimeException =>
         val stacktrace = e.getStackTrace()
-        
+
         // Filter to our Scala methods
         val ourMethods = stacktrace.filter(_.getClassName.startsWith("Main"))
 
-        println(s"Exception stack trace (${ourMethods.length} frames from Main):")
+        println(
+          s"Exception stack trace (${ourMethods.length} frames from Main):"
+        )
         ourMethods.foreach(m => println(s"  $m"))
 
         // Key test: All Main frames should have proper class names (not "<none>")
@@ -108,7 +126,8 @@ object Main {
 
         // In debug mode all methods should be present; in release mode LLVM may inline
         val expectedMethods =
-          if (LinktimeInfo.debugMode) Set("throwingMethod", "testExceptionStackTrace", "main")
+          if (LinktimeInfo.debugMode)
+            Set("throwingMethod", "testExceptionStackTrace", "main")
           else Set("throwingMethod")
 
         val ourMethodNames = ourMethods.map(_.getMethodName).toSet
@@ -116,8 +135,8 @@ object Main {
         assert(
           missingMethods.isEmpty,
           s"Expected methods missing: ${missingMethods.mkString(", ")}\n" +
-          s"Found: ${ourMethodNames.mkString(", ")}\n" +
-          s"Full stack trace:\n${stacktrace.map(e => s"  ${e.getClassName}.${e.getMethodName}").mkString("\n")}"
+            s"Found: ${ourMethodNames.mkString(", ")}\n" +
+            s"Full stack trace:\n${stacktrace.map(e => s"  ${e.getClassName}.${e.getMethodName}").mkString("\n")}"
         )
 
         println("Exception stack trace test passed!")

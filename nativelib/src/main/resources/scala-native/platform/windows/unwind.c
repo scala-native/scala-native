@@ -2,10 +2,10 @@
 #if defined(_WIN32)
 
 #define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+#include "../unwind.h"
 #include <dbghelp.h>
 #include <stdio.h>
-#include "../unwind.h"
+#include <windows.h>
 
 #define MAX_LENGTH_OF_CALLSTACK 255
 #define MAX_LENGHT_OF_NAME 255
