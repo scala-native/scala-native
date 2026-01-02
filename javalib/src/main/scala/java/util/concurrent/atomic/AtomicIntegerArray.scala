@@ -192,7 +192,7 @@ class AtomicIntegerArray extends Serializable {
    *  @return
    *    the previous value
    */
-  final def getAndIncrement()(i: Int): Int = {
+  final def getAndIncrement(i: Int): Int = {
     nativeArray.at(i).fetchAdd(1)
   }
 

@@ -197,7 +197,7 @@ class AtomicLongArray extends Serializable {
    *  @return
    *    the previous value
    */
-  final def getAndIncrement()(i: Int): Long = {
+  final def getAndIncrement(i: Int): Long = {
     nativeArray.at(i).fetchAdd(1)
   }
 
