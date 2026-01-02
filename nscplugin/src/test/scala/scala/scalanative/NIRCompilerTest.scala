@@ -857,4 +857,19 @@ class NIRCompilerTest {
       )
     )
   }
+
+  @Test def issue4709(): Unit = {
+    // Crashed becouse clouse call to static method of non extern EasyBeast$BeastBody$anon was checked after moving it to owner EasyBeast$ which is extern
+    NIRCompiler(
+      _.compile(
+        """|import scala.scalanative.unsafe.extern
+           |@extern object EasyBeast {
+           |  object BeastBody {
+           |    def apply(arg: Option[Int]): Option[Int] = arg.map(_ + 1)
+           |  }
+           |}
+           |""".stripMargin
+      )
+    )
+  }
 }
