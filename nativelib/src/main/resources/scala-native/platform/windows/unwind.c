@@ -13,6 +13,21 @@
 #define MAX_LENGTH_OF_CALLSTACK 255
 #define MAX_LENGHT_OF_NAME 255
 
+// Ensure debug symbols are initialized. Must be called before using
+// SymFromAddrW. SymInitialize must only be called once per process.
+// GetCurrentProcess() returns a pseudo-handle that's always valid, so we don't
+// need to store it.
+static int ensureSymInitialized(void) {
+    static int symInitialized = 0;
+    if (!symInitialized) {
+        if (SymInitialize(GetCurrentProcess(), NULL, TRUE) == FALSE) {
+            return -1;
+        }
+        symInitialized = 1;
+    }
+    return 0;
+}
+
 typedef struct _UnwindContext {
     void *stack[MAX_LENGTH_OF_CALLSTACK];
     unsigned short frames;
@@ -27,18 +42,14 @@ typedef struct _UnwindContext {
 int scalanative_unwind_get_context(void *context) { return 0; }
 
 int scalanative_unwind_init_local(void *cursor, void *context) {
-    static int symInitialized = 0;
     UnwindContext *ucontext = (UnwindContext *)context;
     UnwindContext **ucontextRef = (UnwindContext **)cursor;
     *ucontextRef = ucontext;
     memset(ucontext, 0, sizeof(UnwindContext));
-    ucontext->process = GetCurrentProcess();
-    if (!symInitialized) {
-        if (SymInitialize(ucontext->process, NULL, TRUE) == FALSE) {
-            return 1;
-        }
-        symInitialized = 1;
+    if (ensureSymInitialized() != 0) {
+        return 1;
     }
+    ucontext->process = GetCurrentProcess();
     ucontext->frames = CaptureStackBackTrace(0, MAX_LENGTH_OF_CALLSTACK,
                                              ucontext->stack, NULL);
     ucontext->cursor = 0;
@@ -94,14 +105,9 @@ size_t scalanative_unwind_sizeof_cursor() { return sizeof(UnwindContext *); }
 // Returns 0 on success, negative value on error.
 int scalanative_unwind_get_proc_name_by_ip(size_t ip, char *buffer,
                                            size_t length, size_t *offset) {
-    static int symInitialized = 0;
-    HANDLE process = GetCurrentProcess();
-
-    if (!symInitialized) {
-        if (SymInitialize(process, NULL, TRUE) == FALSE) {
-            return -1;
-        }
-        symInitialized = 1;
+    if (ensureSymInitialized() != 0) {
+        buffer[0] = '\0';
+        return -1;
     }
 
     struct {
@@ -111,7 +117,8 @@ int scalanative_unwind_get_proc_name_by_ip(size_t ip, char *buffer,
     symbol.info.MaxNameLen = MAX_LENGHT_OF_NAME;
     symbol.info.SizeOfStruct = sizeof(symbol.info);
 
-    if (SymFromAddrW(process, (DWORD64)ip, 0, &symbol.info) == FALSE) {
+    if (SymFromAddrW(GetCurrentProcess(), (DWORD64)ip, 0, &symbol.info) ==
+        FALSE) {
         buffer[0] = '\0';
         return -1;
     }
