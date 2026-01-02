@@ -39,7 +39,7 @@ class AtomicBoolean private (private var value: Byte) extends Serializable {
    *  @return
    *    the current value
    */
-  final def get(): Boolean = value
+  final def get(): Boolean = valueRef.load()
 
   /** Atomically sets the value to {@code newValue} if the current value {@code
    *  \== expectedValue}, with memory effects as specified by
