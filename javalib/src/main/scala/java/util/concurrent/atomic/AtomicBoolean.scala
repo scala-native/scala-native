@@ -100,10 +100,7 @@ class AtomicBoolean private (private var value: Byte) extends Serializable {
       expectedValue: Boolean,
       newValue: Boolean
   ): Boolean = {
-    if (byteToBoolean(value) == expectedValue) {
-      value = newValue
-      true
-    } else false
+    valueRef.compareExchangeWeak(expectedValue, newValue, memory_order_relaxed)
   }
 
   /** Sets the value to {@code newValue}, with memory effects as specified by

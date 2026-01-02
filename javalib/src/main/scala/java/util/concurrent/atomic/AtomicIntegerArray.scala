@@ -177,11 +177,9 @@ class AtomicIntegerArray extends Serializable {
       expectedValue: Int,
       newValue: Int
   ): Boolean = {
-    val ref = nativeArray.at(i)
-    if (!ref == expectedValue) {
-      !ref = newValue
-      true
-    } else false
+    nativeArray
+      .at(i)
+      .compareExchangeWeak(expectedValue, newValue, memory_order_relaxed)
   }
 
   /** Atomically increments the value of the element at index {@code i}, with
