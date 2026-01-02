@@ -86,4 +86,39 @@ int scalanative_unw_reg_ip() { return -1; }
 size_t scalanative_unwind_sizeof_context() { return sizeof(UnwindContext); }
 size_t scalanative_unwind_sizeof_cursor() { return sizeof(UnwindContext *); }
 
+// Look up procedure name by instruction pointer address.
+// On Windows, this uses SymFromAddrW which already does address-based lookup.
+// Returns 0 on success, negative value on error.
+int scalanative_unwind_get_proc_name_by_ip(size_t ip, char *buffer,
+                                           size_t length, size_t *offset) {
+    static int symInitialized = 0;
+    HANDLE process = GetCurrentProcess();
+
+    if (!symInitialized) {
+        if (SymInitialize(process, NULL, TRUE) == FALSE) {
+            return -1;
+        }
+        symInitialized = 1;
+    }
+
+    struct {
+        SYMBOL_INFOW info;
+        wchar_t nameBuffer[MAX_LENGHT_OF_NAME + 1];
+    } symbol;
+    symbol.info.MaxNameLen = MAX_LENGHT_OF_NAME;
+    symbol.info.SizeOfStruct = sizeof(symbol.info);
+
+    if (SymFromAddrW(process, (DWORD64)ip, 0, &symbol.info) == FALSE) {
+        buffer[0] = '\0';
+        return -1;
+    }
+
+    snprintf(buffer, length, "%S", symbol.info.Name);
+    if (offset != NULL) {
+        *offset = ip - (size_t)symbol.info.Address;
+    }
+
+    return 0;
+}
+
 #endif // _WIN32
