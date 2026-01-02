@@ -328,17 +328,22 @@ unmanaged memory.
     >
     > // For Scala 3
     > Zone {
-    >   val buffer = alloc[Byte](n)
+    >   val buffer = calloc[Byte](n)
     > }
     > // For Scala 2, works, but is not idiomatic on Scala 3
     > Zone.acquire { implicit z =>
-    >   val buffer = alloc[Byte](n)
+    >   val buffer = calloc[Byte](n)
     > }
     > ```
 
-    `alloc` requests memory sufficient to contain `n` values
+    `calloc` requests memory sufficient to contain `n` values
     of a given type. If number of elements is not specified, it defaults
-    to a single element. Memory is zeroed out by default.
+    to a single element. 
+	
+	Memory is zeroed out by default by both package-scope methods `calloc`
+	and `alloc`. Using `calloc` avoids potentially disasterous confusion 
+	between `alloc` and the visually similar `z.alloc`. The latter is 
+	`Zone#alloc` which returned undefined/uncleared memory.
 
     Zone allocation is the preferred way to allocate temporary unmanaged
     memory. It's idiomatic to use implicit zone parameters to abstract

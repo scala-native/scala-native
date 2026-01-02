@@ -21,18 +21,40 @@ private[scalanative] trait UnsafePackageCompat { self =>
 
   /** Heap allocate and zero-initialize a value using current implicit
    *  allocator.
+   *
+   *  Alias for preferred 'calloc*()' equivalent. Issue #4700
    */
   def alloc[T]()(implicit z: Zone): Ptr[T] = macro MacroImpl.allocSingle[T]
 
   /** Heap allocate and zero-initialize n values using current implicit
    *  allocator.
+   *
+   *  Alias for preferred 'calloc*()' equivalent.
    */
   def alloc[T](n: Int)(implicit z: Zone): Ptr[T] = macro MacroImpl.allocN[T]
 
   /** Heap allocate and zero-initialize n values using current implicit
    *  allocator.
+   *
+   *  Alias for preferred 'calloc*()' equivalent.
    */
   def alloc[T](n: CSize)(implicit z: Zone): Ptr[T] =
+    macro MacroImpl.allocNUnsigned[T]
+
+  /** Heap allocate and zero-initialize a value using current implicit
+   *  allocator.
+   */
+  def calloc[T]()(implicit z: Zone): Ptr[T] = macro MacroImpl.allocSingle[T]
+
+  /** Heap allocate and zero-initialize n values using current implicit
+   *  allocator.
+   */
+  def calloc[T](n: Int)(implicit z: Zone): Ptr[T] = macro MacroImpl.allocN[T]
+
+  /** Heap allocate and zero-initialize n values using current implicit
+   *  allocator.
+   */
+  def calloc[T](n: CSize)(implicit z: Zone): Ptr[T] =
     macro MacroImpl.allocNUnsigned[T]
 
   /** Stack allocate and zero-initialize 1 value of given type */
@@ -84,6 +106,12 @@ private object MacroImpl {
     q"$runtime.fromRawSize($runtime.Intrinsics.sizeOf[$T])"
   }
 
+  /* Use the historical names 'alloc*' rather than the current and
+   * more informative 'calloc*' in order not to disturb the rest
+   * of macros.
+   *
+   * If 'alloc*' macros ever stop clearing memory, adjust 'calloc' accordingly.
+   */
   def allocSingle[T: c.WeakTypeTag](c: Context)()(z: c.Tree): c.Tree = {
     import c.universe._
     val T = weakTypeOf[T]
