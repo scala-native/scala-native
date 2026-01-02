@@ -2,10 +2,13 @@
 #if defined(_WIN32)
 
 #define WIN32_LEAN_AND_MEAN
-#include "platform/unwind.h"
+// clang-format off
+// windows.h must be included before dbghelp.h
+#include <windows.h>
 #include <dbghelp.h>
 #include <stdio.h>
-#include <windows.h>
+#include "platform/unwind.h"
+// clang-format on
 
 #define MAX_LENGTH_OF_CALLSTACK 255
 #define MAX_LENGHT_OF_NAME 255
