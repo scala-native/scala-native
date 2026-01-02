@@ -49,7 +49,7 @@ trait NirGenType(using Context) {
       sym.is(JavaStatic) || sym.isScalaStatic || sym.isExtern
 
     def isExtern: Boolean = sym.exists && {
-      sym.owner.isExternType ||
+      sym.originalOwner.isExternType ||
       sym.hasAnnotation(defnNir.ExternClass) ||
       (sym.is(Accessor) && sym.field.isExtern)
       // NonExtern is added PrepNativeInterop
