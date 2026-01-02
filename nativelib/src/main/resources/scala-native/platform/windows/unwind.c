@@ -2,7 +2,7 @@
 #if defined(_WIN32)
 
 #define WIN32_LEAN_AND_MEAN
-#include "../unwind.h"
+#include "platform/unwind.h"
 #include <dbghelp.h>
 #include <stdio.h>
 #include <windows.h>

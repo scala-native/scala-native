@@ -1,6 +1,12 @@
 // Unwind implementation used only on Posix compliant systems
 #if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
+
+// _GNU_SOURCE needed for dladdr/Dl_info on Linux (must be before any includes)
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include "../unwind.h"
 #include "libunwind/libunwind.h"
 #include <dlfcn.h>
