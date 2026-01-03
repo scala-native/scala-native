@@ -91,7 +91,8 @@ The following environment variables are shared between Immix and Commix GCs.
 -   SCALANATIVE_GC_LOG_LEVEL (default is "warn")
     
     Controls the verbosity of GC log messages. Valid values are:
-    - `debug` - Show all messages including debug information
+    - `debug` - Show all messages (internal operations, allocation tracking)
+    - `info` - Show info, warnings and errors (parsed options, stats)
     - `warn` - Show warnings and errors (default)
     - `error` - Show only errors
     - `none` - Disable all GC logging

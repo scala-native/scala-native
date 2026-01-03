@@ -171,7 +171,7 @@ void Heap_Collect(Heap *heap, Stack *stack) {
 #endif
     uint64_t start_ns, nullify_start_ns, sweep_start_ns, end_ns;
     Stats *stats = heap->stats;
-    GC_LOG_DEBUG("Collect");
+    GC_LOG_INFO("GC collection started");
     start_ns = Time_current_nanos();
     Marker_MarkRoots(heap, stack);
     if (stats != NULL) {
@@ -195,7 +195,7 @@ void Heap_Collect(Heap *heap, Stack *stack) {
                               GC_MutatorThreadState_Managed);
 #endif
     WeakReferences_InvokeGCFinishedCallback();
-    GC_LOG_DEBUG("End collect");
+    GC_LOG_INFO("GC collection finished");
 }
 
 bool Heap_shouldGrow(Heap *heap) {
@@ -208,9 +208,9 @@ bool Heap_shouldGrow(Heap *heap) {
     uint32_t unavailableBlockCount =
         blockCount - (freeBlockCount + recycledBlockCount);
 
-    GC_LOG_DEBUG("Block count: %u, Unavailable: %u, Free: %u, Recycled: %u",
-                 blockCount, unavailableBlockCount, freeBlockCount,
-                 recycledBlockCount);
+    GC_LOG_INFO("Block count: %u, Unavailable: %u, Free: %u, Recycled: %u",
+                blockCount, unavailableBlockCount, freeBlockCount,
+                recycledBlockCount);
 
     return freeBlockCount * 2 < blockCount ||
            4 * unavailableBlockCount > blockCount;
@@ -310,8 +310,8 @@ void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
     }
     size_t incrementInBytes = incrementInBlocks * SPACE_USED_PER_BLOCK;
 
-    GC_LOG_DEBUG("Growing heap by %zu bytes, to %zu bytes", incrementInBytes,
-                 heap->heapSize + incrementInBytes);
+    GC_LOG_INFO("Growing heap by %zu bytes, to %zu bytes", incrementInBytes,
+                heap->heapSize + incrementInBytes);
 
     word_t *heapEnd = heap->heapEnd;
     heap->heapEnd = heapEnd + incrementInBlocks * WORDS_IN_BLOCK;

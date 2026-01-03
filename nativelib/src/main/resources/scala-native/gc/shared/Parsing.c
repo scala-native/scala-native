@@ -88,10 +88,10 @@ size_t Parse_Env_Or_Default(const char *envName, size_t defaultSizeInBytes) {
     const char *res = get_defined_or_env(envName);
     size_t result = Parse_Size_Or_Default(res, defaultSizeInBytes);
     if (res != NULL) {
-        GC_LOG_DEBUG("Found %s=%s, parsed to %zu", envName, res, result);
+        GC_LOG_INFO("Found %s=%s, parsed to %zu", envName, res, result);
     } else {
-        GC_LOG_DEBUG("%s not set, using default %zu", envName,
-                     defaultSizeInBytes);
+        GC_LOG_INFO("%s not set, using default %zu", envName,
+                    defaultSizeInBytes);
     }
     return result;
 }

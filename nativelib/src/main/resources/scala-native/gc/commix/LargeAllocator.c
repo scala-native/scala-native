@@ -188,9 +188,8 @@ INLINE
 word_t *LargeAllocator_lazySweep(LargeAllocator *largeAllocator, Heap *heap,
                                  uint32_t size) {
     word_t *object = NULL;
-    GC_LOG_DEBUG(
-        "Sweeper_LazySweepLarge (%" PRIu32 ") => %" PRIu32, size,
-        (uint32_t)MathUtils_DivAndRoundUp(size, BLOCK_TOTAL_SIZE));
+    GC_LOG_DEBUG("Sweeper_LazySweepLarge (%" PRIu32 ") => %" PRIu32, size,
+                 (uint32_t)MathUtils_DivAndRoundUp(size, BLOCK_TOTAL_SIZE));
     // lazy sweep will happen
     Stats_DefineOrNothing(stats, heap->stats);
     Stats_RecordTime(stats, start_ns);

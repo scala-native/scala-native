@@ -221,9 +221,10 @@ int GCThread_ActiveCount(Heap *heap) {
 
 INLINE void GCThread_WakeMaster(Heap *heap) {
     if (!semaphore_unlock(heap->gcThreads.startMaster)) {
-        GC_LOG_ERROR("Releasing semaphore failed in commix GCThread_WakeMaster, "
-                     "error=%" PRIdErr,
-                     LastError);
+        GC_LOG_ERROR(
+            "Releasing semaphore failed in commix GCThread_WakeMaster, "
+            "error=%" PRIdErr,
+            LastError);
         exit(ExitValue);
     }
 }

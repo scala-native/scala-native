@@ -283,11 +283,11 @@ bool Heap_shouldGrow(Heap *heap) {
     uint32_t unavailableBlockCount =
         blockCount - (freeBlockCount + recycledBlockCount);
 
-    GC_LOG_DEBUG("Max mark time ratio: %lf, Min free ratio: %lf, "
-                 "Block count: %" PRIu32 ", Unavailable: %" PRIu32
-                 ", Free: %" PRIu32 ", Recycled: %" PRIu32,
-                 heap->maxMarkTimeRatio, heap->minFreeRatio, blockCount,
-                 unavailableBlockCount, freeBlockCount, recycledBlockCount);
+    GC_LOG_INFO("Max mark time ratio: %lf, Min free ratio: %lf, "
+                "Block count: %" PRIu32 ", Unavailable: %" PRIu32
+                ", Free: %" PRIu32 ", Recycled: %" PRIu32,
+                heap->maxMarkTimeRatio, heap->minFreeRatio, blockCount,
+                unavailableBlockCount, freeBlockCount, recycledBlockCount);
 
     uint64_t timeInMark = heap->mark.currentEnd_ns - heap->mark.currentStart_ns;
     uint64_t timeTotal = heap->mark.currentEnd_ns - heap->mark.lastEnd_ns;
@@ -333,8 +333,8 @@ void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
     }
     size_t incrementInBytes = incrementInBlocks * SPACE_USED_PER_BLOCK;
 
-    GC_LOG_DEBUG("Growing heap by %zu bytes, to %zu bytes", incrementInBytes,
-                 heap->heapSize + incrementInBytes);
+    GC_LOG_INFO("Growing heap by %zu bytes, to %zu bytes", incrementInBytes,
+                heap->heapSize + incrementInBytes);
 
     word_t *heapEnd = heap->heapEnd;
     heap->heapEnd = heapEnd + incrementInBlocks * WORDS_IN_BLOCK;

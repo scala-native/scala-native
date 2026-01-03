@@ -3,6 +3,14 @@
 #include <string.h>
 #include <stdarg.h>
 
+// Portable case-insensitive string comparison
+#ifdef _WIN32
+#include <string.h>
+#define strcasecmp _stricmp
+#else
+#include <strings.h>
+#endif
+
 // Global log level - default to WARN
 static GC_LogLevel GC_logLevel = GC_LOG_LEVEL_WARN;
 static bool GC_logInitialized = false;
@@ -37,16 +45,15 @@ void GC_Log_Init(void) {
 
     char *levelEnv = getenv("SCALANATIVE_GC_LOG_LEVEL");
     if (levelEnv != NULL) {
-        if (strcmp(levelEnv, "debug") == 0 || strcmp(levelEnv, "DEBUG") == 0) {
+        if (strcasecmp(levelEnv, "debug") == 0) {
             GC_logLevel = GC_LOG_LEVEL_DEBUG;
-        } else if (strcmp(levelEnv, "warn") == 0 ||
-                   strcmp(levelEnv, "WARN") == 0) {
+        } else if (strcasecmp(levelEnv, "info") == 0) {
+            GC_logLevel = GC_LOG_LEVEL_INFO;
+        } else if (strcasecmp(levelEnv, "warn") == 0) {
             GC_logLevel = GC_LOG_LEVEL_WARN;
-        } else if (strcmp(levelEnv, "error") == 0 ||
-                   strcmp(levelEnv, "ERROR") == 0) {
+        } else if (strcasecmp(levelEnv, "error") == 0) {
             GC_logLevel = GC_LOG_LEVEL_ERROR;
-        } else if (strcmp(levelEnv, "none") == 0 ||
-                   strcmp(levelEnv, "NONE") == 0) {
+        } else if (strcasecmp(levelEnv, "none") == 0) {
             GC_logLevel = GC_LOG_LEVEL_NONE;
         }
     }

@@ -110,8 +110,7 @@ void scalanative_GC_init() {
             "allocated=%.2fMB, should preallocate=%s. Consider setting "
             "GC_MAXIMUM_HEAP_SIZE env variable to limit maximal heap size",
             CHUNK / bytesToMB, getFreeMemorySize() / bytesToMB,
-            TOTAL_ALLOCATED / bytesToMB,
-            DO_PREALLOC == 0 ? "false" : "true");
+            TOTAL_ALLOCATED / bytesToMB, DO_PREALLOC == 0 ? "false" : "true");
         exit(1);
     }
     end = current + CHUNK;
