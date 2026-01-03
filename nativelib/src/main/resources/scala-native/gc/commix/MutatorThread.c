@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <stdatomic.h>
 #include <shared/ThreadUtil.h>
-#include <assert.h>
 #include "shared/Log.h"
+#include <assert.h>
 
 static rwlock_t threadListsModificationLock;
 

@@ -1,6 +1,11 @@
 #if defined(SCALANATIVE_GC_IMMIX) || defined(SCALANATIVE_GC_COMMIX) ||         \
     defined(SCALANATIVE_GC_NONE) || defined(SCALANATIVE_GC_EXPERIMENTAL)
 
+// Disable MSVC deprecation warnings for standard C functions
+#ifdef _WIN32
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include "YieldPointTrap.h"
 #include <stdio.h>
 #include <stdlib.h>

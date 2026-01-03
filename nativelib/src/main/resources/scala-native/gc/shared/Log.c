@@ -4,6 +4,11 @@
 #define _GNU_SOURCE
 #endif
 
+// Disable MSVC deprecation warnings for standard C functions
+#ifdef _WIN32
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include "shared/Log.h"
 #include <stdlib.h>
 #include <string.h>
