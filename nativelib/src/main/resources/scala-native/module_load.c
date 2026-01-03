@@ -65,8 +65,8 @@ extern ModuleRef scalanative_initializeModule(ModuleCtor ctor,
 extern ModuleRef scalanative_awaitForInitialization(ModuleSlot slot,
                                                     void *classInfo);
 
-inline static ModuleRef waitForInitialization(ModuleSlot slot,
-                                              void *classInfo) {
+static ModuleRef waitForInitialization(ModuleSlot slot, void *classInfo)
+    __attribute__((noinline)) {
     ModuleRef module = atomic_load_explicit(slot, memory_order_acquire);
     assert(module != NULL);
     if (*module != classInfo) {
@@ -79,23 +79,29 @@ inline static ModuleRef waitForInitialization(ModuleSlot slot,
     return scalanative_awaitForInitialization(slot, classInfo);
 }
 
+static ModuleRef startAndWaitForInitialization(ModuleSlot slot, void *classInfo,
+                                               size_t size, ModuleCtor ctor)
+    __attribute__((noinline)) {
+    InitializationContext ctx = {};
+    void **expected = NULL;
+    if (atomic_compare_exchange_strong(slot, &expected, (void **)&ctx)) {
+        ModuleRef instance = scalanative_GC_alloc(classInfo, size);
+        ctx.initThreadId = getThreadId();
+        ctx.instance = instance;
+        return scalanative_initializeModule(ctor, instance, slot, classInfo);
+    } else {
+        return waitForInitialization(slot, classInfo);
+    }
+}
+
 ModuleRef __scalanative_loadModule(ModuleSlot slot, void *classInfo,
-                                   size_t size, ModuleCtor ctor) {
+                                   size_t size, ModuleCtor ctor)
+    __attribute__((always_inline)) {
     ModuleRef module = atomic_load_explicit(slot, memory_order_acquire);
 
-    if (module == NULL) {
-        InitializationContext ctx = {};
-        void **expected = NULL;
-        if (atomic_compare_exchange_strong(slot, &expected, (void **)&ctx)) {
-            ModuleRef instance = scalanative_GC_alloc(classInfo, size);
-            ctx.initThreadId = getThreadId();
-            ctx.instance = instance;
-            return scalanative_initializeModule(ctor, instance, slot,
-                                                classInfo);
-        } else {
-            return waitForInitialization(slot, classInfo);
-        }
-    }
+    if (module == NULL)
+        return startAndWaitForInitialization(slot, classInfo, size, ctor);
+
     if (*module == classInfo)
         return module;
     else
