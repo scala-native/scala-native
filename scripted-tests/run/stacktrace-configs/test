@@ -25,10 +25,11 @@
 > clean
 > runStackTraceTest
 
-# Test 6: Release-full mode with LTO full, with symbols
-> set nativeConfig := (Global / nativeConfig).value.withSourceLevelDebuggingConfig(_.enableAll).withMode(scala.scalanative.build.Mode.releaseFull).withLTO(scala.scalanative.build.LTO.full)
-> clean
-> runStackTraceTest
+# (disabled) Test 6: Release-full mode with LTO full, with symbols
+# Disabled: LTO full + debug symbols can cause LLVM linker crashes (segfault on Linux)
+# > set nativeConfig := (Global / nativeConfig).value.withSourceLevelDebuggingConfig(_.enableAll).withMode(scala.scalanative.build.Mode.releaseFull).withLTO(scala.scalanative.build.LTO.full)
+# > clean
+# > runStackTraceTest
 
 # (disabled) Test 7: Release-fast mode with LTO thin, without symbols
 # > set nativeConfig := (Global / nativeConfig).value.withSourceLevelDebuggingConfig(_.disableAll).withMode(scala.scalanative.build.Mode.releaseFast).withLTO(scala.scalanative.build.LTO.thin)
