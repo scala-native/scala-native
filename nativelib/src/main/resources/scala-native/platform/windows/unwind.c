@@ -20,6 +20,13 @@
 static int ensureSymInitialized(void) {
     static int symInitialized = 0;
     if (!symInitialized) {
+        // Disable SYMOPT_UNDNAME to get raw mangled symbol names.
+        // Scala Native needs mangled names to extract class/method information.
+        // Default options include SYMOPT_UNDNAME which demangles names.
+        DWORD options = SymGetOptions();
+        options &= ~SYMOPT_UNDNAME;
+        SymSetOptions(options);
+
         if (SymInitialize(GetCurrentProcess(), NULL, TRUE) == FALSE) {
             return -1;
         }
