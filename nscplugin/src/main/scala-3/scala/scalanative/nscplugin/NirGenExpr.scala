@@ -1941,9 +1941,9 @@ trait NirGenExpr(using Context) {
             .toList
           // Estimate capacity needed for the string builder
           val approxBuilderSize = concatArguments.view.map {
-            case Literal(Constant(s: String))              => s.length
-            case Literal(c: Constant) if c.isNonUnitAnyVal =>
-              String.valueOf(c).length
+            case Literal(Constant(s: String))       => s.length
+            case Literal(c: Constant) if c.isAnyVal =>
+              String.valueOf(c.value).length
             case _ => 0
           }.sum
 

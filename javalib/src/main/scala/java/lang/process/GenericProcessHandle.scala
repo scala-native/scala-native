@@ -5,6 +5,7 @@ import java.util.stream.Stream
 import java.util.{Optional, function}
 
 import scala.scalanative.javalib.io.ObjectHandle
+import scala.scalanative.meta.LinktimeInfo
 
 // Represents ProcessHandle for process started by Scala Native runtime
 // Cannot be used with processes started by other programs
@@ -35,19 +36,19 @@ private[process] abstract class GenericProcessHandle(
    * attempts to waitpid (hoping for an ECHILD), a completely new child
    * had been forked with the same pid. */
   protected val exitChecker: ProcessExitChecker = {
-    val useWatcher = // see if we use GenericProcessWatcher
-      if (GenericProcessWatcher.isEnabled)
-        ProcessExitChecker.factory.isInstanceOf[ProcessExitChecker.MultiFactory]
-      else false
-    if (useWatcher)
-      ProcessExitCheckerCompletion
-    else {
+    def createSingle() = {
       implicit val processRegistry: ProcessRegistry = new ProcessRegistry {
         override def completeWith(pid: Long)(ec: Int): Boolean =
           setOrCheckCachedExitCode(ec)
       }
       ProcessExitChecker.factory.createSingle(processId)
     }
+    if (!GenericProcessWatcher.isEnabled) createSingle()
+    else
+      ProcessExitChecker.factory match {
+        case _: ProcessExitChecker.MultiFactory => ProcessExitCheckerCompletion
+        case _                                  => createSingle()
+      }
   }
 
   override final def isAlive(): Boolean = !hasExited
@@ -86,7 +87,10 @@ private[process] abstract class GenericProcessHandle(
   def onExitHandle[A <: AnyRef](
       fn: function.BiFunction[java.lang.Integer, Throwable, A]
   ): CompletableFuture[A] =
-    completion.handleAsync(fn)
+    if (LinktimeInfo.isMultithreadingEnabled)
+      completion.handleAsync(fn)
+    else
+      completion.handle(fn)
 
   override def parent(): Optional[ProcessHandle] = Optional.empty()
 

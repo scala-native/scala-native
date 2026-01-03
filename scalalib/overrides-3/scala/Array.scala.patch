@@ -1,4 +1,4 @@
---- 3.8.0-RC1-bin-20251029-840804f-NIGHTLY/scala/Array.scala
+--- 3.8.0-RC4/scala/Array.scala
 +++ overrides-3/scala/Array.scala
 @@ -35,7 +35,7 @@
   *  where the array objects `a`, `b` and `c` have respectively the values
@@ -26,7 +26,7 @@
 +  @inline def emptyShortArray   = EmptyArrays.emptyShortArray
 +  @inline def emptyObjectArray  = EmptyArrays.emptyObjectArray
 +
-   /** Provides an implicit conversion from the Array object to a collection Factory */
+   /** Provides an implicit conversion from the Array object to a collection Factory. */
    implicit def toFactory[A : ClassTag](dummy: Array.type): Factory[A, Array[A]] = new ArrayFactory(dummy)
    @SerialVersionUID(3L)
 @@ -127,7 +139,8 @@
