@@ -21,6 +21,9 @@
 // Log output destination controlled by SCALANATIVE_GC_LOG_FILE:
 //   - If not set or empty: logs go to stderr (default)
 //   - If set to a file path: logs are appended to that file
+//
+// Timestamps are included by default in [HH:MM:SS.mmm] format.
+// Can be disabled at compile time with -DGC_LOG_SHOW_TIME=0
 
 typedef enum {
     GC_LOG_LEVEL_DEBUG = 0,

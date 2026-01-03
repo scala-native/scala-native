@@ -195,7 +195,8 @@ void Heap_Collect(Heap *heap, Stack *stack) {
                               GC_MutatorThreadState_Managed);
 #endif
     WeakReferences_InvokeGCFinishedCallback();
-    GC_LOG_INFO("GC collection finished");
+    GC_LOG_INFO("GC collection finished in %" PRIu64 "ms",
+                (end_ns - start_ns) / 1000000);
 }
 
 bool Heap_shouldGrow(Heap *heap) {
@@ -208,7 +209,7 @@ bool Heap_shouldGrow(Heap *heap) {
     uint32_t unavailableBlockCount =
         blockCount - (freeBlockCount + recycledBlockCount);
 
-    GC_LOG_INFO("Block count: %u, Unavailable: %u, Free: %u, Recycled: %u",
+    GC_LOG_DEBUG("Block count: %u, Unavailable: %u, Free: %u, Recycled: %u",
                 blockCount, unavailableBlockCount, freeBlockCount,
                 recycledBlockCount);
 

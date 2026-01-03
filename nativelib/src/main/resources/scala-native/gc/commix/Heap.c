@@ -283,7 +283,7 @@ bool Heap_shouldGrow(Heap *heap) {
     uint32_t unavailableBlockCount =
         blockCount - (freeBlockCount + recycledBlockCount);
 
-    GC_LOG_INFO("Max mark time ratio: %lf, Min free ratio: %lf, "
+    GC_LOG_DEBUG("Max mark time ratio: %lf, Min free ratio: %lf, "
                 "Block count: %" PRIu32 ", Unavailable: %" PRIu32
                 ", Free: %" PRIu32 ", Recycled: %" PRIu32,
                 heap->maxMarkTimeRatio, heap->minFreeRatio, blockCount,

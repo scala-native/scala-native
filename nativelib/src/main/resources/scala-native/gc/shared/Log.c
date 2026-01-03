@@ -2,13 +2,22 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <time.h>
 
-// Portable case-insensitive string comparison
+// Portable case-insensitive string comparison and time functions
 #ifdef _WIN32
 #include <string.h>
+#include <windows.h>
 #define strcasecmp _stricmp
 #else
 #include <strings.h>
+#include <sys/time.h>
+#endif
+
+// Whether to include timestamps in log messages (enabled by default)
+// Set to 0 to disable timestamps at compile time
+#ifndef GC_LOG_SHOW_TIME
+#define GC_LOG_SHOW_TIME 1
 #endif
 
 // Global log level - default to WARN
@@ -77,9 +86,31 @@ void GC_Log_Write(GC_LogLevel level, const char *prefix, const char *format,
     char buffer[1024];
     int offset = 0;
     int remaining = sizeof(buffer) - 1;
+    int written;
+
+#if GC_LOG_SHOW_TIME
+    // Write timestamp
+#ifdef _WIN32
+    SYSTEMTIME st;
+    GetLocalTime(&st);
+    written = snprintf(buffer + offset, remaining, "[%02d:%02d:%02d.%03d] ",
+                       st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
+#else
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    struct tm *tm_info = localtime(&tv.tv_sec);
+    written = snprintf(buffer + offset, remaining, "[%02d:%02d:%02d.%03d] ",
+                       tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec,
+                       (int)(tv.tv_usec / 1000));
+#endif
+    if (written > 0 && written < remaining) {
+        offset += written;
+        remaining -= written;
+    }
+#endif
 
     // Write prefix
-    int written = snprintf(buffer + offset, remaining, "%s ", prefix);
+    written = snprintf(buffer + offset, remaining, "%s ", prefix);
     if (written > 0 && written < remaining) {
         offset += written;
         remaining -= written;
