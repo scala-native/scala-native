@@ -22,7 +22,7 @@ void MutatorThread_init(Field_t *stackbottom) {
 #ifdef _WIN32
     self->wakeupEvent = CreateEvent(NULL, true, false, NULL);
     if (self->wakeupEvent == NULL) {
-        fprintf(stderr, "Failed to setup mutator thread: errno=%lu\n",
+        GC_LOG_ERROR("Failed to setup mutator thread wakeup event: errno=%lu",
                 GetLastError());
         exit(1);
     }

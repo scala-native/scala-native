@@ -81,6 +81,21 @@ The None GC uses the two variables shown above **or** the following one when mul
 
  When using this pseudo-GC implementation, GC_THREAD_HEAP_BLOCK_SIZE env variable can be set to control the granuality of allocated heap memory blocks for each of the threads. This env variable is ignored in single-threaded execution.
 
+## Immix and Commix GC Shared Settings
+
+The following environment variables are shared between Immix and Commix GCs.
+
+
+### GC Logging
+
+-   SCALANATIVE_GC_LOG_LEVEL (default is "warn")
+    
+    Controls the verbosity of GC log messages. Valid values are:
+    - `debug` - Show all messages including debug information
+    - `warn` - Show warnings and errors (default)
+    - `error` - Show only errors
+    - `none` - Disable all GC logging
+
 ## Immix GC
 
 The Immix GC uses the two variables shown above as well as the following
