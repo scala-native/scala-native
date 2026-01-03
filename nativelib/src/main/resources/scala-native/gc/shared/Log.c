@@ -88,7 +88,7 @@ void GC_Log_Init(void) {
     GC_logOutput = stderr;
 
     // Check for log file redirection
-    char *fileEnv = getenv("SCALANATIVE_GC_LOG_FILE");
+    char *fileEnv = getenv("GC_LOG_FILE");
     if (fileEnv != NULL && fileEnv[0] != '\0') {
         FILE *logFile = fopen(fileEnv, "a");
         if (logFile != NULL) {

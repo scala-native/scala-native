@@ -18,7 +18,7 @@
 //   - "error" or "ERROR" - show only errors
 //   - "none" or "NONE"   - suppress all messages
 //
-// Log output destination controlled by SCALANATIVE_GC_LOG_FILE:
+// Log output destination controlled by GC_LOG_FILE:
 //   - If not set or empty: logs go to stderr (default)
 //   - If set to a file path: logs are appended to that file
 //
