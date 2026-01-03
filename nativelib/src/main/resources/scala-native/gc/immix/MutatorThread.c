@@ -23,7 +23,7 @@ void MutatorThread_init(Field_t *stackbottom) {
     self->wakeupEvent = CreateEvent(NULL, true, false, NULL);
     if (self->wakeupEvent == NULL) {
         GC_LOG_ERROR("Failed to setup mutator thread wakeup event: errno=%lu",
-                GetLastError());
+                     GetLastError());
         exit(1);
     }
 #else

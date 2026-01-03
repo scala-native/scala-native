@@ -1,23 +1,70 @@
+// _GNU_SOURCE must be defined before any includes for
+// program_invocation_short_name
+#if defined(__linux__)
+#define _GNU_SOURCE
+#endif
+
 #include "shared/Log.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 #include <time.h>
 
-// Portable case-insensitive string comparison and time functions
+// Portable case-insensitive string comparison, time and process functions
 #ifdef _WIN32
 #include <string.h>
 #include <windows.h>
+#include <process.h>
 #define strcasecmp _stricmp
+#define getpid _getpid
 #else
 #include <strings.h>
 #include <sys/time.h>
+#include <unistd.h>
+#endif
+
+// Platform-specific program name access
+#if defined(__APPLE__)
+// getprogname() is in stdlib.h (already included)
+#elif defined(__linux__)
+#include <errno.h>
+extern char *program_invocation_short_name;
 #endif
 
 // Whether to include timestamps in log messages (enabled by default)
 // Set to 0 to disable timestamps at compile time
 #ifndef GC_LOG_SHOW_TIME
 #define GC_LOG_SHOW_TIME 1
+#endif
+
+// Whether to include process ID in log messages (enabled by default)
+// Set to 0 to disable PID at compile time
+#ifndef GC_LOG_SHOW_PID
+#define GC_LOG_SHOW_PID 1
+#endif
+
+#if GC_LOG_SHOW_PID
+// Get the program name (platform-specific)
+static const char *GC_Log_GetProgName(void) {
+#if defined(_WIN32)
+    static char progName[MAX_PATH] = {0};
+    if (progName[0] == '\0') {
+        GetModuleFileNameA(NULL, progName, MAX_PATH);
+        // Extract just the filename
+        char *lastSlash = strrchr(progName, '\\');
+        if (lastSlash != NULL) {
+            memmove(progName, lastSlash + 1, strlen(lastSlash));
+        }
+    }
+    return progName;
+#elif defined(__APPLE__)
+    return getprogname();
+#elif defined(__linux__)
+    return program_invocation_short_name;
+#else
+    return "unknown";
+#endif
+}
 #endif
 
 // Global log level - default to WARN
@@ -103,6 +150,16 @@ void GC_Log_Write(GC_LogLevel level, const char *prefix, const char *format,
                        tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec,
                        (int)(tv.tv_usec / 1000));
 #endif
+    if (written > 0 && written < remaining) {
+        offset += written;
+        remaining -= written;
+    }
+#endif
+
+#if GC_LOG_SHOW_PID
+    // Write process name and PID
+    written = snprintf(buffer + offset, remaining, "[%s:%d] ",
+                       GC_Log_GetProgName(), (int)getpid());
     if (written > 0 && written < remaining) {
         offset += written;
         remaining -= written;

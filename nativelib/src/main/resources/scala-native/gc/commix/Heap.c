@@ -284,10 +284,10 @@ bool Heap_shouldGrow(Heap *heap) {
         blockCount - (freeBlockCount + recycledBlockCount);
 
     GC_LOG_DEBUG("Max mark time ratio: %lf, Min free ratio: %lf, "
-                "Block count: %" PRIu32 ", Unavailable: %" PRIu32
-                ", Free: %" PRIu32 ", Recycled: %" PRIu32,
-                heap->maxMarkTimeRatio, heap->minFreeRatio, blockCount,
-                unavailableBlockCount, freeBlockCount, recycledBlockCount);
+                 "Block count: %" PRIu32 ", Unavailable: %" PRIu32
+                 ", Free: %" PRIu32 ", Recycled: %" PRIu32,
+                 heap->maxMarkTimeRatio, heap->minFreeRatio, blockCount,
+                 unavailableBlockCount, freeBlockCount, recycledBlockCount);
 
     uint64_t timeInMark = heap->mark.currentEnd_ns - heap->mark.currentStart_ns;
     uint64_t timeTotal = heap->mark.currentEnd_ns - heap->mark.lastEnd_ns;

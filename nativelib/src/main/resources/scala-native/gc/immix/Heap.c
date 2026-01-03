@@ -210,8 +210,8 @@ bool Heap_shouldGrow(Heap *heap) {
         blockCount - (freeBlockCount + recycledBlockCount);
 
     GC_LOG_DEBUG("Block count: %u, Unavailable: %u, Free: %u, Recycled: %u",
-                blockCount, unavailableBlockCount, freeBlockCount,
-                recycledBlockCount);
+                 blockCount, unavailableBlockCount, freeBlockCount,
+                 recycledBlockCount);
 
     return freeBlockCount * 2 < blockCount ||
            4 * unavailableBlockCount > blockCount;

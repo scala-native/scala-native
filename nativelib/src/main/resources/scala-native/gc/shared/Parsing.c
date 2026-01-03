@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "shared/Parsing.h"
+#include "shared/Log.h"
 
 size_t Parse_Size_Or_Default(const char *str, size_t defaultSizeInBytes) {
     if (str == NULL) {

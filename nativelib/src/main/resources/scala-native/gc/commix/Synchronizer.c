@@ -4,6 +4,7 @@
 #include "string_constants.h"
 #include "immix_commix/Synchronizer.h"
 #include "shared/ScalaNativeGC.h"
+#include "shared/Log.h"
 #include <stdio.h>
 #include <stdatomic.h>
 #include <stdlib.h>
@@ -12,6 +13,7 @@
 #include "shared/ThreadUtil.h"
 #include "MutatorThread.h"
 #include <signal.h>
+#include <errno.h>
 
 atomic_bool Synchronizer_stopThreads = false;
 static mutex_t synchronizerLock;
@@ -61,7 +63,7 @@ static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
                 return EXCEPTION_CONTINUE_EXECUTION;
             }
             GC_LOG_WARN("Caught exception code %p in GC exception handler",
-                    (void *)(uintptr_t)ex->ExceptionRecord->ExceptionCode);
+                        (void *)(uintptr_t)ex->ExceptionRecord->ExceptionCode);
             StackTrace_PrintStackTrace();
         // pass-through
         default:
@@ -106,7 +108,7 @@ static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
 
     GC_LOG_ERROR("%s Unhandled signal %d triggered when accessing "
                  "memory address %p, code=%d",
-            snErrorPrefix, signal, siginfo->si_addr, siginfo->si_code);
+                 snErrorPrefix, signal, siginfo->si_addr, siginfo->si_code);
     StackTrace_PrintStackTrace();
     abort();
 }
@@ -253,7 +255,7 @@ void Synchronizer_init() {
     threadSuspensionEvent = CreateEvent(NULL, true, false, NULL);
     if (threadSuspensionEvent == NULL) {
         GC_LOG_ERROR("Failed to setup synchronizer event: errno=%lu",
-                GetLastError());
+                     GetLastError());
         exit(1);
     }
 #else

@@ -24,6 +24,9 @@
 //
 // Timestamps are included by default in [HH:MM:SS.mmm] format.
 // Can be disabled at compile time with -DGC_LOG_SHOW_TIME=0
+//
+// Process ID and program name are included by default in [progname:pid] format.
+// Can be disabled at compile time with -DGC_LOG_SHOW_PID=0
 
 typedef enum {
     GC_LOG_LEVEL_DEBUG = 0,
