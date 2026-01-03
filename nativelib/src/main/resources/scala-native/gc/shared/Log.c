@@ -65,13 +65,37 @@ void GC_Log_Write(GC_LogLevel level, const char *prefix, const char *format,
     if (level < GC_logLevel)
         return;
 
+    // Build complete message in buffer to avoid interleaved output from
+    // multiple threads
+    char buffer[1024];
+    int offset = 0;
+    int remaining = sizeof(buffer) - 1;
+
+    // Write prefix
+    int written = snprintf(buffer + offset, remaining, "%s ", prefix);
+    if (written > 0 && written < remaining) {
+        offset += written;
+        remaining -= written;
+    }
+
+    // Write formatted message
     va_list args;
     va_start(args, format);
-
-    fprintf(GC_logOutput, "%s ", prefix);
-    vfprintf(GC_logOutput, format, args);
-    fprintf(GC_logOutput, "\n");
-    fflush(GC_logOutput);
-
+    written = vsnprintf(buffer + offset, remaining, format, args);
     va_end(args);
+
+    if (written > 0 && written < remaining) {
+        offset += written;
+        remaining -= written;
+    }
+
+    // Add newline
+    if (remaining > 1) {
+        buffer[offset++] = '\n';
+    }
+    buffer[offset] = '\0';
+
+    // Single atomic write
+    fputs(buffer, GC_logOutput);
+    fflush(GC_logOutput);
 }
