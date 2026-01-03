@@ -92,9 +92,8 @@ sealed trait NativeConfig {
    *                + This setting is not tested in Scala Native Continuous
    *                  integration.
    *
-   *                + Some Scala Native classes, such as `java.lang.Process*`
-   *                  require multithreading and may fail to link with this
-   *                  setting.
+   *                + Some Scala Native library classes may require
+   *                  multithreading and fail to link with this setting.
    *
    *                + Code using `Future`s may link but encounter runtime
    *                  problems.
