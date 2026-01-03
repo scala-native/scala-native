@@ -11,6 +11,7 @@
 #include "WeakReferences.h"
 #include "Settings.h"
 #include "shared/Parsing.h"
+#include "shared/Log.h"
 #include "shared/jmx.h"
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
 #include "immix_commix/Synchronizer.h"
@@ -18,6 +19,7 @@
 #include "MutatorThread.h"
 #include <stdatomic.h>
 #include "nativeThreadTLS.h"
+#include <assert.h>
 
 void scalanative_afterexit() { Stats_OnExit(heap.stats); }
 

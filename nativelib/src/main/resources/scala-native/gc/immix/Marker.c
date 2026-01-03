@@ -4,7 +4,6 @@
 #include <setjmp.h>
 #include "Marker.h"
 #include "Object.h"
-#include "immix_commix/Log.h"
 #include "State.h"
 #include "datastructures/Stack.h"
 #include "immix_commix/headers/ObjectHeader.h"

@@ -7,7 +7,7 @@
 #include "Allocator.h"
 #include "LargeAllocator.h"
 #include "Marker.h"
-#include "immix_commix/Log.h"
+#include "shared/Log.h"
 #include "Object.h"
 #include "State.h"
 #include "immix_commix/utils/MathUtils.h"
