@@ -33,7 +33,8 @@ object SymbolFormatter {
         isWindows && sourceLevelDebuging.generateFunctionSourcePositions
       val head = read()
       // Check for Scala Native mangled format first (prioritize _S check)
-      if (head == '_' && read() == 'S') readGlobal() // Unix or Windows with raw names
+      if (head == '_' && read() == 'S')
+        readGlobal() // Unix or Windows with raw names
       else if (head == 'S') readGlobal() // Legacy Windows with decorated names
       // Windows linkage symbol format as fallback (unlikely to start with uppercase 'S')
       else if (mayHaveLinkageSymbol) readLinkageSymbol()
