@@ -567,22 +567,47 @@ object Thread {
 
   def onSpinWait(): Unit = NativeThread.onSpinWait()
 
-  def sleep(millis: scala.Long): Unit = sleep(millis, 0)
+  final val IllegalArgMillis = "timeout value is negative"
+  final val IllegalArgNanos = "nanosecond timeout value out of range"
+
+  def sleep(millis: scala.Long): Unit = {
+    if (millis < 0)
+      throw new IllegalArgumentException(IllegalArgMillis)
+
+    // Optimize call tree for the predominating multithread == true case.
+    if (!isMultithreadingEnabled) sleep(millis, 0)
+    else nativeCompanion.currentNativeThread().sleep(millis)
+
+    if (interrupted())
+      throw new InterruptedException()
+  }
 
   def sleep(millis: scala.Long, nanos: Int): Unit = {
     if (millis < 0)
-      throw new IllegalArgumentException("millis must be >= 0")
+      throw new IllegalArgumentException(IllegalArgMillis)
+
     if (nanos < 0 || nanos > 999999)
-      throw new IllegalArgumentException("nanos value out of range")
+      throw new IllegalArgumentException(IllegalArgNanos)
+
     val nativeThread = nativeCompanion.currentNativeThread()
 
     def doSleep(millis: scala.Long, nanos: Int) = {
-      if (millis == 0) nativeThread.sleepNanos(nanos)
-      else
-        nativeThread.sleep(nanos match {
-          case 0 => millis
-          case _ => millis + 1
-        })
+      /* In the by far most frequent call pattern, either millis or nanos are
+       * zero. The 'two sleep' call sequence should be rare and
+       * preserves the full range of millis by avoiding possible
+       * overflow converting millis to nanos and calling only sleepNanos().
+       * 
+       * Work within the bounds imposed by current lower level implementation.
+       * Changing NativeThread to have a more efficient methods, say,
+       * sleepMillisNanos() or sleepTimespec() would mean changing
+       * WindowsThread.scala and that is not feasible.
+       */
+
+      if (millis > 0)
+        nativeThread.sleep(millis)
+
+      if (nanos > 0) // callee will check thread.isInterrupted
+        nativeThread.sleepNanos(nanos)
     }
 
     if (isMultithreadingEnabled) doSleep(millis, nanos)
@@ -592,12 +617,12 @@ object Thread {
       Proxy.stealWork(timeout)
       val deadline = now + timeout.toNanos
       val remainingNanos = deadline - System.nanoTime()
-      if (remainingNanos > 0) {
+      if (remainingNanos > 0)
         doSleep(remainingNanos / 1000000, (remainingNanos % 1000000).toInt)
-      }
     } else doSleep(millis, nanos)
 
-    if (interrupted()) throw new InterruptedException()
+    if (interrupted())
+      throw new InterruptedException()
   }
 
   @alwaysinline def `yield`(): Unit =
