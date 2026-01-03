@@ -96,6 +96,11 @@ The following environment variables are shared between Immix and Commix GCs.
     - `error` - Show only errors
     - `none` - Disable all GC logging
 
+-   SCALANATIVE_GC_LOG_FILE (default is unset)
+    
+    Redirects GC log output to a file instead of stderr. If not set or empty, logs are written to stderr. If set to a file path, logs are appended to that file. If the file cannot be opened, logging falls back to stderr with a warning.
+    Recommended when using `SCALANATIVE_GC_LOG_LEVEL=DEBUG`
+
 ## Immix GC
 
 The Immix GC uses the two variables shown above as well as the following
