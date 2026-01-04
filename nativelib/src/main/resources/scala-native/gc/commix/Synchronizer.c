@@ -4,6 +4,7 @@
 #include "string_constants.h"
 #include "immix_commix/Synchronizer.h"
 #include "shared/ScalaNativeGC.h"
+#include "shared/Log.h"
 #include <stdio.h>
 #include <stdatomic.h>
 #include <stdlib.h>
@@ -12,6 +13,7 @@
 #include "shared/ThreadUtil.h"
 #include "MutatorThread.h"
 #include <signal.h>
+#include <errno.h>
 
 atomic_bool Synchronizer_stopThreads = false;
 static mutex_t synchronizerLock;
@@ -60,10 +62,8 @@ static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
                 Synchronizer_yield();
                 return EXCEPTION_CONTINUE_EXECUTION;
             }
-            fprintf(stderr,
-                    "Caught exception code %p in GC exception handler\n",
-                    (void *)(uintptr_t)ex->ExceptionRecord->ExceptionCode);
-            fflush(stderr);
+            GC_LOG_WARN("Caught exception code %p in GC exception handler",
+                        (void *)(uintptr_t)ex->ExceptionRecord->ExceptionCode);
             StackTrace_PrintStackTrace();
         // pass-through
         default:
@@ -106,10 +106,9 @@ static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
         return;
     }
 
-    fprintf(stderr,
-            "%s Unhandled signal %d triggered when accessing "
-            "memory address %p, code=%d\n\n",
-            snErrorPrefix, signal, siginfo->si_addr, siginfo->si_code);
+    GC_LOG_ERROR("%s Unhandled signal %d triggered when accessing "
+                 "memory address %p, code=%d",
+                 snErrorPrefix, signal, siginfo->si_addr, siginfo->si_code);
     StackTrace_PrintStackTrace();
     abort();
 }
@@ -131,7 +130,8 @@ static void SetupYieldPointTrapHandler() {
     sa.sa_sigaction = &SafepointTrapHandler;
     sa.sa_flags = SA_SIGINFO | SA_RESTART;
     if (sigaction(SAFEPOINT_TRAP_SIGNAL, &sa, &previousSignalHandler) == -1) {
-        perror("Error: cannot setup safepoint synchronization handler");
+        GC_LOG_ERROR("Cannot setup safepoint synchronization handler: %s",
+                     strerror(errno));
         exit(errno);
     }
 #endif
@@ -141,17 +141,17 @@ static void Synchronizer_WaitForResumption(MutatorThread *selfThread) {
     assert(selfThread == currentMutatorThread);
 #ifdef _WIN32
     if (!ResetEvent(selfThread->wakeupEvent)) {
-        fprintf(stderr, "Failed to reset event %lu\n", GetLastError());
+        GC_LOG_WARN("Failed to reset event %lu", GetLastError());
     }
     if (WAIT_OBJECT_0 !=
         WaitForSingleObject(selfThread->wakeupEvent, INFINITE)) {
-        fprintf(stderr, "Error: suspend thread");
+        GC_LOG_ERROR("suspend thread failed: errno=%lu", GetLastError());
         exit(GetLastError());
     }
 #else
     int signum;
     if (0 != sigwait(&threadWakupSignals, &signum)) {
-        perror("Error: sig wait");
+        GC_LOG_ERROR("sigwait failed: %s", strerror(errno));
         exit(errno);
     }
     assert(signum == THREAD_WAKEUP_SIGNAL);
@@ -162,13 +162,12 @@ static void Synchronizer_ResumeThread(MutatorThread *thread) {
 #ifdef _WIN32
     assert(thread != currentMutatorThread);
     if (!SetEvent(thread->wakeupEvent)) {
-        fprintf(stderr, "Failed to set event %lu\n", GetLastError());
+        GC_LOG_ERROR("Failed to set event %lu", GetLastError());
     }
 #else
     int status = pthread_kill(thread->thread, THREAD_WAKEUP_SIGNAL);
     if (status != 0) {
-        fprintf(stderr, "Failed to resume thread after GC, retval: %d\n",
-                status);
+        GC_LOG_ERROR("Failed to resume thread after GC, retval: %d", status);
     }
 #endif
 }
@@ -255,8 +254,8 @@ void Synchronizer_init() {
 #ifdef _WIN32
     threadSuspensionEvent = CreateEvent(NULL, true, false, NULL);
     if (threadSuspensionEvent == NULL) {
-        fprintf(stderr, "Failed to setup synchronizer event: errno=%lu\n",
-                GetLastError());
+        GC_LOG_ERROR("Failed to setup synchronizer event: errno=%lu",
+                     GetLastError());
         exit(1);
     }
 #else
@@ -265,7 +264,7 @@ void Synchronizer_init() {
     sigaddset(&signalsBlockedDuringGC, SIGTERM);
     if (pthread_mutex_init(&threadSuspension.lock, NULL) != 0 ||
         pthread_cond_init(&threadSuspension.resume, NULL) != 0) {
-        perror("Failed to setup synchronizer lock");
+        GC_LOG_ERROR("Failed to setup synchronizer lock: %s", strerror(errno));
         exit(1);
     }
 #endif

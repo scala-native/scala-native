@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "shared/Parsing.h"
+#include "shared/Log.h"
 
 size_t Parse_Size_Or_Default(const char *str, size_t defaultSizeInBytes) {
     if (str == NULL) {
@@ -86,11 +87,14 @@ const char *get_defined_or_env(const char *envName) {
 
 size_t Parse_Env_Or_Default(const char *envName, size_t defaultSizeInBytes) {
     const char *res = get_defined_or_env(envName);
-#ifdef DEBUG_PRINT
-    printf("%s=%s\n", envName, res);
-    fflush(stdout);
-#endif
-    return Parse_Size_Or_Default(res, defaultSizeInBytes);
+    size_t result = Parse_Size_Or_Default(res, defaultSizeInBytes);
+    if (res != NULL) {
+        GC_LOG_INFO("Found %s=%s, parsed to %zu", envName, res, result);
+    } else {
+        GC_LOG_INFO("%s not set, using default %zu", envName,
+                    defaultSizeInBytes);
+    }
+    return result;
 }
 
 size_t Parse_Env_Or_Default_String(const char *envName,

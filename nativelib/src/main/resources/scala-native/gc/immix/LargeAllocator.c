@@ -6,7 +6,6 @@
 #include "LargeAllocator.h"
 #include "immix_commix/utils/MathUtils.h"
 #include "Object.h"
-#include "immix_commix/Log.h"
 #include "immix/State.h"
 #include "immix_commix/headers/ObjectHeader.h"
 

@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <memory.h>
 #include "shared/ThreadUtil.h"
+#include "shared/Log.h"
 #include <assert.h>
 
 bool Allocator_getNextLine(Allocator *allocator);
@@ -186,11 +187,8 @@ bool Allocator_newBlock(Allocator *allocator) {
     if (block != NULL) {
         // get all the changes done by sweeping
         atomic_thread_fence(memory_order_acquire);
-#ifdef DEBUG_PRINT
-        printf("Allocator_newBlock RECYCLED %p %" PRIu32 " for %p\n", block,
-               BlockMeta_GetBlockIndex(blockMetaStart, block), allocator);
-        fflush(stdout);
-#endif
+        GC_LOG_DEBUG("Allocator_newBlock RECYCLED %p %" PRIu32 " for %p", block,
+                     BlockMeta_GetBlockIndex(blockMetaStart, block), allocator);
         assert(block->debugFlag == dbg_partial_free);
 #ifdef GC_ASSERTIONS
         block->debugFlag = dbg_in_use;
@@ -213,11 +211,8 @@ bool Allocator_newBlock(Allocator *allocator) {
         assert(allocator->limit <= Block_GetBlockEnd(blockStart));
     } else {
         block = BlockAllocator_GetFreeBlock(allocator->blockAllocator);
-#ifdef DEBUG_PRINT
-        printf("Allocator_newBlock %p %" PRIu32 " for %p\n", block,
-               BlockMeta_GetBlockIndex(blockMetaStart, block), allocator);
-        fflush(stdout);
-#endif
+        GC_LOG_DEBUG("Allocator_newBlock %p %" PRIu32 " for %p", block,
+                     BlockMeta_GetBlockIndex(blockMetaStart, block), allocator);
         if (block == NULL) {
             return false;
         }

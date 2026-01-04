@@ -8,10 +8,10 @@
 #include <stdlib.h>
 #include <wchar.h>
 #include "immix_commix/CommonConstants.h"
-#include "immix_commix/Log.h"
 #include "immix_commix/utils/MathUtils.h"
 #include "shared/GCTypes.h"
 #include "limits.h"
+#include "assert.h"
 
 extern const int __object_array_id;
 extern const int __blob_array_id;

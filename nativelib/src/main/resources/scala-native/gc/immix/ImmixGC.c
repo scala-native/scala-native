@@ -11,6 +11,7 @@
 #include "WeakReferences.h"
 #include "Settings.h"
 #include "shared/Parsing.h"
+#include "shared/Log.h"
 #include "shared/jmx.h"
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
 #include "immix_commix/Synchronizer.h"
@@ -18,12 +19,14 @@
 #include "MutatorThread.h"
 #include <stdatomic.h>
 #include "nativeThreadTLS.h"
+#include <assert.h>
 
 void scalanative_afterexit() { Stats_OnExit(heap.stats); }
 
 NOINLINE void scalanative_GC_init() {
     volatile word_t dummy = 0;
     dummy = (word_t)&dummy;
+    GC_Log_Init();
     Heap_Init(&heap, Settings_MinHeapSize(), Settings_MaxHeapSize());
     Stack_Init(&stack, INITIAL_STACK_SIZE);
     Stack_Init(&weakRefStack, INITIAL_STACK_SIZE);
