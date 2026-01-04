@@ -7,7 +7,6 @@
 #include "../Constants.h"
 #include "shared/GCTypes.h"
 #include "BlockRange.h"
-#include "immix_commix/Log.h"
 #include "immix_commix/headers/ObjectHeader.h"
 #include "immix_commix/UInt24.h"
 

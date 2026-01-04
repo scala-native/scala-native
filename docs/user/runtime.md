@@ -14,6 +14,7 @@ The following **environment** variables will be used for all GCs. They can go fr
 
 - GC_INITIAL_HEAP_SIZE changes the minimum heap size.
 - GC_MAXIMUM_HEAP_SIZE changes the maximum heap size.
+- GC_LOG_FILE redirects GC log output to a file instead of stderr. If not set or empty, logs are written to stderr. If set to a file path, logs are appended to that file. This variable name matches the one defined in [Boehm GC](https://github.com/ivmai/bdwgc/blob/master/docs/environment.md) to provide a consistent API across all supported garbage collectors.
 
 The GC_INITIAL_HEAP_SIZE and GC_MAXIMUM_HEAP_SIZE are ignored by None GC when multi-threading is enabled and GC_THREAD_HEAP_BLOCK_SIZE is used instead. See the None GC section below for details.
 
@@ -65,7 +66,7 @@ setting names where applicable.
 
 ## Boehm GC
 
-The Boehm GC uses the two variables shown above. The following is
+The Boehm GC uses the three variables shown above. The following is
 available for Boehm and Commix.
 
 -   GC_NPROCS
@@ -75,15 +76,35 @@ The following document shows all the variables available for Boehm:
 
 ## None GC
 
-The None GC uses the two variables shown above **or** the following one when multi-threading is selected.
+The None GC uses the three variables shown above **or** the following one when multi-threading is selected (instead of GC_INITIAL_HEAP_SIZE and GC_MAXIMUM_HEAP_SIZE).
 
 -   GC_THREAD_HEAP_BLOCK_SIZE (defaults to 64 MB)
 
  When using this pseudo-GC implementation, GC_THREAD_HEAP_BLOCK_SIZE env variable can be set to control the granuality of allocated heap memory blocks for each of the threads. This env variable is ignored in single-threaded execution.
 
+## Immix and Commix GC Shared Settings
+
+The following environment variables are shared between Immix and Commix GCs.
+
+
+### GC Logging
+
+-   SCALANATIVE_GC_LOG_LEVEL (default is "warn")
+    
+    Controls the verbosity of GC log messages. Valid values are:
+    - `debug` - Show all messages (internal operations, allocation tracking)
+    - `info` - Show info, warnings and errors (parsed options, stats)
+    - `warn` - Show warnings and errors (default)
+    - `error` - Show only errors
+    - `none` - Disable all GC logging
+
+-   GC_LOG_FILE - see description in `All Garbage Collectors` section above. Recommended when using `SCALANATIVE_GC_LOG_LEVEL=debug`.
+
+Log messages include timestamps in `[HH:MM:SS.mmm]` format with millisecond precision.
+
 ## Immix GC
 
-The Immix GC uses the two variables shown above as well as the following
+The Immix GC uses the three variables shown above as well as the following
 variable.
 
 -   GC_STATS_FILE (set to the file name)

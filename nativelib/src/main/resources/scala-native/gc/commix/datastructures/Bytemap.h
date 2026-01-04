@@ -1,12 +1,12 @@
 #ifndef IMMIX_BYTEMAP_H
 #define IMMIX_BYTEMAP_H
 
+#include <assert.h>
 #include <stddef.h>
 #include <stdbool.h>
 #include <string.h>
 #include "shared/GCTypes.h"
 #include "commix/Constants.h"
-#include "immix_commix/Log.h"
 #include "commix/metadata/ObjectMeta.h"
 
 typedef struct {

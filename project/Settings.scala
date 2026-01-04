@@ -168,6 +168,8 @@ object Settings {
     Def.settings(
       autoAPIMappings := true,
       exportJars := true, // required so ScalaDoc linking works
+      // Don't fail on Scaladoc warnings (e.g., unresolved links to Java classes)
+      Compile / doc / scalacOptions --= Seq("-Werror", "-Xfatal-warnings"),
       Compile / doc / scalacOptions --= scalaVersionsDependendent(
         scalaVersion.value
       )(Seq.empty[String]) {
