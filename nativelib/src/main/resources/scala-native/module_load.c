@@ -65,8 +65,8 @@ extern ModuleRef scalanative_initializeModule(ModuleCtor ctor,
 extern ModuleRef scalanative_awaitForInitialization(ModuleSlot slot,
                                                     void *classInfo);
 
-inline static ModuleRef waitForInitialization(ModuleSlot slot,
-                                              void *classInfo) {
+NOINLINE static ModuleRef
+__scalanative_waitForModuleInitialization(ModuleSlot slot, void *classInfo) {
     ModuleRef module = atomic_load_explicit(slot, memory_order_acquire);
     assert(module != NULL);
     if (*module != classInfo) {
@@ -79,27 +79,35 @@ inline static ModuleRef waitForInitialization(ModuleSlot slot,
     return scalanative_awaitForInitialization(slot, classInfo);
 }
 
-ModuleRef __scalanative_loadModule(ModuleSlot slot, void *classInfo,
-                                   size_t size, ModuleCtor ctor) {
+NOINLINE static ModuleRef __scalanative_startAndWaitForModuleInitialization(
+    ModuleSlot slot, void *classInfo, size_t size, ModuleCtor ctor) {
+    InitializationContext ctx = {};
+    void **expected = NULL;
+    if (atomic_compare_exchange_strong(slot, &expected, (void **)&ctx)) {
+        ModuleRef instance = scalanative_GC_alloc(classInfo, size);
+        ctx.initThreadId = getThreadId();
+        ctx.instance = instance;
+        return scalanative_initializeModule(ctor, instance, slot, classInfo);
+    } else {
+        return __scalanative_waitForModuleInitialization(slot, classInfo);
+    }
+}
+
+/* Load module, if required.  The fast path is inlined into the caller. While
+ * the slow path not-inlined to avoid pressure on the instruction cache.
+ */
+INLINE ModuleRef __scalanative_loadModule(ModuleSlot slot, void *classInfo,
+                                          size_t size, ModuleCtor ctor) {
     ModuleRef module = atomic_load_explicit(slot, memory_order_acquire);
 
-    if (module == NULL) {
-        InitializationContext ctx = {};
-        void **expected = NULL;
-        if (atomic_compare_exchange_strong(slot, &expected, (void **)&ctx)) {
-            ModuleRef instance = scalanative_GC_alloc(classInfo, size);
-            ctx.initThreadId = getThreadId();
-            ctx.instance = instance;
-            return scalanative_initializeModule(ctor, instance, slot,
-                                                classInfo);
-        } else {
-            return waitForInitialization(slot, classInfo);
-        }
-    }
+    if (module == NULL)
+        return __scalanative_startAndWaitForModuleInitialization(
+            slot, classInfo, size, ctor);
+
     if (*module == classInfo)
         return module;
     else
-        return waitForInitialization(slot, classInfo);
+        return __scalanative_waitForModuleInitialization(slot, classInfo);
 }
 
 #endif
