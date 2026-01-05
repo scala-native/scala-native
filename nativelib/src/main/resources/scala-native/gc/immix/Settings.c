@@ -9,15 +9,29 @@
 #include "Settings.h"
 #include "shared/Parsing.h"
 #include "Constants.h"
+#include "shared/Log.h"
+#include "shared/SyncSettings.h"
 
-size_t Settings_MinHeapSize() {
+// =============================================================================
+// Heap Settings
+// =============================================================================
+size_t Settings_MinHeapSize(void) {
     return Parse_Env_Or_Default("GC_INITIAL_HEAP_SIZE", DEFAULT_MIN_HEAP_SIZE);
 }
 
-size_t Settings_MaxHeapSize() {
+size_t Settings_MaxHeapSize(void) {
     return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE", UNLIMITED_HEAP_SIZE);
 }
 
-char *Settings_StatsFileName() { return getenv(GC_STATS_FILE_SETTING); }
+char *Settings_StatsFileName(void) { return getenv(GC_STATS_FILE_SETTING); }
 
-#endif
+// =============================================================================
+// Settings Initialization
+// =============================================================================
+void Settings_Init(void) {
+
+    // Initialize sync timeout settings
+    SyncSettings_Init();
+}
+
+#endif // SCALANATIVE_GC_IMMIX

@@ -40,6 +40,7 @@ NOINLINE void scalanative_GC_init() {
     volatile word_t dummy = 0;
     dummy = (word_t)&dummy;
     GC_Log_Init();
+    Settings_Init();
     Heap_Init(&heap, Settings_MinHeapSize(), Settings_MaxHeapSize());
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     Synchronizer_init();

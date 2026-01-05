@@ -86,6 +86,17 @@ The None GC uses the three variables shown above **or** the following one when m
 
 The following environment variables are shared between Immix and Commix GCs.
 
+### GC Synchronization Timeout
+
+When multithreading is enabled, the GC needs to stop all threads before collecting garbage. If a thread is stuck, e.g. due to undefined behaviour, or executing foreign blocking code without the `@blocking` annotation, the GC may wait indefinitely. These settings control timeout behavior:
+
+-   SCALANATIVE_GC_SYNC_TIMEOUT_MS (default is 60000, i.e. 60 seconds)
+    
+    Timeout in milliseconds for waiting for threads to reach a safepoint. If threads don't reach safepoint within this time, the GC will abort the process with diagnostic information. Set to 0 to disable timeout (wait indefinitely).
+
+-   SCALANATIVE_GC_SYNC_WARNING_INTERVAL_MS (default is 10000, i.e. 10 seconds)
+    
+    Interval in milliseconds for printing warnings while waiting for threads. When threads take longer than expected to reach safepoint, warnings will be printed at this interval with information about which threads are stuck.
 
 ### GC Logging
 
