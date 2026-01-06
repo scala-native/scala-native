@@ -24,9 +24,10 @@ class FrameworkTest extends codegen.CodeGenSpec {
   @Test def multipleFilesClassDefintions(): Unit = {
     val sources = Map(
       "A.scala" -> "class A",
-      "B.scala" -> """|object B extends A {
-                      |  def main(args: Array[String]): Unit = ()
-                      |}""".stripMargin
+      "B.scala" ->
+        """|object B extends A {
+           |  def main(args: Array[String]): Unit = ()
+           |}""".stripMargin
     )
 
     link("B", sources) {

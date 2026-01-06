@@ -3,12 +3,12 @@
 
 #define LAST_HOLE -1
 
+#include <assert.h>
 #include <stdint.h>
 #include <string.h>
 #include "LineMeta.h"
 #include "shared/GCTypes.h"
 #include "commix/Constants.h"
-#include "immix_commix/Log.h"
 #include "immix_commix/UInt24.h"
 
 typedef enum {

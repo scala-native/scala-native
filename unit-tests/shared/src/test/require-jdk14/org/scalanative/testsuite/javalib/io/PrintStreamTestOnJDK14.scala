@@ -10,7 +10,8 @@ import org.junit.Test
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class PrintStreamTestOnJDK14 {
-  final val secondComing = """|
+  final val secondComing =
+    """|
                |""The best lack all conviction, while the worst
                |Are full of passionate intensity."
                """

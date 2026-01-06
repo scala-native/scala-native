@@ -1,0 +1,42 @@
+# Test stack traces with different configurations
+
+# Test 1: Debug mode without source-level debugging (dladdr-based symbol lookup)
+> set nativeConfig := (Global / nativeConfig).value.withSourceLevelDebuggingConfig(_.disableAll).withMode(scala.scalanative.build.Mode.debug)
+> clean
+> runStackTraceTest
+
+# Test 2: Debug mode with source-level debugging (DWARF-based symbol lookup)
+> set nativeConfig := (Global / nativeConfig).value.withSourceLevelDebuggingConfig(_.enableAll).withMode(scala.scalanative.build.Mode.debug)
+> clean
+> runStackTraceTest
+
+# Test 3: Release-fast mode without symbols
+> set nativeConfig := (Global / nativeConfig).value.withSourceLevelDebuggingConfig(_.disableAll).withMode(scala.scalanative.build.Mode.releaseFast)
+> clean
+> runStackTraceTest
+
+# Test 4: Release-fast mode with symbols
+> set nativeConfig := (Global / nativeConfig).value.withSourceLevelDebuggingConfig(_.enableAll).withMode(scala.scalanative.build.Mode.releaseFast)
+> clean
+> runStackTraceTest
+
+# Test 5: Release-full mode with LTO full, without symbols
+> set nativeConfig := (Global / nativeConfig).value.withSourceLevelDebuggingConfig(_.disableAll).withMode(scala.scalanative.build.Mode.releaseFull).withLTO(scala.scalanative.build.LTO.full)
+> clean
+> runStackTraceTest
+
+# (disabled) Test 6: Release-full mode with LTO full, with symbols
+# Disabled: LTO full + debug symbols can cause LLVM linker crashes (segfault on Linux)
+# > set nativeConfig := (Global / nativeConfig).value.withSourceLevelDebuggingConfig(_.enableAll).withMode(scala.scalanative.build.Mode.releaseFull).withLTO(scala.scalanative.build.LTO.full)
+# > clean
+# > runStackTraceTest
+
+# (disabled) Test 7: Release-fast mode with LTO thin, without symbols
+# > set nativeConfig := (Global / nativeConfig).value.withSourceLevelDebuggingConfig(_.disableAll).withMode(scala.scalanative.build.Mode.releaseFast).withLTO(scala.scalanative.build.LTO.thin)
+# > clean
+# > runStackTraceTest
+
+# (disabled) Test 8: Release-fast mode with LTO thin, with symbols
+# > set nativeConfig := (Global / nativeConfig).value.withSourceLevelDebuggingConfig(_.enableAll).withMode(scala.scalanative.build.Mode.releaseFast).withLTO(scala.scalanative.build.LTO.thin)
+# > clean
+# > runStackTraceTest

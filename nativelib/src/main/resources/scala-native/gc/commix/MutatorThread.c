@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdatomic.h>
 #include <shared/ThreadUtil.h>
+#include "shared/Log.h"
 #include <assert.h>
 
 static rwlock_t threadListsModificationLock;
@@ -21,8 +22,8 @@ void MutatorThread_init(Field_t *stackbottom) {
 #ifdef _WIN32
     self->wakeupEvent = CreateEvent(NULL, true, false, NULL);
     if (self->wakeupEvent == NULL) {
-        fprintf(stderr, "Failed to setup mutator thread: errno=%lu\n",
-                GetLastError());
+        GC_LOG_ERROR("Failed to setup mutator thread wakeup event: errno=%lu",
+                     GetLastError());
         exit(1);
     }
 #else

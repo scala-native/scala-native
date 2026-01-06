@@ -12,13 +12,14 @@ class TopLevelExternsTest {
       PackageModule.member(nir.Sig.Extern("externFunction"))
 
     compileAndLoad(
-      "Main.scala" -> """|
-                         |import scala.scalanative.unsafe.{link, define, extern}
-                         |@extern
-                         |@link("MyCustomLink")
-                         |@define("MyCustomDefn") 
-                         |def externFunction(): Unit = extern
-                         |""".stripMargin
+      "Main.scala" ->
+        """|
+           |import scala.scalanative.unsafe.{link, define, extern}
+           |@extern
+           |@link("MyCustomLink")
+           |@define("MyCustomDefn") 
+           |def externFunction(): Unit = extern
+           |""".stripMargin
     ) { defns =>
       defns
         .find(_.name == ExternFunctionSymbol)

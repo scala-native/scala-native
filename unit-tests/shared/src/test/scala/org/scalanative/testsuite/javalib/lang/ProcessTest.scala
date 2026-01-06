@@ -80,7 +80,7 @@ class ProcessTest {
     checkPathOverride(pb)
   }
 
-  // Exercise the fork() path in UnixProcessFactory.
+  // Exercise posix_spawn_file_actions_addchdir() path in UnixProcessFactory.
   @Test def dirOverride(): Unit = {
     assumeFalse("Not tested in Windows", isWindows)
 
@@ -633,14 +633,36 @@ class ProcessTest {
   private val githubWorkspace =
     Paths.get(sys.env.get("GITHUB_WORKSPACE").getOrElse("."))
 
+  /* testGitLSFilesUsing* tests use a documented git feature, the ':/'
+   * argument, to cause files to be listed from the project root
+   * rather than the current working directory.
+   * 
+   * This allows the test to be run interactively on JVM in some environments
+   * where they had previously failed. See SN Issue #4676.
+   *
+   * In some yet-to-be-determined environments, the SN test environment sets
+   * the current working directory to the project-root plus the following
+   * suffix. In each case the terminal dot/full_stop is part of the CWD.
+   *   JVM: unit-tests/jvm/.3/.
+   *   SN : .
+   *
+   * On JVM, the latter is an empty directory, so 'git ls-files'
+   * follows its documented behavior and return an empty string.
+   * Supplying the ':/' argument allows the test to succeed as intended.
+   *
+   * The unanswered questions are why do the initial working directories
+   * differ and why does code without the ':/' argument succeed in CI?
+   * Questions for a rainy day.
+   */
+
   @Test def testGitLsFilesUsingJavaProcessStart(
   ): Unit = (0 until gitTestIterations).foreach { iter =>
 
     val prefix =
       s"[iter=$iter ${new java.io.File(".").getAbsolutePath}] `git ls-files`"
 
-    // run git ls-files --full-names on source
-    val proc = processForCommand("git", "ls-files", "--full-name")
+    // run git ls-files --full-name :/ on project root source
+    val proc = processForCommand("git", "ls-files", "--full-name", ":/")
       .redirectOutput(ProcessBuilder.Redirect.PIPE)
       .redirectError(ProcessBuilder.Redirect.PIPE)
       .directory(githubWorkspace.toFile)
@@ -785,8 +807,8 @@ class ProcessTest {
     val prefix =
       s"[iter=$iter ${new java.io.File(".").getAbsolutePath}] `git ls-files`"
 
-    // run git ls-files --full-names on source
-    val argv = Seq("git", "ls-files", "--full-name")
+    // run git ls-files --full-name :/ on project root source
+    val argv = Seq("git", "ls-files", "--full-name", ":/")
     val (res, stdout, stderr) =
       ProcessTest.runArgv(10.seconds, githubWorkspace)(argv: _*)
     res match {
@@ -882,8 +904,8 @@ class ProcessTest {
     val prefix =
       s"[iter=$iter ${new java.io.File(".").getAbsolutePath}] `git ls-files`"
 
-    // run git ls-files --full-names on source
-    val argv = Seq("git", "ls-files", "--full-name")
+    // run git ls-files --full-name :/ on project root source
+    val argv = Seq("git", "ls-files", "--full-name", ":/")
     val (res, stdout, stderr) =
       ProcessTest.runArgvWithBang(60.seconds, githubWorkspace)(argv: _*)
     res match {
@@ -982,8 +1004,8 @@ class ProcessTest {
     val prefix =
       s"[iter=$iter ${new java.io.File(".").getAbsolutePath}] `git ls-files`"
 
-    // run git ls-files --full-names on source
-    val argv = Seq("git", "ls-files", "--full-name")
+    // run git ls-files --full-name :/ on project root source
+    val argv = Seq("git", "ls-files", "--full-name", ":/")
     val (res, stderr) =
       ProcessTest.runArgvWithBangBang(60.seconds, githubWorkspace)(argv: _*)
     res match {
