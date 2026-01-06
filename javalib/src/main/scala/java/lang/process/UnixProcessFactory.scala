@@ -23,7 +23,7 @@ private[process] object UnixProcessFactory {
   }
 
   /* forkChild supports 32 bit systems and/or older operating systems when
-   * changing working directory. See javalib_spawn.c for details.
+   * changing working directory. See javalib_spawn.c  for details.
    *
    * Note well:
    *   The Fork path has a known, to some, defect when the ProcessBuilder
