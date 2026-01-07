@@ -1,23 +1,10 @@
 import scala.scalanative.unsafe._
 
 /** Native extern declarations for GC deadlock tests.
+ *
+ *  Platform-specific I/O (pipe, read, close) is in PlatformIO.scala. This file
+ *  only contains POSIX-specific functions that have no Windows equivalent.
  */
-
-/** Native calls WITHOUT @blocking - causes GC deadlock */
-@extern
-object NativeBlocking {
-  def read(fd: CInt, buf: Ptr[Byte], count: CSize): CSSize = extern
-  def pause(): CInt = extern
-}
-
-/** Native calls WITH @blocking - GC can proceed */
-@extern
-object NativeBlockingCorrect {
-  @blocking
-  def read(fd: CInt, buf: Ptr[Byte], count: CSize): CSSize = extern
-  @blocking
-  def pause(): CInt = extern
-}
 
 /** Zombie thread helper functions from zombie_thread.c */
 @extern

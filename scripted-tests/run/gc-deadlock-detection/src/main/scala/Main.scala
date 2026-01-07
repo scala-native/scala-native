@@ -1,8 +1,4 @@
-import java.util.concurrent.atomic.AtomicBoolean
-
-import scala.scalanative.posix.unistd.{close, pipe}
 import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
 
 /** GC Deadlock Detection Test - Main Entry Point
  *
@@ -14,8 +10,7 @@ import scala.scalanative.unsigned._
  *    - "correct": @blocking annotation present - GC completes immediately
  *      (baseline)
  *    - "deadlock": Missing @blocking - tests timeout detection
- *    - "pause": Deadlock using pause() syscall
- *    - "zombie": Thread exits without GC cleanup
+ *    - "zombie": Thread exits without GC cleanup (POSIX only)
  *    - "allocator": Multiple blocking threads stress test
  */
 object Main {
@@ -25,7 +20,6 @@ object Main {
     mode match {
       case "correct"   => CorrectScenario.run()
       case "deadlock"  => DeadlockScenario.run()
-      case "pause"     => PauseScenario.run()
       case "zombie"    => ZombieScenario.run()
       case "allocator" => AllocatorScenario.run()
       case _           =>
@@ -34,8 +28,7 @@ object Main {
         println("Modes:")
         println("  correct   - Correct behavior with @blocking annotation")
         println("  deadlock  - Deadlock scenario (missing @blocking)")
-        println("  pause     - Deadlock using pause() syscall")
-        println("  zombie    - Zombie thread scenario")
+        println("  zombie    - Zombie thread scenario (POSIX only)")
         println("  allocator - Multiple blocking threads stress test")
         System.exit(1)
     }

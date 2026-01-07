@@ -1,6 +1,5 @@
 import java.util.concurrent.atomic.AtomicBoolean
 
-import scala.scalanative.posix.unistd.{close, pipe}
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 
@@ -25,7 +24,7 @@ object AllocatorScenario {
     // Create pipes for each thread
     for (i <- 0 until numThreads) {
       val pipeFds = stackalloc[CInt](2)
-      if (pipe(pipeFds) == 0) {
+      if (PlatformIO.createPipe(pipeFds) == 0) {
         pipeReadFds(i) = pipeFds(0)
         pipeWriteFds(i) = pipeFds(1)
       } else {
@@ -46,7 +45,7 @@ object AllocatorScenario {
           println(s"[Thread-$idx] Entering read() WITHOUT @blocking...")
 
           val buf = stackalloc[Byte](1024)
-          val bytesRead = NativeBlocking.read(readFd, buf, 1024.toCSize)
+          val bytesRead = NativeRead.readBlocking(readFd, buf, 1024.toCSize)
 
           println(s"[Thread-$idx] read() returned: $bytesRead")
         },
@@ -74,8 +73,8 @@ object AllocatorScenario {
 
     // Cleanup
     for (i <- 0 until numThreads) {
-      close(pipeReadFds(i))
-      close(pipeWriteFds(i))
+      PlatformIO.closePipe(pipeReadFds(i))
+      PlatformIO.closePipe(pipeWriteFds(i))
     }
 
     for (t <- threads) {

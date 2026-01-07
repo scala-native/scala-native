@@ -18,6 +18,10 @@ import scala.scalanative.unsafe._
  */
 object ZombieScenario {
   def run(): Unit = {
+    assert(
+      !scala.scalanative.meta.LinktimeInfo.isWindows,
+      "ZombieScenario is only supported on POSIX platforms"
+    )
     println("[Test] Running ZOMBIE scenario")
     println("[Test] Creating a thread that exits without GC cleanup...")
 

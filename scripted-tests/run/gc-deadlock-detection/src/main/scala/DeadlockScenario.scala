@@ -1,6 +1,5 @@
 import java.util.concurrent.atomic.AtomicBoolean
 
-import scala.scalanative.posix.unistd.{close, pipe}
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 
@@ -23,7 +22,7 @@ object DeadlockScenario {
     println("[Test] With fix: should timeout and abort")
 
     val pipeFds = stackalloc[CInt](2)
-    if (pipe(pipeFds) != 0) {
+    if (PlatformIO.createPipe(pipeFds) != 0) {
       System.err.println("ERROR: Failed to create pipe")
       System.exit(1)
     }
@@ -36,7 +35,7 @@ object DeadlockScenario {
         println("[Thread] Entering read() WITHOUT @blocking...")
         println("[Thread] Thread stays in Managed state - GC will wait!")
         val buf = stackalloc[Byte](1024)
-        val bytesRead = NativeBlocking.read(readFd, buf, 1024.toCSize)
+        val bytesRead = NativeRead.readBlocking(readFd, buf, 1024.toCSize)
         println(s"[Thread] read() returned: $bytesRead")
       },
       "deadlock-thread"
@@ -56,8 +55,8 @@ object DeadlockScenario {
 
     println(s"[Main] GC completed in ${elapsed}ms")
 
-    close(writeFd)
-    close(readFd)
+    PlatformIO.closePipe(writeFd)
+    PlatformIO.closePipe(readFd)
     blockingThread.join(2000)
 
     // If we get here, GC recovered somehow (shouldn't happen with timeout -> abort)

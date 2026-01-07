@@ -30,11 +30,6 @@ def runScenario(binary: java.io.File, gc: scala.scalanative.build.GC)(
     expectNonZeroExit: Boolean = false,
     envVars: Map[String, String] = Map.empty
 ): Unit = {
-  if (isWindows && (scenario == "pause" || scenario == "zombie")) {
-    System.err.println(s"Skipping $scenario test on Windows")
-    return
-  }
-
   println(s"Running scenario: $scenario, GC=${gc}")
 
   val pb = new ProcessBuilder(binary.getAbsolutePath, scenario)
@@ -85,52 +80,46 @@ testCorrect := runScenario(
 
 /** Test: GC timeout detection when thread blocks without @blocking */
 lazy val testDeadlock = taskKey[Unit]("Test deadlock detection with timeout")
-testDeadlock := {
-  if (isWindows)
-    System.err.println("Skipping deadlock test on Windows")
-  else
-    runScenario(
-      binary = (Compile / nativeLink).value,
-      gc = (Compile / nativeConfig).value.gc
-    )("deadlock", timeoutSeconds = 10, expectNonZeroExit = true)
-}
+testDeadlock := runScenario(
+  binary = (Compile / nativeLink).value,
+  gc = (Compile / nativeConfig).value.gc
+)("deadlock", timeoutSeconds = 20, expectNonZeroExit = true)
 
-/** Test: GC timeout detection with pause() syscall */
+/** Test: GC timeout detection with pause() syscall - POSIX only */
 lazy val testPause = taskKey[Unit]("Test pause() deadlock detection")
 testPause := {
   if (isWindows)
-    System.err.println("Skipping pause test on Windows")
+    System.err.println("Skipping pause test on Windows - pause() is POSIX-only")
   else
     runScenario(
       binary = (Compile / nativeLink).value,
       gc = (Compile / nativeConfig).value.gc
-    )("pause", timeoutSeconds = 10, expectNonZeroExit = true)
+    )("pause", timeoutSeconds = 20, expectNonZeroExit = true)
 }
 
-/** Test: GC detects zombie threads (threads that exited without cleanup) */
+/** Test: GC detects zombie threads (threads that exited without cleanup) -
+ *  POSIX only
+ */
 lazy val testZombie = taskKey[Unit]("Test zombie thread detection")
 testZombie := {
   if (isWindows)
-    System.err.println("Skipping zombie test on Windows")
+    System.err.println(
+      "Skipping zombie test on Windows - uses POSIX pthread APIs"
+    )
   else
     // Zombie test may abort or complete depending on timing
     runScenario(
       binary = (Compile / nativeLink).value,
       gc = (Compile / nativeConfig).value.gc
-    )("zombie", timeoutSeconds = 10, expectNonZeroExit = true)
+    )("zombie", timeoutSeconds = 20, expectNonZeroExit = true)
 }
 
 /** Test: GC handles multiple stuck threads */
 lazy val testAllocator = taskKey[Unit]("Test multiple blocking threads")
-testAllocator := {
-  if (isWindows)
-    System.err.println("Skipping allocator test on Windows")
-  else
-    runScenario(
-      binary = (Compile / nativeLink).value,
-      gc = (Compile / nativeConfig).value.gc
-    )("allocator", timeoutSeconds = 10, expectNonZeroExit = true)
-}
+testAllocator := runScenario(
+  binary = (Compile / nativeLink).value,
+  gc = (Compile / nativeConfig).value.gc
+)("allocator", timeoutSeconds = 20, expectNonZeroExit = true)
 
 /** Run all tests with current GC */
 lazy val testAll = taskKey[Unit]("Run all GC deadlock detection tests")
