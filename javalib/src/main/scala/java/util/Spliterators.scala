@@ -52,16 +52,16 @@ import Spliterator._
 
 object Spliterators {
 
-  private final val sizedCharacteristicsMask =
+  private[util] final val sizedCharacteristicsMask =
     Spliterator.SIZED | Spliterator.SUBSIZED
 
-  private def isMaskSet(characteristics: Int, mask: Int): Boolean =
+  private[util] def isMaskSet(characteristics: Int, mask: Int): Boolean =
     (characteristics & mask) == mask
 
-  private def maskOff(characteristics: Int, mask: Int): Int =
+  private[util] def maskOff(characteristics: Int, mask: Int): Int =
     characteristics & ~mask
 
-  private def maskOn(characteristics: Int, mask: Int): Int =
+  private[util] def maskOn(characteristics: Int, mask: Int): Int =
     characteristics | mask
 
   private def maybeSetSizedCharacteristics(characteristics: Int): Int = {
