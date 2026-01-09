@@ -934,6 +934,21 @@ class IntStreamTest {
     assertEquals(s"unexpected element count", expectedCount, s1.count())
   }
 
+  // Issue #4742 - see also primary reproduction in IntStreamTestOnJDK16
+  @Test def doubleStreamFilter_Characteristics(): Unit = {
+    val expectedCount = 2
+
+    val ds = IntStream.of(55, 44, -11, 0, -22, 33)
+
+    val spliter = ds.filter((d: scala.Int) => d < 0).spliterator()
+
+    StreamTestHelpers.verifyCharacteristics(
+      spliter,
+      Seq(Spliterator.ORDERED), // must be present
+      Seq(Spliterator.SIZED, Spliterator.SUBSIZED) // must be absent
+    )
+  }
+
   @Test def intStreamForeachOrdered(): Unit = {
     val s = IntStream.of(11, 22, 33)
 

@@ -71,4 +71,23 @@ class IntStreamTestOnJDK16 {
     assertEquals("unexpected number of elements", expectedCount, count)
   }
 
+  // SN Issue 4742
+  @Test def streamFilter_ShrinkingDownstream(): Unit = {
+
+    val ds = IntStream.of(
+      55, 44, -11, 0, -22, 33
+    )
+
+    val expectedCount = 2
+
+    val expectedData = new Array[scala.Int](expectedCount)
+    expectedData(0) = -11
+    expectedData(1) = -22
+
+    val filtered: Array[scala.Int] = ds.filter(i => i < 0).toArray()
+
+    assertEquals("filtered size", expectedCount, filtered.size)
+    for (j <- 0 until expectedCount)
+      assertEquals("contents j: $j", expectedData(j), filtered(j))
+  }
 }

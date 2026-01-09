@@ -296,12 +296,16 @@ private[stream] class LongStreamImpl(
   def filter(pred: LongPredicate): LongStream = {
     commenceOperation()
 
-    // Some items may be filtered out, so the estimated size is a high bound.
-    val estimatedSize = _spliter.estimateSize()
-
+    /* Create an unsized spliterator with characteristics matching JVM.
+     * JVM drops some upstream spliterator characteristics. IMMUTABLE
+     * is definitely dropped. Time will tell if others also need to be dropped.
+     */
     val spl = new Spliterators.AbstractLongSpliterator(
-      estimatedSize,
-      _spliter.characteristics()
+      Long.MaxValue,
+      Spliterators.maskOff(
+        _spliter.characteristics(),
+        Spliterators.sizedCharacteristicsMask | Spliterator.IMMUTABLE
+      )
     ) {
       def tryAdvance(action: LongConsumer): Boolean = {
         var success = false
