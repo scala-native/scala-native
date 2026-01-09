@@ -71,4 +71,23 @@ class DoubleStreamTestOnJDK16 {
     assertEquals("unexpected number of elements", expectedCount, count)
   }
 
+  // SN Issue 4742
+  @Test def streamFilter_ShrinkingDownstream(): Unit = {
+
+    val ds = DoubleStream.of(
+      5.5, 4.4, -1.1, 0.0, -2.2, 3.3
+    )
+
+    val expectedCount = 2
+
+    val expectedData = new Array[scala.Double](expectedCount)
+    expectedData(0) = -1.1
+    expectedData(1) = -2.2
+
+    val filtered: Array[scala.Double] = ds.filter(i => i < 0.0).toArray()
+
+    assertEquals("filtered size", expectedCount, filtered.size)
+    for (j <- 0 until expectedCount)
+      assertEquals("contents j: $j", expectedData(j), filtered(j), 0.0)
+  }
 }
