@@ -23,7 +23,6 @@ object Build {
   import Deps._
   import JmhPlugin.JmhKeys._
   import MyScalaNativePlugin.{ideScalaVersion, isGeneratingForIDE}
-  import NoIDEExport.noIDEExportSettings
   import ScalaVersions._
   import ScriptedPlugin.autoImport._
   import Settings._
@@ -91,7 +90,6 @@ object Build {
         name := "Scala Native",
         scalaVersion := ScalaVersions.scala212,
         crossScalaVersions := ScalaVersions.libCrossScalaVersions,
-        noIDEExportSettings,
         commonSettings,
         noPublishSettings,
         disabledTestsSettings,
@@ -318,10 +316,6 @@ object Build {
       .in(file("sbt-scala-native"))
       .enablePlugins(ScriptedPlugin)
       .settings(
-        {
-          if (ideScalaVersion == "2.12") Nil
-          else noIDEExportSettings
-        },
         sbtPluginSettings,
         disabledDocsSettings,
         addSbtPlugin(Deps.SbtPlatformDeps),
@@ -523,11 +517,7 @@ object Build {
             ),
             scalacOptions ++= {
               if (!usesSelfContainedStdlib(scalaVersion.value)) Nil
-              else
-                Seq(
-                  "-Yno-stdlib-patches",
-                  "-Yexplicit-nulls"
-                )
+              else Seq("-Yexplicit-nulls")
             },
             Compile / packageBin / mappings := Def.taskDyn {
               val currentMappings = (Compile / packageBin / mappings).value
@@ -867,10 +857,9 @@ object Build {
       .settings(
         scalacOptions --= Seq(
           "-Xfatal-warnings"
-        ), {
-          if (ideScalaVersion.startsWith("2.")) Nil
-          else noIDEExportSettings
-        },
+        ),
+        // Not cross-compiled to Scala 3 yet
+        bspEnabled := ideScalaVersion.startsWith("2."),
         noPublishSettings,
         shouldPartestSetting,
         resolvers += Resolver.typesafeIvyRepo("releases"),
@@ -932,7 +921,7 @@ object Build {
       .settings(
         noPublishSettings,
         shouldPartestSetting,
-        noIDEExportSettings,
+        bspEnabled := false,
         Test / fork := true,
         Test / javaOptions += "-Xmx1G",
         // Override the dependency of partest - see Scala.js issue #1889
@@ -1028,7 +1017,7 @@ object Build {
   )
     .settings(
       noPublishSettings,
-      noIDEExportSettings,
+      bspEnabled := false,
       scalacOptions ++= Seq(
         "-language:higherKinds"
       ),
