@@ -1,8 +1,8 @@
 package org.scalanative.testsuite.javalib.util.stream
 
-import java.util.Arrays
 import java.util.function.Consumer
 import java.util.stream._
+import java.util.{Arrays, List}
 import java.{lang => jl}
 
 import org.junit.Assert._
@@ -247,4 +247,21 @@ class StreamTestOnJDK16 {
     assertThrows(classOf[UnsupportedOperationException], list.remove(6))
   }
 
+  // SN Issue 4742
+  @Test def streamFilter_ToList(): Unit = {
+    /* Issue 4742 provided reproducion code which used Stream.toList().
+     * That method was introduced in JDK 16. The fundamental defect
+     * was in Stream.filter(), which goes back to JDK 8.  Exercise
+     * the fix here, as well as in StreamTest. The Test here stays
+     * closer to the original reproducer.
+     */
+
+    val list = List.of("A", "B", "CCC", "DD", "EEE")
+    val expectedList = List.of("A", "B", "DD")
+
+    val afterFilter = list.stream().filter(i => i.length < 3).toList()
+
+    assertEquals("filtered size", 3, afterFilter.size)
+    assertEquals("contents", expectedList, afterFilter)
+  }
 }

@@ -772,6 +772,20 @@ class StreamTest {
     assertEquals(s"unexpected element count", expectedCount, s1.count())
   }
 
+  // Issue #4742 - see also primary reproduction Test in StreamTestOnJDK16
+  @Test def streamFilter_Characteristics(): Unit = {
+
+    val s0 = jus.Stream.of[String]("AA", "B", "CC", "D", "EE", "F", "G")
+
+    val spliter = s0.filter((e) => e.length() == 1).spliterator()
+
+    StreamTestHelpers.verifyCharacteristics(
+      spliter,
+      Seq(Spliterator.ORDERED), // must be present
+      Seq(Spliterator.SIZED, Spliterator.SUBSIZED) // must be absent
+    )
+  }
+
   @Test def streamFlatMapToDouble(): Unit = {
     val expectedSum = 4.5
 

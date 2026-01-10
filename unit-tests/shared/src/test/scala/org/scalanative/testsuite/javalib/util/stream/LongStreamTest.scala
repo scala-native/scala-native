@@ -906,6 +906,23 @@ class LongStreamTest {
     assertEquals(s"unexpected element count", expectedCount, s1.count())
   }
 
+  // Issue #4742 - see also primary reproduction in LongStreamTestOnJDK16
+  @Test def doubleStreamFilter_Characteristics(): Unit = {
+    val expectedCount = 2
+
+    val ds = LongStream.of(
+      55L, 44L, -11L, 0L, -22L, 33L
+    )
+
+    val spliter = ds.filter((d: scala.Long) => d < 0L).spliterator()
+
+    StreamTestHelpers.verifyCharacteristics(
+      spliter,
+      Seq(Spliterator.ORDERED), // must be present
+      Seq(Spliterator.SIZED, Spliterator.SUBSIZED) // must be absent
+    )
+  }
+
   @Test def longStreamForeachOrdered(): Unit = {
     val s = LongStream.of(11, 22, 33)
 
