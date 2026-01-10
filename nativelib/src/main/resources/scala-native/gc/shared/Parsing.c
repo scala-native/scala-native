@@ -106,6 +106,43 @@ size_t Parse_Env_Or_Default_String(const char *envName,
         return Parse_Env_Or_Default(envName, defaultSizeInBytes);
 }
 
+// =============================================================================
+// Plain Integer Parsing (for timeouts, counts, etc.)
+// =============================================================================
+
+uint64_t Parse_Long_Or_Default(const char *str, uint64_t defaultValue) {
+    if (str == NULL || str[0] == '\0') {
+        return defaultValue;
+    }
+
+    char *endptr;
+    unsigned long long value = strtoull(str, &endptr, 10);
+
+    // Check if parsing succeeded (at least one digit consumed)
+    if (endptr == str) {
+        return defaultValue;
+    }
+
+    return (uint64_t)value;
+}
+
+uint64_t Parse_Env_Or_Default_Long(const char *envName, uint64_t defaultValue) {
+    if (envName == NULL) {
+        return defaultValue;
+    }
+
+    const char *env = getenv(envName);
+    uint64_t result = Parse_Long_Or_Default(env, defaultValue);
+    if (env != NULL) {
+        GC_LOG_DEBUG("Found %s=%s, parsed to %llu", envName, env,
+                     (unsigned long long)result);
+    } else {
+        GC_LOG_DEBUG("%s not set, using default %llu", envName,
+                     (unsigned long long)defaultValue);
+    }
+    return result;
+}
+
 size_t Choose_IF(size_t left, qualifier qualifier, size_t right) {
     switch (qualifier) {
     case Greater_Than:

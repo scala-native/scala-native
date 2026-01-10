@@ -14,16 +14,21 @@ typedef struct {
     atomic_intptr_t stackTop;
     atomic_bool isWaiting;
     RegistersBuffer registersBuffer;
-    // immutable fields
-#ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
+
+    // Thread handles for liveness checking and signal delivery
 #ifdef _WIN32
-    HANDLE wakeupEvent;
-#else
-    thread_t thread;
+    HANDLE threadHandle; // Duplicated handle for liveness checking
+#ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
+    HANDLE wakeupEvent; // Used for thread wake-up (trap mode only)
 #endif
-#endif // SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
+#else
+    thread_t thread; // pthread_t - used for liveness check and signals
+#endif
+
+    // Allocators (immutable after init)
     Allocator allocator;
     LargeAllocator largeAllocator;
+
 #ifdef SCALANATIVE_THREAD_ALT_STACK
     ThreadInfo *threadInfo;
 #endif
@@ -36,15 +41,36 @@ typedef struct MutatorThreadNode {
 
 typedef MutatorThreadNode *MutatorThreads;
 
+// =============================================================================
+// MutatorThread Lifecycle API
+// =============================================================================
 void MutatorThread_init(word_t **stackBottom);
 void MutatorThread_delete(MutatorThread *self);
 void MutatorThread_switchState(MutatorThread *self,
                                GC_MutatorThreadState newState);
-void MutatorThreads_init();
+
+// =============================================================================
+// Thread State Checks
+// =============================================================================
+
+// Check if thread has reached a safepoint (stopped and saved its stack)
+// Returns true if thread is at safepoint (stackTop is set), false if still
+// running Note: A thread at safepoint has switched to Unmanaged state and saved
+// registers
+bool MutatorThread_isAtSafepoint(MutatorThread *thread);
+
+// Check if a mutator thread is still alive (useful for detecting zombie
+// threads) Returns true if thread exists, false if thread has terminated
+bool MutatorThread_isAlive(MutatorThread *thread);
+
+// =============================================================================
+// MutatorThreads List Management
+// =============================================================================
+void MutatorThreads_init(void);
 void MutatorThreads_add(MutatorThread *node);
 void MutatorThreads_remove(MutatorThread *node);
-void MutatorThreads_lock();
-void MutatorThreads_unlock();
+void MutatorThreads_lock(void);
+void MutatorThreads_unlock(void);
 
 #define MutatorThreads_foreach(list, node)                                     \
     for (MutatorThreads node = list; node != NULL; node = node->next)
