@@ -220,7 +220,7 @@ object MultiScalaProject {
       val ideScalaVersions = additionalIDEScalaVersions :+ ideScalaVersion
       val noIDEExportSettings =
         if (ideScalaVersions.contains(major)) Nil
-        else NoIDEExport.noIDEExportSettings
+        else Seq(bspEnabled := false)
 
       major -> Project(
         id = projectID(idWithSuffix, major),
