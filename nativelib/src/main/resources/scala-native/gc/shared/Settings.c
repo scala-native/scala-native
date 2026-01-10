@@ -38,8 +38,12 @@ void SharedSettings_Init(void) {
 
 uint64_t SharedSettings_TimeoutMs(void) { return syncTimeoutMs; }
 
-uint64_t SharedSettings_WarningIntervalMs(void) { return syncWarningIntervalMs; }
+uint64_t SharedSettings_WarningIntervalMs(void) {
+    return syncWarningIntervalMs;
+}
 
-bool SharedSettings_TimeoutEnabled(void) { return SharedSettings_TimeoutMs() > 0; }
+bool SharedSettings_TimeoutEnabled(void) {
+    return SharedSettings_TimeoutMs() > 0;
+}
 
 #endif // SCALANATIVE_GC_IMMIX || SCALANATIVE_GC_COMMIX
