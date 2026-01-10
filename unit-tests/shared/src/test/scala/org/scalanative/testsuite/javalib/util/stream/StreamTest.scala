@@ -712,6 +712,20 @@ class StreamTest {
     assertTrue("expectedSet has remaining elements", expectedSet.isEmpty())
   }
 
+  // Issue #4743
+  @Test def streamDistinct_Characteristics(): Unit = {
+
+    val s0 = jus.Stream.of[String]("AA", "B", "AA", "CC", "D", "EE", "F", "G")
+
+    val spliter = s0.distinct().spliterator()
+
+    StreamTestHelpers.verifyCharacteristics(
+      spliter,
+      Seq(Spliterator.DISTINCT, Spliterator.ORDERED), // must be present
+      Seq(Spliterator.SIZED, Spliterator.SUBSIZED) // must be absent
+    )
+  }
+
   @Test def streamFindAny_Null(): Unit = {
     val s = Stream.of(null.asInstanceOf[String], "NULL")
     assertThrows(classOf[NullPointerException], s.findAny())

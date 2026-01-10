@@ -260,13 +260,17 @@ private[stream] class DoubleStreamImpl(
 
     val seenElements = new ju.HashSet[scala.Double]()
 
-    // Some items may be dropped, so the estimated size is a high bound.
-    val estimatedSize = _spliter.estimateSize()
-
+    /* Create an unsized spliterator with characteristics matching JVM.
+     * One would expect DISTINCT here. JVM does that for streams of Object,
+     * but not for streams of primitives, double, int, long
+     */
     val spl =
       new Spliterators.AbstractDoubleSpliterator(
-        estimatedSize,
-        _spliter.characteristics()
+        Long.MaxValue,
+        Spliterators.maskOff(
+          _spliter.characteristics(),
+          Spliterators.sizedCharacteristicsMask | Spliterator.IMMUTABLE
+        )
       ) {
         def tryAdvance(action: DoubleConsumer): Boolean = {
           var success = false
