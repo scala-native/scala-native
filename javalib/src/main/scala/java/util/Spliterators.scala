@@ -64,7 +64,7 @@ object Spliterators {
   private[util] def maskOn(characteristics: Int, mask: Int): Int =
     characteristics | mask
 
-  private def maybeSetSizedCharacteristics(characteristics: Int): Int = {
+  private[util] def maybeSetSizedCharacteristics(characteristics: Int): Int = {
     if (isMaskSet(characteristics, Spliterator.CONCURRENT)) characteristics
     else maskOn(characteristics, sizedCharacteristicsMask)
   }
