@@ -8,9 +8,9 @@
 #include <stdlib.h>
 #include "Settings.h"
 #include "shared/Parsing.h"
+#include "shared/Settings.h"
 #include "Constants.h"
 #include "shared/Log.h"
-#include "shared/SyncSettings.h"
 
 // =============================================================================
 // Heap Settings
@@ -31,7 +31,7 @@ char *Settings_StatsFileName(void) { return getenv(GC_STATS_FILE_SETTING); }
 void Settings_Init(void) {
 
     // Initialize sync timeout settings
-    SyncSettings_Init();
+    SharedSettings_Init();
 }
 
 #endif // SCALANATIVE_GC_IMMIX

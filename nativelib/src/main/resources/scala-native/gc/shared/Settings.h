@@ -23,16 +23,16 @@
 // =============================================================================
 
 // Initialize sync settings (call once at GC init, after GC_Log_Init)
-void SyncSettings_Init(void);
+void SharedSettings_Init(void);
 
 // Get the timeout for waiting for threads to reach safepoint (in milliseconds)
 // Returns 0 if timeout is disabled
-uint64_t SyncSettings_TimeoutMs(void);
+uint64_t SharedSettings_TimeoutMs(void);
 
 // Get the interval for printing warnings while waiting (in milliseconds)
-uint64_t SyncSettings_WarningIntervalMs(void);
+uint64_t SharedSettings_WarningIntervalMs(void);
 
 // Check if sync timeout is enabled
-bool SyncSettings_TimeoutEnabled(void);
+bool SharedSettings_TimeoutEnabled(void);
 
 #endif // GC_SHARED_SYNC_SETTINGS_H

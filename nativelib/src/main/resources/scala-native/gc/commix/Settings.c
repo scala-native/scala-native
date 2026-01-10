@@ -16,7 +16,7 @@
 #include "Constants.h"
 #include "shared/Parsing.h"
 #include "shared/Log.h"
-#include "shared/SyncSettings.h"
+#include "shared/Settings.h"
 
 // =============================================================================
 // Heap Settings
@@ -89,7 +89,7 @@ int Settings_GCThreadCount(void) {
 void Settings_Init(void) {
 
     // Initialize sync timeout settings
-    SyncSettings_Init();
+    SharedSettings_Init();
 }
 
 #endif // SCALANATIVE_GC_COMMIX

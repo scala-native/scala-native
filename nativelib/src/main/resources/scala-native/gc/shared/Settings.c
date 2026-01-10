@@ -1,6 +1,6 @@
 #if defined(SCALANATIVE_GC_IMMIX) || defined(SCALANATIVE_GC_COMMIX)
 
-#include "SyncSettings.h"
+#include "Settings.h"
 #include "Parsing.h"
 #include "Log.h"
 
@@ -14,7 +14,7 @@ static uint64_t syncWarningIntervalMs = GC_SYNC_WARNING_INTERVAL_MS_DEFAULT;
 // =============================================================================
 // GC Synchronization Settings Implementation
 // =============================================================================
-void SyncSettings_Init(void) {
+void SharedSettings_Init(void) {
     if (syncSettingsInitialized)
         return;
     syncSettingsInitialized = true;
@@ -36,10 +36,10 @@ void SyncSettings_Init(void) {
                  (unsigned long long)syncWarningIntervalMs);
 }
 
-uint64_t SyncSettings_TimeoutMs(void) { return syncTimeoutMs; }
+uint64_t SharedSettings_TimeoutMs(void) { return syncTimeoutMs; }
 
-uint64_t SyncSettings_WarningIntervalMs(void) { return syncWarningIntervalMs; }
+uint64_t SharedSettings_WarningIntervalMs(void) { return syncWarningIntervalMs; }
 
-bool SyncSettings_TimeoutEnabled(void) { return SyncSettings_TimeoutMs() > 0; }
+bool SharedSettings_TimeoutEnabled(void) { return SharedSettings_TimeoutMs() > 0; }
 
 #endif // SCALANATIVE_GC_IMMIX || SCALANATIVE_GC_COMMIX
