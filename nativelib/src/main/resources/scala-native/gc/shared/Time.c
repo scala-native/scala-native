@@ -35,7 +35,7 @@ long long Time_current_millis(void) {
     return (long long)GetTickCount64();
 #else
     // Use CLOCK_MONOTONIC for elapsed time measurement
-    struct timespec ts;
+    struct timespec ts = {};
     if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
         return (long long)ts.tv_sec * 1000 + (long long)ts.tv_nsec / 1000000;
     }

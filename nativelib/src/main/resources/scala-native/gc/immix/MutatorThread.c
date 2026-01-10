@@ -47,7 +47,7 @@ void MutatorThread_init(Field_t *stackbottom) {
     }
 #endif // SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
 #else
-    // Always store pthread_t for liveness checking
+    // Always store thread identifier for liveness checking
     self->thread = pthread_self();
 #endif
 
@@ -119,6 +119,10 @@ bool MutatorThread_isAtSafepoint(MutatorThread *thread) {
     return atomic_load_explicit(&thread->stackTop, memory_order_acquire) != 0;
 }
 
+// Checks if the given mutator thread is alive.
+// On Windows, uses the thread handle to query the exit code; if the handle is unavailable or the query fails, assumes the thread is alive.
+// On POSIX systems, uses pthread_kill with signal 0 to check existence; returns true if the thread exists.
+// This fallback behavior ensures that threads are conservatively considered alive if liveness cannot be determined.
 bool MutatorThread_isAlive(MutatorThread *thread) {
 #ifdef _WIN32
     if (thread->threadHandle == NULL) {

@@ -120,7 +120,7 @@ static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
 #endif
 #define THREAD_WAKEUP_SIGNAL SIGCONT
 static struct sigaction previousSignalHandler = {};
-static sigset_t threadWakupSignals;
+static sigset_t threadWakupSignals = {};
 
 static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
     int old_errno = errno;
