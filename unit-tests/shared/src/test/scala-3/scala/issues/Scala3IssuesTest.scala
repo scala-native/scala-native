@@ -87,6 +87,22 @@ class Scala3IssuesTest:
     assertThrows(classOf[NullPointerException], () => useUnit(null))
   }
 
+  // Issue #4747: Union type discrimination lost when one if-branch returns Unit
+  @Test def issue4747(): Unit = {
+    import scala.issues.issue4747._
+
+    // Union value passed as parameter
+    val unitVal: Error | Unit = ()
+    val errorVal: Error | Unit = new RuntimeException("boom")
+    assertEquals("unit", matchParameter(unitVal))
+    assertEquals("error", matchParameter(errorVal))
+
+    // Union value from internal call
+    // This was incorrectly returning "unit" for both cases
+    assertEquals("unit", matchInternalCall(true))
+    assertEquals("error", matchInternalCall(false))
+  }
+
 end Scala3IssuesTest
 
 private object issue2484 {
@@ -120,4 +136,22 @@ private object issue3014 {
       case Nanos  => value
     }
   }
+}
+
+// Issue #4747
+private object issue4747 {
+  type Error = Throwable
+
+  inline def matchParameter[E <: Throwable](value: E | Unit): String =
+    value match
+      case _: Unit => "unit"
+      case e: E    => "error"
+
+  def produceUnion(valid: Boolean): Error | Unit =
+    if valid then () else new RuntimeException("boom")
+
+  inline def matchInternalCall(valid: Boolean): String =
+    produceUnion(valid) match
+      case _: Unit      => "unit"
+      case _: Throwable => "error"
 }

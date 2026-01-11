@@ -233,7 +233,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       def isUnitType(tpe: Type) =
         defn.isUnitType(tpe) || tpe =:= defn.BoxedUnitTpe
       val retty =
-        if (isUnitType(thenp.tpe) || isUnitType(elsep.tpe)) nir.Type.Unit
+        if (isUnitType(thenp.tpe) && isUnitType(elsep.tpe)) nir.Type.Unit
         else genType(tree.tpe)
       genIf(retty, cond, thenp, elsep)(tree.pos.orElse(fallbackSourcePosition))
     }

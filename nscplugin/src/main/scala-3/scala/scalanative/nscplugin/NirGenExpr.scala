@@ -482,7 +482,7 @@ trait NirGenExpr(using Context) {
       def isUnitType(tpe: Type) =
         tpe =:= defn.UnitType || defn.isBoxedUnitClass(tpe.typeSymbol)
       val retty =
-        if (isUnitType(thenp.tpe) || isUnitType(elsep.tpe)) nir.Type.Unit
+        if (isUnitType(thenp.tpe) && isUnitType(elsep.tpe)) nir.Type.Unit
         else genType(tree.tpe)
       genIf(retty, cond, thenp, elsep)
     }
