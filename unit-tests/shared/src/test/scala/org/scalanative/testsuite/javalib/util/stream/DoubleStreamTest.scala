@@ -769,6 +769,23 @@ class DoubleStreamTest {
     assertTrue("expectedSet has remaining elements", expectedSet.isEmpty())
   }
 
+  // Issue #4743
+  @Test def doubleStreamDistinct_Characteristics(): Unit = {
+
+    val ds = DoubleStream.of(
+      5.5, 0.0, 4.4, -1.1, -1.1, 4.4, -2.2, -2.2, 3.3, 4.4
+    )
+
+    val spliter = ds.distinct().spliterator()
+
+    // No DISTINCT, inconsistent with Stream#distinct
+    StreamTestHelpers.verifyCharacteristics(
+      spliter,
+      Seq(Spliterator.ORDERED), // must be present
+      Seq(Spliterator.SIZED, Spliterator.SUBSIZED) // must be absent
+    )
+  }
+
   @Test def doubleStreamFindAny_Null(): Unit = {
     val s = DoubleStream.of(null.asInstanceOf[Double])
     // Double nulls get seen as 0.0

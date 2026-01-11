@@ -248,8 +248,8 @@ class StreamTestOnJDK16 {
   }
 
   // SN Issue 4742
-  @Test def streamFilter_ToList(): Unit = {
-    /* Issue 4742 provided reproducion code which used Stream.toList().
+  @Test def streamFilter_ShrinkingDownstream(): Unit = {
+    /* Issue 4742 provided reproduction code which used Stream.toList().
      * That method was introduced in JDK 16. The fundamental defect
      * was in Stream.filter(), which goes back to JDK 8.  Exercise
      * the fix here, as well as in StreamTest. The Test here stays
@@ -261,7 +261,21 @@ class StreamTestOnJDK16 {
 
     val afterFilter = list.stream().filter(i => i.length < 3).toList()
 
-    assertEquals("filtered size", 3, afterFilter.size)
+    assertEquals("filtered size", expectedList.size, afterFilter.size)
     assertEquals("contents", expectedList, afterFilter)
+  }
+
+  // SN Issue 4743
+  @Test def streamDistinct_ShrinkingDownstream(): Unit = {
+    // See notes in streamFilter_ToList test. Same song, next verse.
+
+    val list = List.of("A", "D", "B", "C", "C", "B", "D", "E", "E")
+
+    val expectedList = List.of("A", "D", "B", "C", "E")
+
+    val distinctElements = list.stream().distinct().toList()
+
+    assertEquals("distinct size", expectedList.size, distinctElements.size)
+    assertEquals("contents", expectedList, distinctElements)
   }
 }

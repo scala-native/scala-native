@@ -74,7 +74,7 @@ class IntStreamTestOnJDK16 {
   // SN Issue 4742
   @Test def streamFilter_ShrinkingDownstream(): Unit = {
 
-    val ds = IntStream.of(
+    val is = IntStream.of(
       55, 44, -11, 0, -22, 33
     )
 
@@ -84,10 +84,34 @@ class IntStreamTestOnJDK16 {
     expectedData(0) = -11
     expectedData(1) = -22
 
-    val filtered: Array[scala.Int] = ds.filter(i => i < 0).toArray()
+    val filtered: Array[scala.Int] = is.filter(i => i < 0).toArray()
 
     assertEquals("filtered size", expectedCount, filtered.size)
     for (j <- 0 until expectedCount)
       assertEquals("contents j: $j", expectedData(j), filtered(j))
+  }
+
+  // SN Issue 4743
+  @Test def streamDistinct_ShrinkingDownstream(): Unit = {
+
+    val is = IntStream.of(
+      55, 0, 44, -11, -11, 44, -22, -22, 33, 44
+    )
+
+    val expectedCount = 6
+
+    val expectedData = new Array[scala.Int](expectedCount)
+    expectedData(0) = 55
+    expectedData(1) = 0
+    expectedData(2) = 44
+    expectedData(3) = -11
+    expectedData(4) = -22
+    expectedData(5) = 33
+
+    val distinctElements: Array[scala.Int] = is.distinct().toArray()
+
+    assertEquals("distinct size", expectedCount, distinctElements.size)
+    for (j <- 0 until expectedCount)
+      assertEquals("contents j: $j", expectedData(j), distinctElements(j))
   }
 }

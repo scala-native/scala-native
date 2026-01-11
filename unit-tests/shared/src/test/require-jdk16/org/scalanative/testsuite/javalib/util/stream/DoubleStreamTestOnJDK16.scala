@@ -90,4 +90,28 @@ class DoubleStreamTestOnJDK16 {
     for (j <- 0 until expectedCount)
       assertEquals("contents j: $j", expectedData(j), filtered(j), 0.0)
   }
+
+  // SN Issue 4743
+  @Test def streamDistinct_ShrinkingDownstream(): Unit = {
+
+    val ds = DoubleStream.of(
+      5.5, 0.0, 4.4, -1.1, -1.1, 4.4, -2.2, -2.2, 3.3, 4.4
+    )
+
+    val expectedCount = 6
+
+    val expectedData = new Array[scala.Double](expectedCount)
+    expectedData(0) = 5.5
+    expectedData(1) = 0.0
+    expectedData(2) = 4.4
+    expectedData(3) = -1.1
+    expectedData(4) = -2.2
+    expectedData(5) = 3.3
+
+    val distinctElements: Array[scala.Double] = ds.distinct().toArray()
+
+    assertEquals("distinct size", expectedCount, distinctElements.size)
+    for (j <- 0 until expectedCount)
+      assertEquals("contents j: $j", expectedData(j), distinctElements(j), 0.0)
+  }
 }
