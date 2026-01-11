@@ -15,16 +15,21 @@
 #include "Settings.h"
 #include "Constants.h"
 #include "shared/Parsing.h"
+#include "shared/Log.h"
+#include "shared/Settings.h"
 
-size_t Settings_MinHeapSize() {
+// =============================================================================
+// Heap Settings
+// =============================================================================
+size_t Settings_MinHeapSize(void) {
     return Parse_Env_Or_Default("GC_INITIAL_HEAP_SIZE", DEFAULT_MIN_HEAP_SIZE);
 }
 
-size_t Settings_MaxHeapSize() {
+size_t Settings_MaxHeapSize(void) {
     return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE", UNLIMITED_HEAP_SIZE);
 }
 
-double Settings_MaxMarkTimeRatio() {
+double Settings_MaxMarkTimeRatio(void) {
     char *str = getenv("GC_TIME_RATIO");
     if (str == NULL) {
         return DEFAULT_MARK_TIME_RATIO;
@@ -35,7 +40,7 @@ double Settings_MaxMarkTimeRatio() {
     }
 }
 
-double Settings_MinFreeRatio() {
+double Settings_MinFreeRatio(void) {
     char *str = getenv("GC_FREE_RATIO");
     if (str == NULL) {
         return DEFAULT_FREE_RATIO;
@@ -47,10 +52,10 @@ double Settings_MinFreeRatio() {
 }
 
 #ifdef ENABLE_GC_STATS
-char *Settings_StatsFileName() { return getenv(GC_STATS_FILE_SETTING); }
+char *Settings_StatsFileName(void) { return getenv(GC_STATS_FILE_SETTING); }
 #endif
 
-int Settings_GCThreadCount() {
+int Settings_GCThreadCount(void) {
     char *str = getenv("GC_NPROCS");
     if (str == NULL) {
         // default is number of cores - 1, but no less than 1 and no more than 8
@@ -78,4 +83,13 @@ int Settings_GCThreadCount() {
     }
 }
 
-#endif
+// =============================================================================
+// Settings Initialization
+// =============================================================================
+void Settings_Init(void) {
+
+    // Initialize sync timeout settings
+    SharedSettings_Init();
+}
+
+#endif // SCALANATIVE_GC_COMMIX
