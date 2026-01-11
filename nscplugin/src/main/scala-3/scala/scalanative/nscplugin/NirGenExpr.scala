@@ -481,9 +481,31 @@ trait NirGenExpr(using Context) {
       val If(cond, thenp, elsep) = tree
       def isUnitType(tpe: Type) =
         tpe =:= defn.UnitType || defn.isBoxedUnitClass(tpe.typeSymbol)
+
+      // Check if a type generates a non-reference NIR type that requires
+      // special handling when one if-branch is Unit.
+      def isNonCoercibleType(tpe: Type): Boolean = {
+        val sym = tpe.widenDealias.typeSymbol
+        sym == defnNir.RawPtrClass ||
+          sym == defnNir.RawSizeClass ||
+          defnNir.CStructClasses.contains(sym) ||
+          sym == defnNir.CArrayClass ||
+          sym.isCFuncPtrClass
+      }
+
+      // When one branch is Unit and the other is a non-coercible type (like Ptr),
+      // we must force Unit to avoid NIR type mismatches.
+      // When one branch is Unit and the other is a coercible type (like a class),
+      // we keep the tree's type to preserve runtime type information for pattern matching.
       val retty =
-        if (isUnitType(thenp.tpe) && isUnitType(elsep.tpe)) nir.Type.Unit
+        if (isUnitType(tree.tpe)) nir.Type.Unit
+        else if (isUnitType(thenp.tpe) && isUnitType(elsep.tpe)) nir.Type.Unit
+        else if (isUnitType(thenp.tpe) && isNonCoercibleType(elsep.tpe))
+          nir.Type.Unit
+        else if (isNonCoercibleType(thenp.tpe) && isUnitType(elsep.tpe))
+          nir.Type.Unit
         else genType(tree.tpe)
+
       genIf(retty, cond, thenp, elsep)
     }
 
