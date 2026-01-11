@@ -89,7 +89,20 @@ class Scala3IssuesTest:
 
   // Issue #4747: Union type discrimination lost when one if-branch returns Unit
   @Test def issue4747(): Unit = {
-    import scala.issues.issue4747._
+    type Error = Throwable
+
+    inline def matchParameter[E <: Throwable](value: E | Unit): String =
+      value match
+        case _: Unit => "unit"
+        case e: E    => "error"
+
+    def produceUnion(valid: Boolean): Error | Unit =
+      if valid then () else new RuntimeException("boom")
+
+    inline def matchInternalCall(valid: Boolean): String =
+      produceUnion(valid) match
+        case _: Unit      => "unit"
+        case _: Throwable => "error"
 
     // Union value passed as parameter
     val unitVal: Error | Unit = ()
@@ -136,22 +149,4 @@ private object issue3014 {
       case Nanos  => value
     }
   }
-}
-
-// Issue #4747
-private object issue4747 {
-  type Error = Throwable
-
-  inline def matchParameter[E <: Throwable](value: E | Unit): String =
-    value match
-      case _: Unit => "unit"
-      case e: E    => "error"
-
-  def produceUnion(valid: Boolean): Error | Unit =
-    if valid then () else new RuntimeException("boom")
-
-  inline def matchInternalCall(valid: Boolean): String =
-    produceUnion(valid) match
-      case _: Unit      => "unit"
-      case _: Throwable => "error"
 }

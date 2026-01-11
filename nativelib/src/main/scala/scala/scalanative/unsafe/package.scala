@@ -215,7 +215,7 @@ package object unsafe extends unsafe.UnsafePackageCompat {
     // Set null termination bytes (z.alloc does not initialize memory)
     val cstrEndRaw = elemRawPtr(cstr.rawptr, size)
     if (charSize == 1) storeByte(cstrEndRaw, 0) // most common case
-    else ffi.memset(cstrEndRaw, 0, charSize.toRawSize)
+    else ffi.memset(cstrEndRaw, 0, charSize.toRawSize): Unit
 
     cstr
   }
