@@ -741,7 +741,7 @@ private[math] object Division {
    *    {@code x<sup>-1</sup> (mod 2<sup>n</sup>)}.
    */
   def modPow2Inverse(x: BigInteger, n: Int): BigInteger = {
-    // SN Issue 4740 fixed by porting Scala.js PR 5299
+    // SN Issue 4740 fixed by porting Scala.js PR 5299.
     val numberLength = (n + 31) >> 5 // ceil(n / 32)
     val y = new BigInteger(1, numberLength, new Array[Int](numberLength))
     y.digits(0) = 1
