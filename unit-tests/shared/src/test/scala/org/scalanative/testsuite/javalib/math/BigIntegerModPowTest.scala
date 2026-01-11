@@ -1,4 +1,6 @@
-// Ported from Scala.js, revision c473689, dated 06.05.2021
+/* Ported from Scala.js, revision c473689, dated 06.05.2021
+ * Updated  to Scala.js, revision 84862c3, dated 2026-01-10
+ */
 
 // scalastyle:off line.size.limit
 /*
@@ -296,4 +298,28 @@ class BigIntegerModPowTest {
     }
     assertEquals(1, result.signum())
   }
+
+  // SN Issue 4740, Scala.js Issue 5297
+  @Test def testModPow_SN_Issue4740(): Unit = {
+    // scalastyle:off line.size.limit
+
+    // Values from Plutus conformance test (modulus is 79!)
+    val base = new BigInteger(
+      "295783465278346578267348527836475862348589358937497"
+    )
+    val exp = new BigInteger(
+      "89734578923487957289347527893478952378945268423487234782378423"
+    )
+    val modulus = new BigInteger(
+      "894618213078297528685144171539831652069808216779571907213868063227837990693501860533361810841010176000000000000000000"
+    )
+    val expected = new BigInteger(
+      "280175799933420074585178470510090012806707950340412289432212739835789837904455835552327022379259130346551828535037673"
+    )
+
+    assertEquals(expected, base.modPow(exp, modulus))
+
+    // scalastyle:on line.size.limit
+  }
+
 }

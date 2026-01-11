@@ -1,3 +1,11 @@
+/* Originally ported from Scala.js, 2016-05-05
+ * 
+ * Ported Scala.js PR #5299 fix only, revision 84862c3, dated 2026-01-10
+ * Technical debt: INTERMEDIATE REVISIONS WERE NOT PORTED.
+ *                 Commit 36c7edb is for performance, not correctness.
+ *                 It looks especially promising.
+ */
+
 /*
  * Ported by Alistair Johnson from
  * https://github.com/gwtproject/gwt/blob/master/user/super/com/google/gwt/emul/java/math/Division.java
@@ -733,8 +741,9 @@ private[math] object Division {
    *    {@code x<sup>-1</sup> (mod 2<sup>n</sup>)}.
    */
   def modPow2Inverse(x: BigInteger, n: Int): BigInteger = {
-    val y = new BigInteger(1, new Array[Int](1 << n))
-    y.numberLength = 1
+    // SN Issue 4740 fixed by porting Scala.js PR 5299.
+    val numberLength = (n + 31) >> 5 // ceil(n / 32)
+    val y = new BigInteger(1, numberLength, new Array[Int](numberLength))
     y.digits(0) = 1
     y.sign = 1
     for (i <- 1 until n) {
