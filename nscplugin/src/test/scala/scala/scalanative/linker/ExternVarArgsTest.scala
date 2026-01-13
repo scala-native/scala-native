@@ -6,8 +6,8 @@ import org.junit.Test
 
 class ExternVarArgsTest {
 
-  // Since 3.8.2 when having extern trait FFI; extern object FFI extends FFI; both references to extern member would use trait member
-  def refersToExternMember = buildinfo.ScalaNativeBuildInfo.scalaVersion
+  // Since 3.8.0 when having 'extern trait FFI; extern object FFI extends FFI' both references to extern member would use trait member
+  def refersOnlyToExternMember = buildinfo.ScalaNativeBuildInfo.scalaVersion
     .split("\\D")
     .take(3)
     .map(_.toInt) match {
@@ -53,7 +53,7 @@ class ExternVarArgsTest {
           case d @ nir.Defn.Declare(_, name @ PrintfMethod, ty)      => ty
           case d @ nir.Defn.Declare(_, name @ PrintfTraitMethod, ty) => ty
         }
-        .ensuring(_.size == (if (refersToExternMember) 1 else 2))
+        .ensuring(_.size == (if (refersOnlyToExternMember) 1 else 2))
         .foreach { ty =>
           assertEquals(ty.args.last, nir.Type.Vararg)
         }
@@ -86,7 +86,7 @@ class ExternVarArgsTest {
             args
         }
         .ensuring(
-          _.size == (if (refersToExternMember) 2 else 1),
+          _.size == 2,
           "Not found either tested method or the extern calls"
         )
         .foreach { callArgs =>
