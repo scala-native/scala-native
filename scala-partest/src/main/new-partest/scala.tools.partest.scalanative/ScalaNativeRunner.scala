@@ -9,7 +9,7 @@ class ScalaNativeRunner(
     options: ScalaNativePartestOptions
 ) extends nest.Runner(testInfo, suiteRunner) {
 
-  override def newCompiler = {
+  override def newCompiler: DirectCompiler = {
     new DirectCompiler(this) with ScalaNativeDirectCompiler
   }
 
