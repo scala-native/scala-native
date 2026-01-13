@@ -130,9 +130,9 @@ object ThreadPoolExecutorSubclassTest {
         threadFactory,
         handler
       ) {
-    override protected def newTaskFor[V](c: Callable[V]) =
+    override protected def newTaskFor[V](c: Callable[V]): RunnableFuture[V] =
       new CustomTask[V](c)
-    override protected def newTaskFor[V](r: Runnable, v: V) =
+    override protected def newTaskFor[V](r: Runnable, v: V): RunnableFuture[V] =
       new CustomTask[V](r, v)
     def this(
         corePoolSize: Int,

@@ -83,11 +83,11 @@ class ScheduledExecutorSubclassTest extends JSR166Test {
     override protected def decorateTask[V](
         r: Runnable,
         task: RunnableScheduledFuture[V]
-    ) = new CustomTask[V](task)
+    ): RunnableScheduledFuture[V] = new CustomTask[V](task)
     override protected def decorateTask[V](
         c: Callable[V],
         task: RunnableScheduledFuture[V]
-    ) = new CustomTask[V](task)
+    ): RunnableScheduledFuture[V] = new CustomTask[V](task)
   }
 
   /** execute successfully executes a runnable

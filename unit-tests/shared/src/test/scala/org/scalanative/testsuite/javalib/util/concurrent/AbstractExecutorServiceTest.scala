@@ -149,7 +149,7 @@ class AbstractExecutorServiceTest extends JSR166Test {
     )
   ) { p =>
     val c = new Callable[Any]() {
-      override def call = throw new ArithmeticException
+      override def call: Any = throw new ArithmeticException
     }
     try {
       p.submit(c).get
@@ -192,7 +192,7 @@ class AbstractExecutorServiceTest extends JSR166Test {
   ) { e =>
     val l = new util.ArrayList[Callable[Long]]
     l.add(new Callable[Long]() {
-      override def call = throw new ArithmeticException
+      override def call(): scala.Long = throw new ArithmeticException
     })
     l.add(null)
     try {
@@ -351,7 +351,7 @@ class AbstractExecutorServiceTest extends JSR166Test {
   ) { e =>
     val l = new util.ArrayList[Callable[Long]]
     l.add(new Callable[Long]() {
-      override def call = throw new ArithmeticException
+      override def call(): scala.Long = throw new ArithmeticException
     })
     l.add(null)
     try {

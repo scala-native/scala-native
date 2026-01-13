@@ -57,8 +57,10 @@ class ArraysOfObjectTestOnJDK9 {
         Integer.compare(this.field_1, that.field_1)
       }
   }
-
-  private val comparatorOfDatumField_1 =
+  type AnyRefComparator = Comparator[AnyRef] {
+    def equals(o1: AnyRef, o2: AnyRef): Boolean
+  }
+  private val comparatorOfDatumField_1: AnyRefComparator =
     new Comparator[AnyRef] {
       def compare(o1: AnyRef, o2: AnyRef) = {
         val d1 = o1.asInstanceOf[Datum] // will throw if not right type
@@ -75,7 +77,7 @@ class ArraysOfObjectTestOnJDK9 {
         compare(o1, o2) == 0
     }
 
-  private val comparatorOfDatumField_2 =
+  private val comparatorOfDatumField_2: AnyRefComparator =
     new Comparator[AnyRef] {
       def compare(o1: AnyRef, o2: AnyRef) = {
         val d1 = o1.asInstanceOf[Datum] // will throw if not right type

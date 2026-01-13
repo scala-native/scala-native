@@ -3,6 +3,7 @@ package nscplugin
 
 import java.nio.file.{Path, Paths}
 
+import scala.annotation.nowarn
 import scala.tools.nsc._
 import scala.tools.nsc.plugins._
 
@@ -32,6 +33,7 @@ class ScalaNativePlugin(val global: Global) extends Plugin {
   object prepNativeInterop extends PrepNativeInterop[global.type](global) {
     val nirAddons: ScalaNativePlugin.this.nirAddons.type =
       ScalaNativePlugin.this.nirAddons
+    @nowarn
     val scalaNativeOpts = ScalaNativePlugin.this.scalaNativeOpts
     override val runsAfter = List("typer")
     override val runsBefore = List("pickler")
@@ -40,6 +42,7 @@ class ScalaNativePlugin(val global: Global) extends Plugin {
   object nirGen extends NirGenPhase[global.type](global) {
     val nirAddons: ScalaNativePlugin.this.nirAddons.type =
       ScalaNativePlugin.this.nirAddons
+    @nowarn
     val scalaNativeOpts = ScalaNativePlugin.this.scalaNativeOpts
     override val runsAfter = List("mixin")
     override val runsBefore = List("delambdafy", "cleanup", "terminal")
