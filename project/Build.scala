@@ -409,8 +409,11 @@ object Build {
       }
       .mapBinaryVersions {
         // Cannot suppress package object inheritence warning
-        case "2.12" | "2.13" => _.settings(scalacOptions -= "-Xfatal-warnings")
-        case _               => identity
+        case "2.12" | "2.13" =>
+          _.settings(
+            scalacOptions += "-Wconf:msg=package object inheritance is deprecated:silent"
+          )
+        case _ => identity
       }
 
   lazy val clib = MultiScalaProject("clib")
