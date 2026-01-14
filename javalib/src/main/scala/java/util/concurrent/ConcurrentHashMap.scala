@@ -314,7 +314,7 @@ object ConcurrentHashMap {
 
     override final def toString(): String = Helpers.mapEntryToString(key, `val`)
 
-    override final def setValue(value: V) =
+    override final def setValue(value: V): V =
       throw new UnsupportedOperationException
 
     override final def equals(_o: Any): Boolean = {
@@ -508,7 +508,7 @@ object ConcurrentHashMap {
 
     private[concurrent] var red = false
 
-    override private[concurrent] def find(h: Int, k: AnyRef) =
+    override private[concurrent] def find(h: Int, k: AnyRef): TreeNode[K, V] =
       findTreeNode(h, k, null)
 
     private[concurrent] final def findTreeNode(
@@ -1540,7 +1540,7 @@ object ConcurrentHashMap {
     override def contains(o: Any) = map.containsKey(o)
     override def remove(o: Any) = map.remove(o) != null
 
-    override def iterator() = {
+    override def iterator(): KeyIterator[K, V] = {
       var t: Array[Node[K, V]] = null
       val m = map
       val f =
@@ -1576,7 +1576,7 @@ object ConcurrentHashMap {
         (({ c = o.asInstanceOf[Set[_]]; c } eq this) ||
         (containsAll(c) && c.containsAll(this)))
     }
-    override def spliterator() = {
+    override def spliterator(): KeySpliterator[K, V] = {
       var t: Array[Node[K, V]] = null
       val m = map
       val n = m.sumCount
@@ -1630,9 +1630,9 @@ object ConcurrentHashMap {
       new ValueIterator[K, V](t, f, 0, f, m)
     }
 
-    override final def add(e: V) = throw new UnsupportedOperationException
+    override final def add(e: V): scala.Boolean = throw new UnsupportedOperationException
 
-    override final def addAll(c: Collection[_ <: V]) =
+    override final def addAll(c: Collection[_ <: V]): scala.Boolean =
       throw new UnsupportedOperationException
 
     override def removeAll(c: Collection[_]): Boolean = {

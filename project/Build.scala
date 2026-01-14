@@ -407,6 +407,14 @@ object Build {
         case "2.13" => _.settings(recompileAllOrNothingSettings)
         case _      => identity
       }
+      .mapBinaryVersions {
+        // Cannot suppress package object inheritence warning
+        case "2.12" | "2.13" =>
+          _.settings(
+            scalacOptions += "-Wconf:msg=package object inheritance is deprecated:silent"
+          )
+        case _ => identity
+      }
 
   lazy val clib = MultiScalaProject("clib")
     .settings(publishSettings(Some(VersionScheme.BreakOnMajor)))
@@ -930,7 +938,8 @@ object Build {
           if (shouldPartest.value)
             Seq(new TestFramework("scala.tools.partest.scalanative.Framework"))
           else Seq.empty
-        }
+        },
+        scalacOptions -= "-Xsource:3"
       )
       .zippedSettings(
         Seq("scalaPartest", "auxlib", "scalalib", "scalaPartestRuntime"),
@@ -1026,7 +1035,8 @@ object Build {
         Seq("-Wconf:cat=deprecation:s")
       },
       scalacOptions --= Seq(
-        "-Xfatal-warnings"
+        "-Xfatal-warnings",
+        "-Xsource:3"
       ),
       // No control over sources
       nativeConfig ~= { _.withCheckFeatures(false) },

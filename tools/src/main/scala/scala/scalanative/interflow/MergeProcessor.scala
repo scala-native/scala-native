@@ -27,7 +27,7 @@ private[interflow] final class MergeProcessor(
         local -> offset
     }.toMap
   val blocks = mutable.Map.empty[nir.Local, MergeBlock]
-  val todo = mutable.SortedSet.empty[nir.Local](Ordering.by(offsets))
+  val todo = mutable.SortedSet.empty[nir.Local](using Ordering.by(offsets))
 
   object currentSize extends Function0[Int] { // context-cached function
     var lastBlocksHash: Int = _

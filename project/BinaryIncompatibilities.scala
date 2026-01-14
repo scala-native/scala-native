@@ -22,6 +22,8 @@ object BinaryIncompatibilities {
     exclude[DirectMissingMethodProblem]("scala.scalanative.nir.Attrs.fromProduct"),
     exclude[IncompatibleResultTypeProblem]("scala.scalanative.nir.Attrs.unapply"),
     exclude[MissingTypesProblem]("scala.scalanative.nir.Attrs$"),
+    // since 0.4.10 - incorrectlly defined 
+    exclude[DirectMissingMethodProblem]("scala.scalanative.nir.Global#None.member"),
   )
 
   final val Tools: Filters = Seq(

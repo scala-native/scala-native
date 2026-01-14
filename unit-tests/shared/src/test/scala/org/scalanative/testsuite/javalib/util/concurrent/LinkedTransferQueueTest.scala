@@ -1025,6 +1025,7 @@ class LinkedTransferQueueTest extends JSR166Test {
 
 object LinkedTransferQueueTest {
   class Generic extends BlockingQueueTest {
-    protected def emptyCollection() = new LinkedTransferQueue()
+    protected def emptyCollection(): LinkedTransferQueue[Any] =
+      new LinkedTransferQueue()
   }
 }

@@ -203,7 +203,7 @@ class ExecutorCompletionServiceTest extends JSR166Test {
       TimeUnit.SECONDS,
       new ArrayBlockingQueue[Runnable](1)
     ) {
-      override protected def newTaskFor[T](c: Callable[T]) =
+      override protected def newTaskFor[T](c: Callable[T]): FutureTask[T] =
         new MyCallableFuture[T](c)
     }
 
@@ -242,7 +242,7 @@ class ExecutorCompletionServiceTest extends JSR166Test {
       override protected def newTaskFor[T](
           t: Runnable,
           r: T
-      ) = new MyRunnableFuture[T](t, r)
+      ): FutureTask[T] = new MyRunnableFuture[T](t, r)
     }
 
     val cs = new ExecutorCompletionService[String](e)

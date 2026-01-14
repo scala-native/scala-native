@@ -2,7 +2,7 @@ package scala.scalanative.runtime.dwarf
 
 import scalanative.unsigned._
 
-private[runtime] case class ELF private (
+private[runtime] case class ELF(
     header: ELF.Header,
     sectionHeaders: Array[ELF.SectionHeader]
 ) {

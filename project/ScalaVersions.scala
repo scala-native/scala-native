@@ -18,8 +18,8 @@ package build
 
 object ScalaVersions {
   // Versions of Scala used for publishing compiler plugins
-  val crossScala212 = crossScalaVersions("2.12", 14 to 21)
-  val crossScala213 = crossScalaVersions("2.13", 8 to 18)
+  val crossScala212 = crossScalaVersions("2.12", 17 to 21)
+  val crossScala213 = crossScalaVersions("2.13", 9 to 18)
   val crossScala3 = List(
     extraCrossScalaVersion("3.").toList,
     scala3RCVersions,

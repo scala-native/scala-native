@@ -6,7 +6,7 @@ import java.nio.file.{Path, Paths}
 
 import scalanative.build
 
-case class ScalaNativePartestOptions private (
+case class ScalaNativePartestOptions(
     testFilter: ScalaNativePartestOptions.TestFilter,
     nativeClasspath: Seq[Path],
     precompiledLibrariesPaths: Seq[Path],
