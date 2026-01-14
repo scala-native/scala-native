@@ -56,7 +56,7 @@ private[scalanative] object ControlFlow {
         insts.foreach { inst =>
           inst match {
             case inst: Inst.Label => entries(inst.id) = (i, inst)
-            case _ => ()
+            case _                => ()
           }
 
           i += 1
