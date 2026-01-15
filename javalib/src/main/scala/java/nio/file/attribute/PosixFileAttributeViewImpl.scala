@@ -172,11 +172,13 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
         FileTime.from(st_mtime.toLong, TimeUnit.SECONDS)
       }
 
-      override def group() = PosixGroupPrincipal(st_gid)(None)
+      override def group(): PosixGroupPrincipal =
+        PosixGroupPrincipal(st_gid)(None)
 
-      override def owner() = PosixUserPrincipal(st_uid)(None)
+      override def owner(): PosixUserPrincipal =
+        PosixUserPrincipal(st_uid)(None)
 
-      override def permissions() = {
+      override def permissions(): ju.HashSet[PosixFilePermission] = {
         val set = new ju.HashSet[PosixFilePermission]
         PosixFileAttributeViewImpl.permMap.foreach {
           case (flag, value) =>

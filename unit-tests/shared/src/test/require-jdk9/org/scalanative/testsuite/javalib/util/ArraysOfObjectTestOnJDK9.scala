@@ -57,40 +57,31 @@ class ArraysOfObjectTestOnJDK9 {
         Integer.compare(this.field_1, that.field_1)
       }
   }
+  trait AnyRefComparator extends Comparator[AnyRef] {
+    def equals(o1: AnyRef, o2: AnyRef): Boolean = compare(o1, o2) == 0
+  }
+  private val comparatorOfDatumField_1: AnyRefComparator = {
+    (o1: AnyRef, o2: AnyRef) =>
+      val d1 = o1.asInstanceOf[Datum] // will throw if not right type
+      val d2 = o2.asInstanceOf[Datum]
 
-  private val comparatorOfDatumField_1 =
-    new Comparator[AnyRef] {
-      def compare(o1: AnyRef, o2: AnyRef) = {
-        val d1 = o1.asInstanceOf[Datum] // will throw if not right type
-        val d2 = o2.asInstanceOf[Datum]
+      if ((d1 == null) && (d2 == null)) 0
+      else if (d1 == null) -1
+      else if (d2 == null) 1
+      else
+        d1.field_1 - d2.field_1
+  }
 
-        if ((d1 == null) && (d2 == null)) 0
-        else if (d1 == null) -1
-        else if (d2 == null) 1
-        else
-          d1.field_1 - d2.field_1
-      }
-
-      def equals(o1: AnyRef, o2: AnyRef) =
-        compare(o1, o2) == 0
-    }
-
-  private val comparatorOfDatumField_2 =
-    new Comparator[AnyRef] {
-      def compare(o1: AnyRef, o2: AnyRef) = {
-        val d1 = o1.asInstanceOf[Datum] // will throw if not right type
-        val d2 = o2.asInstanceOf[Datum]
-
-        if ((d1 == null) && (d2 == null)) 0
-        else if (d1 == null) -1
-        else if (d2 == null) 1
-        else
-          d1.field_2 - d2.field_2
-      }
-
-      def equals(o1: AnyRef, o2: AnyRef) =
-        compare(o1, o2) == 0
-    }
+  private val comparatorOfDatumField_2: AnyRefComparator = {
+    (o1: AnyRef, o2: AnyRef) =>
+      val d1 = o1.asInstanceOf[Datum] // will throw if not right type
+      val d2 = o2.asInstanceOf[Datum]
+      if ((d1 == null) && (d2 == null)) 0
+      else if (d1 == null) -1
+      else if (d2 == null) 1
+      else
+        d1.field_2 - d2.field_2
+  }
 
 // compare JDK 9
 

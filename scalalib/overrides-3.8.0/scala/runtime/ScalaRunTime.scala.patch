@@ -1,4 +1,4 @@
---- 3.8.1-RC1-bin-20260113-74ab8e5-NIGHTLY/scala/runtime/ScalaRunTime.scala
+--- 3.8.0-RC4/scala/runtime/ScalaRunTime.scala
 +++ overrides-3/scala/runtime/ScalaRunTime.scala
 @@ -192,28 +192,16 @@
     */
@@ -38,8 +38,8 @@
        // Don't want to a) traverse infinity or b) be overly helpful with peoples' custom
        // collections which may have useful toString methods - ticket #3710
        // or c) print AbstractFiles which are somehow also Iterable[AbstractFile]s.
--      case x: Iterable[?] => (!x.isInstanceOf[StrictOptimizedIterableOps[?, AnyConstr, ?]]) || !isScalaClass(x) || isScalaCompilerClass(x) || isXmlNode(x.getClass) || isXmlMetaData(x.getClass)
-+      case x: Iterable[?] => (!x.isInstanceOf[StrictOptimizedIterableOps[?, AnyConstr, ?]]) || !isScalaClass(x) || isScalaCompilerClass(x) // || isXmlNode(x.getClass) || isXmlMetaData(x.getClass)
+-      case x: Iterable[_] => (!x.isInstanceOf[StrictOptimizedIterableOps[?, AnyConstr, ?]]) || !isScalaClass(x) || isScalaCompilerClass(x) || isXmlNode(x.getClass) || isXmlMetaData(x.getClass)
++      case x: Iterable[_] => (!x.isInstanceOf[StrictOptimizedIterableOps[?, AnyConstr, ?]]) || !isScalaClass(x) || isScalaCompilerClass(x) // || isXmlNode(x.getClass) || isXmlMetaData(x.getClass)
        // Otherwise, nothing could possibly go wrong
        case _ => false
      }

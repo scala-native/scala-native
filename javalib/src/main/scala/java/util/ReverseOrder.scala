@@ -381,10 +381,9 @@ private[util] class ReverseOrderLinkedListView[E](forward: LinkedList[E])
     with ReverseOrderDequeViewTrait[E]
     with ReverseOrderListViewTrait[E] {
 
-  val underlying = forward
+  override val underlying: LinkedList[E] = forward
 
-  override def reversed(): LinkedList[E] =
-    forward
+  override def reversed(): LinkedList[E] = forward
 
   override def size(): Int =
     underlying.size()

@@ -11,7 +11,7 @@ class InstructionBuilder(implicit fresh: Fresh) {
   def ++=(insts: Seq[Inst]): Unit = buffer ++= insts
   def ++=(other: InstructionBuilder): Unit = buffer ++= other.buffer
 
-  def toSeq: Seq[Inst] = buffer.toSeq
+  def toSeq: Seq[Inst] = buffer.toVector
   def size: Int = buffer.size
   def foreach(fn: Inst => Unit) = buffer.foreach(fn)
   def exists(pred: Inst => Boolean) = buffer.exists(pred)

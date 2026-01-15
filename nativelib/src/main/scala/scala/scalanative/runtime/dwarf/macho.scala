@@ -7,11 +7,11 @@ import scalanative.unsigned._
 import Endianness.{BIG, LITTLE}
 import MachO._
 
-private[runtime] case class MachO private (
+private[runtime] case class MachO(
     header: Header,
     segments: List[Segment],
     uuid: List[UInt]
-) {}
+)
 
 private[runtime] object MachO {
   import CommonParsers._

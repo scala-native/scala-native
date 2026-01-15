@@ -738,7 +738,7 @@ class FutureTaskTest extends JSR166Test {
   @Test def testGet_ExecutionException(): Unit = {
     val e = new ArithmeticException
     val task = FutureTaskTest.PublicFutureTask(new Callable[Any]() {
-      override def call = throw e
+      override def call: Any = throw e
     })
     task.run()
     assertEquals(1, task.runCount())
@@ -761,7 +761,7 @@ class FutureTaskTest extends JSR166Test {
   @Test def testTimedGet_ExecutionException2(): Unit = {
     val e = new ArithmeticException
     val task = FutureTaskTest.PublicFutureTask(new Callable[Any]() {
-      override def call = throw e
+      override def call: Any = throw e
     })
     task.run()
     try {

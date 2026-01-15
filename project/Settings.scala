@@ -90,7 +90,7 @@ object Settings {
       .fold(Seq.empty[String]) {
         // -Xfatal-warnings is deprecated, but -Werror is not available in older Scala versions
         case (2, _) =>
-          Seq("-Xfatal-warnings", "-encoding", "utf8")
+          Seq("-Xfatal-warnings", "-encoding", "utf8", "-Xsource:3")
         case _ =>
           Seq("-Werror", "-encoding:utf8")
       },
@@ -778,7 +778,13 @@ object Settings {
         scalaNativeCompilerOptions(
           s"positionRelativizationPaths:${crossTarget.value / "patched"};${(fetchScalaSource / artifactPath).value}"
         ),
-      scalacOptions --= Seq("-deprecation", "-Werror", "-Xfatal-warnings"),
+      // Foreign sources, ignore all warnings and don't try to use custom -source version
+      scalacOptions --= Seq(
+        "-deprecation",
+        "-Werror",
+        "-Xfatal-warnings",
+        "-Xsource:3"
+      ),
       // Scala.js original comment modified to clarify issue is Scala.js.
       /* Work around for https://github.com/scala-js/scala-js/issues/2649
        * We would like to always use `update`, but
