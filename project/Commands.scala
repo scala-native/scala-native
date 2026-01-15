@@ -111,22 +111,30 @@ object Commands {
             "Used command needs explicit Scala version as an argument"
           )
         )
-      val setScriptedLaunchOpts =
+
+      assert(
+        !ScalaVersions.crossScala213.contains("2.13.19"),
+        "Update scripted test when new Scala 2.13 version is released"
+      )
+      def setScriptedLaunchOpts(scala3Version: String) =
         s"""|set sbtScalaNative/scriptedLaunchOpts := {
             |  (sbtScalaNative/scriptedLaunchOpts).value
             |   .filterNot(_.startsWith("-Dscala.version=")) :+
-            |   "-Dscala.version=$version" :+
+            |   "-Dscala.version=$scala3Version" :+
             |   "-Dscala213.version=${ScalaVersions.scala213}"
             |}""".stripMargin
       // Scala 3 is supported since sbt 1.5.0. 1.5.8 is used.
       // Older versions set incorrect binary version
       val isScala3 = version.startsWith("3.")
-      val scalaVersionTests =
-        if (isScala3) "scala3/*"
-        else ""
 
-      setScriptedLaunchOpts ::
-        s"sbtScalaNative/scripted ${scalaVersionTests} run/*" ::
+      // Scala 2.13.18 does not support Tasty from Scala 3.8
+      val scala3OnlyTests =
+        if (isScala3)
+          s"${setScriptedLaunchOpts("3.7.4")};++3.7.4; sbtScalaNative/scripted scala3/*; ++${version};"
+        else ""
+      setScriptedLaunchOpts(version) ::
+        s"sbtScalaNative/scripted run/*" ::
+        scala3OnlyTests ::
         state
   }
 

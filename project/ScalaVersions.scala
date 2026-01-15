@@ -1,5 +1,7 @@
 package build
 
+import MyScalaNativePlugin.enableExperimentalCompiler
+
 /* Note to Contributors:
  *   Scala Native supports a number of Scala versions. These can be
  *   described as Major.Minor.Path.
@@ -30,12 +32,13 @@ object ScalaVersions {
     crossScalaVersions("3.4", 0 to 3),
     crossScalaVersions("3.5", 0 to 2),
     crossScalaVersions("3.6", 2 to 4), // 3.6.0 is broken, 3.6.1 is hotfix
-    crossScalaVersions("3.7", 0 to 4)
+    crossScalaVersions("3.7", 0 to 4),
+    crossScalaVersions("3.8", 0 to 0)
   ).flatten.distinct
 
   // Tested in scheduled nightly CI to check compiler plugins
   // List maintains only upcoming releases, removed from the list after reaching stable status
-  lazy val scala3RCVersions = List("3.8.0-RC4")
+  lazy val scala3RCVersions = List("3.8.1-RC1")
 
   // Scala versions used for publishing libraries
   val scala212: String = crossScala212.last
@@ -46,8 +49,9 @@ object ScalaVersions {
   val scala3PublishVersion = "3.1.3"
   val scala213PublishVersion = crossScala213.head
 
-  // List of nightly version can be found here: https://repo.scala-lang.org/ui/native/maven-nightlies/org/scala-lang/scala3-compiler_3
-  val scala3Nightly = "3.8.1-RC1-bin-20251229-e73ff2c-NIGHTLY"
+  // List of nightly versions can be found here: https://repo.scala-lang.org/ui/native/maven-nightlies/org/scala-lang/scala3-compiler_3
+  // or check outputs of `scala -O --version -S 3.nightly`
+  val scala3Nightly = "3.8.2-RC1-bin-20260114-c089d97-NIGHTLY"
 
   // minimum version rationale:
   //   1.5 is required for Scala 3 and
@@ -56,16 +60,15 @@ object ScalaVersions {
   //   1.9.4 fixes (Common Vulnerabilities and Exposures) CVE-2022-46751
   //   1.9.7 fixes sbt IO.unzip vulnerability described in sbt release notes.
   //   1.10.7 Latest sbt version, 1.10.2 had bug, see comment in SN Issue #4126
-  //   1.11.3 Latest sbt version
-
-  val sbt10Version: String = "1.11.3"
+  //   1.11.5 Scala 3.8 standard library changes support
+  val sbt10Version: String = "1.11.5"
   val sbt10ScalaVersion: String = scala212
 
   val libCrossScalaVersions: Seq[String] = Seq(
     crossScala212,
     crossScala213,
     crossScala3,
-    Seq(scala3Nightly)
+    Option(scala3Nightly).filter(_ => enableExperimentalCompiler).toSeq
   ).flatten.distinct
 
   private def extraCrossScalaVersion(binVersionPrefix: String) = sys.env

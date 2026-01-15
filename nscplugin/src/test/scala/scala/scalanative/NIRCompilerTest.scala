@@ -193,10 +193,19 @@ class NIRCompilerTest {
 
     // Order of error might differ
     val expectedMsg =
-      if (scalaVersion.startsWith("3."))
-        "methods in extern objects must have extern body"
-      else "Extern object can only extend extern traits"
-    assertTrue(err.getMessage().contains(expectedMsg))
+      buildinfo.ScalaNativeBuildInfo.scalaVersion
+        .split("\\D")
+        .take(3)
+        .map(_.toInt) match {
+        case Array(3, minor, _) if minor < 8 =>
+          "methods in extern objects must have extern body"
+        case _ =>
+          "Extern object can only extend extern traits"
+      }
+    assertTrue(
+      s"Expected: '$expectedMsg', got '${err.getMessage()}'",
+      err.getMessage().contains(expectedMsg)
+    )
   }
 
   @Test def mixExternObjectWithNonExternClass(): Unit = {

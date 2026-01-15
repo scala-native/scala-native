@@ -77,16 +77,19 @@ object ScalaNativePluginInternal {
         // when using Scala 2.13 exclude Scala 3 standard native libraries
         // Use full name, Maven style published artifacts cannot use artifact/cross version for exclusion rules
         (CrossVersion.partialVersion(scalaVersion.value) match {
-          case Some((2, 13)) => Some("_3")
-          case Some((3, _))  => Some("_2.13")
-          case _             => None
-        }).fold(Seq.empty[ExclusionRule]) { scalaBinSuffix =>
-          val suffix = "_" +
-            ScalaNativeCrossVersion.scalaNativePrefix + scalaBinSuffix
-          val exclRule = ExclusionRule(nativeOrgName)
-          nativeStandardLibraries.map { lib =>
-            exclRule.withName(lib + suffix)
-          }
+          case Some((2, 13))    => Some("_3" -> Nil)
+          case Some((3, minor)) =>
+            val excludeScalalib = if (minor >= 8) Seq("scalalib") else Nil
+            Some("_2.13" -> excludeScalalib)
+          case _ => None
+        }).fold(Seq.empty[ExclusionRule]) {
+          case (scalaBinSuffix, excludeScalaLib) =>
+            val suffix = "_" +
+              ScalaNativeCrossVersion.scalaNativePrefix + scalaBinSuffix
+            val exclRule = ExclusionRule(nativeOrgName)
+            (nativeStandardLibraries ++ excludeScalaLib).map { lib =>
+              exclRule.withName(lib + suffix)
+            }
         }
       }
     )
