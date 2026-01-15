@@ -8,7 +8,6 @@ import scala.scalanative.posix
 import scala.scalanative.posix.errno._
 import scala.scalanative.posix.fcntl._
 import scala.scalanative.posix.poll._
-import scala.scalanative.posix.pollEvents._
 import scala.scalanative.posix.pollOps._
 import scala.scalanative.posix.unistd
 import scala.scalanative.unsafe._

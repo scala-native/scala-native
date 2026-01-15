@@ -194,12 +194,11 @@ private[java] class PosixThread(
     else sleepNonInterruptible(millis, 0)
 
   private def sleepInterruptible(_millis: Long): Unit = {
+    import scala.scalanative.posix.pollOps._
+
     var millis = _millis
     if (millis <= 0) return
     val deadline = System.currentTimeMillis() + millis
-
-    import scala.scalanative.posix.pollOps._
-    import scala.scalanative.posix.pollEvents._
 
     type PipeFDs = CArray[CInt, Nat._2]
     val pipefd = stackalloc[PipeFDs](1)
