@@ -1,5 +1,5 @@
 /* Originally ported from Scala.js, 2016-05-05
- * 
+ *
  * Ported Scala.js PR #5299 fix only, revision 84862c3, dated 2026-01-10
  * Technical debt: INTERMEDIATE REVISIONS WERE NOT PORTED.
  *                 Commit 36c7edb is for performance, not correctness.

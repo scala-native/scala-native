@@ -90,8 +90,7 @@ private object MacroImpl {
 
     val size, ptr, rawSize = TermName(c.freshName())
 
-    val runtime =
-      q"_root_.scala.scalanative.runtime"
+    val runtime = q"_root_.scala.scalanative.runtime"
 
     q"""{
           val $rawSize = $runtime.Intrinsics.sizeOf[$T]
@@ -110,8 +109,7 @@ private object MacroImpl {
     val elemSize, size, ptr = TermName(c.freshName())
 
     val runtime = q"_root_.scala.scalanative.runtime"
-    val unsignedOf =
-      q"$runtime.Intrinsics.unsignedOf"
+    val unsignedOf = q"$runtime.Intrinsics.unsignedOf"
 
     q"""{
           val $elemSize = $runtime.Intrinsics.sizeOf[$T]
@@ -132,8 +130,7 @@ private object MacroImpl {
 
     val size, ptr, rawSize = TermName(c.freshName())
 
-    val runtime =
-      q"_root_.scala.scalanative.runtime"
+    val runtime = q"_root_.scala.scalanative.runtime"
 
     q"""{
           val $rawSize = $runtime.Intrinsics.sizeOf[$T]
@@ -151,8 +148,7 @@ private object MacroImpl {
 
     val rawptr = TermName(c.freshName())
 
-    val runtime =
-      q"_root_.scala.scalanative.runtime"
+    val runtime = q"_root_.scala.scalanative.runtime"
 
     q"""{
           val $rawptr  = $runtime.Intrinsics.stackalloc[$T]()
@@ -191,8 +187,7 @@ private object MacroImpl {
     val elements, rawptr = TermName(c.freshName())
 
     val runtime = q"_root_.scala.scalanative.runtime"
-    val toRawSize =
-      q"$runtime.Intrinsics.castIntToRawSizeUnsigned"
+    val toRawSize = q"$runtime.Intrinsics.castIntToRawSizeUnsigned"
 
     q"""{
           val $rawptr  = $runtime.Intrinsics.stackalloc[$T](
@@ -211,8 +206,7 @@ private object MacroImpl {
 
     val runtime = q"_root_.scala.scalanative.runtime"
     val toRawSize = q"$runtime.Intrinsics.castIntToRawSizeUnsigned"
-    val toInt =
-      q"$runtime.Intrinsics.castRawSizeToInt"
+    val toInt = q"$runtime.Intrinsics.castRawSizeToInt"
 
     q"""{
           val $elements = $runtime.toRawSize($n)

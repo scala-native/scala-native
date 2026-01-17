@@ -428,7 +428,7 @@ final class _String()
    *   By convention, caller has validated arguments, but strangely.
    *   beginIndex is usually guaranteed to be within 'this' but there is no
    *   such guarantee here.
-   * 
+   *
    *   For details, see note above indexOfImpl(str, fromIndex, toIndex).
    */
   private def indexOfImpl(ch: Int, beginIndex: Int, endIndex: Int): Int = {
@@ -483,7 +483,7 @@ final class _String()
    *   Beware & handle an empty 'this' or an empty slice range!
    *   beginIndex is usually guaranteed to be a valid index for this.value
    *   but there is no such guarantee here.
-   * 
+   *
    *   Especially note that when (this.count == 0) indexOf(str, 0, 0)
    *   fulfills the preconditions but 'this(beginIndex)' will throw.
    */
