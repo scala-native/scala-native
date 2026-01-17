@@ -95,8 +95,7 @@ object BigInteger {
   private final val TWO_POWS =
     Array.tabulate[BigInteger](32)(i => BigInteger.valueOf(1L << i))
 
-  /** The first non zero digit is either -1 if sign is zero, otherwise it is >=
-   *  0.
+  /** The first non zero digit is either -1 if sign is zero, otherwise it is >= 0.
    *
    *  Furthermore, it is a value that is often used and so the value computed
    *  from {@code getFirstNonzeroDigit} is cached to {@code firstNonzeroDigit}

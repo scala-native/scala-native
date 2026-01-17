@@ -263,7 +263,7 @@ private[process] object ProcessExitCheckerFreeBSD
    * kevent reports a child exit transition and when waitpid() on that
    * process reports the child as exited.  This delay is not seen on Linux.
    *
-     * The alternative to allowing HANG on a process which kevent/ppoll has
+   * The alternative to allowing HANG on a process which kevent/ppoll has
    * just reported as having exited is a fussy busy-wait timing loop.
    */
   private def reapWhenNotRunning(pid: Int)(implicit pr: ProcessRegistry) =

@@ -148,13 +148,13 @@ private[java] final class FileChannelImpl(
    *
    *   - AbstractInterruptibleChannel#close is the sole caller. That method
    *     ensures the condition:
-   * 
+   *
    *       This method is only invoked if the channel has not yet been
    *       closed, and it is never invoked more than once.
-   * 
+   *
    *   - nio.channels.Channel#close is higher up the call chain. It
    *     requires:
-   * 
+   *
    *       This method may be invoked at any time. If some other thread has
    *       already invoked it, however, then another invocation will block
    *       until the first invocation is complete, after which it will
@@ -168,7 +168,7 @@ private[java] final class FileChannelImpl(
    *
    *  This implementation does not comply with the requirement in
    *  AbstractInterruptibleChannel:
-   * 
+   *
    *    An implementation of this method must arrange for any other thread
    *    that is blocked in an I/O operation upon this channel to return
    *    immediately, either by throwing an exception or by returning
@@ -794,7 +794,7 @@ private[java] final class FileChannelImpl(
    *         FileChannel reads() after such truncation may violate the
    *         description & contract by blocking for significant amounts
    *         of time
-   * 
+   *
    *         Lifting this restriction is not easy and is left as an
    *         exercise for the reader.
    */

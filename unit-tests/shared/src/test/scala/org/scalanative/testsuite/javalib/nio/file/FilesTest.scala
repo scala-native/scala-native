@@ -600,7 +600,7 @@ class FilesTest {
   /* If you live a Good Life, you will never have to parse this regex by hand.
    *
    * Java uses simple ASCII for numeric '\d', and alphanumeric '\w'.
-   * 
+   *
    * The parse goes:
    *   - an optional single character 'a'
    *   - 1 to 19 digit characters

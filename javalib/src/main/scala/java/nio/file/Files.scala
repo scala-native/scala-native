@@ -112,7 +112,7 @@ object Files {
       Zone.acquire { implicit z =>
 
         /* Requirement:
-         * 
+         *
          *   Files.copy(Path, Path, Options) on the JVM ensures that, on
          *   success, the PosixPermissions of the source, limited by the
          *   process umask, have been copied to the target.
@@ -124,18 +124,18 @@ object Files {
          */
 
         /* Design Notes:
-         * 
+         *
          *   - Use POSIX I/O to handle the corner case where a file exists but
          *     the user does not have write access: r--x------ & kin.
-         * 
+         *
          *     JVM handles this case, Scala Native must also.
-         * 
+         *
          *     Most of Scala Native javalib Files.scala, File_Helpers.scala,
          *     java.nio.*, and java.io.* use a non-atomic sequence of steps:
          *     create the file, then set indicated attributes. Any subsequent
          *     write to the file fails because the file permissions have been
          *     set user no-write.
-         * 
+         *
          *     POSIX fcntl.open() is defined so that it can open and create
          *     a new file for write if the indicated directory permissions
          *     allow. Code can use the fd returned to write to the file as long
@@ -146,14 +146,14 @@ object Files {
          *     condition checking is delegated to the operating system
          *     under the expectation that in most cases the operation will
          *     succeed.
-         * 
+         *
          *   - Some, but probably not all, rare and somewhat astonishing corner
          *     conditions exist when the REPLACE_EXISTING option is present:
-         * 
+         *
          *     - Any kind of IOException, including but not limited to:
          *           - source file can not be read
          *       Action: target file is deleted.
-         * 
+         *
          *     - target file exists but does not have write permission,
          *       e.g. r-xr-xr-x.
          *       Action: copy proceeds but inode number changes.
@@ -162,7 +162,7 @@ object Files {
          *     development days of modifying files in-place.  This
          *     leaves a pretty wide window for misadventure, particularly
          *     if more than one thread or process is accessing the file.
-         * 
+         *
          *     Many contemporary applications create a temporary intermediate
          *     file, copy the source contents to the temporary,
          *     set permissions on the temporary, and then, finally, if the
@@ -174,7 +174,7 @@ object Files {
          *     a file with a temporary name. The obvious library calls
          *     each have their own drawbacks. A "create-until-success" loop
          *     also has its own pain points: more than an afternoon's work.
-         * 
+         *
          *     Oh, give me a good ship, a fair wind, and a few clever
          *     secondary school students!
          */
@@ -235,10 +235,10 @@ object Files {
             /* Handle what should be a vanishingly rare but possible
              * corner case where cTarget exists but is not user writable;
              * r-xr-xr-x, --xr-xr-x, and kin. O_TRUNC will fail in those cases.
-             * 
+             *
              * unlink() is a directory operation. If the permissions on that
              * directory permit, the operation should succeed.
-             * 
+             *
              * Of course, if two or more threads/processes are accessing the
              * same file without explicit synchronization, there are always
              * timing issues, since the file unlink & subsequent creation

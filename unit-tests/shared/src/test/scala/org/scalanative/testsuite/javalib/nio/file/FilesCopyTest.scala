@@ -7,7 +7,7 @@ package org.scalanative.testsuite.javalib.nio.file
  * It aims to improve the SN 0.5.8 situation but does _not_ give complete
  * test coverage of the three Files.copy() methods.  It provides a place
  * for Tests as more extensive coverage is added.
- * 
+ *
  * It is hard to set or read the process environment umask in CI.
  * Several advanced Tests are provided and marked @Ignore. These
  * are intended to be run manually for development and maintenance
@@ -383,7 +383,7 @@ class FilesCopyTest {
 
   /* Precondition: environment umask is 022
    * That is, no user bits are masked off but group and other can have r-x
-   * 
+   *
    * umask may need to be manually set before starting sbt.
    */
   @Ignore // This is a manual special purpose advanced test.
@@ -448,7 +448,7 @@ class FilesCopyTest {
 
   /* Precondition: environment umask is 077.
    * That is, no user bits are masked off but all 'group' and 'other' bits are.
-   * 
+   *
    * umask may need to be manually set before starting sbt.
    */
 
@@ -496,7 +496,7 @@ class FilesCopyTest {
      * bytes are provide than can fit into one buffer. Do the transitions
      * occur correctly? Are all bytes copied? Are some dropped from
      * any final buffer partial fill?
-     * 
+     *
      * To enhance the power of this test, also reduce the size in
      * unix Files.copy(Path, Path) to something small and odd, say, 3.
      */

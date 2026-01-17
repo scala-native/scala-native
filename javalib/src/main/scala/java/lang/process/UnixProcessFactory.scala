@@ -32,7 +32,7 @@ private[process] object UnixProcessFactory {
    *
    *   - The 'os-lib' project report of a reproducible case is captured
    *     in Scala Native Issue #4619.
-   * 
+   *
    *   - The 'kyo' hang captured in Issue #4615 may be another instance.
    *
    *   - The 'scalafmt' reported in #4481 may also be an instance.
