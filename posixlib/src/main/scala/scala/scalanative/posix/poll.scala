@@ -49,14 +49,14 @@ object poll {
   def poll(fds: Ptr[struct_pollfd], nfds: nfds_t, timeout: CInt): CInt = extern
 
   /* BEWARE:
-   * 
+   *
    *  1) This implementation uses time.timespec and signal.sigset_t
    *     directly. Callers of ppoll() may need to import those types.
    *     See the "Open Group" comment at top of this file.
-   * 
+   *
    *     Importing posix.timeOps and/or posix.signalOps is optional,
    *     but allows working with field names instead of numbers.
-   * 
+   *
    *  2) ppoll() is not available on macOS. Using it will result in a
    *     link time error, similar to 'ld64.lld: error: undefined symbol: ppoll'
    */
@@ -70,47 +70,47 @@ object poll {
   ): CInt = extern
 
   /* Usage Note
-   * 
+   *
    * TL;DR
-   * 
+   *
    *  Use as: poll(fds, fds.size.toUInt, timeout)
    *  and do not worry about the UInt to nfsd_t conversion. Act as though
    *  there is an implicit conversion.
-   * 
+   *
    * Bridging the C and ScalaNative universes:
-   * 
+   *
    *  Long comments are anathema but someone trying to trace the
    *  interacting constraints may appreciate this information.
-   * 
+   *
    *  A common use case, which ought to be easy to use, is to declare
    *  the first argument of the poll method as an array, fds, and the
    *  second argument as fds.size.
-   * 
+   *
    *  OpenGroup (posix) defines nfsd_t as an unsigned integral type but
    *  neither defines nor constrains the type before that.  Linux
    *  nfsd_t is defined on some systems as "unsigned long int". Other
    *  systems define it with fewer bytes.  SN nfsd_t above is defined
    *  to allow the maximum with seen in the wild.
-   * 
+   *
    *  Although nfsd_t appears to allow very large numbers of nfsd elements,
    *  it is capped to a much lower value. Posix FOPEN_MAX is currently
    *  defined in nativelib/src/main/resources scalanative wrap.c
    *  as an 'unsigned int'. Operating system implementations almost always
    *  cap the value to a much lower value the maximum unsigned int.
-   * 
+   *
    *  Array.size returns a signed int. The convention in SN is that all
    *  signed to unsigned conversions must be explicit The .toUInt method
    *  makes the most sense, since any bits above #31 in a ULong will
    *  almost certainly be beyond FOPEN_MAX on curent & foreseeable systems.
-   * 
+   *
    *  The end programmer almost certainly wants to use the fds.size.toUInt
    *  idiom.
-   * 
+   *
    *  Behind the curtain the type abstraction works because a UInt can be
    *  promoted, when necessary, to a ULong, which is also a CUnsignedLongInt,
    *  which is an nfds_t. In effect, one has an implicit conversion from
    *  UInt to nfsd_t.
-   * 
+   *
    *  The C and SN world are in harmony:
    */
 
