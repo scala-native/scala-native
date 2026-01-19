@@ -1,5 +1,5 @@
 /* Ported from Scala.js commit: ad7d82f dated: 2020-10-05
- * 
+ *
  * Post Java 8 Static methods on List added for Scala Native
  */
 

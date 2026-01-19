@@ -636,7 +636,7 @@ class ProcessTest {
   /* testGitLSFilesUsing* tests use a documented git feature, the ':/'
    * argument, to cause files to be listed from the project root
    * rather than the current working directory.
-   * 
+   *
    * This allows the test to be run interactively on JVM in some environments
    * where they had previously failed. See SN Issue #4676.
    *
