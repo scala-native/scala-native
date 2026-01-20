@@ -354,9 +354,9 @@ class SubmissionPublisher[T](
     max
   }
 
-  def consume(consumer: Consumer[? >: T]): CompletableFuture[Unit] = {
+  def consume(consumer: Consumer[? >: T]): CompletableFuture[Void] = {
     requireNonNull(consumer, "consumer cannot be null")
-    val status = new CompletableFuture[Unit]()
+    val status = new CompletableFuture[Void]()
     subscribe(new ConsumerSubscriber[T](status, consumer))
     status
   }
@@ -542,7 +542,7 @@ object SubmissionPublisher {
 
   /** Subscriber for method consume */
   final class ConsumerSubscriber[T](
-      status: CompletableFuture[Unit],
+      status: CompletableFuture[Void],
       consumer: Consumer[? >: T]
   ) extends Flow.Subscriber[T] {
     var subscription: Flow.Subscription = null
@@ -557,7 +557,7 @@ object SubmissionPublisher {
       status.completeExceptionally(ex): Unit
 
     final def onComplete(): Unit =
-      status.complete(null.asInstanceOf[Unit]): Unit
+      status.complete(null.asInstanceOf[Void]): Unit
 
     final def onNext(item: T): Unit =
       try consumer.accept(item)
@@ -633,8 +633,7 @@ object SubmissionPublisher {
     private val head = new AtomicInteger(0) // next position to take
     private val tail = new AtomicInteger(0) // next position to put
     // buffer array
-    private var buffer =
-      new AtomicReferenceArray[T](maxCapacity)
+    private var buffer = new AtomicReferenceArray[AnyRef](maxCapacity)
 
     val demand = new AtomicLong(0L) // unfilled requests
     val waiting = new AtomicInteger(0) // nonzero if producer blocked
@@ -661,13 +660,11 @@ object SubmissionPublisher {
     // Utilities used by SubmissionPublisher
     //
 
-    /** Returns true if closed (consumer task may still be running).
-     */
+    /** Returns true if closed (consumer task may still be running). */
     def isClosed() =
       (ctl.get() & CtlFlag.CLOSED) != 0
 
-    /** Returns estimated number of buffered items, or negative if closed.
-     */
+    /** Returns estimated number of buffered items, or negative if closed. */
     def estimateLag(): Int = {
       val lag = tail.get() - head.get()
       if (isClosed()) -1
@@ -696,9 +693,13 @@ object SubmissionPublisher {
           if (size >= cap && cap < maxCapacity) // resize
             growAndOffer(item, _tail)
           else if (size >= cap || unowned) // need volatile CAS
-            buffer.compareAndExchange(index, null.asInstanceOf[T], item) != null
+            buffer.compareAndExchange(
+              index,
+              null,
+              item.asInstanceOf[AnyRef]
+            ) != null
           else {
-            buffer.setRelease(index, item)
+            buffer.setRelease(index, item.asInstanceOf[AnyRef])
             true
           }
 
@@ -711,12 +712,11 @@ object SubmissionPublisher {
       startOnOffer(stat)
     }
 
-    /** Tries to create or expand buffer, then adds item if possible.
-     */
+    /** Tries to create or expand buffer, then adds item if possible. */
     private def growAndOffer(item: T, tail: Int): Boolean = {
       var cap = 0
       var newCap: Int = 0
-      var newBuffer: AtomicReferenceArray[T] = null
+      var newBuffer: AtomicReferenceArray[AnyRef] = null
 
       if ((buffer != null)
           && {
@@ -727,9 +727,9 @@ object SubmissionPublisher {
             newCap = buffer.length() << 1
             newCap > 0
           })
-        try
-          newBuffer = (new AtomicReferenceArray[T](newCap))
-        catch {
+        try {
+          newBuffer = new AtomicReferenceArray[AnyRef](newCap)
+        } catch {
           case exc: OutOfMemoryError => ()
         }
 
@@ -739,11 +739,11 @@ object SubmissionPublisher {
         val mask = cap - 1
         val newMask = newCap - 1
         var _tail = tail - 1
-        newBuffer.set(_tail & newMask, item)
+        newBuffer.set(_tail & newMask, item.asInstanceOf[AnyRef])
 
         boundary {
           for (k <- mask to 0 by -1) {
-            val x = buffer.getAndSet(_tail & mask, null.asInstanceOf[T])
+            val x = buffer.getAndSet(_tail & mask, null)
 
             if (x == null)
               break(()) // already consumed
@@ -761,8 +761,7 @@ object SubmissionPublisher {
       }
     }
 
-    /** Version of offer for retries (no resize or bias)
-     */
+    /** Version of offer for retries (no resize or bias) */
     def retryOffer(item: T): Int = {
       var stat = 0
       var cap = 0
@@ -774,8 +773,8 @@ object SubmissionPublisher {
           }
           && buffer.compareAndExchange(
             (cap - 1) & tail.get(),
-            null.asInstanceOf[T],
-            item
+            null,
+            item.asInstanceOf[AnyRef]
           ) != null)
         stat = tail.incrementAndGet() - head.get()
 
@@ -804,8 +803,7 @@ object SubmissionPublisher {
       _stat
     }
 
-    /** Tries to start consumer task. Sets error state on failure.
-     */
+    /** Tries to start consumer task. Sets error state on failure. */
     private def tryStart(): Unit =
       try {
         val task = new ConsumerTask[T](this)
@@ -856,9 +854,7 @@ object SubmissionPublisher {
         if ((_ctl & CtlFlag.RUN) == 0)
           tryStart()
         else if (buffer != null)
-          (0 until buffer.length()).foreach(i =>
-            buffer.lazySet(i, null.asInstanceOf[T])
-          )
+          (0 until buffer.length()).foreach(i => buffer.lazySet(i, null))
       }
     }
 
@@ -868,8 +864,7 @@ object SubmissionPublisher {
     override def cancel(): Unit =
       onError(null)
 
-    /** Adds to demand and possibly starts task.
-     */
+    /** Adds to demand and possibly starts task. */
     override def request(n: Long): Unit =
       if (n > 0L) {
         while ({
@@ -984,12 +979,12 @@ object SubmissionPublisher {
 
         boundary {
           while (k < n) {
-            val x = buffer.getAndSet(h & m, null.asInstanceOf[T])
+            val x = buffer.getAndSet(h & m, null)
 
             if (waiting != 0) signalWaiter()
 
             if (x == null) break(())
-            else if (!consumeNext(sub, x)) break(())
+            else if (!consumeNext(sub, x.asInstanceOf[T])) break(())
 
             h += 1
             k += 1
@@ -1012,8 +1007,7 @@ object SubmissionPublisher {
           false
       }
 
-    /** Processes exception in Subscriber.onNext.
-     */
+    /** Processes exception in Subscriber.onNext */
     def handleOnNext(sub: Flow.Subscriber[? >: T], exc: Throwable): Unit = {
       try {
         if (handler != null) handler.accept(sub, exc)
@@ -1024,8 +1018,7 @@ object SubmissionPublisher {
       closeOnError(sub, exc)
     }
 
-    /** Issues subscriber.onSubscribe if this is first signal.
-     */
+    /** Issues subscriber.onSubscribe if this is first signal. */
     def subscribeOnOpen(sub: Flow.Subscriber[? >: T]): Unit = {
       val _ctl = ctl.get()
       if (((_ctl & CtlFlag.OPEN) == 0)
@@ -1043,8 +1036,7 @@ object SubmissionPublisher {
           closeOnError(sub, exc)
       }
 
-    /** Issues subscriber.onComplete unless already closed.
-     */
+    /** Issues subscriber.onComplete unless already closed. */
     def closeOnComplete(sub: Flow.Subscriber[? >: T]): Unit = {
       val _ctl = ctl.get()
       ctl.set(_ctl | CtlFlag.CLOSED)
@@ -1056,8 +1048,7 @@ object SubmissionPublisher {
       catch case ignore: Throwable => ()
     }
 
-    /** Issues subscriber.onError, and unblocks producer if needed.
-     */
+    /** Issues subscriber.onError, and unblocks producer if needed. */
     def closeOnError(sub: Flow.Subscriber[? >: T], exc: Throwable): Unit = {
       var _exc = exc
       val _ctl = ctl.get()
@@ -1079,16 +1070,14 @@ object SubmissionPublisher {
 
     // Blocking support
 
-    /** Unblocks waiting producer.
-     */
+    /** Unblocks waiting producer. */
     def signalWaiter(): Unit = {
       var w: Thread = null
       waiting.set(0)
       if (waiter != null) LockSupport.unpark(w)
     }
 
-    /** Returns true if closed or space available. For ManagedBlocker.
-     */
+    /** Returns true if closed or space available. For ManagedBlocker. */
     def isReleasable(): Boolean = {
       var cap = 0
 
@@ -1100,8 +1089,7 @@ object SubmissionPublisher {
         )
     }
 
-    /** Helps or blocks until timeout, closed, or space available.
-     */
+    /** Helps or blocks until timeout, closed, or space available. */
     def awaitSpace(nanos: Long): Unit =
       if (!isReleasable()) {
         ForkJoinPool.helpAsyncBlocker(executor, this)
@@ -1119,8 +1107,7 @@ object SubmissionPublisher {
         }
       }
 
-    /** Blocks until closed, space available or timeout. For ManagedBlocker.
-     */
+    /** Blocks until closed, space available or timeout. For ManagedBlocker. */
     def block(): Boolean = {
       var nanos = timeout
       val timed = timeout < Long.MaxValue
