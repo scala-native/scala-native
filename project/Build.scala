@@ -587,7 +587,7 @@ object Build {
                     "scala/runtime/AbstractPartialFunction",
                     "scala/runtime/NonLocalReturnControl",
                     "scala/util/Sorting",
-                    "scala/util/hashing/MurmurHash3",
+                    "scala/util/hashing/MurmurHash3"
                   )
                   def normalizedPath(path: String) =
                     path.toString().replace("\\", "/").stripSuffix(".class").stripSuffix(".nir")
