@@ -537,10 +537,16 @@ object Build {
                   val newMappings = (scalalib.v2_13 / Compile / packageBin / mappings).value
 
                   // Keep in sync with Scala 3 compiler logic
-                  // https://github.com/scala/scala3/blob/eb1bb7350a99208d9ced9863a996850316d583f7/project/ScalaLibraryPlugin.scala#L116
+                  // https://github.com/scala/scala3/blob/f3ee08dd6c4208bf424b2d81eb610e0d86c62742/project/ScalaLibraryPlugin.scala#L360-L410
                   val overridenFiles = Set(
+                    "scala/Function0",
+                    "scala/Function1",
+                    "scala/Function2",
+                    "scala/Product1",
+                    "scala/Product2",
                     "scala/Tuple1",
                     "scala/Tuple2",
+                    "scala/collection/ArrayOps",
                     "scala/collection/Stepper",
                     "scala/collection/DoubleStepper",
                     "scala/collection/IntStepper",
@@ -549,6 +555,7 @@ object Build {
                     "scala/collection/immutable/IntVectorStepper",
                     "scala/collection/immutable/LongVectorStepper",
                     "scala/collection/immutable/Range",
+                    "scala/jdk/Accumulator",
                     "scala/jdk/DoubleAccumulator",
                     "scala/jdk/IntAccumulator",
                     "scala/jdk/LongAccumulator",
@@ -574,9 +581,13 @@ object Build {
                     "scala/jdk/FunctionWrappers$FromJavaLongToDoubleFunction",
                     "scala/jdk/FunctionWrappers$FromJavaLongToIntFunction",
                     "scala/jdk/FunctionWrappers$FromJavaLongUnaryOperator",
-                    "scala/collection/ArrayOps$ReverseIterator",
+                    "scala/runtime/AbstractFunction0",
+                    "scala/runtime/AbstractFunction1",
+                    "scala/runtime/AbstractFunction2",
+                    "scala/runtime/AbstractPartialFunction",
                     "scala/runtime/NonLocalReturnControl",
-                    "scala/util/Sorting"
+                    "scala/util/Sorting",
+                    "scala/util/hashing/MurmurHash3"
                   )
                   def normalizedPath(path: String) =
                     path.toString().replace("\\", "/").stripSuffix(".class").stripSuffix(".nir")
