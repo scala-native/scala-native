@@ -64,7 +64,7 @@ def tag_commit_date_utc(tag: str) -> str:
 
 # The short X.Y version (binary version)
 version = u'0.5'
-last_stable_release = "0.5.9"
+last_stable_release = "0.5.10"
 # The next version to be releaed, used to calculate snapshot versions
 developed_version   = "0.5.10"
 # The full version, including alpha/beta/rc tags.

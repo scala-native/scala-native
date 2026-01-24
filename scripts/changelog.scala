@@ -119,9 +119,9 @@ def template(
       |
       | Scala Binary Version | Supported Scala Versions |
       | -------------------- | ------------------------ |
-      | 2.12 | 2.12.14 ... 2.12.20 |
-      | 2.13 | 2.13.8 ... 2.13.17 |
-      | 3    | 3.1.2 ... 3.1.3<br>3.2.0 ... 3.2.2<br>3.3.0 ... 3.3.7 LTS<br>3.4.0 ... 3.4.3<br>3.5.0 ... 3.5.2<br>3.6.2 ... 3.6.4<br>3.7.0 ... 3.7.3 |
+      | 2.12 | 2.12.17 ... 2.12.21 |
+      | 2.13 | 2.13.9 ... 2.13.18 |
+      | 3    | 3.1.2 ... 3.1.3<br>3.2.0 ... 3.2.2<br>3.3.0 ... 3.3.7 LTS<br>3.4.0 ... 3.4.3<br>3.5.0 ... 3.5.2<br>3.6.2 ... 3.6.4<br>3.7.0 ... 3.7.4<br>3.8.0 ... 3.8.1 |
       |
       |> Upon release of new Scala version (stable, or Scala 3 RC) version dependent artifacts would be published without a new release.
       |
