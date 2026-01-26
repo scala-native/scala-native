@@ -1,6 +1,6 @@
 /*
- * Written by Doug Lea with assistance from members of JCP JSR-166 Expert Group
- * and released to the public domain, as explained at
+ * Written by Doug Lea with assistance from members of JCP JSR-166
+ * Expert Group and released to the public domain, as explained at
  * http://creativecommons.org/publicdomain/zero/1.0/
  */
 package java.util.concurrent
@@ -325,7 +325,7 @@ class SubmissionPublisher[T](
       0
   }
 
-  def estimateMaximumLag(): Long = {
+  def estimateMaximumLag(): Int = {
     var max = 0
     synchronized {
       var pred: BufferedSubscription[T] = null
@@ -1043,10 +1043,12 @@ object SubmissionPublisher {
       if ((_ctl & CtlFlag.CLOSED) == 0) consumeComplete(sub)
     }
 
-    def consumeComplete(sub: Flow.Subscriber[? >: T]): Unit = {
-      try if (sub != null) sub.onComplete()
-      catch case ignore: Throwable => ()
-    }
+    def consumeComplete(sub: Flow.Subscriber[? >: T]): Unit =
+      try {
+        if (sub != null) sub.onComplete()
+      } catch {
+        case ignore: Throwable => ()
+      }
 
     /** Issues subscriber.onError, and unblocks producer if needed. */
     def closeOnError(sub: Flow.Subscriber[? >: T], exc: Throwable): Unit = {
@@ -1063,12 +1065,16 @@ object SubmissionPublisher {
       }
     }
 
-    def consumeError(sub: Flow.Subscriber[? >: T], exc: Throwable): Unit = {
-      try if (exc != null && sub != null) sub.onError(exc)
-      catch case ignore: Throwable => ()
-    }
+    def consumeError(sub: Flow.Subscriber[? >: T], exc: Throwable): Unit =
+      try {
+        if (exc != null && sub != null) sub.onError(exc)
+      } catch {
+        case ignore: Throwable => ()
+      }
 
+    //
     // Blocking support
+    //
 
     /** Unblocks waiting producer. */
     def signalWaiter(): Unit = {
@@ -1124,7 +1130,7 @@ object SubmissionPublisher {
               })
             break(())
           else if (waiter == null) waiter = Thread.currentThread()
-          else if (waiting eq 0) waiting.set(1)
+          else if (waiting == 0) waiting.set(1)
           else if (timed) LockSupport.parkNanos(this, nanos)
           else LockSupport.park(this)
         }

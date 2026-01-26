@@ -1,7 +1,6 @@
 /*
- * Written by Doug Lea and Martin Buchholz with assistance from
- * members of JCP JSR-166 Expert Group and released to the public
- * domain, as explained at
+ * Written by Doug Lea with assistance from members of JCP JSR-166
+ * Expert Group and released to the public domain, as explained at
  * http://creativecommons.org/publicdomain/zero/1.0/
  */
 package org.scalanative.testsuite.javalib.util.concurrent
@@ -18,7 +17,7 @@ import scala.util.boundary
 import scala.util.boundary.break
 
 import org.junit.Assert._
-import org.junit._
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
@@ -151,14 +150,14 @@ class SubmissionPublisherTest extends JSR166Test {
   def checkInitialState(p: SubmissionPublisher[_]): Unit = {
     assertFalse(p.hasSubscribers())
     assertEquals(0, p.getNumberOfSubscribers())
-    assertTrue(p.getSubscribers.isEmpty())
+    assertTrue(p.getSubscribers().isEmpty())
     assertFalse(p.isClosed())
     assertNull(p.getClosedException())
     val n = p.getMaxBufferCapacity()
     assertTrue((n & (n - 1)) == 0) // power of two
 
     assertNotNull(p.getExecutor())
-    assertEquals(0, p.estimateMinimumDemand())
+    assertEquals(0L, p.estimateMinimumDemand())
     assertEquals(0, p.estimateMaximumLag())
   }
 
@@ -269,7 +268,7 @@ class SubmissionPublisherTest extends JSR166Test {
     p.subscribe(s)
     assertTrue(p.hasSubscribers())
     assertEquals(1, p.getNumberOfSubscribers())
-    assertTrue(p.getSubscribers.contains(s))
+    assertTrue(p.getSubscribers().contains(s))
     assertTrue(p.isSubscribed(s))
     s.awaitSubscribe()
     assertNotNull(s.sn)
@@ -280,8 +279,8 @@ class SubmissionPublisherTest extends JSR166Test {
     p.subscribe(s2)
     assertTrue(p.hasSubscribers())
     assertEquals(2, p.getNumberOfSubscribers())
-    assertTrue(p.getSubscribers.contains(s))
-    assertTrue(p.getSubscribers.contains(s2))
+    assertTrue(p.getSubscribers().contains(s))
+    assertTrue(p.getSubscribers().contains(s2))
     assertTrue(p.isSubscribed(s))
     assertTrue(p.isSubscribed(s2))
     s2.awaitSubscribe()
@@ -331,7 +330,7 @@ class SubmissionPublisherTest extends JSR166Test {
     p.subscribe(s)
     assertTrue(p.hasSubscribers())
     assertEquals(1, p.getNumberOfSubscribers())
-    assertTrue(p.getSubscribers.contains(s))
+    assertTrue(p.getSubscribers().contains(s))
     assertTrue(p.isSubscribed(s))
     s.awaitSubscribe()
     assertNotNull(s.sn)
@@ -345,8 +344,7 @@ class SubmissionPublisherTest extends JSR166Test {
     assertFalse(p.isSubscribed(s))
   }
 
-  /** An exception thrown in onSubscribe causes onError
-   */
+  /** An exception thrown in onSubscribe causes onError */
   @Test def testSubscribe5(): Unit = {
     val s = new TestSubscriber()
     val p = basicPublisher()
@@ -436,8 +434,7 @@ class SubmissionPublisherTest extends JSR166Test {
     assertFalse(p.isSubscribed(s1))
   }
 
-  /** Throwing an exception in onNext causes onError
-   */
+  /** Throwing an exception in onNext causes onError */
   @Test def testThrowOnNext(): Unit = {
     val p = basicPublisher()
     val s1 = new TestSubscriber()
@@ -483,8 +480,7 @@ class SubmissionPublisherTest extends JSR166Test {
     assertEquals(1, calls.get())
   }
 
-  /** onNext items are issued in the same order to each subscriber
-   */
+  /** onNext items are issued in the same order to each subscriber */
   @Test def testOrder(): Unit = {
     val p = basicPublisher()
     val s1 = new TestSubscriber()
@@ -529,8 +525,7 @@ class SubmissionPublisherTest extends JSR166Test {
     assertEquals(1, s1.completes)
   }
 
-  /** onNext is not issued when requests become zero
-   */
+  /** onNext is not issued when requests become zero */
   @Test def testRequest2(): Unit = {
     val p = basicPublisher()
     val s1 = new TestSubscriber()
@@ -550,8 +545,7 @@ class SubmissionPublisherTest extends JSR166Test {
     assertEquals(1, s1.nexts)
   }
 
-  /** Non-positive request causes error
-   */
+  /** Non-positive request causes error */
   @Test def testRequest3(): Unit = {
     val p = basicPublisher()
     val s1 = new TestSubscriber()
@@ -579,8 +573,7 @@ class SubmissionPublisherTest extends JSR166Test {
     assertTrue(s3.lastError.isInstanceOf[IllegalArgumentException])
   }
 
-  /** estimateMinimumDemand reports 0 until request, nonzero after request
-   */
+  /** estimateMinimumDemand reports 0 until request, nonzero after request */
   @Test def testEstimateMinimumDemand(): Unit = {
     val s = new TestSubscriber()
     val p = basicPublisher()
@@ -658,15 +651,13 @@ class SubmissionPublisherTest extends JSR166Test {
     assertEquals(1, s1.completes)
   }
 
-  /** offer to a publisher with no subscribers returns lag 0
-   */
+  /** offer to a publisher with no subscribers returns lag 0 */
   @Test def testEmptyOffer(): Unit = {
     val p = basicPublisher()
     assertEquals(0, p.offer(1, null))
   }
 
-  /** offer(null) throws NPE
-   */
+  /** offer(null) throws NPE */
   @Test def testNullOffer(): Unit = {
     val p = basicPublisher()
     try {
@@ -677,8 +668,7 @@ class SubmissionPublisherTest extends JSR166Test {
     }
   }
 
-  /** offer returns number of lagged items if not saturated
-   */
+  /** offer returns number of lagged items if not saturated */
   @Test def testLaggedOffer(): Unit = {
     val p = basicPublisher()
     val s1 = new TestSubscriber()
@@ -702,8 +692,7 @@ class SubmissionPublisherTest extends JSR166Test {
     assertEquals(4, s2.nexts)
   }
 
-  /** offer reports drops if saturated
-   */
+  /** offer reports drops if saturated */
   @Test def testDroppedOffer(): Unit = {
     val p = new SubmissionPublisher[Integer](basicExecutor, 4)
     val s1 = new TestSubscriber()
@@ -729,8 +718,7 @@ class SubmissionPublisherTest extends JSR166Test {
     assertTrue(s1.nexts >= 4)
   }
 
-  /** offer invokes drop handler if saturated
-   */
+  /** offer invokes drop handler if saturated */
   @Test def testHandledDroppedOffer(): Unit = {
     val calls = new AtomicInteger()
     val p = new SubmissionPublisher[Integer](basicExecutor, 4)
@@ -774,8 +762,7 @@ class SubmissionPublisherTest extends JSR166Test {
     assertTrue(calls.get() >= 4)
   }
 
-  /** offer succeeds if drop handler forces request
-   */
+  /** offer succeeds if drop handler forces request */
   @Test def testRecoveredHandledDroppedOffer(): Unit = {
     val calls = new AtomicInteger()
     val p = new SubmissionPublisher[Integer](basicExecutor, 4)
@@ -802,8 +789,7 @@ class SubmissionPublisherTest extends JSR166Test {
     assertTrue(calls.get() >= 2)
   }
 
-  /** Timed offer to a publisher with no subscribers returns lag 0
-   */
+  /** Timed offer to a publisher with no subscribers returns lag 0 */
   @Test def testEmptyTimedOffer(): Unit = {
     val p = basicPublisher()
     val startTime = System.nanoTime()
@@ -811,8 +797,7 @@ class SubmissionPublisherTest extends JSR166Test {
     assertTrue(millisElapsedSince(startTime) < LONG_DELAY_MS / 2)
   }
 
-  /** Timed offer with null item or TimeUnit throws NPE
-   */
+  /** Timed offer with null item or TimeUnit throws NPE */
   @Test def testNullTimedOffer(): Unit = {
     val p = basicPublisher()
     val startTime = System.nanoTime()
@@ -831,8 +816,7 @@ class SubmissionPublisherTest extends JSR166Test {
     assertTrue(millisElapsedSince(startTime) < LONG_DELAY_MS / 2)
   }
 
-  /** Timed offer returns number of lagged items if not saturated
-   */
+  /** Timed offer returns number of lagged items if not saturated */
   @Test def testLaggedTimedOffer(): Unit = {
     val p = basicPublisher()
     val s1 = new TestSubscriber()
@@ -858,8 +842,7 @@ class SubmissionPublisherTest extends JSR166Test {
     assertTrue(millisElapsedSince(startTime) < LONG_DELAY_MS / 2)
   }
 
-  /** Timed offer reports drops if saturated
-   */
+  /** Timed offer reports drops if saturated */
   @Test def testDroppedTimedOffer(): Unit = {
     val p = new SubmissionPublisher[Integer](basicExecutor, 4)
     val s1 = new TestSubscriber()
@@ -888,8 +871,7 @@ class SubmissionPublisherTest extends JSR166Test {
     assertTrue(s1.nexts >= 2)
   }
 
-  /** Timed offer invokes drop handler if saturated
-   */
+  /** Timed offer invokes drop handler if saturated */
   @Test def testHandledDroppedTimedOffer(): Unit = {
     val calls = new AtomicInteger()
     val p = new SubmissionPublisher[Integer](basicExecutor, 4)
@@ -938,8 +920,7 @@ class SubmissionPublisherTest extends JSR166Test {
     assertTrue(calls.get() >= 2)
   }
 
-  /** Timed offer succeeds if drop handler forces request
-   */
+  /** Timed offer succeeds if drop handler forces request */
   @Test def testRecoveredHandledDroppedTimedOffer(): Unit = {
     val calls = new AtomicInteger()
     val p = new SubmissionPublisher[Integer](basicExecutor, 4)
@@ -986,8 +967,7 @@ class SubmissionPublisherTest extends JSR166Test {
     assertEquals((n * (n + 1)) / 2, sum.get())
   }
 
-  /** consume(null) throws NPE
-   */
+  /** consume(null) throws NPE */
   @Test def testConsumeNPE(): Unit = {
     val p = basicPublisher()
     try {
@@ -998,8 +978,7 @@ class SubmissionPublisherTest extends JSR166Test {
     }
   }
 
-  /** consume eventually stops processing published items if cancelled
-   */
+  /** consume eventually stops processing published items if cancelled */
   @Test def testCancelledConsume(): Unit = {
     val count = new AtomicInteger()
     val p = basicPublisher()

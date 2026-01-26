@@ -8,7 +8,7 @@ package org.scalanative.testsuite.javalib.util.concurrent
 import java.util._
 import java.util.concurrent._
 
-import org.junit.{Ignore, Test}
+import org.junit.Test
 
 /** One publisher, many subscribers */
 object SubmissionPublisherLoops1Test {
@@ -49,7 +49,7 @@ object SubmissionPublisherLoops1Test {
   val NPS: Long = 1000L * 1000 * 1000
 
   @throws[Exception]
-  @Test def main(args: Array[String]): Unit = {
+  def main(args: Array[String]): Unit = {
     var reps = REPS
     if (args.length > 0) reps = args(0).toInt
     System.out.println(
@@ -135,7 +135,7 @@ object SubmissionPublisherLoops2Test {
   val NPS: Long = 1000L * 1000 * 1000
 
   @throws[Exception]
-  @Test def main(args: Array[String]): Unit = {
+  def main(args: Array[String]): Unit = {
     var reps = REPS
     if (args.length > 0) reps = args(0).toInt
     System.out.println(
