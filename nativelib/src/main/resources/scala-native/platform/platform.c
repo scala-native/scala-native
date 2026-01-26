@@ -159,7 +159,7 @@ void scalanative_set_os_props(void (*add_prop)(const char *, const char *)) {
             arch = "amd64";
         }
 #endif
-// On JVM all arm64 architectures are reported as the formal aarch64
+        // On JVM all arm64 architectures are reported as the formal aarch64
         if (strcmp("arm64", arch) == 0) {
             arch = "aarch64";
         }
