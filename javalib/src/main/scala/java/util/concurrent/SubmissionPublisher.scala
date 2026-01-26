@@ -18,8 +18,9 @@ import java.util.concurrent.{
 import java.util.function.{BiConsumer, BiPredicate, Consumer}
 import java.util.{ArrayList, Collections, List as JList}
 
-import scala.util.boundary
-import scala.util.boundary.break
+// import scala.util.boundary
+// import scala.util.boundary.break
+import scala.util.control.Breaks.{break, breakable}
 
 // Reference:
 //
@@ -96,7 +97,7 @@ class SubmissionPublisher[T](
       var pred: BufferedSubscription[T] = null
       var curr = clients
 
-      boundary {
+      breakable {
         while (true) {
           if (curr == null) { // insert as tail
             subscription.onSubscribe()
@@ -110,7 +111,7 @@ class SubmissionPublisher[T](
             else
               pred.next = subscription
 
-            break(())
+            break()
           }
 
           val next = curr.next
@@ -123,7 +124,7 @@ class SubmissionPublisher[T](
           } // force line break (fmt)
           else if (subscriber.equals(curr.subscriber)) {
             curr.onError(new IllegalStateException("Duplicate subscribe"))
-            break(())
+            break()
           } // force line break (fmt)
           else {
             pred = curr
@@ -212,8 +213,9 @@ class SubmissionPublisher[T](
       false
     else
       synchronized {
+        var found = false
         var curr = clients
-        boundary {
+        breakable {
           while (curr != null) {
             val next = curr.next
             if (curr.isClosed()) { // remove this node
@@ -221,11 +223,12 @@ class SubmissionPublisher[T](
               curr = next
               clients = next
             } else {
-              break(true)
+              found = true
+              break()
             }
           }
-          false
         }
+        found
       }
 
   def getNumberOfSubscribers(): Int =
@@ -278,8 +281,9 @@ class SubmissionPublisher[T](
         var pred: BufferedSubscription[T] = null
         var next: BufferedSubscription[T] = null
         var curr = clients
+        var found = false
 
-        boundary {
+        breakable {
           while (curr != null) {
             next = curr.next
 
@@ -290,15 +294,19 @@ class SubmissionPublisher[T](
               else
                 pred.next = next
             } // force line break (fmt)
-            else if (subscriber.equals(curr.subscriber))
-              break(true)
-            else
+            else if (subscriber.equals(curr.subscriber)) {
+              found = true
+              break()
+            } // force line break (fmt)
+            else {
               pred = curr
+            }
 
             curr = next
           }
-          false
         }
+
+        found
       }
     }
   }
@@ -780,12 +788,12 @@ object SubmissionPublisher {
         newBuffer.compareAndSet(tail & newMask, null, item.asInstanceOf[AnyRef])
         var _tail = tail - 1
 
-        boundary {
+        breakable {
           for (k <- mask to 0 by -1) {
             val x = buffer.getAndSet(_tail & mask, null)
 
             if (x == null)
-              break(()) // already consumed
+              break() // already consumed
             else {
               newBuffer.compareAndSet(_tail & newMask, null, x)
               _tail -= 1
@@ -930,7 +938,7 @@ object SubmissionPublisher {
         var _head = head.get()
         var _tail = tail.get()
 
-        boundary {
+        breakable {
           while (true) {
             val _ctl = ctl.get()
             var taken = 0
@@ -938,7 +946,7 @@ object SubmissionPublisher {
 
             if ((_ctl & CtlFlag.ERROR) != 0) {
               closeOnError(subscriber, null)
-              break(())
+              break()
             } // force line break (fmt)
             else if ({
               taken = takeItems(subscriber, _demand, _head)
@@ -962,7 +970,7 @@ object SubmissionPublisher {
                     empty = _tail == _head; empty
                   } && (_ctl & CtlFlag.COMPLETE) != 0) {
                 closeOnComplete(subscriber) // end of stream
-                break(())
+                break()
               } // force line break (fmt)
               else if (empty || _demand == 0L) {
                 val bit =
@@ -972,7 +980,7 @@ object SubmissionPublisher {
                       _ctl,
                       _ctl & ~bit
                     ) && bit == CtlFlag.RUN)
-                  break(())
+                  break()
               }
             }
           }
@@ -1007,16 +1015,16 @@ object SubmissionPublisher {
 
         val n = if (demand < b.toLong) demand.toInt else b
 
-        boundary {
+        breakable {
           while (k < n) {
             val x = buffer.getAndSet(h & m, null)
 
             if (waiting != 0) signalWaiter()
 
             if (x == null)
-              break(())
+              break()
             else if (!consumeNext(sub, x.asInstanceOf[T]))
-              break(())
+              break()
 
             h += 1
             k += 1
@@ -1152,16 +1160,16 @@ object SubmissionPublisher {
       val timed = timeout < Long.MaxValue
       val deadline = if (timed) System.nanoTime() + nanos else 0L
 
-      boundary {
+      breakable {
         while (!isReleasable()) {
           if (Thread.interrupted()) {
             timeout = BufferedSubscription.INTERRUPTED
-            if (timed) break(())
+            if (timed) break()
           } // force line break (fmt)
           else if (timed && {
                 nanos = deadline - System.nanoTime(); nanos <= 0L
               })
-            break(())
+            break()
           else if (waiter == null) waiter = Thread.currentThread()
           else if (waiting == 0) waiting = 1
           else if (timed) LockSupport.parkNanos(this, nanos)
