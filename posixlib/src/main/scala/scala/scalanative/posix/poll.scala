@@ -149,6 +149,52 @@ object poll {
   def POLLNVAL: CInt = extern // Invalid polling request
 }
 
+/* Prefer definitions in object poll. That placement is closer to
+ * the Open Group specification.
+ */
+@deprecated(
+  "Not POSIX, subject to complete removal in the future.",
+  since = "posixlib 0.5.11"
+)
+@extern
+@define("__SCALANATIVE_POSIX_POLL")
+object pollEvents {
+
+  @name("scalanative_pollin")
+  def POLLIN: CInt = extern // Data ready to be read
+
+  @name("scalanative_pollpri")
+  def POLLPRI: CInt = extern // Urgent data ready to be read
+
+  @name("scalanative_pollout")
+  def POLLOUT: CInt = extern // Writing now will not block
+
+  // XOpen events
+
+  @name("scalanative_pollrdnorm")
+  def POLLRDNORM: CInt = extern // Normal data may be read
+
+  @name("scalanative_pollrdband")
+  def POLLRDBAND: CInt = extern // Priority data may be read
+
+  @name("scalanative_pollwrnorm")
+  def POLLWRNORM: CInt = extern // Writing now will not block
+
+  @name("scalanative_pollwrband")
+  def POLLWRBAND: CInt = extern // Priority data may be written
+
+  // Always checked in revents
+
+  @name("scalanative_pollerr")
+  def POLLERR: CInt = extern // Error condition
+
+  @name("scalanative_pollhup")
+  def POLLHUP: CInt = extern // Hung up
+
+  @name("scalanative_pollnval")
+  def POLLNVAL: CInt = extern // Invalid polling request
+}
+
 object pollOps {
   import poll._
 
