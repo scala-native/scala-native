@@ -855,7 +855,7 @@ object SubmissionPublisher {
         if (executor != null) // skip if disabled on error (executor will be set to null)
           executor.execute(task)
       } catch {
-        case exc: (RuntimeException | Error) =>
+        case exc @ (_: RuntimeException | _: Error) =>
           ctl.getAndUpdate(c => c | CtlFlag.ERROR | CtlFlag.CLOSED)
           throw exc
       }
@@ -1128,7 +1128,7 @@ object SubmissionPublisher {
     def isReleasable(): Boolean = {
       var cap = 0
 
-      (ctl.get() & CtlFlag.CLOSED) != 0 // closed
+      ((ctl.get() & CtlFlag.CLOSED) != 0) // closed
         || (
           buffer != null
           && { cap = buffer.length(); cap > 0 }
