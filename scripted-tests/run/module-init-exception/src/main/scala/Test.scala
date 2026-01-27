@@ -46,11 +46,17 @@ object Test {
     cdl.countDown()
 
     t1.join(1000)
-    assert(!t1.isAlive(), s"thread1: ${t1} is still alive (state: ${t1.getState()})")
+    assert(
+      !t1.isAlive(),
+      s"thread1: ${t1} is still alive (state: ${t1.getState()})"
+    )
     checkException(t1, t1.exception)
 
     t2.join(1000)
-    assert(!t2.isAlive(), s"thread2: ${t2} is still alive (state: ${t2.getState()})")
+    assert(
+      !t2.isAlive(),
+      s"thread2: ${t2} is still alive (state: ${t2.getState()})"
+    )
     checkException(t2, t2.exception)
   }
 }
