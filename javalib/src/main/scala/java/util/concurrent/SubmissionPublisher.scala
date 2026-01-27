@@ -1128,8 +1128,8 @@ object SubmissionPublisher {
     def isReleasable(): Boolean = {
       var cap = 0
 
-      ((ctl.get() & CtlFlag.CLOSED) != 0) // closed
-        || (
+      (ctl.get() & CtlFlag.CLOSED) != 0 ||
+        (
           buffer != null
           && { cap = buffer.length(); cap > 0 }
           && buffer.getAcquire((cap - 1) & tail.get()) == null
