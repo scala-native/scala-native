@@ -60,7 +60,7 @@ private[process] object ProcessExitCheckerLinux
       curpidfd != -1 && {
         val ppollfd = stackalloc[struct_pollfd](1)
         ppollfd.fd = curpidfd
-        ppollfd.events = (pollEvents.POLLIN | pollEvents.POLLRDNORM).toShort
+        ppollfd.events = (POLLIN | POLLRDNORM).toShort
 
         val ts = stackalloc[time.timespec]()
         val tsOrNull = unitOpt.map { unit =>
