@@ -13,8 +13,9 @@ import java.util.concurrent.{
   SubmissionPublisher
 }
 
-import scala.util.boundary
-import scala.util.boundary.break
+// import scala.util.boundary
+// import scala.util.boundary.break
+import scala.util.control.Breaks.{break, breakable}
 
 import org.junit.Assert._
 import org.junit.Test
@@ -71,14 +72,14 @@ class SubmissionPublisherTest extends JSR166Test {
     }
 
     def awaitSubscribe(): Unit = {
-      boundary {
+      breakable {
         while (sn == null) {
           synchronized {
             try wait(1L)
             catch {
               case ex: Exception => {
                 threadUnexpectedException(ex)
-                break(())
+                break()
               }
             }
           }
@@ -87,14 +88,14 @@ class SubmissionPublisherTest extends JSR166Test {
     }
 
     def awaitNext(n: Int): Unit = {
-      boundary {
+      breakable {
         while (nexts < n) {
           synchronized {
             try wait(1L)
             catch {
               case ex: Exception => {
                 threadUnexpectedException(ex)
-                break(())
+                break()
               }
             }
           }
@@ -103,14 +104,14 @@ class SubmissionPublisherTest extends JSR166Test {
     }
 
     def awaitComplete(): Unit = {
-      boundary {
+      breakable {
         while (completes == 0 && errors == 0) {
           synchronized {
             try wait(1L)
             catch {
               case ex: Exception => {
                 threadUnexpectedException(ex)
-                break(())
+                break()
               }
             }
           }
@@ -119,14 +120,14 @@ class SubmissionPublisherTest extends JSR166Test {
     }
 
     def awaitError(): Unit = {
-      boundary {
+      breakable {
         while (errors == 0) {
           synchronized {
             try wait(1L)
             catch {
               case ex: Exception => {
                 threadUnexpectedException(ex)
-                break(())
+                break()
               }
             }
           }
