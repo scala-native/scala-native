@@ -6,11 +6,8 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 
 import java.util.concurrent.TimeUnit.MILLISECONDS
+import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.{
-  CompletableFuture, CountDownLatch, Executors, Flow, ForkJoinPool,
-  SubmissionPublisher
-}
 
 // import scala.util.boundary
 // import scala.util.boundary.break
