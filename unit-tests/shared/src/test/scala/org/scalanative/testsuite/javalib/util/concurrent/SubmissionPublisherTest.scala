@@ -5,11 +5,10 @@
  */
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import java.util.concurrent.Flow.{Subscriber, Subscription}
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{
-  CompletableFuture, CountDownLatch, Executor, Executors, Flow, ForkJoinPool,
+  CompletableFuture, CountDownLatch, Executors, Flow, ForkJoinPool,
   SubmissionPublisher
 }
 
@@ -19,8 +18,6 @@ import scala.util.control.Breaks.{break, breakable}
 
 import org.junit.Assert._
 import org.junit.Test
-
-import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 import JSR166Test.{
   LONG_DELAY_MS, expensiveTests, millisElapsedSince, timeoutMillis
