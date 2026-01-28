@@ -308,7 +308,14 @@ object RyuFloat {
       }
       e10 = q + e2 // Note: e2 and e10 are both negative here.
       dpIsTrailingZeros = 1 >= q
-      dvIsTrailingZeros = (q < FLOAT_MANTISSA_BITS) &&
+      // (q - 1 < FLOAT_MANTISSA_BITS + 2)
+      // LHS: checking if mv is divisible by 2^(q-1)
+      // RHS: mv is 4 * m, where m is the 23-bit mantissa.
+      //      which means mv <= 4 * (2^23 - 1) = 2^25 - 4
+      //      So, mv can be divisible by up to 2^24.
+      //      q-1 < 25 is the right restriction here.
+      // see https://github.com/ulfjack/ryu/issues/243
+      dvIsTrailingZeros = (q < FLOAT_MANTISSA_BITS + 3) &&
         (mv & ((1 << (q - 1)) - 1)) == 0
       dmIsTrailingZeros = (if (mm % 2 == 1) 0 else 1) >= q
     }
