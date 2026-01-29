@@ -5,9 +5,9 @@ import scala.scalanative.unsigned._
 /** Platform-specific I/O operations for pipe-based tests.
  *
  *  Uses LinktimeInfo.isWindows to conditionally compile the correct
- *  implementation for each platform.
+ *  implementation for each PlatformInfo.
  */
-object PlatformIO {
+object PlatformInfoIO {
 
   /** Creates a pipe and returns (readFd, writeFd) as CInt values. On Windows,
    *  these are indices into an internal handle array. On POSIX, these are file
