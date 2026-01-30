@@ -225,6 +225,12 @@ object Commands {
         }
         val publishCommand = "publishSigned"
         val publishBaseVersion = s"++$scalaVersion; $publishCommand"
+        val publishSbtPlugin = binVersion match {
+          case "2.12" => Nil // handled by publishBaseVersion
+          case "2.13" => Nil //
+          case "3" => List(s"++${ScalaVersions.sbt2ScalaVersion}; sbtScalaNative/$publishCommand")
+          case _ => sys.error(s"Invalid Scala binary version: '$binVersion'")
+        }
         val publishCrossVersions = crossScalaVersions
           .diff(scalaVersion :: Nil) // exclude already published base version
           .toList
@@ -242,6 +248,7 @@ object Commands {
           "clean" ::
             publishBaseVersion ::
             publishCrossVersions :::
+            publishSbtPlugin :::
             release
 
         println(
