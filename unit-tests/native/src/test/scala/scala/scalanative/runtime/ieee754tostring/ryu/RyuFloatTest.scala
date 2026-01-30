@@ -112,6 +112,13 @@ class RyuFloatTest {
     assertF2sEquals("3.4366718E10", 3.4366717e10f)
   }
 
+  @Test def lotsOfTrailingZeros(): Unit = {
+    assertF2sEquals("2.4414062E-4", 2.4414062e-4f)
+    assertF2sEquals("0.0024414062", 2.4414062e-3f)
+    assertF2sEquals("0.0043945312", 4.3945312e-3f)
+    assertF2sEquals("0.0063476562", 6.3476562e-3f)
+  }
+
   @Test def roundingEvenIfTied(): Unit = {
     assertF2sEquals("0.33007812", 0.33007812f)
   }
