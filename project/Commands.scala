@@ -133,14 +133,14 @@ object Commands {
           println(s"Testing sbt 2.x using Scala ${version}")
           List(
             s"++${ScalaVersions.scala213}; publishLocal",
-            s"++${ScalaVersions.sbt2ScalaVersion}; publishLocal",
+            s"++${ScalaVersions.sbt2ScalaVersion}; publishLocal"
           )
         case "2.12" =>
           println(s"Testing sbt 1.x using Scala ${version}")
           List(
             s"++${ScalaVersions.scriptedTestsScala3Version}; publishLocal",
             s"++${ScalaVersions.scala213}; publishLocal",
-            s"++${ScalaVersions.scala212}; publishLocal",
+            s"++${ScalaVersions.scala212}; publishLocal"
           )
         case binVersion =>
           sys.error(
@@ -228,7 +228,10 @@ object Commands {
         val publishSbtPlugin = binVersion match {
           case "2.12" => Nil // handled by publishBaseVersion
           case "2.13" => Nil //
-          case "3" => List(s"++${ScalaVersions.sbt2ScalaVersion}; sbtScalaNative/$publishCommand")
+          case "3"    =>
+            List(
+              s"++${ScalaVersions.sbt2ScalaVersion}; sbtScalaNative/$publishCommand"
+            )
           case _ => sys.error(s"Invalid Scala binary version: '$binVersion'")
         }
         val publishCrossVersions = crossScalaVersions

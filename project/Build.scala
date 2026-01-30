@@ -367,7 +367,8 @@ object Build {
             IO.copyFile(buildTemplate, buildSbt, replaceExisting)
             sbtBinaryVersion.value match {
               case "2" =>
-                val patchedBuild = IO.read(buildSbt)
+                val patchedBuild = IO
+                  .read(buildSbt)
                   .replace(" %%% ", " %% ")
                   .replace("//:sbt2-only ", "")
                 IO.write(buildSbt, patchedBuild)
