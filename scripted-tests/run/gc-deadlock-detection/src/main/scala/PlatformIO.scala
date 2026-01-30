@@ -7,7 +7,7 @@ import scala.scalanative.unsigned._
  *  Uses LinktimeInfo.isWindows to conditionally compile the correct
  *  implementation for each PlatformInfo.
  */
-object PlatformInfoIO {
+object PlatformIO {
 
   /** Creates a pipe and returns (readFd, writeFd) as CInt values. On Windows,
    *  these are indices into an internal handle array. On POSIX, these are file
@@ -35,7 +35,7 @@ object PlatformInfoIO {
 // POSIX Pipe I/O (Unix/Linux/macOS)
 // =============================================================================
 @extern
-private[this] object PosixPipeIO {
+private object PosixPipeIO {
   def pipe(pipeFds: Ptr[CInt]): CInt = extern
   def close(fd: CInt): CInt = extern
 }
@@ -45,7 +45,7 @@ private[this] object PosixPipeIO {
 // =============================================================================
 @extern
 @link("kernel32")
-private[this] object WindowsPipeIOExtern {
+private object WindowsPipeIOExtern {
   @name("CreatePipe")
   def CreatePipe(
       readPipePtr: Ptr[Ptr[Byte]],
@@ -58,7 +58,7 @@ private[this] object WindowsPipeIOExtern {
   def CloseHandle(handle: Ptr[Byte]): Boolean = extern
 }
 
-private[this] object WindowsPipeIO {
+private object WindowsPipeIO {
   import WindowsPipeIOExtern._
 
   // Store handles for later access - simple approach for test code

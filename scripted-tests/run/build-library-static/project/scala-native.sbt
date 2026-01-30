@@ -1,3 +1,4 @@
+Compile / scalacOptions += "-Xmacro-settings:sbt:no-default-task-cache"
 {
   val pluginVersion = System.getProperty("plugin.version")
   if (pluginVersion == null)
