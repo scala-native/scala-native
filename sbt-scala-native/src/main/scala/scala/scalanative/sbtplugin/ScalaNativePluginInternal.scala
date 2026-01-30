@@ -102,9 +102,8 @@ object ScalaNativePluginInternal {
     )
   }
 
-  lazy val scalaNativeBaseSettings: Seq[Setting[_]] = Seq(
-    crossVersion := ScalaNativeCrossVersion.binary
-  ) ++ PluginCompat.sbtVersionBaseSettings
+  lazy val scalaNativeBaseSettings: Seq[Setting[_]] =
+    PluginCompat.sbtVersionBaseSettings
 
   /** Called by overridden method in plugin
    *

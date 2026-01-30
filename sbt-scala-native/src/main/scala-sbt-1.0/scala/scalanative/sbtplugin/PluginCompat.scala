@@ -11,7 +11,8 @@ private[scalanative] object PluginCompat {
   type NioPath = java.nio.file.Path
 
   val sbtVersionBaseSettings = Seq[Setting[_]](
-    platformDepsCrossVersion := ScalaNativeCrossVersion.binary
+    Keys.crossVersion := ScalaNativeCrossVersion.binary,
+    platformDepsCrossVersion := ScalaNativeCrossVersion.binary,
   )
 
   def crossScalaNative(module: ModuleID): ModuleID =
