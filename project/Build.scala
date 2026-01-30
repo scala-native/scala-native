@@ -316,9 +316,37 @@ object Build {
       .in(file("sbt-scala-native"))
       .enablePlugins(ScriptedPlugin)
       .settings(
+        libraryDependencies ++= {
+          sbtBinaryVersion.value match {
+            case "1.0" => Seq(sbt.Defaults.sbtPluginExtra(Deps.SbtPlatformDeps, "1.0", "2.12"))
+            case _     => Nil
+          }
+        },
+        libraryDependencies ++= {
+          Seq(
+            "org.scala-native" %% "tools" % version.value,
+            "org.scala-native" %% "test-runner" % version.value
+          )
+        },
+        update := update
+          .dependsOn(
+            Def.taskDyn {
+              val ver = scalaBinaryVersion.value
+              Def
+                .task(())
+                .dependsOn(
+                  utilJVM.forBinaryVersion(ver) / Compile / publishLocal,
+                  nirJVM.forBinaryVersion(ver) / Compile / publishLocal,
+                  toolsJVM.forBinaryVersion(ver) / Compile / publishLocal,
+                  testRunner.forBinaryVersion(ver) / Compile / publishLocal
+                )
+            }
+          )
+          .value
+      )
+      .settings(
         sbtPluginSettings,
         disabledDocsSettings,
-        addSbtPlugin(Deps.SbtPlatformDeps),
         sbtTestDirectory := (ThisBuild / baseDirectory).value / "scripted-tests",
         // publish the other projects before running scripted tests.
         scriptedDependencies := {
@@ -390,7 +418,7 @@ object Build {
             .value
         }
       )
-      .dependsOn(toolsJVM.v2_12, testRunner.v2_12)
+  // .dependsOn(toolsJVM.v2_12, testRunner.v2_12)
 
 // Native modules ------------------------------------------------
   lazy val nativelib =

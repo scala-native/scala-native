@@ -11,6 +11,7 @@ Compile / unmanagedSourceDirectories ++= {
   ).flatMap { dir =>
     Seq(
       root / s"$dir/src/main/scala",
+      root / s"$dir/src/main/scala-sbt-1.0",
       root / s"$dir/jvm/src/main/scala"
     )
   }
