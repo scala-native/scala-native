@@ -18,12 +18,13 @@ import scalanative.posix.netdb._
 import scalanative.posix.netdbOps._
 import scalanative.posix.netinet.in._
 import scalanative.posix.netinet.inOps._
-import scalanative.posix.poll._
 import scalanative.posix.pollOps._
 import scalanative.posix.sys.socket._
-import scalanative.posix.{fcntl, pollEvents, unistd}
+import scalanative.posix.{fcntl, poll, unistd}
 import scalanative.unsafe._
 import scalanative.unsigned._
+
+import poll._ // posix.poll to disambiguate POLLIN
 
 object SocketTestHelpers {
 
@@ -306,7 +307,7 @@ object SocketTestHelpers {
     } else {
       val fds = stackalloc[struct_pollfd](1)
       (fds + 0).fd = fd
-      (fds + 0).events = (pollEvents.POLLIN | pollEvents.POLLRDNORM).toShort
+      (fds + 0).events = (poll.POLLIN | poll.POLLRDNORM).toShort
 
       errno = 0
 
@@ -314,7 +315,7 @@ object SocketTestHelpers {
        * in the kernel.
        */
 
-      val ret = poll(fds, 1.toUInt, timeout)
+      val ret = poll.poll(fds, 1.toUInt, timeout)
 
       if (ret == 0) {
         fail(s"poll timed out after ${timeout} milliseconds")
