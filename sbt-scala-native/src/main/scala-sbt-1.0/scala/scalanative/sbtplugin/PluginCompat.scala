@@ -12,7 +12,7 @@ private[scalanative] object PluginCompat {
 
   val sbtVersionBaseSettings = Seq[Setting[_]](
     Keys.crossVersion := ScalaNativeCrossVersion.binary,
-    platformDepsCrossVersion := ScalaNativeCrossVersion.binary,
+    platformDepsCrossVersion := ScalaNativeCrossVersion.binary
   )
 
   def crossScalaNative(module: ModuleID): ModuleID =
