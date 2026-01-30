@@ -126,32 +126,33 @@ object Commands {
           )
         )
 
-      val prepareTests = CrossVersion.binaryScalaVersion(version) match {
-        case "3" =>
-          // Current limmitation test-infra limitation, we're testing sbt 2.x using the same version as it's used to build it's artifacts
-          // scala3.version = sbt2ScalaVersion
-          println(s"Testing sbt 2.x using Scala ${version}")
-          List(
-            s"++${ScalaVersions.scala213}; publishLocal",
-            s"++${ScalaVersions.sbt2ScalaVersion}; publishLocal"
-          )
-        case "2.12" =>
-          println(s"Testing sbt 1.x using Scala ${version}")
-          List(
-            s"++${ScalaVersions.scriptedTestsScala3Version}; publishLocal",
-            s"++${ScalaVersions.scala213}; publishLocal",
-            s"++${ScalaVersions.scala212}; publishLocal"
-          )
-        case binVersion =>
-          sys.error(
-            s"Unsupported Scala binary version for sbt scripted tests: $binVersion (for Scala ${version})"
-          )
-      }
+      val (prepareTests, testsFilter) =
+        CrossVersion.binaryScalaVersion(version) match {
+          case "3" =>
+            // Current limmitation test-infra limitation, we're testing sbt 2.x using the same version as it's used to build it's artifacts
+            // scala3.version = sbt2ScalaVersion
+            println(s"Testing sbt 2.x using Scala ${version}")
+            List(
+              s"++${ScalaVersions.scala213}; publishLocal",
+              s"++${ScalaVersions.sbt2ScalaVersion}; publishLocal"
+            ) -> "run/*" // no scala3/cross-version-compat tests until sbt/sbt#8665 is resolved
+          case "2.12" =>
+            println(s"Testing sbt 1.x using Scala ${version}")
+            List(
+              s"++${ScalaVersions.scriptedTestsScala3Version}; publishLocal",
+              s"++${ScalaVersions.scala213}; publishLocal",
+              s"++${ScalaVersions.scala212}; publishLocal"
+            ) -> "" // run all tests
+          case binVersion =>
+            sys.error(
+              s"Unsupported Scala binary version for sbt scripted tests: $binVersion (for Scala ${version})"
+            )
+        }
 
       prepareTests :::
         "show sbtScalaNative/sbtVersion" ::
         "show sbtScalaNative/scalaVersion" ::
-        "sbtScalaNative/scripted" ::
+        s"sbtScalaNative/scripted ${testsFilter}" ::
         state
   }
 
