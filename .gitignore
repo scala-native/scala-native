@@ -1,5 +1,8 @@
 scalalib/src/
 scala-partest/fetchedSources/
+# Generated from template
+scripted-tests/scala3/cross-version-compat/build.sbt
+
 target/
 _build/
 *.dot
