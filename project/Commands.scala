@@ -106,35 +106,52 @@ object Commands {
       val version = args.headOption
         .flatMap(MultiScalaProject.scalaVersions.get)
         .orElse(state.getSetting(scalaVersion))
+        .map { version =>
+          (
+            CrossVersion.partialVersion(version),
+            CrossVersion.partialVersion(ScalaVersions.sbt2ScalaVersion)
+          ) match {
+            case (Some((3, minor)), Some((3, sbtScalaVersionMinor)))
+                if minor > sbtScalaVersionMinor =>
+              System.err.println(
+                s"Downgrading Scala ${version} version to ${ScalaVersions.sbt2ScalaVersion} for sbt scripted tests: cannot use forward incompatible artifacts"
+              )
+              ScalaVersions.sbt2ScalaVersion
+            case _ => version
+          }
+        }
         .getOrElse(
           sys.error(
             "Used command needs explicit Scala version as an argument"
           )
         )
 
-      assert(
-        !ScalaVersions.crossScala213.contains("2.13.19"),
-        "Update scripted test when new Scala 2.13 version is released"
-      )
-      def setScriptedLaunchOpts(scala3Version: String) =
-        s"""|set sbtScalaNative/scriptedLaunchOpts := {
-            |  (sbtScalaNative/scriptedLaunchOpts).value
-            |   .filterNot(_.startsWith("-Dscala.version=")) :+
-            |   "-Dscala.version=$scala3Version" :+
-            |   "-Dscala213.version=${ScalaVersions.scala213}"
-            |}""".stripMargin
-      // Scala 3 is supported since sbt 1.5.0. 1.5.8 is used.
-      // Older versions set incorrect binary version
-      val isScala3 = version.startsWith("3.")
+      val prepareTests = CrossVersion.binaryScalaVersion(version) match {
+        case "3" =>
+          // Current limmitation test-infra limitation, we're testing sbt 2.x using the same version as it's used to build it's artifacts
+          // scala3.version = sbt2ScalaVersion
+          println(s"Testing sbt 2.x using Scala ${version}")
+          List(
+            s"++${ScalaVersions.scala213}; publishLocal",
+            s"++${ScalaVersions.sbt2ScalaVersion}; publishLocal",
+          )
+        case "2.12" =>
+          println(s"Testing sbt 1.x using Scala ${version}")
+          List(
+            s"++${ScalaVersions.scriptedTestsScala3Version}; publishLocal",
+            s"++${ScalaVersions.scala213}; publishLocal",
+            s"++${ScalaVersions.scala212}; publishLocal",
+          )
+        case binVersion =>
+          sys.error(
+            s"Unsupported Scala binary version for sbt scripted tests: $binVersion (for Scala ${version})"
+          )
+      }
 
-      // Scala 2.13.18 does not support Tasty from Scala 3.8
-      val scala3OnlyTests =
-        if (isScala3)
-          s"${setScriptedLaunchOpts("3.7.4")};++3.7.4; sbtScalaNative/scripted scala3/*; ++${version};"
-        else ""
-      setScriptedLaunchOpts(version) ::
-        s"sbtScalaNative/scripted run/*" ::
-        scala3OnlyTests ::
+      prepareTests :::
+        "show sbtScalaNative/sbtVersion" ::
+        "show sbtScalaNative/scalaVersion" ::
+        "sbtScalaNative/scripted" ::
         state
   }
 

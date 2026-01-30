@@ -185,7 +185,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3]
+        scala: [2.12, 3]
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/linux-setup-env
