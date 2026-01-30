@@ -23,10 +23,11 @@ object ScalaNativeJUnitPlugin extends AutoPlugin {
       val ver = nativeVersion
       val org = nativeOrgName
       Seq(
-        (org %% "junit-runtime" % ver)
-          .cross(ScalaNativeCrossVersion.binary) % Test,
-        (org % "junit-plugin" % ver % ScalaNativeTestPlugin)
-          .cross(CrossVersion.full)
+        PluginCompat.crossScalaNative(org %% "junit-runtime" % ver) % Test,
+        PluginCompat.crossJVM(
+          (org % "junit-plugin" % ver % ScalaNativeTestPlugin)
+            .cross(CrossVersion.full)
+        )
       )
     },
     Test / scalacOptions ++= Def.uncached {

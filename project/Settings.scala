@@ -646,12 +646,17 @@ object Settings {
     },
     sbtBinaryVersion := CrossVersion.binarySbtVersion(sbtVersion.value),
     scriptedLaunchOpts := {
+      val scala3Version = "3.7.4".ensuring(
+        !ScalaVersions.crossScala213.contains("2.13.19"),
+        "Update scala3.version when new Scala 3 version is released"
+      )
       scriptedLaunchOpts.value ++
         Seq(
           "-Xmx1024M",
           "-Dplugin.version=" + version.value,
-          // Default scala.version, can be overriden in test-scrippted command
           "-Dscala.version=" + scalaVersion.value,
+          "-Dscala213.version=" + ScalaVersions.scala213,
+          "-Dscala3.version=" + scala3Version,
           "-Dfile.encoding=UTF-8" // Windows uses Cp1250 as default
         ) ++
         ivyPaths.value.ivyHome.map(home => s"-Dsbt.ivy.home=$home").toSeq

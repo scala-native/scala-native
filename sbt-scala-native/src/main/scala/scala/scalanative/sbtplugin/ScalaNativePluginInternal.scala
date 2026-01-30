@@ -73,8 +73,10 @@ object ScalaNativePluginInternal {
         ) ++ nativeStandardLibraries.map(org %% _ % ver)
 
         Seq(
-          compilerPlugin(org % "nscplugin" % ver).cross(CrossVersion.full)
-        ) ++ runtimeDependencies.map(_.cross(ScalaNativeCrossVersion.binary))
+          PluginCompat.crossJVM(
+            compilerPlugin(org % "nscplugin" % ver).cross(CrossVersion.full)
+          )
+        ) ++ runtimeDependencies.map(PluginCompat.crossScalaNative)
       },
       excludeDependencies ++= {
         // Exclude cross published version dependencies leading to conflicts in Scala 3 vs 2.13
@@ -184,7 +186,7 @@ object ScalaNativePluginInternal {
    *  times per project.
    */
   def scalaNativeConfigSettings(testConfig: Boolean): Seq[Setting[_]] = Seq(
-    scalacOptions ++= {
+    compile / scalacOptions ++= {
       if (isGeneratingForIDE) None
       else
         Some(

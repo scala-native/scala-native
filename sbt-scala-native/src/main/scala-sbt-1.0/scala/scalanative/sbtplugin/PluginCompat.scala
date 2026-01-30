@@ -14,6 +14,11 @@ private[scalanative] object PluginCompat {
     platformDepsCrossVersion := ScalaNativeCrossVersion.binary
   )
 
+  def crossScalaNative(module: ModuleID): ModuleID =
+    module.cross(ScalaNativeCrossVersion.binary)
+
+  def crossJVM(module: ModuleID): ModuleID = module
+
   def toNioPath(a: Attributed[File])(implicit conv: FileConverter): NioPath =
     a.data.toPath()
 

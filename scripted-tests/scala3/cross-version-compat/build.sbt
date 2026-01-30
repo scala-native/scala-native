@@ -1,7 +1,7 @@
 val scala3Version = sys.props.getOrElse(
-  "scala.version",
+  "scala3.version",
   throw new RuntimeException(
-    """The system property 'scala.version' is not defined.
+    """The system property 'scala3.version' is not defined.
       |Specify this property using the scriptedLaunchOpts -D.""".stripMargin
   )
 )
@@ -30,7 +30,6 @@ inThisBuild(
 def NoOpInUnstableScala = if (usesUnstableScala3)
   Def.settings(
     run := {},
-    Test / test := {},
     publishLocal := {},
     Compile / sources := Nil,
     Test / sources := Nil,
@@ -61,7 +60,7 @@ lazy val projectA = project
   .in(file("project-A"))
   .enablePlugins(ScalaNativePlugin)
   .settings(
-    libraryDependencies += organization.value %%% (base / normalizedName).value % version.value
+    libraryDependencies += (organization.value %% (base / normalizedName).value % version.value)
   )
   .settings(NoOpInUnstableScala)
 
@@ -70,7 +69,7 @@ lazy val projectB = project
   .enablePlugins(ScalaNativePlugin)
   .settings(
     commonScala213Settigns,
-    libraryDependencies += (organization.value %%% (base / normalizedName).value % version.value)
+    libraryDependencies += (organization.value %% (base / normalizedName).value % version.value)
       .cross(CrossVersion.for3Use2_13)
   )
   .settings(NoOpInUnstableScala)
@@ -80,7 +79,7 @@ lazy val projectC = project
   .enablePlugins(ScalaNativePlugin)
   .settings(
     commonScala213Settigns,
-    libraryDependencies += (organization.value %%% (base / normalizedName).value % version.value)
+    libraryDependencies += (organization.value %% (base / normalizedName).value % version.value)
       .cross(CrossVersion.for2_13Use3)
   )
   .settings(NoOpInUnstableScala)
@@ -91,9 +90,9 @@ lazy val projectD = project
   .settings(
     commonScala213Settigns,
     libraryDependencies ++= Seq(
-      organization.value %%% (projectA / normalizedName).value % version.value,
-      organization.value %%% (projectB / normalizedName).value % version.value,
-      organization.value %%% (projectC / normalizedName).value % version.value
+      organization.value %% (projectA / normalizedName).value % version.value,
+      organization.value %% (projectB / normalizedName).value % version.value,
+      organization.value %% (projectC / normalizedName).value % version.value
     ),
     excludeDependencies += ExclusionRule(
       organization.value,
@@ -108,9 +107,9 @@ lazy val projectE = project
   .settings(
     commonScala213Settigns,
     libraryDependencies ++= Seq(
-      organization.value %%% (projectA / normalizedName).value % version.value,
-      organization.value %%% (projectB / normalizedName).value % version.value,
-      organization.value %%% (projectC / normalizedName).value % version.value
+      organization.value %% (projectA / normalizedName).value % version.value,
+      organization.value %% (projectB / normalizedName).value % version.value,
+      organization.value %% (projectC / normalizedName).value % version.value
     ).map(_.cross(CrossVersion.for3Use2_13)),
     excludeDependencies += ExclusionRule(
       organization.value,
@@ -125,9 +124,9 @@ lazy val projectF = project
   .settings(
     commonScala213Settigns,
     libraryDependencies ++= Seq(
-      organization.value %%% (projectA / normalizedName).value % version.value,
-      organization.value %%% (projectB / normalizedName).value % version.value,
-      organization.value %%% (projectC / normalizedName).value % version.value
+      organization.value %% (projectA / normalizedName).value % version.value,
+      organization.value %% (projectB / normalizedName).value % version.value,
+      organization.value %% (projectC / normalizedName).value % version.value
     ).map(_.cross(CrossVersion.for2_13Use3)),
     excludeDependencies += ExclusionRule(
       organization.value,

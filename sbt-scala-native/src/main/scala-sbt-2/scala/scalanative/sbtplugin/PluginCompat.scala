@@ -36,7 +36,15 @@ private[scalanative] object PluginCompat:
   ): Vector[File] =
     toNioPaths(cp).map(_.toFile())
 
-  val sbtVersionBaseSettings = Seq.empty[Setting[?]]
+  val sbtVersionBaseSettings = Seq[Setting[?]](
+    Keys.platform := ScalaNativePlatform.current
+  )
+
+  def crossScalaNative(module: ModuleID): ModuleID =
+    module.platform(ScalaNativePlatform.current)
+
+  def crossJVM(module: ModuleID): ModuleID =
+    module.platform(sbt.Platform.jvm)
 
   def classpathEntryToModuleID(entry: Attributed[HashedVirtualFileRef])(using
       conv: FileConverter
