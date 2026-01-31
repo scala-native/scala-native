@@ -1,7 +1,7 @@
 val scala3Version = sys.props.getOrElse(
-  "scala.version",
+  "scala3.version",
   throw new RuntimeException(
-    """The system property 'scala.version' is not defined.
+    """The system property 'scala3.version' is not defined.
       |Specify this property using the scriptedLaunchOpts -D.""".stripMargin
   )
 )
@@ -17,6 +17,7 @@ val usesUnstableScala3 = scala3Version.contains("NIGHTLY")
 
 inThisBuild(
   Seq(
+    //:sbt2-only platform := ScalaNativePlatform,
     scalaVersion := scala3Version,
     crossScalaVersions := Seq(scala3Version, scala213Version),
     version := "0.1.0-SNAPSHOT",
@@ -30,7 +31,6 @@ inThisBuild(
 def NoOpInUnstableScala = if (usesUnstableScala3)
   Def.settings(
     run := {},
-    Test / test := {},
     publishLocal := {},
     Compile / sources := Nil,
     Test / sources := Nil,
@@ -61,7 +61,7 @@ lazy val projectA = project
   .in(file("project-A"))
   .enablePlugins(ScalaNativePlugin)
   .settings(
-    libraryDependencies += organization.value %%% (base / normalizedName).value % version.value
+    libraryDependencies += (organization.value %%% (base / normalizedName).value % version.value)
   )
   .settings(NoOpInUnstableScala)
 

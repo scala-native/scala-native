@@ -120,7 +120,10 @@ private[scalanative] object ResourceEmbedder {
                   (pathString, path)
                 }
 
-              applyPathMatchers(path) match {
+              // Normalize path for matching: remove leading / and normalize separators
+              // Patterns like "*.conf" expect paths without leading /
+              val normalizedPath = Paths.get(pathString.stripPrefix("/"))
+              applyPathMatchers(normalizedPath) match {
                 case Some(IgnoreReason(reason, shouldLog)) =>
                   if (shouldLog) {
                     config.logger.debug(s"Did not embed: $pathName - $reason")

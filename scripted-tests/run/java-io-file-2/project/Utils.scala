@@ -4,7 +4,7 @@ object Utils {
       msg: => String
   )(onUnix: Boolean, onWindows: Boolean) = {
     val expected =
-      if (Platform.isWindows) onWindows
+      if (PlatformInfo.isWindows) onWindows
       else onUnix
     assert(pred == expected, msg)
   }

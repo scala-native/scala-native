@@ -22,7 +22,7 @@ nativeConfig ~= {
     .withBaseName("test")
 }
 
-val outExt = if (Platform.isWindows) "exe" else "out"
+val outExt = if (PlatformInfo.isWindows) "exe" else "out"
 
 // Cannot build program written in C using static library produced by Scala Native
 // Linking would fail with missing __cxa_* symbols
@@ -41,7 +41,7 @@ testCpp := {
 
 def discover(binaryName: String, envPath: String): Option[Path] = {
   val binaryNameOrPath = sys.env.getOrElse(envPath, binaryName)
-  val which = if (Platform.isWindows) "where" else "which"
+  val which = if (PlatformInfo.isWindows) "where" else "which"
   val path = Process(s"$which $binaryNameOrPath").lineStream.map { p =>
     Paths.get(p)
   }.headOption
@@ -55,7 +55,7 @@ def compileAndTest(
     outFile: File
 ): Unit = {
   val platformLibs =
-    if (Platform.isWindows) Seq("advapi32", "userenv", "dbghelp")
+    if (PlatformInfo.isWindows) Seq("advapi32", "userenv", "dbghelp")
     else Seq("pthread", "dl")
   val cmd: Seq[String] =
     Seq(

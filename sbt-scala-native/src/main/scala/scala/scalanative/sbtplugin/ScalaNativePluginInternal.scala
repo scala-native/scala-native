@@ -1,12 +1,13 @@
 package scala.scalanative
 package sbtplugin
 
-import sbt.Keys._
-import sbt._
+import sbt.Keys.*
 import sbt.complete.DefaultParsers._
+import sbt.librarymanagement.LibraryManagementCodec.{given, *}
 import sbt.librarymanagement.{
   DependencyResolution, UnresolvedWarningConfiguration, UpdateConfiguration
 }
+import sbt.{given, *}
 
 import java.lang.Runtime
 import java.nio.file.{Files, Path}
@@ -14,15 +15,14 @@ import java.util.concurrent.atomic._
 import java.util.concurrent.locks.ReentrantLock
 
 import scala.annotation.tailrec
-import scala.concurrent._
+import scala.concurrent.*
 import scala.concurrent.duration.Duration
 import scala.sys.process.Process
 import scala.util.Try
 
-import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
-
-import scala.scalanative.build._
+import scala.scalanative.build.*
 import scala.scalanative.linker.LinkingException
+import scala.scalanative.sbtplugin.PluginCompat.{*, given}
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport.{
   ScalaNativeCrossVersion => _, _
 }
@@ -30,7 +30,9 @@ import scala.scalanative.sbtplugin.Utilities._
 import scala.scalanative.testinterface.adapter.TestAdapter
 import scala.scalanative.util.Scope
 
-import sjsonnew.BasicJsonProtocol._
+import sjsonnew.BasicJsonProtocol.{*, given}
+import sjsonnew.JsonFormat
+import xsbti.FileConverter
 
 /** ScalaNativePlugin delegates to this object
  *
@@ -65,11 +67,16 @@ object ScalaNativePluginInternal {
           case Some((3, _)) => "scala3lib"
           case _ => throw new RuntimeException("Unsupported Scala Version")
         }
+        val runtimeDependencies = Seq(
+          org %% "test-interface" % ver % Test,
+          org %% scalalib % scalalibVersion(scalaVersion.value, ver)
+        ) ++ nativeStandardLibraries.map(org %% _ % ver)
+
         Seq(
-          org %%% "test-interface" % ver % Test,
-          org %%% scalalib % scalalibVersion(scalaVersion.value, ver),
-          compilerPlugin(org % "nscplugin" % ver cross CrossVersion.full)
-        ) ++ nativeStandardLibraries.map(org %%% _ % ver)
+          PluginCompat.crossJVM(
+            compilerPlugin(org % "nscplugin" % ver).cross(CrossVersion.full)
+          )
+        ) ++ runtimeDependencies.map(PluginCompat.crossScalaNative)
       },
       excludeDependencies ++= {
         // Exclude cross published version dependencies leading to conflicts in Scala 3 vs 2.13
@@ -95,10 +102,8 @@ object ScalaNativePluginInternal {
     )
   }
 
-  lazy val scalaNativeBaseSettings: Seq[Setting[_]] = Seq(
-    crossVersion := ScalaNativeCrossVersion.binary,
-    platformDepsCrossVersion := ScalaNativeCrossVersion.binary
-  )
+  lazy val scalaNativeBaseSettings: Seq[Setting[_]] =
+    PluginCompat.sbtVersionBaseSettings
 
   /** Called by overridden method in plugin
    *
@@ -110,15 +115,17 @@ object ScalaNativePluginInternal {
    *    [[ScalaNativePlugin#globalSettings]]
    */
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
-    nativeConfig := build.NativeConfig.empty
-      .withClang(interceptBuildException(Discover.clang()))
-      .withClangPP(interceptBuildException(Discover.clangpp()))
-      .withCompileOptions(Discover.compileOptions())
-      .withLinkingOptions(Discover.linkingOptions())
-      .withLTO(Discover.LTO())
-      .withGC(Discover.GC())
-      .withMode(Discover.mode())
-      .withOptimize(Discover.optimize()),
+    nativeConfig := Def.uncached {
+      build.NativeConfig.empty
+        .withClang(interceptBuildException(Discover.clang()))
+        .withClangPP(interceptBuildException(Discover.clangpp()))
+        .withCompileOptions(Discover.compileOptions())
+        .withLinkingOptions(Discover.linkingOptions())
+        .withLTO(Discover.LTO())
+        .withGC(Discover.GC())
+        .withMode(Discover.mode())
+        .withOptimize(Discover.optimize())
+    },
     nativeWarnOldJVM := {
       val logger = streams.value.log
       Try(Class.forName("java.util.function.Function")).toOption match {
@@ -178,7 +185,7 @@ object ScalaNativePluginInternal {
    *  times per project.
    */
   def scalaNativeConfigSettings(testConfig: Boolean): Seq[Setting[_]] = Seq(
-    scalacOptions ++= {
+    compile / scalacOptions ++= {
       if (isGeneratingForIDE) None
       else
         Some(
@@ -187,9 +194,10 @@ object ScalaNativePluginInternal {
     },
     nativeLinkReleaseFull := Def
       .task {
+        implicit val conv: FileConverter = Keys.fileConverter.value
         val sbtLogger = streams.value.log
         val nativeLogger = sbtLogger.toLogger
-        val classpath = fullClasspath.value.map(_.data.toPath)
+        val classpath = PluginCompat.toNioPaths(fullClasspath.value)
         val userConfig = nativeConfig.value
         val sourcesClassPath = resolveSourcesClassPath(
           userConfig,
@@ -214,9 +222,10 @@ object ScalaNativePluginInternal {
       .value,
     nativeLinkReleaseFast := Def
       .task {
+        implicit val conv: FileConverter = Keys.fileConverter.value
         val sbtLogger = streams.value.log
         val nativeLogger = sbtLogger.toLogger
-        val classpath = fullClasspath.value.map(_.data.toPath)
+        val classpath = PluginCompat.toNioPaths(fullClasspath.value)
         val userConfig = nativeConfig.value
         val sourcesClassPath = resolveSourcesClassPath(
           userConfig,
@@ -241,9 +250,10 @@ object ScalaNativePluginInternal {
       .value,
     nativeLink := Def
       .task {
+        implicit val conv: FileConverter = Keys.fileConverter.value
         val sbtLogger = streams.value.log
         val nativeLogger = sbtLogger.toLogger
-        val classpath = fullClasspath.value.map(_.data.toPath)
+        val classpath = PluginCompat.toNioPaths(fullClasspath.value)
         val userConfig = nativeConfig.value
         val sourcesClassPath = resolveSourcesClassPath(
           userConfig,
@@ -310,7 +320,7 @@ object ScalaNativePluginInternal {
       Seq(
         mainClass := Some("scala.scalanative.testinterface.TestMain"),
         nativeConfig ~= { _.withBuildTarget(build.BuildTarget.application) },
-        loadedTestFrameworks := {
+        loadedTestFrameworks := Def.uncached {
           val configName = configuration.value.name
 
           if (fork.value) {
@@ -425,14 +435,15 @@ object ScalaNativePluginInternal {
       dependencyResolution: DependencyResolution,
       externalClassPath: Classpath,
       log: util.Logger
-  ): Seq[Path] = {
+  )(implicit conv: FileConverter): Seq[Path] = {
     if (!userConfig.sourceLevelDebuggingConfig.enabled) Nil
-    else
-      externalClassPath.par
-        .flatMap { classpath =>
+    else {
+      import scala.concurrent.ExecutionContext.Implicits.global
+      val tasks = Future.traverse(externalClassPath)(classpath =>
+        Future {
           try {
-            classpath.metadata
-              .get(moduleID.key)
+            PluginCompat
+              .classpathEntryToModuleID(classpath)
               .toSeq
               .map(_.classifier("sources").withConfigurations(None))
               .map(dependencyResolution.wrapDependencyInModule)
@@ -457,8 +468,9 @@ object ScalaNativePluginInternal {
               Nil
           }
         }
-        .seq
-        .sorted
+      )
+      Await.result(tasks, Duration.Inf).flatten.sorted
+    }
   }
 
 }
