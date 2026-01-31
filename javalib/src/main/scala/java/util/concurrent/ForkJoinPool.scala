@@ -185,7 +185,7 @@ class ForkJoinPool private (
         val n = if (qs != null) qs.length else 0
         val i = cfg & (n - 1)
         if (n > 0 && (qs(i) eq w))
-          qs(i) == null
+          qs(i) = null
         stealCount += ns // accumulate steals
         lock.unlock()
       }
