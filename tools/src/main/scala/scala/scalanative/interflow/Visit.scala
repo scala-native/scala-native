@@ -55,19 +55,21 @@ private[interflow] trait Visit { self: Interflow =>
     }
 
   def visitEntry(name: nir.Global): Unit = {
-    if (!name.isTop) {
-      visitEntry(name.top)
-    }
-    analysis.infos(name) match {
-      case meth: Method =>
-        visitRoot(meth.name)
-      case cls: Class if cls.isModule =>
-        val init = cls.name.member(nir.Sig.Ctor(Seq.empty))
-        if (hasOriginal(init)) {
-          visitRoot(init)
-        }
-      case _ =>
-        ()
+    tracer.symSpan(name) {
+      if (!name.isTop) {
+        visitEntry(name.top)
+      }
+      analysis.infos(name) match {
+        case meth: Method =>
+          visitRoot(meth.name)
+        case cls: Class if cls.isModule =>
+          val init = cls.name.member(nir.Sig.Ctor(Seq.empty))
+          if (hasOriginal(init)) {
+            visitRoot(init)
+          }
+        case _ =>
+          ()
+      }
     }
   }
 
