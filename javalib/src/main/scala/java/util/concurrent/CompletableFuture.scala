@@ -844,9 +844,6 @@ object CompletableFuture {
   )
 
   /* ------------- Arbitrary-arity constructions -------------- */
-  // TODO: check
-  // def allOf(cfs: CompletableFuture[_ <: AnyRef]*): CompletableFuture[Void] = andTree(cfs, 0, cfs.length - 1)
-  // def anyOf(cfs: CompletableFuture[_ <: AnyRef]*): CompletableFuture[AnyRef] = {
   def allOf(cfs: Array[CompletableFuture[_ <: AnyRef]]): CompletableFuture[Void] = andTree(cfs, 0, cfs.length - 1)
   def anyOf(_cfs: Array[CompletableFuture[_ <: AnyRef]]): CompletableFuture[AnyRef] = {
     val n: Int = _cfs.length
@@ -1921,21 +1918,21 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
 
   override def applyToEither[U <: AnyRef](
       other: CompletionStage[_ <: T],
-      fn: Function[_ >: T, U]
+      fn: Function[_ >: T, _ <: U]
   ): CompletableFuture[U] = {
     return orApplyStage(null, other, fn)
   }
 
   override def applyToEitherAsync[U <: AnyRef](
       other: CompletionStage[_ <: T],
-      fn: Function[_ >: T, U]
+      fn: Function[_ >: T, _ <: U]
   ): CompletableFuture[U] = {
     return orApplyStage(defaultExecutor(), other, fn)
   }
 
   override def applyToEitherAsync[U <: AnyRef](
       other: CompletionStage[_ <: T],
-      fn: Function[_ >: T, U],
+      fn: Function[_ >: T, _ <: U],
       executor: Executor
   ): CompletableFuture[U] = {
     return orApplyStage(screenExecutor(executor), other, fn)
