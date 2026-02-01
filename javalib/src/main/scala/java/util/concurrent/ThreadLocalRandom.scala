@@ -129,7 +129,7 @@ class ThreadLocalRandom extends Random {
   private final def nextSeed(): Long = {
     val t = Thread.currentThread()
     t.threadLocalRandomSeed +=
-      ((t.getId() << 1) + ThreadLocalRandom.GAMMA) // read and update per-thread seed
+      ((t.threadId() << 1) + ThreadLocalRandom.GAMMA) // read and update per-thread seed
     t.threadLocalRandomSeed
   }
 
