@@ -137,7 +137,7 @@ void Phase_StartSweep(Heap *heap) {
     BlockAllocator_UseReserve(&blockAllocator);
 
     // all the marking changes should be visible to all threads by now
-    atomic_thread_fence(memory_order_seq_cst);
+    atomic_thread_fence(memory_order_release);
 
     heap->sweep.cursor = 0;
     uint32_t blockCount = heap->blockCount;

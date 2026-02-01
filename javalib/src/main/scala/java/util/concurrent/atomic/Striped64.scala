@@ -38,10 +38,10 @@ private[atomic] object Striped64 {
       )
 
     private[atomic] final def reset(): Unit =
-      valueAtomic().store(0L, memory_order.memory_order_seq_cst)
+      valueAtomic().store(0L, memory_order.memory_order_release)
 
     private[atomic] final def reset(identity: Long): Unit =
-      valueAtomic().store(identity, memory_order.memory_order_seq_cst)
+      valueAtomic().store(identity, memory_order.memory_order_release)
 
     private[atomic] final def getAndSet(`val`: Long) =
       valueAtomic().exchange(`val`).asInstanceOf[Long]

@@ -124,12 +124,12 @@ private[monitor] class ObjectMonitor() {
           pollInterval = (pollInterval * 4) min MaxPoolInterval
         }
         if (successorThread eq currentThread) successorThread = null
-        atomic_thread_fence(memory_order_seq_cst)
+        atomic_thread_fence(memory_order_acquire)
       }
 
       if (successorThread eq currentThread) successorThread = null
       if (activeWaiterThread eq currentThread) activeWaiterThread = null
-      atomic_thread_fence(memory_order_seq_cst)
+      atomic_thread_fence(memory_order_acquire)
     }
 
     if (!tryLock(currentThread)) awaitLock()
@@ -161,13 +161,13 @@ private[monitor] class ObjectMonitor() {
     }
     if (successorThread eq currentThread) successorThread = null
     node.state = WaiterNode.Active
-    atomic_thread_fence(memory_order_seq_cst)
+    atomic_thread_fence(memory_order_release)
   }
 
   @tailrec private def exitMonitor(currentThread: Thread): Unit = {
     @alwaysinline def releaseOwnerThread() = {
       atomic_store_intptr(ownerThreadPtr, null, memory_order_release)
-      atomic_thread_fence(memory_order_seq_cst)
+      atomic_thread_fence(memory_order_release)
     }
 
     @alwaysinline def onExit(node: WaiterNode): Unit = {
@@ -223,7 +223,7 @@ private[monitor] class ObjectMonitor() {
     if (Thread.interrupted()) throw new InterruptedException()
 
     val node = new WaiterNode(currentThread, WaiterNode.Waiting)
-    atomic_thread_fence(memory_order_seq_cst)
+    atomic_thread_fence(memory_order_release)
 
     acquireWaitList()
     try {
@@ -258,7 +258,7 @@ private[monitor] class ObjectMonitor() {
     if (successorThread eq currentThread) successorThread = null
     // Save the state of notification after waking up the thread
     val wasNotified = node.isNotified
-    atomic_thread_fence(memory_order_seq_cst)
+    atomic_thread_fence(memory_order_acquire)
 
     // Thread is alive again, wait for ownership
     // assert(ownerThread != currentThread, "before re-renter")
@@ -394,16 +394,16 @@ private[monitor] class ObjectMonitor() {
     while (!tryAcquire()) {
       waitForLockRelease(0, backoffNanos = 1000)
     }
-    atomic_thread_fence(memory_order_seq_cst)
+    atomic_thread_fence(memory_order_acquire)
   }
 
   @alwaysinline private def releaseWaitList() = {
     waitListModifcationLock = 0
-    atomic_thread_fence(memory_order_seq_cst)
+    atomic_thread_fence(memory_order_release)
   }
 
   @alwaysinline protected def checkOwnership(currentThread: Thread): Unit = {
-    atomic_thread_fence(memory_order_seq_cst)
+    atomic_thread_fence(memory_order_acquire)
     if (currentThread ne ownerThread) {
       throw new IllegalMonitorStateException(
         "Thread is not an owner of this object"
