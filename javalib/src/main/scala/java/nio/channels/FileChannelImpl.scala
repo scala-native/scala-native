@@ -521,7 +521,7 @@ private[java] final class FileChannelImpl(
           } else {
             buf.flip()
             while (buf.hasRemaining())
-              totalWritten += totalWritten + target.write(buf)
+              totalWritten += target.write(buf)
             buf.flip()
           }
         }
