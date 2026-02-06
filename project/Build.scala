@@ -46,9 +46,10 @@ object Build {
       tests, testsJVM, testsExt, testsExtJVM, sandbox,
       scalaPartest, scalaPartestRuntime,
       scalaPartestTests, scalaPartestJunitTests,
-      toolsBenchmarks
+      toolsBenchmarks,
+      buildCli, buildCliNative
     )
-  lazy val testNoCrossProject = List(testingCompilerInterface, buildCli)
+  lazy val testNoCrossProject = List(testingCompilerInterface)
 // format: on
   lazy val allMultiScalaProjects =
     publishedMultiScalaProjects ::: testMultiScalaProjects
@@ -242,24 +243,47 @@ object Build {
       .dependsOn(nirJVM, utilJVM)
 
   lazy val buildCli =
-    project
-      .in(file("build-cli"))
+    MultiScalaProject("buildCli", base = "build-cli", platform = MultiScalaProject.JVM)
       .enablePlugins(BuildInfoPlugin)
       .settings(
-        commonSettings,
         noPublishSettings,
-        scalaVersion := ScalaVersions.scala3,
+        Compile / mainClass := Some("scala.scalanative.build.BuildMain"),
+        buildInfoPackage := "scala.scalanative.buildinfo",
+        buildInfoObject := "ScalaNativeBuildInfo",
+        buildInfoKeys := Seq[BuildInfoKey](version, scalaVersion)
+      )
+      .zippedSettings(
+        Seq("nscplugin", "javalib", "scalalib"),
+        versionsProjectReplacement = scalalibProjectSelect
+      ) {
+        case Seq(nscPlugin, javalib, scalalib) =>
+          toolsBuildInfoSettings(nscPlugin, javalib, scalalib)
+      }
+      .dependsOn(toolsJVM)
+
+  lazy val buildCliNative =
+    MultiScalaProject("buildCli", base = "build-cli", platform = MultiScalaProject.Native)
+      .enablePlugins(BuildInfoPlugin)
+      .settings(
+        noPublishSettings,
         Compile / mainClass := Some("scala.scalanative.build.BuildMain"),
         buildInfoPackage := "scala.scalanative.buildinfo",
         buildInfoObject := "ScalaNativeBuildInfo",
         buildInfoKeys := Seq[BuildInfoKey](version, scalaVersion),
-        toolsBuildInfoSettings(
-          LocalProject(s"nscplugin3"),
-          LocalProject(s"javalib3"),
-          LocalProject(s"scala3lib3")
-        )
+        nativeConfig ~= {
+          _.withCheckFatalWarnings(false)
+        }
       )
-      .dependsOn(toolsJVM.v3)
+      .withNativeCompilerPlugin
+      .withScalaStandardLibrary
+      .dependsOn(tools, javalib)
+      .zippedSettings(
+        Seq("nscplugin", "javalib", "scalalib"),
+        versionsProjectReplacement = scalalibProjectSelect
+      ) {
+        case Seq(nscPlugin, javalib, scalalib) =>
+          toolsBuildInfoSettings(nscPlugin, javalib, scalalib)
+      }
 
   private def toolsBuildInfoSettings(
       nscPlugin: LocalProject,

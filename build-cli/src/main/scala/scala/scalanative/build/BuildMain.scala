@@ -3,6 +3,7 @@ package build
 
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
+import java.util.zip.ZipFile
 
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo
 import scala.scalanative.util.Scope
@@ -98,6 +99,12 @@ object BuildMain {
     logger.info(s"Classpath ($cpSource, ${classpathPaths.size} entries):")
     classpathPaths.foreach(p => logger.info(s"  $p"))
 
+    // When running as a native binary, java.nio.file.FileSystems doesn't
+    // support the "jar" scheme (no ZipFileSystemProvider).  Pre-extract
+    // any JARs on the classpath to temporary directories so the linker
+    // only sees plain directories it can walk with local filesystem APIs.
+    val resolvedClasspath = resolveJarsToDirectories(classpathPaths, baseDir, logger)
+
     // Build NativeConfig
     var nativeConfig = NativeConfig.empty
       .withClang(
@@ -157,7 +164,7 @@ object BuildMain {
     val config = Config.empty
       .withBaseDir(baseDir)
       .withModuleName(moduleName)
-      .withClassPath(classpathPaths)
+      .withClassPath(resolvedClasspath)
       .withSourcesClassPath(sourcesClassPath)
       .withMainClass(Some(mainClass))
       .withTestConfig(parsed.flag("test-config"))
@@ -225,6 +232,61 @@ object BuildMain {
     if (includeTest && Files.isDirectory(testClassesDir))
       Seq(primary, testClassesDir)
     else Seq(primary)
+  }
+
+  /** Replace JAR file entries on the classpath with directories containing
+   *  their extracted contents.
+   *
+   *  The Scala Native linker opens every classpath entry via
+   *  `VirtualDirectory.real` which, for JARs, requires a
+   *  `ZipFileSystemProvider`.  That provider is not available in Scala
+   *  Native's javalib, so when this CLI runs as a native binary the JARs
+   *  must be unpacked first.
+   *
+   *  Extracted JARs are cached under `baseDir/native/jar-deps/<jarname>/`
+   *  so repeated invocations skip the extraction.
+   */
+  private def resolveJarsToDirectories(
+      classpath: Seq[Path],
+      baseDir: Path,
+      logger: Logger
+  ): Seq[Path] = {
+    val jarCacheDir = baseDir.resolve("native").resolve("jar-deps")
+    classpath.map { entry =>
+      if (Files.isDirectory(entry)) entry
+      else if (entry.toString.endsWith(".jar") && Files.exists(entry)) {
+        val jarName = entry.getFileName.toString.stripSuffix(".jar")
+        val dest = jarCacheDir.resolve(jarName)
+        if (!Files.isDirectory(dest)) {
+          logger.info(s"Extracting $entry")
+          extractJar(entry, dest)
+        }
+        dest
+      } else entry // leave as-is (may be filtered out later)
+    }
+  }
+
+  /** Extract a JAR file to a target directory using `java.util.zip.ZipFile`
+   *  (available on Scala Native, unlike `FileSystems.newFileSystem`).
+   */
+  private def extractJar(jar: Path, target: Path): Unit = {
+    Files.createDirectories(target)
+    val zipFile = new ZipFile(jar.toFile)
+    try {
+      val entries = zipFile.entries()
+      while (entries.hasMoreElements) {
+        val entry = entries.nextElement()
+        val dest = target.resolve(entry.getName)
+        if (entry.isDirectory) {
+          Files.createDirectories(dest)
+        } else {
+          Files.createDirectories(dest.getParent)
+          val in = zipFile.getInputStream(entry)
+          try Files.copy(in, dest)
+          finally in.close()
+        }
+      }
+    } finally zipFile.close()
   }
 
   private def parseBuildTarget(value: String): BuildTarget = value match {
