@@ -217,7 +217,7 @@ object Build {
     .withNativeCompilerPlugin
     .withCommonTools
     .withBuildInfo(Test)
-    .dependsOn(nir, util)
+    .dependsOn(nir, util, javalib)
     .dependsOn(testInterface % "test", junitRuntime % "test")
     .zippedSettings(
       Seq("nscplugin", "javalib", "scalalib"),
