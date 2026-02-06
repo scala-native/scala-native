@@ -41,8 +41,8 @@ lazy val scalaPartest             = Build.scalaPartest
 lazy val scalaPartestTests        = Build.scalaPartestTests
 lazy val scalaPartestJunitTests   = Build.scalaPartestJunitTests
 lazy val scalaPartestRuntime      = Build.scalaPartestRuntime
-lazy val buildCli                 = Build.buildCli
-lazy val buildCliNative           = Build.buildCliNative
+lazy val cli                      = Build.cli
+lazy val cliNative                = Build.cliNative
 
 commands ++= build.Commands.values
 

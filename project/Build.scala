@@ -47,7 +47,7 @@ object Build {
       scalaPartest, scalaPartestRuntime,
       scalaPartestTests, scalaPartestJunitTests,
       toolsBenchmarks,
-      buildCli, buildCliNative
+      cli, cliNative
     )
   lazy val testNoCrossProject = List(testingCompilerInterface)
 // format: on
@@ -242,8 +242,8 @@ object Build {
       }
       .dependsOn(nirJVM, utilJVM)
 
-  lazy val buildCli =
-    MultiScalaProject("buildCli", base = "build-cli", platform = MultiScalaProject.JVM)
+  lazy val cli =
+    MultiScalaProject("cli", platform = MultiScalaProject.JVM)
       .enablePlugins(BuildInfoPlugin)
       .settings(
         noPublishSettings,
@@ -261,8 +261,8 @@ object Build {
       }
       .dependsOn(toolsJVM)
 
-  lazy val buildCliNative =
-    MultiScalaProject("buildCli", base = "build-cli", platform = MultiScalaProject.Native)
+  lazy val cliNative =
+    MultiScalaProject("cli", platform = MultiScalaProject.Native)
       .enablePlugins(BuildInfoPlugin)
       .settings(
         noPublishSettings,
