@@ -2,8 +2,9 @@ package scala.scalanative
 package build
 
 import java.io.File
-import java.nio.file.{Path, Paths}
+import java.nio.file.{Files, Path, Paths}
 
+import scala.scalanative.buildinfo.ScalaNativeBuildInfo
 import scala.scalanative.util.Scope
 
 /** A standalone CLI entry point for the lower part of the Scala Native
@@ -13,13 +14,19 @@ import scala.scalanative.util.Scope
  *  linking, optimization, LLVM IR code-generation, native compilation, and
  *  system linking to produce a native binary.
  *
+ *  By default the classpath includes the Scala Native runtime JARs
+ *  (scalalib, javalib, etc.) baked in at build time via BuildInfo, plus the
+ *  base-dir for user-compiled NIR files. Use --classpath for full control.
+ *
  *  {{{
  *  Usage: scala-native-build [options]
  *
  *  Required:
- *    --classpath <path1:path2:...>   NIR class path (colon-separated)
  *    --main-class <class>            Fully qualified main class name
- *    --base-dir <dir>                Base output directory
+ *    --base-dir <dir>                Base output directory (crossTarget)
+ *
+ *  Optional (classpath):
+ *    --classpath <path1:path2:...>   Override the entire NIR class path
  *
  *  Optional (general):
  *    --module-name <name>            Module name (default: "out")
@@ -58,12 +65,22 @@ object BuildMain {
   def main(args: Array[String]): Unit = {
     val parsed = parseArgs(args.toList)
 
-    val classpath = parsed.getOrError("classpath", "--classpath is required")
     val mainClass = parsed.getOrError("main-class", "--main-class is required")
-    val baseDir = parsed.getOrError("base-dir", "--base-dir is required")
+    val baseDirStr = parsed.getOrError("base-dir", "--base-dir is required")
+    val baseDir = Paths.get(baseDirStr)
 
-    val classpathPaths: Seq[Path] =
-      classpath.split(File.pathSeparator).map(Paths.get(_)).toSeq
+    val classpathPaths: Seq[Path] = parsed.get("classpath") match {
+      case Some(cp) => cp.split(File.pathSeparator).map(Paths.get(_)).toSeq
+      case None =>
+        // Automatically include the Scala Native runtime classpath
+        // (scalalib, javalib, etc.) baked in at build time via BuildInfo,
+        // plus the user's output directory and extracted dependencies.
+        val runtimeCp =
+          ScalaNativeBuildInfo.nativeRuntimeClasspath
+            .split(File.pathSeparator)
+            .map(Paths.get(_))
+        runtimeCp.toSeq ++ discoverClasspath(baseDir, parsed.flag("test-config"))
+    }
 
     val sourcesClassPath: Seq[Path] = parsed
       .get("sources-classpath")
@@ -74,6 +91,12 @@ object BuildMain {
       if (parsed.flag("silent")) Logger.nullLogger
       else if (parsed.flag("verbose")) Logger.default
       else infoLogger
+
+    val cpSource =
+      if (parsed.get("classpath").isDefined) "provided via --classpath"
+      else "runtime (BuildInfo) + discovered base-dir"
+    logger.info(s"Classpath ($cpSource, ${classpathPaths.size} entries):")
+    classpathPaths.foreach(p => logger.info(s"  $p"))
 
     // Build NativeConfig
     var nativeConfig = NativeConfig.empty
@@ -132,7 +155,7 @@ object BuildMain {
     val moduleName = parsed.get("module-name").getOrElse("out")
 
     val config = Config.empty
-      .withBaseDir(Paths.get(baseDir))
+      .withBaseDir(baseDir)
       .withModuleName(moduleName)
       .withClassPath(classpathPaths)
       .withSourcesClassPath(sourcesClassPath)
@@ -175,6 +198,46 @@ object BuildMain {
     warnFn = msg => System.err.println(s"[warn] $msg"),
     errorFn = msg => System.err.println(s"[error] $msg")
   )
+
+  /** Derive the classpath from the base directory, similar to how sbt
+   *  constructs `fullClasspath`.
+   *
+   *  Convention (matching sbt crossTarget layout):
+   *  {{{
+   *    baseDir/
+   *      classes/           → user-compiled NIR files
+   *      test-classes/      → test NIR files (optional, when --test-config)
+   *      native/
+   *        dependencies/    → extracted dependency NIR directories
+   *  }}}
+   *
+   *  If baseDir itself contains `.nir` files (test-style layout where
+   *  outDir == baseDir), it is included directly instead of `classes/`.
+   */
+  private def discoverClasspath(baseDir: Path, includeTest: Boolean): Seq[Path] = {
+    val classesDir = baseDir.resolve("classes")
+    val testClassesDir = baseDir.resolve("test-classes")
+    // workDir is baseDir/"native", dependencies live under workDir
+    val depsDir = baseDir.resolve("native").resolve("dependencies")
+
+    val userClasspath: Seq[Path] = {
+      val primary =
+        if (Files.isDirectory(classesDir)) classesDir
+        else baseDir // outDir == baseDir (test-style layout)
+      if (includeTest && Files.isDirectory(testClassesDir))
+        Seq(primary, testClassesDir)
+      else Seq(primary)
+    }
+
+    val depClasspath: Seq[Path] =
+      if (Files.isDirectory(depsDir))
+        Files.list(depsDir).toArray.toSeq
+          .map(_.asInstanceOf[Path])
+          .filter(Files.isDirectory(_))
+      else Seq.empty
+
+    depClasspath ++ userClasspath
+  }
 
   private def parseBuildTarget(value: String): BuildTarget = value match {
     case "application"      => BuildTarget.application
@@ -307,10 +370,15 @@ object BuildMain {
          |Runs the lower part of the Scala Native compilation pipeline:
          |NIR linking → optimization → LLVM IR codegen → native compilation → system linking
          |
+         |By default the classpath includes the Scala Native runtime JARs
+         |(scalalib, javalib, etc.) from BuildInfo, plus the base-dir.
+         |
          |Required:
-         |  --classpath, -cp <paths>      NIR class path (colon/semicolon-separated)
          |  --main-class <class>          Fully qualified main class name
-         |  --base-dir <dir>              Base output directory
+         |  --base-dir <dir>              Base output directory (crossTarget)
+         |
+         |Classpath:
+         |  --classpath, -cp <paths>      Override the entire NIR class path
          |
          |General:
          |  --module-name <name>          Module name (default: "out")
