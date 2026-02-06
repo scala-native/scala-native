@@ -14,9 +14,9 @@ import scala.scalanative.util.Scope
  *  linking, optimization, LLVM IR code-generation, native compilation, and
  *  system linking to produce a native binary.
  *
- *  By default the classpath includes the Scala Native runtime JARs
- *  (scalalib, javalib, etc.) baked in at build time via BuildInfo, plus the
- *  base-dir for user-compiled NIR files. Use --classpath for full control.
+ *  By default the classpath includes the Scala Native runtime JARs (scalalib,
+ *  javalib, etc.) baked in at build time via BuildInfo, plus the base-dir for
+ *  user-compiled NIR files. Use --classpath for full control.
  *
  *  {{{
  *  Usage: scala-native-build [options]
@@ -71,7 +71,7 @@ object BuildMain {
 
     val classpathPaths: Seq[Path] = parsed.get("classpath") match {
       case Some(cp) => cp.split(File.pathSeparator).map(Paths.get(_)).toSeq
-      case None =>
+      case None     =>
         // Automatically include the Scala Native runtime classpath
         // (scalalib, javalib, etc.) baked in at build time via BuildInfo,
         // plus the user's output directory and extracted dependencies.
@@ -79,7 +79,10 @@ object BuildMain {
           ScalaNativeBuildInfo.nativeRuntimeClasspath
             .split(File.pathSeparator)
             .map(Paths.get(_))
-        runtimeCp.toSeq ++ discoverClasspath(baseDir, parsed.flag("test-config"))
+        runtimeCp.toSeq ++ discoverClasspath(
+          baseDir,
+          parsed.flag("test-config")
+        )
     }
 
     val sourcesClassPath: Seq[Path] = parsed
@@ -208,13 +211,16 @@ object BuildMain {
    *      test-classes/      → test NIR files (optional, when --test-config)
    *  }}}
    *
-   *  If baseDir itself contains `.nir` files (test-style layout where
-   *  outDir == baseDir), it is included directly instead of `classes/`.
+   *  If baseDir itself contains `.nir` files (test-style layout where outDir ==
+   *  baseDir), it is included directly instead of `classes/`.
    *
    *  Note: `native/dependencies/` is NOT included here. The build pipeline
    *  extracts dependency NIR from the JARs on the classpath automatically.
    */
-  private def discoverClasspath(baseDir: Path, includeTest: Boolean): Seq[Path] = {
+  private def discoverClasspath(
+      baseDir: Path,
+      includeTest: Boolean
+  ): Seq[Path] = {
     val classesDir = baseDir.resolve("classes")
     val testClassesDir = baseDir.resolve("test-classes")
 
@@ -228,10 +234,10 @@ object BuildMain {
   }
 
   private def parseBuildTarget(value: String): BuildTarget = value match {
-    case "application"      => BuildTarget.application
-    case "library-dynamic"  => BuildTarget.libraryDynamic
-    case "library-static"   => BuildTarget.libraryStatic
-    case _ =>
+    case "application"     => BuildTarget.application
+    case "library-dynamic" => BuildTarget.libraryDynamic
+    case "library-static"  => BuildTarget.libraryStatic
+    case _                 =>
       throw new IllegalArgumentException(
         s"Unknown build target: '$value'. Use: application, library-dynamic, library-static"
       )
@@ -241,7 +247,7 @@ object BuildMain {
     case "address"   => Sanitizer.AddressSanitizer
     case "thread"    => Sanitizer.ThreadSanitizer
     case "undefined" => Sanitizer.UndefinedBehaviourSanitizer
-    case _ =>
+    case _           =>
       throw new IllegalArgumentException(
         s"Unknown sanitizer: '$value'. Use: address, thread, undefined"
       )

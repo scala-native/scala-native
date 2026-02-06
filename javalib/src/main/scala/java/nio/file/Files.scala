@@ -1179,67 +1179,67 @@ object Files {
         buf.toByteArray()
       } finally is.close()
     } else {
-    /* if 'path' does not exist at all, should get
-     * java.nio.file.NoSuchFileException here.
-     */
-    val pathSize: Long = size(path)
-    if (!pathSize.isValidInt) {
-      throw new OutOfMemoryError("Required array size too large")
-    }
-
-    if (pathSize == 0L) { // SN Issue #I4384, part 1.
-      Array.empty[Byte]
-    } else {
-      val len = pathSize.toInt
-      val bytes = scala.scalanative.runtime.ByteArray.alloc(len)
-
-      if (isWindows) {
-        val bytesRead = stackalloc[DWord]()
-
-        withFileOpen(
-          path.toString,
-          access = FILE_GENERIC_READ,
-          shareMode = FILE_SHARE_READ
-        ) { handle =>
-          if (!FileApi.ReadFile(
-                handle,
-                bytes.at(0),
-                pathSize.toUInt,
-                bytesRead,
-                null
-              )) {
-            throw WindowsException.onPath(path.toString())
-          }
-        }
-      } else {
-        errno = 0
-        val pathCString = toCString(path.toString)
-        val fd = fcntl.open(pathCString, fcntl.O_RDONLY, 0.toUInt)
-
-        if (fd == -1) {
-          val msg = LibcExt.strError()
-          throw new IOException(s"error opening path '${path}': ${msg}")
-        }
-
-        try {
-          var offset = 0
-          var read = 0
-          while ({
-            read = unistd.read(fd, bytes.at(offset), (len - offset).toUInt);
-            read != -1 && (offset + read) < len
-          }) {
-            offset += read
-          }
-
-          if (read == -1)
-            throw UnixException(path.toString, errno)
-        } finally {
-          unistd.close(fd)
-        }
+      /* if 'path' does not exist at all, should get
+       * java.nio.file.NoSuchFileException here.
+       */
+      val pathSize: Long = size(path)
+      if (!pathSize.isValidInt) {
+        throw new OutOfMemoryError("Required array size too large")
       }
 
-      bytes.asInstanceOf[Array[Byte]]
-    }
+      if (pathSize == 0L) { // SN Issue #I4384, part 1.
+        Array.empty[Byte]
+      } else {
+        val len = pathSize.toInt
+        val bytes = scala.scalanative.runtime.ByteArray.alloc(len)
+
+        if (isWindows) {
+          val bytesRead = stackalloc[DWord]()
+
+          withFileOpen(
+            path.toString,
+            access = FILE_GENERIC_READ,
+            shareMode = FILE_SHARE_READ
+          ) { handle =>
+            if (!FileApi.ReadFile(
+                  handle,
+                  bytes.at(0),
+                  pathSize.toUInt,
+                  bytesRead,
+                  null
+                )) {
+              throw WindowsException.onPath(path.toString())
+            }
+          }
+        } else {
+          errno = 0
+          val pathCString = toCString(path.toString)
+          val fd = fcntl.open(pathCString, fcntl.O_RDONLY, 0.toUInt)
+
+          if (fd == -1) {
+            val msg = LibcExt.strError()
+            throw new IOException(s"error opening path '${path}': ${msg}")
+          }
+
+          try {
+            var offset = 0
+            var read = 0
+            while ({
+              read = unistd.read(fd, bytes.at(offset), (len - offset).toUInt);
+              read != -1 && (offset + read) < len
+            }) {
+              offset += read
+            }
+
+            if (read == -1)
+              throw UnixException(path.toString, errno)
+          } finally {
+            unistd.close(fd)
+          }
+        }
+
+        bytes.asInstanceOf[Array[Byte]]
+      }
     }
   }
 

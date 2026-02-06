@@ -1,21 +1,23 @@
 package scala.scalanative.nio.fs.zip
 
-import java.io.{ByteArrayInputStream, InputStream, IOException, OutputStream}
+import java.io.{ByteArrayInputStream, IOException, InputStream, OutputStream}
 import java.net.URI
-import java.nio.channels.{ClosedChannelException, FileChannel, SeekableByteChannel}
+import java.nio.channels.{
+  ClosedChannelException, FileChannel, SeekableByteChannel
+}
 import java.nio.file._
 import java.nio.file.attribute._
 import java.nio.file.spi.FileSystemProvider
-import java.util.{HashMap, Map => JMap, Set => JSet}
 import java.util.concurrent.TimeUnit
 import java.util.stream.{Stream, StreamSupport}
 import java.util.zip.ZipEntry
+import java.util.{HashMap, Map => JMap, Set => JSet}
 
 /** FileSystemProvider for "jar" scheme URIs.
  *
  *  Creates read-only [[ZipFileSystem]] instances backed by zip/jar archives.
- *  The provider supports the operations needed by [[java.nio.file.Files]]
- *  for reading zip contents: `newInputStream`, `newDirectoryStream`,
+ *  The provider supports the operations needed by [[java.nio.file.Files]] for
+ *  reading zip contents: `newInputStream`, `newDirectoryStream`,
  *  `readAttributes`, and `checkAccess`.
  */
 class ZipFileSystemProvider extends FileSystemProvider {
@@ -214,7 +216,7 @@ class ZipFileSystemProvider extends FileSystemProvider {
     val zp1 = toZipPath(path)
     val zp2 = toZipPath(path2)
     zp1.fileSystem == zp2.fileSystem &&
-    zp1.toAbsolutePath().normalize().toString() ==
+      zp1.toAbsolutePath().normalize().toString() ==
       zp2.toAbsolutePath().normalize().toString()
   }
 
@@ -297,7 +299,7 @@ class ZipFileSystemProvider extends FileSystemProvider {
 
   private def toZipPath(path: Path): ZipPath = path match {
     case zp: ZipPath => zp
-    case _ =>
+    case _           =>
       throw new ProviderMismatchException(
         s"Expected ZipPath, got: ${path.getClass.getName}"
       )

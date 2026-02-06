@@ -193,7 +193,7 @@ final class ZipPath private[zip] (
     var common = 0
     val limit = Math.min(thisCount, otherCount)
     while (common < limit &&
-           thisNorm.getName(common).path == otherNorm.getName(common).path) {
+        thisNorm.getName(common).path == otherNorm.getName(common).path) {
       common += 1
     }
 
@@ -272,8 +272,8 @@ final class ZipPath private[zip] (
 
   // --- Internal helpers ---
 
-  /** Return the entry name to look up in the ZipFile.
-   *  Strips leading "/" for absolute paths.
+  /** Return the entry name to look up in the ZipFile. Strips leading "/" for
+   *  absolute paths.
    */
   private[zip] def entryName: String =
     if (path.startsWith("/")) path.substring(1)
@@ -287,7 +287,7 @@ final class ZipPath private[zip] (
 
   private def checkPath(other: Path): ZipPath = other match {
     case zp: ZipPath if zp.fileSystem == fileSystem => zp
-    case _ =>
+    case _                                          =>
       throw new ProviderMismatchException(
         s"Expected ZipPath from same filesystem, got: $other"
       )

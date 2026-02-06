@@ -5,8 +5,8 @@ import java.lang.Iterable
 import java.nio.file._
 import java.nio.file.attribute.UserPrincipalLookupService
 import java.nio.file.spi.FileSystemProvider
-import java.util.{LinkedList, Set => JSet}
 import java.util.zip.{ZipEntry, ZipFile}
+import java.util.{LinkedList, Set => JSet}
 
 /** A read-only FileSystem backed by a zip/jar archive.
  *
@@ -103,9 +103,10 @@ final class ZipFileSystem private[zip] (
   /** Check if a path corresponds to a directory in the archive.
    *
    *  A path is a directory if:
-   *  - it is the root "/"
-   *  - there exists an entry with a trailing "/" matching this path
-   *  - there exist entries that are children of this path (implicit directory)
+   *    - it is the root "/"
+   *    - there exists an entry with a trailing "/" matching this path
+   *    - there exist entries that are children of this path (implicit
+   *      directory)
    */
   private[zip] def isDirectory(path: ZipPath): Boolean = {
     val absPath = path.toAbsolutePath().normalize()
