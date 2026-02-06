@@ -48,7 +48,7 @@ object Build {
       scalaPartestTests, scalaPartestJunitTests,
       toolsBenchmarks
     )
-  lazy val testNoCrossProject = List(testingCompilerInterface)
+  lazy val testNoCrossProject = List(testingCompilerInterface, buildCli)
 // format: on
   lazy val allMultiScalaProjects =
     publishedMultiScalaProjects ::: testMultiScalaProjects
@@ -217,7 +217,7 @@ object Build {
     .withNativeCompilerPlugin
     .withCommonTools
     .withBuildInfo(Test)
-    .dependsOn(nir, util, javalib)
+    .dependsOn(nir, util)
     .dependsOn(testInterface % "test", junitRuntime % "test")
     .zippedSettings(
       Seq("nscplugin", "javalib", "scalalib"),
@@ -240,6 +240,26 @@ object Build {
           toolsBuildInfoSettings(nscPlugin, javalib, scalalib)
       }
       .dependsOn(nirJVM, utilJVM)
+
+  lazy val buildCli =
+    project
+      .in(file("build-cli"))
+      .enablePlugins(BuildInfoPlugin)
+      .settings(
+        commonSettings,
+        noPublishSettings,
+        scalaVersion := ScalaVersions.scala3,
+        Compile / mainClass := Some("scala.scalanative.build.BuildMain"),
+        buildInfoPackage := "scala.scalanative.buildinfo",
+        buildInfoObject := "ScalaNativeBuildInfo",
+        buildInfoKeys := Seq[BuildInfoKey](version, scalaVersion),
+        toolsBuildInfoSettings(
+          LocalProject(s"nscplugin3"),
+          LocalProject(s"javalib3"),
+          LocalProject(s"scala3lib3")
+        )
+      )
+      .dependsOn(toolsJVM.v3)
 
   private def toolsBuildInfoSettings(
       nscPlugin: LocalProject,

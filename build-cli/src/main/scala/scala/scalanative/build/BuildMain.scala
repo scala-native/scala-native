@@ -199,44 +199,32 @@ object BuildMain {
     errorFn = msg => System.err.println(s"[error] $msg")
   )
 
-  /** Derive the classpath from the base directory, similar to how sbt
-   *  constructs `fullClasspath`.
+  /** Derive user classpath entries from the base directory.
    *
    *  Convention (matching sbt crossTarget layout):
    *  {{{
    *    baseDir/
    *      classes/           → user-compiled NIR files
    *      test-classes/      → test NIR files (optional, when --test-config)
-   *      native/
-   *        dependencies/    → extracted dependency NIR directories
    *  }}}
    *
    *  If baseDir itself contains `.nir` files (test-style layout where
    *  outDir == baseDir), it is included directly instead of `classes/`.
+   *
+   *  Note: `native/dependencies/` is NOT included here. The build pipeline
+   *  extracts dependency NIR from the JARs on the classpath automatically.
    */
   private def discoverClasspath(baseDir: Path, includeTest: Boolean): Seq[Path] = {
     val classesDir = baseDir.resolve("classes")
     val testClassesDir = baseDir.resolve("test-classes")
-    // workDir is baseDir/"native", dependencies live under workDir
-    val depsDir = baseDir.resolve("native").resolve("dependencies")
 
-    val userClasspath: Seq[Path] = {
-      val primary =
-        if (Files.isDirectory(classesDir)) classesDir
-        else baseDir // outDir == baseDir (test-style layout)
-      if (includeTest && Files.isDirectory(testClassesDir))
-        Seq(primary, testClassesDir)
-      else Seq(primary)
-    }
+    val primary =
+      if (Files.isDirectory(classesDir)) classesDir
+      else baseDir // outDir == baseDir (test-style layout)
 
-    val depClasspath: Seq[Path] =
-      if (Files.isDirectory(depsDir))
-        Files.list(depsDir).toArray.toSeq
-          .map(_.asInstanceOf[Path])
-          .filter(Files.isDirectory(_))
-      else Seq.empty
-
-    depClasspath ++ userClasspath
+    if (includeTest && Files.isDirectory(testClassesDir))
+      Seq(primary, testClassesDir)
+    else Seq(primary)
   }
 
   private def parseBuildTarget(value: String): BuildTarget = value match {
