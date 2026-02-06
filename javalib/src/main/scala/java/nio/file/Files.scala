@@ -340,6 +340,31 @@ object Files {
 
   def copy(source: Path, target: Path, options: Array[CopyOption]): Path = {
     val linkOpts = Array(LinkOption.NOFOLLOW_LINKS)
+
+    // Cross-filesystem copy: use stream-based copy when source is on a
+    // non-default filesystem (e.g. ZipFileSystem).
+    if (source.getFileSystem() != FileSystems.getDefault() &&
+        target.getFileSystem() == FileSystems.getDefault()) {
+      val sourceAttrs = readAttributes(
+        source,
+        classOf[BasicFileAttributes],
+        linkOpts
+      )
+      if (sourceAttrs.isDirectory()) {
+        createDirectory(target, Array.empty)
+      } else {
+        val in = newInputStream(source, Array.empty)
+        try {
+          copy(
+            in,
+            target,
+            options.filter(_ == REPLACE_EXISTING)
+          )
+        } finally in.close()
+      }
+      return target
+    }
+
     val attrsCls =
       if (isWindows) classOf[DosFileAttributes]
       else classOf[PosixFileAttributes]
@@ -653,10 +678,18 @@ object Files {
     } catch { case _: NoSuchFileException => false }
 
   def exists(path: Path, options: Array[LinkOption]): Boolean = {
-    def fileExists = path.toFile().exists()
-    def noFollowLinks = options.contains(LinkOption.NOFOLLOW_LINKS)
+    if (path.getFileSystem() != FileSystems.getDefault()) {
+      // For non-default filesystems, use readAttributes to check existence
+      try {
+        readAttributes(path, classOf[BasicFileAttributes], options)
+        true
+      } catch { case _: IOException => false }
+    } else {
+      def fileExists = path.toFile().exists()
+      def noFollowLinks = options.contains(LinkOption.NOFOLLOW_LINKS)
 
-    fileExists || (noFollowLinks && isSymbolicLink(path))
+      fileExists || (noFollowLinks && isSymbolicLink(path))
+    }
   }
 
   def find(
@@ -906,6 +939,18 @@ object Files {
   }
 
   def list(dir: Path): Stream[Path] = {
+    /* For non-default filesystems (e.g. ZipFileSystem), delegate to the
+     * provider's newDirectoryStream which knows how to enumerate entries.
+     */
+    if (dir.getFileSystem() != FileSystems.getDefault()) {
+      val ds = newDirectoryStream(dir)
+      val list = new java.util.ArrayList[Path]()
+      val it = ds.iterator()
+      while (it.hasNext()) list.add(it.next())
+      ds.close()
+      return list.stream()
+    }
+
     /* Fix Issue 3165 - From Java "Path" documentation URL:
      * https://docs.oracle.com/javase/8/docs/api/java/nio/file/Path.html
      *
@@ -1121,6 +1166,19 @@ object Files {
     !exists(path, options)
 
   def readAllBytes(path: Path): Array[Byte] = Zone.acquire { implicit z =>
+    /* For non-default filesystems (e.g. ZipFileSystem), read via the
+     * provider's newInputStream since OS-level open/read won't work.
+     */
+    if (path.getFileSystem() != FileSystems.getDefault()) {
+      val is = newInputStream(path, Array.empty)
+      try {
+        val buf = new java.io.ByteArrayOutputStream()
+        val tmp = new Array[Byte](8192)
+        var n = 0
+        while ({ n = is.read(tmp); n >= 0 }) buf.write(tmp, 0, n)
+        buf.toByteArray()
+      } finally is.close()
+    } else {
     /* if 'path' does not exist at all, should get
      * java.nio.file.NoSuchFileException here.
      */
@@ -1181,6 +1239,7 @@ object Files {
       }
 
       bytes.asInstanceOf[Array[Byte]]
+    }
     }
   }
 
