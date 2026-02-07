@@ -133,16 +133,20 @@ object Commands {
             // scala3.version = sbt2ScalaVersion
             println(s"Testing sbt 2.x using Scala ${version}")
             List(
+              s"++${ScalaVersions.sbt2ScalaVersion}; publishLocal",
               s"++${ScalaVersions.scala213}; publishLocal",
-              s"++${ScalaVersions.sbt2ScalaVersion}; publishLocal"
-            ) -> "run/*" // no scala3/cross-version-compat tests until sbt/sbt#8665 is resolved
+              s"++${ScalaVersions.scriptedTestsScala3Version}; publishLocal"
+            ) -> Some("run/*").ensuring(
+              ScalaVersions.sbt2Version == "2.0.0-RC8",
+              "scala3/cross-version-compat fails due to sbt/sbt#8665, would be fixed in next version of sbt"
+            )
           case "2.12" =>
             println(s"Testing sbt 1.x using Scala ${version}")
             List(
-              s"++${ScalaVersions.scriptedTestsScala3Version}; publishLocal",
+              s"++${ScalaVersions.scala212}; publishLocal",
               s"++${ScalaVersions.scala213}; publishLocal",
-              s"++${ScalaVersions.scala212}; publishLocal"
-            ) -> "" // run all tests
+              s"++${ScalaVersions.scriptedTestsScala3Version}; publishLocal"
+            ) -> None // run all tests
           case binVersion =>
             sys.error(
               s"Unsupported Scala binary version for sbt scripted tests: $binVersion (for Scala ${version})"
@@ -152,7 +156,7 @@ object Commands {
       prepareTests :::
         "show sbtScalaNative/sbtVersion" ::
         "show sbtScalaNative/scalaVersion" ::
-        s"sbtScalaNative/scripted ${testsFilter}" ::
+        "sbtScalaNative/scripted" + testsFilter.fold("")(" " + _) ::
         state
   }
 
