@@ -133,9 +133,11 @@ object Commands {
             // scala3.version = sbt2ScalaVersion
             println(s"Testing sbt 2.x using Scala ${version}")
             List(
-              s"++${ScalaVersions.sbt2ScalaVersion}; publishLocal",
               s"++${ScalaVersions.scala213}; publishLocal",
-              s"++${ScalaVersions.scriptedTestsScala3Version}; publishLocal"
+              s"++${ScalaVersions.sbt2ScalaVersion}; publishLocal",
+              s"++${ScalaVersions.scriptedTestsScala3Version}; publishLocal",
+              // Explicitlly to test using sbt 2.x
+              s"++${ScalaVersions.sbt2ScalaVersion}"
             ) -> Some("run/*").ensuring(
               ScalaVersions.sbt2Version == "2.0.0-RC8",
               "scala3/cross-version-compat fails due to sbt/sbt#8665, would be fixed in next version of sbt"
@@ -145,7 +147,9 @@ object Commands {
             List(
               s"++${ScalaVersions.scala212}; publishLocal",
               s"++${ScalaVersions.scala213}; publishLocal",
-              s"++${ScalaVersions.scriptedTestsScala3Version}; publishLocal"
+              s"++${ScalaVersions.scriptedTestsScala3Version}; publishLocal",
+              // Explicitlly to test using sbt 1.x
+              s"++${ScalaVersions.scala212}"
             ) -> None // run all tests
           case binVersion =>
             sys.error(
