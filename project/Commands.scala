@@ -125,6 +125,9 @@ object Commands {
             "Used command needs explicit Scala version as an argument"
           )
         )
+
+      val explicitTestsFilter = args.lift(1).map(_.trim).filterNot(_.isEmpty)
+
       case class Variant(
           prepareCommands: List[String],
           sbtProject: Project,
@@ -169,11 +172,15 @@ object Commands {
             )
         }
 
-      prepareTests :::
+      val allCommands = prepareTests :::
         s"show ${sbtProject.id}/sbtVersion" ::
         s"show ${sbtProject.id}/scalaVersion" ::
-        s"${sbtProject.id}/scripted" + testsFilter.fold("")(" " + _) ::
-        state
+        s"${sbtProject.id}/scripted" + explicitTestsFilter.orElse(testsFilter).fold("")(" " + _) ::
+        Nil
+        
+      println("Will execute following commands:")
+      allCommands.foreach(println)
+      allCommands ::: state
   }
 
   private def projectVersionCommand(
