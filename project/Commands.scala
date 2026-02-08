@@ -175,9 +175,11 @@ object Commands {
       val allCommands = prepareTests :::
         s"show ${sbtProject.id}/sbtVersion" ::
         s"show ${sbtProject.id}/scalaVersion" ::
-        s"${sbtProject.id}/scripted" + explicitTestsFilter.orElse(testsFilter).fold("")(" " + _) ::
+        s"${sbtProject.id}/scripted" + explicitTestsFilter
+          .orElse(testsFilter)
+          .fold("")(" " + _) ::
         Nil
-        
+
       println("Will execute following commands:")
       allCommands.foreach(println)
       allCommands ::: state
