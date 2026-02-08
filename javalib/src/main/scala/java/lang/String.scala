@@ -1679,23 +1679,25 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
 }
 
 object _String {
-  final val CASE_INSENSITIVE_ORDER: Comparator[_String] =
-    new CaseInsensitiveComparator()
-  private final val ascii = {
-    val ascii = new Array[Char](128)
-    var i = 0
-    while (i < ascii.length) {
-      ascii(i) = i.toChar
-      i += 1
-    }
-    ascii
-  }
+  final def CASE_INSENSITIVE_ORDER: Comparator[_String] =
+    CaseInsensitiveComparator
 
-  private class CaseInsensitiveComparator
+  private object CaseInsensitiveComparator
       extends Comparator[_String]
       with Serializable {
     def compare(o1: _String, o2: _String): Int =
       o1.compareToIgnoreCase(o2)
+  }
+
+  private object ASCII {
+    val chars: Array[Char] = new Array[Char](128)
+    locally {
+      var i = 0
+      while (i < chars.length) {
+        chars(i) = i.toChar
+        i += 1
+      }
+    }
   }
 
   def copyValueOf(data: Array[Char], start: Int, length: Int): _String =
@@ -1735,7 +1737,7 @@ object _String {
 
   def valueOf(value: Char): _String = {
     val s =
-      if (value < 128) new _String(value, 1, ascii)
+      if (value < 128) new _String(value, 1, ASCII.chars)
       else new _String(0, 1, Array(value))
     s.cachedHashCode = value
     s

@@ -313,7 +313,7 @@ class Thread private[lang] (
     if (throwable == null)
       throw new NullPointerException("The argument is null!")
     if (isAlive()) {
-      if (Thread.currentThread() == MainThread) throw throwable
+      if (Thread.currentThread() eq MainThread) throw throwable
       else throw new UnsupportedOperationException()
     }
   }
@@ -548,11 +548,14 @@ object Thread {
   def getAllStackTraces(): java.util.Map[Thread, Array[StackTraceElement]] =
     throw new UnsupportedOperationException()
 
-  @volatile private var defaultExceptionHandler: UncaughtExceptionHandler = _
+  // Defined in object so that Thread itself remains a constant module not requiring initialization
+  private object Handlers {
+    @volatile var defaultExceptionHandler: UncaughtExceptionHandler = _
+  }
   def getDefaultUncaughtExceptionHandler(): UncaughtExceptionHandler =
-    defaultExceptionHandler
+    Handlers.defaultExceptionHandler
   def setDefaultUncaughtExceptionHandler(eh: UncaughtExceptionHandler): Unit =
-    defaultExceptionHandler = eh
+    Handlers.defaultExceptionHandler = eh
 
   def holdsLock(obj: Object): scala.Boolean = NativeThread.holdsLock(obj)
 

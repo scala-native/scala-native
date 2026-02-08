@@ -266,7 +266,7 @@ package object unsafe extends unsafe.UnsafePackageCompat {
   }
 
   // wchar_t size may vary across platforms from 2 to 4 bytes.
-  final val WideCharSize = Platform.SizeOfWChar.toInt
+  final def WideCharSize = Platform.SizeOfWChar.toInt
 
   /** Convert a java.lang.String to a CWideString using given charset and
    *  allocator.
