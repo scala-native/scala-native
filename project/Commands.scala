@@ -152,15 +152,16 @@ object Commands {
               s"++${ScalaVersions.scala212}"
             ) -> None // run all tests
           case binVersion =>
-            sys.error(
+            throw new MessageOnlyException(
               s"Unsupported Scala binary version for sbt scripted tests: $binVersion (for Scala ${version})"
             )
         }
 
       prepareTests :::
-        "show sbtScalaNative/sbtVersion" ::
-        "show sbtScalaNative/scalaVersion" ::
-        "sbtScalaNative/scripted" + testsFilter.fold("")(" " + _) ::
+        s"show sbtScalaNative.forBinaryVersion(${version})/sbtVersion" ::
+        s"show sbtScalaNative.forBinaryVersion(${version})/scalaVersion" ::
+        s"sbtScalaNative.forBinaryVersion(${version})/scripted" + testsFilter
+          .fold("")(" " + _) ::
         state
   }
 
@@ -214,10 +215,11 @@ object Commands {
       case (version, state) =>
         List(
           // Sbt plugin and its dependencies
-          s"++${ScalaVersions.scala212} publishLocal",
+          ScalaVersions.scala212,
           // Artifact for current version
-          s"++${version} publishLocal"
-        ) ::: state
+          version
+        ).distinct
+          .map(v => s"++$v publishLocal") ::: state
     }
   }
 
@@ -232,17 +234,8 @@ object Commands {
             ScalaVersions.scala3PublishVersion -> ScalaVersions.crossScala3
           case _ => sys.error(s"Invalid Scala binary version: '$binVersion'")
         }
-        val publishCommand = "publishSigned"
+        val publishCommand = "publishLocal"
         val publishBaseVersion = s"++$scalaVersion; $publishCommand"
-        val publishSbtPlugin = binVersion match {
-          case "2.12" => Nil // handled by publishBaseVersion
-          case "2.13" => Nil //
-          case "3"    =>
-            List(
-              s"++${ScalaVersions.sbt2ScalaVersion}; sbtScalaNative/$publishCommand"
-            )
-          case _ => sys.error(s"Invalid Scala binary version: '$binVersion'")
-        }
         val publishCrossVersions = crossScalaVersions
           .diff(scalaVersion :: Nil) // exclude already published base version
           .toList
@@ -260,7 +253,6 @@ object Commands {
           "clean" ::
             publishBaseVersion ::
             publishCrossVersions :::
-            publishSbtPlugin :::
             release
 
         println(

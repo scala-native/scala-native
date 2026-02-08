@@ -632,12 +632,9 @@ object Settings {
   )
 
   lazy val sbtPluginSettings = Def.settings(
-    commonSettings,
     toolSettings,
     publishSettings(None),
     sbtPlugin := true,
-    crossSbtVersions := ScalaVersions.crossSbtVersions,
-    crossScalaVersions := ScalaVersions.crossSbtScalaVersions,
     (pluginCrossBuild / sbtVersion) := {
       scalaBinaryVersion.value match {
         case "2.12" => ScalaVersions.sbt10Version

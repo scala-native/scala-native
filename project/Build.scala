@@ -29,8 +29,9 @@ object Build {
 
 // format: off
   lazy val compilerPlugins: List[MultiScalaProject] =  List(nscPlugin, junitPlugin)
-  lazy val noCrossProjects: List[Project] = List(sbtScalaNative, javalibintf)
-  lazy val publishedMultiScalaProjects = compilerPlugins ++ List(
+  lazy val sbtPlugins: List[MultiScalaProject] = List(sbtScalaNative)
+  lazy val noCrossProjects: List[Project] = List(javalibintf)
+  lazy val publishedMultiScalaProjects = compilerPlugins ++ sbtPlugins ++ List(
     nir, util, tools,
     nirJVM, utilJVM, toolsJVM,
     nativelib, clib, posixlib, windowslib,
@@ -71,12 +72,12 @@ object Build {
   ) = {
     key := Def.taskDyn {
       val binVersion = scalaBinaryVersion.value
-      // There are 2 not cross build projects:
-      // sbt-plugin which needs to build with 2.12
+      // There is only 1 not cross build project, it can be compiled with any version,
+      // We choose 2.12 for historical reasons and to ensure during release only 1 package published these:
       // javalib-intf which contains only Java code and can be compiled with any version
       val optNoCrossProjects = noCrossProjects.filter(_ => includeNoCrossProjects && binVersion == "2.12")
       val dependencies =
-        optNoCrossProjects ++ projects.map(_.forBinaryVersion(binVersion))
+        optNoCrossProjects ++ projects.flatMap(_.forBinaryVersionIfDefined(binVersion))
       val prev = key.value
       Def
         .task { prev }
@@ -311,73 +312,61 @@ object Build {
           )
       }
 
-  lazy val sbtScalaNative: Project =
-    project
-      .in(file("sbt-scala-native"))
-      .enablePlugins(ScriptedPlugin)
-      .settings(
-        sbtPluginSettings,
-        disabledDocsSettings,
-        libraryDependencies ++= {
+  lazy val sbtScalaNative = MultiScalaProject(
+    "sbtScalaNative",
+    base = Some(file("sbt-scala-native")),
+    crossVersions = Some(
+      Map(
+        "2.12" -> Seq(ScalaVersions.sbt10ScalaVersion),
+        "3" -> Seq(ScalaVersions.sbt2ScalaVersion)
+      )
+    )
+  )
+    .enablePlugins(ScriptedPlugin)
+    .settings(
+      sbtPluginSettings,
+      disabledDocsSettings
+    )
+    .mapBinaryVersions {
+      case "2.12" =>
+        _.settings(
+          addSbtPlugin(Deps.SbtPlatformDeps)
+        )
+      case _ => identity
+    }
+    .settings(
+      sbtTestDirectory := (ThisBuild / baseDirectory).value / "scripted-tests",
+      // publish the other projects before running scripted tests.
+      scriptedDependencies := {
+        import sbt.io.{IO, CopyOptions}
+        val replaceExisting = CopyOptions().withOverwrite(true)
+        // Synchronize SocketHelpers used in java-net-socket test
+        // Each scripted test creates its own environment in tmp directory
+        // which does not allow us to define external sources in script build
+        IO.copyFile(
+          ((javalib.v2_12 / Compile / scalaSource).value / "java/net/SocketHelpers.scala"),
+          (sbtTestDirectory.value / "run/java-net-socket/SocketHelpers.scala"),
+          replaceExisting
+        )
+        locally {
+          val crossVersionCompatDir = sbtTestDirectory.value / "scala3" / "cross-version-compat"
+          val buildTemplate = crossVersionCompatDir / "build.sbt.template"
+          val buildSbt = crossVersionCompatDir / "build.sbt"
+          IO.copyFile(buildTemplate, buildSbt, replaceExisting)
           sbtBinaryVersion.value match {
-            case "1.0" => Seq(sbt.Defaults.sbtPluginExtra(Deps.SbtPlatformDeps, "1.0", "2.12"))
-            case _     => Seq.empty[ModuleID]
+            case "2" =>
+              val patchedBuild = IO
+                .read(buildSbt)
+                .replace(" %%% ", " %% ")
+                .replace("//:sbt2-only ", "")
+              IO.write(buildSbt, patchedBuild)
+            case _ => ()
           }
-        },
-        libraryDependencies ++= {
-          Seq(
-            "org.scala-native" %% "tools" % version.value,
-            "org.scala-native" %% "test-runner" % version.value
-          )
-        },
-        update := update
-          .dependsOn(
-            Def.taskDyn {
-              val ver = scalaBinaryVersion.value
-              Def
-                .task(())
-                .dependsOn(
-                  utilJVM.forBinaryVersion(ver) / Compile / publishLocal,
-                  nirJVM.forBinaryVersion(ver) / Compile / publishLocal,
-                  toolsJVM.forBinaryVersion(ver) / Compile / publishLocal,
-                  testRunner.forBinaryVersion(ver) / Compile / publishLocal
-                )
-            }
-          )
-          .value
-      )
-      .settings(
-        sbtTestDirectory := (ThisBuild / baseDirectory).value / "scripted-tests",
-        // publish the other projects before running scripted tests.
-        scriptedDependencies := {
-          import sbt.io.{IO, CopyOptions}
-          val replaceExisting = CopyOptions().withOverwrite(true)
-          // Synchronize SocketHelpers used in java-net-socket test
-          // Each scripted test creates its own environment in tmp directory
-          // which does not allow us to define external sources in script build
-          IO.copyFile(
-            ((javalib.v2_12 / Compile / scalaSource).value / "java/net/SocketHelpers.scala"),
-            (sbtTestDirectory.value / "run/java-net-socket/SocketHelpers.scala"),
-            replaceExisting
-          )
-          locally {
-            val crossVersionCompatDir = sbtTestDirectory.value / "scala3" / "cross-version-compat"
-            val buildTemplate = crossVersionCompatDir / "build.sbt.template"
-            val buildSbt = crossVersionCompatDir / "build.sbt"
-            IO.copyFile(buildTemplate, buildSbt, replaceExisting)
-            sbtBinaryVersion.value match {
-              case "2" =>
-                val patchedBuild = IO
-                  .read(buildSbt)
-                  .replace(" %%% ", " %% ")
-                  .replace("//:sbt2-only ", "")
-                IO.write(buildSbt, patchedBuild)
-              case _ => ()
-            }
-          }
-          scriptedDependencies.value
         }
-      )
+        scriptedDependencies.value
+      }
+    )
+    .dependsOn(toolsJVM, testRunner)
 
 // Native modules ------------------------------------------------
   lazy val nativelib =
