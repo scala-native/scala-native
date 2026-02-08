@@ -122,7 +122,11 @@ private[scalanative] object ResourceEmbedder {
 
               // Normalize path for matching: remove leading / and normalize separators
               // Patterns like "*.conf" expect paths without leading /
-              val normalizedPath = Paths.get(pathString.stripPrefix("/"))
+              // Use the same filesystem as the original path to ensure correct matching
+              // (important when exportJars=true, as paths come from JAR filesystems)
+              val normalizedPath = path
+                .getFileSystem()
+                .getPath(pathString.stripPrefix("/"))
               applyPathMatchers(normalizedPath) match {
                 case Some(IgnoreReason(reason, shouldLog)) =>
                   if (shouldLog) {
