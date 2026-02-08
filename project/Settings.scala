@@ -643,6 +643,13 @@ object Settings {
     },
     sbtVersion := (pluginCrossBuild / sbtVersion).value,
     sbtBinaryVersion := CrossVersion.binarySbtVersion(sbtVersion.value),
+    mimaPreviousArtifacts := {
+      val sbtV = (pluginCrossBuild / sbtBinaryVersion).value
+      val scalaV = (update / scalaBinaryVersion).value
+      mimaPreviousArtifacts.value.map { dependency =>
+        sbt.Defaults.sbtPluginExtra(dependency, sbtV, scalaV)
+      }
+    },
     scriptedLaunchOpts := {
       scriptedLaunchOpts.value ++
         Seq(

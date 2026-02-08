@@ -10,6 +10,7 @@ import scala.language.implicitConversions
 import com.jsuereth.sbtpgp.PgpKeys.publishSigned
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 
+import scala.scalanative.ScalaNativeBuildInfo
 import scala.scalanative.build._
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 
@@ -332,7 +333,11 @@ object Build {
         _.settings(
           addSbtPlugin(Deps.SbtPlatformDeps)
         )
-      case _ => identity
+      case _ =>
+        _.settings(
+          disableMimaSettings
+            .ensuring(ScalaNativeBuildInfo.version.startsWith("0.5.11"), "sbt plugin not yet published")
+        )
     }
     .settings(
       sbtTestDirectory := (ThisBuild / baseDirectory).value / "scripted-tests",

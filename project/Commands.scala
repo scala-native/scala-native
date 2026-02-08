@@ -94,7 +94,7 @@ object Commands {
   lazy val testMima = projectVersionCommand("test-mima") {
     case (version, state) =>
       val tests = Build.publishedMultiScalaProjects
-        .map(_.forBinaryVersion(version).id)
+        .flatMap(_.forBinaryVersionIfDefined(version).map(_.id))
         .map(id => s"$id/mimaReportBinaryIssues")
         .toList
 
