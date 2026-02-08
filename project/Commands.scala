@@ -86,7 +86,13 @@ object Commands {
       )
         .map(_.forBinaryVersion(version).id)
         .map(id => s"$id/test")
+      val prepareForMiMa = version match {
+        // Ensure all projects are using compatible Scala 3 version (sbt might use older version then used by default in this project which would result in binary incompatibility)
+        case "3" => s"++${ScalaVersions.sbt2ScalaVersion}" :: Nil
+        case _   => Nil
+      }
       tests :::
+        prepareForMiMa :::
         List(s"test-mima $version") :::
         state
   }
@@ -129,7 +135,7 @@ object Commands {
       val explicitTestsFilter = args.lift(1).map(_.trim).filterNot(_.isEmpty)
 
       case class Variant(
-          prepareCommands: List[String],
+          prepareForMiMa: List[String],
           sbtProject: Project,
           testsFilter: Option[String]
       )
@@ -140,7 +146,7 @@ object Commands {
             // scala3.version = sbt2ScalaVersion
             println(s"Testing sbt 2.x using Scala ${version}")
             Variant(
-              prepareCommands = List(
+              prepareForMiMa = List(
                 s"++${ScalaVersions.scala213}; publishLocal",
                 s"++${ScalaVersions.sbt2ScalaVersion}; publishLocal",
                 s"++${ScalaVersions.scriptedTestsScala3Version}; publishLocal",
@@ -156,7 +162,7 @@ object Commands {
           case "2.12" =>
             println(s"Testing sbt 1.x using Scala ${version}")
             Variant(
-              prepareCommands = List(
+              prepareForMiMa = List(
                 s"++${ScalaVersions.scala212}; publishLocal",
                 s"++${ScalaVersions.scala213}; publishLocal",
                 s"++${ScalaVersions.scriptedTestsScala3Version}; publishLocal",
