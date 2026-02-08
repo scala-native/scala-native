@@ -34,6 +34,7 @@ final class Sig(val mangle: String) {
   final def isExtern: Boolean = mangle(0) == 'C'
   final def isGenerated: Boolean = mangle(0) == 'G'
   final def isDuplicate: Boolean = mangle(0) == 'K'
+  private[scalanative] final def isTraitInit = mangle == "D6$init$uEO"
 
   final def isVirtual = !(isCtor || isClinit || isExtern)
   final def isPrivate: Boolean = privateIn.isDefined
