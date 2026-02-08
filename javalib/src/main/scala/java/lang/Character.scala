@@ -453,6 +453,7 @@ object Character {
   }
 
   private object ASCIIDigitCodePoints {
+
     /** All the non-ASCII code points that map to the digit 0.
      *
      *  Each of them is directly followed by 9 other code points mapping to the
