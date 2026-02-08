@@ -59,5 +59,5 @@ RUN dpkg --add-architecture i386 && \
 
 CMD sbt \
   "-J-Xmx7G" \
-  "set sbtScalaNative/scriptedBufferLog := false" \
+  "set every scriptedBufferLog := false" \
   "$TEST_COMMAND"

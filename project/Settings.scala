@@ -19,6 +19,7 @@ import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 import scala.scalanative.ScalaNativeBuildInfo
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 
+import build.ScalaVersions.sbt2Version
 import sbtbuildinfo.BuildInfoPlugin.autoImport._
 
 import MyScalaNativePlugin.isGeneratingForIDE
@@ -631,19 +632,32 @@ object Settings {
   )
 
   lazy val sbtPluginSettings = Def.settings(
-    commonSettings,
     toolSettings,
     publishSettings(None),
     sbtPlugin := true,
-    sbtVersion := ScalaVersions.sbt10Version,
-    scalaVersion := ScalaVersions.sbt10ScalaVersion,
+    (pluginCrossBuild / sbtVersion) := {
+      scalaBinaryVersion.value match {
+        case "2.12" => ScalaVersions.sbt10Version
+        case "3"    => ScalaVersions.sbt2Version
+      }
+    },
+    sbtVersion := (pluginCrossBuild / sbtVersion).value,
+    sbtBinaryVersion := CrossVersion.binarySbtVersion(sbtVersion.value),
+    mimaPreviousArtifacts := {
+      val sbtV = (pluginCrossBuild / sbtBinaryVersion).value
+      val scalaV = (update / scalaBinaryVersion).value
+      mimaPreviousArtifacts.value.map { dependency =>
+        sbt.Defaults.sbtPluginExtra(dependency, sbtV, scalaV)
+      }
+    },
     scriptedLaunchOpts := {
       scriptedLaunchOpts.value ++
         Seq(
           "-Xmx1024M",
           "-Dplugin.version=" + version.value,
-          // Default scala.version, can be overriden in test-scrippted command
-          "-Dscala.version=" + ScalaVersions.scala212,
+          "-Dscala.version=" + scalaVersion.value,
+          "-Dscala213.version=" + ScalaVersions.scala213,
+          "-Dscala3.version=" + ScalaVersions.scriptedTestsScala3Version,
           "-Dfile.encoding=UTF-8" // Windows uses Cp1250 as default
         ) ++
         ivyPaths.value.ivyHome.map(home => s"-Dsbt.ivy.home=$home").toSeq

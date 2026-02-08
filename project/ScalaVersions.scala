@@ -64,12 +64,24 @@ object ScalaVersions {
   val sbt10Version: String = "1.11.5"
   val sbt10ScalaVersion: String = scala212
 
+  val sbt2Version: String = "2.0.0-RC8"
+  val sbt2ScalaVersion: String = "3.7.4"
+
+  val crossSbtVersions = Seq(sbt10Version, sbt2Version)
+  val crossSbtScalaVersions = Seq(sbt10ScalaVersion, sbt2ScalaVersion)
+
   val libCrossScalaVersions: Seq[String] = Seq(
     crossScala212,
     crossScala213,
     crossScala3,
     Option(scala3Nightly).filter(_ => enableExperimentalCompiler).toSeq
   ).flatten.distinct
+
+  // Scala 2.13 cannot be used with Scala 3.8 (see, scala3/cross-version-compat)
+  val scriptedTestsScala3Version: String = "3.7.4".ensuring(
+    !crossScala213.contains("2.13.19"),
+    "Update scriptedTestsScala3Version when new Scala 3 version is released"
+  )
 
   private def extraCrossScalaVersion(binVersionPrefix: String) = sys.env
     .get("EXTRA_CROSS_SCALA_VERSION")

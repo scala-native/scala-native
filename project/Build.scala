@@ -10,6 +10,7 @@ import scala.language.implicitConversions
 import com.jsuereth.sbtpgp.PgpKeys.publishSigned
 import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 
+import scala.scalanative.ScalaNativeBuildInfo
 import scala.scalanative.build._
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 
@@ -29,8 +30,9 @@ object Build {
 
 // format: off
   lazy val compilerPlugins: List[MultiScalaProject] =  List(nscPlugin, junitPlugin)
-  lazy val noCrossProjects: List[Project] = List(sbtScalaNative, javalibintf)
-  lazy val publishedMultiScalaProjects = compilerPlugins ++ List(
+  lazy val sbtPlugins: List[MultiScalaProject] = List(sbtScalaNative)
+  lazy val noCrossProjects: List[Project] = List(javalibintf)
+  lazy val publishedMultiScalaProjects = compilerPlugins ++ sbtPlugins ++ List(
     nir, util, tools,
     nirJVM, utilJVM, toolsJVM,
     nativelib, clib, posixlib, windowslib,
@@ -71,12 +73,12 @@ object Build {
   ) = {
     key := Def.taskDyn {
       val binVersion = scalaBinaryVersion.value
-      // There are 2 not cross build projects:
-      // sbt-plugin which needs to build with 2.12
+      // There is only 1 not cross build project, it can be compiled with any version,
+      // We choose 2.12 for historical reasons and to ensure during release only 1 package published these:
       // javalib-intf which contains only Java code and can be compiled with any version
       val optNoCrossProjects = noCrossProjects.filter(_ => includeNoCrossProjects && binVersion == "2.12")
       val dependencies =
-        optNoCrossProjects ++ projects.map(_.forBinaryVersion(binVersion))
+        optNoCrossProjects ++ projects.flatMap(_.forBinaryVersionIfDefined(binVersion))
       val prev = key.value
       Def
         .task { prev }
@@ -311,86 +313,65 @@ object Build {
           )
       }
 
-  lazy val sbtScalaNative: Project =
-    project
-      .in(file("sbt-scala-native"))
-      .enablePlugins(ScriptedPlugin)
-      .settings(
-        sbtPluginSettings,
-        disabledDocsSettings,
-        addSbtPlugin(Deps.SbtPlatformDeps),
-        sbtTestDirectory := (ThisBuild / baseDirectory).value / "scripted-tests",
-        // publish the other projects before running scripted tests.
-        scriptedDependencies := {
-          import java.nio.file.{Files, StandardCopyOption}
-          // Synchronize SocketHelpers used in java-net-socket test
-          // Each scripted test creates its own environment in tmp directory
-          // which does not allow us to define external sources in script build
-          Files.copy(
-            ((javalib.v2_12 / Compile / scalaSource).value / "java/net/SocketHelpers.scala").toPath,
-            (sbtTestDirectory.value / "run/java-net-socket/SocketHelpers.scala").toPath,
-            StandardCopyOption.REPLACE_EXISTING
-          )
-          scriptedDependencies
-            .dependsOn(Def.taskDyn {
-              // Read scriptedLaunchOpts to get rid of cyclic dependency with root project
-              val ver = {
-                val versionProp = "-Dscala.version="
-                val scalaVersion = scriptedLaunchOpts.value
-                  .find(_.startsWith(versionProp))
-                  .map(_.stripPrefix(versionProp))
-                  .getOrElse(
-                    throw new RuntimeException(
-                      "scala.version not set in scripted launch opts"
-                    )
-                  )
-                MultiScalaProject.scalaCrossVersions
-                  .collectFirst {
-                    case (binV, crossV) if crossV.contains(scalaVersion) => binV
-                  }
-                  .getOrElse(CrossVersion.binaryScalaVersion(scalaVersion))
-              }
-
-              def publishLocalVersion(ver: String) = {
-                Def
-                  .task(())
-                  .dependsOn(
-                    // Compiler plugins
-                    nscPlugin.forBinaryVersion(ver) / publishLocal,
-                    junitPlugin.forBinaryVersion(ver) / publishLocal,
-                    // Native libraries
-                    nativelib.forBinaryVersion(ver) / publishLocal,
-                    clib.forBinaryVersion(ver) / publishLocal,
-                    posixlib.forBinaryVersion(ver) / publishLocal,
-                    windowslib.forBinaryVersion(ver) / publishLocal,
-                    // Standard language libraries
-                    javalib.forBinaryVersion(ver) / publishLocal,
-                    auxlib.forBinaryVersion(ver) / publishLocal,
-                    scalalib.forBinaryVersion(ver) / publishLocal,
-                    scala3lib.forBinaryVersion(ver) / publishLocal,
-                    // Testing infrastructure
-                    testInterfaceSbtDefs.forBinaryVersion(ver) / publishLocal,
-                    testInterface.forBinaryVersion(ver) / publishLocal,
-                    junitRuntime.forBinaryVersion(ver) / publishLocal,
-                    // JVM libraries
-                    utilJVM.forBinaryVersion(ver) / publishLocal,
-                    nirJVM.forBinaryVersion(ver) / publishLocal,
-                    toolsJVM.forBinaryVersion(ver) / publishLocal,
-                    testRunner.forBinaryVersion(ver) / publishLocal
-                  )
-              }
-
-              publishLocalVersion(ver)
-                .dependsOn(
-                  // Scala 3 needs 2.13 deps for its cross version compat tests
-                  if (ver.startsWith("3")) publishLocalVersion("2.13")
-                  else Def.task(())
-                )
-            })
-            .value
-        }
+  lazy val sbtScalaNative = MultiScalaProject(
+    "sbtScalaNative",
+    base = Some(file("sbt-scala-native")),
+    crossVersions = Some(
+      Map(
+        "2.12" -> Seq(ScalaVersions.sbt10ScalaVersion),
+        "3" -> Seq(ScalaVersions.sbt2ScalaVersion)
       )
-      .dependsOn(toolsJVM.v2_12, testRunner.v2_12)
+    )
+  )
+    .enablePlugins(ScriptedPlugin)
+    .settings(
+      sbtPluginSettings,
+      disabledDocsSettings
+    )
+    .mapBinaryVersions {
+      case "2.12" =>
+        _.settings(
+          addSbtPlugin(Deps.SbtPlatformDeps)
+        )
+      case _ =>
+        _.settings(
+          disableMimaSettings
+            .ensuring(ScalaNativeBuildInfo.version.startsWith("0.5.11"), "sbt plugin not yet published")
+        )
+    }
+    .settings(
+      sbtTestDirectory := (ThisBuild / baseDirectory).value / "scripted-tests",
+      // publish the other projects before running scripted tests.
+      scriptedDependencies := {
+        import sbt.io.{IO, CopyOptions}
+        val replaceExisting = CopyOptions().withOverwrite(true)
+        // Synchronize SocketHelpers used in java-net-socket test
+        // Each scripted test creates its own environment in tmp directory
+        // which does not allow us to define external sources in script build
+        IO.copyFile(
+          ((javalib.v2_12 / Compile / scalaSource).value / "java/net/SocketHelpers.scala"),
+          (sbtTestDirectory.value / "run/java-net-socket/SocketHelpers.scala"),
+          replaceExisting
+        )
+        locally {
+          val crossVersionCompatDir = sbtTestDirectory.value / "scala3" / "cross-version-compat"
+          val buildTemplate = crossVersionCompatDir / "build.sbt.template"
+          val buildSbt = crossVersionCompatDir / "build.sbt"
+          IO.copyFile(buildTemplate, buildSbt, replaceExisting)
+          sbtBinaryVersion.value match {
+            case "2" =>
+              val patchedBuild = IO
+                .read(buildSbt)
+                .replace(" %%% ", " %% ")
+                .replace("//:sbt2-only ", "")
+              IO.write(buildSbt, patchedBuild)
+            case _ => ()
+          }
+        }
+        scriptedDependencies.value
+      }
+    )
+    .dependsOn(toolsJVM, testRunner)
 
 // Native modules ------------------------------------------------
   lazy val nativelib =
