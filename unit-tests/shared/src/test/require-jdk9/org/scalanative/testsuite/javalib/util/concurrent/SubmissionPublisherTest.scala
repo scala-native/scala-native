@@ -9,16 +9,12 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicInteger
 
-// import scala.util.boundary
-// import scala.util.boundary.break
 import scala.util.control.Breaks.{break, breakable}
 
 import org.junit.Assert._
 import org.junit.Test
 
-import JSR166Test.{
-  LONG_DELAY_MS, expensiveTests, millisElapsedSince, timeoutMillis
-}
+import JSR166Test.*
 
 class SubmissionPublisherTest extends JSR166Test {
 
@@ -164,9 +160,7 @@ class SubmissionPublisherTest extends JSR166Test {
     assertEquals(0, p.estimateMaximumLag())
   }
 
-  //
-  // End of helper classes and methods
-  //
+  /* End of helper classes and methods */
 
   /** A default-constructed SubmissionPublisher has no subscribers, is not
    *  closed, has default buffer size, and uses the defaultExecutor
@@ -1002,11 +996,15 @@ class SubmissionPublisherTest extends JSR166Test {
    *  -Djsr166.methodFilter=testMissedSignal tck; cvs update -A
    *  src/main/java/util/concurrent/SubmissionPublisher.java
    */
-  @throws[Exception]
   @Test def testMissedSignal_8187947(): Unit = {
-    val N =
-      if (expensiveTests) 1 << 20
-      else 1 << 10
+    // JDK-8212899
+    val fjpFactor =
+      if ((ForkJoinPool.getCommonPoolParallelism() < 2))
+        (1 << 5) // 32
+      else
+        (1 << 10) // 1024
+    val expenseFactor = if (expensiveTests) 1024 else 1
+    val N = fjpFactor * expenseFactor
     val finished = new CountDownLatch(1)
     val pub = new SubmissionPublisher[Boolean]
     class Sub extends Flow.Subscriber[Boolean] {

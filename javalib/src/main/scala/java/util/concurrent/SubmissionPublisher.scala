@@ -7,25 +7,13 @@ package java.util.concurrent
 
 import java.lang.invoke.VarHandle
 import java.util.Objects.requireNonNull
-import java.util.concurrent.atomic.{
-  AtomicBoolean, AtomicInteger, AtomicLong, AtomicReference,
-  AtomicReferenceArray
-}
+import java.util.concurrent.atomic.*
 import java.util.concurrent.locks.LockSupport
-// import java.util.concurrent.{
-//   CompletableFuture, Executor, Flow, ForkJoinPool, TimeUnit
-// }
 import java.util.function.{BiConsumer, BiPredicate, Consumer}
 import java.util.{ArrayList, Collections, List as JList}
 
-// import scala.util.boundary
-// import scala.util.boundary.break
 import scala.util.control.Breaks.{break, breakable}
 
-// Reference:
-//
-// - https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/concurrent/SubmissionPublisher.html
-//
 // @since JDK 9
 class SubmissionPublisher[T](
     private val executor: Executor,
@@ -36,13 +24,10 @@ class SubmissionPublisher[T](
 ) extends Flow.Publisher[T]
     with AutoCloseable {
 
-  import SubmissionPublisher.{
-    BUFFER_CAPACITY_LIMIT, BufferedSubscription, ConsumerSubscriber,
-    INITIAL_CAPACITY
-  }
+  import SubmissionPublisher.*
 
   def this() =
-    this(SubmissionPublisher.ASYNC_POOL, Flow.defaultBufferSize(), null)
+    this(ASYNC_POOL, Flow.defaultBufferSize(), null)
 
   def this(executor: Executor, maxBufferCapacity: Int) =
     this(executor, maxBufferCapacity, null)
@@ -568,7 +553,7 @@ object SubmissionPublisher {
   /** Default executor -- ForkJoinPool.commonPool() unless it cannot support
    *  parallelism.
    */
-  private val ASYNC_POOL: Executor =
+  private[SubmissionPublisher] val ASYNC_POOL: Executor =
     if (ForkJoinPool.getCommonPoolParallelism() > 1)
       ForkJoinPool.commonPool()
     else
