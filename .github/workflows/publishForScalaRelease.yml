@@ -19,6 +19,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.scala-native-version }}
+          submodules: true
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{ inputs.scala-version }}

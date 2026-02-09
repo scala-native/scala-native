@@ -25,6 +25,8 @@ jobs:
         scala: [2.13]
     steps:
       - uses: actions/checkout@v6
+        with:
+          submodules: true
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}

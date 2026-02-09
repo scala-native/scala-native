@@ -23,6 +23,8 @@ jobs:
         scala: [3, 2.13, 2.12]
     steps:
       - uses: actions/checkout@v6
+        with:
+          submodules: true
       - uses: ./.github/actions/macos-setup-env
         id: setup
         with:
@@ -83,6 +85,8 @@ jobs:
           #   gc: commix
     steps:
       - uses: actions/checkout@v6
+        with:
+          submodules: true
       - uses: ./.github/actions/macos-setup-env
         with:
           scala-version: ${{matrix.scala}}
@@ -135,6 +139,8 @@ jobs:
         scala: [3]
     steps:
       - uses: actions/checkout@v6
+        with:
+          submodules: true
       - uses: ./.github/actions/macos-setup-env
         with:
           scala-version: ${{matrix.scala}}
@@ -156,6 +162,8 @@ jobs:
         llvm: [14, 15, 16, 17, 18, 19, 20, latest] # Latest version == 21
     steps:
       - uses: actions/checkout@v6
+        with:
+          submodules: true
       - uses: ./.github/actions/macos-setup-env
         with:
           scala-version: ${{matrix.scala}}
