@@ -75,6 +75,7 @@ release = lastSnapshotVersion()
 
 rst_epilog = f"""
 .. |last_stable_release| replace:: {last_stable_release}
+.. |release| replace:: {release}
 """
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -86,6 +87,9 @@ rst_epilog = f"""
 # ones.
 # myst_parser provides support for '.md' files
 extensions = ['myst_parser', 'sphinx_last_updated_by_git', 'sphinx_markdown_tables']
+
+# Enable substitution extension for myst-parser
+myst_enable_extensions = ["substitution"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -401,3 +405,9 @@ texinfo_documents = [
 
 # permit references to ### level sections
 myst_heading_anchors = 3
+
+# Substitutions for markdown files (using {variable} syntax)
+myst_substitutions = {
+    "last_stable_release": str(last_stable_release),
+    "release": str(release),
+}
