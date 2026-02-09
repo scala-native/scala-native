@@ -65,7 +65,7 @@ class SubmissionPublisherTest extends JSR166Test {
       breakable {
         while (sn == null) {
           synchronized {
-            try wait(1L)
+            try wait()
             catch {
               case ex: Exception => {
                 threadUnexpectedException(ex)
@@ -81,7 +81,7 @@ class SubmissionPublisherTest extends JSR166Test {
       breakable {
         while (nexts < n) {
           synchronized {
-            try wait(1L)
+            try wait()
             catch {
               case ex: Exception => {
                 threadUnexpectedException(ex)
@@ -97,7 +97,7 @@ class SubmissionPublisherTest extends JSR166Test {
       breakable {
         while (completes == 0 && errors == 0) {
           synchronized {
-            try wait(1L)
+            try wait()
             catch {
               case ex: Exception => {
                 threadUnexpectedException(ex)
@@ -113,7 +113,7 @@ class SubmissionPublisherTest extends JSR166Test {
       breakable {
         while (errors == 0) {
           synchronized {
-            try wait(1L)
+            try wait()
             catch {
               case ex: Exception => {
                 threadUnexpectedException(ex)

@@ -27,7 +27,7 @@ class SubmissionPublisher[T](
   import SubmissionPublisher.*
 
   def this() =
-    this(ASYNC_POOL, Flow.defaultBufferSize(), null)
+    this(SubmissionPublisher.ASYNC_POOL, Flow.defaultBufferSize(), null)
 
   def this(executor: Executor, maxBufferCapacity: Int) =
     this(executor, maxBufferCapacity, null)
