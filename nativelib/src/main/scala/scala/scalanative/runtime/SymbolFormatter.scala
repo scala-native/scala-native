@@ -7,6 +7,9 @@ import scalanative.unsigned._
 
 object SymbolFormatter {
 
+  final val NoClassName = c"<none>"
+  final val NoClassNameStr = "<none>"
+
   /* Async-signal-safe stack trace symbol formatter function.
    * Uses only async-signal-safe methods to allow use in a signal handler.
    */
@@ -156,14 +159,14 @@ object SymbolFormatter {
             toRawSize(location - methodStart)
           )
         }
-        if (methodStart == sym) strcpy(classNameOut, c"<none>")
+        if (methodStart == sym) strcpy(classNameOut, NoClassName)
         else strncpy(classNameOut, sym, toRawSize(methodStart - sym - 1))
         true
       }
     }
 
     if (!readSymbol()) {
-      strcpy(classNameOut, c"<none>")
+      strcpy(classNameOut, NoClassName)
       strcpy(methodNameOut, sym)
     }
   }

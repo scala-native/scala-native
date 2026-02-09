@@ -7,6 +7,7 @@ import java.util.Arrays
 import java.util.regex._
 
 import scala.concurrent._
+import scala.sys.process._
 import scala.util.{Failure, Success}
 
 import scala.scalanative.linker.ReachabilityAnalysis
@@ -42,10 +43,88 @@ private[scalanative] object NativeLib {
       nativeLib: NativeLib
   )(implicit ec: ExecutionContext): Future[Seq[Path]] = {
     val destPath = unpackNativeCode(nativeLib)
+    val nativeCodePath = destPath.resolve(nativeCodeDir)
+
+    val libbacktraceDir = nativeCodePath
+      .resolve("platform")
+      .resolve("posix")
+      .resolve("libbacktrace")
+
+    val hasLibbacktrace =
+      Files.exists(libbacktraceDir.resolve("configure"))
+
+    val libbacktraceFut =
+      if (hasLibbacktrace) Future(Some(buildLibbacktrace(config, destPath)))
+      else Future.successful(None)
+
     val paths = findNativePaths(destPath)
+      .filterNot { path =>
+        hasLibbacktrace && path.startsWith(libbacktraceDir)
+      }
+
     val projConfig = configureNativeLibrary(config, analysis, destPath)
-    Future.sequence {
+    val compileFut = Future.sequence {
       paths.map(LLVM.compile(projConfig, analysis, _))
+    }
+
+    for {
+      compiled <- compileFut
+      libbacktraceLib <- libbacktraceFut
+    } yield compiled ++ libbacktraceLib.toSeq
+  }
+
+  /** Runs `./configure && make` in an out-of-source build directory.
+   *
+   *  The generated `config.h` and `libbacktrace.a` are placed in the build
+   *  directory. Results are cached — if `libbacktrace.a` already exists, the
+   *  build is skipped.
+   *
+   *  @return
+   *    the path to `libbacktrace.a`
+   */
+  private def buildLibbacktrace(
+      config: Config,
+      destPath: Path
+  ): Path = {
+    val nativeCodePath = destPath.resolve(nativeCodeDir)
+    val libbacktraceSrc = nativeCodePath
+      .resolve("platform")
+      .resolve("posix")
+      .resolve("libbacktrace")
+
+    val configureScript = libbacktraceSrc.resolve("configure")
+
+    val buildDir = config.workDir.resolve("libbacktrace-build")
+    val staticLib = buildDir.resolve(".libs").resolve("libbacktrace.a")
+
+    if (Files.exists(staticLib)) staticLib
+    else {
+      Files.createDirectories(buildDir)
+
+      // configure
+      val configureCmd =
+        Seq("sh", configureScript.toAbsolutePath.toString) ++
+          config.compilerConfig.targetTriple.map(t => s"--host=$t") ++
+          Seq(s"CC=${config.clang.toAbsolutePath}")
+      config.logger.info("Running libbacktrace configure...")
+      val configureResult = Process(configureCmd, buildDir.toFile) !
+        Logger.toProcessLogger(config.logger)
+      if (configureResult != 0)
+        throw new BuildException("Failed to configure libbacktrace")
+
+      // make
+      val makeCmd = Seq(
+        "make",
+        "-j",
+        Runtime.getRuntime.availableProcessors().toString
+      )
+      config.logger.info("Building libbacktrace...")
+      val makeResult = Process(makeCmd, buildDir.toFile) !
+        Logger.toProcessLogger(config.logger)
+      if (makeResult != 0)
+        throw new BuildException("Failed to build libbacktrace")
+
+      staticLib
     }
   }
 
