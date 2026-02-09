@@ -177,7 +177,7 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
         castLongToRawPtr(lockMark | addr)
       }
     atomic_store_intptr(lockWordRef, inflated, memory_order_release)
-    atomic_thread_fence(memory_order_seq_cst)
+    atomic_thread_fence(memory_order_release)
 
     objectMonitor
   }
