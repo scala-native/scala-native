@@ -86,7 +86,13 @@ object Commands {
       )
         .map(_.forBinaryVersion(version).id)
         .map(id => s"$id/test")
+      val prepareForMiMa = version match {
+        // Ensure all projects are using compatible Scala 3 version (sbt might use older version then used by default in this project which would result in binary incompatibility)
+        case "3" => s"++${ScalaVersions.sbt2ScalaVersion}" :: Nil
+        case _   => Nil
+      }
       tests :::
+        prepareForMiMa :::
         List(s"test-mima $version") :::
         state
   }
@@ -94,7 +100,7 @@ object Commands {
   lazy val testMima = projectVersionCommand("test-mima") {
     case (version, state) =>
       val tests = Build.publishedMultiScalaProjects
-        .map(_.forBinaryVersion(version).id)
+        .flatMap(_.forBinaryVersionIfDefined(version).map(_.id))
         .map(id => s"$id/mimaReportBinaryIssues")
         .toList
 
@@ -106,36 +112,83 @@ object Commands {
       val version = args.headOption
         .flatMap(MultiScalaProject.scalaVersions.get)
         .orElse(state.getSetting(scalaVersion))
+        .map { version =>
+          (
+            CrossVersion.partialVersion(version),
+            CrossVersion.partialVersion(ScalaVersions.sbt2ScalaVersion)
+          ) match {
+            case (Some((3, minor)), Some((3, sbtScalaVersionMinor)))
+                if minor > sbtScalaVersionMinor =>
+              System.err.println(
+                s"Downgrading Scala ${version} version to ${ScalaVersions.sbt2ScalaVersion} for sbt scripted tests: cannot use forward incompatible artifacts"
+              )
+              ScalaVersions.sbt2ScalaVersion
+            case _ => version
+          }
+        }
         .getOrElse(
           sys.error(
             "Used command needs explicit Scala version as an argument"
           )
         )
 
-      assert(
-        !ScalaVersions.crossScala213.contains("2.13.19"),
-        "Update scripted test when new Scala 2.13 version is released"
-      )
-      def setScriptedLaunchOpts(scala3Version: String) =
-        s"""|set sbtScalaNative/scriptedLaunchOpts := {
-            |  (sbtScalaNative/scriptedLaunchOpts).value
-            |   .filterNot(_.startsWith("-Dscala.version=")) :+
-            |   "-Dscala.version=$scala3Version" :+
-            |   "-Dscala213.version=${ScalaVersions.scala213}"
-            |}""".stripMargin
-      // Scala 3 is supported since sbt 1.5.0. 1.5.8 is used.
-      // Older versions set incorrect binary version
-      val isScala3 = version.startsWith("3.")
+      val explicitTestsFilter = args.lift(1).map(_.trim).filterNot(_.isEmpty)
 
-      // Scala 2.13.18 does not support Tasty from Scala 3.8
-      val scala3OnlyTests =
-        if (isScala3)
-          s"${setScriptedLaunchOpts("3.7.4")};++3.7.4; sbtScalaNative/scripted scala3/*; ++${version};"
-        else ""
-      setScriptedLaunchOpts(version) ::
-        s"sbtScalaNative/scripted run/*" ::
-        scala3OnlyTests ::
-        state
+      case class Variant(
+          prepareForMiMa: List[String],
+          sbtProject: Project,
+          testsFilter: Option[String]
+      )
+      val Variant(prepareTests, sbtProject, testsFilter) =
+        CrossVersion.binaryScalaVersion(version) match {
+          case "3" =>
+            // Current limmitation test-infra limitation, we're testing sbt 2.x using the same version as it's used to build it's artifacts
+            // scala3.version = sbt2ScalaVersion
+            println(s"Testing sbt 2.x using Scala ${version}")
+            Variant(
+              prepareForMiMa = List(
+                s"++${ScalaVersions.scala213}; publishLocal",
+                s"++${ScalaVersions.sbt2ScalaVersion}; publishLocal",
+                s"++${ScalaVersions.scriptedTestsScala3Version}; publishLocal",
+                // Explicitlly to test using sbt 2.x
+                s"++${ScalaVersions.sbt2ScalaVersion}"
+              ),
+              sbtProject = sbtScalaNative.v3,
+              testsFilter = Some("run/*").ensuring(
+                ScalaVersions.sbt2Version == "2.0.0-RC8",
+                "scala3/cross-version-compat fails due to sbt/sbt#8665, would be fixed in next version of sbt"
+              )
+            )
+          case "2.12" =>
+            println(s"Testing sbt 1.x using Scala ${version}")
+            Variant(
+              prepareForMiMa = List(
+                s"++${ScalaVersions.scala212}; publishLocal",
+                s"++${ScalaVersions.scala213}; publishLocal",
+                s"++${ScalaVersions.scriptedTestsScala3Version}; publishLocal",
+                // Explicitlly to test using sbt 1.x
+                s"++${ScalaVersions.scala212}"
+              ),
+              sbtProject = sbtScalaNative.v2_12,
+              testsFilter = None // run all tests
+            )
+          case binVersion =>
+            throw new MessageOnlyException(
+              s"Unsupported Scala binary version for sbt scripted tests: $binVersion (for Scala ${version})"
+            )
+        }
+
+      val allCommands = prepareTests :::
+        s"show ${sbtProject.id}/sbtVersion" ::
+        s"show ${sbtProject.id}/scalaVersion" ::
+        s"${sbtProject.id}/scripted" + explicitTestsFilter
+          .orElse(testsFilter)
+          .fold("")(" " + _) ::
+        Nil
+
+      println("Will execute following commands:")
+      allCommands.foreach(println)
+      allCommands ::: state
   }
 
   private def projectVersionCommand(
@@ -188,10 +241,11 @@ object Commands {
       case (version, state) =>
         List(
           // Sbt plugin and its dependencies
-          s"++${ScalaVersions.scala212} publishLocal",
+          ScalaVersions.scala212,
           // Artifact for current version
-          s"++${version} publishLocal"
-        ) ::: state
+          version
+        ).distinct
+          .map(v => s"++$v publishLocal") ::: state
     }
   }
 
@@ -206,7 +260,7 @@ object Commands {
             ScalaVersions.scala3PublishVersion -> ScalaVersions.crossScala3
           case _ => sys.error(s"Invalid Scala binary version: '$binVersion'")
         }
-        val publishCommand = "publishSigned"
+        val publishCommand = "publishLocal"
         val publishBaseVersion = s"++$scalaVersion; $publishCommand"
         val publishCrossVersions = crossScalaVersions
           .diff(scalaVersion :: Nil) // exclude already published base version

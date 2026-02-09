@@ -5,7 +5,7 @@ import scala.scalanative.unsigned._
 /** Platform-specific I/O operations for pipe-based tests.
  *
  *  Uses LinktimeInfo.isWindows to conditionally compile the correct
- *  implementation for each platform.
+ *  implementation for each PlatformInfo.
  */
 object PlatformIO {
 
@@ -35,7 +35,7 @@ object PlatformIO {
 // POSIX Pipe I/O (Unix/Linux/macOS)
 // =============================================================================
 @extern
-private[this] object PosixPipeIO {
+private object PosixPipeIO {
   def pipe(pipeFds: Ptr[CInt]): CInt = extern
   def close(fd: CInt): CInt = extern
 }
@@ -45,7 +45,7 @@ private[this] object PosixPipeIO {
 // =============================================================================
 @extern
 @link("kernel32")
-private[this] object WindowsPipeIOExtern {
+private object WindowsPipeIOExtern {
   @name("CreatePipe")
   def CreatePipe(
       readPipePtr: Ptr[Ptr[Byte]],
@@ -58,7 +58,7 @@ private[this] object WindowsPipeIOExtern {
   def CloseHandle(handle: Ptr[Byte]): Boolean = extern
 }
 
-private[this] object WindowsPipeIO {
+private object WindowsPipeIO {
   import WindowsPipeIOExtern._
 
   // Store handles for later access - simple approach for test code

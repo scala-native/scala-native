@@ -158,7 +158,7 @@ setupTests := {
   assert(existingHiddenFile.exists())
   assert(existingHiddenDirectory.exists())
   assert(!nonexistentHiddenFile.exists())
-  if (Platform.isWindows) {
+  if (PlatformInfo.isWindows) {
     Seq(currentDirectory, existingHiddenDirectory, existingHiddenFile)
       .map(_.toPath)
       .foreach(NioFiles.setAttribute(_, "dos:hidden", true.booleanValue()))
@@ -190,7 +190,7 @@ setupTests := {
 
   IO.createDirectory(directoryLinkedTo)
   assert(directoryLinkedTo.exists)
-  if (!Platform.isWindows) {
+  if (!PlatformInfo.isWindows) {
     // Symbolic links on Windows are broken, needs admin priviliges
     NioFiles.createSymbolicLink(
       linkToDirectory.toPath,

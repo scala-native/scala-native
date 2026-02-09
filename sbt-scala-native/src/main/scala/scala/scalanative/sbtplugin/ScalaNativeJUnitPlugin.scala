@@ -1,11 +1,12 @@
 package scala.scalanative.sbtplugin
 
-import sbt.Keys._
-import sbt._
+import sbt.Keys.*
+import sbt.{*, given}
 
-import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
-
-import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
+import scala.scalanative.sbtplugin.PluginCompat.{*, given}
+import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport.{
+  ScalaNativeCrossVersion => _, *
+}
 
 object ScalaNativeJUnitPlugin extends AutoPlugin {
   override def requires: Plugins = ScalaNativePlugin
@@ -22,11 +23,14 @@ object ScalaNativeJUnitPlugin extends AutoPlugin {
       val ver = nativeVersion
       val org = nativeOrgName
       Seq(
-        org %%% "junit-runtime" % ver % Test,
-        org % "junit-plugin" % ver % ScalaNativeTestPlugin cross CrossVersion.full
+        PluginCompat.crossScalaNative(org %% "junit-runtime" % ver) % Test,
+        PluginCompat.crossJVM(
+          (org % "junit-plugin" % ver % ScalaNativeTestPlugin)
+            .cross(CrossVersion.full)
+        )
       )
     },
-    Test / scalacOptions ++= {
+    Test / scalacOptions ++= Def.uncached {
       val report = update.value
       val jars = report.select(configurationFilter(ScalaNativeTestPlugin.name))
       for {

@@ -6,7 +6,7 @@ import scala.scalanative.runtime.Intrinsics.{castRawSizeToInt as toInt, *}
 import scala.scalanative.runtime._
 
 private[scalanative] trait UnsafePackageCompat {
-  private[scalanative] given reflect.ClassTag[Array[?]] =
+  private[scalanative] given [T]: reflect.ClassTag[Array[?]] =
     reflect.classTag[Array[AnyRef]].asInstanceOf[reflect.ClassTag[Array[?]]]
 
   /** The Scala equivalent of C 'alignmentof', but always returns 32-bit integer

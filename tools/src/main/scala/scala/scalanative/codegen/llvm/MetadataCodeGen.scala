@@ -692,13 +692,13 @@ private[codegen] object MetadataCodeGen {
     }
   }
 
-  trait Writer[T <: Metadata] {
+  abstract class Writer[T <: Metadata] {
     final def sb(implicit ctx: Context): ShowBuilder = ctx.sb
     final def write(v: T)(implicit ctx: Context): Unit = writeMetadata(v, ctx)
     def writeMetadata(v: T, ctx: Context): Unit
   }
 
-  trait InternedWriter[T <: Metadata.Node] extends Writer[T] {
+  abstract class InternedWriter[T <: Metadata.Node] extends Writer[T] {
     import Writer._
     private def asssignedId(v: T)(implicit ctx: Context): Option[Metadata.Id] =
       v.assignedId.orElse(cache(v).get(v))
@@ -756,7 +756,7 @@ private[codegen] object MetadataCodeGen {
     }
   }
 
-  trait Dispatch[T <: Metadata.Node] extends InternedWriter[T] {
+  abstract class Dispatch[T <: Metadata.Node] extends InternedWriter[T] {
     import Writer.MetadataInternedWriterOps
     override final def writeMetadata(v: T, ctx: Context): Unit = delegate(v).writeMetadata(v, ctx)
 
@@ -918,7 +918,7 @@ private[codegen] object MetadataCodeGen {
         }
       }
     }
-    trait Specialized[T <: Metadata.SpecializedNode] extends InternedWriter[T] {
+    abstract class Specialized[T <: Metadata.SpecializedNode] extends InternedWriter[T] {
       def writeFields(v: T): Specialized.Builder[T] => Unit
       override def writeMetadata(v: T, ctx: Context): Unit = {
         implicit def _ctx: Context = ctx
