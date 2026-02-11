@@ -46,9 +46,8 @@ Scala Native is distributed under the Apache License.
 
 
 [Caprese-Link]: https://www.slideshare.net/Odersky/capabilities-for-resources-and-effects-252161040
-[EPFL-Link]: https://www.epfl.ch/en/ 
+[EPFL-Link]: https://www.epfl.ch/en/
 [EPFL_LAMP-Link]: https://www.epfl.ch/labs/lamp/
 [VirtusLab-Link]: https://virtuslab.com/
 [ScalaNative-Link]: https://scala-native.org/
 [ScalaNative_contributors-Link]: https://github.com/scala-native/scala-native/graphs/contributors
-
