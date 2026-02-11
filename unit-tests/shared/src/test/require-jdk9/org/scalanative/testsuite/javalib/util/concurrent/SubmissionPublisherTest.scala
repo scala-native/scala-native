@@ -59,7 +59,7 @@ class SubmissionPublisherTest extends JSR166Test {
       notifyAll()
     }
 
-    def awaitSubscribe(): Unit = {
+    def awaitSubscribe(): Unit = synchronized {
       if (sn == null) {
         while ({
           try wait(1L)
@@ -72,7 +72,7 @@ class SubmissionPublisherTest extends JSR166Test {
       }
     }
 
-    def awaitNext(n: Int): Unit = {
+    def awaitNext(n: Int): Unit = synchronized {
       if (nexts < n) {
         while ({
           try wait(1L)
@@ -85,7 +85,7 @@ class SubmissionPublisherTest extends JSR166Test {
       }
     }
 
-    def awaitComplete(): Unit = {
+    def awaitComplete(): Unit = synchronized {
       if (completes == 0 && errors == 0) {
         while ({
           try wait(1L)
@@ -98,7 +98,7 @@ class SubmissionPublisherTest extends JSR166Test {
       }
     }
 
-    def awaitError(): Unit = {
+    def awaitError(): Unit = synchronized {
       if (errors == 0) {
         while ({
           try wait(1L)
