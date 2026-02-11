@@ -9,8 +9,6 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicInteger
 
-import scala.util.control.Breaks.{break, breakable}
-
 import org.junit.Assert._
 import org.junit.Test
 
@@ -62,66 +60,54 @@ class SubmissionPublisherTest extends JSR166Test {
     }
 
     def awaitSubscribe(): Unit = {
-      breakable {
-        while (sn == null) {
-          synchronized {
-            try wait(1L)
-            catch {
-              case ex: Exception => {
-                threadUnexpectedException(ex)
-                break()
-              }
-            }
+      if (sn == null) {
+        while ({
+          try wait(1L)
+          catch {
+            case ex: Exception => threadUnexpectedException(ex)
           }
-        }
+
+          sn == null
+        }) {}
       }
     }
 
     def awaitNext(n: Int): Unit = {
-      breakable {
-        while (nexts < n) {
-          synchronized {
-            try wait(1L)
-            catch {
-              case ex: Exception => {
-                threadUnexpectedException(ex)
-                break()
-              }
-            }
+      if (nexts < n) {
+        while ({
+          try wait(1L)
+          catch {
+            case ex: Exception => threadUnexpectedException(ex)
           }
-        }
+
+          nexts < n
+        }) {}
       }
     }
 
     def awaitComplete(): Unit = {
-      breakable {
-        while (completes == 0 && errors == 0) {
-          synchronized {
-            try wait(1L)
-            catch {
-              case ex: Exception => {
-                threadUnexpectedException(ex)
-                break()
-              }
-            }
+      if (completes == 0 && errors == 0) {
+        while ({
+          try wait(1L)
+          catch {
+            case ex: Exception => threadUnexpectedException(ex)
           }
-        }
+
+          completes == 0 && errors == 0
+        }) {}
       }
     }
 
     def awaitError(): Unit = {
-      breakable {
-        while (errors == 0) {
-          synchronized {
-            try wait(1L)
-            catch {
-              case ex: Exception => {
-                threadUnexpectedException(ex)
-                break()
-              }
-            }
+      if (errors == 0) {
+        while ({
+          try wait(1L)
+          catch {
+            case ex: Exception => threadUnexpectedException(ex)
           }
-        }
+
+          (errors == 0)
+        }) {}
       }
     }
   }
