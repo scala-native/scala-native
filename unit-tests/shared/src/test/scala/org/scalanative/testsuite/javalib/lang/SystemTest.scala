@@ -78,10 +78,10 @@ class SystemTest {
           osVersion.matches("""\d+\.\d+(\.\d+)?""")
         )
       } else if (isLinux) {
-        // Linux kernel version like "6.5.0-44-generic" or "5.15.0-1024-aws"
+        // Linux kernel version like "6.5.0-44-generic" or "7.0-RC1"
         assertTrue(
           s"os.version '$osVersion' should match Linux kernel version pattern",
-          osVersion.matches("""\d+\.\d+\..*""")
+          osVersion.matches("""\d+\.\d+.*""")
         )
       }
     }
