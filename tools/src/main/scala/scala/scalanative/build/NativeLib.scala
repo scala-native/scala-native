@@ -110,8 +110,11 @@ private[scalanative] object NativeLib {
       val clangName = clangPath.getFileName.toString
       val pathEnv = s"$clangDir${File.pathSeparator}${System.getenv("PATH")}"
 
+      // Convert to forward slashes — autotools rejects backslashes in srcdir.
+      val configurePath =
+        configureScript.toAbsolutePath.toString.replace('\\', '/')
       val configureCmd =
-        Seq("sh", configureScript.toAbsolutePath.toString) ++
+        Seq("sh", configurePath) ++
           config.compilerConfig.targetTriple.map(t => s"--host=$t") ++
           Seq(s"CC=$clangName")
       config.logger.info("Running libbacktrace configure...")
