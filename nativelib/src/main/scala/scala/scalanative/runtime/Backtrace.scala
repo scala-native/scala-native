@@ -42,7 +42,9 @@ private[runtime] object Backtrace {
     val filename =
       if (cFilename != null) {
         val full = fromCString(cFilename)
-        val lastSep = full.lastIndexOf('/')
+        val lastFwd = full.lastIndexOf('/')
+        val lastBck = full.lastIndexOf('\\')
+        val lastSep = Math.max(lastFwd, lastBck)
         if (lastSep >= 0) full.substring(lastSep + 1)
         else full
       } else null

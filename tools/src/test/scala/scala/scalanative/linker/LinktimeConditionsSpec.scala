@@ -97,13 +97,7 @@ class LinktimeConditionsSpec extends OptimizerSpec {
       Entry("secret.performance.multiplier", 9.99, nir.Val.Double(9.99))
     )
   }
-  val defaultEntriesWithExtraComingFromRuntime = defaultEntries ++ Seq(
-    Entry(
-      "scala.scalanative.meta.linktimeinfo.debugMetadata.generateFunctionSourcePositions",
-      false,
-      nir.Val.False
-    )
-  )
+  val defaultEntriesWithExtraComingFromRuntime = defaultEntries
   val defaultProperties = defaultEntries.map(e => e.propertyName -> e.value)
 
   @Test def resolvesLinktimeValues(): Unit = {

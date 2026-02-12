@@ -4,6 +4,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef _WIN32
+#define sn_strdup _strdup
+#else
+#define sn_strdup strdup
+#endif
+
 static struct backtrace_state *bt_state = NULL;
 
 static void error_cb(void *data, const char *msg, int errnum) {}
@@ -30,7 +36,7 @@ static void syminfo_cb(void *data, uintptr_t pc, const char *symname,
 
 int scalanative_backtrace_init(const char *filename, int threaded) {
     /* backtrace_create_state stores the pointer for lazy use, strdup */
-    const char *fn_copy = filename ? strdup(filename) : NULL;
+    const char *fn_copy = filename ? sn_strdup(filename) : NULL;
     bt_state = backtrace_create_state(fn_copy, threaded, error_cb, NULL);
     return bt_state != NULL ? 0 : -1;
 }

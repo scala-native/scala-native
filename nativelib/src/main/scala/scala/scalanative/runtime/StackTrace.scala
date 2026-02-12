@@ -152,7 +152,7 @@ private[runtime] object StackTrace {
     // Non-Scala frame (e.g. C function) — use raw symbol as method name
     if (classNameStr == SymbolFormatter.NoClassNameStr) {
       new StackTraceElement(
-        "<native>",
+        "<none>",
         fromCString(sym),
         position.filename,
         position.line
