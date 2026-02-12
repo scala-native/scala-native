@@ -48,8 +48,11 @@ object BinaryIncompatibilities {
   final val NativeLib = Seq(
     exclude[MissingClassProblem]("scala.scalanative.runtime.rtti*"),
     exclude[Problem]("scala.scalanative.runtime.Backtrace*"),
-    exclude[Problem]("scala.scalanative.runtime.dwarf.DWARF*"),
+    exclude[Problem]("scala.scalanative.runtime.dwarf.*"),
     exclude[Problem]("scala.scalanative.runtime.StackTraceElement*"),
+    exclude[DirectMissingMethodProblem]("scala.scalanative.runtime.StackTrace.currentStackTrace"),
+    exclude[MissingClassProblem]("scala.scalanative.runtime.vmoffset"),
+    exclude[MissingClassProblem]("scala.scalanative.runtime.vmoffset$"),
     exclude[ReversedMissingMethodProblem]("scala.scalanative.runtime.NativeThread.companion"),
     exclude[ReversedMissingMethodProblem]("scala.scalanative.runtime.NativeThread.stackSize"),
     exclude[ReversedMissingMethodProblem]("scala.scalanative.runtime.NativeThread#Companion.defaultOSStackSize"),
