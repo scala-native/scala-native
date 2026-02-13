@@ -522,7 +522,11 @@ class FileChannelTest {
         val dst1 = ByteBuffer.allocate(3)
         val n1 = channel.read(dst1)
         assertEquals("first read bytes", 3, n1)
-        assertEquals("first read content", "abc", new String(dst1.array(), 0, 3))
+        assertEquals(
+          "first read content",
+          "abc",
+          new String(dst1.array(), 0, 3)
+        )
         assertEquals("position after first read", 3, channel.position())
 
         // Second relative read: should continue from position 3
