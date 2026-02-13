@@ -48,7 +48,8 @@ object Build {
       tests, testsJVM, testsExt, testsExtJVM, sandbox,
       scalaPartest, scalaPartestRuntime,
       scalaPartestTests, scalaPartestJunitTests,
-      toolsBenchmarks
+      toolsBenchmarks,
+      cli, cliNative
     )
   lazy val testNoCrossProject = List(testingCompilerInterface)
 // format: on
@@ -242,6 +243,49 @@ object Build {
           toolsBuildInfoSettings(nscPlugin, javalib, scalalib)
       }
       .dependsOn(nirJVM, utilJVM)
+
+  lazy val cli =
+    MultiScalaProject("cli", platform = MultiScalaProject.JVM)
+      .enablePlugins(BuildInfoPlugin)
+      .settings(
+        noPublishSettings,
+        Compile / mainClass := Some("scala.scalanative.build.BuildMain"),
+        buildInfoPackage := "scala.scalanative.buildinfo",
+        buildInfoObject := "ScalaNativeBuildInfo",
+        buildInfoKeys := Seq[BuildInfoKey](version, scalaVersion)
+      )
+      .zippedSettings(
+        Seq("nscplugin", "javalib", "scalalib"),
+        versionsProjectReplacement = scalalibProjectSelect
+      ) {
+        case Seq(nscPlugin, javalib, scalalib) =>
+          toolsBuildInfoSettings(nscPlugin, javalib, scalalib)
+      }
+      .dependsOn(toolsJVM)
+
+  lazy val cliNative =
+    MultiScalaProject("cli", platform = MultiScalaProject.Native)
+      .enablePlugins(BuildInfoPlugin)
+      .settings(
+        noPublishSettings,
+        Compile / mainClass := Some("scala.scalanative.build.BuildMain"),
+        buildInfoPackage := "scala.scalanative.buildinfo",
+        buildInfoObject := "ScalaNativeBuildInfo",
+        buildInfoKeys := Seq[BuildInfoKey](version, scalaVersion),
+        nativeConfig ~= {
+          _.withCheckFatalWarnings(false)
+        }
+      )
+      .withNativeCompilerPlugin
+      .withScalaStandardLibrary
+      .dependsOn(tools, javalib)
+      .zippedSettings(
+        Seq("nscplugin", "javalib", "scalalib"),
+        versionsProjectReplacement = scalalibProjectSelect
+      ) {
+        case Seq(nscPlugin, javalib, scalalib) =>
+          toolsBuildInfoSettings(nscPlugin, javalib, scalalib)
+      }
 
   private def toolsBuildInfoSettings(
       nscPlugin: LocalProject,
