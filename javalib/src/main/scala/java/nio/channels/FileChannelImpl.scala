@@ -308,7 +308,22 @@ private[java] final class FileChannelImpl(
 
   override def read(buffer: ByteBuffer, pos: Long): Int = {
     ensureOpen()
-    position(pos)
+    val stashPosition = position()
+    compelPosition(pos)
+    val bufPosition: Int = buffer.position()
+    read(buffer.array(), bufPosition, buffer.limit() - bufPosition) match {
+      case bytesRead if bytesRead < 0 =>
+        compelPosition(stashPosition)
+        bytesRead
+      case bytesRead =>
+        buffer.position(bufPosition + bytesRead)
+        compelPosition(stashPosition)
+        bytesRead
+    }
+  }
+
+  override def read(buffer: ByteBuffer): Int = {
+    ensureOpen()
     val bufPosition: Int = buffer.position()
     read(buffer.array(), bufPosition, buffer.limit() - bufPosition) match {
       case bytesRead if bytesRead < 0 =>
@@ -317,10 +332,6 @@ private[java] final class FileChannelImpl(
         buffer.position(bufPosition + bytesRead)
         bytesRead
     }
-  }
-
-  override def read(buffer: ByteBuffer): Int = {
-    read(buffer, position())
   }
 
   private def getFileName(orElse: => String = ""): String =
