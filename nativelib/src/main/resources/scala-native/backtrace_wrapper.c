@@ -1,14 +1,13 @@
 #include "backtrace_wrapper.h"
-#include "platform/posix/libbacktrace/backtrace.h"
 
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef _WIN32
-#define sn_strdup _strdup
-#else
-#define sn_strdup strdup
-#endif
+#if defined(__APPLE__) || defined(__linux__)
+
+/* ---- Mac/Linux: libbacktrace ---- */
+
+#include "platform/posix/libbacktrace/backtrace.h"
 
 static struct backtrace_state *bt_state = NULL;
 
@@ -36,7 +35,7 @@ static void syminfo_cb(void *data, uintptr_t pc, const char *symname,
 
 int scalanative_backtrace_init(const char *filename, int threaded) {
     /* backtrace_create_state stores the pointer for lazy use, strdup */
-    const char *fn_copy = filename ? sn_strdup(filename) : NULL;
+    const char *fn_copy = filename ? strdup(filename) : NULL;
     bt_state = backtrace_create_state(fn_copy, threaded, error_cb, NULL);
     return bt_state != NULL ? 0 : -1;
 }
@@ -93,3 +92,5 @@ int scalanative_backtrace_collect(int skip, uintptr_t *buffer, int max_frames) {
     backtrace_simple(bt_state, skip, collect_cb, error_cb, &data);
     return data.count;
 }
+
+#endif /* __APPLE__ || __linux__ */

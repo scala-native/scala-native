@@ -54,7 +54,8 @@ private[scalanative] object NativeLib {
       Files.exists(libbacktraceDir.resolve("configure"))
 
     val libbacktraceFut =
-      if (hasLibbacktrace) Future(Some(buildLibbacktrace(config, destPath)))
+      if (hasLibbacktrace && (Platform.isMac || Platform.isLinux))
+        Future(Some(buildLibbacktrace(config, destPath)))
       else Future.successful(None)
 
     val paths = findNativePaths(destPath)
@@ -102,25 +103,13 @@ private[scalanative] object NativeLib {
       Files.createDirectories(buildDir)
 
       // configure
-      // Use just the clang filename as CC and add its directory to PATH.
-      // Autotools expands $CC unquoted, so paths with spaces (e.g.
-      // "C:\Program Files\LLVM\bin\clang.exe") cause word-splitting failures.
-      val clangPath = config.clang.toAbsolutePath
-      val clangDir = clangPath.getParent.toString
-      val clangName = clangPath.getFileName.toString
-      val pathEnv = s"$clangDir${File.pathSeparator}${System.getenv("PATH")}"
-
-      // Convert to forward slashes — autotools rejects backslashes in srcdir.
-      val configurePath =
-        configureScript.toAbsolutePath.toString.replace('\\', '/')
       val configureCmd =
-        Seq("sh", configurePath) ++
+        Seq("sh", configureScript.toAbsolutePath.toString) ++
           config.compilerConfig.targetTriple.map(t => s"--host=$t") ++
-          Seq(s"CC=$clangName")
+          Seq(s"CC=${config.clang.toAbsolutePath}")
       config.logger.info("Running libbacktrace configure...")
-      val configureResult =
-        Process(configureCmd, buildDir.toFile, "PATH" -> pathEnv) !
-          Logger.toProcessLogger(config.logger)
+      val configureResult = Process(configureCmd, buildDir.toFile) !
+        Logger.toProcessLogger(config.logger)
       if (configureResult != 0)
         throw new BuildException("Failed to configure libbacktrace")
 
