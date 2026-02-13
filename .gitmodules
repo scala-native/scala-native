@@ -1,0 +1,3 @@
+[submodule "nativelib/src/main/resources/scala-native/platform/posix/libbacktrace"]
+	path = nativelib/src/main/resources/scala-native/platform/posix/libbacktrace
+	url = https://github.com/ianlancetaylor/libbacktrace

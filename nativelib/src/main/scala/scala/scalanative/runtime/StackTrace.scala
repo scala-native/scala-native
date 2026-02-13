@@ -11,30 +11,51 @@ import scala.scalanative.unsigned._
 
 private[runtime] object StackTrace {
   @noinline def stackTraceIterator(): Iterator[StackTraceElement] = {
-    new Iterator[StackTraceElement] {
+    if (LinktimeInfo.isMac || LinktimeInfo.isLinux) {
+      // Mac/Linux: use backtrace_ffi (new libbacktrace approach)
+      val rawPCs = currentRawStackTrace()
       val tlContext = ThreadLocalContext.get()
       implicit val localContext: Context = tlContext
-      val cursor = tlContext.unwindCursor
-      val context = tlContext.unwindContext
-      val ip = tlContext.ip
-      unwind.get_context(context)
-      unwind.init_local(cursor, context)
 
-      override def hasNext: Boolean = unwind.step(cursor) > 0
-      override def next(): StackTraceElement = {
-        unwind.get_reg(cursor, unwind.UNW_REG_IP, ip)
-        val addr =
-          Intrinsics.castRawSizeToLongUnsigned(Intrinsics.loadRawSize(ip))
-        tlContext.cache.getOrElseUpdate(
-          addr,
-          makeStackTraceElement(addr)
-        )
+      rawPCs.iterator
+        .map { addr =>
+          tlContext.cache.getOrElseUpdate(
+            addr,
+            makeStackTraceElement(addr)
+          )
+        }
+        .filter(_ != null)
+        .dropWhile { elem =>
+          elem.getClassName.startsWith("scala.scalanative.runtime.") ||
+          elem.getClassName.contains("scala.collection.")
+        }
+    } else {
+      // Other platforms: use unwind APIs (old approach)
+      new Iterator[StackTraceElement] {
+        val tlContext = ThreadLocalContext.get()
+        implicit val localContext: Context = tlContext
+        val cursor = tlContext.unwindCursor
+        val context = tlContext.unwindContext
+        val ip = tlContext.ip
+        unwind.get_context(context)
+        unwind.init_local(cursor, context)
+
+        override def hasNext: Boolean = unwind.step(cursor) > 0
+        override def next(): StackTraceElement = {
+          unwind.get_reg(cursor, unwind.UNW_REG_IP, ip)
+          val addr =
+            Intrinsics.castRawSizeToLongUnsigned(Intrinsics.loadRawSize(ip))
+          tlContext.cache.getOrElseUpdate(
+            addr,
+            makeStackTraceElement(addr)
+          )
+        }
       }
+        .dropWhile { elem =>
+          elem.getClassName.startsWith("scala.scalanative.runtime.") ||
+          elem.getClassName.contains("scala.collection.")
+        }
     }
-      .dropWhile { elem =>
-        elem.getClassName.startsWith("scala.scalanative.runtime.") ||
-        elem.getClassName.contains("scala.collection.")
-      }
   }
 
   private[runtime] type InstructionPointer = Long
@@ -52,34 +73,64 @@ private[runtime] object StackTrace {
     if (LinktimeInfo.asanEnabled)
       return emptyStackTrace
 
-    implicit val tlContext: Context = ThreadLocalContext.get()
-    val context = tlContext.unwindContext
-    if (unwind.get_context(context) < 0)
-      return emptyStackTrace
+    if (LinktimeInfo.isMac || LinktimeInfo.isLinux) {
+      // Mac/Linux: use backtrace_ffi
+      try {
+        thread.isFillingStackTrace = true
 
-    val cursor = tlContext.unwindCursor
-    if (unwind.init_local(cursor, context) < 0)
-      return emptyStackTrace
-    val ip = tlContext.ip
-    try {
-      thread.isFillingStackTrace = true
-
-      val buffer = scala.Array.newBuilder[Long]
-      buffer.sizeHint(32) // at least
-
-      // JVM limit stack trace to 1024 entries
-      var frames = 0
-      while (unwind.step(cursor) > 0 && frames < 1024) {
-        frames += 1
-        if (unwind.get_reg(cursor, unwind.UNW_REG_IP, ip) == 0) {
-          buffer += Intrinsics.castRawSizeToLongUnsigned(
-            Intrinsics.loadRawSize(ip)
+        Backtrace.ensureInitialized()
+        val maxFrames = 1024
+        val rawBuf: Ptr[CSize] =
+          fromRawPtr(
+            Intrinsics.stackalloc[CSize](
+              Intrinsics.castIntToRawSizeUnsigned(maxFrames)
+            )
           )
+        // skip=1 to skip this currentRawStackTrace frame itself
+        val count = backtrace_ffi.collect(1, rawBuf, maxFrames)
+        if (count <= 0) return emptyStackTrace
+
+        val result = new scala.Array[Long](count)
+        var i = 0
+        while (i < count) {
+          result(i) = (!(rawBuf + i)).toLong
+          i += 1
         }
+        result
+      } finally {
+        thread.isFillingStackTrace = false
       }
-      buffer.result()
-    } finally {
-      thread.isFillingStackTrace = false
+    } else {
+      // Other platforms: use unwind APIs
+      implicit val tlContext: Context = ThreadLocalContext.get()
+      val context = tlContext.unwindContext
+      if (unwind.get_context(context) < 0)
+        return emptyStackTrace
+
+      val cursor = tlContext.unwindCursor
+      if (unwind.init_local(cursor, context) < 0)
+        return emptyStackTrace
+      val ip = tlContext.ip
+      try {
+        thread.isFillingStackTrace = true
+
+        val buffer = scala.Array.newBuilder[Long]
+        buffer.sizeHint(32) // at least
+
+        // JVM limit stack trace to 1024 entries
+        var frames = 0
+        while (unwind.step(cursor) > 0 && frames < 1024) {
+          frames += 1
+          if (unwind.get_reg(cursor, unwind.UNW_REG_IP, ip) == 0) {
+            buffer += Intrinsics.castRawSizeToLongUnsigned(
+              Intrinsics.loadRawSize(ip)
+            )
+          }
+        }
+        buffer.result()
+      } finally {
+        thread.isFillingStackTrace = false
+      }
     }
 
   }
@@ -92,6 +143,7 @@ private[runtime] object StackTrace {
       return emptyStackTrace
 
     implicit val tlContext: Context = ThreadLocalContext.get()
+
     val buffer = scala.Array.newBuilder[StackTraceElement]
     buffer.sizeHint(raw.length)
 
@@ -99,24 +151,22 @@ private[runtime] object StackTrace {
     while (ipIdx < raw.length) {
       val addr = raw(ipIdx)
 
-      /* Creates a stack trace element. Finding a name of the symbol for
-       * current function is expensive, so we cache stack trace elements
-       * based on current instruction pointer.
-       */
       val elem = tlContext.cache.getOrElseUpdate(
         addr,
         makeStackTraceElement(addr)
       )
-      buffer += elem
+      if (elem != null) {
+        buffer += elem
 
-      // Stack trace cleanup
-      if (ipIdx < 4) {
-        if (elem.getClassName.startsWith("scala.scalanative.runtime.")) {
-          val shouldClear =
-            (elem.getClassName == "scala.scalanative.runtime.Throwable" && {
-              elem.getMethodName == "fillInStackTrace" || elem.getMethodName == "<init>"
-            })
-          if (shouldClear) buffer.clear()
+        // Stack trace cleanup
+        if (ipIdx < 4) {
+          if (elem.getClassName.startsWith("scala.scalanative.runtime.")) {
+            val shouldClear =
+              (elem.getClassName == "scala.scalanative.runtime.Throwable" && {
+                elem.getMethodName == "fillInStackTrace" || elem.getMethodName == "<init>"
+              })
+            if (shouldClear) buffer.clear()
+          }
         }
       }
       ipIdx += 1
@@ -185,44 +235,29 @@ private[runtime] object StackTrace {
     }
   }
 
-  @resolvedAtLinktime
-  private def hasDebugInfo: Boolean =
-    (LinktimeInfo.isMac || LinktimeInfo.isLinux) &&
-      !LinktimeInfo.is32BitPlatform &&
-      LinktimeInfo.sourceLevelDebuging.generateFunctionSourcePositions
-
   private def makeStackTraceElement(
       ip: Long
   )(implicit tlContext: Context): StackTraceElement = {
+    if (LinktimeInfo.isMac || LinktimeInfo.isLinux) {
+      // Mac/Linux: use backtrace_ffi/libbacktrace for symbol resolution
+      val position = Backtrace.decodePosition(ip)
 
-    val position =
-      if (hasDebugInfo) Backtrace.decodePosition(ip)
-      else Backtrace.Position.empty
-
-    def withNameFromDWARF() = {
-      // linkageName has an extra "_" that we don't want in stack traces
-      def isScalaNativeMangledName =
-        ffi.strncmp(
-          position.linkageName,
-          c"__SM",
-          Intrinsics.castIntToRawSize(4)
-        ) == 0
-      val symbol =
-        if (isScalaNativeMangledName)
-          // skip first `_`
-          position.linkageName + 1
-        else position.linkageName
-
-      parseStackTraceElement(symbol, position)
-    }
-
-    def withNameFromUnwind() = {
+      if (position.linkageName != null) {
+        parseStackTraceElement(position.linkageName, position)
+      } else {
+        // No symbol found — still show the frame with whatever info we have
+        new StackTraceElement(
+          "<unknown>",
+          "<unknown>",
+          position.filename,
+          position.line
+        )
+      }
+    } else {
+      // Other platforms: use unwind for symbol resolution
       import Context._
       val symbol = tlContext.freshSymbolBuffer
       val offset = Intrinsics.stackalloc[Long]()
-      // Use address-based lookup instead of cursor-based.
-      // This is required for materializeStackTrace where the cursor
-      // is not at the correct stack frame position.
       unwind.get_proc_name_by_ip(
         Intrinsics.castLongToRawSize(ip),
         symbol,
@@ -230,17 +265,10 @@ private[runtime] object StackTrace {
         offset
       )
       // Make sure the name is definitely 0-terminated.
-      // Unmangler is going to use strlen on this name and its
-      // behavior is not defined for non-zero-terminated strings.
       symbol(SymbolMaxLength - 1) = 0.toByte
 
-      parseStackTraceElement(symbol, position)
+      parseStackTraceElement(symbol, Backtrace.Position.empty)
     }
-
-    if (hasDebugInfo) {
-      if (position.linkageName != null) withNameFromDWARF()
-      else withNameFromUnwind()
-    } else withNameFromUnwind()
   }
 
   private def parseStackTraceElement(
@@ -250,8 +278,8 @@ private[runtime] object StackTrace {
     val className: Ptr[CChar] = tlContext.freshClassNameBuffer
     val methodName: Ptr[CChar] = tlContext.freshMethodNameBuffer
     val fileName: Ptr[CChar] =
-      if (LinktimeInfo.isWindows) tlContext.freshFileNameBuffer
-      else null
+      if (LinktimeInfo.isMac || LinktimeInfo.isLinux) null
+      else tlContext.freshFileNameBuffer
     val lineOut: Ptr[Int] = fromRawPtr(Intrinsics.stackalloc[Int]())
     SymbolFormatter.asyncSafeFromSymbol(
       sym = sym,
@@ -260,19 +288,31 @@ private[runtime] object StackTrace {
       fileNameOut = fileName,
       lineOut = lineOut
     )
-    val filename =
-      if (position.filename != null || fileName == null) position.filename
-      else fromCString(fileName).trim()
-    val line =
-      if (position.line > 0 || filename == null) position.line
-      else !lineOut
+    val classNameStr = fromCString(className)
 
-    new StackTraceElement(
-      fromCString(className),
-      fromCString(methodName),
-      filename,
-      line
-    )
+    // Non-Scala frame (e.g. C function) — use raw symbol as method name
+    if (classNameStr == SymbolFormatter.NoClassNameStr) {
+      new StackTraceElement(
+        "<none>",
+        fromCString(sym),
+        position.filename,
+        position.line
+      )
+    } else {
+      val filename =
+        if (position.filename != null || fileName == null) position.filename
+        else fromCString(fileName).trim()
+      val line =
+        if (position.line > 0 || filename == null) position.line
+        else !lineOut
+
+      new StackTraceElement(
+        classNameStr,
+        fromCString(methodName),
+        filename,
+        line
+      )
+    }
   }
 
   private object ThreadLocalContext extends InheritableThreadLocal[Context] {

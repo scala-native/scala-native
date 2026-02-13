@@ -26,6 +26,8 @@ jobs:
       - name: Setup git config
         run: git config --global core.autocrlf false
       - uses: actions/checkout@v6
+        with:
+          submodules: true
       - uses: ./.github/actions/windows-setup-env
         id: setup
         with:
@@ -83,6 +85,8 @@ jobs:
       - name: Setup git config
         run: git config --global core.autocrlf false
       - uses: actions/checkout@v6
+        with:
+          submodules: true
       - uses: ./.github/actions/windows-setup-env
         with:
           scala-version: ${{matrix.scala}}
@@ -129,6 +133,8 @@ jobs:
       - name: Setup git config
         run: git config --global core.autocrlf false
       - uses: actions/checkout@v6
+        with:
+          submodules: true
       - uses: ./.github/actions/windows-setup-env
         id: setup
         with:
@@ -160,6 +166,8 @@ jobs:
       - name: Setup git config
         run: git config --global core.autocrlf false
       - uses: actions/checkout@v6
+        with:
+          submodules: true
       - uses: ./.github/actions/windows-setup-env
         id: setup
         with:

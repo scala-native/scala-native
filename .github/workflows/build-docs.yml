@@ -8,6 +8,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0 # clone full repo to get last-updated dates
+          submodules: true
       - uses: actions/setup-python@v6
         with:
           python-version: '3.11' 

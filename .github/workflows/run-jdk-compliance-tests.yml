@@ -21,6 +21,8 @@ jobs:
         java: [25]
     steps:
       - uses: actions/checkout@v6
+        with:
+          submodules: true
       - uses: ./.github/actions/macos-setup-env
         if: ${{ startsWith(matrix.os, 'macos') }}
         with:
@@ -55,6 +57,8 @@ jobs:
       - name: Setup git config
         run: git config --global core.autocrlf false
       - uses: actions/checkout@v6
+        with:
+          submodules: true
       - uses: ./.github/actions/windows-setup-env
         id: setup
         with:
