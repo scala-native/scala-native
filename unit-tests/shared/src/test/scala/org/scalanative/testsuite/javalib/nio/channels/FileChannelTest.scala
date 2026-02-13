@@ -470,6 +470,75 @@ class FileChannelTest {
     }
   }
 
+  // Issue #4385
+  @Test def absoluteReadShouldNotChangeChannelPosition(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      Files.write(f, "hello, world!".getBytes("UTF-8"))
+
+      val channel = FileChannel.open(f, StandardOpenOption.READ)
+      try {
+        // Set position to 2
+        channel.position(2)
+        val preReadPos = channel.position()
+        assertEquals("pre-read position", 2, preReadPos)
+
+        // Absolute read at position 7 — should NOT change channel position
+        val dst = ByteBuffer.allocate(5)
+        val bytesRead = channel.read(dst, 7)
+        assertEquals("bytes read", 5, bytesRead)
+        assertEquals("read content", "world", new String(dst.array(), 0, 5))
+
+        // Channel position must be unchanged after absolute read
+        assertEquals(
+          "position after absolute read",
+          preReadPos,
+          channel.position()
+        )
+
+        // A subsequent relative read should read from the original position
+        val dst2 = ByteBuffer.allocate(3)
+        channel.read(dst2)
+        assertEquals(
+          "relative read content",
+          "llo",
+          new String(dst2.array(), 0, 3)
+        )
+      } finally channel.close()
+    }
+  }
+
+  // Ensure relative read still advances position after untangling from absolute read
+  @Test def relativeReadShouldAdvanceChannelPosition(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      Files.write(f, "abcdefghij".getBytes("UTF-8"))
+
+      val channel = FileChannel.open(f, StandardOpenOption.READ)
+      try {
+        assertEquals("initial position", 0, channel.position())
+
+        // First relative read: should advance position by 3
+        val dst1 = ByteBuffer.allocate(3)
+        val n1 = channel.read(dst1)
+        assertEquals("first read bytes", 3, n1)
+        assertEquals("first read content", "abc", new String(dst1.array(), 0, 3))
+        assertEquals("position after first read", 3, channel.position())
+
+        // Second relative read: should continue from position 3
+        val dst2 = ByteBuffer.allocate(4)
+        val n2 = channel.read(dst2)
+        assertEquals("second read bytes", 4, n2)
+        assertEquals(
+          "second read content",
+          "defg",
+          new String(dst2.array(), 0, 4)
+        )
+        assertEquals("position after second read", 7, channel.position())
+      } finally channel.close()
+    }
+  }
+
   @Test def writeOfMultipleBuffersReturnsTotalBytesWritten(): Unit = {
     withTemporaryDirectory { dir =>
       val f = dir.resolve("f")
