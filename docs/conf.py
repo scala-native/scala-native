@@ -86,7 +86,7 @@ rst_epilog = f"""
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 # myst_parser provides support for '.md' files
-extensions = ['myst_parser', 'sphinx_last_updated_by_git', 'sphinx_markdown_tables']
+extensions = ['myst_parser', 'sphinx_last_updated_by_git']
 
 # Enable substitution extension for myst-parser
 myst_enable_extensions = ["substitution"]
