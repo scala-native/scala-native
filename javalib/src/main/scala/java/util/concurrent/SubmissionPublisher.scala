@@ -8,7 +8,7 @@ package java.util.concurrent
 import java.lang.invoke.VarHandle
 import java.util.Objects.requireNonNull
 import java.util.concurrent.atomic.*
-import java.util.concurrent.locks.LockSupport
+import java.util.concurrent.locks.{LockSupport, ReentrantLock}
 import java.util.function.{BiConsumer, BiPredicate, Consumer}
 import java.util.{ArrayList, Collections, List as JList}
 
@@ -62,6 +62,9 @@ class SubmissionPublisher[T](
   /** The first caller thread to subscribe, or null if thread ever changed */
   @volatile private var ownerThread: Thread = null
 
+  /** A lock for operations that need to be synchronous */
+  private final val lock = new ReentrantLock()
+
   override def subscribe(subscriber: Flow.Subscriber[? >: T]): Unit = {
     requireNonNull(subscriber, "subscriber cannot be null")
     val initCap = if (maxCap < INITIAL_CAPACITY) maxCap else INITIAL_CAPACITY
@@ -73,7 +76,8 @@ class SubmissionPublisher[T](
       handler
     )
 
-    synchronized {
+    lock.lock()
+    try {
       if (!subscribed) {
         subscribed = true
         ownerThread = Thread.currentThread()
@@ -119,6 +123,8 @@ class SubmissionPublisher[T](
         }
         ()
       }
+    } finally {
+      lock.unlock()
     }
   }
 
@@ -147,12 +153,15 @@ class SubmissionPublisher[T](
     if (!closed) {
       var curr: BufferedSubscription[T] = null
 
-      synchronized {
+      lock.lock()
+      try {
         // no need to re-check closed here
         curr = clients
         clients = null
         ownerThread = null
         closed = true
+      } finally {
+        lock.unlock()
       }
 
       while (curr != null) {
@@ -168,7 +177,8 @@ class SubmissionPublisher[T](
     if (!closed) {
       var curr: BufferedSubscription[T] = null
 
-      synchronized {
+      lock.lock()
+      try {
         curr = clients
         if (!closed) { // don't clobber racing close
           clients = null
@@ -176,6 +186,8 @@ class SubmissionPublisher[T](
           closed = true // set both closed
           closedException = error // and closedException synchronously
         }
+      } finally {
+        lock.unlock()
       }
 
       while (curr != null) {
@@ -196,8 +208,9 @@ class SubmissionPublisher[T](
   def hasSubscribers(): Boolean =
     if (closed)
       false
-    else
-      synchronized {
+    else {
+      lock.lock()
+      try {
         var found = false
         var curr = clients
         breakable {
@@ -214,15 +227,21 @@ class SubmissionPublisher[T](
           }
         }
         found
+      } finally {
+        lock.unlock()
       }
+    }
 
   def getNumberOfSubscribers(): Int =
     if (closed)
       0
-    else
-      synchronized {
+    else {
+      lock.lock()
+      try
         cleanAndCount()
-      }
+      finally
+        lock.unlock()
+    }
 
   def getExecutor(): Executor =
     executor
@@ -232,7 +251,9 @@ class SubmissionPublisher[T](
 
   def getSubscribers(): JList[Flow.Subscriber[? >: T]] = {
     val subs = new ArrayList[Flow.Subscriber[? >: T]]
-    synchronized {
+
+    lock.lock()
+    try {
       var pred: BufferedSubscription[T] = null
       var next: BufferedSubscription[T] = null
       var curr = clients
@@ -253,7 +274,10 @@ class SubmissionPublisher[T](
 
         curr = next
       }
+    } finally {
+      lock.unlock()
     }
+
     Collections.unmodifiableList(subs)
   }
 
@@ -262,7 +286,8 @@ class SubmissionPublisher[T](
     if (closed)
       false
     else {
-      synchronized {
+      lock.lock()
+      try {
         var pred: BufferedSubscription[T] = null
         var next: BufferedSubscription[T] = null
         var curr = clients
@@ -292,6 +317,8 @@ class SubmissionPublisher[T](
         }
 
         found
+      } finally {
+        lock.unlock()
       }
     }
   }
@@ -300,7 +327,8 @@ class SubmissionPublisher[T](
     var min = Long.MaxValue
     var nonEmpty = false
 
-    synchronized {
+    lock.lock()
+    try {
       var pred: BufferedSubscription[T] = null
       var next: BufferedSubscription[T] = null
       var curr = clients
@@ -326,6 +354,8 @@ class SubmissionPublisher[T](
 
         curr = next
       }
+    } finally {
+      lock.unlock()
     }
 
     if (nonEmpty)
@@ -336,7 +366,9 @@ class SubmissionPublisher[T](
 
   def estimateMaximumLag(): Int = {
     var max = 0
-    synchronized {
+
+    lock.lock()
+    try {
       var pred: BufferedSubscription[T] = null
       var next: BufferedSubscription[T] = null
       var curr = clients
@@ -359,7 +391,10 @@ class SubmissionPublisher[T](
 
         curr = next
       }
+    } finally {
+      lock.unlock()
     }
+
     max
   }
 
@@ -388,7 +423,8 @@ class SubmissionPublisher[T](
     val complete = new AtomicBoolean(false)
     var lag = 0 // highest lag observed
 
-    synchronized {
+    lock.lock()
+    try {
       val _thread = Thread.currentThread()
       val _ownerThread = ownerThread
       val unowned = _ownerThread != _thread && _ownerThread != null
@@ -434,7 +470,8 @@ class SubmissionPublisher[T](
           lag =
             retryOffer(item, timeoutNanos, onDrop, retries, lag, cleanMe.get())
       }
-
+    } finally {
+      lock.unlock()
     }
 
     if (complete.get())
@@ -609,10 +646,12 @@ object SubmissionPublisher {
     override final def getRawResult(): Unit =
       ()
 
-    override protected[concurrent] final def setRawResult(value: Unit): Unit =
+    override protected[SubmissionPublisher] final def setRawResult(
+        value: Unit
+    ): Unit =
       ()
 
-    override protected[concurrent] final def exec(): Boolean = {
+    override protected[SubmissionPublisher] final def exec(): Boolean = {
       consumer.consume()
       false
     }
@@ -639,8 +678,8 @@ object SubmissionPublisher {
 
   }
 
-  final class BufferedSubscription[T] private[concurrent] (
-      private[concurrent] val subscriber: Flow.Subscriber[? >: T],
+  final class BufferedSubscription[T] private[SubmissionPublisher] (
+      private[SubmissionPublisher] val subscriber: Flow.Subscriber[? >: T],
       private var executor: Executor,
       private val initCapacity: Int,
       private val maxCapacity: Int,
