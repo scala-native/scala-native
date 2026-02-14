@@ -12,8 +12,6 @@ import java.util.concurrent.locks.{LockSupport, ReentrantLock}
 import java.util.function.{BiConsumer, BiPredicate, Consumer}
 import java.util.{ArrayList, Collections, List as JList}
 
-import scala.util.control.Breaks.{break, breakable}
-
 // @since JDK 9
 class SubmissionPublisher[T](
     private val executor: Executor,
@@ -86,23 +84,23 @@ class SubmissionPublisher[T](
       var pred: BufferedSubscription[T] = null
       var curr = clients
 
-      breakable {
-        while (true) {
-          if (curr == null) { // insert as tail
-            subscription.onSubscribe()
+      var break = false
+      while (!break) {
+        if (curr == null) { // insert as tail
+          subscription.onSubscribe()
 
-            if (closedException != null)
-              subscription.onError(closedException)
-            else if (closed)
-              subscription.onComplete()
-            else if (pred == null)
-              clients = subscription
-            else
-              pred.next = subscription
+          if (closedException != null)
+            subscription.onError(closedException)
+          else if (closed)
+            subscription.onComplete()
+          else if (pred == null)
+            clients = subscription
+          else
+            pred.next = subscription
 
-            break()
-          }
-
+          break = true
+        } // force a new line for formatting
+        else {
           val next = curr.next
           if (curr.isClosed()) { // detach curr node
             curr.next = null
@@ -110,18 +108,17 @@ class SubmissionPublisher[T](
               clients = next
             else
               pred.next = next
-          } // force line break (fmt)
+          } // force a new line for formatting
           else if (subscriber.equals(curr.subscriber)) {
             curr.onError(new IllegalStateException("Duplicate subscribe"))
-            break()
-          } // force line break (fmt)
+            break = true
+          } // force a new line for formatting
           else {
             pred = curr
           }
 
           curr = next
         }
-        ()
       }
     } finally {
       lock.unlock()
@@ -211,21 +208,19 @@ class SubmissionPublisher[T](
     else {
       lock.lock()
       try {
-        var found = false
         var curr = clients
-        breakable {
-          while (curr != null) {
-            val next = curr.next
-            if (curr.isClosed()) { // remove this node
-              curr.next = null
-              curr = next
-              clients = next
-            } else {
-              found = true
-              break()
-            }
+        var found = false
+        while (curr != null && !found) {
+          val next = curr.next
+          if (curr.isClosed()) { // remove this node
+            curr.next = null
+            curr = next
+            clients = next
+          } else {
+            found = true
           }
         }
+
         found
       } finally {
         lock.unlock()
@@ -293,27 +288,24 @@ class SubmissionPublisher[T](
         var curr = clients
         var found = false
 
-        breakable {
-          while (curr != null) {
-            next = curr.next
+        while (curr != null && !found) {
+          next = curr.next
 
-            if (curr.isClosed()) {
-              curr.next = null
-              if (pred == null)
-                clients = next
-              else
-                pred.next = next
-            } // force line break (fmt)
-            else if (subscriber.equals(curr.subscriber)) {
-              found = true
-              break()
-            } // force line break (fmt)
-            else {
-              pred = curr
-            }
-
-            curr = next
+          if (curr.isClosed()) {
+            curr.next = null
+            if (pred == null)
+              clients = next
+            else
+              pred.next = next
+          } // force a new line for formatting
+          else if (subscriber.equals(curr.subscriber)) {
+            found = true
+          } // force a new line for formatting
+          else {
+            pred = curr
           }
+
+          curr = next
         }
 
         found
@@ -383,7 +375,7 @@ class SubmissionPublisher[T](
             clients = next
           else
             pred.next = next
-        } // force line break (fmt)
+        } // force a new line for formatting
         else {
           if (lag > max) max = lag
           pred = curr
@@ -455,10 +447,10 @@ class SubmissionPublisher[T](
               rtail.nextRetry = curr
 
             rtail = curr
-          } // force line break (fmt)
+          } // force a new line for formatting
           else if (stat < 0) { // closed
             cleanMe.set(true) // remove later
-          } // force line break (fmt)
+          } // force a new line for formatting
           else if (stat > lag)
             lag = stat
 
@@ -545,7 +537,7 @@ class SubmissionPublisher[T](
           clients = next
         else
           pred.next = next
-      } // force line break (fmt)
+      } // force a new line for formatting
       else {
         pred = curr
         count += 1
@@ -718,18 +710,14 @@ object SubmissionPublisher {
     // next node for retry linked list
     private[SubmissionPublisher] var nextRetry: BufferedSubscription[T] = null
 
-    //
     // Wrappers for demand VarHandle
-    //
 
     private def demandSubtractAndGet(k: Long): Long = {
       val n = -k
       n + demand.getAndAdd(n)
     }
 
-    //
     // Utilities used by SubmissionPublisher
-    //
 
     /** Returns true if closed (consumer task may still be running). */
     def isClosed() =
@@ -743,9 +731,7 @@ object SubmissionPublisher {
       else lag
     }
 
-    //
     // Methods for submitting items
-    //
 
     /** Tries to add item and start consumer task if necessary.
      *
@@ -793,7 +779,7 @@ object SubmissionPublisher {
           && {
             cap = buffer.length()
             cap > 0
-          } // force line break (fmt)
+          } // force a new line for formatting
           && {
             newCap = cap << 1
             newCap > 0
@@ -812,18 +798,16 @@ object SubmissionPublisher {
         newBuffer.compareAndSet(tail & newMask, null, item.asInstanceOf[AnyRef])
         var _tail = tail - 1
 
-        breakable {
-          for (k <- mask to 0 by -1) {
-            val x = buffer.getAndSet(_tail & mask, null)
+        (mask to 0 by -1).find { k =>
+          val x = buffer.getAndSet(_tail & mask, null)
 
-            if (x == null)
-              break() // already consumed
-            else {
-              newBuffer.compareAndSet(_tail & newMask, null, x)
-              _tail -= 1
-            }
+          if (x == null)
+            true // already consumed, exits loop
+          else {
+            newBuffer.compareAndSet(_tail & newMask, null, x)
+            _tail -= 1
+            false
           }
-          ()
         }
 
         buffer = newBuffer
@@ -884,9 +868,7 @@ object SubmissionPublisher {
           throw exc
       }
 
-    //
     // Signals to consumer tasks
-    //
 
     /** Sets the given control bits, starting task if not running or closed.
      *
@@ -941,15 +923,13 @@ object SubmissionPublisher {
         }) {}
 
         startOnSignal(CtlFlag.RUN | CtlFlag.ACTIVE | CtlFlag.REQS)
-      } // force line break (fmt)
+      } // force a new line for formatting
       else
         onError(
           new IllegalArgumentException("non-positive subscription request")
         )
 
-    //
     // Consumer task actions
-    //
 
     /** Consumer loop, called from ConsumerTask, or indirectly when helping
      *  during submit.
@@ -962,53 +942,52 @@ object SubmissionPublisher {
         var _head = head.get()
         var _tail = tail.get()
 
-        breakable {
-          while (true) {
-            val _ctl = ctl.get()
-            var taken = 0
-            var empty = false
+        var break = false
+        while (!break) {
+          val _ctl = ctl.get()
+          var taken = 0
+          var empty = false
 
-            if ((_ctl & CtlFlag.ERROR) != 0) {
-              closeOnError(subscriber, null)
-              break()
-            } // force line break (fmt)
-            else if ({
-              taken = takeItems(subscriber, _demand, _head)
-              taken > 0
-            }) {
-              _head += taken
-              head.set(_head)
-              _demand = demandSubtractAndGet(taken.toLong)
-            } // force line break (fmt)
-            else if ({
-                  _demand = demand.get(); _demand == 0L
-                } && ((_ctl & CtlFlag.REQS) != 0)) // exhausted demand
-              ctl.weakCompareAndSetPlain(_ctl, _ctl & ~CtlFlag.REQS): Unit
-            else if (_demand != 0L && (_ctl & CtlFlag.REQS) == 0) // new demand
-              ctl.weakCompareAndSetPlain(_ctl, _ctl | CtlFlag.REQS): Unit
-            else if ({
-              val _tail_old = _tail; _tail = tail.get();
-              _tail_old == _tail // stability check
-            }) {
-              if ({
-                    empty = _tail == _head; empty
-                  } && (_ctl & CtlFlag.COMPLETE) != 0) {
-                closeOnComplete(subscriber) // end of stream
-                break()
-              } // force line break (fmt)
-              else if (empty || _demand == 0L) {
-                val bit =
-                  if ((_ctl & CtlFlag.ACTIVE) != 0) CtlFlag.ACTIVE
-                  else CtlFlag.RUN
-                if (ctl.weakCompareAndSetPlain(
-                      _ctl,
-                      _ctl & ~bit
-                    ) && bit == CtlFlag.RUN)
-                  break()
-              }
+          if ((_ctl & CtlFlag.ERROR) != 0) {
+            closeOnError(subscriber, null)
+            break = true
+          } // force a new line for formatting
+          else if ({
+            taken = takeItems(subscriber, _demand, _head)
+            taken > 0
+          }) {
+            _head += taken
+            head.set(_head)
+            _demand = demandSubtractAndGet(taken.toLong)
+          } // force a new line for formatting
+          else if ({
+                _demand = demand.get(); _demand == 0L
+              } && ((_ctl & CtlFlag.REQS) != 0)) // exhausted demand
+            ctl.weakCompareAndSetPlain(_ctl, _ctl & ~CtlFlag.REQS): Unit
+          else if (_demand != 0L && (_ctl & CtlFlag.REQS) == 0) // new demand
+            ctl.weakCompareAndSetPlain(_ctl, _ctl | CtlFlag.REQS): Unit
+          else if ({
+            val _tail_old = _tail; _tail = tail.get();
+            _tail_old == _tail // stability check
+          }) {
+            if ({
+                  empty = _tail == _head; empty
+                } && (_ctl & CtlFlag.COMPLETE) != 0) {
+              closeOnComplete(subscriber) // end of stream
+              break = true
+            } // force a new line for formatting
+            else if (empty || _demand == 0L) {
+              val bit =
+                if ((_ctl & CtlFlag.ACTIVE) != 0) CtlFlag.ACTIVE
+                else CtlFlag.RUN
+              if (ctl.weakCompareAndSetPlain(
+                    _ctl,
+                    _ctl & ~bit
+                  ) && bit == CtlFlag.RUN)
+                break = true
             }
           }
-          ()
+
         }
       }
 
@@ -1039,21 +1018,19 @@ object SubmissionPublisher {
 
         val n = if (demand < b.toLong) demand.toInt else b
 
-        breakable {
-          while (k < n) {
-            val x = buffer.getAndSet(h & m, null)
+        var break = false
+        while (k < n && !break) {
+          val x = buffer.getAndSet(h & m, null)
 
-            if (waiting != 0) signalWaiter()
+          if (waiting != 0) signalWaiter()
 
-            if (x == null)
-              break()
-            else if (!consumeNext(sub, x.asInstanceOf[T]))
-              break()
+          if (x == null)
+            break = true
+          else if (!consumeNext(sub, x.asInstanceOf[T]))
+            break = true
 
-            h += 1
-            k += 1
-          }
-          ()
+          h += 1
+          k += 1
         }
       }
 
@@ -1064,7 +1041,7 @@ object SubmissionPublisher {
       try {
         if (sub != null) sub.onNext(x)
         true
-      } // force line break (fmt)
+      } // force a new line for formatting
       catch {
         case exc: Throwable =>
           handleOnNext(sub, exc)
@@ -1137,9 +1114,7 @@ object SubmissionPublisher {
         case ignore: Throwable => ()
       }
 
-    //
     // Blocking support
-    //
 
     /** Unblocks waiting producer. */
     def signalWaiter(): Unit = {
@@ -1184,22 +1159,19 @@ object SubmissionPublisher {
       val timed = timeout < Long.MaxValue
       val deadline = if (timed) System.nanoTime() + nanos else 0L
 
-      breakable {
-        while (!isReleasable()) {
-          if (Thread.interrupted()) {
-            timeout = BufferedSubscription.INTERRUPTED
-            if (timed) break()
-          } // force line break (fmt)
-          else if (timed && {
-                nanos = deadline - System.nanoTime(); nanos <= 0L
-              })
-            break()
-          else if (waiter == null) waiter = Thread.currentThread()
-          else if (waiting == 0) waiting = 1
-          else if (timed) LockSupport.parkNanos(this, nanos)
-          else LockSupport.park(this)
-        }
-        ()
+      var break = false
+      while (!isReleasable() && !break) {
+        if (Thread.interrupted()) {
+          timeout = BufferedSubscription.INTERRUPTED
+          if (timed)
+            break = true
+        } // force a new line for formatting
+        else if (timed && { nanos = deadline - System.nanoTime(); nanos <= 0L })
+          break = true
+        else if (waiter == null) waiter = Thread.currentThread()
+        else if (waiting == 0) waiting = 1
+        else if (timed) LockSupport.parkNanos(this, nanos)
+        else LockSupport.park(this)
       }
 
       waiter = null
