@@ -124,6 +124,16 @@ void scalanative_set_os_props(void (*add_prop)(const char *, const char *)) {
     add_prop("os.name", "Windows (Unknown version)");
 #elif defined(__APPLE__)
     add_prop("os.name", "Mac OS X");
+    // Use kern.osproductversion to get the macOS product version (e.g. "15.4")
+    // matching JVM behavior, instead of the Darwin kernel version from uname.
+    {
+        char version[32];
+        size_t version_len = sizeof(version);
+        if (sysctlbyname("kern.osproductversion", version, &version_len, NULL,
+                         0) == 0) {
+            add_prop("os.version", version);
+        }
+    }
 #else
     struct utsname name;
     if (uname(&name) == 0) {
