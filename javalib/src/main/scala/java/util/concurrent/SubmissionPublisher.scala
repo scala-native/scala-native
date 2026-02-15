@@ -108,6 +108,8 @@ class SubmissionPublisher[T](
               clients = next
             else
               pred.next = next
+
+            curr = next
           } // force a new line for formatting
           else if (subscriber.equals(curr.subscriber)) {
             curr.onError(new IllegalStateException("Duplicate subscribe"))
@@ -115,9 +117,8 @@ class SubmissionPublisher[T](
           } // force a new line for formatting
           else {
             pred = curr
+            curr = next
           }
-
-          curr = next
         }
       }
     } finally {
@@ -210,7 +211,8 @@ class SubmissionPublisher[T](
       try {
         var curr = clients
         var found = false
-        while (curr != null && !found) {
+
+        while (!found && curr != null) {
           val next = curr.next
           if (curr.isClosed()) { // remove this node
             curr.next = null
@@ -288,7 +290,7 @@ class SubmissionPublisher[T](
         var curr = clients
         var found = false
 
-        while (curr != null && !found) {
+        while (!found && curr != null) {
           next = curr.next
 
           if (curr.isClosed()) {
@@ -297,15 +299,15 @@ class SubmissionPublisher[T](
               clients = next
             else
               pred.next = next
+            curr = next
           } // force a new line for formatting
           else if (subscriber.equals(curr.subscriber)) {
             found = true
           } // force a new line for formatting
           else {
             pred = curr
+            curr = next
           }
-
-          curr = next
         }
 
         found
@@ -1019,7 +1021,7 @@ object SubmissionPublisher {
         val n = if (demand < b.toLong) demand.toInt else b
 
         var break = false
-        while (k < n && !break) {
+        while (!break && k < n) {
           val x = buffer.getAndSet(h & m, null)
 
           if (waiting != 0) signalWaiter()
@@ -1028,9 +1030,10 @@ object SubmissionPublisher {
             break = true
           else if (!consumeNext(sub, x.asInstanceOf[T]))
             break = true
-
-          h += 1
-          k += 1
+          else {
+            h += 1
+            k += 1
+          }
         }
       }
 
@@ -1160,7 +1163,7 @@ object SubmissionPublisher {
       val deadline = if (timed) System.nanoTime() + nanos else 0L
 
       var break = false
-      while (!isReleasable() && !break) {
+      while (!break && !isReleasable()) {
         if (Thread.interrupted()) {
           timeout = BufferedSubscription.INTERRUPTED
           if (timed)
@@ -1168,10 +1171,14 @@ object SubmissionPublisher {
         } // force a new line for formatting
         else if (timed && { nanos = deadline - System.nanoTime(); nanos <= 0L })
           break = true
-        else if (waiter == null) waiter = Thread.currentThread()
-        else if (waiting == 0) waiting = 1
-        else if (timed) LockSupport.parkNanos(this, nanos)
-        else LockSupport.park(this)
+        else if (waiter == null)
+          waiter = Thread.currentThread()
+        else if (waiting == 0)
+          waiting = 1
+        else if (timed)
+          LockSupport.parkNanos(this, nanos)
+        else
+          LockSupport.park(this)
       }
 
       waiter = null
