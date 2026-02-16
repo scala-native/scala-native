@@ -260,7 +260,7 @@ object Commands {
             ScalaVersions.scala3PublishVersion -> ScalaVersions.crossScala3
           case _ => sys.error(s"Invalid Scala binary version: '$binVersion'")
         }
-        val publishCommand = "publishLocal"
+        val publishCommand = "publishSigned"
         val publishBaseVersion = s"++$scalaVersion; $publishCommand"
         val publishCrossVersions = crossScalaVersions
           .diff(scalaVersion :: Nil) // exclude already published base version
