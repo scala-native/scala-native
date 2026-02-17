@@ -137,7 +137,7 @@ object Commands {
       case class Variant(
           prepareForMiMa: List[String],
           sbtProject: Project,
-          testsFilter: Option[String]
+          testsFilter: Option[String] = None
       )
       val Variant(prepareTests, sbtProject, testsFilter) =
         CrossVersion.binaryScalaVersion(version) match {
@@ -153,11 +153,7 @@ object Commands {
                 // Explicitlly to test using sbt 2.x
                 s"++${ScalaVersions.sbt2ScalaVersion}"
               ),
-              sbtProject = sbtScalaNative.v3,
-              testsFilter = Some("run/*").ensuring(
-                ScalaVersions.sbt2Version == "2.0.0-RC8",
-                "scala3/cross-version-compat fails due to sbt/sbt#8665, would be fixed in next version of sbt"
-              )
+              sbtProject = sbtScalaNative.v3
             )
           case "2.12" =>
             println(s"Testing sbt 1.x using Scala ${version}")
@@ -169,8 +165,7 @@ object Commands {
                 // Explicitlly to test using sbt 1.x
                 s"++${ScalaVersions.scala212}"
               ),
-              sbtProject = sbtScalaNative.v2_12,
-              testsFilter = None // run all tests
+              sbtProject = sbtScalaNative.v2_12
             )
           case binVersion =>
             throw new MessageOnlyException(
@@ -260,7 +255,7 @@ object Commands {
             ScalaVersions.scala3PublishVersion -> ScalaVersions.crossScala3
           case _ => sys.error(s"Invalid Scala binary version: '$binVersion'")
         }
-        val publishCommand = "publishLocal"
+        val publishCommand = "publishSigned"
         val publishBaseVersion = s"++$scalaVersion; $publishCommand"
         val publishCrossVersions = crossScalaVersions
           .diff(scalaVersion :: Nil) // exclude already published base version
