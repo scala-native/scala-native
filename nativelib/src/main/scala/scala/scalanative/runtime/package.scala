@@ -95,7 +95,7 @@ package object runtime {
     import MainThreadShutdownContext._
     if (isMultithreadingEnabled) {
       shutdownThread = Thread.currentThread()
-      atomic_thread_fence(memory_order.memory_order_seq_cst)
+      atomic_thread_fence(memory_order.memory_order_release)
     }
     def pollNonDaemonThreads = {
       val it = NativeThread.Registry.aliveThreadsIterator
