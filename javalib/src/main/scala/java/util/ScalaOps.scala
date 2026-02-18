@@ -23,7 +23,8 @@ private[java] object ScalaOps {
   /* The following should be left commented out until the point where
    * we can run the javalib with -Yno-predef
    * See: https://github.com/scala-native/scala-native/issues/2885
-   * Note: Removed scalastyle comments and added additional mkString methods
+   * Note 1: Removed scalastyle comments
+   * Note 2: Adapted mkstring for SN and added additional mkString methods
    */
 
   // implicit class IntScalaOps private[ScalaOps] (val __self: Int) extends AnyVal {
@@ -163,17 +164,21 @@ private[java] object ScalaOps {
       foldLeft[B](__self.next())(f)
     }
 
+    /* Scala.js Strings are treated as primitive types so we use
+     * java.lang.StringBuilder for Scala Native
+     */
     @inline def mkString(start: String, sep: String, end: String): String = {
-      var result: String = start
+      val sb = new java.lang.StringBuilder(start)
       var first = true
       while (__self.hasNext()) {
         if (first)
           first = false
         else
-          result += sep
-        result += __self.next()
+          sb.append(sep)
+        sb.append(__self.next().asInstanceOf[Object])
       }
-      result + end
+      sb.append(end)
+      sb.toString
     }
 
     @inline def mkString(sep: String): String = mkString("", sep, "")
