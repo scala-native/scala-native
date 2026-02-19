@@ -5,7 +5,6 @@
  */
 package java.util.concurrent
 
-import java.lang.invoke.VarHandle
 import java.util.Objects.requireNonNull
 import java.util.concurrent.atomic.*
 import java.util.concurrent.locks.{LockSupport, ReentrantLock}
@@ -697,7 +696,8 @@ object SubmissionPublisher {
     private[SubmissionPublisher] val demand = new AtomicLong(0L)
 
     // buffer array
-    private var buffer = new AtomicReferenceArray[AnyRef](initCapacity)
+    @volatile private var buffer =
+      new AtomicReferenceArray[AnyRef](initCapacity)
 
     // holds until onError issued
     @volatile private var pendingError: Throwable = null
@@ -812,8 +812,7 @@ object SubmissionPublisher {
           }
         }
 
-        buffer = newBuffer
-        VarHandle.releaseFence() // release array and slots
+        buffer = newBuffer // release array and slots
         true
       }
     }

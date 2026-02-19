@@ -51,3 +51,4 @@ Scala Native is distributed under the Apache License.
 [VirtusLab-Link]: https://virtuslab.com/
 [ScalaNative-Link]: https://scala-native.org/
 [ScalaNative_contributors-Link]: https://github.com/scala-native/scala-native/graphs/contributors
+
