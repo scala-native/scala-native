@@ -798,17 +798,19 @@ object SubmissionPublisher {
         val mask = cap - 1
         val newMask = newCap - 1
         newBuffer.compareAndSet(tail & newMask, null, item.asInstanceOf[AnyRef])
-        var _tail = tail - 1
 
-        (mask to 0 by -1).find { k =>
-          val x = buffer.getAndSet(_tail & mask, null)
+        var t = tail - 1
+        var k = mask
+        var break = false
+        while (!break && k >= 0) {
+          val x = buffer.getAndSet(t & mask, null)
 
           if (x == null)
-            true // already consumed, exits loop
+            break = true // already consumed, exits loop
           else {
-            newBuffer.compareAndSet(_tail & newMask, null, x)
-            _tail -= 1
-            false
+            newBuffer.compareAndSet(t & newMask, null, x)
+            t -= 1
+            k -= 1
           }
         }
 
