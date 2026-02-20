@@ -166,6 +166,7 @@ object ScalaNativePluginInternal {
         .withMainClass(mainClass)
         .withTestConfig(testConfig)
         .withCompilerConfig(nativeConfig)
+        .withBuildTracing(nativeConfig.buildTracing)
 
     interceptBuildException {
       SharedScope { implicit sharedScope: Scope =>

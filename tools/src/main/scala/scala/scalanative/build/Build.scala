@@ -11,7 +11,7 @@ import scala.concurrent._
 import scala.concurrent.duration.Duration
 import scala.util.{Properties, Success, Try}
 
-import scala.scalanative.codegen.llvm.CodeGen.IRGenerators
+// import scala.scalanative.codegen.llvm.CodeGen.IRGenerators
 import scala.scalanative.linker.ReachabilityAnalysis
 import scala.scalanative.util.Scope
 
@@ -164,18 +164,12 @@ object Build {
   private def compile(
       config: Config,
       analysis: ReachabilityAnalysis.Result,
-      irGenerators: Seq[Future[Path]]
+      irFiles: Seq[Path]
   )(implicit ec: ExecutionContext): Future[Seq[Path]] =
     config.logger.timeAsync("Compiling to native code") {
       // compile generated LLVM IR
-      val compileGeneratedIR = Future
-        .sequence {
-          irGenerators.map(irGenerator =>
-            irGenerator.flatMap(generatedIR =>
-              LLVM.compile(config, analysis, generatedIR)
-            )
-          )
-        }
+      val compileGeneratedIR =
+        Future.traverse(irFiles)(file => LLVM.compile(config, analysis, file))
 
       /* Finds all the libraries on the classpath that contain native
        * code and then compiles them.
