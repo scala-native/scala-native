@@ -247,17 +247,11 @@ class Thread private[lang] (
   }
 
   def isInterrupted(): scala.Boolean = interruptedState
+
   def interrupt(): Unit = {
     interruptedState = true
-    if (isAlive() && !isVirtual())  
+    if (isAlive())
       platformCtx.nativeThread.interrupt()
-    // interruptLock.synchronized {
-    //   // if(this != Thread.currentThread()){
-    //   //   val blocker = interruptLock.synchronized{
-          
-    //   //   }
-    //   // }
-    // }
   }
   private[java] def setInterrupt(): Unit = {
     if (!interruptedState) {
@@ -265,12 +259,16 @@ class Thread private[lang] (
       platformCtx.nativeThread.interrupt()
     }
   }
-  private[java] def clearInterrupt(): Unit = {
-    if (interruptedState) {
-      interruptedState = false
-      // clearInterruptEvent() // TODO
+  private[java] def getAndClearInterrupt(): scala.Boolean = {
+    val value = interruptedState
+    if (value) {
+      interruptLock.synchronized {
+        interruptedState = false
+      }
     }
+    value
   }
+  private[java] def clearInterrupt(): Unit = getAndClearInterrupt()
 
   def run(): Unit = {
     // Overriden in VirtualThread
@@ -283,15 +281,10 @@ class Thread private[lang] (
   // Internal variant that does not trigger explicit need to enable multithreading
   def startInternal(): Unit = synchronized {
     if (!isMultithreadingEnabled) UnsupportedFeature.threads()
-      platformCtx.start(this)
+    platformCtx.start(this)
   }
 
-  final def join(): Unit = synchronized {
-    while (isAlive()) {
-      if (interrupted()) throw new InterruptedException()
-      wait()
-    }
-  }
+  final def join(): Unit = join(0)
 
   final def join(millis: scala.Long): Unit = join(millis, 0)
 
@@ -300,26 +293,34 @@ class Thread private[lang] (
     var millis: scala.Long = ml
     if (millis < 0 || nanos < 0 || nanos > 999999)
       throw new IllegalArgumentException()
-    if (millis == 0 && nanos == 0) join()
-    else
-      this match {
-        case vthread: VirtualThread =>
-          if (isAlive()) {
-            val nanos = TimeUnit.MILLISECONDS.toNanos(millis)
-            vthread.joinNanos(nanos);
-          }
-        case _ =>
-          synchronized {
+
+    this match {
+      case vthread: VirtualThread =>
+        if (isAlive()) {
+          val nanos = TimeUnit.MILLISECONDS.toNanos(millis)
+          vthread.joinNanos(nanos);
+        }
+
+      case _ if millis == 0 && nanos == 0 =>
+        synchronized {
+          while (isAlive()) {
             if (interrupted()) throw new InterruptedException()
-            val end = System.nanoTime() + 1000000 * millis + nanos.toLong
-            var rest = 0L
-            while (isAlive() && { rest = end - System.nanoTime(); rest > 0 }) {
-              wait(millis, nanos)
-              nanos = (rest % 1000000).toInt
-              millis = rest / 1000000
-            }
+            wait()
           }
-      }
+        }
+
+      case _ =>
+        synchronized {
+          if (interrupted()) throw new InterruptedException()
+          val end = System.nanoTime() + 1000000 * millis + nanos.toLong
+          var rest = 0L
+          while (isAlive() && { rest = end - System.nanoTime(); rest > 0 }) {
+            wait(millis, nanos)
+            nanos = (rest % 1000000).toInt
+            millis = rest / 1000000
+          }
+        }
+    }
   }
 
 //  @deprecated("Deprecated for removal", "1.2")
@@ -613,14 +614,28 @@ object Thread {
 
   def onSpinWait(): Unit = NativeThread.onSpinWait()
 
-  def sleep(millis: scala.Long): Unit = sleep(millis, 0)
+  def sleep(millis: scala.Long): Unit = {
+    require(millis >= 0, "sleep timeout is negative")
+    sleepNanos(TimeUnit.MILLISECONDS.toNanos(millis))
+  }
 
   def sleep(millis: scala.Long, nanos: Int): Unit = {
     if (millis < 0)
       throw new IllegalArgumentException("millis must be >= 0")
     if (nanos < 0 || nanos > 999999)
       throw new IllegalArgumentException("nanos value out of range")
-    val nativeThread = nativeCompanion.currentNativeThread()
+
+    val millisToNanos = TimeUnit.MILLISECONDS.toNanos(millis);
+    sleepNanos(
+      millisToNanos + Math.min(java.lang.Long.MAX_VALUE - millisToNanos, nanos)
+    )
+  }
+
+  private def sleepNanos(totalNanos: scala.Long): Unit = {
+    val nativeThread = Thread.currentThread() match {
+      case vThread: VirtualThread => return vThread.sleepNanos(totalNanos)
+      case thread                 => thread.platformCtx.nativeThread
+    }
 
     def doSleep(millis: scala.Long, nanos: Int) = {
       if (millis == 0) nativeThread.sleepNanos(nanos)
@@ -631,6 +646,8 @@ object Thread {
         })
     }
 
+    val millis = TimeUnit.NANOSECONDS.toMillis(totalNanos)
+    val nanos = (totalNanos % TimeUnit.MILLISECONDS.toNanos(1)).toInt
     if (isMultithreadingEnabled) doSleep(millis, nanos)
     else if (NativeExecutionContext.queue.nonEmpty) {
       val now = System.nanoTime()
@@ -714,8 +731,6 @@ private[java] case class PlatformThreadContext(
     @volatile var daemon: scala.Boolean = false
 ) {
   var nativeThread: NativeThread = _
-
-  def unpark(): Unit = if (nativeThread != null) nativeThread.unpark()
 
   def start(thread: Thread): Unit = {
     assert(thread.platformCtx == this)
