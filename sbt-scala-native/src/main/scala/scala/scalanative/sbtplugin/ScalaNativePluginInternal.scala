@@ -290,17 +290,46 @@ object ScalaNativePluginInternal {
       val binary = nativeLink.value.getAbsolutePath
       val args = binary +: spaceDelimited("<arg>").parsed
 
+      @volatile var pipeOutputThreads: List[Thread] = Nil
+
       logger.running(args)
 
-      val exitCode = {
-        val proc = new ProcessBuilder(args: _*).inheritIO()
-        env.foreach((proc.environment.put _).tupled)
-        proc.start().waitFor()
-      }
+      val message = try {
+        val exitCode = {
+          val proc =
+            new ProcessBuilder(args: _*)
 
-      val message =
+          env.foreach((proc.environment.put _).tupled)
+
+          val process = proc.start()
+
+          /*
+           * Comment copied from Scala.js:
+           * https://github.com/scala-js/scala-js/blob/35c206173ad3b6626a8bd02b687690fcfba93c31/sbt-plugin/src/main/scala/org/scalajs/sbtplugin/ScalaJSPluginInternal.scala#L598-L603
+           *
+           * #4560 Explicitly redirect out/err to System.out/System.err, instead
+           * of relying on `inheritOut` and `inheritErr`, so that streams
+           * installed with `System.setOut` and `System.setErr` are always taken
+           * into account. sbt installs such alternative outputs when it runs in
+           * server mode.
+           */
+          val err = process.getErrorStream()
+          val out = process.getInputStream()
+          pipeOutputThreads = List(
+            PipeOutputThread.start(err, System.err),
+            PipeOutputThread.start(out, System.out)
+          )
+
+          process.waitFor()
+        }
+
         if (exitCode == 0) None
         else Some("Nonzero exit code: " + exitCode)
+      } finally {
+        // always shutdown the output piping threads
+        for (pipeOutputThread <- pipeOutputThreads)
+          pipeOutputThread.join()
+      }
 
       message.foreach(sys.error)
     },
