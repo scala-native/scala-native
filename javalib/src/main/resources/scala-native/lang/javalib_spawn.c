@@ -42,7 +42,7 @@ bool hasFileActionsAddChdir() {
 
 #if (__MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_11_1)
     result = true;
-#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 260000
+#if __MAC_OS_X_VERSION_MIN_REQUIRED >= 260000
 // earlier uses _np form, introduced in approx macOS 11.1, released 2020-12-20
 #define SCALANATIVE_JAVALIB_HAVE_POSIX_CHDIR 1
 #endif

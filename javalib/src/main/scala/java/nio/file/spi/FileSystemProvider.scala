@@ -15,6 +15,7 @@ import java.util.{LinkedList, List, Map, ServiceLoader, Set}
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.nio.fs.unix.UnixFileSystemProvider
 import scala.scalanative.nio.fs.windows.WindowsFileSystemProvider
+import scala.scalanative.nio.fs.zip.ZipFileSystemProvider
 
 abstract class FileSystemProvider protected () {
 
@@ -147,6 +148,7 @@ object FileSystemProvider {
       else new UnixFileSystemProvider()
 
     list.add(defaultProvider)
+    list.add(new ZipFileSystemProvider())
     ServiceLoader.load(classOf[FileSystemProvider]).forEach(list.add(_))
 
     list

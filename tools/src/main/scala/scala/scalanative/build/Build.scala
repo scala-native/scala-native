@@ -82,6 +82,26 @@ object Build {
   /** Run the complete Scala Native pipeline, LLVM optimizer and system linker,
    *  producing a native binary in the end.
    *
+   *  This method would block infinitely long for the result of `Build.build`
+   *  executed using a dedicated ExecutionContext.
+   *
+   *  @param config
+   *    The configuration of the toolchain.
+   *  @return
+   *    [[Config#artifactPath]], the path to the resulting native binary.
+   */
+  @throws(classOf[InterruptedException])
+  @throws(classOf[BuildException])
+  @throws(classOf[linker.LinkingException])
+  def buildAwait(config: Config)(implicit scope: Scope): Path = {
+    await { implicit ec: ExecutionContext =>
+      Build.build(config)
+    }(logTrace = config.logger.trace(_))
+  }
+
+  /** Run the complete Scala Native pipeline, LLVM optimizer and system linker,
+   *  producing a native binary in the end.
+   *
    *  For example, to produce a binary one needs a classpath, a working
    *  directory and a main class entry point:
    *
