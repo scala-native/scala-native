@@ -44,7 +44,7 @@ static void Synchronizer_diagnoseStuckThreads(MutatorThread *self,
             GC_LOG_WARN("  Thread id=%lu, stackBottom=%p, state=%s, alive=%s",
                         (unsigned long)thread->thread,
 #endif
-                        (void *)thread->stackBottom,
+                        (void *)MutatorThread_getStackBottom(thread),
                         state == GC_MutatorThreadState_Managed ? "Managed"
                                                                : "Unmanaged",
                         alive ? "yes" : "NO (zombie)");

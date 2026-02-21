@@ -152,30 +152,27 @@ NO_SANITIZE static void Marker_markRange(Heap *heap, Stack *stack,
 
 NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
                                          Stack *stack) {
-    word_t **stackBottom = thread->stackBottom;
+    word_t **stackBottom = MutatorThread_getStackBottom(thread);
     word_t **stackTop = NULL;
     do {
         // Can spuriously fail, very rare, yet deadly
-        stackTop = (word_t **)atomic_load_explicit(&thread->stackTop,
-                                                   memory_order_acquire);
+        stackTop = MutatorThread_getStackTop(thread, false);
     } while (stackTop == NULL);
 #ifdef SCALANATIVE_THREAD_ALT_STACK
-    // If signal handler is executing in alternative stack we need to mark the
-    // whole thread stack
-    if (!isInRange(stackTop, thread->threadInfo->stackTop,
+    if (thread->threadInfo != NULL &&
+        !isInRange(stackTop, thread->threadInfo->stackTop,
                    thread->threadInfo->stackBottom)) {
         // Area between thread-stackTop and stackGaurdPage might be guarded
         void *stackScanLimit = threadStackScanableLimit(thread->threadInfo);
         stackTop =
             (stackScanLimit != NULL)
-                ? stackScanLimit
+                ? (word_t **)stackScanLimit
                 : stackBottom - 64 * 1024; // not yet initialized, approximate
-                                           // safe scanning limit
         if (thread->threadInfo->signalHandlerStack != NULL) {
             // Marking alternative stack should not be needed, but tests showed
             // that it might contain some pointer to managed object
             word_t **signalHandlerStack =
-                thread->threadInfo->signalHandlerStack;
+                (word_t **)thread->threadInfo->signalHandlerStack;
             Marker_markRange(
                 heap, stack, signalHandlerStack,
                 (word_t **)((char *)signalHandlerStack +
