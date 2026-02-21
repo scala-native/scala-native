@@ -29,9 +29,7 @@ typedef struct {
     Allocator allocator;
     LargeAllocator largeAllocator;
 
-#ifdef SCALANATIVE_THREAD_ALT_STACK
     ThreadInfo *threadInfo;
-#endif
 } MutatorThread;
 
 typedef struct MutatorThreadNode {
@@ -52,6 +50,12 @@ void MutatorThread_switchState(MutatorThread *self,
 // =============================================================================
 // Thread State Checks
 // =============================================================================
+
+// Stack bounds accessors
+word_t **MutatorThread_getStackBottom(MutatorThread *thread);
+// allowEstimated: if true, may return threadInfo->stackTop when not at
+// safepoint May return NULL if not at safepoint and allowEstimated is false
+word_t **MutatorThread_getStackTop(MutatorThread *thread, bool allowEstimated);
 
 // Check if thread has reached a safepoint (stopped and saved its stack)
 // Returns true if thread is at safepoint (stackTop is set), false if still
