@@ -2673,7 +2673,8 @@ trait NirGenExpr(using Context) {
       }
 
       val allFields =
-        classInfoSym.info.fields ++ classInfoSym.info.parents.flatMap(_.fields)
+        classInfo.baseClasses
+          .flatMap(baseSym => classInfo.baseType(baseSym).fields)
       allFields
         .collectFirst {
           case f if matchesName(f) =>
