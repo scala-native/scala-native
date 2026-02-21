@@ -6,11 +6,12 @@
 
 package java.util.concurrent.locks
 
+import java.util.concurrent.TimeUnit
+
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
 import scala.scalanative.runtime.{NativeThread, fromRawPtr}
 import scala.scalanative.unsafe.Ptr
-import java.util.concurrent.TimeUnit
 
 object LockSupport {
 
@@ -59,7 +60,7 @@ object LockSupport {
   def unpark(thread: Thread): Unit = thread match {
     case null                   => ()
     case vThread: VirtualThread => vThread.unpark()
-    case _ =>
+    case _                      =>
       thread.platformCtx.nativeThread match {
         case null         => ()
         case nativeThread => nativeThread.unpark()

@@ -91,7 +91,10 @@ class VirtualThreadInterruptTest {
     joiner.join(Timeout)
     blocker.countDown()
     target.join(Timeout)
-    assertTrue("join should throw InterruptedException on interrupt", threw.get())
+    assertTrue(
+      "join should throw InterruptedException on interrupt",
+      threw.get()
+    )
   }
 
   @Test def interruptDuringObjectWait(): Unit = {
@@ -115,7 +118,10 @@ class VirtualThreadInterruptTest {
     vt.interrupt()
     vt.join(Timeout)
     assertTrue("Object.wait should throw InterruptedException", threw.get())
-    assertTrue("monitor should be re-acquired after InterruptedException", reacquired.get())
+    assertTrue(
+      "monitor should be re-acquired after InterruptedException",
+      reacquired.get()
+    )
   }
 
   @Test def interruptDuringLockSupportPark(): Unit = {
@@ -148,7 +154,10 @@ class VirtualThreadInterruptTest {
     val r = result.get()
     assertNotNull(r)
     assertTrue("first Thread.interrupted() should return true", r(0))
-    assertFalse("second Thread.interrupted() should return false (cleared)", r(1))
+    assertFalse(
+      "second Thread.interrupted() should return false (cleared)",
+      r(1)
+    )
   }
 
   @Test def selfInterrupt(): Unit = {
@@ -193,7 +202,10 @@ class VirtualThreadInterruptTest {
     // Interrupt from the current (platform) thread
     vt.interrupt()
     vt.join(Timeout)
-    assertTrue("platform thread should be able to interrupt VT", interrupted.get())
+    assertTrue(
+      "platform thread should be able to interrupt VT",
+      interrupted.get()
+    )
   }
 
   @Test def interruptFromAnotherVirtualThread(): Unit = {
@@ -211,6 +223,9 @@ class VirtualThreadInterruptTest {
     }
     interrupter.join(Timeout)
     target.join(Timeout)
-    assertTrue("one VT should be able to interrupt another VT", interrupted.get())
+    assertTrue(
+      "one VT should be able to interrupt another VT",
+      interrupted.get()
+    )
   }
 }

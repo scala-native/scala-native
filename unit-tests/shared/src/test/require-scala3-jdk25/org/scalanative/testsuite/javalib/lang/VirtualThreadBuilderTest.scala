@@ -71,7 +71,11 @@ class VirtualThreadBuilderTest {
         seen.set(InheritedLocal.get())
       }
     thread.join(Timeout)
-    assertSame("child VT should see parent's inheritable local", value, seen.get())
+    assertSame(
+      "child VT should see parent's inheritable local",
+      value,
+      seen.get()
+    )
   }
 
   @Test def builderNoInheritInheritableThreadLocals(): Unit = {

@@ -177,7 +177,11 @@ class VirtualPlatformInteropTest {
       if (i % 2 == 0)
         Thread.ofVirtual().start(() => latch.countDown()).join(Timeout)
       else
-        Thread.ofPlatform().daemon(true).start(() => latch.countDown()).join(Timeout)
+        Thread
+          .ofPlatform()
+          .daemon(true)
+          .start(() => latch.countDown())
+          .join(Timeout)
     }
 
     assertTrue(done.await(Timeout, TimeUnit.MILLISECONDS))

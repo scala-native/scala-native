@@ -1,7 +1,9 @@
 package org.scalanative.testsuite.javalib.lang
 
 import java.util.concurrent._
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicReference}
+import java.util.concurrent.atomic.{
+  AtomicBoolean, AtomicInteger, AtomicReference
+}
 
 import org.junit.Assert._
 import org.junit._
