@@ -2,7 +2,7 @@ package java.lang
 
 import scala.scalanative.runtime.UnsupportedFeature
 
-final private[java] class VirtualThread(
+private[java] final class VirtualThread(
     name: String,
     characteristics: Int,
     task: Runnable
@@ -12,7 +12,7 @@ final private[java] class VirtualThread(
   override def run(): Unit = UnsupportedFeature.virtualThreads()
 
   override def getState(): Thread.State = Thread.State.NEW
-  
+
   private[lang] def joinNanos(nanos: scala.Long): scala.Boolean = ???
   private[lang] def sleepNanos(nanos: scala.Long): Unit = ???
   private[lang] def tryYield(): Unit = ???

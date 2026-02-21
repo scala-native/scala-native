@@ -133,7 +133,11 @@ class VirtualThreadJUCLocksTest {
     while (completed.get() < count && System.currentTimeMillis() < deadline) {
       Thread.sleep(10)
     }
-    assertEquals("all VTs should complete after countdown", count, completed.get())
+    assertEquals(
+      "all VTs should complete after countdown",
+      count,
+      completed.get()
+    )
   }
 
   @Test def countDownLatchAwaitTimeout(): Unit = {

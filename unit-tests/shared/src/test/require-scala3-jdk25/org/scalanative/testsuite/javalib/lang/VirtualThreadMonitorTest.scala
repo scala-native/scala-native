@@ -1,7 +1,9 @@
 package org.scalanative.testsuite.javalib.lang
 
 import java.util.concurrent._
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicReference}
+import java.util.concurrent.atomic.{
+  AtomicBoolean, AtomicInteger, AtomicReference
+}
 
 import org.junit.Assert._
 import org.junit._
@@ -280,7 +282,10 @@ class VirtualThreadMonitorTest {
     }
     checker.join(Timeout)
     waiter.join(Timeout)
-    assertTrue("another thread should enter lock while VT is in wait()", entered.get())
+    assertTrue(
+      "another thread should enter lock while VT is in wait()",
+      entered.get()
+    )
     assertTrue("waiter should complete after being notified", done.get())
   }
 

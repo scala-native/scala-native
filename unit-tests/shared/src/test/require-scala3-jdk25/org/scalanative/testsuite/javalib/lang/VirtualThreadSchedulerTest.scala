@@ -1,7 +1,9 @@
 package org.scalanative.testsuite.javalib.lang
 
 import java.util.concurrent._
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicReference}
+import java.util.concurrent.atomic.{
+  AtomicBoolean, AtomicInteger, AtomicReference
+}
 
 import org.junit.Assert._
 import org.junit._
@@ -159,14 +161,17 @@ class VirtualThreadSchedulerTest {
     val innerGroup = new AtomicReference[ThreadGroup]()
     val latch = new CountDownLatch(1)
 
-    Thread.ofVirtual().start { () =>
-      outerGroup.set(Thread.currentThread().getThreadGroup)
-      val inner = Thread.ofVirtual().start { () =>
-        innerGroup.set(Thread.currentThread().getThreadGroup)
-        latch.countDown()
+    Thread
+      .ofVirtual()
+      .start { () =>
+        outerGroup.set(Thread.currentThread().getThreadGroup)
+        val inner = Thread.ofVirtual().start { () =>
+          innerGroup.set(Thread.currentThread().getThreadGroup)
+          latch.countDown()
+        }
+        inner.join()
       }
-      inner.join()
-    }.join(Timeout)
+      .join(Timeout)
 
     assertTrue(latch.await(Timeout, TimeUnit.MILLISECONDS))
     assertNotNull(outerGroup.get())
