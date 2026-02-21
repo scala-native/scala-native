@@ -2576,7 +2576,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
 
       val candidates =
-        (classInfo.decls ++ classInfoSym.parentSymbols.flatMap(_.info.decls))
+        classInfo.baseClasses
+          .flatMap(base => classInfo.baseType(base).decls)
           .filter(f => f.isField && matchesName(f))
 
       candidates.find(!_.isVar).foreach { f =>
