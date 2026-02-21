@@ -5,6 +5,7 @@ import java.lang.impl._
 import java.time.Duration
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.locks.LockSupport
+import java.util.concurrent.TimeUnit
 
 import scala.concurrent.duration._
 
@@ -24,8 +25,9 @@ class Thread private[lang] (
     private[java] val platformCtx: PlatformThreadContext /* | Null */
 ) extends Runnable {
   protected val tid = ThreadIdentifiers.next()
+  private[lang] final val interruptLock = new Object()
 
-  @volatile private var interruptedState = false
+  @volatile protected var interruptedState = false
   @volatile private[java] var parkBlocker: Object = _
 
   private var unhandledExceptionHandler: Thread.UncaughtExceptionHandler = _
@@ -148,7 +150,6 @@ class Thread private[lang] (
     this(group, target, name, 0)
 
   // accessors
-
   /** We only have one dummy classloader for JVM compatibility as used to get
    *  resources on Scala Native.
    *  @return
@@ -156,8 +157,7 @@ class Thread private[lang] (
    */
   def getContextClassLoader(): ClassLoader =
     ClassLoader.getSystemClassLoader()
-
-  // def setContextClassLoader(classLoader: ClassLoader): Unit = ()
+  def setContextClassLoader(classLoader: ClassLoader): Unit = () // no-op
 
   @deprecated(
     "This method is not final and may be overridden to return a value that is not the thread ID. Use threadId() instead.",
@@ -189,8 +189,8 @@ class Thread private[lang] (
   def getStackTrace(): Array[StackTraceElement] =
     new Array[StackTraceElement](0)
 
-  def getState(): State = {
-    assert(!isVirtual(), "should be overriden by virtual threads")
+  def getState(): State = threadState()
+  private[lang] def threadState(): State = {
     import NativeThread.State._
     val nativeThread = platformCtx.nativeThread
     if (nativeThread == null) State.NEW
@@ -206,25 +206,30 @@ class Thread private[lang] (
   }
 
   final def getThreadGroup(): ThreadGroup = {
-    if (isVirtual()) ??? // special group for virtual threads
+    if (isVirtual()) VirtualThreadsGroup // special group for virtual threads
     else
-      getState() match {
+      threadState() match {
         case State.TERMINATED => null
         case _                => platformCtx.group
       }
   }
 
   def getUncaughtExceptionHandler(): Thread.UncaughtExceptionHandler = {
-    if (unhandledExceptionHandler != null) unhandledExceptionHandler
+    if (isTerminated()) null
+    else if (unhandledExceptionHandler != null) unhandledExceptionHandler
     else getThreadGroup()
   }
   def setUncaughtExceptionHandler(eh: Thread.UncaughtExceptionHandler): Unit =
     unhandledExceptionHandler = eh
 
-  final def isAlive(): scala.Boolean = getState() match {
+  final def isAlive(): scala.Boolean = alive()
+
+  private[lang] def alive(): scala.Boolean = threadState() match {
     case State.NEW | State.TERMINATED => false
     case _                            => true
   }
+  private[lang] def isTerminated(): scala.Boolean =
+    threadState() == State.TERMINATED
 
   final def isDaemon(): scala.Boolean =
     if (isVirtual()) true
@@ -232,20 +237,38 @@ class Thread private[lang] (
 
   final def setDaemon(on: scala.Boolean): Unit = {
     if (isAlive()) throw new IllegalThreadStateException()
-    if (isVirtual() && !on)
-      throw new IllegalArgumentException(
-        "VirtualThread cannot be non-deamon thread"
-      )
-    else platformCtx.daemon = on
+    if (isVirtual()) {
+      if (!on)
+        throw new IllegalArgumentException(
+          "VirtualThread cannot be non-deamon thread"
+        )
+    } else platformCtx.daemon = on
 
   }
 
   def isInterrupted(): scala.Boolean = interruptedState
-  def interrupt(): Unit = if (isAlive()) {
-    synchronized {
+  def interrupt(): Unit = {
+    interruptedState = true
+    if (isAlive() && !isVirtual())  
+      platformCtx.nativeThread.interrupt()
+    // interruptLock.synchronized {
+    //   // if(this != Thread.currentThread()){
+    //   //   val blocker = interruptLock.synchronized{
+          
+    //   //   }
+    //   // }
+    // }
+  }
+  private[java] def setInterrupt(): Unit = {
+    if (!interruptedState) {
       interruptedState = true
-      if (isVirtual()) ??? // TODO
-      else platformCtx.nativeThread.interrupt()
+      platformCtx.nativeThread.interrupt()
+    }
+  }
+  private[java] def clearInterrupt(): Unit = {
+    if (interruptedState) {
+      interruptedState = false
+      // clearInterruptEvent() // TODO
     }
   }
 
@@ -260,11 +283,6 @@ class Thread private[lang] (
   // Internal variant that does not trigger explicit need to enable multithreading
   def startInternal(): Unit = synchronized {
     if (!isMultithreadingEnabled) UnsupportedFeature.threads()
-    if (isVirtual())
-      throw new UnsupportedOperationException(
-        "VirtualThreads are not yet supported"
-      )
-    else
       platformCtx.start(this)
   }
 
@@ -284,15 +302,23 @@ class Thread private[lang] (
       throw new IllegalArgumentException()
     if (millis == 0 && nanos == 0) join()
     else
-      synchronized {
-        if (interrupted()) throw new InterruptedException()
-        val end = System.nanoTime() + 1000000 * millis + nanos.toLong
-        var rest = 0L
-        while (isAlive() && { rest = end - System.nanoTime(); rest > 0 }) {
-          wait(millis, nanos)
-          nanos = (rest % 1000000).toInt
-          millis = rest / 1000000
-        }
+      this match {
+        case vthread: VirtualThread =>
+          if (isAlive()) {
+            val nanos = TimeUnit.MILLISECONDS.toNanos(millis)
+            vthread.joinNanos(nanos);
+          }
+        case _ =>
+          synchronized {
+            if (interrupted()) throw new InterruptedException()
+            val end = System.nanoTime() + 1000000 * millis + nanos.toLong
+            var rest = 0L
+            while (isAlive() && { rest = end - System.nanoTime(); rest > 0 }) {
+              wait(millis, nanos)
+              nanos = (rest % 1000000).toInt
+              millis = rest / 1000000
+            }
+          }
       }
   }
 
@@ -331,7 +357,7 @@ class Thread private[lang] (
       case null  => ""
       case group => group.getName()
     }
-    s"Thread[${threadId()},${getName()},${getPriority()},$groupName]"
+    s"Thread[#${threadId()},${getName()},${getPriority()},$groupName]"
   }
 
   @deprecated("Deprecated for removal", "17")
@@ -345,14 +371,26 @@ class Thread private[lang] (
   )
   @throws[IllegalThreadStateException]("if this thread has not been started")
   final def join(duration: Duration): scala.Boolean = {
-    getState() match {
+    threadState() match {
       case Thread.State.NEW =>
         throw new IllegalThreadStateException("Cannot join unstarted thread")
+      case Thread.State.TERMINATED =>
+        true
       case _ =>
-        if (duration.isNegative() || duration.isZero()) {
-          join(duration.getSeconds() * 1000, duration.getNano())
+        val nanos = TimeUnit.NANOSECONDS.convert(duration)
+        if (nanos <= 0)
+          return false
+        this match {
+          case vt: VirtualThread =>
+            return vt.joinNanos(TimeUnit.NANOSECONDS.convert(duration))
+          case _ =>
+            var millis =
+              TimeUnit.MILLISECONDS.convert(nanos, TimeUnit.NANOSECONDS)
+            if (nanos > NANOSECONDS.convert(millis, TimeUnit.MILLISECONDS))
+              millis += 1
+            join(millis)
+            isTerminated()
         }
-        getState() == Thread.State.TERMINATED
     }
   }
 
@@ -535,7 +573,12 @@ object Thread {
 
   @alwaysinline def currentThread(): Thread =
     NativeThread.currentThread match {
-      case null   => MainThread
+      case null => MainThread
+      case carrier: VirtualThreadCarrier =>
+        carrier.mountedThread match {
+          case null    => carrier
+          case mounted => mounted
+        }
       case thread => thread
     }
 
@@ -604,8 +647,13 @@ object Thread {
   }
 
   @alwaysinline def `yield`(): Unit =
-    if (isMultithreadingEnabled) nativeCompanion.yieldThread()
-    else Proxy.stealWork(1)
+    currentThread() match {
+      case vt: VirtualThread => vt.tryYield()
+      case _ =>
+        if (isMultithreadingEnabled) nativeCompanion.yieldThread()
+        else Proxy.stealWork(1)
+
+    }
 
   // Since JDK 19
   @throws[InterruptedException](
@@ -648,6 +696,13 @@ object Thread {
   }
   object ThreadNamesNumbering extends Numbering
   object ThreadIdentifiers extends Numbering
+  object VirtualThreadsGroup
+      extends ThreadGroup(
+        ThreadGroup.System,
+        "VirtualThreads",
+        false,
+        MAX_PRIORITY
+      )
 }
 
 // ScalaNative specific
