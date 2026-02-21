@@ -39,7 +39,11 @@ class VirtualThreadThreadLocalTest {
 
     assertTrue(latch.await(Timeout, TimeUnit.MILLISECONDS))
     // Each VT should have read back its own distinct object
-    assertEquals("each VT should have its own ThreadLocal", count, values.size())
+    assertEquals(
+      "each VT should have its own ThreadLocal",
+      count,
+      values.size()
+    )
   }
 
   @Test def threadLocalNotSharedWithCarrier(): Unit = {

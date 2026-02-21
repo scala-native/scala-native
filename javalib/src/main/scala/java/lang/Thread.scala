@@ -3,9 +3,8 @@ package java.lang
 import java.lang.Thread._
 import java.lang.impl._
 import java.time.Duration
-import java.util.concurrent.ThreadFactory
 import java.util.concurrent.locks.LockSupport
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{ThreadFactory, TimeUnit}
 
 import scala.concurrent.duration._
 
@@ -668,7 +667,7 @@ object Thread {
   @alwaysinline def `yield`(): Unit =
     currentThread() match {
       case vt: VirtualThread => vt.tryYield()
-      case _ =>
+      case _                 =>
         if (isMultithreadingEnabled) nativeCompanion.yieldThread()
         else Proxy.stealWork(1)
 
