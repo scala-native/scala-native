@@ -4,19 +4,17 @@ package java.lang
 
 import java.lang.VirtualThread.DefaultScheduler
 import java.util.Objects
+import java.util.concurrent.*
 import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory
-import java.util.Objects
-
-import scala.scalanative.libc.stdatomic.{AtomicInt, AtomicRef}
-import scala.scalanative.runtime.{Continuations, Intrinsics, fromRawPtr}
-import scala.scalanative.annotation.alwaysinline
-import java.lang.VirtualThread.DefaultScheduler
-import scala.annotation.tailrec
 import java.util.concurrent.locks.LockSupport
-import java.util.concurrent.Future
-import scala.scalanative.runtime.NativeThread
 
-final private[lang] class VirtualThread(
+import scala.annotation.tailrec
+
+import scala.scalanative.annotation.alwaysinline
+import scala.scalanative.libc.stdatomic.{AtomicBool, AtomicInt, AtomicRef}
+import scala.scalanative.runtime.{Continuations, Intrinsics, NativeThread, fromRawPtr}
+
+private[java] final class VirtualThread(
     name: String,
     characteristics: Int,
     task: Runnable
@@ -342,11 +340,10 @@ final private[lang] class VirtualThread(
   }
 
   override def threadState(): Thread.State = state match {
-    case State.New                                => Thread.State.NEW
-    case State.Started                            => Thread.State.RUNNABLE
-    case State.Runnable | State.RunnableSuspended => Thread.State.RUNNABLE
-    case State.Running => 
-      carrierThreadAccessLock.synchronized{
+    case State.New                      => Thread.State.NEW
+    case State.Started | State.Runnable => Thread.State.RUNNABLE
+    case State.Running                  =>
+      carrierThreadAccessLock.synchronized {
         val carrier = this.carrierThread
         if (carrierThread != null) carrierThread.threadState()
         else Thread.State.RUNNABLE
@@ -470,22 +467,22 @@ object VirtualThread {
   }
 }
 
-
 // Non public
 class VirtualThreadCarrier(scheduler: ForkJoinPool) extends ForkJoinWorkerThread(scheduler) {
   import VirtualThreadCarrier.*
 
   var mountedThread: VirtualThread = _
-  
+
   private var compensation: CompensationState = CompensationState.NotCompensating
   private var compensationValue: scala.Long = 0L
-  
+
   def startBlocking(): scala.Boolean = {
     compensation match
       case CompensationState.NotCompensating =>
         try {
           compensation = CompensationState.InProgress
-          compensationValue = getPool().startCompensating()
+          // TODO: spwawn additional FJP workers to compensate
+          // compensationValue = getPool().startCompensating()
           compensation = CompensationState.Compensating
           true
         } catch {
@@ -499,7 +496,8 @@ class VirtualThreadCarrier(scheduler: ForkJoinPool) extends ForkJoinWorkerThread
   }
   def stopBlocking(): Unit = compensation match {
     case CompensationState.Compensating =>
-      getPool().finishCompensating(compensationValue)
+      // TODO: finish compensating
+      // getPool().finishCompensating(compensationValue)
       compensation = CompensationState.NotCompensating
       compensationValue = 0
     case _ => ()
