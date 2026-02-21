@@ -5,9 +5,10 @@
  */
 
 package java.util.concurrent
+import java.lang.Thread
 import java.security.{PrivilegedAction, PrivilegedExceptionAction}
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.{Collection, List}
+import java.util.{Collection, Collections, List}
 
 import scala.scalanative.annotation.{alwaysinline, safePublish}
 
@@ -77,6 +78,19 @@ object Executors {
       new SynchronousQueue[Runnable],
       threadFactory
     )
+  }
+
+  /** Creates an Executor that starts a new Thread for each task. */
+  def newThreadPerTaskExecutor(
+      threadFactory: ThreadFactory
+  ): ExecutorService = {
+    if (threadFactory == null) throw new NullPointerException
+    new Executors.ThreadPerTaskExecutorService(threadFactory)
+  }
+
+  /** Creates an Executor that starts a new virtual Thread for each task. */
+  def newVirtualThreadPerTaskExecutor(): ExecutorService = {
+    newThreadPerTaskExecutor(Thread.ofVirtual().factory())
   }
 
   def newSingleThreadScheduledExecutor(): ScheduledExecutorService = {
@@ -228,6 +242,69 @@ object Executors {
       super.newThread(new Runnable() {
         override def run(): Unit = r.run()
       })
+  }
+
+  /** ExecutorService that runs each task in a new thread from the given
+   *  factory.
+   */
+  private class ThreadPerTaskExecutorService(threadFactory: ThreadFactory)
+      extends AbstractExecutorService {
+    @volatile private var shutdownFlag: Boolean = false
+    private val activeCount = new AtomicInteger(0)
+    private val lock = new Object
+
+    override def execute(command: Runnable): Unit = {
+      if (command == null) throw new NullPointerException
+      lock.synchronized {
+        if (shutdownFlag) throw new RejectedExecutionException()
+      }
+      activeCount.incrementAndGet()
+      try {
+        threadFactory
+          .newThread(() =>
+            try command.run()
+            finally {
+              if (activeCount.decrementAndGet() == 0) {
+                lock.synchronized { lock.notifyAll() }
+              }
+            }
+          )
+          .start()
+      } catch {
+        case t: Throwable =>
+          if (activeCount.decrementAndGet() == 0) {
+            lock.synchronized { lock.notifyAll() }
+          }
+          throw new RejectedExecutionException(t)
+      }
+    }
+
+    override def shutdown(): Unit = {
+      shutdownFlag = true
+    }
+
+    override def shutdownNow(): List[Runnable] = {
+      shutdownFlag = true
+      Collections.emptyList[Runnable]()
+    }
+
+    override def isShutdown(): Boolean = shutdownFlag
+
+    override def isTerminated(): Boolean =
+      shutdownFlag && activeCount.get() == 0
+
+    @throws[InterruptedException]
+    override def awaitTermination(timeout: Long, unit: TimeUnit): Boolean = {
+      var nanosRemaining = unit.toNanos(timeout)
+      lock.synchronized {
+        while (!isTerminated() && nanosRemaining > 0) {
+          val start = System.nanoTime()
+          TimeUnit.NANOSECONDS.timedWait(lock, nanosRemaining)
+          nanosRemaining -= (System.nanoTime() - start)
+        }
+        isTerminated()
+      }
+    }
   }
 
   private class DelegatedExecutorService(
