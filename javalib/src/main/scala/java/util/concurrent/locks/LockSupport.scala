@@ -10,34 +10,43 @@ import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
 import scala.scalanative.runtime.{NativeThread, fromRawPtr}
 import scala.scalanative.unsafe.Ptr
+import java.util.concurrent.TimeUnit
 
 object LockSupport {
 
   def getBlocker(t: Thread): Object = t.parkBlocker
 
-  def park(): Unit = NativeThread.currentNativeThread.park()
+  def park(): Unit = Thread.currentThread() match {
+    case vThread: VirtualThread => vThread.park()
+    case thread                 => thread.platformCtx.nativeThread.park()
+  }
 
   def park(blocker: Object): Unit = {
-    val nativeThread = NativeThread.currentNativeThread
-    val thread = nativeThread.thread
+    val thread = Thread.currentThread()
     setBlocker(thread, blocker)
-    try nativeThread.park()
+    try park()
     finally setBlocker(thread, null: Object)
   }
 
-  def parkNanos(nanos: Long): Unit =
-    NativeThread.currentNativeThread.parkNanos(nanos)
+  def parkNanos(nanos: Long): Unit = Thread.currentThread() match {
+    case vThread: VirtualThread => vThread.parkNanos(nanos)
+    case thread => thread.platformCtx.nativeThread.parkNanos(nanos)
+  }
 
   def parkNanos(blocker: Object, nanos: Long): Unit = if (nanos > 0) {
-    val nativeThread = NativeThread.currentNativeThread
-    val thread = nativeThread.thread
+    val thread = Thread.currentThread()
     setBlocker(thread, blocker)
-    try nativeThread.parkNanos(nanos)
+    try parkNanos(nanos)
     finally setBlocker(thread, null: Object)
   }
 
   def parkUntil(deadline: Long): Unit =
-    NativeThread.currentNativeThread.parkUntil(deadline)
+    Thread.currentThread() match {
+      case vThread: VirtualThread =>
+        val millis = deadline - System.currentTimeMillis()
+        vThread.parkNanos(TimeUnit.MILLISECONDS.toNanos(millis))
+      case thread => thread.platformCtx.nativeThread.parkUntil(deadline)
+    }
 
   def parkUntil(blocker: Object, deadline: Long): Unit = {
     val nativeThread = NativeThread.currentNativeThread
@@ -47,8 +56,14 @@ object LockSupport {
     finally setBlocker(thread, null: Object)
   }
 
-  def unpark(thread: Thread): Unit = {
-    if (thread != null) thread.platformCtx.unpark()
+  def unpark(thread: Thread): Unit = thread match {
+    case null                   => ()
+    case vThread: VirtualThread => vThread.unpark()
+    case _ =>
+      thread.platformCtx.nativeThread match {
+        case null         => ()
+        case nativeThread => nativeThread.unpark()
+      }
   }
 
   @alwaysinline private def parkBlockerRef(thread: Thread): Ptr[Object] =
