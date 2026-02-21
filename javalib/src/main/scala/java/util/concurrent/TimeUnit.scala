@@ -41,7 +41,8 @@ object TimeUnit {
 
   final val MICROSECONDS: TimeUnit = new TimeUnit("MICROSECONDS", 1) {
     def convert(a: Long, u: TimeUnit): Long = u.toMicros(a)
-    def convert(duration: Duration): Long = NANOSECONDS.toMicros(duration.toNanos())
+    def convert(duration: Duration): Long =
+      NANOSECONDS.toMicros(duration.toNanos())
     def toNanos(a: Long): Long = x(a, C1 / C0, MAX / (C1 / C0))
     def toMicros(a: Long): Long = a
     def toMillis(a: Long): Long = a / (C2 / C1)

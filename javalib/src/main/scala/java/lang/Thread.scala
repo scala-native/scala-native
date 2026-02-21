@@ -574,11 +574,11 @@ object Thread {
 
   @alwaysinline def currentThread(): Thread =
     NativeThread.currentThread match {
-      case null => MainThread
+      case null   => MainThread
       case thread => thread
     }
-    
-  @alwaysinline private[java] def currentPlatformThread: Thread = 
+
+  @alwaysinline private[java] def currentPlatformThread: Thread =
     NativeThread.currentNativeThread.thread
 
   def dumpStack(): Unit = new Throwable().printStackTrace()

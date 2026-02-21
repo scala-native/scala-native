@@ -455,7 +455,7 @@ class UnsupportedOperationException(s: String, e: Throwable)
   def this(e: Throwable) = this(if (e == null) null else e.toString, e)
 }
 
-class WrongThreadException(s: String, e: Throwable) extends RuntimeException{
+class WrongThreadException(s: String, e: Throwable) extends RuntimeException {
   def this() = this(null, null)
   def this(s: String) = this(s, null)
   def this(e: Throwable) = this(if (e == null) null else e.toString, e)

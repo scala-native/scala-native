@@ -137,18 +137,29 @@ final private[lang] class VirtualThread(
     if (interruptedState) return
     if (nanos <= 0) return
 
-    val startTime = System.nanoTime()
-    state = State.TimedParking
-    Continuations.suspend[Unit] { resumeContinuation =>
-      resumeExecution = resumeContinuation
-      timeoutTask = VirtualThread.schedule(() => unpark(), nanos, TimeUnit.NANOSECONDS)
-      state = State.TimedParked
+    state match {
+      case State.Running =>
+        val startTime = System.nanoTime()
+        state = State.TimedParking
+        Continuations.suspend[Unit] { resumeContinuation =>
+          resumeExecution = resumeContinuation
+          timeoutTask = VirtualThread.schedule(() => unpark(), nanos, TimeUnit.NANOSECONDS)
 
-      // may have been unparked
-      if (wasUnparked && compareAndSetState(State.TimedParked, State.Unparked)) {
-        submitRunContinuation(lazilly = true)
-      }
-    }(using boundary)
+          // may have been unparked
+          if (wasUnparked && compareAndSetState(State.TimedParking, State.Unparked)) {
+            submitRunContinuation(lazily = true)
+          } else {
+            state = State.TimedParked
+          }
+        }(using boundary)
+        state = State.Running
+
+      case s @ (State.Parking | State.TimedParking | State.Yielding) =>
+        // recursive park during suspension
+        state = State.TimedPinned
+        NativeThread.currentNativeThread.parkNanos(nanos)
+        state = s
+    }
   }
 
   private[java] def park(): Unit = {
@@ -157,16 +168,28 @@ final private[lang] class VirtualThread(
     if (getAndSetWasUnparked(false)) return
     if (interruptedState) return
 
-    state = State.Parking
-    Continuations.suspend[Unit] { resumeContinuation =>
-      resumeExecution = resumeContinuation
-      state = State.Parked
+    state match {
+      case State.Running =>
+        state = State.Parking
+        Continuations.suspend[Unit] { resumeContinuation =>
+          resumeExecution = resumeContinuation
+          // may have been unparked
+          if (wasUnparked && compareAndSetState(State.Parking, State.Unparked)) {
+            submitRunContinuation(lazily = true)
+          } else {
+            state = State.Parked
+          }
+        }(using boundary)
+        state = State.Running
 
-      // may have been unparked
-      if (wasUnparked && compareAndSetState(State.Parked, State.Unparked)) {
-        submitRunContinuation(lazilly = true)
-      }
-    }(using boundary)
+      case s @ (State.Parking | State.TimedParking | State.Yielding) =>
+        // recursive park during suspension, need to pin carrier thread
+        state = State.Pinned
+        NativeThread.currentNativeThread.park()
+        setWasUnparked(false) // consume
+        state = s
+    }
+
   }
 
   private[java] def unpark(): Unit = {
@@ -175,19 +198,24 @@ final private[lang] class VirtualThread(
 
     state match {
       case s @ (State.Parked | State.TimedParked) if compareAndSetState(s, State.Unparked) =>
-        return submitRunContinuation()
+        submitRunContinuation()
+      case State.Pinned | State.TimedPinned =>
+        LockSupport.unpark(carrierThread)
       case _ => ()
     }
   }
 
-  private def submitRunContinuation(lazilly: scala.Boolean = false): Unit =
+  private def submitRunContinuation(lazily: scala.Boolean = false): Unit =
     scheduler match {
-      case pool: ForkJoinPool if lazilly => pool.lazySubmit(ForkJoinTask.adapt(executeContinuation))
-      case _                             => scheduler.execute(executeContinuation)
+      case pool: ForkJoinPool if lazily => pool.lazySubmit(ForkJoinTask.adapt(executeContinuation))
+      case _                            => scheduler.execute(executeContinuation)
     }
 
   private def mount(): Unit = {
-    assert(NativeThread.currentThread.isInstanceOf[VirtualThreadCarrier], s"${NativeThread.currentThread} is not VThreadCarrier")
+    assert(
+      NativeThread.currentThread.isInstanceOf[VirtualThreadCarrier],
+      s"${NativeThread.currentThread} is not VThreadCarrier"
+    )
     val carrier = Thread.currentPlatformThread
     this.carrierThread = carrier
 
@@ -206,6 +234,7 @@ final private[lang] class VirtualThread(
   }
 
   private def unmount(): Unit = {
+    assert(this.state != State.Running)
     val carrier = this.carrierThread.asInstanceOf[VirtualThreadCarrier]
     NativeThread.setCurrentThread(carrier)
 
@@ -225,19 +254,18 @@ final private[lang] class VirtualThread(
 
       val initialState = state
       val initialRun = initialState match {
-        case State.Started | State.Runnable | State.Unparked =>
+        case State.Started | State.Unparked | State.Yielded =>
           if (!compareAndSetState(initialState, State.Running))
             return
 
           initialState match {
             case State.Unparked =>
               VirtualThread.this.cancelTimeoutTask()
-              VirtualThread.this.setWasUnparked(true)
+              VirtualThread.this.setWasUnparked(false) // consume event
             case _ => ()
           }
 
-        // setParkPermit
-        case _ => return println(s"not runnable ${VirtualThread.this.toString}") // Not runnable
+        case _ => return // Not runnable
       }
 
       mount()
@@ -254,7 +282,12 @@ final private[lang] class VirtualThread(
           resumeExecution = null
           continue()
         }
-      finally unmount()
+      catch {
+        case scala.util.control.NonFatal(ex) =>
+          val executionKind = if initialState == State.Started then "initial" else "resumed"
+          System.err.println(s"Unhandled exception when during ${executionKind} execution VirtualThread $this ")
+          ex.printStackTrace()
+      } finally unmount()
     }
   }
 
@@ -263,9 +296,10 @@ final private[lang] class VirtualThread(
     state = State.Yielding
     Continuations.suspend[Unit] { resumeContinuation =>
       resumeExecution = resumeContinuation
-      state = State.Runnable
-      submitRunContinuation(lazilly = true)
+      submitRunContinuation(lazily = true)
+      state = State.Yielded
     }(using boundary)
+    state = State.Running
   }
 
   def afterDone(): Unit = {
@@ -276,12 +310,7 @@ final private[lang] class VirtualThread(
         termination.countDown()
       case null => ()
     }
-  }
-
-  def tryResume(): Unit = synchronized {
-    val resume = this.resumeExecution
-    this.resumeExecution = null
-    resume()
+    assert(state == State.Terminated)
   }
 
   private def getTermination(): CountDownLatch = {
@@ -322,9 +351,12 @@ final private[lang] class VirtualThread(
         if (carrierThread != null) carrierThread.threadState()
         else Thread.State.RUNNABLE
       }
-    case State.Parking | State.Yielding                      => Thread.State.RUNNABLE
-    case State.Parked | State.ParkedSuspended | State.Pinned => Thread.State.WAITING
-    case State.Terminated                                    => Thread.State.TERMINATED
+    case State.Yielding                        => Thread.State.RUNNABLE
+    case State.Parking | State.TimedParking    => Thread.State.RUNNABLE
+    case State.Parked | State.Pinned           => Thread.State.WAITING
+    case State.TimedParked | State.TimedPinned => Thread.State.TIMED_WAITING
+    case State.Unparked | State.Yielded        => Thread.State.RUNNABLE
+    case State.Terminated                      => Thread.State.TERMINATED
   }
   override def alive(): scala.Boolean = state match {
     case State.New | State.Terminated => false
@@ -377,32 +409,16 @@ object VirtualThread {
     final val Parking = 4
     final val Parked = 5 // unmounted
     final val Pinned = 6 // mounted
-    final val TimedParking = 6
-    final val TimedParked = 7 // unmounted
-    final val TimedPinned = 8 // mounted
-    final val Unparked = 7 // unmounted but runnable
+    final val TimedParking = 7
+    final val TimedParked = 8 // unmounted
+    final val TimedPinned = 9 // mounted
+    final val Unparked = 10 // unmounted but runnable
 
     // Thread.yield
-    final val Yielding = 7 // Thread.yield
-    // final val Yielded = 11 // unmounted but runnable
-
-    // monitor enter
-    // final val Blocking = 12
-    // final val Blocked = 13 // unmounted
-    // final val Unblocked = 14 // unmounted but runnable
-
-    // monitor wait/timed-wait
-    // final val Waiting = 15
-    // final val Wait = 16 // waiting in Object.wait
-    // final val TimedWaiting = 17
-    // final val TimedWait = 18 // waiting in timed-Object.wait
+    final val Yielding = 11 // Thread.yield
+    final val Yielded = 12 // unmounted but runnable
 
     final val Terminated = 99 // final state
-
-    // can be suspended from scheduling when unmounted
-    final val Suspended = 1 << 8
-    final val RunnableSuspended = Runnable | Suspended
-    final val ParkedSuspended = Parked | Suspended
   }
 
   lazy val DefaultScheduler = {
