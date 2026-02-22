@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdatomic.h>
+#include <setjmp.h>
 #include "gc/shared/ThreadUtil.h"
 
 // Defined symbols here:
@@ -155,6 +156,21 @@ __noinline static void handler_split_at(ContinuationBoundaryLabel l,
 __noinline static void *handler_head_longjmp(int arg) {
     assert(__handlers != NULL);
     return _lh_longjmp(__handlers->buf, arg);
+}
+
+// =============================
+// Continuation exception escape state (shared by eh.c / eh.cpp)
+
+static SN_ThreadLocal struct ContinuationExceptionHandler
+    continuation_exception_handler = {NULL, NULL};
+
+void scalanative_continuation_exception_handler_set(
+    struct ContinuationExceptionHandler handler) {
+    continuation_exception_handler = handler;
+}
+struct ContinuationExceptionHandler
+scalanative_continuation_exception_handler() {
+    return continuation_exception_handler;
 }
 
 // =============================
@@ -325,6 +341,8 @@ void __continuation_resume_impl(void *tail, Continuation *continuation,
 #undef jmpbuf_fix
 }
 
+extern void scalanative_throw(Exception exception);
+
 void *scalanative_continuation_resume(Continuation *continuation, void *out) {
     /*
      * Why we need a setjmp/longjmp.
@@ -337,7 +355,24 @@ void *scalanative_continuation_resume(Continuation *continuation, void *out) {
      *
      * Resumed computation might suspend on a parent, and mess up the setjmp
      * buffer that way.
-     * */
+     *
+     * Exception escape: when the resumed body throws and unwinding returns
+     * _URC_END_OF_STACK, eh.c longjmps here. We clear the handler and rethrow
+     * so the resumer's caller can handle it (e.g. return Failure(exception) on
+     * the Scala side). Local try/catch inside the continuation body is
+     * unaffected (unwinding finds them first).
+     */
+    volatile Exception caught = NULL;
+    jmp_buf exception_env;
+    if (setjmp(exception_env) != 0) {
+        scalanative_continuation_exception_handler_clear();
+        scalanative_throw(caught);
+        __builtin_unreachable();
+    }
+    ContinuationExceptionHandler exception_handler = {
+        .env = &exception_env, .exception_slot = (Exception *)&caught};
+    scalanative_continuation_exception_handler_set(exception_handler);
+
     volatile void *result = NULL; // we need to force the compiler to re-read
     // this from stack every time.
     volatile ContinuationBoundaryLabel label = next_label_count();
@@ -349,6 +384,8 @@ void *scalanative_continuation_resume(Continuation *continuation, void *out) {
                                  // refering to non-volatile `h`
     }
     handler_pop(label);
+    scalanative_continuation_exception_handler_clear(); /* normal return path */
+
     return (void *)result;
 }
 
