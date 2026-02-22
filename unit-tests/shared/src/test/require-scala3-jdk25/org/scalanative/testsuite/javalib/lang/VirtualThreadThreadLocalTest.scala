@@ -52,12 +52,13 @@ class VirtualThreadThreadLocalTest {
     val vtDone = new CountDownLatch(1)
 
     // Set a value in VT, then verify it's not visible on the carrier thread
-    val vt = Thread.ofVirtual().start { () =>
+    val ctx = startVirtualThread(() => {
       Local.set(marker)
       assertEquals(marker, Local.get())
       vtDone.countDown()
-    }
-    vt.join(Timeout)
+    })
+    ctx.thread.join(Timeout)
+    ctx.rethrowException()
 
     // Platform thread checking that the local is not set
     val pt = Thread.ofPlatform().start { () =>

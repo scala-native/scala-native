@@ -167,7 +167,7 @@ class VirtualThreadMonitorTest {
     val lock1 = new Object
     val lock2 = new Object
     val done = new AtomicBoolean(false)
-    val vt = Thread.ofVirtual().start { () =>
+    runOnVirtualThread(Timeout) {
       lock1.synchronized {
         assertTrue(Thread.holdsLock(lock1))
         lock2.synchronized {
@@ -183,7 +183,6 @@ class VirtualThreadMonitorTest {
         done.set(true)
       }
     }
-    vt.join(Timeout)
     assertTrue("nested synchronized should work", done.get())
   }
 
