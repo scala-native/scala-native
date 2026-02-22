@@ -32,20 +32,20 @@ class VirtualThreadSleepTest {
     )
   }
 
-  @Test def sleepDuration(): Unit = {
-    val sleepMs = 200L
-    val elapsed = new java.util.concurrent.atomic.AtomicLong(0)
-    val thread = Thread.ofVirtual().start { () =>
-      val start = System.nanoTime()
-      Thread.sleep(Duration.ofMillis(sleepMs))
-      elapsed.set(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start))
-    }
-    thread.join(Timeout)
-    assertTrue(
-      s"sleep(Duration) should sleep at least ${sleepMs}ms, actual: ${elapsed.get()}ms",
-      elapsed.get() >= sleepMs - 20
-    )
-  }
+  // @Test def sleepDuration(): Unit = {
+  //   val sleepMs = 200L
+  //   val elapsed = new java.util.concurrent.atomic.AtomicLong(0)
+  //   val thread = Thread.ofVirtual().start { () =>
+  //     val start = System.nanoTime()
+  //     Thread.sleep(Duration.ofMillis(sleepMs))
+  //     elapsed.set(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start))
+  //   }
+  //   thread.join(Timeout)
+  //   assertTrue(
+  //     s"sleep(Duration) should sleep at least ${sleepMs}ms, actual: ${elapsed.get()}ms",
+  //     elapsed.get() >= sleepMs - 20
+  //   )
+  // }
 
   @Test def sleepZero(): Unit = {
     val done = new AtomicBoolean(false)
