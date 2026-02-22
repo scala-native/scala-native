@@ -36,6 +36,11 @@ void scalanative_GC_collect();
 typedef void (*WeakReferencesCollectedCallback)();
 void scalanative_GC_set_weak_references_collected_callback(
     WeakReferencesCollectedCallback);
+#if defined(SCALANATIVE_GC_BOEHM)
+void *scalanative_GC_weak_ref_slot_create(void *referent);
+void *scalanative_GC_weak_ref_slot_get(void *slot);
+void scalanative_GC_weak_ref_slot_clear(void *slot);
+#endif
 
 size_t scalanative_GC_get_init_heapsize();
 size_t scalanative_GC_get_max_heapsize();

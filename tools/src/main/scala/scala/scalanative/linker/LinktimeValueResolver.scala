@@ -26,7 +26,8 @@ private[linker] trait LinktimeValueResolver { self: Reach =>
       s"$linktimeInfo.isMultithreadingEnabled" -> conf.multithreadingSupport,
       s"$linktimeInfo.isWeakReferenceSupported" -> {
         conf.gc == GC.Immix ||
-        conf.gc == GC.Commix
+        conf.gc == GC.Commix ||
+        conf.gc == GC.Boehm
       },
       s"$linktimeInfo.is32BitPlatform" -> conf.is32BitPlatform,
       s"$linktimeInfo.enabledSanitizer" -> conf.sanitizer
