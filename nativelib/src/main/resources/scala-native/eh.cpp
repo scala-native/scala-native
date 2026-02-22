@@ -1,6 +1,9 @@
 #if defined(SCALANATIVE_USING_CPP_EXCEPTIONS)
 
 #include <exception>
+#include "delimcc.h"
+#include "string_constants.h"
+#include <stdio.h>
 
 #if defined(__SCALANATIVE_DELIMCC)
 #include "delimcc.h"
