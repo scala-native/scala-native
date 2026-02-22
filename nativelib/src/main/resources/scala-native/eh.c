@@ -3,8 +3,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <setjmp.h>
 #include "string_constants.h"
 #include "unwind.h"
+#include "delimcc.h"
 
 #if defined(__SCALANATIVE_DELIMCC)
 #include "delimcc.h"
