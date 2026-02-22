@@ -62,7 +62,7 @@ private[java] final class VirtualThread(
     if (wasUnparked != value) wasUnparkedAtomic.exchange(value)
     else value
 
-  override def run(): Unit = ???
+  override def run(): Unit = () // no-op, must be started via start(), JVM compliant
 
   override def startInternal(): Unit = {
     if (!compareAndSetState(State.New, State.Started))
@@ -89,17 +89,22 @@ private[java] final class VirtualThread(
     value
   }
   override def interrupt(): Unit = {
-    if (Thread.currentThread() ne this) interruptLock.synchronized {
-      carrierThread match {
-        case null    => ()
-        case carrier => carrier.setInterrupt()
+    if (Thread.currentThread() ne this) {
+      interruptLock.synchronized {
+        interruptedState = true
+        // we should prevent suspension of the current thread
+        // when we we'd support Interruptible (in NIO we should interrupt the current blocker as well)
+        carrierThread match {
+          case null    => ()
+          case carrier => carrier.setInterrupt()
+        }
       }
       unpark()
-    }
-    else {
+      // Unblock if blocked and schedule execution of the continuation
+    } else {
       interruptedState = true
       carrierThread.setInterrupt()
-      setWasUnparked(true)
+      setWasUnparked(true) // consume parking permit
     }
   }
 
@@ -243,7 +248,10 @@ private[java] final class VirtualThread(
     carrier.clearInterrupt();
   }
 
-  private def executeContinuation: Runnable = new Runnable {
+  private def executeContinuation: Runnable = new VirtualThreadContinuation()
+  private class VirtualThreadContinuation extends Runnable {
+    val vThread = VirtualThread.this
+
     override def run(): Unit = {
       // the carrier must be a platform thread
       if (Thread.currentThread().isVirtual()) {
@@ -271,20 +279,23 @@ private[java] final class VirtualThread(
         // initial run
         if (initialState == State.Started) Continuations.boundary[Unit] {
           boundary = summon[Boundary]
+          // Initial invocation of the task, might suspend
           task.run()
+          // We get here only when whole fiber is completed
           afterDone()
           boundary = null.asInstanceOf[Boundary]
         }
         else {
+          // Consume continuation and resume, might suspend
           val continue = resumeExecution
           resumeExecution = null
           continue()
+          // Not done yet
         }
       catch {
-        case scala.util.control.NonFatal(ex) =>
-          val executionKind = if initialState == State.Started then "initial" else "resumed"
-          System.err.println(s"Unhandled exception when during ${executionKind} execution VirtualThread $this ")
-          ex.printStackTrace()
+        case ex: Throwable =>
+          getUncaughtExceptionHandler().uncaughtException(VirtualThread.this, ex)
+          afterDone()
       } finally unmount()
     }
   }
@@ -324,6 +335,8 @@ private[java] final class VirtualThread(
   private[lang] def joinNanos(nanos: scala.Long): scala.Boolean = {
     if (state == State.Terminated)
       return true
+    if (Thread.interrupted())
+      throw new InterruptedException()
 
     // ensure termination object exists, then re-check state
     val termination = getTermination()

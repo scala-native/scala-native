@@ -97,13 +97,12 @@ class VirtualThreadBuilderTest {
 
   @Test def builderThreadLocalSupport(): Unit = {
     val done = new AtomicBoolean(false)
-    val thread = Thread.ofVirtual().start { () =>
+    runOnVirtualThread(Timeout) {
       val value = new AnyRef
       Local.set(value)
       assertSame(value, Local.get())
       done.set(true)
     }
-    thread.join(Timeout)
     assertTrue("thread local get/set should work", done.get())
   }
 
