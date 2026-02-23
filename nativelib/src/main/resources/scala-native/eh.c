@@ -3,10 +3,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
-#include <setjmp.h>
 #include "string_constants.h"
 #include "unwind.h"
+
+#if defined(__SCALANATIVE_DELIMCC)
 #include "delimcc.h"
+#include <setjmp.h>
+#endif
 
 #if defined(__SCALANATIVE_DELIMCC)
 #include "delimcc.h"
@@ -307,7 +310,6 @@ __attribute__((noreturn)) void scalanative_throw(Exception obj) {
         scalanative_Throwable_showStackTrace(obj);
         abort();
     }
-#endif
     scalanative_Throwable_showStackTrace(obj);
     fprintf(stderr,
             "%s Unhandled exception: "
