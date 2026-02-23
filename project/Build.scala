@@ -132,11 +132,11 @@ object Build {
         _.settings(
           Compile / unmanagedSources += {
             val nirPritmtivesCompat = (Compile / sourceDirectory).value / "scala-3-compat" / "nirPrimitives"
-            scalaVersion.value.split("\\.|-").take(3).map(_.toInt) match {
-              case Array(3, 8, patch) if patch <= 2 => nirPritmtivesCompat / "until_3.8.2.scala"
-              case Array(3, minor) if minor < 8     => nirPritmtivesCompat / "until_3.8.2.scala"
-              case _                                => nirPritmtivesCompat / "since_3.8.3.scala"
-            }
+            val Array(3, minor, patch) = scalaVersion.value.split("\\.|-").map(_.toInt)
+            if (minor < 8 || (minor == 8 && patch <= 2)) 
+              nirPritmtivesCompat / "until_3.8.2.scala"
+            else 
+              nirPritmtivesCompat / "since_3.8.3.scala"
           }
         )
       case _ => identity
