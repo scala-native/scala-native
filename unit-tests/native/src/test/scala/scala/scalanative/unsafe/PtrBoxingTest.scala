@@ -190,6 +190,7 @@ class PtrBoxingTest {
     }
   }
 
+  @scala.annotation.nowarn("msg=eta-expansion is unnecessary")
   @Test def loadAndStoreCFuncPtr(): Unit = {
     Zone.acquire { implicit z =>
       val x: Ptr[Functions] = stackalloc[Functions]()

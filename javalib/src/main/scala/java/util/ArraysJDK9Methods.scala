@@ -963,12 +963,11 @@ private[util] trait ArraysJDK9Methods { self: Arrays.type =>
       a: Array[Comparable[_]], // Scala 3 Array[T]
       b: Array[Comparable[_]] // Scala 3 Array[T]
   ): Int = {
-    val cmp = compareNullsFirst[T] _ // see comments in method
     compareImpl(
       a,
       b,
       (a: Comparable[_], b: Comparable[_]) =>
-        cmp(a.asInstanceOf[T], b.asInstanceOf[T])
+        compareNullsFirst[T](a.asInstanceOf[T], b.asInstanceOf[T])
     )
   }
 
@@ -997,8 +996,6 @@ private[util] trait ArraysJDK9Methods { self: Arrays.type =>
       bFromIndex: Int,
       bToIndex: Int
   ): Int = {
-    val cmp = compareNullsFirst[T] _ // see comments in method
-
     compareImpl(
       a,
       aFromIndex,
@@ -1007,7 +1004,7 @@ private[util] trait ArraysJDK9Methods { self: Arrays.type =>
       bFromIndex,
       bToIndex,
       (a: Comparable[_], b: Comparable[_]) =>
-        cmp(a.asInstanceOf[T], b.asInstanceOf[T])
+        compareNullsFirst[T](a.asInstanceOf[T], b.asInstanceOf[T])
     )
   }
 
