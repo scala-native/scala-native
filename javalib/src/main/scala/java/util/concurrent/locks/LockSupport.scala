@@ -50,10 +50,9 @@ object LockSupport {
     }
 
   def parkUntil(blocker: Object, deadline: Long): Unit = {
-    val nativeThread = NativeThread.currentNativeThread
-    val thread = nativeThread.thread
+    val thread = Thread.currentThread()
     setBlocker(thread, blocker)
-    try nativeThread.parkUntil(deadline)
+    try parkUntil(deadline)
     finally setBlocker(thread, null: Object)
   }
 
