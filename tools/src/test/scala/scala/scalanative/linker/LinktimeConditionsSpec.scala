@@ -70,6 +70,11 @@ class LinktimeConditionsSpec extends OptimizerSpec {
       s"$linktimeInfo.target.vendor",
       s"$linktimeInfo.target.os",
       s"$linktimeInfo.target.env",
+      s"$linktimeInfo.garbageCollector",
+      s"$linktimeInfo.gc.isBoehm",
+      s"$linktimeInfo.gc.isImmix",
+      s"$linktimeInfo.gc.isCommix",
+      s"$linktimeInfo.gc.isNone",
       s"$linktimeInfo.contendedPaddingWidth"
     )
   }
@@ -428,8 +433,8 @@ class LinktimeConditionsSpec extends OptimizerSpec {
   ) = {
     val left = actual.toSet
     val right = expected.toSet
-    assertTrue("underapproximation", (left -- right).isEmpty)
-    assertTrue("overapproximation", (right -- left).isEmpty)
+    assertTrue(s"underapproximation: ${left -- right}", (left -- right).isEmpty)
+    assertTrue(s"overapproximation: ${right -- left}", (right -- left).isEmpty)
   }
 
   private def link[T](
