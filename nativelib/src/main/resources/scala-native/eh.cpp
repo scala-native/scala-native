@@ -1,9 +1,12 @@
 #if defined(SCALANATIVE_USING_CPP_EXCEPTIONS)
 
 #include <exception>
+
+#if defined(__SCALANATIVE_DELIMCC)
 #include "delimcc.h"
 #include "string_constants.h"
 #include <stdio.h>
+#endif
 
 // Scala Native compiles Scala's exception in C++-compatible
 // manner under the hood. Every exception thrown on the Scala
