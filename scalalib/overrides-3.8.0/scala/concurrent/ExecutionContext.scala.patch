@@ -1,4 +1,4 @@
---- 3.8.3-RC1/scala/concurrent/ExecutionContext.scala
+--- 3.8.0-RC1-bin-20251017-96aff06-NIGHTLY/scala/concurrent/ExecutionContext.scala
 +++ overrides-3/scala/concurrent/ExecutionContext.scala
 @@ -15,6 +15,7 @@
  import scala.language.`2.13`
@@ -6,11 +6,11 @@
  import scala.annotation.implicitNotFound
 +import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
  
- /** An `ExecutionContext` can execute program logic asynchronously,
-  *  typically but not necessarily on a thread pool.
-@@ -192,7 +193,10 @@
+ /**
+  * An `ExecutionContext` can execute program logic asynchronously,
+@@ -197,7 +198,10 @@
     *
-    *  @return the global [[ExecutionContext]]
+    * @return the global [[ExecutionContext]]
     */
 -  final lazy val global: ExecutionContextExecutor = impl.ExecutionContextImpl.fromExecutor(null: Executor | Null)
 +  final lazy val global: ExecutionContextExecutor = {
@@ -18,12 +18,12 @@
 +    else scala.scalanative.concurrent.NativeExecutionContext.queue
 +  }
  
-   /** WARNING: Only ever execute logic which will quickly return control to the caller.
-    *
-@@ -219,7 +223,7 @@
-   }
- 
-   /** See [[ExecutionContext.global]]. */
+   /**
+    * WARNING: Only ever execute logic which will quickly return control to the caller.
+@@ -227,7 +231,7 @@
+   /**
+    * See [[ExecutionContext.global]].
+    */
 -  private[scala] lazy val opportunistic: ExecutionContextExecutor = new ExecutionContextExecutor with BatchingExecutor {
 +  private[scala] lazy val opportunistic: ExecutionContextExecutor = if(!isMultithreadingEnabled) ExecutionContext.global else new ExecutionContextExecutor with BatchingExecutor {
      final override def submitForExecution(runnable: Runnable): Unit = global.execute(runnable)

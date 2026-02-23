@@ -1,4 +1,4 @@
---- 3.8.3-RC1/scala/Enumeration.scala
+--- 3.8.0-RC1-bin-20251029-840804f-NIGHTLY/scala/Enumeration.scala
 +++ overrides-3/scala/Enumeration.scala
 @@ -94,7 +94,7 @@
  
@@ -7,9 +7,9 @@
 -  protected def readResolve(): AnyRef = thisenum.getClass.getField(MODULE_INSTANCE_NAME).get(null)
 +  protected def readResolve(): AnyRef = ???
  
-   /** The name of this enumeration. */
-   override def toString(): String =
-@@ -195,38 +195,7 @@
+   /** The name of this enumeration.
+    */
+@@ -193,38 +193,7 @@
     */
    protected final def Value(i: Int, name: String | Null): Value = new Val(i, name)
  
@@ -48,7 +48,7 @@
    /** The type of the enumerated values. */
    @SerialVersionUID(7091335633555234129L)
    abstract class Value extends Ordered[Value] with Serializable {
-@@ -268,8 +237,8 @@
+@@ -266,8 +235,8 @@
      def id: Int = i
      override def toString(): String =
        if (name != null) name
