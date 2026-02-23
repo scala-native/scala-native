@@ -307,6 +307,7 @@ __attribute__((noreturn)) void scalanative_throw(Exception obj) {
         scalanative_Throwable_showStackTrace(obj);
         abort();
     }
+#endif
     scalanative_Throwable_showStackTrace(obj);
     fprintf(stderr,
             "%s Unhandled exception: "
