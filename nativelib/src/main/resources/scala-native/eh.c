@@ -277,6 +277,7 @@ __attribute__((noreturn)) void scalanative_throw(Exception obj) {
     _Unwind_Reason_Code code = _Unwind_RaiseException(unwindException);
 
     if (code == _URC_END_OF_STACK) {
+#if defined(__SCALANATIVE_DELIMCC)
         /* If we're inside a resumed continuation, escape to the resumer instead
          * of aborting. Unwinding already ran and found no handler (or could not
          * traverse the copied stack); local try/catch in the continuation body
@@ -300,6 +301,7 @@ __attribute__((noreturn)) void scalanative_throw(Exception obj) {
         scalanative_Throwable_showStackTrace(obj);
         abort();
     }
+#endif
     scalanative_Throwable_showStackTrace(obj);
     fprintf(stderr,
             "%s Unhandled exception: "
