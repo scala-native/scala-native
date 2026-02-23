@@ -70,6 +70,10 @@ class LinktimeConditionsSpec extends OptimizerSpec {
       s"$linktimeInfo.target.vendor",
       s"$linktimeInfo.target.os",
       s"$linktimeInfo.target.env",
+      s"$linktimeInfo.gc.isBoehm",
+      s"$linktimeInfo.gc.isImmix",
+      s"$linktimeInfo.gc.isCommix",
+      s"$linktimeInfo.gc.isNone",
       s"$linktimeInfo.contendedPaddingWidth"
     )
   }
