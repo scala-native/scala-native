@@ -104,12 +104,18 @@ private[interflow] final class MergeProcessor(
         val mergeEmitted = mutable.AnyRefMap.empty[nir.Op, nir.Val.Local]
         val newEscapes = mutable.Set.empty[Addr]
 
+        def isSingleValue(values: Seq[nir.Val]): Boolean =
+          if (values.nonEmpty) {
+            val h = values.head
+            values.forall(_ == h)
+          } else false
+
         def mergePhi(
             values: Seq[nir.Val],
             bound: Option[nir.Type],
             localName: Option[String] = None
         ): nir.Val = {
-          if (values.distinct.size == 1) values.head
+          if (isSingleValue(values)) values.head
           else {
             val materialized = states.zip(values).map {
               case (s, v) =>
