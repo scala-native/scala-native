@@ -132,10 +132,10 @@ object Build {
         _.settings(
           Compile / unmanagedSources += {
             val nirPritmtivesCompat = (Compile / sourceDirectory).value / "scala-3-compat" / "nirPrimitives"
-            val Array(3, minor, patch) = scalaVersion.value.split("\\.|-").map(_.toInt)
-            if (minor < 8 || (minor == 8 && patch <= 2)) 
+            val Array(3, minor, patch) = scalaVersion.value.split("\\.|-").take(3).map(_.toInt)
+            if (minor < 8 || (minor == 8 && patch <= 2))
               nirPritmtivesCompat / "until_3.8.2.scala"
-            else 
+            else
               nirPritmtivesCompat / "since_3.8.3.scala"
           }
         )
