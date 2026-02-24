@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdatomic.h>
 #include <setjmp.h>
+#include <stdint.h>
 #include "gc/shared/ThreadUtil.h"
 
 // Defined symbols here:
@@ -17,18 +18,22 @@
 #if defined(__aarch64__) // ARM64
 #define ASM_JMPBUF_SIZE 192
 #define JMPBUF_STACK_POINTER_OFFSET (104 / 8)
+#define JMPBUF_FRAME_POINTER_OFFSET (88 / 8)
 #elif defined(__x86_64__) &&                                                   \
     (defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) ||       \
      defined(__OpenBSD__) || defined(__NetBSD__))
 #define ASM_JMPBUF_SIZE 72
 #define JMPBUF_STACK_POINTER_OFFSET (16 / 8)
+#define JMPBUF_FRAME_POINTER_OFFSET (24 / 8)
 #elif defined(__i386__) &&                                                     \
     (defined(__linux__) || defined(__APPLE__)) // x86 linux and macOS
 #define ASM_JMPBUF_SIZE 32
 #define JMPBUF_STACK_POINTER_OFFSET (16 / 4)
+#define JMPBUF_FRAME_POINTER_OFFSET (0 / 4)
 #elif defined(__x86_64__) && defined(_WIN64) // x86-64 Windows
 #define ASM_JMPBUF_SIZE 256
 #define JMPBUF_STACK_POINTER_OFFSET (16 / 8)
+#define JMPBUF_FRAME_POINTER_OFFSET (24 / 8)
 #else
 #error "Unsupported platform"
 #endif
@@ -234,6 +239,15 @@ struct Continuation {
     char stack[];
 };
 
+static inline int
+continuation_contains_stack_address(const Continuation *continuation,
+                                    const void *p) {
+    uintptr_t addr = (uintptr_t)p;
+    uintptr_t stack_top = (uintptr_t)continuation->stack_top;
+    uintptr_t stack_end = stack_top + (uintptr_t)continuation->size;
+    return addr >= stack_top && addr < stack_end;
+}
+
 static void *continuation_alloc_by_malloc(unsigned long size, void *arg) {
     (void)arg;
     return malloc(size);
@@ -280,10 +294,9 @@ void __continuation_resume_impl(void *tail, Continuation *continuation,
                                 void *out, void *ret_addr) {
     // Allocate all values up front so we know how many to deal with.
     Handler *h_tail, *h_head; // new handler chain
-    ptrdiff_t i;
-    ptrdiff_t diff;         // pointer difference and stack size
-    void *target;           // our target stack
-    void **new_return_slot; // new return slot
+    ptrdiff_t diff;           // pointer difference and stack size
+    void *target;             // our target stack
+    void **new_return_slot;   // new return slot
     lh_jmp_buf return_buf;
 
     target = tail - continuation->size;
@@ -303,11 +316,21 @@ void __continuation_resume_impl(void *tail, Continuation *continuation,
 #define fixed_addr(X) ((void *)(X) + diff)
 #define fix_addr(X) X = fixed_addr(X)
 /**
- * Fixes the stack pointer offset within a `jmpbuf` by the difference given by
- * `diff`. We need to do this for every jmpbuf that is stored in the handler
- * chain, as well as the suspend jmpbuf.
+ * Fix stack-derived registers in the saved jmp buffer.
+ *
+ * Stack pointer always points into the saved fragment and must be rebased.
+ * Frame pointer may or may not be stack-derived (depending on compiler flags),
+ * so adjust it only when it points into the saved fragment.
  */
-#define jmpbuf_fix(buf) fix_addr(buf[JMPBUF_STACK_POINTER_OFFSET])
+#define jmpbuf_fix(buf)                                                        \
+    do {                                                                       \
+        void *saved_fp = (buf)[JMPBUF_FRAME_POINTER_OFFSET];                   \
+        fix_addr((buf)[JMPBUF_STACK_POINTER_OFFSET]);                          \
+        if (saved_fp != NULL &&                                                \
+            continuation_contains_stack_address(continuation, saved_fp)) {     \
+            (buf)[JMPBUF_FRAME_POINTER_OFFSET] = fixed_addr(saved_fp);         \
+        }                                                                      \
+    } while (0)
     // clone the handler chain, with fixes.
     h_head = h_tail = (Handler *)fixed_addr(continuation->handlers);
     jmpbuf_fix(return_buf);
@@ -357,15 +380,17 @@ void *scalanative_continuation_resume(Continuation *continuation, void *out) {
      * buffer that way.
      *
      * Exception escape: when the resumed body throws and unwinding returns
-     * _URC_END_OF_STACK, eh.c longjmps here. We clear the handler and rethrow
-     * so the resumer's caller can handle it (e.g. return Failure(exception) on
-     * the Scala side). Local try/catch inside the continuation body is
-     * unaffected (unwinding finds them first).
+     * _URC_END_OF_STACK, eh.c/eh.cpp longjmps here. Handlers can nest across
+     * nested resume calls, so we must restore the previous handler (instead of
+     * blindly clearing TLS) on both normal and exceptional paths.
      */
     volatile Exception caught = NULL;
     jmp_buf exception_env;
+    ContinuationExceptionHandler previous_exception_handler =
+        scalanative_continuation_exception_handler();
     if (setjmp(exception_env) != 0) {
-        scalanative_continuation_exception_handler_clear();
+        scalanative_continuation_exception_handler_set(
+            previous_exception_handler);
         scalanative_throw(caught);
         __builtin_unreachable();
     }
@@ -384,7 +409,7 @@ void *scalanative_continuation_resume(Continuation *continuation, void *out) {
                                  // refering to non-volatile `h`
     }
     handler_pop(label);
-    scalanative_continuation_exception_handler_clear(); /* normal return path */
+    scalanative_continuation_exception_handler_set(previous_exception_handler);
 
     return (void *)result;
 }

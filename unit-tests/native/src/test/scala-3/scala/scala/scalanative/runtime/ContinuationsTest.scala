@@ -1,5 +1,7 @@
 package scala.scalanative.runtime
 
+import scala.util.control.ControlThrowable
+
 import org.junit.Assert._
 import org.junit.Test
 
@@ -102,4 +104,93 @@ class ContinuationsTest:
         case End(v) =>
           assert(false)
   }
+
+  @Test def nestedResumePropagatesEscapingThrowable(): Unit =
+    if isContinuationsSupported then {
+      case object EscapesBoundary extends ControlThrowable
+      @noinline def captureResumePoint(onResume: => Unit): () => Unit = {
+        var resume: () => Unit = null
+        boundary[Unit] {
+          suspend[Unit] { k =>
+            resume = k
+          }
+          onResume
+        }
+
+        if resume == null then
+          fail("Failed to capture continuation resume handle")
+        resume
+      }
+
+      val innerResume = captureResumePoint { () }
+      val outerResume = captureResumePoint {
+        innerResume()
+        throw EscapesBoundary
+      }
+
+      try
+        outerResume()
+        fail("Expected EscapesBoundary to propagate from nested resume")
+      catch case EscapesBoundary => ()
+    }
+
+  @Test def resumePreservesLocalsAcrossSuspendResume(): Unit = {
+    var clobberSink: Int = 0
+
+    @noinline def runOneContinuationCycle(i: Int): Int = {
+      var resume: () => Int = null
+
+      val first = boundary[Int] {
+        val a = i + 11
+        val b = i + 23
+        val c = i + 37
+
+        val token: Int = suspend[Int, Int] { k =>
+          resume = () => k(123)
+          -777
+        }
+        a + b + c + token
+      }
+
+      assertEquals(-777, first)
+      clobberSink ^= clobberStackFrames(i)
+
+      val resumed = resume()
+      val expected = (i + 11) + (i + 23) + (i + 37) + 123
+      assertEquals(expected, resumed)
+      resumed
+    }
+
+    @noinline def clobberStackFrames(seed: Int): Int =
+      clobberStackFramesRec(48, seed)
+
+    @noinline def clobberStackFramesRec(depth: Int, in: Int): Int = {
+      val a0 = in + 1
+      val a1 = in + 2
+      val a2 = in + 3
+      val a3 = in + 4
+      val a4 = in + 5
+      val a5 = in + 6
+      val a6 = in + 7
+      val a7 = in + 8
+      val sum = a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7
+
+      if depth == 0 then sum
+      else clobberStackFramesRec(depth - 1, sum ^ depth) + (depth & 1)
+    }
+
+    if isContinuationsSupported then {
+      var checksum = 0L
+      var i = 0
+
+      while i < 5000 do
+        checksum += runOneContinuationCycle(i)
+        i += 1
+
+      val n = 5000L
+      val expectedChecksum = (3L * n * (n - 1) / 2L) + (194L * n)
+      assertEquals(expectedChecksum, checksum)
+    }
+  }
+
 end ContinuationsTest
