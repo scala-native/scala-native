@@ -1,4 +1,4 @@
---- 3.8.3-RC1/scala/Array.scala
+--- 3.8.0-RC4/scala/Array.scala
 +++ overrides-3/scala/Array.scala
 @@ -35,7 +35,7 @@
   *  where the array objects `a`, `b` and `c` have respectively the values
@@ -29,9 +29,9 @@
    /** Provides an implicit conversion from the Array object to a collection Factory. */
    implicit def toFactory[A : ClassTag](dummy: Array.type): Factory[A, Array[A]] = new ArrayFactory(dummy)
    @SerialVersionUID(3L)
-@@ -125,7 +137,8 @@
-    *  @see `java.util.Arrays#copyOf`
-    */
+@@ -127,7 +139,8 @@
+     * @see `java.util.Arrays#copyOf`
+     */
    def copyOf[A](original: Array[A], newLength: Int): Array[A] = ((original: @unchecked) match {
 -    case original: Array[BoxedUnit]  => newUnitArray(newLength).asInstanceOf[Array[A]]
 +    //  We cannot distinguish Array[BoxedUnit] from Array[Object] in Scala Native

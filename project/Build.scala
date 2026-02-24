@@ -127,6 +127,20 @@ object Build {
       case "2.12" => _.settings(disabledDocsSettings)
       case _      => identity
     }
+    .mapBinaryVersions {
+      case "3" | "3-next" =>
+        _.settings(
+          Compile / unmanagedSources += {
+            val nirPritmtivesCompat = (Compile / sourceDirectory).value / "scala-3-compat" / "nirPrimitives"
+            val Array(3, minor, patch) = scalaVersion.value.split("\\.|-").take(3).map(_.toInt)
+            if (minor < 8 || (minor == 8 && patch <= 2))
+              nirPritmtivesCompat / "until_3.8.2.scala"
+            else
+              nirPritmtivesCompat / "since_3.8.3.scala"
+          }
+        )
+      case _ => identity
+    }
     .settings(
       Test / unmanagedSourceDirectories ++= (testingCompilerInterface / Compile / unmanagedSourceDirectories).value
     )

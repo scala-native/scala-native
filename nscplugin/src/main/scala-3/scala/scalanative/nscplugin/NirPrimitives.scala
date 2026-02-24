@@ -124,16 +124,12 @@ object NirPrimitives {
     code >= DIV_UINT && code <= ULONG_TO_DOUBLE
 }
 
-class NirPrimitives(using ctx: Context) extends DottyPrimitives(ctx) {
+class NirPrimitives(using ctx: Context) extends NirPrimitivesCompat(using ctx) {
   import NirPrimitives._
-  private lazy val nirPrimitives: ReadOnlyMap[Symbol, Int] = initNirPrimitives
+  protected lazy val nirPrimitives: ReadOnlyMap[Symbol, Int] = initNirPrimitives
 
   override def getPrimitive(sym: Symbol): Int =
     nirPrimitives.getOrElse(sym, super.getPrimitive(sym))
-
-  override def getPrimitive(app: Apply, tpe: Type)(using Context): Int =
-    nirPrimitives.getOrElse(app.fun.symbol, super.getPrimitive(app, tpe))
-
   override def isPrimitive(sym: Symbol): Boolean = {
     nirPrimitives.contains(sym) || super.isPrimitive(sym)
   }
