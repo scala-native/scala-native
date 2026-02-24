@@ -64,7 +64,6 @@ class ThreadBuilderTestOnJDK19 {
     assertTrue(done3.get())
   }
 
-  @Ignore("VirtualThreads unimplemented")
   @Test def testVirtualThread(): Unit = {
     val parent = Thread.currentThread()
     val builder = Thread.ofVirtual()
@@ -114,7 +113,6 @@ class ThreadBuilderTestOnJDK19 {
     assertTrue(thread3.getName() == "foo")
   }
 
-  @Ignore("VirtualThreads unimplemented")
   @Test def testName2(): Unit = {
     val builder = Thread.ofVirtual().name("foo")
     val thread1 = builder.unstarted(() => {})
@@ -179,7 +177,6 @@ class ThreadBuilderTestOnJDK19 {
     }
   }
 
-  @Ignore("VirtualThreads unimplemented")
   @Test def testThreadGroup2(): Unit = {
     val vgroup =
       Thread.ofVirtual().unstarted(() => {}).getThreadGroup
@@ -282,7 +279,6 @@ class ThreadBuilderTestOnJDK19 {
     assertTrue(thread3.isDaemon() == d)
   }
 
-  @Ignore("VirtualThreads unimplemented")
   @Test def testDaemon5(): Unit = {
     val builder = Thread.ofVirtual()
     val thread1 = builder.unstarted(() => {})
@@ -335,7 +331,6 @@ class ThreadBuilderTestOnJDK19 {
     assertTrue(exceptionRef.get.isInstanceOf[FooException])
   }
 
-  @Ignore("VirtualThreads unimplemented")
   @Test def testUncaughtExceptionHandler2(): Unit = {
     val threadRef = new AtomicReference[Thread]
     val exceptionRef =
@@ -458,7 +453,6 @@ class ThreadBuilderTestOnJDK19 {
     testThreadLocals(builder)
   }
 
-  @Ignore("VirtualThreads unimplemented")
   @Test def testThreadLocals2(): Unit = {
     val builder = Thread.ofVirtual()
     testThreadLocals(builder)
@@ -526,7 +520,6 @@ class ThreadBuilderTestOnJDK19 {
     testInheritedThreadLocals(builder)
   }
 
-  @Ignore("VirtualThreads unimplemented")
   @Test def testInheritedThreadLocals2(): Unit = {
     val builder = Thread.ofVirtual()
     testInheritedThreadLocals(builder) // default
