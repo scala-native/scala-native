@@ -245,7 +245,7 @@ continuation_contains_stack_address(const Continuation *continuation,
     uintptr_t addr = (uintptr_t)p;
     uintptr_t stack_top = (uintptr_t)continuation->stack_top;
     uintptr_t stack_end = stack_top + (uintptr_t)continuation->size;
-    return addr >= stack_top && addr <= stack_end;
+    return addr >= stack_top && addr < stack_end;
 }
 
 static void *continuation_alloc_by_malloc(unsigned long size, void *arg) {
