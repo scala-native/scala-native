@@ -773,19 +773,11 @@ object SubmissionPublisher {
 
     /** Tries to create or expand buffer, then adds item if possible. */
     private def growAndOffer(item: T, tail: Int): Boolean = {
-      var cap = 0
-      var newCap: Int = 0
+      val cap = buffer.length()
+      val newCap = cap << 1
       var newBuffer: AtomicReferenceArray[AnyRef] = null
 
-      if ((buffer != null)
-          && {
-            cap = buffer.length()
-            cap > 0
-          } // force a new line for formatting
-          && {
-            newCap = cap << 1
-            newCap > 0
-          })
+      if (newCap > 0)
         try {
           newBuffer = new AtomicReferenceArray[AnyRef](newCap)
         } catch {
@@ -822,18 +814,10 @@ object SubmissionPublisher {
     /** Version of offer for retries (no resize or bias) */
     def retryOffer(item: T): Int = {
       var stat = 0
-      var cap = 0
+      val mask = buffer.length() - 1
+      val idx = mask & tail.get()
 
-      if (buffer != null
-          && {
-            cap = buffer.length()
-            cap > 0
-          }
-          && buffer.compareAndSet(
-            (cap - 1) & tail.get(),
-            null,
-            item.asInstanceOf[AnyRef]
-          ))
+      if (buffer.compareAndSet(idx, null, item.asInstanceOf[AnyRef]))
         stat = tail.incrementAndGet() - head.get()
 
       startOnOffer(stat);
@@ -905,7 +889,7 @@ object SubmissionPublisher {
       if ((_ctl & CtlFlag.CLOSED) == 0) {
         if ((_ctl & CtlFlag.RUN) == 0)
           tryStart()
-        else if (buffer != null)
+        else
           (0 until buffer.length()).foreach(i => buffer.lazySet(i, null))
       }
     }
@@ -937,62 +921,61 @@ object SubmissionPublisher {
     /** Consumer loop, called from ConsumerTask, or indirectly when helping
      *  during submit.
      */
-    def consume(): Unit =
-      if (subscriber != null) { // hoist checks else disabled
-        subscribeOnOpen(subscriber)
+    def consume(): Unit = {
+      // `subscriber != null` checked in constructor
+      subscribeOnOpen(subscriber)
 
-        var _demand = demand.get()
-        var _head = head.get()
-        var _tail = tail.get()
+      var _demand = demand.get()
+      var _head = head.get()
+      var _tail = tail.get()
 
-        var break = false
-        while (!break) {
-          val _ctl = ctl.get()
-          var taken = 0
-          var empty = false
+      var break = false
+      while (!break) {
+        val _ctl = ctl.get()
+        var taken = 0
+        var empty = false
 
-          if ((_ctl & CtlFlag.ERROR) != 0) {
-            closeOnError(subscriber, null)
+        if ((_ctl & CtlFlag.ERROR) != 0) {
+          closeOnError(subscriber, null)
+          break = true
+        } // force a new line for formatting
+        else if ({
+          taken = takeItems(subscriber, _demand, _head)
+          taken > 0
+        }) {
+          _head += taken
+          head.set(_head)
+          _demand = demandSubtractAndGet(taken.toLong)
+        } // force a new line for formatting
+        else if ({
+              _demand = demand.get(); _demand == 0L
+            } && ((_ctl & CtlFlag.REQS) != 0)) // exhausted demand
+          ctl.weakCompareAndSetPlain(_ctl, _ctl & ~CtlFlag.REQS): Unit
+        else if (_demand != 0L && (_ctl & CtlFlag.REQS) == 0) // new demand
+          ctl.weakCompareAndSetPlain(_ctl, _ctl | CtlFlag.REQS): Unit
+        else if ({
+          val _tail_old = _tail; _tail = tail.get();
+          _tail_old == _tail // stability check
+        }) {
+          if ({
+                empty = _tail == _head; empty
+              } && (_ctl & CtlFlag.COMPLETE) != 0) {
+            closeOnComplete(subscriber) // end of stream
             break = true
           } // force a new line for formatting
-          else if ({
-            taken = takeItems(subscriber, _demand, _head)
-            taken > 0
-          }) {
-            _head += taken
-            head.set(_head)
-            _demand = demandSubtractAndGet(taken.toLong)
-          } // force a new line for formatting
-          else if ({
-                _demand = demand.get(); _demand == 0L
-              } && ((_ctl & CtlFlag.REQS) != 0)) // exhausted demand
-            ctl.weakCompareAndSetPlain(_ctl, _ctl & ~CtlFlag.REQS): Unit
-          else if (_demand != 0L && (_ctl & CtlFlag.REQS) == 0) // new demand
-            ctl.weakCompareAndSetPlain(_ctl, _ctl | CtlFlag.REQS): Unit
-          else if ({
-            val _tail_old = _tail; _tail = tail.get();
-            _tail_old == _tail // stability check
-          }) {
-            if ({
-                  empty = _tail == _head; empty
-                } && (_ctl & CtlFlag.COMPLETE) != 0) {
-              closeOnComplete(subscriber) // end of stream
+          else if (empty || _demand == 0L) {
+            val bit =
+              if ((_ctl & CtlFlag.ACTIVE) != 0) CtlFlag.ACTIVE
+              else CtlFlag.RUN
+            if (ctl.weakCompareAndSetPlain(
+                  _ctl,
+                  _ctl & ~bit
+                ) && bit == CtlFlag.RUN)
               break = true
-            } // force a new line for formatting
-            else if (empty || _demand == 0L) {
-              val bit =
-                if ((_ctl & CtlFlag.ACTIVE) != 0) CtlFlag.ACTIVE
-                else CtlFlag.RUN
-              if (ctl.weakCompareAndSetPlain(
-                    _ctl,
-                    _ctl & ~bit
-                  ) && bit == CtlFlag.RUN)
-                break = true
-            }
           }
-
         }
       }
+    }
 
     /** Consumes some items until unavailable or bound or error.
      *
@@ -1012,13 +995,11 @@ object SubmissionPublisher {
     ): Int = {
       var h = head
       var k = 0
-      var cap = 0
+      val cap = buffer.length()
 
-      if (buffer != null
-          && { cap = buffer.length(); cap > 0 }) {
+      if (cap > 0) {
         val m = cap - 1
         val b = (m >>> 3) + 1 // min(1, cap/8)
-
         val n = if (demand < b.toLong) demand.toInt else b
 
         var break = false
@@ -1043,7 +1024,7 @@ object SubmissionPublisher {
 
     def consumeNext(sub: Flow.Subscriber[? >: T], x: T): Boolean =
       try {
-        if (sub != null) sub.onNext(x)
+        sub.onNext(x)
         true
       } // force a new line for formatting
       catch {
@@ -1073,8 +1054,7 @@ object SubmissionPublisher {
 
     def consumeSubscribe(sub: Flow.Subscriber[? >: T]): Unit =
       try {
-        if (sub != null)
-          sub.onSubscribe(this) // ignore if disabled
+        sub.onSubscribe(this) // ignore if disabled
       } catch {
         case exc: Throwable =>
           closeOnError(sub, exc)
@@ -1088,8 +1068,7 @@ object SubmissionPublisher {
 
     def consumeComplete(sub: Flow.Subscriber[? >: T]): Unit =
       try {
-        if (sub != null)
-          sub.onComplete()
+        sub.onComplete()
       } catch {
         case ignore: Throwable => ()
       }
@@ -1112,8 +1091,7 @@ object SubmissionPublisher {
 
     def consumeError(sub: Flow.Subscriber[? >: T], exc: Throwable): Unit =
       try {
-        if (exc != null && sub != null)
-          sub.onError(exc)
+        if (exc != null) sub.onError(exc)
       } catch {
         case ignore: Throwable => ()
       }
@@ -1128,16 +1106,11 @@ object SubmissionPublisher {
     }
 
     /** Returns true if closed or space available. For ManagedBlocker. */
-    def isReleasable(): Boolean = {
-      var cap = 0
-
-      (ctl.get() & CtlFlag.CLOSED) != 0 ||
-        (
-          buffer != null
-          && { cap = buffer.length(); cap > 0 }
-          && buffer.getAcquire((cap - 1) & tail.get()) == null
-        )
-    }
+    def isReleasable(): Boolean =
+      ((ctl.get() & CtlFlag.CLOSED) != 0) || {
+        val cap = buffer.length()
+        cap > 0 && (buffer.getAcquire((cap - 1) & tail.get()) == null)
+      }
 
     /** Helps or blocks until timeout, closed, or space available. */
     def awaitSpace(nanos: Long): Unit =
