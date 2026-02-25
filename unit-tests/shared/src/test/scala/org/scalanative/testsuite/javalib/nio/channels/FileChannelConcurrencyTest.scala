@@ -4,8 +4,8 @@ import java.io.File
 import java.nio.ByteBuffer
 import java.nio.channels.FileChannel
 import java.nio.file.{Files, Path, StandardOpenOption}
-import java.util.concurrent.{CyclicBarrier, CountDownLatch, TimeUnit}
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
+import java.util.concurrent.{CountDownLatch, CyclicBarrier, TimeUnit}
 
 import org.junit.Assert._
 import org.junit.{BeforeClass, Test}
@@ -14,13 +14,13 @@ import scala.scalanative.junit.utils.AssumesHelper
 
 /** Tests demonstrating FileChannel thread-safety issues (Issue #4385).
  *
- *  Java's FileChannel contract requires thread-safety: "Channels are safe
- *  for use by multiple concurrent threads." The current Scala Native
- *  FileChannelImpl uses an unsynchronized save/restore position pattern
- *  that races under concurrent access.
+ *  Java's FileChannel contract requires thread-safety: "Channels are safe for
+ *  use by multiple concurrent threads." The current Scala Native
+ *  FileChannelImpl uses an unsynchronized save/restore position pattern that
+ *  races under concurrent access.
  *
- *  These tests should PASS on JVM (which has proper synchronization)
- *  and are expected to FAIL on Scala Native until internal locking is added.
+ *  These tests should PASS on JVM (which has proper synchronization) and are
+ *  expected to FAIL on Scala Native until internal locking is added.
  */
 object FileChannelConcurrencyTest {
   @BeforeClass
@@ -42,7 +42,8 @@ class FileChannelConcurrencyTest {
     val dir = Files.createTempDirectory("fc-conc-test")
     try fn(dir)
     finally {
-      Files.walk(dir)
+      Files
+        .walk(dir)
         .sorted(java.util.Comparator.reverseOrder())
         .forEach(p => Files.deleteIfExists(p))
     }
@@ -243,8 +244,8 @@ class FileChannelConcurrencyTest {
         val regionAOffset = 0L
         val regionBOffset = 200L
         val regionSize = 100
-        val patternA: Byte = 0xAA.toByte
-        val patternB: Byte = 0xBB.toByte
+        val patternA: Byte = 0xaa.toByte
+        val patternB: Byte = 0xbb.toByte
 
         for (_ <- 0 until ITERATIONS) {
           channel.position(knownPosition)
