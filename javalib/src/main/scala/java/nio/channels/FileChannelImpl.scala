@@ -4,6 +4,7 @@ import java.io.{File, FileDescriptor, IOException}
 import java.nio.file.{Files, WindowsException}
 import java.nio.{ByteBuffer, MappedByteBuffer, MappedByteBufferImpl}
 import java.util.Objects
+import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import scala.scalanative.libc.errno.errno
 import scala.scalanative.libc.{LibcExt, stdio}
@@ -31,11 +32,29 @@ private[java] final class FileChannelImpl(
     openForWriting: Boolean,
     openForAppending: Boolean = false
 ) extends FileChannel {
-  /* Note:
-   *   Channels are described in the Java documentation as thread-safe.
-   *   This implementation is, most patently _not_ thread-safe.
-   *   Use with only one thread accessing the channel, even for READS.
+  /* Channels are described in the Java documentation as thread-safe.
+   * This implementation uses a ReentrantReadWriteLock to provide
+   * mutual exclusion for position-sensitive operations.
+   *
+   * Write lock: any operation that modifies file position or content.
+   * Read lock: position() getter, size() — queries that do not modify position.
    */
+
+  private val positionLock = new ReentrantReadWriteLock()
+
+  @inline private def withWriteLock[A](body: => A): A = {
+    val lock = positionLock.writeLock()
+    lock.lock()
+    try body
+    finally lock.unlock()
+  }
+
+  @inline private def withReadLock[A](body: => A): A = {
+    val lock = positionLock.readLock()
+    lock.lock()
+    try body
+    finally lock.unlock()
+  }
 
   if (openForAppending)
     seekEOF() // so a position() before first APPEND write() matches JVM.
@@ -188,7 +207,7 @@ private[java] final class FileChannelImpl(
       mode: FileChannel.MapMode,
       position: Long,
       size: Long
-  ): MappedByteBuffer = {
+  ): MappedByteBuffer = withWriteLock {
     if (!openForReading)
       throw new NonReadableChannelException
 
@@ -219,7 +238,7 @@ private[java] final class FileChannelImpl(
 
       // This "lengthen" branch is tested/exercised in MappedByteBufferTest.
       // Look in MappedByteBufferTest for tests of this "lengthen" block.
-      val currentFileSize = this.size()
+      val currentFileSize = sizeUnsync()
       // Detect Long overflow & throw. Room for improvement here.
       val newFileSize = Math.addExact(position, size)
       if (newFileSize > currentFileSize)
@@ -229,6 +248,24 @@ private[java] final class FileChannelImpl(
     // RE: toInt() truncation safety, see note for "size" arg checking above.
     MappedByteBufferImpl(mode, position, size.toInt, fd)
   }
+
+  // Internal position getter — caller must already hold the lock.
+  private def positionUnsync(): Long =
+    if (isWindows) {
+      val filePointer = stackalloc[LargeInteger]()
+      FileApi.SetFilePointerEx(
+        fd.handle,
+        0,
+        filePointer,
+        FILE_CURRENT
+      )
+      !filePointer
+    } else {
+      val pos = unistd.lseek(fd.fd, 0, stdio.SEEK_CUR).toLong
+      if (pos < 0)
+        throwPosixException("lseek")
+      pos
+    }
 
   // change position, even in APPEND mode. Use _carefully_.
   private def compelPosition(offset: Long): FileChannel = {
@@ -248,35 +285,22 @@ private[java] final class FileChannelImpl(
     this
   }
 
-  override def position(offset: Long): FileChannel = {
+  override def position(offset: Long): FileChannel = withWriteLock {
     if (!openForAppending)
       compelPosition(offset)
 
     this
   }
 
-  override def position(): Long =
-    if (isWindows) {
-      val filePointer = stackalloc[LargeInteger]()
-      FileApi.SetFilePointerEx(
-        fd.handle,
-        0,
-        filePointer,
-        FILE_CURRENT
-      )
-      !filePointer
-    } else {
-      val pos = unistd.lseek(fd.fd, 0, stdio.SEEK_CUR).toLong
-      if (pos < 0)
-        throwPosixException("lseek")
-      pos
-    }
+  override def position(): Long = withReadLock {
+    positionUnsync()
+  }
 
   override def read(
       buffers: Array[ByteBuffer],
       start: Int,
       number: Int
-  ): Long = {
+  ): Long = withWriteLock {
     Objects.requireNonNull(buffers, "dsts")
     Objects.checkFromIndexSize(start, number, buffers.length)
 
@@ -306,9 +330,9 @@ private[java] final class FileChannelImpl(
     totalRead
   }
 
-  override def read(buffer: ByteBuffer, pos: Long): Int = {
+  override def read(buffer: ByteBuffer, pos: Long): Int = withWriteLock {
     ensureOpen()
-    val stashPosition = position()
+    val stashPosition = positionUnsync()
     compelPosition(pos)
     val bufPosition: Int = buffer.position()
     read(buffer.array(), bufPosition, buffer.limit() - bufPosition) match {
@@ -322,7 +346,7 @@ private[java] final class FileChannelImpl(
     }
   }
 
-  override def read(buffer: ByteBuffer): Int = {
+  override def read(buffer: ByteBuffer): Int = withWriteLock {
     ensureOpen()
     val bufPosition: Int = buffer.position()
     read(buffer.array(), bufPosition, buffer.limit() - bufPosition) match {
@@ -392,7 +416,22 @@ private[java] final class FileChannelImpl(
     }
   }
 
-  override def size(): Long = {
+  // Internal size getter — caller must already hold the lock.
+  private def sizeUnsync(): Long =
+    if (isWindows) {
+      val size = stackalloc[windows.LargeInteger]()
+      if (GetFileSizeEx(fd.handle, size)) (!size).toLong
+      else 0L
+    } else
+      Zone.acquire { implicit z =>
+        val statBuf = alloc[stat.stat]()
+        val err = stat.fstat(fd.fd, statBuf)
+        if (err != 0)
+          throwPosixException("fstat")
+        statBuf.st_size.toLong
+      }
+
+  override def size(): Long = withReadLock {
     if (isWindows) {
       val size = stackalloc[windows.LargeInteger]()
       if (GetFileSizeEx(fd.handle, size)) (!size).toLong
@@ -427,14 +466,14 @@ private[java] final class FileChannelImpl(
       src: ReadableByteChannel,
       _position: Long,
       count: Long
-  ): Long = {
+  ): Long = withWriteLock {
     if (_position < 0L)
       throw new IllegalArgumentException("Negative position")
 
     if (count < 0L)
       throw new IllegalArgumentException("Negative count")
 
-    if (_position > this.size()) {
+    if (_position > sizeUnsync()) {
       0L
     } else {
       ensureOpen()
@@ -446,13 +485,9 @@ private[java] final class FileChannelImpl(
 
       val buf = ByteBuffer.allocate(bufSize)
 
-      /* The writing is known to be sequential, reduce wasted seek()ing
-       * by using relative I/O with save/restore of original position
-       * rather than attractive but expensive absolute I/O plus math.
-       */
-      val savedPosition = position()
+      val savedPosition = positionUnsync()
       if (savedPosition != _position)
-        position(_position)
+        compelPosition(_position)
 
       var totalWritten = 0L
 
@@ -460,22 +495,21 @@ private[java] final class FileChannelImpl(
         var done = false
 
         while ((!done) && (totalWritten < count)) {
-          // Bounding the limit is key to not reading/writing too many bytes.
           val nRemaining = count - totalWritten
           if ((nRemaining) < bufSize)
-            buf.limit(nRemaining.toInt) // Enable next partial buf short read
+            buf.limit(nRemaining.toInt)
 
           if (src.read(buf) == -1) {
             done = true
           } else {
             buf.flip()
             while (buf.hasRemaining())
-              totalWritten += this.write(buf)
+              totalWritten += writeByteBuffer(buf)
             buf.flip()
           }
         }
       } finally {
-        position(savedPosition)
+        compelPosition(savedPosition)
       }
 
       totalWritten
@@ -488,14 +522,14 @@ private[java] final class FileChannelImpl(
       _position: Long,
       count: Long,
       target: WritableByteChannel
-  ): Long = {
+  ): Long = withWriteLock {
     if (_position < 0L)
       throw new IllegalArgumentException("Negative position")
 
     if (count < 0L)
       throw new IllegalArgumentException("Negative count")
 
-    if (_position > this.size()) {
+    if (_position > sizeUnsync()) {
       0L
     } else {
       ensureOpen()
@@ -507,29 +541,26 @@ private[java] final class FileChannelImpl(
 
       val buf = ByteBuffer.allocate(bufSize)
 
-      /* The reading is known to be sequential, reduce wasted seek()ing
-       * by using relative I/O with save/restore of original position
-       * rather than attractive but expensive absolute I/O plus math.
-       */
-      val savedPosition = position()
+      val savedPosition = positionUnsync()
       if (savedPosition != _position)
-        position(_position)
+        compelPosition(_position)
 
       var totalWritten = 0L
 
       try {
-
         var done = false
 
         while ((!done) && (totalWritten < count)) {
-          // Bounding the limit is key to not reading/writing too many bytes.
           val nRemaining = count - totalWritten
           if (nRemaining < bufSize)
-            buf.limit(nRemaining.toInt) // Enable next partial buf short read
+            buf.limit(nRemaining.toInt)
 
-          if (this.read(buf) == -1) {
+          val bufPosition = buf.position()
+          val n = read(buf.array(), bufPosition, buf.limit() - bufPosition)
+          if (n == -1) {
             done = true
           } else {
+            buf.position(bufPosition + n)
             buf.flip()
             while (buf.hasRemaining())
               totalWritten += target.write(buf)
@@ -537,13 +568,14 @@ private[java] final class FileChannelImpl(
           }
         }
       } finally {
-        position(savedPosition)
+        compelPosition(savedPosition)
       }
 
       totalWritten
     }
   }
 
+  // Precondition: caller must already hold write lock.
   private def lengthen(newFileSize: Long): Unit = {
     /* Preconditions: only caller, this.map(),  has ensured:
      *   - newFileSize > currentSize
@@ -555,7 +587,7 @@ private[java] final class FileChannelImpl(
       if (status < 0)
         throwPosixException("ftruncate")
     } else {
-      val currentPosition = position()
+      val currentPosition = positionUnsync()
 
       val hasSucceded =
         FileApi.SetFilePointerEx(
@@ -577,9 +609,10 @@ private[java] final class FileChannelImpl(
        * Write a single byte to just before EOF to convince the
        * Windows file systems to actualize and zero the undefined blocks.
        */
-      write(ByteBuffer.wrap(Array[Byte](0.toByte)), newFileSize - 1)
+      compelPosition(newFileSize - 1)
+      writeArray(Array[Byte](0.toByte), 0, 1)
 
-      position(currentPosition)
+      compelPosition(currentPosition)
     }
 
     /* This next step may not be strictly necessary; it is included for the
@@ -598,7 +631,7 @@ private[java] final class FileChannelImpl(
     force(true)
   }
 
-  override def truncate(newSize: Long): FileChannel = {
+  override def truncate(newSize: Long): FileChannel = withWriteLock {
     if (newSize < 0)
       throw new IllegalArgumentException("Negative size")
 
@@ -607,9 +640,9 @@ private[java] final class FileChannelImpl(
     if (!openForWriting)
       throw new NonWritableChannelException()
 
-    val currentPosition = position()
+    val currentPosition = positionUnsync()
 
-    if (newSize < size()) {
+    if (newSize < sizeUnsync()) {
       if (isWindows) {
         val hasSucceded =
           FileApi.SetFilePointerEx(
@@ -716,7 +749,7 @@ private[java] final class FileChannelImpl(
       srcs: Array[ByteBuffer],
       offset: Int,
       length: Int
-  ): Long = {
+  ): Long = withWriteLock {
     Objects.requireNonNull(srcs, "srcs")
     Objects.checkFromIndexSize(offset, length, srcs.length)
 
@@ -752,9 +785,9 @@ private[java] final class FileChannelImpl(
    * new EOF rather than stashed position, according to JVM it is not
    * really changing the "current position".
    */
-  override def write(src: ByteBuffer, pos: Long): Int = {
+  override def write(src: ByteBuffer, pos: Long): Int = withWriteLock {
     ensureOpenForWrite()
-    val stashPosition = position()
+    val stashPosition = positionUnsync()
     compelPosition(pos)
 
     val nBytesWritten = writeByteBuffer(src)
@@ -768,7 +801,7 @@ private[java] final class FileChannelImpl(
   }
 
   // Write relative to current position (SEEK_CUR) or, for APPEND, SEEK_END.
-  override def write(src: ByteBuffer): Int = {
+  override def write(src: ByteBuffer): Int = withWriteLock {
     ensureOpenForWrite()
     writeByteBuffer(src)
   }
@@ -811,7 +844,7 @@ private[java] final class FileChannelImpl(
    */
 
   // local API extension, but follows description of FileInputStream#available
-  private[java] def available(): Int = {
+  private[java] def available(): Int = withReadLock {
     ensureOpen()
 
     if (!isWindows) {
@@ -832,7 +865,7 @@ private[java] final class FileChannelImpl(
       if (failed) 0
       else Math.min((!availableTotal).toLong, Int.MaxValue).toInt
     } else {
-      Math.clamp((size() - position()), 0, Int.MaxValue)
+      Math.clamp((sizeUnsync() - positionUnsync()), 0, Int.MaxValue)
     }
   }
 }
