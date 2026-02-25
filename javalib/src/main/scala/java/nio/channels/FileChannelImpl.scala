@@ -432,26 +432,7 @@ private[java] final class FileChannelImpl(
       }
 
   override def size(): Long = withReadLock {
-    if (isWindows) {
-      val size = stackalloc[windows.LargeInteger]()
-      if (GetFileSizeEx(fd.handle, size)) (!size).toLong
-      else 0L
-    } else
-      Zone.acquire { implicit z =>
-        /* statbuf is too large to be thread stack friendly.
-         * Even a Zone and an alloc() per size() call should be cheaper than
-         * the required three (yes 3 to get it right and not move current
-         * position) lseek() calls. Room for performance improvements remain.
-         */
-
-        val statBuf = alloc[stat.stat]()
-
-        val err = stat.fstat(fd.fd, statBuf)
-        if (err != 0)
-          throwPosixException("fstat")
-
-        statBuf.st_size.toLong
-      }
+    sizeUnsync()
   }
 
   /* The pair transferFrom() and transferTo() and quite similar and
