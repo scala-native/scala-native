@@ -668,7 +668,7 @@ private[java] case class PlatformThreadContext(
       throw new IllegalThreadStateException("This thread was already started!")
     }
 
-    atomic_thread_fence(memory_order_seq_cst)
+    atomic_thread_fence(memory_order_release)
     nativeThread = Thread.nativeCompanion.create(thread, stackSize)
     atomic_thread_fence(memory_order_release)
     while (nativeThread.state == New) Thread.onSpinWait()

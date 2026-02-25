@@ -220,7 +220,7 @@ object NativeThread {
     StackOverflowGuards.setup(isMainThread = false)
 
     nativeThread.state = State.Running
-    atomic_thread_fence(memory_order_seq_cst)
+    atomic_thread_fence(memory_order_release)
     // Ensure Java Thread already assigned the Native Thread instance
     // Otherwise park/unpark events might be lost
     while (thread.getState() == Thread.State.NEW) onSpinWait()
