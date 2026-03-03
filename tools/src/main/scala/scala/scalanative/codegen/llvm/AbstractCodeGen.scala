@@ -23,11 +23,13 @@ import MetadataCodeGen.DefnScopes
 
 private[codegen] abstract class AbstractCodeGen(
     env: Map[nir.Global, nir.Defn],
-    defns: Seq[nir.Defn]
+    defns: Seq[nir.Defn],
+    tracer: build.ScalaNativeTracer
 )(implicit val meta: CodeGenMetadata)
     extends MetadataCodeGen {
   import meta.{config, platform}
   import platform._
+  import tracer.*
 
   val pointerType = if (useOpaquePointers) "ptr" else "i8*"
 
@@ -198,18 +200,21 @@ private[codegen] abstract class AbstractCodeGen(
   private def genDefn(defn: nir.Defn)(implicit
       sb: ShowBuilder,
       metaCtx: MetadataCodeGen.Context
-  ): Unit = defn match {
-    case nir.Defn.Var(attrs, name, ty, rhs) =>
-      genGlobalDefn(attrs, name, isConst = false, ty, rhs)
-    case nir.Defn.Const(attrs, name, ty, rhs) =>
-      genGlobalDefn(attrs, name, isConst = true, ty, rhs)
-    case nir.Defn.Declare(attrs, name, sig) =>
-      genFunctionDefn(defn, Seq.empty, nir.Fresh(), DebugInfo.empty)
-    case nir.Defn.Define(attrs, name, sig, insts, debugInfo) =>
-      genFunctionDefn(defn, insts, nir.Fresh(insts), debugInfo)
-    case defn =>
-      unsupported(defn)
-  }
+  ): Unit =
+    symSpan(defn.name) {
+      defn match {
+        case nir.Defn.Var(attrs, name, ty, rhs) =>
+          genGlobalDefn(attrs, name, isConst = false, ty, rhs)
+        case nir.Defn.Const(attrs, name, ty, rhs) =>
+          genGlobalDefn(attrs, name, isConst = true, ty, rhs)
+        case nir.Defn.Declare(attrs, name, sig) =>
+          genFunctionDefn(defn, Seq.empty, nir.Fresh(), DebugInfo.empty)
+        case nir.Defn.Define(attrs, name, sig, insts, debugInfo) =>
+          genFunctionDefn(defn, insts, nir.Fresh(insts), debugInfo)
+        case defn =>
+          unsupported(defn)
+      }
+    }
 
   private[codegen] def genGlobalDefn(
       attrs: nir.Attrs,

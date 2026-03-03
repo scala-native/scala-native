@@ -4,6 +4,7 @@ package codegen
 
 import scala.collection.mutable
 
+import scala.scalanative.build.{ScalaNativeTracer, Tracing}
 import scalanative.interflow.UseDef.eliminateDeadCode
 import scalanative.linker._
 import scalanative.nir.ControlFlow.{Block, Graph}
@@ -12,11 +13,12 @@ import scalanative.util.{ScopedVar, unsupported}
 private[scalanative] object Lower {
 
   def apply(
-      defns: Seq[nir.Defn]
+      defns: Seq[nir.Defn],
+      tracer: ScalaNativeTracer
   )(implicit meta: Metadata, logger: build.Logger): Seq[nir.Defn] =
-    (new Impl).onDefns(defns)
+    (new Impl(tracer)).onDefns(defns)
 
-  private final class Impl(implicit meta: Metadata, logger: build.Logger) extends nir.Transform {
+  private final class Impl(val tracer: ScalaNativeTracer)(implicit meta: Metadata, logger: build.Logger) extends nir.Transform {
     import meta._
     import meta.layouts.{ArrayHeader, ClassRtti, ITable, Rtti}
 
@@ -122,21 +124,24 @@ private[scalanative] object Lower {
       buf.toSeq
     }
 
-    override def onDefn(defn: nir.Defn): nir.Defn = defn match {
-      case defn: nir.Defn.Define =>
-        val nir.Type.Function(_, ty) = defn.ty
-        ScopedVar.scoped(
-          fresh := nir.Fresh(defn.insts),
-          currentDefn := defn,
-          currentDefnGraph := Graph(defn.insts),
-          intrinsicMethods := mutable.Map.empty
-        ) {
-          try super.onDefn(defn)
-          finally blockInfo.clear()
+    override def onDefn(defn: nir.Defn): nir.Defn =
+      tracer.symSpan(defn.name) {
+        defn match {
+          case defn: nir.Defn.Define =>
+            val nir.Type.Function(_, ty) = defn.ty
+            ScopedVar.scoped(
+              fresh := nir.Fresh(defn.insts),
+              currentDefn := defn,
+              currentDefnGraph := Graph(defn.insts),
+              intrinsicMethods := mutable.Map.empty
+            ) {
+              try super.onDefn(defn)
+              finally blockInfo.clear()
+            }
+          case _ =>
+            super.onDefn(defn)
         }
-      case _ =>
-        super.onDefn(defn)
-    }
+      }
 
     override def onType(ty: nir.Type): nir.Type = ty
 
@@ -319,9 +324,9 @@ private[scalanative] object Lower {
           logger.synchronized {
             logger.error(
               s"""|Dead code elimnation failed: ${error.getMessage()}
-                  |Original defn: 
+                  |Original defn:
                   |${currentDefn.get.show}
-                  |Lowered instructions: 
+                  |Lowered instructions:
                   |${loweredInsts.zipWithIndex.map { case (inst, idx) => s"${idx.toString().padTo(4, ' ')}| ${inst.show}" }.mkString("\n")}
                   |""".stripMargin
             )
