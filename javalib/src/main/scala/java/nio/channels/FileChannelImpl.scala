@@ -68,6 +68,7 @@ private[java] final class FileChannelImpl(
       throw new NonWritableChannelException()
   }
 
+  // Precondition: caller must already hold write lock (or be in constructor).
   private def seekEOF(): Unit = {
     if (isWindows) {
       SetFilePointerEx(
@@ -249,6 +250,24 @@ private[java] final class FileChannelImpl(
     MappedByteBufferImpl(mode, position, size.toInt, fd)
   }
 
+  // change position, even in APPEND mode. Use _carefully_.
+  private def compelPosition(offset: Long): FileChannel = {
+    if (isWindows)
+      FileApi.SetFilePointerEx(
+        fd.handle,
+        offset,
+        null,
+        FILE_BEGIN
+      )
+    else {
+      val pos = unistd.lseek(fd.fd, offset.toSize, stdio.SEEK_SET)
+      if (pos < 0)
+        throwPosixException("lseek")
+    }
+
+    this
+  }
+
   // Internal position getter — caller must already hold the lock.
   private def positionUnsync(): Long =
     if (isWindows) {
@@ -267,22 +286,29 @@ private[java] final class FileChannelImpl(
       pos
     }
 
-  // change position, even in APPEND mode. Use _carefully_.
-  private def compelPosition(offset: Long): FileChannel = {
-    if (isWindows)
-      FileApi.SetFilePointerEx(
-        fd.handle,
-        offset,
-        null,
-        FILE_BEGIN
-      )
-    else {
-      val pos = unistd.lseek(fd.fd, offset.toSize, stdio.SEEK_SET)
-      if (pos < 0)
-        throwPosixException("lseek")
-    }
+  /* Save current position, seek to pos, execute body, restore position.
+   * Always restores because I/O within body advances the position.
+   * Precondition: caller must already hold write lock.
+   */
+  @inline private def withPositionUnsync[A](pos: Long)(body: => A): A = {
+    val savedPos = positionUnsync()
+    if (savedPos != pos) compelPosition(pos)
+    try body
+    finally compelPosition(savedPos)
+  }
 
-    this
+  /* Read into a ByteBuffer without acquiring the position lock.
+   * Precondition: caller must already hold write lock.
+   */
+  private def readByteBufferUnsync(buffer: ByteBuffer): Int = {
+    val bufPosition: Int = buffer.position()
+    read(buffer.array(), bufPosition, buffer.limit() - bufPosition) match {
+      case bytesRead if bytesRead < 0 =>
+        bytesRead
+      case bytesRead =>
+        buffer.position(bufPosition + bytesRead)
+        bytesRead
+    }
   }
 
   override def position(offset: Long): FileChannel = withWriteLock {
@@ -332,30 +358,14 @@ private[java] final class FileChannelImpl(
 
   override def read(buffer: ByteBuffer, pos: Long): Int = withWriteLock {
     ensureOpen()
-    val stashPosition = positionUnsync()
-    compelPosition(pos)
-    val bufPosition: Int = buffer.position()
-    read(buffer.array(), bufPosition, buffer.limit() - bufPosition) match {
-      case bytesRead if bytesRead < 0 =>
-        compelPosition(stashPosition)
-        bytesRead
-      case bytesRead =>
-        buffer.position(bufPosition + bytesRead)
-        compelPosition(stashPosition)
-        bytesRead
+    withPositionUnsync(pos) {
+      readByteBufferUnsync(buffer)
     }
   }
 
   override def read(buffer: ByteBuffer): Int = withWriteLock {
     ensureOpen()
-    val bufPosition: Int = buffer.position()
-    read(buffer.array(), bufPosition, buffer.limit() - bufPosition) match {
-      case bytesRead if bytesRead < 0 =>
-        bytesRead
-      case bytesRead =>
-        buffer.position(bufPosition + bytesRead)
-        bytesRead
-    }
+    readByteBufferUnsync(buffer)
   }
 
   private def getFileName(orElse: => String = ""): String =
@@ -443,6 +453,11 @@ private[java] final class FileChannelImpl(
    * day is left for the reader.
    */
 
+  /* The write lock is acquired once at method entry. Internal calls use
+   * unsync helpers (positionUnsync, writeByteBuffer, etc.) to avoid
+   * recursive lock acquisition. Designed for correctness; eliminating
+   * any remaining recursive locking overhead is a future optimization.
+   */
   override def transferFrom(
       src: ReadableByteChannel,
       _position: Long,
@@ -466,19 +481,19 @@ private[java] final class FileChannelImpl(
 
       val buf = ByteBuffer.allocate(bufSize)
 
-      val savedPosition = positionUnsync()
-      if (savedPosition != _position)
-        compelPosition(_position)
-
-      var totalWritten = 0L
-
-      try {
+      /* The writing is known to be sequential, reduce wasted seek()ing
+       * by using relative I/O with save/restore of original position
+       * rather than attractive but expensive absolute I/O plus math.
+       */
+      withPositionUnsync(_position) {
+        var totalWritten = 0L
         var done = false
 
         while ((!done) && (totalWritten < count)) {
+          // Bounding the limit is key to not reading/writing too many bytes.
           val nRemaining = count - totalWritten
           if ((nRemaining) < bufSize)
-            buf.limit(nRemaining.toInt)
+            buf.limit(nRemaining.toInt) // Enable next partial buf short read
 
           if (src.read(buf) == -1) {
             done = true
@@ -489,16 +504,15 @@ private[java] final class FileChannelImpl(
             buf.flip()
           }
         }
-      } finally {
-        compelPosition(savedPosition)
-      }
 
-      totalWritten
+        totalWritten
+      }
     }
   }
 
   // See comment about lack of common code before transferFrom()
 
+  // See comment about lock design before transferFrom()
   override def transferTo(
       _position: Long,
       count: Long,
@@ -522,37 +536,33 @@ private[java] final class FileChannelImpl(
 
       val buf = ByteBuffer.allocate(bufSize)
 
-      val savedPosition = positionUnsync()
-      if (savedPosition != _position)
-        compelPosition(_position)
-
-      var totalWritten = 0L
-
-      try {
+      /* The reading is known to be sequential, reduce wasted seek()ing
+       * by using relative I/O with save/restore of original position
+       * rather than attractive but expensive absolute I/O plus math.
+       */
+      withPositionUnsync(_position) {
+        var totalWritten = 0L
         var done = false
 
         while ((!done) && (totalWritten < count)) {
+          // Bounding the limit is key to not reading/writing too many bytes.
           val nRemaining = count - totalWritten
           if (nRemaining < bufSize)
-            buf.limit(nRemaining.toInt)
+            buf.limit(nRemaining.toInt) // Enable next partial buf short read
 
-          val bufPosition = buf.position()
-          val n = read(buf.array(), bufPosition, buf.limit() - bufPosition)
+          val n = readByteBufferUnsync(buf)
           if (n == -1) {
             done = true
           } else {
-            buf.position(bufPosition + n)
             buf.flip()
             while (buf.hasRemaining())
               totalWritten += target.write(buf)
             buf.flip()
           }
         }
-      } finally {
-        compelPosition(savedPosition)
-      }
 
-      totalWritten
+        totalWritten
+      }
     }
   }
 
@@ -773,6 +783,7 @@ private[java] final class FileChannelImpl(
 
     val nBytesWritten = writeByteBuffer(src)
 
+    // Precondition: seekEOF() is called with write lock held.
     if (!openForAppending)
       compelPosition(stashPosition)
     else
