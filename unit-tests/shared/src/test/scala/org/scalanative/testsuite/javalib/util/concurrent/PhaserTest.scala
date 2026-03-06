@@ -24,7 +24,6 @@ import java.util.{ArrayList, List}
 import org.junit.Assert._
 import org.junit.Test
 
-import org.scalanative.testsuite.javalib.util.concurrent.JSR166Test
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 import JSR166Test._
