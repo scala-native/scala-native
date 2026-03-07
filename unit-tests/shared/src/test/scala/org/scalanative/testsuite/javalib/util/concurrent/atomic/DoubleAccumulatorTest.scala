@@ -128,7 +128,7 @@ class DoubleAccumulatorTest extends JSR166Test {
     val acc = new DoubleAccumulator((x, y) => x + y, 0.0)
     val nThreads = ThreadLocalRandom.current().nextInt(1, 5)
     val phaser = new Phaser(nThreads + 1)
-    val incs = if (expensiveTests) 1000_000 else 100000
+    val incs = if (expensiveTests) 1000000 else 100000
     val total: scala.Double = nThreads * incs / 2.0 * (incs - 1) // Gauss
     val task: Runnable = () => {
       phaser.arriveAndAwaitAdvance()
