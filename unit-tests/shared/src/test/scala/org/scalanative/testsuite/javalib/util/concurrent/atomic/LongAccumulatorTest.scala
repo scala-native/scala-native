@@ -118,7 +118,7 @@ class LongAccumulatorTest extends JSR166Test {
     val acc = new LongAccumulator((x, y) => x + y, 0L)
     val nThreads = ThreadLocalRandom.current().nextInt(1, 5)
     val phaser = new Phaser(nThreads + 1)
-    val incs = if (expensiveTests) 1_000_000 else 100_000
+    val incs = if (expensiveTests) 1000000 else 100000
     val total: scala.Long = nThreads * incs / 2L * (incs - 1) // Gauss
     val task: Runnable = () => {
       phaser.arriveAndAwaitAdvance()
