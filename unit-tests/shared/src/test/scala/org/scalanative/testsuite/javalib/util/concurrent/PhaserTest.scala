@@ -3,7 +3,7 @@
  *
  *    https://gee.cs.oswego.edu/dl/concurrency-interest/.
  *
- * file: src/test/tck/PhaserTest.java?revision=1.51&view=markup
+ * file: src/test/tck/PhaserTest.java
  * revision 1.51, dated: 2021-01-26
  */
 
@@ -25,8 +25,6 @@ import org.junit.Assert._
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-
-import JSR166Test._
 
 class PhaserTest extends JSR166Test {
   import JSR166Test._
