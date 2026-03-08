@@ -18,18 +18,24 @@ abstract class TimeUnit private (name: String, ordinal: Int)
   def toHours(a: Long): Long
   def toDays(a: Long): Long
 
-  def sleep(timeout: Long): Unit =
-    if (timeout > 0) Thread.sleep(toMillis(timeout))
-  def timedJoin(thread: Thread, timeout: Long) =
-    if (timeout > 0) thread.join(toMillis(timeout))
-  def timedWait(obj: Object, timeout: Long) =
-    if (timeout > 0) obj.wait(toMillis(timeout))
+  def sleep(timeout: Long): Unit = if (timeout > 0) {
+    val millis = toMillis(timeout)
+    Thread.sleep(millis, TimeUnit.excessNanos(this, timeout, millis))
+  }
+  def timedJoin(thread: Thread, timeout: Long) = if (timeout > 0) {
+    val millis = toMillis(timeout)
+    thread.join(millis, TimeUnit.excessNanos(this, timeout, millis))
+  }
+  def timedWait(obj: Object, timeout: Long) = if (timeout > 0) {
+    val millis = toMillis(timeout)
+    obj.wait(millis, TimeUnit.excessNanos(this, timeout, millis))
+  }
 }
 
 object TimeUnit {
   final val NANOSECONDS: TimeUnit = new TimeUnit("NANOSECONDS", 0) {
     def convert(a: Long, u: TimeUnit): Long = u.toNanos(a)
-    def convert(duration: Duration): Long = duration.toNanos()
+    def convert(duration: Duration): Long = durationToUnitCount(duration, C0)
     def toNanos(a: Long): Long = a
     def toMicros(a: Long): Long = a / (C1 / C0)
     def toMillis(a: Long): Long = a / (C2 / C0)
@@ -41,8 +47,7 @@ object TimeUnit {
 
   final val MICROSECONDS: TimeUnit = new TimeUnit("MICROSECONDS", 1) {
     def convert(a: Long, u: TimeUnit): Long = u.toMicros(a)
-    def convert(duration: Duration): Long =
-      NANOSECONDS.toMicros(duration.toNanos())
+    def convert(duration: Duration): Long = durationToUnitCount(duration, C1)
     def toNanos(a: Long): Long = x(a, C1 / C0, MAX / (C1 / C0))
     def toMicros(a: Long): Long = a
     def toMillis(a: Long): Long = a / (C2 / C1)
@@ -54,7 +59,7 @@ object TimeUnit {
 
   final val MILLISECONDS: TimeUnit = new TimeUnit("MILLISECONDS", 2) {
     def convert(a: Long, u: TimeUnit): Long = u.toMillis(a)
-    def convert(duration: Duration): Long = duration.toMillis()
+    def convert(duration: Duration): Long = durationToUnitCount(duration, C2)
     def toNanos(a: Long): Long = x(a, C2 / C0, MAX / (C2 / C0))
     def toMicros(a: Long): Long = x(a, C2 / C1, MAX / (C2 / C1))
     def toMillis(a: Long): Long = a
@@ -66,7 +71,7 @@ object TimeUnit {
 
   final val SECONDS: TimeUnit = new TimeUnit("SECONDS", 3) {
     def convert(a: Long, u: TimeUnit): Long = u.toSeconds(a)
-    def convert(duration: Duration): Long = duration.toSeconds()
+    def convert(duration: Duration): Long = durationToUnitCount(duration, C3)
     def toNanos(a: Long): Long = x(a, C3 / C0, MAX / (C3 / C0))
     def toMicros(a: Long): Long = x(a, C3 / C1, MAX / (C3 / C1))
     def toMillis(a: Long): Long = x(a, C3 / C2, MAX / (C3 / C2))
@@ -78,7 +83,7 @@ object TimeUnit {
 
   final val MINUTES: TimeUnit = new TimeUnit("MINUTES", 4) {
     def convert(a: Long, u: TimeUnit): Long = u.toMinutes(a)
-    def convert(duration: Duration): Long = duration.toMinutes()
+    def convert(duration: Duration): Long = durationToUnitCount(duration, C4)
     def toNanos(a: Long): Long = x(a, C4 / C0, MAX / (C4 / C0))
     def toMicros(a: Long): Long = x(a, C4 / C1, MAX / (C4 / C1))
     def toMillis(a: Long): Long = x(a, C4 / C2, MAX / (C4 / C2))
@@ -90,7 +95,7 @@ object TimeUnit {
 
   final val HOURS: TimeUnit = new TimeUnit("HOURS", 5) {
     def convert(a: Long, u: TimeUnit): Long = u.toHours(a)
-    def convert(duration: Duration): Long = duration.toHours()
+    def convert(duration: Duration): Long = durationToUnitCount(duration, C5)
     def toNanos(a: Long): Long = x(a, C5 / C0, MAX / (C5 / C0))
     def toMicros(a: Long): Long = x(a, C5 / C1, MAX / (C5 / C1))
     def toMillis(a: Long): Long = x(a, C5 / C2, MAX / (C5 / C2))
@@ -102,7 +107,7 @@ object TimeUnit {
 
   final val DAYS: TimeUnit = new TimeUnit("DAYS", 6) {
     def convert(a: Long, u: TimeUnit): Long = u.toDays(a)
-    def convert(duration: Duration): Long = duration.toDays()
+    def convert(duration: Duration): Long = durationToUnitCount(duration, C6)
     def toNanos(a: Long): Long = x(a, C6 / C0, MAX / (C6 / C0))
     def toMicros(a: Long): Long = x(a, C6 / C1, MAX / (C6 / C1))
     def toMillis(a: Long): Long = x(a, C6 / C2, MAX / (C6 / C2))
@@ -132,6 +137,7 @@ object TimeUnit {
   private final val C5 = C4 * 60L
   private final val C6 = C5 * 24L
   private final val MAX = Long.MaxValue
+  private final val MIN = Long.MinValue
 
   def values(): Array[TimeUnit] = _values.clone()
 
@@ -144,6 +150,51 @@ object TimeUnit {
   private def x(a: Long, b: Long, max: Long): Long = {
     if (a > max) MAX
     else if (a < -max) -MAX
+    else a * b
+  }
+
+  private def excessNanos(unit: TimeUnit, duration: Long, millis: Long): Int =
+    unit match {
+      case NANOSECONDS  => (duration - (millis * C2)).toInt
+      case MICROSECONDS => ((duration * C1) - (millis * C2)).toInt
+      case _            => 0
+    }
+
+  private def durationToUnitCount(
+      duration: Duration,
+      nanosPerUnit: Long
+  ): Long = {
+    var seconds = duration.getSeconds()
+    var nanos = duration.getNano().toLong
+
+    // Align the fractional nanoseconds with the sign of the whole-seconds part
+    // so division truncates toward zero like the JDK.
+    if (seconds < 0 && nanos > 0) {
+      seconds += 1
+      nanos -= C3
+    }
+
+    if (nanosPerUnit <= C3) {
+      val unitsPerSecond = C3 / nanosPerUnit
+      addSaturated(
+        multiplySaturated(seconds, unitsPerSecond),
+        nanos / nanosPerUnit
+      )
+    } else {
+      val secondsPerUnit = nanosPerUnit / C3
+      seconds / secondsPerUnit
+    }
+  }
+
+  private def addSaturated(a: Long, b: Long): Long = {
+    if (b > 0 && a > MAX - b) MAX
+    else if (b < 0 && a < MIN - b) MIN
+    else a + b
+  }
+
+  private def multiplySaturated(a: Long, b: Long): Long = {
+    if (a > MAX / b) MAX
+    else if (a < MIN / b) MIN
     else a * b
   }
 }
