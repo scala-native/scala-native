@@ -480,8 +480,9 @@ object VirtualThread {
   }
 }
 
-// Non public
-class VirtualThreadCarrier(scheduler: ForkJoinPool) extends ForkJoinWorkerThread(scheduler) {
+class VirtualThreadCarrier(scheduler: ForkJoinPool)
+    extends ForkJoinWorkerThread(Thread.VirtualThreadCarriersGroup, scheduler, true) {
+
   import VirtualThreadCarrier.*
 
   var mountedThread: VirtualThread = _

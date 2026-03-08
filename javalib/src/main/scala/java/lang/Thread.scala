@@ -726,6 +726,21 @@ object Thread {
         "VirtualThreads",
         false,
         MAX_PRIORITY
+      ) {
+    override def activeCount(): Int = 0
+    override def enumerate(out: Array[Thread]): Int = 0
+    override def enumerate(out: Array[Thread], recurse: scala.Boolean): Int = 0
+  }
+
+  /** Carrier threads (platform threads that run virtual threads) live in this
+   *  group.
+   */
+  object VirtualThreadCarriersGroup
+      extends ThreadGroup(
+        ThreadGroup.System,
+        "VirtualThreadCarriers",
+        false,
+        MAX_PRIORITY
       )
 }
 
