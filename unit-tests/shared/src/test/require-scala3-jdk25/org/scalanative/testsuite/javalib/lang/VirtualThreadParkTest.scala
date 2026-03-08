@@ -138,6 +138,33 @@ class VirtualThreadParkTest {
     )
   }
 
+  @Test def doubleUnparkProvidesSinglePermit(): Unit = {
+    val readyForSecondPark = new CountDownLatch(1)
+    val completed = new AtomicBoolean(false)
+
+    val vt = Thread.ofVirtual().start { () =>
+      val current = Thread.currentThread()
+      LockSupport.unpark(current)
+      LockSupport.unpark(current)
+      LockSupport.park()
+      readyForSecondPark.countDown()
+      LockSupport.park()
+      completed.set(true)
+    }
+
+    assertTrue(readyForSecondPark.await(Timeout, TimeUnit.MILLISECONDS))
+    Thread.sleep(50)
+    assertEquals(
+      "second park should still block because only one permit is retained",
+      Thread.State.WAITING,
+      vt.getState()
+    )
+    assertFalse(completed.get())
+    LockSupport.unpark(vt)
+    vt.join(Timeout)
+    assertTrue(completed.get())
+  }
+
   @Test def parkStateIsWaiting(): Unit = {
     val parked = new CountDownLatch(1)
     val vt = Thread.ofVirtual().start { () =>

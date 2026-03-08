@@ -1,6 +1,5 @@
 package org.scalanative.testsuite.javalib.lang
 
-import java.time.Duration
 import java.util.concurrent._
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
 
@@ -32,6 +31,7 @@ class VirtualThreadSleepTest {
     )
   }
 
+  // TODO: java.time.Duration support
   // @Test def sleepDuration(): Unit = {
   //   val sleepMs = 200L
   //   val elapsed = new java.util.concurrent.atomic.AtomicLong(0)

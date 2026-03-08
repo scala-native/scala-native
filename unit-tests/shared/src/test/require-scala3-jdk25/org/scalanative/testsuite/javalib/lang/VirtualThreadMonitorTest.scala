@@ -4,6 +4,7 @@ import java.util.concurrent._
 import java.util.concurrent.atomic.{
   AtomicBoolean, AtomicInteger, AtomicReference
 }
+import java.util.concurrent.locks.LockSupport
 
 import org.junit.Assert._
 import org.junit._
@@ -36,7 +37,10 @@ class VirtualThreadMonitorTest {
       }
     }
 
-    assertTrue(latch.await(Timeout, TimeUnit.MILLISECONDS))
+    assertTrue(
+      "timeout waiting on latch",
+      latch.await(Timeout, TimeUnit.MILLISECONDS)
+    )
     assertEquals(numThreads * iterations, counter.get())
   }
 
@@ -147,6 +151,73 @@ class VirtualThreadMonitorTest {
     assertTrue("monitor should be re-acquired", reacquiredMonitor.get())
   }
 
+  @Test def objectWaitWithInterruptStatusSetClearsFlag(): Unit = {
+    val threw = new AtomicBoolean(false)
+    val cleared = new AtomicBoolean(false)
+    val lock = new Object
+
+    val vt = Thread.ofVirtual().start { () =>
+      lock.synchronized {
+        Thread.currentThread().interrupt()
+        try lock.wait()
+        catch {
+          case _: InterruptedException =>
+            threw.set(true)
+            cleared.set(!Thread.currentThread().isInterrupted)
+        }
+      }
+    }
+
+    vt.join(Timeout)
+    assertTrue(
+      "wait should throw when interrupt status is pre-set",
+      threw.get()
+    )
+    assertTrue(
+      "wait should clear interrupt status when it throws",
+      cleared.get()
+    )
+  }
+
+  @Test def interruptDuringReenterAfterWaitPreservesInterruptStatus(): Unit = {
+    val lock = new Object
+    val inWait = new CountDownLatch(1)
+    val interruptedException = new AtomicBoolean(false)
+    val interruptStatusAfter = new AtomicBoolean(false)
+
+    val vt = Thread.ofVirtual().start { () =>
+      lock.synchronized {
+        try {
+          inWait.countDown()
+          lock.wait()
+        } catch {
+          case _: InterruptedException =>
+            interruptedException.set(true)
+        }
+        interruptStatusAfter.set(Thread.currentThread().isInterrupted)
+      }
+    }
+
+    assertTrue(inWait.await(Timeout, TimeUnit.MILLISECONDS))
+    awaitState(vt, Thread.State.WAITING)
+
+    lock.synchronized {
+      lock.notifyAll()
+      awaitStateBlockedOnMonitor(vt)
+      vt.interrupt()
+    }
+
+    vt.join(Timeout)
+    assertFalse(
+      "interrupt after notify but before monitor reentry should not throw",
+      interruptedException.get()
+    )
+    assertTrue(
+      "interrupt after reentry should remain set on the virtual thread",
+      interruptStatusAfter.get()
+    )
+  }
+
   @Test def objectWaitIllegalMonitorState(): Unit = {
     val lock = new Object
     val threw = new AtomicBoolean(false)
@@ -160,6 +231,39 @@ class VirtualThreadMonitorTest {
     assertTrue(
       "wait() without holding lock should throw IllegalMonitorStateException",
       threw.get()
+    )
+  }
+
+  @Test def objectWaitReacquiresReentrantMonitorDepth(): Unit = {
+    val lock = new Object
+    val inWait = new CountDownLatch(1)
+    val finished = new AtomicBoolean(false)
+
+    val vt = Thread.ofVirtual().start { () =>
+      lock.synchronized {
+        lock.synchronized {
+          lock.synchronized {
+            inWait.countDown()
+            lock.wait()
+            assertTrue(Thread.holdsLock(lock))
+            lock.synchronized {
+              assertTrue(Thread.holdsLock(lock))
+            }
+          }
+        }
+        finished.set(true)
+      }
+    }
+
+    assertTrue(inWait.await(Timeout, TimeUnit.MILLISECONDS))
+    awaitState(vt, Thread.State.WAITING)
+    lock.synchronized {
+      lock.notifyAll()
+    }
+    vt.join(Timeout)
+    assertTrue(
+      "wait should restore monitor reentrancy depth when the thread resumes",
+      finished.get()
     )
   }
 
@@ -230,7 +334,10 @@ class VirtualThreadMonitorTest {
       }
     }
 
-    assertTrue(latch.await(Timeout, TimeUnit.MILLISECONDS))
+    assertTrue(
+      "timeout waiting for latch",
+      latch.await(Timeout, TimeUnit.MILLISECONDS)
+    )
     assertEquals(
       "contended lock should still produce correct count",
       numThreads * iterations,
@@ -288,6 +395,123 @@ class VirtualThreadMonitorTest {
     assertTrue("waiter should complete after being notified", done.get())
   }
 
+  @Test def waitDoesNotConsumeParkingPermit(): Unit = {
+    val lock = new Object
+    val inWait = new CountDownLatch(1)
+    val completed = new AtomicBoolean(false)
+
+    val vt = Thread.ofVirtual().start { () =>
+      LockSupport.unpark(Thread.currentThread())
+      lock.synchronized {
+        inWait.countDown()
+        lock.wait()
+      }
+      LockSupport.park()
+      completed.set(true)
+    }
+
+    assertTrue(inWait.await(Timeout, TimeUnit.MILLISECONDS))
+    awaitState(vt, Thread.State.WAITING)
+    lock.synchronized {
+      lock.notifyAll()
+    }
+    vt.join(Timeout)
+    assertTrue(
+      "wait should not consume an already-available parking permit",
+      completed.get()
+    )
+  }
+
+  @Test def waitDoesNotOfferParkingPermit(): Unit = {
+    val lock = new Object
+    val inWait = new CountDownLatch(1)
+    val readyToPark = new CountDownLatch(1)
+    val completed = new AtomicBoolean(false)
+
+    val vt = Thread.ofVirtual().start { () =>
+      lock.synchronized {
+        inWait.countDown()
+        lock.wait()
+      }
+      readyToPark.countDown()
+      LockSupport.park()
+      completed.set(true)
+    }
+
+    assertTrue(inWait.await(Timeout, TimeUnit.MILLISECONDS))
+    awaitState(vt, Thread.State.WAITING)
+    lock.synchronized {
+      lock.notifyAll()
+    }
+    assertTrue(readyToPark.await(Timeout, TimeUnit.MILLISECONDS))
+    awaitState(vt, Thread.State.WAITING)
+    assertFalse(
+      "wait should not create a parking permit for a later park",
+      completed.get()
+    )
+    LockSupport.unpark(vt)
+    vt.join(Timeout)
+    assertTrue(completed.get())
+  }
+
+  @Test def contendedMonitorEnterDoesNotConsumeParkingPermit(): Unit = {
+    val lock = new Object
+    val started = new CountDownLatch(1)
+    val completed = new AtomicBoolean(false)
+
+    val vt = Thread.ofVirtual().unstarted { () =>
+      started.countDown()
+      LockSupport.unpark(Thread.currentThread())
+      lock.synchronized {}
+      LockSupport.park()
+      completed.set(true)
+    }
+
+    lock.synchronized {
+      vt.start()
+      assertTrue(started.await(Timeout, TimeUnit.MILLISECONDS))
+      awaitStateBlockedOnMonitor(vt)
+    }
+
+    vt.join(Timeout)
+    assertTrue(
+      "monitor enter should not consume an already-available parking permit",
+      completed.get()
+    )
+  }
+
+  @Test def contendedMonitorEnterDoesNotOfferParkingPermit(): Unit = {
+    val lock = new Object
+    val started = new CountDownLatch(1)
+    val enteredMonitor = new CountDownLatch(1)
+    val completed = new AtomicBoolean(false)
+
+    val vt = Thread.ofVirtual().unstarted { () =>
+      started.countDown()
+      lock.synchronized {
+        enteredMonitor.countDown()
+      }
+      LockSupport.park()
+      completed.set(true)
+    }
+
+    lock.synchronized {
+      vt.start()
+      assertTrue(started.await(Timeout, TimeUnit.MILLISECONDS))
+      awaitStateBlockedOnMonitor(vt)
+    }
+
+    assertTrue(enteredMonitor.await(Timeout, TimeUnit.MILLISECONDS))
+    awaitState(vt, Thread.State.WAITING)
+    assertFalse(
+      "monitor enter should not synthesize a parking permit",
+      completed.get()
+    )
+    LockSupport.unpark(vt)
+    vt.join(Timeout)
+    assertTrue(completed.get())
+  }
+
   @Test def spuriousWakeup(): Unit = {
     val lock = new Object
     val ready = new CountDownLatch(1)
@@ -321,5 +545,37 @@ class VirtualThreadMonitorTest {
     }
     vt.join(Timeout)
     assertTrue("should complete when condition is met", done.get())
+  }
+
+  private def awaitState(thread: Thread, expected: Thread.State): Unit = {
+    val deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(Timeout)
+    var state = thread.getState()
+    while (state != expected && System.nanoTime() < deadline) {
+      Thread.sleep(10)
+      state = thread.getState()
+    }
+    assertEquals(expected, state)
+  }
+
+  /** A VT blocked on monitor enter may report BLOCKED (JDK) or
+   *  TIMED_WAITING/WAITING (Scala Native carrier parking). Accept any of these
+   *  as "blocked on monitor".
+   */
+  private def awaitStateBlockedOnMonitor(thread: Thread): Unit = {
+    val deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(Timeout)
+    val accepted = Set(
+      Thread.State.BLOCKED,
+      Thread.State.TIMED_WAITING,
+      Thread.State.WAITING
+    )
+    var state = thread.getState()
+    while (!accepted(state) && System.nanoTime() < deadline) {
+      Thread.sleep(10)
+      state = thread.getState()
+    }
+    assertTrue(
+      s"expected BLOCKED, TIMED_WAITING, or WAITING (blocked on monitor) but was $state",
+      accepted(state)
+    )
   }
 }
