@@ -250,8 +250,10 @@ object Executors {
   private class ThreadPerTaskExecutorService(threadFactory: ThreadFactory)
       extends AbstractExecutorService {
     @volatile private var shutdownFlag: Boolean = false
+    @volatile private var shutdownNowFlag: Boolean = false
     private val activeCount = new AtomicInteger(0)
     private val lock = new Object
+    private val activeThreads = new java.util.HashSet[Thread]()
 
     override def execute(command: Runnable): Unit = {
       if (command == null) throw new NullPointerException
@@ -260,16 +262,37 @@ object Executors {
       }
       activeCount.incrementAndGet()
       try {
-        threadFactory
-          .newThread(() =>
-            try command.run()
-            finally {
+        val worker = threadFactory.newThread(() =>
+          try command.run()
+          finally {
+            lock.synchronized {
+              activeThreads.remove(Thread.currentThread())
               if (activeCount.decrementAndGet() == 0) {
-                lock.synchronized { lock.notifyAll() }
+                lock.notifyAll()
               }
             }
-          )
-          .start()
+          }
+        )
+
+        if (worker == null) {
+          throw new NullPointerException("threadFactory returned null")
+        }
+
+        val interruptAfterStart = lock.synchronized {
+          activeThreads.add(worker)
+          shutdownNowFlag
+        }
+
+        try worker.start()
+        catch {
+          case t: Throwable =>
+            lock.synchronized { activeThreads.remove(worker) }
+            throw t
+        }
+
+        if (interruptAfterStart) {
+          worker.interrupt()
+        }
       } catch {
         case t: Throwable =>
           if (activeCount.decrementAndGet() == 0) {
@@ -280,11 +303,25 @@ object Executors {
     }
 
     override def shutdown(): Unit = {
-      shutdownFlag = true
+      lock.synchronized {
+        shutdownFlag = true
+        if (activeCount.get() == 0) lock.notifyAll()
+      }
     }
 
     override def shutdownNow(): List[Runnable] = {
-      shutdownFlag = true
+      val threadsToInterrupt = lock.synchronized {
+        shutdownFlag = true
+        shutdownNowFlag = true
+        if (activeCount.get() == 0) lock.notifyAll()
+        new java.util.ArrayList[Thread](activeThreads)
+      }
+
+      val iterator = threadsToInterrupt.iterator()
+      while (iterator.hasNext()) {
+        iterator.next().interrupt()
+      }
+
       Collections.emptyList[Runnable]()
     }
 
