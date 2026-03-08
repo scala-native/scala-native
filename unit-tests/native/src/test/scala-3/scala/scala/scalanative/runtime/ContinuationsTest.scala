@@ -1,5 +1,8 @@
 package scala.scalanative.runtime
 
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
+import java.util.concurrent.{CountDownLatch, LinkedBlockingQueue, TimeUnit}
+
 import scala.util.control.ControlThrowable
 
 import org.junit.Assert._
@@ -192,5 +195,532 @@ class ContinuationsTest:
       assertEquals(expectedChecksum, checksum)
     }
   }
+
+  @Test def stressSuspendResumeAcrossPlatformThreads(): Unit =
+    if isContinuationsSupported then {
+      val fibers = 50
+      val iterations = 1000
+      val workers = math.max(4, Runtime.getRuntime().availableProcessors())
+
+      val ready = new LinkedBlockingQueue[() => Unit]()
+      val finished = new CountDownLatch(fibers)
+      val workersFinished = new CountDownLatch(workers)
+      val resumedSteps = new AtomicInteger(0)
+      val enqueued = new AtomicInteger(0)
+
+      def enqueue(k: () => Unit): Unit = {
+        ready.put(k)
+        enqueued.incrementAndGet()
+      }
+
+      var fiberId = 0
+      while fiberId < fibers do
+        boundary[Unit] {
+          var step = 0
+          while step < iterations do
+            suspend[Unit] { resume =>
+              enqueue(resume)
+            }
+            resumedSteps.incrementAndGet()
+            step += 1
+          finished.countDown()
+        }
+        fiberId += 1
+
+      def workerLoop(): Unit =
+        try
+          var keepRunning = true
+          while keepRunning do
+            val resume = ready.poll(100, TimeUnit.MILLISECONDS)
+            if resume != null then
+              resume()
+              Thread.`yield`()
+            else if finished.getCount() == 0 && ready.isEmpty() then
+              keepRunning = false
+        finally workersFinished.countDown()
+
+      val pool = scala.Array.tabulate(workers) { idx =>
+        val t = new Thread(() => workerLoop(), s"cont-stress-worker-$idx")
+        t.start()
+        t
+      }
+      val _ = pool
+
+      assertTrue(
+        s"Timed out waiting for fiber completion; resumed=${resumedSteps.get()}, queue=${ready.size()}",
+        finished.await(60, TimeUnit.SECONDS)
+      )
+      assertTrue(
+        s"Timed out waiting for workers to stop; queue=${ready.size()}",
+        workersFinished.await(10, TimeUnit.SECONDS)
+      )
+
+      val expected = fibers * iterations
+      assertEquals(expected, resumedSteps.get())
+      assertEquals(expected, enqueued.get())
+    }
+
+  @Test def vtMonitorContention_5x50(): Unit =
+    if isContinuationsSupported then {
+      vtMonitorContentionImpl(5, 50)
+    }
+
+  @Test def vtMonitorContention_10x100(): Unit =
+    if isContinuationsSupported then {
+      vtMonitorContentionImpl(10, 100)
+    }
+
+  @Test def vtMonitorContention_15x100(): Unit =
+    if isContinuationsSupported then {
+      vtMonitorContentionImpl(15, 100)
+    }
+
+  @Test def vtMonitorContention_15x100_run2(): Unit =
+    if isContinuationsSupported then {
+      vtMonitorContentionImpl(15, 100)
+    }
+
+  @Test def vtMonitorContention_15x100_run3(): Unit =
+    if isContinuationsSupported then {
+      vtMonitorContentionImpl(15, 100)
+    }
+
+  @Test def vtMonitorContention_20x200(): Unit =
+    if isContinuationsSupported then {
+      vtMonitorContentionImpl(20, 200)
+    }
+
+  @Test def vtDeepStackInMonitor(): Unit =
+    if isContinuationsSupported then {
+      val depth = 100
+      val threads = 8
+      val iterations = 50
+      val lock = new Object
+      val latch = new CountDownLatch(threads)
+      val errors = new AtomicInteger(0)
+
+      @noinline def deepWork(d: Int, salt: Long): Long =
+        val local = salt * 31 + d
+        if d == 0 then lock.synchronized { local }
+        else
+          val sub = deepWork(d - 1, local)
+          if local != salt * 31 + d then errors.incrementAndGet()
+          sub + local
+
+      for i <- 0 until threads do
+        Thread.ofVirtual().name(s"deep-$i").start { () =>
+          for _ <- 0 until iterations do deepWork(depth, i.toLong * 997)
+          latch.countDown()
+        }
+
+      assertTrue(
+        s"vtDeepStackInMonitor timed out; errors=${errors.get()}",
+        latch.await(30, TimeUnit.SECONDS)
+      )
+      assertEquals("stack local corruption", 0, errors.get())
+    }
+
+  @Test def vtMixedContention(): Unit =
+    if isContinuationsSupported then {
+      val numVirtual = 10
+      val numPlatform = 5
+      val iterations = 200
+      val total = numVirtual + numPlatform
+      val counter = new AtomicInteger(0)
+      val lock = new Object
+      val latch = new CountDownLatch(total)
+
+      for i <- 0 until numVirtual do
+        Thread.ofVirtual().name(s"vt-$i").start { () =>
+          for _ <- 0 until iterations do
+            lock.synchronized { counter.incrementAndGet() }
+          latch.countDown()
+        }
+      for i <- 0 until numPlatform do
+        Thread.ofPlatform().daemon(true).name(s"pt-$i").start { () =>
+          for _ <- 0 until iterations do
+            lock.synchronized { counter.incrementAndGet() }
+          latch.countDown()
+        }
+
+      assertTrue(
+        s"vtMixedContention timed out; counter=${counter.get()}/${total * iterations}",
+        latch.await(30, TimeUnit.SECONDS)
+      )
+      assertEquals("counter mismatch", total * iterations, counter.get())
+    }
+
+  @Test def vtRepeatedLockUnlock(): Unit =
+    if isContinuationsSupported then {
+      val lock = new Object
+      val iterations = 2000
+      val contenders = 4
+      val latch = new CountDownLatch(1 + contenders)
+
+      for i <- 0 until contenders do
+        Thread.ofVirtual().name(s"bg-$i").start { () =>
+          for _ <- 0 until iterations do lock.synchronized { Thread.`yield`() }
+          latch.countDown()
+        }
+
+      Thread.ofVirtual().name("rapid").start { () =>
+        for _ <- 0 until iterations do lock.synchronized { () }
+        latch.countDown()
+      }
+
+      assertTrue(
+        "vtRepeatedLockUnlock timed out",
+        latch.await(30, TimeUnit.SECONDS)
+      )
+    }
+
+  private def vtMonitorContentionImpl(numThreads: Int, iterations: Int): Unit =
+    val counter = new AtomicInteger(0)
+    val lock = new Object
+    val latch = new CountDownLatch(numThreads)
+
+    for i <- 0 until numThreads do
+      Thread.ofVirtual().name(s"vt-$i").start { () =>
+        for _ <- 0 until iterations do
+          lock.synchronized { counter.incrementAndGet() }
+        latch.countDown()
+      }
+
+    assertTrue(
+      s"vtMonitorContention timed out; counter=${counter.get()}/${numThreads * iterations}",
+      latch.await(30, TimeUnit.SECONDS)
+    )
+    assertEquals("counter mismatch", numThreads * iterations, counter.get())
+
+  // -----------------------------------------------------------------------
+  // Group B: Raw continuation tests (kept for regression — these should
+  // always pass, even before delimcc fixes, because the code path is
+  // simpler than the VT machinery).
+  // -----------------------------------------------------------------------
+
+  @Test def rawContinuationWithClobber(): Unit =
+    if isContinuationsSupported then {
+      val workers = math.max(4, Runtime.getRuntime().availableProcessors())
+      val fibers = 30
+      val iterations = 300
+      val pool = new WorkerPool("clobber", workers)
+      val finished = new CountDownLatch(fibers)
+      val errors = new AtomicInteger(0)
+
+      @noinline def clobberStack(seed: Int): Int =
+        val a0 = seed ^ 0xdead
+        val a1 = seed ^ 0xbeef
+        val a2 = seed ^ 0xcafe
+        val a3 = seed ^ 0xbabe
+        val a4 = seed ^ 0xf00d
+        val a5 = seed ^ 0xd00d
+        val a6 = seed ^ 0xface
+        val a7 = seed ^ 0xace0
+        a0 ^ a1 ^ a2 ^ a3 ^ a4 ^ a5 ^ a6 ^ a7
+
+      var fid = 0
+      while fid < fibers do
+        val id = fid
+        boundary[Unit] {
+          var step = 0
+          while step < iterations do
+            val a0 = id * 1000 + step * 1 + 111
+            val a1 = id * 1000 + step * 2 + 222
+            val a2 = id * 1000 + step * 3 + 333
+            val a3 = id * 1000 + step * 4 + 444
+            val a4 = id * 1000 + step * 5 + 555
+            val a5 = id * 1000 + step * 6 + 666
+            val a6 = id * 1000 + step * 7 + 777
+            val a7 = id * 1000 + step * 8 + 888
+            val a8 = id * 1000 + step * 9 + 999
+            val a9 = id * 1000 + step * 10 + 1010
+            val a10 = id * 1000 + step * 11 + 1111
+            val a11 = id * 1000 + step * 12 + 1212
+
+            suspend[Unit] { resume =>
+              clobberStack(id ^ step)
+              pool.submit(resume)
+            }
+
+            if a0 != id * 1000 + step * 1 + 111 ||
+                a1 != id * 1000 + step * 2 + 222 ||
+                a2 != id * 1000 + step * 3 + 333 ||
+                a3 != id * 1000 + step * 4 + 444 ||
+                a4 != id * 1000 + step * 5 + 555 ||
+                a5 != id * 1000 + step * 6 + 666 ||
+                a6 != id * 1000 + step * 7 + 777 ||
+                a7 != id * 1000 + step * 8 + 888 ||
+                a8 != id * 1000 + step * 9 + 999 ||
+                a9 != id * 1000 + step * 10 + 1010 ||
+                a10 != id * 1000 + step * 11 + 1111 ||
+                a11 != id * 1000 + step * 12 + 1212
+            then errors.incrementAndGet()
+
+            step += 1
+          finished.countDown()
+        }
+        fid += 1
+
+      assertTrue(
+        s"rawContinuationWithClobber timed out; errors=${errors.get()}",
+        finished.await(45, TimeUnit.SECONDS)
+      )
+      assertTrue(
+        "clobber worker pool did not stop",
+        pool.shutdown(5, TimeUnit.SECONDS)
+      )
+      assertEquals("register corruption", 0, errors.get())
+    }
+
+  @Test def rawDeepStackManyMigrations(): Unit =
+    if isContinuationsSupported then {
+      val workers = math.max(4, Runtime.getRuntime().availableProcessors())
+      val depth = 150
+      val rounds = 50
+      val pool = new WorkerPool("deepmig", workers)
+      val finished = new CountDownLatch(rounds)
+      val errors = new AtomicInteger(0)
+
+      @noinline def recurse(d: Int, salt: Long)(using
+          BoundaryLabel[Unit]
+      ): Long =
+        val local1 = salt * 31 + d
+        val local2 = salt * 37 + d * 3
+        val local3 = salt ^ (d.toLong << 16)
+        if d == 0 then
+          suspend[Unit] { resume => pool.submit(resume) }
+          local1 + local2 + local3
+        else
+          val sub = recurse(d - 1, local1)
+          if local1 != salt * 31 + d ||
+              local2 != salt * 37 + d * 3 ||
+              local3 != (salt ^ (d.toLong << 16))
+          then errors.incrementAndGet()
+          sub + local1 + local2 + local3
+
+      var round = 0
+      while round < rounds do
+        boundary[Unit] {
+          recurse(depth, round.toLong * 997)
+          finished.countDown()
+        }
+        round += 1
+
+      assertTrue(
+        s"rawDeepStackManyMigrations timed out; errors=${errors.get()}",
+        finished.await(45, TimeUnit.SECONDS)
+      )
+      assertTrue(
+        "deepmig worker pool did not stop",
+        pool.shutdown(5, TimeUnit.SECONDS)
+      )
+      assertEquals("deep stack corruption", 0, errors.get())
+    }
+
+  private final class WorkerPool(name: String, numWorkers: Int):
+    private val queue = new LinkedBlockingQueue[() => Unit]()
+    private val done = new AtomicBoolean(false)
+    private val stopped = new CountDownLatch(numWorkers)
+
+    private val workers = scala.Array.tabulate(numWorkers) { idx =>
+      val t = new Thread(() => workerLoop(), s"$name-$idx")
+      t.setDaemon(true)
+      t.start()
+      t
+    }
+
+    private val _ = workers
+
+    private def workerLoop(): Unit =
+      try
+        while !done.get() do
+          val task = queue.poll(50, TimeUnit.MILLISECONDS)
+          if task != null then task()
+      finally stopped.countDown()
+
+    def submit(task: () => Unit): Unit =
+      queue.put(task)
+
+    def shutdown(timeout: Long, unit: TimeUnit): Boolean =
+      done.set(true)
+      stopped.await(timeout, unit)
+
+  @Test def registerPreservationAcrossCarriers(): Unit =
+    if isContinuationsSupported then {
+      val workers = math.max(4, Runtime.getRuntime().availableProcessors())
+      val fibers = 20
+      val iterations = 500
+      val ready = new LinkedBlockingQueue[() => Unit]()
+      val finished = new CountDownLatch(fibers)
+      val workersFinished = new CountDownLatch(workers)
+      val errors = new AtomicInteger(0)
+
+      var fid = 0
+      while fid < fibers do
+        val id = fid
+        boundary[Unit] {
+          var step = 0
+          while step < iterations do
+            val a0 = id + step * 1
+            val a1 = id + step * 2
+            val a2 = id + step * 3
+            val a3 = id + step * 4
+            val a4 = id + step * 5
+            val a5 = id + step * 6
+            val a6 = id + step * 7
+            val a7 = id + step * 8
+            val a8 = id + step * 9
+            val a9 = id + step * 10
+            val a10 = id + step * 11
+            val a11 = id + step * 12
+
+            suspend[Unit] { resume => ready.put(resume) }
+
+            if a0 != id + step * 1 || a1 != id + step * 2 ||
+                a2 != id + step * 3 || a3 != id + step * 4 ||
+                a4 != id + step * 5 || a5 != id + step * 6 ||
+                a6 != id + step * 7 || a7 != id + step * 8 ||
+                a8 != id + step * 9 || a9 != id + step * 10 ||
+                a10 != id + step * 11 || a11 != id + step * 12
+            then errors.incrementAndGet()
+
+            step += 1
+          finished.countDown()
+        }
+        fid += 1
+
+      def workerLoop(): Unit =
+        try
+          var keepRunning = true
+          while keepRunning do
+            val task = ready.poll(100, TimeUnit.MILLISECONDS)
+            if task != null then task()
+            else if finished.getCount() == 0 && ready.isEmpty() then
+              keepRunning = false
+        finally workersFinished.countDown()
+
+      val pool = scala.Array.tabulate(workers) { idx =>
+        val t = new Thread(() => workerLoop(), s"regtest-$idx")
+        t.start()
+        t
+      }
+      val _ = pool
+
+      assertTrue(
+        s"registerPreservation timed out; errors=${errors.get()}",
+        finished.await(60, TimeUnit.SECONDS)
+      )
+      assertTrue(
+        "workers did not stop",
+        workersFinished.await(10, TimeUnit.SECONDS)
+      )
+      assertEquals(s"register corruption detected", 0, errors.get())
+    }
+
+  @Test def repeatedSuspendResumeNoStackGrowth(): Unit =
+    if isContinuationsSupported then {
+      val workers = math.max(2, Runtime.getRuntime().availableProcessors())
+      val cycles = 5000
+      val ready = new LinkedBlockingQueue[() => Unit]()
+      val finished = new CountDownLatch(1)
+      val workersFinished = new CountDownLatch(workers)
+
+      boundary[Unit] {
+        var i = 0
+        while i < cycles do
+          suspend[Unit] { resume => ready.put(resume) }
+          i += 1
+        finished.countDown()
+      }
+
+      def workerLoop(): Unit =
+        try
+          var keepRunning = true
+          while keepRunning do
+            val task = ready.poll(100, TimeUnit.MILLISECONDS)
+            if task != null then task()
+            else if finished.getCount() == 0 && ready.isEmpty() then
+              keepRunning = false
+        finally workersFinished.countDown()
+
+      val pool = scala.Array.tabulate(workers) { idx =>
+        val t = new Thread(() => workerLoop(), s"stacktest-$idx")
+        t.start()
+        t
+      }
+      val _ = pool
+
+      assertTrue(
+        "repeatedSuspendResume timed out — possible stack overflow",
+        finished.await(60, TimeUnit.SECONDS)
+      )
+      assertTrue(
+        "workers did not stop",
+        workersFinished.await(10, TimeUnit.SECONDS)
+      )
+    }
+
+  @Test def deepStackSuspendResume(): Unit =
+    if isContinuationsSupported then {
+      val workers = math.max(2, Runtime.getRuntime().availableProcessors())
+      val depth = 200
+      val rounds = 20
+      val ready = new LinkedBlockingQueue[() => Unit]()
+      val finished = new CountDownLatch(rounds)
+      val workersFinished = new CountDownLatch(workers)
+      val errors = new AtomicInteger(0)
+
+      @noinline def recurse(d: Int, salt: Long)(using
+          BoundaryLabel[Unit]
+      ): Long =
+        val local1 = salt * 31 + d
+        val local2 = salt * 37 + d * 3
+        val local3 = salt ^ (d.toLong << 16)
+        if d == 0 then
+          suspend[Unit] { resume => ready.put(resume) }
+          local1 + local2 + local3
+        else
+          val sub = recurse(d - 1, local1)
+          if local1 != salt * 31 + d ||
+              local2 != salt * 37 + d * 3 ||
+              local3 != (salt ^ (d.toLong << 16))
+          then errors.incrementAndGet()
+          sub + local1 + local2 + local3
+
+      var round = 0
+      while round < rounds do
+        boundary[Unit] {
+          recurse(depth, round.toLong * 997)
+          finished.countDown()
+        }
+        round += 1
+
+      def workerLoop(): Unit =
+        try
+          var keepRunning = true
+          while keepRunning do
+            val task = ready.poll(100, TimeUnit.MILLISECONDS)
+            if task != null then task()
+            else if finished.getCount() == 0 && ready.isEmpty() then
+              keepRunning = false
+        finally workersFinished.countDown()
+
+      val pool = scala.Array.tabulate(workers) { idx =>
+        val t = new Thread(() => workerLoop(), s"deeptest-$idx")
+        t.start()
+        t
+      }
+      val _ = pool
+
+      assertTrue(
+        s"deepStackSuspendResume timed out; errors=${errors.get()}",
+        finished.await(60, TimeUnit.SECONDS)
+      )
+      assertTrue(
+        "workers did not stop",
+        workersFinished.await(10, TimeUnit.SECONDS)
+      )
+      assertEquals("deep stack local corruption", 0, errors.get())
+    }
 
 end ContinuationsTest
