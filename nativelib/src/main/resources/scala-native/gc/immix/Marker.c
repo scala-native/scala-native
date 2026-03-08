@@ -99,7 +99,10 @@ void Marker_Mark(Heap *heap, Stack *stack) {
                 }
             } else if (objectId == __blob_array_id) {
                 int8_t *start = (int8_t *)(arrayHeader + 1);
-                int8_t *end = start + BlobArray_ScannableLimit(arrayHeader);
+                size_t bytesLength = BlobArray_ScannableLimit(arrayHeader);
+                size_t wordsLength =
+                    (bytesLength + sizeof(word_t) - 1) / sizeof(word_t);
+                int8_t *end = start + wordsLength * sizeof(word_t);
                 Marker_markRange(heap, stack, (word_t **)start, (word_t **)end,
                                  sizeof(word_t));
             }
