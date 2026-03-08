@@ -86,6 +86,61 @@ class VirtualThreadLifecycleTest {
     assertEquals("VirtualThreads", group.getName)
   }
 
+  /** Virtual threads share a ThreadGroup. JVM semantics (JDK 21+):
+   *  activeCount() and enumerate() do *not* include virtual threads. Scala
+   *  Native must follow the same semantics.
+   */
+  @Test def virtualThreadsGroupEnumerateMatchesJVM(): Unit = {
+    val n = 10
+    val block = new CountDownLatch(1)
+    val started = new CountDownLatch(n)
+    val vts = (0 until n).map { i =>
+      Thread.ofVirtual().name(s"vt-enum-$i").start { () =>
+        started.countDown()
+        block.await(Timeout, TimeUnit.MILLISECONDS)
+      }
+    }
+    assertTrue(
+      "all VTs should start",
+      started.await(Timeout, TimeUnit.MILLISECONDS)
+    )
+    val group = vts.head.getThreadGroup
+    assertNotNull(group)
+    assertEquals("VirtualThreads", group.getName())
+
+    vts.foreach { t =>
+      assertTrue(
+        "each VT should be in VirtualThreadsGroup",
+        t.getThreadGroup eq group
+      )
+    }
+
+    // JVM semantics: VirtualThreads group does not count or enumerate virtual threads.
+    val count = group.activeCount()
+    assertEquals(
+      s"VirtualThreadsGroup.activeCount() must follow JVM semantics (exclude VTs), expected 0, got $count",
+      0,
+      count
+    )
+
+    val arr = new Array[Thread](64)
+    val enumerated = group.enumerate(arr, true)
+    assertEquals(
+      s"VirtualThreadsGroup.enumerate() must follow JVM semantics (exclude VTs), expected 0, got $enumerated",
+      0,
+      enumerated
+    )
+    val enumeratedSet = (0 until enumerated).flatMap(i => Option(arr(i))).toSet
+    val leaked = vts.toSet.intersect(enumeratedSet)
+    assertTrue(
+      s"VirtualThreadsGroup.enumerate() must not include virtual threads; found: ${leaked.view.map(_.getName).mkString(", ")}",
+      leaked.isEmpty
+    )
+
+    block.countDown()
+    vts.foreach(_.join(Timeout))
+  }
+
   @Test def threadIdIsUnique(): Unit = {
     val count = 100
     val ids = new ConcurrentHashMap[java.lang.Long, java.lang.Boolean]()

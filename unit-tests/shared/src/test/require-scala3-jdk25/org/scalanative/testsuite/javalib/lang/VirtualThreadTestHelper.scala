@@ -10,6 +10,7 @@ class VirtualThreadExecution(
     val thread: Thread,
     exceptionRef: AtomicReference[Option[Throwable]]
 ) {
+
   /** If an exception was captured from the VT, rethrow it (so the test fails).
    */
   def rethrowException(): Unit = {

@@ -4,6 +4,7 @@ import java.util.concurrent._
 import java.util.concurrent.atomic.{
   AtomicBoolean, AtomicInteger, AtomicReference
 }
+import java.util.concurrent.locks.LockSupport
 
 import org.junit.Assert._
 import org.junit._
@@ -93,6 +94,44 @@ class VirtualThreadSchedulerTest {
     assertTrue("yield should not block the VT", done.get())
   }
 
+  @Test def yieldDoesNotConsumeParkingPermit(): Unit = {
+    val completed = new AtomicBoolean(false)
+    val vt = Thread.ofVirtual().start { () =>
+      LockSupport.unpark(Thread.currentThread())
+      Thread.`yield`()
+      LockSupport.park()
+      completed.set(true)
+    }
+    vt.join(Timeout)
+    assertTrue(
+      "yield should not consume an already-available parking permit",
+      completed.get()
+    )
+  }
+
+  @Test def yieldDoesNotOfferParkingPermit(): Unit = {
+    val readyToPark = new CountDownLatch(1)
+    val completed = new AtomicBoolean(false)
+    val vt = Thread.ofVirtual().start { () =>
+      Thread.`yield`()
+      readyToPark.countDown()
+      LockSupport.park()
+      completed.set(true)
+    }
+
+    assertTrue(readyToPark.await(Timeout, TimeUnit.MILLISECONDS))
+    Thread.sleep(50)
+    assertEquals(
+      "yield should not synthesize a parking permit",
+      Thread.State.WAITING,
+      vt.getState()
+    )
+    assertFalse(completed.get())
+    LockSupport.unpark(vt)
+    vt.join(Timeout)
+    assertTrue(completed.get())
+  }
+
   @Test def yieldUnderLoad(): Unit = {
     val numThreads = 20
     val iterations = 1000
@@ -119,6 +158,35 @@ class VirtualThreadSchedulerTest {
         counters(i).get()
       )
     }
+  }
+
+  @Test def yieldLoopWhenPinnedStillMakesProgress(): Unit = {
+    val started = new CountDownLatch(1)
+    val done = new AtomicBoolean(false)
+    val pinLock = new Object
+
+    val vt = Thread.ofVirtual().start { () =>
+      pinLock.synchronized {
+        started.countDown()
+        while (!done.get()) {
+          Thread.`yield`()
+        }
+      }
+    }
+
+    assertTrue(started.await(Timeout, TimeUnit.MILLISECONDS))
+    val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2)
+    while (System.nanoTime() < deadline) {
+      System.gc()
+      Thread.sleep(25)
+    }
+    done.set(true)
+    vt.join(Timeout)
+    assertEquals(
+      "pinned yield loop should terminate once progress condition flips",
+      Thread.State.TERMINATED,
+      vt.getState()
+    )
   }
 
   @Test def compensationForBlockedCarrier(): Unit = {

@@ -8,6 +8,8 @@ import java.util.concurrent.atomic.{
 import org.junit.Assert._
 import org.junit._
 
+import org.scalanative.testsuite.utils.Platform
+
 import scala.scalanative.junit.utils.AssumesHelper
 
 object VirtualThreadEdgeCaseTest {
@@ -106,15 +108,19 @@ class VirtualThreadEdgeCaseTest {
     extra.join(Timeout)
   }
 
+  /** Recursive method used by continuationStackOverflow. Must be a class member
+   *  so the compiler inserts stack-overflow checks (Scala Native).
+   */
+  @noinline
+  @Platform.nooptimize
+  private def deepRecurse(n: Int): Int = n + deepRecurse(n + 1)
+
   @Test def continuationStackOverflow(): Unit = {
     val threw = new AtomicReference[Throwable]()
     val vt = Thread
       .ofVirtual()
       .uncaughtExceptionHandler((_, e) => threw.set(e))
-      .start { () =>
-        def recurse(n: Int): Int = n + recurse(n + 1)
-        recurse(0)
-      }
+      .start { () => deepRecurse(0) }
     vt.join(Timeout)
     assertTrue(
       "deep recursion in VT should produce StackOverflowError",

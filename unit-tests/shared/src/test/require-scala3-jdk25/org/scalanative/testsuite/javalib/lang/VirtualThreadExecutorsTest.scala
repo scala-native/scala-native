@@ -58,6 +58,39 @@ class VirtualThreadExecutorsTest {
     assertTrue(executor.isTerminated)
   }
 
+  @Test def shutdownNowInterruptsRunningTask(): Unit = {
+    val executor = Executors.newVirtualThreadPerTaskExecutor()
+    val started = new CountDownLatch(1)
+    val finished = new CountDownLatch(1)
+    val interrupted = new AtomicBoolean(false)
+
+    executor.execute { () =>
+      started.countDown()
+      try {
+        Thread.sleep(Timeout)
+      } catch {
+        case _: InterruptedException =>
+          interrupted.set(true)
+      } finally {
+        finished.countDown()
+      }
+    }
+
+    assertTrue(started.await(Timeout, TimeUnit.MILLISECONDS))
+    val queued = executor.shutdownNow()
+    assertTrue(queued.isEmpty())
+    assertTrue(
+      "running task should stop promptly",
+      finished.await(Timeout, TimeUnit.MILLISECONDS)
+    )
+    assertTrue(
+      "shutdownNow() should interrupt the worker thread",
+      interrupted.get()
+    )
+    assertTrue(executor.awaitTermination(Timeout, TimeUnit.MILLISECONDS))
+    assertTrue(executor.isTerminated)
+  }
+
   @Test def newThreadPerTaskExecutorWithVirtualFactory(): Unit = {
     val factory = Thread.ofVirtual().factory()
     val executor = Executors.newThreadPerTaskExecutor(factory)

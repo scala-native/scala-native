@@ -21,6 +21,11 @@ class VirtualThreadThreadLocalTest {
   import VirtualThreadThreadLocalTest._
   private val Timeout = 5000L
 
+  @After def clearThreadLocals(): Unit = {
+    Local.remove()
+    InheritedLocal.remove()
+  }
+
   @Test def threadLocalIsolation(): Unit = {
     val count = 10
     val values = new ConcurrentHashMap[Long, AnyRef]()
@@ -99,6 +104,52 @@ class VirtualThreadThreadLocalTest {
     vt.join(Timeout)
     assertNull(
       "VT with inheritInheritableThreadLocals(false) should not inherit",
+      childSeen.get()
+    )
+  }
+
+  @Test def inheritableThreadLocalInheritedFromVirtualParent(): Unit = {
+    val parentSeen = new AtomicReference[AnyRef]()
+    val childSeen = new AtomicReference[AnyRef]()
+    val marker = new Object
+
+    val parent = Thread.ofVirtual().start { () =>
+      InheritedLocal.set(marker)
+      parentSeen.set(InheritedLocal.get())
+      val child = Thread.ofVirtual().start { () =>
+        childSeen.set(InheritedLocal.get())
+      }
+      child.join(Timeout)
+    }
+
+    parent.join(Timeout)
+    assertSame(marker, parentSeen.get())
+    assertSame(
+      "nested VT should inherit inheritable local from VT parent",
+      marker,
+      childSeen.get()
+    )
+  }
+
+  @Test def inheritableThreadLocalNotInheritedFromVirtualParent(): Unit = {
+    val childSeen = new AtomicReference[AnyRef]()
+    val marker = new Object
+
+    val parent = Thread.ofVirtual().start { () =>
+      InheritedLocal.set(marker)
+      val child = Thread
+        .ofVirtual()
+        .inheritInheritableThreadLocals(false)
+        .start { () =>
+          childSeen.set(InheritedLocal.get())
+        }
+      child.join(Timeout)
+      assertSame(marker, InheritedLocal.get())
+    }
+
+    parent.join(Timeout)
+    assertNull(
+      "nested VT with inheritInheritableThreadLocals(false) should not inherit",
       childSeen.get()
     )
   }

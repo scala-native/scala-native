@@ -230,4 +230,45 @@ class VirtualPlatformInteropTest {
     pt.join(Timeout)
     assertTrue("PT should wake up from VT's notify", ptDone.get())
   }
+
+  @Test def mixedNotifyWakesOneThreadAtATime(): Unit = {
+    val lock = new Object
+    val ready = new CountDownLatch(4)
+    val notified = new AtomicInteger(0)
+
+    def waitTask(): Unit = {
+      lock.synchronized {
+        ready.countDown()
+        lock.wait()
+        notified.incrementAndGet()
+      }
+    }
+
+    val threads = Seq[Thread](
+      Thread.ofVirtual().start(() => waitTask()),
+      Thread.ofVirtual().start(() => waitTask()),
+      Thread.ofPlatform().daemon(true).start(() => waitTask()),
+      Thread.ofPlatform().daemon(true).start(() => waitTask())
+    )
+
+    try {
+      assertTrue(ready.await(Timeout, TimeUnit.MILLISECONDS))
+      for (expected <- 1 to threads.size) {
+        lock.synchronized {
+          lock.notify()
+        }
+        val deadline =
+          System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(Timeout)
+        while (notified.get() < expected && System.nanoTime() < deadline) {
+          Thread.sleep(10)
+        }
+        assertEquals(expected, notified.get())
+      }
+    } finally {
+      lock.synchronized {
+        lock.notifyAll()
+      }
+      threads.foreach(_.join(Timeout))
+    }
+  }
 }

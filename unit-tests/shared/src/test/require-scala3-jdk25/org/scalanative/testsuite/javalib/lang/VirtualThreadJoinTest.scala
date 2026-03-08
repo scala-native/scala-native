@@ -1,6 +1,5 @@
 package org.scalanative.testsuite.javalib.lang
 
-import java.time.Duration
 import java.util.concurrent._
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
 
@@ -47,6 +46,30 @@ class VirtualThreadJoinTest {
     ctx.rethrowException()
   }
 
+  @Test def joinWithNanosOnlyTimeout(): Unit = {
+    val latch = new CountDownLatch(1)
+    val ctx =
+      startVirtualThread(() => latch.await(Timeout, TimeUnit.MILLISECONDS))
+    val joinerDone = new CountDownLatch(1)
+    val joiner = new Thread(() => {
+      ctx.thread.join(0, 1)
+      joinerDone.countDown()
+    })
+    joiner.start()
+    try {
+      assertTrue(
+        "join(0, 1) should time out instead of waiting for termination",
+        joinerDone.await(500, TimeUnit.MILLISECONDS)
+      )
+      assertTrue("thread should still be alive", ctx.thread.isAlive)
+    } finally {
+      latch.countDown()
+      joiner.join(Timeout)
+      ctx.thread.join(Timeout)
+    }
+    ctx.rethrowException()
+  }
+
   @Test def joinWithMillisTimeoutAndNanos(): Unit = {
     val latch = new CountDownLatch(1)
     val ctx =
@@ -64,6 +87,7 @@ class VirtualThreadJoinTest {
     ctx.rethrowException()
   }
 
+  // TODO: java.time.Duration support
   // @Test def joinWithDuration(): Unit = {
   //   val latch = new CountDownLatch(1)
   //   val ctx = startVirtualThread(() =>
@@ -127,7 +151,10 @@ class VirtualThreadJoinTest {
     Thread.sleep(50)
     joinerCtx.thread.interrupt()
     joinerCtx.thread.join(Timeout)
-    assertThrows(classOf[InterruptedException], () => joinerCtx.rethrowException())
+    assertThrows(
+      classOf[InterruptedException],
+      () => joinerCtx.rethrowException()
+    )
     latch.countDown()
     threadCtx.thread.join(Timeout)
     threadCtx.rethrowException()
