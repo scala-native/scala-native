@@ -297,8 +297,14 @@ class Thread private[lang] (
     this match {
       case vthread: VirtualThread =>
         if (isAlive()) {
-          val nanos = TimeUnit.MILLISECONDS.toNanos(millis)
-          vthread.joinNanos(nanos)
+          // Guard against overflow
+          val timeoutNanos = TimeUnit.MILLISECONDS.toNanos(millis) match {
+            case millisNanos
+                if millisNanos >= scala.Long.MaxValue - nanos.toLong =>
+              scala.Long.MaxValue
+            case millisNanos => millisNanos + nanos.toLong
+          }
+          vthread.joinNanos(timeoutNanos)
         }
 
       case _ if millis == 0 && nanos == 0 =>
@@ -383,7 +389,7 @@ class Thread private[lang] (
           return false
         this match {
           case vt: VirtualThread =>
-            return vt.joinNanos(TimeUnit.NANOSECONDS.convert(duration))
+            return vt.joinNanos(nanos)
           case _ =>
             var millis =
               TimeUnit.MILLISECONDS.convert(nanos, TimeUnit.NANOSECONDS)
