@@ -198,13 +198,18 @@ private[linker] trait LinktimeValueResolver { self: Reach =>
         (ComparableVal.fromNir(condVal), resolvedValue) match {
           case ComparableTuple(ordering, condition, resolved) =>
             val comparsionFn = comparison match {
-              case nir.Comp.Ieq | nir.Comp.Feq => ordering.equiv _
+              case nir.Comp.Ieq | nir.Comp.Feq =>
+                ordering.equiv(_, _)
               case nir.Comp.Ine | nir.Comp.Fne =>
                 !ordering.equiv(_: Any, _: Any)
-              case nir.Comp.Sgt | nir.Comp.Ugt | nir.Comp.Fgt => ordering.gt _
-              case nir.Comp.Sge | nir.Comp.Uge | nir.Comp.Fge => ordering.gteq _
-              case nir.Comp.Slt | nir.Comp.Ult | nir.Comp.Flt => ordering.lt _
-              case nir.Comp.Sle | nir.Comp.Ule | nir.Comp.Fle => ordering.lteq _
+              case nir.Comp.Sgt | nir.Comp.Ugt | nir.Comp.Fgt =>
+                ordering.gt(_, _)
+              case nir.Comp.Sge | nir.Comp.Uge | nir.Comp.Fge =>
+                ordering.gteq(_, _)
+              case nir.Comp.Slt | nir.Comp.Ult | nir.Comp.Flt =>
+                ordering.lt(_, _)
+              case nir.Comp.Sle | nir.Comp.Ule | nir.Comp.Fle =>
+                ordering.lteq(_, _)
             }
 
             comparsionFn(resolved.value, condition.value)

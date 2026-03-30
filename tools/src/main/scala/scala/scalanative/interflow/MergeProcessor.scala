@@ -164,7 +164,9 @@ private[interflow] final class MergeProcessor(
               )
             }
           }
-          headState.locals.foreach((mergeLocal _).tupled)
+          headState.locals.foreach {
+            case (local, value) => mergeLocal(local, value)
+          }
 
           // 2. Merge heap
           def includeAddr(addr: Addr): Boolean =

@@ -102,7 +102,7 @@ private[scalanative] object NativeLib {
       }
     }
 
-    (withAnalysisInfo _)
+    (withAnalysisInfo(_))
       .andThen(withProjectDescriptor)
       .apply(initialConfig)
   }

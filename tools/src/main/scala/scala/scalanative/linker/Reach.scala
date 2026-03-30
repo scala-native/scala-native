@@ -238,7 +238,7 @@ private[linker] class Reach(
   private def preprocessDefn(defn: nir.Defn): nir.Defn = {
     defn match {
       case defn: nir.Defn.Define =>
-        (resolveLinktimeDefine _)
+        (resolveLinktimeDefine(_))
           .andThen(resolveDefineIntrinsics)
           .apply(defn)
 
