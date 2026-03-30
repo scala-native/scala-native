@@ -626,7 +626,7 @@ object Settings {
     publishSettings(None),
     mavenPublishSettings,
     exportJars := true,
-    scalacOptions --= Seq("-deprecation", "-Werror", "-Xfatal-warnings"),
+    scalacOptions --= Seq("-Xfatal-warnings", "-Werror"),
     scalacOptions ++= ignoredScalaDeprecations(scalaVersion.value),
     disableMimaSettings
   )

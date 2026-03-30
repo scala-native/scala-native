@@ -1113,7 +1113,7 @@ trait NirGenExpr(using Context) {
       val Apply(fun @ DesugaredSelect(receiver, _), args) = app: @unchecked
 
       val sym = app.symbol
-      val code = nirPrimitives.getPrimitive(app, receiver.tpe)
+      val code = nirPrimitives.getPrimitiveCompat(app, receiver.tpe)
       def arg = args.head
 
       (code: @switch) match {
@@ -1845,7 +1845,7 @@ trait NirGenExpr(using Context) {
     def liftStringConcat(tree: Tree): List[Tree] = tree match {
       case tree @ Apply(fun @ DesugaredSelect(larg, method), rarg) =>
         if (nirPrimitives.isPrimitive(fun) &&
-            nirPrimitives.getPrimitive(tree, larg.tpe) == CONCAT)
+            nirPrimitives.getPrimitiveCompat(tree, larg.tpe) == CONCAT)
           liftStringConcat(larg) ::: rarg
         else
           tree :: Nil
