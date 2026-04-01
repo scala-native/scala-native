@@ -6,10 +6,13 @@ import java.nio.file.{Path, Paths}
 import scala.annotation.tailrec
 import scala.collection.mutable
 
+import scala.scalanative.build.ScalaNativeTracer
+
 private[linker] class Reach(
     protected val config: build.Config,
     entries: Seq[nir.Global],
-    protected val loader: ClassLoader
+    protected val loader: ClassLoader,
+    tracer: ScalaNativeTracer
 ) extends LinktimeValueResolver
     with LinktimeIntrinsicCallsResolver {
   import Reach._
@@ -196,43 +199,47 @@ private[linker] class Reach(
   }
 
   def reachDefn(name: nir.Global): Unit = {
-    stack ::= name
-    lookup(name).fold[Unit] {
-      reachUnavailable(name)
-    } { defn =>
-      if (defn.attrs.isStub && !config.linkStubs) {
+    tracer.symSpan(name) {
+      stack ::= name
+      lookup(name).fold[Unit] {
         reachUnavailable(name)
-      } else {
-        reachDefn(defn)
+      } { defn =>
+        if (defn.attrs.isStub && !config.linkStubs) {
+          reachUnavailable(name)
+        } else {
+          reachDefn(defn)
+        }
       }
+      stack = stack.tail
     }
-    stack = stack.tail
   }
 
   def reachDefn(defninition: nir.Defn): Unit = {
-    val defn = preprocessDefn(defninition)
-    implicit val srcPosition = defn.pos
-    defn match {
-      case defn: nir.Defn.Var =>
-        reachVar(defn)
-      case defn: nir.Defn.Const =>
-        reachConst(defn)
-      case defn: nir.Defn.Declare =>
-        reachDeclare(defn)
-      case defn: nir.Defn.Define =>
-        val nir.Global.Member(_, sig) = defn.name
-        nir.Rt.arrayAlloc
-          .get(sig)
-          .foreach { classInfo(_).foreach(reachAllocation) }
-        reachDefine(defn)
-      case defn: nir.Defn.Trait =>
-        reachTrait(defn)
-      case defn: nir.Defn.Class =>
-        reachClass(defn)
-      case defn: nir.Defn.Module =>
-        reachModule(defn)
+    tracer.symSpan(defninition.name) {
+      val defn = preprocessDefn(defninition)
+      implicit val srcPosition = defn.pos
+      defn match {
+        case defn: nir.Defn.Var =>
+          reachVar(defn)
+        case defn: nir.Defn.Const =>
+          reachConst(defn)
+        case defn: nir.Defn.Declare =>
+          reachDeclare(defn)
+        case defn: nir.Defn.Define =>
+          val nir.Global.Member(_, sig) = defn.name
+          nir.Rt.arrayAlloc
+            .get(sig)
+            .foreach { classInfo(_).foreach(reachAllocation) }
+          reachDefine(defn)
+        case defn: nir.Defn.Trait =>
+          reachTrait(defn)
+        case defn: nir.Defn.Class =>
+          reachClass(defn)
+        case defn: nir.Defn.Module =>
+          reachModule(defn)
+      }
+      done(defn.name) = defn
     }
-    done(defn.name) = defn
   }
 
   private def preprocessDefn(defn: nir.Defn): nir.Defn = {
@@ -257,24 +264,26 @@ private[linker] class Reach(
   def reachEntry(
       name: nir.Global
   )(implicit srcPosition: nir.SourcePosition): Unit = {
-    if (!name.isTop) {
-      reachEntry(name.top)
-    }
-    from.getOrElseUpdate(name, ReferencedFrom.Root)
-    reachGlobalNow(name)
-    infos.get(name) match {
-      case Some(cls: Class) =>
-        if (!cls.attrs.isAbstract) {
-          reachAllocation(cls)(cls.position)
-          if (cls.isModule) {
-            val init = cls.name.member(nir.Sig.Ctor(Seq.empty))
-            if (loaded(cls.name).contains(init)) {
-              reachGlobal(init)(cls.position)
+    tracer.symSpan(name) {
+      if (!name.isTop) {
+        reachEntry(name.top)
+      }
+      from.getOrElseUpdate(name, ReferencedFrom.Root)
+      reachGlobalNow(name)
+      infos.get(name) match {
+        case Some(cls: Class) =>
+          if (!cls.attrs.isAbstract) {
+            reachAllocation(cls)(cls.position)
+            if (cls.isModule) {
+              val init = cls.name.member(nir.Sig.Ctor(Seq.empty))
+              if (loaded(cls.name).contains(init)) {
+                reachGlobal(init)(cls.position)
+              }
             }
           }
-        }
-      case _ =>
-        ()
+        case _ =>
+          ()
+      }
     }
   }
 
@@ -322,16 +331,18 @@ private[linker] class Reach(
   def reachGlobalNow(
       name: nir.Global
   )(implicit srcPosition: nir.SourcePosition): Unit =
-    if (done.contains(name)) {
-      ()
-    } else if (!stack.contains(name)) {
-      enqueued += name
-      track(name)
-      reachDefn(name)
-    } else {
-      val lines = (s"cyclic reference to ${name.show}:" +:
-        stack.map(el => s"* ${el.show}"))
-      fail(lines.mkString("\n"))
+    tracer.symSpan(name) {
+      if (done.contains(name)) {
+        ()
+      } else if (!stack.contains(name)) {
+        enqueued += name
+        track(name)
+        reachDefn(name)
+      } else {
+        val lines = (s"cyclic reference to ${name.show}:" +:
+          stack.map(el => s"* ${el.show}"))
+        fail(lines.mkString("\n"))
+      }
     }
 
   def newInfo(info: Info): Unit = {
@@ -568,21 +579,23 @@ private[linker] class Reach(
   }
 
   def reachVar(defn: nir.Defn.Var): Unit = {
-    val nir.Defn.Var(attrs, name, ty, rhs) = defn
-    implicit val pos: nir.SourcePosition = defn.pos
-    newInfo(
-      new Field(
-        attrs,
-        scopeInfoOrUnavailable(name.top),
-        name,
-        isConst = false,
-        ty,
-        rhs
+    tracer.symSpan(defn.name) {
+      val nir.Defn.Var(attrs, name, ty, rhs) = defn
+      implicit val pos: nir.SourcePosition = defn.pos
+      newInfo(
+        new Field(
+          attrs,
+          scopeInfoOrUnavailable(name.top),
+          name,
+          isConst = false,
+          ty,
+          rhs
+        )
       )
-    )
-    reachAttrs(attrs)
-    reachType(ty)
-    reachVal(rhs)
+      reachAttrs(attrs)
+      reachType(ty)
+      reachVal(rhs)
+    }
   }
 
   def reachConst(defn: nir.Defn.Const): Unit = {
@@ -663,19 +676,21 @@ private[linker] class Reach(
   }
 
   def reachModule(defn: nir.Defn.Module): Unit = {
-    val nir.Defn.Module(attrs, name, parent, traits) = defn
-    implicit val pos: nir.SourcePosition = defn.pos
-    newInfo(
-      new Class(
-        attrs,
-        name,
-        parent.map(classInfoOrObject),
-        traits.flatMap(traitInfo),
-        isModule = true
+    tracer.symSpan(defn.name) {
+      val nir.Defn.Module(attrs, name, parent, traits) = defn
+      implicit val pos: nir.SourcePosition = defn.pos
+      newInfo(
+        new Class(
+          attrs,
+          name,
+          parent.map(classInfoOrObject),
+          traits.flatMap(traitInfo),
+          isModule = true
+        )
       )
-    )
-    reachAttrs(attrs)
-    reachExported(name)
+      reachAttrs(attrs)
+      reachExported(name)
+    }
   }
 
   def reachAttrs(attrs: nir.Attrs): Unit = {
@@ -1178,9 +1193,10 @@ private[scalanative] object Reach {
   def apply(
       config: build.Config,
       entries: Seq[nir.Global],
-      loader: ClassLoader
+      loader: ClassLoader,
+      tracer: ScalaNativeTracer
   ): ReachabilityAnalysis = {
-    val reachability = new Reach(config, entries, loader)
+    val reachability = new Reach(config, entries, loader, tracer)
     reachability.process()
     reachability.processDelayed()
     reachability.result()
