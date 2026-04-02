@@ -527,12 +527,97 @@ final class Matcher private (private var _pattern: Pattern) {
     this
   }
 
+  // Scala Native addition for JDK 9
+  // Cut & paste is a coyote ugly eyesore but does not disturb prior code
+  // and does not require a runtime copy.
+  def appendReplacement(sb: jl.StringBuilder, replacement: String): Matcher = {
+    checkHasMatch()
+    val s = abspos(_lastMatchStart)
+    val e = abspos(_lastMatchEnd)
+
+    if (_appendPos < s) {
+      sb.append(_inputSequence, _appendPos, s)
+    }
+    _appendPos = e
+    var last = 0
+    var i = 0
+    val m = replacement.length()
+    while (i < m - 1) {
+      if (replacement.charAt(i) == '\\') {
+        if (last < i) {
+          sb.append(replacement, last, i)
+        }
+        i += 1
+        last = i
+      } else if (replacement.charAt(i) == '$') {
+        var c = replacement.charAt(i + 1)
+        if ('0' <= c && c <= '9') {
+          var n = c - '0'
+          if (last < i) {
+            sb.append(replacement, last, i)
+          }
+          i += 2
+          var break = false
+          while (!break && i < m) {
+            c = replacement.charAt(i)
+            if (c < '0' || c > '9') {
+              break = true
+            } else {
+              n = n * 10 + c - '0'
+              i += 1
+            }
+          }
+          if (n > _groupCount) {
+            throw new IndexOutOfBoundsException("n > number of groups: " + n)
+          }
+          val group = this.group(n)
+          if (group != null) {
+            sb.append(group)
+          }
+          last = i
+          i -= 1
+        } else if (c == '{') {
+          if (last < i) {
+            sb.append(replacement, last, i)
+          }
+          i += 2 // after '${'
+          val off = i
+          while (i < replacement.length &&
+              replacement.charAt(i) != '}' &&
+              replacement.charAt(i) != ' ') {
+            i += 1
+          }
+          if (i == replacement.length || replacement.charAt(i) == ' ') {
+            throw new IllegalStateException("No match available")
+          }
+          val groupName = replacement.substring(off, i)
+          // JVM uses slightly different Exception message for non-extant
+          // named group in replacement string.
+          val gid = getNamedGroupOrThrow(groupName, "No match available")
+          sb.append(this.group(gid))
+          last = i + 1 // after '}'
+        }
+      }
+      i += 1
+    }
+    if (last < m) {
+      sb.append(replacement, last, m)
+    }
+    this
+  }
+
   // Appends to {@code sb} the substring of the input from the
   // append position to the end of the input.
   //
   // @param sb the {@link StringBuffer} to append to
   // @return the argument {@code sb}, for method chaining
   def appendTail(sb: StringBuffer): StringBuffer = {
+    sb.append(_inputSequence, _appendPos, _inputLength)
+    sb
+  }
+
+  // Scala Native addition for JDK 9
+  def appendTail(sb: jl.StringBuilder): jl.StringBuilder = {
     sb.append(_inputSequence, _appendPos, _inputLength)
     sb
   }
