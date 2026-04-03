@@ -34,6 +34,12 @@ final class Matcher private[regex] (
   private var lastMatch: engine.ExecResult = null
   private var lastMatchIsForMatches = false
 
+  /** Mirrors JDK: after {@code usePattern}, capture tuples are cleared but
+   *  the previous match span is kept for {@code start}/{@code end}/
+   *  {@code appendReplacement}; {@code group(n)} returns {@code null}.
+   */
+  private var groupsClearedByUsePattern: Boolean = false
+
   private var appendPos: Int = 0
 
   def matches(): Boolean = {
@@ -41,6 +47,8 @@ final class Matcher private[regex] (
 
     lastMatch = pattern().execMatches(inputstr)
     lastMatchIsForMatches = true
+    if (lastMatch != null)
+      groupsClearedByUsePattern = false
     lastMatch != null
   }
 
@@ -49,6 +57,8 @@ final class Matcher private[regex] (
     find()
     if ((lastMatch != null) && (engine.getIndex(ensureLastMatch) != 0))
       resetMatch()
+    if (lastMatch != null)
+      groupsClearedByUsePattern = false
     lastMatch != null
   }
 
@@ -59,10 +69,14 @@ final class Matcher private[regex] (
       else inputstr.length() + 1
     lastMatch = mtch
     lastMatchIsForMatches = false
+    if (mtch != null)
+      groupsClearedByUsePattern = false
     mtch != null
   }
 
   def find(start: Int): Boolean = {
+    if (start < 0 || start > input0.length)
+      throw new IndexOutOfBoundsException("Illegal start index")
     reset()
     position = start
     find()
@@ -88,13 +102,31 @@ final class Matcher private[regex] (
       replacement.charAt(i) match {
         case '$' =>
           i += 1
-          val j = i
-          while (i < len && isDigit(replacement.charAt(i)))
+          if (i >= len) {
+            sb.append('$')
+          } else if (replacement.charAt(i) == '{') {
             i += 1
-          val group = Integer.parseInt(replacement.substring(j, i))
-          val replaced = this.group(group)
-          if (replaced != null)
-            sb.append(replaced)
+            val nameStart = i
+            while (i < len && replacement.charAt(i) != '}')
+              i += 1
+            if (i >= len)
+              throw new IllegalArgumentException("named capturing group is missing trailing '}'")
+            val name = replacement.substring(nameStart, i)
+            i += 1
+            val replaced = this.group(name)
+            if (replaced != null)
+              sb.append(replaced)
+          } else if (isDigit(replacement.charAt(i))) {
+            val j = i
+            while (i < len && isDigit(replacement.charAt(i)))
+              i += 1
+            val group = Integer.parseInt(replacement.substring(j, i))
+            val replaced = this.group(group)
+            if (replaced != null)
+              sb.append(replaced)
+          } else {
+            sb.append('$')
+          }
 
         case '\\' =>
           i += 1
@@ -161,6 +193,7 @@ final class Matcher private[regex] (
     position = 0
     lastMatch = null
     appendPos = 0
+    groupsClearedByUsePattern = false
     this
   }
 
@@ -180,7 +213,7 @@ final class Matcher private[regex] (
     if (pattern == null)
       throw new IllegalArgumentException("Pattern cannot be null")
     pattern0 = pattern
-    lastMatch = null
+    groupsClearedByUsePattern = true
     this
   }
 
@@ -193,11 +226,24 @@ final class Matcher private[regex] (
   def groupCount(): Int = pattern().groupCount
 
   def start(): Int = engine.getIndex(ensureLastMatch) + regionStart()
-  def end(): Int = start() + group().length
-  def group(): String = engine.getGroup(ensureLastMatch, 0)
+
+  def end(): Int = {
+    ensureLastMatch
+    val ix = engine.getIndices(lastMatch)
+    val raw = engine.getEnd(ix, 0)
+    if (raw < 0) raw
+    else raw + regionStart()
+  }
+
+  def group(): String = group(0)
 
   private def indices: engine.IndicesArray =
     pattern().getIndices(ensureLastMatch, lastMatchIsForMatches)
+
+  private def checkGroupIndex(group: Int): Unit = {
+    if (group < 0 || group > pattern().groupCount)
+      throw new IndexOutOfBoundsException(s"No group $group")
+  }
 
   private def startInternal(compiledGroup: Int): Int = {
     val rawResult = engine.getStart(indices, compiledGroup)
@@ -205,11 +251,18 @@ final class Matcher private[regex] (
     else rawResult + regionStart()
   }
 
-  def start(group: Int): Int =
-    startInternal(pattern().numberedGroup(group))
+  def start(group: Int): Int = {
+    checkGroupIndex(group)
+    if (groupsClearedByUsePattern) -1
+    else startInternal(pattern().numberedGroup(group))
+  }
 
-  def start(name: String): Int =
-    startInternal(pattern().namedGroup(name))
+  def start(name: String): Int = {
+    ensureLastMatch
+    val num = pattern().namedGroup(name)
+    if (groupsClearedByUsePattern) -1
+    else startInternal(num)
+  }
 
   private def endInternal(compiledGroup: Int): Int = {
     val rawResult = engine.getEnd(indices, compiledGroup)
@@ -217,20 +270,39 @@ final class Matcher private[regex] (
     else rawResult + regionStart()
   }
 
-  def end(group: Int): Int =
-    endInternal(pattern().numberedGroup(group))
+  def end(group: Int): Int = {
+    checkGroupIndex(group)
+    if (groupsClearedByUsePattern) -1
+    else endInternal(pattern().numberedGroup(group))
+  }
 
-  def end(name: String): Int =
-    endInternal(pattern().namedGroup(name))
+  def end(name: String): Int = {
+    ensureLastMatch
+    val num = pattern().namedGroup(name)
+    if (groupsClearedByUsePattern) -1
+    else endInternal(num)
+  }
 
-  def group(group: Int): String =
-    engine.getGroup(ensureLastMatch, pattern().numberedGroup(group))
+  def group(group: Int): String = {
+    ensureLastMatch
+    checkGroupIndex(group)
+    if (groupsClearedByUsePattern)
+      null
+    else
+      engine.getGroup(lastMatch, pattern().numberedGroup(group))
+  }
 
-  def group(name: String): String =
-    engine.getGroup(ensureLastMatch, pattern().namedGroup(name))
+  def group(name: String): String = {
+    ensureLastMatch
+    if (groupsClearedByUsePattern)
+      null
+    else
+      engine.getGroup(lastMatch, pattern().namedGroup(name))
+  }
 
   def toMatchResult(): MatchResult =
-    new SealedResult(lastMatch, lastMatchIsForMatches, pattern(), regionStart())
+    new SealedResult(lastMatch, lastMatchIsForMatches, pattern(), regionStart(),
+        groupsClearedByUsePattern)
 
   def regionStart(): Int = regionStart0
   def regionEnd(): Int = regionEnd0
@@ -263,7 +335,8 @@ final class Matcher private[regex] (
     val regEnd = regionEnd()
     val last =
       try {
-        group()
+        val g = group()
+        if (g == null) "" else g
       } catch {
         case _: IllegalStateException => ""
       }
@@ -291,32 +364,56 @@ object Matcher {
   }
 
   private final class SealedResult(lastMatch: engine.ExecResult,
-      lastMatchIsForMatches: Boolean, pattern: Pattern, regionStart: Int)
+      lastMatchIsForMatches: Boolean, pattern: Pattern, regionStart: Int,
+      groupsClearedByUsePattern: Boolean)
       extends MatchResult {
 
     def groupCount(): Int = pattern.groupCount
 
     def start(): Int = engine.getIndex(ensureLastMatch) + regionStart
-    def end(): Int = start() + group().length
-    def group(): String = engine.getGroup(ensureLastMatch, 0)
+
+    def end(): Int = {
+      val ix = engine.getIndices(lastMatch)
+      val raw = engine.getEnd(ix, 0)
+      if (raw < 0) raw
+      else raw + regionStart
+    }
+
+    def group(): String = group(0)
 
     private def indices: engine.IndicesArray =
       pattern.getIndices(ensureLastMatch, lastMatchIsForMatches)
 
+    private def checkGroupIndex(group: Int): Unit = {
+      if (group < 0 || group > pattern.groupCount)
+        throw new IndexOutOfBoundsException(s"No group $group")
+    }
+
     def start(group: Int): Int = {
-      val rawResult = engine.getStart(indices, pattern.numberedGroup(group))
-      if (rawResult < 0) rawResult
-      else rawResult + regionStart
+      checkGroupIndex(group)
+      if (groupsClearedByUsePattern) -1
+      else {
+        val rawResult = engine.getStart(indices, pattern.numberedGroup(group))
+        if (rawResult < 0) rawResult
+        else rawResult + regionStart
+      }
     }
 
     def end(group: Int): Int = {
-      val rawResult = engine.getEnd(indices, pattern.numberedGroup(group))
-      if (rawResult < 0) rawResult
-      else rawResult + regionStart
+      checkGroupIndex(group)
+      if (groupsClearedByUsePattern) -1
+      else {
+        val rawResult = engine.getEnd(indices, pattern.numberedGroup(group))
+        if (rawResult < 0) rawResult
+        else rawResult + regionStart
+      }
     }
 
-    def group(group: Int): String =
-      engine.getGroup(ensureLastMatch, pattern.numberedGroup(group))
+    def group(group: Int): String = {
+      checkGroupIndex(group)
+      if (groupsClearedByUsePattern) null
+      else engine.getGroup(lastMatch, pattern.numberedGroup(group))
+    }
 
     private def ensureLastMatch: engine.ExecResult = {
       if (lastMatch == null)
