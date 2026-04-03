@@ -1,3 +1,4 @@
+// format: off
 /*
  * Scala.js (https://www.scala-js.org/)
  *
