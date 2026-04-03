@@ -34,7 +34,7 @@ class LongAccumulatorTest extends JSR166Test {
       assertEquals(identity, new LongAccumulator(jl.Long.max, identity).get())
   }
 
-  /** accumulate accumulates given value to current, and get returns current
+  /* accumulate accumulates given value to current, and get returns current
    *  value
    */
   @Test def testAccumulateAndGet(): Unit = {
@@ -47,7 +47,7 @@ class LongAccumulatorTest extends JSR166Test {
     assertEquals("a3", 4, acc.get())
   }
 
-  /** reset() causes subsequent get() to return zero
+  /* reset() causes subsequent get() to return zero
    */
   @Test def testReset(): Unit = {
     val acc = new LongAccumulator(jl.Long.max, 0L)
@@ -57,7 +57,7 @@ class LongAccumulatorTest extends JSR166Test {
     assertEquals("a2", 0, acc.get())
   }
 
-  /** getThenReset() returns current value; subsequent get() returns zero
+  /* getThenReset() returns current value; subsequent get() returns zero
    */
   @Test def testGetThenReset(): Unit = {
     val acc = new LongAccumulator(jl.Long.max, 0L)
@@ -67,7 +67,7 @@ class LongAccumulatorTest extends JSR166Test {
     assertEquals("a3", 0, acc.get())
   }
 
-  /** toString returns current value.
+  /* toString returns current value.
    */
   @Test def testToString(): Unit = {
     val acc = new LongAccumulator(jl.Long.max, 0L)
@@ -76,7 +76,7 @@ class LongAccumulatorTest extends JSR166Test {
     assertEquals("a2", jl.Long.toString(1), acc.toString())
   }
 
-  /** intValue returns current value.
+  /* intValue returns current value.
    */
   @Test def testIntValue(): Unit = {
     val acc = new LongAccumulator(jl.Long.max, 0L)

@@ -18,7 +18,7 @@ import java.io.Serializable
 import java.lang.Double.{doubleToRawLongBits, longBitsToDouble}
 import java.util.function.DoubleBinaryOperator;
 
-/** One or more variables that together maintain a running {@code double} value
+/* One or more variables that together maintain a running {@code double} value
  *  updated using a supplied function. When updates (method {@link #accumulate})
  *  are contended across threads, the set of variables may grow dynamically to
  *  reduce contention. Method {@link #get} (or, equivalently,
@@ -55,10 +55,14 @@ import java.util.function.DoubleBinaryOperator;
  *  @author
  *    Doug Lea
  */
-/** Scala Native Devo Notes:
+/* Scala Native Devo Notes:
  *
  *  1) DoubleAccumulator extends Serializable so that the signature matches but
  *  Serialization & SerializationProxy are not implemented.
+ *
+ *  2) Converted javadoc "/** */" comments to simple "/* */" block comments
+ *     since the former currently break SN doc generation. The original
+ *     JSR-166 comments are invaluable to javalib maintainers.
  */
 class DoubleAccumulator(
     accumulatorFunction: DoubleBinaryOperator,
@@ -73,7 +77,7 @@ class DoubleAccumulator(
   val identity = doubleToRawLongBits(_identity)
   base = this.identity
 
-  /** Updates with the given value.
+  /* Updates with the given value.
    *
    *  @param x
    *    the value
@@ -108,7 +112,7 @@ class DoubleAccumulator(
     }
   }
 
-  /** Returns the current value. The returned value is <em>NOT</em> an atomic
+  /* Returns the current value. The returned value is <em>NOT</em> an atomic
    *  snapshot; invocation in the absence of concurrent updates returns an
    *  accurate result, but concurrent updates that occur while the value is
    *  being calculated might not be incorporated.
@@ -132,7 +136,7 @@ class DoubleAccumulator(
     result
   }
 
-  /** Resets variables maintaining updates to the identity value. This method
+  /* Resets variables maintaining updates to the identity value. This method
    *  may be a useful alternative to creating a new updater, but is only
    *  effective if there are no concurrent updates. Because this method is
    *  intrinsically racy, it should only be used when it is known that no
@@ -151,7 +155,7 @@ class DoubleAccumulator(
     }
   }
 
-  /** Equivalent in effect to {@link #get} followed by {@link #reset}. This
+  /* Equivalent in effect to {@link #get} followed by {@link #reset}. This
    *  method may apply for example during quiescent points between multithreaded
    *  computations. If there are updates concurrent with this method, the
    *  returned value is <em>not</em> guaranteed to be the final value occurring
@@ -177,7 +181,7 @@ class DoubleAccumulator(
     result
   }
 
-  /** Returns the String representation of the current value.
+  /* Returns the String representation of the current value.
    *  @return
    *    the String representation of the current value
    */
@@ -185,7 +189,7 @@ class DoubleAccumulator(
   override def toString(): String =
     get().toString()
 
-  /** Equivalent to {@link #get}.
+  /* Equivalent to {@link #get}.
    *
    *  @return
    *    the current value
@@ -193,19 +197,19 @@ class DoubleAccumulator(
   def doubleValue(): scala.Double =
     get()
 
-  /** Returns the {@linkplain #get current value} as a {@code long} after a
+  /* Returns the {@linkplain #get current value} as a {@code long} after a
    *  narrowing primitive conversion.
    */
   def longValue(): scala.Long =
     get().toLong
 
-  /** Returns the {@linkplain #get current value} as an {@code int} after a
+  /* Returns the {@linkplain #get current value} as an {@code int} after a
    *  narrowing primitive conversion.
    */
   def intValue(): scala.Int =
     get().toInt
 
-  /** Returns the {@linkplain #get current value} as a {@code float} after a
+  /* Returns the {@linkplain #get current value} as a {@code float} after a
    *  narrowing primitive conversion.
    */
   def floatValue(): scala.Float =
