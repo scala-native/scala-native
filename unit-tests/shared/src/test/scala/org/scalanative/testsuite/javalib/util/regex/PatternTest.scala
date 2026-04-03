@@ -360,7 +360,7 @@ class PatternTest {
       val m = Pattern.compile(needle).matcher(haystack)
 
       m.region(4, 9)
-      
+
       try m.find()
       catch {
         case e: IllegalStateException =>
