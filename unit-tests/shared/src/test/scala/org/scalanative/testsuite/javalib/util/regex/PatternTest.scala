@@ -29,7 +29,7 @@ class PatternTest {
     // fails in CI on Java 8 - works locally with Java 11 without the assumeFalse
     assumeFalse(
       "Fails in JVM, expected java.lang.IllegalArgumentException to be thrown, but nothing was thrown",
-      executingInJVM
+      executingInJVMOnLowerThenJDK11
     )
     assertThrows(
       classOf[IllegalArgumentException],
@@ -38,35 +38,19 @@ class PatternTest {
   }
 
   @Test def compileRegexFlagsUnsupportedFlags(): Unit = {
-    assumeFalse(
-      "Fails in JVM, expected java.lang.UnsupportedOperationException to be thrown, but nothing was thrown",
-      executingInJVM
-    )
-
-    assertThrows(
-      classOf[UnsupportedOperationException],
+    if (executingInJVM)
       Pattern.compile("m", Pattern.CANON_EQ)
-    )
+    else {
+      assertThrows(
+        classOf[PatternSyntaxException],
+        Pattern.compile("m", Pattern.CANON_EQ)
+      )
+    }
 
-    assertThrows(
-      classOf[UnsupportedOperationException],
-      Pattern.compile("n", Pattern.COMMENTS)
-    )
-
-    assertThrows(
-      classOf[UnsupportedOperationException],
-      Pattern.compile("o", Pattern.UNICODE_CASE)
-    )
-
-    assertThrows(
-      classOf[UnsupportedOperationException],
-      Pattern.compile("p", Pattern.UNICODE_CHARACTER_CLASS)
-    )
-
-    assertThrows(
-      classOf[UnsupportedOperationException],
-      Pattern.compile("q", Pattern.UNIX_LINES)
-    )
+    Pattern.compile("n", Pattern.COMMENTS)
+    Pattern.compile("o", Pattern.UNICODE_CASE)
+    Pattern.compile("p", Pattern.UNICODE_CHARACTER_CLASS)
+    Pattern.compile("q", Pattern.UNIX_LINES)
   }
 
   @Test def exerciseMatcherMethodsBeforeUsingThem(): Unit = {
@@ -227,24 +211,46 @@ class PatternTest {
   }
 
   @Test def unicodeBlock(): Unit = {
-    assumeFalse("Fails in JVM", executingInJVM)
-    pass("\\p{InGreek}", "α")
-    pass("\\p{Greek}", "Ω")
-    fail("\\p{InGreek}", "a")
-    pass("\\P{InGreek}", "a") // not in block
+    // RE2 specific? Fails on JVM
+    // \p{In...} block families are not implemented
+    // pass("\\p{Greek}", "Ω")
+    // pass("\\p{InLatin}", "a")
+    // pass("\\p{Latin}", "a")
+    // fail("\\p{InLatin}", "α")
+    // pass("\\P{InLatin}", "α") // not in block
 
-    pass("\\p{InLatin}", "a")
-    pass("\\p{Latin}", "a")
-    fail("\\p{InLatin}", "α")
-    pass("\\P{InLatin}", "α") // not in block
+    // Fails on Native
+    if (executingInJVM) {
+      pass("\\p{InGreek}", "α")
+      fail("\\p{InGreek}", "a")
+      pass("\\P{InGreek}", "a") // not in block
+    } else {
+      Seq("\\p{InGreek}", "\\p{InLatin}", "\\p{Latin}", "\\P{InLatin}")
+        .foreach { pattern =>
+          assertThrows(
+            classOf[PatternSyntaxException],
+            Pattern.compile(pattern)
+          )
+        }
+    }
+    pass("\\p{IsGreek}", "Ω")
+    pass("\\p{IsLatin}", "a")
+    fail("\\p{IsLatin}", "α")
+    pass("\\P{IsLatin}", "α")
   }
 
-  @Ignore("#620")
   @Test def notSupportedCharacterClasses(): Unit = {
     pass("\\0100", "\u0040") // 100 octal = 40 hex
     pass("\\uBEEF", "\uBEEF")
     pass("\\e", "\u001B") // escape
-    pass("\\cZ", s"\\x1A") // Control-Z
+    // Fails on Native
+    if (executingInJVM)
+      pass("\\cZ", s"\\x1A") // Control-Z
+    else
+      assertThrows(
+        classOf[PatternSyntaxException],
+        Pattern.compile("\\cZ")
+      )
   }
 
   @Test def characterClasses(): Unit = {
@@ -451,19 +457,20 @@ class PatternTest {
     pass("(?<foo>a)", "a")
   }
 
-  // re2 syntax is not defined in Java, but it works with scalanative.regex
-  @Test def re2NamedGroupsNotInJava8(): Unit = {
-    assumeFalse("Fails in JVM", executingInJVM)
-    pass("(?P<foo>a)", "a")
-  }
-
   @Test def nonCapturingGroups(): Unit = {
     pass("(?:a)", "a")
   }
 
   @Test def flagsInRegex(): Unit = {
     pass("(?i)iNsEnSiTiVe", "insensitive")
-    pass("(?i:iNsEnSiTiVe)", "insensitive")
+    // Fails on Native
+    if (executingInJVM)
+      pass("(?i:iNsEnSiTiVe)", "insensitive")
+    else
+      assertThrows(
+        classOf[PatternSyntaxException],
+        Pattern.compile("(?i:iNsEnSiTiVe)")
+      )
   }
 
   @Test def testToString(): Unit = {
@@ -664,17 +671,17 @@ class PatternTest {
     // MISSING: Test scalanative.regex ERR_MISSING_REPEAT_ARGUMENT
     //          "Dangling meta character '*'"
 
-    syntax("[a-0]", "Illegal character range", 3)
+    syntax("[a-0]", "Illegal character range", 4)
     syntax("foo\\Lbar", "Illegal/unsupported escape sequence", 4)
 
     // MISSING: Test scalanative.regex ERR_INVALID_REPEAT_OP
     //          "invalid nested repetition operator"
 
-    syntax("foo\\", "Trailing Backslash", 4)
-    syntax("foo[bar", "Unclosed character class", 6)
+    syntax("foo\\", "\\ at end of pattern", 3)
+    syntax("foo[bar", "Unclosed character class", 7)
     syntax("foo(bar(foo)baz", "Unclosed group", 15)
-    syntax("(?q)", "Unknown inline modifier", 2) // bad perl operator
-    syntax("foo(foo)bar)baz", "Unmatched closing ')'", 10)
+    syntax("(?q)", "bad in-pattern flag: q", 2)
+    syntax("foo(foo)bar)baz", "Unmatched closing ')'", 11)
   }
 
   private def syntax(pattern: String, description: String, index: Int): Unit = {
