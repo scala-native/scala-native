@@ -185,6 +185,9 @@ private[regex] object WasmEngine extends Engine {
 
     val capturingGroupsCount = groupNodeMap.length - 1
 
+    private val emptyCaptures =
+      new Captures(capturingGroupsCount + 1)
+
     var lastIndex: Int = 0
 
     def exec(input: String): WasmExecResult = {
@@ -208,7 +211,7 @@ private[regex] object WasmEngine extends Engine {
             lastIndex = 0
           null
         } else {
-          val initState = new MatchState(input, lastIndex, new Captures(capturingGroupsCount + 1))
+          val initState = new MatchState(input, lastIndex, emptyCaptures)
           val r = root(initState, y => y)
 
           r match {
@@ -219,7 +222,7 @@ private[regex] object WasmEngine extends Engine {
               } else {
                 lastIndex =
                   if (lastIndex == input.length()) lastIndex + 1
-                  else input.offsetByCodePoints(lastIndex, 1)
+                  else advanceIndexByCodePoint(input, lastIndex)
                 loop()
               }
 
@@ -603,7 +606,7 @@ private[regex] object WasmEngine extends Engine {
     def apply(x: MatchState, c: MatchContinuation): MatchResult = {
       import x._
       if (endIndex < input.length())
-        c(MatchState(input, input.offsetByCodePoints(endIndex, +1), captures))
+        c(MatchState(input, advanceIndexByCodePoint(input, endIndex), captures))
       else
         Failure
     }
@@ -617,7 +620,7 @@ private[regex] object WasmEngine extends Engine {
     def apply(x: MatchState, c: MatchContinuation): MatchResult = {
       import x._
       if (endIndex > 0)
-        c(MatchState(input, input.offsetByCodePoints(endIndex, -1), captures))
+        c(MatchState(input, retreatIndexByCodePoint(input, endIndex), captures))
       else
         Failure
     }
@@ -749,6 +752,30 @@ private[regex] object WasmEngine extends Engine {
     index == 0 ||
     index == input.length() ||
     !Character.isSurrogatePair(input.charAt(index - 1), input.charAt(index))
+  }
+
+  @inline
+  private def advanceIndexByCodePoint(input: String, index: Int): Int = {
+    val next = index + 1
+    if (next < input.length() &&
+        Character.isHighSurrogate(input.charAt(index)) &&
+        Character.isLowSurrogate(input.charAt(next))) {
+      next + 1
+    } else {
+      next
+    }
+  }
+
+  @inline
+  private def retreatIndexByCodePoint(input: String, index: Int): Int = {
+    val prev = index - 1
+    if (prev > 0 &&
+        Character.isLowSurrogate(input.charAt(prev)) &&
+        Character.isHighSurrogate(input.charAt(prev - 1))) {
+      prev - 1
+    } else {
+      prev
+    }
   }
 
   // !!! Lots of copy-paste with IndicesBuilder.Parser
