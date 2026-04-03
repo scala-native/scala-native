@@ -425,6 +425,10 @@ object Build {
       case "3" => _.settings(disabledDocsSettings)
       case _   => _.settings(docsSettings)
     }
+    .mapBinaryVersions {
+      case "2.12" => _.settings(scalacOptions += "-language:higherKinds")
+      case _      => identity
+    }
     .dependsOn(posixlib, windowslib, clib)
     .withNativeCompilerPlugin
 
