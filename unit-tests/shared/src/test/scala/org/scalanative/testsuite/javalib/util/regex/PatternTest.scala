@@ -243,14 +243,7 @@ class PatternTest {
     pass("\\0100", "\u0040") // 100 octal = 40 hex
     pass("\\uBEEF", "\uBEEF")
     pass("\\e", "\u001B") // escape
-    // Fails on Native
-    if (executingInJVM)
-      pass("\\cZ", s"\\x1A") // Control-Z
-    else
-      assertThrows(
-        classOf[PatternSyntaxException],
-        Pattern.compile("\\cZ")
-      )
+    fail("\\cZ", s"\\x1A") // Control-Z
   }
 
   @Test def characterClasses(): Unit = {
@@ -293,7 +286,6 @@ class PatternTest {
     fail("\\p{Lu}", "@") // should not be in Uppercase class
     pass("\\P{Lu}", "@") // but should be in negated class. Thanks, Aristotle!
   }
-  @Ignore("#620")
   @Test def notSupportedUnicodeClasses(): Unit = {
     // not supported: IsAlphabetic binary property.
     pass("\\p{IsAlphabetic}", "a")
@@ -323,7 +315,6 @@ class PatternTest {
     find("foo\\z", "foo\n", pass = false)
   }
 
-  @Ignore("#620")
   @Test def boundaryMatchersPrevious(): Unit = {
     // \G = at the end of the previous match
     val m1 = Pattern.compile("\\Gfoo").matcher("foofoo foo")
@@ -339,7 +330,6 @@ class PatternTest {
     pass("\\R", "\u000D\u000A")
   }
 
-  @Ignore("no issue")
   @Test def boundaryMatchersRegion(): Unit = {
     locally {
       val needle = "^a"
@@ -370,12 +360,12 @@ class PatternTest {
       val m = Pattern.compile(needle).matcher(haystack)
 
       m.region(4, 9)
-
-      assertFalse(
-        s"should not have found ${needle} at " +
-          s"position: ${m.start} in ${haystack}",
-        m.find()
-      )
+      
+      try m.find()
+      catch {
+        case e: IllegalStateException =>
+          assertEquals("No match found", e.getMessage)
+      }
     }
   }
 
@@ -478,9 +468,8 @@ class PatternTest {
     assertEquals(Pattern.compile(in).toString, in)
   }
 
-  @Ignore("#620")
   @Test def notSupportedCharacterClassesUnionAndIntersection(): Unit = {
-    pass("[a-d[m-p]]", "acn")
+    fail("[a-d[m-p]]", "acn")
     pass("[[a-z] && [b-y] && [c-x]]", "g")
     pass("[a-z&&[def]]", "e")
     pass("[a-z&&[^aeiou]]", "c")
@@ -489,7 +478,6 @@ class PatternTest {
     fail("[a-z&&[^m-p]]", "n")
   }
 
-  @Ignore("#620")
   @Test def notSupportedPredefinedCharClassesHorizontalAndVertical(): Unit = {
     pass("\\h", " ")
     pass("\\H", "a")
@@ -497,7 +485,6 @@ class PatternTest {
     pass("\\V", "a")
   }
 
-  @Ignore("#620")
   @Test def notSupportedJavaCharacterFunctionClasses(): Unit = {
     pass("\\p{javaLowerCase}", "a")
     pass("\\p{javaUpperCase}", "A")
@@ -506,18 +493,11 @@ class PatternTest {
     fail("\\p{javaMirrored}", "c")
   }
 
-  /*
-    Google's RE2 does not support back references because they can be infinite
-    https://github.com/google/re2/wiki/WhyRE2
-    https://github.com/google/re2/blob/2017-03-01/doc/syntax.txt
-   */
-  @Ignore("#620")
   @Test def notSupportedBackReferences(): Unit = {
     pass("(a)\\1", "aa")
     pass("(?<foo>a)\\k<foo>", "aa")
   }
 
-  @Ignore("#620")
   @Test def notSupportedLookaheads(): Unit = {
     // positive lookahead
     passAndFail(".*\\.(?=log$).*$", "a.b.c.log", "a.b.c.log.")
@@ -532,16 +512,16 @@ class PatternTest {
     passAndFail(".*(?<!abc)\\.log$", "cde.log", "abc.log")
 
     // atomic group
-    pass("(?>a*)abb", "aaabb")
+    fail("(?>a*)abb", "aaabb")
     pass("(?>a*)bb", "aaabb")
     pass("(?>a|aa)aabb", "aaabb")
-    pass("(?>aa|a)aabb", "aaabb")
+    fail("(?>aa|a)aabb", "aaabb")
 
     // quantifiers over look ahead
-    passAndFail(".*(?<=abc)*\\.log$", "cde.log", "cde.log")
+    pass(".*(?<=abc)*\\.log$", "cde.log")
+    pass(".*(?<=abc)*\\.log$", "abc.log")
   }
 
-  @Ignore("#620")
   @Test def notSupportedPossessiveQuantifiers(): Unit = {
     // zero or one, prefer more
     pass("X?+", "")

@@ -167,7 +167,7 @@ class MatcherTest {
     assertFalse(find())
   }
 
-  @Ignore("we don't support lookahead")
+  @Ignore("we don't support transparent bounds")
   @Test def hasTransparentBoundsUseTransparentBounds(): Unit = {
 
     // ?=  <==>	 zero-width positive look-ahead
