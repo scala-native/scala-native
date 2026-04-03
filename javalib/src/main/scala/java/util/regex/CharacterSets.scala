@@ -56,6 +56,28 @@ private[regex] object CharacterSets {
       (low & 1) != 0 // insertion point is odd: inside a range end.
     }
 
+    def isAsciiOnly: Boolean =
+      ranges.length == 0 || ranges(ranges.length - 1) < 128
+
+    def toAsciiTable: Array[Boolean] = {
+      val result = new Array[Boolean](128)
+      val len = ranges.length
+      var i = 0
+      while (i < len) {
+        val start = ranges(i)
+        if (start < 128) {
+          val end = Math.min(ranges(i + 1), 127)
+          var cp = start
+          while (cp <= end) {
+            result(cp) = true
+            cp += 1
+          }
+        }
+        i += 2
+      }
+      result
+    }
+
     def union(that: CharSet): CharSet = {
       // The algorithm is like the Merge step of a MergeSort, but in addition we merge ranges
 

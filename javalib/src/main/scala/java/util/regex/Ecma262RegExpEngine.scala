@@ -426,6 +426,9 @@ private[regex] object Ecma262RegExpEngine extends Engine {
       case m: NonCapturingGroupMatcher =>
         extractLeadingBmpChars(m.m)
 
+      case m: RepeatMatcher if m.min > 0 =>
+        extractLeadingBmpChars(m.m)
+
       case m: CapturingGroupMatcher if m.forward =>
         extractLeadingBmpChars(m.m)
 
@@ -443,7 +446,7 @@ private[regex] object Ecma262RegExpEngine extends Engine {
    *
    *  @see [[https://262.ecma-international.org/15.0/index.html#sec-runtime-semantics-repeatmatcher-abstract-operation]]
    */
-  private[regex] final class RepeatMatcher(m: Matcher, min: Int, max: Int,
+  private[regex] final class RepeatMatcher(val m: Matcher, val min: Int, max: Int,
       greedy: Boolean, parenIndex: Int, parenCount: Int)
       extends Matcher {
 
@@ -876,6 +879,23 @@ private[regex] object Ecma262RegExpEngine extends Engine {
     }
   }
 
+  private[regex] final class AsciiForwardCharacterSetMatcher(table: Array[Boolean]) extends Matcher {
+    def apply(x: MatchState, c: MatchContinuation): MatchResult = {
+      val input = x.input
+      val e = x.endIndex
+
+      if (e >= input.length()) {
+        Failure
+      } else {
+        val ch = input.charAt(e)
+        if (ch < 128 && table(ch))
+          c(MatchState(input, e + 1, x.captures))
+        else
+          Failure
+      }
+    }
+  }
+
   /** Backward Matcher for a `CharSet`.
    *
    *  @see [[https://262.ecma-international.org/15.0/index.html#sec-compileatom]]
@@ -902,12 +922,37 @@ private[regex] object Ecma262RegExpEngine extends Engine {
     }
   }
 
+  private[regex] final class AsciiBackwardCharacterSetMatcher(table: Array[Boolean]) extends Matcher {
+    def apply(x: MatchState, c: MatchContinuation): MatchResult = {
+      val input = x.input
+      val e = x.endIndex
+
+      if (e <= 0) {
+        Failure
+      } else {
+        val ch = input.charAt(e - 1)
+        if (ch < 128 && table(ch))
+          c(MatchState(input, e - 1, x.captures))
+        else
+          Failure
+      }
+    }
+  }
+
   private def makeCharacterSetMatcher(charSet: CharSet, invert: Boolean,
       unicodeIgnoreCase: Boolean, forward: Boolean): Matcher = {
-    if (forward)
-      new ForwardCharacterSetMatcher(charSet, invert, unicodeIgnoreCase)
-    else
-      new BackwardCharacterSetMatcher(charSet, invert, unicodeIgnoreCase)
+    if (!invert && !unicodeIgnoreCase && charSet.isAsciiOnly) {
+      val table = charSet.toAsciiTable
+      if (forward)
+        new AsciiForwardCharacterSetMatcher(table)
+      else
+        new AsciiBackwardCharacterSetMatcher(table)
+    } else {
+      if (forward)
+        new ForwardCharacterSetMatcher(charSet, invert, unicodeIgnoreCase)
+      else
+        new BackwardCharacterSetMatcher(charSet, invert, unicodeIgnoreCase)
+    }
   }
 
   /** A capturing group.
