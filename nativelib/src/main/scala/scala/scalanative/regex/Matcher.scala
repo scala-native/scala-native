@@ -540,6 +540,10 @@ final class Matcher private (private var _pattern: Pattern) {
     this
   }
 
+  // SN: for binary compatibility
+  def appendReplacement(sb: StringBuffer, replacement: String): Matcher =
+    appendReplacement(sb.asInstanceOf[Appendable], replacement)
+
   // Appends to {@code sb} the substring of the input from the
   // append position to the end of the input.
   //
@@ -556,6 +560,12 @@ final class Matcher private (private var _pattern: Pattern) {
    */
 
   def appendTail[T <: jl.Appendable](sb: T): T = {
+    sb.append(_inputSequence, _appendPos, _inputLength)
+    sb
+  }
+
+  // SN: for binary compatibility
+  def appendTail(sb: StringBuffer): StringBuffer = {
     sb.append(_inputSequence, _appendPos, _inputLength)
     sb
   }
