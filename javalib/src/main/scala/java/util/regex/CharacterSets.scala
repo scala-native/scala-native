@@ -38,10 +38,21 @@ private[regex] object CharacterSets {
     import CharSet._
 
     def contains(cp: Int): Boolean = {
-      val p = Arrays.binarySearch(ranges, cp)
+      var low = 0
+      var high = ranges.length
 
-      (p >= 0) || // found in the array: exactly the start or end of a range; or
-        ((-p - 1) & 1) != 0 // the insertion point is odd (an end value): inside a range.
+      while (low < high) {
+        val mid = (low + high) >>> 1
+        val elem = ranges(mid)
+        if (cp < elem)
+          high = mid
+        else if (cp == elem)
+          return true
+        else
+          low = mid + 1
+      }
+
+      (low & 1) != 0 // insertion point is odd: inside a range end.
     }
 
     def union(that: CharSet): CharSet = {

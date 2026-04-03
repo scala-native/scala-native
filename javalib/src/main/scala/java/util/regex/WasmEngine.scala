@@ -170,12 +170,16 @@ private[regex] object WasmEngine extends Engine {
      *  `parenIndex + parenCount` (inclusive).
      */
     def erase(parenIndex: Int, parenCount: Int): Captures = {
-      val newRanges = ranges.clone()
-      for (group <- (parenIndex + 1) to (parenIndex + parenCount)) {
-        newRanges(group * 2) = -1
-        newRanges(group * 2 + 1) = -1
+      if (parenCount == 0) {
+        this
+      } else {
+        val newRanges = ranges.clone()
+        for (group <- (parenIndex + 1) to (parenIndex + parenCount)) {
+          newRanges(group * 2) = -1
+          newRanges(group * 2 + 1) = -1
+        }
+        new Captures(newRanges)
       }
-      new Captures(newRanges)
     }
   }
 
@@ -361,8 +365,9 @@ private[regex] object WasmEngine extends Engine {
             loop(min2, max2, y, c)
           }
         }
-        val cap = x.captures.erase(parenIndex, parenCount)
-        val xr = MatchState(x.input, x.endIndex, cap)
+        val xr =
+          if (parenCount == 0) x
+          else MatchState(x.input, x.endIndex, x.captures.erase(parenIndex, parenCount))
 
         if (min != 0) {
           m(xr, d)
@@ -447,8 +452,127 @@ private[regex] object WasmEngine extends Engine {
     }
   }
 
-  private def makeAlternativesMatcher(alternatives: ArrayList[Matcher]): Matcher =
-    new MatchAlternatives(alternatives.toArray(new Array[Matcher](alternatives.size())))
+  private def makeAlternativesMatcher(alternatives: ArrayList[Matcher]): Matcher = {
+    val ms = alternatives.toArray(new Array[Matcher](alternatives.size()))
+    optimizeLiteralAlternatives(ms).getOrElse(new MatchAlternatives(ms))
+  }
+
+  private def optimizeLiteralAlternatives(ms: Array[Matcher]): Option[Matcher] = {
+    if (ms.length < 2) {
+      None
+    } else {
+      val literals = new Array[String](ms.length)
+      var i = 0
+      while (i < ms.length) {
+        ms(i) match {
+          case m: LiteralMatcher if !m.literal.isEmpty() =>
+            literals(i) = m.literal
+          case _ =>
+            return None
+        }
+        i += 1
+      }
+
+      if (!arePrefixFree(literals)) None
+      else Some(buildLiteralAlternativesMatcher(literals))
+    }
+  }
+
+  private def buildLiteralAlternativesMatcher(literals: Array[String]): Matcher = {
+    if (literals.length == 1) {
+      new LiteralMatcher(literals(0))
+    } else {
+      val prefixLen = commonLiteralPrefixLength(literals)
+      if (prefixLen > 0) {
+        val prefix = literals(0).substring(0, prefixLen)
+        val remainders = new Array[String](literals.length)
+        var i = 0
+        while (i < literals.length) {
+          remainders(i) = literals(i).substring(prefixLen)
+          i += 1
+        }
+        new MatchSequence(new LiteralMatcher(prefix),
+            buildLiteralAlternativesMatcher(remainders))
+      } else {
+        val groupKeys = new ArrayList[String]()
+        val groups = new HashMap[String, ArrayList[String]]()
+        var i = 0
+        while (i < literals.length) {
+          val literal = literals(i)
+          val firstLen = Character.charCount(literal.codePointAt(0))
+          val key = literal.substring(0, firstLen)
+          val remainder = literal.substring(firstLen)
+          var group = groups.get(key)
+          if (group == null) {
+            group = new ArrayList[String]()
+            groups.put(key, group)
+            groupKeys.add(key)
+          }
+          group.add(remainder)
+          i += 1
+        }
+
+        val groupedMatchers = new Array[Matcher](groupKeys.size())
+        i = 0
+        while (i < groupedMatchers.length) {
+          val key = groupKeys.get(i)
+          val group = groups.get(key)
+          groupedMatchers(i) =
+            if (group.size() == 1) {
+              new LiteralMatcher(key + group.get(0))
+            } else {
+              new MatchSequence(new LiteralMatcher(key),
+                  buildLiteralAlternativesMatcher(
+                    group.toArray(new Array[String](group.size()))
+                  ))
+            }
+          i += 1
+        }
+
+        new MatchAlternatives(groupedMatchers)
+      }
+    }
+  }
+
+  private def arePrefixFree(literals: Array[String]): Boolean = {
+    var i = 0
+    while (i < literals.length) {
+      var j = i + 1
+      while (j < literals.length) {
+        val a = literals(i)
+        val b = literals(j)
+        if (a.startsWith(b) || b.startsWith(a))
+          return false
+        j += 1
+      }
+      i += 1
+    }
+    true
+  }
+
+  private def commonLiteralPrefixLength(literals: Array[String]): Int = {
+    val first = literals(0)
+    val firstLength = first.length()
+    var prefixLength = 0
+    var done = false
+
+    while (!done && prefixLength < firstLength) {
+      val cp = first.codePointAt(prefixLength)
+      val cpWidth = Character.charCount(cp)
+      var i = 1
+      while (i < literals.length &&
+          prefixLength + cpWidth <= literals(i).length() &&
+          literals(i).codePointAt(prefixLength) == cp) {
+        i += 1
+      }
+      if (i == literals.length)
+        prefixLength += cpWidth
+      else
+        done = true
+    }
+
+    prefixLength
+  }
 
   /** A sequence of consecutive nodes.
    *
