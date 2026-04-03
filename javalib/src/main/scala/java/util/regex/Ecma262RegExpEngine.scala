@@ -9,6 +9,10 @@
  *
  * See the NOTICE file distributed with this work for
  * additional information regarding copyright ownership.
+ *
+ * Embedded in Scala Native as [[Ecma262RegExpEngine]]: standalone Scala
+ * implementation of ECMA-262 `RegExp` pattern semantics.
+ * Upstream scala-wasm used the name `WasmEngine` for this backend.
  */
 
 package java.util.regex
@@ -23,18 +27,20 @@ import CaseFolding._
 import CharacterSets._
 import UnicodeProperties._
 
-/** An implementation of `Engine` that only uses standalone Scala code.
+/** Standalone [[Engine]] implementing ECMA-262 `RegExp` matching (Scala only).
  *
- *  It natively supports atomic groups and possessive quantifiers, which are
- *  not part of the spec of `js.RegExp`. They can be understood as if the
- *  proposal [[https://github.com/tc39/proposal-regexp-atomic-operators]] had
- *  been added to the spec.
+ *  Specification references use [[https://tc39.es/ecma262/]] /
+ *  [[https://262.ecma-international.org/]] (see individual `Matcher` nodes).
+ *
+ *  Atomic groups and possessive quantifiers are supported even though they are
+ *  not in core `js.RegExp`; treat them as in
+ *  [[https://github.com/tc39/proposal-regexp-atomic-operators]].
  */
-private[regex] object WasmEngine extends Engine {
+private[regex] object Ecma262RegExpEngine extends Engine {
   type Dictionary[V] = HashMap[String, V]
 
-  type RegExp = WasmRegExp
-  type ExecResult = WasmExecResult
+  type RegExp = Ecma262RegExp
+  type ExecResult = Ecma262ExecResult
   type IndicesArray = Array[Int] // flattened pairs at (2*i, 2*i + 1)
 
   @inline
@@ -80,7 +86,7 @@ private[regex] object WasmEngine extends Engine {
     val parser = new Parser(pattern, unicodeIgnoreCase)
     val root = parser.parseTopLevel()
     val groupNodeMap = parser.groupNodeMap.toArray(new Array[Matcher](parser.groupNodeMap.size()))
-    new WasmRegExp(root, groupNodeMap, global, sticky, buildSearchPrefilter(root))
+    new Ecma262RegExp(root, groupNodeMap, global, sticky, buildSearchPrefilter(root))
   }
 
   @inline
@@ -128,7 +134,7 @@ private[regex] object WasmEngine extends Engine {
     indices(2 * group + 1)
 
   /** Corresponds to a `js.RegExp.ExecResult`. */
-  final class WasmExecResult(val input: String, val indices: IndicesArray) {
+  final class Ecma262ExecResult(val input: String, val indices: IndicesArray) {
     val index = indices(0)
 
     def getGroup(group: Int): String = {
@@ -184,7 +190,7 @@ private[regex] object WasmEngine extends Engine {
   }
 
   /** Corresponds to a `js.RegExp`. */
-  final class WasmRegExp private[WasmEngine] (root: Matcher, groupNodeMap: Array[Matcher],
+  final class Ecma262RegExp private[Ecma262RegExpEngine] (root: Matcher, groupNodeMap: Array[Matcher],
       global: Boolean, sticky: Boolean, searchPrefilter: SearchPrefilter) {
 
     val capturingGroupsCount = groupNodeMap.length - 1
@@ -194,7 +200,7 @@ private[regex] object WasmEngine extends Engine {
 
     var lastIndex: Int = 0
 
-    def exec(input: String): WasmExecResult = {
+    def exec(input: String): Ecma262ExecResult = {
       // https://tc39.es/ecma262/multipage/text-processing.html#sec-regexpbuiltinexec
 
       // Step 1
@@ -253,7 +259,7 @@ private[regex] object WasmEngine extends Engine {
 
         val groups = new Array[String](groupNodeMap.length)
         val captures = r.captures.set(0, lastIndex, e)
-        new WasmExecResult(input, captures.toIndicesArray)
+        new Ecma262ExecResult(input, captures.toIndicesArray)
       }
     }
   }

@@ -1,6 +1,7 @@
 // format: off
 /*
- * Derived from Scala.js / scala-wasm (https://www.scala-js.org/)
+ * Derived from the Scala.js / scala-wasm ECMA-262 RegExp sources
+ * (https://www.scala-js.org/).
  *
  * Copyright EPFL.
  *
@@ -104,7 +105,9 @@ final class Pattern private[regex] (
       _forMatches: Boolean): engine.IndicesArray = {
     val indices = engine.getIndices(lastMatch)
     if (indices == null)
-      throw new AssertionError("Unreachable; WasmEngine always supports and produces indices")
+      throw new AssertionError(
+        "Unreachable; Ecma262RegExpEngine always supports and produces indices"
+      )
     indices
   }
 

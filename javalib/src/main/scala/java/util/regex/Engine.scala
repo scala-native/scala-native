@@ -1,14 +1,15 @@
 // format: off
 /*
- * Derived from Scala.js / scala-wasm (https://www.scala-js.org/)
+ * Derived from the Scala.js / scala-wasm ECMA-262 RegExp sources
+ * (https://www.scala-js.org/).
  *
  * Copyright EPFL.
  *
  * Licensed under Apache License 2.0
  * (https://www.apache.org/licenses/LICENSE-2.0).
  *
- * Scala Native uses the standalone engine only (equivalent to scala-wasm's
- * `WasmEngine`); there is no JavaScript `RegExp` host.
+ * Scala Native uses the standalone ECMA-262 RegExp engine only (see
+ * [[Ecma262RegExpEngine]], named `WasmEngine` in scala-wasm);
  */
 
 package java.util.regex
@@ -63,5 +64,5 @@ private[regex] abstract class Engine {
 }
 
 private[regex] object Engine {
-  val engine: Engine = WasmEngine
+  val engine: Engine = Ecma262RegExpEngine
 }

@@ -1,6 +1,7 @@
 // format: off
 /*
- * Derived from Scala.js / scala-wasm (https://www.scala-js.org/)
+ * Derived from the Scala.js / scala-wasm ECMA-262 RegExp sources
+ * (https://www.scala-js.org/).
  *
  * Copyright EPFL.
  *
