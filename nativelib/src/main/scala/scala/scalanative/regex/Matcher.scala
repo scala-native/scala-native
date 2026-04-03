@@ -542,7 +542,7 @@ final class Matcher private (private var _pattern: Pattern) {
 
   // SN: for binary compatibility
   def appendReplacement(sb: StringBuffer, replacement: String): Matcher =
-    appendReplacement(sb.asInstanceOf[Appendable], replacement)
+    this.appendReplacement(sb.asInstanceOf[Appendable], replacement)
 
   // Appends to {@code sb} the substring of the input from the
   // append position to the end of the input.
