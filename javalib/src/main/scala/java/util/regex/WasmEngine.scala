@@ -80,7 +80,7 @@ private[regex] object WasmEngine extends Engine {
     val parser = new Parser(pattern, unicodeIgnoreCase)
     val root = parser.parseTopLevel()
     val groupNodeMap = parser.groupNodeMap.toArray(new Array[Matcher](parser.groupNodeMap.size()))
-    new WasmRegExp(root, groupNodeMap, global, sticky)
+    new WasmRegExp(root, groupNodeMap, global, sticky, buildSearchPrefilter(root))
   }
 
   @inline
@@ -185,7 +185,7 @@ private[regex] object WasmEngine extends Engine {
 
   /** Corresponds to a `js.RegExp`. */
   final class WasmRegExp private[WasmEngine] (root: Matcher, groupNodeMap: Array[Matcher],
-      global: Boolean, sticky: Boolean) {
+      global: Boolean, sticky: Boolean, searchPrefilter: SearchPrefilter) {
 
     val capturingGroupsCount = groupNodeMap.length - 1
 
@@ -210,6 +210,9 @@ private[regex] object WasmEngine extends Engine {
       // Step 13
       @inline @tailrec
       def loop(): MatchState = {
+        if (!sticky && (searchPrefilter ne null) && lastIndex < length)
+          lastIndex = searchPrefilter.nextCandidateIndex(input, lastIndex)
+
         if (lastIndex > length) {
           if (global || sticky)
             lastIndex = 0
@@ -334,6 +337,97 @@ private[regex] object WasmEngine extends Engine {
     def apply(x: MatchState, c: MatchContinuation): MatchResult
   }
 
+  private[regex] trait SearchPrefilter {
+    def nextCandidateIndex(input: String, fromIndex: Int): Int
+  }
+
+  private[regex] final class LeadingBmpCharPrefilter(chars: Array[Char]) extends SearchPrefilter {
+    def nextCandidateIndex(input: String, fromIndex: Int): Int = {
+      val chars = this.chars
+      val len = chars.length
+      var best = input.length() + 1
+      var i = 0
+      while (i < len) {
+        val idx = input.indexOf(chars(i).toInt, fromIndex)
+        if (idx >= 0 && idx < best)
+          best = idx
+        i += 1
+      }
+      best
+    }
+  }
+
+  private final val MaxPrefilterLeadingChars = 4
+
+  private def buildSearchPrefilter(root: Matcher): SearchPrefilter = {
+    val chars = extractLeadingBmpChars(root)
+    if (chars == null || chars.length == 0 || chars.length > MaxPrefilterLeadingChars)
+      null
+    else
+      new LeadingBmpCharPrefilter(chars)
+  }
+
+  private def extractLeadingBmpChars(m: Matcher): Array[Char] = {
+    def fromLiteral(literal: String): Array[Char] = {
+      if (literal.isEmpty()) {
+        null
+      } else {
+        val ch = literal.charAt(0)
+        if (Character.isSurrogate(ch)) null
+        else Array(ch)
+      }
+    }
+
+    m match {
+      case m: LiteralMatcher =>
+        fromLiteral(m.literal)
+
+      case m: MatchSequence =>
+        extractLeadingBmpChars(m.m1)
+
+      case m: MatchAlternatives =>
+        val seen = new HashSet[Character]()
+        val ms = m.ms
+        var i = 0
+        while (i < ms.length) {
+          val chars = extractLeadingBmpChars(ms(i))
+          if (chars == null)
+            return null
+          var j = 0
+          while (j < chars.length) {
+            seen.add(chars(j))
+            j += 1
+          }
+          i += 1
+        }
+
+        if (seen.isEmpty()) {
+          null
+        } else {
+          val result = new Array[Char](seen.size())
+          val iter = seen.iterator()
+          var i = 0
+          while (iter.hasNext()) {
+            result(i) = iter.next()
+            i += 1
+          }
+          result
+        }
+
+      case m: AtomicMatcher =>
+        extractLeadingBmpChars(m.m)
+
+      case m: NonCapturingGroupMatcher =>
+        extractLeadingBmpChars(m.m)
+
+      case m: CapturingGroupMatcher if m.forward =>
+        extractLeadingBmpChars(m.m)
+
+      case _ =>
+        null
+    }
+  }
+
   /** Repeat matcher (ECMA-262 / Java backtracking semantics).
    *
    *  Nested greedy repeats such as `(a+)+b` can take time exponential in input
@@ -397,7 +491,7 @@ private[regex] object WasmEngine extends Engine {
    *  This is generated around greedy quantifier to implement the semantics of
    *  possessive quantifiers.
    */
-  private[regex] final class AtomicMatcher(m: Matcher) extends Matcher {
+  private[regex] final class AtomicMatcher(val m: Matcher) extends Matcher {
     def apply(x: MatchState, c: MatchContinuation): MatchResult = {
       /* Inspired by the logic for (?=...) lookaheads.
        * The terminal continuation `y => y` prevents backtracking within `m`.
@@ -430,7 +524,7 @@ private[regex] object WasmEngine extends Engine {
    *
    *  @see [[https://262.ecma-international.org/15.0/index.html#sec-matchtwoalternatives]]
    */
-  private[regex] final class MatchAlternatives(ms: Array[Matcher]) extends Matcher {
+  private[regex] final class MatchAlternatives(val ms: Array[Matcher]) extends Matcher {
     def apply(x: MatchState, c: MatchContinuation): MatchResult = {
       // scalastyle:off return
 
@@ -578,7 +672,7 @@ private[regex] object WasmEngine extends Engine {
    *
    *  @see [[https://262.ecma-international.org/15.0/index.html#sec-matchsequence]]
    */
-  private[regex] final class MatchSequence(m1: Matcher, m2: Matcher) extends Matcher {
+  private[regex] final class MatchSequence(val m1: Matcher, val m2: Matcher) extends Matcher {
     def apply(x: MatchState, c: MatchContinuation): MatchResult = {
       m1(x,
           { y =>
@@ -814,7 +908,7 @@ private[regex] object WasmEngine extends Engine {
    *
    *  @see [[https://262.ecma-international.org/15.0/index.html#sec-compileatom]]
    */
-  private[regex] final class CapturingGroupMatcher(number: Int, m: Matcher, forward: Boolean)
+  private[regex] final class CapturingGroupMatcher(number: Int, val m: Matcher, val forward: Boolean)
       extends Matcher {
     def apply(x: MatchState, c: MatchContinuation): MatchResult = {
       m(x,
@@ -830,7 +924,7 @@ private[regex] object WasmEngine extends Engine {
   }
 
   /** An explicit non-capturing group meant to prevent unintended fusion. */
-  private[regex] final class NonCapturingGroupMatcher(m: Matcher) extends Matcher {
+  private[regex] final class NonCapturingGroupMatcher(val m: Matcher) extends Matcher {
     def apply(x: MatchState, c: MatchContinuation): MatchResult = m(x, c)
   }
 
