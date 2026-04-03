@@ -1,6 +1,6 @@
---- 3.8.4-RC1/scala/runtime/LazyVals.scala
+--- 3.8.0-RC1-bin-20251017-96aff06-NIGHTLY/scala/runtime/LazyVals.scala
 +++ overrides-3/scala/runtime/LazyVals.scala
-@@ -5,45 +5,14 @@
+@@ -5,44 +5,14 @@
  
  import scala.annotation.*
  
@@ -12,7 +12,7 @@
   */
  object LazyVals {
 -  @nowarn
--  private val unsafe: sun.misc.Unsafe = {
+-  private val unsafe: sun.misc.Unsafe^ = { // do not let unsafe leak
 -    def throwInitializationException() =
 -      throw new ExceptionInInitializerError(
 -        new IllegalStateException("Can't find instance of sun.misc.Unsafe")
@@ -30,18 +30,17 @@
 -
 -  private val base: Int = {
 -    val processors = java.lang.Runtime.getRuntime.availableProcessors()
--    val rawSize = 8 * processors * processors
--    //find the next power of 2
--    1 << (32 - Integer.numberOfLeadingZeros(rawSize - 1))
+-    8 * processors * processors
 -  }
--
--  private val mask: Int = base - 1
 -
 -  private val monitors: Array[Object] =
 -    Array.tabulate(base)(_ => new Object)
 -
 -  private def getMonitor(obj: Object, fieldId: Int = 0) = {
--    monitors((java.lang.System.identityHashCode(obj) + fieldId) & mask)
+-    var id = (java.lang.System.identityHashCode(obj) + fieldId) % base
+-
+-    if (id < 0) id += base
+-    monitors(id)
 -  }
 -
    private final val LAZY_VAL_MASK = 3L
@@ -49,7 +48,7 @@
  
    /* ------------- Start of public API ------------- */
  
-@@ -65,6 +34,8 @@
+@@ -64,6 +34,8 @@
       * correct.
       */
      private def writeReplace(): Any = null
@@ -58,7 +57,7 @@
    }
  
    /**
-@@ -88,94 +59,47 @@
+@@ -87,94 +59,47 @@
  
    def STATE(cur: Long, ord: Int): Long = {
      val r = (cur >> (ord * BITS_PER_LAZY_VAL)) & LAZY_VAL_MASK

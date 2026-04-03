@@ -38,11 +38,11 @@ object ScalaVersions {
 
   // Tested in scheduled nightly CI to check compiler plugins
   // List maintains only upcoming releases, removed from the list after reaching stable status
-  lazy val scala3RCVersions = List.empty[String]
+  lazy val scala3RCVersions = List("3.8.4-RC1")
 
   // List of nightly versions can be found here: https://repo.scala-lang.org/ui/native/maven-nightlies/org/scala-lang/scala3-compiler_3
   // or check outputs of `scala -O --version -S 3.nightly`
-  val scala3Nightly = "3.8.4-RC1-bin-20260223-dd3cd80-NIGHTLY"
+  val scala3Nightly = "3.8.4-RC1-bin-20260402-44bbcdf-NIGHTLY"
 
   // Scala versions used for publishing libraries
   val scala212: String = crossScala212.last
