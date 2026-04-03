@@ -1,3 +1,4 @@
+// format: off
 /*
  * Derived from Scala.js / scala-wasm (https://www.scala-js.org/)
  *

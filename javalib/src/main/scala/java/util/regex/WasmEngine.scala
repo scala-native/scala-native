@@ -1,3 +1,4 @@
+// format: off
 /*
  * Scala.js (https://www.scala-js.org/)
  *
@@ -326,7 +327,12 @@ private[regex] object WasmEngine extends Engine {
     def apply(x: MatchState, c: MatchContinuation): MatchResult
   }
 
-  /** Repeat matcher.
+  /** Repeat matcher (ECMA-262 / Java backtracking semantics).
+   *
+   *  Nested greedy repeats such as `(a+)+b` can take time exponential in input
+   *  length on failing paths: each outer repetition can split the inner `a+`
+   *  run in many ways before `b` is tried. RE2-style engines avoid that; this
+   *  implementation does not.
    *
    *  @see [[https://262.ecma-international.org/15.0/index.html#sec-runtime-semantics-repeatmatcher-abstract-operation]]
    */
