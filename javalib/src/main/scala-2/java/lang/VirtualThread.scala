@@ -1,6 +1,7 @@
 package java.lang
 
 import scala.scalanative.runtime.UnsupportedFeature
+import scala.scalanative.runtime.VirtualThreadScheduler
 
 private[java] final class VirtualThread(
     name: String,
@@ -11,6 +12,7 @@ private[java] final class VirtualThread(
   // TODO: continuations-based thread implementation
   override def run(): Unit = UnsupportedFeature.virtualThreads()
 
+  private[java] val scheduler: VirtualThreadScheduler = ???
   override def getState(): Thread.State = Thread.State.NEW
 
   private[lang] def joinNanos(nanos: scala.Long): scala.Boolean = ???
