@@ -15,7 +15,7 @@ import scala.scalanative.junit.utils.AssumesHelper
 
 object VirtualThreadWaitTimeoutContentionTest {
   @BeforeClass def checkRuntime(): Unit =
-    AssumesHelper.assumeMultithreadingIsEnabled()
+    AssumesHelper.assumeSupportsVirtualThreads()
 }
 
 class VirtualThreadWaitTimeoutContentionTest {

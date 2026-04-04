@@ -18,7 +18,7 @@ import scala.scalanative.junit.utils.AssumesHelper
  */
 object VirtualThreadLazySubmitCompatibilityTest {
   @BeforeClass def checkRuntime(): Unit =
-    AssumesHelper.assumeMultithreadingIsEnabled()
+    AssumesHelper.assumeSupportsVirtualThreads()
 }
 
 class VirtualThreadLazySubmitCompatibilityTest {

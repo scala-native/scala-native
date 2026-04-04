@@ -9,7 +9,7 @@ import scala.scalanative.junit.utils.AssumesHelper
 
 object VirtualThreadStackTraceTest {
   @BeforeClass def checkRuntime(): Unit = {
-    AssumesHelper.assumeMultithreadingIsEnabled()
+    AssumesHelper.assumeSupportsVirtualThreads()
     AssumesHelper.assumeSupportsStackTraces()
   }
 }
