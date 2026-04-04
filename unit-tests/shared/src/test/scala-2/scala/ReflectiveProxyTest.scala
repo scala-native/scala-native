@@ -252,8 +252,11 @@ class ReflectiveProxyTest {
     class A
 
     assertThrows(classOf[IllegalMonitorStateException], objNotifyTest(new A()))
-    synchronized{
-      assertThrows(classOf[IllegalMonitorStateException], objNotifyTest(new A()))
+    synchronized {
+      assertThrows(
+        classOf[IllegalMonitorStateException],
+        objNotifyTest(new A())
+      )
     }
   }
 
