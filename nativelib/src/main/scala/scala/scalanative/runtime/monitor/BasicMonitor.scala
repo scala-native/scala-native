@@ -6,6 +6,7 @@ import scala.annotation.tailrec
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.meta.LinktimeInfo.{is32BitPlatform => is32bit}
 import scala.scalanative.runtime.Intrinsics._
+import scala.scalanative.runtime.VirtualThread
 import scala.scalanative.runtime.ffi._
 import scala.scalanative.runtime.ffi.stdatomic._
 import scala.scalanative.runtime.ffi.stdatomic.memory_order._
@@ -175,17 +176,18 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
       def MaxSleepNanos = 128000
       if (!tryLock(threadId) && !lockWord.isInflated) {
         if (yields > 8) {
-          if (MonitorWaitSupport.usesContResume(thread)) {
-            // Avoid pinning a carrier while contending on a thin monitor.
-            // VirtualThread.yield() lets the owner run and release the lock.
-            Thread.`yield`()
-            waitForOwnership(yields, backoffNanos)
-          } else {
-            NativeThread.currentNativeThread.sleepNanos(backoffNanos)
-            waitForOwnership(
-              yields,
-              backoffNanos = (backoffNanos * 3 / 2).min(MaxSleepNanos)
-            )
+          thread match {
+            case vt: VirtualThread =>
+              // Avoid pinning a carrier while contending on a thin monitor.
+              // VirtualThread.yield() lets the owner run and release the lock.
+              Thread.`yield`()
+              waitForOwnership(yields, backoffNanos)
+            case _ =>
+              NativeThread.currentNativeThread.sleepNanos(backoffNanos)
+              waitForOwnership(
+                yields,
+                backoffNanos = (backoffNanos * 3 / 2).min(MaxSleepNanos)
+              )
           }
         } else {
           NativeThread.onSpinWait()

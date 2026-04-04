@@ -10,7 +10,9 @@ import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.runtime.ffi._
 import scala.scalanative.runtime.ffi.stdatomic._
 import scala.scalanative.runtime.ffi.stdatomic.memory_order._
-import scala.scalanative.runtime.{Intrinsics, NativeThread, RawPtr}
+import scala.scalanative.runtime.{
+  Intrinsics, NativeThread, RawPtr, VirtualThread
+}
 import scala.scalanative.unsafe.{sizeOf => _, stackalloc => _, _}
 
 /** Heavy-weight monitor created only upon detection of access from multiple
@@ -103,7 +105,7 @@ private[monitor] class ObjectMonitor() {
 
   // Slow path: join entry list, then park or suspend until the lock is acquired.
   private def enterMonitor(currentThread: Thread): Unit = {
-    val isVT = MonitorWaitSupport.usesContResume(currentThread)
+    val isVT = currentThread.isInstanceOf[VirtualThread]
     if (isVT) incrementUnmountedVThreads()
     val node = new WaiterNode(currentThread, WaiterNode.InEnterQueue)
     while ({
@@ -161,7 +163,7 @@ private[monitor] class ObjectMonitor() {
       atomic_thread_fence(memory_order_seq_cst)
     }
 
-    val isVT = MonitorWaitSupport.usesContResume(currentThread)
+    val isVT = currentThread.isInstanceOf[VirtualThread]
     if (!tryLock(currentThread)) awaitLock()
 
     // Current thread now owns the monitor; unlink self from the entry list.
@@ -226,38 +228,40 @@ private[monitor] class ObjectMonitor() {
       successorThread = wakedThread
       releaseOwnerThread()
       var resume = node.resumeForWait
-      if (resume eq MonitorWaitSupport.RESUME_SENTINEL) {
+      if (resume eq VirtualThread.RESUME_SENTINEL) {
         // VT suspend callback is about to publish the real resume.
         // Spin until it does, or until the VT clears the sentinel
         // (meaning it skipped blockForMonitorWait because isNotified was true).
         while ({
           resume = node.resumeForWait
-          resume eq MonitorWaitSupport.RESUME_SENTINEL
+          resume eq VirtualThread.RESUME_SENTINEL
         }) NativeThread.onSpinWait()
       }
       if (resume != null) {
         val resumeGeneration = node.resumeForWaitGeneration
         node.resumeForWait = null
         node.resumeForWaitGeneration = 0L
-        MonitorWaitSupport.scheduleWithResume(
-          wakedThread,
-          resume,
-          resumeGeneration
-        )
+        wakedThread match {
+          case vt: VirtualThread =>
+            vt.scheduleWithResume(resume, resumeGeneration)
+          case _ => LockSupport.unpark(wakedThread)
+        }
       } else {
         val resumeEnter = node.resumeForEnter
         if (resumeEnter != null) {
           val resumeEnterGeneration = node.resumeForEnterGeneration
           node.resumeForEnter = null
           node.resumeForEnterGeneration = 0L
-          MonitorWaitSupport.scheduleWithResume(
-            wakedThread,
-            resumeEnter,
-            resumeEnterGeneration
-          )
+          wakedThread match {
+            case vt: VirtualThread =>
+              vt.scheduleWithResume(resumeEnter, resumeEnterGeneration)
+            case _ => LockSupport.unpark(wakedThread)
+          }
         } else {
-          val threadToUnpark =
-            MonitorWaitSupport.getCarrierForUnpark(wakedThread)
+          val threadToUnpark = wakedThread match {
+            case vt: VirtualThread => vt.carrierForUnpark
+            case _                 => wakedThread
+          }
           LockSupport.unpark(
             if (threadToUnpark != null) threadToUnpark else wakedThread
           )
@@ -324,8 +328,8 @@ private[monitor] class ObjectMonitor() {
     // This guarantees (via monitor happens-before) that onExit will see the
     // sentinel and spin-wait for the real continuation resume instead of
     // falling back to LockSupport.unpark which would consume the parking permit.
-    if (MonitorWaitSupport.usesContResume(currentThread)) {
-      node.resumeForWait = MonitorWaitSupport.RESUME_SENTINEL
+    if (currentThread.isInstanceOf[VirtualThread]) {
+      node.resumeForWait = VirtualThread.RESUME_SENTINEL
       node.resumeForWaitGeneration = 0L
     }
     exitMonitor(currentThread)
@@ -336,21 +340,26 @@ private[monitor] class ObjectMonitor() {
     // the LockSupport permit and so the carrier is not parked (many VTs can wait).
     val interruped = currentThread.isInterrupted()
     if (!interruped && !node.isNotified) {
-      MonitorWaitSupport.blockForMonitorWait(
-        currentThread,
-        nanos,
-        (resume: () => Unit, generation: Long) => {
-          node.resumeForWait = resume
-          node.resumeForWaitGeneration = generation
-        }
-      )
+      currentThread match {
+        case vt: VirtualThread =>
+          vt.blockForMonitorWait(
+            nanos,
+            (resume: () => Unit, generation: Long) => {
+              node.resumeForWait = resume
+              node.resumeForWaitGeneration = generation
+            }
+          )
+        case _ =>
+          if (nanos == 0) LockSupport.park()
+          else LockSupport.parkNanos(nanos)
+      }
     }
     waitDebug(
       currentThread,
       s"resumed nanos=$nanos nodeState=${node.state} notified=${node.isNotified} owner=$ownerThread successor=$successorThread"
     )
     // Clear sentinel if VT was notified before entering blockForMonitorWait
-    if (node.resumeForWait eq MonitorWaitSupport.RESUME_SENTINEL) {
+    if (node.resumeForWait eq VirtualThread.RESUME_SENTINEL) {
       node.resumeForWait = null
       node.resumeForWaitGeneration = 0L
     }
@@ -423,7 +432,7 @@ private[monitor] class ObjectMonitor() {
       case node =>
         node.isNotified = true
         node.state = WaiterNode.InEnterQueue
-        val isVT = MonitorWaitSupport.usesContResume(node.thread)
+        val isVT = node.thread.isInstanceOf[VirtualThread]
         var forceTimedRecheck = false
         if (isVT) {
           node.clearTimedParkHint()
@@ -506,7 +515,10 @@ private[monitor] class ObjectMonitor() {
   }
 
   @alwaysinline private def wakePlatformWaiter(thread: Thread): Unit = {
-    val threadToUnpark = MonitorWaitSupport.getCarrierForUnpark(thread)
+    val threadToUnpark = thread match {
+      case vt: VirtualThread => vt.carrierForUnpark
+      case _                 => thread
+    }
     LockSupport.unpark(if (threadToUnpark != null) threadToUnpark else thread)
   }
 
