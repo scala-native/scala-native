@@ -634,7 +634,10 @@ private[monitor] class ObjectMonitor() {
 }
 
 private object ObjectMonitor {
-    /** Sentinel on WaiterNode.resumeForWait so ObjectMonitor spin-waits for real resume. */
+
+  /** Sentinel on WaiterNode.resumeForWait so ObjectMonitor spin-waits for real
+   *  resume.
+   */
   val RESUME_SENTINEL: () => Unit = () => ()
   object WaiterNode {
 

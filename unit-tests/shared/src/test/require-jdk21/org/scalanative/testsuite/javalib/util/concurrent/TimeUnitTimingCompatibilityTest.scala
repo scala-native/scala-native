@@ -1,10 +1,10 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import java.util.concurrent.{CountDownLatch, TimeUnit}
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
+import java.util.concurrent.{CountDownLatch, TimeUnit}
 
-import org.junit.Assert.*
 import org.junit.*
+import org.junit.Assert.*
 
 import scala.scalanative.junit.utils.AssumesHelper
 
@@ -19,26 +19,30 @@ class TimeUnitTimingCompatibilityTest {
   @Test def timedJoinPreservesSubMillisecondTimeout(): Unit = {
     val releaseTarget = new CountDownLatch(1)
     val targetStarted = new CountDownLatch(1)
-    val target = Thread.ofPlatform().start(() => {
-      targetStarted.countDown()
-      releaseTarget.await(Timeout, TimeUnit.MILLISECONDS)
-    })
+    val target = Thread
+      .ofPlatform()
+      .start(() => {
+        targetStarted.countDown()
+        releaseTarget.await(Timeout, TimeUnit.MILLISECONDS)
+      })
     assertTrue(targetStarted.await(Timeout, TimeUnit.MILLISECONDS))
 
     val aliveAfterJoin = new AtomicBoolean(false)
     val joinError = new AtomicReference[Throwable](null)
     val joinFinished = new CountDownLatch(1)
-    val joiner = Thread.ofPlatform().start(() => {
-      try {
-        TimeUnit.MICROSECONDS.timedJoin(target, 500)
-        aliveAfterJoin.set(target.isAlive)
-      } catch {
-        case t: Throwable =>
-          joinError.set(t)
-      } finally {
-        joinFinished.countDown()
-      }
-    })
+    val joiner = Thread
+      .ofPlatform()
+      .start(() => {
+        try {
+          TimeUnit.MICROSECONDS.timedJoin(target, 500)
+          aliveAfterJoin.set(target.isAlive)
+        } catch {
+          case t: Throwable =>
+            joinError.set(t)
+        } finally {
+          joinFinished.countDown()
+        }
+      })
 
     val finishedInTime = joinFinished.await(500, TimeUnit.MILLISECONDS)
     releaseTarget.countDown()
@@ -62,19 +66,21 @@ class TimeUnitTimingCompatibilityTest {
     val waitFinished = new CountDownLatch(1)
     val timedOutNaturally = new AtomicBoolean(false)
 
-    val waiter = Thread.ofPlatform().start(() => {
-      try {
-        lock.synchronized {
-          TimeUnit.MICROSECONDS.timedWait(lock, 500)
+    val waiter = Thread
+      .ofPlatform()
+      .start(() => {
+        try {
+          lock.synchronized {
+            TimeUnit.MICROSECONDS.timedWait(lock, 500)
+          }
+          timedOutNaturally.set(true)
+        } catch {
+          case t: Throwable =>
+            waitError.set(t)
+        } finally {
+          waitFinished.countDown()
         }
-        timedOutNaturally.set(true)
-      } catch {
-        case t: Throwable =>
-          waitError.set(t)
-      } finally {
-        waitFinished.countDown()
-      }
-    })
+      })
 
     val finishedInTime = waitFinished.await(500, TimeUnit.MILLISECONDS)
     if (!finishedInTime) {
