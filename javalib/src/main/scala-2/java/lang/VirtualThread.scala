@@ -1,7 +1,6 @@
 package java.lang
 
-import scala.scalanative.runtime.UnsupportedFeature
-import scala.scalanative.runtime.VirtualThreadScheduler
+import scala.scalanative.runtime.{UnsupportedFeature, VirtualThreadScheduler}
 
 private[java] final class VirtualThread(
     name: String,
