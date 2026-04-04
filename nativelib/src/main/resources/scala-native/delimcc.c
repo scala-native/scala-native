@@ -349,8 +349,8 @@ struct Continuation {
     void *heap_stack_fragment;
     size_t heap_fragment_alloc_size;
 
-    /* alloc_arg passed at suspend; used at resume to allocate heap_stack_fragment
-     * via continuation_alloc_fn (non-moving GC). */
+    /* alloc_arg passed at suspend; used at resume to allocate
+     * heap_stack_fragment via continuation_alloc_fn (non-moving GC). */
     void *alloc_arg;
 
     char stack[];
@@ -516,55 +516,55 @@ void __continuation_resume_impl(void *tail, Continuation *continuation,
     target = (void *)((uintptr_t)tail - (uintptr_t)continuation->size);
     diff = continuation_address_diff(target, continuation->stack_top);
 
-        /* Avoid placing the continuation fragment in the guard region. If the
-         * carrier stack has no room (target < stackBottom), use a heap-allocated
-         * fragment (reused from continuation->heap_stack_fragment or newly
-         * allocated via continuation_alloc_fn). When we later resume on a
-         * carrier with enough stack, set heap_stack_fragment = NULL so the GC
-         * can reclaim it (no free; allocator is non-moving GC). */
-        {
-            ThreadInfo *ti = scalanative_currentThreadInfo();
-            use_heap = 0;
-            if (ti->stackTop != NULL && ti->stackBottom != NULL) {
-                uintptr_t lo = (uintptr_t)ti->stackTop;
-                uintptr_t hi = (uintptr_t)ti->stackBottom;
-                if (lo > hi) {
-                    uintptr_t t = lo;
-                    lo = hi;
-                    hi = t;
-                }
-                use_heap = ((uintptr_t)target < lo || (uintptr_t)target >= hi);
+    /* Avoid placing the continuation fragment in the guard region. If the
+     * carrier stack has no room (target < stackBottom), use a heap-allocated
+     * fragment (reused from continuation->heap_stack_fragment or newly
+     * allocated via continuation_alloc_fn). When we later resume on a
+     * carrier with enough stack, set heap_stack_fragment = NULL so the GC
+     * can reclaim it (no free; allocator is non-moving GC). */
+    {
+        ThreadInfo *ti = scalanative_currentThreadInfo();
+        use_heap = 0;
+        if (ti->stackTop != NULL && ti->stackBottom != NULL) {
+            uintptr_t lo = (uintptr_t)ti->stackTop;
+            uintptr_t hi = (uintptr_t)ti->stackBottom;
+            if (lo > hi) {
+                uintptr_t t = lo;
+                lo = hi;
+                hi = t;
             }
-            if (use_heap) {
-                size_t need = (size_t)continuation->size + HEAP_FRAGMENT_SLACK;
-                if (continuation->heap_stack_fragment != NULL &&
-                    continuation->heap_fragment_alloc_size >= need) {
-                    target = (char *)continuation->heap_stack_fragment +
-                             HEAP_FRAGMENT_SLACK;
-                } else {
-                    /* Drop old fragment (GC will reclaim); alloc via same
-                     * allocator as continuation so GC is aware. */
-                    continuation->heap_stack_fragment = NULL;
-                    continuation->heap_fragment_alloc_size = 0;
-                    void *block = continuation_alloc_fn(
-                        (unsigned long)need, continuation->alloc_arg);
-                    if (block == NULL) {
-                        DELIMCC_ERROR_ABORT(
-                            "__continuation_resume_impl: continuation_alloc_fn("
-                            "%lu) failed for heap fallback; carrier stack "
-                            "overflow\n",
-                            (unsigned long)need);
-                    }
-                    continuation->heap_stack_fragment = block;
-                    continuation->heap_fragment_alloc_size = need;
-                    target = (char *)block + HEAP_FRAGMENT_SLACK;
-                }
-                diff = continuation_address_diff(target, continuation->stack_top);
+            use_heap = ((uintptr_t)target < lo || (uintptr_t)target >= hi);
+        }
+        if (use_heap) {
+            size_t need = (size_t)continuation->size + HEAP_FRAGMENT_SLACK;
+            if (continuation->heap_stack_fragment != NULL &&
+                continuation->heap_fragment_alloc_size >= need) {
+                target = (char *)continuation->heap_stack_fragment +
+                         HEAP_FRAGMENT_SLACK;
             } else {
+                /* Drop old fragment (GC will reclaim); alloc via same
+                 * allocator as continuation so GC is aware. */
                 continuation->heap_stack_fragment = NULL;
                 continuation->heap_fragment_alloc_size = 0;
+                void *block = continuation_alloc_fn((unsigned long)need,
+                                                    continuation->alloc_arg);
+                if (block == NULL) {
+                    DELIMCC_ERROR_ABORT(
+                        "__continuation_resume_impl: continuation_alloc_fn("
+                        "%lu) failed for heap fallback; carrier stack "
+                        "overflow\n",
+                        (unsigned long)need);
+                }
+                continuation->heap_stack_fragment = block;
+                continuation->heap_fragment_alloc_size = need;
+                target = (char *)block + HEAP_FRAGMENT_SLACK;
             }
+            diff = continuation_address_diff(target, continuation->stack_top);
+        } else {
+            continuation->heap_stack_fragment = NULL;
+            continuation->heap_fragment_alloc_size = 0;
         }
+    }
 
     // set up stuff
     memcpy(return_buf, continuation->buf, ASM_JMPBUF_SIZE);

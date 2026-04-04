@@ -165,7 +165,8 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
          * allocator) must not be treated as stack overflow. Otherwise we
          * mis-report "Unrecoverable StackOverflow" and exit. */
         if (threadInfo.stackBottom != NULL && threadInfo.stackTop != NULL &&
-            !isInRange(faultAddr, threadInfo.stackBottom, threadInfo.stackTop)) {
+            !isInRange(faultAddr, threadInfo.stackBottom,
+                       threadInfo.stackTop)) {
             currentThreadInfo.pendingStackOverflowException = false;
             goto dispatchDefaultSignal;
         }
