@@ -61,7 +61,7 @@ private[java] final class VirtualThread(
   private inline def currentBoundaryOrThrow(op: String): Boundary =
     val current = boundary
     if current == null then throw new IllegalStateException(s"Missing continuation boundary during $op")
-    current.nn
+    current.asInstanceOf[Boundary] // No .nn on Scala 3.1 
 
   @volatile private var resumeExecution: Continuation | Null = compiletime.uninitialized
   private val resumeLock = new {}
