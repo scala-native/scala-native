@@ -175,11 +175,18 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
       def MaxSleepNanos = 128000
       if (!tryLock(threadId) && !lockWord.isInflated) {
         if (yields > 8) {
-          NativeThread.currentNativeThread.sleepNanos(backoffNanos)
-          waitForOwnership(
-            yields,
-            backoffNanos = (backoffNanos * 3 / 2).min(MaxSleepNanos)
-          )
+          if (MonitorWaitSupport.usesContResume(thread)) {
+            // Avoid pinning a carrier while contending on a thin monitor.
+            // VirtualThread.yield() lets the owner run and release the lock.
+            Thread.`yield`()
+            waitForOwnership(yields, backoffNanos)
+          } else {
+            NativeThread.currentNativeThread.sleepNanos(backoffNanos)
+            waitForOwnership(
+              yields,
+              backoffNanos = (backoffNanos * 3 / 2).min(MaxSleepNanos)
+            )
+          }
         } else {
           NativeThread.onSpinWait()
           waitForOwnership(yields + 1, backoffNanos)
