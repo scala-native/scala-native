@@ -1,6 +1,7 @@
 package java.lang.process
 
 import java.io.{FileDescriptor, InputStream, OutputStream}
+import java.lang.Blocker
 import java.util.concurrent.{CompletableFuture, TimeUnit}
 import java.util.stream.Stream
 
@@ -57,12 +58,16 @@ private[process] abstract class GenericProcess(val handle: GenericProcessHandle)
   }
 
   override final def waitFor(): Int = {
-    handle.waitFor()
-    handle.getCachedExitCode.getOrElse(-1)
+    Blocker {
+      handle.waitFor()
+      handle.getCachedExitCode.getOrElse(-1)
+    }
   }
 
   override final def waitFor(timeout: scala.Long, unit: TimeUnit): Boolean =
-    handle.waitFor(timeout, unit)
+    Blocker {
+      handle.waitFor(timeout, unit)
+    }
 
   override def equals(that: Any): Boolean = that match {
     case other: GenericProcess => handle.compareTo(other.handle) == 0

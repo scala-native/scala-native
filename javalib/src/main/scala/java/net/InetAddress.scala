@@ -7,6 +7,7 @@ package java.net
  */
 
 import java.io.IOException
+import java.lang.Blocker
 import java.{util => ju}
 
 import scala.annotation.tailrec
@@ -242,7 +243,7 @@ object InetAddress {
     fromCString(dst)
   }
 
-  private def getByNumericName(host: String): Option[InetAddress] =
+  private def getByNumericName(host: String): Option[InetAddress] = Blocker {
     Zone.acquire { implicit z =>
       val hints = stackalloc[addrinfo]() // stackalloc clears its memory
       val addrinfo = stackalloc[Ptr[addrinfo]]()
@@ -300,6 +301,7 @@ object InetAddress {
           freeaddrinfo(!addrinfo)
         }
     }
+  }
 
   private def vetScopeText(host: String): Unit = { // callers have handled null
     // Fail on either numeric %-2 and non-numeric (text) %-abc
@@ -310,8 +312,8 @@ object InetAddress {
     }
   }
 
-  private def getByNonNumericName(host: String): InetAddress = Zone.acquire {
-    implicit z =>
+  private def getByNonNumericName(host: String): InetAddress = Blocker {
+    Zone.acquire { implicit z =>
       /* Design Note:
        *   Host-to-ip-address translation is known to be fraught with
        *   complexity. The java.net API reflects the simplicity of 1995 or so.
@@ -400,12 +402,15 @@ object InetAddress {
         try {
           findFirstAcceptableAddrinfo(preferIPv6Ai, !addrinfo, None) match {
             case None =>
-              throw new UnknownHostException(s"${host}: Name does not resolve")
+              throw new UnknownHostException(
+                s"${host}: Name does not resolve"
+              )
             case Some(ai) => InetAddress(ai, host, isNumeric = false)
           }
         } finally {
           freeaddrinfo(!addrinfo)
         }
+    }
   }
 
   /* Fully Qualified Domain Name which may or may not be the same as the
@@ -490,7 +495,9 @@ object InetAddress {
         else Some(fromCString(host))
       }
 
-    ipToHost(ipByteArray)
+    Blocker {
+      ipToHost(ipByteArray)
+    }
   }
 
   private def hostToInetAddressArray(host: String): Array[InetAddress] =

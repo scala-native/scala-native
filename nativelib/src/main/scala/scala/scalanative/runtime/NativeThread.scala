@@ -153,6 +153,9 @@ object NativeThread {
   }
 
   @alwaysinline def currentThread: Thread = TLS.currentThread
+  @alwaysinline def setCurrentThread(thread: Thread): Unit = {
+    TLS.assignCurrentThread(thread, currentNativeThread)
+  }
   @alwaysinline def currentNativeThread: NativeThread = TLS.currentNativeThread
 
   def onSpinWait(): Unit = LLVMIntrinsics.`llvm.donothing`

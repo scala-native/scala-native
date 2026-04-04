@@ -1,6 +1,7 @@
 package java.io
 
 import java.io.FileDescriptor._
+import java.lang.Blocker
 
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.javalib.io._
@@ -50,11 +51,13 @@ final class FileDescriptor private[java] (
       if (isWindows) !valid() || this == in || this == out || this == err
       else fd <= 2
 
-    val failed = isStdOrInvalidFileDescriptor || !readOnly && {
-      if (isWindows) !FlushFileBuffers(handle) else unistd.fsync(fd) != 0
-    }
+    Blocker {
+      val failed = isStdOrInvalidFileDescriptor || !readOnly && {
+        if (isWindows) !FlushFileBuffers(handle) else unistd.fsync(fd) != 0
+      }
 
-    if (failed) throw new SyncFailedException("sync failed")
+      if (failed) throw new SyncFailedException("sync failed")
+    }
   }
 
   @alwaysinline def valid(): Boolean = get().valid()

@@ -190,10 +190,16 @@ sealed trait Config {
   private[scalanative] lazy val useTrapBasedGCYieldPoints =
     compilerConfig.gc match {
       case GC.Immix | GC.Commix | GC.Experimental =>
-        sys.env
-          .get("SCALANATIVE_GC_TRAP_BASED_YIELDPOINTS")
-          .map(_ == "1")
-          .getOrElse(compilerConfig.mode.isInstanceOf[Mode.Release])
+        sys.env.get("SCALANATIVE_GC_TRAP_BASED_YIELDPOINTS") match {
+          case Some("1") => true
+          case Some("0") => false
+          case _         =>
+            // On macOS, EXC_BAD_ACCESS from the yieldpoint trap is not always
+            // delivered as SIGBUS/SIGSEGV to the faulting thread, causing STW
+            // to hang. Use conditional (polling) yieldpoints by default.
+            if (targetsMac) true
+            else compilerConfig.mode.isInstanceOf[Mode.Release]
+        }
       case _ => false
     }
 

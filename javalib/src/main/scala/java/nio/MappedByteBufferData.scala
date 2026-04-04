@@ -1,6 +1,7 @@
 package java.nio
 
 import java.io.IOException
+import java.lang.Blocker
 import java.lang.ref.Cleaner
 import java.nio.channels.FileChannel.MapMode
 
@@ -28,12 +29,14 @@ private[nio] class MappedByteBufferData private (
 
   def force(): Unit = {
     if (mode eq MapMode.READ_WRITE) {
-      if (isWindows) {
-        if (!FlushViewOfFile(mapAddress, 0.toUInt))
-          throw new IOException("Could not flush view of file")
-      } else {
-        if (msync(mapAddress, length.toUInt, MS_SYNC) == -1)
-          throw new IOException("Could not sync with file")
+      Blocker {
+        if (isWindows) {
+          if (!FlushViewOfFile(mapAddress, 0.toUInt))
+            throw new IOException("Could not flush view of file")
+        } else {
+          if (msync(mapAddress, length.toUInt, MS_SYNC) == -1)
+            throw new IOException("Could not sync with file")
+        }
       }
     }
   }

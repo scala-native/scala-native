@@ -285,7 +285,7 @@ static int Marker_markBlobArray(Heap *heap, Stats *stats, Object *object,
                                 GreyPacket **outWeakRefHolder) {
     ArrayHeader *arrayHeader = (ArrayHeader *)object;
     size_t bytesLength = BlobArray_ScannableLimit(arrayHeader);
-    size_t objectsLength = bytesLength / sizeof(word_t);
+    size_t objectsLength = (bytesLength + sizeof(word_t) - 1) / sizeof(word_t);
     word_t **blobStart = (word_t **)(arrayHeader + 1);
     int objectsTraced;
     // From that point we can treat it similary as object array

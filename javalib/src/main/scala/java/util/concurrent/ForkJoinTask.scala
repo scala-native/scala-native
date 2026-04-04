@@ -787,7 +787,7 @@ object ForkJoinTask {
       super.toString + "[Wrapped task = " + callable + "]"
   }
 
-  def adapt(runnable: Runnable): ForkJoinTask[_] =
+  def adapt(runnable: Runnable): ForkJoinTask[Void] =
     new AdaptedRunnableAction(runnable)
 
   def adapt[T](runnable: Runnable, result: T): ForkJoinTask[T] =

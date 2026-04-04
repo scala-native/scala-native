@@ -1,5 +1,6 @@
 package scala.scalanative.runtime.monitor
 
+import java.lang.Thread
 import java.util.concurrent.locks.LockSupport
 
 import scala.annotation.{switch, tailrec}
@@ -9,51 +10,59 @@ import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.runtime.ffi._
 import scala.scalanative.runtime.ffi.stdatomic._
 import scala.scalanative.runtime.ffi.stdatomic.memory_order._
-import scala.scalanative.runtime.{Intrinsics, NativeThread, RawPtr}
+import scala.scalanative.runtime.{
+  Intrinsics, NativeThread, RawPtr, VirtualThread
+}
 import scala.scalanative.unsafe.{sizeOf => _, stackalloc => _, _}
 
 /** Heavy-weight monitor created only upon detection of access from multiple
- *  threads is inflated in ObjectMonitor
+ *  threads is inflated in ObjectMonitor.
+ *
+ *    - Entry list: contenders CAS onto head; successor is the tail (FIFO).
+ *    - Handoff succession: the exiting thread does not unlink the successor; it
+ *      only nominates and wakes it. The wakee unlinks itself when it acquires.
+ *    - Exit protocol: set successor, release owner (release store), fence, then
+ *      unpark (or schedule VT via scheduleWithResume). No list modification on
+ *      exit.
  */
 private[monitor] class ObjectMonitor() {
   import ObjectMonitor._
 
-  /** Thread currently locking ownership over given object */
+  /** Thread currently holding the monitor (owner). */
   @volatile private var ownerThread: Thread = _
 
-  /** Thread nominated to be the next owner of the monitor. If not null
-   *  successorThread would be unparked upon exit
+  /** Nominated successor: thread to unpark on this exit. Set before releasing
+   *  owner; cleared by wakee after it acquires. Never used to unlink from list.
    */
   @volatile private var successorThread: Thread = _
 
-  /** Thread selected for active acquiring the lock. A selected thread is the
-   *  only thread which would be parked in a timed manner. It is done to prevent
-   *  rare cases of deadlocks.
-   */
+  /** Thread selected for timed parking to alleviate rare deadlocks. */
   @volatile private var activeWaiterThread: Thread = _
 
-  /** Linked list of threads waiting to enter the monitor. It's head would be
-   *  modified using CAS from InEnterQueue threads. Can be detached and
-   *  transferred to enterQueue by the owner thread upon exit.
+  /** Contenders CAS onto head; successor is tail (FIFO). Only owner manipulates
+   *  for succession; wakee unlinks self on acquire.
    */
-  @volatile private var arriveQueue: WaiterNode = _
+  @volatile private var entryList: WaiterNode = _
 
-  /** Double-linked list of threads waiting to enter the monitor. Can be
-   *  modified only by the owner thread. Head of the queue might be nominated to
-   *  become successor thread.
+  /** Cached tail of entry list; set when building DLL on exit or appending on
+   *  notify; wakee updates when it unlinks and was the tail.
    */
-  @volatile private var enterQueue: WaiterNode = _
+  @volatile private var entryListTail: WaiterNode = _
 
   /** Ring list of waiting threads. Access limited by the modification lock.
-   *  Upon InEnterQueue the wait zone threads would enqueue to the queue, and
-   *  would remove themselves upon exiting the zone. Threads would be notified
-   *  sequentially based on their order in the queue. Nodes from waitQueue can
-   *  be detached and moved to the enterQueue
+   *  Wait-set threads are moved to the entry list (tail) on notify; they remove
+   *  themselves when they acquire the lock.
    */
   @volatile private var waitQueue: WaiterNode = _
   @volatile private var waiting: Int = 0
   @volatile private var waitListModifcationLock: Byte = 0
   @volatile private[monitor] var recursion: Int = 0
+
+  /** Number of unmounted virtual threads on the entry list. When positive,
+   *  platform threads use timed park with recheck to avoid deadlock when all
+   *  carriers are busy with pinned VTs.
+   */
+  @volatile private[monitor] var unmountedVThreads: Long = 0L
 
   @inline def enter(currentThread: Thread): Unit = {
     if (casOwnerThread(expected = null, currentThread)) ()
@@ -94,37 +103,59 @@ private[monitor] class ObjectMonitor() {
 
   @alwaysinline def isLockedBy(thread: Thread): Boolean = ownerThread eq thread
 
-  // enter slow-path
+  // Slow path: join entry list, then park or suspend until the lock is acquired.
   private def enterMonitor(currentThread: Thread): Unit = {
-    // Enqueue the node to the arriveQueue using CAS
-    val node = new WaiterNode(currentThread, WaiterNode.InArriveQueue)
+    val isVT = currentThread.isInstanceOf[VirtualThread]
+    if (isVT) incrementUnmountedVThreads()
+    val node = new WaiterNode(currentThread, WaiterNode.InEnterQueue)
     while ({
-      val next = arriveQueue
+      val next = entryList
       node.next = next
-      !casWaitList(arriveQueuePtr, next, node)
-    }) if (tryLock(currentThread)) return
+      !casWaitList(entryListPtr, next, node)
+    }) if (tryLock(currentThread)) {
+      if (isVT) decrementUnmountedVThreads()
+      return
+    }
 
     enterMonitor(currentThread, node)
   }
 
-  private def enterMonitor(currentThread: Thread, node: WaiterNode) = {
-    // Try to lock upon spinning, otherwise park the thread and try again upon wake up
+  private def enterMonitor(currentThread: Thread, node: WaiterNode): Unit = {
+    // Try to lock upon spinning, otherwise park the thread and try again upon wake up.
+    // Virtual threads: suspend (blockForMonitorEnter) so carrier can run other VTs; exit will call scheduleWithResume.
     def awaitLock(): Unit = {
-      var isActive = false
-      var pollInterval = 25000L // ns, 0.25ms
-      @alwaysinline def MaxPoolInterval = 1000000000L // ns = 1s
       @alwaysinline def tryLockThenSpin() =
         tryLock(currentThread) || trySpinAndLock(currentThread)
 
+      // With unmounted VTs on the entry list, use timed park with growing
+      // recheck interval (×8, cap 1s) so this thread periodically retries and
+      // can act as successor, avoiding deadlock when carriers are busy with
+      // pinned VTs. Otherwise use a shorter fixed-backoff poll.
+      var recheckIntervalMs = 1L
+      @alwaysinline def MaxRecheckIntervalMs = 1000L
+      var pollInterval = 25000L // ns, 0.025ms
+      @alwaysinline def MaxPollInterval = 1000000L // ns = 1ms
+      var forcedTimedRecheck = node.consumeTimedParkHint()
+
+      NativeThread.currentNativeThread.state =
+        NativeThread.State.WaitingOnMonitorEnter
       while (!tryLockThenSpin()) {
-        isActive ||= casActiveWaiterThread(null, currentThread)
-        if (!isActive) LockSupport.park(this)
-        else {
-          LockSupport.parkNanos(this, pollInterval)
-          pollInterval = (pollInterval * 4) min MaxPoolInterval
+        if (activeWaiterThread eq null)
+          casActiveWaiterThread(null, currentThread)
+        NativeThread.currentNativeThread.state =
+          NativeThread.State.WaitingOnMonitorEnter
+        if (forcedTimedRecheck || hasUnmountedVThreads()) {
+          NativeThread.currentNativeThread.parkNanos(
+            recheckIntervalMs * 1000000L
+          )
+          recheckIntervalMs = (recheckIntervalMs * 8) min MaxRecheckIntervalMs
+          forcedTimedRecheck = false
+        } else {
+          recheckIntervalMs = 1L
+          NativeThread.currentNativeThread.parkNanos(pollInterval)
+          pollInterval = (pollInterval * 4) min MaxPollInterval
         }
-        if (successorThread eq currentThread) successorThread = null
-        atomic_thread_fence(memory_order_seq_cst)
+        clearSuccessorAndFenceBeforeRetry(currentThread)
       }
 
       if (successorThread eq currentThread) successorThread = null
@@ -132,87 +163,145 @@ private[monitor] class ObjectMonitor() {
       atomic_thread_fence(memory_order_seq_cst)
     }
 
+    val isVT = currentThread.isInstanceOf[VirtualThread]
     if (!tryLock(currentThread)) awaitLock()
 
-    // Current thread is now owner of the monitor, unlink it from the queue
-    // assert(currentThread eq ownerThread)
-    if (node.state == WaiterNode.InEnterQueue) {
-      // enterQ can be only modified by the owner thread
-      val next = node.next
-      val prev = node.prev
-      if (next != null) next.prev = prev
-      if (prev != null) prev.next = next
-      if (node == enterQueue) enterQueue = next
-    } else {
-      // assert(node.state == WaiterNode.InArriveQueue)
-      val head = arriveQueue
-      if ((head ne node) || !casWaitList(arriveQueuePtr, head, node.next)) {
-        // Find and remove the node from queue
-        // No need for atomic ops - only head of the queue might be modified using CAS
-        @tailrec def loop(current: WaiterNode, prev: WaiterNode): Unit =
-          if (current != null && (current ne node))
-            loop(current.next, current)
-          else {
-            assert(current eq node, s"not found node $node in queue")
-            prev.next = current.next
-          }
-        loop(if (head eq node) arriveQueue else head, null)
+    // Current thread now owns the monitor; unlink self from the entry list.
+    if (isVT) decrementUnmountedVThreads()
+    node.clearTimedParkHint()
+    node.resumeForEnter = null
+    node.resumeForEnterGeneration = 0L
+
+    // Robust unlink: prefer list scan over cached node.prev to avoid stale-link races.
+    @tailrec def unlinkSelfFromEntryList(): Unit = {
+      val head = entryList
+      if (head == null) ()
+      else if (head eq node) {
+        val next = node.next
+        if (!casWaitList(entryListPtr, node, next)) unlinkSelfFromEntryList()
+        else {
+          if (next != null) next.prev = null
+          else entryListTail = null
+        }
+      } else {
+        var prev = head
+        var cur = head.next
+        while ((cur != null) && (cur ne node)) {
+          prev = cur
+          cur = cur.next
+        }
+        if (cur != null) {
+          val next = cur.next
+          prev.next = next
+          if (next != null) next.prev = prev
+          else entryListTail = prev
+        }
       }
     }
+    unlinkSelfFromEntryList()
+    node.next = null
+    node.prev = null
+
     if (successorThread eq currentThread) successorThread = null
     node.state = WaiterNode.Active
+    NativeThread.currentNativeThread.state = NativeThread.State.Running
     atomic_thread_fence(memory_order_seq_cst)
   }
 
-  @tailrec private def exitMonitor(currentThread: Thread): Unit = {
+  private def exitMonitor(currentThread: Thread): Unit = {
     @alwaysinline def releaseOwnerThread() = {
       atomic_store_intptr(ownerThreadPtr, null, memory_order_release)
       atomic_thread_fence(memory_order_seq_cst)
     }
 
+    /** Return the tail (oldest waiter) of the enter list for FIFO succession */
+    @tailrec def tailOf(head: WaiterNode): WaiterNode =
+      if (head == null) null
+      else {
+        val n = head.next
+        if (n == null) head else tailOf(n)
+      }
+
+    /** Wake the nominated successor. We do not unlink node from entry list. */
     @alwaysinline def onExit(node: WaiterNode): Unit = {
       val wakedThread = node.thread
       successorThread = wakedThread
       releaseOwnerThread()
-      LockSupport.unpark(wakedThread)
+      var resume = node.resumeForWait
+      if (resume eq RESUME_SENTINEL) {
+        // VT suspend callback is about to publish the real resume.
+        // Spin until it does, or until the VT clears the sentinel
+        // (meaning it skipped blockForMonitorWait because isNotified was true).
+        while ({
+          resume = node.resumeForWait
+          resume eq RESUME_SENTINEL
+        }) NativeThread.onSpinWait()
+      }
+      if (resume != null) {
+        val resumeGeneration = node.resumeForWaitGeneration
+        node.resumeForWait = null
+        node.resumeForWaitGeneration = 0L
+        wakedThread match {
+          case vt: VirtualThread =>
+            vt.scheduleWithResume(resume, resumeGeneration)
+          case _ => LockSupport.unpark(wakedThread)
+        }
+      } else {
+        val resumeEnter = node.resumeForEnter
+        if (resumeEnter != null) {
+          val resumeEnterGeneration = node.resumeForEnterGeneration
+          node.resumeForEnter = null
+          node.resumeForEnterGeneration = 0L
+          wakedThread match {
+            case vt: VirtualThread =>
+              vt.scheduleWithResume(resumeEnter, resumeEnterGeneration)
+            case _ => LockSupport.unpark(wakedThread)
+          }
+        } else {
+          val threadToUnpark = wakedThread match {
+            case vt: VirtualThread => vt.carrierThread
+            case _                 => wakedThread
+          }
+          LockSupport.unpark(threadToUnpark)
+        }
+      }
     }
 
-    releaseOwnerThread()
-    // If there is no successor or entry queus are empty we can finish here
-    val queuesAreEmpty = enterQueue == null && arriveQueue == null
-    if (queuesAreEmpty || successorThread != null) ()
-    // If other thread has already taken ownership over monitor it would be responsible for selecting successor
-    else if (tryLock(currentThread)) {
-      enterQueue match {
-        case null =>
-          // enterQueue is empty, try to detach and transfer arriveQueue to it
-          arriveQueue match {
-            // both queues are empty, it conflicts with previous check. Mutation accoured, so restart loop
-            case null => exitMonitor(currentThread)
-            case node =>
-              @tailrec def detachNodes(head: WaiterNode): WaiterNode = {
-                if (casWaitList(arriveQueuePtr, head, null)) head
-                else detachNodes(arriveQueue)
-              }
+    // Exit loop: hand off to a waiter when needed, release ownership, then
+    // either delegate via successor or stop if another thread owns next steps.
+    //
+    //   if (no successor && entry list non-empty) → build DLL, wake tail, stop
+    //   release owner; fence
+    //   if (entry list empty || successor set) → stop
+    //   if (try reacquire fails) → stop
+    //   else loop
+    @tailrec def transformToDLL(cur: WaiterNode, prev: WaiterNode): Unit =
+      if (cur != null) {
+        cur.prev = prev
+        transformToDLL(cur.next, cur)
+      }
 
-              @tailrec def transformToDLL(
-                  cur: WaiterNode,
-                  prev: WaiterNode
-              ): Unit = if (cur != null) {
-                cur.state = WaiterNode.InEnterQueue
-                cur.prev = prev
-                transformToDLL(cur.next, cur)
-              }
+    var looping = true
+    while (looping) {
+      if (successorThread == null) {
+        val w = entryList
+        if (w != null) {
+          transformToDLL(w, null)
+          val tail = tailOf(w)
+          onExit(tail)
+          looping = false
+        }
+      }
 
-              val detached = detachNodes(node)
-              transformToDLL(detached, prev = null)
-              enterQueue = detached
-
-              // conficts with the previous condition, mutation accoured, restart
-              if (successorThread != null) exitMonitor(currentThread)
-              else onExit(detached)
+      if (looping) {
+        releaseOwnerThread()
+        if (entryList == null || successorThread != null) {
+          looping = false
+        } else {
+          if (!tryLock(currentThread)) {
+            looping = false
           }
-        case node => onExit(node)
+        }
       }
     }
   }
@@ -233,20 +322,50 @@ private[monitor] class ObjectMonitor() {
 
     val savedRecursion = this.recursion
     this.recursion = 0
+    // For VTs: place a sentinel on resumeForWait BEFORE releasing the monitor.
+    // This guarantees (via monitor happens-before) that onExit will see the
+    // sentinel and spin-wait for the real continuation resume instead of
+    // falling back to LockSupport.unpark which would consume the parking permit.
+    if (currentThread.isInstanceOf[VirtualThread]) {
+      node.resumeForWait = RESUME_SENTINEL
+      node.resumeForWaitGeneration = 0L
+    }
     exitMonitor(currentThread)
     // assert(ownerThread != currentThread)
 
-    // Current thread is no longer the owner, wait for the notification
+    // Current thread is no longer the owner, wait for the notification.
+    // Virtual threads register blockForMonitorWait so wait() does not consume
+    // the LockSupport permit and so the carrier is not parked (many VTs can wait).
     val interruped = currentThread.isInterrupted()
     if (!interruped && !node.isNotified) {
-      if (nanos == 0) LockSupport.park(this)
-      else LockSupport.parkNanos(this, nanos)
+      currentThread match {
+        case vt: VirtualThread =>
+          vt.blockForMonitorWait(
+            nanos,
+            (resume: () => Unit, generation: Long) => {
+              node.resumeForWait = resume
+              node.resumeForWaitGeneration = generation
+            }
+          )
+        case _ =>
+          if (nanos == 0) LockSupport.park()
+          else LockSupport.parkNanos(nanos)
+      }
+    }
+    // Clear sentinel if VT was notified before entering blockForMonitorWait
+    if (node.resumeForWait eq RESUME_SENTINEL) {
+      node.resumeForWait = null
+      node.resumeForWaitGeneration = 0L
     }
     if (node.state == WaiterNode.Waiting) {
       acquireWaitList()
-      // Skip unlinking node if was moved from waitQueue to enterQueue by notify call
+      // Skip unlinking node if was moved from waitQueue to entry list by notify
       try
         if (node.state == WaiterNode.Waiting) {
+          // Timeout/interrupt won the race, so clear the wait resume before unlinking.
+          // This prevents a late notify from re-scheduling the same continuation.
+          node.resumeForWait = null
+          node.resumeForWaitGeneration = 0L
           removeFromWaitList(node)
           waiting -= 1
           node.state = WaiterNode.Active
@@ -255,10 +374,9 @@ private[monitor] class ObjectMonitor() {
     }
 
     atomic_thread_fence(memory_order_acquire)
-    if (successorThread eq currentThread) successorThread = null
     // Save the state of notification after waking up the thread
     val wasNotified = node.isNotified
-    atomic_thread_fence(memory_order_seq_cst)
+    clearSuccessorAndFenceBeforeRetry(currentThread)
 
     // Thread is alive again, wait for ownership
     // assert(ownerThread != currentThread, "before re-renter")
@@ -268,7 +386,7 @@ private[monitor] class ObjectMonitor() {
     (node.state: @switch) match {
       case WaiterNode.Active =>
         enter(currentThread)
-      case WaiterNode.InArriveQueue | WaiterNode.InEnterQueue =>
+      case WaiterNode.InEnterQueue =>
         enterMonitor(currentThread, node)
       case _ =>
         throw new IllegalMonitorStateException("internal state of thread")
@@ -283,29 +401,34 @@ private[monitor] class ObjectMonitor() {
   }
 
   @inline private def notifyImpl(notifiedElements: Int): Unit = {
-    var tail: WaiterNode = null
     @tailrec def iterate(toNotify: Int): Unit = dequeueWaiter() match {
       case null => ()
       case node =>
         node.isNotified = true
         node.state = WaiterNode.InEnterQueue
-        // Move from waitList to tail of enterQueue
-        enterQueue match {
-          case null =>
-            node.next = null
-            node.prev = null
-            enterQueue = node
-          case head =>
-            if (tail == null) {
-              tail = head
-              while (tail.next != null) tail = tail.next
-            }
-            tail.next = node
-            node.prev = tail
-            node.next = null
-            tail = node
+        val isVT = node.thread.isInstanceOf[VirtualThread]
+        var forceTimedRecheck = false
+        if (isVT) {
+          node.clearTimedParkHint()
+          incrementUnmountedVThreads()
+        } else {
+          forceTimedRecheck = hasUnmountedVThreads()
+          node.setTimedParkHint(forceTimedRecheck)
         }
-        if (toNotify > 0) iterate(toNotify - 1)
+        // Push notifyee to head of entry list. Successor is always the tail
+        // (oldest), so existing contenders
+        // are woken before the notifyee. CAS because contenders also
+        // push to head concurrently.
+        node.prev = null
+        while ({
+          val head = entryList
+          node.next = head
+          !casWaitList(entryListPtr, head, node)
+        }) ()
+        if (!isVT && forceTimedRecheck) {
+          wakePlatformWaiter(node.thread)
+        }
+        if (toNotify > 1) iterate(toNotify - 1)
     }
 
     acquireWaitList()
@@ -315,14 +438,63 @@ private[monitor] class ObjectMonitor() {
 
   @alwaysinline private def ownerThreadPtr =
     classFieldRawPtr(this, "ownerThread")
-  @alwaysinline private def arriveQueuePtr =
-    classFieldRawPtr(this, "arriveQueue")
+  @alwaysinline private def entryListPtr =
+    classFieldRawPtr(this, "entryList")
 
   @alwaysinline private def waitListModificationLockPtr =
     classFieldRawPtr(this, "waitListModifcationLock")
 
+  @alwaysinline private def unmountedVThreadsPtr =
+    classFieldRawPtr(this, "unmountedVThreads")
+
   @alwaysinline private def activeWaiterThreadPtr =
     classFieldRawPtr(this, "activeWaiterThread")
+
+  @alwaysinline private def hasUnmountedVThreads(): Boolean =
+    atomic_load_llong(unmountedVThreadsPtr, memory_order_seq_cst) > 0L
+
+  /** After clearing successor, retry ownership only after a full fence so
+   *  successor/queue metadata is observed consistently.
+   */
+  @alwaysinline private def clearSuccessorAndFenceBeforeRetry(
+      currentThread: Thread
+  ): Unit = {
+    if (successorThread eq currentThread) successorThread = null
+    atomic_thread_fence(memory_order_seq_cst)
+  }
+
+  @alwaysinline private def incrementUnmountedVThreads(): Unit =
+    casUpdateUnmountedVThreads(_ + 1L)
+
+  @alwaysinline private def decrementUnmountedVThreads(): Unit =
+    casUpdateUnmountedVThreads { current =>
+      assert(current > 0L, "unmountedVThreads underflow")
+      current - 1L
+    }
+
+  private def casUpdateUnmountedVThreads(f: Long => Long): Unit = {
+    val expected = stackalloc[Long]()
+    var done = false
+    while (!done) {
+      val current =
+        atomic_load_llong(unmountedVThreadsPtr, memory_order_seq_cst)
+      storeLong(expected, current)
+      done = atomic_compare_exchange_llong(
+        unmountedVThreadsPtr,
+        expected,
+        f(current)
+      )
+      if (!done) NativeThread.onSpinWait()
+    }
+  }
+
+  @alwaysinline private def wakePlatformWaiter(thread: Thread): Unit = {
+    val threadToUnpark = thread match {
+      case vt: VirtualThread => vt.carrierThread
+      case _                 => thread
+    }
+    LockSupport.unpark(threadToUnpark)
+  }
 
   @alwaysinline private def casOwnerThread(
       expected: Thread,
@@ -462,6 +634,11 @@ private[monitor] class ObjectMonitor() {
 }
 
 private object ObjectMonitor {
+
+  /** Sentinel on WaiterNode.resumeForWait so ObjectMonitor spin-waits for real
+   *  resume.
+   */
+  val RESUME_SENTINEL: () => Unit = () => ()
   object WaiterNode {
 
     /** Current state and expected placement of the node in the queues */
@@ -478,5 +655,32 @@ private object ObjectMonitor {
       @volatile var isNotified: Boolean = false,
       @volatile var next: WaiterNode = null,
       @volatile var prev: WaiterNode = null
-  )
+  ) {
+
+    /** Set by VT blockForMonitorWait so notify can schedule the VT without
+     *  parking the carrier.
+     */
+    @volatile var resumeForWait: () => Unit = null
+    @volatile var resumeForWaitGeneration: Long = 0L
+
+    /** Set by VT blockForMonitorEnter so monitor exit can schedule the VT */
+    @volatile var resumeForEnter: () => Unit = null
+    @volatile var resumeForEnterGeneration: Long = 0L
+
+    /** Notify-side liveness hint: force timed recheck for platform waiter once.
+     */
+    @volatile private var forceTimedPark: Boolean = false
+
+    @alwaysinline def setTimedParkHint(value: Boolean): Unit =
+      forceTimedPark = value
+
+    @alwaysinline def clearTimedParkHint(): Unit =
+      forceTimedPark = false
+
+    @alwaysinline def consumeTimedParkHint(): Boolean = {
+      val value = forceTimedPark
+      forceTimedPark = false
+      value
+    }
+  }
 }
