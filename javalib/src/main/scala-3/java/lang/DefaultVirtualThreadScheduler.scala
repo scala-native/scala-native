@@ -80,6 +80,29 @@ private[java] object DefaultVirtualThreadScheduler extends VirtualThreadSchedule
       case c: VirtualThreadCarrier => c.getQueuedTaskCount() == 0
       case _                       => false
     }
+
+  override def beginCarrierCompensatedBlock(carrier: Thread): scala.Boolean =
+    carrier match {
+      case c: VirtualThreadCarrier if c.getPool().eq(pool) => c.beginBlocking()
+      case _                                               => false
+    }
+
+  override def endCarrierCompensatedBlock(
+      carrier: Thread,
+      attempted: scala.Boolean
+  ): Unit =
+    if (attempted) {
+      carrier match {
+        case c: VirtualThreadCarrier if c.getPool().eq(pool) => c.endBlocking()
+        case _                                               => ()
+      }
+    }
+
+  override def afterYieldOnCarrier(carrier: Thread): Unit =
+    carrier match {
+      case c: VirtualThreadCarrier if c.getPool().eq(pool) => c.endBlocking()
+      case _                                               => ()
+    }
 }
 
 class VirtualThreadCarrier(scheduler: ForkJoinPool)
@@ -92,39 +115,39 @@ class VirtualThreadCarrier(scheduler: ForkJoinPool)
   private var compensation: CompensationState = CompensationState.NotCompensating
   private var compensationValue: scala.Long = 0L
 
-  def startBlocking(): scala.Boolean = {
-    compensation match
+  def beginBlocking(): scala.Boolean =
+    compensation match {
       case CompensationState.NotCompensating =>
         try {
-          compensation = CompensationState.InProgress
-          // TODO: spawn additional FJP workers to compensate
-          // compensationValue = getPool().startCompensating()
+          compensation = CompensationState.CompensateInProgress
+          compensationValue = getPool().beginCompensatedBlock()
           compensation = CompensationState.Compensating
           true
         } catch {
           case ex: Throwable =>
             compensation = CompensationState.NotCompensating
+            compensationValue = 0L
             throw ex
         }
-      case CompensationState.InProgress =>
-        throw new IllegalStateException("Recursive blocking in VirtualThreadCarrier")
-      case CompensationState.Compensating => false
-  }
-  def stopBlocking(): Unit = compensation match {
-    case CompensationState.Compensating =>
-      // TODO: finish compensating
-      // getPool().finishCompensating(compensationValue)
-      compensation = CompensationState.NotCompensating
-      compensationValue = 0
-    case _ => ()
-  }
+      case _ => false
+    }
+
+  def endBlocking(): Unit =
+    compensation match {
+      case CompensationState.Compensating =>
+        getPool().endCompensatedBlock(compensationValue)
+        compensation = CompensationState.NotCompensating
+        compensationValue = 0L
+      case _ =>
+        ()
+    }
 }
 
 object VirtualThreadCarrier {
   opaque type CompensationState = Int
   object CompensationState {
     final val NotCompensating: CompensationState = 0
-    final val InProgress: CompensationState = 1
+    final val CompensateInProgress: CompensationState = 1
     final val Compensating: CompensationState = 2
   }
 }
