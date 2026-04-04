@@ -590,6 +590,8 @@ object Thread {
   @alwaysinline private[java] def currentPlatformThread: Thread =
     NativeThread.currentNativeThread.thread
 
+  @alwaysinline def currentCarrierThread(): Thread = currentPlatformThread
+
   def dumpStack(): Unit = new Throwable().printStackTrace()
 
   def enumerate(list: Array[Thread]): Int = currentThread()

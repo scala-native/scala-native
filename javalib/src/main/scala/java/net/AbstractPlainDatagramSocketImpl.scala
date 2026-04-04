@@ -1,6 +1,7 @@
 package java.net
 
 import java.io.{FileDescriptor, IOException}
+import java.lang.Blocker
 import java.net.ipOps._
 
 import scala.scalanative.libc.string.memcpy
@@ -199,8 +200,10 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
 
   override def send(p: DatagramPacket): Unit = {
     throwIfClosed("send")
-    if (useIPv4Only) send4(p)
-    else send6(p)
+    Blocker {
+      if (useIPv4Only) send4(p)
+      else send6(p)
+    }
   }
 
   private def connect4(address: InetAddress, port: Int): Unit = {
@@ -251,10 +254,12 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
 
   override def connect(address: InetAddress, port: Int): Unit = {
     throwIfClosed("connect")
-    connectFunc(address, port)
-    connectedAddress = address
-    connectedPort = port
-    connected = true
+    Blocker {
+      connectFunc(address, port)
+      connectedAddress = address
+      connectedPort = port
+      connected = true
+    }
   }
 
   override def disconnect(): Unit = {
@@ -274,7 +279,12 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     }
   }
 
-  private def recvfrom(p: DatagramPacket, flag: CInt, op: String): Unit = {
+  private def recvfrom(p: DatagramPacket, flag: CInt, op: String): Unit =
+    Blocker {
+      recvfrom0(p, flag, op)
+    }
+
+  private def recvfrom0(p: DatagramPacket, flag: CInt, op: String): Unit = {
     if (timeout > 0)
       tryPoll(op)
 

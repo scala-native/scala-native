@@ -772,7 +772,7 @@ private[java] final class VirtualThread(
             var resubmitYield = false
             var didAfterYieldSubmit = false
             mount()
-            try
+            try {
               // Every VT run/resume must start from a clean carrier handler TLS.
               // The continuation/boundary machinery re-installs the VT's own
               // captured chain; keeping stale handlers from a previous VT on
@@ -797,7 +797,7 @@ private[java] final class VirtualThread(
                 try continue()
                 finally reachabilityFence(continue)
               }
-            catch {
+            } catch {
               case ex: Throwable =>
                 getUncaughtExceptionHandler().uncaughtException(VirtualThread.this, ex)
                 afterDone()
@@ -831,6 +831,8 @@ private[java] final class VirtualThread(
               resubmitYield = (state == State.Yielded || state == State.Unparked || state == State.Unblocked) &&
                 (resumeExecution != null) && !didAfterYieldSubmit
               unmount()
+              if (carrierThread != null)
+                scheduler.afterYieldOnCarrier(carrierThread)
             }
 
             if (resubmitYield) {
