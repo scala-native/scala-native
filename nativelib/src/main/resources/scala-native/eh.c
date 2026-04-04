@@ -300,6 +300,9 @@ __attribute__((noreturn)) void scalanative_throw(Exception obj) {
             longjmp(*env, 1);
             __builtin_unreachable();
         }
+        if (scalanative_continuation_exception_escape(obj)) {
+            __builtin_unreachable();
+        }
 #endif
         generic_exception_cleanup(code, &exceptionWrapper->unwindException);
         fprintf(stderr,
@@ -308,6 +311,8 @@ __attribute__((noreturn)) void scalanative_throw(Exception obj) {
                 "stack.\n",
                 snFatalErrorPrefix);
         scalanative_Throwable_showStackTrace(obj);
+        fflush(stderr);
+        fflush(stdout);
         abort();
     }
     scalanative_Throwable_showStackTrace(obj);
