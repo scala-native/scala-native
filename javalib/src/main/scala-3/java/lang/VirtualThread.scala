@@ -6,13 +6,16 @@ import java.lang.VirtualThread.DefaultScheduler
 import java.util.Objects
 import java.util.concurrent.*
 import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.LockSupport
 
 import scala.annotation.tailrec
+import scala.noinline
 
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.libc.stdatomic.{AtomicBool, AtomicInt, AtomicRef}
 import scala.scalanative.runtime.{Continuations, Intrinsics, NativeThread, fromRawPtr}
+import scala.scalanative.unsigned.*
 
 private[java] final class VirtualThread(
     name: String,
@@ -28,17 +31,33 @@ private[java] final class VirtualThread(
   }
 
   private type Boundary = Continuations.BoundaryLabel[Unit]
-  private var boundary: Boundary = _
-  private var resumeExecution: () => Unit /* | Null */ = _
+  @volatile private var boundary: Boundary | Null = _
+  @volatile private var resumeExecution: () => Unit | Null = _
+  private val resumeLock = new {}
+  private var nextResumeGeneration: Long = 0L
+  @volatile private var activeResumeGeneration: Long = 0L
+  private val runDispatchState =
+    new java.util.concurrent.atomic.AtomicInteger(VirtualThread.RunDispatchState.Idle)
   val carrierThreadAccessLock = new {}
 
-  @volatile var carrierThread: Thread = _
-  @volatile var termination: CountDownLatch = _
+  @volatile var carrierThread: Thread | Null = _
+  @volatile var termination: CountDownLatch | Null = _
   @volatile var state: VirtualThread.State = VirtualThread.State.New
-  @volatile var wasUnparked: scala.Boolean = false
 
-  // timeout for parking/waiting operations
-  private var timeoutTask: Future[_] = _
+  /** When true, the next park() does not block. Set by unpark(), cleared in park(). */
+  @volatile var parkPermit: scala.Boolean = false
+
+  // True while this VT is submitting a task to the scheduler.
+  // Prevents yielding (unmounting) so the carrier stays stable during submit,
+  // analogous to pinning around scheduler submission.
+  @volatile private var pinnedForSubmit: scala.Boolean = false
+
+  // Timed park/wait callbacks must be generation-scoped so a late timeout from
+  // an earlier operation cannot wake a later park/wait on the same VT.
+  private val timeoutLock = new {}
+  private var timeoutGeneration: Long = 0L
+  private var timeoutTaskResumeGeneration: Long = 0L
+  @volatile private var timeoutTask: Future[_] = _
 
   @alwaysinline
   private def stateAtomic =
@@ -49,26 +68,57 @@ private[java] final class VirtualThread(
     new AtomicRef[CountDownLatch](fromRawPtr(Intrinsics.classFieldRawPtr(this, "termination")))
 
   @alwaysinline
-  private def wasUnparkedAtomic =
-    new AtomicBool(fromRawPtr(Intrinsics.classFieldRawPtr(this, "wasUnparked")))
+  private def parkPermitAtomic =
+    new AtomicBool(fromRawPtr(Intrinsics.classFieldRawPtr(this, "parkPermit")))
 
   @inline private def compareAndSetState(expected: VirtualThread.State, value: VirtualThread.State): Boolean =
     stateAtomic.compareExchangeStrong(expected, value)
 
-  @inline private def setWasUnparked(value: scala.Boolean) = {
-    if (wasUnparked != value) wasUnparked = value
-  }
-  @inline private def getAndSetWasUnparked(value: scala.Boolean) =
-    if (wasUnparked != value) wasUnparkedAtomic.exchange(value)
-    else value
+  @inline private def isRecursiveSuspendState(s: VirtualThread.State): Boolean =
+    s == State.Parking || s == State.Parked ||
+      s == State.TimedParking || s == State.TimedParked ||
+      s == State.Yielding || s == State.Yielded
 
-  override def run(): Unit = () // no-op, must be started via start(), JVM compliant
+  @noinline private def reachabilityFence(target: Any): Unit = ()
+
+  private def publishResume(resume: () => Unit): Long =
+    resumeLock.synchronized {
+      nextResumeGeneration += 1L
+      val generation = nextResumeGeneration
+      resumeExecution = resume
+      activeResumeGeneration = generation
+      generation
+    }
+
+  private def consumeResume(): () => Unit | Null =
+    resumeLock.synchronized {
+      val continue = resumeExecution
+      resumeExecution = null
+      activeResumeGeneration = 0L
+      continue
+    }
+
+  private def isActiveResumeGeneration(generation: Long): Boolean =
+    generation != 0L && activeResumeGeneration == generation && resumeExecution != null
+
+  private inline def currentBoundaryOrThrow(op: String): Boundary =
+    val current = boundary
+    if current == null then throw new IllegalStateException(s"Missing continuation boundary during $op")
+    current.nn
+
+  @inline private def setParkPermit(value: scala.Boolean): Unit = {
+    if (parkPermit != value) parkPermit = value
+  }
+  @inline private def getAndSetParkPermit(value: scala.Boolean): scala.Boolean =
+    parkPermitAtomic.exchange(value)
+
+  override def run(): Unit = () // no-op; execution is started via start() (Thread API contract).
 
   override def startInternal(): Unit = {
     if (!compareAndSetState(State.New, State.Started))
       throw new IllegalThreadStateException("Already started")
 
-    try submitRunContinuation()
+    try requestRun()
     catch {
       case ex: Exception =>
         afterDone()
@@ -78,7 +128,8 @@ private[java] final class VirtualThread(
 
   override def isInterrupted(): scala.Boolean = interruptedState
   override def getAndClearInterrupt(): scala.Boolean = {
-    assert(Thread.currentThread() eq this)
+    if (Thread.currentThread() ne this)
+      throw new IllegalThreadStateException("getAndClearInterrupt must be called on the current thread")
     val value = interruptedState
     if (value) {
       interruptLock.synchronized {
@@ -104,20 +155,62 @@ private[java] final class VirtualThread(
     } else {
       interruptedState = true
       carrierThread.setInterrupt()
-      setWasUnparked(true) // consume parking permit
+      setParkPermit(true) // consume parking permit
     }
   }
 
-  private def cancelTimeoutTask(): Unit = timeoutTask match {
-    case null => ()
-    case task =>
-      task.cancel(false)
+  private def cancelTimeoutTask(expectedResumeGeneration: Long): Unit =
+    val task = timeoutLock.synchronized {
+      if (timeoutTaskResumeGeneration == expectedResumeGeneration) {
+        timeoutGeneration += 1L
+        timeoutTaskResumeGeneration = 0L
+        val current = timeoutTask
+        timeoutTask = null
+        current
+      } else null
+    }
+    task match
+      case null => ()
+      case task =>
+        if (!task.isDone()) task.cancel(false)
+
+  private def scheduleTimeout(delay: scala.Long, unit: TimeUnit, resumeGeneration: Long)(onTimeout: => Unit): Unit = {
+    val timeoutToken = timeoutLock.synchronized {
+      timeoutGeneration += 1L
+      timeoutTaskResumeGeneration = resumeGeneration
       timeoutTask = null
+      timeoutGeneration
+    }
+
+    val task = VirtualThread.schedule(
+      () => {
+        val shouldRun = timeoutLock.synchronized {
+          if (timeoutGeneration == timeoutToken && isActiveResumeGeneration(
+                resumeGeneration
+              )) {
+            if (timeoutTaskResumeGeneration == resumeGeneration) {
+              timeoutTask = null
+              timeoutTaskResumeGeneration = 0L
+            }
+            true
+          } else false
+        }
+        if (shouldRun) onTimeout
+      },
+      delay,
+      unit
+    )
+
+    timeoutLock.synchronized {
+      if (timeoutGeneration == timeoutToken && !task.isDone()) timeoutTask = task
+      else if (!task.isDone()) task.cancel(false)
+    }
   }
 
   private[lang] def sleepNanos(nanos: scala.Long): Unit = {
-    assert(Thread.currentThread() eq this)
-    assert(nanos >= 0)
+    if (Thread.currentThread() ne this)
+      throw new IllegalThreadStateException("sleepNanos must be called on the current thread")
+    if (nanos < 0) throw new IllegalArgumentException("nanos must be non-negative")
 
     if (getAndClearInterrupt()) throw new InterruptedException()
     if (nanos == 0) tryYield()
@@ -130,96 +223,187 @@ private[java] final class VirtualThread(
           if (getAndClearInterrupt()) throw new InterruptedException()
           remainingNanos = nanos - (System.nanoTime() - startNanos)
         }
-      } finally setWasUnparked(true)
+      } finally setParkPermit(true)
   }
 
   private[java] def parkNanos(nanos: scala.Long): Unit = {
-    assert(Thread.currentThread() eq this)
+    if (Thread.currentThread() ne this)
+      throw new IllegalThreadStateException("parkNanos must be called on the current thread")
 
-    if (getAndSetWasUnparked(false)) return
+    if (getAndSetParkPermit(false)) return
     if (interruptedState) return
     if (nanos <= 0) return
 
     state match {
-      case State.Running =>
-        val startTime = System.nanoTime()
-        state = State.TimedParking
-        Continuations.suspend[Unit] { resumeContinuation =>
-          resumeExecution = resumeContinuation
-          timeoutTask = VirtualThread.schedule(() => unpark(), nanos, TimeUnit.NANOSECONDS)
-
-          // may have been unparked
-          if (wasUnparked && compareAndSetState(State.TimedParking, State.Unparked)) {
-            submitRunContinuation(lazily = true)
-          } else {
-            state = State.TimedParked
-          }
-        }(using boundary)
+      case State.Running if pinnedForSubmit =>
+        // Pinned during submit: park on carrier instead of yielding
+        state = State.TimedPinned
+        NativeThread.currentNativeThread.parkNanos(nanos)
         state = State.Running
 
-      case s @ (State.Parking | State.TimedParking | State.Yielding) =>
+      case State.Running =>
+        state = State.TimedParking
+        // Close race with unpark that can arrive after initial permit check
+        // but before we publish parking state and suspend.
+        if (getAndSetParkPermit(false)) {
+          state = State.Running
+          return
+        }
+        Continuations.suspend[Unit] { resumeContinuation =>
+          val generation = publishResume(resumeContinuation)
+          scheduleTimeout(nanos, TimeUnit.NANOSECONDS, generation) {
+            unpark(lazily = true) // timed park wakeup: prefer lazy scheduler submit
+          }
+
+          // Move into parked state only if no concurrent unpark already moved
+          // us to Unparked while suspension was being established.
+          compareAndSetState(State.TimedParking, State.TimedParked)
+        }(using currentBoundaryOrThrow("parkNanos"))
+        state = State.Running
+
+      case s if isRecursiveSuspendState(s) =>
         // recursive park during suspension
         state = State.TimedPinned
         NativeThread.currentNativeThread.parkNanos(nanos)
         state = s
+      case _ =>
+        ()
     }
   }
 
   private[java] def park(): Unit = {
-    assert(Thread.currentThread() eq this)
+    if (Thread.currentThread() ne this)
+      throw new IllegalThreadStateException("park must be called on the current thread")
 
-    if (getAndSetWasUnparked(false)) return
+    if (getAndSetParkPermit(false)) return
     if (interruptedState) return
 
     state match {
-      case State.Running =>
-        state = State.Parking
-        Continuations.suspend[Unit] { resumeContinuation =>
-          resumeExecution = resumeContinuation
-          // may have been unparked
-          if (wasUnparked && compareAndSetState(State.Parking, State.Unparked)) {
-            submitRunContinuation(lazily = true)
-          } else {
-            state = State.Parked
-          }
-        }(using boundary)
+      case State.Running if pinnedForSubmit =>
+        // Pinned during submit: park on carrier instead of yielding
+        state = State.Pinned
+        NativeThread.currentNativeThread.park()
+        setParkPermit(false)
         state = State.Running
 
-      case s @ (State.Parking | State.TimedParking | State.Yielding) =>
+      case State.Running =>
+        state = State.Parking
+        // Close race with unpark that can arrive after initial permit check
+        // but before we publish parking state and suspend.
+        if (getAndSetParkPermit(false)) {
+          state = State.Running
+          return
+        }
+        Continuations.suspend[Unit] { resumeContinuation =>
+          publishResume(resumeContinuation)
+          // Move into parked state only if no concurrent unpark already moved
+          // us to Unparked while suspension was being established.
+          compareAndSetState(State.Parking, State.Parked)
+        }(using currentBoundaryOrThrow("park"))
+        state = State.Running
+
+      case s if isRecursiveSuspendState(s) =>
         // recursive park during suspension, need to pin carrier thread
         state = State.Pinned
         NativeThread.currentNativeThread.park()
-        setWasUnparked(false) // consume
+        setParkPermit(false) // consume
         state = s
+      case _ =>
+        ()
     }
 
   }
 
-  private[java] def unpark(): Unit = {
-    if (getAndSetWasUnparked(true)) return
+  /** Set parking permit first, then schedule only if this VT is already in Parked/TimedParked. If unpark races with the
+   *  Parking transition, the post-yield path consumes the permit and performs the submit. For Pinned, unpark the
+   *  carrier.
+   *
+   *  @param lazily
+   *    when true, use ForkJoinPool.lazySubmit when the current thread is a pool carrier with an empty local queue
+   *    (timeout and similar paths).
+   */
+  private def unpark(lazily: scala.Boolean): Unit = {
+    // Permit first; only submit when permit was previously false (avoid redundant submit).
+    // getAndSetParkPermit(true) returns the prior value; submit when it was false.
+    val previousPermit = getAndSetParkPermit(true)
     if (Thread.currentThread() eq this) return
 
-    state match {
-      case s @ (State.Parked | State.TimedParked) if compareAndSetState(s, State.Unparked) =>
-        submitRunContinuation()
-      case State.Pinned | State.TimedPinned =>
-        LockSupport.unpark(carrierThread)
-      case _ => ()
+    var s = state
+    var done = false
+    while (!done) {
+      s match {
+        case State.Parked | State.TimedParked =>
+          if (compareAndSetState(s, State.Unparked)) {
+            if (!previousPermit) requestRun(lazily)
+            done = true
+          } else {
+            s = state // re-read after CAS failure
+          }
+        case State.Pinned | State.TimedPinned =>
+          val carrier = carrierThread
+          if (carrier != null) LockSupport.unpark(carrier)
+          done = true
+        case _ =>
+          done = true
+      }
     }
   }
+  private[java] def unpark(): Unit = unpark(false)
 
-  private def submitRunContinuation(lazily: scala.Boolean = false): Unit =
+  private def submitScheduledRun(lazily: scala.Boolean = false): Unit =
     scheduler match {
       case pool: ForkJoinPool if lazily => pool.lazySubmit(ForkJoinTask.adapt(executeContinuation))
       case _                            => scheduler.execute(executeContinuation)
     }
 
+  private def requestRun(lazily: scala.Boolean = false): Unit = {
+    import VirtualThread.RunDispatchState
+    var done = false
+    while (!done) {
+      runDispatchState.get() match {
+        case RunDispatchState.Idle =>
+          if (runDispatchState.compareAndSet(RunDispatchState.Idle, RunDispatchState.Queued)) {
+            // Pin this VT (prevent unmounting) while submitting, so the carrier
+            // stays stable during the submit.
+            val needsPin = Thread.currentThread() eq this
+            if (needsPin) pinnedForSubmit = true
+            // Lazy submit only when requested and the submitter is a carrier on this pool
+            // with an empty local queue. lazily=true is used from post-yield and timeout paths.
+            val useLazy =
+              !needsPin && lazily && (Thread.currentThread() match {
+                case c: VirtualThreadCarrier if scheduler.isInstanceOf[ForkJoinPool] && (scheduler eq c.getPool()) =>
+                  c.getQueuedTaskCount() == 0
+                case _ => false
+              })
+            try submitScheduledRun(useLazy)
+            catch {
+              case ex: Throwable =>
+                runDispatchState.compareAndSet(RunDispatchState.Queued, RunDispatchState.Idle)
+                throw ex
+            } finally {
+              if (needsPin) pinnedForSubmit = false
+            }
+            done = true
+          }
+        case RunDispatchState.Running =>
+          if (runDispatchState.compareAndSet(
+                RunDispatchState.Running,
+                RunDispatchState.RunningQueued
+              )) {
+            done = true
+          }
+        case RunDispatchState.Queued | RunDispatchState.RunningQueued =>
+          done = true
+      }
+    }
+  }
+
   private def mount(): Unit = {
-    assert(
-      NativeThread.currentThread.isInstanceOf[VirtualThreadCarrier],
-      s"${NativeThread.currentThread} is not VThreadCarrier"
-    )
-    val carrier = Thread.currentPlatformThread
+    val platformThread = Thread.currentPlatformThread
+    if (!platformThread.isInstanceOf[VirtualThreadCarrier]) {
+      throw new IllegalStateException(s"$platformThread is not a VirtualThreadCarrier")
+    }
+    val carrier = platformThread
     this.carrierThread = carrier
 
     // sync up carrier thread interrupt status if needed
@@ -237,7 +421,9 @@ private[java] final class VirtualThread(
   }
 
   private def unmount(): Unit = {
-    assert(this.state != State.Running)
+    if (this.state == State.Running) {
+      throw new IllegalStateException("Cannot unmount virtual thread while Running")
+    }
     val carrier = this.carrierThread.asInstanceOf[VirtualThreadCarrier]
     NativeThread.setCurrentThread(carrier)
 
@@ -248,78 +434,220 @@ private[java] final class VirtualThread(
     carrier.clearInterrupt();
   }
 
+  private def tryAcquireRunLoopToken(): Boolean = {
+    import VirtualThread.RunDispatchState
+    var acquired = false
+    var done = false
+    while (!done) {
+      runDispatchState.get() match {
+        case RunDispatchState.Queued =>
+          if (runDispatchState.compareAndSet(RunDispatchState.Queued, RunDispatchState.Running)) {
+            acquired = true
+            done = true
+          }
+        case RunDispatchState.Running | RunDispatchState.RunningQueued | RunDispatchState.Idle =>
+          done = true
+      }
+    }
+    acquired
+  }
+
+  private def finishRunLoopIteration(): Boolean = {
+    import VirtualThread.RunDispatchState
+    var continue = false
+    var done = false
+    while (!done) {
+      runDispatchState.get() match {
+        case RunDispatchState.RunningQueued =>
+          if (runDispatchState.compareAndSet(RunDispatchState.RunningQueued, RunDispatchState.Running)) {
+            continue = true
+            done = true
+          }
+        case RunDispatchState.Running =>
+          if (runDispatchState.compareAndSet(RunDispatchState.Running, RunDispatchState.Idle)) {
+            continue = false
+            done = true
+          }
+        case RunDispatchState.Queued =>
+          if (runDispatchState.compareAndSet(RunDispatchState.Queued, RunDispatchState.Running)) {
+            continue = true
+            done = true
+          }
+        case RunDispatchState.Idle =>
+          continue = false
+          done = true
+      }
+    }
+    continue
+  }
+
+  private def recoverRunLoopOnUnexpectedExit(): Unit = {
+    import VirtualThread.RunDispatchState
+    var done = false
+    while (!done) {
+      runDispatchState.get() match {
+        case RunDispatchState.RunningQueued =>
+          if (runDispatchState.compareAndSet(RunDispatchState.RunningQueued, RunDispatchState.Queued)) {
+            try submitScheduledRun(lazily = false)
+            catch {
+              case _: Throwable =>
+                runDispatchState.compareAndSet(RunDispatchState.Queued, RunDispatchState.Idle)
+            }
+            done = true
+          }
+        case RunDispatchState.Running =>
+          if (runDispatchState.compareAndSet(RunDispatchState.Running, RunDispatchState.Idle)) {
+            done = true
+          }
+        case _ =>
+          done = true
+      }
+    }
+  }
+
   private def executeContinuation: Runnable = new VirtualThreadContinuation()
   private class VirtualThreadContinuation extends Runnable {
     val vThread = VirtualThread.this
 
     override def run(): Unit = {
-      // the carrier must be a platform thread
-      if (Thread.currentThread().isVirtual()) {
-        throw new WrongThreadException()
+      // Recovery guard: if a previous VT left TLS currentThread mapped to a VT,
+      // reset to the platform carrier before dispatching this continuation.
+      val platformThread = Thread.currentPlatformThread
+      if (Thread.currentThread().isVirtual() && platformThread.isInstanceOf[VirtualThreadCarrier]) {
+        NativeThread.setCurrentThread(platformThread)
       }
 
-      val initialState = state
-      val initialRun = initialState match {
-        case State.Started | State.Unparked | State.Yielded =>
-          if (!compareAndSetState(initialState, State.Running))
-            return
+      if (!tryAcquireRunLoopToken()) {
+        // Re-queue once if VT is runnable so we don't drop the resumption.
+        if (state == State.Unparked || (state == State.Yielded && resumeExecution != null)) {
+          requestRun()
+        }
+        return
+      }
+
+      var exitedNormally = false
+      try
+        var continueLoop = true
+        while (continueLoop) {
+          var runCurrent = false
+          val initialState = state
 
           initialState match {
-            case State.Unparked =>
-              VirtualThread.this.cancelTimeoutTask()
-              VirtualThread.this.setWasUnparked(false) // consume event
+            case State.Started | State.Unparked | State.Yielded =>
+              runCurrent = compareAndSetState(initialState, State.Running)
+              if (runCurrent) {
+                if (initialState == State.Unparked) {
+                  VirtualThread.this.cancelTimeoutTask(VirtualThread.this.activeResumeGeneration)
+                  VirtualThread.this.setParkPermit(false) // consume park event
+                }
+              }
             case _ => ()
           }
 
-        case _ => return // Not runnable
-      }
+          if (runCurrent) {
+            var resubmitYield = false
+            var didAfterYieldSubmit = false
+            mount()
+            try
+              // Every VT run/resume must start from a clean carrier handler TLS.
+              // The continuation/boundary machinery re-installs the VT's own
+              // captured chain; keeping stale handlers from a previous VT on
+              // the carrier corrupts handler_pop/split_at during park/wait.
+              Continuations.handlersReset()
+              // initial run
+              if (initialState == State.Started) {
+                Continuations.boundary[Unit] {
+                  boundary = summon[Boundary]
+                  // Initial invocation of the task, might suspend
+                  task.run()
+                  // We get here only when whole fiber is completed
+                  afterDone()
+                  boundary = null
+                }
+              } else {
+                // Consume continuation and resume, might suspend
+                val continue = consumeResume()
+                if (continue == null) {
+                  throw new IllegalStateException("Missing continuation to resume")
+                }
+                try continue()
+                finally reachabilityFence(continue)
+              }
+            catch {
+              case ex: Throwable =>
+                getUncaughtExceptionHandler().uncaughtException(VirtualThread.this, ex)
+                afterDone()
+            } finally {
+              // A yielded continuation has already captured the VT handler chain.
+              // Clear carrier-local delimcc TLS eagerly so no stale handlers leak
+              // into the next VT dispatched on this worker.
+              Continuations.handlersReset()
+              // Post-yield on carrier: reconcile parked state with permit.
+              val s = state
+              // Park path: Parked/TimedParked (LockSupport.park) + parkPermit; skip when resumeExecution null (wait).
+              if ((s == State.Parked || s == State.TimedParked)
+                  && resumeExecution != null
+                  && getAndSetParkPermit(false)) {
+                if (!compareAndSetState(s, State.Unparked)) setParkPermit(true)
+                else {
+                  requestRun(lazily = true)
+                  didAfterYieldSubmit = true
+                }
+              }
+              resubmitYield = (state == State.Yielded || state == State.Unparked) &&
+                (resumeExecution != null) && !didAfterYieldSubmit
+              unmount()
+            }
 
-      mount()
-      try
-        // initial run
-        if (initialState == State.Started) Continuations.boundary[Unit] {
-          boundary = summon[Boundary]
-          // Initial invocation of the task, might suspend
-          task.run()
-          // We get here only when whole fiber is completed
-          afterDone()
-          boundary = null.asInstanceOf[Boundary]
+            if (resubmitYield) {
+              // Resubmit after yield using lazy submit when permitted (carrier, empty queue).
+              requestRun(lazily = true)
+            }
+          }
+
+          // Defensive requeue: if a continuation is available but dispatch state
+          // got desynchronized, ensure we keep scheduling progress.
+          if ((state == State.Yielded || state == State.Unparked) && resumeExecution != null) {
+            requestRun()
+          }
+
+          continueLoop = finishRunLoopIteration()
         }
-        else {
-          // Consume continuation and resume, might suspend
-          val continue = resumeExecution
-          resumeExecution = null
-          continue()
-          // Not done yet
-        }
-      catch {
-        case ex: Throwable =>
-          getUncaughtExceptionHandler().uncaughtException(VirtualThread.this, ex)
-          afterDone()
-      } finally unmount()
+        exitedNormally = true
+      finally if (!exitedNormally) recoverRunLoopOnUnexpectedExit()
     }
   }
 
   private[lang] def tryYield(): Unit = {
-    assert(Thread.currentThread() eq this)
-    state = State.Yielding
-    Continuations.suspend[Unit] { resumeContinuation =>
-      resumeExecution = resumeContinuation
-      submitRunContinuation(lazily = true)
-      state = State.Yielded
-    }(using boundary)
-    state = State.Running
+    if (Thread.currentThread() ne this) {
+      throw new IllegalThreadStateException("tryYield must be called on the current thread")
+    }
+    state match
+      case State.Running =>
+        // Avoid unmounting on yield: if the VT currently owns a monitor, a
+        // suspended yield can strand thin-lock ownership and starve contenders.
+        Thread.nativeCompanion.yieldThread()
+      case s if isRecursiveSuspendState(s) =>
+        // Recursive yield while suspension is in progress must not suspend again.
+        state = State.Pinned
+        Thread.nativeCompanion.yieldThread()
+        state = s
+      case _ =>
+        Thread.nativeCompanion.yieldThread()
   }
 
   private def afterDone(): Unit = {
     state = State.Terminated
+    // Registry tracks only platform threads; VTs were never added
     termination match {
       case termination: CountDownLatch =>
-        assert(termination.getCount() == 1)
+        val c = termination.getCount()
+        if (c != 1L) {
+          throw new IllegalStateException(s"Unexpected termination latch count: $c")
+        }
         termination.countDown()
       case null => ()
     }
-    assert(state == State.Terminated)
   }
 
   private def getTermination(): CountDownLatch = {
@@ -358,15 +686,15 @@ private[java] final class VirtualThread(
     case State.Running                  =>
       carrierThreadAccessLock.synchronized {
         val carrier = this.carrierThread
-        if (carrierThread != null) carrierThread.threadState()
+        if (carrier != null) carrier.threadState()
         else Thread.State.RUNNABLE
       }
-    case State.Yielding                        => Thread.State.RUNNABLE
-    case State.Parking | State.TimedParking    => Thread.State.RUNNABLE
-    case State.Parked | State.Pinned           => Thread.State.WAITING
-    case State.TimedParked | State.TimedPinned => Thread.State.TIMED_WAITING
-    case State.Unparked | State.Yielded        => Thread.State.RUNNABLE
-    case State.Terminated                      => Thread.State.TERMINATED
+    case State.Yielding                  => Thread.State.RUNNABLE
+    case State.Parking | State.TimedParking               => Thread.State.RUNNABLE
+    case State.Parked | State.Pinned                      => Thread.State.WAITING
+    case State.TimedParked | State.TimedPinned            => Thread.State.TIMED_WAITING
+    case State.Unparked | State.Yielded => Thread.State.RUNNABLE
+    case State.Terminated                                 => Thread.State.TERMINATED
   }
   override def alive(): scala.Boolean = state match {
     case State.New | State.Terminated => false
@@ -408,6 +736,13 @@ private[java] final class VirtualThread(
 }
 
 object VirtualThread {
+  private object RunDispatchState {
+    final val Idle = 0
+    final val Queued = 1
+    final val Running = 2
+    final val RunningQueued = 3
+  }
+
   type State = Int
   object State {
     final val New = 0
@@ -431,11 +766,11 @@ object VirtualThread {
     final val Terminated = 99 // final state
   }
 
+  private val shutdownHookRegistered = new AtomicBoolean(false)
   lazy val DefaultScheduler = {
     val factory: ForkJoinWorkerThreadFactory = new ForkJoinWorkerThreadFactory {
       override def newThread(pool: ForkJoinPool): ForkJoinWorkerThread =
         new VirtualThreadCarrier(pool)
-
     }
     val handler: Thread.UncaughtExceptionHandler = (_, _) => ()
     val paralellism = Runtime.getRuntime().availableProcessors()
@@ -457,7 +792,11 @@ object VirtualThread {
 
   lazy val DelayedTasksSchedulers: scala.Array[ScheduledThreadPoolExecutor] = {
     val paralellism = Runtime.getRuntime().availableProcessors()
-    val queueCount = Integer.highestOneBit(paralellism / 4).max(1)
+    // Continuation resume has higher per-task overhead on Scala Native than on a typical hosted JVM.
+    // Under sleep-heavy workloads (for example 10k sleeping VTs), a small number
+    // of timer queues serializes wakeups and leaves timed parks pending for too
+    // long. Use a wider fan-out to keep delayed unparks flowing.
+    val queueCount = Integer.highestOneBit(paralellism * 4).max(1)
     Array.fill(queueCount) {
       val executor: ScheduledThreadPoolExecutor =
         new ScheduledThreadPoolExecutor(
