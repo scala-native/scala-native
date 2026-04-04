@@ -14,6 +14,7 @@ import scala.noinline
 
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.libc.stdatomic.{AtomicBool, AtomicInt, AtomicRef}
+import scala.scalanative.runtime.monitor.MonitorWaitSupport
 import scala.scalanative.runtime.{Continuations, Intrinsics, NativeThread, fromRawPtr}
 import scala.scalanative.unsigned.*
 
@@ -47,6 +48,9 @@ private[java] final class VirtualThread(
   /** When true, the next park() does not block. Set by unpark(), cleared in park(). */
   @volatile var parkPermit: scala.Boolean = false
 
+  /** Set when unblocking from monitor wait or enter; consumed when run completes with Unblocked. */
+  @volatile private var blockPermit: scala.Boolean = false
+
   // True while this VT is submitting a task to the scheduler.
   // Prevents yielding (unmounting) so the carrier stays stable during submit,
   // analogous to pinning around scheduler submission.
@@ -58,6 +62,10 @@ private[java] final class VirtualThread(
   private var timeoutGeneration: Long = 0L
   private var timeoutTaskResumeGeneration: Long = 0L
   @volatile private var timeoutTask: Future[_] = _
+
+  /** Set while in Object.wait() (blockForMonitorWait) so interrupt() can wake this VT. */
+  @volatile private var currentWaitResume: () => Unit = _
+  @volatile private var currentWaitResumeGeneration: Long = 0L
 
   @alwaysinline
   private def stateAtomic =
@@ -71,13 +79,18 @@ private[java] final class VirtualThread(
   private def parkPermitAtomic =
     new AtomicBool(fromRawPtr(Intrinsics.classFieldRawPtr(this, "parkPermit")))
 
+  @alwaysinline
+  private def blockPermitAtomic =
+    new AtomicBool(fromRawPtr(Intrinsics.classFieldRawPtr(this, "blockPermit")))
+
   @inline private def compareAndSetState(expected: VirtualThread.State, value: VirtualThread.State): Boolean =
     stateAtomic.compareExchangeStrong(expected, value)
 
   @inline private def isRecursiveSuspendState(s: VirtualThread.State): Boolean =
     s == State.Parking || s == State.Parked ||
       s == State.TimedParking || s == State.TimedParked ||
-      s == State.Yielding || s == State.Yielded
+      s == State.Yielding || s == State.Yielded ||
+      s == State.Blocking || s == State.Blocked || s == State.TimedBlocked
 
   @noinline private def reachabilityFence(target: Any): Unit = ()
 
@@ -101,6 +114,14 @@ private[java] final class VirtualThread(
   private def isActiveResumeGeneration(generation: Long): Boolean =
     generation != 0L && activeResumeGeneration == generation && resumeExecution != null
 
+  private def isActiveResume(resume: () => Unit, generation: Long): Boolean = {
+    val current = resumeExecution
+    generation != 0L &&
+      activeResumeGeneration == generation &&
+      current != null &&
+      (current eq resume)
+  }
+
   private inline def currentBoundaryOrThrow(op: String): Boundary =
     val current = boundary
     if current == null then throw new IllegalStateException(s"Missing continuation boundary during $op")
@@ -112,12 +133,19 @@ private[java] final class VirtualThread(
   @inline private def getAndSetParkPermit(value: scala.Boolean): scala.Boolean =
     parkPermitAtomic.exchange(value)
 
+  @inline private def setBlockPermit(value: scala.Boolean): Unit = {
+    if (blockPermit != value) blockPermit = value
+  }
+  @inline private def getAndSetBlockPermit(value: scala.Boolean): scala.Boolean =
+    blockPermitAtomic.exchange(value)
+
   override def run(): Unit = () // no-op; execution is started via start() (Thread API contract).
 
   override def startInternal(): Unit = {
     if (!compareAndSetState(State.New, State.Started))
       throw new IllegalThreadStateException("Already started")
 
+    VirtualThread.registerMonitorWaitSupport()
     try requestRun()
     catch {
       case ex: Exception =>
@@ -148,6 +176,14 @@ private[java] final class VirtualThread(
         carrierThread match {
           case null    => ()
           case carrier => carrier.setInterrupt()
+        }
+        // Wake if blocked in Object.wait() so wait() can see interrupt and throw
+        val resume = currentWaitResume
+        val generation = currentWaitResumeGeneration
+        if (resume != null) {
+          currentWaitResume = null
+          currentWaitResumeGeneration = 0L
+          scheduleWithResume(resume, generation)
         }
       }
       unpark()
@@ -312,6 +348,80 @@ private[java] final class VirtualThread(
         ()
     }
 
+  }
+
+  /** Blocks for Object.wait() without consuming the LockSupport permit. For indefinite wait (nanos == 0) we do not park
+   *  the carrier so many VTs can wait. For timed wait we schedule a delayed unblock, so the carrier is not pinned. Uses
+   *  Blocked/TimedBlocked states so unblock() is the single entry point for notify.
+   */
+  private[java] def blockForMonitorWait(
+      nanos: scala.Long,
+      setResume: MonitorWaitSupport.SetResume
+  ): Unit = {
+    state = if (nanos == 0) State.Blocked else State.TimedBlocked
+    Continuations.suspend[Unit] { resume =>
+      val generation = publishResume(resume)
+      setResume(resume, generation)
+      currentWaitResume = resume
+      currentWaitResumeGeneration = generation
+      if (nanos == 0) {
+        // Do not park the carrier; notify will call unblock(resume).
+      } else {
+        scheduleTimeout(nanos, TimeUnit.NANOSECONDS, generation) {
+          // Timeout wakeup follows the same path as notify wakeup.
+          scheduleWithResume(resume, generation)
+        }
+      }
+    }(using currentBoundaryOrThrow("blockForMonitorWait"))
+    currentWaitResume = null
+    currentWaitResumeGeneration = 0L
+    state = State.Running
+  }
+
+  /** Set blockPermit, CAS Blocked/TimedBlocked/Blocking→Unblocked, submit. Single entry point for notify (Object.wait)
+   *  and for monitor exit (contended enter). Handles Blocking so "unblocked while blocking" (exit before we CAS to
+   *  Blocked) is still submitted.
+   */
+  private[java] def unblock(resume: () => Unit, generation: Long): Unit = {
+    if (!isActiveResume(resume, generation)) {
+      return
+    }
+    var s = state
+    var done = false
+    while (!done) {
+      if (s == State.Blocking || s == State.Blocked || s == State.TimedBlocked) {
+        if (compareAndSetState(s, State.Unblocked)) {
+          if (s == State.TimedBlocked) cancelTimeoutTask(generation)
+          getAndSetBlockPermit(true)
+          requestRun()
+          done = true
+        } else s = state
+      } else if (s == State.Unblocked) done = true
+      else done = true
+    }
+  }
+
+  /** Called by the monitor when notifying a VT (wait) or when a VT acquires after block (enter). Routes through
+   *  unblock() so the run loop consumes block permit, not park permit.
+   */
+  private[java] def scheduleWithResume(resume: () => Unit, generation: Long): Unit =
+    unblock(resume, generation)
+
+  /** Block for contended monitor enter: suspend so the carrier can run other VTs; monitor exit will call
+   *  scheduleWithResume to wake this thread.
+   */
+  private[java] def blockForMonitorEnter(setResume: MonitorWaitSupport.SetResume): Unit = {
+    // If a monitor exit signalled blockPermit (because resumeForEnter was null
+    // during the transient window), consume the permit and retry tryLock instead
+    // of suspending the continuation.
+    if (getAndSetBlockPermit(false)) return
+    state = State.Blocking
+    Continuations.suspend[Unit] { resume =>
+      val generation = publishResume(resume)
+      setResume(resume, generation)
+      compareAndSetState(State.Blocking, State.Blocked)
+    }(using currentBoundaryOrThrow("blockForMonitorEnter"))
+    state = State.Running
   }
 
   /** Set parking permit first, then schedule only if this VT is already in Parked/TimedParked. If unpark races with the
@@ -519,7 +629,8 @@ private[java] final class VirtualThread(
 
       if (!tryAcquireRunLoopToken()) {
         // Re-queue once if VT is runnable so we don't drop the resumption.
-        if (state == State.Unparked || (state == State.Yielded && resumeExecution != null)) {
+        if (state == State.Unparked || state == State.Unblocked
+            || (state == State.Yielded && resumeExecution != null)) {
           requestRun()
         }
         return
@@ -533,13 +644,14 @@ private[java] final class VirtualThread(
           val initialState = state
 
           initialState match {
-            case State.Started | State.Unparked | State.Yielded =>
+            case State.Started | State.Unparked | State.Yielded | State.Unblocked =>
               runCurrent = compareAndSetState(initialState, State.Running)
               if (runCurrent) {
                 if (initialState == State.Unparked) {
                   VirtualThread.this.cancelTimeoutTask(VirtualThread.this.activeResumeGeneration)
                   VirtualThread.this.setParkPermit(false) // consume park event
-                }
+                } else if (initialState == State.Unblocked)
+                  VirtualThread.this.setBlockPermit(false) // consume block event
               }
             case _ => ()
           }
@@ -594,7 +706,17 @@ private[java] final class VirtualThread(
                   didAfterYieldSubmit = true
                 }
               }
-              resubmitYield = (state == State.Yielded || state == State.Unparked) &&
+              // Block path: Blocked/TimedBlocked (wait/enter) + blockPermit.
+              if ((s == State.Blocked || s == State.TimedBlocked)
+                  && getAndSetBlockPermit(false)) {
+                if (!compareAndSetState(s, State.Unblocked))
+                  setBlockPermit(true)
+                else {
+                  requestRun(lazily = true)
+                  didAfterYieldSubmit = true
+                }
+              }
+              resubmitYield = (state == State.Yielded || state == State.Unparked || state == State.Unblocked) &&
                 (resumeExecution != null) && !didAfterYieldSubmit
               unmount()
             }
@@ -607,7 +729,8 @@ private[java] final class VirtualThread(
 
           // Defensive requeue: if a continuation is available but dispatch state
           // got desynchronized, ensure we keep scheduling progress.
-          if ((state == State.Yielded || state == State.Unparked) && resumeExecution != null) {
+          if ((state == State.Yielded || state == State.Unparked || state == State.Unblocked)
+              && resumeExecution != null) {
             requestRun()
           }
 
@@ -689,11 +812,13 @@ private[java] final class VirtualThread(
         if (carrier != null) carrier.threadState()
         else Thread.State.RUNNABLE
       }
-    case State.Yielding                  => Thread.State.RUNNABLE
+    case State.Yielding | State.Blocking                  => Thread.State.RUNNABLE
     case State.Parking | State.TimedParking               => Thread.State.RUNNABLE
     case State.Parked | State.Pinned                      => Thread.State.WAITING
     case State.TimedParked | State.TimedPinned            => Thread.State.TIMED_WAITING
-    case State.Unparked | State.Yielded => Thread.State.RUNNABLE
+    case State.Blocked                                    => Thread.State.WAITING
+    case State.TimedBlocked                               => Thread.State.TIMED_WAITING
+    case State.Unparked | State.Yielded | State.Unblocked => Thread.State.RUNNABLE
     case State.Terminated                                 => Thread.State.TERMINATED
   }
   override def alive(): scala.Boolean = state match {
@@ -743,6 +868,45 @@ object VirtualThread {
     final val RunningQueued = 3
   }
 
+  @volatile private var monitorWaitRegistered = false
+
+  /** Register VT-specific monitor wait so Object.wait() does not consume LockSupport permit. */
+  private def registerMonitorWaitSupport(): Unit = {
+    if (!monitorWaitRegistered) {
+      monitorWaitRegistered = true
+      MonitorWaitSupport.blockForMonitorWait = (thread, nanos, setResume) =>
+        thread match {
+          case vt: VirtualThread => vt.blockForMonitorWait(nanos, setResume)
+          case _                 =>
+            if (nanos == 0) LockSupport.park()
+            else LockSupport.parkNanos(nanos)
+        }
+      MonitorWaitSupport.blockForMonitorEnter = (thread, setResume) =>
+        thread match {
+          case vt: VirtualThread => vt.blockForMonitorEnter(setResume)
+          case _                 => ()
+        }
+      MonitorWaitSupport.scheduleWithResume = (thread, resume, generation) =>
+        thread match {
+          case vt: VirtualThread => vt.scheduleWithResume(resume, generation)
+          case _                 => LockSupport.unpark(thread)
+        }
+      MonitorWaitSupport.getCarrierForUnpark = thread =>
+        thread match {
+          case vt: VirtualThread =>
+            val c = vt.carrierThread
+            if (c != null) c else thread
+          case _ => thread
+        }
+      MonitorWaitSupport.usesContResume = _.isVirtual()
+      MonitorWaitSupport.signalBlockPermit = thread =>
+        thread match {
+          case vt: VirtualThread => vt.setBlockPermit(true)
+          case _                 => ()
+        }
+    }
+  }
+
   type State = Int
   object State {
     final val New = 0
@@ -762,6 +926,12 @@ object VirtualThread {
     // Thread.yield
     final val Yielding = 11 // Thread.yield
     final val Yielded = 12 // unmounted but runnable
+
+    // Monitor block (Object.wait / contended monitor enter)
+    final val Blocking = 13 // about to suspend for wait/enter
+    final val Blocked = 14 // in Object.wait() or blocked on monitor enter
+    final val TimedBlocked = 15
+    final val Unblocked = 16 // unblocked, runnable (notify / monitor exit)
 
     final val Terminated = 99 // final state
   }

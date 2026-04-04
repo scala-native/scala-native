@@ -154,7 +154,6 @@ object NativeThread {
 
   @alwaysinline def currentThread: Thread = TLS.currentThread
   @alwaysinline def setCurrentThread(thread: Thread): Unit = {
-    val current = currentThread
     TLS.assignCurrentThread(thread, currentNativeThread)
   }
   @alwaysinline def currentNativeThread: NativeThread = TLS.currentNativeThread
