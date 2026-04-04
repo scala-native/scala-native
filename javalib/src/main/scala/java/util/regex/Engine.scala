@@ -40,6 +40,8 @@ private[regex] abstract class Engine {
 
   def compile(pattern: String, flags: String): RegExp
 
+  def duplicate(regexp: RegExp): RegExp
+
   def validateScriptName(scriptName: String): Boolean
 
   def getLastIndex(regexp: RegExp): Int

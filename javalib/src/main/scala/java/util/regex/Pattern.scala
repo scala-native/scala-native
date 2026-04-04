@@ -37,26 +37,41 @@ final class Pattern private[regex] (
     jsFlags + (if (sticky && supportsSticky) "gy" else "g")
 
   /** The RegExp that is used for `Matcher.find()`. */
-  private val jsRegExpForFind: engine.RegExp =
+  private val jsRegExpForFindPrototype: engine.RegExp =
     engine.compile(jsPattern, jsFlagsForFind)
 
   /** RegExp used by `Matcher.matches()`. */
-  private val jsRegExpForMatches: engine.RegExp =
+  private val jsRegExpForMatchesPrototype: engine.RegExp =
     engine.compile(wrapJSPatternForMatches(jsPattern), jsFlags)
 
-  private[regex] def execMatches(input: String): engine.ExecResult =
-    engine.exec(jsRegExpForMatches, input)
+  private[regex] def newExecMatchesRegExp(): engine.RegExp =
+    engine.duplicate(jsRegExpForMatchesPrototype)
+
+  private[regex] def newExecFindRegExp(): engine.RegExp =
+    engine.duplicate(jsRegExpForFindPrototype)
+
+  private[regex] def execMatches(
+      input: String,
+      regexp: engine.RegExp
+  ): engine.ExecResult =
+    engine.exec(regexp, input)
 
   @inline // to stack-allocate the tuple
-  private[regex] def execFind(input: String, start: Int): (engine.ExecResult, Int) = {
-    val mtch = execFindInternal(input, start)
-    val end = engine.getLastIndex(jsRegExpForFind)
+  private[regex] def execFind(
+      input: String,
+      start: Int,
+      regexp: engine.RegExp
+  ): (engine.ExecResult, Int) = {
+    val mtch = execFindInternal(input, start, regexp)
+    val end = engine.getLastIndex(regexp)
     (mtch, end)
   }
 
-  private def execFindInternal(input: String, start: Int): engine.ExecResult = {
-    val regexp = jsRegExpForFind
-
+  private def execFindInternal(
+      input: String,
+      start: Int,
+      regexp: engine.RegExp
+  ): engine.ExecResult = {
     if (!supportsSticky && sticky) {
       engine.setLastIndex(regexp, start)
       val mtch = engine.exec(regexp, input)

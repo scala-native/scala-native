@@ -26,6 +26,9 @@ final class Matcher private[regex] (
   import Matcher._
   import Engine.engine
 
+  private var regexpForFind = pattern().newExecFindRegExp()
+  private var regexpForMatches = pattern().newExecMatchesRegExp()
+
   def pattern(): Pattern = pattern0
 
   private var regionStart0 = 0
@@ -44,10 +47,15 @@ final class Matcher private[regex] (
 
   private var appendPos: Int = 0
 
+  private def resetRegexps(): Unit = {
+    regexpForFind = pattern().newExecFindRegExp()
+    regexpForMatches = pattern().newExecMatchesRegExp()
+  }
+
   def matches(): Boolean = {
     resetMatch()
 
-    lastMatch = pattern().execMatches(inputstr)
+    lastMatch = pattern().execMatches(inputstr, regexpForMatches)
     lastMatchIsForMatches = true
     if (lastMatch != null)
       groupsClearedByUsePattern = false
@@ -65,7 +73,7 @@ final class Matcher private[regex] (
   }
 
   def find(): Boolean = {
-    val (mtch, end) = pattern().execFind(inputstr, position)
+    val (mtch, end) = pattern().execFind(inputstr, position, regexpForFind)
     position =
       if (mtch != null) (if (end == engine.getIndex(mtch)) end + 1 else end)
       else inputstr.length() + 1
@@ -215,6 +223,7 @@ final class Matcher private[regex] (
     if (pattern == null)
       throw new IllegalArgumentException("Pattern cannot be null")
     pattern0 = pattern
+    resetRegexps()
     groupsClearedByUsePattern = true
     this
   }

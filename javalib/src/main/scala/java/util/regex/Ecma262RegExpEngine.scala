@@ -90,6 +90,10 @@ private[regex] object Ecma262RegExpEngine extends Engine {
   }
 
   @inline
+  def duplicate(regexp: RegExp): RegExp =
+    regexp.duplicate()
+
+  @inline
   def validateScriptName(scriptName: String): Boolean =
     UnicodeProperties.validateScriptName(scriptName)
 
@@ -199,6 +203,9 @@ private[regex] object Ecma262RegExpEngine extends Engine {
       new Captures(capturingGroupsCount + 1)
 
     var lastIndex: Int = 0
+
+    def duplicate(): Ecma262RegExp =
+      new Ecma262RegExp(root, groupNodeMap, global, sticky, searchPrefilter)
 
     def exec(input: String): Ecma262ExecResult = {
       // https://tc39.es/ecma262/multipage/text-processing.html#sec-regexpbuiltinexec
