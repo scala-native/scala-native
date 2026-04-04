@@ -15,15 +15,15 @@ import scala.scalanative.runtime.javalib.Proxy
 import scala.scalanative.runtime.{Continuations, Intrinsics, NativeThread, VirtualThreadScheduler, fromRawPtr}
 
 /** Loom-style virtual thread: a `Runnable` fiber that mounts on a platform carrier, suspends via
-  * `Continuations.suspend`, and resumes through `VirtualThreadScheduler`.
-  *
-  * Two wakeup channels are kept distinct from `LockSupport` parking:
-  *  - `parkPermit` / `Unparked` — async unpark and timed `park` (`LockSupport` semantics).
-  *  - `blockPermit` / `Unblocked` — `Object.wait` / notify and contended monitor enter (`ObjectMonitor`).
-  *
-  * Field updates that participate in races use libc atomics (`AtomicInt` / `AtomicBool`) on the corresponding
-  * `volatile` fields. See companion `State` for the `state` bit assignments.
-  */
+ *  `Continuations.suspend`, and resumes through `VirtualThreadScheduler`.
+ *
+ *  Two wakeup channels are kept distinct from `LockSupport` parking:
+ *    - `parkPermit` / `Unparked` — async unpark and timed `park` (`LockSupport` semantics).
+ *    - `blockPermit` / `Unblocked` — `Object.wait` / notify and contended monitor enter (`ObjectMonitor`).
+ *
+ *  Field updates that participate in races use libc atomics (`AtomicInt` / `AtomicBool`) on the corresponding
+ *  `volatile` fields. See companion `State` for the `state` bit assignments.
+ */
 private[java] final class VirtualThread(
     name: String,
     characteristics: Int,
@@ -38,9 +38,9 @@ private[java] final class VirtualThread(
   // Construction & scheduler inheritance
   // ---------------------------------------------------------------------------
 
-  /** Scheduler shared with the parent VT when this VT is created from another VT; otherwise the default from
-    * `Proxy` / `DefaultVirtualThreadScheduler`.
-    */
+  /** Scheduler shared with the parent VT when this VT is created from another VT; otherwise the default from `Proxy` /
+   *  `DefaultVirtualThreadScheduler`.
+   */
   val scheduler: VirtualThreadScheduler = Thread.currentThread() match {
     case vt: VirtualThread => vt.scheduler
     case _                 =>
@@ -287,15 +287,15 @@ private[java] final class VirtualThread(
   }
 
   /** Transitions out of monitor wait/enter suspension: CAS to `Unblocked`, arms `blockPermit`, and queues the run loop.
-    *
-    * Single entry for `Object.notify` / timed wait expiry and for waking a contender after monitor exit. Handles
-    * `Blocking` so an exit that happens before the VT reaches `Blocked` still schedules a run.
-    *
-    * @param resume
-    *   continuation published by `publishResume` for this wait/enter
-    * @param generation
-    *   generation paired with `resume` (stale wakeups are ignored)
-    */
+   *
+   *  Single entry for `Object.notify` / timed wait expiry and for waking a contender after monitor exit. Handles
+   *  `Blocking` so an exit that happens before the VT reaches `Blocked` still schedules a run.
+   *
+   *  @param resume
+   *    continuation published by `publishResume` for this wait/enter
+   *  @param generation
+   *    generation paired with `resume` (stale wakeups are ignored)
+   */
   private[java] def unblock(resume: () => Unit, generation: Long): Unit = {
     if (!isActiveResume(resume, generation)) {
       return
@@ -359,9 +359,11 @@ private[java] final class VirtualThread(
     }
     value
   }
+
   /** If invoked from another thread: sets interrupt flag, interrupts the carrier, wakes `Object.wait` if applicable,
-    * and `unpark`s. If invoked on self: sets flag, clears carrier interrupt wiring for parking, and posts a park permit.
-    */
+   *  and `unpark`s. If invoked on self: sets flag, clears carrier interrupt wiring for parking, and posts a park
+   *  permit.
+   */
   override def interrupt(): Unit = {
     if (Thread.currentThread() ne this) {
       interruptLock.synchronized {
@@ -400,8 +402,8 @@ private[java] final class VirtualThread(
   @volatile private var pinnedForSubmit: scala.Boolean = false
 
   /** Timed `LockSupport.parkNanos` for this VT: may yield the continuation or pin the native carrier when already
-    * inside scheduler submission or nested suspension.
-    */
+   *  inside scheduler submission or nested suspension.
+   */
   private[java] def parkNanos(nanos: scala.Long): Unit = {
     if (Thread.currentThread() ne this)
       throw new IllegalThreadStateException("parkNanos must be called on the current thread")
@@ -524,8 +526,9 @@ private[java] final class VirtualThread(
       }
     }
   }
+
   /** Wakes a parked VT: sets the park permit and either schedules the continuation or unparks the carrier when pinned.
-    */
+   */
   private[java] def unpark(): Unit = unpark(false)
 
   /** `Thread.sleep` nanosecond path: interruptible loop over [[parkNanos]], or `tryYield` for `nanos == 0`. */
@@ -558,8 +561,8 @@ private[java] final class VirtualThread(
     else scheduler.execute(executeContinuation)
 
   /** Ensures the run loop is queued: coordinates `runDispatchState`, pins during self-submit, and picks lazy vs eager
-    * `execute` when permitted.
-    */
+   *  `execute` when permitted.
+   */
   private def requestRun(lazily: scala.Boolean = false): Unit = {
     import VirtualThread.DispatchState
     var done = false
@@ -600,8 +603,8 @@ private[java] final class VirtualThread(
   // ---------------------------------------------------------------------------
 
   /** Binds this VT as `NativeThread.currentThread`, copies interrupt visibility to the carrier, and records
-    * `carrierThread`.
-    */
+   *  `carrierThread`.
+   */
   private def mount(): Unit = {
     val platformThread = Thread.currentPlatformThread
     if (platformThread == null || platformThread.isVirtual()) {
@@ -621,8 +624,8 @@ private[java] final class VirtualThread(
   }
 
   /** Restores the carrier as `NativeThread.currentThread`, clears `carrierThread` under `interruptLock`, and clears the
-    * carrier interrupt bit we used for proxying this VT’s interrupt.
-    */
+   *  carrier interrupt bit we used for proxying this VT’s interrupt.
+   */
   private def unmount(): Unit = {
     if (this.state == State.Running) {
       throw new IllegalStateException("Cannot unmount virtual thread while Running")
@@ -694,8 +697,8 @@ private[java] final class VirtualThread(
   }
 
   /** If `VirtualThreadContinuation.run` aborts without finishing the inner `try`, re-queues or resets dispatch state so
-    * the VT does not strand `RunningQueued` / `Running`.
-    */
+   *  the VT does not strand `RunningQueued` / `Running`.
+   */
   private def recoverRunLoopOnUnexpectedExit(): Unit = {
     import VirtualThread.DispatchState
     var done = false
@@ -723,8 +726,8 @@ private[java] final class VirtualThread(
   private def executeContinuation: Runnable = new VirtualThreadContinuation()
 
   /** `Runnable` submitted to `VirtualThreadScheduler`: owns the outer run loop, `mount`/`unmount`, and either starts
-    * the root `task` inside a delimcc boundary or resumes a published continuation.
-    */
+   *  the root `task` inside a delimcc boundary or resumes a published continuation.
+   */
   private class VirtualThreadContinuation extends Runnable {
     val vThread = VirtualThread.this
 
@@ -877,7 +880,8 @@ private[java] final class VirtualThread(
   // Termination & join
   // ---------------------------------------------------------------------------
 
-  /** Marks `Terminated` and signals `termination` exactly once (if present) when the `task` finishes or fails fatally. */
+  /** Marks `Terminated` and signals `termination` exactly once (if present) when the `task` finishes or fails fatally.
+   */
   private def afterDone(): Unit = {
     state = State.Terminated
     // Registry tracks only platform threads; VTs were never added
@@ -998,9 +1002,9 @@ object VirtualThread {
     final val RunningQueued: DispatchState = 3
   }
 
-  /** Fiber lifecycle and suspension flavour: parking vs monitor block vs yield vs terminal (encoded as `Int` for atomics
-    * and `@switch`-friendly comparisons).
-    */
+  /** Fiber lifecycle and suspension flavour: parking vs monitor block vs yield vs terminal (encoded as `Int` for
+   *  atomics and `@switch`-friendly comparisons).
+   */
   opaque type State <: Int = Int
   private object State {
     final val New: State = 0
