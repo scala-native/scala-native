@@ -1,6 +1,7 @@
 #if defined(SCALANATIVE_USING_CPP_EXCEPTIONS)
 
 #include <exception>
+#include <mutex>
 
 #if defined(__SCALANATIVE_DELIMCC)
 #include "delimcc.h"
@@ -48,6 +49,7 @@ extern "C" {
  * resumer instead of terminating.
  */
 static std::terminate_handler default_terminate_handler = NULL;
+static std::once_flag continuation_terminate_handler_once;
 
 static void continuation_terminate_handler() {
     ContinuationExceptionHandler ceh =
@@ -77,19 +79,12 @@ static void continuation_terminate_handler() {
     std::abort();
 }
 
-/* Install our terminate handler once when this TU is loaded;
- * no per-resume cost. */
-namespace {
-struct InstallContinuationTerminateHandler {
-    InstallContinuationTerminateHandler() {
-        printf("Installing continuation terminate handler\n");
+void scalanative_continuation_exception_terminate_handler_install(void) {
+    std::call_once(continuation_terminate_handler_once, []() {
         default_terminate_handler =
             std::set_terminate(continuation_terminate_handler);
-    }
-};
-static InstallContinuationTerminateHandler
-    install_continuation_terminate_handler;
-} // namespace
+    });
+}
 #endif
 
 void scalanative_throw(void *obj) { throw scalanative::ExceptionWrapper(obj); }
