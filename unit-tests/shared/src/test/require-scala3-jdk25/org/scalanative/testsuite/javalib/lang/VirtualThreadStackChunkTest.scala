@@ -10,7 +10,7 @@ import scala.scalanative.junit.utils.AssumesHelper
 
 object VirtualThreadStackChunkTest {
   @BeforeClass def checkRuntime(): Unit =
-    AssumesHelper.assumeMultithreadingIsEnabled()
+    AssumesHelper.assumeSupportsVirtualThreads()
 }
 
 class VirtualThreadStackChunkTest {

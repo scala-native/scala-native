@@ -6,41 +6,41 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
 import org.junit.Assert._
 import org.junit.Test
 
-import scala.scalanative.meta.LinktimeInfo.isContinuationsSupported
+import scala.scalanative.meta.LinktimeInfo.isVirtualThreadsSupported
 
 class ContinuationsVirtualThreadTest:
   @Test def vtMonitorContention_5x50(): Unit =
-    if isContinuationsSupported then {
+    if isVirtualThreadsSupported then {
       vtMonitorContentionImpl(5, 50)
     }
 
   @Test def vtMonitorContention_10x100(): Unit =
-    if isContinuationsSupported then {
+    if isVirtualThreadsSupported then {
       vtMonitorContentionImpl(10, 100)
     }
 
   @Test def vtMonitorContention_15x100(): Unit =
-    if isContinuationsSupported then {
+    if isVirtualThreadsSupported then {
       vtMonitorContentionImpl(15, 100)
     }
 
   @Test def vtMonitorContention_15x100_run2(): Unit =
-    if isContinuationsSupported then {
+    if isVirtualThreadsSupported then {
       vtMonitorContentionImpl(15, 100)
     }
 
   @Test def vtMonitorContention_15x100_run3(): Unit =
-    if isContinuationsSupported then {
+    if isVirtualThreadsSupported then {
       vtMonitorContentionImpl(15, 100)
     }
 
   @Test def vtMonitorContention_20x200(): Unit =
-    if isContinuationsSupported then {
+    if isVirtualThreadsSupported then {
       vtMonitorContentionImpl(20, 200)
     }
 
   @Test def vtDeepStackInMonitor(): Unit =
-    if isContinuationsSupported then {
+    if isVirtualThreadsSupported then {
       val depth = 100
       val threads = 8
       val iterations = 50
@@ -70,7 +70,7 @@ class ContinuationsVirtualThreadTest:
     }
 
   @Test def vtMixedContention(): Unit =
-    if isContinuationsSupported then {
+    if isVirtualThreadsSupported then {
       val numVirtual = 10
       val numPlatform = 5
       val iterations = 200
@@ -100,7 +100,7 @@ class ContinuationsVirtualThreadTest:
     }
 
   @Test def vtRepeatedLockUnlock(): Unit =
-    if isContinuationsSupported then {
+    if isVirtualThreadsSupported then {
       val lock = new Object
       val iterations = 2000
       val contenders = 4

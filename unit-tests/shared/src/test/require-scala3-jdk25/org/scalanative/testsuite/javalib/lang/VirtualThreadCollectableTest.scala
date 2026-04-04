@@ -15,7 +15,7 @@ import scala.scalanative.junit.utils.AssumesHelper
 
 object VirtualThreadCollectableTest {
   @BeforeClass def checkRuntime(): Unit = {
-    AssumesHelper.assumeMultithreadingIsEnabled()
+    AssumesHelper.assumeSupportsVirtualThreads()
     assumeTrue(
       "WeakReferences work only on Commix and Immix GC",
       Platform.isWeakReferenceSupported

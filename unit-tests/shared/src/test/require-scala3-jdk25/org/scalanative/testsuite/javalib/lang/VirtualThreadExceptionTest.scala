@@ -12,7 +12,7 @@ import scala.scalanative.junit.utils.AssumesHelper
 
 object VirtualThreadExceptionTest {
   @BeforeClass def checkRuntime(): Unit =
-    AssumesHelper.assumeMultithreadingIsEnabled()
+    AssumesHelper.assumeSupportsVirtualThreads()
 
   class TestException extends RuntimeException("test")
   class TestError extends Error("test error")

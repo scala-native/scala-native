@@ -10,7 +10,7 @@ import scala.scalanative.junit.utils.AssumesHelper
 
 object VirtualThreadLifecycleTest {
   @BeforeClass def checkRuntime(): Unit =
-    AssumesHelper.assumeMultithreadingIsEnabled()
+    AssumesHelper.assumeSupportsVirtualThreads()
 }
 
 class VirtualThreadLifecycleTest {

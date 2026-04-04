@@ -14,7 +14,7 @@ import scala.scalanative.junit.utils.AssumesHelper
 
 object VirtualThreadEdgeCaseTest {
   @BeforeClass def checkRuntime(): Unit =
-    AssumesHelper.assumeMultithreadingIsEnabled()
+    AssumesHelper.assumeSupportsVirtualThreads()
 }
 
 class VirtualThreadEdgeCaseTest {

@@ -11,7 +11,7 @@ import scala.scalanative.junit.utils.AssumesHelper
 
 object ThreadBuilderTestOnJDK19 {
   @BeforeClass def checkRuntime(): Unit = {
-    AssumesHelper.assumeMultithreadingIsEnabled()
+    AssumesHelper.assumeSupportsVirtualThreads()
   }
 
   val Local = new ThreadLocal[AnyRef]
