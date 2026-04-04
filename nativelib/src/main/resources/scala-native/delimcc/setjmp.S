@@ -272,11 +272,12 @@ See:
 notes: 
 - According to the ARM ABI specification, only the bottom 64 bits of the floating 
   point registers need to be preserved (sec. 5.1.2 of aapcs64)
-- The x18 register is the "platform register" and may be temporary or not. For safety
-  we always save it.
+- On Apple ARM64, x18 is reserved by the platform and must not be carried
+  across cross-thread longjmp. We keep its slot in the jump buffer reserved
+  for layout compatibility, but do not save or restore it there.
 
 jump_buf layout:
-   0: x18  
+   0: x18 (reserved on Apple)
    8: x19
   16: x20
   24: x21
@@ -315,7 +316,12 @@ jump_buf layout:
 .balign 4
 /* called with x0: &jmp_buf */
 _lh_setjmp:                 
+#if defined(__APPLE__)
+    str   xzr,      [x0], #8
+    str   x19,      [x0], #8
+#else
     stp   x18, x19, [x0], #16
+#endif
     stp   x20, x21, [x0], #16
     stp   x22, x23, [x0], #16
     stp   x24, x25, [x0], #16
@@ -339,7 +345,12 @@ _lh_setjmp:
 .balign 4
 /* called with x0: &jmp_buf, x1: value to return */
 _lh_longjmp:
+#if defined(__APPLE__)
+    add   x0, x0, #8
+    ldr   x19,      [x0], #8
+#else
     ldp   x18, x19, [x0], #16
+#endif
     ldp   x20, x21, [x0], #16
     ldp   x22, x23, [x0], #16
     ldp   x24, x25, [x0], #16
