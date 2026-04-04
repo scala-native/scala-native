@@ -228,13 +228,13 @@ private[monitor] class ObjectMonitor() {
       successorThread = wakedThread
       releaseOwnerThread()
       var resume = node.resumeForWait
-      if (resume eq VirtualThread.RESUME_SENTINEL) {
+      if (resume eq RESUME_SENTINEL) {
         // VT suspend callback is about to publish the real resume.
         // Spin until it does, or until the VT clears the sentinel
         // (meaning it skipped blockForMonitorWait because isNotified was true).
         while ({
           resume = node.resumeForWait
-          resume eq VirtualThread.RESUME_SENTINEL
+          resume eq RESUME_SENTINEL
         }) NativeThread.onSpinWait()
       }
       if (resume != null) {
@@ -259,12 +259,10 @@ private[monitor] class ObjectMonitor() {
           }
         } else {
           val threadToUnpark = wakedThread match {
-            case vt: VirtualThread => vt.carrierForUnpark
+            case vt: VirtualThread => vt.carrierThread
             case _                 => wakedThread
           }
-          LockSupport.unpark(
-            if (threadToUnpark != null) threadToUnpark else wakedThread
-          )
+          LockSupport.unpark(threadToUnpark)
         }
       }
     }
@@ -329,7 +327,7 @@ private[monitor] class ObjectMonitor() {
     // sentinel and spin-wait for the real continuation resume instead of
     // falling back to LockSupport.unpark which would consume the parking permit.
     if (currentThread.isInstanceOf[VirtualThread]) {
-      node.resumeForWait = VirtualThread.RESUME_SENTINEL
+      node.resumeForWait = RESUME_SENTINEL
       node.resumeForWaitGeneration = 0L
     }
     exitMonitor(currentThread)
@@ -354,20 +352,12 @@ private[monitor] class ObjectMonitor() {
           else LockSupport.parkNanos(nanos)
       }
     }
-    waitDebug(
-      currentThread,
-      s"resumed nanos=$nanos nodeState=${node.state} notified=${node.isNotified} owner=$ownerThread successor=$successorThread"
-    )
     // Clear sentinel if VT was notified before entering blockForMonitorWait
-    if (node.resumeForWait eq VirtualThread.RESUME_SENTINEL) {
+    if (node.resumeForWait eq RESUME_SENTINEL) {
       node.resumeForWait = null
       node.resumeForWaitGeneration = 0L
     }
     if (node.state == WaiterNode.Waiting) {
-      waitDebug(
-        currentThread,
-        s"before-remove nanos=$nanos nodeState=${node.state} waitQueue=$waitQueue"
-      )
       acquireWaitList()
       // Skip unlinking node if was moved from waitQueue to entry list by notify
       try
@@ -381,10 +371,6 @@ private[monitor] class ObjectMonitor() {
           node.state = WaiterNode.Active
         }
       finally releaseWaitList()
-      waitDebug(
-        currentThread,
-        s"after-remove nanos=$nanos nodeState=${node.state} waitQueue=$waitQueue"
-      )
     }
 
     atomic_thread_fence(memory_order_acquire)
@@ -399,24 +385,12 @@ private[monitor] class ObjectMonitor() {
     nativeThread.state = NativeThread.State.WaitingOnMonitorEnter
     (node.state: @switch) match {
       case WaiterNode.Active =>
-        waitDebug(
-          currentThread,
-          s"before-enter-active nanos=$nanos owner=$ownerThread successor=$successorThread"
-        )
         enter(currentThread)
       case WaiterNode.InEnterQueue =>
-        waitDebug(
-          currentThread,
-          s"before-enter-queue nanos=$nanos owner=$ownerThread successor=$successorThread"
-        )
         enterMonitor(currentThread, node)
       case _ =>
         throw new IllegalMonitorStateException("internal state of thread")
     }
-    waitDebug(
-      currentThread,
-      s"after-enter nanos=$nanos owner=$ownerThread successor=$successorThread"
-    )
     nativeThread.state = NativeThread.State.Running
     this.recursion = savedRecursion
     // assert(ownerThread == currentThread, "reenter")
@@ -516,10 +490,10 @@ private[monitor] class ObjectMonitor() {
 
   @alwaysinline private def wakePlatformWaiter(thread: Thread): Unit = {
     val threadToUnpark = thread match {
-      case vt: VirtualThread => vt.carrierForUnpark
+      case vt: VirtualThread => vt.carrierThread
       case _                 => thread
     }
-    LockSupport.unpark(if (threadToUnpark != null) threadToUnpark else thread)
+    LockSupport.unpark(threadToUnpark)
   }
 
   @alwaysinline private def casOwnerThread(
@@ -660,15 +634,8 @@ private[monitor] class ObjectMonitor() {
 }
 
 private object ObjectMonitor {
-  private val waitDebugEnabled = System.getenv("SN_VT_WAIT_DEBUG") != null
-
-  private def waitDebug(thread: Thread, message: => String): Unit =
-    if (waitDebugEnabled) {
-      System.err.println(
-        s"[MONITOR-WAIT threadId=${thread.getId()} name=${thread.getName()}] $message"
-      )
-    }
-
+    /** Sentinel on WaiterNode.resumeForWait so ObjectMonitor spin-waits for real resume. */
+  val RESUME_SENTINEL: () => Unit = () => ()
   object WaiterNode {
 
     /** Current state and expected placement of the node in the queues */
