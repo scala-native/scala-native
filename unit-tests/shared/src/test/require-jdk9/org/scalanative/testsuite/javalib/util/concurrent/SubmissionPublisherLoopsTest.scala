@@ -78,7 +78,7 @@ object SubmissionPublisherLoops1Test {
     phaser.arriveAndAwaitAdvance()
     val elapsed = System.nanoTime() - startTime
     val secs = elapsed.toDouble / NPS
-    System.out.printf("\tTime: %7.3f\n", secs)
+    System.out.println(f"\tTime: ${secs}%7.3f}\n")
   }
 }
 
@@ -153,7 +153,7 @@ object SubmissionPublisherLoops2Test {
     phaser.arriveAndAwaitAdvance()
     val elapsed = System.nanoTime() - startTime
     val secs = elapsed.toDouble / NPS
-    System.out.printf("\tTime: %7.3f\n", secs)
+    System.out.println(f"\tTime: ${secs}%7.3f\n")
   }
 }
 
@@ -190,8 +190,8 @@ object SubmissionPublisherLoops3Test {
     val elapsed = System.nanoTime() - startTime
     val secs = elapsed.toDouble / (1000L * 1000 * 1000)
     val ips = nitems / secs
-    System.out.printf("Time: %7.2f", secs)
-    System.out.printf(" items per sec: %14.2f\n", ips)
+    System.out.println(f"Time: ${secs}%7.2f")
+    System.out.println(f" items per sec: ${ips}%14.2f\n")
     System.out.println(ForkJoinPool.commonPool())
   }
 
@@ -275,8 +275,8 @@ object SubmissionPublisherLoops4Test {
     val elapsed = System.nanoTime() - startTime
     val secs = elapsed.toDouble / (1000L * 1000 * 1000)
     val ips = NEXTS / secs
-    System.out.printf("Time: %7.2f", secs)
-    System.out.printf(" items per sec: %14.2f\n", ips)
+    System.out.println(f"Time: ${secs}%7.2f")
+    System.out.println(f" items per sec: ${ips}%14.2f\n")
     System.out.println(ForkJoinPool.commonPool())
   }
 
