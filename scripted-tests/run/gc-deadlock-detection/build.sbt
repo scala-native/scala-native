@@ -74,14 +74,20 @@ def runScenario(binary: java.io.File, gc: scala.scalanative.build.GC)(
 /** Test: GC works correctly with @blocking annotation (baseline) */
 lazy val testCorrect = taskKey[Unit]("Test correct @blocking behavior")
 testCorrect := runScenario(
-  binary = (Compile / nativeLink).value,
+  binary = {
+    implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
+    (Compile / nativeLink).value.toFile
+  },
   gc = (Compile / nativeConfig).value.gc
 )("correct", timeoutSeconds = 10)
 
 /** Test: GC timeout detection when thread blocks without @blocking */
 lazy val testDeadlock = taskKey[Unit]("Test deadlock detection with timeout")
 testDeadlock := runScenario(
-  binary = (Compile / nativeLink).value,
+  binary = {
+    implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
+    (Compile / nativeLink).value.toFile
+  },
   gc = (Compile / nativeConfig).value.gc
 )("deadlock", timeoutSeconds = 20, expectNonZeroExit = true)
 
@@ -92,7 +98,10 @@ testPause := {
     System.err.println("Skipping pause test on Windows - pause() is POSIX-only")
   else
     runScenario(
-      binary = (Compile / nativeLink).value,
+      binary = {
+        implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
+        (Compile / nativeLink).value.toFile
+      },
       gc = (Compile / nativeConfig).value.gc
     )("pause", timeoutSeconds = 20, expectNonZeroExit = true)
 }
@@ -109,7 +118,10 @@ testZombie := {
   else
     // Zombie test may abort or complete depending on timing
     runScenario(
-      binary = (Compile / nativeLink).value,
+      binary = {
+        implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
+        (Compile / nativeLink).value.toFile
+      },
       gc = (Compile / nativeConfig).value.gc
     )("zombie", timeoutSeconds = 20, expectNonZeroExit = true)
 }
@@ -117,7 +129,10 @@ testZombie := {
 /** Test: GC handles multiple stuck threads */
 lazy val testAllocator = taskKey[Unit]("Test multiple blocking threads")
 testAllocator := runScenario(
-  binary = (Compile / nativeLink).value,
+  binary = {
+    implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
+    (Compile / nativeLink).value.toFile
+  },
   gc = (Compile / nativeConfig).value.gc
 )("allocator", timeoutSeconds = 20, expectNonZeroExit = true)
 

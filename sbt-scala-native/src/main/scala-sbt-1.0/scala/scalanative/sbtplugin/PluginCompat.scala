@@ -7,8 +7,18 @@ import xsbti.FileConverter
 
 private[scalanative] object PluginCompat {
   type FileRef = java.io.File
-  type Out = java.io.File
   type NioPath = java.nio.file.Path
+
+  def toNioPath(out: FileRef)(implicit conv: FileConverter): NioPath =
+    out.toPath()
+
+  def toFile(out: FileRef)(implicit conv: FileConverter): File =
+    out
+  def toFileRef(path: NioPath)(implicit conv: FileConverter): FileRef =
+    path.toFile()
+
+  def toFileRef(file: File)(implicit conv: FileConverter): FileRef =
+    file
 
   val sbtVersionBaseSettings = Seq[Setting[_]](
     Keys.crossVersion := ScalaNativeCrossVersion.binary,

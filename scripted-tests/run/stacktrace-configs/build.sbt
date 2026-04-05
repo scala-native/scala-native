@@ -17,6 +17,7 @@ lazy val runStackTraceTest =
   taskKey[Unit]("Run stack trace test with current configuration")
 runStackTraceTest := {
   import scala.sys.process._
+  implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
 
   val log = streams.value.log
   val config = nativeConfig.value
@@ -26,7 +27,7 @@ runStackTraceTest := {
   log.info(s"  sourceLevelDebugging: ${config.sourceLevelDebuggingConfig}")
 
   val bin = (Compile / nativeLink).value
-  val result = Process(bin.getAbsolutePath).!
+  val result = Process(bin.toFile.getAbsolutePath).!
 
   if (result != 0) {
     throw new RuntimeException(

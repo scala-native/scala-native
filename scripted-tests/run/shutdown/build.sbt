@@ -23,7 +23,8 @@ enablePlugins(ScalaNativePlugin)
 val runTestDeleteOnExit =
   taskKey[Unit]("run test checking if shutdown hook is exucuted")
 runTestDeleteOnExit := {
-  val cmd = (Compile / nativeLink).value.toString
+  implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
+  val cmd = (Compile / nativeLink).value.toFile.toString
   val file = Files.createTempFile("foo", "")
   assert(Files.exists(file))
   val proc = new ProcessBuilder(cmd, file.toString).start()
@@ -57,7 +58,8 @@ runTestThreadsJoin := {
       "Not testing multithreaded shutdown on Windows - it can deadlock during the GC, due to the lack of signals blocking"
     )
   else {
-    val cmd = (Compile / nativeLink).value.toString
+    implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
+    val cmd = (Compile / nativeLink).value.toFile.toString
     checkThreadsJoin(cmd, joinInMain = true)
     checkThreadsJoin(cmd, joinInMain = false)
   }
@@ -67,7 +69,8 @@ val runTestQueueWithThreads = taskKey[Unit](
   "test multithreaded shutdown in mixed environement using Queue and Threads scheduling"
 )
 runTestQueueWithThreads := {
-  val cmd = (Compile / nativeLink).value.toString
+  implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
+  val cmd = (Compile / nativeLink).value.toFile.toString
   val proc = new ProcessBuilder(cmd).start()
   assert(proc.waitFor(5, TimeUnit.SECONDS))
   assert(proc.exitValue == 0)

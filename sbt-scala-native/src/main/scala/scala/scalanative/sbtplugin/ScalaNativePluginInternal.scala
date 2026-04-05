@@ -180,6 +180,40 @@ object ScalaNativePluginInternal {
   private final val isGeneratingForIDE =
     sys.env.getOrElse("METALS_ENABLED", "false").toBoolean
 
+  private def nativeLinkCachedTask(
+      testConfig: Boolean,
+      moduleSuffix: String,
+      configureNativeConfig: NativeConfig => NativeConfig
+  ): Def.Initialize[Task[FileRef]] =
+    Def
+      .task {
+        implicit val conv: FileConverter = Keys.fileConverter.value
+        val sbtLogger = streams.value.log
+        val nativeLogger = sbtLogger.toLogger
+        val classpath = PluginCompat.toNioPaths(fullClasspath.value)
+        val userConfig = nativeConfig.value
+        val sourcesClassPath = resolveSourcesClassPath(
+          userConfig,
+          dependencyResolution.value,
+          externalDependencyClasspath.value,
+          sbtLogger
+        )
+
+        val artifactFile = nativeLinkImpl(
+          nativeConfig = configureNativeConfig(userConfig),
+          classpath = classpath,
+          sourcesClassPath = sourcesClassPath,
+          sbtLogger = sbtLogger,
+          nativeLogger = nativeLogger,
+          mainClass = selectMainClass.value,
+          baseDir = crossTarget.value.toPath(),
+          testConfig = testConfig,
+          moduleName = moduleName.value + moduleSuffix
+        )
+        toFileRef(artifactFile)
+      }
+      .tag(NativeTags.Link)
+
   /** Config settings are called for each project, for each Scala version, and
    *  for test and app configurations. The total with 3 Scala versions equals 6
    *  times per project.
@@ -192,90 +226,21 @@ object ScalaNativePluginInternal {
           s"-P:scalanative:positionRelativizationPaths:${sourceDirectories.value.map(_.getAbsolutePath()).mkString(";")}"
         )
     },
-    nativeLinkReleaseFull := Def
-      .task {
-        implicit val conv: FileConverter = Keys.fileConverter.value
-        val sbtLogger = streams.value.log
-        val nativeLogger = sbtLogger.toLogger
-        val classpath = PluginCompat.toNioPaths(fullClasspath.value)
-        val userConfig = nativeConfig.value
-        val sourcesClassPath = resolveSourcesClassPath(
-          userConfig,
-          dependencyResolution.value,
-          externalDependencyClasspath.value,
-          sbtLogger
-        )
-
-        nativeLinkImpl(
-          nativeConfig = userConfig.withMode(Mode.releaseFull),
-          classpath = classpath,
-          sourcesClassPath = sourcesClassPath,
-          sbtLogger = sbtLogger,
-          nativeLogger = nativeLogger,
-          mainClass = selectMainClass.value,
-          baseDir = crossTarget.value.toPath(),
-          testConfig = testConfig,
-          moduleName = moduleName.value + "-release-full"
-        )
-      }
-      .tag(NativeTags.Link)
-      .value,
-    nativeLinkReleaseFast := Def
-      .task {
-        implicit val conv: FileConverter = Keys.fileConverter.value
-        val sbtLogger = streams.value.log
-        val nativeLogger = sbtLogger.toLogger
-        val classpath = PluginCompat.toNioPaths(fullClasspath.value)
-        val userConfig = nativeConfig.value
-        val sourcesClassPath = resolveSourcesClassPath(
-          userConfig,
-          dependencyResolution.value,
-          externalDependencyClasspath.value,
-          sbtLogger
-        )
-
-        nativeLinkImpl(
-          nativeConfig = userConfig.withMode(Mode.releaseFast),
-          classpath = classpath,
-          sourcesClassPath = sourcesClassPath,
-          sbtLogger = sbtLogger,
-          nativeLogger = nativeLogger,
-          mainClass = selectMainClass.value,
-          baseDir = crossTarget.value.toPath(),
-          testConfig = testConfig,
-          moduleName = moduleName.value + "-release-fast"
-        )
-      }
-      .tag(NativeTags.Link)
-      .value,
-    nativeLink := Def
-      .task {
-        implicit val conv: FileConverter = Keys.fileConverter.value
-        val sbtLogger = streams.value.log
-        val nativeLogger = sbtLogger.toLogger
-        val classpath = PluginCompat.toNioPaths(fullClasspath.value)
-        val userConfig = nativeConfig.value
-        val sourcesClassPath = resolveSourcesClassPath(
-          userConfig,
-          dependencyResolution.value,
-          externalDependencyClasspath.value,
-          sbtLogger
-        )
-
-        nativeLinkImpl(
-          nativeConfig = userConfig,
-          classpath = classpath,
-          sourcesClassPath = sourcesClassPath,
-          sbtLogger = sbtLogger,
-          nativeLogger = nativeLogger,
-          mainClass = selectMainClass.value,
-          baseDir = crossTarget.value.toPath(),
-          testConfig = testConfig,
-          moduleName = moduleName.value
-        )
-      }
-      .tag(NativeTags.Link)
-      .value,
+    nativeLinkReleaseFull := nativeLinkCachedTask(
+      testConfig,
+      moduleSuffix = "-release-full",
+      configureNativeConfig = _.withMode(Mode.releaseFull)
+    ).value,
+    nativeLinkReleaseFast := nativeLinkCachedTask(
+      testConfig,
+      moduleSuffix = "-release-fast",
+      configureNativeConfig = _.withMode(Mode.releaseFast)
+    ).value,
+    nativeLink := nativeLinkCachedTask(
+      testConfig,
+      moduleSuffix = "",
+      configureNativeConfig = identity
+    ).value,
     console := console
       .dependsOn(Def.task {
         streams.value.log.warn(
@@ -285,9 +250,10 @@ object ScalaNativePluginInternal {
       })
       .value,
     run := {
+      implicit val conv: FileConverter = Keys.fileConverter.value
       val env = (run / envVars).value.toSeq
       val logger = streams.value.log
-      val binary = nativeLink.value.getAbsolutePath
+      val binary = toFile(nativeLink.value).getAbsolutePath
       val args = binary +: spaceDelimited("<arg>").parsed
 
       @volatile var pipeOutputThreads: List[Thread] = Nil
@@ -299,7 +265,7 @@ object ScalaNativePluginInternal {
           val proc =
             new ProcessBuilder(args: _*)
 
-          env.foreach((proc.environment.put _).tupled)
+          env.foreach { case (k, v) => proc.environment().put(k, v) }
 
           val process = proc.start()
 
@@ -350,6 +316,7 @@ object ScalaNativePluginInternal {
         mainClass := Some("scala.scalanative.testinterface.TestMain"),
         nativeConfig ~= { _.withBuildTarget(build.BuildTarget.application) },
         loadedTestFrameworks := Def.uncached {
+          implicit val conv: FileConverter = Keys.fileConverter.value
           val configName = configuration.value.name
 
           if (fork.value) {
@@ -362,7 +329,7 @@ object ScalaNativePluginInternal {
           val frameworkNames = frameworks.map(_.implClassNames.toList).toList
 
           val logger = streams.value.log.toLogger
-          val testBinary = nativeLink.value
+          val testBinary = toFile(nativeLink.value)
           val envVars = (test / Keys.envVars).value
 
           val config = TestAdapter

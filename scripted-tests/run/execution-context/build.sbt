@@ -21,9 +21,10 @@ val isMac = osName.startsWith("mac")
 lazy val testQueueExecutionContext = taskKey[Unit]("...")
 testQueueExecutionContext := {
   import scala.sys.process._
+  implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
 
   val bin = (Compile / nativeLink).value
-  val out = Process(bin.getAbsolutePath).lineStream_!.toList
+  val out = Process(bin.toFile.getAbsolutePath).lineStream_!.toList
   assert(
     out == List(
       "start main",
@@ -39,8 +40,9 @@ testQueueExecutionContext := {
 lazy val testQueueExecutionContext2 = taskKey[Unit]("...")
 testQueueExecutionContext2 := {
   import java.util.concurrent.TimeUnit
+  implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
   val bin = (Compile / nativeLink).value
-  val proc = new ProcessBuilder(bin.getAbsolutePath).start()
+  val proc = new ProcessBuilder(bin.toFile.getAbsolutePath).start()
   val finished = proc.waitFor(1, TimeUnit.SECONDS)
   if (!finished) proc.destroyForcibly()
   assert(finished)
@@ -53,8 +55,9 @@ testEventLoop := Def.taskDyn {
   else
     Def.task {
       import java.util.concurrent.TimeUnit
+      implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
       val bin = (Compile / nativeLink).value
-      val proc = new ProcessBuilder(bin.getAbsolutePath).start()
+      val proc = new ProcessBuilder(bin.toFile.getAbsolutePath).start()
       val finished = proc.waitFor(1, TimeUnit.SECONDS)
       if (!finished) proc.destroyForcibly()
       assert(finished)
@@ -64,8 +67,9 @@ testEventLoop := Def.taskDyn {
 lazy val testIssue3859 = taskKey[Unit]("...")
 testIssue3859 := {
   import java.util.concurrent.TimeUnit
+  implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
   val bin = (Compile / nativeLink).value
-  val proc = new ProcessBuilder(bin.getAbsolutePath).start()
+  val proc = new ProcessBuilder(bin.toFile.getAbsolutePath).start()
   val finished = proc.waitFor(1, TimeUnit.SECONDS)
   if (!finished) proc.destroyForcibly()
   assert(finished)
