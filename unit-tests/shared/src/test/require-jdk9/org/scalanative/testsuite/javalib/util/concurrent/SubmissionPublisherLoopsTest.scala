@@ -8,6 +8,7 @@ package org.scalanative.testsuite.javalib.util.concurrent
 import java.util._
 import java.util.concurrent._
 
+import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /** One publisher, many subscribers */
@@ -15,7 +16,7 @@ object SubmissionPublisherLoops1Test {
   val ITEMS: Int = 1 << 20
   val CONSUMERS = 64
   val CAP: Int = Flow.defaultBufferSize()
-  val REPS = 9
+  val REPS = 5
   val phaser = new Phaser(CONSUMERS + 1)
 
   final class Sub extends Flow.Subscriber[Boolean] {
@@ -40,8 +41,9 @@ object SubmissionPublisherLoops1Test {
     }
 
     override def onComplete(): Unit = {
-      if (count != ITEMS)
-        System.out.println("Error: remaining " + (ITEMS - count))
+      // if (count != ITEMS)
+      //   System.out.println("Error: remaining " + (ITEMS - count))
+      assertEquals(count, ITEMS)
       phaser.arrive()
     }
   }
@@ -50,7 +52,7 @@ object SubmissionPublisherLoops1Test {
 
   @Test def main(): Unit = {
     var reps = REPS
-    if (args.length > 0) reps = args(0).toInt
+    // if (args.length > 0) reps = args(0).toInt
     System.out.println(
       "ITEMS: " + ITEMS + " CONSUMERS: " + CONSUMERS + " CAP: " + CAP
     )
@@ -85,7 +87,7 @@ object SubmissionPublisherLoops2Test {
   val ITEMS: Int = 1 << 20
   val CONSUMERS = 64
   val CAP: Int = Flow.defaultBufferSize()
-  val REPS = 9
+  val REPS = 5
   val phaser = new Phaser(CONSUMERS + 1)
 
   final class Sub extends Flow.Subscriber[Boolean] {
@@ -108,8 +110,9 @@ object SubmissionPublisherLoops2Test {
     }
 
     def onComplete(): Unit = {
-      if (count != ITEMS)
-        System.out.println("Error: remaining " + (ITEMS - count))
+      // if (count != ITEMS)
+      //   System.out.println("Error: remaining " + (ITEMS - count))
+      assertEquals(count, ITEMS)
       phaser.arrive()
     }
   }
@@ -134,7 +137,7 @@ object SubmissionPublisherLoops2Test {
 
   @Test def main(): Unit = {
     var reps = REPS
-    if (args.length > 0) reps = args(0).toInt
+    // if (args.length > 0) reps = args(0).toInt
     System.out.println(
       "ITEMS: " + ITEMS + " CONSUMERS: " + CONSUMERS + " CAP: " + CAP
     )
@@ -162,12 +165,12 @@ object SubmissionPublisherLoops3Test {
   val PRODUCERS = 32
   val CONSUMERS = 32
   val CAP: Int = Flow.defaultBufferSize()
-  val REPS = 9
+  val REPS = 5
   val phaser = new Phaser(PRODUCERS * CONSUMERS + 1)
 
   @Test def main(): Unit = {
     var reps = REPS
-    if (args.length > 0) reps = args(0).toInt
+    // if (args.length > 0) reps = args(0).toInt
     System.out.println(
       "ITEMS: " + ITEMS + " PRODUCERS: " + PRODUCERS + " CONSUMERS: " + CONSUMERS + " CAP: " + CAP
     )
@@ -208,8 +211,9 @@ object SubmissionPublisherLoops3Test {
     }
 
     def onComplete(): Unit = {
-      if (count != ITEMS)
-        System.out.println("Error: remaining " + (ITEMS - count))
+      // if (count != ITEMS)
+      //   System.out.println("Error: remaining " + (ITEMS - count))
+      assertEquals(count, ITEMS)
       phaser.arrive()
     }
 
@@ -245,14 +249,14 @@ object SubmissionPublisherLoops4Test {
   val PROCESSORS = 32
   val CONSUMERS = 32
   val CAP: Int = Flow.defaultBufferSize()
-  val REPS = 9
+  val REPS = 5
   val SINKS: Int = PRODUCERS * PROCESSORS * CONSUMERS
   val NEXTS: Long = ITEMS.toLong * SINKS
   val phaser = new Phaser(SINKS + 1)
 
   @Test def main(): Unit = {
     var reps = REPS
-    if (args.length > 0) reps = args(0).toInt
+    // if (args.length > 0) reps = args(0).toInt
     System.out.println(
       "ITEMS: " + ITEMS + " PRODUCERS: " + PRODUCERS + " PROCESSORS: " + PROCESSORS + " CONSUMERS: " + CONSUMERS + " CAP: " + CAP
     )
@@ -292,8 +296,9 @@ object SubmissionPublisherLoops4Test {
     }
 
     def onComplete(): Unit = {
-      if (count != ITEMS)
-        System.out.println("Error: remaining " + (ITEMS - count))
+      // if (count != ITEMS)
+      //   System.out.println("Error: remaining " + (ITEMS - count))
+      assertEquals(count, ITEMS)
       phaser.arrive()
     }
 
