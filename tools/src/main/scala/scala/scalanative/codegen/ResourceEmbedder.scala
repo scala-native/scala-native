@@ -38,6 +38,7 @@ private[scalanative] object ResourceEmbedder {
         "/scala-native/**",
         "/LICENSE",
         "/NOTICE",
+        "/library.properties",
         "/BUILD",
         "/rootdoc.txt",
         "/META-INF/**",
@@ -59,7 +60,16 @@ private[scalanative] object ResourceEmbedder {
     val notInIncludePatterns =
       s"Not matched by any include pattern: [${includePatterns.map(pat => s"'$pat'").mkString(", ")}]"
     case class IgnoreReason(reason: String, shouldLog: Boolean = true)
-    case class Matcher(matcher: PathMatcher, pattern: String)
+    case class Matcher(
+        matcher: PathMatcher,
+        pattern: String,
+        usesAbsoluteResourcePath: Boolean
+    ) {
+      def matches(absolutePath: Path, relativePath: Path): Boolean =
+        matcher.matches(
+          if (usesAbsoluteResourcePath) absolutePath else relativePath
+        )
+    }
 
     /** If the return value is defined, the given path should be ignored. If
      *  it's None, the path should be included.
@@ -67,13 +77,13 @@ private[scalanative] object ResourceEmbedder {
     def shouldIgnore(
         includeMatchers: Seq[Matcher],
         excludeMatchers: Seq[Matcher]
-    )(path: Path): Option[IgnoreReason] =
+    )(absolutePath: Path, relativePath: Path): Option[IgnoreReason] =
       includeMatchers
-        .find(_.matcher.matches(path))
+        .find(_.matches(absolutePath, relativePath))
         .map(_.pattern)
         .map { includePattern =>
           excludeMatchers
-            .find(_.matcher.matches(path))
+            .find(_.matches(absolutePath, relativePath))
             .map(_.pattern)
             .map(excludePattern =>
               IgnoreReason(
@@ -86,8 +96,8 @@ private[scalanative] object ResourceEmbedder {
           Some(
             IgnoreReason(
               notInIncludePatterns,
-              shouldLog = !(isSourceFile(path) || excludeMatchers
-                .find(_.matcher.matches(path))
+              shouldLog = !(isSourceFile(relativePath) || excludeMatchers
+                .find(_.matches(absolutePath, relativePath))
                 .exists(matcher =>
                   internalExclusionPatterns.contains(matcher.pattern)
                 ))
@@ -103,12 +113,13 @@ private[scalanative] object ResourceEmbedder {
           def makeMatcher(pattern: String) =
             Matcher(
               matcher = virtualDir.pathMatcher(pattern),
-              pattern = pattern
+              pattern = pattern,
+              usesAbsoluteResourcePath = pattern.startsWith("glob:/")
             )
           val includeMatchers = includePatterns.map(makeMatcher)
           val excludeMatchers = excludePatterns.map(makeMatcher)
           val applyPathMatchers =
-            shouldIgnore(includeMatchers, excludeMatchers)(_)
+            shouldIgnore(includeMatchers, excludeMatchers)(_, _)
           virtualDir.files
             .flatMap { path =>
               // Use the same path separator on all OSs
@@ -120,14 +131,18 @@ private[scalanative] object ResourceEmbedder {
                   (pathString, path)
                 }
 
-              // Normalize path for matching: remove leading / and normalize separators
-              // Patterns like "*.conf" expect paths without leading /
-              // Use the same filesystem as the original path to ensure correct matching
-              // (important when exportJars=true, as paths come from JAR filesystems)
-              val normalizedPath = path
+              val absoluteResourcePath = path
+                .getFileSystem()
+                .getPath(pathName)
+              // Match relative glob patterns such as "*.conf" against resource
+              // paths without a leading slash.
+              val relativeResourcePath = path
                 .getFileSystem()
                 .getPath(pathString.stripPrefix("/"))
-              applyPathMatchers(normalizedPath) match {
+              applyPathMatchers(
+                absoluteResourcePath,
+                relativeResourcePath
+              ) match {
                 case Some(IgnoreReason(reason, shouldLog)) =>
                   if (shouldLog) {
                     config.logger.debug(s"Did not embed: $pathName - $reason")

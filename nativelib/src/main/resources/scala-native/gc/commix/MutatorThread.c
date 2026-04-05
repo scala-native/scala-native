@@ -4,6 +4,7 @@
 #include "State.h"
 #include <stdlib.h>
 #include <stdatomic.h>
+#include <stdint.h>
 #include "shared/ThreadUtil.h"
 #include "shared/Log.h"
 #include <assert.h>
@@ -18,9 +19,7 @@ void MutatorThread_init(Field_t *stackbottom) {
     MutatorThread *self = (MutatorThread *)malloc(sizeof(MutatorThread));
     memset(self, 0, sizeof(MutatorThread));
     currentMutatorThread = self;
-#ifdef SCALANATIVE_THREAD_ALT_STACK
     self->threadInfo = &currentThreadInfo;
-#endif
 
     self->stackBottom = stackbottom;
 
@@ -113,6 +112,25 @@ INLINE void MutatorThread_switchState(MutatorThread *self,
         break;
     }
     self->state = newState;
+}
+
+word_t **MutatorThread_getStackBottom(MutatorThread *thread) {
+    word_t **bottom = thread->stackBottom;
+    if (thread->threadInfo != NULL && thread->threadInfo->stackBottom != NULL &&
+        (uintptr_t)thread->threadInfo->stackBottom > (uintptr_t)bottom) {
+        bottom = (word_t **)thread->threadInfo->stackBottom;
+    }
+    return bottom;
+}
+
+word_t **MutatorThread_getStackTop(MutatorThread *thread, bool allowEstimated) {
+    intptr_t sp = atomic_load_explicit(&thread->stackTop, memory_order_acquire);
+    if (sp != 0)
+        return (word_t **)sp;
+    if (allowEstimated && thread->threadInfo != NULL &&
+        thread->threadInfo->stackTop != NULL)
+        return (word_t **)thread->threadInfo->stackTop;
+    return NULL;
 }
 
 bool MutatorThread_isAtSafepoint(MutatorThread *thread) {

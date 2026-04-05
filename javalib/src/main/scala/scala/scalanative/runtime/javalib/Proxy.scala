@@ -5,6 +5,7 @@ package javalib
 import scala.concurrent.duration.FiniteDuration
 
 import scala.scalanative.annotation.alwaysinline
+import scala.scalanative.runtime.Intrinsics
 
 object Proxy {
   @alwaysinline
@@ -23,6 +24,16 @@ object Proxy {
   def GC_setWeakReferencesCollectedCallback(
       callback: GCWeakReferencesCollectedCallback
   ): Unit = GC.setWeakReferencesCollectedCallback(callback)
+
+  def GC_Boehm_weakRefSlotCreate(referent: AnyRef): RawPtr =
+    GC.Boehm.weakRefSlotCreate(Intrinsics.castObjectToRawPtr(referent))
+  def GC_Boehm_weakRefSlotGet[T <: AnyRef](slot: RawPtr): T = {
+    Intrinsics
+      .castRawPtrToObject(GC.Boehm.weakRefSlotGet(slot))
+      .asInstanceOf[T]
+  }
+  def GC_Boehm_weakRefSlotClear(slot: RawPtr): Unit =
+    GC.Boehm.weakRefSlotClear(slot)
 
   def disableGracefullShutdown(): Unit =
     MainThreadShutdownContext.gracefully = false

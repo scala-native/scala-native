@@ -6,6 +6,11 @@
 #include "string_constants.h"
 #include "unwind.h"
 
+#if defined(__SCALANATIVE_DELIMCC)
+#include "delimcc.h"
+#include <setjmp.h>
+#endif
+
 // gets the ExceptionWrapper from the _Unwind_Exception which is at the end of
 // it. +1 goes to the end of the struct since it adds with the size of
 // _Unwind_Exception, then we cast to ExceptionWrapper and we do - 1 to
@@ -15,6 +20,15 @@
 
 typedef void *Exception;
 typedef void (*OnCatchHandler)(Exception);
+
+/*
+ * Continuation exception escape: when _Unwind_RaiseException returns
+ * _URC_END_OF_STACK (no handler found in the resumed stack), we longjmp to
+ * the resumer (in delimcc.c) instead of aborting. delimcc.c sets
+ * scalanative_continuation_exception_handler before resume and clears it after
+ * longjmp or normal return. Local try/catch inside the continuation body still
+ * runs (unwinding finds them first); we only escape when no handler was found.
+ */
 typedef struct ExceptionWrapper {
     Exception obj;
     _Unwind_Exception unwindException;
@@ -266,6 +280,22 @@ __attribute__((noreturn)) void scalanative_throw(Exception obj) {
     _Unwind_Reason_Code code = _Unwind_RaiseException(unwindException);
 
     if (code == _URC_END_OF_STACK) {
+#if defined(__SCALANATIVE_DELIMCC)
+        /* If we're inside a resumed continuation, escape to the resumer instead
+         * of aborting. Unwinding already ran and found no handler (or could not
+         * traverse the copied stack); local try/catch in the continuation body
+         * would have been found first if present. */
+        ContinuationExceptionHandler ceh =
+            scalanative_continuation_exception_handler();
+        if (ceh.env != NULL && ceh.exception_slot != NULL) {
+            jmp_buf *env = ceh.env;
+            *ceh.exception_slot = obj;
+            scalanative_continuation_exception_handler_clear();
+            // Do not run exception cleanup; we're transferring to the resumer.
+            longjmp(*env, 1);
+            __builtin_unreachable();
+        }
+#endif
         generic_exception_cleanup(code, &exceptionWrapper->unwindException);
         fprintf(stderr,
                 "%s Failed to throw exception, not found "

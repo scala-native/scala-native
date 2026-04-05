@@ -27,12 +27,12 @@ private[java] object WeakReferenceRegistry {
       head: WeakReference[_],
       current: WeakReference[_],
       prev: WeakReference[_]
-  ): (WeakReference[Any], WeakReference[Any]) =
+  ): (WeakReference[AnyRef], WeakReference[AnyRef]) =
     if (current == null) {
       val last = if (prev != null) prev else head
       (
-        head.asInstanceOf[WeakReference[Any]],
-        last.asInstanceOf[WeakReference[Any]]
+        head.asInstanceOf[WeakReference[AnyRef]],
+        last.asInstanceOf[WeakReference[AnyRef]]
       )
     } else {
       val next = current.nextReference

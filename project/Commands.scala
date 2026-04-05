@@ -31,9 +31,13 @@ object Commands {
   lazy val testGC = projectVersionCommand("test-gc") {
     case (version, state) =>
       import scala.scalanative.build.GC
+      val isWindows =
+        System.getProperty("os.name").toLowerCase.contains("windows")
       val runs =
         for {
           gc <- List(GC.none, GC.immix, GC.commix, GC.boehm)
+          // Exclude running Boehm GC on Windows for Scala 3 as deadlocks for unknown reasons
+          if !(isWindows && gc == GC.boehm && version == "3")
           (project, command) <- Map(
             sandbox -> "run",
             testInterface -> "test",

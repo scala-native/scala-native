@@ -4,7 +4,7 @@ package testinterface.signalhandling
 import scala.scalanative.libc.signal._
 import scala.scalanative.libc.stdlib._
 import scala.scalanative.libc.string._
-import scala.scalanative.meta.LinktimeInfo._
+import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.posix.unistd._
 import scala.scalanative.runtime.{SymbolFormatter, unwind}
 import scala.scalanative.unsafe._
@@ -23,7 +23,7 @@ private[scalanative] object SignalConfig {
    */
   private def asyncSafePrintStackTrace(sig: CInt): Unit = {
     def printError(str: CString): Unit =
-      if (isWindows) {
+      if (LinktimeInfo.isWindows) {
         val written = stackalloc[DWord]()
         FileApi.WriteFile(
           ConsoleApiExt.stdErr,
@@ -58,7 +58,7 @@ private[scalanative] object SignalConfig {
     }
 
     val signalNumberStr: Ptr[CChar] =
-      if (!isWindows) {
+      if (!LinktimeInfo.isWindows) {
         import scala.scalanative.posix.string.strsignal
         strsignal(sig)
       } else {
@@ -95,7 +95,8 @@ private[scalanative] object SignalConfig {
         sym(symMax - 1) = 0.toByte
         val className: Ptr[CChar] = stackalloc[CChar](512)
         val methodName: Ptr[CChar] = stackalloc[CChar](256)
-        val fileName = if (isWindows) stackalloc[CChar](512) else null
+        val fileName =
+          if (LinktimeInfo.isWindows) stackalloc[CChar](512) else null
         val unused = stackalloc[Int]()
         SymbolFormatter.asyncSafeFromSymbol(
           sym,
@@ -154,14 +155,14 @@ private[scalanative] object SignalConfig {
     setHandler(SIGFPE)
     setHandler(SIGILL)
     setHandler(SIGTERM)
-    if (!isMultithreadingEnabled || isMac) {
+    if (!LinktimeInfo.isMultithreadingEnabled || LinktimeInfo.isMac) {
       // Used in GC traps, MacOS uses SIGBUS instead
       setHandler(SIGSEGV)
     }
 
-    if (!isWindows) {
+    if (!LinktimeInfo.isWindows) {
       import scala.scalanative.posix.signal._
-      if (!isMultithreadingEnabled || !isMac) {
+      if (!LinktimeInfo.isMultithreadingEnabled || !LinktimeInfo.isMac) {
         // Used in Immix GC traps on MacOS
         setHandler(SIGBUS)
       }
@@ -177,8 +178,8 @@ private[scalanative] object SignalConfig {
       setHandler(SIGSYS)
       setHandler(SIGTRAP)
       setHandler(SIGVTALRM)
-      // Boehm GC and None GC are the only GCs without weak reference support
-      if (!isMultithreadingEnabled || isWeakReferenceSupported) {
+      if (LinktimeInfo.isMultithreadingEnabled && LinktimeInfo.gc.isBoehm) ()
+      else {
         // Used by Boehm GC StopTheWorld signal handlers
         setHandler(SIGXCPU)
         setHandler(SIGXFSZ)

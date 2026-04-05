@@ -72,6 +72,12 @@ object LinktimeInfo {
     "scala.scalanative.meta.linktimeinfo.garbageCollector"
   )
   def garbageCollector: String = resolved
+  object gc {
+    @resolvedAtLinktime def isBoehm: Boolean = garbageCollector == "boehm"
+    @resolvedAtLinktime def isImmix: Boolean = garbageCollector == "immix"
+    @resolvedAtLinktime def isCommix: Boolean = garbageCollector == "commix"
+    @resolvedAtLinktime def isNone: Boolean = garbageCollector == "none"
+  }
 
   object target {
     @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.target.arch")

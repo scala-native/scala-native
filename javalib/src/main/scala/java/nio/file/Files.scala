@@ -1072,7 +1072,7 @@ object Files {
       _options: Array[OpenOption]
   ): SeekableByteChannel = {
     val options = new HashSet[OpenOption]()
-    _options.foreach(options.add _)
+    _options.foreach(options.add)
     newByteChannel(path, options, Array.empty)
   }
 

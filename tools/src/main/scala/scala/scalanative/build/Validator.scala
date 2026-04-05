@@ -13,7 +13,7 @@ private[build] object Validator {
    *    potentially a modified [[Config]] that is valid
    */
   def validate(config: Config): Config =
-    (validateMainClass _)
+    (validateMainClass(_))
       .andThen(validateClasspath)
       .andThen(validateCompileConfig)
       .apply(config)
