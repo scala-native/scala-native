@@ -3,6 +3,16 @@
  * Expert Group and released to the public domain, as explained at
  * http://creativecommons.org/publicdomain/zero/1.0/
  */
+
+/*
+ * Ported from JSR-166 tests. Porting notes:
+ *
+ * The original code was designed to execute as individual command line programs,
+ * and serve as microbenchmarks. These tests have been adapted for integration
+ * as unit testswith reduced parameters to ensure reasonable execution times in
+ * CI. The original common parameters are noted near the variables for reference.
+ */
+
 package org.scalanative.testsuite.javalib.util.concurrent
 
 import java.util._
@@ -13,10 +23,16 @@ import org.junit.Test
 
 /** One publisher, many subscribers */
 object SubmissionPublisherLoops1Test {
-  val ITEMS: Int = 1 << 20
-  val CONSUMERS = 64
-  val CAP: Int = Flow.defaultBufferSize()
+
+  /* Original JSR-166 parameters: */
+  // val ITEMS: Int = 1 << 20
+  // val CONSUMERS = 64
+  // val REPS = 9
+  val ITEMS: Int = 1 << 8
+  val CONSUMERS = 16
   val REPS = 5
+
+  val CAP: Int = Flow.defaultBufferSize()
   val phaser = new Phaser(CONSUMERS + 1)
 
   final class Sub extends Flow.Subscriber[Boolean] {
@@ -29,10 +45,7 @@ object SubmissionPublisherLoops1Test {
     }
 
     override def onNext(t: Boolean): Unit = {
-      if (({
-            count += 1
-            count
-          } & (CAP - 1)) == (CAP >>> 1))
+      if (({ count += 1; count } & (CAP - 1)) == (CAP >>> 1))
         sn.request(CAP)
     }
 
@@ -51,13 +64,11 @@ object SubmissionPublisherLoops1Test {
   val NPS: Long = 1000L * 1000 * 1000
 
   @Test def main(): Unit = {
-    var reps = REPS
-    // if (args.length > 0) reps = args(0).toInt
     System.out.println(
       "ITEMS: " + ITEMS + " CONSUMERS: " + CONSUMERS + " CAP: " + CAP
     )
     val exec = ForkJoinPool.commonPool()
-    for (rep <- 0 until reps) {
+    for (rep <- 0 until REPS) {
       oneRun(exec)
       System.out.println(exec)
       Thread.sleep(1000)
@@ -84,10 +95,16 @@ object SubmissionPublisherLoops1Test {
 
 /** One FJ publisher, many subscribers */
 object SubmissionPublisherLoops2Test {
-  val ITEMS: Int = 1 << 20
-  val CONSUMERS = 64
-  val CAP: Int = Flow.defaultBufferSize()
+
+  /* Original JSR-166 parameters: */
+  // val ITEMS: Int = 1 << 20
+  // val CONSUMERS = 64
+  // val REPS = 9
+  val ITEMS: Int = 1 << 8
+  val CONSUMERS = 16
   val REPS = 5
+
+  val CAP: Int = Flow.defaultBufferSize()
   val phaser = new Phaser(CONSUMERS + 1)
 
   final class Sub extends Flow.Subscriber[Boolean] {
@@ -100,9 +117,8 @@ object SubmissionPublisherLoops2Test {
     }
 
     def onNext(t: Boolean): Unit = {
-      if (({
-            count += 1; count
-          } & (CAP - 1)) == (CAP >>> 1)) sn.request(CAP)
+      if (({ count += 1; count } & (CAP - 1)) == (CAP >>> 1))
+        sn.request(CAP)
     }
 
     def onError(t: Throwable): Unit = {
@@ -136,12 +152,10 @@ object SubmissionPublisherLoops2Test {
   val NPS: Long = 1000L * 1000 * 1000
 
   @Test def main(): Unit = {
-    var reps = REPS
-    // if (args.length > 0) reps = args(0).toInt
     System.out.println(
       "ITEMS: " + ITEMS + " CONSUMERS: " + CONSUMERS + " CAP: " + CAP
     )
-    for (rep <- 0 until reps) {
+    for (rep <- 0 until REPS) {
       oneRun()
       Thread.sleep(1000)
     }
@@ -161,20 +175,25 @@ object SubmissionPublisherLoops2Test {
  *  ITEMS items, with CAP buffering; repeats REPS times
  */
 object SubmissionPublisherLoops3Test {
-  val ITEMS: Int = 1 << 20
-  val PRODUCERS = 32
-  val CONSUMERS = 32
-  val CAP: Int = Flow.defaultBufferSize()
+
+  /* Original JSR-166 parameters: */
+  // val ITEMS: Int = 1 << 20
+  // val PRODUCERS = 32
+  // val CONSUMERS = 32
+  // val REPS = 9
+  val ITEMS: Int = 1 << 8
+  val PRODUCERS = 8
+  val CONSUMERS = 8
   val REPS = 5
+
+  val CAP: Int = Flow.defaultBufferSize()
   val phaser = new Phaser(PRODUCERS * CONSUMERS + 1)
 
   @Test def main(): Unit = {
-    var reps = REPS
-    // if (args.length > 0) reps = args(0).toInt
     System.out.println(
       "ITEMS: " + ITEMS + " PRODUCERS: " + PRODUCERS + " CONSUMERS: " + CONSUMERS + " CAP: " + CAP
     )
-    for (rep <- 0 until reps) {
+    for (rep <- 0 until REPS) {
       oneRun()
       Thread.sleep(1000)
     }
@@ -205,9 +224,8 @@ object SubmissionPublisherLoops3Test {
     }
 
     def onNext(b: Boolean): Unit = {
-      if (b && ({
-            count += 1; count
-          } & ((CAP >>> 1) - 1)) == 0) subscription.request(CAP >>> 1)
+      if (b && ({ count += 1; count } & ((CAP >>> 1) - 1)) == 0)
+        subscription.request(CAP >>> 1)
     }
 
     def onComplete(): Unit = {
@@ -244,23 +262,29 @@ object SubmissionPublisherLoops3Test {
  *  repeats REPS times
  */
 object SubmissionPublisherLoops4Test {
-  val ITEMS: Int = 1 << 20
-  val PRODUCERS = 32
-  val PROCESSORS = 32
-  val CONSUMERS = 32
-  val CAP: Int = Flow.defaultBufferSize()
+
+  /* Original JSR-166 parameters: */
+  // val ITEMS: Int = 1 << 20
+  // val PRODUCERS = 32
+  // val PROCESSORS = 32
+  // val CONSUMERS = 32
+  // val REPS = 9
+  val ITEMS: Int = 1 << 8
+  val PRODUCERS = 8
+  val PROCESSORS = 8
+  val CONSUMERS = 8
   val REPS = 5
+
+  val CAP: Int = Flow.defaultBufferSize()
   val SINKS: Int = PRODUCERS * PROCESSORS * CONSUMERS
   val NEXTS: Long = ITEMS.toLong * SINKS
   val phaser = new Phaser(SINKS + 1)
 
   @Test def main(): Unit = {
-    var reps = REPS
-    // if (args.length > 0) reps = args(0).toInt
     System.out.println(
       "ITEMS: " + ITEMS + " PRODUCERS: " + PRODUCERS + " PROCESSORS: " + PROCESSORS + " CONSUMERS: " + CONSUMERS + " CAP: " + CAP
     )
-    for (rep <- 0 until reps) {
+    for (rep <- 0 until REPS) {
       oneRun()
       Thread.sleep(1000)
     }
@@ -290,9 +314,8 @@ object SubmissionPublisherLoops4Test {
     }
 
     def onNext(b: Boolean): Unit = {
-      if (b && ({
-            count += 1; count
-          } & ((CAP >>> 1) - 1)) == 0) subscription.request(CAP >>> 1)
+      if (b && ({ count += 1; count } & ((CAP >>> 1) - 1)) == 0)
+        subscription.request(CAP >>> 1)
     }
 
     def onComplete(): Unit = {
@@ -319,9 +342,9 @@ object SubmissionPublisherLoops4Test {
     }
 
     def onNext(item: Boolean): Unit = {
-      if (({
-            count += 1; count
-          } & ((CAP >>> 1) - 1)) == 0) subscription.request(CAP >>> 1)
+      if (({ count += 1; count } & ((CAP >>> 1) - 1)) == 0)
+        subscription.request(CAP >>> 1)
+
       submit(item)
     }
 
