@@ -20,113 +20,82 @@ Scala Native ports JSR166 Java code to Scala rather than bundling the compiled J
 - **Browsable source**: http://gee.cs.oswego.edu/cgi-bin/viewcvs.cgi/jsr166/jsr166/src/main/java/util/
 - **TCK tests**: http://gee.cs.oswego.edu/cgi-bin/viewcvs.cgi/jsr166/jsr166/src/tests/tck/
 - **API docs**: http://gee.cs.oswego.edu/dl/jsr166/dist/docs/
+- **OpenJDK Mirror**: https://github.com/openjdk/jdk/tree/master/src/java.base/share/classes/java/util/concurrent
+
+## License & Copyright
+
+**IMPORTANT**: JSR166 code has dual licensing:
+
+1. **Original JSR166** (Doug Lea's code at oswego.edu): 
+   - **Public Domain** - http://creativecommons.org/publicdomain/zero/1.0/
+   - Can be freely used, modified, and distributed
+   - This is what scala-native ports
+
+2. **OpenJDK Packaging**:
+   - GPL v2 + Classpath Exception (wrappers around JSR166)
+   - The underlying JSR166 code remains public domain
+
+**scala-native License Compatibility**:
+- scala-native uses Apache 2.0 License
+- Porting public domain JSR166 code is fully compatible
+- Must retain attribution: "Written by Doug Lea with assistance from members of JCP JSR-166 Expert Group"
 
 ## Version Comparison
 
-### Files with Explicit Revision Markers
+### Files with Explicit Revision Markers (scala-native vs OpenJDK Latest)
 
-| File | Current Revision | Date | Notes |
-|------|:----------------:|------|-------|
-| `ForkJoinPool.scala` | **1.411** | - | Major executor framework class |
-| `CompletableFuture.scala` | **1.225** | Jan 19, 2021 | Critical async API |
-| `Phaser.scala` | **1.97** | 2021-01-31 | Synchronization barrier |
-| `CountedCompleter.scala` | **1.72** | - | ForkJoinTask variant |
-| `Future.scala` | **1.47** | - | Core future interface |
-| `ConcurrentNavigableMap.scala` | **1.20** | - | Concurrent sorted map |
-| `DoubleAccumulator.scala` | **1.44** | 2020-11-27 | Atomic accumulation |
-| `LongAccumulator.scala` | **1.38** | 2020-11-27 | Atomic accumulation |
-| `Striped64.scala` | **1.28** | - | Base for adders/accumulators |
-| `LongAdder.scala` | **1.23** | - | High-throughput counter |
-| `DoubleAdder.scala` | **1.23** | 2020-11-27 | High-throughput counter |
+| Class | scala-native Rev | In OpenJDK | Priority | Notes |
+|-------|:----------------:|:----------:|:--------:|-------|
+| `ForkJoinPool` | **1.411** | ✓ | 🔴 High | Core executor framework |
+| `CompletableFuture` | **1.225** | ✓ | 🔴 High | Critical async API (Jan 2021) |
+| `Phaser` | **1.97** | ✓ | 🟡 Medium | Sync barrier (Jan 2021) |
+| `CountedCompleter` | **1.72** | ✓ | 🟡 Medium | ForkJoinTask variant |
+| `Future` | **1.47** | ✓ | 🟢 Low | Core interface |
+| `ConcurrentNavigableMap` | **1.20** | ✓ | 🟢 Low | Concurrent sorted map |
+| `DoubleAccumulator` | **1.44** | ✓ | 🟡 Medium | Atomic accumulation (Nov 2020) |
+| `LongAccumulator` | **1.38** | ✓ | 🟡 Medium | Atomic accumulation (Nov 2020) |
+| `Striped64` | **1.28** | ✓ | 🟡 Medium | Base for adders |
+| `LongAdder` | **1.23** | ✓ | 🟡 Medium | High-throughput counter |
+| `DoubleAdder` | **1.23** | ✓ | 🟡 Medium | High-throughput counter (Nov 2020) |
 
-### Files Without Revision Markers
+### scala-native Files Without Revision Markers (68 files)
 
-These files carry the JSR-166 copyright but lack explicit revision numbers:
+These carry JSR-166 copyright but lack explicit revision numbers. Need to be compared against OpenJDK sources:
 
-**java/util/concurrent/** (47 files):
-- AbstractExecutorService.scala
-- ArrayBlockingQueue.scala
-- BlockingDeque.scala
-- BlockingQueue.scala
-- BrokenBarrierException.scala
-- Callable.scala
-- CancellationException.scala
-- CompletionException.scala
-- CompletionService.scala
-- CompletionStage.scala
-- ConcurrentHashMap.scala
-- ConcurrentLinkedDeque.scala
-- ConcurrentLinkedQueue.scala
-- ConcurrentMap.scala
-- ConcurrentSkipListMap.scala
-- ConcurrentSkipListSet.scala
-- CopyOnWriteArrayList.scala
-- CopyOnWriteArraySet.scala
-- CountDownLatch.scala
-- CyclicBarrier.scala
-- Delayed.scala
-- DelayQueue.scala
-- Exchanger.scala
-- ExecutionException.scala
-- Executor.scala
-- ExecutorCompletionService.scala
-- Executors.scala
-- ExecutorService.scala
-- Flow.scala
-- ForkJoinTask.scala
-- ForkJoinWorkerThread.scala
-- FutureTask.scala
-- Helpers.scala
-- LinkedBlockingDeque.scala
-- LinkedBlockingQueue.scala
-- LinkedTransferQueue.scala
-- package-info.scala
-- PriorityBlockingQueue.scala
-- RecursiveAction.scala
-- RecursiveTask.scala
-- RejectedExecutionException.scala
-- RejectedExecutionHandler.scala
-- RunnableFuture.scala
-- RunnableScheduledFuture.scala
-- ScheduledExecutorService.scala
-- ScheduledFuture.scala
-- ScheduledThreadPoolExecutor.scala
-- Semaphore.scala
-- SubmissionPublisher.scala
-- SynchronousQueue.scala
-- ThreadFactory.scala
-- ThreadLocalRandom.scala
-- ThreadPoolExecutor.scala
-- TimeoutException.scala
-- TimeUnit.scala
-- TransferQueue.scala
+**java/util/concurrent/** (41 files):
+AbstractExecutorService, ArrayBlockingQueue, BlockingDeque, BlockingQueue, BrokenBarrierException, Callable, CancellationException, CompletionException, CompletionService, CompletionStage, **ConcurrentHashMap**, ConcurrentLinkedDeque, ConcurrentLinkedQueue, ConcurrentMap, ConcurrentSkipListSet, CopyOnWriteArrayList, CountDownLatch, CyclicBarrier, Delayed, Executor, ExecutorCompletionService, Executors, ExecutorService, Flow, ForkJoinTask, ForkJoinWorkerThread, FutureTask, LinkedBlockingQueue, LinkedTransferQueue, PriorityBlockingQueue, RecursiveAction, RecursiveTask, RejectedExecutionHandler, RunnableFuture, RunnableScheduledFuture, ScheduledExecutorService, ScheduledFuture, ScheduledThreadPoolExecutor, Semaphore, SynchronousQueue, ThreadFactory, ThreadLocalRandom, ThreadPoolExecutor, TimeUnit, TransferQueue
 
 **java/util/concurrent/atomic/** (12 files):
-- AtomicBoolean.scala
-- AtomicInteger.scala
-- AtomicIntegerArray.scala
-- AtomicIntegerFieldUpdater.scala
-- AtomicLong.scala
-- AtomicLongArray.scala
-- AtomicLongFieldUpdater.scala
-- AtomicMarkableReference.scala
-- AtomicReference.scala
-- AtomicReferenceArray.scala
-- AtomicReferenceFieldUpdater.scala
-- AtomicStampedReference.scala
+AtomicBoolean, AtomicInteger, AtomicIntegerArray, AtomicIntegerFieldUpdater, AtomicLong, AtomicLongArray, AtomicLongFieldUpdater, AtomicMarkableReference, AtomicReference, AtomicReferenceArray, AtomicReferenceFieldUpdater, AtomicStampedReference
 
 **java/util/concurrent/locks/** (9 files):
-- AbstractOwnableSynchronizer.scala
-- AbstractQueuedLongSynchronizer.scala
-- AbstractQueuedSynchronizer.scala
-- Condition.scala
-- Lock.scala
-- LockSupport.scala
-- package-info.scala
-- ReadWriteLock.scala
-- ReentrantLock.scala
-- ReentrantReadWriteLock.scala
-- StampedLock.scala
+AbstractOwnableSynchronizer, AbstractQueuedLongSynchronizer, AbstractQueuedSynchronizer, Condition, Lock, LockSupport, ReadWriteLock, ReentrantLock, ReentrantReadWriteLock, StampedLock
+
+### Files in OpenJDK but NOT in scala-native (17 JSR166 files)
+
+These exist in OpenJDK with JSR-166 attribution but haven't been ported to scala-native:
+
+| Class | Category | Priority | Notes |
+|-------|----------|:--------:|-------|
+| **ConcurrentSkipListMap** | concurrent | 🔴 High | Concurrent sorted map implementation |
+| **Exchanger** | concurrent | 🟡 Medium | Thread synchronization utility |
+| **DelayQueue** | concurrent | 🟡 Medium | Priority queue with delays |
+| **LinkedBlockingDeque** | concurrent | 🟡 Medium | Doubly-linked blocking queue |
+| **SubmissionPublisher** | concurrent | 🟡 Medium | Reactive Streams publisher |
+| **CancellationException** | concurrent | 🟢 Low | Exception class |
+| **ExecutionException** | concurrent | 🟢 Low | Exception class |
+| **RejectedExecutionException** | concurrent | 🟢 Low | Exception class |
+| **TimeoutException** | concurrent | 🟢 Low | Exception class |
+| AtomicBoolean | atomic | 🟢 Low | Already in scala-native |
+| AtomicInteger | atomic | 🟢 Low | Already in scala-native |
+| AtomicIntegerArray | atomic | 🟢 Low | Already in scala-native |
+| AtomicLong | atomic | 🟢 Low | Already in scala-native |
+| AtomicLongArray | atomic | 🟢 Low | Already in scala-native |
+| AtomicReference | atomic | 🟢 Low | Already in scala-native |
+| AtomicReferenceArray | atomic | 🟢 Low | Already in scala-native |
+| Striped64 | atomic | 🟢 Low | Already in scala-native |
+
+> **Note**: Some atomic classes appear in both repos - scala-native has them but the OpenJDK comparison script flagged them due to directory structure differences.
 
 ## Update Strategy
 
