@@ -37,22 +37,55 @@ object Build {
   )(implicit scope: Scope, ec: ExecutionContext): Future[Path] = {
     val checksumPath = config.workDir.resolve("build-checksum")
 
+    val configChecksum = checkSum(config)
+
     if (Files.exists(config.artifactPath) &&
-        IO.readFully(checksumPath).contains(checkSum(config).toString)) {
+        IO.readFully(checksumPath).contains(configChecksum)) {
       config.logger.info(
         "Build skipped: No changes detected in build configuration and class path contents since last build."
       )
       Future.successful(config.artifactPath)
     } else {
+      if (Files.exists(checksumPath)) {
+        import merkle.*
+        val result = for {
+          oldChecksumLines <- IO
+            .readFully(checksumPath)
+            .map(_.split("\n").toVector)
+            .toRight(s"${checksumPath} does not exist")
+          read <- MerkleTree.deserialise(oldChecksumLines).toEither
+          dt <- DiffTree.create(read, ConfigHasher(config)).toEither
+        } yield dt
+
+        result.fold(
+          err => config.logger.error(s"Failed to diff the build config: $err"),
+          dt => {
+            config.logger.info("Build config has changed:")
+            config.logger.info(dt.renderToString(true))
+          }
+        )
+      }
+
       build(config).andThen {
         case Success(_) =>
           // Need to re-calculate the checksum because the content of `output` have changed.
           IO.write(
             path = checksumPath,
-            content = checkSum(config).toString
+            // Recalculate the config hash because it includes the path to the output artifact, we need to capture its mtime
+            content = checkSum(config)
           )
       }
     }
+  }
+
+  private def gitDiff(old: Path, recent: Path) = {
+    import scala.sys.process.*
+    val sb = new StringBuilder
+    val logger = ProcessLogger(s => sb.append(s + "\n"))
+    val diff =
+      s"git diff --no-index ${old} ${recent} -U1 --no-prefix".!(logger)
+
+    sb.result()
   }
 
   /** Run the complete Scala Native pipeline, LLVM optimizer and system linker,
@@ -251,18 +284,19 @@ object Build {
     }
 
   /** Returns a checksum of a compilation pipeline with the given `config`. */
-  private def checkSum(config: Config): Int = {
+  private def checkSum(config: Config): String = {
+    ConfigHasher(config).serialiseToString().getOrThrow()
     // skip the whole nativeLink process if the followings are unchanged since the previous build
     // - build configuration
     // - class paths' mtime
     // - the output native binary ('s mtime)
     // Since the NIR code is shipped in jars, we should be able to detect the changes in NIRs.
     // One thing we miss is, we cannot detect changes in c libraries somewhere in `/usr/lib`.
-    (
-      config,
-      config.classPath.map(getLastModifiedChild(_)),
-      getLastModified(config.artifactPath)
-    ).hashCode()
+    // (
+    //   config,
+    //   config.classPath.map(getLastModifiedChild(_)),
+    //   getLastModified(config.artifactPath)
+    // ).hashCode()
   }
 
   /** Finds and compiles native libaries.
