@@ -242,7 +242,7 @@ object Settings {
       .getOrElse(name.value, Nil),
     mimaPreviousArtifacts ++= {
       // The previous releases of Scala Native with which this version is binary compatible.
-      val binCompatVersions = Set("0.5.4")
+      val binCompatVersions = Set("0.5.11")
       binCompatVersions
         .map { version =>
           ModuleID(organization.value, moduleName.value, version)
