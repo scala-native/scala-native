@@ -12,11 +12,15 @@ scalaVersion := {
 
 nativeConfig ~= { _.withMultithreading(false) }
 
-/** sbt 1 returns a [[java.io.File]]; sbt 2 returns a virtual file ref — resolve via [[xsbti.FileConverter]]. */
-def nativeExecutable(linkOutput: Any)(implicit conv: xsbti.FileConverter): java.io.File =
+/** sbt 1 returns a [[java.io.File]]; sbt 2 returns a virtual file ref — resolve
+ *  via [[xsbti.FileConverter]].
+ */
+def nativeExecutable(
+    linkOutput: Any
+)(implicit conv: xsbti.FileConverter): java.io.File =
   linkOutput match {
-    case f: java.io.File              => f
-    case ref: xsbti.VirtualFileRef    => conv.toPath(ref).toFile()
+    case f: java.io.File           => f
+    case ref: xsbti.VirtualFileRef => conv.toPath(ref).toFile()
   }
 
 import java.util.Locale
@@ -64,7 +68,8 @@ testEventLoop := Def.taskDyn {
       import java.util.concurrent.TimeUnit
       implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
       val bin = (Compile / nativeLink).value
-      val proc = new ProcessBuilder(nativeExecutable(bin).getAbsolutePath).start()
+      val proc =
+        new ProcessBuilder(nativeExecutable(bin).getAbsolutePath).start()
       val finished = proc.waitFor(1, TimeUnit.SECONDS)
       if (!finished) proc.destroyForcibly()
       assert(finished)

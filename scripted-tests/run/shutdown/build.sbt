@@ -20,11 +20,15 @@ scalaVersion := {
 
 enablePlugins(ScalaNativePlugin)
 
-/** sbt 1: link output is a [[java.io.File]]; sbt 2: virtual file ref — resolve with [[xsbti.FileConverter]]. */
-def nativeExecutable(linkOutput: Any)(implicit conv: xsbti.FileConverter): java.io.File =
+/** sbt 1: link output is a [[java.io.File]]; sbt 2: virtual file ref — resolve
+ *  with [[xsbti.FileConverter]].
+ */
+def nativeExecutable(
+    linkOutput: Any
+)(implicit conv: xsbti.FileConverter): java.io.File =
   linkOutput match {
-    case f: java.io.File              => f
-    case ref: xsbti.VirtualFileRef    => conv.toPath(ref).toFile()
+    case f: java.io.File           => f
+    case ref: xsbti.VirtualFileRef => conv.toPath(ref).toFile()
   }
 
 val runTestDeleteOnExit =
