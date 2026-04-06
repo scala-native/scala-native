@@ -20,11 +20,18 @@ scalaVersion := {
 
 enablePlugins(ScalaNativePlugin)
 
+/** sbt 1: link output is a [[java.io.File]]; sbt 2: virtual file ref — resolve with [[xsbti.FileConverter]]. */
+def nativeExecutable(linkOutput: Any)(implicit conv: xsbti.FileConverter): java.io.File =
+  linkOutput match {
+    case f: java.io.File              => f
+    case ref: xsbti.VirtualFileRef    => conv.toPath(ref).toFile()
+  }
+
 val runTestDeleteOnExit =
   taskKey[Unit]("run test checking if shutdown hook is exucuted")
 runTestDeleteOnExit := {
   implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
-  val cmd = (Compile / nativeLink).value.toFile.toString
+  val cmd = nativeExecutable((Compile / nativeLink).value).toString
   val file = Files.createTempFile("foo", "")
   assert(Files.exists(file))
   val proc = new ProcessBuilder(cmd, file.toString).start()
@@ -59,7 +66,7 @@ runTestThreadsJoin := {
     )
   else {
     implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
-    val cmd = (Compile / nativeLink).value.toFile.toString
+    val cmd = nativeExecutable((Compile / nativeLink).value).toString
     checkThreadsJoin(cmd, joinInMain = true)
     checkThreadsJoin(cmd, joinInMain = false)
   }
@@ -70,7 +77,7 @@ val runTestQueueWithThreads = taskKey[Unit](
 )
 runTestQueueWithThreads := {
   implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
-  val cmd = (Compile / nativeLink).value.toFile.toString
+  val cmd = nativeExecutable((Compile / nativeLink).value).toString
   val proc = new ProcessBuilder(cmd).start()
   assert(proc.waitFor(5, TimeUnit.SECONDS))
   assert(proc.exitValue == 0)

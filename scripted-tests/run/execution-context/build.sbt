@@ -12,6 +12,13 @@ scalaVersion := {
 
 nativeConfig ~= { _.withMultithreading(false) }
 
+/** sbt 1 returns a [[java.io.File]]; sbt 2 returns a virtual file ref — resolve via [[xsbti.FileConverter]]. */
+def nativeExecutable(linkOutput: Any)(implicit conv: xsbti.FileConverter): java.io.File =
+  linkOutput match {
+    case f: java.io.File              => f
+    case ref: xsbti.VirtualFileRef    => conv.toPath(ref).toFile()
+  }
+
 import java.util.Locale
 val osName = System
   .getProperty("os.name", "unknown")
@@ -24,7 +31,7 @@ testQueueExecutionContext := {
   implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
 
   val bin = (Compile / nativeLink).value
-  val out = Process(bin.toFile.getAbsolutePath).lineStream_!.toList
+  val out = Process(nativeExecutable(bin).getAbsolutePath).lineStream_!.toList
   assert(
     out == List(
       "start main",
@@ -42,7 +49,7 @@ testQueueExecutionContext2 := {
   import java.util.concurrent.TimeUnit
   implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
   val bin = (Compile / nativeLink).value
-  val proc = new ProcessBuilder(bin.toFile.getAbsolutePath).start()
+  val proc = new ProcessBuilder(nativeExecutable(bin).getAbsolutePath).start()
   val finished = proc.waitFor(1, TimeUnit.SECONDS)
   if (!finished) proc.destroyForcibly()
   assert(finished)
@@ -57,7 +64,7 @@ testEventLoop := Def.taskDyn {
       import java.util.concurrent.TimeUnit
       implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
       val bin = (Compile / nativeLink).value
-      val proc = new ProcessBuilder(bin.toFile.getAbsolutePath).start()
+      val proc = new ProcessBuilder(nativeExecutable(bin).getAbsolutePath).start()
       val finished = proc.waitFor(1, TimeUnit.SECONDS)
       if (!finished) proc.destroyForcibly()
       assert(finished)
@@ -69,7 +76,7 @@ testIssue3859 := {
   import java.util.concurrent.TimeUnit
   implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
   val bin = (Compile / nativeLink).value
-  val proc = new ProcessBuilder(bin.toFile.getAbsolutePath).start()
+  val proc = new ProcessBuilder(nativeExecutable(bin).getAbsolutePath).start()
   val finished = proc.waitFor(1, TimeUnit.SECONDS)
   if (!finished) proc.destroyForcibly()
   assert(finished)
