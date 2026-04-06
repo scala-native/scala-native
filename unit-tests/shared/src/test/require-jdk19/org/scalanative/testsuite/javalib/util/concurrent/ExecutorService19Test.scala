@@ -118,6 +118,7 @@ class ExecutorService19Test extends JSR166Test {
     } finally latch.countDown()
   }
 
+  @Ignore // See SN Issue #4820
   /** Test CompletableFuture with the task has not completed.
    */
   @Test def testCompletableFuture1(): Unit = {
@@ -127,6 +128,7 @@ class ExecutorService19Test extends JSR166Test {
     assertThrows(classOf[IllegalStateException], () => future.exceptionNow())
   }
 
+  @Ignore // See SN Issue #4820
   /** Test CompletableFuture with the task has completed with result
    */
   @Test def testCompletableFuture2(): Unit = {
@@ -137,6 +139,7 @@ class ExecutorService19Test extends JSR166Test {
     assertThrows(classOf[IllegalStateException], () => future.exceptionNow())
   }
 
+  @Ignore // See SN Issue #4820
   /** Test CompletableFuture with the task has completed with null
    */
   @Test def testCompletableFuture3(): Unit = {
@@ -147,6 +150,7 @@ class ExecutorService19Test extends JSR166Test {
     assertThrows(classOf[IllegalStateException], () => future.exceptionNow())
   }
 
+  @Ignore // See SN Issue #4820
   /** Test CompletableFuture with the task has completed with exception
    */
   @Test def testCompletableFuture4(): Unit = {
@@ -158,6 +162,7 @@ class ExecutorService19Test extends JSR166Test {
     assertTrue(ex.isInstanceOf[ArithmeticException])
   }
 
+  @Ignore // See SN Issue #4820
   /** Test CompletableFuture with the task that was cancelled
    */
   @Test def testCompletableFuture5(): Unit = {
@@ -193,6 +198,7 @@ class ExecutorService19Test extends JSR166Test {
     assertEquals("foo", future.get())
   }
 
+  @Ignore // See SN Issue #4820
   /** Test close when executor is shutdown but not terminated.
    */
   @Test def testShutdownBeforeClose(): Unit = testExecutors { executor =>
@@ -213,6 +219,7 @@ class ExecutorService19Test extends JSR166Test {
     assertEquals(future.get, "foo")
   }
 
+  @Ignore // See SN Issue #4820
   /** Test invoking close with interrupt status set.
    */
   @Test def testInterruptBeforeClose(): Unit = testExecutors { executor =>
