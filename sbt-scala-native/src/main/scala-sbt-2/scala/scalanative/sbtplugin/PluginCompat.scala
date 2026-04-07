@@ -10,11 +10,53 @@ import scala.scalanative.build.*
 
 import sjsonnew.BasicJsonProtocol.{given, *}
 import sjsonnew.{Builder, HashWriter, JsonFormat, Unbuilder}
-import xsbti.{FileConverter, HashedVirtualFileRef, VirtualFile}
+import xsbti.{FileConverter, HashedVirtualFileRef}
 
 private[scalanative] object PluginCompat:
   type FileRef = HashedVirtualFileRef
-  type Out = VirtualFile
+
+  private final case class FileRefData(
+      id: String,
+      contentHash: String,
+      sizeBytes: Long
+  )
+
+  private given JsonFormat[FileRefData] =
+    sjsonnew.BasicJsonProtocol.caseClass3(
+      FileRefData.apply,
+      data => Some((data.id, data.contentHash, data.sizeBytes))
+    )(
+      "id",
+      "contentHash",
+      "sizeBytes"
+    )
+
+  given JsonFormat[FileRef] with
+    override def read[J](jsOpt: Option[J], unbuilder: Unbuilder[J]): FileRef =
+      val data = summon[JsonFormat[FileRefData]].read(jsOpt, unbuilder)
+      HashedVirtualFileRef.of(data.id, data.contentHash, data.sizeBytes)
+
+    override def write[J](obj: FileRef, builder: Builder[J]): Unit =
+      summon[JsonFormat[FileRefData]].write(
+        FileRefData(
+          id = obj.id(),
+          contentHash = obj.contentHashStr(),
+          sizeBytes = obj.sizeBytes()
+        ),
+        builder
+      )
+
+  def toNioPath(out: FileRef)(using conv: FileConverter): NioPath =
+    conv.toPath(out)
+
+  inline def toFile(out: FileRef)(using conv: FileConverter): File =
+    toNioPath(out).toFile()
+
+  def toFileRef(path: NioPath)(using conv: FileConverter): FileRef =
+    conv.toVirtualFile(path)
+
+  inline def toFileRef(file: File)(using conv: FileConverter): FileRef =
+    toFileRef(file.toPath())
 
   def toNioPath(a: Attributed[HashedVirtualFileRef])(using
       conv: FileConverter
