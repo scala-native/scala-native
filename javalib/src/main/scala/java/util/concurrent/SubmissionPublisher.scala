@@ -9,7 +9,7 @@ import java.util.Objects.requireNonNull
 import java.util.concurrent.atomic.*
 import java.util.concurrent.locks.{LockSupport, ReentrantLock}
 import java.util.function.{BiConsumer, BiPredicate, Consumer}
-import java.util.{ArrayList, Collections, List as JList}
+import java.util.{ArrayList, List as JList}
 
 // @since JDK 9
 class SubmissionPublisher[T](
@@ -45,19 +45,19 @@ class SubmissionPublisher[T](
    * on each subscriber, and place saturated ones in retries list (using
    * nextRetry field), and retry, possibly blocking or dropping.
    */
-  @volatile private var clients: BufferedSubscription[T] = null
+  private var clients: BufferedSubscription[T] = _
 
   /** Run status, updated only within locks */
   @volatile private var closed = false
 
-  /** If non-null, the exception in closeExceptionally */
-  @volatile private var closedException: Throwable = null
-
   /** Set true on first call to subscribe, to initialize possible owner */
-  @volatile private var subscribed = false
+  private var subscribed = false
 
   /** The first caller thread to subscribe, or null if thread ever changed */
-  @volatile private var ownerThread: Thread = null
+  private var ownerThread: Thread = _
+
+  /** If non-null, the exception in closeExceptionally */
+  @volatile private var closedException: Throwable = _
 
   /** A lock for operations that need to be synchronous */
   private final val lock = new ReentrantLock()
@@ -178,10 +178,10 @@ class SubmissionPublisher[T](
       try {
         curr = clients
         if (!closed) { // don't clobber racing close
+          closedException = error
           clients = null
           ownerThread = null
-          closed = true // set both closed
-          closedException = error // and closedException synchronously
+          closed = true
         }
       } finally {
         lock.unlock()
@@ -274,7 +274,7 @@ class SubmissionPublisher[T](
       lock.unlock()
     }
 
-    Collections.unmodifiableList(subs)
+    subs
   }
 
   def isSubscribed(subscriber: Flow.Subscriber[? >: T]): Boolean = {
@@ -603,7 +603,7 @@ object SubmissionPublisher {
       status: CompletableFuture[Void],
       consumer: Consumer[? >: T]
   ) extends Flow.Subscriber[T] {
-    var subscription: Flow.Subscription = null
+    var subscription: Flow.Subscription = _
 
     final def onSubscribe(subscription: Flow.Subscription): Unit = {
       this.subscription = subscription
@@ -689,31 +689,34 @@ object SubmissionPublisher {
 
     import BufferedSubscription.CtlFlag
 
-    private val ctl = new AtomicInteger(0) // atomic run state flags
-    private val head = new AtomicInteger(0) // next position to take
-    private val tail = new AtomicInteger(0) // next position to put
-    // unfilled requests
-    private[SubmissionPublisher] val demand = new AtomicLong(0L)
-
+    // > 0 if timed wait, Long.MAX_VALUE if untimed wait
+    private var timeout = 0L
+    // next position to take
+    private val head = new AtomicInteger(0)
+    // next position to put
+    private val tail = new AtomicInteger(0)
+    // atomic run state flags
+    private val ctl = new AtomicInteger(0)
     // buffer array
-    @volatile private var buffer =
+    private var buffer =
       new AtomicReferenceArray[AnyRef](initCapacity)
-
+    // blocked producer thread
+    private var waiter: Thread = _
     // holds until onError issued
-    @volatile private var pendingError: Throwable = null
-
-    @volatile private var waiting: Int = 0 // nonzero if producer blocked
-    @volatile private var waiter: Thread = null // blocked producer thread
-
-    @volatile private var timeout = 0L // > 0 if timed wait
+    private var pendingError: Throwable = _
 
     // next node for main linked list
-    private[SubmissionPublisher] var next: BufferedSubscription[T] = null
+    private[SubmissionPublisher] var next: BufferedSubscription[T] = _
     // next node for retry linked list
-    private[SubmissionPublisher] var nextRetry: BufferedSubscription[T] = null
+    private[SubmissionPublisher] var nextRetry: BufferedSubscription[T] = _
+
+    private type Contended = scala.scalanative.annotation.align
+    // unfilled requests
+    @Contended("c") private[SubmissionPublisher] val demand = new AtomicLong(0L)
+    // nonzero if producer blocked
+    @Contended("c") @volatile private var waiting: Int = 0
 
     // Wrappers for demand VarHandle
-
     private def demandSubtractAndGet(k: Long): Long = {
       val n = -k
       n + demand.getAndAdd(n)
@@ -743,7 +746,7 @@ object SubmissionPublisher {
     def offer(item: T, unowned: Boolean): Int = {
       val _tail = tail.get()
       val size = _tail + 1 - head.get()
-      val cap = if (buffer == null) 0 else buffer.length()
+      val cap = buffer.length()
       val index = _tail & (cap - 1)
 
       var stat = 0
