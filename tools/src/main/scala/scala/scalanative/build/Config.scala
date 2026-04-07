@@ -197,7 +197,7 @@ sealed trait Config {
             // On macOS, EXC_BAD_ACCESS from the yieldpoint trap is not always
             // delivered as SIGBUS/SIGSEGV to the faulting thread, causing STW
             // to hang. Use conditional (polling) yieldpoints by default.
-            if (targetsMac) true
+            if (targetsMac) false
             else compilerConfig.mode.isInstanceOf[Mode.Release]
         }
       case _ => false
