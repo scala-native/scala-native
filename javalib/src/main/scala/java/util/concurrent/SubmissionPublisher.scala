@@ -666,17 +666,17 @@ object SubmissionPublisher {
 
     /** ctl bit values */
     private[SubmissionPublisher] object CtlFlag {
-      val CLOSED = 0x01 // if set, other bits ignored
-      val ACTIVE = 0x02 // keep-alive for consumer task
-      val REQS = 0x04 // (possibly) nonzero demand
-      val ERROR = 0x08 // issues onError when noticed
-      val COMPLETE = 0x10 // issues onComplete when done
-      val RUN = 0x20 // task is or will be running
-      val OPEN = 0x40 // true after subscribe
+      final val CLOSED = 0x01 // if set, other bits ignored
+      final val ACTIVE = 0x02 // keep-alive for consumer task
+      final val REQS = 0x04 // (possibly) nonzero demand
+      final val ERROR = 0x08 // issues onError when noticed
+      final val COMPLETE = 0x10 // issues onComplete when done
+      final val RUN = 0x20 // task is or will be running
+      final val OPEN = 0x40 // true after subscribe
     }
 
     /** timeout vs interrupt sentinel */
-    private[SubmissionPublisher] val INTERRUPTED = -1L
+    private[SubmissionPublisher] final val INTERRUPTED = -1L
 
   }
 
