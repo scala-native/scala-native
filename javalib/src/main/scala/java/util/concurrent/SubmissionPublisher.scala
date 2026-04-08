@@ -5,11 +5,20 @@
  */
 package java.util.concurrent
 
+import java.lang.invoke.VarHandle
 import java.util.Objects.requireNonNull
-import java.util.concurrent.atomic.*
 import java.util.concurrent.locks.{LockSupport, ReentrantLock}
 import java.util.function.{BiConsumer, BiPredicate, Consumer}
-import java.util.{ArrayList, List as JList}
+import java.util.{ArrayList, Arrays, List as JList}
+
+import scala.scalanative.annotation.alwaysinline
+import scala.scalanative.libc.stdatomic.memory_order.{
+  memory_order_acquire, memory_order_release
+}
+import scala.scalanative.libc.stdatomic.{AtomicInt, AtomicLongLong, AtomicRef}
+import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
+import scala.scalanative.runtime.{ObjectArray, fromRawPtr}
+import scala.scalanative.unsafe.{Ptr, stackalloc}
 
 // @since JDK 9
 class SubmissionPublisher[T](
@@ -328,7 +337,7 @@ class SubmissionPublisher[T](
 
       while (curr != null) {
         val lag = curr.estimateLag()
-        val demand = curr.demand.get()
+        val demand = curr.getDemand()
         next = curr.next
 
         if (lag < 0) {
@@ -413,7 +422,7 @@ class SubmissionPublisher[T](
   ): Int = {
     requireNonNull(item, "item cannot be null")
 
-    val complete = new AtomicBoolean(false)
+    var complete = false
     var lag = 0 // highest lag observed
 
     lock.lock()
@@ -427,11 +436,11 @@ class SubmissionPublisher[T](
       var curr = clients
 
       if (curr == null)
-        complete.set(closed)
+        complete = closed
       else {
-        complete.set(false)
-        val cleanMe = new AtomicBoolean(false)
+        complete = false
 
+        var cleanMe = false
         var retries: BufferedSubscription[T] = null
         var rtail: BufferedSubscription[T] = null
 
@@ -450,7 +459,7 @@ class SubmissionPublisher[T](
             rtail = curr
           } // force a new line for formatting
           else if (stat < 0) { // closed
-            cleanMe.set(true) // remove later
+            cleanMe = true // remove later
           } // force a new line for formatting
           else if (stat > lag)
             lag = stat
@@ -459,15 +468,14 @@ class SubmissionPublisher[T](
           curr != null
         }) {}
 
-        if (retries != null || cleanMe.get())
-          lag =
-            retryOffer(item, timeoutNanos, onDrop, retries, lag, cleanMe.get())
+        if (retries != null || cleanMe)
+          lag = retryOffer(item, timeoutNanos, onDrop, retries, lag, cleanMe)
       }
     } finally {
       lock.unlock()
     }
 
-    if (complete.get())
+    if (complete)
       throw new IllegalStateException("Closed")
     else
       lag
@@ -620,9 +628,10 @@ object SubmissionPublisher {
     final def onNext(item: T): Unit =
       try consumer.accept(item)
       catch {
-        case exc: Throwable =>
+        case exc: Throwable => {
           subscription.cancel()
           status.completeExceptionally(exc): Unit
+        }
       }
   }
 
@@ -690,16 +699,15 @@ object SubmissionPublisher {
     import BufferedSubscription.CtlFlag
 
     // > 0 if timed wait, Long.MAX_VALUE if untimed wait
-    private var timeout = 0L
+    @Contended("c") private var timeout: Long = 0L
     // next position to take
-    private val head = new AtomicInteger(0)
+    @Contended("c") private var head: Int = 0
     // next position to put
-    private val tail = new AtomicInteger(0)
+    @Contended("c") private var tail: Int = 0
     // atomic run state flags
-    private val ctl = new AtomicInteger(0)
-    // buffer array
-    private var buffer =
-      new AtomicReferenceArray[AnyRef](initCapacity)
+    @Contended("c") private var ctl: Int = 0
+    // buffer array, the type constraint is T <: AnyRef
+    private var buffer = new Array[Object](initCapacity)
     // blocked producer thread
     private var waiter: Thread = _
     // holds until onError issued
@@ -712,29 +720,94 @@ object SubmissionPublisher {
 
     private type Contended = scala.scalanative.annotation.align
     // unfilled requests
-    @Contended("c") private[SubmissionPublisher] val demand = new AtomicLong(0L)
+    @Contended("c") private var demand: Long = 0L
     // nonzero if producer blocked
     @Contended("c") @volatile private var waiting: Int = 0
 
-    // Wrappers for demand VarHandle
-    private def demandSubtractAndGet(k: Long): Long = {
-      val n = -k
-      n + demand.getAndAdd(n)
+    // Utilities for atomic access to fields
+
+    @alwaysinline
+    private def tailPtr: Ptr[Int] =
+      fromRawPtr[Int](classFieldRawPtr(this, "tail"))
+    @alwaysinline
+    private def tailAtm: AtomicInt =
+      new AtomicInt(tailPtr)
+    @alwaysinline
+    private def tailIncrementAndGet(): Int =
+      tailAtm.fetchAdd(1) + 1
+    @alwaysinline
+    private def tailGetAndIncrement(): Int =
+      tailAtm.fetchAdd(1)
+
+    @alwaysinline
+    private def ctlPtr: Ptr[Int] =
+      fromRawPtr[Int](classFieldRawPtr(this, "ctl"))
+    @alwaysinline
+    private def ctlAtm =
+      new AtomicInt(ctlPtr)
+    @alwaysinline
+    private def ctlGetAndBitwiseOr(bits: Int): Int =
+      ctlAtm.fetchOr(bits)
+    @alwaysinline
+    private def ctlWeakCompareAndSet(expect: Ptr[Int], value: Int): Boolean =
+      ctlAtm.compareExchangeWeak(expect, value)
+
+    @alwaysinline
+    private def demandPtr: Ptr[Long] =
+      fromRawPtr[Long](classFieldRawPtr(this, "demand"))
+    @alwaysinline
+    private def demandAtm =
+      new AtomicLongLong(demandPtr)
+    @alwaysinline
+    private def demandCompareAndSet(expect: Ptr[Long], value: Long): Boolean =
+      demandAtm.compareExchangeStrong(expect, value)
+    @alwaysinline
+    private def demandSubtractAndGet(k: Long): Long =
+      demandAtm.fetchSub(k) - k
+
+    @alwaysinline
+    private def arrayGetAtomicRef[E <: AnyRef](
+        a: Array[E],
+        i: Int
+    ): AtomicRef[E] = {
+      val elemRef = a.asInstanceOf[ObjectArray].at(i).asInstanceOf[Ptr[E]]
+      new AtomicRef[E](elemRef)
     }
+    @alwaysinline
+    private def arrayCompareAndSet[E <: AnyRef](
+        a: Array[E],
+        i: Int,
+        e: E,
+        v: E
+    ): Boolean =
+      arrayGetAtomicRef(a, i).compareExchangeStrong(e, v)
+    @alwaysinline
+    private def arraySetRelease[E <: AnyRef](a: Array[E], i: Int, e: E): Unit =
+      arrayGetAtomicRef(a, i).store(e, memory_order_release)
+    @alwaysinline
+    private def arrayGetAcquire[E <: AnyRef](a: Array[E], i: Int): E =
+      arrayGetAtomicRef(a, i).load(memory_order_acquire)
+    @alwaysinline
+    private def arrayGetAndSet[E <: AnyRef](a: Array[E], i: Int, v: E): E =
+      arrayGetAtomicRef(a, i).exchange(v)
 
     // Utilities used by SubmissionPublisher
 
     /** Returns true if closed (consumer task may still be running). */
     def isClosed() =
-      (ctl.get() & CtlFlag.CLOSED) != 0
+      (ctl & CtlFlag.CLOSED) != 0
 
     /** Returns estimated number of buffered items, or negative if closed. */
     def estimateLag(): Int = {
-      val lag = tail.get() - head.get()
+      val lag = tail - head
       if (isClosed()) -1
       else if (lag < 0) 0
       else lag
     }
+
+    @alwaysinline
+    def getDemand(): Long =
+      demand
 
     // Methods for submitting items
 
@@ -744,9 +817,9 @@ object SubmissionPublisher {
      *    negative if closed, 0 if saturated, else estimated lag
      */
     def offer(item: T, unowned: Boolean): Int = {
-      val _tail = tail.get()
-      val size = _tail + 1 - head.get()
-      val cap = buffer.length()
+      val _tail = tail
+      val size = _tail + 1 - head
+      val cap = buffer.length
       val index = _tail & (cap - 1)
 
       var stat = 0
@@ -755,18 +828,14 @@ object SubmissionPublisher {
           if (size >= cap && cap < maxCapacity) // resize
             growAndOffer(item, _tail)
           else if (size >= cap || unowned) // need volatile CAS
-            buffer.compareAndSet(
-              index,
-              null,
-              item.asInstanceOf[AnyRef]
-            )
+            arrayCompareAndSet(buffer, index, null, item.asInstanceOf[AnyRef])
           else {
-            buffer.setRelease(index, item.asInstanceOf[AnyRef])
+            arraySetRelease(buffer, index, item.asInstanceOf[AnyRef])
             true
           }
 
         if (added) {
-          tail.getAndIncrement()
+          tailGetAndIncrement()
           stat = size
         }
       }
@@ -776,13 +845,13 @@ object SubmissionPublisher {
 
     /** Tries to create or expand buffer, then adds item if possible. */
     private def growAndOffer(item: T, tail: Int): Boolean = {
-      val cap = buffer.length()
+      val cap = buffer.length
       val newCap = cap << 1
-      var newBuffer: AtomicReferenceArray[AnyRef] = null
+      var newBuffer: Array[Object] = null
 
       if (newCap > 0)
         try {
-          newBuffer = new AtomicReferenceArray[AnyRef](newCap)
+          newBuffer = new Array[Object](newCap)
         } catch {
           case exc: OutOfMemoryError => ()
         }
@@ -792,24 +861,25 @@ object SubmissionPublisher {
       else { // take and move items
         val mask = cap - 1
         val newMask = newCap - 1
-        newBuffer.compareAndSet(tail & newMask, null, item.asInstanceOf[AnyRef])
+        newBuffer(tail & newMask) = item.asInstanceOf[AnyRef]
 
         var t = tail - 1
         var k = mask
         var break = false
         while (!break && k >= 0) {
-          val x = buffer.getAndSet(t & mask, null)
+          val x = arrayGetAndSet(buffer, t & mask, null)
 
           if (x == null)
             break = true // already consumed, exits loop
           else {
-            newBuffer.compareAndSet(t & newMask, null, x)
+            newBuffer(t & newMask) = x
             t -= 1
             k -= 1
           }
         }
 
-        buffer = newBuffer // release array and slots
+        buffer = newBuffer
+        VarHandle.releaseFence() // release array and slots
         true
       }
     }
@@ -817,11 +887,11 @@ object SubmissionPublisher {
     /** Version of offer for retries (no resize or bias) */
     def retryOffer(item: T): Int = {
       var stat = 0
-      val mask = buffer.length() - 1
-      val idx = mask & tail.get()
+      val mask = buffer.length - 1
+      val idx = mask & tail
 
-      if (buffer.compareAndSet(idx, null, item.asInstanceOf[AnyRef]))
-        stat = tail.incrementAndGet() - head.get()
+      if (arrayCompareAndSet(buffer, idx, null, item.asInstanceOf[AnyRef]))
+        stat = tailIncrementAndGet() - head
 
       startOnOffer(stat);
     }
@@ -832,13 +902,15 @@ object SubmissionPublisher {
      *    negative if now closed, else argument
      */
     private def startOnOffer(stat: Int): Int = {
-      var _ctl = ctl.get()
+      var _ctl = ctl
       var _stat = stat
 
       // start or keep alive if requests exist and not active
       if ((_ctl & (CtlFlag.REQS | CtlFlag.ACTIVE)) == CtlFlag.REQS
-          && (ctl.getAndUpdate(c => c | CtlFlag.RUN | CtlFlag.ACTIVE)
-            & (CtlFlag.RUN | CtlFlag.CLOSED)) == 0)
+          && {
+            _ctl = ctlGetAndBitwiseOr(CtlFlag.RUN | CtlFlag.ACTIVE)
+            (_ctl & (CtlFlag.RUN | CtlFlag.CLOSED)) == 0
+          })
         tryStart()
       else if ((_ctl & CtlFlag.CLOSED) != 0)
         _stat = -1
@@ -854,7 +926,7 @@ object SubmissionPublisher {
           executor.execute(task)
       } catch {
         case exc @ (_: RuntimeException | _: Error) =>
-          ctl.getAndUpdate(c => c | CtlFlag.ERROR | CtlFlag.CLOSED)
+          ctlGetAndBitwiseOr(CtlFlag.ERROR | CtlFlag.CLOSED)
           throw exc
       }
 
@@ -865,14 +937,10 @@ object SubmissionPublisher {
      *  @param bits
      *    state bits, assumed to include RUN but not CLOSED
      */
-    def startOnSignal(bits: Int): Unit = {
-      val _ctl = ctl.get()
-      if ((_ctl & bits) != bits
-          &&
-          (ctl.getAndUpdate(c => c | bits)
-            & (CtlFlag.RUN | CtlFlag.CLOSED)) == 0)
+    def startOnSignal(bits: Int): Unit =
+      if ((ctl & bits) != bits
+          && (ctlGetAndBitwiseOr(bits) & (CtlFlag.RUN | CtlFlag.CLOSED)) == 0)
         tryStart()
-    }
 
     def onSubscribe(): Unit =
       startOnSignal(CtlFlag.RUN | CtlFlag.ACTIVE)
@@ -887,13 +955,14 @@ object SubmissionPublisher {
       if (exc != null)
         pendingError = exc // races are OK
 
-      val _ctl =
-        ctl.getAndUpdate(x => x | CtlFlag.ERROR | CtlFlag.RUN | CtlFlag.ACTIVE)
+      val _ctl = ctlGetAndBitwiseOr(
+        CtlFlag.ERROR | CtlFlag.RUN | CtlFlag.ACTIVE
+      )
       if ((_ctl & CtlFlag.CLOSED) == 0) {
         if ((_ctl & CtlFlag.RUN) == 0)
           tryStart()
         else
-          (0 until buffer.length()).foreach(i => buffer.lazySet(i, null))
+          Arrays.fill(buffer, null)
       }
     }
 
@@ -907,9 +976,9 @@ object SubmissionPublisher {
     override def request(n: Long): Unit =
       if (n > 0L) {
         while ({
-          val p = demand.get()
-          val d = p + n // saturate
-          !demand.compareAndSet(p, if (d < p) Long.MaxValue else d)
+          val p = stackalloc[Long](); !p = demand
+          val d = !p + n // saturate
+          !demandCompareAndSet(p, if (d < !p) Long.MaxValue else d)
         }) {}
 
         startOnSignal(CtlFlag.RUN | CtlFlag.ACTIVE | CtlFlag.REQS)
@@ -928,13 +997,15 @@ object SubmissionPublisher {
       // `subscriber != null` checked in constructor
       subscribeOnOpen(subscriber)
 
-      var _demand = demand.get()
-      var _head = head.get()
-      var _tail = tail.get()
+      var _demand = demand
+      var _head = head
+      var _tail = tail
 
       var break = false
       while (!break) {
-        val _ctl = ctl.get()
+        val _ctlPtr = stackalloc[Int](); !_ctlPtr = ctl
+        @alwaysinline def _ctl = !_ctlPtr
+
         var taken = 0
         var empty = false
 
@@ -947,22 +1018,20 @@ object SubmissionPublisher {
           taken > 0
         }) {
           _head += taken
-          head.set(_head)
+          head = _head
           _demand = demandSubtractAndGet(taken.toLong)
         } // force a new line for formatting
-        else if ({
-              _demand = demand.get(); _demand == 0L
-            } && ((_ctl & CtlFlag.REQS) != 0)) // exhausted demand
-          ctl.weakCompareAndSetPlain(_ctl, _ctl & ~CtlFlag.REQS): Unit
+        else if ({ _demand = demand; _demand == 0L }
+            && ((_ctl & CtlFlag.REQS) != 0)) // exhausted demand
+          ctlWeakCompareAndSet(_ctlPtr, _ctl & ~CtlFlag.REQS): Unit
         else if (_demand != 0L && (_ctl & CtlFlag.REQS) == 0) // new demand
-          ctl.weakCompareAndSetPlain(_ctl, _ctl | CtlFlag.REQS): Unit
+          ctlWeakCompareAndSet(_ctlPtr, _ctl | CtlFlag.REQS): Unit
         else if ({
-          val _tail_old = _tail; _tail = tail.get();
+          val _tail_old = _tail; _tail = tail;
           _tail_old == _tail // stability check
         }) {
-          if ({
-                empty = _tail == _head; empty
-              } && (_ctl & CtlFlag.COMPLETE) != 0) {
+          if ({ empty = _tail == _head; empty }
+              && (_ctl & CtlFlag.COMPLETE) != 0) {
             closeOnComplete(subscriber) // end of stream
             break = true
           } // force a new line for formatting
@@ -970,8 +1039,8 @@ object SubmissionPublisher {
             val bit =
               if ((_ctl & CtlFlag.ACTIVE) != 0) CtlFlag.ACTIVE
               else CtlFlag.RUN
-            if (ctl.weakCompareAndSetPlain(
-                  _ctl,
+            if (ctlWeakCompareAndSet(
+                  _ctlPtr,
                   _ctl & ~bit
                 ) && bit == CtlFlag.RUN)
               break = true
@@ -998,7 +1067,7 @@ object SubmissionPublisher {
     ): Int = {
       var h = head
       var k = 0
-      val cap = buffer.length()
+      val cap = buffer.length
 
       if (cap > 0) {
         val m = cap - 1
@@ -1007,7 +1076,7 @@ object SubmissionPublisher {
 
         var break = false
         while (!break && k < n) {
-          val x = buffer.getAndSet(h & m, null)
+          val x = arrayGetAndSet(buffer, h & m, null)
 
           if (waiting != 0) signalWaiter()
 
@@ -1049,9 +1118,9 @@ object SubmissionPublisher {
 
     /** Issues subscriber.onSubscribe if this is first signal. */
     def subscribeOnOpen(sub: Flow.Subscriber[? >: T]): Unit =
-      if ((ctl.get() & CtlFlag.OPEN) == 0
+      if ((ctl & CtlFlag.OPEN) == 0
           &&
-          (ctl.getAndUpdate(c => c | CtlFlag.OPEN) & CtlFlag.OPEN) == 0) {
+          (ctlGetAndBitwiseOr(CtlFlag.OPEN) & CtlFlag.OPEN) == 0) {
         consumeSubscribe(sub)
       }
 
@@ -1065,7 +1134,7 @@ object SubmissionPublisher {
 
     /** Issues subscriber.onComplete unless already closed. */
     def closeOnComplete(sub: Flow.Subscriber[? >: T]): Unit = {
-      if ((ctl.getAndUpdate(c => c | CtlFlag.CLOSED) & CtlFlag.CLOSED) == 0)
+      if ((ctlGetAndBitwiseOr(CtlFlag.CLOSED) & CtlFlag.CLOSED) == 0)
         consumeComplete(sub)
     }
 
@@ -1079,9 +1148,7 @@ object SubmissionPublisher {
     /** Issues subscriber.onError, and unblocks producer if needed. */
     def closeOnError(sub: Flow.Subscriber[? >: T], exc: Throwable): Unit = {
       var _exc = exc
-      if ((ctl.getAndUpdate(c =>
-            c | CtlFlag.ERROR | CtlFlag.CLOSED
-          ) & CtlFlag.CLOSED)
+      if ((ctlGetAndBitwiseOr(CtlFlag.ERROR | CtlFlag.CLOSED) & CtlFlag.CLOSED)
             == 0) {
         if (exc == null)
           _exc = pendingError
@@ -1110,9 +1177,9 @@ object SubmissionPublisher {
 
     /** Returns true if closed or space available. For ManagedBlocker. */
     def isReleasable(): Boolean =
-      ((ctl.get() & CtlFlag.CLOSED) != 0) || {
-        val cap = buffer.length()
-        cap > 0 && (buffer.getAcquire((cap - 1) & tail.get()) == null)
+      ((ctl & CtlFlag.CLOSED) != 0) || {
+        val cap = buffer.length
+        cap > 0 && (arrayGetAcquire(buffer, (cap - 1) & tail) == null)
       }
 
     /** Helps or blocks until timeout, closed, or space available. */
