@@ -1171,11 +1171,10 @@ object SubmissionPublisher {
 
     /** Returns true if closed or space available. For ManagedBlocker. */
     def isReleasable(): Boolean =
-      ((ctl & Ctl.CLOSED) != 0)
-        || {
-          val cap = buffer.length
-          cap > 0 && (arrayGetAcquire(buffer, (cap - 1) & tail) == null)
-        }
+      ((ctl & Ctl.CLOSED) != 0) || {
+        val cap = buffer.length
+        cap > 0 && (arrayGetAcquire(buffer, (cap - 1) & tail) == null)
+      }
 
     /** Helps or blocks until timeout, closed, or space available. */
     def awaitSpace(nanos: Long): Unit =
