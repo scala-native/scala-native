@@ -333,11 +333,7 @@ object Build {
         _.settings(
           addSbtPlugin(Deps.SbtPlatformDeps)
         )
-      case _ =>
-        _.settings(
-          disableMimaSettings
-            .ensuring(ScalaNativeBuildInfo.version.startsWith("0.5.11"), "sbt plugin not yet published")
-        )
+      case _ => identity
     }
     .settings(
       sbtTestDirectory := (ThisBuild / baseDirectory).value / "scripted-tests",
