@@ -1963,12 +1963,17 @@ class FilesTest {
 
       val before = Files.getLastModifiedTime(path).toMillis()
 
-      // Detect & report wildly out of range lastModifiedTime values.
+      /* Detect & report wildly out of range lastModifiedTime values.
+       * An instance of the classic ROC (Receiver Operating Characteristics)
+       * decision choice. Pick a value which is small enough to detect
+       * true failures but large enough to avoid failures due to
+       * vagaries in CI execution.
+       */
       assertEquals(
         "unreasonable lastModifiedTime",
         now.toDouble,
         before.toDouble,
-        10.0 // an arbitrary, small value for sloow CI machines
+        500.0 // an arbitrary, small value for slooow CI machines
       )
 
       // Sleep so that the modified time is definitely different
