@@ -3,6 +3,11 @@ package java.nio.file.attribute
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 
+import scalanative.posix.{time, timeOps}
+import scalanative.unsafe._
+
+import timeOps.timespecOps
+
 final class FileTime private (
     private val epochDays: Long,
     private val dayNanos: Long
@@ -28,8 +33,8 @@ final class FileTime private (
 
   /* From JDK 8 API
    *
-   * Conversion from a coarser granularity that would numerically overflow saturate to Long.MIN_VALUE if negative
-   * or Long.MAX_VALUE if positive.
+   * Conversion from a coarser granularity that would numerically overflow
+   * saturate to Long.MIN_VALUE if negative or Long.MAX_VALUE if positive.
    */
   def to(unit: TimeUnit): Long = {
     val fromDays = unit.convert(epochDays, TimeUnit.DAYS)
@@ -69,6 +74,16 @@ final class FileTime private (
   }
 
   override def toString(): String = s"FileTime($epochDays, $dayNanos)"
+
+  // Fill and return the provided timespec
+  private[attribute] def toTimespec(
+      tsPtr: Ptr[time.timespec]
+  ): Ptr[time.timespec] = {
+    tsPtr.tv_sec = to(TimeUnit.SECONDS).toSize
+    tsPtr.tv_nsec = Math.floorMod(dayNanos, NanosToSecond).toSize
+
+    tsPtr
+  }
 }
 
 object FileTime {
@@ -90,6 +105,22 @@ object FileTime {
     val days = Math.floorDiv(s, SecondsInDay)
     val daySeconds = Math.floorMod(s, SecondsInDay)
     val dayNanos = (daySeconds * NanosToSecond) + instant.getNano
+    new FileTime(days, dayNanos)
+  }
+
+  // Pre-condition: POSIX timespec st_mtim.tv_nsec guarantees nanos < 1 second
+  private[attribute] def from(
+      seconds: scala.Long,
+      nanos: scala.Long
+  ): FileTime = {
+    /* Math is similar to that in method 'from(instant)' above.
+     * Open code to preserve full range of File time and
+     * avoid SN java.time support complexity.
+     */
+    val days = Math.floorDiv(seconds, SecondsInDay)
+    val daySeconds = Math.floorMod(seconds, SecondsInDay)
+    val dayNanos = (daySeconds * NanosToSecond) + nanos
+
     new FileTime(days, dayNanos)
   }
 }

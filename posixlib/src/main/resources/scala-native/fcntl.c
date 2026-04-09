@@ -55,6 +55,8 @@ int scalanative_o_rdwr() { return O_RDWR; }
 
 int scalanative_o_wronly() { return O_WRONLY; }
 
+int scalanative_at_fdcwd() { return AT_FDCWD; }
+
 struct scalanative_flock {
     off_t l_start; /* starting offset */
     off_t l_len;   /* len = 0 means until end of file */
