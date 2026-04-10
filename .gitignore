@@ -12,6 +12,7 @@ scripts/.coursier
 scripts/.scalafmt*
 scripts/.scala-cli*
 sbt-crossproject/
+sbt-launch.jar
 local.sbt
 .ammonite/
 
