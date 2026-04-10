@@ -18,7 +18,7 @@ import scala.scalanative.libc.stdatomic.memory_order.{
 import scala.scalanative.libc.stdatomic.{AtomicInt, AtomicLongLong, AtomicRef}
 import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
 import scala.scalanative.runtime.{ObjectArray, fromRawPtr}
-import scala.scalanative.unsafe.{Ptr, stackalloc}
+import scala.scalanative.unsafe.Ptr
 
 // @since JDK 9
 class SubmissionPublisher[T](
@@ -680,14 +680,18 @@ object SubmissionPublisher {
 
   }
 
+  private type Contended = scala.scalanative.annotation.align
+
+  @Contended()
   final class BufferedSubscription[T] private[SubmissionPublisher] (
       private[SubmissionPublisher] val subscriber: Flow.Subscriber[? >: T],
       private var executor: Executor,
       private val initCapacity: Int,
       private val maxCapacity: Int,
-      private val handler: BiConsumer[? >: Flow.Subscriber[
-        ? >: T
-      ], ? >: Throwable]
+      private val handler: BiConsumer[
+        ? >: Flow.Subscriber[? >: T],
+        ? >: Throwable
+      ]
   ) extends Flow.Subscription
       with ForkJoinPool.ManagedBlocker {
 
@@ -699,13 +703,13 @@ object SubmissionPublisher {
     import BufferedSubscription.Ctl
 
     // > 0 if timed wait, Long.MAX_VALUE if untimed wait
-    @Contended("c") private var timeout: Long = 0L
+    private var timeout: Long = 0L
     // next position to take
-    @Contended("c") private var head: Int = 0
+    private var head: Int = 0
     // next position to put
-    @Contended("c") private var tail: Int = 0
+    private var tail: Int = 0
     // atomic run state flags
-    @Contended("c") private var ctl: Int = 0
+    private var ctl: Int = 0
     // buffer array, the type constraint is T <: AnyRef
     private var buffer = new Array[Object](initCapacity)
     // blocked producer thread
@@ -718,7 +722,6 @@ object SubmissionPublisher {
     // next node for retry linked list
     private[SubmissionPublisher] var nextRetry: BufferedSubscription[T] = _
 
-    private type Contended = scala.scalanative.annotation.align
     // unfilled requests
     @Contended("c") private var demand: Long = 0L
     // nonzero if producer blocked
@@ -727,11 +730,8 @@ object SubmissionPublisher {
     // Utilities for atomic access to fields
 
     @alwaysinline
-    private def tailPtr: Ptr[Int] =
-      fromRawPtr[Int](classFieldRawPtr(this, "tail"))
-    @alwaysinline
     private def tailAtm: AtomicInt =
-      new AtomicInt(tailPtr)
+      new AtomicInt(fromRawPtr[Int](classFieldRawPtr(this, "tail")))
     @alwaysinline
     private def tailIncrementAndGet(): Int =
       tailAtm.fetchAdd(1) + 1
@@ -740,27 +740,21 @@ object SubmissionPublisher {
       tailAtm.fetchAdd(1)
 
     @alwaysinline
-    private def ctlPtr: Ptr[Int] =
-      fromRawPtr[Int](classFieldRawPtr(this, "ctl"))
-    @alwaysinline
     private def ctlAtm =
-      new AtomicInt(ctlPtr)
+      new AtomicInt(fromRawPtr[Int](classFieldRawPtr(this, "ctl")))
     @alwaysinline
     private def ctlGetAndBitwiseOr(bits: Int): Int =
       ctlAtm.fetchOr(bits)
     @alwaysinline
-    private def ctlWeakCompareAndSet(expect: Ptr[Int], value: Int): Boolean =
-      ctlAtm.compareExchangeWeak(expect, value)
+    private def ctlWeakCompareAndSet(expectValue: Int, value: Int): Boolean =
+      ctlAtm.compareExchangeWeak(expectValue, value)
 
     @alwaysinline
-    private def demandPtr: Ptr[Long] =
-      fromRawPtr[Long](classFieldRawPtr(this, "demand"))
-    @alwaysinline
     private def demandAtm =
-      new AtomicLongLong(demandPtr)
+      new AtomicLongLong(fromRawPtr[Long](classFieldRawPtr(this, "demand")))
     @alwaysinline
-    private def demandCompareAndSet(expect: Ptr[Long], value: Long): Boolean =
-      demandAtm.compareExchangeStrong(expect, value)
+    private def demandCompareAndSet(expectValue: Long, value: Long): Boolean =
+      demandAtm.compareExchangeStrong(expectValue, value)
     @alwaysinline
     private def demandSubtractAndGet(k: Long): Long =
       demandAtm.fetchSub(k) - k
@@ -974,9 +968,9 @@ object SubmissionPublisher {
     override def request(n: Long): Unit =
       if (n > 0L) {
         while ({
-          val p = stackalloc[Long](); !p = demand
-          val d = !p + n // saturate
-          !demandCompareAndSet(p, if (d < !p) Long.MaxValue else d)
+          val p = demand
+          val d = p + n // saturate
+          !demandCompareAndSet(p, if (d < p) Long.MaxValue else d)
         }) {}
 
         startOnSignal(Ctl.RUN | Ctl.ACTIVE | Ctl.REQS)
@@ -992,7 +986,7 @@ object SubmissionPublisher {
      *  during submit.
      */
     def consume(): Unit = {
-      // `subscriber != null` checked in constructor
+      // `subscriber != null` has been checked in the constructor
       subscribeOnOpen(subscriber)
 
       var _demand = demand
@@ -1001,9 +995,7 @@ object SubmissionPublisher {
 
       var break = false
       while (!break) {
-        val _ctlPtr = stackalloc[Int](); !_ctlPtr = ctl
-        @alwaysinline def _ctl = !_ctlPtr
-
+        val _ctl = ctl
         var taken = 0
         var empty = false
 
@@ -1021,9 +1013,9 @@ object SubmissionPublisher {
         } // force a new line for formatting
         else if ({ _demand = demand; _demand == 0L }
             && ((_ctl & Ctl.REQS) != 0)) // exhausted demand
-          ctlWeakCompareAndSet(_ctlPtr, _ctl & ~Ctl.REQS): Unit
+          ctlWeakCompareAndSet(_ctl, _ctl & ~Ctl.REQS): Unit
         else if (_demand != 0L && (_ctl & Ctl.REQS) == 0) // new demand
-          ctlWeakCompareAndSet(_ctlPtr, _ctl | Ctl.REQS): Unit
+          ctlWeakCompareAndSet(_ctl, _ctl | Ctl.REQS): Unit
         else if ({
           val _tail_old = _tail; _tail = tail;
           _tail_old == _tail // stability check
@@ -1038,7 +1030,7 @@ object SubmissionPublisher {
                 Ctl.ACTIVE
               else
                 Ctl.RUN
-            if (ctlWeakCompareAndSet(_ctlPtr, _ctl & ~bit) && bit == Ctl.RUN)
+            if (ctlWeakCompareAndSet(_ctl, _ctl & ~bit) && bit == Ctl.RUN)
               break = true
           }
         }
