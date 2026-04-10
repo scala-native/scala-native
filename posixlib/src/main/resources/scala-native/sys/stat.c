@@ -81,6 +81,17 @@ int scalanative_fstat(int fildes, struct scalanative_stat *buf) {
     }
 }
 
+int scalanative_fstatat(int fildes, char *path, struct scalanative_stat *buf,
+                        int flag) {
+    struct stat orig_buf;
+    if (fstatat(fildes, path, &orig_buf, flag) == 0) {
+        scalanative_stat_init(&orig_buf, buf);
+        return 0;
+    } else {
+        return 1;
+    }
+}
+
 int scalanative_lstat(char *path, struct scalanative_stat *buf) {
     struct stat orig_buf;
     if (lstat(path, &orig_buf) == 0) {
@@ -128,6 +139,10 @@ int scalanative_s_isfifo(mode_t mode) { return S_ISFIFO(mode); }
 int scalanative_s_islnk(mode_t mode) { return S_ISLNK(mode); }
 
 int scalanative_s_issock(mode_t mode) { return S_ISSOCK(mode); }
+
+int scalanative_utime_now() { return UTIME_NOW; }
+
+int scalanative_utime_omit() { return UTIME_OMIT; }
 
 #endif // Unix or Mac OS
 #endif

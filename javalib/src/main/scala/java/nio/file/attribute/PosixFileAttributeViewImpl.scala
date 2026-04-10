@@ -10,6 +10,7 @@ import java.{lang => jl, util => ju}
 import scala.scalanative.posix.{errno => posixErrno}
 import scalanative.posix._
 import scalanative.posix.sys.stat
+import scalanative.posix.timeOps._
 import scalanative.unsafe._
 import scalanative.unsigned._
 
@@ -28,18 +29,28 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
       lastAccessTime: FileTime,
       createTime: FileTime
   ): Unit = Zone.acquire { implicit z =>
-    import scala.scalanative.posix.sys.statOps.statOps
-    val sb = getStat()
+    val times = stackalloc[time.timespec](2)
 
-    val buf = alloc[utime.utimbuf]()
-    buf._1 =
-      if (lastAccessTime != null) lastAccessTime.to(TimeUnit.SECONDS).toSize
-      else sb.st_atime
-    buf._2 =
-      if (lastModifiedTime != null) lastModifiedTime.to(TimeUnit.SECONDS).toSize
-      else sb.st_mtime
+    if (lastAccessTime == null)
+      times(0).tv_nsec = stat.UTIME_OMIT
+    else
+      lastAccessTime.toTimespec(times)
+
+    if (lastModifiedTime == null)
+      times(1).tv_nsec = stat.UTIME_OMIT
+    else
+      lastModifiedTime.toTimespec(times + 1)
+
     // createTime is ignored: No posix-y way to set it.
-    if (utime.utime(toCString(path.toString), buf) != 0)
+
+    val status = stat.utimensat(
+      fcntl.AT_FDCWD,
+      toCString(path.toString),
+      times,
+      0 // JVM default is to follow symlinks; do the same here.
+    )
+
+    if (status != 0)
       throwIOException()
   }
 
@@ -84,7 +95,6 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
     }
 
 //  override def readAttributes(): BasicFileAttributes = attributes
-//  override def readAttributes(): PosixFileAttributes = attributes
 
   def readAttributes(): PosixFileAttributes = attributes
 
@@ -120,8 +130,13 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
       private var st_uid: stat.uid_t = _
       private var st_gid: stat.gid_t = _
       private var st_size: stat.off_t = _
-      private var st_atime: time.time_t = _
-      private var st_mtime: time.time_t = _
+
+      private var st_atim_seconds: Long = 0
+      private var st_atim_nanos: Long = 0
+
+      private var st_mtim_seconds: Long = 0
+      private var st_mtim_nanos: Long = 0
+
       private var st_mode: stat.mode_t = _
 
       Zone.acquire { implicit z =>
@@ -134,8 +149,10 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
         st_uid = buf.st_uid
         st_gid = buf.st_gid
         st_size = buf.st_size
-        st_atime = buf.st_atime
-        st_mtime = buf.st_mtime
+        st_atim_seconds = buf.st_atim.tv_sec.toLong
+        st_atim_nanos = buf.st_atim.tv_nsec.toLong
+        st_mtim_seconds = buf.st_mtim.tv_sec.toLong
+        st_mtim_nanos = buf.st_mtim.tv_nsec.toLong
         st_mode = buf.st_mode
       }
 
@@ -156,11 +173,11 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
       override def isOther() =
         !isDirectory() && !isRegularFile() && !isSymbolicLink()
 
-      override def lastAccessTime() =
-        FileTime.from(st_atime.toLong, TimeUnit.SECONDS)
+      override def lastAccessTime(): FileTime =
+        FileTime.from(st_atim_seconds.toLong, st_atim_nanos.toLong)
 
-      override def lastModifiedTime() =
-        FileTime.from(st_mtime.toLong, TimeUnit.SECONDS)
+      override def lastModifiedTime(): FileTime =
+        FileTime.from(st_mtim_seconds.toLong, st_mtim_nanos.toLong)
 
       override def creationTime() = {
         // True file creationTime is not accessible in Posix.
@@ -169,7 +186,7 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
         // for creationTime(). It allows the use of  last-modified-time
         // as a fallback when the true creationTime is unobtainable.
 
-        FileTime.from(st_mtime.toLong, TimeUnit.SECONDS)
+        FileTime.from(st_mtim_seconds.toLong, st_mtim_nanos.toLong)
       }
 
       override def group(): PosixGroupPrincipal =

@@ -327,18 +327,6 @@ class FilesTest {
 
       val copyAttrs = Files.readAttributes(fooCopy, attrsCls)
 
-      // Note Well:
-      //   If/When attempting to verify the matches below by using
-      //   the operating system stat command or equivalent, be
-      //   aware that many Scala Native versions truncate
-      //   file times to seconds. The operating system may report
-      //   microseconds or nanoseconds. The assertions below may
-      //   pass when, at first blush, a visual inspection would lead
-      //   one to wonder why they were passing.
-      //
-      //   File times as seconds can lead to other visual anomalies,
-      //   such as lastModified times being before birth times. Go figure!
-
       assertEquals(
         "lastModifiedTime",
         attrs.lastModifiedTime,
@@ -1955,6 +1943,47 @@ class FilesTest {
         referenceMs / lastModifiedResolution,
         filetimeMs / lastModifiedResolution
       )
+    }
+  }
+
+  // Issue 4819
+  @Test def filesGetLastModifiedTimeUsesMilliseconds(): Unit = {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val path = dir.resolve("myfile")
+
+      Files.write(
+        path,
+        "howdy".getBytes(),
+        StandardOpenOption.CREATE_NEW,
+        StandardOpenOption.SYNC
+      )
+
+      val now = System.currentTimeMillis()
+
+      val before = Files.getLastModifiedTime(path).toMillis()
+
+      /* Detect & report wildly out of range lastModifiedTime values.
+       * An instance of the classic ROC (Receiver Operating Characteristics)
+       * decision choice. Pick a value which is small enough to detect
+       * true failures but large enough to avoid failures due to
+       * vagaries in CI execution.
+       */
+      assertEquals(
+        "unreasonable lastModifiedTime",
+        now.toDouble,
+        before.toDouble,
+        500.0 // an arbitrary, small value for slooow CI machines
+      )
+
+      // Sleep so that the modified time is definitely different
+      Thread.sleep(500L)
+
+      Files.write(path, "byebyebye".getBytes(), StandardOpenOption.SYNC)
+
+      val after = Files.getLastModifiedTime(path).toMillis()
+
+      assertNotEquals(s"before and after are the same", before, after)
     }
   }
 

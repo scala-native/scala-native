@@ -106,6 +106,9 @@ object fcntl {
 
   @name("scalanative_o_wronly")
   def O_WRONLY: CInt = extern
+
+  @name("scalanative_at_fdcwd")
+  def AT_FDCWD: CInt = extern
 }
 
 object fcntlOps {
