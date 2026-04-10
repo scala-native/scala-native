@@ -54,8 +54,8 @@ object ScalaVersions {
   val scala213PublishVersion = crossScala213.head
 
   // minimum version rationale:
-  //   1.11.5 Scala 3.8 standard library changes support
-  //   1.12.9 Latest sbt version after 1.12.8 which fixed Windows CVE.
+  //   An sbt version after 1.12.8, which fixed a CVE on Windows.
+
   val sbt10Version: String = "1.12.9"
   val sbt10ScalaVersion: String = scala212
 
