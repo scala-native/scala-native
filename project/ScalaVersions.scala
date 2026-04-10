@@ -54,14 +54,9 @@ object ScalaVersions {
   val scala213PublishVersion = crossScala213.head
 
   // minimum version rationale:
-  //   1.5 is required for Scala 3 and
-  //   1.5.8 has log4j vulnerability fixed
-  //   1.9.0 is required in order to use Java >= 21
-  //   1.9.4 fixes (Common Vulnerabilities and Exposures) CVE-2022-46751
-  //   1.9.7 fixes sbt IO.unzip vulnerability described in sbt release notes.
-  //   1.10.7 Latest sbt version, 1.10.2 had bug, see comment in SN Issue #4126
-  //   1.11.5 Scala 3.8 standard library changes support
-  val sbt10Version: String = "1.11.5"
+  //   An sbt version after 1.12.8, which fixed a CVE on Windows.
+
+  val sbt10Version: String = "1.12.9"
   val sbt10ScalaVersion: String = scala212
 
   val sbt2Version: String = "2.0.0-RC10"
