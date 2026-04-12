@@ -139,6 +139,9 @@ private[java] class PosixThread(
     // Interference with ongoing unpark
     if (pthread_mutex_trylock(lock) != 0) return
 
+    // Preserve WaitingOnMonitorEnter so Thread.getState() reports BLOCKED for
+    // threads blocked in monitor enter (ObjectMonitor.enterMonitor).
+    var wasWaitingOnMonitorEnter = false
     try {
       if (counter > 0) { // no wait needed
         counter = 0
@@ -149,9 +152,12 @@ private[java] class PosixThread(
         conditionIdx == ConditionUnset,
         s"condition idx: $conditionIdx, expected=$ConditionUnset"
       )
+      wasWaitingOnMonitorEnter =
+        state == NativeThread.State.WaitingOnMonitorEnter
       if (time == 0) {
         conditionIdx = ConditionRelativeIdx
-        state = NativeThread.State.ParkedWaiting
+        if (!wasWaitingOnMonitorEnter)
+          state = NativeThread.State.ParkedWaiting
         val status = pthread_cond_wait(condition(conditionIdx), lock)
         assert(
           status == 0 ||
@@ -161,7 +167,8 @@ private[java] class PosixThread(
       } else {
         conditionIdx =
           if (isAbsolute) ConditionAbsoluteIdx else ConditionRelativeIdx
-        state = NativeThread.State.ParkedWaitingTimed
+        if (!wasWaitingOnMonitorEnter)
+          state = NativeThread.State.ParkedWaitingTimed
         val status =
           pthread_cond_timedwait(condition(conditionIdx), lock, absTime)
         assert(status == 0 || status == ETIMEDOUT, "park, timed-wait")
@@ -170,7 +177,9 @@ private[java] class PosixThread(
       conditionIdx = ConditionUnset
       counter = 0
     } finally {
-      state = NativeThread.State.Running
+      state =
+        if (wasWaitingOnMonitorEnter) NativeThread.State.WaitingOnMonitorEnter
+        else NativeThread.State.Running
       val status = pthread_mutex_unlock(lock)
       assert(status == 0, "park, unlock")
       atomic_thread_fence(memory_order_seq_cst)

@@ -48,6 +48,11 @@ void *scalanative_continuation_suspend(ContinuationBoundaryLabel b,
 // argument into the suspended computation and returns its result.
 void *scalanative_continuation_resume(Continuation *continuation, void *arg);
 
+// Reset the thread-local handler chain to NULL. Call before entering a new
+// boundary (e.g. before dispatching a virtual thread) so the carrier does not
+// inherit stale handlers from a previous VT that ran on the same carrier.
+void scalanative_continuation_handlers_reset(void);
+
 /* Exception type compatible with eh.c (void* = Scala object). */
 typedef void *Exception;
 
@@ -77,6 +82,12 @@ typedef struct ContinuationExceptionHandler {
 void scalanative_continuation_exception_handler_set(
     ContinuationExceptionHandler handler);
 ContinuationExceptionHandler scalanative_continuation_exception_handler(void);
+
+/* Fallback escape route used by eh.c when _Unwind reaches end-of-stack and no
+ * continuation exception handler is installed. Returns non-zero if escape was
+ * handled (function does not return in that case), zero otherwise.
+ */
+int scalanative_continuation_exception_escape(Exception exception);
 
 /* Clear the exception escape handler. Called by resume on both return paths. */
 inline static void scalanative_continuation_exception_handler_clear(void) {

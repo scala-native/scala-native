@@ -46,4 +46,6 @@ object Proxy {
   def stackTraceIterator(): Iterator[StackTraceElement] =
     StackTrace.stackTraceIterator()
 
+  def defaultVirtualThreadScheduler: VirtualThreadScheduler =
+    VirtualThread.defaultScheduler
 }

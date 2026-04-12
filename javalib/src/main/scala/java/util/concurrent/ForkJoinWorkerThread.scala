@@ -49,6 +49,9 @@ class ForkJoinWorkerThread private[concurrent] (
 
   def getPoolIndex(): Int = workQueue.getPoolIndex()
 
+  // Since JDK 20
+  def getQueuedTaskCount(): scala.Int = workQueue.queueSize()
+
   protected def onStart(): Unit = ()
 
   protected def onTermination(exception: Throwable): Unit = ()
