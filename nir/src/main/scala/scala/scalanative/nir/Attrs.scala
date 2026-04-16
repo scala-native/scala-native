@@ -378,27 +378,32 @@ object Attrs {
     val links = Seq.newBuilder[Attr.Link]
     val preprocessorDefinitions = Seq.newBuilder[Attr.Define]
 
-    attrs.foreach {
-      case attr: Inline     => inline = attr
-      case attr: Specialize => specialize = attr
-      case attr: Opt        => opt = attr
-      case attr: Alignment  =>
-        align = Some(attr)
-      case Extern(blocking) =>
-        isExtern = true
-        isBlocking = blocking
-      case Dyn                 => isDyn = true
-      case Stub                => isStub = true
-      case LinkCppRuntime      => linkCppRuntime = true
-      case link: Attr.Link     => links += link
-      case define: Attr.Define => preprocessorDefinitions += define
-      case Abstract            => isAbstract = true
-      case Volatile            => isVolatile = true
-      case Final               => isFinal = true
-      case SafePublish         => isSafePublish = true
+    // Manual iterator is used on purpose
+    // foreach would allocate a BooleanRef for every var.
+    val it = attrs.iterator
+    while (it.hasNext) {
+      it.next() match {
+        case attr: Inline     => inline = attr
+        case attr: Specialize => specialize = attr
+        case attr: Opt        => opt = attr
+        case attr: Alignment  =>
+          align = Some(attr)
+        case Extern(blocking) =>
+          isExtern = true
+          isBlocking = blocking
+        case Dyn                 => isDyn = true
+        case Stub                => isStub = true
+        case LinkCppRuntime      => linkCppRuntime = true
+        case link: Attr.Link     => links += link
+        case define: Attr.Define => preprocessorDefinitions += define
+        case Abstract            => isAbstract = true
+        case Volatile            => isVolatile = true
+        case Final               => isFinal = true
+        case SafePublish         => isSafePublish = true
 
-      case LinktimeResolved => isLinktimeResolved = true
-      case UsesIntrinsic    => isUsingIntrinsics = true
+        case LinktimeResolved => isLinktimeResolved = true
+        case UsesIntrinsic    => isUsingIntrinsics = true
+      }
     }
 
     new Attrs(
