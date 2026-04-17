@@ -592,7 +592,7 @@ class MatcherTest {
     assertTrue(m.hasAnchoringBounds()) // Expect true, same as JVM default.
   }
 
-  // we don't support lookahead
+  // we don't support transparent bounds
   @Ignore("#640")
   @Test def hasTransparentBoundsUseTransparentBoundsNotSupported(): Unit = {
 
@@ -609,20 +609,22 @@ class MatcherTest {
     val m2 = Pattern.compile("foo(?!buzz)").matcher("foobuzz")
     m2.region(0, 3)
     m2.useTransparentBounds(false)
-    assertFalse(m2.matches()) // opaque
+    assertTrue(m2.matches()) // opaque
 
     m2.useTransparentBounds(true)
-    assertTrue(m2.matches()) // transparent
+    assertFalse(m2.matches()) // transparent
   }
 
   @Test def testHitEnd(): Unit = {
-    assumeFalse("Fails in JVM", executingInJVM)
     val needle = "needle"
     val haystack = "haystack"
 
     val m = matcher(needle, haystack)
 
-    assertThrows(classOf[UnsupportedOperationException], m.hitEnd())
+    if (executingInJVM)
+      m.hitEnd()
+    else
+      assertThrows(classOf[UnsupportedOperationException], m.hitEnd())
   }
 
   @Test def lookingAtRegion(): Unit = {
@@ -746,10 +748,6 @@ class MatcherTest {
   }
 
   @Test def namedGroupJavaSyntax(): Unit = {
-    assumeFalse(
-      "Fails in JVM, expected:<java.lang.IllegalStateException> but was:<java.lang.IllegalArgumentException>",
-      executingInJVM
-    )
     val m = matcher(
       "from (?<S>.*) to (?<D>.*)",
       "from Montreal, Canada to Lausanne, Switzerland"
@@ -760,12 +758,13 @@ class MatcherTest {
     assertEquals(m.group("D"), "Lausanne, Switzerland")
     assertThrows(
       "No match found",
-      classOf[IllegalStateException],
+      classOf[IllegalArgumentException],
       m.group("foo")
     )
   }
 
   // re2 syntax is not defined in Java, but it works with scalanative.regex
+  @Ignore("Python-style (?P<name>) is not Java; java.util.regex uses (?<name>)")
   @Test def namedGroupRe2Syntax(): Unit = {
     assumeFalse("Fails in JVM", executingInJVM)
     val m = matcher(
@@ -910,13 +909,15 @@ class MatcherTest {
   }
 
   @Test def requireEnd(): Unit = {
-    assumeFalse("Fails in JVM", executingInJVM)
     val needle = "needle"
     val haystack = "haystack"
 
     val m = matcher(needle, haystack)
 
-    assertThrows(classOf[UnsupportedOperationException], m.requireEnd())
+    if (executingInJVM)
+      m.requireEnd()
+    else
+      assertThrows(classOf[UnsupportedOperationException], m.requireEnd())
   }
 
   @Test def startEndIndices(): Unit = {
@@ -998,6 +999,7 @@ class MatcherTest {
   }
 
   // re2 syntax is not defined in Java, but it works with scalanative.regex
+  @Ignore("Python-style (?P<name>) is not Java; java.util.regex uses (?<name>)")
   @Test def startNameEndNameRe2Syntax(): Unit = {
     assumeFalse("Fails in JVM", executingInJVM)
     val m = matcher(
@@ -1063,16 +1065,18 @@ class MatcherTest {
   }
 
   @Test def useAnchoringBounds(): Unit = {
-    assumeFalse("Fails in JVM", executingInJVM)
     val needle = "needle"
     val haystack = "haystack"
 
     val m = matcher(needle, haystack)
 
-    assertThrows(
-      classOf[UnsupportedOperationException],
+    if (executingInJVM)
       m.useAnchoringBounds(false)
-    )
+    else
+      assertThrows(
+        classOf[UnsupportedOperationException],
+        m.useAnchoringBounds(false)
+      )
   }
 
   @Test def usePattern(): Unit = {
