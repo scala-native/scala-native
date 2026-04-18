@@ -1523,9 +1523,19 @@ private[scalanative] object Lower {
 
           label(resultL, Seq(nir.Val.Local(n, op.resty)))
 
+        // Remove redundant `bitcast ptr %x to ptr`
+        case nir.Op.Conv(nir.Conv.Bitcast, toty, value) if platform.useOpaquePointers && isPtrInLLVM(toty) && isPtrInLLVM(value.ty) =>
+          let(n, nir.Op.Copy(genVal(buf, value)), unwind)
+
         case nir.Op.Conv(conv, ty, value) =>
           let(n, nir.Op.Conv(conv, ty, genVal(buf, value)), unwind)
       }
+    }
+
+    private def isPtrInLLVM(ty: nir.Type): Boolean = ty match {
+      case nir.Type.Unit                                         => false
+      case _: nir.Type.RefKind | nir.Type.Ptr | nir.Type.Nothing => true
+      case _                                                     => false
     }
 
     def genBinOp(

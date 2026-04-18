@@ -489,10 +489,11 @@ private[codegen] abstract class AbstractCodeGen(
   private[codegen] def genType(ty: nir.Type)(implicit sb: ShowBuilder): Unit = {
     import sb._
     ty match {
-      case nir.Type.Vararg => str("...")
-      case nir.Type.Unit   => str("void")
-      case _: nir.Type.RefKind | nir.Type.Ptr | nir.Type.Null |
-          nir.Type.Nothing =>
+      case nir.Type.Vararg =>
+        str("...")
+      case nir.Type.Unit =>
+        str("void")
+      case _: nir.Type.RefKind | nir.Type.Ptr | nir.Type.Nothing =>
         str(pointerType)
       case nir.Type.Bool          => str("i1")
       case i: nir.Type.FixedSizeI => str("i"); str(i.width)
