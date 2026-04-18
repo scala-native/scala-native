@@ -109,9 +109,13 @@ private[interflow] trait PolyInline { self: Interflow =>
       (0 until targets.size).map(i => impls.indexOf(targets(i)._2)).toIndexedSeq
     val mergeLabel = fresh()
 
-    val meth = emit.method(obj, nir.Rt.GetClassSig, nir.Next.None)
-    val methty = nir.Type.Function(Seq(nir.Rt.Object), nir.Rt.Class)
-    val objcls = emit.call(methty, meth, Seq(obj), nir.Next.None)
+    val objcls = state.getClassCache.getOrElseUpdate(
+      obj, {
+        val meth = emit.method(obj, nir.Rt.GetClassSig, nir.Next.None)
+        val methty = nir.Type.Function(Seq(nir.Rt.Object), nir.Rt.Class)
+        emit.call(methty, meth, Seq(obj), nir.Next.None)
+      }
+    )
 
     for (idx <- 0.until(checkLabels.length)) {
       val checkLabel = checkLabels(idx)
