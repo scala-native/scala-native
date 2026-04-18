@@ -40,8 +40,7 @@ class LoweringTest extends CodeGenSpec {
            |    println(s.size)
            |  }
            |}""".stripMargin
-    ),
-    setupConfig = _.withMode(scala.scalanative.build.Mode.releaseFast)
+    )
   ) {
     case (_, _, outfiles) =>
       val pattern = """bitcast ptr %\S+ to ptr\b""".r
