@@ -18,6 +18,11 @@ private[interflow] final class State(val blockId: nir.Local)(
   var delayed = mutable.AnyRefMap.empty[nir.Op, nir.Val]
   var emitted = mutable.AnyRefMap.empty[nir.Op, nir.Val.Local]
   var emit = new nir.InstructionBuilder()(fresh)
+  // Cache of `obj.getClass` materialized values, keyed by the SSA value of
+  // `obj`. Reused across polymorphic-inline type switches emitted into this
+  // state so that back-to-back virtual calls on the same receiver don't each
+  // re-emit a getClass call (and subsequent icmp eq's can be CSE'd by LLVM).
+  var getClassCache = mutable.AnyRefMap.empty[nir.Val, nir.Val]
 
   // Delayed init
   var localNames: mutable.OpenHashMap[nir.Local, String] = _
@@ -285,6 +290,8 @@ private[interflow] final class State(val blockId: nir.Local)(
     newstate.locals = locals.clone()
     newstate.delayed = delayed.clone()
     newstate.emitted = emitted.clone()
+    newstate.getClassCache = getClassCache.clone()
+
     if (preserveDebugInfo) {
       newstate.virtualNames = virtualNames.mapValuesNow(identity)
       newstate.localNames = localNames.clone()
