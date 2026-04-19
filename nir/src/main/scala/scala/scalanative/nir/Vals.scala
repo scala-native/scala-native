@@ -7,6 +7,8 @@ import java.lang.Float.floatToRawIntBits
 /** A NIR value. */
 sealed abstract class Val {
 
+  private[scalanative] def tag: Byte
+
   /** The type of the value. */
   final def ty: Type = this match {
     case Val.Null =>
@@ -229,11 +231,41 @@ sealed abstract class Val {
 
 object Val {
 
+  private[scalanative] object Tags {
+    final val True = 0.toByte
+    final val False = 1.toByte
+    final val Null = 2.toByte
+    final val Zero = 3.toByte
+    final val Size = 4.toByte
+    final val Char = 5.toByte
+    final val Byte = 6.toByte
+    final val Short = 7.toByte
+    final val Int = 8.toByte
+    final val Long = 9.toByte
+    final val Float = 10.toByte
+    final val Double = 11.toByte
+    final val StructValue = 12.toByte
+    final val ArrayValue = 13.toByte
+    final val ByteString = 14.toByte
+    final val Local = 15.toByte
+    final val Global = 16.toByte
+    final val Unit = 17.toByte
+    final val Const = 18.toByte
+    final val String = 19.toByte
+    final val Virtual = 20.toByte
+    final val ClassOf = 21.toByte
+    final val Int128 = 22.toByte
+  }
+
   /** The constant Boolean 'true'. */
-  case object True extends Val
+  case object True extends Val {
+    private[scalanative] def tag = Tags.True
+  }
 
   /** The constant Boolean 'false'. */
-  case object False extends Val
+  case object False extends Val {
+    private[scalanative] def tag = Tags.False
+  }
 
   /** A Boolean constant. */
   object Bool extends (Boolean => Val) {
@@ -247,33 +279,51 @@ object Val {
   }
 
   /** The constant 'null' value. */
-  case object Null extends Val
+  case object Null extends Val {
+    private[scalanative] def tag = Tags.Null
+  }
 
   /** The "zero" value of the given NIR type. */
-  final case class Zero(of: nir.Type) extends Val
+  final case class Zero(of: nir.Type) extends Val {
+    private[scalanative] def tag = Tags.Zero
+  }
 
   /** A numerical value suitable to represent the size of a container. */
-  final case class Size(value: scala.Long) extends Val
+  final case class Size(value: scala.Long) extends Val {
+    private[scalanative] def tag = Tags.Size
+  }
 
   /** 16-bit unsigned Unicode character */
-  final case class Char(value: scala.Char) extends Val
+  final case class Char(value: scala.Char) extends Val {
+    private[scalanative] def tag = Tags.Char
+  }
 
   /** A 8-bit signed two’s complement integer. */
-  final case class Byte(value: scala.Byte) extends Val
+  final case class Byte(value: scala.Byte) extends Val {
+    private[scalanative] def tag = Tags.Byte
+  }
 
   /** A 16-bit signed two’s complement integer. */
-  final case class Short(value: scala.Short) extends Val
+  final case class Short(value: scala.Short) extends Val {
+    private[scalanative] def tag = Tags.Short
+  }
 
   /** A 32-bit signed two’s complement integer. */
-  final case class Int(value: scala.Int) extends Val
+  final case class Int(value: scala.Int) extends Val {
+    private[scalanative] def tag = Tags.Int
+  }
 
   /** A 64-bit signed two’s complement integer. */
-  final case class Long(value: scala.Long) extends Val
+  final case class Long(value: scala.Long) extends Val {
+    private[scalanative] def tag = Tags.Long
+  }
 
   /** A 128-bit signed two’s complement integer, encoded as two 64‑bit words.
    *  Not emmited by compiler!
    */
   final case class Int128(hi: scala.Long, lo: scala.Long) extends Val {
+    private[scalanative] def tag = Tags.Int128
+
     def bigIntValue: math.BigInt = {
       val hiPart = math.BigInt(hi) << 64
       val loPart = math.BigInt(lo & 0xffffffffffffffffL)
@@ -283,6 +333,8 @@ object Val {
 
   /** A 32-bit IEEE 754 single-precision float. */
   final case class Float(value: scala.Float) extends Val {
+    private[scalanative] def tag = Tags.Float
+
     override def equals(that: Any): Boolean = that match {
       case Float(thatValue) =>
         val theseBits = floatToRawIntBits(value)
@@ -294,6 +346,8 @@ object Val {
 
   /** A 64-bit IEEE 754 double-precision float. */
   final case class Double(value: scala.Double) extends Val {
+    private[scalanative] def tag = Tags.Double
+
     override def equals(that: Any): Boolean = that match {
       case Double(thatValue) =>
         val theseBits = doubleToRawLongBits(value)
@@ -304,10 +358,14 @@ object Val {
   }
 
   /** A heterogeneous collection of data members. */
-  final case class StructValue(values: Seq[Val]) extends Val
+  final case class StructValue(values: Seq[Val]) extends Val {
+    private[scalanative] def tag = Tags.StructValue
+  }
 
   /** A homogeneous collection of data members. */
-  final case class ArrayValue(elemty: nir.Type, values: Seq[Val]) extends Val
+  final case class ArrayValue(elemty: nir.Type, values: Seq[Val]) extends Val {
+    private[scalanative] def tag = Tags.ArrayValue
+  }
 
   /** A collection of bytes.
    *
@@ -316,17 +374,25 @@ object Val {
    *  be compiled to `c"a\0"`.
    */
   final case class ByteString(bytes: Array[scala.Byte]) extends Val {
+    private[scalanative] def tag = Tags.ByteString
+
     def byteCount: scala.Int = bytes.length + 1
   }
 
   /** A local SSA variable. */
-  final case class Local(id: nir.Local, valty: nir.Type) extends Val
+  final case class Local(id: nir.Local, valty: nir.Type) extends Val {
+    private[scalanative] def tag = Tags.Local
+  }
 
   /** A reference to a global variable, constant, or method. */
-  final case class Global(name: nir.Global, valty: nir.Type) extends Val
+  final case class Global(name: nir.Global, valty: nir.Type) extends Val {
+    private[scalanative] def tag = Tags.Global
+  }
 
   /** The unit value. */
-  case object Unit extends Val
+  case object Unit extends Val {
+    private[scalanative] def tag = Tags.Unit
+  }
 
   /** A constant.
    *
@@ -334,7 +400,9 @@ object Val {
    *  represented by `ByteString`, `Zero`, `Int`, etc. Instead, it represents a
    *  pointer to some constant value.
    */
-  final case class Const(value: Val) extends Val
+  final case class Const(value: Val) extends Val {
+    private[scalanative] def tag = Tags.Const
+  }
 
   /** A character string.
    *
@@ -342,14 +410,18 @@ object Val {
    *  compiled as global arrays of UTF-16 characters. Use `ByteString` to
    *  represent C-string literals.
    */
-  final case class String(value: java.lang.String) extends Val
+  final case class String(value: java.lang.String) extends Val {
+    private[scalanative] def tag = Tags.String
+  }
 
   /** A virtual value.
    *
    *  Virtual values only serve as placeholders during optimization. They are
    *  not serializable and are never emitted by the compiler plugin.
    */
-  final case class Virtual(key: scala.Long) extends Val
+  final case class Virtual(key: scala.Long) extends Val {
+    private[scalanative] def tag = Tags.Virtual
+  }
 
   /** A reference to `java.lang.Class[_]` of given symbol `name`.
    *
@@ -363,6 +435,8 @@ object Val {
    *  (specifically, `lockWord`), which contains an `ObjectMonitor` or a bit set
    *  of lock word.
    */
-  final case class ClassOf(name: nir.Global.Top) extends Val
+  final case class ClassOf(name: nir.Global.Top) extends Val {
+    private[scalanative] def tag = Tags.ClassOf
+  }
 
 }

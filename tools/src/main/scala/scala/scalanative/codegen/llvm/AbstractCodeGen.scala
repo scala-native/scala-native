@@ -551,51 +551,77 @@ private[codegen] abstract class AbstractCodeGen(
   )(implicit sb: ShowBuilder): Unit = {
     import sb._
 
-    deconstify(v) match {
-      case nir.Val.True     => str("true")
-      case nir.Val.False    => str("false")
-      case nir.Val.Null     => str("null")
-      case nir.Val.Unit     => str("void")
-      case nir.Val.Zero(ty) => str("zeroinitializer")
-      case nir.Val.Byte(v)  => str(v)
-      case nir.Val.Size(v)  =>
+    val value = deconstify(v)
+
+    value.tag match {
+      case nir.Val.Tags.True  => str("true")
+      case nir.Val.Tags.False => str("false")
+      case nir.Val.Tags.Null  => str("null")
+      case nir.Val.Tags.Unit  => str("void")
+      case nir.Val.Tags.Zero  => str("zeroinitializer")
+      case nir.Val.Tags.Byte  =>
+        val nir.Val.Byte(v) = value: @unchecked
+        str(v)
+      case nir.Val.Tags.Size =>
+        val nir.Val.Size(v) = value: @unchecked
         if (!platform.is32Bit) str(v)
         else if (v.toInt == v) str(v.toInt)
         else unsupported("Emitting size values that exceed the platform bounds")
-      case nir.Val.Char(v)         => str(v.toInt)
-      case nir.Val.Short(v)        => str(v)
-      case nir.Val.Int(v)          => str(v)
-      case nir.Val.Long(v)         => str(v)
-      case v: nir.Val.Int128       => str(v.bigIntValue)
-      case nir.Val.Float(v)        => genFloatHex(v)
-      case nir.Val.Double(v)       => genDoubleHex(v)
-      case nir.Val.StructValue(vs) =>
+      case nir.Val.Tags.Char =>
+        val nir.Val.Char(v) = value: @unchecked
+        str(v.toInt)
+      case nir.Val.Tags.Short =>
+        val nir.Val.Short(v) = value: @unchecked
+        str(v)
+      case nir.Val.Tags.Int =>
+        val nir.Val.Int(v) = value: @unchecked
+        str(v)
+      case nir.Val.Tags.Long =>
+        val nir.Val.Long(v) = value: @unchecked
+        str(v)
+      case nir.Val.Tags.Int128 =>
+        val v: nir.Val.Int128 = value.asInstanceOf
+        str(v.bigIntValue)
+      case nir.Val.Tags.Float =>
+        val nir.Val.Float(v) = value: @unchecked
+        genFloatHex(v)
+      case nir.Val.Tags.Double =>
+        val nir.Val.Double(v) = value: @unchecked
+        genDoubleHex(v)
+      case nir.Val.Tags.StructValue =>
+        val nir.Val.StructValue(vs) = value: @unchecked
         str("{ ")
         rep(vs, sep = ", ")(genVal)
         str(" }")
-      case nir.Val.ArrayValue(_, vs) =>
+      case nir.Val.Tags.ArrayValue =>
+        val nir.Val.ArrayValue(_, vs) = value: @unchecked
         str("[ ")
         rep(vs, sep = ", ")(genVal)
         str(" ]")
-      case nir.Val.ByteString(v) =>
+      case nir.Val.Tags.ByteString =>
+        val nir.Val.ByteString(v) = value: @unchecked
         genByteString(v)
-      case nir.Val.Local(n, ty) =>
+      case nir.Val.Tags.Local =>
+        val nir.Val.Local(n, ty) = value: @unchecked
         str("%")
         genLocal(n)
-      case nir.Val.Global(n: nir.Global.Member, ty) =>
-        if (useOpaquePointers) {
-          lookup(n)
-          str("@")
-          genGlobal(n)
-        } else {
-          str("bitcast (")
-          genType(lookup(n))
-          str("* @")
-          genGlobal(n)
-          str(" to i8*)")
+      case nir.Val.Tags.Global =>
+        value.asInstanceOf[nir.Val.Global].name match {
+          case n: nir.Global.Member =>
+            if (useOpaquePointers) {
+              lookup(n)
+              str("@")
+              genGlobal(n)
+            } else {
+              str("bitcast (")
+              genType(lookup(n))
+              str("* @")
+              genGlobal(n)
+              str(" to i8*)")
+            }
+          case _ => unsupported(v)
         }
-      case _: nir.Val.Global | _: nir.Val.Const | _: nir.Val.String |
-          _: nir.Val.Virtual | _: nir.Val.ClassOf =>
+      case _ =>
         unsupported(v)
     }
   }
