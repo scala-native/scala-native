@@ -9,6 +9,14 @@ sealed trait ShowBuilder {
 
   def str(v: Char): Unit = out.append(v)
   def str(v: CharSequence): Unit = out.append(v)
+  def str(value: Int): Unit =
+    out.append(java.lang.Integer.toString(value))
+  def str(value: Long): Unit =
+    out.append(java.lang.Long.toString(value))
+  def str(value: Short): Unit =
+    out.append(java.lang.Short.toString(value))
+  def str(value: Byte): Unit =
+    out.append(java.lang.Byte.toString(value))
   def str(value: Any): Unit =
     out.append(value.toString)
 
@@ -41,8 +49,10 @@ sealed trait ShowBuilder {
 
   def newline(): Unit = {
     out.append("\n")
-    for (_ <- 0.until(indentation)) {
+    var i = 0
+    while (i < indentation) {
       out.append("  ")
+      i += 1
     }
   }
 
