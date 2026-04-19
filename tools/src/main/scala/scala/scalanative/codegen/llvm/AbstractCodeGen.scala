@@ -36,7 +36,9 @@ private[codegen] abstract class AbstractCodeGen(
 
   private val copies = mutable.Map.empty[nir.Local, nir.Val]
   private val deps = mutable.Set.empty[nir.Global.Member]
+  deps.sizeHint(1024)
   private val generated = mutable.Set.empty[String]
+  generated.sizeHint(1024)
   private val externSigMembers = mutable.Map.empty[nir.Sig, nir.Global.Member]
 
   private def isGnu: Boolean = {
