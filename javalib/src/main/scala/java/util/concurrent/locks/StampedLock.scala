@@ -18,7 +18,7 @@
  *     documented on the web (but not Wikipedia).
  *
  *   * Remaining issues
- *       ? how to translate '@ReservedStackAccess'??
+ *       ? how to translate '@ReservedStackAccess'?
  *       ? check with a guru about handling of SerialVersionUID?
  */
 
