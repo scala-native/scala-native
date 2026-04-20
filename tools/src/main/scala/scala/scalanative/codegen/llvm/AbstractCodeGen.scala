@@ -4,6 +4,7 @@ package llvm
 import java.nio.file.{Path, Paths}
 import java.{lang => jl}
 
+import scala.annotation.switch
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
@@ -551,51 +552,77 @@ private[codegen] abstract class AbstractCodeGen(
   )(implicit sb: ShowBuilder): Unit = {
     import sb._
 
-    deconstify(v) match {
-      case nir.Val.True     => str("true")
-      case nir.Val.False    => str("false")
-      case nir.Val.Null     => str("null")
-      case nir.Val.Unit     => str("void")
-      case nir.Val.Zero(ty) => str("zeroinitializer")
-      case nir.Val.Byte(v)  => str(v)
-      case nir.Val.Size(v)  =>
+    val value = deconstify(v)
+
+    (value.tag: @switch) match {
+      case 0 /* True */  => str("true")
+      case 1 /* False */ => str("false")
+      case 2 /* Null */  => str("null")
+      case 17 /* Unit */ => str("void")
+      case 3 /* Zero */  => str("zeroinitializer")
+      case 6 /* Byte */  =>
+        val nir.Val.Byte(v) = value: @unchecked
+        str(v)
+      case 4 /* Size */ =>
+        val nir.Val.Size(v) = value: @unchecked
         if (!platform.is32Bit) str(v)
         else if (v.toInt == v) str(v.toInt)
         else unsupported("Emitting size values that exceed the platform bounds")
-      case nir.Val.Char(v)         => str(v.toInt)
-      case nir.Val.Short(v)        => str(v)
-      case nir.Val.Int(v)          => str(v)
-      case nir.Val.Long(v)         => str(v)
-      case v: nir.Val.Int128       => str(v.bigIntValue)
-      case nir.Val.Float(v)        => genFloatHex(v)
-      case nir.Val.Double(v)       => genDoubleHex(v)
-      case nir.Val.StructValue(vs) =>
+      case 5 /* Char */ =>
+        val nir.Val.Char(v) = value: @unchecked
+        str(v.toInt)
+      case 7 /* Short */ =>
+        val nir.Val.Short(v) = value: @unchecked
+        str(v)
+      case 8 /* Int */ =>
+        val nir.Val.Int(v) = value: @unchecked
+        str(v)
+      case 9 /* Long */ =>
+        val nir.Val.Long(v) = value: @unchecked
+        str(v)
+      case 22 /* Int128 */ =>
+        val v: nir.Val.Int128 = value.asInstanceOf
+        str(v.bigIntValue)
+      case 10 /* Float */ =>
+        val nir.Val.Float(v) = value: @unchecked
+        genFloatHex(v)
+      case 11 /* Double */ =>
+        val nir.Val.Double(v) = value: @unchecked
+        genDoubleHex(v)
+      case 12 /* StructValue */ =>
+        val nir.Val.StructValue(vs) = value: @unchecked
         str("{ ")
         rep(vs, sep = ", ")(genVal)
         str(" }")
-      case nir.Val.ArrayValue(_, vs) =>
+      case 13 /* ArrayValue */ =>
+        val nir.Val.ArrayValue(_, vs) = value: @unchecked
         str("[ ")
         rep(vs, sep = ", ")(genVal)
         str(" ]")
-      case nir.Val.ByteString(v) =>
+      case 14 /* ByteString */ =>
+        val nir.Val.ByteString(v) = value: @unchecked
         genByteString(v)
-      case nir.Val.Local(n, ty) =>
+      case 15 /* Local */ =>
+        val nir.Val.Local(n, ty) = value: @unchecked
         str("%")
         genLocal(n)
-      case nir.Val.Global(n: nir.Global.Member, ty) =>
-        if (useOpaquePointers) {
-          lookup(n)
-          str("@")
-          genGlobal(n)
-        } else {
-          str("bitcast (")
-          genType(lookup(n))
-          str("* @")
-          genGlobal(n)
-          str(" to i8*)")
+      case 16 /* Global */ =>
+        value.asInstanceOf[nir.Val.Global].name match {
+          case n: nir.Global.Member =>
+            if (useOpaquePointers) {
+              lookup(n)
+              str("@")
+              genGlobal(n)
+            } else {
+              str("bitcast (")
+              genType(lookup(n))
+              str("* @")
+              genGlobal(n)
+              str(" to i8*)")
+            }
+          case _ => unsupported(v)
         }
-      case _: nir.Val.Global | _: nir.Val.Const | _: nir.Val.String |
-          _: nir.Val.Virtual | _: nir.Val.ClassOf =>
+      case _ =>
         unsupported(v)
     }
   }
