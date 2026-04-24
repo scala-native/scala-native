@@ -22,14 +22,14 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /** One publisher, many subscribers */
-object SubmissionPublisherLoops1Test {
+class SubmissionPublisherLoops1Test {
 
   /* Original JSR-166 parameters: */
   // val ITEMS: Int = 1 << 20
   // val CONSUMERS = 64
   // val REPS = 9
-  val ITEMS: Int = 1 << 8
-  val CONSUMERS = 16
+  val ITEMS: Int = 1 << 16
+  val CONSUMERS = 32
   val REPS = 5
 
   val CAP: Int = Flow.defaultBufferSize()
@@ -94,7 +94,7 @@ object SubmissionPublisherLoops1Test {
 }
 
 /** One FJ publisher, many subscribers */
-object SubmissionPublisherLoops2Test {
+class SubmissionPublisherLoops2Test {
 
   /* Original JSR-166 parameters: */
   // val ITEMS: Int = 1 << 20
@@ -174,7 +174,7 @@ object SubmissionPublisherLoops2Test {
 /** Creates PRODUCERS publishers each with CONSUMERS subscribers, each sent
  *  ITEMS items, with CAP buffering; repeats REPS times
  */
-object SubmissionPublisherLoops3Test {
+class SubmissionPublisherLoops3Test {
 
   /* Original JSR-166 parameters: */
   // val ITEMS: Int = 1 << 20
@@ -211,7 +211,6 @@ object SubmissionPublisherLoops3Test {
     val ips = nitems / secs
     System.out.println(f"Time: ${secs}%7.2f")
     System.out.println(f" items per sec: ${ips}%14.2f\n")
-    System.out.println(ForkJoinPool.commonPool())
   }
 
   final class Sub extends Flow.Subscriber[Boolean] {
@@ -261,7 +260,7 @@ object SubmissionPublisherLoops3Test {
  *  CONSUMERS subscribers, each sent ITEMS items, with max CAP buffering;
  *  repeats REPS times
  */
-object SubmissionPublisherLoops4Test {
+class SubmissionPublisherLoops4Test {
 
   /* Original JSR-166 parameters: */
   // val ITEMS: Int = 1 << 20
