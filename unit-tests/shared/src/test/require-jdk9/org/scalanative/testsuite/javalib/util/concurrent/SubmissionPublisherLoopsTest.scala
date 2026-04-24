@@ -28,8 +28,8 @@ class SubmissionPublisherLoops1Test {
   // val ITEMS: Int = 1 << 20
   // val CONSUMERS = 64
   // val REPS = 9
-  val ITEMS: Int = 1 << 8
-  val CONSUMERS = 16
+  val ITEMS: Int = 1 << 16
+  val CONSUMERS = 32
   val REPS = 5
 
   val CAP: Int = Flow.defaultBufferSize()
@@ -211,7 +211,6 @@ class SubmissionPublisherLoops3Test {
     val ips = nitems / secs
     System.out.println(f"Time: ${secs}%7.2f")
     System.out.println(f" items per sec: ${ips}%14.2f\n")
-    System.out.println(ForkJoinPool.commonPool())
   }
 
   final class Sub extends Flow.Subscriber[Boolean] {
