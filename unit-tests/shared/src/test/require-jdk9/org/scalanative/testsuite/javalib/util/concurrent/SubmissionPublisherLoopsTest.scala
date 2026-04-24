@@ -22,7 +22,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /** One publisher, many subscribers */
-object SubmissionPublisherLoops1Test {
+class SubmissionPublisherLoops1Test {
 
   /* Original JSR-166 parameters: */
   // val ITEMS: Int = 1 << 20
@@ -94,7 +94,7 @@ object SubmissionPublisherLoops1Test {
 }
 
 /** One FJ publisher, many subscribers */
-object SubmissionPublisherLoops2Test {
+class SubmissionPublisherLoops2Test {
 
   /* Original JSR-166 parameters: */
   // val ITEMS: Int = 1 << 20
@@ -174,7 +174,7 @@ object SubmissionPublisherLoops2Test {
 /** Creates PRODUCERS publishers each with CONSUMERS subscribers, each sent
  *  ITEMS items, with CAP buffering; repeats REPS times
  */
-object SubmissionPublisherLoops3Test {
+class SubmissionPublisherLoops3Test {
 
   /* Original JSR-166 parameters: */
   // val ITEMS: Int = 1 << 20
@@ -261,7 +261,7 @@ object SubmissionPublisherLoops3Test {
  *  CONSUMERS subscribers, each sent ITEMS items, with max CAP buffering;
  *  repeats REPS times
  */
-object SubmissionPublisherLoops4Test {
+class SubmissionPublisherLoops4Test {
 
   /* Original JSR-166 parameters: */
   // val ITEMS: Int = 1 << 20
