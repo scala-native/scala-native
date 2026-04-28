@@ -1152,4 +1152,39 @@ class ForkJoinTask8Test extends JSR166Test {
     }
     testInvokeOnPool(mainPool, a)
   }
+
+  @Test def testPollSubmission(): Unit = {
+    val done = new CountDownLatch(1)
+    val a = ForkJoinTask.adapt(awaiter(done))
+    val b = ForkJoinTask.adapt(awaiter(done))
+    val c = ForkJoinTask.adapt(awaiter(done))
+    val p = singletonPool
+
+    usingWrappedPoolCleaner(p)(cleaner(_, done)) { p =>
+      val external = new Thread(new CheckedRunnable() {
+        override def realRun(): Unit = {
+          p.execute(a)
+          p.execute(b)
+          p.execute(c)
+        }
+      })
+
+      val s = new CheckedRecursiveAction() {
+        override protected def realCompute(): Unit = {
+          external.start()
+          try external.join()
+          catch {
+            case ex: Exception => threadUnexpectedException(ex)
+          }
+          assertTrue(p.hasQueuedSubmissions())
+          assertTrue(Thread.currentThread().isInstanceOf[ForkJoinWorkerThread])
+          val r = ForkJoinTask.pollSubmission()
+          assertTrue(r == a || r == b || r == c)
+          assertFalse(r.isDone())
+        }
+      }
+
+      p.invoke(s)
+    }
+  }
 }
