@@ -8,6 +8,23 @@ import org.junit.Test
 import org.scalanative.testsuite.utils.Platform._
 
 class SystemTest {
+  @Test def testNanoTime(): Unit = {
+    val millisRound = 17L
+    val m0 = System.currentTimeMillis()
+    val n0 = System.nanoTime()
+    Thread.sleep(1L)
+    val m1 = System.currentTimeMillis()
+    val n1 = System.nanoTime()
+    Thread.sleep(50L)
+    val m2 = System.currentTimeMillis()
+    val n2 = System.nanoTime()
+    Thread.sleep(1L)
+    val m3 = System.currentTimeMillis()
+    val n3 = System.nanoTime()
+    assertTrue((n2 - n1) / 1000000L <= m3 - m0 + millisRound)
+    assertTrue(m2 - m1 <= (n3 - n0) / 1000000L + millisRound)
+  }
+
   @Test def systemNanoTimeIsMonotonicallyIncreasing(): Unit = {
     var t0 = 0L
     var t1 = 0L
