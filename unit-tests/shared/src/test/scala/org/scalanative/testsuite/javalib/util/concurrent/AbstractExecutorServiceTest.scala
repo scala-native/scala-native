@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.{ArrayList, Collection, Collections, List}
 
 import org.junit.Assert._
-import org.junit.Test
+import org.junit.{Ignore, Test}
 
 object AbstractExecutorServiceTest {
 
@@ -85,10 +85,12 @@ class AbstractExecutorServiceTest extends JSR166Test {
     assertEquals(TEST_STRING, result)
   }
 
-  // No PrivilegedAction in Scala Native
-  // @Test def testSubmitPrivilegedAction(): Unit = {}
-  // @Test def testSubmitPrivilegedExceptionAction(): Unit = {}
-  // @Test def testSubmitFailedPrivilegedExceptionAction(): Unit = {}
+  @Ignore("scala-native#4848: java.security PrivilegedAction types are not linkable in Scala Native")
+  @Test def testSubmitPrivilegedAction(): Unit = {}
+  @Ignore("scala-native#4848: java.security PrivilegedExceptionAction types are not linkable in Scala Native")
+  @Test def testSubmitPrivilegedExceptionAction(): Unit = {}
+  @Ignore("scala-native#4848: java.security PrivilegedExceptionAction types are not linkable in Scala Native")
+  @Test def testSubmitFailedPrivilegedExceptionAction(): Unit = {}
 
   /** Submitting null tasks throws NullPointerException
    */
