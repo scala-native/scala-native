@@ -84,8 +84,12 @@ class CopyOnWriteArrayList[E <: AnyRef] private (
       else jlr.Array.newInstance(componentType, size()).asInstanceOf[Array[T]]
 
     val iter = iterator()
-    for (i <- 0 until size())
-      toFill(i) = iter.next().asInstanceOf[T]
+    for (i <- 0 until size()) {
+      val elem = iter.next()
+      if (elem != null && !componentType.isAssignableFrom(elem.getClass))
+        throw new ArrayStoreException(elem.getClass.getName)
+      jlr.Array.set(toFill, i, elem)
+    }
     if (toFill.length > size())
       toFill(size()) = null.asInstanceOf[T]
     toFill

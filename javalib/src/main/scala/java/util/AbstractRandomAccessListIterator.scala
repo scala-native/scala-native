@@ -13,6 +13,8 @@ private[util] abstract class AbstractRandomAccessListIterator[E](
     i < end
 
   def next(): E = {
+    if (!hasNext())
+      throw new NoSuchElementException
     last = i
     i += 1
     get(last)
@@ -22,6 +24,8 @@ private[util] abstract class AbstractRandomAccessListIterator[E](
     start < i
 
   def previous(): E = {
+    if (!hasPrevious())
+      throw new NoSuchElementException
     i -= 1
     last = i
     get(last)
