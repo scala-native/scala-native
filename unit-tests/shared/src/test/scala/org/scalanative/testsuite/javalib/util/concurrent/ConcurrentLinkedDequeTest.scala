@@ -744,9 +744,8 @@ class ConcurrentLinkedDequeTest extends JSR166Test {
 
   /** toArray(incompatible array type) throws ArrayStoreException
    */
-  // Lack of ArrayStoreExeption in Scala Native is a known defect/insufficiency
-  @Ignore("No distinguishment in Array component types in Scala Native")
-  @Test def testToArray1_BadArg(): Unit = {
+  @Ignore("scala-native#4845: arrays lose runtime component type")
+  @Test def testToArray_incompatibleArrayType(): Unit = {
     val q = populatedDeque(SIZE)
     try {
       q.toArray(new Array[String](10))
@@ -948,6 +947,9 @@ class ConcurrentLinkedDequeTest extends JSR166Test {
   //   }
   //   assertTrue(y.isEmpty)
   // }
+
+  @Ignore("No ObjectInputStream/ObjectOutputStream in Scala Native")
+  @Test def testSerialization(): Unit = ()
 
   /** contains(null) always return false. remove(null) always throws
    *  NullPointerException.
