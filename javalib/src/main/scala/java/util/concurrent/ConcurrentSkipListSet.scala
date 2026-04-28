@@ -1,111 +1,130 @@
-// Ported from Scala.js commit: bbf0314 dated: Mon, 13 Jun 2022
+/*
+ * Written by Doug Lea with assistance from members of JCP JSR-166
+ * Expert Group and released to the public domain, as explained at
+ * http://creativecommons.org/publicdomain/zero/1.0/
+ */
 
 package java.util.concurrent
 
 import java.lang.Cloneable
 import java.util._
 
-class ConcurrentSkipListSet[E] private (inner: TreeSet[E])
-    extends AbstractSet[E]
+@SerialVersionUID(-2479143111061671589L)
+class ConcurrentSkipListSet[E] private (
+    private val map: ConcurrentNavigableMap[E, java.lang.Boolean]
+) extends AbstractSet[E]
     with NavigableSet[E]
     with Cloneable
     with Serializable {
 
-  def this(collection: Collection[_ <: E]) =
-    this(new TreeSet[E](collection))
+  import ConcurrentSkipListSet._
 
   def this() =
-    this(new TreeSet[E]())
+    this(new ConcurrentSkipListMap[E, java.lang.Boolean]())
 
   def this(comparator: Comparator[_ >: E]) =
-    this(new TreeSet[E](comparator))
+    this(new ConcurrentSkipListMap[E, java.lang.Boolean](comparator))
 
-  def this(sortedSet: SortedSet[E]) =
-    this(new TreeSet[E](sortedSet))
+  def this(collection: Collection[_ <: E]) = {
+    this()
+    addAll(collection)
+  }
 
-  override def clone(): ConcurrentSkipListSet[E] =
-    new ConcurrentSkipListSet(this)
+  def this(sortedSet: SortedSet[E]) = {
+    this(sortedSet.comparator())
+    addAll(sortedSet)
+  }
 
-  def size(): Int =
-    inner.size()
+  override def clone(): ConcurrentSkipListSet[E] = {
+    val cloned = new ConcurrentSkipListSet[E](comparator())
+    cloned.addAll(this)
+    cloned
+  }
+
+  override def size(): Int =
+    map.size()
 
   override def isEmpty(): Boolean =
-    inner.isEmpty()
+    map.isEmpty()
 
   override def contains(o: Any): Boolean =
-    if (o == null) false
-    else inner.contains(o)
+    map.containsKey(o)
 
   override def add(e: E): Boolean =
-    if (e == null) throw new NullPointerException()
-    else inner.add(e)
+    map.putIfAbsent(e, PRESENT) == null
 
   override def remove(o: Any): Boolean =
-    if (o == null) throw new NullPointerException()
-    else inner.remove(o)
+    map.remove(o) != null
 
   override def clear(): Unit =
-    inner.clear()
+    map.clear()
 
-  def iterator(): Iterator[E] =
-    inner.iterator()
+  override def iterator(): Iterator[E] =
+    map.navigableKeySet().iterator()
 
-  def descendingIterator(): Iterator[E] =
-    inner.descendingIterator()
+  override def descendingIterator(): Iterator[E] =
+    map.descendingKeySet().iterator()
 
-  override def removeAll(c: Collection[_]): Boolean =
-    inner.removeAll(c)
+  override def lower(e: E): E =
+    map.lowerKey(e)
 
-  def lower(e: E): E =
-    inner.lower(e)
+  override def floor(e: E): E =
+    map.floorKey(e)
 
-  def floor(e: E): E =
-    inner.floor(e)
+  override def ceiling(e: E): E =
+    map.ceilingKey(e)
 
-  def ceiling(e: E): E =
-    inner.ceiling(e)
+  override def higher(e: E): E =
+    map.higherKey(e)
 
-  def higher(e: E): E =
-    inner.higher(e)
+  override def pollFirst(): E = {
+    val e = map.pollFirstEntry()
+    if (e == null) null.asInstanceOf[E] else e.getKey()
+  }
 
-  def pollFirst(): E =
-    inner.pollFirst()
+  override def pollLast(): E = {
+    val e = map.pollLastEntry()
+    if (e == null) null.asInstanceOf[E] else e.getKey()
+  }
 
-  def pollLast(): E =
-    inner.pollLast()
+  override def comparator(): Comparator[_ >: E] =
+    map.comparator()
 
-  def comparator(): Comparator[_ >: E] =
-    inner.comparator()
+  override def first(): E =
+    map.firstKey()
 
-  def first(): E =
-    inner.first()
+  override def last(): E =
+    map.lastKey()
 
-  def last(): E =
-    inner.last()
-
-  def subSet(
+  override def subSet(
       fromElement: E,
       fromInclusive: Boolean,
       toElement: E,
       toInclusive: Boolean
   ): NavigableSet[E] =
-    inner.subSet(fromElement, fromInclusive, toElement, toInclusive)
+    new ConcurrentSkipListSet[E](
+      map.subMap(fromElement, fromInclusive, toElement, toInclusive)
+    )
 
-  def headSet(toElement: E, inclusive: Boolean): NavigableSet[E] =
-    inner.headSet(toElement, inclusive)
+  override def headSet(toElement: E, inclusive: Boolean): NavigableSet[E] =
+    new ConcurrentSkipListSet[E](map.headMap(toElement, inclusive))
 
-  def tailSet(fromElement: E, inclusive: Boolean): NavigableSet[E] =
-    inner.tailSet(fromElement, inclusive)
+  override def tailSet(fromElement: E, inclusive: Boolean): NavigableSet[E] =
+    new ConcurrentSkipListSet[E](map.tailMap(fromElement, inclusive))
 
-  def subSet(fromElement: E, toElement: E): NavigableSet[E] =
-    inner.subSet(fromElement, true, toElement, false)
+  override def subSet(fromElement: E, toElement: E): NavigableSet[E] =
+    subSet(fromElement, true, toElement, false)
 
-  def headSet(toElement: E): NavigableSet[E] =
-    inner.headSet(toElement, false)
+  override def headSet(toElement: E): NavigableSet[E] =
+    headSet(toElement, false)
 
-  def tailSet(fromElement: E): NavigableSet[E] =
-    inner.tailSet(fromElement, true)
+  override def tailSet(fromElement: E): NavigableSet[E] =
+    tailSet(fromElement, true)
 
-  def descendingSet(): NavigableSet[E] =
-    inner.descendingSet()
+  override def descendingSet(): NavigableSet[E] =
+    new ConcurrentSkipListSet[E](map.descendingMap())
+}
+
+private object ConcurrentSkipListSet {
+  private val PRESENT = java.lang.Boolean.TRUE
 }
