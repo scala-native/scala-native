@@ -634,7 +634,7 @@ class FutureTaskTest extends JSR166Test {
 
   /** set in one thread causes get in another thread to retrieve value
    */
-  @Test def testdoSet(): Unit = {
+  @Test def testGetSet(): Unit = {
     val pleaseSet = new CountDownLatch(2)
     val task = FutureTaskTest.PublicFutureTask(
       new CheckedCallable[AnyRef]() {

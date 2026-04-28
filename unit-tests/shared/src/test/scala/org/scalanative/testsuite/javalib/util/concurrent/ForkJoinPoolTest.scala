@@ -193,7 +193,7 @@ class ForkJoinPoolTest extends JSR166Test {
   }
 
   // awaitTermination on a non-shutdown pool times out
-  @Test def testAwaitTerminationTimesOut(): Unit = {
+  @Test def testAwaitTermination_timesOut(): Unit = {
     usingPoolCleaner(new ForkJoinPool(1)) { p =>
       assertFalse(p.isTerminated())
       assertFalse(p.awaitTermination(java.lang.Long.MIN_VALUE, NANOSECONDS))
