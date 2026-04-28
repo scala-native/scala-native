@@ -1583,7 +1583,7 @@ class LinkedBlockingDequeTest extends JSR166Test {
   }
 
   /** toString contains toStrings of elements */
-  @Test def testToString_(): Unit = {
+  @Test def testToString(): Unit = {
     val q = populatedDeque(SIZE)
     val s = q.toString()
     for (i <- 0 until SIZE)

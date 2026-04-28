@@ -522,7 +522,7 @@ class DelayQueueTest extends JSR166Test {
   }
 
   /** toString contains toStrings of elements */
-  @Test def testToString_(): Unit = {
+  @Test def testToString(): Unit = {
     val q = populatedQueue(SIZE)
     val s = q.toString()
     val it = q.iterator()

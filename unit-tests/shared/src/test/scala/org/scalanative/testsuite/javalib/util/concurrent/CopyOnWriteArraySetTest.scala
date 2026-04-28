@@ -209,7 +209,7 @@ class CopyOnWriteArraySetTest extends JSR166Test {
   }
 
   /** toString holds toString of elements */
-  @Test def testToString_(): Unit = {
+  @Test def testToString(): Unit = {
     mustEqual("[]", new CopyOnWriteArraySet[Item]().toString())
     val full = populatedSet(3).asInstanceOf[Collection[Item]]
     val s = full.toString()
