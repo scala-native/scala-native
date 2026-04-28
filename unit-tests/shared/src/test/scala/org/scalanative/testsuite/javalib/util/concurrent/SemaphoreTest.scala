@@ -473,8 +473,10 @@ class SemaphoreTest extends JSR166Test {
     assertEquals(-11, s.availablePermits)
   }
 
-  // @Test def testSerialization(): Unit = { testSerialization(false) }
-  // @Test def testSerialization_fair(): Unit = { testSerialization(true) }
+  @Ignore("No ObjectInputStream/ObjectOutputStream in Scala Native")
+  @Test def testSerialization(): Unit = {}
+  @Ignore("No ObjectInputStream/ObjectOutputStream in Scala Native")
+  @Test def testSerialization_fair(): Unit = {}
   // def testSerialization(fair: Boolean): Unit = ???
 
   /** tryAcquire(n) succeeds when sufficient permits, else fails

@@ -476,8 +476,8 @@ class PriorityBlockingQueueTest extends JSR166Test {
     assertTrue(q.isEmpty)
   }
 
-  @Ignore("Runtime limitation - issue #209")
-  @Test def testToArray1_BadArg(): Unit = {
+  @Ignore("scala-native#4845: arrays lose runtime component type")
+  @Test def testToArray_incompatibleArrayType(): Unit = {
     val q =
       PriorityBlockingQueueTest.populatedQueue(SIZE)
     try {

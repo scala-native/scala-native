@@ -9,7 +9,7 @@ import scala.collection.mutable
 import scala.reflect.ClassTag
 
 import org.junit.Assert._
-import org.junit.Test
+import org.junit.{Ignore, Test}
 
 import org.scalanative.testsuite.javalib.util.MapTest
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
@@ -234,6 +234,9 @@ class ConcurrentHashMapTest extends MapTest {
       str == "[a, b]" || str == "[b, a]"
     )
   }
+
+  @Ignore("No ObjectInputStream/ObjectOutputStream in Scala Native")
+  @Test def testSerialization(): Unit = ()
 }
 
 class ConcurrentHashMapFactory extends ConcurrentMapFactory {
