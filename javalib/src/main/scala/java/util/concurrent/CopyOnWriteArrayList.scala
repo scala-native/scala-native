@@ -49,6 +49,11 @@ class CopyOnWriteArrayList[E <: AnyRef] private (
     indexOf(o.asInstanceOf[E], 0)
 
   def indexOf(e: E, index: Int): Int = {
+    if (index < 0)
+      throw new IndexOutOfBoundsException(index.toString)
+    if (index >= size())
+      return -1
+
     @tailrec
     def findIndex(iter: ListIterator[E]): Int = {
       if (!iter.hasNext()) -1
@@ -59,16 +64,21 @@ class CopyOnWriteArrayList[E <: AnyRef] private (
   }
 
   def lastIndexOf(o: scala.Any): Int =
-    lastIndexOf(o.asInstanceOf[E], 0)
+    lastIndexOf(o.asInstanceOf[E], size() - 1)
 
   def lastIndexOf(e: E, index: Int): Int = {
+    if (index < 0)
+      return -1
+    if (index >= size())
+      throw new IndexOutOfBoundsException(index.toString)
+
     @tailrec
     def findIndex(iter: ListIterator[E]): Int = {
       if (!iter.hasPrevious()) -1
       else if (Objects.equals(iter.previous(), e)) iter.nextIndex()
       else findIndex(iter)
     }
-    findIndex(listIterator(size()))
+    findIndex(listIterator(index + 1))
   }
 
   override def clone(): AnyRef =
@@ -307,12 +317,17 @@ class CopyOnWriteArrayList[E <: AnyRef] private (
 
     override def listIterator(index: Int): ListIterator[E] = {
       checkIndexOnBounds(index)
+      val offset = fromIndex
       new CopyOnWriteArrayListIterator[E](
         innerSnapshot(),
         fromIndex + index,
         fromIndex,
         toIndex
       ) {
+        override def nextIndex(): Int = super.nextIndex() - offset
+
+        override def previousIndex(): Int = super.previousIndex() - offset
+
         override protected def onSizeChanged(delta: Int): Unit =
           viewSelf.changeSize(delta)
       }
