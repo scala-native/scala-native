@@ -549,7 +549,12 @@ class Collection8Test extends JSR166Test {
       }
     }
 
-  @Test def testElementRemovalDuringTraversal(): Unit =
+  @Test def testElementRemovalDuringTraversal(): Unit = {
+    assumeFalse(
+      "JDK8 concurrent spliterator traversal after clear differs from current JSR166 TCK",
+      Platform.executingInJVMOnJDK8OrLower
+    )
+
     forAllImplementations("testElementRemovalDuringTraversal") { impl =>
       val c = impl.emptyCollection()
       val rnd = juc.ThreadLocalRandom.current()
@@ -586,6 +591,7 @@ class Collection8Test extends JSR166Test {
       assertTrue(copy.containsAll(iterated))
       assertTrue(copy.containsAll(spliterated))
     }
+  }
 
   @Test def testRandomElementRemovalDuringTraversal(): Unit =
     forAllImplementations("testRandomElementRemovalDuringTraversal") { impl =>
