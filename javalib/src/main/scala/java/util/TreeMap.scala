@@ -164,16 +164,20 @@ class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit
 
   def pollFirstEntry(): Map.Entry[K, V] = {
     val node = RB.minNode(tree)
-    if (node ne null)
+    if (node ne null) {
+      val result = new AbstractMap.SimpleImmutableEntry[K, V](node)
       RB.deleteNode(tree, node)
-    node
+      result
+    } else null
   }
 
   def pollLastEntry(): Map.Entry[K, V] = {
     val node = RB.maxNode(tree)
-    if (node ne null)
+    if (node ne null) {
+      val result = new AbstractMap.SimpleImmutableEntry[K, V](node)
       RB.deleteNode(tree, node)
-    node
+      result
+    } else null
   }
 
   def lowerEntry(key: K): Map.Entry[K, V] =
@@ -341,6 +345,25 @@ private object TreeMap {
         .isWithinUpperBound(key, upperBound, upperKind)
   }
 
+  private final class DescendingProjectedEntrySet[K, V](
+      tree: RB.Tree[K, V],
+      lowerBound: K,
+      lowerKind: RB.BoundKind,
+      upperBound: K,
+      upperKind: RB.BoundKind
+  )(implicit comp: Comparator[_ >: K])
+      extends ProjectedEntrySet[K, V](
+        tree,
+        lowerBound,
+        lowerKind,
+        upperBound,
+        upperKind
+      ) {
+
+    override def iterator(): Iterator[Map.Entry[K, V]] =
+      RB.descendingIterator(tree, upperBound, upperKind, lowerBound, lowerKind)
+  }
+
   private abstract class AbstractProjection[K, V](
       protected val tree: RB.Tree[K, V],
       protected val lowerBound: K,
@@ -479,8 +502,9 @@ private object TreeMap {
       val node = RB.minNodeAfter(tree, lowerBound, lowerKind)
       if (node ne null) {
         if (isWithinUpperBound(node.key)) {
+          val result = new AbstractMap.SimpleImmutableEntry[K, V](node)
           RB.deleteNode(tree, node)
-          node
+          result
         } else {
           null
         }
@@ -494,8 +518,9 @@ private object TreeMap {
       val node = RB.maxNodeBefore(tree, upperBound, upperKind)
       if (node ne null) {
         if (isWithinLowerBound(node.key)) {
+          val result = new AbstractMap.SimpleImmutableEntry[K, V](node)
           RB.deleteNode(tree, node)
-          node
+          result
         } else {
           null
         }
@@ -716,6 +741,15 @@ private object TreeMap {
 
     def comparator(): Comparator[_ >: K] =
       Collections.reverseOrder(NaturalComparator.unselect(comp))
+
+    override def entrySet(): Set[Map.Entry[K, V]] =
+      new DescendingProjectedEntrySet(
+        tree,
+        lowerBound,
+        lowerKind,
+        upperBound,
+        upperKind
+      )
 
     def firstEntry(): Map.Entry[K, V] =
       nextNode(fromKey, fromBoundKind)
