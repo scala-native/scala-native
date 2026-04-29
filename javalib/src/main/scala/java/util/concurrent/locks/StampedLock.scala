@@ -8,12 +8,23 @@ package java.util.concurrent.locks
 
 import java.util.concurrent.TimeUnit
 
+import scala.annotation.tailrec
+
+import scala.scalanative.annotation.alwaysinline
+import scala.scalanative.libc.stdatomic.AtomicLongLong
+import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
+import scala.scalanative.unsafe._
+
 @SerialVersionUID(-6001602636862214147L)
 object StampedLock {
   private final val WriteBit = 1L << 62
   private final val ReadBit = 1L << 61
   private final val ModeMask = WriteBit | ReadBit
-  private final val VersionMask = ~ModeMask
+  private final val ReaderBits = 31
+  private final val ReaderMask = (1L << ReaderBits) - 1L
+  private final val VersionUnit = 1L << ReaderBits
+  private final val VersionMask = ~(ModeMask | ReaderMask)
+  private final val Origin = VersionUnit
 
   private def versionOf(stamp: Long): Long = stamp & VersionMask
 
@@ -35,257 +46,344 @@ class StampedLock extends Serializable {
   import StampedLock._
 
   private final val monitor = new Object
-  private var readers = 0
-  private var writer = false
-  private var version = 1L
+  @volatile private[locks] var state = Origin
 
-  private def nextVersion(): Unit = {
-    version = (version + 1L) & VersionMask
-    if (version == 0L) version = 1L
+  @alwaysinline
+  private def stateRef: AtomicLongLong =
+    new AtomicLongLong(fromRawPtr(Intrinsics.classFieldRawPtr(this, "state")))
+
+  @alwaysinline
+  private def loadState(): Long = stateRef.load()
+
+  @alwaysinline
+  private def casState(expect: Long, update: Long): Boolean =
+    stateRef.compareExchangeStrong(expect, update)
+
+  @alwaysinline
+  private def readerCount(s: Long): Int = (s & ReaderMask).toInt
+
+  @alwaysinline
+  private def isWriteState(s: Long): Boolean = (s & WriteBit) != 0L
+
+  @alwaysinline
+  private def stateVersion(s: Long): Long = s & VersionMask
+
+  @alwaysinline
+  private def optimisticStamp(s: Long): Long = stateVersion(s)
+
+  @alwaysinline
+  private def readStamp(s: Long): Long = ReadBit | stateVersion(s)
+
+  @alwaysinline
+  private def writeStamp(s: Long): Long = WriteBit | stateVersion(s)
+
+  @alwaysinline
+  private def validVersion(stamp: Long, s: Long): Boolean =
+    stamp != 0L && versionOf(stamp) == stateVersion(s)
+
+  private def nextVersionState(s: Long): Long = {
+    val next = (stateVersion(s) + VersionUnit) & VersionMask
+    if (next == 0L) Origin else next
   }
 
-  private def optimisticStamp(): Long = version
-  private def readStamp(): Long = ReadBit | version
-  private def writeStamp(): Long = WriteBit | version
-
-  private def validVersion(stamp: Long): Boolean =
-    stamp != 0L && versionOf(stamp) == version
+  private def signalWaiters(): Unit =
+    monitor.synchronized(monitor.notifyAll())
 
   @throws[InterruptedException]
-  private def awaitRemainingNanos(remaining: Long): Long = {
-    val start = System.nanoTime()
+  private def awaitNanos(remaining: Long): Unit = {
     val millis = remaining / 1000000L
     val nanos = (remaining % 1000000L).toInt
     monitor.wait(millis, nanos)
-    val elapsed = System.nanoTime() - start
-    if (elapsed <= 0L) remaining else remaining - elapsed
+  }
+
+  @tailrec
+  private def tryAcquireWrite(): Long = {
+    val s = loadState()
+    if (isWriteState(s) || readerCount(s) != 0) 0L
+    else {
+      val next = stateVersion(s) | WriteBit
+      if (casState(s, next)) writeStamp(next)
+      else tryAcquireWrite()
+    }
+  }
+
+  @tailrec
+  private def tryAcquireRead(): Long = {
+    val s = loadState()
+    if (isWriteState(s)) 0L
+    else {
+      val readers = readerCount(s)
+      if (readers == ReaderMask)
+        throw new Error("Maximum read lock count exceeded")
+      val next = s + 1L
+      if (casState(s, next)) readStamp(next)
+      else tryAcquireRead()
+    }
   }
 
   def writeLock(): Long = {
+    var stamp = tryAcquireWrite()
+    if (stamp != 0L) return stamp
+
     var interrupted = false
     monitor.synchronized {
-      while (writer || readers != 0) {
+      while (stamp == 0L) {
+        stamp = tryAcquireWrite()
+        if (stamp != 0L) {
+          if (interrupted) Thread.currentThread().interrupt()
+          return stamp
+        }
         try monitor.wait()
         catch {
           case _: InterruptedException =>
             interrupted = true
         }
       }
-      writer = true
-      val stamp = writeStamp()
-      if (interrupted) Thread.currentThread().interrupt()
-      stamp
     }
+    if (interrupted) Thread.currentThread().interrupt()
+    stamp
   }
 
-  def tryWriteLock(): Long =
-    monitor.synchronized {
-      if (writer || readers != 0) 0L
-      else {
-        writer = true
-        writeStamp()
-      }
-    }
+  def tryWriteLock(): Long = tryAcquireWrite()
 
   @throws[InterruptedException]
   def tryWriteLock(time: Long, unit: TimeUnit): Long = {
     var nanos = unit.toNanos(time)
     if (Thread.interrupted()) throw new InterruptedException()
+    var stamp = tryAcquireWrite()
+    if (stamp != 0L) return stamp
     monitor.synchronized {
-      if (!writer && readers == 0) {
-        writer = true
-        return writeStamp()
-      }
       if (nanos <= 0L) return 0L
-      while (writer || readers != 0) {
-        nanos = awaitRemainingNanos(nanos)
+      val deadline = System.nanoTime() + nanos
+      while (stamp == 0L) {
+        stamp = tryAcquireWrite()
+        if (stamp != 0L) return stamp
         if (nanos <= 0L) return 0L
+        awaitNanos(nanos)
+        nanos = deadline - System.nanoTime()
       }
-      writer = true
-      writeStamp()
+      stamp
     }
   }
 
   @throws[InterruptedException]
   def writeLockInterruptibly(): Long = {
     if (Thread.interrupted()) throw new InterruptedException()
+    var stamp = tryAcquireWrite()
+    if (stamp != 0L) return stamp
     monitor.synchronized {
-      while (writer || readers != 0) monitor.wait()
-      writer = true
-      writeStamp()
+      while (stamp == 0L) {
+        stamp = tryAcquireWrite()
+        if (stamp != 0L) return stamp
+        monitor.wait()
+      }
+      stamp
     }
   }
 
   def readLock(): Long = {
+    var stamp = tryAcquireRead()
+    if (stamp != 0L) return stamp
+
     var interrupted = false
     monitor.synchronized {
-      while (writer) {
+      while (stamp == 0L) {
+        stamp = tryAcquireRead()
+        if (stamp != 0L) {
+          if (interrupted) Thread.currentThread().interrupt()
+          return stamp
+        }
         try monitor.wait()
         catch {
           case _: InterruptedException =>
             interrupted = true
         }
       }
-      readers += 1
-      val stamp = readStamp()
-      if (interrupted) Thread.currentThread().interrupt()
-      stamp
     }
+    if (interrupted) Thread.currentThread().interrupt()
+    stamp
   }
 
-  def tryReadLock(): Long =
-    monitor.synchronized {
-      if (writer) 0L
-      else {
-        readers += 1
-        readStamp()
-      }
-    }
+  def tryReadLock(): Long = tryAcquireRead()
 
   @throws[InterruptedException]
   def tryReadLock(time: Long, unit: TimeUnit): Long = {
     var nanos = unit.toNanos(time)
     if (Thread.interrupted()) throw new InterruptedException()
+    var stamp = tryAcquireRead()
+    if (stamp != 0L) return stamp
     monitor.synchronized {
-      if (!writer) {
-        readers += 1
-        return readStamp()
-      }
       if (nanos <= 0L) return 0L
-      while (writer) {
-        nanos = awaitRemainingNanos(nanos)
+      val deadline = System.nanoTime() + nanos
+      while (stamp == 0L) {
+        stamp = tryAcquireRead()
+        if (stamp != 0L) return stamp
         if (nanos <= 0L) return 0L
+        awaitNanos(nanos)
+        nanos = deadline - System.nanoTime()
       }
-      readers += 1
-      readStamp()
+      stamp
     }
   }
 
   @throws[InterruptedException]
   def readLockInterruptibly(): Long = {
     if (Thread.interrupted()) throw new InterruptedException()
+    var stamp = tryAcquireRead()
+    if (stamp != 0L) return stamp
     monitor.synchronized {
-      while (writer) monitor.wait()
-      readers += 1
-      readStamp()
+      while (stamp == 0L) {
+        stamp = tryAcquireRead()
+        if (stamp != 0L) return stamp
+        monitor.wait()
+      }
+      stamp
     }
   }
 
-  def tryOptimisticRead(): Long =
-    monitor.synchronized {
-      if (writer) 0L else optimisticStamp()
-    }
+  def tryOptimisticRead(): Long = {
+    val s = loadState()
+    if (isWriteState(s)) 0L else optimisticStamp(s)
+  }
 
-  def validate(stamp: Long): Boolean =
-    monitor.synchronized {
-      if (!validVersion(stamp)) false
-      else if (isWriteLockStamp(stamp)) writer
-      else !writer
-    }
+  def validate(stamp: Long): Boolean = {
+    val s = loadState()
+    if (!validVersion(stamp, s)) false
+    else if (isWriteLockStamp(stamp)) isWriteState(s)
+    else !isWriteState(s)
+  }
 
-  def unlockWrite(stamp: Long): Unit =
-    monitor.synchronized {
-      if (!isWriteLockStamp(stamp) || !validVersion(stamp) || !writer)
-        throw new IllegalMonitorStateException()
-      writer = false
-      nextVersion()
-      monitor.notifyAll()
-    }
+  @tailrec
+  private def unlockWriteLoop(stamp: Long): Unit = {
+    val s = loadState()
+    if (!isWriteLockStamp(stamp) || !validVersion(stamp, s) || !isWriteState(s))
+      throw new IllegalMonitorStateException()
+    if (casState(s, nextVersionState(s))) signalWaiters()
+    else unlockWriteLoop(stamp)
+  }
 
-  def unlockRead(stamp: Long): Unit =
-    monitor.synchronized {
-      if (!isReadLockStamp(stamp) || !validVersion(stamp) || readers == 0)
-        throw new IllegalMonitorStateException()
-      readers -= 1
-      if (readers == 0) monitor.notifyAll()
-    }
+  def unlockWrite(stamp: Long): Unit = unlockWriteLoop(stamp)
+
+  @tailrec
+  private def unlockReadLoop(stamp: Long): Unit = {
+    val s = loadState()
+    val readers = readerCount(s)
+    if (!isReadLockStamp(stamp) || !validVersion(stamp, s) ||
+        isWriteState(s) || readers == 0)
+      throw new IllegalMonitorStateException()
+    val next = s - 1L
+    if (casState(s, next)) {
+      if (readers == 1) signalWaiters()
+    } else unlockReadLoop(stamp)
+  }
+
+  def unlockRead(stamp: Long): Unit = unlockReadLoop(stamp)
 
   def unlock(stamp: Long): Unit =
     if (isWriteLockStamp(stamp)) unlockWrite(stamp)
     else if (isReadLockStamp(stamp)) unlockRead(stamp)
     else throw new IllegalMonitorStateException()
 
-  def tryConvertToWriteLock(stamp: Long): Long =
-    monitor.synchronized {
-      if (!validVersion(stamp)) 0L
-      else if (isWriteLockStamp(stamp)) {
-        if (writer) stamp else 0L
-      } else if (isReadLockStamp(stamp)) {
-        if (!writer && readers == 1) {
-          readers = 0
-          writer = true
-          writeStamp()
-        } else 0L
-      } else {
-        if (!writer && readers == 0) {
-          writer = true
-          writeStamp()
-        } else 0L
-      }
+  @tailrec
+  final def tryConvertToWriteLock(stamp: Long): Long = {
+    val s = loadState()
+    val readers = readerCount(s)
+    if (!validVersion(stamp, s)) 0L
+    else if (isWriteLockStamp(stamp)) {
+      if (isWriteState(s)) stamp else 0L
+    } else if (isReadLockStamp(stamp)) {
+      if (!isWriteState(s) && readers == 1) {
+        val next = stateVersion(s) | WriteBit
+        if (casState(s, next)) writeStamp(next)
+        else tryConvertToWriteLock(stamp)
+      } else 0L
+    } else {
+      if (!isWriteState(s) && readers == 0) {
+        val next = stateVersion(s) | WriteBit
+        if (casState(s, next)) writeStamp(next)
+        else tryConvertToWriteLock(stamp)
+      } else 0L
     }
+  }
 
-  def tryConvertToReadLock(stamp: Long): Long =
-    monitor.synchronized {
-      if (!validVersion(stamp)) 0L
-      else if (isReadLockStamp(stamp)) {
-        if (!writer) stamp else 0L
-      } else if (isWriteLockStamp(stamp)) {
-        if (writer) {
-          writer = false
-          readers += 1
-          monitor.notifyAll()
-          readStamp()
-        } else 0L
-      } else {
-        if (!writer) {
-          readers += 1
-          readStamp()
-        } else 0L
-      }
-    }
-
-  def tryConvertToOptimisticRead(stamp: Long): Long =
-    monitor.synchronized {
-      if (!validVersion(stamp)) 0L
-      else if (isWriteLockStamp(stamp)) {
-        if (!writer) 0L
-        else {
-          writer = false
-          nextVersion()
-          monitor.notifyAll()
-          optimisticStamp()
-        }
-      } else if (isReadLockStamp(stamp)) {
-        if (writer || readers == 0) 0L
-        else {
-          readers -= 1
-          if (readers == 0) monitor.notifyAll()
-          optimisticStamp()
-        }
-      } else if (!writer) stamp
-      else 0L
-    }
-
-  def tryUnlockWrite(): Boolean =
-    monitor.synchronized {
-      if (!writer) false
+  @tailrec
+  final def tryConvertToReadLock(stamp: Long): Long = {
+    val s = loadState()
+    val readers = readerCount(s)
+    if (!validVersion(stamp, s)) 0L
+    else if (isWriteLockStamp(stamp)) {
+      if (!isWriteState(s)) 0L
       else {
-        writer = false
-        nextVersion()
-        monitor.notifyAll()
-        true
+        val next = nextVersionState(s) | 1L
+        if (casState(s, next)) {
+          signalWaiters()
+          readStamp(next)
+        } else tryConvertToReadLock(stamp)
       }
-    }
-
-  def tryUnlockRead(): Boolean =
-    monitor.synchronized {
-      if (readers == 0) false
+    } else if (isReadLockStamp(stamp)) {
+      if (!isWriteState(s) && readers != 0) stamp else 0L
+    } else {
+      if (isWriteState(s)) 0L
+      else if (readers == ReaderMask)
+        throw new Error("Maximum read lock count exceeded")
       else {
-        readers -= 1
-        if (readers == 0) monitor.notifyAll()
-        true
+        val next = s + 1L
+        if (casState(s, next)) readStamp(next)
+        else tryConvertToReadLock(stamp)
       }
     }
+  }
+
+  @tailrec
+  final def tryConvertToOptimisticRead(stamp: Long): Long = {
+    val s = loadState()
+    val readers = readerCount(s)
+    if (!validVersion(stamp, s)) 0L
+    else if (isWriteLockStamp(stamp)) {
+      if (!isWriteState(s)) 0L
+      else {
+        val next = nextVersionState(s)
+        if (casState(s, next)) {
+          signalWaiters()
+          optimisticStamp(next)
+        } else tryConvertToOptimisticRead(stamp)
+      }
+    } else if (isReadLockStamp(stamp)) {
+      if (isWriteState(s) || readers == 0) 0L
+      else {
+        val next = s - 1L
+        if (casState(s, next)) {
+          if (readers == 1) signalWaiters()
+          optimisticStamp(next)
+        } else tryConvertToOptimisticRead(stamp)
+      }
+    } else if (!isWriteState(s)) stamp
+    else 0L
+  }
+
+  @tailrec
+  final def tryUnlockWrite(): Boolean = {
+    val s = loadState()
+    if (!isWriteState(s)) false
+    else if (casState(s, nextVersionState(s))) {
+      signalWaiters()
+      true
+    } else tryUnlockWrite()
+  }
+
+  @tailrec
+  final def tryUnlockRead(): Boolean = {
+    val s = loadState()
+    val readers = readerCount(s)
+    if (isWriteState(s) || readers == 0) false
+    else {
+      val next = s - 1L
+      if (casState(s, next)) {
+        if (readers == 1) signalWaiters()
+        true
+      } else tryUnlockRead()
+    }
+  }
 
   private def unstampedUnlockWrite(): Unit =
     if (!tryUnlockWrite()) throw new IllegalMonitorStateException()
@@ -293,20 +391,23 @@ class StampedLock extends Serializable {
   private def unstampedUnlockRead(): Unit =
     if (!tryUnlockRead()) throw new IllegalMonitorStateException()
 
-  def isWriteLocked(): Boolean = monitor.synchronized(writer)
+  def isWriteLocked(): Boolean = isWriteState(loadState())
 
-  def isReadLocked(): Boolean = monitor.synchronized(readers != 0)
+  def isReadLocked(): Boolean = readerCount(loadState()) != 0
 
-  def getReadLockCount(): Int = monitor.synchronized(readers)
+  def getReadLockCount(): Int = readerCount(loadState())
 
-  override def toString(): String =
-    monitor.synchronized {
-      val state =
-        if (writer) "Write-locked"
-        else if (readers != 0) s"Read-locks:$readers"
+  override def toString(): String = {
+    val s = loadState()
+    val state =
+      if (isWriteState(s)) "Write-locked"
+      else {
+        val readers = readerCount(s)
+        if (readers != 0) s"Read-locks:$readers"
         else "Unlocked"
-      super.toString() + "[" + state + "]"
-    }
+      }
+    super.toString() + "[" + state + "]"
+  }
 
   def asReadLock(): Lock = new ReadLockView
 
