@@ -457,6 +457,22 @@ class ConcurrentSkipListMapTest extends JSR166Test {
     assertTrue(s.contains("E"))
   }
 
+  @Test def testValuesIteratorRemoveDuplicateValue(): Unit = {
+    val map = new ConcurrentSkipListMap[Item, String]()
+    map.put(iOne, "same")
+    map.put(iTwo, "same")
+    map.put(iThree, "other")
+
+    val it = map.values().iterator()
+    mustEqual("same", it.next())
+    it.remove()
+
+    assertFalse(map.containsKey(iOne))
+    assertTrue(map.containsKey(iTwo))
+    assertTrue(map.containsKey(iThree))
+    mustEqual(2, map.size())
+  }
+
   @Test def testEntrySet(): Unit = {
     val map = map5()
     val s = map.entrySet()

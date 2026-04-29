@@ -252,6 +252,42 @@ class DelayQueueTest extends JSR166Test {
       mustEqual(new PDelay(i), q.take())
   }
 
+  /** take signals another waiting taker when more expired elements remain */
+  @Test def testTakeSignalsNextExpiredElement(): Unit = {
+    val q = new DelayQueue[PDelay]()
+    val threadsStarted = new CountDownLatch(2)
+    val done = new CountDownLatch(2)
+    val taken = Collections.synchronizedList(new ArrayList[PDelay]())
+
+    val taker = new CheckedRunnable {
+      override def realRun(): Unit = {
+        threadsStarted.countDown()
+        taken.add(q.take())
+        done.countDown()
+      }
+    }
+
+    val t1 = newStartedThread(taker)
+    val t2 = newStartedThread(taker)
+    try {
+      await(threadsStarted)
+      waitForThreadToEnterWaitState(t1)
+      waitForThreadToEnterWaitState(t2)
+
+      q.put(new PDelay(0))
+      q.put(new PDelay(1))
+
+      await(done)
+      awaitTermination(t1)
+      awaitTermination(t2)
+      mustEqual(2, taken.size())
+      assertTrue(q.isEmpty())
+    } finally {
+      t1.interrupt()
+      t2.interrupt()
+    }
+  }
+
   /** Take removes existing elements until empty, then blocks interruptibly */
   @Test def testBlockingTake(): Unit = {
     val q = populatedQueue(SIZE)

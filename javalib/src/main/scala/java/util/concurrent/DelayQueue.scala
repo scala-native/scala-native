@@ -24,6 +24,9 @@ class DelayQueue[E <: Delayed]()
 
   private final val q = new PriorityQueue[E]()
 
+  private def signalAvailableIfNonEmpty(): Unit =
+    if (q.peek() != null) available.signal()
+
   def this(c: Collection[_ <: E]) = {
     this()
     addAll(c)
@@ -60,7 +63,11 @@ class DelayQueue[E <: Delayed]()
       val first = q.peek()
       if (first == null || first.getDelay(TimeUnit.NANOSECONDS) > 0L)
         null.asInstanceOf[E]
-      else q.poll()
+      else {
+        val result = q.poll()
+        signalAvailableIfNonEmpty()
+        result
+      }
     } finally lock.unlock()
   }
 
@@ -75,8 +82,10 @@ class DelayQueue[E <: Delayed]()
         if (first == null) available.await()
         else {
           val delay = first.getDelay(TimeUnit.NANOSECONDS)
-          if (delay <= 0L) result = q.poll()
-          else available.awaitNanos(delay)
+          if (delay <= 0L) {
+            result = q.poll()
+            signalAvailableIfNonEmpty()
+          } else available.awaitNanos(delay)
         }
       }
       result
@@ -100,6 +109,7 @@ class DelayQueue[E <: Delayed]()
           val delay = first.getDelay(TimeUnit.NANOSECONDS)
           if (delay <= 0L) {
             result = q.poll()
+            signalAvailableIfNonEmpty()
             done = true
           } else if (nanos <= 0L) done = true
           else nanos = available.awaitNanos(nanos.min(delay))
@@ -200,13 +210,17 @@ class DelayQueue[E <: Delayed]()
     lock.lock()
     try {
       var n = 0
-      while (n < maxElements) {
+      var done = false
+      while (!done && n < maxElements) {
         val first = q.peek()
         if (first == null || first.getDelay(TimeUnit.NANOSECONDS) > 0L)
-          return n
-        c.add(q.poll())
-        n += 1
+          done = true
+        else {
+          c.add(q.poll())
+          n += 1
+        }
       }
+      if (n != 0) signalAvailableIfNonEmpty()
       n
     } finally lock.unlock()
   }
