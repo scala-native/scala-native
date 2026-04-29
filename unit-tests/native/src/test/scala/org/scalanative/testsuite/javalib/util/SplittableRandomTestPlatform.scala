@@ -2,17 +2,18 @@ package org.scalanative.testsuite.javalib.util
 
 import java.util.SplittableRandom
 
-import scala.language.reflectiveCalls
+import org.junit.Assume.assumeTrue
 
 object SplittableRandomTestPlatform {
-  private type SplittableRandomWithNextBytes =
-    AnyRef { def nextBytes(bytes: Array[Byte]): Unit }
-
   def hasNextBytes: Boolean =
-    true
+    false
 
-  def assumeNextBytes(): Unit = ()
+  def assumeNextBytes(): Unit =
+    assumeTrue(
+      "SplittableRandom.nextBytes is covered by require-jdk17 tests",
+      false
+    )
 
   def nextBytes(random: SplittableRandom, bytes: Array[Byte]): Unit =
-    random.asInstanceOf[SplittableRandomWithNextBytes].nextBytes(bytes)
+    throw new AssertionError("unreachable")
 }
