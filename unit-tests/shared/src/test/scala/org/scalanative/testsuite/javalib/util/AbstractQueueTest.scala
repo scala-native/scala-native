@@ -90,19 +90,28 @@ class AbstractQueueTest extends JSR166Test {
   @Test def testAddAll2(): Unit = {
     val q = new Succeed()
     val items = new Array[Item](SIZE)
-    assertThrows(classOf[NullPointerException], q.addAll(Arrays.asList(items: _*)))
+    assertThrows(
+      classOf[NullPointerException],
+      q.addAll(Arrays.asList(items: _*))
+    )
   }
 
   @Test def testAddAll3(): Unit = {
     val q = new Succeed()
     val items = new Array[Item](SIZE)
     for (i <- 0 until SIZE - 1) items(i) = itemFor(i)
-    assertThrows(classOf[NullPointerException], q.addAll(Arrays.asList(items: _*)))
+    assertThrows(
+      classOf[NullPointerException],
+      q.addAll(Arrays.asList(items: _*))
+    )
   }
 
   @Test def testAddAll4(): Unit = {
     val q = new Fail()
     val items = seqItems(SIZE)
-    assertThrows(classOf[IllegalStateException], q.addAll(Arrays.asList(items: _*)))
+    assertThrows(
+      classOf[IllegalStateException],
+      q.addAll(Arrays.asList(items: _*))
+    )
   }
 }
