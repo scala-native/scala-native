@@ -477,7 +477,9 @@ class DelayQueueTest extends JSR166Test {
   }
 
   /** toArray(incompatible array type) throws ArrayStoreException */
-  @Ignore("Scala Native reference arrays do not preserve runtime component types")
+  @Ignore(
+    "Scala Native reference arrays do not preserve runtime component types"
+  )
   @Test def testToArray_incompatibleArrayType(): Unit = {
     val q = populatedQueue(SIZE)
     try {

@@ -318,15 +318,25 @@ class ExecutorsTest extends JSR166Test {
     }
   }
 
-  @Ignore("scala-native#4848: SecurityManager/AccessControlContext is not implemented in Scala Native")
+  @Ignore(
+    "scala-native#4848: SecurityManager/AccessControlContext is not implemented in Scala Native"
+  )
   @Test def testPrivilegedThreadFactory(): Unit = ()
-  @Ignore("scala-native#4848: SecurityManager/AccessControlContext is not implemented in Scala Native")
+  @Ignore(
+    "scala-native#4848: SecurityManager/AccessControlContext is not implemented in Scala Native"
+  )
   @Test def testCreatePrivilegedCallableUsingCCLWithNoPrivs(): Unit = ()
-  @Ignore("scala-native#4848: SecurityManager/AccessControlContext is not implemented in Scala Native")
+  @Ignore(
+    "scala-native#4848: SecurityManager/AccessControlContext is not implemented in Scala Native"
+  )
   @Test def testPrivilegedCallableUsingCCLWithPrivs(): Unit = ()
-  @Ignore("scala-native#4848: SecurityManager/AccessControlContext is not implemented in Scala Native")
+  @Ignore(
+    "scala-native#4848: SecurityManager/AccessControlContext is not implemented in Scala Native"
+  )
   @Test def testPrivilegedCallableWithNoPrivs(): Unit = ()
-  @Ignore("scala-native#4848: SecurityManager/AccessControlContext is not implemented in Scala Native")
+  @Ignore(
+    "scala-native#4848: SecurityManager/AccessControlContext is not implemented in Scala Native"
+  )
   @Test def testPrivilegedCallableWithPrivs(): Unit = ()
 
   /** callable(Runnable) returns null when called
@@ -346,9 +356,13 @@ class ExecutorsTest extends JSR166Test {
     assertSame(one, c.call)
   }
 
-  @Ignore("scala-native#4848: java.security PrivilegedAction types are not linkable in Scala Native")
+  @Ignore(
+    "scala-native#4848: java.security PrivilegedAction types are not linkable in Scala Native"
+  )
   @Test def testCallable3(): Unit = ()
-  @Ignore("scala-native#4848: java.security PrivilegedExceptionAction types are not linkable in Scala Native")
+  @Ignore(
+    "scala-native#4848: java.security PrivilegedExceptionAction types are not linkable in Scala Native"
+  )
   @Test def testCallable4(): Unit = ()
 
   /** callable(null Runnable) throws NPE
@@ -373,9 +387,13 @@ class ExecutorsTest extends JSR166Test {
     }
   }
 
-  @Ignore("scala-native#4848: java.security PrivilegedAction types are not linkable in Scala Native")
+  @Ignore(
+    "scala-native#4848: java.security PrivilegedAction types are not linkable in Scala Native"
+  )
   @Test def testCallableNPE3(): Unit = ()
-  @Ignore("scala-native#4848: java.security PrivilegedExceptionAction types are not linkable in Scala Native")
+  @Ignore(
+    "scala-native#4848: java.security PrivilegedExceptionAction types are not linkable in Scala Native"
+  )
   @Test def testCallableNPE4(): Unit = ()
 
   /** callable(runnable, x).toString() contains toString of wrapped task

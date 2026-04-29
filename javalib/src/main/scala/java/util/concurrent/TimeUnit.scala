@@ -151,16 +151,18 @@ object TimeUnit {
 
   def of(chronoUnit: ChronoUnit): TimeUnit =
     chronoUnit match {
-      case null                 => throw new NullPointerException()
-      case ChronoUnit.NANOS     => NANOSECONDS
-      case ChronoUnit.MICROS    => MICROSECONDS
-      case ChronoUnit.MILLIS    => MILLISECONDS
-      case ChronoUnit.SECONDS   => SECONDS
-      case ChronoUnit.MINUTES   => MINUTES
-      case ChronoUnit.HOURS     => HOURS
-      case ChronoUnit.DAYS      => DAYS
+      case null                => throw new NullPointerException()
+      case ChronoUnit.NANOS    => NANOSECONDS
+      case ChronoUnit.MICROS   => MICROSECONDS
+      case ChronoUnit.MILLIS   => MILLISECONDS
+      case ChronoUnit.SECONDS  => SECONDS
+      case ChronoUnit.MINUTES  => MINUTES
+      case ChronoUnit.HOURS    => HOURS
+      case ChronoUnit.DAYS     => DAYS
       case unsupported: AnyRef =>
-        throw new IllegalArgumentException("No TimeUnit equivalent for " + unsupported)
+        throw new IllegalArgumentException(
+          "No TimeUnit equivalent for " + unsupported
+        )
     }
 
   private def x(a: Long, b: Long, max: Long): Long = {
@@ -181,7 +183,8 @@ object TimeUnit {
     val convertedSeconds = unit.convert(seconds, SECONDS)
     if (convertedSeconds == Long.MinValue || convertedSeconds == Long.MaxValue)
       convertedSeconds
-    else saturatingAdd(convertedSeconds, unit.convert(nanos.toLong, NANOSECONDS))
+    else
+      saturatingAdd(convertedSeconds, unit.convert(nanos.toLong, NANOSECONDS))
   }
 
   private def saturatingAdd(a: Long, b: Long): Long = {

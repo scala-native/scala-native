@@ -12,8 +12,8 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 
 import java.util
-import java.util.concurrent.{ConcurrentLinkedDeque, ThreadLocalRandom}
 import java.util.concurrent.atomic.LongAdder
+import java.util.concurrent.{ConcurrentLinkedDeque, ThreadLocalRandom}
 import java.util.{Arrays, Collection, NoSuchElementException, Random}
 
 import org.junit.Assert._
@@ -1057,47 +1057,61 @@ class ConcurrentLinkedDequeTest extends JSR166Test {
     while (n > 0) {
       val d = new ConcurrentLinkedDeque[Object]()
 
-      val add = chooseRandomly(Array[Runnable](
-        new Runnable { override def run(): Unit = d.addFirst(x) },
-        new Runnable { override def run(): Unit = d.offerFirst(x) },
-        new Runnable { override def run(): Unit = d.addLast(x) },
-        new Runnable { override def run(): Unit = d.offerLast(x) }
-      ))
+      val add = chooseRandomly(
+        Array[Runnable](
+          new Runnable { override def run(): Unit = d.addFirst(x) },
+          new Runnable { override def run(): Unit = d.offerFirst(x) },
+          new Runnable { override def run(): Unit = d.addLast(x) },
+          new Runnable { override def run(): Unit = d.offerLast(x) }
+        )
+      )
 
-      val get = chooseRandomly(Array[Runnable](
-        new Runnable { override def run(): Unit = assertFalse(d.isEmpty()) },
-        new Runnable { override def run(): Unit = assertSame(x, d.peekFirst()) },
-        new Runnable { override def run(): Unit = assertSame(x, d.peekLast()) },
-        new Runnable { override def run(): Unit = assertSame(x, d.pollFirst()) },
-        new Runnable { override def run(): Unit = assertSame(x, d.pollLast()) }
-      ))
+      val get = chooseRandomly(
+        Array[Runnable](
+          new Runnable { override def run(): Unit = assertFalse(d.isEmpty()) },
+          new Runnable {
+            override def run(): Unit = assertSame(x, d.peekFirst())
+          },
+          new Runnable {
+            override def run(): Unit = assertSame(x, d.peekLast())
+          },
+          new Runnable {
+            override def run(): Unit = assertSame(x, d.pollFirst())
+          },
+          new Runnable {
+            override def run(): Unit = assertSame(x, d.pollLast())
+          }
+        )
+      )
 
-      val addRemove = chooseRandomly(Array[Runnable](
-        new Runnable {
-          override def run(): Unit = {
-            d.addFirst(x)
-            d.pollLast()
+      val addRemove = chooseRandomly(
+        Array[Runnable](
+          new Runnable {
+            override def run(): Unit = {
+              d.addFirst(x)
+              d.pollLast()
+            }
+          },
+          new Runnable {
+            override def run(): Unit = {
+              d.offerFirst(x)
+              d.removeFirst()
+            }
+          },
+          new Runnable {
+            override def run(): Unit = {
+              d.offerLast(x)
+              d.removeLast()
+            }
+          },
+          new Runnable {
+            override def run(): Unit = {
+              d.addLast(x)
+              d.pollFirst()
+            }
           }
-        },
-        new Runnable {
-          override def run(): Unit = {
-            d.offerFirst(x)
-            d.removeFirst()
-          }
-        },
-        new Runnable {
-          override def run(): Unit = {
-            d.offerLast(x)
-            d.removeLast()
-          }
-        },
-        new Runnable {
-          override def run(): Unit = {
-            d.addLast(x)
-            d.pollFirst()
-          }
-        }
-      ))
+        )
+      )
 
       add.run()
       runAsync(get, addRemove)

@@ -7,9 +7,8 @@
 
 package org.scalanative.testsuite.javalib.util.concurrent
 
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit._
+import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 import org.junit.Assert._
 import org.junit.{Ignore, Test}
@@ -71,10 +70,22 @@ class TimeUnitTest extends JSR166Test {
   }
 
   @Test def testConvertSaturate(): Unit = {
-    assertEquals(Long.MaxValue, NANOSECONDS.convert(Long.MaxValue / 2L, SECONDS))
-    assertEquals(Long.MinValue, NANOSECONDS.convert(-Long.MaxValue / 4L, SECONDS))
-    assertEquals(Long.MaxValue, NANOSECONDS.convert(Long.MaxValue / 2L, MINUTES))
-    assertEquals(Long.MinValue, NANOSECONDS.convert(-Long.MaxValue / 4L, MINUTES))
+    assertEquals(
+      Long.MaxValue,
+      NANOSECONDS.convert(Long.MaxValue / 2L, SECONDS)
+    )
+    assertEquals(
+      Long.MinValue,
+      NANOSECONDS.convert(-Long.MaxValue / 4L, SECONDS)
+    )
+    assertEquals(
+      Long.MaxValue,
+      NANOSECONDS.convert(Long.MaxValue / 2L, MINUTES)
+    )
+    assertEquals(
+      Long.MinValue,
+      NANOSECONDS.convert(-Long.MaxValue / 4L, MINUTES)
+    )
     assertEquals(Long.MaxValue, NANOSECONDS.convert(Long.MaxValue / 2L, HOURS))
     assertEquals(Long.MinValue, NANOSECONDS.convert(-Long.MaxValue / 4L, HOURS))
     assertEquals(Long.MaxValue, NANOSECONDS.convert(Long.MaxValue / 2L, DAYS))

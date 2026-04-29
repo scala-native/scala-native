@@ -64,21 +64,29 @@ class AtomicLongFieldUpdaterTest extends JSR166Test {
 
   // Platform limitatios: following cases would not compile / would not be checked
   /** Construction with non-existent field throws RuntimeException */
-  @Ignore("Requires reflection-based newUpdater access checks (scala-native#4846)")
+  @Ignore(
+    "Requires reflection-based newUpdater access checks (scala-native#4846)"
+  )
   @Test def testConstructor(): Unit = ()
 
   /** construction with field not of given type throws IllegalArgumentException
    */
-  @Ignore("Requires reflection-based newUpdater access checks (scala-native#4846)")
+  @Ignore(
+    "Requires reflection-based newUpdater access checks (scala-native#4846)"
+  )
   @Test def testConstructor2(): Unit = ()
 
   /** construction with non-volatile field throws IllegalArgumentException
    */
-  @Ignore("Requires reflection-based newUpdater access checks (scala-native#4846)")
+  @Ignore(
+    "Requires reflection-based newUpdater access checks (scala-native#4846)"
+  )
   @Test def testConstructor3(): Unit = ()
 
   /** construction using private field from subclass throws RuntimeException */
-  @Ignore("Requires reflection-based newUpdater access checks (scala-native#4846)")
+  @Ignore(
+    "Requires reflection-based newUpdater access checks (scala-native#4846)"
+  )
   @Test def testPrivateFieldInSubclass(): Unit = ()
 
   /** construction from unrelated class; package access is allowed, private

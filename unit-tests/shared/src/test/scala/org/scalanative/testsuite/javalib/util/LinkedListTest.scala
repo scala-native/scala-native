@@ -7,12 +7,7 @@
 package org.scalanative.testsuite.javalib.util
 
 import java.util.{
-  Arrays,
-  Collection,
-  Iterator,
-  LinkedList,
-  NoSuchElementException,
-  Spliterator
+  Arrays, Collection, Iterator, LinkedList, NoSuchElementException, Spliterator
 }
 
 import scala.reflect.ClassTag

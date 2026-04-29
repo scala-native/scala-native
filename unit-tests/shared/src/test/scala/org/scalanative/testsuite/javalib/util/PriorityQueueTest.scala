@@ -14,13 +14,8 @@
 package org.scalanative.testsuite.javalib.util
 
 import java.util.{
-  Arrays,
-  Collection,
-  Comparator,
-  Iterator,
-  NoSuchElementException,
-  PriorityQueue,
-  Queue
+  Arrays, Collection, Comparator, Iterator, NoSuchElementException,
+  PriorityQueue, Queue
 }
 
 import scala.reflect.ClassTag

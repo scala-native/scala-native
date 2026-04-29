@@ -9,14 +9,7 @@ package org.scalanative.testsuite.javalib.util.concurrent
 
 import java.util.concurrent.{ConcurrentNavigableMap, ConcurrentSkipListMap}
 import java.util.{
-  ArrayList,
-  Arrays,
-  Collection,
-  Iterator,
-  Map,
-  NavigableMap,
-  Set,
-  SortedMap
+  ArrayList, Arrays, Collection, Iterator, Map, NavigableMap, Set, SortedMap
 }
 
 import org.junit.Assert._
@@ -216,10 +209,10 @@ class ConcurrentSkipListSubMapTest extends JSR166Test {
       val e = it.next()
       assertTrue(
         (e.getKey().equals(iOne) && e.getValue().equals("A")) ||
-          (e.getKey().equals(iTwo) && e.getValue().equals("B")) ||
-          (e.getKey().equals(iThree) && e.getValue().equals("C")) ||
-          (e.getKey().equals(iFour) && e.getValue().equals("D")) ||
-          (e.getKey().equals(iFive) && e.getValue().equals("E"))
+        (e.getKey().equals(iTwo) && e.getValue().equals("B")) ||
+        (e.getKey().equals(iThree) && e.getValue().equals("C")) ||
+        (e.getKey().equals(iFour) && e.getValue().equals("D")) ||
+        (e.getKey().equals(iFive) && e.getValue().equals("E"))
       )
     }
   }
@@ -393,7 +386,10 @@ class ConcurrentSkipListSubMapTest extends JSR166Test {
     assertThrows(classOf[NullPointerException], map5().put(null, "whatever"))
 
   @Test def testPutIfAbsent1_NullPointerException(): Unit =
-    assertThrows(classOf[NullPointerException], map5().putIfAbsent(null, "whatever"))
+    assertThrows(
+      classOf[NullPointerException],
+      map5().putIfAbsent(null, "whatever")
+    )
 
   @Test def testReplace_NullPointerException(): Unit =
     assertThrows(classOf[NullPointerException], map5().replace(null, "A"))
@@ -649,10 +645,10 @@ class ConcurrentSkipListSubMapTest extends JSR166Test {
       val e = it.next()
       assertTrue(
         (e.getKey().equals(nOne) && e.getValue().equals("A")) ||
-          (e.getKey().equals(nTwo) && e.getValue().equals("B")) ||
-          (e.getKey().equals(nThree) && e.getValue().equals("C")) ||
-          (e.getKey().equals(nFour) && e.getValue().equals("D")) ||
-          (e.getKey().equals(nFive) && e.getValue().equals("E"))
+        (e.getKey().equals(nTwo) && e.getValue().equals("B")) ||
+        (e.getKey().equals(nThree) && e.getValue().equals("C")) ||
+        (e.getKey().equals(nFour) && e.getValue().equals("D")) ||
+        (e.getKey().equals(nFive) && e.getValue().equals("E"))
       )
     }
   }
@@ -826,10 +822,16 @@ class ConcurrentSkipListSubMapTest extends JSR166Test {
     assertThrows(classOf[NullPointerException], dmap5().put(null, "whatever"))
 
   @Test def testDescendingPutIfAbsent1_NullPointerException(): Unit =
-    assertThrows(classOf[NullPointerException], dmap5().putIfAbsent(null, "whatever"))
+    assertThrows(
+      classOf[NullPointerException],
+      dmap5().putIfAbsent(null, "whatever")
+    )
 
   @Test def testDescendingReplace_NullPointerException(): Unit =
-    assertThrows(classOf[NullPointerException], dmap5().replace(null, "whatever"))
+    assertThrows(
+      classOf[NullPointerException],
+      dmap5().replace(null, "whatever")
+    )
 
   @Test def testDescendingReplaceValue_NullPointerException(): Unit =
     assertThrows(classOf[NullPointerException], dmap5().replace(null, "A", "B"))
@@ -838,7 +840,10 @@ class ConcurrentSkipListSubMapTest extends JSR166Test {
     assertThrows(classOf[NullPointerException], dmap5().remove(null))
 
   @Test def testDescendingRemove2_NullPointerException(): Unit =
-    assertThrows(classOf[NullPointerException], dmap5().remove(null, "whatever"))
+    assertThrows(
+      classOf[NullPointerException],
+      dmap5().remove(null, "whatever")
+    )
 
   @Ignore("No ObjectInputStream in Scala Native")
   @Test def testDescendingSerialization(): Unit = {}

@@ -46,9 +46,11 @@ class ThreadLocalRandom8Test extends JSR166Test {
     var reps = 0
     while (reps < REPS) {
       counter.reset()
-      r.ints(size).parallel().forEach(new IntConsumer {
-        override def accept(x: Int): Unit = counter.increment()
-      })
+      r.ints(size)
+        .parallel()
+        .forEach(new IntConsumer {
+          override def accept(x: Int): Unit = counter.increment()
+        })
       assertEquals(size, counter.sum())
       size += 524959L
       reps += 1
@@ -62,9 +64,11 @@ class ThreadLocalRandom8Test extends JSR166Test {
     var reps = 0
     while (reps < REPS) {
       counter.reset()
-      r.longs(size).parallel().forEach(new LongConsumer {
-        override def accept(x: Long): Unit = counter.increment()
-      })
+      r.longs(size)
+        .parallel()
+        .forEach(new LongConsumer {
+          override def accept(x: Long): Unit = counter.increment()
+        })
       assertEquals(size, counter.sum())
       size += 524959L
       reps += 1
@@ -78,9 +82,11 @@ class ThreadLocalRandom8Test extends JSR166Test {
     var reps = 0
     while (reps < REPS) {
       counter.reset()
-      r.doubles(size).parallel().forEach(new DoubleConsumer {
-        override def accept(x: Double): Unit = counter.increment()
-      })
+      r.doubles(size)
+        .parallel()
+        .forEach(new DoubleConsumer {
+          override def accept(x: Double): Unit = counter.increment()
+        })
       assertEquals(size, counter.sum())
       size += 524959L
       reps += 1
@@ -97,10 +103,12 @@ class ThreadLocalRandom8Test extends JSR166Test {
       while (bound > least && bound < MAX_INT_BOUND) {
         val lo = least
         val hi = bound
-        r.ints(size, lo, hi).parallel().forEach(new IntConsumer {
-          override def accept(x: Int): Unit =
-            if (x < lo || x >= hi) fails.getAndIncrement()
-        })
+        r.ints(size, lo, hi)
+          .parallel()
+          .forEach(new IntConsumer {
+            override def accept(x: Int): Unit =
+              if (x < lo || x >= hi) fails.getAndIncrement()
+          })
         bound += 67867967
       }
       least += 524959
@@ -118,10 +126,12 @@ class ThreadLocalRandom8Test extends JSR166Test {
       while (bound > least && bound < MAX_LONG_BOUND) {
         val lo = least
         val hi = bound
-        r.longs(size, lo, hi).parallel().forEach(new LongConsumer {
-          override def accept(x: Long): Unit =
-            if (x < lo || x >= hi) fails.getAndIncrement()
-        })
+        r.longs(size, lo, hi)
+          .parallel()
+          .forEach(new LongConsumer {
+            override def accept(x: Long): Unit =
+              if (x < lo || x >= hi) fails.getAndIncrement()
+          })
         bound += Math.abs(bound * 7919L)
       }
       least += 1982451653L
@@ -139,10 +149,12 @@ class ThreadLocalRandom8Test extends JSR166Test {
       while (bound < 1.0e20) {
         val lo = least
         val hi = bound
-        r.doubles(size, lo, hi).parallel().forEach(new DoubleConsumer {
-          override def accept(x: Double): Unit =
-            if (x < lo || x >= hi) fails.getAndIncrement()
-        })
+        r.doubles(size, lo, hi)
+          .parallel()
+          .forEach(new DoubleConsumer {
+            override def accept(x: Double): Unit =
+              if (x < lo || x >= hi) fails.getAndIncrement()
+          })
         bound *= 17.0
       }
       least *= 9.0
@@ -191,25 +203,37 @@ class ThreadLocalRandom8Test extends JSR166Test {
 
   @Test def testUnsizedIntsCountSeq(): Unit = {
     val counter = new LongAdder()
-    ThreadLocalRandom.current().ints().limit(100L).forEach(new IntConsumer {
-      override def accept(x: Int): Unit = counter.increment()
-    })
+    ThreadLocalRandom
+      .current()
+      .ints()
+      .limit(100L)
+      .forEach(new IntConsumer {
+        override def accept(x: Int): Unit = counter.increment()
+      })
     assertEquals(100L, counter.sum())
   }
 
   @Test def testUnsizedLongsCountSeq(): Unit = {
     val counter = new LongAdder()
-    ThreadLocalRandom.current().longs().limit(100L).forEach(new LongConsumer {
-      override def accept(x: Long): Unit = counter.increment()
-    })
+    ThreadLocalRandom
+      .current()
+      .longs()
+      .limit(100L)
+      .forEach(new LongConsumer {
+        override def accept(x: Long): Unit = counter.increment()
+      })
     assertEquals(100L, counter.sum())
   }
 
   @Test def testUnsizedDoublesCountSeq(): Unit = {
     val counter = new LongAdder()
-    ThreadLocalRandom.current().doubles().limit(100L).forEach(new DoubleConsumer {
-      override def accept(x: Double): Unit = counter.increment()
-    })
+    ThreadLocalRandom
+      .current()
+      .doubles()
+      .limit(100L)
+      .forEach(new DoubleConsumer {
+        override def accept(x: Double): Unit = counter.increment()
+      })
     assertEquals(100L, counter.sum())
   }
 
