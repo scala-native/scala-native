@@ -25,7 +25,9 @@ import org.junit.Assume._
 import org.junit.{Ignore, Test}
 
 import org.scalanative.testsuite.javalib.util.concurrent.{Item, JSR166Test}
-import org.scalanative.testsuite.utils.Platform.executingInJVM
+import org.scalanative.testsuite.utils.Platform.{
+  executingInJVM, executingInJVMOnJDK8OrLower
+}
 
 class PriorityQueueTest extends JSR166Test with CollectionTest {
   import JSR166Test._
@@ -179,6 +181,11 @@ class PriorityQueueTest extends JSR166Test with CollectionTest {
   }
 
   @Test def testOfferNonComparable(): Unit = {
+    assumeFalse(
+      "JDK8 PriorityQueue accepts a first non-comparable element",
+      executingInJVMOnJDK8OrLower
+    )
+
     val q = new PriorityQueue[Object](1)
     try {
       q.offer(new Object())

@@ -21,11 +21,13 @@ import java.util.{concurrent => juc}
 import java.{util => ju}
 
 import org.junit.Assert._
+import org.junit.Assume.assumeFalse
 import org.junit.{Ignore, Test}
 
 import org.scalanative.testsuite.javalib.util.concurrent.DelayQueueTest.PDelay
 import org.scalanative.testsuite.javalib.util.concurrent.{Item, JSR166Test}
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.Platform
 
 class Collection8Test extends JSR166Test {
   import JSR166Test._
@@ -770,7 +772,12 @@ class Collection8Test extends JSR166Test {
       }
     }
 
-  @Test def testRemoveAfterForEachRemaining(): Unit =
+  @Test def testRemoveAfterForEachRemaining(): Unit = {
+    assumeFalse(
+      "JDK8 iterator behavior after forEachRemaining differs from current JSR166 TCK",
+      Platform.executingInJVMOnJDK8OrLower
+    )
+
     forAllImplementations("testRemoveAfterForEachRemaining") { impl =>
       val c = impl.emptyCollection()
       val rnd = juc.ThreadLocalRandom.current()
@@ -847,6 +854,7 @@ class Collection8Test extends JSR166Test {
         case _ =>
       }
     }
+  }
 
   @Test def testStreamForEach(): Unit =
     forAllImplementations("testStreamForEach") { impl =>
@@ -944,7 +952,12 @@ class Collection8Test extends JSR166Test {
       assertTrue(found.isEmpty())
     }
 
-  @Test def testStickySpliteratorExhaustion(): Unit =
+  @Test def testStickySpliteratorExhaustion(): Unit = {
+    assumeFalse(
+      "JDK8 concurrent spliterator exhaustion behavior differs from current JSR166 TCK",
+      Platform.executingInJVMOnJDK8OrLower
+    )
+
     forAllImplementations("testStickySpliteratorExhaustion") { impl =>
       if (impl.isConcurrent() && testImplementationDetails) {
         val rnd = juc.ThreadLocalRandom.current()
@@ -959,6 +972,7 @@ class Collection8Test extends JSR166Test {
         else s.forEachRemaining(alwaysThrows)
       }
     }
+  }
 
   @Ignore("scala-native#4850: Collection8 concurrent race stress can hang")
   @Test def testDetectRaces(): Unit =
