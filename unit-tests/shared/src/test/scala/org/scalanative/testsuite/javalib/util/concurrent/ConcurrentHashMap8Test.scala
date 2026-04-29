@@ -17,7 +17,7 @@ package org.scalanative.testsuite.javalib.util.concurrent
 import java.lang.{Long => JLong}
 import java.util.concurrent.atomic.LongAdder
 import java.util.concurrent.{ConcurrentHashMap, Executors}
-import java.util.function.BiFunction
+import java.util.function.{BiConsumer, BiFunction, Consumer, Function}
 import java.{util => ju}
 
 import org.junit.Assert._
@@ -431,6 +431,72 @@ class ConcurrentHashMap8Test extends JSR166Test {
   private def expectedValues: Long = BulkSize.toLong * (BulkSize - 1L)
   private def expectedMappings: Long = 3L * BulkSize * (BulkSize - 1L) / 2L
 
+  private final class AddLongs extends BiFunction[JLong, JLong, JLong] {
+    override def apply(x: JLong, y: JLong): JLong =
+      JLong.valueOf(x.longValue() + y.longValue())
+  }
+
+  private final class TimesFour extends Function[JLong, JLong] {
+    override def apply(x: JLong): JLong =
+      JLong.valueOf(4L * x.longValue())
+  }
+
+  private final class AddLongTo(adder: LongAdder) extends Consumer[JLong] {
+    override def accept(x: JLong): Unit =
+      adder.add(x.longValue())
+  }
+
+  private final class AddMappingTo(adder: LongAdder)
+      extends BiConsumer[JLong, JLong] {
+    override def accept(x: JLong, y: JLong): Unit =
+      adder.add(x.longValue() + y.longValue())
+  }
+
+  private final class AddEntryTo(adder: LongAdder)
+      extends Consumer[ju.Map.Entry[JLong, JLong]] {
+    override def accept(e: ju.Map.Entry[JLong, JLong]): Unit =
+      adder.add(e.getKey().longValue() + e.getValue().longValue())
+  }
+
+  private final class EntryToLong
+      extends Function[ju.Map.Entry[JLong, JLong], JLong] {
+    override def apply(e: ju.Map.Entry[JLong, JLong]): JLong =
+      JLong.valueOf(e.getKey().longValue() + e.getValue().longValue())
+  }
+
+  private final class FindLong(half: Long) extends Function[JLong, JLong] {
+    override def apply(x: JLong): JLong =
+      if (x.longValue() == half) x else null
+  }
+
+  private final class FindNoLong extends Function[JLong, JLong] {
+    override def apply(x: JLong): JLong =
+      if (x.longValue() < 0L) x else null
+  }
+
+  private final class FindMapping(half: Long)
+      extends BiFunction[JLong, JLong, JLong] {
+    override def apply(x: JLong, y: JLong): JLong =
+      if (x.longValue() == half) x else null
+  }
+
+  private final class FindNoMapping extends BiFunction[JLong, JLong, JLong] {
+    override def apply(x: JLong, y: JLong): JLong =
+      if (x.longValue() < 0L) x else null
+  }
+
+  private final class FindEntry(half: Long)
+      extends Function[ju.Map.Entry[JLong, JLong], JLong] {
+    override def apply(e: ju.Map.Entry[JLong, JLong]): JLong =
+      if (e.getKey().longValue() == half) e.getKey() else null
+  }
+
+  private final class FindNoEntry
+      extends Function[ju.Map.Entry[JLong, JLong], JLong] {
+    override def apply(e: ju.Map.Entry[JLong, JLong]): JLong =
+      if (e.getKey().longValue() < 0L) e.getKey() else null
+  }
+
   private final class AddKeys
       extends BiFunction[
         ju.Map.Entry[JLong, JLong],
@@ -449,29 +515,22 @@ class ConcurrentHashMap8Test extends JSR166Test {
 
   private def forEachKey(threshold: Long): Long = {
     val adder = new LongAdder()
-    bulkMap.forEachKey(threshold, (x: JLong) => adder.add(x.longValue()))
+    bulkMap.forEachKey(threshold, new AddLongTo(adder))
     adder.sum()
   }
   private def forEachValue(threshold: Long): Long = {
     val adder = new LongAdder()
-    bulkMap.forEachValue(threshold, (x: JLong) => adder.add(x.longValue()))
+    bulkMap.forEachValue(threshold, new AddLongTo(adder))
     adder.sum()
   }
   private def forEachMapping(threshold: Long): Long = {
     val adder = new LongAdder()
-    bulkMap.forEach(
-      threshold,
-      (x: JLong, y: JLong) => adder.add(x.longValue() + y.longValue())
-    )
+    bulkMap.forEach(threshold, new AddMappingTo(adder))
     adder.sum()
   }
   private def forEachEntry(threshold: Long): Long = {
     val adder = new LongAdder()
-    bulkMap.forEachEntry(
-      threshold,
-      (e: ju.Map.Entry[JLong, JLong]) =>
-        adder.add(e.getKey().longValue() + e.getValue().longValue())
-    )
+    bulkMap.forEachEntry(threshold, new AddEntryTo(adder))
     adder.sum()
   }
 
@@ -494,38 +553,37 @@ class ConcurrentHashMap8Test extends JSR166Test {
 
   private def mappedForEachKey(threshold: Long): Long = {
     val adder = new LongAdder()
-    bulkMap.forEachKey(
+    bulkMap.forEachKey[JLong](
       threshold,
-      (x: JLong) => JLong.valueOf(4L * x.longValue()),
-      (x: JLong) => adder.add(x.longValue())
+      new TimesFour(),
+      new AddLongTo(adder)
     )
     adder.sum()
   }
   private def mappedForEachValue(threshold: Long): Long = {
     val adder = new LongAdder()
-    bulkMap.forEachValue(
+    bulkMap.forEachValue[JLong](
       threshold,
-      (x: JLong) => JLong.valueOf(4L * x.longValue()),
-      (x: JLong) => adder.add(x.longValue())
+      new TimesFour(),
+      new AddLongTo(adder)
     )
     adder.sum()
   }
   private def mappedForEach(threshold: Long): Long = {
     val adder = new LongAdder()
-    bulkMap.forEach(
+    bulkMap.forEach[JLong](
       threshold,
-      (x: JLong, y: JLong) => JLong.valueOf(x.longValue() + y.longValue()),
-      (x: JLong) => adder.add(x.longValue())
+      new AddLongs(),
+      new AddLongTo(adder)
     )
     adder.sum()
   }
   private def mappedForEachEntry(threshold: Long): Long = {
     val adder = new LongAdder()
-    bulkMap.forEachEntry(
+    bulkMap.forEachEntry[JLong](
       threshold,
-      (e: ju.Map.Entry[JLong, JLong]) =>
-        JLong.valueOf(e.getKey().longValue() + e.getValue().longValue()),
-      (x: JLong) => adder.add(x.longValue())
+      new EntryToLong(),
+      new AddLongTo(adder)
     )
     adder.sum()
   }
@@ -552,7 +610,7 @@ class ConcurrentHashMap8Test extends JSR166Test {
       bulkMap
         .reduceKeys(
           Long.MaxValue,
-          (x: JLong, y: JLong) => JLong.valueOf(x.longValue() + y.longValue())
+          new AddLongs()
         )
         .longValue(),
       expectedKeys
@@ -562,7 +620,7 @@ class ConcurrentHashMap8Test extends JSR166Test {
       bulkMap
         .reduceKeys(
           Long.MaxValue,
-          (x: JLong, y: JLong) => JLong.valueOf(x.longValue() + y.longValue())
+          new AddLongs()
         )
         .longValue(),
       expectedKeys
@@ -577,7 +635,7 @@ class ConcurrentHashMap8Test extends JSR166Test {
       bulkMap
         .reduceKeys(
           1L,
-          (x: JLong, y: JLong) => JLong.valueOf(x.longValue() + y.longValue())
+          new AddLongs()
         )
         .longValue(),
       expectedKeys
@@ -587,7 +645,7 @@ class ConcurrentHashMap8Test extends JSR166Test {
       bulkMap
         .reduceValues(
           1L,
-          (x: JLong, y: JLong) => JLong.valueOf(x.longValue() + y.longValue())
+          new AddLongs()
         )
         .longValue(),
       expectedValues
@@ -601,10 +659,10 @@ class ConcurrentHashMap8Test extends JSR166Test {
   @Test def testMapReduceKeysSequentially(): Unit =
     mustEqual(
       bulkMap
-        .reduceKeys(
+        .reduceKeys[JLong](
           Long.MaxValue,
-          (x: JLong) => JLong.valueOf(4L * x.longValue()),
-          (x: JLong, y: JLong) => JLong.valueOf(x.longValue() + y.longValue())
+          new TimesFour(),
+          new AddLongs()
         )
         .longValue(),
       4L * expectedKeys
@@ -612,10 +670,10 @@ class ConcurrentHashMap8Test extends JSR166Test {
   @Test def testMapReduceValuesSequentially(): Unit =
     mustEqual(
       bulkMap
-        .reduceValues(
+        .reduceValues[JLong](
           Long.MaxValue,
-          (x: JLong) => JLong.valueOf(4L * x.longValue()),
-          (x: JLong, y: JLong) => JLong.valueOf(x.longValue() + y.longValue())
+          new TimesFour(),
+          new AddLongs()
         )
         .longValue(),
       4L * expectedValues
@@ -623,10 +681,10 @@ class ConcurrentHashMap8Test extends JSR166Test {
   @Test def testMappedReduceSequentially(): Unit =
     mustEqual(
       bulkMap
-        .reduce(
+        .reduce[JLong](
           Long.MaxValue,
-          (x: JLong, y: JLong) => JLong.valueOf(x.longValue() + y.longValue()),
-          (x: JLong, y: JLong) => JLong.valueOf(x.longValue() + y.longValue())
+          new AddLongs(),
+          new AddLongs()
         )
         .longValue(),
       expectedMappings
@@ -634,10 +692,10 @@ class ConcurrentHashMap8Test extends JSR166Test {
   @Test def testMapReduceKeysInParallel(): Unit =
     mustEqual(
       bulkMap
-        .reduceKeys(
+        .reduceKeys[JLong](
           1L,
-          (x: JLong) => JLong.valueOf(4L * x.longValue()),
-          (x: JLong, y: JLong) => JLong.valueOf(x.longValue() + y.longValue())
+          new TimesFour(),
+          new AddLongs()
         )
         .longValue(),
       4L * expectedKeys
@@ -645,10 +703,10 @@ class ConcurrentHashMap8Test extends JSR166Test {
   @Test def testMapReduceValuesInParallel(): Unit =
     mustEqual(
       bulkMap
-        .reduceValues(
+        .reduceValues[JLong](
           1L,
-          (x: JLong) => JLong.valueOf(4L * x.longValue()),
-          (x: JLong, y: JLong) => JLong.valueOf(x.longValue() + y.longValue())
+          new TimesFour(),
+          new AddLongs()
         )
         .longValue(),
       4L * expectedValues
@@ -656,10 +714,10 @@ class ConcurrentHashMap8Test extends JSR166Test {
   @Test def testMappedReduceInParallel(): Unit =
     mustEqual(
       bulkMap
-        .reduce(
+        .reduce[JLong](
           1L,
-          (x: JLong, y: JLong) => JLong.valueOf(x.longValue() + y.longValue()),
-          (x: JLong, y: JLong) => JLong.valueOf(x.longValue() + y.longValue())
+          new AddLongs(),
+          new AddLongs()
         )
         .longValue(),
       expectedMappings
@@ -778,64 +836,62 @@ class ConcurrentHashMap8Test extends JSR166Test {
     val half = BulkSize / 2L
     mustEqual(
       bulkMap
-        .searchKeys(
+        .searchKeys[JLong](
           threshold,
-          (x: JLong) => if (x.longValue() == half) x else null
+          new FindLong(half)
         )
         .longValue(),
       half
     )
     assertNull(
-      bulkMap.searchKeys(
+      bulkMap.searchKeys[JLong](
         threshold,
-        (x: JLong) => if (x.longValue() < 0L) x else null
+        new FindNoLong()
       )
     )
     mustEqual(
       bulkMap
-        .searchValues(
+        .searchValues[JLong](
           threshold,
-          (x: JLong) => if (x.longValue() == half) x else null
+          new FindLong(half)
         )
         .longValue(),
       half
     )
     assertNull(
-      bulkMap.searchValues(
+      bulkMap.searchValues[JLong](
         threshold,
-        (x: JLong) => if (x.longValue() < 0L) x else null
+        new FindNoLong()
       )
     )
     mustEqual(
       bulkMap
-        .search(
+        .search[JLong](
           threshold,
-          (x: JLong, _: JLong) => if (x.longValue() == half) x else null
+          new FindMapping(half)
         )
         .longValue(),
       half
     )
     assertNull(
-      bulkMap.search(
+      bulkMap.search[JLong](
         threshold,
-        (x: JLong, _: JLong) => if (x.longValue() < 0L) x else null
+        new FindNoMapping()
       )
     )
     mustEqual(
       bulkMap
-        .searchEntries(
+        .searchEntries[JLong](
           threshold,
-          (e: ju.Map.Entry[JLong, JLong]) =>
-            if (e.getKey().longValue() == half) e.getKey() else null
+          new FindEntry(half)
         )
         .longValue(),
       half
     )
     assertNull(
-      bulkMap.searchEntries(
+      bulkMap.searchEntries[JLong](
         threshold,
-        (e: ju.Map.Entry[JLong, JLong]) =>
-          if (e.getKey().longValue() < 0L) e.getKey() else null
+        new FindNoEntry()
       )
     )
   }

@@ -7,8 +7,6 @@ import java.lang.{Cloneable, reflect => jlr}
 import java.util._
 import java.util.function.{Predicate, UnaryOperator}
 
-import scala.annotation.tailrec
-
 class CopyOnWriteArrayList[E <: AnyRef] private (
     private var inner: ArrayList[E]
 ) extends List[E]
@@ -46,39 +44,23 @@ class CopyOnWriteArrayList[E <: AnyRef] private (
     inner.contains(o)
 
   def indexOf(o: scala.Any): Int =
-    indexOf(o.asInstanceOf[E], 0)
+    indexOfFrom(o, 0)
 
   def indexOf(e: E, index: Int): Int = {
     if (index < 0)
       throw new IndexOutOfBoundsException(index.toString)
-    if (index >= size())
-      return -1
-
-    @tailrec
-    def findIndex(iter: ListIterator[E]): Int = {
-      if (!iter.hasNext()) -1
-      else if (Objects.equals(iter.next(), e)) iter.previousIndex()
-      else findIndex(iter)
-    }
-    findIndex(listIterator(index))
+    indexOfFrom(e, index)
   }
 
   def lastIndexOf(o: scala.Any): Int =
-    lastIndexOf(o.asInstanceOf[E], size() - 1)
+    lastIndexOfFrom(o, size() - 1)
 
   def lastIndexOf(e: E, index: Int): Int = {
     if (index < 0)
       return -1
     if (index >= size())
       throw new IndexOutOfBoundsException(index.toString)
-
-    @tailrec
-    def findIndex(iter: ListIterator[E]): Int = {
-      if (!iter.hasPrevious()) -1
-      else if (Objects.equals(iter.previous(), e)) iter.nextIndex()
-      else findIndex(iter)
-    }
-    findIndex(listIterator(index + 1))
+    lastIndexOfFrom(e, index)
   }
 
   override def clone(): AnyRef =
@@ -269,6 +251,27 @@ class CopyOnWriteArrayList[E <: AnyRef] private (
 
   protected def innerGet(index: Int): E =
     inner.get(index)
+
+  private def indexOfFrom(o: scala.Any, index: Int): Int = {
+    var i = index
+    val len = size()
+    while (i < len) {
+      if (Objects.equals(innerGet(i), o))
+        return i
+      i += 1
+    }
+    -1
+  }
+
+  private def lastIndexOfFrom(o: scala.Any, index: Int): Int = {
+    var i = index
+    while (i >= 0) {
+      if (Objects.equals(innerGet(i), o))
+        return i
+      i -= 1
+    }
+    -1
+  }
 
   protected def innerSet(index: Int, elem: E): Unit =
     inner.set(index, elem)

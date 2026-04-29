@@ -84,8 +84,9 @@ class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
       inner.remove(requireKey(key)).getOrElse(null.asInstanceOf[V])
     )
 
-  def putAll(m: ju.Map[_ <: K, _ <: V]): Unit =
+  def putAll(m: ju.Map[_ <: K, _ <: V]): Unit = self.synchronized {
     m.entrySet().scalaOps.foreach(e => put(e.getKey(), e.getValue()))
+  }
 
   def clear(): Unit =
     self.synchronized(inner.clear())
@@ -302,7 +303,8 @@ class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
 
   override def remove(key: Any, value: Any): Boolean = self.synchronized {
     val boxedKey = requireKey(key)
-    if (value != null && inner.get(boxedKey).exists(Objects.equals(_, value))) {
+    requireValue(value)
+    if (inner.get(boxedKey).exists(Objects.equals(_, value))) {
       inner.remove(boxedKey)
       true
     } else {
@@ -388,7 +390,6 @@ class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
       remappingFunction: BiFunction[_ >: V, _ >: V, _ <: V]
   ): V = self.synchronized {
     val boxedKey = requireKey(key)
-    requireValue(value)
     Objects.requireNonNull(remappingFunction)
     val newValue = inner.get(boxedKey) match {
       case Some(oldValue) =>
