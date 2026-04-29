@@ -31,9 +31,9 @@ private[util] abstract class AbstractRandomAccessListIterator[E](
     get(last)
   }
 
-  def nextIndex(): Int = i
+  def nextIndex(): Int = i - start
 
-  def previousIndex(): Int = i - 1
+  def previousIndex(): Int = i - start - 1
 
   override def remove(): Unit = {
     checkThatHasLast()

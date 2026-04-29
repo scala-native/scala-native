@@ -209,6 +209,9 @@ class LinkedHashMapFactory(
     s"java.util.LinkedHashMap{$orderName$sizeLimitSting}"
   }
 
+  override def supportsJSR166MapTests: Boolean =
+    !accessOrder && withSizeLimit.isEmpty
+
   override def empty[K: ClassTag, V: ClassTag]: ju.LinkedHashMap[K, V] = {
     withSizeLimit match {
       case Some(limit) =>
