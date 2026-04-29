@@ -464,6 +464,56 @@ private object ConcurrentSkipListMap {
     }
   }
 
+  private final class SnapshotKeyIterator[K, V](
+      snapshot: ArrayList[Map.Entry[K, V]],
+      map: ConcurrentSkipListMap[K, V]
+  ) extends Iterator[K] {
+    private val it = snapshot.iterator()
+    private var last: Map.Entry[K, V] = _
+    private var canRemove = false
+
+    override def hasNext(): Boolean = it.hasNext()
+
+    override def next(): K = {
+      if (!it.hasNext())
+        throw new NoSuchElementException
+      last = it.next()
+      canRemove = true
+      last.getKey()
+    }
+
+    override def remove(): Unit = {
+      if (!canRemove) throw new IllegalStateException
+      map.remove(last.getKey())
+      canRemove = false
+    }
+  }
+
+  private final class SnapshotValueIterator[K, V](
+      snapshot: ArrayList[Map.Entry[K, V]],
+      map: ConcurrentSkipListMap[K, V]
+  ) extends Iterator[V] {
+    private val it = snapshot.iterator()
+    private var last: Map.Entry[K, V] = _
+    private var canRemove = false
+
+    override def hasNext(): Boolean = it.hasNext()
+
+    override def next(): V = {
+      if (!it.hasNext())
+        throw new NoSuchElementException
+      last = it.next()
+      canRemove = true
+      last.getValue()
+    }
+
+    override def remove(): Unit = {
+      if (!canRemove) throw new IllegalStateException
+      map.removeSnapshotEntry(last)
+      canRemove = false
+    }
+  }
+
   private final class EntrySet[K, V](map: ConcurrentSkipListMap[K, V])
       extends AbstractSet[Map.Entry[K, V]]
       with Serializable {
@@ -507,22 +557,7 @@ private object ConcurrentSkipListMap {
 
     override def iterator(): Iterator[V] = {
       val entries = map.snapshotEntries()
-      val values = new ArrayList[V](entries.size())
-      val it = entries.iterator()
-      while (it.hasNext())
-        values.add(it.next().getValue())
-      new SnapshotIterator[V](
-        values,
-        value => {
-          val entryIt = entries.iterator()
-          var removed = false
-          while (!removed && entryIt.hasNext()) {
-            val e = entryIt.next()
-            if (Objects.equals(e.getValue(), value))
-              removed = map.remove(e.getKey(), e.getValue())
-          }
-        }
-      )
+      new SnapshotValueIterator[K, V](entries, map)
     }
   }
 
@@ -546,11 +581,7 @@ private object ConcurrentSkipListMap {
 
     override def iterator(): Iterator[K] = {
       val entries = map.snapshotEntries()
-      val keys = new ArrayList[K](entries.size())
-      val it = entries.iterator()
-      while (it.hasNext())
-        keys.add(it.next().getKey())
-      new SnapshotIterator[K](keys, key => map.remove(key))
+      new SnapshotKeyIterator[K, V](entries, map)
     }
 
     override def descendingIterator(): Iterator[K] =
