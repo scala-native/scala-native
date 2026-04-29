@@ -169,7 +169,8 @@ class LinkedList[E]()
 
   override def add(index: Int, element: E): Unit = {
     checkIndexOnBounds(index)
-    addNode(getNodeAt(index), element)
+    if (index == size()) addLast(element)
+    else addNode(getNodeAt(index), element)
   }
 
   private def removeNode(node: Node[E]): E = {
