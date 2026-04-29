@@ -285,7 +285,7 @@ trait MapTest {
               makeJSR166Value(vi)
             }
           }
-          while (!done.getAcquire()) {
+          while (!done.get()) {
             invocations(0) += 1
             val key = makeJSR166Key(3 * rnd.nextInt(10))
             map.compute(key, incValue)
@@ -305,7 +305,7 @@ trait MapTest {
               makeJSR166Value(jsr166ValueToInt(v) + 1)
             }
           }
-          while (!done.getAcquire()) {
+          while (!done.get()) {
             val key = makeJSR166Key(3 * rnd.nextInt(10))
             if (map.computeIfPresent(key, incValue) != null)
               invocations(0) += 1
@@ -324,7 +324,7 @@ trait MapTest {
       futures.add(CompletableFuture.runAsync(task))
     }
     Thread.sleep(testDurationMillis)
-    done.setRelease(true)
+    done.set(true)
     val fit = futures.iterator()
     while (fit.hasNext())
       assertNull(fit.next().get(10L, TimeUnit.SECONDS))

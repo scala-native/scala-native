@@ -1154,6 +1154,8 @@ class ForkJoinTask8Test extends JSR166Test {
   }
 
   @Test def testPollSubmission(): Unit = {
+    ForkJoinTask8TestPlatform.assumePollSubmission()
+
     val done = new CountDownLatch(1)
     val a = ForkJoinTask.adapt(awaiter(done))
     val b = ForkJoinTask.adapt(awaiter(done))
@@ -1178,7 +1180,7 @@ class ForkJoinTask8Test extends JSR166Test {
           }
           assertTrue(p.hasQueuedSubmissions())
           assertTrue(Thread.currentThread().isInstanceOf[ForkJoinWorkerThread])
-          val r = ForkJoinTask.pollSubmission()
+          val r = ForkJoinTask8TestPlatform.pollSubmission()
           assertTrue(r == a || r == b || r == c)
           assertFalse(r.isDone())
         }

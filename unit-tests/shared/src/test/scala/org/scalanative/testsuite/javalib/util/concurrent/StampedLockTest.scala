@@ -16,15 +16,23 @@ import java.util.concurrent.{
 }
 
 import org.junit.Assert._
+import org.junit.Assume.assumeFalse
 import org.junit.{Ignore, Test}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.Platform
 
 class StampedLockTest extends JSR166Test {
   import JSR166Test._
 
   private type Locker = StampedLock => Long
   private type Unlocker = (StampedLock, Long) => Unit
+
+  private def assumeNotJDK8StampedLock(): Unit =
+    assumeFalse(
+      "JDK8 StampedLock behavior differs from current JSR166 TCK",
+      Platform.executingInJVMOnJDK8OrLower
+    )
 
   private def releaseWriteLock(lock: StampedLock, stamp: Long): Unit = {
     assertTrue(lock.isWriteLocked())
@@ -140,6 +148,8 @@ class StampedLockTest extends JSR166Test {
   }
 
   @Test def testReadLock_lockUnlock(): Unit = {
+    assumeNotJDK8StampedLock()
+
     val lock = new StampedLock()
     for (readLocker <- readLockers(); readUnlocker <- readUnlockers()) {
       var s = 42L
@@ -669,6 +679,8 @@ class StampedLockTest extends JSR166Test {
   }
 
   @Test def testTryConvertToOptimisticRead(): Unit = {
+    assumeNotJDK8StampedLock()
+
     val lock = new StampedLock()
     assertEquals(0L, lock.tryConvertToOptimisticRead(0L))
 
@@ -700,6 +712,8 @@ class StampedLockTest extends JSR166Test {
   }
 
   @Test def testTryConvertToReadLock(): Unit = {
+    assumeNotJDK8StampedLock()
+
     val lock = new StampedLock()
     assertEquals(0L, lock.tryConvertToReadLock(0L))
 
@@ -741,6 +755,8 @@ class StampedLockTest extends JSR166Test {
   }
 
   @Test def testTryConvertToWriteLock(): Unit = {
+    assumeNotJDK8StampedLock()
+
     val lock = new StampedLock()
     assertEquals(0L, lock.tryConvertToWriteLock(0L))
 
@@ -1042,6 +1058,8 @@ class StampedLockTest extends JSR166Test {
   }
 
   @Test def testDeeplyNestedReadLocks(): Unit = {
+    assumeNotJDK8StampedLock()
+
     val lock = new StampedLock()
     val depth = 300
     val stamps = new Array[Long](depth)
@@ -1101,6 +1119,8 @@ class StampedLockTest extends JSR166Test {
   }
 
   @Test def testSampleUsage(): Unit = {
+    StampedLockTestPlatform.assumeStampStateInspectionMethods()
+
     class Point {
       private var x = 0.0
       private var y = 0.0
@@ -1147,7 +1167,8 @@ class StampedLockTest extends JSR166Test {
           }
           0.0
         } finally {
-          if (StampedLock.isReadLockStamp(stamp)) sl.unlockRead(stamp)
+          if (StampedLockTestPlatform.isReadLockStamp(stamp))
+            sl.unlockRead(stamp)
         }
       }
 
@@ -1180,20 +1201,22 @@ class StampedLockTest extends JSR166Test {
   }
 
   @Test def testStampStateInspectionMethods(): Unit = {
+    StampedLockTestPlatform.assumeStampStateInspectionMethods()
+
     val lock = new StampedLock()
 
-    assertFalse(StampedLock.isWriteLockStamp(0L))
-    assertFalse(StampedLock.isReadLockStamp(0L))
-    assertFalse(StampedLock.isLockStamp(0L))
-    assertFalse(StampedLock.isOptimisticReadStamp(0L))
+    assertFalse(StampedLockTestPlatform.isWriteLockStamp(0L))
+    assertFalse(StampedLockTestPlatform.isReadLockStamp(0L))
+    assertFalse(StampedLockTestPlatform.isLockStamp(0L))
+    assertFalse(StampedLockTestPlatform.isOptimisticReadStamp(0L))
 
     {
       val stamp = lock.writeLock()
       for (i <- 0 until 2) {
-        assertTrue(StampedLock.isWriteLockStamp(stamp))
-        assertFalse(StampedLock.isReadLockStamp(stamp))
-        assertTrue(StampedLock.isLockStamp(stamp))
-        assertFalse(StampedLock.isOptimisticReadStamp(stamp))
+        assertTrue(StampedLockTestPlatform.isWriteLockStamp(stamp))
+        assertFalse(StampedLockTestPlatform.isReadLockStamp(stamp))
+        assertTrue(StampedLockTestPlatform.isLockStamp(stamp))
+        assertFalse(StampedLockTestPlatform.isOptimisticReadStamp(stamp))
         if (i == 0) lock.unlockWrite(stamp)
       }
     }
@@ -1201,10 +1224,10 @@ class StampedLockTest extends JSR166Test {
     {
       val stamp = lock.readLock()
       for (i <- 0 until 2) {
-        assertFalse(StampedLock.isWriteLockStamp(stamp))
-        assertTrue(StampedLock.isReadLockStamp(stamp))
-        assertTrue(StampedLock.isLockStamp(stamp))
-        assertFalse(StampedLock.isOptimisticReadStamp(stamp))
+        assertFalse(StampedLockTestPlatform.isWriteLockStamp(stamp))
+        assertTrue(StampedLockTestPlatform.isReadLockStamp(stamp))
+        assertTrue(StampedLockTestPlatform.isLockStamp(stamp))
+        assertFalse(StampedLockTestPlatform.isOptimisticReadStamp(stamp))
         if (i == 0) lock.unlockRead(stamp)
       }
     }
@@ -1214,26 +1237,30 @@ class StampedLockTest extends JSR166Test {
       val readStamp = lock.tryConvertToReadLock(optimisticStamp)
       val writeStamp = lock.tryConvertToWriteLock(readStamp)
       for (i <- 0 until 2) {
-        assertFalse(StampedLock.isWriteLockStamp(optimisticStamp))
-        assertFalse(StampedLock.isReadLockStamp(optimisticStamp))
-        assertFalse(StampedLock.isLockStamp(optimisticStamp))
-        assertTrue(StampedLock.isOptimisticReadStamp(optimisticStamp))
+        assertFalse(StampedLockTestPlatform.isWriteLockStamp(optimisticStamp))
+        assertFalse(StampedLockTestPlatform.isReadLockStamp(optimisticStamp))
+        assertFalse(StampedLockTestPlatform.isLockStamp(optimisticStamp))
+        assertTrue(
+          StampedLockTestPlatform.isOptimisticReadStamp(optimisticStamp)
+        )
 
-        assertFalse(StampedLock.isWriteLockStamp(readStamp))
-        assertTrue(StampedLock.isReadLockStamp(readStamp))
-        assertTrue(StampedLock.isLockStamp(readStamp))
-        assertFalse(StampedLock.isOptimisticReadStamp(readStamp))
+        assertFalse(StampedLockTestPlatform.isWriteLockStamp(readStamp))
+        assertTrue(StampedLockTestPlatform.isReadLockStamp(readStamp))
+        assertTrue(StampedLockTestPlatform.isLockStamp(readStamp))
+        assertFalse(StampedLockTestPlatform.isOptimisticReadStamp(readStamp))
 
-        assertTrue(StampedLock.isWriteLockStamp(writeStamp))
-        assertFalse(StampedLock.isReadLockStamp(writeStamp))
-        assertTrue(StampedLock.isLockStamp(writeStamp))
-        assertFalse(StampedLock.isOptimisticReadStamp(writeStamp))
+        assertTrue(StampedLockTestPlatform.isWriteLockStamp(writeStamp))
+        assertFalse(StampedLockTestPlatform.isReadLockStamp(writeStamp))
+        assertTrue(StampedLockTestPlatform.isLockStamp(writeStamp))
+        assertFalse(StampedLockTestPlatform.isOptimisticReadStamp(writeStamp))
         if (i == 0) lock.unlockWrite(writeStamp)
       }
     }
   }
 
   @Test def testConcurrentAccess(): Unit = {
+    StampedLockTestPlatform.assumeStampStateInspectionMethods()
+
     val sl = new StampedLock()
     val wl = sl.asWriteLock()
     val rl = sl.asReadLock()
@@ -1306,12 +1333,12 @@ class StampedLockTest extends JSR166Test {
     val writer = action {
       val locker = chooseRandomly(stampedWriteLockers)
       val unlocker = chooseRandomly(stampedWriteUnlockers)
-      while (!done.getAcquire()) {
+      while (!done.get()) {
         val stamp = locker()
         try {
-          assertTrue(StampedLock.isWriteLockStamp(stamp))
+          assertTrue(StampedLockTestPlatform.isWriteLockStamp(stamp))
           assertTrue(sl.isWriteLocked())
-          assertFalse(StampedLock.isReadLockStamp(stamp))
+          assertFalse(StampedLockTestPlatform.isReadLockStamp(stamp))
           assertFalse(sl.isReadLocked())
           assertEquals(0, sl.getReadLockCount())
           assertTrue(sl.validate(stamp))
@@ -1323,12 +1350,12 @@ class StampedLockTest extends JSR166Test {
     val reader = action {
       val locker = chooseRandomly(stampedReadLockers)
       val unlocker = chooseRandomly(stampedReadUnlockers)
-      while (!done.getAcquire()) {
+      while (!done.get()) {
         val stamp = locker()
         try {
-          assertFalse(StampedLock.isWriteLockStamp(stamp))
+          assertFalse(StampedLockTestPlatform.isWriteLockStamp(stamp))
           assertFalse(sl.isWriteLocked())
-          assertTrue(StampedLock.isReadLockStamp(stamp))
+          assertTrue(StampedLockTestPlatform.isReadLockStamp(stamp))
           assertTrue(sl.isReadLocked())
           assertTrue(sl.getReadLockCount() > 0)
           assertTrue(sl.validate(stamp))
@@ -1348,7 +1375,7 @@ class StampedLockTest extends JSR166Test {
       )
     }
     Thread.sleep(testDurationMillis)
-    done.setRelease(true)
+    done.set(true)
     val it = futures.iterator()
     while (it.hasNext()) checkTimedGet(it.next(), null)
   }

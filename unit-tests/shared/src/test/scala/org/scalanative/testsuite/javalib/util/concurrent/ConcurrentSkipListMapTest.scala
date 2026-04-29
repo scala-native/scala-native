@@ -231,7 +231,7 @@ class ConcurrentSkipListMapTest extends JSR166Test {
                 impl.makeValue(vi)
               }
             }
-          while (!done.getAcquire()) {
+          while (!done.get()) {
             invocations(0) += 1
             val key = impl.makeKey(3 * rnd.nextInt(10))
             map.compute(key, incValue)
@@ -252,7 +252,7 @@ class ConcurrentSkipListMapTest extends JSR166Test {
                 impl.makeValue(impl.valueToInt(v) + 1)
               }
             }
-          while (!done.getAcquire()) {
+          while (!done.get()) {
             val key = impl.makeKey(3 * rnd.nextInt(10))
             if (map.computeIfPresent(key, incValue) != null)
               invocations(0) += 1
@@ -272,7 +272,7 @@ class ConcurrentSkipListMapTest extends JSR166Test {
       )
     }
     Thread.sleep(testDurationMillis)
-    done.setRelease(true)
+    done.set(true)
     val fit = futures.iterator()
     while (fit.hasNext())
       checkTimedGet(fit.next(), null)
