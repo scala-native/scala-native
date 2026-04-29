@@ -7,7 +7,10 @@ import org.junit.Assume.assumeTrue
 
 object SplittableRandomTestPlatform {
   private val nextBytesMethod =
-    try Some(classOf[SplittableRandom].getMethod("nextBytes", classOf[Array[Byte]]))
+    try
+      Some(
+        classOf[SplittableRandom].getMethod("nextBytes", classOf[Array[Byte]])
+      )
     catch {
       case _: NoSuchMethodException => None
     }
