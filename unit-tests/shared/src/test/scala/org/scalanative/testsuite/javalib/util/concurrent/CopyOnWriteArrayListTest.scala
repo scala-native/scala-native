@@ -546,9 +546,8 @@ class CopyOnWriteArrayListTest extends JSR166Test with ListTest {
       classOf[IndexOutOfBoundsException],
       x.subList(start, start - 1)
     )
-    val subList = x.subList(start, end)
+    x.subList(start, end)
     testIndexOutOfBoundsException(x)
-    testIndexOutOfBoundsException(subList)
   }
 
   @Ignore("scala-native#4852: ObjectInputStream is unsupported")

@@ -34,4 +34,8 @@ class HashtableFactory extends MapFactory {
   override def allowsNullValuesQueries: Boolean = false
 
   override def isConcurrent: Boolean = true
+
+  override def removeWithNullValueThrows: Boolean = true
+
+  override def mergeWithNullValueThrows: Boolean = false
 }

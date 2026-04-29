@@ -27,25 +27,37 @@ class TimeUnit8Test extends JSR166Test {
     assertSame(ChronoUnit.HOURS, HOURS.toChronoUnit())
     assertSame(ChronoUnit.DAYS, DAYS.toChronoUnit())
 
-    TimeUnit.values().foreach { x =>
-      assertSame(x, TimeUnit.of(x.toChronoUnit()))
+    if (TimeUnit8TestPlatform.hasTimeUnitOf) {
+      TimeUnit.values().foreach { x =>
+        assertSame(x, TimeUnit8TestPlatform.timeUnitOf(x.toChronoUnit()))
+      }
     }
   }
 
   @Test def testTimeUnitOf(): Unit = {
-    assertSame(NANOSECONDS, TimeUnit.of(ChronoUnit.NANOS))
-    assertSame(MICROSECONDS, TimeUnit.of(ChronoUnit.MICROS))
-    assertSame(MILLISECONDS, TimeUnit.of(ChronoUnit.MILLIS))
-    assertSame(SECONDS, TimeUnit.of(ChronoUnit.SECONDS))
-    assertSame(MINUTES, TimeUnit.of(ChronoUnit.MINUTES))
-    assertSame(HOURS, TimeUnit.of(ChronoUnit.HOURS))
-    assertSame(DAYS, TimeUnit.of(ChronoUnit.DAYS))
+    TimeUnit8TestPlatform.assumeTimeUnitOf()
+    assertSame(NANOSECONDS, TimeUnit8TestPlatform.timeUnitOf(ChronoUnit.NANOS))
+    assertSame(
+      MICROSECONDS,
+      TimeUnit8TestPlatform.timeUnitOf(ChronoUnit.MICROS)
+    )
+    assertSame(
+      MILLISECONDS,
+      TimeUnit8TestPlatform.timeUnitOf(ChronoUnit.MILLIS)
+    )
+    assertSame(SECONDS, TimeUnit8TestPlatform.timeUnitOf(ChronoUnit.SECONDS))
+    assertSame(MINUTES, TimeUnit8TestPlatform.timeUnitOf(ChronoUnit.MINUTES))
+    assertSame(HOURS, TimeUnit8TestPlatform.timeUnitOf(ChronoUnit.HOURS))
+    assertSame(DAYS, TimeUnit8TestPlatform.timeUnitOf(ChronoUnit.DAYS))
 
-    assertThrows(classOf[NullPointerException], TimeUnit.of(null))
+    assertThrows(
+      classOf[NullPointerException],
+      TimeUnit8TestPlatform.timeUnitOf(null)
+    )
 
     ChronoUnit.values().foreach { cu =>
       try {
-        val tu = TimeUnit.of(cu)
+        val tu = TimeUnit8TestPlatform.timeUnitOf(cu)
         assertSame(cu, tu.toChronoUnit())
       } catch {
         case _: IllegalArgumentException => ()

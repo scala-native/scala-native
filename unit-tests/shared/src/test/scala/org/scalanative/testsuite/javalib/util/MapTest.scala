@@ -1616,7 +1616,10 @@ trait MapTest {
 
     assertFalse(mp.remove("TWO", "one"))
     assertEquals("two", mp.get("TWO"))
-    assertFalse(mp.remove("TWO", null))
+    if (factory.removeWithNullValueThrows)
+      assertThrowsNPEIfCompliant(mp.remove("TWO", null))
+    else
+      assertFalse(mp.remove("TWO", null))
     assertEquals("two", mp.get("TWO"))
 
     assertTrue(mp.remove("ONE", "one"))
@@ -1640,7 +1643,10 @@ trait MapTest {
       assertFalse(mp.containsKey("nullable"))
     } else {
       // mp#(key, null) should not remove. https://bugs.java.com/bugdatabase/view_bug.do?bug_id=6272521
-      assertFalse(mp.remove("THREE", null))
+      if (factory.removeWithNullValueThrows)
+        assertThrowsNPEIfCompliant(mp.remove("THREE", null))
+      else
+        assertFalse(mp.remove("THREE", null))
     }
   }
 
@@ -1899,8 +1905,15 @@ trait MapTest {
     assertEquals("def", mp.merge("SEVEN", "def", notCalled))
     assertEquals("def", mp.get("SEVEN"))
 
-    assertThrowsNPEIfCompliant(mp.merge("non existing", null, notCalled))
-    assertThrowsNPEIfCompliant(mp.merge("ONE", null, notCalled))
+    if (factory.mergeWithNullValueThrows) {
+      assertThrowsNPEIfCompliant(mp.merge("non existing", null, notCalled))
+      assertThrowsNPEIfCompliant(mp.merge("ONE", null, notCalled))
+    } else {
+      assertNull(mp.merge("non existing", null, notCalled))
+      assertFalse(mp.containsKey("non existing"))
+      assertEquals("one - null", mp.merge("ONE", null, remappingFun))
+      assertEquals("one - null", mp.get("ONE"))
+    }
 
     assertNull(mp.merge("ONE", "def", returnsNull))
     assertFalse(mp.containsKey("ONE"))
@@ -1999,6 +2012,10 @@ trait MapFactory {
   def supportsSetValue: Boolean = true
 
   def remappingFunctionCalledAtMostOnce: Boolean = true
+
+  def removeWithNullValueThrows: Boolean = false
+
+  def mergeWithNullValueThrows: Boolean = true
 
   def supportsJSR166MapTests: Boolean = true
 
