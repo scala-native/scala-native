@@ -19,17 +19,32 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class TimeUnit8Test extends JSR166Test {
   @Test def testToChronoUnit(): Unit = {
-    assertSame(ChronoUnit.NANOS, NANOSECONDS.toChronoUnit())
-    assertSame(ChronoUnit.MICROS, MICROSECONDS.toChronoUnit())
-    assertSame(ChronoUnit.MILLIS, MILLISECONDS.toChronoUnit())
-    assertSame(ChronoUnit.SECONDS, SECONDS.toChronoUnit())
-    assertSame(ChronoUnit.MINUTES, MINUTES.toChronoUnit())
-    assertSame(ChronoUnit.HOURS, HOURS.toChronoUnit())
-    assertSame(ChronoUnit.DAYS, DAYS.toChronoUnit())
+    TimeUnit8TestPlatform.assumeToChronoUnit()
+
+    assertSame(
+      ChronoUnit.NANOS,
+      TimeUnit8TestPlatform.toChronoUnit(NANOSECONDS)
+    )
+    assertSame(
+      ChronoUnit.MICROS,
+      TimeUnit8TestPlatform.toChronoUnit(MICROSECONDS)
+    )
+    assertSame(
+      ChronoUnit.MILLIS,
+      TimeUnit8TestPlatform.toChronoUnit(MILLISECONDS)
+    )
+    assertSame(ChronoUnit.SECONDS, TimeUnit8TestPlatform.toChronoUnit(SECONDS))
+    assertSame(ChronoUnit.MINUTES, TimeUnit8TestPlatform.toChronoUnit(MINUTES))
+    assertSame(ChronoUnit.HOURS, TimeUnit8TestPlatform.toChronoUnit(HOURS))
+    assertSame(ChronoUnit.DAYS, TimeUnit8TestPlatform.toChronoUnit(DAYS))
 
     if (TimeUnit8TestPlatform.hasTimeUnitOf) {
       TimeUnit.values().foreach { x =>
-        assertSame(x, TimeUnit8TestPlatform.timeUnitOf(x.toChronoUnit()))
+        assertSame(
+          x,
+          TimeUnit8TestPlatform
+            .timeUnitOf(TimeUnit8TestPlatform.toChronoUnit(x))
+        )
       }
     }
   }
@@ -58,7 +73,7 @@ class TimeUnit8Test extends JSR166Test {
     ChronoUnit.values().foreach { cu =>
       try {
         val tu = TimeUnit8TestPlatform.timeUnitOf(cu)
-        assertSame(cu, tu.toChronoUnit())
+        assertSame(cu, TimeUnit8TestPlatform.toChronoUnit(tu))
       } catch {
         case _: IllegalArgumentException => ()
       }
@@ -66,26 +81,84 @@ class TimeUnit8Test extends JSR166Test {
   }
 
   @Test def testConvertDuration_roundtripDurationOf(): Unit = {
+    TimeUnit8TestPlatform.assumeConvertDuration()
+
     var n = ThreadLocalRandom.current().nextLong()
 
-    assertEquals(n, NANOSECONDS.convert(Duration.ofNanos(n)))
-    assertEquals(n, NANOSECONDS.convert(Duration.of(n, ChronoUnit.NANOS)))
-    assertEquals(n, MILLISECONDS.convert(Duration.ofMillis(n)))
-    assertEquals(n, MILLISECONDS.convert(Duration.of(n, ChronoUnit.MILLIS)))
-    assertEquals(n, SECONDS.convert(Duration.ofSeconds(n)))
-    assertEquals(n, SECONDS.convert(Duration.of(n, ChronoUnit.SECONDS)))
+    assertEquals(
+      n,
+      TimeUnit8TestPlatform.convertDuration(NANOSECONDS, Duration.ofNanos(n))
+    )
+    assertEquals(
+      n,
+      TimeUnit8TestPlatform.convertDuration(
+        NANOSECONDS,
+        Duration.of(n, ChronoUnit.NANOS)
+      )
+    )
+    assertEquals(
+      n,
+      TimeUnit8TestPlatform.convertDuration(MILLISECONDS, Duration.ofMillis(n))
+    )
+    assertEquals(
+      n,
+      TimeUnit8TestPlatform.convertDuration(
+        MILLISECONDS,
+        Duration.of(n, ChronoUnit.MILLIS)
+      )
+    )
+    assertEquals(
+      n,
+      TimeUnit8TestPlatform.convertDuration(SECONDS, Duration.ofSeconds(n))
+    )
+    assertEquals(
+      n,
+      TimeUnit8TestPlatform.convertDuration(
+        SECONDS,
+        Duration.of(n, ChronoUnit.SECONDS)
+      )
+    )
     n /= 60L
-    assertEquals(n, MINUTES.convert(Duration.ofMinutes(n)))
-    assertEquals(n, MINUTES.convert(Duration.of(n, ChronoUnit.MINUTES)))
+    assertEquals(
+      n,
+      TimeUnit8TestPlatform.convertDuration(MINUTES, Duration.ofMinutes(n))
+    )
+    assertEquals(
+      n,
+      TimeUnit8TestPlatform.convertDuration(
+        MINUTES,
+        Duration.of(n, ChronoUnit.MINUTES)
+      )
+    )
     n /= 60L
-    assertEquals(n, HOURS.convert(Duration.ofHours(n)))
-    assertEquals(n, HOURS.convert(Duration.of(n, ChronoUnit.HOURS)))
+    assertEquals(
+      n,
+      TimeUnit8TestPlatform.convertDuration(HOURS, Duration.ofHours(n))
+    )
+    assertEquals(
+      n,
+      TimeUnit8TestPlatform.convertDuration(
+        HOURS,
+        Duration.of(n, ChronoUnit.HOURS)
+      )
+    )
     n /= 24L
-    assertEquals(n, DAYS.convert(Duration.ofDays(n)))
-    assertEquals(n, DAYS.convert(Duration.of(n, ChronoUnit.DAYS)))
+    assertEquals(
+      n,
+      TimeUnit8TestPlatform.convertDuration(DAYS, Duration.ofDays(n))
+    )
+    assertEquals(
+      n,
+      TimeUnit8TestPlatform.convertDuration(
+        DAYS,
+        Duration.of(n, ChronoUnit.DAYS)
+      )
+    )
   }
 
   @Test def testConvertDuration_roundtripDurationOfNanos(): Unit = {
+    TimeUnit8TestPlatform.assumeConvertDuration()
+
     val unitNanos = TimeUnit.values().map(_.toNanos(1L))
     val baseValues = unitNanos ++ Array(Long.MaxValue, Long.MinValue)
     for {
@@ -95,17 +168,23 @@ class TimeUnit8Test extends JSR166Test {
       n <- Array(n2, -n2)
       u <- TimeUnit.values()
     } {
-      assertEquals(u.convert(n, NANOSECONDS), u.convert(Duration.ofNanos(n)))
+      assertEquals(
+        u.convert(n, NANOSECONDS),
+        TimeUnit8TestPlatform.convertDuration(u, Duration.ofNanos(n))
+      )
     }
   }
 
   @Test def testConvertDuration_nearOverflow(): Unit = {
+    TimeUnit8TestPlatform.assumeConvertDuration()
+    TimeUnit8TestPlatform.assumeToChronoUnit()
+
     val nanos = ChronoUnit.NANOS
     val maxDuration = Duration.ofSeconds(Long.MaxValue, 999999999L)
     val minDuration = Duration.ofSeconds(Long.MinValue, 0L)
 
     TimeUnit.values().foreach { u =>
-      val cu = u.toChronoUnit()
+      val cu = TimeUnit8TestPlatform.toChronoUnit(u)
       val r =
         if (u.toNanos(1L) > SECONDS.toNanos(1L)) {
           val ratio = u.toNanos(1L) / SECONDS.toNanos(1L)
@@ -121,23 +200,59 @@ class TimeUnit8Test extends JSR166Test {
         } else {
           val max = Duration.of(Long.MaxValue, cu)
           val min = Duration.of(Long.MinValue, cu)
-          assertEquals(Long.MaxValue, u.convert(max))
-          assertEquals(Long.MaxValue - 1L, u.convert(max.minus(1L, nanos)))
-          assertEquals(Long.MaxValue - 1L, u.convert(max.minus(1L, cu)))
-          assertEquals(Long.MinValue, u.convert(min))
-          assertEquals(Long.MinValue + 1L, u.convert(min.plus(1L, nanos)))
-          assertEquals(Long.MinValue + 1L, u.convert(min.plus(1L, cu)))
-          assertEquals(Long.MaxValue, u.convert(max.plus(1L, nanos)))
+          assertEquals(
+            Long.MaxValue,
+            TimeUnit8TestPlatform.convertDuration(u, max)
+          )
+          assertEquals(
+            Long.MaxValue - 1L,
+            TimeUnit8TestPlatform.convertDuration(u, max.minus(1L, nanos))
+          )
+          assertEquals(
+            Long.MaxValue - 1L,
+            TimeUnit8TestPlatform.convertDuration(u, max.minus(1L, cu))
+          )
+          assertEquals(
+            Long.MinValue,
+            TimeUnit8TestPlatform.convertDuration(u, min)
+          )
+          assertEquals(
+            Long.MinValue + 1L,
+            TimeUnit8TestPlatform.convertDuration(u, min.plus(1L, nanos))
+          )
+          assertEquals(
+            Long.MinValue + 1L,
+            TimeUnit8TestPlatform.convertDuration(u, min.plus(1L, cu))
+          )
+          assertEquals(
+            Long.MaxValue,
+            TimeUnit8TestPlatform.convertDuration(u, max.plus(1L, nanos))
+          )
           if (u != SECONDS) {
-            assertEquals(Long.MaxValue, u.convert(max.plus(1L, cu)))
-            assertEquals(Long.MinValue, u.convert(min.minus(1L, nanos)))
-            assertEquals(Long.MinValue, u.convert(min.minus(1L, cu)))
+            assertEquals(
+              Long.MaxValue,
+              TimeUnit8TestPlatform.convertDuration(u, max.plus(1L, cu))
+            )
+            assertEquals(
+              Long.MinValue,
+              TimeUnit8TestPlatform.convertDuration(u, min.minus(1L, nanos))
+            )
+            assertEquals(
+              Long.MinValue,
+              TimeUnit8TestPlatform.convertDuration(u, min.minus(1L, cu))
+            )
           }
           1L
         }
 
-      assertEquals(Long.MaxValue / r, u.convert(maxDuration))
-      assertEquals(Long.MinValue / r, u.convert(minDuration))
+      assertEquals(
+        Long.MaxValue / r,
+        TimeUnit8TestPlatform.convertDuration(u, maxDuration)
+      )
+      assertEquals(
+        Long.MinValue / r,
+        TimeUnit8TestPlatform.convertDuration(u, minDuration)
+      )
     }
   }
 }

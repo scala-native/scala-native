@@ -525,7 +525,8 @@ class SplittableRandomTest extends JSR166Test {
     val r = new SplittableRandom(123L)
     val bytes = new Array[Byte](1)
 
-    r.nextBytes(bytes)
+    if (SplittableRandomTestPlatform.hasNextBytes)
+      SplittableRandomTestPlatform.nextBytes(r, bytes)
     r.nextBoolean()
     r.nextInt()
     r.nextInt(2)
@@ -547,6 +548,8 @@ class SplittableRandomTest extends JSR166Test {
   }
 
   @Test def testNextBytes(): Unit = {
+    SplittableRandomTestPlatform.assumeNextBytes()
+
     val sr = new SplittableRandom()
     val n = sr.nextInt(1, 20)
     val bytes = new Array[Byte](n)
@@ -556,7 +559,7 @@ class SplittableRandomTest extends JSR166Test {
       var varied = false
       while (tries > 0 && !varied) {
         val before = bytes(i)
-        sr.nextBytes(bytes)
+        SplittableRandomTestPlatform.nextBytes(sr, bytes)
         val after = bytes(i)
         if (after * before < 0) {
           varied = true
@@ -571,13 +574,18 @@ class SplittableRandomTest extends JSR166Test {
   }
 
   @Test def testNextBytes_emptyArray(): Unit = {
-    new SplittableRandom().nextBytes(new Array[Byte](0))
+    SplittableRandomTestPlatform.assumeNextBytes()
+    SplittableRandomTestPlatform.nextBytes(
+      new SplittableRandom(),
+      new Array[Byte](0)
+    )
   }
 
   @Test def testNextBytes_nullArray(): Unit = {
+    SplittableRandomTestPlatform.assumeNextBytes()
     assertThrows(
       classOf[NullPointerException],
-      new SplittableRandom().nextBytes(null)
+      SplittableRandomTestPlatform.nextBytes(new SplittableRandom(), null)
     )
   }
 

@@ -3711,11 +3711,13 @@ class CompletableFutureTest extends JSR166Test {
   /** minimalStage.toCompletableFuture().join() awaits completion
    */
   @Test def testMinimalCompletionStage_toCompletableFuture_join(): Unit = {
+    CompletableFutureTestPlatform.assumeMinimalCompletionStage()
+
     for (createIncomplete <- Array(true, false)) {
       for (v1 <- Array[Item](one, null)) {
         val f = new CompletableFuture[Item]
         if (!createIncomplete) assertTrue(f.complete(v1))
-        val minimal = f.minimalCompletionStage()
+        val minimal = CompletableFutureTestPlatform.minimalCompletionStage(f)
         if (createIncomplete) assertTrue(f.complete(v1))
         mustEqual(v1, minimal.toCompletableFuture().join())
         mustEqual(v1, minimal.toCompletableFuture().get())
