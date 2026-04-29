@@ -9,9 +9,8 @@ package org.scalanative.testsuite.javalib.util.concurrent
 
 import java.time.Duration
 import java.time.temporal.ChronoUnit
-import java.util.concurrent.ThreadLocalRandom
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit._
+import java.util.concurrent.{ThreadLocalRandom, TimeUnit}
 
 import org.junit.Assert._
 import org.junit.Test
@@ -98,8 +97,14 @@ class TimeUnit8Test extends JSR166Test {
       val r =
         if (u.toNanos(1L) > SECONDS.toNanos(1L)) {
           val ratio = u.toNanos(1L) / SECONDS.toNanos(1L)
-          assertThrows(classOf[ArithmeticException], Duration.of(Long.MaxValue, cu))
-          assertThrows(classOf[ArithmeticException], Duration.of(Long.MinValue, cu))
+          assertThrows(
+            classOf[ArithmeticException],
+            Duration.of(Long.MaxValue, cu)
+          )
+          assertThrows(
+            classOf[ArithmeticException],
+            Duration.of(Long.MinValue, cu)
+          )
           ratio
         } else {
           val max = Duration.of(Long.MaxValue, cu)
