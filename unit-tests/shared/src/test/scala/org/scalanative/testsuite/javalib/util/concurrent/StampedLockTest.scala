@@ -1120,7 +1120,8 @@ class StampedLockTest extends JSR166Test {
         var currentX = 0.0
         var currentY = 0.0
         var stamp = sl.tryOptimisticRead()
-        do {
+        var retry = true
+        while (retry) {
           if (stamp == 0L) stamp = sl.readLock()
           try {
             currentX = x
@@ -1128,7 +1129,8 @@ class StampedLockTest extends JSR166Test {
           } finally {
             stamp = sl.tryConvertToOptimisticRead(stamp)
           }
-        } while (stamp == 0L)
+          retry = stamp == 0L
+        }
         Math.hypot(currentX, currentY)
       }
 
@@ -1246,20 +1248,20 @@ class StampedLockTest extends JSR166Test {
       () => tryWriteLockUninterrupted(sl, LONG_DELAY_MS, MILLISECONDS),
       () => {
         var stamp = 0L
-        do stamp = sl.tryConvertToWriteLock(sl.tryOptimisticRead())
         while (stamp == 0L)
+          stamp = sl.tryConvertToWriteLock(sl.tryOptimisticRead())
         stamp
       },
       () => {
         var stamp = 0L
-        do stamp = sl.tryWriteLock()
         while (stamp == 0L)
+          stamp = sl.tryWriteLock()
         stamp
       },
       () => {
         var stamp = 0L
-        do stamp = sl.tryWriteLock(0L, DAYS)
         while (stamp == 0L)
+          stamp = sl.tryWriteLock(0L, DAYS)
         stamp
       }
     )
@@ -1269,20 +1271,20 @@ class StampedLockTest extends JSR166Test {
       () => tryReadLockUninterrupted(sl, LONG_DELAY_MS, MILLISECONDS),
       () => {
         var stamp = 0L
-        do stamp = sl.tryConvertToReadLock(sl.tryOptimisticRead())
         while (stamp == 0L)
+          stamp = sl.tryConvertToReadLock(sl.tryOptimisticRead())
         stamp
       },
       () => {
         var stamp = 0L
-        do stamp = sl.tryReadLock()
         while (stamp == 0L)
+          stamp = sl.tryReadLock()
         stamp
       },
       () => {
         var stamp = 0L
-        do stamp = sl.tryReadLock(0L, DAYS)
         while (stamp == 0L)
+          stamp = sl.tryReadLock(0L, DAYS)
         stamp
       }
     )
