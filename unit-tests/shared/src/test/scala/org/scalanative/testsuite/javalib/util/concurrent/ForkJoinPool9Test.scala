@@ -10,6 +10,8 @@ package org.scalanative.testsuite.javalib.util.concurrent
 import org.junit.{Ignore, Test}
 
 class ForkJoinPool9Test extends JSR166Test {
-  @Ignore("Requires MethodHandles.privateLookupIn and Thread.setContextClassLoader")
+  @Ignore(
+    "Requires MethodHandles.privateLookupIn and Thread.setContextClassLoader"
+  )
   @Test def testCommonPoolThreadContextClassLoader(): Unit = ()
 }
