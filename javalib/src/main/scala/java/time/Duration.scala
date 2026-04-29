@@ -90,7 +90,7 @@ object Duration {
         case ChronoUnit.MINUTES => BigInt(SecondsPerMinute) * NanosPerSecond
         case ChronoUnit.HOURS   => BigInt(SecondsPerHour) * NanosPerSecond
         case ChronoUnit.DAYS    => BigInt(SecondsPerDay) * NanosPerSecond
-        case _ =>
+        case _                  =>
           throw new java.time.DateTimeException("Unsupported unit: " + unit)
       }
     BigInt(amount) * perUnitNanos
