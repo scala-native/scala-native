@@ -16,7 +16,7 @@ import java.util.concurrent.{CyclicBarrier, ExecutorService, Executors}
 import java.{lang => jl}
 
 import org.junit.Assert._
-import org.junit.Test
+import org.junit.{Ignore, Test}
 
 import org.scalanative.testsuite.javalib.util.concurrent.JSR166Test
 
@@ -62,12 +62,8 @@ class DoubleAdderTest extends JSR166Test {
     assertEquals(0.0, ai.sum(), 0.0)
   }
 
-  // Serialization is not implemented on Scala Native
-  //
-  // /**
-  //  * a deserialized/reserialized adder holds same value
-  //  */
-  // public void testSerialization() throws Exception
+  @Ignore("scala-native#4852: ObjectInputStream is unsupported")
+  @Test def testSerialization(): Unit = ()
 
   /** toString returns current value.
    */
@@ -115,7 +111,7 @@ class DoubleAdderTest extends JSR166Test {
   }
 
   @throws[Throwable]
-  @Test def testAddAndSumMT: Unit = {
+  @Test def testAddAndSumMT(): Unit = {
 
     val incs = 1000000
     val nthreads = 4

@@ -198,7 +198,9 @@ class AtomicReferenceArrayTest extends JSR166Test {
   /** a deserialized/reserialized array holds same values in same order
    */
   @throws[Exception]
-  @Ignore("No ObjectInputStreams in Scala Native")
+  @Ignore(
+    "scala-native#4852: ObjectInputStream/ObjectOutputStream are unsupported"
+  )
   @Test def testSerialization(): Unit = {
     //   val x = new AtomicReferenceArray[Any](SIZE)
     //   for (i <- 0 until SIZE) { x.set(i, new Integer(-i)) }

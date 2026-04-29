@@ -164,16 +164,20 @@ class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit
 
   def pollFirstEntry(): Map.Entry[K, V] = {
     val node = RB.minNode(tree)
-    if (node ne null)
+    if (node ne null) {
+      val result = new AbstractMap.SimpleImmutableEntry[K, V](node)
       RB.deleteNode(tree, node)
-    node
+      result
+    } else null
   }
 
   def pollLastEntry(): Map.Entry[K, V] = {
     val node = RB.maxNode(tree)
-    if (node ne null)
+    if (node ne null) {
+      val result = new AbstractMap.SimpleImmutableEntry[K, V](node)
       RB.deleteNode(tree, node)
-    node
+      result
+    } else null
   }
 
   def lowerEntry(key: K): Map.Entry[K, V] =
@@ -341,6 +345,25 @@ private object TreeMap {
         .isWithinUpperBound(key, upperBound, upperKind)
   }
 
+  private final class DescendingProjectedEntrySet[K, V](
+      tree: RB.Tree[K, V],
+      lowerBound: K,
+      lowerKind: RB.BoundKind,
+      upperBound: K,
+      upperKind: RB.BoundKind
+  )(implicit comp: Comparator[_ >: K])
+      extends ProjectedEntrySet[K, V](
+        tree,
+        lowerBound,
+        lowerKind,
+        upperBound,
+        upperKind
+      ) {
+
+    override def iterator(): Iterator[Map.Entry[K, V]] =
+      RB.descendingIterator(tree, upperBound, upperKind, lowerBound, lowerKind)
+  }
+
   private abstract class AbstractProjection[K, V](
       protected val tree: RB.Tree[K, V],
       protected val lowerBound: K,
@@ -479,8 +502,9 @@ private object TreeMap {
       val node = RB.minNodeAfter(tree, lowerBound, lowerKind)
       if (node ne null) {
         if (isWithinUpperBound(node.key)) {
+          val result = new AbstractMap.SimpleImmutableEntry[K, V](node)
           RB.deleteNode(tree, node)
-          node
+          result
         } else {
           null
         }
@@ -494,8 +518,9 @@ private object TreeMap {
       val node = RB.maxNodeBefore(tree, upperBound, upperKind)
       if (node ne null) {
         if (isWithinLowerBound(node.key)) {
+          val result = new AbstractMap.SimpleImmutableEntry[K, V](node)
           RB.deleteNode(tree, node)
-          node
+          result
         } else {
           null
         }
@@ -521,6 +546,10 @@ private object TreeMap {
 
     protected final def ifWithinUpperBound(node: RB.Node[K, V]): RB.Node[K, V] =
       if (node != null && isWithinUpperBound(node.key)) node
+      else null
+
+    protected final def ifWithinBounds(node: RB.Node[K, V]): RB.Node[K, V] =
+      if (node != null && isWithinBounds(node.key)) node
       else null
   }
 
@@ -553,12 +582,25 @@ private object TreeMap {
      */
 
     @inline
-    protected def nextNode(key: K, boundKind: RB.BoundKind): RB.Node[K, V] =
-      ifWithinUpperBound(RB.minNodeAfter(tree, key, boundKind))
+    protected def nextNode(key: K, boundKind: RB.BoundKind): RB.Node[K, V] = {
+      val bound = RB.intersectLowerBounds(
+        new RB.Bound(lowerBound, lowerKind),
+        new RB.Bound(key, boundKind)
+      )
+      ifWithinUpperBound(RB.minNodeAfter(tree, bound.bound, bound.kind))
+    }
 
     @inline
-    protected def previousNode(key: K, boundKind: RB.BoundKind): RB.Node[K, V] =
-      ifWithinLowerBound(RB.maxNodeBefore(tree, key, boundKind))
+    protected def previousNode(
+        key: K,
+        boundKind: RB.BoundKind
+    ): RB.Node[K, V] = {
+      val bound = RB.intersectUpperBounds(
+        new RB.Bound(upperBound, upperKind),
+        new RB.Bound(key, boundKind)
+      )
+      ifWithinLowerBound(RB.maxNodeBefore(tree, bound.bound, bound.kind))
+    }
 
     protected def subMapGeneric(
         newFromKey: K,
@@ -653,11 +695,24 @@ private object TreeMap {
 
     // Implementation of the abstract methods from AbstractProjection
 
-    protected def nextNode(key: K, boundKind: RB.BoundKind): RB.Node[K, V] =
-      ifWithinLowerBound(RB.maxNodeBefore(tree, key, boundKind))
+    protected def nextNode(key: K, boundKind: RB.BoundKind): RB.Node[K, V] = {
+      val bound = RB.intersectUpperBounds(
+        new RB.Bound(upperBound, upperKind),
+        new RB.Bound(key, boundKind)
+      )
+      ifWithinLowerBound(RB.maxNodeBefore(tree, bound.bound, bound.kind))
+    }
 
-    protected def previousNode(key: K, boundKind: RB.BoundKind): RB.Node[K, V] =
-      ifWithinUpperBound(RB.minNodeAfter(tree, key, boundKind))
+    protected def previousNode(
+        key: K,
+        boundKind: RB.BoundKind
+    ): RB.Node[K, V] = {
+      val bound = RB.intersectLowerBounds(
+        new RB.Bound(lowerBound, lowerKind),
+        new RB.Bound(key, boundKind)
+      )
+      ifWithinUpperBound(RB.minNodeAfter(tree, bound.bound, bound.kind))
+    }
 
     protected def subMapGeneric(
         newFromKey: K,
@@ -673,7 +728,7 @@ private object TreeMap {
         new RB.Bound(toKey, toBoundKind),
         new RB.Bound(newToKey, newToBoundKind)
       )
-      new Projection(
+      new DescendingProjection(
         tree,
         intersectedFromBound.bound,
         intersectedFromBound.kind,
@@ -686,6 +741,15 @@ private object TreeMap {
 
     def comparator(): Comparator[_ >: K] =
       Collections.reverseOrder(NaturalComparator.unselect(comp))
+
+    override def entrySet(): Set[Map.Entry[K, V]] =
+      new DescendingProjectedEntrySet(
+        tree,
+        lowerBound,
+        lowerKind,
+        upperBound,
+        upperKind
+      )
 
     def firstEntry(): Map.Entry[K, V] =
       nextNode(fromKey, fromBoundKind)

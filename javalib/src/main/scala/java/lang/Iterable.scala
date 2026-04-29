@@ -4,12 +4,13 @@
 package java.lang
 
 import java.util.function.Consumer
-import java.util.{Iterator, Spliterator, Spliterators}
+import java.util.{Iterator, Objects, Spliterator, Spliterators}
 
 trait Iterable[T] {
   def iterator(): Iterator[T]
 
   def forEach(action: Consumer[_ >: T]): Unit = {
+    Objects.requireNonNull(action)
     val iter = iterator()
     while (iter.hasNext())
       action.accept(iter.next())

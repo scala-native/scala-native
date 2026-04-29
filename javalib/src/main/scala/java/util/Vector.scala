@@ -382,7 +382,11 @@ class Vector[E <: AnyRef](
   }
 
   def setSize(length: Int): Unit = synchronized {
-    if (length == elementCount) return ensureCapacity(length)
+    if (length < 0)
+      throw new ArrayIndexOutOfBoundsException(length)
+    if (length == elementCount) return
+    if (length > elementData.length)
+      ensureCapacity(length)
     if (elementCount > length)
       Arrays.fill(
         elementData.asInstanceOf[Array[AnyRef]],
