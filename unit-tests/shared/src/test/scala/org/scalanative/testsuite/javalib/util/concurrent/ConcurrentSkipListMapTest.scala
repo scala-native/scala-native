@@ -783,7 +783,7 @@ class ConcurrentSkipListMapTest extends JSR166Test {
     assertFalse(x.equals(y))
   }
 
-  @Ignore("No ObjectInputStream in Scala Native")
+  @Ignore("scala-native#4852: ObjectInputStream is unsupported")
   @Test def testSerialization(): Unit = {}
 
   @Test def testSubMapContents(): Unit = {

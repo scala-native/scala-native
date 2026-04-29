@@ -62,7 +62,7 @@ class DoubleAdderTest extends JSR166Test {
     assertEquals(0.0, ai.sum(), 0.0)
   }
 
-  @Ignore("No ObjectInputStream in Scala Native")
+  @Ignore("scala-native#4852: ObjectInputStream is unsupported")
   @Test def testSerialization(): Unit = ()
 
   /** toString returns current value.

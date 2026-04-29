@@ -449,7 +449,9 @@ abstract class TreeSetTest(val factory: TreeSetFactory)
     }
   }
 
-  @Ignore("scala-native: ObjectInputStream/ObjectOutputStream are unsupported")
+  @Ignore(
+    "scala-native#4852: ObjectInputStream/ObjectOutputStream are unsupported"
+  )
   @Test def testSerialization(): Unit = ()
 
   @Test def testSubSetContents(): Unit = {

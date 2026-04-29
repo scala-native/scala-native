@@ -155,7 +155,7 @@ class AtomicReferenceTest extends JSR166Test {
     assertSame(m10, ai.getAndSet(one))
   }
 
-  @Ignore("No ObjectInputStreams in Scala Native")
+  @Ignore("scala-native#4852: ObjectInputStream is unsupported")
   @Test def testSerialization(): Unit = ()
 
   @Test def testToString(): Unit = {

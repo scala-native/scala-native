@@ -384,7 +384,9 @@ abstract class TreeMapTest(val factory: TreeMapFactory)
     assertThrows(classOf[NullPointerException], c.remove(null))
   }
 
-  @Ignore("scala-native: ObjectInputStream/ObjectOutputStream are unsupported")
+  @Ignore(
+    "scala-native#4852: ObjectInputStream/ObjectOutputStream are unsupported"
+  )
   @Test def testSerialization(): Unit = ()
 
   @Test def testSubMapContents(): Unit = {

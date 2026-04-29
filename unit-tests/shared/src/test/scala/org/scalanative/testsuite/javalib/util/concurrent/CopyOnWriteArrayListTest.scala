@@ -551,7 +551,7 @@ class CopyOnWriteArrayListTest extends JSR166Test with ListTest {
     testIndexOutOfBoundsException(subList)
   }
 
-  @Ignore("No ObjectInputStream in Scala Native")
+  @Ignore("scala-native#4852: ObjectInputStream is unsupported")
   @Test def testSerialization(): Unit = ()
 
   private def testIndexOutOfBoundsException(list: JList[Item]): Unit = {

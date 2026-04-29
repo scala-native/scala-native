@@ -250,7 +250,9 @@ class TreeSubSetTest extends JSR166Test {
   @Test def testToString(): Unit =
     checkToString(populatedSet(SIZE).toString())
 
-  @Ignore("scala-native: ObjectInputStream/ObjectOutputStream are unsupported")
+  @Ignore(
+    "scala-native#4852: ObjectInputStream/ObjectOutputStream are unsupported"
+  )
   @Test def testSerialization(): Unit = ()
 
   @Test def testSubSetContents(): Unit =
@@ -432,7 +434,9 @@ class TreeSubSetTest extends JSR166Test {
   @Test def testDescendingToString(): Unit =
     checkToString(populatedSet(SIZE).toString())
 
-  @Ignore("scala-native: ObjectInputStream/ObjectOutputStream are unsupported")
+  @Ignore(
+    "scala-native#4852: ObjectInputStream/ObjectOutputStream are unsupported"
+  )
   @Test def testDescendingSerialization(): Unit = ()
 
   @Test def testDescendingSubSetContents(): Unit =

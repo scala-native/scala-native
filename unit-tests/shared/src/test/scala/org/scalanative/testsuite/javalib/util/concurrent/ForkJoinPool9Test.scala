@@ -11,7 +11,7 @@ import org.junit.{Ignore, Test}
 
 class ForkJoinPool9Test extends JSR166Test {
   @Ignore(
-    "Requires MethodHandles.privateLookupIn and Thread.setContextClassLoader"
+    "scala-native#4854: requires MethodHandles.privateLookupIn and Thread.setContextClassLoader"
   )
   @Test def testCommonPoolThreadContextClassLoader(): Unit = ()
 }

@@ -773,7 +773,7 @@ class LinkedBlockingQueueTest extends JSR166Test {
   /** A deserialized/reserialized queue has same elements in same order
    */
   @throws[Exception]
-  @Ignore("No ObjectInputStream in Scala Native")
+  @Ignore("scala-native#4852: ObjectInputStream is unsupported")
   @Test def testSerialization(): Unit = {}
 
   /** drainTo(c) empties queue into another collection c

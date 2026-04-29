@@ -1644,7 +1644,7 @@ class LinkedBlockingDequeTest extends JSR166Test {
 
   /* A deserialized/reserialized deque has same elements in same order */
   @Ignore("scala-native#4852: ObjectInputStream is unsupported")
-  @Test def testSerialization(): Unit = {}
+  @Test def testSerialization(): Unit = ()
 
   /* drainTo(c) empties deque into another collection c */
   @Test def testDrainTo(): Unit = {

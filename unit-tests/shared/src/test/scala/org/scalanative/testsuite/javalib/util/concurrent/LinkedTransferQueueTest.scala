@@ -598,7 +598,7 @@ class LinkedTransferQueueTest extends JSR166Test {
    *  We don't have `serialClone`, since ObjectInputStream is not in Scala
    *  Native.
    */
-  @Ignore("No ObjectInputStream in Scala Native")
+  @Ignore("scala-native#4852: ObjectInputStream is unsupported")
   @Test def testSerialization(): Unit = ()
 
   /** drainTo(c) empties queue into another collection c

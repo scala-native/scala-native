@@ -552,7 +552,7 @@ class PriorityBlockingQueueTest extends JSR166Test {
   }
 
   @throws[Exception]
-  @Ignore("No ObjectInputStream in Scala Native")
+  @Ignore("scala-native#4852: ObjectInputStream is unsupported")
   @Test def testSerialization(): Unit = {
     // val x: Queue[_] = PriorityBlockingQueueTest.populatedQueue(SIZE)
     // val y: Queue[_] = serialClone(x)

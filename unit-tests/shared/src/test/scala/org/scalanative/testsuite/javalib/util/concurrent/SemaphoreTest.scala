@@ -473,9 +473,13 @@ class SemaphoreTest extends JSR166Test {
     assertEquals(-11, s.availablePermits)
   }
 
-  @Ignore("No ObjectInputStream/ObjectOutputStream in Scala Native")
+  @Ignore(
+    "scala-native#4852: ObjectInputStream/ObjectOutputStream are unsupported"
+  )
   @Test def testSerialization(): Unit = {}
-  @Ignore("No ObjectInputStream/ObjectOutputStream in Scala Native")
+  @Ignore(
+    "scala-native#4852: ObjectInputStream/ObjectOutputStream are unsupported"
+  )
   @Test def testSerialization_fair(): Unit = {}
   // def testSerialization(fair: Boolean): Unit = ???
 

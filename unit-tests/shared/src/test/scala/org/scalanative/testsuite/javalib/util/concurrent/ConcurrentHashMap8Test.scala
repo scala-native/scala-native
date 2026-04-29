@@ -412,7 +412,9 @@ class ConcurrentHashMap8Test extends JSR166Test {
     )
   }
 
-  @Ignore("scala-native: ObjectInputStream/ObjectOutputStream are unsupported")
+  @Ignore(
+    "scala-native#4852: ObjectInputStream/ObjectOutputStream are unsupported"
+  )
   @Test def testSerialization(): Unit = ()
 
   private final val BulkSize = 1000
