@@ -18,7 +18,9 @@ object CompletableFutureTestPlatform {
       minimalCompletionStageMethod.isDefined
     )
 
-  def minimalCompletionStage[T](future: CompletableFuture[T]): CompletionStage[T] =
+  def minimalCompletionStage[T](
+      future: CompletableFuture[T]
+  ): CompletionStage[T] =
     try
       minimalCompletionStageMethod.get
         .invoke(future)
