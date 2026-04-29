@@ -449,7 +449,9 @@ class LinkedTransferQueueTest extends JSR166Test {
    *
    *  We don't have this, because SN doesn't yet do runtime variance check.
    */
-  @Ignore("Scala Native reference arrays do not preserve runtime component types (#4845)")
+  @Ignore(
+    "Scala Native reference arrays do not preserve runtime component types (#4845)"
+  )
   @Test def testToArray_incompatibleArrayType(): Unit = ()
 
   /** iterator iterates through all elements

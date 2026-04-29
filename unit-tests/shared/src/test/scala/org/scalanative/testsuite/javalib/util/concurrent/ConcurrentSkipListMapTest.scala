@@ -8,22 +8,13 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong}
-import java.util.concurrent.{CompletableFuture, ConcurrentSkipListMap, ThreadLocalRandom}
+import java.util.concurrent.{
+  CompletableFuture, ConcurrentSkipListMap, ThreadLocalRandom
+}
 import java.util.function.BiFunction
 import java.util.{
-  ArrayList,
-  Arrays,
-  BitSet,
-  Collection,
-  Comparator,
-  Iterator,
-  Map,
-  NavigableMap,
-  NavigableSet,
-  NoSuchElementException,
-  Random,
-  Set,
-  SortedMap
+  ArrayList, Arrays, BitSet, Collection, Comparator, Iterator, Map,
+  NavigableMap, NavigableSet, NoSuchElementException, Random, Set, SortedMap
 }
 
 import org.junit.Assert._
@@ -160,7 +151,10 @@ class ConcurrentSkipListMapTest extends JSR166Test {
     i = 0
     while (i < size2) {
       val elt =
-        rnd.nextInt(Integer.MIN_VALUE + 1024 * i, Integer.MIN_VALUE + 1024 * (i + 1))
+        rnd.nextInt(
+          Integer.MIN_VALUE + 1024 * i,
+          Integer.MIN_VALUE + 1024 * (i + 1)
+        )
       assertNull(m2.put(impl.makeKey(elt), impl.makeValue(-elt)))
       i += 1
     }
@@ -273,7 +267,9 @@ class ConcurrentSkipListMapTest extends JSR166Test {
     var i = nTasks
     while (i > 0) {
       i -= 1
-      futures.add(CompletableFuture.runAsync(checkedRunnable(chooseRandomly(tasks))))
+      futures.add(
+        CompletableFuture.runAsync(checkedRunnable(chooseRandomly(tasks)))
+      )
     }
     Thread.sleep(testDurationMillis)
     done.setRelease(true)
@@ -470,10 +466,10 @@ class ConcurrentSkipListMapTest extends JSR166Test {
       val e = it.next()
       assertTrue(
         (e.getKey().equals(iOne) && e.getValue().equals("A")) ||
-          (e.getKey().equals(iTwo) && e.getValue().equals("B")) ||
-          (e.getKey().equals(iThree) && e.getValue().equals("C")) ||
-          (e.getKey().equals(iFour) && e.getValue().equals("D")) ||
-          (e.getKey().equals(iFive) && e.getValue().equals("E"))
+        (e.getKey().equals(iTwo) && e.getValue().equals("B")) ||
+        (e.getKey().equals(iThree) && e.getValue().equals("C")) ||
+        (e.getKey().equals(iFour) && e.getValue().equals("D")) ||
+        (e.getKey().equals(iFive) && e.getValue().equals("E"))
       )
     }
   }
@@ -487,10 +483,10 @@ class ConcurrentSkipListMapTest extends JSR166Test {
       val e = it.next()
       assertTrue(
         (e.getKey().equals(iOne) && e.getValue().equals("A")) ||
-          (e.getKey().equals(iTwo) && e.getValue().equals("B")) ||
-          (e.getKey().equals(iThree) && e.getValue().equals("C")) ||
-          (e.getKey().equals(iFour) && e.getValue().equals("D")) ||
-          (e.getKey().equals(iFive) && e.getValue().equals("E"))
+        (e.getKey().equals(iTwo) && e.getValue().equals("B")) ||
+        (e.getKey().equals(iThree) && e.getValue().equals("C")) ||
+        (e.getKey().equals(iFour) && e.getValue().equals("D")) ||
+        (e.getKey().equals(iFive) && e.getValue().equals("E"))
       )
     }
   }
@@ -956,7 +952,11 @@ class ConcurrentSkipListMapTest extends JSR166Test {
     }
   }
 
-  private def mutateMap(map: NavigableMap[Item, Item], min: Int, max: Int): Unit = {
+  private def mutateMap(
+      map: NavigableMap[Item, Item],
+      min: Int,
+      max: Int
+  ): Unit = {
     val size = map.size()
     val rangeSize = max - min + 1
 
@@ -984,7 +984,11 @@ class ConcurrentSkipListMapTest extends JSR166Test {
     }
   }
 
-  private def mutateSubMap(map: NavigableMap[Item, Item], min: Int, max: Int): Unit = {
+  private def mutateSubMap(
+      map: NavigableMap[Item, Item],
+      min: Int,
+      max: Int
+  ): Unit = {
     val size = map.size()
     val rangeSize = max - min + 1
 
@@ -1101,7 +1105,12 @@ class ConcurrentSkipListMapTest extends JSR166Test {
     val highIncl = rnd.nextBoolean()
     if (ascending) {
       val sm =
-        map.subMap(itemFor(endpoints(0)), lowIncl, itemFor(endpoints(1)), highIncl)
+        map.subMap(
+          itemFor(endpoints(0)),
+          lowIncl,
+          itemFor(endpoints(1)),
+          highIncl
+        )
       if (rnd.nextBoolean())
         bashSubMap(
           sm,
@@ -1118,7 +1127,12 @@ class ConcurrentSkipListMapTest extends JSR166Test {
         )
     } else {
       val sm =
-        map.subMap(itemFor(endpoints(1)), highIncl, itemFor(endpoints(0)), lowIncl)
+        map.subMap(
+          itemFor(endpoints(1)),
+          highIncl,
+          itemFor(endpoints(0)),
+          lowIncl
+        )
       if (rnd.nextBoolean())
         bashSubMap(
           sm,
@@ -1204,8 +1218,8 @@ class ConcurrentSkipListMapTest extends JSR166Test {
       size2 += 1
       assertTrue(
         previousKey < 0 ||
-          (if (ascending) key.value - previousKey > 0
-           else key.value - previousKey < 0)
+        (if (ascending) key.value - previousKey > 0
+         else key.value - previousKey < 0)
       )
       previousKey = key.value
     }
@@ -1214,16 +1228,40 @@ class ConcurrentSkipListMapTest extends JSR166Test {
     var key = min - 1
     while (key <= max + 1) {
       val k = itemFor(key)
-      assertEq(s"lowerKey($key) ${viewState(map, min, max, ascending)}", map.lowerKey(k), rs.lower(key))
-      assertEq(s"floorKey($key) ${viewState(map, min, max, ascending)}", map.floorKey(k), rs.floor(key))
-      assertEq(s"higherKey($key) ${viewState(map, min, max, ascending)}", map.higherKey(k), rs.higher(key))
-      assertEq(s"ceilingKey($key) ${viewState(map, min, max, ascending)}", map.ceilingKey(k), rs.ceiling(key))
+      assertEq(
+        s"lowerKey($key) ${viewState(map, min, max, ascending)}",
+        map.lowerKey(k),
+        rs.lower(key)
+      )
+      assertEq(
+        s"floorKey($key) ${viewState(map, min, max, ascending)}",
+        map.floorKey(k),
+        rs.floor(key)
+      )
+      assertEq(
+        s"higherKey($key) ${viewState(map, min, max, ascending)}",
+        map.higherKey(k),
+        rs.higher(key)
+      )
+      assertEq(
+        s"ceilingKey($key) ${viewState(map, min, max, ascending)}",
+        map.ceilingKey(k),
+        rs.ceiling(key)
+      )
       key += 1
     }
 
     if (map.size() != 0) {
-      assertEq(s"firstKey ${viewState(map, min, max, ascending)}", map.firstKey(), rs.first())
-      assertEq(s"lastKey ${viewState(map, min, max, ascending)}", map.lastKey(), rs.last())
+      assertEq(
+        s"firstKey ${viewState(map, min, max, ascending)}",
+        map.firstKey(),
+        rs.first()
+      )
+      assertEq(
+        s"lastKey ${viewState(map, min, max, ascending)}",
+        map.lastKey(),
+        rs.last()
+      )
     } else {
       mustEqual(rs.first(), -1)
       mustEqual(rs.last(), -1)

@@ -253,7 +253,9 @@ class CopyOnWriteArraySetTest extends JSR166Test {
     shuffle(elements)
     val full = populatedSet(elements)
 
-    assertTrue(Arrays.equals(elements.asInstanceOf[Array[AnyRef]], full.toArray()))
+    assertTrue(
+      Arrays.equals(elements.asInstanceOf[Array[AnyRef]], full.toArray())
+    )
     assertSame(classOf[Array[AnyRef]], full.toArray().getClass())
   }
 
@@ -302,7 +304,9 @@ class CopyOnWriteArraySetTest extends JSR166Test {
   }
 
   /** toArray throws ArrayStoreException for incompatible arrays */
-  @Ignore("Scala Native reference arrays do not preserve runtime component types")
+  @Ignore(
+    "Scala Native reference arrays do not preserve runtime component types"
+  )
   @Test def testToArray_ArrayStoreException(): Unit = {
     val c = new CopyOnWriteArraySet[Item]()
     c.add(itemOne)

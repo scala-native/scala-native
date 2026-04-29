@@ -4,11 +4,7 @@ package org.scalanative.testsuite.javalib.util.concurrent
 
 import java.util.concurrent.{CopyOnWriteArrayList, ThreadLocalRandom}
 import java.util.{
-  ArrayList,
-  Arrays,
-  Collection,
-  Collections,
-  List => JList,
+  ArrayList, Arrays, Collection, Collections, List => JList,
   NoSuchElementException
 }
 import java.{util => ju}
@@ -354,7 +350,10 @@ class CopyOnWriteArrayListTest extends JSR166Test with ListTest {
     mustEqual(-1, list.lastIndexOf(itemZero, -1))
 
     val size = list.size()
-    assertThrows(classOf[IndexOutOfBoundsException], list.lastIndexOf(itemZero, size))
+    assertThrows(
+      classOf[IndexOutOfBoundsException],
+      list.lastIndexOf(itemZero, size)
+    )
     assertThrows(
       classOf[IndexOutOfBoundsException],
       list.lastIndexOf(itemZero, Integer.MAX_VALUE)
@@ -462,7 +461,9 @@ class CopyOnWriteArrayListTest extends JSR166Test with ListTest {
     shuffle(elements)
     val full = populatedList(elements)
 
-    assertTrue(Arrays.equals(elements.asInstanceOf[Array[AnyRef]], full.toArray()))
+    assertTrue(
+      Arrays.equals(elements.asInstanceOf[Array[AnyRef]], full.toArray())
+    )
     assertSame(classOf[Array[AnyRef]], full.toArray().getClass())
   }
 
@@ -530,7 +531,9 @@ class CopyOnWriteArrayListTest extends JSR166Test with ListTest {
     assertThrows(classOf[IndexOutOfBoundsException], s.set(0, fortytwo))
   }
 
-  @Ignore("Scala Native reference arrays do not preserve runtime component types (#4845)")
+  @Ignore(
+    "Scala Native reference arrays do not preserve runtime component types (#4845)"
+  )
   @Test def testToArray_ArrayStoreException(): Unit = ()
 
   @Test def testIndexOutOfBoundsException(): Unit = {
@@ -539,7 +542,10 @@ class CopyOnWriteArrayListTest extends JSR166Test with ListTest {
 
     val start = ThreadLocalRandom.current().nextInt(x.size() + 1)
     val end = ThreadLocalRandom.current().nextInt(start, x.size() + 1)
-    assertThrows(classOf[IndexOutOfBoundsException], x.subList(start, start - 1))
+    assertThrows(
+      classOf[IndexOutOfBoundsException],
+      x.subList(start, start - 1)
+    )
     val subList = x.subList(start, end)
     testIndexOutOfBoundsException(x)
     testIndexOutOfBoundsException(subList)
@@ -556,7 +562,10 @@ class CopyOnWriteArrayListTest extends JSR166Test with ListTest {
     assertThrows(classOf[IndexOutOfBoundsException], raw.set(-1, "qwerty"))
     assertThrows(classOf[IndexOutOfBoundsException], raw.set(size, "qwerty"))
     assertThrows(classOf[IndexOutOfBoundsException], raw.add(-1, "qwerty"))
-    assertThrows(classOf[IndexOutOfBoundsException], raw.add(size + 1, "qwerty"))
+    assertThrows(
+      classOf[IndexOutOfBoundsException],
+      raw.add(size + 1, "qwerty")
+    )
     assertThrows(classOf[IndexOutOfBoundsException], raw.remove(-1))
     assertThrows(classOf[IndexOutOfBoundsException], raw.remove(size))
     assertThrows(

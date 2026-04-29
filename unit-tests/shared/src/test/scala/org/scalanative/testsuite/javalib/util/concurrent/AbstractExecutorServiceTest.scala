@@ -85,11 +85,17 @@ class AbstractExecutorServiceTest extends JSR166Test {
     assertEquals(TEST_STRING, result)
   }
 
-  @Ignore("scala-native#4848: java.security PrivilegedAction types are not linkable in Scala Native")
+  @Ignore(
+    "scala-native#4848: java.security PrivilegedAction types are not linkable in Scala Native"
+  )
   @Test def testSubmitPrivilegedAction(): Unit = {}
-  @Ignore("scala-native#4848: java.security PrivilegedExceptionAction types are not linkable in Scala Native")
+  @Ignore(
+    "scala-native#4848: java.security PrivilegedExceptionAction types are not linkable in Scala Native"
+  )
   @Test def testSubmitPrivilegedExceptionAction(): Unit = {}
-  @Ignore("scala-native#4848: java.security PrivilegedExceptionAction types are not linkable in Scala Native")
+  @Ignore(
+    "scala-native#4848: java.security PrivilegedExceptionAction types are not linkable in Scala Native"
+  )
   @Test def testSubmitFailedPrivilegedExceptionAction(): Unit = {}
 
   /** Submitting null tasks throws NullPointerException

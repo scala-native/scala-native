@@ -9,16 +9,8 @@ package org.scalanative.testsuite.javalib.util.concurrent
 
 import java.util.concurrent.ConcurrentSkipListSet
 import java.util.{
-  Arrays,
-  BitSet,
-  Collection,
-  Comparator,
-  Iterator,
-  NavigableSet,
-  NoSuchElementException,
-  Random,
-  Set,
-  SortedSet
+  Arrays, BitSet, Collection, Comparator, Iterator, NavigableSet,
+  NoSuchElementException, Random, Set, SortedSet
 }
 
 import org.junit.Assert._
@@ -153,7 +145,10 @@ class ConcurrentSkipListSetTest extends JSR166Test {
   }
 
   @Test def testAddNull(): Unit =
-    assertThrows(classOf[NullPointerException], new ConcurrentSkipListSet[Item]().add(null))
+    assertThrows(
+      classOf[NullPointerException],
+      new ConcurrentSkipListSet[Item]().add(null)
+    )
 
   @Test def testAdd(): Unit = {
     val q = new ConcurrentSkipListSet[Item]()
@@ -189,19 +184,28 @@ class ConcurrentSkipListSetTest extends JSR166Test {
   }
 
   @Test def testAddAll1(): Unit =
-    assertThrows(classOf[NullPointerException], new ConcurrentSkipListSet[Item]().addAll(null))
+    assertThrows(
+      classOf[NullPointerException],
+      new ConcurrentSkipListSet[Item]().addAll(null)
+    )
 
   @Test def testAddAll2(): Unit = {
     val q = new ConcurrentSkipListSet[Item]()
     val items = new Array[Item](SIZE)
-    assertThrows(classOf[NullPointerException], q.addAll(Arrays.asList(items: _*)))
+    assertThrows(
+      classOf[NullPointerException],
+      q.addAll(Arrays.asList(items: _*))
+    )
   }
 
   @Test def testAddAll3(): Unit = {
     val q = new ConcurrentSkipListSet[Item]()
     val items = new Array[Item](2)
     items(0) = iZero
-    assertThrows(classOf[NullPointerException], q.addAll(Arrays.asList(items: _*)))
+    assertThrows(
+      classOf[NullPointerException],
+      q.addAll(Arrays.asList(items: _*))
+    )
   }
 
   @Test def testAddAll5(): Unit = {
@@ -569,7 +573,11 @@ class ConcurrentSkipListSetTest extends JSR166Test {
     result
   }
 
-  private def populate(set: NavigableSet[Item], limit: Int, bs: BitSet): Unit = {
+  private def populate(
+      set: NavigableSet[Item],
+      limit: Int,
+      bs: BitSet
+  ): Unit = {
     var i = 0
     val n = 2 * limit / 3
     while (i < n) {
@@ -637,7 +645,10 @@ class ConcurrentSkipListSetTest extends JSR166Test {
       val element = min - 5 + rnd.nextInt(rangeSize + 10)
       if (element >= min && element <= max) put(set, element, bs)
       else
-        assertThrows(classOf[IllegalArgumentException], set.add(itemFor(element)))
+        assertThrows(
+          classOf[IllegalArgumentException],
+          set.add(itemFor(element))
+        )
     }
   }
 
@@ -646,7 +657,11 @@ class ConcurrentSkipListSetTest extends JSR166Test {
       bs.set(element)
   }
 
-  private def remove(set: NavigableSet[Item], element: Int, bs: BitSet): Unit = {
+  private def remove(
+      set: NavigableSet[Item],
+      element: Int,
+      bs: BitSet
+  ): Unit = {
     if (set.remove(itemFor(element)))
       bs.clear(element)
   }
@@ -673,7 +688,13 @@ class ConcurrentSkipListSetTest extends JSR166Test {
     val hm = set.headSet(itemFor(midPoint), incl)
     if (ascending) {
       if (rnd.nextBoolean())
-        bashSubSet(hm, min, midPoint - (if (incl) 0 else 1), ascending = true, bs)
+        bashSubSet(
+          hm,
+          min,
+          midPoint - (if (incl) 0 else 1),
+          ascending = true,
+          bs
+        )
       else
         bashSubSet(
           hm.descendingSet(),
@@ -684,7 +705,13 @@ class ConcurrentSkipListSetTest extends JSR166Test {
         )
     } else {
       if (rnd.nextBoolean())
-        bashSubSet(hm, midPoint + (if (incl) 0 else 1), max, ascending = false, bs)
+        bashSubSet(
+          hm,
+          midPoint + (if (incl) 0 else 1),
+          max,
+          ascending = false,
+          bs
+        )
       else
         bashSubSet(
           hm.descendingSet(),
@@ -699,7 +726,13 @@ class ConcurrentSkipListSetTest extends JSR166Test {
     val tm = set.tailSet(itemFor(midPoint), incl)
     if (ascending) {
       if (rnd.nextBoolean())
-        bashSubSet(tm, midPoint + (if (incl) 0 else 1), max, ascending = true, bs)
+        bashSubSet(
+          tm,
+          midPoint + (if (incl) 0 else 1),
+          max,
+          ascending = true,
+          bs
+        )
       else
         bashSubSet(
           tm.descendingSet(),
@@ -710,7 +743,13 @@ class ConcurrentSkipListSetTest extends JSR166Test {
         )
     } else {
       if (rnd.nextBoolean())
-        bashSubSet(tm, min, midPoint - (if (incl) 0 else 1), ascending = false, bs)
+        bashSubSet(
+          tm,
+          min,
+          midPoint - (if (incl) 0 else 1),
+          ascending = false,
+          bs
+        )
       else
         bashSubSet(
           tm.descendingSet(),
@@ -731,7 +770,12 @@ class ConcurrentSkipListSetTest extends JSR166Test {
     val highIncl = rnd.nextBoolean()
     if (ascending) {
       val sm =
-        set.subSet(itemFor(endpoints(0)), lowIncl, itemFor(endpoints(1)), highIncl)
+        set.subSet(
+          itemFor(endpoints(0)),
+          lowIncl,
+          itemFor(endpoints(1)),
+          highIncl
+        )
       if (rnd.nextBoolean())
         bashSubSet(
           sm,
@@ -750,7 +794,12 @@ class ConcurrentSkipListSetTest extends JSR166Test {
         )
     } else {
       val sm =
-        set.subSet(itemFor(endpoints(1)), highIncl, itemFor(endpoints(0)), lowIncl)
+        set.subSet(
+          itemFor(endpoints(1)),
+          highIncl,
+          itemFor(endpoints(0)),
+          lowIncl
+        )
       if (rnd.nextBoolean())
         bashSubSet(
           sm,
@@ -840,8 +889,8 @@ class ConcurrentSkipListSetTest extends JSR166Test {
       size2 += 1
       assertTrue(
         previousElement < 0 ||
-          (if (ascending) element.value - previousElement > 0
-           else element.value - previousElement < 0)
+        (if (ascending) element.value - previousElement > 0
+         else element.value - previousElement < 0)
       )
       previousElement = element.value
     }

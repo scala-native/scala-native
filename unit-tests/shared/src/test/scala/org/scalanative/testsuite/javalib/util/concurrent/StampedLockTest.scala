@@ -12,11 +12,7 @@ import java.util.concurrent.TimeUnit.{DAYS, MILLISECONDS}
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.locks.{Lock, StampedLock}
 import java.util.concurrent.{
-  CompletableFuture,
-  CountDownLatch,
-  Future,
-  ThreadLocalRandom,
-  TimeUnit
+  CompletableFuture, CountDownLatch, Future, ThreadLocalRandom, TimeUnit
 }
 
 import org.junit.Assert._
@@ -319,7 +315,9 @@ class StampedLockTest extends JSR166Test {
     )
     shuffle(interruptibleLockBlockingActions)
 
-    assertThrowInterruptedExceptionWhenInterrupted(interruptibleLockBlockingActions)
+    assertThrowInterruptedExceptionWhenInterrupted(
+      interruptibleLockBlockingActions
+    )
     releaseWriteLock(lock, stamp)
   }
 
@@ -335,7 +333,9 @@ class StampedLockTest extends JSR166Test {
     )
     shuffle(interruptibleLockBlockingActions)
 
-    assertThrowInterruptedExceptionWhenInterrupted(interruptibleLockBlockingActions)
+    assertThrowInterruptedExceptionWhenInterrupted(
+      interruptibleLockBlockingActions
+    )
     releaseReadLock(lock, stamp)
   }
 
@@ -1340,7 +1340,9 @@ class StampedLockTest extends JSR166Test {
     while (i > 0) {
       i -= 1
       futures.add(
-        CompletableFuture.runAsync(checkedRunnable(chooseRandomly(Array(writer, reader))))
+        CompletableFuture.runAsync(
+          checkedRunnable(chooseRandomly(Array(writer, reader)))
+        )
       )
     }
     Thread.sleep(testDurationMillis)

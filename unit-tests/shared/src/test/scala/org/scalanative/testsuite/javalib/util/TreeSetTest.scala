@@ -533,7 +533,10 @@ abstract class TreeSetTest(val factory: TreeSetFactory)
     mustEqual(4, set.size())
   }
 
-  private def checkSetOrder(it: ju.Iterator[_ <: Item], expected: Array[Item]): Unit = {
+  private def checkSetOrder(
+      it: ju.Iterator[_ <: Item],
+      expected: Array[Item]
+  ): Unit = {
     var i = 0
     while (i < expected.length) {
       mustEqual(expected(i), it.next())
@@ -577,7 +580,11 @@ abstract class TreeSetTest(val factory: TreeSetFactory)
     }
   }
 
-  private def mutateSet(set: ju.NavigableSet[Item], min: Int, max: Int): Unit = {
+  private def mutateSet(
+      set: ju.NavigableSet[Item],
+      min: Int,
+      max: Int
+  ): Unit = {
     val size = set.size()
     val rangeSize = max - min + 1
     var i = 0
@@ -601,7 +608,11 @@ abstract class TreeSetTest(val factory: TreeSetFactory)
     }
   }
 
-  private def mutateSubSet(set: ju.NavigableSet[Item], min: Int, max: Int): Unit = {
+  private def mutateSubSet(
+      set: ju.NavigableSet[Item],
+      min: Int,
+      max: Int
+  ): Unit = {
     val size = set.size()
     val rangeSize = max - min + 1
     var i = 0
@@ -621,7 +632,11 @@ abstract class TreeSetTest(val factory: TreeSetFactory)
     while (set.size() < size) {
       val element = min - 5 + rnd.nextInt(rangeSize + 10)
       if (element >= min && element <= max) put(set, element)
-      else assertThrows(classOf[IllegalArgumentException], set.add(itemFor(element)))
+      else
+        assertThrows(
+          classOf[IllegalArgumentException],
+          set.add(itemFor(element))
+        )
     }
   }
 
@@ -653,12 +668,22 @@ abstract class TreeSetTest(val factory: TreeSetFactory)
       if (rnd.nextBoolean())
         bashSubSet(hm, min, midPoint - (if (incl) 0 else 1), ascending = true)
       else
-        bashSubSet(hm.descendingSet(), min, midPoint - (if (incl) 0 else 1), ascending = false)
+        bashSubSet(
+          hm.descendingSet(),
+          min,
+          midPoint - (if (incl) 0 else 1),
+          ascending = false
+        )
     } else {
       if (rnd.nextBoolean())
         bashSubSet(hm, midPoint + (if (incl) 0 else 1), max, ascending = false)
       else
-        bashSubSet(hm.descendingSet(), midPoint + (if (incl) 0 else 1), max, ascending = true)
+        bashSubSet(
+          hm.descendingSet(),
+          midPoint + (if (incl) 0 else 1),
+          max,
+          ascending = true
+        )
     }
 
     incl = rnd.nextBoolean()
@@ -667,12 +692,22 @@ abstract class TreeSetTest(val factory: TreeSetFactory)
       if (rnd.nextBoolean())
         bashSubSet(tm, midPoint + (if (incl) 0 else 1), max, ascending = true)
       else
-        bashSubSet(tm.descendingSet(), midPoint + (if (incl) 0 else 1), max, ascending = false)
+        bashSubSet(
+          tm.descendingSet(),
+          midPoint + (if (incl) 0 else 1),
+          max,
+          ascending = false
+        )
     } else {
       if (rnd.nextBoolean())
         bashSubSet(tm, min, midPoint - (if (incl) 0 else 1), ascending = false)
       else
-        bashSubSet(tm.descendingSet(), min, midPoint - (if (incl) 0 else 1), ascending = true)
+        bashSubSet(
+          tm.descendingSet(),
+          min,
+          midPoint - (if (incl) 0 else 1),
+          ascending = true
+        )
     }
 
     val rangeSize = max - min + 1
@@ -684,7 +719,12 @@ abstract class TreeSetTest(val factory: TreeSetFactory)
     val lowIncl = rnd.nextBoolean()
     val highIncl = rnd.nextBoolean()
     if (ascending) {
-      val sm = set.subSet(itemFor(endpoints(0)), lowIncl, itemFor(endpoints(1)), highIncl)
+      val sm = set.subSet(
+        itemFor(endpoints(0)),
+        lowIncl,
+        itemFor(endpoints(1)),
+        highIncl
+      )
       if (rnd.nextBoolean())
         bashSubSet(
           sm,
@@ -700,7 +740,12 @@ abstract class TreeSetTest(val factory: TreeSetFactory)
           ascending = false
         )
     } else {
-      val sm = set.subSet(itemFor(endpoints(1)), highIncl, itemFor(endpoints(0)), lowIncl)
+      val sm = set.subSet(
+        itemFor(endpoints(1)),
+        highIncl,
+        itemFor(endpoints(0)),
+        lowIncl
+      )
       if (rnd.nextBoolean())
         bashSubSet(
           sm,
@@ -776,7 +821,11 @@ abstract class TreeSetTest(val factory: TreeSetFactory)
       if (contains) size += 1
       element += 1
     }
-    assertEquals(s"size, min=$min max=$max ascending=$ascending", size, set.size())
+    assertEquals(
+      s"size, min=$min max=$max ascending=$ascending",
+      size,
+      set.size()
+    )
 
     var size2 = 0
     var previousElement = -1
@@ -793,7 +842,11 @@ abstract class TreeSetTest(val factory: TreeSetFactory)
       )
       previousElement = e.value
     }
-    assertEquals(s"iterated size, min=$min max=$max ascending=$ascending", size, size2)
+    assertEquals(
+      s"iterated size, min=$min max=$max ascending=$ascending",
+      size,
+      size2
+    )
 
     element = min - 1
     while (element <= max + 1) {

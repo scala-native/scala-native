@@ -147,14 +147,20 @@ class ConcurrentSkipListSubSetTest extends JSR166Test {
   @Test def testAddAll2(): Unit = {
     val q = set0()
     val items = new Array[Item](1)
-    assertThrows(classOf[NullPointerException], q.addAll(Arrays.asList(items: _*)))
+    assertThrows(
+      classOf[NullPointerException],
+      q.addAll(Arrays.asList(items: _*))
+    )
   }
 
   @Test def testAddAll3(): Unit = {
     val q = set0()
     val items = new Array[Item](2)
     items(0) = iZero
-    assertThrows(classOf[NullPointerException], q.addAll(Arrays.asList(items: _*)))
+    assertThrows(
+      classOf[NullPointerException],
+      q.addAll(Arrays.asList(items: _*))
+    )
   }
 
   @Test def testAddAll5(): Unit =
@@ -287,14 +293,20 @@ class ConcurrentSkipListSubSetTest extends JSR166Test {
   @Test def testDescendingAddAll2(): Unit = {
     val q = dset0()
     val items = new Array[Item](1)
-    assertThrows(classOf[NullPointerException], q.addAll(Arrays.asList(items: _*)))
+    assertThrows(
+      classOf[NullPointerException],
+      q.addAll(Arrays.asList(items: _*))
+    )
   }
 
   @Test def testDescendingAddAll3(): Unit = {
     val q = dset0()
     val items = new Array[Item](2)
     items(0) = iZero
-    assertThrows(classOf[NullPointerException], q.addAll(Arrays.asList(items: _*)))
+    assertThrows(
+      classOf[NullPointerException],
+      q.addAll(Arrays.asList(items: _*))
+    )
   }
 
   @Test def testDescendingAddAll5(): Unit =
@@ -421,10 +433,12 @@ class ConcurrentSkipListSubSetTest extends JSR166Test {
 
   private def assertAddNonComparableThrows(): Unit = {
     val q = new ConcurrentSkipListSet[Object]()
-    assertThrows(classOf[ClassCastException], {
-      q.add(new Object())
-      q.add(new Object())
-    })
+    assertThrows(
+      classOf[ClassCastException], {
+        q.add(new Object())
+        q.add(new Object())
+      }
+    )
   }
 
   private def checkAddAll5(q: NavigableSet[Item], ascending: Boolean): Unit = {
@@ -441,7 +455,10 @@ class ConcurrentSkipListSubSetTest extends JSR166Test {
     }
   }
 
-  private def checkRemoveElement(q: NavigableSet[Item], ascending: Boolean): Unit = {
+  private def checkRemoveElement(
+      q: NavigableSet[Item],
+      ascending: Boolean
+  ): Unit = {
     var i = if (ascending) 1 else -1
     while (if (ascending) i < SIZE else i >= -5) {
       mustContain(q, i)
@@ -506,7 +523,10 @@ class ConcurrentSkipListSubSetTest extends JSR166Test {
     assertTrue(p.containsAll(q))
   }
 
-  private def checkRetainAll(q: NavigableSet[Item], p: NavigableSet[Item]): Unit = {
+  private def checkRetainAll(
+      q: NavigableSet[Item],
+      p: NavigableSet[Item]
+  ): Unit = {
     var i = 0
     val size = q.size()
     while (i < size) {
@@ -613,7 +633,10 @@ class ConcurrentSkipListSubSetTest extends JSR166Test {
     assertFalse(it.hasNext())
   }
 
-  private def checkToString(q: NavigableSet[Item], values: Iterable[Int]): Unit = {
+  private def checkToString(
+      q: NavigableSet[Item],
+      values: Iterable[Int]
+  ): Unit = {
     val s = q.toString()
     for (i <- values)
       assertTrue(s.contains(String.valueOf(i)))

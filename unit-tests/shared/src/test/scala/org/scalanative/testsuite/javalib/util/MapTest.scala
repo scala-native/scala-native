@@ -93,11 +93,11 @@ trait MapTest {
 
   private def cloneableClone[K, V](map: ju.Map[K, V]): ju.Map[K, V] =
     map match {
-      case m: ju.HashMap[K, V]       => m.clone().asInstanceOf[ju.Map[K, V]]
+      case m: ju.HashMap[K, V]         => m.clone().asInstanceOf[ju.Map[K, V]]
       case m: ju.IdentityHashMap[K, V] =>
         m.clone().asInstanceOf[ju.Map[K, V]]
-      case m: ju.TreeMap[K, V]       => m.clone().asInstanceOf[ju.Map[K, V]]
-      case _                         => null
+      case m: ju.TreeMap[K, V] => m.clone().asInstanceOf[ju.Map[K, V]]
+      case _                   => null
     }
 
   @Test def testImplSanity(): Unit = {

@@ -16,17 +16,18 @@
  */
 package org.scalanative.testsuite.javalib.util
 
-import java.util.{
-  Arrays, Collection, HashSet, LinkedList, List, NoSuchElementException, Vector
-}
-import java.util.Collections
 import java.util.concurrent.ThreadLocalRandom
+import java.util.{
+  Arrays, Collection, Collections, HashSet, LinkedList, List,
+  NoSuchElementException, Vector
+}
 
 import org.junit.Assert.{assertThrows => _, _}
 import org.junit._
 
 import org.scalanative.testsuite.javalib.util.concurrent.{Item, JSR166Test}
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+
 import scala.scalanative.junit.utils.AssumesHelper
 
 class VectorTest extends JSR166Test {

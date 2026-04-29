@@ -11,8 +11,9 @@ import org.junit.Assert._
 import org.junit.Assume._
 import org.junit.{Ignore, Test}
 
-import org.scalanative.testsuite.javalib.util.concurrent.ConcurrentMapFactory
-import org.scalanative.testsuite.javalib.util.concurrent.{Item, JSR166Test}
+import org.scalanative.testsuite.javalib.util.concurrent.{
+  ConcurrentMapFactory, Item, JSR166Test
+}
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform._
 
@@ -206,10 +207,10 @@ abstract class TreeMapTest(val factory: TreeMapFactory)
       val e = it.next()
       assertTrue(
         (e.getKey().equals(oneItem) && e.getValue() == "A") ||
-          (e.getKey().equals(twoItem) && e.getValue() == "B") ||
-          (e.getKey().equals(threeItem) && e.getValue() == "C") ||
-          (e.getKey().equals(fourItem) && e.getValue() == "D") ||
-          (e.getKey().equals(fiveItem) && e.getValue() == "E")
+        (e.getKey().equals(twoItem) && e.getValue() == "B") ||
+        (e.getKey().equals(threeItem) && e.getValue() == "C") ||
+        (e.getKey().equals(fourItem) && e.getValue() == "D") ||
+        (e.getKey().equals(fiveItem) && e.getValue() == "E")
       )
     }
   }
@@ -468,7 +469,12 @@ abstract class TreeMapTest(val factory: TreeMapFactory)
       Array(fiveItem, fourItem, threeItem, twoItem)
     )
     val ei = sm.entrySet().iterator()
-    for ((k, v) <- Array(twoItem -> "B", threeItem -> "C", fourItem -> "D", fiveItem -> "E")) {
+    for ((k, v) <- Array(
+          twoItem -> "B",
+          threeItem -> "C",
+          fourItem -> "D",
+          fiveItem -> "E"
+        )) {
       val e = ei.next()
       mustEqual(k, e.getKey())
       mustEqual(v, e.getValue())
@@ -522,7 +528,11 @@ abstract class TreeMapTest(val factory: TreeMapFactory)
     }
   }
 
-  private def mutateMap(map: ju.NavigableMap[Item, Item], min: Int, max: Int): Unit = {
+  private def mutateMap(
+      map: ju.NavigableMap[Item, Item],
+      min: Int,
+      max: Int
+  ): Unit = {
     val size = map.size()
     val rangeSize = max - min + 1
     var i = 0
@@ -606,12 +616,22 @@ abstract class TreeMapTest(val factory: TreeMapFactory)
       if (rnd.nextBoolean())
         bashSubMap(hm, min, midPoint - (if (incl) 0 else 1), ascending = true)
       else
-        bashSubMap(hm.descendingMap(), min, midPoint - (if (incl) 0 else 1), ascending = false)
+        bashSubMap(
+          hm.descendingMap(),
+          min,
+          midPoint - (if (incl) 0 else 1),
+          ascending = false
+        )
     } else {
       if (rnd.nextBoolean())
         bashSubMap(hm, midPoint + (if (incl) 0 else 1), max, ascending = false)
       else
-        bashSubMap(hm.descendingMap(), midPoint + (if (incl) 0 else 1), max, ascending = true)
+        bashSubMap(
+          hm.descendingMap(),
+          midPoint + (if (incl) 0 else 1),
+          max,
+          ascending = true
+        )
     }
 
     incl = rnd.nextBoolean()
@@ -620,12 +640,22 @@ abstract class TreeMapTest(val factory: TreeMapFactory)
       if (rnd.nextBoolean())
         bashSubMap(tm, midPoint + (if (incl) 0 else 1), max, ascending = true)
       else
-        bashSubMap(tm.descendingMap(), midPoint + (if (incl) 0 else 1), max, ascending = false)
+        bashSubMap(
+          tm.descendingMap(),
+          midPoint + (if (incl) 0 else 1),
+          max,
+          ascending = false
+        )
     } else {
       if (rnd.nextBoolean())
         bashSubMap(tm, min, midPoint - (if (incl) 0 else 1), ascending = false)
       else
-        bashSubMap(tm.descendingMap(), min, midPoint - (if (incl) 0 else 1), ascending = true)
+        bashSubMap(
+          tm.descendingMap(),
+          min,
+          midPoint - (if (incl) 0 else 1),
+          ascending = true
+        )
     }
 
     val rangeSize = max - min + 1
@@ -637,7 +667,12 @@ abstract class TreeMapTest(val factory: TreeMapFactory)
     val lowIncl = rnd.nextBoolean()
     val highIncl = rnd.nextBoolean()
     if (ascending) {
-      val sm = map.subMap(itemFor(endpoints(0)), lowIncl, itemFor(endpoints(1)), highIncl)
+      val sm = map.subMap(
+        itemFor(endpoints(0)),
+        lowIncl,
+        itemFor(endpoints(1)),
+        highIncl
+      )
       if (rnd.nextBoolean())
         bashSubMap(
           sm,
@@ -653,7 +688,12 @@ abstract class TreeMapTest(val factory: TreeMapFactory)
           ascending = false
         )
     } else {
-      val sm = map.subMap(itemFor(endpoints(1)), highIncl, itemFor(endpoints(0)), lowIncl)
+      val sm = map.subMap(
+        itemFor(endpoints(1)),
+        highIncl,
+        itemFor(endpoints(0)),
+        lowIncl
+      )
       if (rnd.nextBoolean())
         bashSubMap(
           sm,
@@ -729,7 +769,11 @@ abstract class TreeMapTest(val factory: TreeMapFactory)
       if (contains) size += 1
       key += 1
     }
-    assertEquals(s"size, min=$min max=$max ascending=$ascending", size, map.size())
+    assertEquals(
+      s"size, min=$min max=$max ascending=$ascending",
+      size,
+      map.size()
+    )
 
     var size2 = 0
     var previousKey = -1
@@ -746,7 +790,11 @@ abstract class TreeMapTest(val factory: TreeMapFactory)
       )
       previousKey = k.value
     }
-    assertEquals(s"iterated size, min=$min max=$max ascending=$ascending", size, size2)
+    assertEquals(
+      s"iterated size, min=$min max=$max ascending=$ascending",
+      size,
+      size2
+    )
 
     key = min - 1
     while (key <= max + 1) {
