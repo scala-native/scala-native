@@ -69,16 +69,17 @@ class DelayQueue[E <: Delayed]()
     val lock = this.lock
     lock.lockInterruptibly()
     try {
-      while (true) {
+      var result: E = null.asInstanceOf[E]
+      while (result == null) {
         val first = q.peek()
         if (first == null) available.await()
         else {
           val delay = first.getDelay(TimeUnit.NANOSECONDS)
-          if (delay <= 0L) return q.poll()
-          available.awaitNanos(delay)
+          if (delay <= 0L) result = q.poll()
+          else available.awaitNanos(delay)
         }
       }
-      null.asInstanceOf[E]
+      result
     } finally lock.unlock()
   }
 
@@ -88,19 +89,23 @@ class DelayQueue[E <: Delayed]()
     val lock = this.lock
     lock.lockInterruptibly()
     try {
-      while (true) {
+      var result: E = null.asInstanceOf[E]
+      var done = false
+      while (!done) {
         val first = q.peek()
         if (first == null) {
-          if (nanos <= 0L) return null.asInstanceOf[E]
-          nanos = available.awaitNanos(nanos)
+          if (nanos <= 0L) done = true
+          else nanos = available.awaitNanos(nanos)
         } else {
           val delay = first.getDelay(TimeUnit.NANOSECONDS)
-          if (delay <= 0L) return q.poll()
-          if (nanos <= 0L) return null.asInstanceOf[E]
-          nanos = available.awaitNanos(nanos.min(delay))
+          if (delay <= 0L) {
+            result = q.poll()
+            done = true
+          } else if (nanos <= 0L) done = true
+          else nanos = available.awaitNanos(nanos.min(delay))
         }
       }
-      null.asInstanceOf[E]
+      result
     } finally lock.unlock()
   }
 
