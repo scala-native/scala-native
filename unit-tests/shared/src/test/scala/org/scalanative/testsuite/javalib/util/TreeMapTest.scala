@@ -64,4 +64,6 @@ class TreeMapWithNullFactory extends TreeMapFactory {
   override def allowsNullKeys: Boolean = true
 
   override def allowsNullKeysQueries: Boolean = true
+
+  override def supportsJSR166MapTests: Boolean = false
 }
