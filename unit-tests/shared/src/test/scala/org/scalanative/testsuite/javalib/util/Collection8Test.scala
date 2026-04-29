@@ -747,6 +747,7 @@ class Collection8Test extends JSR166Test {
         assertTrue(it1.hasNext())
         assertTrue(it2.hasNext())
         c.clear()
+        val concurrentModificationResult = "ConcurrentModificationException"
         val r1 =
           try {
             while (it1.hasNext()) iterated.add(it1.next())
@@ -754,7 +755,7 @@ class Collection8Test extends JSR166Test {
           } catch {
             case _: ju.ConcurrentModificationException =>
               assertFalse(impl.isConcurrent())
-              classOf[ju.ConcurrentModificationException]
+              concurrentModificationResult
           }
         val r2 =
           try {
@@ -763,7 +764,7 @@ class Collection8Test extends JSR166Test {
           } catch {
             case _: ju.ConcurrentModificationException =>
               assertFalse(impl.isConcurrent())
-              classOf[ju.ConcurrentModificationException]
+              concurrentModificationResult
           }
         mustEqual(r1, r2)
       }
