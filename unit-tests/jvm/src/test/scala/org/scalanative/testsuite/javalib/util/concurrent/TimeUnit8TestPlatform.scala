@@ -20,7 +20,8 @@ object TimeUnit8TestPlatform {
     assumeTrue("TimeUnit.of requires JDK 19+", hasTimeUnitOf)
 
   def timeUnitOf(chronoUnit: ChronoUnit): TimeUnit =
-    try timeUnitOfMethod.get
+    try
+      timeUnitOfMethod.get
         .invoke(null, chronoUnit.asInstanceOf[AnyRef])
         .asInstanceOf[TimeUnit]
     catch {
