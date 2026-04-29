@@ -250,7 +250,9 @@ class TreeSubMapTest extends JSR166Test {
   @Test def testRemove1_NullPointerException(): Unit =
     assertThrows(classOf[NullPointerException], map5().remove(null))
 
-  @Ignore("scala-native: ObjectInputStream/ObjectOutputStream are unsupported")
+  @Ignore(
+    "scala-native#4852: ObjectInputStream/ObjectOutputStream are unsupported"
+  )
   @Test def testSerialization(): Unit = ()
 
   @Test def testSubMapContents(): Unit =
@@ -500,7 +502,9 @@ class TreeSubMapTest extends JSR166Test {
   @Test def testDescendingPut1_NullPointerException(): Unit =
     assertThrows(classOf[NullPointerException], dmap5().put(null, "whatever"))
 
-  @Ignore("scala-native: ObjectInputStream/ObjectOutputStream are unsupported")
+  @Ignore(
+    "scala-native#4852: ObjectInputStream/ObjectOutputStream are unsupported"
+  )
   @Test def testDescendingSerialization(): Unit = ()
 
   @Test def testDescendingSubMapContents(): Unit =

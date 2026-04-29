@@ -252,7 +252,7 @@ class ConcurrentSkipListSubSetTest extends JSR166Test {
   @Test def testToString(): Unit =
     checkToString(populatedSet(SIZE), 0 until SIZE)
 
-  @Ignore("No ObjectInputStream in Scala Native")
+  @Ignore("scala-native#4852: ObjectInputStream is unsupported")
   @Test def testSerialization(): Unit = {}
 
   @Test def testSubSetContents(): Unit =
@@ -401,7 +401,7 @@ class ConcurrentSkipListSubSetTest extends JSR166Test {
   @Test def testDescendingToString(): Unit =
     checkToString(dset5(), -5 to -1)
 
-  @Ignore("No ObjectInputStream in Scala Native")
+  @Ignore("scala-native#4852: ObjectInputStream is unsupported")
   @Test def testDescendingSerialization(): Unit = {}
 
   @Test def testDescendingSubSetContents(): Unit =

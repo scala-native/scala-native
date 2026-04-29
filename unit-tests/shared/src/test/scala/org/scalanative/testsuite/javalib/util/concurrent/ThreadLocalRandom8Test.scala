@@ -237,7 +237,9 @@ class ThreadLocalRandom8Test extends JSR166Test {
     assertEquals(100L, counter.sum())
   }
 
-  @Ignore("No ObjectInputStream/ObjectOutputStream in Scala Native")
+  @Ignore(
+    "scala-native#4852: ObjectInputStream/ObjectOutputStream are unsupported"
+  )
   @Test def testSerialization(): Unit = ()
 }
 

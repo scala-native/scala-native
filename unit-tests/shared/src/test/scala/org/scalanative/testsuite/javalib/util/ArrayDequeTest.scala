@@ -1865,7 +1865,9 @@ class ArrayDequeJSR166Test {
 
   /** A deserialized/reserialized deque has same elements in same order
    */
-  @Ignore("No ObjectInputStream/ObjectOutputStream in Scala Native")
+  @Ignore(
+    "scala-native#4852: ObjectInputStream/ObjectOutputStream are unsupported"
+  )
   @Test def testSerialization(): Unit = ()
 
   /** A cloned deque has same elements in same order

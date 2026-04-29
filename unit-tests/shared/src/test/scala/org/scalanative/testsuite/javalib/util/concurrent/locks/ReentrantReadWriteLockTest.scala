@@ -1292,9 +1292,13 @@ class ReentrantReadWriteLockTest extends JSR166Test {
   // No object input stream in Scala NAtive
   // /** A serialized lock deserializes as unlocked
   //  */
-  @Ignore("No ObjectInputStream/ObjectOutputStream in Scala Native")
+  @Ignore(
+    "scala-native#4852: ObjectInputStream/ObjectOutputStream are unsupported"
+  )
   @Test def testSerialization(): Unit = {}
-  @Ignore("No ObjectInputStream/ObjectOutputStream in Scala Native")
+  @Ignore(
+    "scala-native#4852: ObjectInputStream/ObjectOutputStream are unsupported"
+  )
   @Test def testSerialization_fair(): Unit = {}
 
   /** hasQueuedThreads reports whether there are waiting threads
@@ -1775,6 +1779,8 @@ class ReentrantReadWriteLockTest extends JSR166Test {
   }
 
   /* ThreadMXBean reports the blockers that we expect.*/
-  @Ignore("ThreadInfo lock blocker metadata is not implemented in Scala Native")
+  @Ignore(
+    "scala-native#4853: ThreadInfo lock blocker metadata is not implemented"
+  )
   @Test def testBlockers(): Unit = ()
 }

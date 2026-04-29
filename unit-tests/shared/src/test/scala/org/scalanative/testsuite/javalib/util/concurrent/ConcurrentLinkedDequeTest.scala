@@ -960,7 +960,9 @@ class ConcurrentLinkedDequeTest extends JSR166Test {
   //   assertTrue(y.isEmpty)
   // }
 
-  @Ignore("No ObjectInputStream/ObjectOutputStream in Scala Native")
+  @Ignore(
+    "scala-native#4852: ObjectInputStream/ObjectOutputStream are unsupported"
+  )
   @Test def testSerialization(): Unit = ()
 
   /** contains(null) always return false. remove(null) always throws

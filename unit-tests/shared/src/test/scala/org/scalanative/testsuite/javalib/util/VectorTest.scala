@@ -368,7 +368,9 @@ class VectorTest extends JSR166Test {
     checkIndexOutOfBoundsException(x)
   }
 
-  @Ignore("scala-native: ObjectInputStream/ObjectOutputStream are unsupported")
+  @Ignore(
+    "scala-native#4852: ObjectInputStream/ObjectOutputStream are unsupported"
+  )
   @Test def testSerialization(): Unit = ()
 
   @Test def testSetSize(): Unit = {

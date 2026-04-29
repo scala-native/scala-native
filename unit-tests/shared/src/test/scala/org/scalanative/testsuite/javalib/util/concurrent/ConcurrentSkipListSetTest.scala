@@ -435,7 +435,7 @@ class ConcurrentSkipListSetTest extends JSR166Test {
     assertTrue(y.isEmpty())
   }
 
-  @Ignore("No ObjectInputStream in Scala Native")
+  @Ignore("scala-native#4852: ObjectInputStream is unsupported")
   @Test def testSerialization(): Unit = {}
 
   @Test def testSubSetContents(): Unit = {

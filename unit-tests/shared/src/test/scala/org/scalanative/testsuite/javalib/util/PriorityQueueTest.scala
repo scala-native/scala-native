@@ -508,7 +508,7 @@ class PriorityQueueTest extends JSR166Test with CollectionTest {
     for (i <- 0 until SIZE) assertTrue(s.contains(String.valueOf(i)))
   }
 
-  @Ignore("No ObjectInputStream in Scala Native")
+  @Ignore("scala-native#4852: ObjectInputStream is unsupported")
   @Test def testSerialization(): Unit = ()
 
   @Test def addAllCollectionIntAndAddInt(): Unit = {
