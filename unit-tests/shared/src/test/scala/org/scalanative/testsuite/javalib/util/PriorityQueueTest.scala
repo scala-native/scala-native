@@ -31,6 +31,8 @@ class PriorityQueueTest extends JSR166Test with CollectionTest {
   import JSR166Test._
   import PriorityQueueTest._
 
+  // The test* methods are ported from the public-domain JSR166 TCK
+  // PriorityQueueTest. The non-test* methods are existing Scala.js coverage.
   def factory: PriorityQueueFactory = new PriorityQueueFactory
 
   @Test def addAndRemoveInt(): Unit = {
