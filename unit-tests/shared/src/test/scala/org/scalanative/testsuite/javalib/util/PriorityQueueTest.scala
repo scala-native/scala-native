@@ -13,17 +13,28 @@
 
 package org.scalanative.testsuite.javalib.util
 
-import java.util.{Comparator, PriorityQueue}
+import java.util.{
+  Arrays, Collection, Comparator, Iterator, NoSuchElementException,
+  PriorityQueue, Queue
+}
 
 import scala.reflect.ClassTag
 
 import org.junit.Assert._
 import org.junit.Assume._
-import org.junit.Test
+import org.junit.{Ignore, Test}
 
-import org.scalanative.testsuite.utils.Platform.executingInJVM
+import org.scalanative.testsuite.javalib.util.concurrent.{Item, JSR166Test}
+import org.scalanative.testsuite.utils.Platform.{
+  executingInJVM, executingInJVMOnJDK8OrLower
+}
 
-class PriorityQueueTest extends CollectionTest {
+class PriorityQueueTest extends JSR166Test with CollectionTest {
+  import JSR166Test._
+  import PriorityQueueTest._
+
+  // The test* methods are ported from the public-domain JSR166 TCK
+  // PriorityQueueTest. The non-test* methods are existing Scala.js coverage.
   def factory: PriorityQueueFactory = new PriorityQueueFactory
 
   @Test def addAndRemoveInt(): Unit = {
@@ -61,6 +72,248 @@ class PriorityQueueTest extends CollectionTest {
     assertTrue(pq.remove("bbb"))
     assertFalse(pq.remove("bbb"))
     assertNull(pq.poll())
+  }
+
+  @Test def testConstructor1(): Unit = {
+    mustEqual(0, new PriorityQueue[Item](SIZE).size())
+  }
+
+  @Test def testConstructor2(): Unit = {
+    try {
+      new PriorityQueue[Item](0)
+      shouldThrow()
+    } catch {
+      case _: IllegalArgumentException =>
+    }
+  }
+
+  @Test def testConstructor3(): Unit = {
+    try {
+      new PriorityQueue[Item](null.asInstanceOf[Collection[Item]])
+      shouldThrow()
+    } catch {
+      case _: NullPointerException =>
+    }
+  }
+
+  @Test def testConstructor4(): Unit = {
+    try {
+      new PriorityQueue[Item](Arrays.asList(new Array[Item](SIZE): _*))
+      shouldThrow()
+    } catch {
+      case _: NullPointerException =>
+    }
+  }
+
+  @Test def testConstructor5(): Unit = {
+    val items = new Array[Item](2)
+    items(0) = itemZero
+    try {
+      new PriorityQueue[Item](Arrays.asList(items: _*))
+      shouldThrow()
+    } catch {
+      case _: NullPointerException =>
+    }
+  }
+
+  @Test def testConstructor6(): Unit = {
+    val items = defaultItems
+    val q = new PriorityQueue[Item](Arrays.asList(items: _*))
+    for (i <- 0 until SIZE) mustEqual(items(i), q.poll())
+  }
+
+  @Test def testConstructor7(): Unit = {
+    val cmp = new MyReverseComparator()
+    val q = new PriorityQueue[Item](SIZE, cmp)
+    assertEquals(cmp, q.comparator())
+    val items = seqItems(SIZE)
+    q.addAll(Arrays.asList(items: _*))
+    for (i <- (SIZE - 1) to 0 by -1) mustEqual(items(i), q.poll())
+  }
+
+  @Test def testEmpty(): Unit = {
+    val q = new PriorityQueue[Item](2)
+    assertTrue(q.isEmpty())
+    q.add(itemOne)
+    assertFalse(q.isEmpty())
+    q.add(itemTwo)
+    q.remove()
+    q.remove()
+    assertTrue(q.isEmpty())
+  }
+
+  @Test def testSize(): Unit = {
+    val q = populatedQueue(SIZE)
+    for (i <- 0 until SIZE) {
+      mustEqual(SIZE - i, q.size())
+      q.remove()
+    }
+    for (i <- 0 until SIZE) {
+      mustEqual(i, q.size())
+      mustAdd(q, i)
+    }
+  }
+
+  @Test def testOfferNull(): Unit = {
+    val q = new PriorityQueue[Item](1)
+    try {
+      q.offer(null)
+      shouldThrow()
+    } catch {
+      case _: NullPointerException =>
+    }
+  }
+
+  @Test def testAddNull(): Unit = {
+    val q = new PriorityQueue[Item](1)
+    try {
+      q.add(null)
+      shouldThrow()
+    } catch {
+      case _: NullPointerException =>
+    }
+  }
+
+  @Test def testOffer(): Unit = {
+    val q = new PriorityQueue[Item](1)
+    assertTrue(q.offer(itemZero))
+    assertTrue(q.offer(itemOne))
+  }
+
+  @Test def testOfferNonComparable(): Unit = {
+    assumeFalse(
+      "JDK8 PriorityQueue accepts a first non-comparable element",
+      executingInJVMOnJDK8OrLower
+    )
+
+    val q = new PriorityQueue[Object](1)
+    try {
+      q.offer(new Object())
+      shouldThrow()
+    } catch {
+      case _: ClassCastException =>
+        assertTrue(q.isEmpty())
+        mustEqual(0, q.size())
+        assertNull(q.poll())
+    }
+  }
+
+  @Test def testAdd(): Unit = {
+    val q = new PriorityQueue[Item](SIZE)
+    for (i <- 0 until SIZE) {
+      mustEqual(i, q.size())
+      mustAdd(q, i)
+    }
+  }
+
+  @Test def testAddAll1(): Unit = {
+    val q = new PriorityQueue[Item](1)
+    try {
+      q.addAll(null)
+      shouldThrow()
+    } catch {
+      case _: NullPointerException =>
+    }
+  }
+
+  @Test def testAddAll2(): Unit = {
+    val q = new PriorityQueue[Item](SIZE)
+    try {
+      q.addAll(Arrays.asList(new Array[Item](SIZE): _*))
+      shouldThrow()
+    } catch {
+      case _: NullPointerException =>
+    }
+  }
+
+  @Test def testAddAll3(): Unit = {
+    val q = new PriorityQueue[Item](SIZE)
+    val items = new Array[Item](2)
+    items(0) = itemZero
+    try {
+      q.addAll(Arrays.asList(items: _*))
+      shouldThrow()
+    } catch {
+      case _: NullPointerException =>
+    }
+  }
+
+  @Test def testAddAll5(): Unit = {
+    val empty = new Array[Item](0)
+    val items = new Array[Item](SIZE)
+    for (i <- 0 until SIZE) items(i) = itemFor(SIZE - 1 - i)
+    val q = new PriorityQueue[Item](SIZE)
+    assertFalse(q.addAll(Arrays.asList(empty: _*)))
+    assertTrue(q.addAll(Arrays.asList(items: _*)))
+    for (i <- 0 until SIZE) mustEqual(i, q.poll())
+  }
+
+  @Test def testPoll(): Unit = {
+    val q = populatedQueue(SIZE)
+    for (i <- 0 until SIZE) mustEqual(i, q.poll())
+    assertNull(q.poll())
+  }
+
+  @Test def testPeek(): Unit = {
+    val q = populatedQueue(SIZE)
+    for (i <- 0 until SIZE) {
+      mustEqual(i, q.peek())
+      mustEqual(i, q.poll())
+      assertTrue(q.peek() == null || !q.peek().equals(itemFor(i)))
+    }
+    assertNull(q.peek())
+  }
+
+  @Test def testElement(): Unit = {
+    val q = populatedQueue(SIZE)
+    for (i <- 0 until SIZE) {
+      mustEqual(i, q.element())
+      mustEqual(i, q.poll())
+    }
+    try {
+      q.element()
+      shouldThrow()
+    } catch {
+      case _: NoSuchElementException =>
+    }
+  }
+
+  @Test def testRemove(): Unit = {
+    val q = populatedQueue(SIZE)
+    for (i <- 0 until SIZE) mustEqual(i, q.remove())
+    try {
+      q.remove()
+      shouldThrow()
+    } catch {
+      case _: NoSuchElementException =>
+    }
+  }
+
+  @Test def testRemoveElement(): Unit = {
+    val q = populatedQueue(SIZE)
+    for (i <- 1 until SIZE by 2) {
+      mustContain(q, i)
+      mustRemove(q, i)
+      mustNotContain(q, i)
+      mustContain(q, i - 1)
+    }
+    for (i <- 0 until SIZE by 2) {
+      mustContain(q, i)
+      mustRemove(q, i)
+      mustNotContain(q, i)
+      mustNotRemove(q, i + 1)
+      mustNotContain(q, i + 1)
+    }
+    assertTrue(q.isEmpty())
+  }
+
+  @Test def testContains(): Unit = {
+    val q = populatedQueue(SIZE)
+    for (i <- 0 until SIZE) {
+      mustContain(q, i)
+      q.poll()
+      mustNotContain(q, i)
+    }
   }
 
   @Test def addAndRemoveObjectWithCustomComparator(): Unit = {
@@ -169,6 +422,101 @@ class PriorityQueueTest extends CollectionTest {
     pq.clear()
     assertEquals(0, pq.size())
   }
+
+  @Test def testContainsAll(): Unit = {
+    val q = populatedQueue(SIZE)
+    val p = new PriorityQueue[Item](SIZE)
+    for (i <- 0 until SIZE) {
+      assertTrue(q.containsAll(p))
+      assertFalse(p.containsAll(q))
+      mustAdd(p, i)
+    }
+    assertTrue(p.containsAll(q))
+  }
+
+  @Test def testRetainAll(): Unit = {
+    val q = populatedQueue(SIZE)
+    val p = populatedQueue(SIZE)
+    for (i <- 0 until SIZE) {
+      val changed = q.retainAll(p)
+      if (i == 0) assertFalse(changed)
+      else assertTrue(changed)
+
+      assertTrue(q.containsAll(p))
+      mustEqual(SIZE - i, q.size())
+      p.remove()
+    }
+  }
+
+  @Test def testRemoveAll(): Unit = {
+    for (i <- 1 until SIZE) {
+      val q = populatedQueue(SIZE)
+      val p = populatedQueue(i)
+      assertTrue(q.removeAll(p))
+      mustEqual(SIZE - i, q.size())
+      for (_ <- 0 until i) mustNotContain(q, p.remove())
+    }
+  }
+
+  @Test def testToArray(): Unit = {
+    val q = populatedQueue(SIZE)
+    val a = q.toArray()
+    assertSame(classOf[Array[Object]], a.getClass())
+    Arrays.sort(a)
+    for (o <- a) assertSame(o, q.poll())
+    assertTrue(q.isEmpty())
+  }
+
+  @Test def testToArray2(): Unit = {
+    val q = populatedQueue(SIZE)
+    val items = new Array[Item](SIZE)
+    val array = q.toArray(items)
+    assertSame(items, array)
+    Arrays.sort(items.asInstanceOf[Array[Object]])
+    for (o <- items) assertSame(o, q.poll())
+    assertTrue(q.isEmpty())
+  }
+
+  @Test def testIterator(): Unit = {
+    val q = populatedQueue(SIZE)
+    val it = q.iterator()
+    var i = 0
+    while (it.hasNext()) {
+      mustContain(q, it.next())
+      i += 1
+    }
+    mustEqual(i, SIZE)
+    assertIteratorExhausted(it)
+  }
+
+  @Test def testEmptyIterator(): Unit = {
+    assertIteratorExhausted(new PriorityQueue[Item]().iterator())
+  }
+
+  @Test def testIteratorRemove(): Unit = {
+    val q = new PriorityQueue[Item](3)
+    q.add(itemTwo)
+    q.add(itemOne)
+    q.add(itemThree)
+
+    var it = q.iterator()
+    it.next()
+    it.remove()
+
+    it = q.iterator()
+    mustEqual(it.next(), itemTwo)
+    mustEqual(it.next(), itemThree)
+    assertFalse(it.hasNext())
+  }
+
+  @Test def testToString(): Unit = {
+    val q = populatedQueue(SIZE)
+    val s = q.toString()
+    for (i <- 0 until SIZE) assertTrue(s.contains(String.valueOf(i)))
+  }
+
+  @Ignore("scala-native#4852: ObjectInputStream is unsupported")
+  @Test def testSerialization(): Unit = ()
 
   @Test def addAllCollectionIntAndAddInt(): Unit = {
     val l = TrivialImmutableCollection(1, 5, 2, 3, 4)
@@ -475,6 +823,40 @@ class PriorityQueueTest extends CollectionTest {
     pq
   }
 
+}
+
+object PriorityQueueTest {
+  import JSR166Test._
+
+  private val itemZero = itemFor(0)
+  private val itemOne = itemFor(1)
+  private val itemTwo = itemFor(2)
+  private val itemThree = itemFor(3)
+
+  final class MyReverseComparator
+      extends Comparator[Item]
+      with java.io.Serializable {
+    override def compare(x: Item, y: Item): Int = y.compareTo(x)
+  }
+
+  private def populatedQueue(n: Int): PriorityQueue[Item] = {
+    val q = new PriorityQueue[Item](n)
+    assertTrue(q.isEmpty())
+    var i = n - 1
+    while (i >= 0) {
+      mustOffer(q, i)
+      i -= 2
+    }
+    i = n & 1
+    while (i < n) {
+      mustOffer(q, i)
+      i += 2
+    }
+    assertFalse(q.isEmpty())
+    mustEqual(n, q.size())
+    mustEqual(0, q.peek())
+    q
+  }
 }
 
 class PriorityQueueFactory extends CollectionFactory {
