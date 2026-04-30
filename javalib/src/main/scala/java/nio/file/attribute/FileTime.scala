@@ -44,16 +44,25 @@ final class FileTime private (
     val fromDaysOverflow =
       fromDays == Long.MaxValue || fromDays <= -Long.MaxValue
 
-    if (fromDaysOverflow) fromDays
+    if (fromDaysOverflow) toSaturated(unit)
     else {
       try {
         Math.addExact(fromDays, fromNanos)
       } catch {
-        case _: ArithmeticException =>
-          if (fromDays > 0) Long.MaxValue
-          else Long.MinValue
+        case _: ArithmeticException => toSaturated(unit)
       }
     }
+  }
+
+  private def toSaturated(unit: TimeUnit): Long = {
+    val unitNanos = unit.toNanos(1L)
+    val totalNanos =
+      (BigInt(epochDays) * BigInt(NanosInDay)) + BigInt(dayNanos)
+    val converted = totalNanos / BigInt(unitNanos)
+
+    if (converted > BigInt(Long.MaxValue)) Long.MaxValue
+    else if (converted < BigInt(Long.MinValue)) Long.MinValue
+    else converted.toLong
   }
 
   def toMillis(): Long = to(TimeUnit.MILLISECONDS)
