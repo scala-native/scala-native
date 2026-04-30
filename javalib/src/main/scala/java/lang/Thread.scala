@@ -349,8 +349,9 @@ class Thread private[lang] (
       case Thread.State.NEW =>
         throw new IllegalThreadStateException("Cannot join unstarted thread")
       case _ =>
-        if (duration.isNegative() || duration.isZero()) {
-          join(duration.getSeconds() * 1000, duration.getNano())
+        if (!duration.isNegative() && !duration.isZero()) {
+          val (millis, nanos) = duration.toMillisAndNanos
+          join(millis, nanos)
         }
         getState() == Thread.State.TERMINATED
     }
@@ -611,8 +612,12 @@ object Thread {
   @throws[InterruptedException](
     "if the current thread is interrupted while sleeping"
   )
-  def sleep(duration: Duration): Unit =
-    sleep(millis = duration.getSeconds() * 1000, nanos = duration.getNano())
+  def sleep(duration: Duration): Unit = {
+    if (!duration.isNegative() && !duration.isZero()) {
+      val (millis, nanos) = duration.toMillisAndNanos
+      sleep(millis, nanos)
+    }
+  }
 
   def ofPlatform(): Builder.OfPlatform =
     new ThreadBuilders.PlatformThreadBuilder
