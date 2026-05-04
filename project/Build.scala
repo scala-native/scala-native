@@ -242,6 +242,27 @@ object Build {
         case Seq(nscPlugin, javalib, scalalib) =>
           toolsBuildInfoSettings(nscPlugin, javalib, scalalib)
       }
+      .settings(
+        scalacOptions ++= {
+          // Don’t enable the optimizer during development: it breaks incremental compilation
+          val enableOptimizer = sys.env.get("CI").isDefined ||
+            sys.env.get("ENABLE_JVM_OPTIMIZER").contains("1")
+
+          val inlineFrom = Seq(
+            "scala.scalanative.**"
+          ).mkString(",")
+
+          CrossVersion
+            .partialVersion(scalaVersion.value)
+            .collect {
+              case (2, 12)                  => Seq("-opt:inline", s"-opt-inline-from:${inlineFrom}")
+              case (2, 13)                  => Seq(s"-opt:inline:${inlineFrom}")
+              case (3, minor) if minor >= 9 => Seq("-opt", s"-opt-inline-from:${inlineFrom}")
+            }
+            .filter(_ => enableOptimizer)
+            .getOrElse(Nil)
+        }
+      )
       .dependsOn(nirJVM, utilJVM)
 
   private def toolsBuildInfoSettings(
