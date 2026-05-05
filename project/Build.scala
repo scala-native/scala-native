@@ -147,7 +147,8 @@ object Build {
           Seq(
             "-Dscalanative.nscplugin.jar=" + nscCompilerJar,
             "-Dscalanative.testingcompiler.cp=" + testingCompilerCp,
-            "-Dscalanative.nativeruntime.cp=" + nativelibCp
+            "-Dscalanative.nativeruntime.cp=" + nativelibCp,
+            "-Dscalanative.scalaversion=" + scalaVersion.value
           )
         }
     }
