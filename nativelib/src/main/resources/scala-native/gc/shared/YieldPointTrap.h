@@ -2,8 +2,9 @@
 #define YieldPointTrap_H
 
 typedef void **safepoint_t;
-safepoint_t YieldPointTrap_init();
+safepoint_t YieldPointTrap_init(void);
 void YieldPointTrap_arm(safepoint_t ref);
 void YieldPointTrap_disarm(safepoint_t ref);
+void YieldPointTrap_free(safepoint_t ref);
 
 #endif

@@ -13,6 +13,10 @@
 #include <signal.h>
 #endif
 
+#ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
+#include "shared/YieldPointTrap.h"
+#endif
+
 static rwlock_t threadListsModificationLock;
 
 void MutatorThread_init(Field_t *stackbottom) {
@@ -51,6 +55,12 @@ void MutatorThread_init(Field_t *stackbottom) {
     self->thread = pthread_self();
 #endif
 
+#ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
+    self->yieldpointTrap = YieldPointTrap_init();
+    YieldPointTrap_disarm(self->yieldpointTrap);
+    scalanative_GC_yieldpoint_trap = self->yieldpointTrap;
+#endif
+
     MutatorThread_switchState(self, GC_MutatorThreadState_Managed);
     Allocator_Init(&self->allocator, &blockAllocator, heap.bytemap,
                    heap.blockMetaStart, heap.heapStart);
@@ -81,6 +91,10 @@ void MutatorThread_delete(MutatorThread *self) {
     CloseHandle(self->wakeupEvent);
 #endif
 #endif // WIN32
+
+#ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
+    YieldPointTrap_free(self->yieldpointTrap);
+#endif
 
     free(self);
 }

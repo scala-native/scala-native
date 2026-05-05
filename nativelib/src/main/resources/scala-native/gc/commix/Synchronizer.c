@@ -85,12 +85,23 @@ static void Synchronizer_WaitForResumption(MutatorThread *selfThread);
 #include <errhandlingapi.h>
 #else
 #include <pthread.h>
-#include <sys/mman.h>
 #include <sys/time.h>
 #include <unistd.h>
 #endif
 
-void **scalanative_GC_yieldpoint_trap;
+SN_ThreadLocal void **scalanative_GC_yieldpoint_trap;
+
+static void YieldPointTrap_armAllMutators(void) {
+    MutatorThreads_foreach(mutatorThreads, node) {
+        YieldPointTrap_arm(node->value->yieldpointTrap);
+    }
+}
+
+static void YieldPointTrap_disarmAllMutators(void) {
+    MutatorThreads_foreach(mutatorThreads, node) {
+        YieldPointTrap_disarm(node->value->yieldpointTrap);
+    }
+}
 
 #ifdef _WIN32
 static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
@@ -98,7 +109,7 @@ static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
         switch (ex->ExceptionRecord->ExceptionCode) {
         case EXCEPTION_ACCESS_VIOLATION:
             ULONG_PTR addr = ex->ExceptionRecord->ExceptionInformation[1];
-            if ((void *)addr == scalanative_GC_yieldpoint_trap) {
+            if ((void *)addr == (void *)scalanative_GC_yieldpoint_trap) {
                 Synchronizer_yield();
                 return EXCEPTION_CONTINUE_EXECUTION;
             }
@@ -124,8 +135,16 @@ static sigset_t threadWakupSignals = {};
 
 static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
     int old_errno = errno;
-    if (signal == SAFEPOINT_TRAP_SIGNAL &&
-        siginfo->si_addr == scalanative_GC_yieldpoint_trap) {
+    void *trapCell = NULL;
+    MutatorThread *self = currentMutatorThread;
+    if (self != NULL) {
+        trapCell = (void *)self->yieldpointTrap;
+    }
+    if (trapCell == NULL) {
+        trapCell = (void *)scalanative_GC_yieldpoint_trap;
+    }
+    if (signal == SAFEPOINT_TRAP_SIGNAL && trapCell != NULL &&
+        siginfo->si_addr == trapCell) {
         Synchronizer_yield();
         errno = old_errno;
         return;
@@ -216,11 +235,11 @@ static void Synchronizer_ResumeThread(MutatorThread *thread) {
 static void Synchronizer_SuspendThreads(void) {
     atomic_store_explicit(&Synchronizer_stopThreads, true,
                           memory_order_release);
-    YieldPointTrap_arm(scalanative_GC_yieldpoint_trap);
+    YieldPointTrap_armAllMutators();
 }
 
 static void Synchronizer_ResumeThreads(void) {
-    YieldPointTrap_disarm(scalanative_GC_yieldpoint_trap);
+    YieldPointTrap_disarmAllMutators();
     atomic_store_explicit(&Synchronizer_stopThreads, false,
                           memory_order_release);
     MutatorThreads_foreach(mutatorThreads, node) {
@@ -292,8 +311,6 @@ static void Synchronizer_ResumeThreads(void) {
 void Synchronizer_init(void) {
     mutex_init(&synchronizerLock);
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
-    scalanative_GC_yieldpoint_trap = YieldPointTrap_init();
-    YieldPointTrap_disarm(scalanative_GC_yieldpoint_trap);
     SetupYieldPointTrapHandler();
 #else
 #ifdef _WIN32

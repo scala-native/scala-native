@@ -97,4 +97,20 @@ void YieldPointTrap_disarm(safepoint_t ref) {
     }
 }
 
+void YieldPointTrap_free(safepoint_t ref) {
+    if (ref == NULL) {
+        return;
+    }
+#ifdef _WIN32
+    if (!VirtualFree((LPVOID)ref, 0, MEM_RELEASE)) {
+        GC_LOG_WARN("Failed to release GC safepoint trap memory: %lu",
+                    GetLastError());
+    }
+#else
+    if (munmap((void *)ref, sizeof(safepoint_t)) != 0) {
+        GC_LOG_WARN("Failed to unmap GC safepoint trap: %s", strerror(errno));
+    }
+#endif
+}
+
 #endif

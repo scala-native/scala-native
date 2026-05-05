@@ -30,6 +30,9 @@ typedef struct {
     LargeAllocator largeAllocator;
 
     ThreadInfo *threadInfo;
+#ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
+    void **yieldpointTrap;
+#endif
 } MutatorThread;
 
 typedef struct MutatorThreadNode {
