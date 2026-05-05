@@ -232,6 +232,7 @@ static void Synchronizer_ResumeThread(MutatorThread *thread) {
 static void Synchronizer_SuspendThreads(void) {
     atomic_store_explicit(&Synchronizer_stopThreads, true,
                           memory_order_release);
+    YieldPointTrap_resetTaskMachBadAccessPorts();
     YieldPointTrap_armAllMutators();
 }
 
@@ -390,6 +391,9 @@ bool Synchronizer_acquire(void) {
                             "(%.1fs elapsed)",
                             activeThreads, elapsed / 1000.0);
                 Synchronizer_diagnoseStuckThreads(self, activeThreads);
+#ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
+                YieldPointTrap_resetTaskMachBadAccessPorts();
+#endif
             }
 
             // Check for timeout (0 = disabled)
