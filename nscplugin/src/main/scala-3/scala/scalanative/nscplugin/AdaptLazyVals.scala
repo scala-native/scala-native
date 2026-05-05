@@ -4,7 +4,7 @@ import dotty.tools._
 import dotty.tools.dotc._
 import dotty.tools.dotc.ast.tpd._
 import dotty.tools.dotc.config.*
-import dotty.tools.dotc.config.Settings
+import dotty.tools.dotc.config.Settings.Setting
 import scala.annotation.{threadUnsafe => tu}
 
 // This helper class is responsible for rewriting calls to scala.runtime.LazyVals with
@@ -41,7 +41,7 @@ class AdaptLazyVals(defnNir: NirDefinitions) {
             None
           }
           .get
-          .asInstanceOf[Settings.Setting[Boolean]]
+          .asInstanceOf[Setting[Boolean]]
           .value
       case SpecificScalaVersion(3, minor, _, _) => minor >= 8
       case _                                    => false
