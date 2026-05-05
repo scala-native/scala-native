@@ -20,14 +20,19 @@ class NativeCompilerTest:
     }
   }
 
-  def compileAll(sources: (String, String)*): Unit = {
+  def compileAll(sources: (String, String)*): Unit =
+    compileAll(scalacOptions = Nil)(sources: _*)
+
+  def compileAll(
+      scalacOptions: Seq[String] = Nil
+  )(sources: (String, String)*): Unit = {
     Scope { implicit in =>
       val outDir = Files.createTempDirectory("native-test-out")
       val compiler = scalanative.NIRCompiler.getCompiler(outDir)
       val sourcesDir = scalanative.NIRCompiler.writeSources(sources.toMap)
       val dir = VirtualDirectory.real(outDir)
 
-      try scalanative.NIRCompiler(_.compile(sourcesDir))
+      try scalanative.NIRCompiler(_.compile(sourcesDir, scalacOptions.toArray))
       catch {
         case ex: CompilationFailedException =>
           fail(s"Failed to compile source: $ex")

@@ -18,22 +18,38 @@ class NIRCompiler(outputDir: Path) extends api.NIRCompiler {
 
   def this() = this(Files.createTempDirectory("scala-native-target"))
 
-  override def compile(code: String): Array[Path] = {
-    val source = new BatchSourceFile(NoFile, code)
-    compile(Seq(source)).toArray
-  }
+  override def compile(code: String): Array[Path] =
+    compile(code, Array.empty[String])
 
-  override def compile(base: Path): Array[Path] = {
+  override def compile(
+      code: String,
+      scalacOptions: Array[String]
+  ): Array[Path] = {
+    val source = new BatchSourceFile(NoFile, code)
+    compile(Seq(source), scalacOptions).toArray
+  }
+  override def compile(base: Path): Array[Path] =
+    compile(base, Array.empty[String])
+
+  override def compile(
+      base: Path,
+      scalacOptions: Array[String]
+  ): Array[Path] = {
     val sources = getFiles(base.toFile, _.getName endsWith ".scala")
     val sourceFiles = sources map { s =>
       val abstractFile = AbstractFile.getFile(s)
       new BatchSourceFile(abstractFile)
     }
-    compile(sourceFiles).toArray
+    compile(sourceFiles, scalacOptions).toArray
   }
 
-  private def compile(sources: Seq[SourceFile]): Seq[Path] = {
-    val global = getCompiler(options = ScalaNative)
+  private def compile(
+      sources: Seq[SourceFile],
+      scalacOptions: Seq[String]
+  ): Seq[Path] = {
+    val options: List[CompilerOption] =
+      ScalaNative :: scalacOptions.map(new CompilerOption(_)).toList
+    val global = getCompiler(options: _*)
     import global._
     val run = new Run
     run.compileSources(sources.toList)
