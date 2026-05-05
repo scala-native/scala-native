@@ -4,6 +4,7 @@ import dotty.tools._
 import dotty.tools.dotc._
 import dotty.tools.dotc.ast.tpd._
 import dotty.tools.dotc.config.*
+import dotty.tools.dotc.config.Settings
 import scala.annotation.{threadUnsafe => tu}
 
 // This helper class is responsible for rewriting calls to scala.runtime.LazyVals with
