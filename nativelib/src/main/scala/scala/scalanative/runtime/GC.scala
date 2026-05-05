@@ -120,8 +120,8 @@ object GC {
   private[runtime] def `yield`(): Unit = extern
 
   /** Thread-local pointer to this mutator's trap page (distinct per pthread).
-   *  The GC mprotects each mutator's page during STW. Used only with
-   *  trap-based yieldpoints in multithreaded release-style builds.
+   *  The GC mprotects each mutator's page during STW. Used only with trap-based
+   *  yieldpoints in multithreaded release-style builds.
    */
   @name("scalanative_GC_yieldpoint_trap")
   private[runtime] var yieldPointTrap: RawPtr = extern
