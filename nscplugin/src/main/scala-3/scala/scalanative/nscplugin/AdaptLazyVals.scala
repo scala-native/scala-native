@@ -24,10 +24,27 @@ class AdaptLazyVals(defnNir: NirDefinitions) {
 
   def defn(using Context) = LazyValsDefns.get
 
-  private val compilerUsesVarHandles = ScalaVersion.current match {
-    case SpecificScalaVersion(3, minor, _, _) => minor >= 8
-    case _                                    => false
-  }
+  lazy val currentScalaVersion = ScalaVersion
+    .parse(Properties.versionNumberString) // Scala 3.1+ support
+    .toOption
+    .orElse(Some(ScalaVersion.current)) // Scala 3.8+ native
+
+  private def compilerUsesVarHandles(using Context) = currentScalaVersion
+    .exists {
+      case SpecificScalaVersion(3, 3, patch, _) if patch >= 8 =>
+        // For source compatibility we need cannot refer to the setting directlly, defined only in Scala 3.3 series starting with 3.3.8
+        ctx.settings.allSettings
+          .find(_.name == "-Yfuture-lazy-vals")
+          .orElse {
+            report.error("expected -Yfuture-lazy-vals setting not found")
+            None
+          }
+          .get
+          .asInstanceOf[Settings.Setting[Boolean]]
+          .value
+      case SpecificScalaVersion(3, minor, _, _) => minor >= 8
+      case _                                    => false
+    }
 
   private def isLazyFieldOffset(name: Name) =
     name.startsWith(nme.LAZY_FIELD_OFFSET.toString)
@@ -35,7 +52,7 @@ class AdaptLazyVals(defnNir: NirDefinitions) {
   private def isLazyFieldHandle(name: Name) =
     CompilerCompat.LazyValHandleNameCompat.exists(name.is(_))
 
-  private def isLazyFieldStore(name: Name) =
+  private def isLazyFieldStore(name: Name)(using Context) =
     if compilerUsesVarHandles then isLazyFieldHandle(name)
     else isLazyFieldOffset(name)
 

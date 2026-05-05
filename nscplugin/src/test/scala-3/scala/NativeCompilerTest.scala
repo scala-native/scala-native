@@ -229,7 +229,7 @@ class NativeCompilerTest:
           |""".stripMargin
   )
 
-  @Test def issue4869(): Unit =
+  @Test def issue4869(): Unit = {
     assumeTrue(
       "Scala 3.3 LTS specific",
       sys.props
@@ -247,7 +247,7 @@ class NativeCompilerTest:
         .flatMap(_.toIntOption)
         .exists(_ >= 9)
     )
-    compileAll(scalacOptions = Seq("-release:9", "-Yfuture-lazy-vals"))(
+    val testSources = Seq(
       "Test.scala" ->
         s"""|trait A:
             |  def b: String
@@ -258,3 +258,11 @@ class NativeCompilerTest:
             |  }
             |""".stripMargin
     )
+    compileAll(scalacOptions = Seq())(testSources*)
+    compileAll(scalacOptions = Seq("-release:9", "-Yfuture-lazy-vals"))(
+      testSources*
+    )
+    compileAll(scalacOptions = Seq("-release:9", "-Ylegacy-lazy-vals"))(
+      testSources*
+    )
+  }
