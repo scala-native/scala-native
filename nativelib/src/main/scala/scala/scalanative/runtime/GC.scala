@@ -121,10 +121,11 @@ object GC {
 
   /** Thread-local pointer to this mutator's trap page (distinct per pthread).
    *  The GC mprotects each mutator's page during STW. Used only with trap-based
-   *  yieldpoints in multithreaded release-style builds.
+   *  yieldpoints when multithreading is enabled (same condition as the
+   *  `SCALANATIVE_GC_USE_YIELDPOINT_TRAPS` nativelib define).
    */
   @name("scalanative_GC_yieldpoint_trap")
-  private[runtime] var yieldPointTrap: RawPtr = extern
+  private[runtime] var yieldPointTrap: /* thread local */ RawPtr = extern
 
   /** Notify the Garbage Collector about the range of memory which should be
    *  scanned when marking the objects. The range should contain only memory NOT

@@ -215,7 +215,7 @@ private[codegen] abstract class AbstractCodeGen(
 
   // Currently we have a single usage for interaction with GC
   private def isThreadLocal(name: nir.Global): Boolean =
-    (name eq Lower.GCYieldPointTrapName) &&
+    (name == Lower.GCYieldPointTrapName) &&
       platform.isMultithreadingEnabled &&
       platform.useGCYieldPointTraps
 
