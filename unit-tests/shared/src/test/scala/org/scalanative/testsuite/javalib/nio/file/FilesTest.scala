@@ -1955,8 +1955,7 @@ class FilesTest {
      * using seconds. The millisecond are truncated to 000, so no sense
      * running this test on JVM < 9.
      */
-    val hasJVM8SecondsOnlyBug =
-      Platform.executingInJVM && Platform.executingInJVMOnLowerThanJDK(9)
+    val hasJVM8SecondsOnlyBug = Platform.executingInJVMOnLowerThanJDK(9)
 
     assumeFalse(
       "Not testing JVM with JDK 8 getLastModifiedTime seconds-only bug",
