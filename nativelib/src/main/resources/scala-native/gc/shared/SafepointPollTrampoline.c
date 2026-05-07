@@ -11,9 +11,21 @@
  * the handler calls Synchronizer_yield() directly.
  */
 
+#if defined(__APPLE__)
 /* Darwin ucontext.h requires a POSIX feature macro before inclusion. */
 #ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 700
+#endif
+#elif defined(__linux__)
+/* glibc: x86_64 uc_mcontext.gregs / REG_RIP are GNU extensions. With only
+ * _XOPEN_SOURCE, mcontext_t has no gregs */
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif
+#else
+#ifndef _XOPEN_SOURCE
+#define _XOPEN_SOURCE 700
+#endif
 #endif
 
 #include "SafepointPollTrampoline.h"
@@ -49,6 +61,7 @@ void scalanative_gc_safepoint_poll_trampoline(void);
     ((uc)->uc_mcontext->__ss.__rip = (__uint64_t)(uintptr_t)(addr))
 #elif defined(__linux__)
 #include <signal.h>
+#include <sys/reg.h>
 #define SN_UC_GET_PC(uc) ((uintptr_t)(uc)->uc_mcontext.gregs[REG_RIP])
 #define SN_UC_SET_PC(uc, addr)                                                 \
     ((uc)->uc_mcontext.gregs[REG_RIP] = (greg_t)(uintptr_t)(addr))
