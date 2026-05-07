@@ -1,7 +1,6 @@
 package java.nio.channels
 
 import java.io.{File, FileDescriptor, IOException}
-import java.lang.Blocker
 import java.nio.file.{Files, WindowsException}
 import java.nio.{ByteBuffer, MappedByteBuffer, MappedByteBufferImpl}
 import java.util.Objects
@@ -92,12 +91,10 @@ private[java] final class FileChannelImpl(
 
   override def lock(position: Long, size: Long, shared: Boolean): FileLock = {
     assertIfCanLock()
-    Blocker {
-      if (isWindows) {
-        val flag: DWord = if (shared) 0.toUInt else LOCKFILE_EXCLUSIVE_LOCK
-        lockWindows(position, size, LOCKFILE_FAIL_IMMEDIATELY | flag)
-      } else lockUnix(position, size, shared, F_SETLKW)
-    }
+    if (isWindows) {
+      val flag: DWord = if (shared) 0.toUInt else LOCKFILE_EXCLUSIVE_LOCK
+      lockWindows(position, size, LOCKFILE_FAIL_IMMEDIATELY | flag)
+    } else lockUnix(position, size, shared, F_SETLKW)
   }
 
   @inline private def lockUnix(
@@ -351,12 +348,6 @@ private[java] final class FileChannelImpl(
       return 0
     }
 
-    Blocker {
-      read0(buffer, offset, count)
-    }
-  }
-
-  private def read0(buffer: Array[Byte], offset: Int, count: Int): Int = {
     // we use the runtime knowledge of the array layout to avoid
     // intermediate buffer, and write straight into the array memory
     if (isWindows) {
@@ -693,11 +684,7 @@ private[java] final class FileChannelImpl(
     if ((offset < 0) || (count < 0) || (count > buffer.length - offset))
       throw new IndexOutOfBoundsException
 
-    if (count == 0) 0
-    else
-      Blocker {
-        writeArray(buffer, offset, count)
-      }
+    writeArray(buffer, offset, count)
   }
 
   private def writeByteBuffer(src: ByteBuffer): Int = {
@@ -827,12 +814,6 @@ private[java] final class FileChannelImpl(
   private[java] def available(): Int = {
     ensureOpen()
 
-    Blocker {
-      available0()
-    }
-  }
-
-  private def available0(): Int =
     if (!isWindows) {
       val res = stackalloc[CInt]()
       val resByte = res.asInstanceOf[Ptr[scala.Byte]]
@@ -853,4 +834,5 @@ private[java] final class FileChannelImpl(
     } else {
       Math.clamp((size() - position()), 0, Int.MaxValue)
     }
+  }
 }

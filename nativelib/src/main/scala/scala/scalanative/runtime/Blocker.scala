@@ -1,12 +1,14 @@
-package java.lang
+package scala.scalanative
+package runtime
+
+import java.lang.Thread
 
 import scala.scalanative.annotation.alwaysinline
 
-/** Marks possibly-blocking regions when a [[VirtualThread]] runs on a
- *  [[VirtualThreadCarrier]], so the default scheduler can compensate the
- *  [[java.util.concurrent.ForkJoinPool]].
+/** Marks possibly-blocking regions when a [[VirtualThread]] runs on a carrier
+ *  thread. Applied automatically by the compiler to the extern blocking calls.
  */
-private[java] object Blocker {
+private[runtime] object Blocker {
 
   /** Runs `body` with `begin`/`end` pairing; inlined at every call site. */
   @alwaysinline
@@ -23,14 +25,13 @@ private[java] object Blocker {
     else body
 
   def begin(): scala.Boolean =
-    if (!Thread.currentThread().isVirtual()) false
-    else
-      Thread.currentThread() match {
-        case vt: VirtualThread =>
-          val carrier = Thread.currentCarrierThread()
-          vt.scheduler.beginCarrierCompensatedBlock(carrier)
-        case _ => false
-      }
+    Thread.currentThread() match {
+      case vt: VirtualThread =>
+        val carrier = vt.carrierThread
+        if (carrier eq null) false
+        else vt.scheduler.beginCarrierCompensatedBlock(carrier)
+      case _ => false
+    }
 
   def begin(blocking: scala.Boolean): scala.Boolean =
     if (blocking) begin()
@@ -40,8 +41,9 @@ private[java] object Blocker {
     if (attempted)
       Thread.currentThread() match {
         case vt: VirtualThread =>
-          val carrier = Thread.currentCarrierThread()
-          vt.scheduler.endCarrierCompensatedBlock(carrier, true)
+          val carrier = vt.carrierThread
+          if (carrier ne null)
+            vt.scheduler.endCarrierCompensatedBlock(carrier, true)
         case _ => ()
       }
 }

@@ -547,7 +547,8 @@ class ForkJoinPool private (
 
   /** Package-private hook for virtual-thread carrier compensation; same
    *  contract as JDK `ForkJoinPool.beginCompensatedBlock` /
-   *  `endCompensatedBlock` (see `CarrierThread` / `Blocker`).
+   *  `endCompensatedBlock` (see `CarrierThread` /
+   *  `scala.scalanative.runtime.Blocker`).
    */
   private[java] final def beginCompensatedBlock(): scala.Long = {
     var c = 0

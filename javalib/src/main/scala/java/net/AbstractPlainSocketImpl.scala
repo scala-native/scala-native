@@ -1,7 +1,6 @@
 package java.net
 
 import java.io.{FileDescriptor, IOException, InputStream, OutputStream}
-import java.lang.Blocker
 
 import scala.scalanative.libc.LibcExt
 import scala.scalanative.meta.LinktimeInfo.isWindows
@@ -152,26 +151,24 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
   override def accept(s: SocketImpl): Unit = {
     throwIfClosed("accept") // Do not send negative fd.fd to poll()
 
-    Blocker {
-      if (timeout > 0)
-        tryPollOnAccept()
+    if (timeout > 0)
+      tryPollOnAccept()
 
-      val storage = stackalloc[socket.sockaddr_storage]()
-      val address = storage.asInstanceOf[Ptr[socket.sockaddr]]
-      val addressLen = stackalloc[socket.socklen_t]()
-      !addressLen = sizeof[in.sockaddr_in6].toUInt
+    val storage = stackalloc[socket.sockaddr_storage]()
+    val address = storage.asInstanceOf[Ptr[socket.sockaddr]]
+    val addressLen = stackalloc[socket.socklen_t]()
+    !addressLen = sizeof[in.sockaddr_in6].toUInt
 
-      val newFd = socket.accept(fd.fd, address, addressLen)
-      if (newFd == -1) {
-        throw new SocketException("Accept failed")
-      }
-
-      val insAddr = SocketHelpers.sockaddrStorageToInetSocketAddress(address)
-      s.address = insAddr.getAddress
-      s.port = insAddr.getPort
-      s.localport = this.localport
-      s.fd = new FileDescriptor(newFd)
+    val newFd = socket.accept(fd.fd, address, addressLen)
+    if (newFd == -1) {
+      throw new SocketException("Accept failed")
     }
+
+    val insAddr = SocketHelpers.sockaddrStorageToInetSocketAddress(address)
+    s.address = insAddr.getAddress
+    s.port = insAddr.getPort
+    s.localport = this.localport
+    s.fd = new FileDescriptor(newFd)
   }
 
   private def connect4(addr: InetAddress, port: Int, timeout: Int): Unit = {
@@ -264,15 +261,11 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
   override def connect(host: String, port: Int): Unit = {
     throwIfClosed("connect")
     val addr = InetAddress.getByName(host)
-    Blocker {
-      connectFunc(addr, port, 0)
-    }
+    connectFunc(addr, port, 0)
   }
   override def connect(address: InetAddress, port: Int): Unit = {
     throwIfClosed("connect")
-    Blocker {
-      connectFunc(address, port, 0)
-    }
+    connectFunc(address, port, 0)
   }
 
   override def connect(address: SocketAddress, timeout: Int): Unit = {
@@ -283,9 +276,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     }
     val addr = insAddr.getAddress
     val port = insAddr.getPort
-    Blocker {
-      connectFunc(addr, port, timeout)
-    }
+    connectFunc(addr, port, timeout)
   }
 
   override def close(): Unit = {
@@ -367,61 +358,50 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     } else if (isClosed) {
       0
     } else {
-      Blocker {
-        val cArr = buffer.at(offset)
-        var sent = 0
-        while (sent < count) {
-          val ret = socket
-            .send(
-              fd.fd,
-              cArr + sent,
-              (count - sent).toUInt,
-              socket.MSG_NOSIGNAL
-            )
-            .toInt
-          if (ret < 0) {
-            throw new IOException("Could not send the packet to the client")
-          }
-          sent += ret
+      val cArr = buffer.at(offset)
+      var sent = 0
+      while (sent < count) {
+        val ret = socket
+          .send(fd.fd, cArr + sent, (count - sent).toUInt, socket.MSG_NOSIGNAL)
+          .toInt
+        if (ret < 0) {
+          throw new IOException("Could not send the packet to the client")
         }
-        sent
+        sent += ret
       }
+      sent
     }
   }
 
   def read(buffer: Array[Byte], offset: Int, count: Int): Int = {
     if (shutInput) -1
     else {
-      Blocker {
-        val bytesNum = socket
-          .recv(fd.fd, buffer.at(offset), count.toUInt, 0)
-          .toInt
+      val bytesNum = socket
+        .recv(fd.fd, buffer.at(offset), count.toUInt, 0)
+        .toInt
 
-        def timeoutDetected = mapLastError(
-          onUnix = { err => err == EAGAIN || err == EWOULDBLOCK },
-          onWindows = { err => err == WSAEWOULDBLOCK || err == WSAETIMEDOUT }
-        )
-        def interruptDetected = mapLastError(
-          onUnix = { _ == EINTR },
-          onWindows = { _ == WSAEINTR }
-        )
+      def timeoutDetected = mapLastError(
+        onUnix = { err => err == EAGAIN || err == EWOULDBLOCK },
+        onWindows = { err => err == WSAEWOULDBLOCK || err == WSAETIMEDOUT }
+      )
+      def interruptDetected = mapLastError(
+        onUnix = { _ == EINTR },
+        onWindows = { _ == WSAEINTR }
+      )
 
-        bytesNum match {
-          case _ if (bytesNum > 0) => bytesNum
+      bytesNum match {
+        case _ if (bytesNum > 0) => bytesNum
 
-          case 0 => if (count == 0) 0 else -1
+        case 0 => if (count == 0) 0 else -1
 
-          case _ if timeoutDetected =>
-            throw new SocketTimeoutException(
-              "Socket timeout while reading data"
-            )
+        case _ if timeoutDetected =>
+          throw new SocketTimeoutException("Socket timeout while reading data")
 
-          case _ if interruptDetected && !Thread.interrupted() =>
-            read(buffer, offset, count)
+        case _ if interruptDetected && !Thread.interrupted() =>
+          read(buffer, offset, count)
 
-          case _ =>
-            throw new SocketException(s"read failed, errno: ${lastError()}")
-        }
+        case _ =>
+          throw new SocketException(s"read failed, errno: ${lastError()}")
       }
     }
   }

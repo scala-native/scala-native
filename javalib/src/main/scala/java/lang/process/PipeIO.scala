@@ -1,7 +1,6 @@
 package java.lang.process
 
 import java.io._
-import java.lang.Blocker
 
 import scala.scalanative.annotation.stub
 import scala.scalanative.meta.LinktimeInfo.isWindows
@@ -116,11 +115,9 @@ private[process] object PipeIO {
       if (src eq NullInput) -1
       else
         synchronized {
-          Blocker {
-            val res = src.read()
-            if (res == -1) switchToNullInput()
-            res
-          }
+          val res = src.read()
+          if (res == -1) switchToNullInput()
+          res
         }
 
     override def read(buf: Array[scala.Byte], offset: Int, len: Int): Int = {
@@ -135,11 +132,9 @@ private[process] object PipeIO {
       else if (src eq NullInput) -1
       else
         synchronized {
-          Blocker {
-            val res = src.read(buf, offset, len)
-            if (res < 0) switchToNullInput()
-            res
-          }
+          val res = src.read(buf, offset, len)
+          if (res < 0) switchToNullInput()
+          res
         }
     }
 
