@@ -3,6 +3,8 @@ package sbtplugin
 
 import sbt._
 
+import sjsonnew.JsonFormat
+
 object ScalaNativePlugin extends AutoPlugin {
   override def requires: Plugins = plugins.JvmPlugin
 
@@ -52,6 +54,8 @@ object ScalaNativePlugin extends AutoPlugin {
         "Generates native binary in release-full configuration without running it."
       )
 
+    implicit def nativeConfigJsonFormat: JsonFormat[build.NativeConfig] =
+      NativeConfigJsonFormats.NativeConfigCodec
   }
 
   override def globalSettings: Seq[Setting[_]] =

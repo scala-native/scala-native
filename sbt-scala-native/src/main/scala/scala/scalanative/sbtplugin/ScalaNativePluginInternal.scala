@@ -115,7 +115,7 @@ object ScalaNativePluginInternal {
    *    [[ScalaNativePlugin#globalSettings]]
    */
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
-    nativeConfig := Def.uncached {
+    nativeConfig := {
       build.NativeConfig.empty
         .withClang(interceptBuildException(Discover.clang()))
         .withClangPP(interceptBuildException(Discover.clangpp()))
