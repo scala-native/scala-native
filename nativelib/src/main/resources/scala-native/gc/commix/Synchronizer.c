@@ -81,6 +81,7 @@ static void Synchronizer_WaitForResumption(MutatorThread *selfThread);
 #include "shared/YieldPointTrap.h"
 #include "StackTrace.h"
 #include <errno.h>
+#include <stdint.h>
 #ifdef _WIN32
 #include <errhandlingapi.h>
 #else
@@ -124,14 +125,40 @@ static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
     return EXCEPTION_CONTINUE_SEARCH;
 }
 #else
-#ifdef __APPLE__
-#define SAFEPOINT_TRAP_SIGNAL SIGBUS
-#else
-#define SAFEPOINT_TRAP_SIGNAL SIGSEGV
-#endif
 #define THREAD_WAKEUP_SIGNAL SIGCONT
-static struct sigaction previousSignalHandler = {};
 static sigset_t threadWakupSignals = {};
+static struct sigaction previousSigsegvHandler = {};
+#ifdef __APPLE__
+static struct sigaction previousSigbusHandler = {};
+#endif
+
+static bool isSafepointTrapSignal(int signal) {
+#ifdef __APPLE__
+    return signal == SIGBUS || signal == SIGSEGV;
+#else
+    return signal == SIGSEGV;
+#endif
+}
+
+static bool isTrapFaultAddress(const void *faultAddress, const void *trapCell) {
+    if (faultAddress == NULL || trapCell == NULL) {
+        return false;
+    }
+    uintptr_t pageSize = (uintptr_t)getpagesize();
+    uintptr_t faultPage = ((uintptr_t)faultAddress) / pageSize;
+    uintptr_t trapPage = ((uintptr_t)trapCell) / pageSize;
+    return faultPage == trapPage;
+}
+
+static struct sigaction *previousSignalHandlerFor(int signal) {
+    if (signal == SIGSEGV)
+        return &previousSigsegvHandler;
+#ifdef __APPLE__
+    if (signal == SIGBUS)
+        return &previousSigbusHandler;
+#endif
+    return NULL;
+}
 
 static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
     int old_errno = errno;
@@ -143,24 +170,27 @@ static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
     if (trapCell == NULL) {
         trapCell = (void *)scalanative_GC_yieldpoint_trap;
     }
-    if (signal == SAFEPOINT_TRAP_SIGNAL && trapCell != NULL &&
-        siginfo->si_addr == trapCell) {
+    if (isSafepointTrapSignal(signal) && trapCell != NULL &&
+        isTrapFaultAddress(siginfo->si_addr, trapCell)) {
         Synchronizer_yield();
         errno = old_errno;
         return;
     }
 
     // Try call other handlers
-    if (previousSignalHandler.sa_handler != NULL) {
-        void *handler = previousSignalHandler.sa_handler;
+    struct sigaction *previousSignalHandler = previousSignalHandlerFor(signal);
+    if (previousSignalHandler != NULL &&
+        previousSignalHandler->sa_handler != NULL) {
+        void *handler = previousSignalHandler->sa_handler;
         if (handler != SIG_DFL && handler != SIG_IGN && handler != SIG_ERR &&
             handler != SafepointTrapHandler) {
-            if (previousSignalHandler.sa_flags & SA_SIGINFO) {
+            if (previousSignalHandler->sa_flags & SA_SIGINFO) {
                 void (*sigInfoHandler)(int, siginfo_t *, void *) = (void (*)(
-                    int, siginfo_t *, void *))previousSignalHandler.sa_handler;
+                    int, siginfo_t *,
+                    void *))previousSignalHandler->sa_handler;
                 return sigInfoHandler(signal, siginfo, uap);
             } else {
-                return previousSignalHandler.sa_handler(signal);
+                return previousSignalHandler->sa_handler(signal);
             }
         }
         return;
@@ -189,11 +219,20 @@ static void SetupYieldPointTrapHandler(void) {
     sigemptyset(&sa.sa_mask);
     sa.sa_sigaction = &SafepointTrapHandler;
     sa.sa_flags = SA_SIGINFO | SA_RESTART;
-    if (sigaction(SAFEPOINT_TRAP_SIGNAL, &sa, &previousSignalHandler) == -1) {
-        GC_LOG_ERROR("Cannot setup safepoint synchronization handler: %s",
+    if (sigaction(SIGSEGV, &sa, &previousSigsegvHandler) == -1) {
+        GC_LOG_ERROR("Cannot setup safepoint synchronization handler for "
+                     "SIGSEGV: %s",
                      strerror(errno));
         exit(errno);
     }
+#ifdef __APPLE__
+    if (sigaction(SIGBUS, &sa, &previousSigbusHandler) == -1) {
+        GC_LOG_ERROR("Cannot setup safepoint synchronization handler for "
+                     "SIGBUS: %s",
+                     strerror(errno));
+        exit(errno);
+    }
+#endif
 #endif
 }
 
