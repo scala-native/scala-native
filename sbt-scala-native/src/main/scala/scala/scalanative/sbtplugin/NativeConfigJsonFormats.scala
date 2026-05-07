@@ -235,54 +235,44 @@ object NativeConfigJsonFormats {
       fromJson(StringJsonFormat.read(jsOpt, unbuilder))
   }
 
-  implicit val optionSanitizerJsonFormat: JsonFormat[Option[Sanitizer]] =
-    optionFormat[Sanitizer]
-
-  implicit val optionBooleanJsonFormat: JsonFormat[Option[Boolean]] =
-    optionFormat[Boolean]
-
-  implicit val optionStringJsonFormat: JsonFormat[Option[String]] =
-    optionFormat[String]
-
   /** Deterministic key order for stable task-cache hashing. */
-  private val mapStringVecStringJsonFormat: JsonFormat[Map[String, Vector[String]]] =
-    new JsonFormat[Map[String, Vector[String]]] {
-      def write[J](m: Map[String, Vector[String]], builder: Builder[J]): Unit = {
-        builder.beginObject()
-        m.toSeq.sortBy(_._1).foreach {
-          case (k, vs) =>
-            builder.addFieldName(k)
-            implicitly[JsonFormat[Vector[String]]].write(vs, builder)
-        }
-        builder.endObject()
+  private object MapStringVecStringJsonFormat extends JsonFormat[Map[String, Vector[String]]] {
+    def write[J](m: Map[String, Vector[String]], builder: Builder[J]): Unit = {
+      builder.beginObject()
+      m.toSeq.sortBy(_._1).foreach {
+        case (k, vs) =>
+          builder.addFieldName(k)
+          implicitly[JsonFormat[Vector[String]]].write(vs, builder)
       }
-
-      def read[J](jsOpt: Option[J], unbuilder: Unbuilder[J]): Map[String, Vector[String]] = {
-        val js = jsOpt.getOrElse(deserializationError("expected JSON object for service providers"))
-        val n = unbuilder.beginObject(js)
-        val buf = scala.collection.mutable.Map.empty[String, Vector[String]]
-        var i = 0
-        while (i < n) {
-          val (k, vOpt) = unbuilder.nextFieldOpt()
-          val vs = vOpt
-            .map(vjs => implicitly[JsonFormat[Vector[String]]].read(Some(vjs), unbuilder))
-            .getOrElse(Vector.empty)
-          buf(k) = vs
-          i += 1
-        }
-        unbuilder.endObject()
-        buf.toMap
-      }
+      builder.endObject()
     }
+
+    def read[J](jsOpt: Option[J], unbuilder: Unbuilder[J]): Map[String, Vector[String]] = {
+      val js = jsOpt.getOrElse(deserializationError("expected JSON object for service providers"))
+      val n = unbuilder.beginObject(js)
+      val buf = scala.collection.mutable.Map.empty[String, Vector[String]]
+      var i = 0
+      while (i < n) {
+        val (k, vOpt) = unbuilder.nextFieldOpt()
+        val vs = vOpt
+          .map(vjs => implicitly[JsonFormat[Vector[String]]].read(Some(vjs), unbuilder))
+          .getOrElse(Vector.empty)
+        buf(k) = vs
+        i += 1
+      }
+      unbuilder.endObject()
+      buf.toMap
+    }
+  }
 
   // --- Service providers (Iterable normalized to Seq) ----------------------------------------
 
   implicit object ServiceProvidersJsonFormat extends JsonFormat[Map[String, Iterable[String]]] {
     def write[J](obj: Map[String, Iterable[String]], builder: Builder[J]): Unit =
-      mapStringVecStringJsonFormat.write(obj.map { case (k, v) => (k, v.toVector) }, builder)
+      MapStringVecStringJsonFormat.write(obj.map { case (k, v) => (k, v.toVector) }, builder)
 
     def read[J](jsOpt: Option[J], unbuilder: Unbuilder[J]): Map[String, Iterable[String]] =
-      mapStringVecStringJsonFormat
+      MapStringVecStringJsonFormat
         .read(jsOpt, unbuilder)
         .map { case (k, v) => (k, v: Iterable[String]) }
   }
