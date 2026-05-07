@@ -166,6 +166,35 @@ static struct sigaction *previousSignalHandlerFor(int signal) {
     return NULL;
 }
 
+/* See immix Synchronizer.c for the rationale: continuation migration can
+ * leave a previous carrier's TLS-derived trap-cell pointer cached in the
+ * resumed function, so the fault may land on another armed mutator's trap
+ * page rather than the current carrier's. Arming is global, so any
+ * SEGV_ACCERR from a registered mutator while stopThreads is set is a
+ * legitimate safepoint trap on the current carrier. */
+static bool isAccessPermissionFault(int signal, int si_code) {
+    if (signal == SIGSEGV)
+        return si_code == SEGV_ACCERR;
+#ifdef __APPLE__
+    if (signal == SIGBUS)
+        return si_code == BUS_ADRERR;
+#endif
+    return false;
+}
+
+static bool isContinuationStaleTrapFault(int signal, siginfo_t *siginfo,
+                                         MutatorThread *self) {
+    if (self == NULL)
+        return false;
+    if (!isSafepointTrapSignal(signal))
+        return false;
+    if (!isAccessPermissionFault(signal, siginfo->si_code))
+        return false;
+    if (!atomic_load_explicit(&Synchronizer_stopThreads, memory_order_acquire))
+        return false;
+    return true;
+}
+
 static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
     int old_errno = errno;
     void *trapCell = NULL;
@@ -176,8 +205,11 @@ static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
     if (trapCell == NULL) {
         trapCell = (void *)scalanative_GC_yieldpoint_trap;
     }
-    if (isSafepointTrapSignal(signal) && trapCell != NULL &&
-        isTrapFaultAddress(siginfo->si_addr, trapCell)) {
+    bool isOwnTrap = isSafepointTrapSignal(signal) && trapCell != NULL &&
+                     isTrapFaultAddress(siginfo->si_addr, trapCell);
+    bool isStaleCarrierTrap =
+        !isOwnTrap && isContinuationStaleTrapFault(signal, siginfo, self);
+    if (isOwnTrap || isStaleCarrierTrap) {
 #ifdef _WIN32
         Synchronizer_yield();
 #else

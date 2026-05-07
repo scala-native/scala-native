@@ -164,6 +164,43 @@ static struct sigaction *previousSignalHandlerFor(int signal) {
     return NULL;
 }
 
+/*
+ * Continuation migration may leave a previous carrier's TLS-derived trap
+ * cell pointer cached in the resumed function's stack/registers (LLVM is
+ * free to CSE `mrs tpidr_el0` and the subsequent TLS-slot dereference
+ * across arbitrary call boundaries; the runtime cannot announce that a
+ * scalanative_continuation_resume call may have moved execution onto a
+ * different OS thread). The faulting load can therefore land on another
+ * armed mutator's trap page rather than the current carrier's. Because
+ * arming is global (Synchronizer_SuspendThreads sets stopThreads BEFORE
+ * arming every mutator's trap page), any access-permission fault from a
+ * registered mutator while stopThreads is set is a legitimate safepoint
+ * trap on the current carrier - yielding here makes the current carrier
+ * observe stopThreads and synchronise correctly on the next resume.
+ */
+static bool isAccessPermissionFault(int signal, int si_code) {
+    if (signal == SIGSEGV)
+        return si_code == SEGV_ACCERR;
+#ifdef __APPLE__
+    if (signal == SIGBUS)
+        return si_code == BUS_ADRERR;
+#endif
+    return false;
+}
+
+static bool isContinuationStaleTrapFault(int signal, siginfo_t *siginfo,
+                                         MutatorThread *self) {
+    if (self == NULL)
+        return false;
+    if (!isSafepointTrapSignal(signal))
+        return false;
+    if (!isAccessPermissionFault(signal, siginfo->si_code))
+        return false;
+    if (!atomic_load_explicit(&Synchronizer_stopThreads, memory_order_acquire))
+        return false;
+    return true;
+}
+
 static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
     int old_errno = errno;
     void *trapCell = NULL;
@@ -174,8 +211,11 @@ static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
     if (trapCell == NULL) {
         trapCell = (void *)scalanative_GC_yieldpoint_trap;
     }
-    if (isSafepointTrapSignal(signal) && trapCell != NULL &&
-        isTrapFaultAddress(siginfo->si_addr, trapCell)) {
+    bool isOwnTrap = isSafepointTrapSignal(signal) && trapCell != NULL &&
+                     isTrapFaultAddress(siginfo->si_addr, trapCell);
+    bool isStaleCarrierTrap =
+        !isOwnTrap && isContinuationStaleTrapFault(signal, siginfo, self);
+    if (isOwnTrap || isStaleCarrierTrap) {
 #ifdef _WIN32
         Synchronizer_yield();
 #else
