@@ -48,7 +48,13 @@ runs:
         "ProgramFiles=${env:ProgramFiles}" >> $env:GITHUB_OUTPUT
         "LocalAppData=${env:LocalAppData}" >> $env:GITHUB_OUTPUT
         "UserProfile=${env:UserProfile}" >> $env:GITHUB_OUTPUT
-        "VcpkgLibs=${env:VCPKG_INSTALLATION_ROOT}\installed\x64-windows-static" >> $env:GITHUB_OUTPUT
+        $vcpkgRoot = $env:VCPKG_INSTALLATION_ROOT
+        if ([string]::IsNullOrWhiteSpace($vcpkgRoot)) {
+          $vcpkgRoot = 'C:\vcpkg'
+          Write-Warning "VCPKG_INSTALLATION_ROOT is unset or empty; using fallback: $vcpkgRoot"
+        }
+        $vcpkgLibs = "$vcpkgRoot\installed\x64-windows-static"
+        "VcpkgLibs=$vcpkgLibs" >> $env:GITHUB_OUTPUT
         if ("${{inputs.scala-version}}".StartsWith("2.")) {
           echo ("project-version=" + ("${{inputs.scala-version}}".Split(".")[0, 1] -join "_")) >> $env:GITHUB_ENV
         } elseif ("${{inputs.scala-version}}".StartsWith("3-next")) {
@@ -106,3 +112,14 @@ runs:
     - name: Install libs
       shell: pwsh
       run: vcpkg install bdwgc zlib --triplet=x64-windows-static
+
+    - name: Verify vcpkg static libs
+      shell: pwsh
+      run: |
+        $base = '${{ steps.resolve-env.outputs.VcpkgLibs }}'
+        $zlib = Join-Path $base 'lib\zlib.lib'
+        if (-not (Test-Path -LiteralPath $zlib)) {
+          Write-Error "Missing '$zlib' (linker needs zlib.lib for javalib). Check vcpkg install and VcpkgLibs='$base'"
+          exit 1
+        }
+        Write-Host "OK: $zlib"
