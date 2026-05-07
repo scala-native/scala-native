@@ -1377,6 +1377,10 @@ class StampedLockTest extends JSR166Test {
     Thread.sleep(testDurationMillis)
     done.set(true)
     val it = futures.iterator()
-    while (it.hasNext()) checkTimedGet(it.next(), null)
+    while (it.hasNext()) {
+      val future = it.next()
+      if (future.isDone()) checkTimedGet(future, null)
+      else future.cancel(true)
+    }
   }
 }
