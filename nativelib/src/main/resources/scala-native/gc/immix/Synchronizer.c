@@ -75,8 +75,14 @@ static void Synchronizer_WaitForResumption(MutatorThread *selfThread);
 // =============================================================================
 // Uses signal handlers for low-overhead yieldpoints
 // See: https://dl.acm.org/doi/10.1145/2887746.2754187
+//
+// POSIX: On a matching fault, prefer scalanative_gc_safepoint_prepare_redirect
+// so Synchronizer_yield runs from the asm trampoline (normal context), not
+// inside the signal handler. See docs/contrib/gc-safepoint-trampoline.md.
+// Windows: still yields from the exception filter.
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
 #include "shared/YieldPointTrap.h"
+#include "shared/SafepointPollTrampoline.h"
 #include "StackTrace.h"
 #include <errno.h>
 #include <stdint.h>
@@ -170,7 +176,13 @@ static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
     }
     if (isSafepointTrapSignal(signal) && trapCell != NULL &&
         isTrapFaultAddress(siginfo->si_addr, trapCell)) {
+#ifdef _WIN32
         Synchronizer_yield();
+#else
+        if (!scalanative_gc_safepoint_prepare_redirect(uap, self)) {
+            Synchronizer_yield();
+        }
+#endif
         errno = old_errno;
         return;
     }
@@ -184,8 +196,7 @@ static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
             handler != SafepointTrapHandler) {
             if (previousSignalHandler->sa_flags & SA_SIGINFO) {
                 void (*sigInfoHandler)(int, siginfo_t *, void *) = (void (*)(
-                    int, siginfo_t *,
-                    void *))previousSignalHandler->sa_handler;
+                    int, siginfo_t *, void *))previousSignalHandler->sa_handler;
                 return sigInfoHandler(signal, siginfo, uap);
             } else {
                 return previousSignalHandler->sa_handler(signal);
