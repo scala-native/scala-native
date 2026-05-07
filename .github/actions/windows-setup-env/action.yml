@@ -48,7 +48,13 @@ runs:
         "ProgramFiles=${env:ProgramFiles}" >> $env:GITHUB_OUTPUT
         "LocalAppData=${env:LocalAppData}" >> $env:GITHUB_OUTPUT
         "UserProfile=${env:UserProfile}" >> $env:GITHUB_OUTPUT
-        "VcpkgLibs=${env:VCPKG_INSTALLATION_ROOT}\installed\x64-windows-static" >> $env:GITHUB_OUTPUT
+        $vcpkgRoot = $env:VCPKG_INSTALLATION_ROOT
+        if ([string]::IsNullOrWhiteSpace($vcpkgRoot)) {
+          $vcpkgRoot = 'C:\vcpkg'
+          Write-Warning "VCPKG_INSTALLATION_ROOT is unset or empty; using fallback: $vcpkgRoot"
+        }
+        $vcpkgLibs = "$vcpkgRoot\installed\x64-windows-static"
+        "VcpkgLibs=$vcpkgLibs" >> $env:GITHUB_OUTPUT
         if ("${{inputs.scala-version}}".StartsWith("2.")) {
           echo ("project-version=" + ("${{inputs.scala-version}}".Split(".")[0, 1] -join "_")) >> $env:GITHUB_ENV
         } elseif ("${{inputs.scala-version}}".StartsWith("3-next")) {
@@ -106,3 +112,31 @@ runs:
     - name: Install libs
       shell: pwsh
       run: vcpkg install bdwgc zlib --triplet=x64-windows-static
+
+    # madler zlib 1.3+ CMake installs the static archive as zs.lib (OUTPUT_NAME
+    # z + Windows static suffix s). javalib uses @link("zlib") -> zlib.lib.
+    - name: Normalize vcpkg zlib.lib name for linking
+      shell: pwsh
+      run: |
+        $libDir = Join-Path '${{ steps.resolve-env.outputs.VcpkgLibs }}' 'lib'
+        $zs = Join-Path $libDir 'zs.lib'
+        $zlib = Join-Path $libDir 'zlib.lib'
+        if (-not (Test-Path -LiteralPath $zlib) -and (Test-Path -LiteralPath $zs)) {
+          Copy-Item -LiteralPath $zs -Destination $zlib
+          Write-Host "Installed zlib.lib (copy of zs.lib) for @link(zlib)"
+        } elseif (Test-Path -LiteralPath $zlib) {
+          Write-Host "zlib.lib already present"
+        } else {
+          Write-Error "Neither zlib.lib nor zs.lib in $libDir"
+          exit 1
+        }
+
+    - name: Verify vcpkg static libs
+      shell: pwsh
+      run: |
+        $zlib = Join-Path '${{ steps.resolve-env.outputs.VcpkgLibs }}' 'lib\zlib.lib'
+        if (-not (Test-Path -LiteralPath $zlib)) {
+          Write-Error "Missing '$zlib' (javalib links zlib.lib). VcpkgLibs='${{ steps.resolve-env.outputs.VcpkgLibs }}'"
+          exit 1
+        }
+        Write-Host "OK: $zlib"

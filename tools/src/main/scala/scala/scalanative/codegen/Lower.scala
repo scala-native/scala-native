@@ -873,7 +873,6 @@ private[scalanative] object Lower {
       }
       private val multithreadingEnabled = meta.platform.isMultithreadingEnabled
       private val usesGCYieldPoints = multithreadingEnabled && supportedGC
-      private val useYieldPointTraps = platform.useGCYieldPointTraps
 
       def apply(defn: nir.Defn.Define): Boolean = {
         if (!usesGCYieldPoints) false

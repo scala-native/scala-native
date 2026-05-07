@@ -28,6 +28,25 @@
 #include <mach/mach.h>
 #endif
 
+void YieldPointTrap_resetTaskMachBadAccessPorts(void) {
+#if defined(__APPLE__)
+    /* LLDB and some frameworks install task-wide Mach exception handlers for
+     * EXC_BAD_ACCESS. XNU delivers Mach exceptions to those handlers before
+     * translating the fault to SIGBUS, so a mutator can fault on a PROT_NONE
+     * yield trap and never run our POSIX safepoint handler. Clearing the task
+     * exception port for this mask restores the signal path. Call from init
+     * and again before arming traps (e.g. each GC) because dylibs may
+     * reinstall handlers after startup. */
+    kern_return_t kr = task_set_exception_ports(
+        mach_task_self(), EXC_MASK_BAD_ACCESS, MACH_PORT_NULL,
+        EXCEPTION_STATE_IDENTITY, MACHINE_THREAD_STATE);
+    if (kr != KERN_SUCCESS)
+        GC_LOG_WARN("Failed to reset GC safepoint Mach EXC_BAD_ACCESS ports "
+                    "(kern_return_t=%d)",
+                    (int)kr);
+#endif
+}
+
 safepoint_t YieldPointTrap_init() {
     bool allocated;
     void *addr =
@@ -46,22 +65,7 @@ safepoint_t YieldPointTrap_init() {
     }
 
 #if defined(__APPLE__)
-    /* LLDB installs task-wide Mach exception handlers. XNU dispatches Mach
-     * exceptions first to any registered "activation" handler and then to
-     * any registered task handler before dispatching the exception to a
-     * host-wide Mach exception handler that does translation to POSIX
-     * signals. This makes it impossible to use LLDB with safepoints;
-     * continuing execution after LLDB
-     * traps an EXC_BAD_ACCESS will result in LLDB's EXC_BAD_ACCESS handler
-     * being invoked again. Work around this here by
-     * installing a no-op task-wide Mach exception handler for
-     * EXC_BAD_ACCESS.
-     */
-    kern_return_t kr = task_set_exception_ports(
-        mach_task_self(), EXC_MASK_BAD_ACCESS, MACH_PORT_NULL,
-        EXCEPTION_STATE_IDENTITY, MACHINE_THREAD_STATE);
-    if (kr != KERN_SUCCESS)
-        GC_LOG_WARN("Failed to create GC safepoint bad access handler");
+    YieldPointTrap_resetTaskMachBadAccessPorts();
 #endif
     return addr;
 }
@@ -95,6 +99,22 @@ void YieldPointTrap_disarm(safepoint_t ref) {
         GC_LOG_ERROR("Failed to disable GC collect trap: %s", strerror(errno));
         exit(errno);
     }
+}
+
+void YieldPointTrap_free(safepoint_t ref) {
+    if (ref == NULL) {
+        return;
+    }
+#ifdef _WIN32
+    if (!VirtualFree((LPVOID)ref, 0, MEM_RELEASE)) {
+        GC_LOG_WARN("Failed to release GC safepoint trap memory: %lu",
+                    GetLastError());
+    }
+#else
+    if (munmap((void *)ref, sizeof(safepoint_t)) != 0) {
+        GC_LOG_WARN("Failed to unmap GC safepoint trap: %s", strerror(errno));
+    }
+#endif
 }
 
 #endif

@@ -11,7 +11,7 @@ import scala.util.control.NonFatal
 import scala.scalanative.build.Discover
 import scala.scalanative.codegen.llvm.Metadata.conversions._
 import scala.scalanative.codegen.llvm.compat.os.OsCompat
-import scala.scalanative.codegen.{Metadata => CodeGenMetadata}
+import scala.scalanative.codegen.{Lower, Metadata => CodeGenMetadata}
 import scala.scalanative.io.VirtualDirectory
 import scala.scalanative.nir.ControlFlow.{Block, Graph => CFG}
 import scala.scalanative.nir.Defn.Define.DebugInfo
@@ -213,6 +213,12 @@ private[codegen] abstract class AbstractCodeGen(
       unsupported(defn)
   }
 
+  // Currently we have a single usage for interaction with GC
+  private def isThreadLocal(name: nir.Global): Boolean =
+    (name == Lower.GCYieldPointTrapName) &&
+      platform.isMultithreadingEnabled &&
+      platform.useGCYieldPointTraps
+
   private[codegen] def genGlobalDefn(
       attrs: nir.Attrs,
       name: nir.Global,
@@ -225,6 +231,9 @@ private[codegen] abstract class AbstractCodeGen(
     genGlobal(name)
     str(" = ")
     str(if (attrs.isExtern) "external " else "hidden ")
+    if (attrs.isExtern && isThreadLocal(name)) {
+      str("thread_local ")
+    }
     str(if (isConst) "constant" else "global")
     str(" ")
     if (attrs.isExtern) {

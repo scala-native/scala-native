@@ -399,7 +399,7 @@ object TSPExchangerTest {
         jl.Double.valueOf(secs),
         jl.Double.valueOf(best),
         jl.Double.valueOf(worst),
-        jl.Double.valueOf(xs),
+        jl.Integer.valueOf(xs),
         jl.Long.valueOf(rate)
       )
       // JSR-166 orignal comments
