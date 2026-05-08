@@ -11,7 +11,7 @@ import scala.util.control.NonFatal
 import scala.scalanative.build.Discover
 import scala.scalanative.codegen.llvm.Metadata.conversions._
 import scala.scalanative.codegen.llvm.compat.os.OsCompat
-import scala.scalanative.codegen.{Metadata => CodeGenMetadata}
+import scala.scalanative.codegen.{Lower, Metadata => CodeGenMetadata}
 import scala.scalanative.io.VirtualDirectory
 import scala.scalanative.nir.ControlFlow.{Block, Graph => CFG}
 import scala.scalanative.nir.Defn.Define.DebugInfo
@@ -36,7 +36,9 @@ private[codegen] abstract class AbstractCodeGen(
 
   private val copies = mutable.Map.empty[nir.Local, nir.Val]
   private val deps = mutable.Set.empty[nir.Global.Member]
+  deps.sizeHint(1024)
   private val generated = mutable.Set.empty[String]
+  generated.sizeHint(1024)
   private val externSigMembers = mutable.Map.empty[nir.Sig, nir.Global.Member]
 
   private def isGnu: Boolean = {
@@ -211,6 +213,12 @@ private[codegen] abstract class AbstractCodeGen(
       unsupported(defn)
   }
 
+  // Currently we have a single usage for interaction with GC
+  private def isThreadLocal(name: nir.Global): Boolean =
+    (name == Lower.GCYieldPointTrapName) &&
+      platform.isMultithreadingEnabled &&
+      platform.useGCYieldPointTraps
+
   private[codegen] def genGlobalDefn(
       attrs: nir.Attrs,
       name: nir.Global,
@@ -223,6 +231,9 @@ private[codegen] abstract class AbstractCodeGen(
     genGlobal(name)
     str(" = ")
     str(if (attrs.isExtern) "external " else "hidden ")
+    if (attrs.isExtern && isThreadLocal(name)) {
+      str("thread_local ")
+    }
     str(if (isConst) "constant" else "global")
     str(" ")
     if (attrs.isExtern) {
@@ -489,10 +500,11 @@ private[codegen] abstract class AbstractCodeGen(
   private[codegen] def genType(ty: nir.Type)(implicit sb: ShowBuilder): Unit = {
     import sb._
     ty match {
-      case nir.Type.Vararg => str("...")
-      case nir.Type.Unit   => str("void")
-      case _: nir.Type.RefKind | nir.Type.Ptr | nir.Type.Null |
-          nir.Type.Nothing =>
+      case nir.Type.Vararg =>
+        str("...")
+      case nir.Type.Unit =>
+        str("void")
+      case _: nir.Type.RefKind | nir.Type.Ptr | nir.Type.Nothing =>
         str(pointerType)
       case nir.Type.Bool          => str("i1")
       case i: nir.Type.FixedSizeI => str("i"); str(i.width)

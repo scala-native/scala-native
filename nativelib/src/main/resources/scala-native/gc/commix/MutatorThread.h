@@ -9,6 +9,7 @@
 #include <shared/ThreadUtil.h>
 #include "immix_commix/RegistersCapture.h"
 #include "nativeThreadTLS.h"
+#include <stdint.h>
 
 typedef struct {
     _Atomic(GC_MutatorThreadState) state;
@@ -30,6 +31,13 @@ typedef struct {
     thread_t thread; // pthread_t - used for liveness check and signals
 #endif
     ThreadInfo *threadInfo;
+#ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
+    /* Per-mutator trap cell (distinct VM page); mirrored in TLS
+     * scalanative_GC_yieldpoint_trap for generated yieldpoint loads. */
+    void **yieldpointTrap;
+    /* Faulting PC when using deferred safepoint trampoline (POSIX). */
+    uintptr_t safepointResumePc;
+#endif
 } MutatorThread;
 
 typedef struct MutatorThreadNode {

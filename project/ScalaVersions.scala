@@ -38,7 +38,7 @@ object ScalaVersions {
 
   // Tested in scheduled nightly CI to check compiler plugins
   // List maintains only upcoming releases, removed from the list after reaching stable status
-  lazy val scala3RCVersions = List("3.8.4-RC1")
+  lazy val scala3RCVersions = List("3.3.8-RC1", "3.8.4-RC1")
 
   // List of nightly versions can be found here: https://repo.scala-lang.org/ui/native/maven-nightlies/org/scala-lang/scala3-compiler_3
   // or check outputs of `scala -O --version -S 3.nightly`

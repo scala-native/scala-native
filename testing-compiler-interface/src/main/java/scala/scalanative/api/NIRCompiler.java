@@ -18,6 +18,7 @@ public interface NIRCompiler {
 	 *         etc.)
 	 */
     public Path[] compile(String source);
+    public Path[] compile(String source, String[] scalacOptions); 
 
     /**
      * Compiles all the source files in `base` and returns all the files
@@ -28,4 +29,5 @@ public interface NIRCompiler {
      *         etc.)
      */
     public Path[] compile(Path base);
+    public Path[] compile(Path base, String[] scalacOptions);
 }
