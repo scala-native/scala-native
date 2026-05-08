@@ -12,6 +12,13 @@ scalaVersion := {
 
 import scala.scalanative.build._
 
+def baseNativeConfig(config: NativeConfig): NativeConfig =
+  config
+    .withMode(Mode.debug)
+    .withLTO(LTO.none)
+    .withGC(GC.default)
+    .withOptimize(true)
+
 // Distinct override at every scope level to verify the delegation chain:
 //   Compile / nativeLinkReleaseX / nativeConfig
 //     -> Compile / nativeConfig
@@ -23,7 +30,7 @@ import scala.scalanative.build._
 // `Test / nativeConfig` is provided, `Test / nativeConfig` would inherit from
 // `Compile / nativeConfig` rather than from the project-scoped `nativeConfig`.
 // This test sets every scope explicitly to make the chain unambiguous.
-Global / nativeConfig ~= { _.withBaseName("level-global") }
+Global / nativeConfig ~= { baseNativeConfig(_).withBaseName("level-global") }
 ThisBuild / nativeConfig ~= { _.withBaseName("level-thisbuild") }
 nativeConfig ~= { _.withBaseName("level-project") }
 Compile / nativeConfig ~= { _.withBaseName("level-compile") }
