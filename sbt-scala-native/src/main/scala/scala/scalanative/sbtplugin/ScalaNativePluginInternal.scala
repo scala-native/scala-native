@@ -126,6 +126,7 @@ object ScalaNativePluginInternal {
         .withMode(Discover.mode())
         .withOptimize(Discover.optimize())
     },
+    ThisBuild / nativeConfig := (Global / nativeConfig).value,
     nativeWarnOldJVM := {
       val logger = streams.value.log
       Try(Class.forName("java.util.function.Function")).toOption match {
@@ -183,7 +184,7 @@ object ScalaNativePluginInternal {
   private def nativeLinkCachedTask(
       testConfig: Boolean,
       moduleSuffix: String,
-      configureNativeConfig: NativeConfig => NativeConfig
+      linkKey: TaskKey[FileRef]
   ): Def.Initialize[Task[FileRef]] =
     Def
       .task {
@@ -191,7 +192,7 @@ object ScalaNativePluginInternal {
         val sbtLogger = streams.value.log
         val nativeLogger = sbtLogger.toLogger
         val classpath = PluginCompat.toNioPaths(fullClasspath.value)
-        val userConfig = nativeConfig.value
+        val userConfig = (linkKey / nativeConfig).value
         val sourcesClassPath = resolveSourcesClassPath(
           userConfig,
           dependencyResolution.value,
@@ -200,7 +201,7 @@ object ScalaNativePluginInternal {
         )
 
         val artifactFile = nativeLinkImpl(
-          nativeConfig = configureNativeConfig(userConfig),
+          nativeConfig = userConfig,
           classpath = classpath,
           sourcesClassPath = sourcesClassPath,
           sbtLogger = sbtLogger,
@@ -226,20 +227,25 @@ object ScalaNativePluginInternal {
           s"-P:scalanative:positionRelativizationPaths:${sourceDirectories.value.map(_.getAbsolutePath()).mkString(";")}"
         )
     },
+    nativeLink / nativeConfig := nativeConfig.value,
+    nativeLinkReleaseFast / nativeConfig := nativeConfig.value
+      .withMode(Mode.releaseFast),
+    nativeLinkReleaseFull / nativeConfig := nativeConfig.value
+      .withMode(Mode.releaseFull),
     nativeLinkReleaseFull := nativeLinkCachedTask(
       testConfig,
       moduleSuffix = "-release-full",
-      configureNativeConfig = _.withMode(Mode.releaseFull)
+      linkKey = nativeLinkReleaseFull
     ).value,
     nativeLinkReleaseFast := nativeLinkCachedTask(
       testConfig,
       moduleSuffix = "-release-fast",
-      configureNativeConfig = _.withMode(Mode.releaseFast)
+      linkKey = nativeLinkReleaseFast
     ).value,
     nativeLink := nativeLinkCachedTask(
       testConfig,
       moduleSuffix = "",
-      configureNativeConfig = identity
+      linkKey = nativeLink
     ).value,
     console := console
       .dependsOn(Def.task {
