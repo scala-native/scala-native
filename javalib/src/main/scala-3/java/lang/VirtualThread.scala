@@ -732,6 +732,11 @@ private[java] final class VirtualThread(
     val vThread = VirtualThread.this
 
     override def run(): Unit = {
+      /* Clear delimcc handler TLS before any early return. If tryAcquireRunLoopToken
+       * fails we still leave this worker with a clean chain; otherwise a stale head
+       * from another VT (or a partial suspend) can make handler_pop / handler_split_at
+       * see the wrong label and abort, which strands Object.wait continuations. */
+      Continuations.handlersReset()
       // Recovery guard: if a previous VT left TLS currentThread mapped to a VT,
       // reset to the platform carrier before dispatching this continuation.
       val platformThread = Thread.currentPlatformThread
