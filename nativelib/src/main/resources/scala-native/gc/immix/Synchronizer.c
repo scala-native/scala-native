@@ -13,6 +13,7 @@
 #include "Settings.h"
 #include "shared/ThreadUtil.h"
 #include "shared/Log.h"
+#include "shared/MemoryInfo.h"
 #include "shared/Time.h"
 #include "MutatorThread.h"
 #include <signal.h>
@@ -148,7 +149,7 @@ static bool isTrapFaultAddress(const void *faultAddress, const void *trapCell) {
     if (faultAddress == NULL || trapCell == NULL) {
         return false;
     }
-    uintptr_t pageSize = (uintptr_t)getpagesize();
+    uintptr_t pageSize = getPageSize();
     uintptr_t faultPage = ((uintptr_t)faultAddress) / pageSize;
     uintptr_t trapPage = ((uintptr_t)trapCell) / pageSize;
     return faultPage == trapPage;

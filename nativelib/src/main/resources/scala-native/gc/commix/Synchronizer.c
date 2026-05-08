@@ -5,6 +5,7 @@
 #include "immix_commix/Synchronizer.h"
 #include "shared/ScalaNativeGC.h"
 #include "shared/Log.h"
+#include "shared/MemoryInfo.h"
 #include <stdio.h>
 #include <stdatomic.h>
 #include <stdlib.h>
@@ -150,7 +151,7 @@ static bool isTrapFaultAddress(const void *faultAddress, const void *trapCell) {
     if (faultAddress == NULL || trapCell == NULL) {
         return false;
     }
-    uintptr_t pageSize = (uintptr_t)getpagesize();
+    uintptr_t pageSize = getPageSize();
     uintptr_t faultPage = ((uintptr_t)faultAddress) / pageSize;
     uintptr_t trapPage = ((uintptr_t)trapCell) / pageSize;
     return faultPage == trapPage;
