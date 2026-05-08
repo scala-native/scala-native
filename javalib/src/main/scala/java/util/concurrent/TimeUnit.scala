@@ -1,11 +1,20 @@
 package java.util.concurrent
 
 // Ported from Scala.js
+// Scala Native adds Java 9 and 11 methods.
+
+import java.time.Duration
+import java.time.temporal.ChronoUnit
+import java.util.Objects
+import java.{lang => jl}
 
 abstract class TimeUnit private (name: String, ordinal: Int)
     extends _Enum[TimeUnit](name, ordinal) {
 
   def convert(a: Long, u: TimeUnit): Long
+
+  def convert(duration: Duration): Long =
+    TimeUnit.convertDuration(duration, this)
 
   def toNanos(a: Long): Long
   def toMicros(a: Long): Long
@@ -21,6 +30,25 @@ abstract class TimeUnit private (name: String, ordinal: Int)
     if (timeout > 0) thread.join(toMillis(timeout))
   def timedWait(obj: Object, timeout: Long) =
     if (timeout > 0) obj.wait(toMillis(timeout))
+
+  def toChronoUnit(): ChronoUnit = {
+
+    this match {
+      case TimeUnit.NANOSECONDS => ChronoUnit.NANOS
+
+      case TimeUnit.MICROSECONDS => ChronoUnit.MICROS
+
+      case TimeUnit.MILLISECONDS => ChronoUnit.MILLIS
+
+      case TimeUnit.SECONDS => ChronoUnit.SECONDS
+
+      case TimeUnit.MINUTES => ChronoUnit.MINUTES
+
+      case TimeUnit.HOURS => ChronoUnit.HOURS
+
+      case TimeUnit.DAYS => ChronoUnit.DAYS
+    }
+  }
 }
 
 object TimeUnit {
@@ -134,5 +162,53 @@ object TimeUnit {
     if (a > max) MAX
     else if (a < -max) -MAX
     else a * b
+  }
+
+  def of(chronoUnit: ChronoUnit): TimeUnit = {
+    Objects.requireNonNull(chronoUnit, "chronoUnit")
+
+    chronoUnit match {
+      case ChronoUnit.NANOS =>
+        TimeUnit.NANOSECONDS
+
+      case ChronoUnit.MICROS =>
+        TimeUnit.MICROSECONDS
+
+      case ChronoUnit.MILLIS =>
+        TimeUnit.MILLISECONDS
+
+      case ChronoUnit.SECONDS =>
+        TimeUnit.SECONDS
+
+      case ChronoUnit.MINUTES =>
+        TimeUnit.MINUTES
+
+      case ChronoUnit.HOURS =>
+        TimeUnit.HOURS
+
+      case ChronoUnit.DAYS =>
+        TimeUnit.DAYS
+
+      case _ =>
+        throw new IllegalArgumentException(
+          s"No TimeUnit equivalent for ${chronoUnit}"
+        )
+    }
+  }
+
+  private def convertDuration(duration: Duration, unit: TimeUnit): Long = {
+    val seconds = duration.getSeconds()
+    val nano = duration.getNano()
+
+    val convertedSeconds = unit.convert(seconds, TimeUnit.SECONDS)
+    val convertedNano = unit.convert(nano, TimeUnit.NANOSECONDS)
+
+    try {
+      Math.addExact(convertedSeconds, convertedNano)
+    } catch {
+      case _: ArithmeticException =>
+        if (seconds > 0) jl.Long.MAX_VALUE
+        else jl.Long.MIN_VALUE
+    }
   }
 }
