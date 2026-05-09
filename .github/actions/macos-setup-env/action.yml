@@ -9,6 +9,7 @@ inputs:
     default: "17"
   llvm-version:
     description: "Custom version of LLVM to use"
+    default: "16"
   gc: 
     description: "Garbage collector used, might require installing dependencies"
 runs:
