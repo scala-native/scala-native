@@ -41,12 +41,16 @@ class ConcurrentSkipListMap[K <: AnyRef, V <: AnyRef](
 
   def this(m: SortedMap[K, _ <: V]) = {
     this(m.comparator())
-    putAll(m)
+    buildFromSorted(m)
   }
 
   private val baseHead =
     new Node[K, V](null.asInstanceOf[K], null.asInstanceOf[V], null)
   private val adder = new LongAdder
+  private[this] var keySetView: KeySet[K, V] = null
+  private[this] var valuesView: Values[K, V] = null
+  private[this] var entrySetView: EntrySet[K, V] = null
+  private[this] var descendingMapView: ConcurrentNavigableMap[K, V] = null
   private[concurrent] var headIndex =
     new Index[K, V](baseHead, null, null)
 
@@ -486,6 +490,55 @@ class ConcurrentSkipListMap[K <: AnyRef, V <: AnyRef](
   private def checkKey(key: K): Unit =
     requireKey(key)
 
+  // Initializes from a sorted source using the same index-shape strategy as JSR166.
+  private def buildFromSorted(map: SortedMap[K, _ <: V]): Unit = {
+    Objects.requireNonNull(map)
+    val it = map.entrySet().iterator()
+    val preds = new Array[Index[K, V]](64)
+    var bp = baseHead
+    var h = new Index[K, V](bp, null, null)
+    preds(0) = h
+    var count = 0L
+
+    while (it.hasNext()) {
+      val e = it.next()
+      val k = requireKey(e.getKey())
+      val v = requireValue(e.getValue())
+      val z = new Node[K, V](k, v, null)
+      bp.next = z
+      bp = z
+      count += 1L
+
+      if ((count & 3L) == 0L) {
+        var mask = count >>> 2
+        var i = 0
+        var idx: Index[K, V] = null
+        var continue = true
+        while (continue && i < preds.length) {
+          idx = new Index[K, V](z, idx, null)
+          val q = preds(i)
+          if (q == null) {
+            h = new Index[K, V](h.node, h, idx)
+            preds(i) = h
+          } else {
+            q.right = idx
+            preds(i) = idx
+          }
+          i += 1
+          mask >>>= 1
+          continue = (mask & 1L) != 0L
+        }
+      }
+    }
+
+    if (count != 0L) {
+      atomic_thread_fence(memory_order_release)
+      addCount(count)
+      headIndex = h
+      atomic_thread_fence(memory_order_seq_cst)
+    }
+  }
+
   private def immutableEntry(
       key: K,
       value: V
@@ -733,56 +786,74 @@ class ConcurrentSkipListMap[K <: AnyRef, V <: AnyRef](
     }
   }
 
-  override def entrySet(): Set[Map.Entry[K, V]] =
-    new EntrySet[K, V](
-      this,
-      () =>
-        new LiveEntryIterator[K, V](
-          () => firstNodeInView(),
-          n => nextNodeInView(n),
-          k => { remove(k); () }
-        ),
-      () => entrySpliterator(),
-      () => descendingMap().sequencedEntrySet()
-    )
+  override def entrySet(): Set[Map.Entry[K, V]] = {
+    var es = entrySetView
+    if (es == null) {
+      es = new EntrySet[K, V](
+        this,
+        () =>
+          new LiveEntryIterator[K, V](
+            () => firstNodeInView(),
+            n => nextNodeInView(n),
+            k => { remove(k); () }
+          ),
+        () => entrySpliterator(),
+        () => descendingMap().sequencedEntrySet()
+      )
+      entrySetView = es
+    }
+    es
+  }
 
   override def keySet(): NavigableSet[K] =
     navigableKeySet()
 
-  override def navigableKeySet(): NavigableSet[K] =
-    new KeySet[K, V](
-      this,
-      () =>
-        new LiveKeyIterator[K, V](
-          () => firstNodeInView(),
-          n => nextNodeInView(n),
-          k => { remove(k); () },
-          () => comparator()
-        ),
-      () => keySpliterator()
-    )
+  override def navigableKeySet(): NavigableSet[K] = {
+    var ks = keySetView
+    if (ks == null) {
+      ks = new KeySet[K, V](
+        this,
+        () =>
+          new LiveKeyIterator[K, V](
+            () => firstNodeInView(),
+            n => nextNodeInView(n),
+            k => { remove(k); () },
+            () => comparator()
+          ),
+        () => keySpliterator()
+      )
+      keySetView = ks
+    }
+    ks
+  }
 
   override def descendingKeySet(): NavigableSet[K] =
     descendingMap().navigableKeySet()
 
-  override def values(): Collection[V] =
-    new Values[K, V](
-      this,
-      () =>
-        new LiveValueIterator[K, V](
-          () => firstNodeInView(),
-          n => nextNodeInView(n),
-          k => { remove(k); () }
-        ),
-      () =>
-        new LiveEntryIterator[K, V](
-          () => firstNodeInView(),
-          n => nextNodeInView(n),
-          k => { remove(k); () }
-        ),
-      () => valueSpliterator(),
-      () => descendingMap().sequencedValues()
-    )
+  override def values(): Collection[V] = {
+    var vs = valuesView
+    if (vs == null) {
+      vs = new Values[K, V](
+        this,
+        () =>
+          new LiveValueIterator[K, V](
+            () => firstNodeInView(),
+            n => nextNodeInView(n),
+            k => { remove(k); () }
+          ),
+        () =>
+          new LiveEntryIterator[K, V](
+            () => firstNodeInView(),
+            n => nextNodeInView(n),
+            k => { remove(k); () }
+          ),
+        () => valueSpliterator(),
+        () => descendingMap().sequencedValues()
+      )
+      valuesView = vs
+    }
+    vs
+  }
 
   override def comparator(): Comparator[_ >: K] =
     ordering
@@ -924,18 +995,87 @@ class ConcurrentSkipListMap[K <: AnyRef, V <: AnyRef](
   override def tailMap(fromKey: K): ConcurrentNavigableMap[K, V] =
     tailMap(fromKey, true)
 
-  override def descendingMap(): ConcurrentNavigableMap[K, V] =
-    new SubMap[K, V](
-      this,
-      null.asInstanceOf[K],
-      loInclusive = false,
-      null.asInstanceOf[K],
-      hiInclusive = false,
-      isDescending = true
-    )
+  override def descendingMap(): ConcurrentNavigableMap[K, V] = {
+    var dm = descendingMapView
+    if (dm == null) {
+      dm = new SubMap[K, V](
+        this,
+        null.asInstanceOf[K],
+        loInclusive = false,
+        null.asInstanceOf[K],
+        hiInclusive = false,
+        isDescending = true
+      )
+      descendingMapView = dm
+    }
+    dm
+  }
 
   override def reversed(): ConcurrentNavigableMap[K, V] =
     descendingMap()
+
+  override def equals(other: Any): Boolean = {
+    if (other.asInstanceOf[AnyRef] eq this) return true
+    if (!other.isInstanceOf[Map[_, _]]) return false
+
+    val m = other.asInstanceOf[Map[_, _]]
+    try {
+      val cmp = ordering
+      val it = m
+        .entrySet()
+        .iterator()
+        .asInstanceOf[Iterator[Map.Entry[_, _]]]
+
+      if (m.isInstanceOf[SortedMap[_, _]] &&
+          (m.asInstanceOf[SortedMap[_, _]].comparator().asInstanceOf[AnyRef] eq
+            cmp.asInstanceOf[AnyRef])) {
+        var b = baseHead
+        var n = b.next
+        while (n != null) {
+          val k = n.key
+          val v = n.value
+          if (k != null && v != null) {
+            if (!it.hasNext()) return false
+            val e = it.next()
+            val mk = e.getKey()
+            val mv = e.getValue()
+            if (mk == null || mv == null || compareAny(k, mk) != 0)
+              return false
+            if (!mv.equals(v)) return false
+          }
+          b = n
+          n = b.next
+        }
+        !it.hasNext()
+      } else {
+        while (it.hasNext()) {
+          val e = it.next()
+          val mk = e.getKey()
+          val mv = e.getValue()
+          if (mk == null || mv == null) return false
+          val v = get(mk)
+          if (v == null || !v.equals(mv)) return false
+        }
+
+        var b = baseHead
+        var n = b.next
+        while (n != null) {
+          val k = n.key
+          val v = n.value
+          if (k != null && v != null) {
+            val mv = m.get(k)
+            if (mv == null || !mv.equals(v)) return false
+          }
+          b = n
+          n = b.next
+        }
+        true
+      }
+    } catch {
+      case _: ClassCastException   => false
+      case _: NullPointerException => false
+    }
+  }
 
   override def putFirst(key: K, value: V): V =
     throw new UnsupportedOperationException
@@ -984,13 +1124,7 @@ class ConcurrentSkipListMap[K <: AnyRef, V <: AnyRef](
 
   override def clone(): ConcurrentSkipListMap[K, V] = {
     val cloned = new ConcurrentSkipListMap[K, V](ordering)
-    var n = firstNodeInView()
-    while (n != null) {
-      val v = n.value
-      if (v != null)
-        cloned.put(n.key, v)
-      n = nextNodeInView(n)
-    }
+    cloned.buildFromSorted(this)
     cloned
   }
 }
@@ -1352,6 +1486,10 @@ private object ConcurrentSkipListMap {
 
     if (lo != null && hi != null && m.compare(lo, hi) > 0)
       throw new IllegalArgumentException("inconsistent range")
+
+    private[this] var keySetView: KeySet[K, V] = null
+    private[this] var valuesView: Values[K, V] = null
+    private[this] var entrySetView: EntrySet[K, V] = null
 
     private def requireKey(key: Any): K = {
       if (key == null) throw new NullPointerException
@@ -1742,72 +1880,90 @@ private object ConcurrentSkipListMap {
       }
     }
 
-    override def entrySet(): Set[Map.Entry[K, V]] =
-      new EntrySet[K, V](
-        this,
-        () =>
-          new LiveEntryIterator[K, V](
-            () => firstNodeInView(),
-            n => nextNodeInView(n),
-            k => { remove(k); () }
-          ),
-        () =>
-          new LiveEntryIterator[K, V](
-            () => firstNodeInView(),
-            n => nextNodeInView(n),
-            k => { remove(k); () }
-          ),
-        () => descendingMap().sequencedEntrySet()
-      )
+    override def entrySet(): Set[Map.Entry[K, V]] = {
+      var es = entrySetView
+      if (es == null) {
+        es = new EntrySet[K, V](
+          this,
+          () =>
+            new LiveEntryIterator[K, V](
+              () => firstNodeInView(),
+              n => nextNodeInView(n),
+              k => { remove(k); () }
+            ),
+          () =>
+            new LiveEntryIterator[K, V](
+              () => firstNodeInView(),
+              n => nextNodeInView(n),
+              k => { remove(k); () }
+            ),
+          () => descendingMap().sequencedEntrySet()
+        )
+        entrySetView = es
+      }
+      es
+    }
 
     override def keySet(): NavigableSet[K] =
       navigableKeySet()
 
-    override def navigableKeySet(): NavigableSet[K] =
-      new KeySet[K, V](
-        this,
-        () =>
-          new LiveKeyIterator[K, V](
-            () => firstNodeInView(),
-            n => nextNodeInView(n),
-            k => { remove(k); () },
-            () => comparator()
-          ),
-        () =>
-          new LiveKeyIterator[K, V](
-            () => firstNodeInView(),
-            n => nextNodeInView(n),
-            k => { remove(k); () },
-            () => comparator()
-          )
-      )
+    override def navigableKeySet(): NavigableSet[K] = {
+      var ks = keySetView
+      if (ks == null) {
+        ks = new KeySet[K, V](
+          this,
+          () =>
+            new LiveKeyIterator[K, V](
+              () => firstNodeInView(),
+              n => nextNodeInView(n),
+              k => { remove(k); () },
+              () => comparator()
+            ),
+          () =>
+            new LiveKeyIterator[K, V](
+              () => firstNodeInView(),
+              n => nextNodeInView(n),
+              k => { remove(k); () },
+              () => comparator()
+            )
+        )
+        keySetView = ks
+      }
+      ks
+    }
 
     override def descendingKeySet(): NavigableSet[K] =
       descendingMap().navigableKeySet()
 
-    override def values(): Collection[V] =
-      new Values[K, V](
-        this,
-        () =>
-          new LiveValueIterator[K, V](
-            () => firstNodeInView(),
-            n => nextNodeInView(n),
-            k => { remove(k); () }
-          ),
-        () =>
-          new LiveEntryIterator[K, V](
-            () => firstNodeInView(),
-            n => nextNodeInView(n),
-            k => { remove(k); () }
-          ),
-        () =>
-          new LiveValueIterator[K, V](
-            () => firstNodeInView(),
-            n => nextNodeInView(n),
-            k => { remove(k); () }
-          ),
-        () => descendingMap().sequencedValues()
-      )
+    override def values(): Collection[V] = {
+      var vs = valuesView
+      if (vs == null) {
+        vs = new Values[K, V](
+          this,
+          () =>
+            new LiveValueIterator[K, V](
+              () => firstNodeInView(),
+              n => nextNodeInView(n),
+              k => { remove(k); () }
+            ),
+          () =>
+            new LiveEntryIterator[K, V](
+              () => firstNodeInView(),
+              n => nextNodeInView(n),
+              k => { remove(k); () }
+            ),
+          () =>
+            new LiveValueIterator[K, V](
+              () => firstNodeInView(),
+              n => nextNodeInView(n),
+              k => { remove(k); () }
+            ),
+          () => descendingMap().sequencedValues()
+        )
+        valuesView = vs
+      }
+      vs
+    }
 
     override def comparator(): Comparator[_ >: K] =
       if (!isDescending) m.ordering

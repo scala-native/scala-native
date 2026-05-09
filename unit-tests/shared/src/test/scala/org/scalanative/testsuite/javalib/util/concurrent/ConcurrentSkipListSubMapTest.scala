@@ -174,6 +174,13 @@ class ConcurrentSkipListSubMapTest extends JSR166Test {
     assertFalse(map2.equals(map1))
   }
 
+  @Test def testViewCachingOnSubMap(): Unit = {
+    val map = map5()
+    assertSame(map.navigableKeySet(), map.navigableKeySet())
+    assertSame(map.values(), map.values())
+    assertSame(map.entrySet(), map.entrySet())
+  }
+
   @Test def testContainsKey(): Unit = {
     val map = map5()
     assertTrue(map.containsKey(iOne))
