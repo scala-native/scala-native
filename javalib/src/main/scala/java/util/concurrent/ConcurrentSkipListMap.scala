@@ -733,6 +733,28 @@ private object ConcurrentSkipListMap {
     def count(): Long =
       math.max(0L, adder.sum)
 
+    private def unlinkNode(b: Node[K, V], n: Node[K, V]): Unit = {
+      if (b != null && n != null) {
+        var p: Node[K, V] = null
+        var done = false
+        while (!done) {
+          val f = n.next
+          if (f != null && f.key == null) {
+            p = f.next
+            done = true
+          } else {
+            val marker =
+              new Node[K, V](null.asInstanceOf[K], null.asInstanceOf[V], f)
+            if (n.casNext(f, marker)) {
+              p = f
+              done = true
+            }
+          }
+        }
+        b.casNext(n, p)
+      }
+    }
+
     def compareAny(a: Any, b: Any): Int =
       compare(a.asInstanceOf[K], b.asInstanceOf[K])
 
@@ -752,36 +774,45 @@ private object ConcurrentSkipListMap {
         val b = findPredecessor(key)
         var n = b.next
         var pred = b
+        var restart = false
         while (n != null) {
-          val v = n.value
-          if (v == null) {
-            pred.casNext(n, n.next)
-            n = pred.next
+          val k = n.key
+          if (k == null) {
+            restart = true
+            n = null
           } else {
-            val c = compare(n.key, key)
-            if (c < 0) {
-              pred = n
-              n = n.next
-            } else if (c == 0) {
-              if (onlyIfAbsent) return v
-              if (n.casValue(v, value)) return v
+            val v = n.value
+            if (v == null) {
+              unlinkNode(pred, n)
               n = pred.next
             } else {
-              val z = new Node[K, V](key, value, n)
-              if (pred.casNext(n, z)) {
-                addIndices(z)
-                addCount(1L)
-                return null.asInstanceOf[V]
+              val c = compare(k, key)
+              if (c < 0) {
+                pred = n
+                n = n.next
+              } else if (c == 0) {
+                if (onlyIfAbsent) return v
+                if (n.casValue(v, value)) return v
+                n = pred.next
+              } else {
+                val z = new Node[K, V](key, value, n)
+                if (pred.casNext(n, z)) {
+                  addIndices(z)
+                  addCount(1L)
+                  return null.asInstanceOf[V]
+                }
+                n = pred.next
               }
-              n = pred.next
             }
           }
         }
-        val z = new Node[K, V](key, value, null)
-        if (pred.casNext(null, z)) {
-          addIndices(z)
-          addCount(1L)
-          return null.asInstanceOf[V]
+        if (!restart) {
+          val z = new Node[K, V](key, value, null)
+          if (pred.casNext(null, z)) {
+            addIndices(z)
+            addCount(1L)
+            return null.asInstanceOf[V]
+          }
         }
       }
       null.asInstanceOf[V]
@@ -793,32 +824,38 @@ private object ConcurrentSkipListMap {
         val b = findPredecessor(key)
         var n = b.next
         var pred = b
+        var restart = false
         while (n != null) {
-          val v = n.value
-          if (v == null) {
-            pred.casNext(n, n.next)
-            n = pred.next
+          val k = n.key
+          if (k == null) {
+            restart = true
+            n = null
           } else {
-            val c = compare(n.key, key)
-            if (c < 0) {
-              pred = n
-              n = n.next
-            } else if (c > 0) return null.asInstanceOf[V]
-            else {
-              if (expectedValue != null && !Objects.equals(v, expectedValue))
-                return null.asInstanceOf[V]
-              if (n.casValue(v, null.asInstanceOf[V])) {
-                pred.casNext(n, n.next)
-                findPredecessor(key)
-                tryReduceLevel()
-                addCount(-1L)
-                return v
-              }
+            val v = n.value
+            if (v == null) {
+              unlinkNode(pred, n)
               n = pred.next
+            } else {
+              val c = compare(k, key)
+              if (c < 0) {
+                pred = n
+                n = n.next
+              } else if (c > 0) return null.asInstanceOf[V]
+              else {
+                if (expectedValue != null && !Objects.equals(v, expectedValue))
+                  return null.asInstanceOf[V]
+                if (n.casValue(v, null.asInstanceOf[V])) {
+                  unlinkNode(pred, n)
+                  tryReduceLevel()
+                  addCount(-1L)
+                  return v
+                }
+                n = pred.next
+              }
             }
           }
         }
-        return null.asInstanceOf[V]
+        if (!restart) return null.asInstanceOf[V]
       }
       null.asInstanceOf[V]
     }
@@ -899,9 +936,16 @@ private object ConcurrentSkipListMap {
     private def liveNext(pred: Node[K, V]): Node[K, V] = {
       var n = pred.next
       while (n != null) {
-        if (n.value != null) return n
-        pred.casNext(n, n.next)
-        n = pred.next
+        val k = n.key
+        val v = n.value
+        if (k == null) {
+          pred.casNext(n, n.next)
+          n = pred.next
+        } else if (v != null) return n
+        else {
+          unlinkNode(pred, n)
+          n = pred.next
+        }
       }
       null
     }
@@ -912,11 +956,12 @@ private object ConcurrentSkipListMap {
         var r = q.right
         while (r != null) {
           val n = r.node
+          val k = n.key
           val v = n.value
-          if (v == null) {
+          if (k == null || v == null) {
             q.casRight(r, r.right)
             r = q.right
-          } else if (compare(n.key, key) < 0) {
+          } else if (compare(k, key) < 0) {
             q = r
             r = q.right
           } else r = null
@@ -927,11 +972,14 @@ private object ConcurrentSkipListMap {
             return findPredecessor(key)
           var n = b.next
           while (n != null) {
+            val k = n.key
             val v = n.value
-            if (v == null) {
-              b.casNext(n, n.next)
+            if (k == null) {
+              return findPredecessor(key)
+            } else if (v == null) {
+              unlinkNode(b, n)
               n = b.next
-            } else if (compare(n.key, key) < 0) {
+            } else if (compare(k, key) < 0) {
               b = n
               n = n.next
             } else return b
@@ -988,11 +1036,12 @@ private object ConcurrentSkipListMap {
         var r = q.right
         while (r != null) {
           val n = r.node
+          val k = n.key
           val v = n.value
-          if (v == null) {
+          if (k == null || v == null) {
             q.casRight(r, r.right)
             r = q.right
-          } else if (compare(n.key, key) < 0) {
+          } else if (compare(k, key) < 0) {
             q = r
             r = q.right
           } else r = null
