@@ -742,7 +742,8 @@ class ConcurrentSkipListMap[K <: AnyRef, V <: AnyRef](
           n => nextNodeInView(n),
           k => { remove(k); () }
         ),
-      () => entrySpliterator()
+      () => entrySpliterator(),
+      () => descendingMap().sequencedEntrySet()
     )
 
   override def keySet(): NavigableSet[K] =
@@ -779,7 +780,8 @@ class ConcurrentSkipListMap[K <: AnyRef, V <: AnyRef](
           n => nextNodeInView(n),
           k => { remove(k); () }
         ),
-      () => valueSpliterator()
+      () => valueSpliterator(),
+      () => descendingMap().sequencedValues()
     )
 
   override def comparator(): Comparator[_ >: K] =
@@ -931,6 +933,24 @@ class ConcurrentSkipListMap[K <: AnyRef, V <: AnyRef](
       hiInclusive = false,
       isDescending = true
     )
+
+  override def reversed(): ConcurrentNavigableMap[K, V] =
+    descendingMap()
+
+  override def putFirst(key: K, value: V): V =
+    throw new UnsupportedOperationException
+
+  override def putLast(key: K, value: V): V =
+    throw new UnsupportedOperationException
+
+  override def sequencedKeySet(): SequencedSet[K] =
+    navigableKeySet()
+
+  override def sequencedValues(): SequencedCollection[V] =
+    values().asInstanceOf[SequencedCollection[V]]
+
+  override def sequencedEntrySet(): SequencedSet[Map.Entry[K, V]] =
+    entrySet().asInstanceOf[SequencedSet[Map.Entry[K, V]]]
 
   private def keySpliterator(): Spliterator[K] = {
     atomic_thread_fence(memory_order_acquire)
@@ -1723,7 +1743,8 @@ private object ConcurrentSkipListMap {
             () => firstNodeInView(),
             n => nextNodeInView(n),
             k => { remove(k); () }
-          )
+          ),
+        () => descendingMap().sequencedEntrySet()
       )
 
     override def keySet(): NavigableSet[K] =
@@ -1771,7 +1792,8 @@ private object ConcurrentSkipListMap {
             () => firstNodeInView(),
             n => nextNodeInView(n),
             k => { remove(k); () }
-          )
+          ),
+        () => descendingMap().sequencedValues()
       )
 
     override def comparator(): Comparator[_ >: K] =
@@ -1925,6 +1947,24 @@ private object ConcurrentSkipListMap {
         hiInclusive,
         !isDescending
       )
+
+    override def reversed(): ConcurrentNavigableMap[K, V] =
+      descendingMap()
+
+    override def putFirst(key: K, value: V): V =
+      throw new UnsupportedOperationException
+
+    override def putLast(key: K, value: V): V =
+      throw new UnsupportedOperationException
+
+    override def sequencedKeySet(): SequencedSet[K] =
+      navigableKeySet()
+
+    override def sequencedValues(): SequencedCollection[V] =
+      values().asInstanceOf[SequencedCollection[V]]
+
+    override def sequencedEntrySet(): SequencedSet[Map.Entry[K, V]] =
+      entrySet().asInstanceOf[SequencedSet[Map.Entry[K, V]]]
   }
 
   private abstract class LiveIterator[K <: AnyRef, V <: AnyRef, A](
@@ -2035,8 +2075,10 @@ private object ConcurrentSkipListMap {
   private final class EntrySet[K <: AnyRef, V <: AnyRef](
       map: ConcurrentNavigableMap[K, V],
       iteratorFactory: () => Iterator[Map.Entry[K, V]],
-      spliteratorFactory: () => Spliterator[Map.Entry[K, V]]
+      spliteratorFactory: () => Spliterator[Map.Entry[K, V]],
+      reversedFactory: () => SequencedSet[Map.Entry[K, V]]
   ) extends AbstractSet[Map.Entry[K, V]]
+      with SequencedSet[Map.Entry[K, V]]
       with Serializable {
 
     override def size(): Int = map.size()
@@ -2074,14 +2116,19 @@ private object ConcurrentSkipListMap {
       }
       removed
     }
+
+    override def reversed(): SequencedSet[Map.Entry[K, V]] =
+      reversedFactory()
   }
 
   private final class Values[K <: AnyRef, V <: AnyRef](
       map: ConcurrentNavigableMap[K, V],
       iteratorFactory: () => Iterator[V],
       entryIteratorFactory: () => Iterator[Map.Entry[K, V]],
-      spliteratorFactory: () => Spliterator[V]
+      spliteratorFactory: () => Spliterator[V],
+      reversedFactory: () => SequencedCollection[V]
   ) extends AbstractCollection[V]
+      with SequencedCollection[V]
       with Serializable {
 
     override def size(): Int = map.size()
@@ -2110,6 +2157,9 @@ private object ConcurrentSkipListMap {
       }
       removed
     }
+
+    override def reversed(): SequencedCollection[V] =
+      reversedFactory()
   }
 
   private final class KeySet[K <: AnyRef, V <: AnyRef](
