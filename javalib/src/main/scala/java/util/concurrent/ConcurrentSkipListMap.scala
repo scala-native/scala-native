@@ -6,7 +6,6 @@
 
 package java.util.concurrent
 
-import java.io.{ObjectInputStream, ObjectOutputStream}
 import java.util._
 import java.util.concurrent.atomic.LongAdder
 import java.util.function.{
@@ -45,10 +44,10 @@ class ConcurrentSkipListMap[K <: AnyRef, V <: AnyRef](
     putAll(m)
   }
 
-  @transient private var baseHead =
+  private val baseHead =
     new Node[K, V](null.asInstanceOf[K], null.asInstanceOf[V], null)
-  @transient private var adder = new LongAdder
-  @transient private[concurrent] var headIndex =
+  private val adder = new LongAdder
+  private[concurrent] var headIndex =
     new Index[K, V](baseHead, null, null)
 
   @alwaysinline
@@ -537,84 +536,6 @@ class ConcurrentSkipListMap[K <: AnyRef, V <: AnyRef](
       toInclusive0,
       isDescending = false
     )
-  }
-
-  @throws[java.io.IOException]
-  private def writeObject(s: ObjectOutputStream): Unit = {
-    s.defaultWriteObject()
-    var b = baseHead
-    while (b != null) {
-      val n = b.next
-      if (n == null) b = null
-      else {
-        val v = n.value
-        if (v != null) {
-          s.writeObject(n.key)
-          s.writeObject(v)
-        }
-        b = n
-      }
-    }
-    s.writeObject(null)
-  }
-
-  @throws[java.io.IOException]
-  @throws[ClassNotFoundException]
-  private def readObject(s: ObjectInputStream): Unit = {
-    s.defaultReadObject()
-
-    val preds = new Array[Index[K, V]](64)
-    var bp = new Node[K, V](null.asInstanceOf[K], null.asInstanceOf[V], null)
-    var h = new Index[K, V](bp, null, null)
-    preds(0) = h
-
-    var prevKey = null.asInstanceOf[K]
-    var count = 0L
-    var done = false
-    while (!done) {
-      val k = s.readObject().asInstanceOf[K]
-      if (k == null) done = true
-      else {
-        val v = s.readObject().asInstanceOf[V]
-        if (v == null) throw new NullPointerException
-        if (prevKey != null && compare(prevKey, k) > 0)
-          throw new IllegalStateException("out of order")
-        prevKey = k
-
-        val z = new Node[K, V](k, v, null)
-        bp.next = z
-        bp = z
-        count += 1L
-
-        if ((count & 3L) == 0L) {
-          var m = count >>> 2
-          var i = 0
-          var idx: Index[K, V] = null
-          while (i < preds.length && (m & 1L) != 0L) {
-            idx = new Index[K, V](z, idx, null)
-            val q = preds(i)
-            if (q == null) {
-              h = new Index[K, V](h.node, h, idx)
-              preds(i) = h
-            } else {
-              q.right = idx
-              preds(i) = idx
-            }
-            i += 1
-            m >>>= 1
-          }
-        }
-      }
-    }
-
-    baseHead = h.node
-    adder = new LongAdder
-    if (count != 0L) {
-      atomic_thread_fence(memory_order_release)
-      addCount(count)
-    }
-    headIndex = h
-    atomic_thread_fence(memory_order_seq_cst)
   }
 
   override def size(): Int = {
