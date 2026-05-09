@@ -19,8 +19,10 @@ import java.util.{
 }
 
 import org.junit.Assert._
+import org.junit.Assume.assumeFalse
 import org.junit.{Ignore, Test}
 
+import org.scalanative.testsuite.utils.Platform
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 object ConcurrentSkipListMapTest {
@@ -171,6 +173,10 @@ class ConcurrentSkipListMapTest extends JSR166Test {
   // javalib/util/concurrent/JEP431_ConcurrentSkipListMapTestOnJDK21.scala
 
   @Test def testValuesRemoveIfRemovesConditionally(): Unit = {
+    assumeFalse(
+      "Fails due to bug in the JVM",
+      Platform.executingInJVMOnJDK8OrLower
+    )
     val map = map5()
     val removed = map
       .values()
@@ -187,6 +193,10 @@ class ConcurrentSkipListMapTest extends JSR166Test {
   }
 
   @Test def testEntrySetRemoveIfRemovesConditionally(): Unit = {
+    assumeFalse(
+      "Fails due to bug in the JVM",
+      Platform.executingInJVMOnJDK8OrLower
+    )
     val map = map5()
     val removed = map
       .entrySet()
