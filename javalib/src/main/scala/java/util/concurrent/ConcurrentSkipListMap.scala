@@ -7,6 +7,7 @@
 package java.util.concurrent
 
 import java.util._
+import java.util.concurrent.atomic.LongAdder
 import java.util.function.{BiConsumer, BiFunction, Function}
 
 import scala.annotation.tailrec
@@ -18,7 +19,7 @@ import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
 import scala.scalanative.unsafe._
 
 @SerialVersionUID(-8627078645895051609L)
-class ConcurrentSkipListMap[K, V] private (
+class ConcurrentSkipListMap[K <: AnyRef, V <: AnyRef] private (
     private val backing: ConcurrentSkipListMap.Backing[K, V],
     private val lo: K,
     private val loInclusive: Boolean,
@@ -273,13 +274,18 @@ class ConcurrentSkipListMap[K, V] private (
     remove(entry.getKey(), entry.getValue())
 
   override def size(): Int = {
-    var count = 0L
-    var n = lowestNodeAscending()
-    while (n != null) {
-      if (n.value != null) count += 1L
-      n = backing.findGreaterThan(n.key)
-      if (n != null && tooHigh(n.key)) n = null
-    }
+    val count =
+      if (!loSet && !hiSet) backing.count()
+      else {
+        var count = 0L
+        var n = lowestNodeAscending()
+        while (n != null) {
+          if (n.value != null) count += 1L
+          n = backing.findGreaterThan(n.key)
+          if (n != null && tooHigh(n.key)) n = null
+        }
+        count
+      }
     if (count >= Int.MaxValue) Int.MaxValue else count.toInt
   }
 
@@ -657,36 +663,27 @@ class ConcurrentSkipListMap[K, V] private (
 }
 
 private object ConcurrentSkipListMap {
-  private final val MaxIndexLevel = 32
+  private final val MaxIndexLevel = 62
 
-  private[concurrent] final class Node[K, V](
+  private[concurrent] final class Node[K <: AnyRef, V <: AnyRef](
       val key: K,
-      @volatile private[concurrent] var rawValue: AnyRef,
-      @volatile private[concurrent] var nextNode: Node[K, V]
+      private[concurrent] var value: V,
+      private[concurrent] var next: Node[K, V]
   ) {
     @alwaysinline
-    private def valueRef: AtomicRef[AnyRef] =
-      new AtomicRef[AnyRef](
-        fromRawPtr(Intrinsics.classFieldRawPtr(this, "rawValue"))
+    private def valueRef: AtomicRef[V] =
+      new AtomicRef[V](
+        fromRawPtr(Intrinsics.classFieldRawPtr(this, "value"))
       )
 
     @alwaysinline
     private def nextRef: AtomicRef[Node[K, V]] =
       new AtomicRef[Node[K, V]](
-        fromRawPtr(Intrinsics.classFieldRawPtr(this, "nextNode"))
+        fromRawPtr(Intrinsics.classFieldRawPtr(this, "next"))
       )
 
     @alwaysinline
-    def valueAny: AnyRef = valueRef.load()
-
-    @alwaysinline
-    def value: V = valueAny.asInstanceOf[V]
-
-    @alwaysinline
-    def next: Node[K, V] = nextRef.load()
-
-    @alwaysinline
-    def casValue(expect: AnyRef, update: AnyRef): Boolean =
+    def casValue(expect: V, update: V): Boolean =
       valueRef.compareExchangeStrong(expect, update)
 
     @alwaysinline
@@ -694,33 +691,29 @@ private object ConcurrentSkipListMap {
       nextRef.compareExchangeStrong(expect, update)
   }
 
-  private[concurrent] final class Index[K, V](
+  private[concurrent] final class Index[K <: AnyRef, V <: AnyRef](
       val node: Node[K, V],
       val down: Index[K, V],
-      @volatile private[concurrent] var rightNode: Index[K, V]
+      private[concurrent] var right: Index[K, V]
   ) {
     @alwaysinline
     private def rightRef: AtomicRef[Index[K, V]] =
       new AtomicRef[Index[K, V]](
-        fromRawPtr(Intrinsics.classFieldRawPtr(this, "rightNode"))
+        fromRawPtr(Intrinsics.classFieldRawPtr(this, "right"))
       )
-
-    @alwaysinline
-    def right: Index[K, V] = rightRef.load()
-
-    @alwaysinline
-    def setRight(right: Index[K, V]): Unit = rightRef.store(right)
 
     @alwaysinline
     def casRight(expect: Index[K, V], update: Index[K, V]): Boolean =
       rightRef.compareExchangeStrong(expect, update)
   }
 
-  private[concurrent] final class Backing[K, V](
+  private[concurrent] final class Backing[K <: AnyRef, V <: AnyRef](
       val comparator: Comparator[_ >: K]
   ) {
-    private val baseHead = new Node[K, V](null.asInstanceOf[K], null, null)
-    @volatile private[concurrent] var headIndex =
+    private val baseHead =
+      new Node[K, V](null.asInstanceOf[K], null.asInstanceOf[V], null)
+    private val adder = new LongAdder
+    private[concurrent] var headIndex =
       new Index[K, V](baseHead, null, null)
 
     @alwaysinline
@@ -730,11 +723,15 @@ private object ConcurrentSkipListMap {
       )
 
     @alwaysinline
-    private def head: Index[K, V] = headRef.load()
-
-    @alwaysinline
     private def casHead(expect: Index[K, V], update: Index[K, V]): Boolean =
       headRef.compareExchangeStrong(expect, update)
+
+    @alwaysinline
+    private def addCount(c: Long): Unit =
+      adder.add(c)
+
+    def count(): Long =
+      math.max(0L, adder.sum)
 
     def compareAny(a: Any, b: Any): Int =
       compare(a.asInstanceOf[K], b.asInstanceOf[K])
@@ -751,13 +748,12 @@ private object ConcurrentSkipListMap {
 
     def put(key: K, value: V, onlyIfAbsent: Boolean): V = {
       compare(key, key)
-      val newValue = value.asInstanceOf[AnyRef]
       while (true) {
         val b = findPredecessor(key)
         var n = b.next
         var pred = b
         while (n != null) {
-          val v = n.valueAny
+          val v = n.value
           if (v == null) {
             pred.casNext(n, n.next)
             n = pred.next
@@ -767,22 +763,24 @@ private object ConcurrentSkipListMap {
               pred = n
               n = n.next
             } else if (c == 0) {
-              if (onlyIfAbsent) return v.asInstanceOf[V]
-              if (n.casValue(v, newValue)) return v.asInstanceOf[V]
+              if (onlyIfAbsent) return v
+              if (n.casValue(v, value)) return v
               n = pred.next
             } else {
-              val z = new Node[K, V](key, newValue, n)
+              val z = new Node[K, V](key, value, n)
               if (pred.casNext(n, z)) {
                 addIndices(z)
+                addCount(1L)
                 return null.asInstanceOf[V]
               }
               n = pred.next
             }
           }
         }
-        val z = new Node[K, V](key, newValue, null)
+        val z = new Node[K, V](key, value, null)
         if (pred.casNext(null, z)) {
           addIndices(z)
+          addCount(1L)
           return null.asInstanceOf[V]
         }
       }
@@ -790,13 +788,13 @@ private object ConcurrentSkipListMap {
     }
 
     def remove(key: K, expectedValue: Any): V = {
-      compare(key, key)
+      Objects.requireNonNull(key)
       while (true) {
         val b = findPredecessor(key)
         var n = b.next
         var pred = b
         while (n != null) {
-          val v = n.valueAny
+          val v = n.value
           if (v == null) {
             pred.casNext(n, n.next)
             n = pred.next
@@ -809,10 +807,12 @@ private object ConcurrentSkipListMap {
             else {
               if (expectedValue != null && !Objects.equals(v, expectedValue))
                 return null.asInstanceOf[V]
-              if (n.casValue(v, null)) {
+              if (n.casValue(v, null.asInstanceOf[V])) {
                 pred.casNext(n, n.next)
                 findPredecessor(key)
-                return v.asInstanceOf[V]
+                tryReduceLevel()
+                addCount(-1L)
+                return v
               }
               n = pred.next
             }
@@ -825,27 +825,25 @@ private object ConcurrentSkipListMap {
 
     def replace(key: K, oldValue: V, newValue: V): Boolean = {
       compare(key, key)
-      val newRef = newValue.asInstanceOf[AnyRef]
       while (true) {
         val n = findNode(key)
         if (n == null) return false
-        val v = n.valueAny
+        val v = n.value
         if (v == null) ()
         else if (!Objects.equals(v, oldValue)) return false
-        else if (n.casValue(v, newRef)) return true
+        else if (n.casValue(v, newValue)) return true
       }
       false
     }
 
     def replace(key: K, value: V): V = {
       compare(key, key)
-      val newRef = value.asInstanceOf[AnyRef]
       while (true) {
         val n = findNode(key)
         if (n == null) return null.asInstanceOf[V]
-        val v = n.valueAny
+        val v = n.value
         if (v == null) ()
-        else if (n.casValue(v, newRef)) return v.asInstanceOf[V]
+        else if (n.casValue(v, value)) return v
       }
       null.asInstanceOf[V]
     }
@@ -894,14 +892,14 @@ private object ConcurrentSkipListMap {
 
     private def findNode(key: K): Node[K, V] = {
       var n = findGreaterOrEqual(key)
-      if (n != null && compare(n.key, key) == 0 && n.valueAny != null) n
+      if (n != null && compare(n.key, key) == 0 && n.value != null) n
       else null
     }
 
     private def liveNext(pred: Node[K, V]): Node[K, V] = {
       var n = pred.next
       while (n != null) {
-        if (n.valueAny != null) return n
+        if (n.value != null) return n
         pred.casNext(n, n.next)
         n = pred.next
       }
@@ -909,12 +907,12 @@ private object ConcurrentSkipListMap {
     }
 
     private def findPredecessor(key: K): Node[K, V] = {
-      var q = head
+      var q = headIndex
       while (true) {
         var r = q.right
         while (r != null) {
           val n = r.node
-          val v = n.valueAny
+          val v = n.value
           if (v == null) {
             q.casRight(r, r.right)
             r = q.right
@@ -925,11 +923,11 @@ private object ConcurrentSkipListMap {
         }
         if (q.down == null) {
           var b = q.node
-          if ((b ne baseHead) && b.valueAny == null)
+          if ((b ne baseHead) && b.value == null)
             return findPredecessor(key)
           var n = b.next
           while (n != null) {
-            val v = n.valueAny
+            val v = n.value
             if (v == null) {
               b.casNext(n, n.next)
               n = b.next
@@ -956,7 +954,7 @@ private object ConcurrentSkipListMap {
     }
 
     private def headHeight(): Int = {
-      var h = head
+      var h = headIndex
       var height = 1
       while (h.down != null) {
         height += 1
@@ -968,7 +966,7 @@ private object ConcurrentSkipListMap {
     private def ensureHeadHeight(level: Int): Unit = {
       var done = false
       while (!done) {
-        val h = head
+        val h = headIndex
         val height = headHeight()
         if (height >= level) done = true
         else {
@@ -984,13 +982,13 @@ private object ConcurrentSkipListMap {
     }
 
     private def predecessorIndex(key: K, targetLevel: Int): Index[K, V] = {
-      var q = head
+      var q = headIndex
       var level = headHeight()
       while (true) {
         var r = q.right
         while (r != null) {
           val n = r.node
-          val v = n.valueAny
+          val v = n.value
           if (v == null) {
             q.casRight(r, r.right)
             r = q.right
@@ -1004,6 +1002,18 @@ private object ConcurrentSkipListMap {
         level -= 1
       }
       q
+    }
+
+    private def tryReduceLevel(): Unit = {
+      val h = headIndex
+      if (h.right == null) {
+        val d = h.down
+        if (d != null && d.right == null) {
+          val e = d.down
+          if (e != null && e.right == null && casHead(h, d) && h.right != null)
+            casHead(d, h)
+        }
+      }
     }
 
     private def addIndices(node: Node[K, V]): Unit = {
@@ -1022,13 +1032,13 @@ private object ConcurrentSkipListMap {
       }
 
       i = 1
-      while (i <= level && node.valueAny != null) {
+      while (i <= level && node.value != null) {
         var inserted = false
         val idx = indices(i - 1)
-        while (!inserted && node.valueAny != null) {
+        while (!inserted && node.value != null) {
           val pred = predecessorIndex(node.key, i)
           val right = pred.right
-          idx.setRight(right)
+          idx.right = right
           inserted = pred.casRight(right, idx)
         }
         i += 1
@@ -1061,7 +1071,7 @@ private object ConcurrentSkipListMap {
     }
   }
 
-  private final class SnapshotKeyIterator[K, V](
+  private final class SnapshotKeyIterator[K <: AnyRef, V <: AnyRef](
       snapshot: ArrayList[Map.Entry[K, V]],
       map: ConcurrentSkipListMap[K, V]
   ) extends Iterator[K] {
@@ -1086,7 +1096,7 @@ private object ConcurrentSkipListMap {
     }
   }
 
-  private final class SnapshotValueIterator[K, V](
+  private final class SnapshotValueIterator[K <: AnyRef, V <: AnyRef](
       snapshot: ArrayList[Map.Entry[K, V]],
       map: ConcurrentSkipListMap[K, V]
   ) extends Iterator[V] {
@@ -1111,8 +1121,9 @@ private object ConcurrentSkipListMap {
     }
   }
 
-  private final class EntrySet[K, V](map: ConcurrentSkipListMap[K, V])
-      extends AbstractSet[Map.Entry[K, V]]
+  private final class EntrySet[K <: AnyRef, V <: AnyRef](
+      map: ConcurrentSkipListMap[K, V]
+  ) extends AbstractSet[Map.Entry[K, V]]
       with Serializable {
 
     override def size(): Int = map.size()
@@ -1140,8 +1151,9 @@ private object ConcurrentSkipListMap {
       )
   }
 
-  private final class Values[K, V](map: ConcurrentSkipListMap[K, V])
-      extends AbstractCollection[V]
+  private final class Values[K <: AnyRef, V <: AnyRef](
+      map: ConcurrentSkipListMap[K, V]
+  ) extends AbstractCollection[V]
       with Serializable {
 
     override def size(): Int = map.size()
@@ -1158,8 +1170,9 @@ private object ConcurrentSkipListMap {
     }
   }
 
-  private final class KeySet[K, V](map: ConcurrentSkipListMap[K, V])
-      extends AbstractSet[K]
+  private final class KeySet[K <: AnyRef, V <: AnyRef](
+      map: ConcurrentSkipListMap[K, V]
+  ) extends AbstractSet[K]
       with NavigableSet[K]
       with Serializable {
 
