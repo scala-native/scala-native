@@ -375,6 +375,14 @@ class ConcurrentSkipListMapTest extends JSR166Test {
     mustEqual(map, map2)
   }
 
+  @Test def testViewCachingOnMap(): Unit = {
+    val map = map5()
+    assertSame(map.navigableKeySet(), map.navigableKeySet())
+    assertSame(map.values(), map.values())
+    assertSame(map.entrySet(), map.entrySet())
+    assertSame(map.descendingMap(), map.descendingMap())
+  }
+
   @Test def testEquals(): Unit = {
     val map1 = map5()
     val map2 = map5()
