@@ -189,7 +189,7 @@ object Discover {
     }
     // Warn once about deprecated clang version (so that we don't spam users since nativeConfig is a task)
     if (majorVersion < WarnOnClangOlderThan &&
-        warnedAboutDeprecatedClangVersion.compareAndExchange(false, true)) {
+        warnedAboutDeprecatedClangVersion.compareAndSet(false, true)) {
       logger.warn(
         s"""|Using deprecated clang version '$version'.
             |Versions older than clang '$WarnOnClangOlderThan' can contain known bugs and runtime issues.
