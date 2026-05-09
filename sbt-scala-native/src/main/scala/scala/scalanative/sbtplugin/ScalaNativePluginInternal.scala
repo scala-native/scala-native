@@ -116,10 +116,9 @@ object ScalaNativePluginInternal {
    */
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
     nativeConfig := {
-      val logger = sLog.value.toLogger
       build.NativeConfig.empty
-        .withClang(interceptBuildException(Discover.clang(logger)))
-        .withClangPP(interceptBuildException(Discover.clangpp(logger)))
+        .withClang(interceptBuildException(Discover.clang()))
+        .withClangPP(interceptBuildException(Discover.clangpp()))
         .withCompileOptions(Discover.compileOptions())
         .withLinkingOptions(Discover.linkingOptions())
         .withLTO(Discover.LTO())

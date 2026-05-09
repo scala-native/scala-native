@@ -42,18 +42,16 @@ object Discover {
       .getOrElse(build.GC.default)
 
   /** Use the clang binary on the path or via LLVM_BIN env var. */
-  def clang(): Path = clang(Logger.nullLogger)
-  private[scalanative] def clang(logger: Logger): Path = {
+  def clang(): Path = {
     val path = discover("clang", "LLVM_BIN")
-    checkClangVersion(path, logger)
+    checkClangVersion(path, Logger.default)
     path
   }
 
   /** Use the clang++ binary on the path or via LLVM_BIN env var. */
-  def clangpp(): Path = clangpp(Logger.nullLogger)
-  private[scalanative] def clangpp(logger: Logger): Path = {
+  def clangpp(): Path = {
     val path = discover("clang++", "LLVM_BIN")
-    checkClangVersion(path, logger)
+    checkClangVersion(path, Logger.default)
     path
   }
 
