@@ -167,6 +167,41 @@ class ConcurrentSkipListMapTest extends JSR166Test {
     assertNotNull(entries.getComparator())
   }
 
+  @Test def testSequencedMapViews(): Unit = {
+    val map = map5()
+
+    mustEqual(iOne, map.sequencedKeySet().getFirst())
+    mustEqual(iFive, map.sequencedKeySet().reversed().getFirst())
+
+    mustEqual("A", map.sequencedValues().getFirst())
+    mustEqual("E", map.sequencedValues().reversed().getFirst())
+
+    mustEqual(iOne, map.sequencedEntrySet().getFirst().getKey())
+    mustEqual("A", map.sequencedEntrySet().getFirst().getValue())
+    mustEqual(iFive, map.sequencedEntrySet().reversed().getFirst().getKey())
+    mustEqual("E", map.sequencedEntrySet().reversed().getFirst().getValue())
+
+    mustEqual(iFive, map.reversed().firstEntry().getKey())
+    mustEqual(iOne, map.reversed().reversed().firstEntry().getKey())
+  }
+
+  @Test def testSequencedMapPutFirstLastUnsupported(): Unit = {
+    val map = map5()
+    assertThrows(
+      classOf[UnsupportedOperationException],
+      map.putFirst(null, "X")
+    )
+    assertThrows(
+      classOf[UnsupportedOperationException],
+      map.putFirst(iZero, null)
+    )
+    assertThrows(
+      classOf[UnsupportedOperationException],
+      map.putFirst(iZero, "X")
+    )
+    assertThrows(classOf[UnsupportedOperationException], map.putLast(iSix, "X"))
+  }
+
   @Test def testValuesRemoveIfRemovesConditionally(): Unit = {
     val map = map5()
     val removed = map

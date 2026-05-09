@@ -113,6 +113,44 @@ class ConcurrentSkipListSubMapTest extends JSR166Test {
     mustEqual(java.lang.Long.MAX_VALUE, entries.estimateSize())
   }
 
+  @Test def testSubMapSequencedMapViews(): Unit = {
+    val map = map5()
+
+    mustEqual(iOne, map.sequencedKeySet().getFirst())
+    mustEqual(iFive, map.sequencedKeySet().reversed().getFirst())
+
+    mustEqual("A", map.sequencedValues().getFirst())
+    mustEqual("E", map.sequencedValues().reversed().getFirst())
+
+    mustEqual(iOne, map.sequencedEntrySet().getFirst().getKey())
+    mustEqual("A", map.sequencedEntrySet().getFirst().getValue())
+    mustEqual(iFive, map.sequencedEntrySet().reversed().getFirst().getKey())
+    mustEqual("E", map.sequencedEntrySet().reversed().getFirst().getValue())
+
+    mustEqual(iFive, map.reversed().firstEntry().getKey())
+    mustEqual(iOne, map.reversed().reversed().firstEntry().getKey())
+  }
+
+  @Test def testSubMapSequencedMapPutFirstLastUnsupported(): Unit = {
+    val map = map5()
+    assertThrows(
+      classOf[UnsupportedOperationException],
+      map.putFirst(null, "X")
+    )
+    assertThrows(
+      classOf[UnsupportedOperationException],
+      map.putFirst(iTwo, null)
+    )
+    assertThrows(
+      classOf[UnsupportedOperationException],
+      map.putFirst(iTwo, "X")
+    )
+    assertThrows(
+      classOf[UnsupportedOperationException],
+      map.putLast(iThree, "X")
+    )
+  }
+
   @Test def testSubMapValuesRemoveIfRemovesConditionally(): Unit = {
     val map = map5()
     val removed = map
