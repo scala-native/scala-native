@@ -53,8 +53,15 @@ runs:
           $vcpkgRoot = 'C:\vcpkg'
           Write-Warning "VCPKG_INSTALLATION_ROOT is unset or empty; using fallback: $vcpkgRoot"
         }
-        $vcpkgLibs = "$vcpkgRoot\installed\x64-windows-static"
+        # RUNNER_ARCH is X64 on windows-2022 and ARM64 on windows-11-arm (GitHub-hosted).
+        $triplet = if ($env:RUNNER_ARCH -eq 'ARM64') {
+          'arm64-windows-static'
+        } else {
+          'x64-windows-static'
+        }
+        $vcpkgLibs = "$vcpkgRoot\installed\$triplet"
         "VcpkgLibs=$vcpkgLibs" >> $env:GITHUB_OUTPUT
+        "VcpkgTriplet=$triplet" >> $env:GITHUB_OUTPUT
         if ("${{inputs.scala-version}}".StartsWith("2.")) {
           echo ("project-version=" + ("${{inputs.scala-version}}".Split(".")[0, 1] -join "_")) >> $env:GITHUB_ENV
         } elseif ("${{inputs.scala-version}}".StartsWith("3-next")) {
@@ -69,7 +76,7 @@ runs:
       with:
         path: |
           ${{steps.resolve-env.outputs.ProgramFiles}}\LLVM\
-        key: llvm-${{ inputs.llvm-version }}
+        key: llvm-${{ inputs.llvm-version }}-${{ runner.arch }}
 
     # Install LLVM in case if cache is missing
     - name: Install LLVM
@@ -111,7 +118,7 @@ runs:
 
     - name: Install libs
       shell: pwsh
-      run: vcpkg install bdwgc zlib --triplet=x64-windows-static
+      run: vcpkg install bdwgc zlib --triplet=${{ steps.resolve-env.outputs.VcpkgTriplet }}
 
     # madler zlib 1.3+ CMake installs the static archive as zs.lib (OUTPUT_NAME
     # z + Windows static suffix s). javalib uses @link("zlib") -> zlib.lib.

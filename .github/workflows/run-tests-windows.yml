@@ -12,14 +12,15 @@ concurrency:
 
 jobs:
   test-runtime:
-    name: Test runtime
+    name: Test runtime (${{ matrix.os }}, Scala ${{ matrix.scala }})
     if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
-    runs-on: windows-2022
+    runs-on: ${{ matrix.os }}
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
       fail-fast: false
       matrix:
+        os: [windows-2022, windows-11-arm]
         scala: [2.12, 2.13, 3]
     steps:
       # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
@@ -71,12 +72,13 @@ jobs:
         shell: cmd
 
   run-scripted-tests:
-    name: Scripted tests
+    name: Scripted tests (${{ matrix.os }}, Scala ${{ matrix.scala }})
     if: github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
-    runs-on: windows-2022
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os: [windows-2022, windows-11-arm]
         scala: [2.12, 3]
     steps:
       # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
@@ -92,15 +94,16 @@ jobs:
         shell: cmd
 
   test-runtime-ext:
-    name: Test runtime extension
+    name: Test runtime extension (${{ matrix.os }})
     if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
-    runs-on: windows-2022
+    runs-on: ${{ matrix.os }}
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
     needs: [test-runtime]
     strategy:
       fail-fast: false
       matrix:
+        os: [windows-2022, windows-11-arm]
         scala: [2.13, 3]
         build-mode: [debug, release-fast]
         lto: [none, thin]
@@ -149,11 +152,13 @@ jobs:
         shell: cmd
 
   test-llvm-versions:
-    runs-on: windows-2022
+    name: LLVM ${{ matrix.llvm }} (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
     strategy:
       fail-fast: false
       matrix:
+        os: [windows-2022, windows-11-arm]
         scala: [3]
         llvm: ["19.1.7", "20.1.4"] # Last 2 stable versions, LLVM 10 is minimal version able to compile current Windows SDK
     steps:

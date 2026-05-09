@@ -43,11 +43,12 @@ jobs:
           "test-runtime ${{matrix.scala}}"
 
   tests-windows-jdk-compliance:
-    name: Test Windows JDK compliance
-    runs-on: windows-2022
+    name: Test Windows JDK compliance (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os: [windows-2022, windows-11-arm]
         scala: [3]
         java: [25]
     steps:
