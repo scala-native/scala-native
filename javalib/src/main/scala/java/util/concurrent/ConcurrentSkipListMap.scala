@@ -8,13 +8,16 @@ package java.util.concurrent
 
 import java.util._
 import java.util.concurrent.atomic.LongAdder
-import java.util.function.{BiConsumer, BiFunction, Function}
+import java.util.function.{
+  BiConsumer, BiFunction, Consumer, Function, Predicate
+}
 
 import scala.annotation.tailrec
 import scala.language.existentials
 
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.libc.stdatomic.AtomicRef
+import scala.scalanative.libc.stdatomic.memory_order._
+import scala.scalanative.libc.stdatomic.{AtomicRef, atomic_thread_fence}
 import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
 import scala.scalanative.unsafe._
 
@@ -738,7 +741,8 @@ class ConcurrentSkipListMap[K <: AnyRef, V <: AnyRef](
           () => firstNodeInView(),
           n => nextNodeInView(n),
           k => { remove(k); () }
-        )
+        ),
+      () => entrySpliterator()
     )
 
   override def keySet(): NavigableSet[K] =
@@ -751,8 +755,10 @@ class ConcurrentSkipListMap[K <: AnyRef, V <: AnyRef](
         new LiveKeyIterator[K, V](
           () => firstNodeInView(),
           n => nextNodeInView(n),
-          k => { remove(k); () }
-        )
+          k => { remove(k); () },
+          () => comparator()
+        ),
+      () => keySpliterator()
     )
 
   override def descendingKeySet(): NavigableSet[K] =
@@ -766,7 +772,14 @@ class ConcurrentSkipListMap[K <: AnyRef, V <: AnyRef](
           () => firstNodeInView(),
           n => nextNodeInView(n),
           k => { remove(k); () }
-        )
+        ),
+      () =>
+        new LiveEntryIterator[K, V](
+          () => firstNodeInView(),
+          n => nextNodeInView(n),
+          k => { remove(k); () }
+        ),
+      () => valueSpliterator()
     )
 
   override def comparator(): Comparator[_ >: K] =
@@ -919,6 +932,36 @@ class ConcurrentSkipListMap[K <: AnyRef, V <: AnyRef](
       isDescending = true
     )
 
+  private def keySpliterator(): Spliterator[K] = {
+    atomic_thread_fence(memory_order_acquire)
+    val h = headIndex
+    new KeySpliterator[K, V](ordering, h, h.node, null.asInstanceOf[K], count())
+  }
+
+  private def valueSpliterator(): Spliterator[V] = {
+    atomic_thread_fence(memory_order_acquire)
+    val h = headIndex
+    new ValueSpliterator[K, V](
+      ordering,
+      h,
+      h.node,
+      null.asInstanceOf[K],
+      count()
+    )
+  }
+
+  private def entrySpliterator(): Spliterator[Map.Entry[K, V]] = {
+    atomic_thread_fence(memory_order_acquire)
+    val h = headIndex
+    new EntrySpliterator[K, V](
+      ordering,
+      h,
+      h.node,
+      null.asInstanceOf[K],
+      count()
+    )
+  }
+
   override def clone(): ConcurrentSkipListMap[K, V] = {
     val cloned = new ConcurrentSkipListMap[K, V](ordering)
     var n = firstNodeInView()
@@ -973,6 +1016,294 @@ private object ConcurrentSkipListMap {
     @alwaysinline
     def casRight(expect: Index[K, V], update: Index[K, V]): Boolean =
       rightRef.compareExchangeStrong(expect, update)
+  }
+
+  private def compare[K <: AnyRef](
+      comparator: Comparator[_ >: K],
+      a: K,
+      b: K
+  ): Int =
+    if (comparator != null) comparator.compare(a, b)
+    else a.asInstanceOf[Comparable[Any]].compareTo(b)
+
+  private abstract class CSLMSpliterator[K <: AnyRef, V <: AnyRef, A](
+      val comparator: Comparator[_ >: K],
+      var row: Index[K, V],
+      var current: Node[K, V],
+      val fence: K,
+      var est: Long
+  ) extends Spliterator[A] {
+    override final def estimateSize(): Long = est
+  }
+
+  private final class KeySpliterator[K <: AnyRef, V <: AnyRef](
+      comparator: Comparator[_ >: K],
+      row: Index[K, V],
+      origin: Node[K, V],
+      fence: K,
+      est: Long
+  ) extends CSLMSpliterator[K, V, K](comparator, row, origin, fence, est) {
+
+    override def trySplit(): Spliterator[K] = {
+      val e = current
+      if (e != null && e.key != null) {
+        var q = row
+        while (q != null) {
+          val s = q.right
+          if (s != null) {
+            val b = s.node
+            val n = if (b == null) null else b.next
+            if (n != null && n.value != null && n.key != null &&
+                compare(comparator, n.key, e.key) > 0 &&
+                (fence == null || compare(comparator, n.key, fence) < 0)) {
+              current = n
+              val r = q.down
+              row = if (s.right != null) s else s.down
+              this.est = this.est - (this.est >>> 2)
+              return new KeySpliterator[K, V](
+                comparator,
+                r,
+                e,
+                n.key,
+                this.est
+              )
+            }
+          }
+          q = q.down
+          row = q
+        }
+      }
+      null
+    }
+
+    override def forEachRemaining(action: Consumer[_ >: K]): Unit = {
+      Objects.requireNonNull(action)
+      var e = current
+      current = null
+      while (e != null) {
+        val k = e.key
+        if (k != null && fence != null && compare(comparator, fence, k) <= 0)
+          return
+        if (e.value != null)
+          action.accept(k)
+        e = e.next
+      }
+    }
+
+    override def tryAdvance(action: Consumer[_ >: K]): Boolean = {
+      Objects.requireNonNull(action)
+      var e = current
+      while (e != null) {
+        val k = e.key
+        if (k != null && fence != null && compare(comparator, fence, k) <= 0) {
+          e = null
+        } else if (e.value != null) {
+          current = e.next
+          action.accept(k)
+          return true
+        } else e = e.next
+      }
+      current = e
+      false
+    }
+
+    override def characteristics(): Int =
+      Spliterator.DISTINCT | Spliterator.SORTED |
+        Spliterator.ORDERED | Spliterator.CONCURRENT |
+        Spliterator.NONNULL
+
+    override def getComparator(): Comparator[_ >: K] =
+      comparator
+  }
+
+  private final class ValueSpliterator[K <: AnyRef, V <: AnyRef](
+      comparator: Comparator[_ >: K],
+      row: Index[K, V],
+      origin: Node[K, V],
+      fence: K,
+      est: Long
+  ) extends CSLMSpliterator[K, V, V](comparator, row, origin, fence, est) {
+
+    override def trySplit(): Spliterator[V] = {
+      val e = current
+      if (e != null && e.key != null) {
+        var q = row
+        while (q != null) {
+          val s = q.right
+          if (s != null) {
+            val b = s.node
+            val n = if (b == null) null else b.next
+            if (n != null && n.value != null && n.key != null &&
+                compare(comparator, n.key, e.key) > 0 &&
+                (fence == null || compare(comparator, n.key, fence) < 0)) {
+              current = n
+              val r = q.down
+              row = if (s.right != null) s else s.down
+              this.est = this.est - (this.est >>> 2)
+              return new ValueSpliterator[K, V](
+                comparator,
+                r,
+                e,
+                n.key,
+                this.est
+              )
+            }
+          }
+          q = q.down
+          row = q
+        }
+      }
+      null
+    }
+
+    override def forEachRemaining(action: Consumer[_ >: V]): Unit = {
+      Objects.requireNonNull(action)
+      var e = current
+      current = null
+      while (e != null) {
+        val k = e.key
+        if (k != null && fence != null && compare(comparator, fence, k) <= 0)
+          return
+        val v = e.value
+        if (v != null)
+          action.accept(v)
+        e = e.next
+      }
+    }
+
+    override def tryAdvance(action: Consumer[_ >: V]): Boolean = {
+      Objects.requireNonNull(action)
+      var e = current
+      while (e != null) {
+        val k = e.key
+        if (k != null && fence != null && compare(comparator, fence, k) <= 0) {
+          e = null
+        } else {
+          val v = e.value
+          if (v != null) {
+            current = e.next
+            action.accept(v)
+            return true
+          }
+          e = e.next
+        }
+      }
+      current = e
+      false
+    }
+
+    override def characteristics(): Int =
+      Spliterator.CONCURRENT | Spliterator.ORDERED | Spliterator.NONNULL
+  }
+
+  private final class EntrySpliterator[K <: AnyRef, V <: AnyRef](
+      comparator: Comparator[_ >: K],
+      row: Index[K, V],
+      origin: Node[K, V],
+      fence: K,
+      est: Long
+  ) extends CSLMSpliterator[K, V, Map.Entry[K, V]](
+        comparator,
+        row,
+        origin,
+        fence,
+        est
+      ) {
+
+    override def trySplit(): Spliterator[Map.Entry[K, V]] = {
+      val e = current
+      if (e != null && e.key != null) {
+        var q = row
+        while (q != null) {
+          val s = q.right
+          if (s != null) {
+            val b = s.node
+            val n = if (b == null) null else b.next
+            if (n != null && n.value != null && n.key != null &&
+                compare(comparator, n.key, e.key) > 0 &&
+                (fence == null || compare(comparator, n.key, fence) < 0)) {
+              current = n
+              val r = q.down
+              row = if (s.right != null) s else s.down
+              this.est = this.est - (this.est >>> 2)
+              return new EntrySpliterator[K, V](
+                comparator,
+                r,
+                e,
+                n.key,
+                this.est
+              )
+            }
+          }
+          q = q.down
+          row = q
+        }
+      }
+      null
+    }
+
+    override def forEachRemaining(
+        action: Consumer[_ >: Map.Entry[K, V]]
+    ): Unit = {
+      Objects.requireNonNull(action)
+      var e = current
+      current = null
+      while (e != null) {
+        val k = e.key
+        if (k != null && fence != null && compare(comparator, fence, k) <= 0)
+          return
+        val v = e.value
+        if (v != null)
+          action.accept(new AbstractMap.SimpleImmutableEntry[K, V](k, v))
+        e = e.next
+      }
+    }
+
+    override def tryAdvance(
+        action: Consumer[_ >: Map.Entry[K, V]]
+    ): Boolean = {
+      Objects.requireNonNull(action)
+      var e = current
+      while (e != null) {
+        val k = e.key
+        if (k != null && fence != null && compare(comparator, fence, k) <= 0) {
+          e = null
+        } else {
+          val v = e.value
+          if (v != null) {
+            current = e.next
+            action.accept(new AbstractMap.SimpleImmutableEntry[K, V](k, v))
+            return true
+          }
+          e = e.next
+        }
+      }
+      current = e
+      false
+    }
+
+    override def characteristics(): Int =
+      Spliterator.DISTINCT | Spliterator.SORTED |
+        Spliterator.ORDERED | Spliterator.CONCURRENT |
+        Spliterator.NONNULL
+
+    override def getComparator(): Comparator[_ >: Map.Entry[K, V]] =
+      if (comparator != null)
+        new Comparator[Map.Entry[K, V]] {
+          override def compare(
+              e1: Map.Entry[K, V],
+              e2: Map.Entry[K, V]
+          ): Int =
+            comparator.compare(e1.getKey(), e2.getKey())
+        }
+      else
+        new Comparator[Map.Entry[K, V]] {
+          override def compare(
+              e1: Map.Entry[K, V],
+              e2: Map.Entry[K, V]
+          ): Int =
+            e1.getKey().asInstanceOf[Comparable[Any]].compareTo(e2.getKey())
+        }
   }
 
   private final class SubMap[K <: AnyRef, V <: AnyRef](
@@ -1386,6 +1717,12 @@ private object ConcurrentSkipListMap {
             () => firstNodeInView(),
             n => nextNodeInView(n),
             k => { remove(k); () }
+          ),
+        () =>
+          new LiveEntryIterator[K, V](
+            () => firstNodeInView(),
+            n => nextNodeInView(n),
+            k => { remove(k); () }
           )
       )
 
@@ -1399,7 +1736,15 @@ private object ConcurrentSkipListMap {
           new LiveKeyIterator[K, V](
             () => firstNodeInView(),
             n => nextNodeInView(n),
-            k => { remove(k); () }
+            k => { remove(k); () },
+            () => comparator()
+          ),
+        () =>
+          new LiveKeyIterator[K, V](
+            () => firstNodeInView(),
+            n => nextNodeInView(n),
+            k => { remove(k); () },
+            () => comparator()
           )
       )
 
@@ -1409,6 +1754,18 @@ private object ConcurrentSkipListMap {
     override def values(): Collection[V] =
       new Values[K, V](
         this,
+        () =>
+          new LiveValueIterator[K, V](
+            () => firstNodeInView(),
+            n => nextNodeInView(n),
+            k => { remove(k); () }
+          ),
+        () =>
+          new LiveEntryIterator[K, V](
+            () => firstNodeInView(),
+            n => nextNodeInView(n),
+            k => { remove(k); () }
+          ),
         () =>
           new LiveValueIterator[K, V](
             () => firstNodeInView(),
@@ -1574,12 +1931,15 @@ private object ConcurrentSkipListMap {
       firstNode: () => Node[K, V],
       nextNodeOf: Node[K, V] => Node[K, V],
       removeKey: K => Unit
-  ) extends Iterator[A] {
-    private var nextNode = firstNode()
+  ) extends Iterator[A]
+      with Spliterator[A] {
+    private var nextNode: Node[K, V] = _
     private var nextValue: V = _
     private var lastReturned: Node[K, V] = _
     protected var currentValue: V = _
 
+    atomic_thread_fence(memory_order_acquire)
+    nextNode = firstNode()
     skipDeleted()
 
     private def skipDeleted(): Unit = {
@@ -1609,14 +1969,38 @@ private object ConcurrentSkipListMap {
       removeKey(n.key)
       lastReturned = null
     }
+
+    override final def trySplit(): Spliterator[A] = null
+
+    override final def tryAdvance(action: Consumer[_ >: A]): Boolean = {
+      Objects.requireNonNull(action)
+      if (!hasNext()) false
+      else {
+        action.accept(next())
+        true
+      }
+    }
+
+    override final def forEachRemaining(action: Consumer[_ >: A]): Unit = {
+      Objects.requireNonNull(action)
+      while (hasNext())
+        action.accept(next())
+    }
+
+    override final def estimateSize(): Long = java.lang.Long.MAX_VALUE
   }
 
   private final class LiveKeyIterator[K <: AnyRef, V <: AnyRef](
       firstNode: () => Node[K, V],
       nextNodeOf: Node[K, V] => Node[K, V],
-      removeKey: K => Unit
+      removeKey: K => Unit,
+      comparatorFactory: () => Comparator[_ >: K]
   ) extends LiveIterator[K, V, K](firstNode, nextNodeOf, removeKey) {
     override def next(): K = nextLiveNode().key
+    override def characteristics(): Int =
+      Spliterator.DISTINCT | Spliterator.ORDERED | Spliterator.SORTED
+    override def getComparator(): Comparator[_ >: K] =
+      comparatorFactory()
   }
 
   private final class LiveValueIterator[K <: AnyRef, V <: AnyRef](
@@ -1628,6 +2012,7 @@ private object ConcurrentSkipListMap {
       nextLiveNode()
       currentValue
     }
+    override def characteristics(): Int = 0
   }
 
   private final class LiveEntryIterator[K <: AnyRef, V <: AnyRef](
@@ -1643,11 +2028,14 @@ private object ConcurrentSkipListMap {
       val n = nextLiveNode()
       new AbstractMap.SimpleImmutableEntry[K, V](n.key, currentValue)
     }
+    override def characteristics(): Int =
+      Spliterator.DISTINCT
   }
 
   private final class EntrySet[K <: AnyRef, V <: AnyRef](
       map: ConcurrentNavigableMap[K, V],
-      iteratorFactory: () => Iterator[Map.Entry[K, V]]
+      iteratorFactory: () => Iterator[Map.Entry[K, V]],
+      spliteratorFactory: () => Spliterator[Map.Entry[K, V]]
   ) extends AbstractSet[Map.Entry[K, V]]
       with Serializable {
 
@@ -1671,11 +2059,28 @@ private object ConcurrentSkipListMap {
 
     override def iterator(): Iterator[Map.Entry[K, V]] =
       iteratorFactory()
+
+    override def spliterator(): Spliterator[Map.Entry[K, V]] =
+      spliteratorFactory()
+
+    override def removeIf(filter: Predicate[_ >: Map.Entry[K, V]]): Boolean = {
+      Objects.requireNonNull(filter)
+      val it = iteratorFactory()
+      var removed = false
+      while (it.hasNext()) {
+        val e = it.next()
+        if (filter.test(e) && map.remove(e.getKey(), e.getValue()))
+          removed = true
+      }
+      removed
+    }
   }
 
   private final class Values[K <: AnyRef, V <: AnyRef](
       map: ConcurrentNavigableMap[K, V],
-      iteratorFactory: () => Iterator[V]
+      iteratorFactory: () => Iterator[V],
+      entryIteratorFactory: () => Iterator[Map.Entry[K, V]],
+      spliteratorFactory: () => Spliterator[V]
   ) extends AbstractCollection[V]
       with Serializable {
 
@@ -1689,11 +2094,28 @@ private object ConcurrentSkipListMap {
 
     override def iterator(): Iterator[V] =
       iteratorFactory()
+
+    override def spliterator(): Spliterator[V] =
+      spliteratorFactory()
+
+    override def removeIf(filter: Predicate[_ >: V]): Boolean = {
+      Objects.requireNonNull(filter)
+      val it = entryIteratorFactory()
+      var removed = false
+      while (it.hasNext()) {
+        val e = it.next()
+        val v = e.getValue()
+        if (filter.test(v) && map.remove(e.getKey(), v))
+          removed = true
+      }
+      removed
+    }
   }
 
   private final class KeySet[K <: AnyRef, V <: AnyRef](
       map: ConcurrentNavigableMap[K, V],
-      iteratorFactory: () => Iterator[K]
+      iteratorFactory: () => Iterator[K],
+      spliteratorFactory: () => Spliterator[K]
   ) extends AbstractSet[K]
       with NavigableSet[K]
       with Serializable {
@@ -1713,6 +2135,9 @@ private object ConcurrentSkipListMap {
 
     override def iterator(): Iterator[K] =
       iteratorFactory()
+
+    override def spliterator(): Spliterator[K] =
+      spliteratorFactory()
 
     override def descendingIterator(): Iterator[K] =
       descendingSet().iterator()
