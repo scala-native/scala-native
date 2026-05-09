@@ -253,33 +253,6 @@ class ConcurrentSkipListMap[K <: AnyRef, V <: AnyRef] private (
     )
   }
 
-  private[concurrent] def snapshotEntries(): ArrayList[Map.Entry[K, V]] = {
-    val entries = new ArrayList[Map.Entry[K, V]]()
-    var n = lowestNodeAscending()
-    while (n != null) {
-      val value = n.value
-      if (value != null)
-        entries.add(new AbstractMap.SimpleImmutableEntry[K, V](n.key, value))
-      n = backing.findGreaterThan(n.key)
-      if (n != null && tooHigh(n.key)) n = null
-    }
-    if (!descending) entries
-    else {
-      val reversed = new ArrayList[Map.Entry[K, V]](entries.size())
-      var i = entries.size() - 1
-      while (i >= 0) {
-        reversed.add(entries.get(i))
-        i -= 1
-      }
-      reversed
-    }
-  }
-
-  private[concurrent] def removeSnapshotEntry(
-      entry: Map.Entry[K, V]
-  ): Boolean =
-    remove(entry.getKey(), entry.getValue())
-
   override def size(): Int = {
     val count =
       if (!loSet && !hiSet) backing.count()
@@ -1148,78 +1121,66 @@ private object ConcurrentSkipListMap {
     }
   }
 
-  private final class SnapshotIterator[A](
-      snapshot: ArrayList[A],
-      removeLast: A => Unit
+  private abstract class LiveIterator[K <: AnyRef, V <: AnyRef, A](
+      map: ConcurrentSkipListMap[K, V]
   ) extends Iterator[A] {
-    private val it = snapshot.iterator()
-    private var last: A = _
-    private var canRemove = false
+    private var nextNode = map.firstNodeInView()
+    private var nextValue: V = _
+    private var lastReturned: Node[K, V] = _
+    protected var currentValue: V = _
 
-    override def hasNext(): Boolean = it.hasNext()
+    skipDeleted()
 
-    override def next(): A = {
-      if (!it.hasNext())
-        throw new NoSuchElementException
-      last = it.next()
-      canRemove = true
-      last
+    private def skipDeleted(): Unit = {
+      while (nextNode != null) {
+        nextValue = nextNode.value
+        if (nextValue != null) return
+        nextNode = map.nextNodeInView(nextNode)
+      }
     }
 
-    override def remove(): Unit = {
-      if (!canRemove) throw new IllegalStateException
-      removeLast(last)
-      canRemove = false
+    override final def hasNext(): Boolean = nextNode != null
+
+    protected final def nextLiveNode(): Node[K, V] = {
+      val n = nextNode
+      if (n == null)
+        throw new NoSuchElementException
+      currentValue = nextValue
+      lastReturned = n
+      nextNode = map.nextNodeInView(n)
+      skipDeleted()
+      n
+    }
+
+    override final def remove(): Unit = {
+      val n = lastReturned
+      if (n == null) throw new IllegalStateException
+      map.remove(n.key)
+      lastReturned = null
     }
   }
 
-  private final class SnapshotKeyIterator[K <: AnyRef, V <: AnyRef](
-      snapshot: ArrayList[Map.Entry[K, V]],
+  private final class LiveKeyIterator[K <: AnyRef, V <: AnyRef](
       map: ConcurrentSkipListMap[K, V]
-  ) extends Iterator[K] {
-    private val it = snapshot.iterator()
-    private var last: Map.Entry[K, V] = _
-    private var canRemove = false
-
-    override def hasNext(): Boolean = it.hasNext()
-
-    override def next(): K = {
-      if (!it.hasNext())
-        throw new NoSuchElementException
-      last = it.next()
-      canRemove = true
-      last.getKey()
-    }
-
-    override def remove(): Unit = {
-      if (!canRemove) throw new IllegalStateException
-      map.remove(last.getKey())
-      canRemove = false
-    }
+  ) extends LiveIterator[K, V, K](map) {
+    override def next(): K = nextLiveNode().key
   }
 
-  private final class SnapshotValueIterator[K <: AnyRef, V <: AnyRef](
-      snapshot: ArrayList[Map.Entry[K, V]],
+  private final class LiveValueIterator[K <: AnyRef, V <: AnyRef](
       map: ConcurrentSkipListMap[K, V]
-  ) extends Iterator[V] {
-    private val it = snapshot.iterator()
-    private var last: Map.Entry[K, V] = _
-    private var canRemove = false
-
-    override def hasNext(): Boolean = it.hasNext()
-
+  ) extends LiveIterator[K, V, V](map) {
     override def next(): V = {
-      if (!it.hasNext())
-        throw new NoSuchElementException
-      last = it.next()
-      canRemove = true
-      last.getValue()
+      nextLiveNode()
+      currentValue
     }
+  }
 
-    override def remove(): Unit = {
-      if (!canRemove) throw new IllegalStateException
-      map.removeSnapshotEntry(last)
-      canRemove = false
+  private final class LiveEntryIterator[K <: AnyRef, V <: AnyRef](
+      map: ConcurrentSkipListMap[K, V]
+  ) extends LiveIterator[K, V, Map.Entry[K, V]](map) {
+    override def next(): Map.Entry[K, V] = {
+      val n = nextLiveNode()
+      new AbstractMap.SimpleImmutableEntry[K, V](n.key, currentValue)
     }
   }
 
@@ -1247,10 +1208,7 @@ private object ConcurrentSkipListMap {
     }
 
     override def iterator(): Iterator[Map.Entry[K, V]] =
-      new SnapshotIterator[Map.Entry[K, V]](
-        map.snapshotEntries(),
-        e => map.removeSnapshotEntry(e)
-      )
+      new LiveEntryIterator[K, V](map)
   }
 
   private final class Values[K <: AnyRef, V <: AnyRef](
@@ -1266,10 +1224,8 @@ private object ConcurrentSkipListMap {
 
     override def contains(o: Any): Boolean = map.containsValue(o)
 
-    override def iterator(): Iterator[V] = {
-      val entries = map.snapshotEntries()
-      new SnapshotValueIterator[K, V](entries, map)
-    }
+    override def iterator(): Iterator[V] =
+      new LiveValueIterator[K, V](map)
   }
 
   private final class KeySet[K <: AnyRef, V <: AnyRef](
@@ -1291,10 +1247,8 @@ private object ConcurrentSkipListMap {
     override def add(e: K): Boolean =
       throw new UnsupportedOperationException
 
-    override def iterator(): Iterator[K] = {
-      val entries = map.snapshotEntries()
-      new SnapshotKeyIterator[K, V](entries, map)
-    }
+    override def iterator(): Iterator[K] =
+      new LiveKeyIterator[K, V](map)
 
     override def descendingIterator(): Iterator[K] =
       descendingSet().iterator()
