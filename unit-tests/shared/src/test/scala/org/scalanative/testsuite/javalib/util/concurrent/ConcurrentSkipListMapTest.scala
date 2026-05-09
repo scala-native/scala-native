@@ -11,10 +11,11 @@ import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong}
 import java.util.concurrent.{
   CompletableFuture, ConcurrentSkipListMap, ThreadLocalRandom
 }
-import java.util.function.BiFunction
+import java.util.function.{BiFunction, Predicate}
 import java.util.{
   ArrayList, Arrays, BitSet, Collection, Comparator, Iterator, Map,
-  NavigableMap, NavigableSet, NoSuchElementException, Random, Set, SortedMap
+  NavigableMap, NavigableSet, NoSuchElementException, Random, Set, SortedMap,
+  Spliterator
 }
 
 import org.junit.Assert._
@@ -131,6 +132,71 @@ class ConcurrentSkipListMapTest extends JSR166Test {
         )
       }
     }
+  }
+
+  @Test def testViewSpliteratorCharacteristics(): Unit = {
+    val map = map5()
+
+    val keys = map.navigableKeySet().spliterator()
+    assertTrue(keys.hasCharacteristics(Spliterator.DISTINCT))
+    assertTrue(keys.hasCharacteristics(Spliterator.SORTED))
+    assertTrue(keys.hasCharacteristics(Spliterator.ORDERED))
+    assertTrue(keys.hasCharacteristics(Spliterator.CONCURRENT))
+    assertTrue(keys.hasCharacteristics(Spliterator.NONNULL))
+    assertFalse(keys.hasCharacteristics(Spliterator.SIZED))
+    assertFalse(keys.hasCharacteristics(Spliterator.SUBSIZED))
+    assertNull(keys.getComparator())
+
+    val values = map.values().spliterator()
+    assertTrue(values.hasCharacteristics(Spliterator.CONCURRENT))
+    assertTrue(values.hasCharacteristics(Spliterator.ORDERED))
+    assertTrue(values.hasCharacteristics(Spliterator.NONNULL))
+    assertFalse(values.hasCharacteristics(Spliterator.DISTINCT))
+    assertFalse(values.hasCharacteristics(Spliterator.SORTED))
+    assertFalse(values.hasCharacteristics(Spliterator.SIZED))
+    assertFalse(values.hasCharacteristics(Spliterator.SUBSIZED))
+
+    val entries = map.entrySet().spliterator()
+    assertTrue(entries.hasCharacteristics(Spliterator.DISTINCT))
+    assertTrue(entries.hasCharacteristics(Spliterator.SORTED))
+    assertTrue(entries.hasCharacteristics(Spliterator.ORDERED))
+    assertTrue(entries.hasCharacteristics(Spliterator.CONCURRENT))
+    assertTrue(entries.hasCharacteristics(Spliterator.NONNULL))
+    assertFalse(entries.hasCharacteristics(Spliterator.SIZED))
+    assertFalse(entries.hasCharacteristics(Spliterator.SUBSIZED))
+    assertNotNull(entries.getComparator())
+  }
+
+  @Test def testValuesRemoveIfRemovesConditionally(): Unit = {
+    val map = map5()
+    val removed = map
+      .values()
+      .removeIf(new Predicate[String] {
+        override def test(value: String): Boolean = {
+          map.put(iOne, "changed")
+          value == "A"
+        }
+      })
+
+    assertFalse(removed)
+    mustEqual("changed", map.get(iOne))
+    assertTrue(map.containsKey(iOne))
+  }
+
+  @Test def testEntrySetRemoveIfRemovesConditionally(): Unit = {
+    val map = map5()
+    val removed = map
+      .entrySet()
+      .removeIf(new Predicate[Map.Entry[Item, String]] {
+        override def test(entry: Map.Entry[Item, String]): Boolean = {
+          map.put(entry.getKey(), "changed")
+          entry.getValue() == "A"
+        }
+      })
+
+    assertFalse(removed)
+    mustEqual("changed", map.get(iOne))
+    assertTrue(map.containsKey(iOne))
   }
 
   @Test def testMapBug8210280(): Unit = {

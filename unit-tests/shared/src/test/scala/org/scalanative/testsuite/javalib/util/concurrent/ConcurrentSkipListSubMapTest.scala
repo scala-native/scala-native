@@ -8,8 +8,10 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 
 import java.util.concurrent.{ConcurrentNavigableMap, ConcurrentSkipListMap}
+import java.util.function.Predicate
 import java.util.{
-  ArrayList, Arrays, Collection, Iterator, Map, NavigableMap, Set, SortedMap
+  ArrayList, Arrays, Collection, Iterator, Map, NavigableMap, Set, SortedMap,
+  Spliterator
 }
 
 import org.junit.Assert._
@@ -80,6 +82,68 @@ object ConcurrentSkipListSubMapTest {
 class ConcurrentSkipListSubMapTest extends JSR166Test {
   import ConcurrentSkipListSubMapTest._
   import JSR166Test._
+
+  @Test def testSubMapViewSpliteratorCharacteristics(): Unit = {
+    val map = map5()
+
+    val keys = map.navigableKeySet().spliterator()
+    assertTrue(keys.hasCharacteristics(Spliterator.DISTINCT))
+    assertTrue(keys.hasCharacteristics(Spliterator.SORTED))
+    assertTrue(keys.hasCharacteristics(Spliterator.ORDERED))
+    assertFalse(keys.hasCharacteristics(Spliterator.CONCURRENT))
+    assertFalse(keys.hasCharacteristics(Spliterator.NONNULL))
+    assertFalse(keys.hasCharacteristics(Spliterator.SIZED))
+    assertFalse(keys.hasCharacteristics(Spliterator.SUBSIZED))
+    assertNull(keys.getComparator())
+    mustEqual(java.lang.Long.MAX_VALUE, keys.estimateSize())
+
+    val values = map.values().spliterator()
+    mustEqual(0, values.characteristics())
+    assertFalse(values.hasCharacteristics(Spliterator.SIZED))
+    assertFalse(values.hasCharacteristics(Spliterator.SUBSIZED))
+    mustEqual(java.lang.Long.MAX_VALUE, values.estimateSize())
+
+    val entries = map.entrySet().spliterator()
+    assertTrue(entries.hasCharacteristics(Spliterator.DISTINCT))
+    assertFalse(entries.hasCharacteristics(Spliterator.SORTED))
+    assertFalse(entries.hasCharacteristics(Spliterator.CONCURRENT))
+    assertFalse(entries.hasCharacteristics(Spliterator.NONNULL))
+    assertFalse(entries.hasCharacteristics(Spliterator.SIZED))
+    assertFalse(entries.hasCharacteristics(Spliterator.SUBSIZED))
+    mustEqual(java.lang.Long.MAX_VALUE, entries.estimateSize())
+  }
+
+  @Test def testSubMapValuesRemoveIfRemovesConditionally(): Unit = {
+    val map = map5()
+    val removed = map
+      .values()
+      .removeIf(new Predicate[String] {
+        override def test(value: String): Boolean = {
+          map.put(iOne, "changed")
+          value == "A"
+        }
+      })
+
+    assertFalse(removed)
+    mustEqual("changed", map.get(iOne))
+    assertTrue(map.containsKey(iOne))
+  }
+
+  @Test def testSubMapEntrySetRemoveIfRemovesConditionally(): Unit = {
+    val map = map5()
+    val removed = map
+      .entrySet()
+      .removeIf(new Predicate[Map.Entry[Item, String]] {
+        override def test(entry: Map.Entry[Item, String]): Boolean = {
+          map.put(entry.getKey(), "changed")
+          entry.getValue() == "A"
+        }
+      })
+
+    assertFalse(removed)
+    mustEqual("changed", map.get(iOne))
+    assertTrue(map.containsKey(iOne))
+  }
 
   @Test def testClear(): Unit = {
     val map = map5()
