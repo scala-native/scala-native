@@ -18,8 +18,8 @@ import org.junit.Assert._
 import org.junit.Assume.assumeFalse
 import org.junit.{Ignore, Test}
 
-import org.scalanative.testsuite.utils.Platform
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.Platform
 
 object ConcurrentSkipListSubMapTest {
   import JSR166Test._
