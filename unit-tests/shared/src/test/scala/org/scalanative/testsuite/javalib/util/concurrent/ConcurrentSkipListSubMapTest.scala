@@ -15,7 +15,7 @@ import java.util.{
 }
 
 import org.junit.Assert._
-import org.junit.{Ignore, Test}
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
@@ -531,8 +531,8 @@ class ConcurrentSkipListSubMapTest extends JSR166Test {
   @Test def testRemove2_NullPointerException(): Unit =
     assertThrows(classOf[NullPointerException], map5().remove(null, "whatever"))
 
-  @Ignore("scala-native#4852: ObjectInputStream is unsupported")
-  @Test def testSerialization(): Unit = {}
+  // JVM-only serialization assertions live in
+  // unit-tests/jvm/.../ConcurrentSkipListMapSerializationTestOnJVM.scala
 
   @Test def testSubMapContents(): Unit = {
     val map = map5()
@@ -973,8 +973,8 @@ class ConcurrentSkipListSubMapTest extends JSR166Test {
       dmap5().remove(null, "whatever")
     )
 
-  @Ignore("scala-native#4852: ObjectInputStream is unsupported")
-  @Test def testDescendingSerialization(): Unit = {}
+  // JVM-only serialization assertions live in
+  // unit-tests/jvm/.../ConcurrentSkipListMapSerializationTestOnJVM.scala
 
   @Test def testDescendingSubMapContents(): Unit = {
     val map = dmap5()
