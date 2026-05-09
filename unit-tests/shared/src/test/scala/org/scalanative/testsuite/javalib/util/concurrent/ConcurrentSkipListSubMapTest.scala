@@ -151,6 +151,32 @@ class ConcurrentSkipListSubMapTest extends JSR166Test {
     )
   }
 
+  @Test def testSubMapSequencedValuesRemoveFirstLast(): Unit = {
+    val map = map5()
+
+    mustEqual("A", map.sequencedValues().removeFirst())
+    assertFalse(map.containsKey(iOne))
+    mustEqual(iTwo, map.firstKey())
+
+    mustEqual("E", map.sequencedValues().removeLast())
+    assertFalse(map.containsKey(iFive))
+    mustEqual(iFour, map.lastKey())
+  }
+
+  @Test def testSubMapSequencedEntrySetRemoveFirstLast(): Unit = {
+    val map = map5()
+
+    val first = map.sequencedEntrySet().removeFirst()
+    mustEqual(iOne, first.getKey())
+    mustEqual("A", first.getValue())
+    assertFalse(map.containsKey(iOne))
+
+    val last = map.sequencedEntrySet().removeLast()
+    mustEqual(iFive, last.getKey())
+    mustEqual("E", last.getValue())
+    assertFalse(map.containsKey(iFive))
+  }
+
   @Test def testSubMapValuesRemoveIfRemovesConditionally(): Unit = {
     val map = map5()
     val removed = map
