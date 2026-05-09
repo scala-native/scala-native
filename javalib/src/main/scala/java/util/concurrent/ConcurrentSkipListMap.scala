@@ -139,6 +139,13 @@ class ConcurrentSkipListMap[K <: AnyRef, V <: AnyRef] private (
     if (descending) lowestNodeAscending()
     else highestNodeAscending()
 
+  private def nextNodeInView(node: Node[K, V]): Node[K, V] = {
+    val n =
+      if (descending) backing.findLessThan(node.key)
+      else backing.findGreaterThan(node.key)
+    if (n != null && inBounds(n.key)) n else null
+  }
+
   private def ascLowerNode(key: K): Node[K, V] =
     if (tooLow(key)) null
     else if (tooHigh(key)) highestNodeAscending()
@@ -348,11 +355,15 @@ class ConcurrentSkipListMap[K <: AnyRef, V <: AnyRef] private (
   }
 
   override def clear(): Unit = {
-    val entries = snapshotEntries()
-    val it = entries.iterator()
-    while (it.hasNext()) {
-      val e = it.next()
-      backing.remove(e.getKey(), null)
+    if (!loSet && !hiSet) backing.clear()
+    else {
+      var n = firstNodeInView()
+      while (n != null) {
+        val next = nextNodeInView(n)
+        if (n.value != null)
+          backing.remove(n.key, null)
+        n = next
+      }
     }
   }
 
@@ -461,23 +472,29 @@ class ConcurrentSkipListMap[K <: AnyRef, V <: AnyRef] private (
       function: BiFunction[_ >: K, _ >: V, _ <: V]
   ): Unit = {
     Objects.requireNonNull(function)
-    val entries = snapshotEntries()
-    val it = entries.iterator()
-    while (it.hasNext()) {
-      val e = it.next()
-      val newValue = function.apply(e.getKey(), e.getValue())
-      if (newValue == null) throw new NullPointerException
-      backing.replace(e.getKey(), e.getValue(), newValue)
+    var n = firstNodeInView()
+    while (n != null) {
+      var done = false
+      while (!done) {
+        val v = n.value
+        if (v == null) done = true
+        else {
+          val newValue = function.apply(n.key, v)
+          if (newValue == null) throw new NullPointerException
+          done = n.casValue(v, newValue)
+        }
+      }
+      n = nextNodeInView(n)
     }
   }
 
   override def forEach(action: BiConsumer[_ >: K, _ >: V]): Unit = {
     Objects.requireNonNull(action)
-    val entries = snapshotEntries()
-    val it = entries.iterator()
-    while (it.hasNext()) {
-      val e = it.next()
-      action.accept(e.getKey(), e.getValue())
+    var n = firstNodeInView()
+    while (n != null) {
+      val v = n.value
+      if (v != null) action.accept(n.key, v)
+      n = nextNodeInView(n)
     }
   }
 
@@ -652,11 +669,12 @@ class ConcurrentSkipListMap[K <: AnyRef, V <: AnyRef] private (
 
   override def clone(): ConcurrentSkipListMap[K, V] = {
     val cloned = new ConcurrentSkipListMap[K, V](backing.comparator)
-    val entries = snapshotEntries()
-    val it = entries.iterator()
-    while (it.hasNext()) {
-      val e = it.next()
-      cloned.put(e.getKey(), e.getValue())
+    var n = firstNodeInView()
+    while (n != null) {
+      val v = n.value
+      if (v != null)
+        cloned.put(n.key, v)
+      n = nextNodeInView(n)
     }
     cloned
   }
@@ -730,6 +748,37 @@ private object ConcurrentSkipListMap {
 
     def count(): Long =
       math.max(0L, adder.sum)
+
+    def clear(): Unit = {
+      var done = false
+      while (!done) {
+        val h = headIndex
+        val r = h.right
+        if (r != null) h.casRight(r, null)
+        else {
+          val d = h.down
+          if (d != null) casHead(h, d)
+          else {
+            var count = 0L
+            val b = h.node
+            if (b != null) {
+              var n = b.next
+              while (n != null) {
+                var v = n.value
+                if (v != null && n.casValue(v, null.asInstanceOf[V])) {
+                  count -= 1L
+                  v = null.asInstanceOf[V]
+                }
+                if (v == null) unlinkNode(b, n)
+                n = b.next
+              }
+            }
+            if (count != 0L) addCount(count)
+            else done = true
+          }
+        }
+      }
+    }
 
     private def unlinkNode(b: Node[K, V], n: Node[K, V]): Unit = {
       if (b != null && n != null) {
