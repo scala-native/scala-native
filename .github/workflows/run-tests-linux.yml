@@ -42,6 +42,7 @@ jobs:
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: 3
+          java-version: 17
 
       - name: Compile everything
         # Publish 2.13.latest artifacts locally first, these are required by scalalib3
@@ -61,6 +62,7 @@ jobs:
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
+          java-version: 17
 
       # scalalib/Test/compile would force building both compiler plugins as well
       - name: Test cross compilation of compiler plugins and stdlib
@@ -270,4 +272,3 @@ jobs:
           sbt \
           "-J-Xmx3G" \
           "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff"
-
