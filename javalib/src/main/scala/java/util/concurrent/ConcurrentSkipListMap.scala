@@ -663,8 +663,6 @@ class ConcurrentSkipListMap[K <: AnyRef, V <: AnyRef] private (
 }
 
 private object ConcurrentSkipListMap {
-  private final val MaxIndexLevel = 62
-
   private[concurrent] final class Node[K <: AnyRef, V <: AnyRef](
       val key: K,
       private[concurrent] var value: V,
@@ -771,45 +769,94 @@ private object ConcurrentSkipListMap {
     def put(key: K, value: V, onlyIfAbsent: Boolean): V = {
       compare(key, key)
       while (true) {
-        val b = findPredecessor(key)
-        var n = b.next
-        var pred = b
-        var restart = false
-        while (n != null) {
-          val k = n.key
-          if (k == null) {
-            restart = true
-            n = null
+        val h = headIndex
+        var q = h
+        var b: Node[K, V] = null
+        var levels = 0
+        var descended = false
+        while (!descended) {
+          var r = q.right
+          var scanning = true
+          while (scanning && r != null) {
+            val n = r.node
+            val k = if (n == null) null.asInstanceOf[K] else n.key
+            val v = if (n == null) null.asInstanceOf[V] else n.value
+            if (k == null || v == null) {
+              q.casRight(r, r.right)
+              r = q.right
+            } else if (compare(key, k) > 0) {
+              q = r
+              r = q.right
+            } else scanning = false
+          }
+          val d = q.down
+          if (d != null) {
+            levels += 1
+            q = d
           } else {
-            val v = n.value
-            if (v == null) {
-              unlinkNode(pred, n)
-              n = pred.next
-            } else {
-              val c = compare(k, key)
-              if (c < 0) {
-                pred = n
-                n = n.next
-              } else if (c == 0) {
-                if (onlyIfAbsent) return v
-                if (n.casValue(v, value)) return v
-                n = pred.next
-              } else {
-                val z = new Node[K, V](key, value, n)
-                if (pred.casNext(n, z)) {
-                  addIndices(z)
-                  addCount(1L)
-                  return null.asInstanceOf[V]
+            b = q.node
+            descended = true
+          }
+        }
+
+        if (b != null) {
+          var z: Node[K, V] = null
+          var inserted = false
+          while (!inserted) {
+            val n = b.next
+            var c = 0
+            if (n == null) c = -1
+            else {
+              val k = n.key
+              if (k == null) inserted = true
+              else {
+                val v = n.value
+                if (v == null) {
+                  unlinkNode(b, n)
+                  c = 1
+                } else {
+                  c = compare(key, k)
+                  if (c > 0) b = n
+                  else if (c == 0 && (onlyIfAbsent || n.casValue(v, value)))
+                    return v
                 }
-                n = pred.next
+              }
+            }
+
+            if (!inserted && c < 0) {
+              val p = new Node[K, V](key, value, n)
+              if (b.casNext(n, p)) {
+                z = p
+                inserted = true
               }
             }
           }
-        }
-        if (!restart) {
-          val z = new Node[K, V](key, value, null)
-          if (pred.casNext(null, z)) {
-            addIndices(z)
+
+          if (z != null) {
+            val lr = ThreadLocalRandom.nextSecondarySeed()
+            if ((lr & 0x3) == 0) {
+              val hr = ThreadLocalRandom.nextSecondarySeed()
+              var rnd = (hr.toLong << 32) | (lr.toLong & 0xffffffffL)
+              var skips = levels
+              var x: Index[K, V] = null
+              var done = false
+              while (!done) {
+                x = new Index[K, V](z, x, null)
+                if (rnd >= 0L) done = true
+                else {
+                  skips -= 1
+                  if (skips < 0) done = true
+                  else rnd <<= 1
+                }
+              }
+              if (addIndices(h, skips, x) && skips < 0 && (headIndex eq h)) {
+                val hx = new Index[K, V](z, x, null)
+                val nh = new Index[K, V](h.node, h, hx)
+                casHead(h, nh)
+              }
+              if (z.value == null)
+                findPredecessor(key)
+            }
             addCount(1L)
             return null.asInstanceOf[V]
           }
@@ -820,44 +867,92 @@ private object ConcurrentSkipListMap {
 
     def remove(key: K, expectedValue: Any): V = {
       Objects.requireNonNull(key)
-      while (true) {
-        val b = findPredecessor(key)
-        var n = b.next
-        var pred = b
-        var restart = false
-        while (n != null) {
-          val k = n.key
-          if (k == null) {
-            restart = true
-            n = null
-          } else {
-            val v = n.value
-            if (v == null) {
-              unlinkNode(pred, n)
-              n = pred.next
-            } else {
-              val c = compare(k, key)
-              if (c < 0) {
-                pred = n
-                n = n.next
-              } else if (c > 0) return null.asInstanceOf[V]
+      var result: V = null.asInstanceOf[V]
+      var done = false
+      while (!done && result == null) {
+        var b = findPredecessor(key)
+        while (b != null && !done && result == null) {
+          val n = b.next
+          if (n == null) done = true
+          else {
+            val k = n.key
+            if (k == null) b = null
+            else {
+              val v = n.value
+              if (v == null) unlinkNode(b, n)
               else {
-                if (expectedValue != null && !Objects.equals(v, expectedValue))
-                  return null.asInstanceOf[V]
-                if (n.casValue(v, null.asInstanceOf[V])) {
-                  unlinkNode(pred, n)
-                  tryReduceLevel()
-                  addCount(-1L)
-                  return v
+                val c = compare(key, k)
+                if (c > 0) b = n
+                else if (c < 0) done = true
+                else if (expectedValue != null && !Objects.equals(
+                      expectedValue,
+                      v
+                    )) done = true
+                else if (n.casValue(v, null.asInstanceOf[V])) {
+                  result = v
+                  unlinkNode(b, n)
                 }
-                n = pred.next
               }
             }
           }
         }
-        if (!restart) return null.asInstanceOf[V]
       }
-      null.asInstanceOf[V]
+      if (result != null) {
+        tryReduceLevel()
+        addCount(-1L)
+      }
+      result
+    }
+
+    private def addIndices(
+        q0: Index[K, V],
+        skips0: Int,
+        x: Index[K, V]
+    ): Boolean = {
+      if (x != null) {
+        val z = x.node
+        if (z != null) {
+          val key = z.key
+          if (key != null && q0 != null) {
+            var q = q0
+            var skips = skips0
+            var retrying = false
+            while (true) {
+              val r = q.right
+              var c = 0
+              if (r != null) {
+                val p = r.node
+                val k = if (p == null) null.asInstanceOf[K] else p.key
+                val v = if (p == null) null.asInstanceOf[V] else p.value
+                if (k == null || v == null) {
+                  q.casRight(r, r.right)
+                } else {
+                  c = compare(key, k)
+                  if (c > 0) q = r
+                  else if (c == 0) return false
+                }
+              } else {
+                c = -1
+              }
+
+              if (c < 0) {
+                val d = q.down
+                if (d != null && skips > 0) {
+                  skips -= 1
+                  q = d
+                } else if (d != null && !retrying && !addIndices(d, 0, x.down))
+                  return false
+                else {
+                  x.right = r
+                  if (q.casRight(r, x)) return true
+                  retrying = true
+                }
+              }
+            }
+          }
+        }
+      }
+      false
     }
 
     def replace(key: K, oldValue: V, newValue: V): Boolean = {
@@ -991,68 +1086,6 @@ private object ConcurrentSkipListMap {
       baseHead
     }
 
-    private def randomLevel(): Int = {
-      var x = ThreadLocalRandom.current().nextInt()
-      var level = 0
-      while ((x & 1) != 0 && level < MaxIndexLevel) {
-        level += 1
-        x = x >>> 1
-      }
-      level
-    }
-
-    private def headHeight(): Int = {
-      var h = headIndex
-      var height = 1
-      while (h.down != null) {
-        height += 1
-        h = h.down
-      }
-      height
-    }
-
-    private def ensureHeadHeight(level: Int): Unit = {
-      var done = false
-      while (!done) {
-        val h = headIndex
-        val height = headHeight()
-        if (height >= level) done = true
-        else {
-          var newHead = h
-          var i = height
-          while (i < level) {
-            newHead = new Index[K, V](baseHead, newHead, null)
-            i += 1
-          }
-          done = casHead(h, newHead)
-        }
-      }
-    }
-
-    private def predecessorIndex(key: K, targetLevel: Int): Index[K, V] = {
-      var q = headIndex
-      var level = headHeight()
-      while (true) {
-        var r = q.right
-        while (r != null) {
-          val n = r.node
-          val k = n.key
-          val v = n.value
-          if (k == null || v == null) {
-            q.casRight(r, r.right)
-            r = q.right
-          } else if (compare(k, key) < 0) {
-            q = r
-            r = q.right
-          } else r = null
-        }
-        if (level == targetLevel || q.down == null) return q
-        q = q.down
-        level -= 1
-      }
-      q
-    }
-
     private def tryReduceLevel(): Unit = {
       val h = headIndex
       if (h.right == null) {
@@ -1062,35 +1095,6 @@ private object ConcurrentSkipListMap {
           if (e != null && e.right == null && casHead(h, d) && h.right != null)
             casHead(d, h)
         }
-      }
-    }
-
-    private def addIndices(node: Node[K, V]): Unit = {
-      val level = randomLevel()
-      if (level == 0) return
-      ensureHeadHeight(level)
-
-      val indices = new Array[Index[K, V]](level)
-      var i = 0
-      var down: Index[K, V] = null
-      while (i < level) {
-        val idx = new Index[K, V](node, down, null)
-        indices(i) = idx
-        down = idx
-        i += 1
-      }
-
-      i = 1
-      while (i <= level && node.value != null) {
-        var inserted = false
-        val idx = indices(i - 1)
-        while (!inserted && node.value != null) {
-          val pred = predecessorIndex(node.key, i)
-          val right = pred.right
-          idx.right = right
-          inserted = pred.casRight(right, idx)
-        }
-        i += 1
       }
     }
   }
