@@ -114,7 +114,14 @@ private[scala] object LinktimeIntrinsicCallsResolver {
       val builder = Seq.newBuilder[String]
       val header: Entry = ("Service", "Service Provider", "Status")
       val entryPadding = 3
-      val (serviceNameWidth, provideNameWidth, stateWidth) = serviceProviders
+
+      val normalizedServiceProviders = serviceProviders.toSeq.sortBy(_._1).map {
+        case (serviceName, providers) =>
+          serviceName -> (if (providers.nonEmpty) providers.sortBy(_.name)
+                          else Seq(FoundServiceProvider("---", NoProviders)))
+      }
+
+      val (serviceNameWidth, provideNameWidth, stateWidth) = normalizedServiceProviders
         .foldLeft(header._1.length(), header._2.length(), header._3.length()) {
           case ((maxServiceName, maxProviderName, maxStateName), (serviceName, providers)) =>
             val longestProviderName = providers.foldLeft(0) { _ max _.name.length }
@@ -146,11 +153,9 @@ private[scala] object LinktimeIntrinsicCallsResolver {
       addEntry(header, statusColor = "", skipServiceName = false)
       addLine()
       for {
-        ((serviceName, providers), serviceIdx) <- serviceProviders.toSeq.sortBy(_._1).zipWithIndex
+        ((serviceName, providers), serviceIdx) <- normalizedServiceProviders.zipWithIndex
 
-        (provider, providerIdx) <-
-          if (providers.nonEmpty) providers.sortBy(_.name).zipWithIndex
-          else Seq(FoundServiceProvider("---", NoProviders) -> 0)
+        (provider, providerIdx) <- providers.zipWithIndex
         statusColor = provider.status match {
           case _ if noColor                             => ""
           case Loaded                                   => GREEN

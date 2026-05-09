@@ -41,4 +41,26 @@ class FoundServiceProvidersTableTest extends LinkerSpec {
         assertEquals(expectedLine, actualLine)
     }
   }
+
+  @Test def correctFormattingWithNoProviders(): Unit = {
+    val actual = new LinktimeIntrinsicCallsResolver.FoundServiceProviders(
+      Map(
+        "java.nio.charset.spi.CharsetProvider" -> Seq.empty
+      )
+    )
+      .asTable(noColor = false)
+
+    val expected = Seq(
+      "|-----------------------------------------------------------------------|",
+      "| Service                              | Service Provider | Status      |",
+      "|-----------------------------------------------------------------------|",
+      s"| java.nio.charset.spi.CharsetProvider | ---              | ${AnsiColor.YELLOW}NoProviders${AnsiColor.RESET} |",
+      "|-----------------------------------------------------------------------|"
+    )
+
+    expected.zip(actual).foreach {
+      case (expectedLine, actualLine) =>
+        assertEquals(expectedLine, actualLine)
+    }
+  }
 }
