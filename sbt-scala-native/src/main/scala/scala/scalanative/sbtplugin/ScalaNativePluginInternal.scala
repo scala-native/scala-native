@@ -18,7 +18,6 @@ import scala.annotation.tailrec
 import scala.concurrent.*
 import scala.concurrent.duration.Duration
 import scala.sys.process.Process
-import scala.util.Try
 
 import scala.scalanative.build.*
 import scala.scalanative.linker.LinkingException
@@ -50,9 +49,12 @@ import xsbti.FileConverter
  *      (currently 3), and test true and false for each
  */
 object ScalaNativePluginInternal {
+  private final val MinimumSupportedJDK = 8
+  private final val WarnOnJDKOlderThan = 17
 
+  @deprecated("Deprecated for removal in favor of internal logging", "0.5.12")
   val nativeWarnOldJVM =
-    taskKey[Unit]("Warn if JVM 7 or older is used.")
+    taskKey[Unit]("Report if using unsupported or deprecated JVM version")
 
   lazy val scalaNativeDependencySettings: Seq[Setting[_]] = {
     val nativeStandardLibraries =
@@ -115,6 +117,10 @@ object ScalaNativePluginInternal {
    *    [[ScalaNativePlugin#globalSettings]]
    */
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
+    onLoad := {
+      checkJVMVersion(sLog.value)
+      onLoad.value
+    },
     nativeConfig := {
       build.NativeConfig.empty
         .withClang(interceptBuildException(Discover.clang()))
@@ -128,13 +134,8 @@ object ScalaNativePluginInternal {
     },
     nativeWarnOldJVM := {
       val logger = streams.value.log
-      Try(Class.forName("java.util.function.Function")).toOption match {
-        case None =>
-          logger.warn("Scala Native is only supported on Java 8 or newer.")
-        case Some(_) =>
-          ()
-      }
-    },
+      checkJVMVersion(logger)
+    }: @annotation.nowarn,
     onComplete := {
       val prev: () => Unit = onComplete.value
       () => {
@@ -469,4 +470,31 @@ object ScalaNativePluginInternal {
     }
   }
 
+  private def hostJavaSpecificationVersion(): Int = {
+    val fullVersion = sys.props
+      .get("java.specification.version")
+      .orElse(sys.props.get("java.version"))
+      .getOrElse("")
+
+    fullVersion.stripPrefix("1.").takeWhile(_.isDigit) match {
+      case ""     => 0
+      case digits => digits.toInt
+    }
+  }
+
+  private def checkJVMVersion(logger: util.Logger): Unit = {
+    val currentVersion = hostJavaSpecificationVersion()
+    if (currentVersion < MinimumSupportedJDK) {
+      throw new MessageOnlyException(
+        s"Scala Native requires JDK $MinimumSupportedJDK or newer."
+      )
+    }
+    if (currentVersion < WarnOnJDKOlderThan) {
+      logger.warn(
+        s"Using JDK $currentVersion with Scala Native. " +
+          s"Support for running Scala Native on JDK < $WarnOnJDKOlderThan is deprecated - it would be removed in the future; " +
+          s"please upgrade to JDK $WarnOnJDKOlderThan or newer."
+      )
+    }
+  }
 }
