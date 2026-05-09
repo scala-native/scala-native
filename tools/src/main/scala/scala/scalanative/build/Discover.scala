@@ -1,8 +1,9 @@
 package scala.scalanative
 package build
 
-import java.io.File
-import java.nio.file.{Files, Path, Paths}
+import java.io.{File, IOException}
+import java.nio.file.{Files, LinkOption, Path, Paths}
+import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.reflect.ClassTag
 import scala.sys.process._
@@ -41,16 +42,18 @@ object Discover {
       .getOrElse(build.GC.default)
 
   /** Use the clang binary on the path or via LLVM_BIN env var. */
-  def clang(): Path = {
+  def clang(): Path = clang(Logger.nullLogger)
+  private[scalanative] def clang(logger: Logger): Path = {
     val path = discover("clang", "LLVM_BIN")
-    checkClangVersion(path)
+    checkClangVersion(path, logger)
     path
   }
 
   /** Use the clang++ binary on the path or via LLVM_BIN env var. */
-  def clangpp(): Path = {
+  def clangpp(): Path = clangpp(Logger.nullLogger)
+  private[scalanative] def clangpp(logger: Logger): Path = {
     val path = discover("clang++", "LLVM_BIN")
-    checkClangVersion(path)
+    checkClangVersion(path, logger)
     path
   }
 
@@ -159,20 +162,60 @@ object Discover {
   /** Tests whether the clang compiler is greater or equal to the minumum
    *  version required.
    */
-  private[scalanative] def checkClangVersion(pathToClangBinary: Path): Unit = {
+  private[scalanative] def checkClangVersion(
+      pathToClangBinary: Path,
+      logger: Logger
+  ): Unit = {
     val ClangInfo(majorVersion, version, _) = clangInfo(pathToClangBinary)
+    resetWarningOnClangChange(pathToClangBinary)
+    checkClangVersion(
+      majorVersion,
+      version,
+      logger
+    )
+  }
 
-    if (majorVersion < clangMinVersion) {
+  private[scalanative] def checkClangVersion(
+      majorVersion: Int,
+      version: String,
+      logger: Logger
+  ): Unit = {
+    if (majorVersion < MinimumSupportedClangVersion) {
       throw new BuildException(
-        s"""|Minimum version of clang is '$clangMinVersion'.
+        s"""|Minimum version of clang is '$MinimumSupportedClangVersion'.
             |Discovered version '$version'.
             |Please refer to ($docSetup)""".stripMargin
+      )
+    }
+    if (majorVersion < WarnOnClangOlderThan) {
+      logger.warn(
+        s"""|Using deprecated clang version '$version'.
+            |Versions older than clang '$WarnOnClangOlderThan' can contain known bugs and runtime issues.
+            |Please upgrade to clang '$WarnOnClangOlderThan' or newer.
+            |Refer to ($docSetup)""".stripMargin
       )
     }
   }
 
   /** Minimum version of clang */
-  private[scalanative] final val clangMinVersion = 6
+  private[scalanative] final val MinimumSupportedClangVersion = 6
+
+  /** Minimum clang version that does not emit a deprecation warning. */
+  private[scalanative] final val WarnOnClangOlderThan = 16
+
+  private var lastCheckedClangPath: Option[Path] = None
+  private val warnedAboutDeprecatedClangVersion = new AtomicBoolean(false)
+  private def resetWarningOnClangChange(pathToClangBinary: Path): Unit =
+    try {
+      val llvmBinDir = pathToClangBinary.toRealPath().getParent()
+      if (!lastCheckedClangPath.contains(llvmBinDir)) {
+        lastCheckedClangPath = Some(llvmBinDir)
+        warnedAboutDeprecatedClangVersion.set(false)
+      }
+    } catch {
+      // ignore broken symlinks, we just want to check version
+      case _: IOException => ()
+    }
 
   /** Link to setup documentation */
   private[scalanative] val docSetup =

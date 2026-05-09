@@ -46,6 +46,7 @@ private[build] object Validator {
 
     if (!Files.exists(c.clang))
       issues += s"Provided clang path '${c.clang.toAbsolutePath()}' does not exist, specify a valid path to LLVM Toolchain distribution using config or LLVM_BIN environment variable"
+    else Discover.checkClangVersion(c.clang, config.logger)
     if (!Files.exists(c.clangPP))
       issues += s"Provided clang++ path '${c.clangPP.toAbsolutePath()}' does not exist, specify a valid path to LLVM Toolchain distribution using config or LLVM_BIN environment variable"
     // config.baseName provides default value when config.compileConfig.baseName is empty
