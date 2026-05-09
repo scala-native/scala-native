@@ -47,10 +47,10 @@ class ConcurrentSkipListMap[K <: AnyRef, V <: AnyRef](
   private val baseHead =
     new Node[K, V](null.asInstanceOf[K], null.asInstanceOf[V], null)
   private val adder = new LongAdder
-  private[this] var keySetView: KeySet[K, V] = null
-  private[this] var valuesView: Values[K, V] = null
-  private[this] var entrySetView: EntrySet[K, V] = null
-  private[this] var descendingMapView: ConcurrentNavigableMap[K, V] = null
+  private var keySetView: KeySet[K, V] = null
+  private var valuesView: Values[K, V] = null
+  private var entrySetView: EntrySet[K, V] = null
+  private var descendingMapView: ConcurrentNavigableMap[K, V] = null
   private[concurrent] var headIndex =
     new Index[K, V](baseHead, null, null)
 
@@ -1487,9 +1487,9 @@ private object ConcurrentSkipListMap {
     if (lo != null && hi != null && m.compare(lo, hi) > 0)
       throw new IllegalArgumentException("inconsistent range")
 
-    private[this] var keySetView: KeySet[K, V] = null
-    private[this] var valuesView: Values[K, V] = null
-    private[this] var entrySetView: EntrySet[K, V] = null
+    private var keySetView: KeySet[K, V] = null
+    private var valuesView: Values[K, V] = null
+    private var entrySetView: EntrySet[K, V] = null
 
     private def requireKey(key: Any): K = {
       if (key == null) throw new NullPointerException
