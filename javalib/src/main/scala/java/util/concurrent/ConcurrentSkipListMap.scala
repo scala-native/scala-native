@@ -1117,12 +1117,13 @@ private object ConcurrentSkipListMap {
       rightRef.compareExchangeStrong(expect, update)
   }
 
-  private def compare[K <: AnyRef](
-      comparator: Comparator[_ >: K],
-      a: K,
-      b: K
+  private def compare(
+      comparator: Comparator[_],
+      a: AnyRef,
+      b: AnyRef
   ): Int =
-    if (comparator != null) comparator.compare(a, b)
+    if (comparator != null)
+      comparator.asInstanceOf[Comparator[AnyRef]].compare(a, b)
     else a.asInstanceOf[Comparable[Any]].compareTo(b)
 
   private abstract class CSLMSpliterator[K <: AnyRef, V <: AnyRef, A](
@@ -1137,11 +1138,17 @@ private object ConcurrentSkipListMap {
 
   private final class KeySpliterator[K <: AnyRef, V <: AnyRef](
       comparator: Comparator[_ >: K],
-      row: Index[K, V],
-      origin: Node[K, V],
-      fence: K,
-      est: Long
-  ) extends CSLMSpliterator[K, V, K](comparator, row, origin, fence, est) {
+      initialRow: Index[K, V],
+      initialOrigin: Node[K, V],
+      initialFence: K,
+      initialEst: Long
+  ) extends CSLMSpliterator[K, V, K](
+        comparator,
+        initialRow,
+        initialOrigin,
+        initialFence,
+        initialEst
+      ) {
 
     override def trySplit(): Spliterator[K] = {
       val e = current
@@ -1217,11 +1224,17 @@ private object ConcurrentSkipListMap {
 
   private final class ValueSpliterator[K <: AnyRef, V <: AnyRef](
       comparator: Comparator[_ >: K],
-      row: Index[K, V],
-      origin: Node[K, V],
-      fence: K,
-      est: Long
-  ) extends CSLMSpliterator[K, V, V](comparator, row, origin, fence, est) {
+      initialRow: Index[K, V],
+      initialOrigin: Node[K, V],
+      initialFence: K,
+      initialEst: Long
+  ) extends CSLMSpliterator[K, V, V](
+        comparator,
+        initialRow,
+        initialOrigin,
+        initialFence,
+        initialEst
+      ) {
 
     override def trySplit(): Spliterator[V] = {
       val e = current
@@ -1297,16 +1310,16 @@ private object ConcurrentSkipListMap {
 
   private final class EntrySpliterator[K <: AnyRef, V <: AnyRef](
       comparator: Comparator[_ >: K],
-      row: Index[K, V],
-      origin: Node[K, V],
-      fence: K,
-      est: Long
+      initialRow: Index[K, V],
+      initialOrigin: Node[K, V],
+      initialFence: K,
+      initialEst: Long
   ) extends CSLMSpliterator[K, V, Map.Entry[K, V]](
         comparator,
-        row,
-        origin,
-        fence,
-        est
+        initialRow,
+        initialOrigin,
+        initialFence,
+        initialEst
       ) {
 
     override def trySplit(): Spliterator[Map.Entry[K, V]] = {
