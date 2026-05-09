@@ -28,11 +28,11 @@ class FoundServiceProvidersTableTest extends LinkerSpec {
 
     val expected = Seq(
       "|----------------------------------------------------------------------------------|",
-      "| Service                  | Service Provider                        | Status      |",
+      "|         Service          |            Service Provider             |   Status    |",
       "|----------------------------------------------------------------------------------|",
-      s"| Service 1 very long name | Service 1 very long implementation name | ${AnsiColor.GREEN}Loaded     ${AnsiColor.RESET} |",
+      s"| Service 1 very long name | Service 1 very long implementation name | ${AnsiColor.GREEN}  Loaded   ${AnsiColor.RESET} |",
       "|                          |                                         |             |",
-      s"| Service 2                | ---                                     | ${AnsiColor.YELLOW}NoProviders${AnsiColor.RESET} |",
+      s"|        Service 2         |                   ---                   | ${AnsiColor.YELLOW}NoProviders${AnsiColor.RESET} |",
       "|----------------------------------------------------------------------------------|"
     )
 
@@ -52,9 +52,9 @@ class FoundServiceProvidersTableTest extends LinkerSpec {
 
     val expected = Seq(
       "|-----------------------------------------------------------------------|",
-      "| Service                              | Service Provider | Status      |",
+      "|               Service                | Service Provider |   Status    |",
       "|-----------------------------------------------------------------------|",
-      s"| java.nio.charset.spi.CharsetProvider | ---              | ${AnsiColor.YELLOW}NoProviders${AnsiColor.RESET} |",
+      s"| java.nio.charset.spi.CharsetProvider |       ---        | ${AnsiColor.YELLOW}NoProviders${AnsiColor.RESET} |",
       "|-----------------------------------------------------------------------|"
     )
 

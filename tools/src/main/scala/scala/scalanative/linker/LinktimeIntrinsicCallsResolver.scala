@@ -136,14 +136,21 @@ private[scala] object LinktimeIntrinsicCallsResolver {
         val dashlineLength = serviceNameWidth + provideNameWidth + stateWidth + 8 // extra padding columns
         builder += s"|${"-" * dashlineLength}|"
       }
+      def centerPad(value: String, width: Int) = {
+        val totalPadding = width - value.length
+        val leftPadding = totalPadding / 2
+        // Keep remaining padding on the right when split is uneven.
+        val rightPadding = totalPadding - leftPadding
+        s"${" " * leftPadding}$value${" " * rightPadding}"
+      }
       def addEntry(entry: Entry, statusColor: String, skipServiceName: Boolean) = {
         val (serviceName, providerName, status) = entry
         import ServiceProviderStatus._
         val serviceNameOrBlank = if (skipServiceName) "" else serviceName
-        val servicePadded = serviceNameOrBlank.padTo(serviceNameWidth, ' ')
-        val providerPadded = providerName.padTo(provideNameWidth, ' ')
+        val servicePadded = centerPad(serviceNameOrBlank, serviceNameWidth)
+        val providerPadded = centerPad(providerName, provideNameWidth)
         val statusPadded =
-          s"$statusColor${status.toString.padTo(stateWidth, ' ')}${if (statusColor.nonEmpty) RESET else ""}"
+          s"$statusColor${centerPad(status, stateWidth)}${if (statusColor.nonEmpty) RESET else ""}"
         builder += s"| $servicePadded | $providerPadded | $statusPadded |"
       }
 
