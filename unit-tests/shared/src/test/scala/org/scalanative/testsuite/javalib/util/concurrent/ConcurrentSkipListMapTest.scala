@@ -19,7 +19,7 @@ import java.util.{
 }
 
 import org.junit.Assert._
-import org.junit.{Ignore, Test}
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
@@ -926,8 +926,8 @@ class ConcurrentSkipListMapTest extends JSR166Test {
     assertFalse(x.equals(y))
   }
 
-  @Ignore("scala-native#4852: ObjectInputStream is unsupported")
-  @Test def testSerialization(): Unit = {}
+  // JVM-only serialization assertions live in
+  // unit-tests/jvm/.../ConcurrentSkipListMapSerializationTestOnJVM.scala
 
   @Test def testSubMapContents(): Unit = {
     val map = map5()
