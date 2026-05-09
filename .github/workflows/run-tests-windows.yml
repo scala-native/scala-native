@@ -155,7 +155,7 @@ jobs:
       fail-fast: false
       matrix:
         scala: [3]
-        llvm: ["19.1.7", "20.1.4"] # Last 2 stable versions, LLVM 10 is minimal version able to compile current Windows SDK
+        llvm: ["19.1.7", "21.1.8", "22.1.0"] # LLVM 19 is the minimal version, 20 is the the defualt
     steps:
       - name: Setup git config
         run: git config --global core.autocrlf false
