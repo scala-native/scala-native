@@ -363,7 +363,7 @@ class ConcurrentSkipListMap[K <: AnyRef, V <: AnyRef](
     var n = firstNode()
     while (n != null) {
       last = n
-      n = findGreaterThan(n.key)
+      n = liveNext(n)
     }
     last
   }
@@ -403,7 +403,7 @@ class ConcurrentSkipListMap[K <: AnyRef, V <: AnyRef](
     else null
   }
 
-  private def liveNext(pred: Node[K, V]): Node[K, V] = {
+  private[concurrent] def liveNext(pred: Node[K, V]): Node[K, V] = {
     var n = pred.next
     while (n != null) {
       val k = n.key
@@ -506,7 +506,7 @@ class ConcurrentSkipListMap[K <: AnyRef, V <: AnyRef](
     lastNode()
 
   private def nextNodeInView(node: Node[K, V]): Node[K, V] =
-    findGreaterThan(node.key)
+    liveNext(node)
 
   private def lowerNodeInView(key: K): Node[K, V] =
     findLessThan(key)
@@ -557,7 +557,7 @@ class ConcurrentSkipListMap[K <: AnyRef, V <: AnyRef](
     while (n != null) {
       val v = n.value
       if (v != null && Objects.equals(v, value)) return true
-      n = findGreaterThan(n.key)
+      n = liveNext(n)
     }
     false
   }
@@ -1410,7 +1410,7 @@ private object ConcurrentSkipListMap {
     private def nextNodeInView(node: Node[K, V]): Node[K, V] = {
       val n =
         if (isDescending) m.findLessThan(node.key)
-        else m.findGreaterThan(node.key)
+        else m.liveNext(node)
       if (n != null && inBounds(n.key)) n else null
     }
 
@@ -1524,7 +1524,7 @@ private object ConcurrentSkipListMap {
       var n = lowestNodeAscending()
       while (n != null) {
         if (n.value != null) count += 1L
-        n = m.findGreaterThan(n.key)
+        n = m.liveNext(n)
         if (n != null && tooHigh(n.key)) n = null
       }
       if (count >= Int.MaxValue) Int.MaxValue else count.toInt
@@ -1544,7 +1544,7 @@ private object ConcurrentSkipListMap {
       while (n != null) {
         val v = n.value
         if (v != null && Objects.equals(v, value)) return true
-        n = m.findGreaterThan(n.key)
+        n = m.liveNext(n)
         if (n != null && tooHigh(n.key)) n = null
       }
       false
