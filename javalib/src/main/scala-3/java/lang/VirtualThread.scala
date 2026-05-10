@@ -9,11 +9,10 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
 import scala.noinline
 
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.libc.stdatomic.{AtomicBool, AtomicInt, AtomicLong, AtomicRef}
+import scala.scalanative.libc.stdatomic.{AtomicBool, AtomicInt, AtomicLongLong, AtomicRef}
 import scala.scalanative.runtime
 import scala.scalanative.runtime.javalib.Proxy
 import scala.scalanative.runtime.{Continuations, Intrinsics, NativeThread, VirtualThreadScheduler, fromRawPtr}
-import scala.scalanative.unsafe.CLong
 
 /** Loom-style virtual thread: a `Runnable` fiber that mounts on a platform carrier, suspends via
  *  `Continuations.suspend`, and resumes through `VirtualThreadScheduler`.
@@ -69,10 +68,10 @@ private[java] final class VirtualThread(
 
   @alwaysinline
   private def nextResumeGenerationAtomic =
-    new AtomicLong(fromRawPtr(Intrinsics.classFieldRawPtr(this, "nextResumeGeneration")))
+    new AtomicLongLong(fromRawPtr(Intrinsics.classFieldRawPtr(this, "nextResumeGeneration")))
 
   private[java] def publishResume(resume: () => Unit): Long = {
-    val generation = nextResumeGenerationAtomic.fetchAdd(1L.asInstanceOf[CLong]) + 1L
+    val generation = nextResumeGenerationAtomic.fetchAdd(1L) + 1L
     resumeExecution = resume
     activeResumeGeneration = generation
     generation
@@ -172,11 +171,11 @@ private[java] final class VirtualThread(
 
   @alwaysinline
   private def timeoutGenerationAtomic =
-    new AtomicLong(fromRawPtr(Intrinsics.classFieldRawPtr(this, "timeoutGeneration")))
+    new AtomicLongLong(fromRawPtr(Intrinsics.classFieldRawPtr(this, "timeoutGeneration")))
 
   private def cancelTimeoutTask(generation: Long): Unit = {
     if (isActiveResumeGeneration(generation)) {
-      timeoutGenerationAtomic.fetchAdd(1L.asInstanceOf[CLong])
+      timeoutGenerationAtomic.fetchAdd(1L)
       val task = timeoutTaskAtomic.exchange(null)
       if (task != null) {
         task.cancel()
@@ -186,7 +185,7 @@ private[java] final class VirtualThread(
 
   private def scheduleTimeout(delay: scala.Long, unit: TimeUnit, resumeGeneration: Long)(onTimeout: => Unit): Unit = {
     if (delay <= 0) return
-    val timeoutToken = timeoutGenerationAtomic.fetchAdd(1L.asInstanceOf[CLong]) + 1L
+    val timeoutToken = timeoutGenerationAtomic.fetchAdd(1L) + 1L
 
     val task = scheduler.schedule(
       () => {
