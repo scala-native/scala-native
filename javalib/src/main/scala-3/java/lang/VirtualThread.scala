@@ -27,10 +27,10 @@ import scala.scalanative.runtime.{Continuations, Intrinsics, NativeThread, Virtu
 private[java] final class VirtualThread(
     name: String,
     characteristics: Int,
-    task: Runnable
+    private var task: Runnable | Null
 ) extends Thread(name, characteristics)
     with runtime.VirtualThread {
-  import java.lang.VirtualThread.State
+  import java.lang.VirtualThread.{Boundary, State}
 
   Objects.requireNonNull(task)
 
@@ -55,20 +55,19 @@ private[java] final class VirtualThread(
   // Used by Continuations.suspend, park paths, monitor wait/enter, and the run loop.
   // ---------------------------------------------------------------------------
 
-  private type Boundary = Continuations.BoundaryLabel[Unit]
-  @volatile private var boundary: Boundary | Null = compiletime.uninitialized
+  @volatile private[lang] var boundary: Boundary | Null = compiletime.uninitialized
 
   private inline def currentBoundaryOrThrow(op: String): Boundary =
     val current = boundary
     if current == null then throw new IllegalStateException(s"Missing continuation boundary during $op")
     current.asInstanceOf[Boundary] // No .nn on Scala 3.1
 
-  @volatile private var resumeExecution: Continuation | Null = compiletime.uninitialized
+  @volatile private[java] var resumeExecution: Continuation | Null = compiletime.uninitialized
   private val resumeLock = new {}
   private var nextResumeGeneration: Long = 0L
   @volatile private var activeResumeGeneration: Long = 0L
 
-  private def publishResume(resume: () => Unit): Long =
+  private[java] def publishResume(resume: () => Unit): Long =
     resumeLock.synchronized {
       nextResumeGeneration += 1L
       val generation = nextResumeGeneration
@@ -77,7 +76,7 @@ private[java] final class VirtualThread(
       generation
     }
 
-  private def consumeResume(): () => Unit | Null =
+  private[java] def consumeResume(): () => Unit | Null =
     resumeLock.synchronized {
       val continue = resumeExecution
       resumeExecution = null
@@ -130,10 +129,10 @@ private[java] final class VirtualThread(
   private def blockPermitAtomic =
     new AtomicBool(fromRawPtr(Intrinsics.classFieldRawPtr(this, "blockPermit")))
 
-  @inline private def compareAndSetState(expected: VirtualThread.State, value: VirtualThread.State): Boolean =
+  @inline private[java] def compareAndSetState(expected: VirtualThread.State, value: VirtualThread.State): Boolean =
     stateAtomic.compareExchangeStrong(expected, value)
 
-  @inline private def compareAndSetDispatchState(
+  @inline private[java] def compareAndSetDispatchState(
       expected: VirtualThread.DispatchState,
       value: VirtualThread.DispatchState
   ): Boolean =
@@ -146,7 +145,7 @@ private[java] final class VirtualThread(
       || s == State.Blocking || s == State.Blocked
       || s == State.TimedBlocked
 
-  @noinline private def reachabilityFence(target: Any): Unit = ()
+  @noinline private[java] def reachabilityFence(target: Any): Unit = ()
 
   // ---------------------------------------------------------------------------
   // LockSupport-style parking (park permit)
@@ -723,142 +722,7 @@ private[java] final class VirtualThread(
     }
   }
 
-  private def executeContinuation: Runnable = new VirtualThreadContinuation()
-
-  /** `Runnable` submitted to `VirtualThreadScheduler`: owns the outer run loop, `mount`/`unmount`, and either starts
-   *  the root `task` inside a delimcc boundary or resumes a published continuation.
-   */
-  private class VirtualThreadContinuation extends Runnable {
-    val vThread = VirtualThread.this
-
-    override def run(): Unit = {
-      /* Clear delimcc handler TLS before any early return. If tryAcquireRunLoopToken
-       * fails we still leave this worker with a clean chain; otherwise a stale head
-       * from another VT (or a partial suspend) can make handler_pop / handler_split_at
-       * see the wrong label and abort, which strands Object.wait continuations. */
-      Continuations.handlersReset()
-      // Recovery guard: if a previous VT left TLS currentThread mapped to a VT,
-      // reset to the platform carrier before dispatching this continuation.
-      val platformThread = Thread.currentPlatformThread
-      if (Thread.currentThread().isVirtual() && (Thread.currentThread() ne platformThread)) {
-        NativeThread.setCurrentThread(platformThread)
-      }
-
-      if (!tryAcquireRunLoopToken()) {
-        // Re-queue once if VT is runnable so we don't drop the resumption.
-        if (state == State.Unparked || state == State.Unblocked
-            || (state == State.Yielded && resumeExecution != null)) {
-          requestRun()
-        }
-        return
-      }
-
-      var exitedNormally = false
-      try
-        var continueLoop = true
-        while (continueLoop) {
-          var runCurrent = false
-          val initialState = state
-
-          initialState match {
-            case State.Started | State.Unparked | State.Yielded | State.Unblocked =>
-              runCurrent = compareAndSetState(initialState, State.Running)
-              if (runCurrent) {
-                if (initialState == State.Unparked) {
-                  VirtualThread.this.cancelTimeoutTask(VirtualThread.this.activeResumeGeneration)
-                  VirtualThread.this.setParkPermit(false) // consume park event
-                } else if (initialState == State.Unblocked)
-                  VirtualThread.this.setBlockPermit(false) // consume block event
-              }
-            case _ => ()
-          }
-
-          if (runCurrent) {
-            var resubmitYield = false
-            var didAfterYieldSubmit = false
-            mount()
-            try {
-              // Every VT run/resume must start from a clean carrier handler TLS.
-              // The continuation/boundary machinery re-installs the VT's own
-              // captured chain; keeping stale handlers from a previous VT on
-              // the carrier corrupts handler_pop/split_at during park/wait.
-              Continuations.handlersReset()
-              // initial run
-              if (initialState == State.Started) {
-                Continuations.boundary[Unit] {
-                  boundary = summon[Boundary]
-                  // Initial invocation of the task, might suspend
-                  task.run()
-                  // We get here only when whole fiber is completed
-                  afterDone()
-                  boundary = null
-                }
-              } else {
-                // Consume continuation and resume, might suspend
-                val continue = consumeResume()
-                if (continue == null) {
-                  throw new IllegalStateException("Missing continuation to resume")
-                }
-                try continue()
-                finally reachabilityFence(continue)
-              }
-            } catch {
-              case ex: Throwable =>
-                getUncaughtExceptionHandler().uncaughtException(VirtualThread.this, ex)
-                afterDone()
-            } finally {
-              // A yielded continuation has already captured the VT handler chain.
-              // Clear carrier-local delimcc TLS eagerly so no stale handlers leak
-              // into the next VT dispatched on this worker.
-              Continuations.handlersReset()
-              // Post-yield on carrier: reconcile parked state with permit.
-              val s = state
-              // Park path: Parked/TimedParked (LockSupport.park) + parkPermit; skip when resumeExecution null (wait).
-              if ((s == State.Parked || s == State.TimedParked)
-                  && resumeExecution != null
-                  && getAndSetParkPermit(false)) {
-                if (!compareAndSetState(s, State.Unparked)) setParkPermit(true)
-                else {
-                  requestRun(lazily = true)
-                  didAfterYieldSubmit = true
-                }
-              }
-              // Block path: Blocked/TimedBlocked (wait/enter) + blockPermit.
-              if ((s == State.Blocked || s == State.TimedBlocked)
-                  && getAndSetBlockPermit(false)) {
-                if (!compareAndSetState(s, State.Unblocked))
-                  setBlockPermit(true)
-                else {
-                  requestRun(lazily = true)
-                  didAfterYieldSubmit = true
-                }
-              }
-              resubmitYield = (state == State.Yielded || state == State.Unparked || state == State.Unblocked) &&
-                (resumeExecution != null) && !didAfterYieldSubmit
-              unmount()
-              if (carrierThread != null)
-                scheduler.afterYieldOnCarrier(carrierThread)
-            }
-
-            if (resubmitYield) {
-              // Resubmit after yield using lazy submit when permitted (carrier, empty queue).
-              requestRun(lazily = true)
-            }
-          }
-
-          // Defensive requeue: if a continuation is available but dispatch state
-          // got desynchronized, ensure we keep scheduling progress.
-          if ((state == State.Yielded || state == State.Unparked || state == State.Unblocked)
-              && resumeExecution != null) {
-            requestRun()
-          }
-
-          continueLoop = finishRunLoopIteration()
-        }
-        exitedNormally = true
-      finally if (!exitedNormally) recoverRunLoopOnUnexpectedExit()
-    }
-  }
+  private def executeContinuation: Runnable = new VirtualThread.RunLoop(this)
 
   // ---------------------------------------------------------------------------
   // Thread.yield cooperative scheduling
@@ -872,7 +736,7 @@ private[java] final class VirtualThread(
     state match
       case State.Running =>
         // Avoid unmounting on yield: if the VT currently owns a monitor, a
-        // suspended yield can strand thin-lock ownership and starve contenders.
+        // suspended yield can starve contenders.
         Thread.nativeCompanion.yieldThread()
       case s if isRecursiveSuspendState(s) =>
         // Recursive yield while suspension is in progress must not suspend again.
@@ -891,6 +755,7 @@ private[java] final class VirtualThread(
    */
   private def afterDone(): Unit = {
     state = State.Terminated
+    task = null
     // Registry tracks only platform threads; VTs were never added
     termination match {
       case termination: CountDownLatch =>
@@ -999,6 +864,152 @@ private[java] final class VirtualThread(
 
 /** Internal constants and opaque state tags for `java.lang.VirtualThread` (javalib implementation). */
 object VirtualThread {
+  private[java] type Boundary = Continuations.BoundaryLabel[Unit]
+  private[java] type Continuation = () => Unit
+
+  /** `Runnable` submitted to `VirtualThreadScheduler`: owns the outer run loop, `mount`/`unmount`, and either starts
+   *  the root `task` inside a delimcc boundary or resumes a published continuation.
+   */
+  private class RunLoop(private var vThread: VirtualThread | Null) extends Runnable {
+
+    override def run(): Unit = {
+      val vt = vThread
+      if (vt == null) return
+
+      /* Clear delimcc handler TLS before any early return. If tryAcquireRunLoopToken
+       * fails we still leave this worker with a clean chain; otherwise a stale head
+       * from another VT (or a partial suspend) can make handler_pop / handler_split_at
+       * see the wrong label and abort, which strands Object.wait continuations. */
+      Continuations.handlersReset()
+      // Recovery guard: if a previous VT left TLS currentThread mapped to a VT,
+      // reset to the platform carrier before dispatching this continuation.
+      val platformThread = Thread.currentPlatformThread
+      if (Thread.currentThread().isVirtual() && (Thread.currentThread() ne platformThread)) {
+        NativeThread.setCurrentThread(platformThread)
+      }
+
+      if (!vt.tryAcquireRunLoopToken()) {
+        // Re-queue once if VT is runnable so we don't drop the resumption.
+        if (vt.state == State.Unparked || vt.state == State.Unblocked ||
+            (vt.state == State.Yielded && vt.resumeExecution != null)) {
+          vt.requestRun()
+        }
+        return
+      }
+
+      var exitedNormally = false
+      try {
+        var continueLoop = true
+        while (continueLoop) {
+          var runCurrent = false
+          val initialState = vt.state
+
+          initialState match {
+            case State.Started | State.Unparked | State.Yielded | State.Unblocked =>
+              runCurrent = vt.compareAndSetState(initialState, State.Running)
+              if (runCurrent) {
+                if (initialState == State.Unparked) {
+                  vt.cancelTimeoutTask(vt.activeResumeGeneration)
+                  vt.setParkPermit(false) // consume park event
+                } else if (initialState == State.Unblocked) {
+                  vt.setBlockPermit(false) // consume block event
+                }
+              }
+            case _ => ()
+          }
+
+          if (runCurrent) {
+            var resubmitYield = false
+            var didAfterYieldSubmit = false
+            vt.mount()
+            try {
+              // Every VT run/resume must start from a clean carrier handler TLS.
+              // The continuation/boundary machinery re-installs the VT's own
+              // captured chain; keeping stale handlers from a previous VT on
+              // the carrier corrupts handler_pop/split_at during park/wait.
+              Continuations.handlersReset()
+              // initial run
+              if (initialState == State.Started) {
+                Continuations.boundary[Unit] {
+                  vt.boundary = summon[Boundary]
+                  // Initial invocation of the task, might suspend
+                  val t = vt.task
+                  if (t != null) t.run()
+                  // We get here only when whole fiber is completed
+                  vt.afterDone()
+                  vt.boundary = null
+                }
+              } else {
+                // Consume continuation and resume, might suspend
+                val continue = vt.consumeResume()
+                if (continue == null) {
+                  throw new IllegalStateException("Missing continuation to resume")
+                }
+                try continue()
+                finally vt.reachabilityFence(continue)
+              }
+            } catch {
+              case ex: Throwable =>
+                vt.getUncaughtExceptionHandler().uncaughtException(vt, ex)
+                vt.afterDone()
+            } finally {
+              // A yielded continuation has already captured the VT handler chain.
+              // Clear carrier-local delimcc TLS eagerly so no stale handlers leak
+              // into the next VT dispatched on this worker.
+              Continuations.handlersReset()
+              // Post-yield on carrier: reconcile parked state with permit.
+              val s = vt.state
+              // Park path: Parked/TimedParked (LockSupport.park) + parkPermit; skip when resumeExecution null (wait).
+              if ((s == State.Parked || s == State.TimedParked) &&
+                  vt.resumeExecution != null &&
+                  vt.getAndSetParkPermit(false)) {
+                if (!vt.compareAndSetState(s, State.Unparked)) vt.setParkPermit(true)
+                else {
+                  vt.requestRun(lazily = true)
+                  didAfterYieldSubmit = true
+                }
+              }
+              // Block path: Blocked/TimedBlocked (wait/enter) + blockPermit.
+              if ((s == State.Blocked || s == State.TimedBlocked) &&
+                  vt.getAndSetBlockPermit(false)) {
+                if (!vt.compareAndSetState(s, State.Unblocked)) {
+                  vt.setBlockPermit(true)
+                } else {
+                  vt.requestRun(lazily = true)
+                  didAfterYieldSubmit = true
+                }
+              }
+              resubmitYield =
+                (vt.state == State.Yielded || vt.state == State.Unparked || vt.state == State.Unblocked) &&
+                  (vt.resumeExecution != null) && !didAfterYieldSubmit
+              vt.unmount()
+              if (vt.carrierThread != null) {
+                vt.scheduler.afterYieldOnCarrier(vt.carrierThread.asInstanceOf[Thread])
+              }
+            }
+
+            if (resubmitYield) {
+              // Resubmit after yield using lazy submit when permitted (carrier, empty queue).
+              vt.requestRun(lazily = true)
+            }
+          }
+
+          // Defensive requeue: if a continuation is available but dispatch state
+          // got desynchronized, ensure we keep scheduling progress.
+          if ((vt.state == State.Yielded || vt.state == State.Unparked || vt.state == State.Unblocked) &&
+              vt.resumeExecution != null) {
+            vt.requestRun()
+          }
+
+          continueLoop = vt.finishRunLoopIteration()
+        }
+        exitedNormally = true
+      } finally {
+        if (!exitedNormally) vt.recoverRunLoopOnUnexpectedExit()
+        if (vt.isTerminated()) vThread = null
+      }
+    }
+  }
 
   /** Run-loop queue phase for scheduled continuations: prevents duplicate submits and supports coalesced wakeups. */
   opaque type DispatchState <: Int = Int
