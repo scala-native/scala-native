@@ -9,10 +9,11 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
 import scala.noinline
 
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.libc.stdatomic.{AtomicBool, AtomicInt, AtomicRef}
+import scala.scalanative.libc.stdatomic.{AtomicBool, AtomicInt, AtomicLong, AtomicRef}
 import scala.scalanative.runtime
 import scala.scalanative.runtime.javalib.Proxy
 import scala.scalanative.runtime.{Continuations, Intrinsics, NativeThread, VirtualThreadScheduler, fromRawPtr}
+import scala.scalanative.unsafe.CLong
 
 /** Loom-style virtual thread: a `Runnable` fiber that mounts on a platform carrier, suspends via
  *  `Continuations.suspend`, and resumes through `VirtualThreadScheduler`.
@@ -63,26 +64,26 @@ private[java] final class VirtualThread(
     current.asInstanceOf[Boundary] // No .nn on Scala 3.1
 
   @volatile private[java] var resumeExecution: Continuation | Null = compiletime.uninitialized
-  private val resumeLock = new {}
-  private var nextResumeGeneration: Long = 0L
+  private[lang] var nextResumeGeneration: Long = 0L
   @volatile private var activeResumeGeneration: Long = 0L
 
-  private[java] def publishResume(resume: () => Unit): Long =
-    resumeLock.synchronized {
-      nextResumeGeneration += 1L
-      val generation = nextResumeGeneration
-      resumeExecution = resume
-      activeResumeGeneration = generation
-      generation
-    }
+  @alwaysinline
+  private def nextResumeGenerationAtomic =
+    new AtomicLong(fromRawPtr(Intrinsics.classFieldRawPtr(this, "nextResumeGeneration")))
 
-  private[java] def consumeResume(): () => Unit | Null =
-    resumeLock.synchronized {
-      val continue = resumeExecution
-      resumeExecution = null
-      activeResumeGeneration = 0L
-      continue
-    }
+  private[java] def publishResume(resume: () => Unit): Long = {
+    val generation = nextResumeGenerationAtomic.fetchAdd(1L.asInstanceOf[CLong]) + 1L
+    resumeExecution = resume
+    activeResumeGeneration = generation
+    generation
+  }
+
+  private[java] def consumeResume(): () => Unit | Null = {
+    val continue = resumeExecution
+    resumeExecution = null
+    activeResumeGeneration = 0L
+    continue
+  }
 
   private def isActiveResumeGeneration(generation: Long): Boolean =
     generation != 0L && activeResumeGeneration == generation && resumeExecution != null
@@ -121,14 +122,6 @@ private[java] final class VirtualThread(
   private def terminationAtomic =
     new AtomicRef[CountDownLatch](fromRawPtr(Intrinsics.classFieldRawPtr(this, "termination")))
 
-  @alwaysinline
-  private def parkPermitAtomic =
-    new AtomicBool(fromRawPtr(Intrinsics.classFieldRawPtr(this, "parkPermit")))
-
-  @alwaysinline
-  private def blockPermitAtomic =
-    new AtomicBool(fromRawPtr(Intrinsics.classFieldRawPtr(this, "blockPermit")))
-
   @inline private[java] def compareAndSetState(expected: VirtualThread.State, value: VirtualThread.State): Boolean =
     stateAtomic.compareExchangeStrong(expected, value)
 
@@ -153,70 +146,61 @@ private[java] final class VirtualThread(
   // ---------------------------------------------------------------------------
 
   /** When true, the next park() does not block. Set by unpark(), cleared in park(). */
-  @volatile var parkPermit: scala.Boolean = false
+  @volatile private[lang] var parkPermit: scala.Boolean = false
 
-  @inline private def setParkPermit(value: scala.Boolean): Unit = {
-    if (parkPermit != value) parkPermit = value
-  }
-  @inline private def getAndSetParkPermit(value: scala.Boolean): scala.Boolean =
+  @alwaysinline
+  private def parkPermitAtomic =
+    new AtomicBool(fromRawPtr(Intrinsics.classFieldRawPtr(this, "parkPermit")))
+
+  @alwaysinline private def getAndSetParkPermit(value: scala.Boolean): scala.Boolean =
     parkPermitAtomic.exchange(value)
+
+  @alwaysinline private def setParkPermit(value: scala.Boolean): Unit =
+    parkPermit = value
 
   // ---------------------------------------------------------------------------
   // Timed park / wait: generation-scoped timeout tasks
   // So a late timeout from an earlier operation cannot wake a later park/wait on the same VT.
   // ---------------------------------------------------------------------------
 
-  private val timeoutLock = new {}
-  private var timeoutGeneration: Long = 0L
-  private var timeoutTaskResumeGeneration: Long = 0L
-  @volatile private var timeoutTask: VirtualThreadScheduler.Cancellable | Null = compiletime.uninitialized
+  @volatile private[java] var timeoutTask: VirtualThreadScheduler.Cancellable | Null = compiletime.uninitialized
+  @volatile private[lang] var timeoutGeneration: Long = 0L
 
-  private def cancelTimeoutTask(expectedResumeGeneration: Long): Unit =
-    val task = timeoutLock.synchronized {
-      if (timeoutTaskResumeGeneration == expectedResumeGeneration) {
-        timeoutGeneration += 1L
-        timeoutTaskResumeGeneration = 0L
-        val current = timeoutTask
-        timeoutTask = null
-        current
-      } else null
+  @alwaysinline
+  private def timeoutTaskAtomic =
+    new AtomicRef[VirtualThreadScheduler.Cancellable](fromRawPtr(Intrinsics.classFieldRawPtr(this, "timeoutTask")))
+
+  @alwaysinline
+  private def timeoutGenerationAtomic =
+    new AtomicLong(fromRawPtr(Intrinsics.classFieldRawPtr(this, "timeoutGeneration")))
+
+  private def cancelTimeoutTask(generation: Long): Unit = {
+    if (isActiveResumeGeneration(generation)) {
+      timeoutGenerationAtomic.fetchAdd(1L.asInstanceOf[CLong])
+      val task = timeoutTaskAtomic.exchange(null)
+      if (task != null) {
+        task.cancel()
+      }
     }
-    task match
-      case null => ()
-      case task =>
-        if (!task.isDone()) task.cancel()
+  }
 
   private def scheduleTimeout(delay: scala.Long, unit: TimeUnit, resumeGeneration: Long)(onTimeout: => Unit): Unit = {
-    val timeoutToken = timeoutLock.synchronized {
-      timeoutGeneration += 1L
-      timeoutTaskResumeGeneration = resumeGeneration
-      timeoutTask = null
-      timeoutGeneration
-    }
+    if (delay <= 0) return
+    val timeoutToken = timeoutGenerationAtomic.fetchAdd(1L.asInstanceOf[CLong]) + 1L
 
     val task = scheduler.schedule(
       () => {
-        val shouldRun = timeoutLock.synchronized {
-          if (timeoutGeneration == timeoutToken && isActiveResumeGeneration(
-                resumeGeneration
-              )) {
-            if (timeoutTaskResumeGeneration == resumeGeneration) {
-              timeoutTask = null
-              timeoutTaskResumeGeneration = 0L
-            }
-            true
-          } else false
+        // This runs on platform thread: CAS is enough to avoid races with cancel.
+        if (timeoutGeneration == timeoutToken && isActiveResumeGeneration(resumeGeneration)) {
+          // Double-check active resume generation to avoid waking up a thread that already resumed and parked again
+          // before we could cancel the old task.
+          onTimeout
         }
-        if (shouldRun) onTimeout
       },
       delay,
       unit
     )
-
-    timeoutLock.synchronized {
-      if (timeoutGeneration == timeoutToken && !task.isDone()) timeoutTask = task
-      else if (!task.isDone()) task.cancel()
-    }
+    timeoutTask = task
   }
 
   // ---------------------------------------------------------------------------
@@ -225,14 +209,17 @@ private[java] final class VirtualThread(
   // currentWaitResume*: only blockForMonitorWait + interrupt() (wake from wait).
   // ---------------------------------------------------------------------------
 
-  /** Set when unblocking from monitor wait or enter; consumed when run completes with Unblocked. */
-  @volatile private var blockPermit: scala.Boolean = false
+  @volatile private[lang] var blockPermit: scala.Boolean = false
 
-  @inline private def setBlockPermit(value: scala.Boolean): Unit = {
-    if (blockPermit != value) blockPermit = value
-  }
-  @inline private def getAndSetBlockPermit(value: scala.Boolean): scala.Boolean =
+  @alwaysinline
+  private def blockPermitAtomic =
+    new AtomicBool(fromRawPtr(Intrinsics.classFieldRawPtr(this, "blockPermit")))
+
+  @alwaysinline private def getAndSetBlockPermit(value: scala.Boolean): scala.Boolean =
     blockPermitAtomic.exchange(value)
+
+  @alwaysinline private def setBlockPermit(value: scala.Boolean): Unit =
+    blockPermitAtomic.store(value)
 
   /** Set while in Object.wait() (blockForMonitorWait) so interrupt() can wake this VT. */
   @volatile private var currentWaitResume: () => Unit = compiletime.uninitialized
@@ -429,7 +416,7 @@ private[java] final class VirtualThread(
         Continuations.suspend[Unit] { resumeContinuation =>
           val generation = publishResume(resumeContinuation)
           scheduleTimeout(nanos, TimeUnit.NANOSECONDS, generation) {
-            unpark(lazily = true) // timed park wakeup: prefer lazy scheduler submit
+            unpark(lazily = false) // timed park wakeup: use normal submit
           }
 
           // Move into parked state only if no concurrent unpark already moved
@@ -610,13 +597,14 @@ private[java] final class VirtualThread(
       throw new IllegalStateException(s"Invalid carrier for virtual thread mount: $platformThread")
     }
     val carrier = platformThread
-    this.carrierThread = carrier
-
-    if (interruptedState) {
-      carrier.setInterrupt()
-    } else if (carrier.isInterrupted()) {
-      if (!interruptedState) {
-        carrier.clearInterrupt()
+    interruptLock.synchronized {
+      this.carrierThread = carrier
+      if (interruptedState) {
+        carrier.setInterrupt()
+      } else if (carrier.isInterrupted()) {
+        if (!interruptedState) {
+          carrier.clearInterrupt()
+        }
       }
     }
     NativeThread.setCurrentThread(this)
