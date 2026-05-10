@@ -120,10 +120,7 @@ jobs:
             junitTestOutputsJVM${{env.project-version}}/test;
             junitTestOutputsNative${{env.project-version}}/test;
             scalaPartestJunitTests${{env.project-version}}/test
-        run: |
-          export LLVM_BIN="$(brew --prefix llvm)/bin"
-          $LLVM_BIN/clang --version
-          sbt -J-Xmx5G "${TEST_COMMAND}"
+        run: sbt -J-Xmx5G "${TEST_COMMAND}"
 
   run-scripted-tests:
     name: Scripted tests
@@ -141,10 +138,7 @@ jobs:
           llvm-version: latest
 
       - name: Test scripted
-        run: |
-          export LLVM_BIN=$(brew --prefix llvm)/bin
-          $LLVM_BIN/clang --version
-          sbt "test-scripted ${{matrix.scala}}"
+        run: sbt "test-scripted ${{matrix.scala}}"
 
   test-llvm-versions:
     if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
@@ -166,12 +160,4 @@ jobs:
         # env:
         #   SCALANATIVE_MODE: release-fast
         #   SCALANATIVE_LTO: thin
-        run: |
-          if [[ "${{ matrix.llvm }}" == "latest" ]]; then 
-            export LLVM_BIN=$(brew --prefix llvm)/bin
-          else 
-            export LLVM_BIN=$(brew --prefix llvm@${{ matrix.llvm }})/bin
-          fi
-          echo "LLVM_BIN=${LLVM_BIN}"
-          $LLVM_BIN/clang --version
-          sbt "test-runtime ${{ matrix.scala }}"
+        run: sbt "test-runtime ${{ matrix.scala }}"

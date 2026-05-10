@@ -221,7 +221,6 @@ jobs:
         env:
           SCALANATIVE_MODE: release-fast
           SCALANATIVE_LTO: thin
-          LLVM_BIN: "/usr/lib/llvm-${{ matrix.llvm }}/bin"
           SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
         run: sbt "test-runtime ${{ matrix.scala }}"
 
