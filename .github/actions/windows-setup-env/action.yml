@@ -73,6 +73,7 @@ runs:
 
     # Install LLVM in case if cache is missing
     - name: Install LLVM
+      if: steps.cache-deps.outputs.cache-hit != 'true'
       shell: pwsh
       run: |
         $retryCount = 3

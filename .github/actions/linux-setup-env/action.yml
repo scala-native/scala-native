@@ -42,15 +42,117 @@ runs:
           sudo apt-get update
           sudo apt-get install libgc-dev
 
+    - name: Resolve LLVM cache metadata
+      id: llvm-meta
+      shell: bash
+      if: ${{ inputs.llvm-version != '' }}
+      run: |
+        set -euo pipefail
+
+        request="${{ inputs.llvm-version }}"
+        . /etc/os-release
+        distro="${VERSION_CODENAME:-${UBUNTU_CODENAME:-unknown}}"
+        arch="$(dpkg --print-architecture)"
+
+        if [[ "$request" == "latest" ]]; then
+          resolved="$(
+            curl -fsSL https://apt.llvm.org/ |
+            sed -nE 's/.*currently version ([0-9]+).*/\1/p' |
+            head -n1
+          )"
+          repo_suffix=""
+        else
+          resolved="$request"
+          repo_suffix="-$request"
+        fi
+
+        if [[ -z "$resolved" ]]; then
+          echo "::error::Failed to resolve LLVM version for '$request'"
+          exit 1
+        fi
+
+        release_url="https://apt.llvm.org/${distro}/dists/llvm-toolchain-${distro}${repo_suffix}/Release"
+        branch_stamp="$(
+          curl -fsSI "$release_url" |
+          awk '
+            BEGIN { IGNORECASE = 1 }
+            /^etag:/ {
+              gsub(/\r/, "", $2)
+              gsub(/"/, "", $2)
+              print $2
+              exit
+            }
+            /^last-modified:/ {
+              value = substr($0, index($0, ":") + 2)
+              gsub(/\r/, "", value)
+              print value
+              exit
+            }
+          ' FS=': '
+        )"
+
+        if [[ -z "$branch_stamp" ]]; then
+          echo "::error::Failed to resolve LLVM cache stamp from $release_url"
+          exit 1
+        fi
+
+        branch_stamp="$(echo "$branch_stamp" | tr -cs 'A-Za-z0-9._-' '-')"
+        archive_dir="${RUNNER_TOOL_CACHE}/scala-native-llvm"
+        archive_path="${archive_dir}/linux-${distro}-${arch}-${request}-${resolved}.tar"
+        toolchain_dir="/usr/lib/llvm-${resolved}"
+        cache_key="llvm-linux-${distro}-${arch}-${request}-${resolved}-${branch_stamp}"
+
+        echo "llvm-request=$request" >> "$GITHUB_OUTPUT"
+        echo "llvm-version=$resolved" >> "$GITHUB_OUTPUT"
+        echo "llvm-dir=$toolchain_dir" >> "$GITHUB_OUTPUT"
+        echo "llvm-archive=$archive_path" >> "$GITHUB_OUTPUT"
+        echo "llvm-cache-key=$cache_key" >> "$GITHUB_OUTPUT"
+
+    - name: Restore LLVM archive cache
+      id: llvm-cache
+      if: ${{ inputs.llvm-version != '' }}
+      uses: actions/cache/restore@v5
+      with:
+        path: ${{ steps.llvm-meta.outputs.llvm-archive }}
+        key: ${{ steps.llvm-meta.outputs.llvm-cache-key }}
+
+    - name: Restore cached LLVM toolchain
+      shell: bash
+      if: ${{ inputs.llvm-version != '' }}
+      run: |
+        set -euo pipefail
+
+        archive="${{ steps.llvm-meta.outputs.llvm-archive }}"
+        toolchain="${{ steps.llvm-meta.outputs.llvm-dir }}"
+
+        if [[ -x "$toolchain/bin/clang" ]] && "$toolchain/bin/clang" --version >/dev/null 2>&1; then
+          echo "LLVM already present at $toolchain"
+          exit 0
+        fi
+
+        if [[ -f "$archive" ]]; then
+          sudo rm -rf "$toolchain"
+          sudo tar -xf "$archive" -C /
+          sudo ldconfig
+          echo "Restored LLVM from cache archive: $archive"
+        fi
+
     - name: Install explicit LLVM toolchain
       shell: bash
       if: ${{ inputs.llvm-version != '' }}
       run: |
+        set -euo pipefail
+
+        LLVM_TOOLCHAIN="${{ steps.llvm-meta.outputs.llvm-dir }}/bin"
+        if [[ -x "$LLVM_TOOLCHAIN/clang" ]] && "$LLVM_TOOLCHAIN/clang" --version >/dev/null 2>&1; then
+          echo "Using cached toolchain: $("$LLVM_TOOLCHAIN/clang" --version | head -1)"
+          exit 0
+        fi
+
         wget https://apt.llvm.org/llvm.sh
         chmod +x llvm.sh
-        (yes "" || true) | sudo ./llvm.sh ${{ inputs.llvm-version }}
+        (yes "" || true) | sudo ./llvm.sh ${{ steps.llvm-meta.outputs.llvm-version }}
         # Prefer apt.llvm.org install over /usr/bin/clang (Discover uses LLVM_BIN / PATH).
-        LLVM_TOOLCHAIN="/usr/lib/llvm-${{ inputs.llvm-version }}/bin"
         if [[ -d "$LLVM_TOOLCHAIN" ]]; then
           echo "LLVM_BIN=$LLVM_TOOLCHAIN" >> "$GITHUB_ENV"
           echo "$LLVM_TOOLCHAIN" >> "$GITHUB_PATH"
@@ -58,3 +160,61 @@ runs:
         else
           echo "::warning::No directory $LLVM_TOOLCHAIN (e.g. llvm-version=latest); set LLVM_BIN on the step if needed."
         fi
+
+    - name: Archive LLVM toolchain
+      shell: bash
+      if: ${{ inputs.llvm-version != '' }}
+      run: |
+        set -euo pipefail
+
+        archive="${{ steps.llvm-meta.outputs.llvm-archive }}"
+        toolchain="${{ steps.llvm-meta.outputs.llvm-dir }}"
+        version="${{ steps.llvm-meta.outputs.llvm-version }}"
+
+        if [[ ! -x "$toolchain/bin/clang" ]] || ! "$toolchain/bin/clang" --version >/dev/null 2>&1; then
+          echo "::error::Missing clang under $toolchain"
+          exit 1
+        fi
+
+        if [[ -f "$archive" ]]; then
+          exit 0
+        fi
+
+        multiarch="$(dpkg-architecture -qDEB_HOST_MULTIARCH)"
+        lib_dir="/usr/lib/$multiarch"
+        shopt -s nullglob
+        runtime_libs=(
+          "$lib_dir/libLLVM-${version}.so"*
+          "$lib_dir/libclang-cpp.so.${version}"*
+          "$lib_dir/libclang-cpp${version}.so"*
+        )
+
+        mkdir -p "$(dirname "$archive")"
+        tar -cf "$archive" -C / "${toolchain#/}" "${runtime_libs[@]/#\//}"
+
+    - name: Save LLVM archive cache
+      if: ${{ inputs.llvm-version != '' && steps.llvm-cache.outputs.cache-hit != 'true' }}
+      uses: actions/cache/save@v5
+      with:
+        path: ${{ steps.llvm-meta.outputs.llvm-archive }}
+        key: ${{ steps.llvm-meta.outputs.llvm-cache-key }}
+
+    - name: Expose LLVM to Scala Native (PATH and LLVM_BIN)
+      shell: bash
+      if: ${{ inputs.llvm-version != '' }}
+      run: |
+        set -euo pipefail
+
+        LLVM_TOOLCHAIN="${{ steps.llvm-meta.outputs.llvm-dir }}/bin"
+        if [[ -d "$LLVM_TOOLCHAIN" ]]; then
+          echo "LLVM_BIN=$LLVM_TOOLCHAIN" >> "$GITHUB_ENV"
+          echo "$LLVM_TOOLCHAIN" >> "$GITHUB_PATH"
+          echo "Using toolchain: $("$LLVM_TOOLCHAIN/clang" --version | head -1)"
+        else
+          echo "::warning::No directory $LLVM_TOOLCHAIN; set LLVM_BIN on the step if needed."
+        fi
+
+    - name: Assert clang installed and on path
+      shell: bash
+      if: ${{ inputs.llvm-version != '' }}
+      run: clang --version

@@ -38,23 +38,195 @@ runs:
       if: ${{ startsWith(inputs.gc, 'boehm') }}
       run: brew install bdw-gc
 
-    - name: Install explicit LLVM toolchain
+    - name: Resolve LLVM cache metadata
+      id: llvm-meta
+      shell: bash
+      if: ${{ inputs.llvm-version != '' }}
+      env:
+        HOMEBREW_NO_AUTO_UPDATE: "1"
+      run: |
+        set -euo pipefail
+
+        request="${{ inputs.llvm-version }}"
+        if [[ "$request" == "latest" ]]; then
+          llvm_formula="llvm"
+          lld_formula="lld"
+        else
+          llvm_formula="llvm@${request}"
+          if [[ "$request" =~ ^[0-9]+$ && "$request" -ge 19 ]]; then
+            lld_formula="lld@${request}"
+          else
+            lld_formula=""
+          fi
+        fi
+
+        llvm_version="$(
+          brew info --json=v2 "$llvm_formula" |
+          ruby -rjson -e 'puts JSON.parse(STDIN.read).fetch("formulae").first.fetch("versions").fetch("stable")'
+        )"
+        if [[ -n "$lld_formula" ]]; then
+          lld_version="$(
+            brew info --json=v2 "$lld_formula" |
+            ruby -rjson -e 'puts JSON.parse(STDIN.read).fetch("formulae").first.fetch("versions").fetch("stable")'
+          )"
+          lld_dir="$(brew --prefix)/opt/$lld_formula"
+          lld_key_part="$lld_version"
+        else
+          lld_version=""
+          lld_dir=""
+          lld_key_part="no-lld"
+        fi
+
+        if [[ -z "$llvm_version" ]]; then
+          echo "::error::Failed to resolve LLVM version for '$request'"
+          exit 1
+        fi
+
+        arch="$(uname -m)"
+        macos_major="$(sw_vers -productVersion | cut -d. -f1)"
+        llvm_dir="$(brew --prefix)/opt/$llvm_formula"
+        archive_dir="${RUNNER_TOOL_CACHE}/scala-native-llvm"
+        archive_path="${archive_dir}/macos-${macos_major}-${arch}-${request}-${llvm_version}-${lld_key_part}.tar"
+        cache_key="llvm-macos-${macos_major}-${arch}-${request}-${llvm_version}-${lld_key_part}"
+
+        echo "llvm-formula=$llvm_formula" >> "$GITHUB_OUTPUT"
+        echo "lld-formula=$lld_formula" >> "$GITHUB_OUTPUT"
+        echo "llvm-request=$request" >> "$GITHUB_OUTPUT"
+        echo "llvm-version=$llvm_version" >> "$GITHUB_OUTPUT"
+        echo "lld-version=$lld_version" >> "$GITHUB_OUTPUT"
+        echo "llvm-dir=$llvm_dir" >> "$GITHUB_OUTPUT"
+        echo "lld-dir=$lld_dir" >> "$GITHUB_OUTPUT"
+        echo "llvm-archive=$archive_path" >> "$GITHUB_OUTPUT"
+        echo "llvm-cache-key=$cache_key" >> "$GITHUB_OUTPUT"
+
+    - name: Restore LLVM archive cache
+      id: llvm-cache
+      if: ${{ inputs.llvm-version != '' }}
+      uses: actions/cache/restore@v5
+      with:
+        path: ${{ steps.llvm-meta.outputs.llvm-archive }}
+        key: ${{ steps.llvm-meta.outputs.llvm-cache-key }}
+
+    - name: Restore cached LLVM toolchain
       shell: bash
       if: ${{ inputs.llvm-version != '' }}
       run: |
-        brew install lld
-        if [[ "${{ inputs.llvm-version }}" == "latest" ]]; then
-          brew install llvm
-          LLVM_TOOLCHAIN="$(brew --prefix llvm)/bin"
-        else
-          brew install llvm@${{ inputs.llvm-version }}
-          LLVM_TOOLCHAIN="$(brew --prefix llvm@${{ inputs.llvm-version }})/bin"
+        set -euo pipefail
+
+        archive="${{ steps.llvm-meta.outputs.llvm-archive }}"
+        llvm_dir="${{ steps.llvm-meta.outputs.llvm-dir }}"
+        lld_dir="${{ steps.llvm-meta.outputs.lld-dir }}"
+        lld_formula="${{ steps.llvm-meta.outputs.lld-formula }}"
+
+        if [[ -x "$llvm_dir/bin/clang" ]] && "$llvm_dir/bin/clang" --version >/dev/null 2>&1 &&
+           { [[ -z "$lld_formula" ]] || [[ -x "$lld_dir/bin/ld.lld" ]]; }; then
+          echo "LLVM already present at $llvm_dir"
+          exit 0
+        fi
+
+        if [[ -f "$archive" ]]; then
+          rm -rf "$llvm_dir" "$lld_dir"
+          tar -xf "$archive" -C /
+          echo "Restored LLVM from cache archive: $archive"
+        fi
+
+    - name: Install explicit LLVM toolchain
+      shell: bash
+      if: ${{ inputs.llvm-version != '' }}
+      env:
+        HOMEBREW_NO_AUTO_UPDATE: "1"
+      run: |
+        set -euo pipefail
+
+        LLVM_TOOLCHAIN="${{ steps.llvm-meta.outputs.llvm-dir }}/bin"
+        LLD_TOOLCHAIN="${{ steps.llvm-meta.outputs.lld-dir }}/bin"
+        LLD_FORMULA="${{ steps.llvm-meta.outputs.lld-formula }}"
+        if [[ -x "$LLVM_TOOLCHAIN/clang" ]] && "$LLVM_TOOLCHAIN/clang" --version >/dev/null 2>&1 &&
+           { [[ -z "$LLD_FORMULA" ]] || [[ -x "$LLD_TOOLCHAIN/ld.lld" ]]; }; then
+          echo "Using cached toolchain: $("$LLVM_TOOLCHAIN/clang" --version | head -1)"
+          exit 0
+        fi
+
+        brew install "${{ steps.llvm-meta.outputs.llvm-formula }}"
+        if [[ -n "$LLD_FORMULA" ]]; then
+          brew install "$LLD_FORMULA"
         fi
         # Prefer Homebrew LLVM over Xcode clang (Discover uses LLVM_BIN / PATH).
         if [[ -d "$LLVM_TOOLCHAIN" ]]; then
+          echo "Using toolchain: $("$LLVM_TOOLCHAIN/clang" --version | head -1)"
+        else
+          echo "::warning::No directory $LLVM_TOOLCHAIN; set LLVM_BIN on the step if needed."
+        fi
+
+        if [[ -n "$LLD_FORMULA" && ! -x "$LLD_TOOLCHAIN/ld.lld" ]]; then
+          echo "::error::Expected ld.lld under $LLD_TOOLCHAIN"
+          exit 1
+        fi
+
+    - name: Archive LLVM toolchain
+      shell: bash
+      if: ${{ inputs.llvm-version != '' }}
+      run: |
+        set -euo pipefail
+
+        archive="${{ steps.llvm-meta.outputs.llvm-archive }}"
+        llvm_dir="${{ steps.llvm-meta.outputs.llvm-dir }}"
+        lld_dir="${{ steps.llvm-meta.outputs.lld-dir }}"
+        lld_formula="${{ steps.llvm-meta.outputs.lld-formula }}"
+
+        if [[ ! -x "$llvm_dir/bin/clang" ]] || ! "$llvm_dir/bin/clang" --version >/dev/null 2>&1; then
+          echo "::error::Missing clang under $llvm_dir"
+          exit 1
+        fi
+
+        if [[ -n "$lld_formula" && ! -x "$lld_dir/bin/ld.lld" ]]; then
+          echo "::error::Missing ld.lld under $lld_dir"
+          exit 1
+        fi
+
+        if [[ -f "$archive" ]]; then
+          exit 0
+        fi
+
+        mkdir -p "$(dirname "$archive")"
+        if [[ -n "$lld_formula" ]]; then
+          tar -chf "$archive" -C / "${llvm_dir#/}" "${lld_dir#/}"
+        else
+          tar -chf "$archive" -C / "${llvm_dir#/}"
+        fi
+
+    - name: Save LLVM archive cache
+      if: ${{ inputs.llvm-version != '' && steps.llvm-cache.outputs.cache-hit != 'true' }}
+      uses: actions/cache/save@v5
+      with:
+        path: ${{ steps.llvm-meta.outputs.llvm-archive }}
+        key: ${{ steps.llvm-meta.outputs.llvm-cache-key }}
+
+    - name: Expose LLVM to Scala Native (PATH and LLVM_BIN)
+      shell: bash
+      if: ${{ inputs.llvm-version != '' }}
+      run: |
+        set -euo pipefail
+
+        LLVM_TOOLCHAIN="${{ steps.llvm-meta.outputs.llvm-dir }}/bin"
+        LLD_TOOLCHAIN="${{ steps.llvm-meta.outputs.lld-dir }}/bin"
+        LLD_FORMULA="${{ steps.llvm-meta.outputs.lld-formula }}"
+        if [[ -d "$LLVM_TOOLCHAIN" ]]; then
           echo "LLVM_BIN=$LLVM_TOOLCHAIN" >> "$GITHUB_ENV"
+          if [[ -n "$LLD_FORMULA" ]]; then
+            echo "$LLD_TOOLCHAIN" >> "$GITHUB_PATH"
+          fi
           echo "$LLVM_TOOLCHAIN" >> "$GITHUB_PATH"
           echo "Using toolchain: $("$LLVM_TOOLCHAIN/clang" --version | head -1)"
         else
           echo "::warning::No directory $LLVM_TOOLCHAIN; set LLVM_BIN on the step if needed."
+        fi
+
+    - name: Assert clang installed and on path
+      shell: bash
+      if: ${{ inputs.llvm-version != '' }}
+      run: |
+        clang --version
+        if [[ -n "${{ steps.llvm-meta.outputs.lld-formula }}" ]]; then
+          ld.lld --version
         fi

@@ -11,10 +11,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  prepare-llvm:
+    name: Prepare default LLVM cache
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/macos-setup-env
+        with:
+          scala-version: 3
+
   test-runtime:
     name: Test runtime
     if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
     runs-on: macos-15
+    needs: prepare-llvm
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
@@ -51,7 +62,7 @@ jobs:
     name: Test runtime extension
     if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
     runs-on: macos-15
-    needs: [test-runtime]
+    needs: [prepare-llvm, test-runtime]
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
@@ -87,7 +98,6 @@ jobs:
         with:
           scala-version: ${{matrix.scala}}
           gc: ${{ matrix.gc }}
-          llvm-version: 19
 
       - name: Prepare setConfig command
         # Linking on MacOS in GithubActions fails when using default linker (ld), use lld instead
@@ -147,7 +157,7 @@ jobs:
       fail-fast: false
       matrix:
         scala: [3]
-        llvm: [17, 18, 19, 20, 21 latest] # Latest version == 22
+        llvm: [17, 18, 19, 20, 21, latest]
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/macos-setup-env
