@@ -13,8 +13,8 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: coursier/cache-action@v6
-    - uses: coursier/setup-action@v1
+    - uses: coursier/cache-action@v8
+    - uses: coursier/setup-action@v3
       with:
         jvm: ${{inputs.java-version}}
         apps: sbt
