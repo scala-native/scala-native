@@ -40,7 +40,13 @@ class ModuleFlagsTest extends CodeGenSpec {
   ) {
     case (_, _, outfiles) =>
       val ir = emittedIr(outfiles)
-      assertFalse(s"PIC Level must not be emitted on Windows", ir.contains(PicFlag))
-      assertFalse(s"PIE Level must not be emitted on Windows", ir.contains(PieFlag))
+      assertFalse(
+        s"PIC Level must not be emitted on Windows",
+        ir.contains(PicFlag)
+      )
+      assertFalse(
+        s"PIE Level must not be emitted on Windows",
+        ir.contains(PieFlag)
+      )
   }
 }
