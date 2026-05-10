@@ -64,7 +64,7 @@ private[codegen] abstract class AbstractCodeGen(
     dir.write(metadata) { metadataWriter =>
       implicit val metadata: MetadataCodeGen.Context =
         new MetadataCodeGen.Context(this, new FileShowBuilder(metadataWriter))
-      genDebugMetadata()
+      genPlatformMetadata()
 
       dir.write(body) { writer =>
         implicit val fsb: ShowBuilder = new FileShowBuilder(writer)
@@ -85,15 +85,23 @@ private[codegen] abstract class AbstractCodeGen(
     dir.merge(Seq(body, metadata), headers)
   }
 
-  private def genDebugMetadata()(implicit
+  private def genPlatformMetadata()(implicit
       ctx: MetadataCodeGen.Context
   ): Unit = {
     import Metadata.Constants._
     import Metadata.ModFlagBehavior._
-    dbg("llvm.module.flags")(
-      tuple(Max, "Dwarf Version", DWARF_VERSION),
-      tuple(Warning, "Debug Info Version", DEBUG_INFO_VERSION)
-    )
+    val flags = List.newBuilder[Metadata.Node]
+    if (!platform.targetsWindows) {
+      flags += tuple(Min, "PIC Level", PIC_LEVEL)
+      flags += tuple(Max, "PIE Level", PIE_LEVEL)
+    }
+    if (generateDebugMetadata) {
+      flags += tuple(Max, "Dwarf Version", DWARF_VERSION)
+      flags += tuple(Warning, "Debug Info Version", DEBUG_INFO_VERSION)
+    }
+    val result = flags.result()
+    if (result.nonEmpty)
+      emitNamedMetadata("llvm.module.flags")(result: _*)
   }
 
   private def genDeps()(implicit

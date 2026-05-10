@@ -300,6 +300,8 @@ private[codegen] object Metadata {
     val PRODUCER = "Scala Native"
     val DWARF_VERSION = 4
     val DEBUG_INFO_VERSION = 3
+    val PIC_LEVEL = 2
+    val PIE_LEVEL = 2
     final val SourceToDILineOffset = 1
     final val SourceToDIColumnOffset = 1
   }

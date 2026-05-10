@@ -30,14 +30,17 @@ private[codegen] trait MetadataCodeGen { self: AbstractCodeGen =>
 
   /* Create a name debug metadata entry and write it on the metadata section */
   def dbg(name: => String)(values: Metadata.Node*)(implicit ctx: Context): Unit =
-    if (generateDebugMetadata) {
-      // Named metadata is always stored in metadata section
-      import ctx.sb._
-      values.foreach(Writer.ofNode.intern)
-      newline()
-      str(s"!$name = ")
-      Metadata.Tuple(values).write()
-    }
+    if (generateDebugMetadata) emitNamedMetadata(name)(values: _*)
+
+  def emitNamedMetadata(name: String)(values: Metadata.Node*)(implicit
+      ctx: Context
+  ): Unit = {
+    import ctx.sb._
+    values.foreach(Writer.ofNode.intern)
+    newline()
+    str(s"!$name = ")
+    Metadata.Tuple(values).write()
+  }
 
   def dbgUsing[T <: Metadata.Node: InternedWriter](
       v: => T
