@@ -145,7 +145,17 @@ class VirtualThreadSleepTest {
         latch.countDown()
       }
     }
-    assertTrue(latch.await(Timeout, TimeUnit.MILLISECONDS))
+    val finished = latch.await(Timeout, TimeUnit.MILLISECONDS)
+    if (!finished) {
+      val countLeft = latch.getCount()
+      System.err.println(
+        s"TIMEOUT: $countLeft threads failed to complete within ${Timeout}ms"
+      )
+    }
+    assertTrue(
+      s"Timed out waiting for $count virtual threads to finish sleep",
+      finished
+    )
     val elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start)
     assertTrue(
       s"10000 VTs sleeping 100ms should complete in well under 10s (took ${elapsed}ms)",

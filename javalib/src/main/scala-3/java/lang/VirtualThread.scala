@@ -542,9 +542,11 @@ private[java] final class VirtualThread(
   // ---------------------------------------------------------------------------
 
   /** Submits [[executeContinuation]] to `scheduler`, optionally using `lazyExecute` for carrier-local batching. */
-  private def submitScheduledRun(lazily: scala.Boolean = false): Unit =
-    if (lazily) scheduler.lazyExecute(executeContinuation)
-    else scheduler.execute(executeContinuation)
+  private def submitScheduledRun(lazily: scala.Boolean = false): Unit = {
+    val taskContinuation = new VirtualThread.RunLoop(this)
+    if (lazily) scheduler.lazyExecute(taskContinuation)
+    else scheduler.execute(taskContinuation)
+  }
 
   /** Ensures the run loop is queued: coordinates `runDispatchState`, pins during self-submit, and picks lazy vs eager
    *  `execute` when permitted.
@@ -709,8 +711,6 @@ private[java] final class VirtualThread(
       }
     }
   }
-
-  private def executeContinuation: Runnable = new VirtualThread.RunLoop(this)
 
   // ---------------------------------------------------------------------------
   // Thread.yield cooperative scheduling
