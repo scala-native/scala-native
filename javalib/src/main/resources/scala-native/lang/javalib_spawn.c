@@ -45,7 +45,8 @@ bool hasFileActionsAddChdir() {
 #endif
 #if defined(__MAC_OS_X_VERSION_MIN_REQUIRED) &&                                \
     (__MAC_OS_X_VERSION_MIN_REQUIRED >= 260000)
-/* Standard addchdir is macOS 26+; below that use addchdir_np (unguarded SDK). */
+/* Standard addchdir is macOS 26+; below that use addchdir_np (unguarded SDK).
+ */
 #define SCALANATIVE_JAVALIB_HAVE_POSIX_CHDIR 1
 #endif
 
