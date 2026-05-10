@@ -42,10 +42,22 @@ jobs:
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
 
+  prepare-llvm:
+    name: Prepare LLVM cache
+    runs-on: ubuntu-22.04
+    needs: [load_tag]
+    if: needs.load_tag.outputs.skip == 'false'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: "3" # unused
+          java-version: 17
+
   check-compiles:
     name: Test compilation of all modules
     runs-on: ubuntu-22.04
-    needs: [load_tag]
+    needs: [load_tag, prepare-llvm]
     if: needs.load_tag.outputs.skip == 'false' # repository check is done in load_tag
     steps:
       - uses: actions/checkout@v6
@@ -66,8 +78,7 @@ jobs:
       matrix:
         # Older Scala compiler version don't support -release flag, leading to java.lang.NoSuchMethodError: java.nio.ByteBuffer.position(I)Ljava/nio/ByteBuffer in nir.serialization.Prelude$
         # Make sure to use JDK 8 to keep binary compatibility
-        include:
-        - scala: ["2.12", "2.13", "3"]
+        scala: ["2.12", "2.13", "3"]
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/linux-setup-env
