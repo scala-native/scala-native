@@ -101,9 +101,19 @@ runs:
             }
         }
 
-    - name: Add LLVM on Path
+    - name: Expose LLVM to Scala Native (PATH and LLVM_BIN)
       shell: pwsh
-      run: echo "${env:ProgramFiles}\LLVM\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      run: |
+        $llvmBin = Join-Path (Join-Path $env:ProgramFiles 'LLVM') 'bin'
+        $clang = Join-Path $llvmBin 'clang.exe'
+        if (Test-Path -LiteralPath $clang) {
+          Add-Content -Path $env:GITHUB_ENV -Value "LLVM_BIN=$llvmBin"
+          $llvmBin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          $verLine = (& $clang --version | Select-Object -First 1)
+          Write-Host "Using toolchain: $verLine"
+        } else {
+          Write-Host "::warning::No clang.exe under $llvmBin; set LLVM_BIN on the step if needed."
+        }
 
     - name: Assert clang installed and on path
       shell: pwsh

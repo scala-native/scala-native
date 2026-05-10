@@ -49,3 +49,12 @@ runs:
         wget https://apt.llvm.org/llvm.sh
         chmod +x llvm.sh
         (yes "" || true) | sudo ./llvm.sh ${{ inputs.llvm-version }}
+        # Prefer apt.llvm.org install over /usr/bin/clang (Discover uses LLVM_BIN / PATH).
+        LLVM_TOOLCHAIN="/usr/lib/llvm-${{ inputs.llvm-version }}/bin"
+        if [[ -d "$LLVM_TOOLCHAIN" ]]; then
+          echo "LLVM_BIN=$LLVM_TOOLCHAIN" >> "$GITHUB_ENV"
+          echo "$LLVM_TOOLCHAIN" >> "$GITHUB_PATH"
+          echo "Using toolchain: $("$LLVM_TOOLCHAIN/clang" --version | head -1)"
+        else
+          echo "::warning::No directory $LLVM_TOOLCHAIN (e.g. llvm-version=latest); set LLVM_BIN on the step if needed."
+        fi

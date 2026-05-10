@@ -43,8 +43,18 @@ runs:
       if: ${{ inputs.llvm-version != '' }}
       run: |
         brew install lld
-        if [[ "${{ inputs.llvm-version }}" == "latest" ]]; then 
+        if [[ "${{ inputs.llvm-version }}" == "latest" ]]; then
           brew install llvm
-        else 
+          LLVM_TOOLCHAIN="$(brew --prefix llvm)/bin"
+        else
           brew install llvm@${{ inputs.llvm-version }}
+          LLVM_TOOLCHAIN="$(brew --prefix llvm@${{ inputs.llvm-version }})/bin"
+        fi
+        # Prefer Homebrew LLVM over Xcode clang (Discover uses LLVM_BIN / PATH).
+        if [[ -d "$LLVM_TOOLCHAIN" ]]; then
+          echo "LLVM_BIN=$LLVM_TOOLCHAIN" >> "$GITHUB_ENV"
+          echo "$LLVM_TOOLCHAIN" >> "$GITHUB_PATH"
+          echo "Using toolchain: $("$LLVM_TOOLCHAIN/clang" --version | head -1)"
+        else
+          echo "::warning::No directory $LLVM_TOOLCHAIN; set LLVM_BIN on the step if needed."
         fi
