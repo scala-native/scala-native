@@ -91,23 +91,35 @@ object Discover {
 
   /** Find default options passed to the system's native linker. */
   def linkingOptions(): Seq[String] = {
-    val libs = {
-      val llvmLibDir =
-        Try(Process(s"$llvmConfigCLI --libdir").lineStream_!.toSeq)
-          .getOrElse(Seq.empty)
+    val llvmLibDirs =
+      Try(Process(s"$llvmConfigCLI --libdir").lineStream_!.toSeq)
+        .getOrElse(Seq.empty)
 
-      val libDirs =
-        getenv("SCALANATIVE_LIB_DIRS")
-          .map(_.split(File.pathSeparatorChar).toSeq)
-          .getOrElse(
-            filterExisting(
-              Seq("/usr/local/lib", "/opt/local/lib", "/opt/homebrew/lib")
-            )
+    val libDirs =
+      getenv("SCALANATIVE_LIB_DIRS")
+        .map(_.split(File.pathSeparatorChar).toSeq)
+        .getOrElse(
+          filterExisting(
+            Seq("/usr/local/lib", "/opt/local/lib", "/opt/homebrew/lib")
           )
+        )
 
-      (libDirs ++ llvmLibDir).map(s => s"-L$s")
-    }
-    libs
+    defaultLinkingOptions(
+      libDirs = libDirs,
+      llvmLibDirs = llvmLibDirs,
+      targetsMac = Platform.isMac
+    )
+  }
+
+  private[scalanative] def defaultLinkingOptions(
+      libDirs: Seq[String],
+      llvmLibDirs: Seq[String],
+      targetsMac: Boolean
+  ): Seq[String] = {
+    // On Darwin, adding LLVM's own libdir pollutes application links with
+    // Homebrew runtime libraries such as libunwind and produces linker noise.
+    val extraLibDirs = if (targetsMac) Nil else llvmLibDirs
+    (libDirs ++ extraLibDirs).map(s => s"-L$s")
   }
 
   private case class ClangInfo(
