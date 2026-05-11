@@ -322,7 +322,10 @@ private[java] final class VirtualThread(
           requestRun()
           done = true
         } else s = state
-      } else if (s == State.Unblocked) done = true
+      } else if (s == State.Unblocked) {
+        requestRun()
+        done = true
+      }
       else done = true
     }
   }
@@ -513,9 +516,11 @@ private[java] final class VirtualThread(
    *    (timeout and similar paths).
    */
   private def unpark(lazily: scala.Boolean): Unit = {
-    // Permit first; only submit when permit was previously false (avoid redundant submit).
-    // getAndSetParkPermit(true) returns the prior value; submit when it was false.
-    val previousPermit = getAndSetParkPermit(true)
+    // Publish the permit before inspecting state. If the thread is already
+    // parked, always request a run; dispatch-state coalescing absorbs duplicate
+    // submissions, while skipping the request can strand a parked continuation
+    // when a prior race left the permit set.
+    getAndSetParkPermit(true)
     if (Thread.currentThread() eq this) return
 
     var s = state
@@ -524,7 +529,7 @@ private[java] final class VirtualThread(
       s match {
         case State.Parked | State.TimedParked =>
           if (compareAndSetState(s, State.Unparked)) {
-            if (!previousPermit) requestRun(lazily)
+            requestRun(lazily)
             done = true
           } else {
             s = state // re-read after CAS failure
