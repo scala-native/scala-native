@@ -4,6 +4,7 @@ package java.lang
 
 import java.util.concurrent.*
 import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory
+import java.util.concurrent.atomic.AtomicInteger
 
 import scala.scalanative.runtime.VirtualThreadScheduler
 
@@ -51,6 +52,7 @@ private[java] object DefaultVirtualThreadScheduler extends VirtualThreadSchedule
       executor
     }
   }
+  private val nextDelayedScheduler = new AtomicInteger()
 
   override def execute(task: Runnable): Unit = pool.execute(task)
 
@@ -62,8 +64,7 @@ private[java] object DefaultVirtualThreadScheduler extends VirtualThreadSchedule
       delay: scala.Long,
       unit: TimeUnit
   ): VirtualThreadScheduler.Cancellable = {
-    val tid = Thread.currentThread().threadId()
-    val idx = (tid.toInt & (delayedSchedulers.length - 1))
+    val idx = nextDelayedScheduler.getAndIncrement() & (delayedSchedulers.length - 1)
     val future = delayedSchedulers(idx).schedule(task, delay, unit)
     new VirtualThreadScheduler.Cancellable {
       override def cancel(): scala.Boolean = future.cancel(false)
