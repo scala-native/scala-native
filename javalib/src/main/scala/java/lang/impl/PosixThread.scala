@@ -6,7 +6,7 @@ import scala.annotation._
 
 import scala.scalanative.annotation._
 import scala.scalanative.libc.stdatomic._
-import scala.scalanative.libc.stdatomic.memory_order.memory_order_seq_cst
+import scala.scalanative.libc.stdatomic.memory_order.memory_order_release
 import scala.scalanative.meta.LinktimeInfo._
 import scala.scalanative.posix.errno._
 import scala.scalanative.posix.poll._
@@ -173,7 +173,7 @@ private[java] class PosixThread(
       state = NativeThread.State.Running
       val status = pthread_mutex_unlock(lock)
       assert(status == 0, "park, unlock")
-      atomic_thread_fence(memory_order_seq_cst)
+      atomic_thread_fence(memory_order_release)
     }
   }
 
