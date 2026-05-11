@@ -557,25 +557,16 @@ class VirtualThreadMonitorTest {
     assertEquals(expected, state)
   }
 
-  /** A VT blocked on monitor enter may report BLOCKED (JDK) or
-   *  TIMED_WAITING/WAITING (Scala Native carrier parking). Accept any of these
-   *  as "blocked on monitor".
-   */
   private def awaitStateBlockedOnMonitor(thread: Thread): Unit = {
     val deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(Timeout)
-    val accepted = Set(
-      Thread.State.BLOCKED,
-      Thread.State.TIMED_WAITING,
-      Thread.State.WAITING
-    )
     var state = thread.getState()
-    while (!accepted(state) && System.nanoTime() < deadline) {
+    while (state != Thread.State.BLOCKED && System.nanoTime() < deadline) {
       Thread.sleep(10)
       state = thread.getState()
     }
     assertTrue(
-      s"expected BLOCKED, TIMED_WAITING, or WAITING (blocked on monitor) but was $state",
-      accepted(state)
+      s"expected BLOCKED (blocked on monitor) but was $state",
+      state == Thread.State.BLOCKED
     )
   }
 }

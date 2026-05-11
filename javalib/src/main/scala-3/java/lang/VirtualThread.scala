@@ -9,7 +9,7 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
 import scala.noinline
 
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.libc.stdatomic.{AtomicBool, AtomicInt, AtomicLongLong, AtomicRef}
+import scala.scalanative.libc.stdatomic.{AtomicBool, AtomicInt, AtomicRef}
 import scala.scalanative.runtime
 import scala.scalanative.runtime.javalib.Proxy
 import scala.scalanative.runtime.{Continuations, Intrinsics, NativeThread, VirtualThreadScheduler, fromRawPtr}
@@ -63,26 +63,26 @@ private[java] final class VirtualThread(
     current.asInstanceOf[Boundary] // No .nn on Scala 3.1
 
   @volatile private[java] var resumeExecution: Continuation | Null = compiletime.uninitialized
-  private[lang] var nextResumeGeneration: Long = 0L
+  private val resumeLock = new {}
+  private var nextResumeGeneration: Long = 0L
   @volatile private var activeResumeGeneration: Long = 0L
 
-  @alwaysinline
-  private def nextResumeGenerationAtomic =
-    new AtomicLongLong(fromRawPtr(Intrinsics.classFieldRawPtr(this, "nextResumeGeneration")))
+  private[java] def publishResume(resume: () => Unit): Long =
+    resumeLock.synchronized {
+      nextResumeGeneration += 1L
+      val generation = nextResumeGeneration
+      resumeExecution = resume
+      activeResumeGeneration = generation
+      generation
+    }
 
-  private[java] def publishResume(resume: () => Unit): Long = {
-    val generation = nextResumeGenerationAtomic.fetchAdd(1L) + 1L
-    resumeExecution = resume
-    activeResumeGeneration = generation
-    generation
-  }
-
-  private[java] def consumeResume(): () => Unit | Null = {
-    val continue = resumeExecution
-    resumeExecution = null
-    activeResumeGeneration = 0L
-    continue
-  }
+  private[java] def consumeResume(): () => Unit | Null =
+    resumeLock.synchronized {
+      val continue = resumeExecution
+      resumeExecution = null
+      activeResumeGeneration = 0L
+      continue
+    }
 
   private def isActiveResumeGeneration(generation: Long): Boolean =
     generation != 0L && activeResumeGeneration == generation && resumeExecution != null
@@ -162,44 +162,55 @@ private[java] final class VirtualThread(
   // So a late timeout from an earlier operation cannot wake a later park/wait on the same VT.
   // ---------------------------------------------------------------------------
 
+  private val timeoutLock = new {}
+  private var timeoutGeneration: Long = 0L
+  private var timeoutTaskResumeGeneration: Long = 0L
   @volatile private[java] var timeoutTask: VirtualThreadScheduler.Cancellable | Null = compiletime.uninitialized
-  @volatile private[lang] var timeoutGeneration: Long = 0L
 
-  @alwaysinline
-  private def timeoutTaskAtomic =
-    new AtomicRef[VirtualThreadScheduler.Cancellable](fromRawPtr(Intrinsics.classFieldRawPtr(this, "timeoutTask")))
-
-  @alwaysinline
-  private def timeoutGenerationAtomic =
-    new AtomicLongLong(fromRawPtr(Intrinsics.classFieldRawPtr(this, "timeoutGeneration")))
-
-  private def cancelTimeoutTask(generation: Long): Unit = {
-    if (isActiveResumeGeneration(generation)) {
-      timeoutGenerationAtomic.fetchAdd(1L)
-      val task = timeoutTaskAtomic.exchange(null)
-      if (task != null) {
-        task.cancel()
-      }
+  private def cancelTimeoutTask(expectedResumeGeneration: Long): Unit =
+    val task = timeoutLock.synchronized {
+      if (timeoutTaskResumeGeneration == expectedResumeGeneration) {
+        timeoutGeneration += 1L
+        timeoutTaskResumeGeneration = 0L
+        val current = timeoutTask
+        timeoutTask = null
+        current
+      } else null
     }
-  }
+    task match
+      case null => ()
+      case task =>
+        if (!task.isDone()) task.cancel()
 
   private def scheduleTimeout(delay: scala.Long, unit: TimeUnit, resumeGeneration: Long)(onTimeout: => Unit): Unit = {
-    if (delay <= 0) return
-    val timeoutToken = timeoutGenerationAtomic.fetchAdd(1L) + 1L
+    val timeoutToken = timeoutLock.synchronized {
+      timeoutGeneration += 1L
+      timeoutTaskResumeGeneration = resumeGeneration
+      timeoutTask = null
+      timeoutGeneration
+    }
 
     val task = scheduler.schedule(
       () => {
-        // This runs on platform thread: CAS is enough to avoid races with cancel.
-        if (timeoutGeneration == timeoutToken && isActiveResumeGeneration(resumeGeneration)) {
-          // Double-check active resume generation to avoid waking up a thread that already resumed and parked again
-          // before we could cancel the old task.
-          onTimeout
+        val shouldRun = timeoutLock.synchronized {
+          if (timeoutGeneration == timeoutToken && isActiveResumeGeneration(resumeGeneration)) {
+            if (timeoutTaskResumeGeneration == resumeGeneration) {
+              timeoutTask = null
+              timeoutTaskResumeGeneration = 0L
+            }
+            true
+          } else false
         }
+        if (shouldRun) onTimeout
       },
       delay,
       unit
     )
-    timeoutTask = task
+
+    timeoutLock.synchronized {
+      if (timeoutGeneration == timeoutToken && !task.isDone()) timeoutTask = task
+      else if (!task.isDone()) task.cancel()
+    }
   }
 
   // ---------------------------------------------------------------------------
