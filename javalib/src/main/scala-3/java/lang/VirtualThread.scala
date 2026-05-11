@@ -273,13 +273,27 @@ private[java] final class VirtualThread(
     // during the transient window), consume the permit and retry tryLock instead
     // of suspending the continuation.
     if (getAndSetBlockPermit(false)) return
-    state = State.Blocking
+    state = State.MonitorBlocking
     Continuations.suspend[Unit] { resume =>
       val generation = publishResume(resume)
       setResume(resume, generation)
-      compareAndSetState(State.Blocking, State.Blocked)
+      compareAndSetState(State.MonitorBlocking, State.MonitorBlocked)
     }(using currentBoundaryOrThrow("blockForMonitorEnter"))
     state = State.Running
+  }
+
+  /** A notified Object.wait() VT is no longer waiting for notification; it is queued to re-enter the monitor. */
+  override protected def doMarkBlockedOnMonitorEnter(): Unit = {
+    var s = state
+    var done = false
+    while (!done) {
+      if (s == State.Blocked || s == State.TimedBlocked) {
+        if (s == State.TimedBlocked)
+          cancelTimeoutTask(currentWaitResumeGeneration)
+        if (compareAndSetState(s, State.MonitorBlocked)) done = true
+        else s = state
+      } else done = true
+    }
   }
 
   /** Transitions out of monitor wait/enter suspension: CAS to `Unblocked`, arms `blockPermit`, and queues the run loop.
@@ -299,7 +313,9 @@ private[java] final class VirtualThread(
     var s = state
     var done = false
     while (!done) {
-      if (s == State.Blocking || s == State.Blocked || s == State.TimedBlocked) {
+      if (s == State.Blocking || s == State.Blocked ||
+          s == State.TimedBlocked || s == State.MonitorBlocked ||
+          s == State.MonitorBlocking) {
         if (compareAndSetState(s, State.Unblocked)) {
           if (s == State.TimedBlocked) cancelTimeoutTask(generation)
           getAndSetBlockPermit(true)
@@ -813,10 +829,12 @@ private[java] final class VirtualThread(
         else Thread.State.RUNNABLE
       }
     case State.Yielding | State.Blocking                  => Thread.State.RUNNABLE
+    case State.MonitorBlocking                            => Thread.State.RUNNABLE
     case State.Parking | State.TimedParking               => Thread.State.RUNNABLE
     case State.Parked | State.Pinned                      => Thread.State.WAITING
     case State.TimedParked | State.TimedPinned            => Thread.State.TIMED_WAITING
     case State.Blocked                                    => Thread.State.WAITING
+    case State.MonitorBlocked                             => Thread.State.BLOCKED
     case State.TimedBlocked                               => Thread.State.TIMED_WAITING
     case State.Unparked | State.Yielded | State.Unblocked => Thread.State.RUNNABLE
     case State.Terminated                                 => Thread.State.TERMINATED
@@ -967,8 +985,8 @@ object VirtualThread {
                   didAfterYieldSubmit = true
                 }
               }
-              // Block path: Blocked/TimedBlocked (wait/enter) + blockPermit.
-              if ((s == State.Blocked || s == State.TimedBlocked) &&
+              // Block path: wait/enter blocked states + blockPermit.
+              if ((s == State.Blocked || s == State.TimedBlocked || s == State.MonitorBlocked) &&
                   vt.getAndSetBlockPermit(false)) {
                 if (!vt.compareAndSetState(s, State.Unblocked)) {
                   vt.setBlockPermit(true)
@@ -1043,9 +1061,11 @@ object VirtualThread {
 
     // Monitor block (Object.wait / contended monitor enter)
     final val Blocking: State = 13 // about to suspend for wait/enter
-    final val Blocked: State = 14 // in Object.wait() or blocked on monitor enter
+    final val Blocked: State = 14 // in Object.wait()
     final val TimedBlocked: State = 15
     final val Unblocked: State = 16 // unblocked, runnable (notify / monitor exit)
+    final val MonitorBlocking: State = 17 // about to suspend for monitor enter
+    final val MonitorBlocked: State = 18 // blocked on monitor enter
 
     final val Terminated: State = 99 // final state
   }

@@ -39,6 +39,10 @@ trait VirtualThread extends Any { self: Thread =>
     doBlockForMonitorEnter(setResume)
   protected def doBlockForMonitorEnter(setResume: SetResumeContinuation): Unit
 
+  private[runtime] def markBlockedOnMonitorEnter(): Unit =
+    doMarkBlockedOnMonitorEnter()
+  protected def doMarkBlockedOnMonitorEnter(): Unit
+
   private[runtime] def scheduleWithResume(
       resume: Continuation,
       generation: scala.Long

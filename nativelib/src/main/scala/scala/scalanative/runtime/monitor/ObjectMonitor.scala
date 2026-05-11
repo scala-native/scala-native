@@ -3,7 +3,7 @@ package scala.scalanative.runtime.monitor
 import java.lang.Thread
 import java.util.concurrent.locks.LockSupport
 
-import scala.annotation.{switch, tailrec}
+import scala.annotation.{nowarn, switch, tailrec}
 
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.runtime.Intrinsics._
@@ -406,6 +406,7 @@ private[monitor] class ObjectMonitor() {
       case node =>
         node.isNotified = true
         node.state = WaiterNode.InEnterQueue
+        markBlockedOnMonitorEnter(node.thread)
         val isVT = node.thread.isInstanceOf[VirtualThread]
         var forceTimedRecheck = false
         if (isVT) {
@@ -495,6 +496,16 @@ private[monitor] class ObjectMonitor() {
     }
     LockSupport.unpark(threadToUnpark)
   }
+
+  @alwaysinline private def markBlockedOnMonitorEnter(thread: Thread): Unit =
+    thread match {
+      case vt: VirtualThread =>
+        vt.markBlockedOnMonitorEnter()
+      case _ =>
+        NativeThread.Registry.getById(thread.getId(): @nowarn).foreach {
+          _.state = NativeThread.State.WaitingOnMonitorEnter
+        }
+    }
 
   @alwaysinline private def casOwnerThread(
       expected: Thread,
