@@ -229,13 +229,20 @@ private[monitor] class ObjectMonitor() {
       releaseOwnerThread()
       var resume = node.resumeForWait
       if (resume eq RESUME_SENTINEL) {
-        // VT suspend callback is about to publish the real resume.
-        // Spin until it does, or until the VT clears the sentinel
-        // (meaning it skipped blockForMonitorWait because isNotified was true).
+        // The notify can race with the waiter's transition into
+        // blockForMonitorWait. Spin briefly for the common case where the
+        // continuation is published immediately, but do not pin a carrier
+        // indefinitely: the waiter will self-schedule if it observes the notify
+        // while publishing the continuation.
+        var spins = 256
         while ({
           resume = node.resumeForWait
-          resume eq RESUME_SENTINEL
+          (resume eq RESUME_SENTINEL) && {
+            spins -= 1
+            spins >= 0
+          }
         }) NativeThread.onSpinWait()
+        if (resume eq RESUME_SENTINEL) resume = null
       }
       if (resume != null) {
         val resumeGeneration = node.resumeForWaitGeneration
@@ -345,6 +352,7 @@ private[monitor] class ObjectMonitor() {
             (resume: () => Unit, generation: Long) => {
               node.resumeForWait = resume
               node.resumeForWaitGeneration = generation
+              if (node.isNotified) vt.scheduleWithResume(resume, generation)
             }
           )
         case _ =>
@@ -352,8 +360,10 @@ private[monitor] class ObjectMonitor() {
           else LockSupport.parkNanos(nanos)
       }
     }
-    // Clear sentinel if VT was notified before entering blockForMonitorWait
-    if (node.resumeForWait eq RESUME_SENTINEL) {
+    // The wait continuation is no longer needed after wait() has resumed. Clear
+    // it before monitor reentry so a stale wait resume cannot mask a later
+    // resumeForEnter handoff on the same node.
+    if (currentThread.isInstanceOf[VirtualThread]) {
       node.resumeForWait = null
       node.resumeForWaitGeneration = 0L
     }
