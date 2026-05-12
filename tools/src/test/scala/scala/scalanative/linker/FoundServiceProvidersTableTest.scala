@@ -28,12 +28,34 @@ class FoundServiceProvidersTableTest extends LinkerSpec {
 
     val expected = Seq(
       "|----------------------------------------------------------------------------------|",
-      "| Service                  | Service Provider                        | Status      |",
+      "|         Service          |            Service Provider             |   Status    |",
       "|----------------------------------------------------------------------------------|",
-      s"| Service 1 very long name | Service 1 very long implementation name | ${AnsiColor.GREEN}Loaded     ${AnsiColor.RESET} |",
+      s"| Service 1 very long name | Service 1 very long implementation name | ${AnsiColor.GREEN}  Loaded   ${AnsiColor.RESET} |",
       "|                          |                                         |             |",
-      s"| Service 2                | ---                                     | ${AnsiColor.YELLOW}NoProviders${AnsiColor.RESET} |",
+      s"|        Service 2         |                   ---                   | ${AnsiColor.YELLOW}NoProviders${AnsiColor.RESET} |",
       "|----------------------------------------------------------------------------------|"
+    )
+
+    expected.zip(actual).foreach {
+      case (expectedLine, actualLine) =>
+        assertEquals(expectedLine, actualLine)
+    }
+  }
+
+  @Test def correctFormattingWithNoProviders(): Unit = {
+    val actual = new LinktimeIntrinsicCallsResolver.FoundServiceProviders(
+      Map(
+        "java.nio.charset.spi.CharsetProvider" -> Seq.empty
+      )
+    )
+      .asTable(noColor = false)
+
+    val expected = Seq(
+      "|-----------------------------------------------------------------------|",
+      "|               Service                | Service Provider |   Status    |",
+      "|-----------------------------------------------------------------------|",
+      s"| java.nio.charset.spi.CharsetProvider |       ---        | ${AnsiColor.YELLOW}NoProviders${AnsiColor.RESET} |",
+      "|-----------------------------------------------------------------------|"
     )
 
     expected.zip(actual).foreach {

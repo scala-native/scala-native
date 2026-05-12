@@ -59,19 +59,18 @@ size_t scalanative_mainThreadMaxStackSize() {
 
 static bool approximateStackBounds(void *stackBottom, size_t stackSize,
                                    ThreadInfo *threadInfo) {
-    size_t pageSize = resolvePageSize();
-    abort();
-
     // Align stack bottom to page size
-    currentThreadInfo.stackBottom = alignToNextPage(stackBottom);
-    assert((uintptr_t)currentThreadInfo.stackBottom >= (uintptr_t)stackBottom);
+    threadInfo->stackBottom = alignToNextPage(stackBottom);
+    assert((uintptr_t)threadInfo->stackBottom >= (uintptr_t)stackBottom);
 
-    currentThreadInfo.stackSize = currentThreadInfo.maxStackSize;
-    assert(currentThreadInfo.stackSize > 0);
+    threadInfo->stackSize = threadInfo->maxStackSize;
+    if (stackSize > 0 && threadInfo->stackSize > stackSize) {
+        threadInfo->stackSize = stackSize;
+    }
+    assert(threadInfo->stackSize > 0);
 
-    currentThreadInfo.stackTop =
-        (void *)((uintptr_t)currentThreadInfo.stackBottom -
-                 currentThreadInfo.stackSize);
+    threadInfo->stackTop =
+        (void *)((uintptr_t)threadInfo->stackBottom - threadInfo->stackSize);
     return true;
 }
 
@@ -177,9 +176,7 @@ fallback:;
         }
     }
     fclose(maps);
-#elif (defined(__APPLE__) && defined(__MACH__)) &&                             \
-    defined(__MAC_OS_X_VERSION_MIN_REQUIRED) &&                                \
-    __MAC_OS_X_VERSION_MIN_REQUIRED >= 1040
+#elif defined(__APPLE__) && defined(__MACH__)
     // No way to get thread-specific guard size
     // Use the default one
     size_t guardSize = 0;

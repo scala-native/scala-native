@@ -6,11 +6,17 @@
  * without cleanup.
  */
 
+#ifndef _WIN32
+#ifndef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 199309L
+#endif
+#endif
+
 #ifdef _WIN32
 #include <windows.h>
 #else
 #include <pthread.h>
-#include <unistd.h>
+#include <time.h>
 #endif
 
 #include <stdio.h>
@@ -44,6 +50,9 @@ void zombie_thread_native_sleep_ms(int ms) {
 #ifdef _WIN32
     Sleep(ms);
 #else
-    usleep(ms * 1000);
+    struct timespec ts;
+    ts.tv_sec = ms / 1000;
+    ts.tv_nsec = (ms % 1000) * 1000000;
+    nanosleep(&ts, NULL);
 #endif
 }

@@ -17,7 +17,8 @@ import org.junit.Assume._
 import org.junit.{Ignore, Test}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import org.scalanative.testsuite.utils.Platform.{executingInJVM, isWindows}
+import org.scalanative.testsuite.utils.Platform
+import org.scalanative.testsuite.utils.Platform.isWindows
 
 import scala.scalanative.junit.utils.AssumesHelper.assumeNotJVMCompliant
 import scala.scalanative.junit.utils.CollectionConverters._
@@ -1937,6 +1938,7 @@ class FilesTest {
       val filetimeMs = Files.getLastModifiedTime(f0).toMillis()
 
       // Last 3 digits tend to be ignored by JVM
+      // May be a Java 8 bug, reported fixed in JDK 9.
       val lastModifiedResolution = 1000
       assertEquals(
         "a2",
@@ -1948,6 +1950,18 @@ class FilesTest {
 
   // Issue 4819
   @Test def filesGetLastModifiedTimeUsesMilliseconds(): Unit = {
+    /* Files.getLastModifiedTime on JVM 8 is documented to use milliseconds,
+     * if available, but is reported to have a bug, fixed in JDK 9, of only
+     * using seconds. The millisecond are truncated to 000, so no sense
+     * running this test on JVM < 9.
+     */
+    val hasJVM8SecondsOnlyBug = Platform.executingInJVMOnLowerThanJDK(9)
+
+    assumeFalse(
+      "Not testing JVM with JDK 8 getLastModifiedTime seconds-only bug",
+      hasJVM8SecondsOnlyBug
+    )
+
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath()
       val path = dir.resolve("myfile")

@@ -63,8 +63,19 @@ extern int __modules_size;
 // continuously query for new packets spending CPU resources, slowing other
 // threads and not doing any work.
 
-static inline GreyPacket *Marker_takeEmptyPacket(Heap *heap, Stats *stats) {
+/* May return NULL when all grey packets are in flight (e.g. many refrange
+ * slices queued). Callers that must have a packet should use
+ * `Marker_takeEmptyPacket`. */
+static inline GreyPacket *Marker_tryTakeEmptyPacket(Heap *heap, Stats *stats) {
     return SyncGreyLists_takeEmptyPacket(heap, stats);
+}
+
+static GreyPacket *Marker_takeEmptyPacket(Heap *heap, Stats *stats) {
+    GreyPacket *packet;
+    while ((packet = Marker_tryTakeEmptyPacket(heap, stats)) == NULL) {
+        thread_yield();
+    }
+    return packet;
 }
 
 static inline GreyPacket *Marker_takeFullPacket(Heap *heap, Stats *stats) {
@@ -240,20 +251,29 @@ int Marker_splitObjectArray(Heap *heap, Stats *stats, GreyPacket **outHolder,
         fields + (length / ARRAY_SPLIT_BATCH) * ARRAY_SPLIT_BATCH;
 
     assert(lastBatch <= limit);
-    for (word_t **batchFields = fields; batchFields < limit;
+    int objectsTraced = 0;
+    /* Full batches only; remainder is `lastBatchSize` below. */
+    for (word_t **batchFields = fields; batchFields < lastBatch;
          batchFields += ARRAY_SPLIT_BATCH) {
-        GreyPacket *slice = Marker_takeEmptyPacket(heap, stats);
-        assert(slice != NULL);
-        slice->type = grey_packet_refrange;
-        slice->items[0] = (Stack_Type)batchFields;
-        // no point writing the size, because it is constant
-        Marker_giveFullPacket(heap, stats, slice);
+        GreyPacket *slice = Marker_tryTakeEmptyPacket(heap, stats);
+        if (slice == NULL) {
+            /* Not enough grey packets to enqueue one refrange slice per batch
+             * (pool size scales with max heap; batch count scales with array
+             * length). Mark this batch on the current thread instead. */
+            objectsTraced += Marker_markRange(
+                heap, stats, outHolder, outWeakRefHolder, batchFields,
+                ARRAY_SPLIT_BATCH, sizeof(word_t));
+        } else {
+            slice->type = grey_packet_refrange;
+            slice->items[0] = (Stack_Type)batchFields;
+            // no point writing the size, because it is constant
+            Marker_giveFullPacket(heap, stats, slice);
+        }
     }
 
     size_t lastBatchSize = limit - lastBatch;
-    int objectsTraced = 0;
     if (lastBatchSize > 0) {
-        objectsTraced =
+        objectsTraced +=
             Marker_markRange(heap, stats, outHolder, outWeakRefHolder,
                              lastBatch, lastBatchSize, sizeof(word_t));
     }
@@ -306,19 +326,18 @@ static inline void Marker_splitIncomingPacket(Heap *heap, Stats *stats,
                                               GreyPacket *in) {
     int toMove = in->size / 2;
     if (toMove > 0) {
-        GreyPacket *slice = Marker_takeEmptyPacket(heap, stats);
-        assert(slice != NULL);
-        GreyPacket_MoveItems(in, slice, toMove);
-        Marker_giveFullPacket(heap, stats, slice);
+        GreyPacket *slice = Marker_tryTakeEmptyPacket(heap, stats);
+        if (slice != NULL) {
+            GreyPacket_MoveItems(in, slice, toMove);
+            Marker_giveFullPacket(heap, stats, slice);
+        }
     }
 }
 
 static inline void Marker_RetakeIfNull(Heap *heap, Stats *stats,
                                        GreyPacket **outHolder) {
     if (*outHolder == NULL) {
-        GreyPacket *fresh = Marker_takeEmptyPacket(heap, stats);
-        assert(fresh != NULL);
-        *outHolder = fresh;
+        *outHolder = Marker_takeEmptyPacket(heap, stats);
     }
 }
 

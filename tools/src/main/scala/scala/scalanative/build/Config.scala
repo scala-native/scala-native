@@ -187,13 +187,19 @@ sealed trait Config {
   // see https://no-color.org/
   private[scalanative] lazy val noColor: Boolean = sys.env.contains("NO_COLOR")
 
+  /** Trap-based safepoints coordinate STW across mutators; they require
+   *  multithreaded linking and must stay off when `multithreadingSupport` is
+   *  false so nativelib and LLVM agree with [[codegen.Lower.depends]].
+   */
   private[scalanative] lazy val useTrapBasedGCYieldPoints =
     compilerConfig.gc match {
       case GC.Immix | GC.Commix | GC.Experimental =>
-        sys.env
-          .get("SCALANATIVE_GC_TRAP_BASED_YIELDPOINTS")
-          .map(_ == "1")
-          .getOrElse(compilerConfig.mode.isInstanceOf[Mode.Release])
+        compilerConfig.multithreadingSupport && {
+          sys.env
+            .get("SCALANATIVE_GC_TRAP_BASED_YIELDPOINTS")
+            .map(_ == "1")
+            .getOrElse(compilerConfig.mode.isInstanceOf[Mode.Release])
+        }
       case _ => false
     }
 

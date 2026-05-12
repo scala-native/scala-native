@@ -295,8 +295,8 @@ void scalanative_StackOverflowGuards_setup(bool isMainThread) {
         setupSignalHandler(SIGSEGV);
 #if (defined(__APPLE__) && defined(__MACH__))
         setupSignalHandler(SIGBUS);
-        isHandlerConfigured = true;
 #endif // Apple
+        isHandlerConfigured = true;
     }
 }
 

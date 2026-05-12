@@ -90,12 +90,11 @@ void scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState);
 // Check for StopTheWorld event and wait for its end if needed
 void scalanative_GC_yield();
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
-// Conditionally protected memory address used for STW events polling
-// Scala Native compiler would introduce load/store operations to location
-// pointed by this field. Under active StopTheWorld event these would trigger
-// thread execution suspension via exception handling mechanism
-// (signals/exceptionHandler)
-extern void **scalanative_GC_yieldpoint_trap;
+#include "shared/ThreadUtil.h"
+// Thread-local pointer to this mutator's own trap page (see MutatorThread).
+// Each pthread mmap/VirtualAlloc's a private page; the GC arms every mutator's
+// page during STW so faulting loads do not share one TLB/mprotect target.
+extern SN_ThreadLocal void **scalanative_GC_yieldpoint_trap;
 #endif
 
 void scalanative_GC_add_roots(void *addr_low, void *addr_high);
