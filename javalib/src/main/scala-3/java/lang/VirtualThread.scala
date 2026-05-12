@@ -359,8 +359,7 @@ private[java] final class VirtualThread(
       } else if (s == State.Unblocked) {
         requestRun()
         done = true
-      }
-      else done = true
+      } else done = true
     }
   }
 
