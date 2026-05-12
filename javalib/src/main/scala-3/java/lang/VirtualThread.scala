@@ -166,9 +166,22 @@ private[java] final class VirtualThread(
   private var timeoutGeneration: Long = 0L
   private var timeoutTaskResumeGeneration: Long = 0L
   @volatile private[java] var timeoutTask: VirtualThreadScheduler.Cancellable | Null = compiletime.uninitialized
+  private var pendingTimeout: PendingTimeout | Null = compiletime.uninitialized
+
+  private final class PendingTimeout(
+      val delay: scala.Long,
+      val unit: TimeUnit,
+      val resumeGeneration: Long,
+      val action: () => Unit
+  )
 
   private def cancelTimeoutTask(expectedResumeGeneration: Long): Unit =
     val task = timeoutLock.synchronized {
+      pendingTimeout match {
+        case pending: PendingTimeout if pending.resumeGeneration == expectedResumeGeneration =>
+          pendingTimeout = null
+        case _ => ()
+      }
       if (timeoutTaskResumeGeneration == expectedResumeGeneration) {
         timeoutGeneration += 1L
         timeoutTaskResumeGeneration = 0L
@@ -181,6 +194,27 @@ private[java] final class VirtualThread(
       case null => ()
       case task =>
         if (!task.isDone()) task.cancel()
+
+  private def deferTimeout(delay: scala.Long, unit: TimeUnit, resumeGeneration: Long)(onTimeout: => Unit): Unit =
+    timeoutLock.synchronized {
+      pendingTimeout = new PendingTimeout(delay, unit, resumeGeneration, () => onTimeout)
+    }
+
+  private def scheduleDeferredTimeout(): Unit = {
+    val request = timeoutLock.synchronized {
+      val pending = pendingTimeout
+      pendingTimeout = null
+      pending match {
+        case pending: PendingTimeout if isActiveResumeGeneration(pending.resumeGeneration) =>
+          pending
+        case _ => null
+      }
+    }
+    if (request != null)
+      scheduleTimeout(request.delay, request.unit, request.resumeGeneration) {
+        request.action()
+      }
+  }
 
   private def scheduleTimeout(delay: scala.Long, unit: TimeUnit, resumeGeneration: Long)(onTimeout: => Unit): Unit = {
     val timeoutToken = timeoutLock.synchronized {
@@ -252,7 +286,7 @@ private[java] final class VirtualThread(
       if (nanos == 0) {
         // Do not park the carrier; notify will call unblock(resume).
       } else {
-        scheduleTimeout(nanos, TimeUnit.NANOSECONDS, generation) {
+        deferTimeout(nanos, TimeUnit.NANOSECONDS, generation) {
           // Timeout wakeup follows the same path as notify wakeup.
           unblock(resume, generation)
         }
@@ -444,7 +478,7 @@ private[java] final class VirtualThread(
         }
         Continuations.suspend[Unit] { resumeContinuation =>
           val generation = publishResume(resumeContinuation)
-          scheduleTimeout(nanos, TimeUnit.NANOSECONDS, generation) {
+          deferTimeout(nanos, TimeUnit.NANOSECONDS, generation) {
             unpark(lazily = false) // timed park wakeup: use normal submit
           }
 
@@ -1004,6 +1038,7 @@ object VirtualThread {
                 (vt.state == State.Yielded || vt.state == State.Unparked || vt.state == State.Unblocked) &&
                   (vt.resumeExecution != null) && !didAfterYieldSubmit
               vt.unmount()
+              vt.scheduleDeferredTimeout()
               if (vt.carrierThread != null) {
                 vt.scheduler.afterYieldOnCarrier(vt.carrierThread.asInstanceOf[Thread])
               }
