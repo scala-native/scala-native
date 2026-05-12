@@ -29,7 +29,7 @@ class SubmissionPublisherLoops1Test {
   // val CONSUMERS = 64
   // val REPS = 9
   val ITEMS: Int = 1 << 16
-  val CONSUMERS = 32
+  val CONSUMERS = 16
   val REPS = 5
 
   val CAP: Int = Flow.defaultBufferSize()
@@ -100,7 +100,7 @@ class SubmissionPublisherLoops2Test {
   // val ITEMS: Int = 1 << 20
   // val CONSUMERS = 64
   // val REPS = 9
-  val ITEMS: Int = 1 << 8
+  val ITEMS: Int = 1 << 16
   val CONSUMERS = 16
   val REPS = 5
 
@@ -181,7 +181,7 @@ class SubmissionPublisherLoops3Test {
   // val PRODUCERS = 32
   // val CONSUMERS = 32
   // val REPS = 9
-  val ITEMS: Int = 1 << 8
+  val ITEMS: Int = 1 << 16
   val PRODUCERS = 8
   val CONSUMERS = 8
   val REPS = 5
@@ -268,7 +268,7 @@ class SubmissionPublisherLoops4Test {
   // val PROCESSORS = 32
   // val CONSUMERS = 32
   // val REPS = 9
-  val ITEMS: Int = 1 << 8
+  val ITEMS: Int = 1 << 16
   val PRODUCERS = 8
   val PROCESSORS = 8
   val CONSUMERS = 8
