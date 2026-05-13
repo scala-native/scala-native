@@ -116,7 +116,7 @@ class DelayQueue[E <: Delayed] extends AbstractQueue[E] with BlockingQueue[E] {
     lock.lock()
     try {
       q.offer(e)
-      if (q.peek() == e) {
+      if (q.peek().eq(e)) { // reference quality: exact element just inserted
         leader = null
         available.signal()
       }
