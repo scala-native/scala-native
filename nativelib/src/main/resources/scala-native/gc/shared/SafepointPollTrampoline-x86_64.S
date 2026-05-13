@@ -31,22 +31,23 @@ scalanative_gc_safepoint_poll_trampoline:
 #endif
     subq $SFPT_FRAME, %rsp
 
-    movdqa %xmm0, 0(%rsp)
-    movdqa %xmm1, 16(%rsp)
-    movdqa %xmm2, 32(%rsp)
-    movdqa %xmm3, 48(%rsp)
-    movdqa %xmm4, 64(%rsp)
-    movdqa %xmm5, 80(%rsp)
-    movdqa %xmm6, 96(%rsp)
-    movdqa %xmm7, 112(%rsp)
-    movdqa %xmm8, 128(%rsp)
-    movdqa %xmm9, 144(%rsp)
-    movdqa %xmm10, 160(%rsp)
-    movdqa %xmm11, 176(%rsp)
-    movdqa %xmm12, 192(%rsp)
-    movdqa %xmm13, 208(%rsp)
-    movdqa %xmm14, 224(%rsp)
-    movdqa %xmm15, 240(%rsp)
+    /* Safepoints can interrupt code at points where %rsp is not 16-byte aligned. */
+    movdqu %xmm0, 0(%rsp)
+    movdqu %xmm1, 16(%rsp)
+    movdqu %xmm2, 32(%rsp)
+    movdqu %xmm3, 48(%rsp)
+    movdqu %xmm4, 64(%rsp)
+    movdqu %xmm5, 80(%rsp)
+    movdqu %xmm6, 96(%rsp)
+    movdqu %xmm7, 112(%rsp)
+    movdqu %xmm8, 128(%rsp)
+    movdqu %xmm9, 144(%rsp)
+    movdqu %xmm10, 160(%rsp)
+    movdqu %xmm11, 176(%rsp)
+    movdqu %xmm12, 192(%rsp)
+    movdqu %xmm13, 208(%rsp)
+    movdqu %xmm14, 224(%rsp)
+    movdqu %xmm15, 240(%rsp)
 
     movq %rax, 272(%rsp)
     movq %rbx, 280(%rsp)
@@ -84,22 +85,22 @@ scalanative_gc_safepoint_poll_trampoline:
     movq 280(%rsp), %rbx
     movq 272(%rsp), %rax
 
-    movdqa 240(%rsp), %xmm15
-    movdqa 224(%rsp), %xmm14
-    movdqa 208(%rsp), %xmm13
-    movdqa 192(%rsp), %xmm12
-    movdqa 176(%rsp), %xmm11
-    movdqa 160(%rsp), %xmm10
-    movdqa 144(%rsp), %xmm9
-    movdqa 128(%rsp), %xmm8
-    movdqa 112(%rsp), %xmm7
-    movdqa 96(%rsp), %xmm6
-    movdqa 80(%rsp), %xmm5
-    movdqa 64(%rsp), %xmm4
-    movdqa 48(%rsp), %xmm3
-    movdqa 32(%rsp), %xmm2
-    movdqa 16(%rsp), %xmm1
-    movdqa 0(%rsp), %xmm0
+    movdqu 240(%rsp), %xmm15
+    movdqu 224(%rsp), %xmm14
+    movdqu 208(%rsp), %xmm13
+    movdqu 192(%rsp), %xmm12
+    movdqu 176(%rsp), %xmm11
+    movdqu 160(%rsp), %xmm10
+    movdqu 144(%rsp), %xmm9
+    movdqu 128(%rsp), %xmm8
+    movdqu 112(%rsp), %xmm7
+    movdqu 96(%rsp), %xmm6
+    movdqu 80(%rsp), %xmm5
+    movdqu 64(%rsp), %xmm4
+    movdqu 48(%rsp), %xmm3
+    movdqu 32(%rsp), %xmm2
+    movdqu 16(%rsp), %xmm1
+    movdqu 0(%rsp), %xmm0
 
     movq 256(%rsp), %r10
     addq $SFPT_FRAME, %rsp
