@@ -455,14 +455,14 @@ class DelayQueue[E <: Delayed] extends AbstractQueue[E] with BlockingQueue[E] {
   /*
    * Identity-based version for use in Itr.remove.
    */
-  def removeEQ(o: Any): Unit = {
+  private def removeEQ(o: AnyRef): Unit = {
     val lock = this.lock
     lock.lock()
     try {
       val it = q.iterator()
       var breakSeen = false
       while (it.hasNext() && !breakSeen) {
-        if (o == it.next()) {
+        if (o.eq(it.next())) {
           it.remove()
           breakSeen = true
         }
