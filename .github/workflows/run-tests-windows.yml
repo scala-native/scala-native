@@ -21,6 +21,10 @@ jobs:
       fail-fast: false
       matrix:
         scala: [2.12, 2.13, 3]
+        build-mode: [debug]
+        include:
+          - scala: 3
+            build-mode: release-fast
     steps:
       # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
       - name: Setup git config
@@ -36,6 +40,7 @@ jobs:
         env:
           SCALANATIVE_INCLUDE_DIRS: ${{steps.setup.outputs.vcpkg-dir}}\include
           SCALANATIVE_LIB_DIRS: ${{steps.setup.outputs.vcpkg-dir}}\lib
+          SCALANATIVE_MODE: ${{ matrix.build-mode }}
         run: sbt "test-gc ${{ matrix.scala }}"
 
       # None GC takes too much memory on Windows to execute partest JUnit tests
@@ -46,6 +51,7 @@ jobs:
         timeout-minutes: 45
         run: >
           set SCALANATIVE_GC=${{matrix.gc}}&
+          set SCALANATIVE_MODE=${{ matrix.build-mode }}&
           set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
           set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
           set SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1&
@@ -61,6 +67,7 @@ jobs:
         timeout-minutes: 45
         run: >
           set SCALANATIVE_GC=${{matrix.gc}}&
+          set SCALANATIVE_MODE=${{ matrix.build-mode }}&
           set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
           set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
           set SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1&

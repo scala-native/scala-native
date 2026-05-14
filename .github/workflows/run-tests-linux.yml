@@ -85,13 +85,17 @@ jobs:
     name: Test runtime
     if: github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
     runs-on: ubuntu-22.04
-    needs: [prepare-llvm, tests-tools]
+    needs: [prepare-llvm]
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
       fail-fast: false
       matrix:
         scala: [3, 2.13, 2.12, 3-next]
+        build-mode: [debug]
+        include:
+          - scala: 3
+            build-mode: release-fast
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/linux-setup-env
@@ -104,6 +108,7 @@ jobs:
         timeout-minutes: 45
         env:
           SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
+          SCALANATIVE_MODE: ${{ matrix.build-mode }}
         run: sbt "test-runtime ${{ matrix.scala }}"      
 
   test-runtime-ext:
