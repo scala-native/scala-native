@@ -32,6 +32,10 @@ jobs:
       fail-fast: false
       matrix:
         scala: [3, 2.13, 2.12]
+        build-mode: [debug]
+        include:
+          - scala: 3
+            build-mode: release-fast
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/macos-setup-env
@@ -43,12 +47,15 @@ jobs:
         run: brew install bdw-gc
       - name: Test GC compilation
         timeout-minutes: 45
+        env:
+          SCALANATIVE_MODE: ${{ matrix.build-mode }}
         run: sbt "test-gc ${{ matrix.scala }}"
     
       - name: Run tests
         timeout-minutes: 45
         env:
           SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
+          SCALANATIVE_MODE: ${{ matrix.build-mode }}
         run: sbt "test-runtime ${{matrix.scala}}"
 
       - name: Test partests infrastructure
