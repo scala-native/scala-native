@@ -133,7 +133,7 @@ static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
 }
 #else
 #define THREAD_WAKEUP_SIGNAL SIGCONT
-static sigset_t threadWakupSignals = {};
+static sigset_t threadWakupSignals;
 static struct sigaction previousSigsegvHandler = {};
 #ifdef __APPLE__
 static struct sigaction previousSigbusHandler = {};
