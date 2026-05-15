@@ -6,12 +6,16 @@ import java.util.function.Supplier
 import scala.collection.mutable
 import scala.concurrent._
 
+import scala.scalanative.build.ScalaNativeTracer
 import scala.scalanative.codegen.PlatformInfo
 import scala.scalanative.linker._
 import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.util.ScopedVar
 
-private[scalanative] class Interflow(val config: build.Config)(implicit
+private[scalanative] class Interflow(
+    val config: build.Config,
+    val tracer: ScalaNativeTracer
+)(implicit
     val analysis: ReachabilityAnalysis.Result
 ) extends Visit
     with Opt
@@ -192,10 +196,14 @@ private[scalanative] class Interflow(val config: build.Config)(implicit
 
 object Interflow {
 
-  def optimize(config: build.Config, analysis: ReachabilityAnalysis.Result)(
-      implicit ec: ExecutionContext
+  def optimize(
+      config: build.Config,
+      analysis: ReachabilityAnalysis.Result,
+      tracer: ScalaNativeTracer
+  )(implicit
+      ec: ExecutionContext
   ): Future[Seq[nir.Defn]] = {
-    val interflow = new Interflow(config)(analysis)
+    val interflow = new Interflow(config, tracer)(analysis)
     interflow.visitEntries()
     interflow
       .visitLoop()

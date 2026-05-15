@@ -214,7 +214,8 @@ object Build {
         log.warn(
           "Unable to test tools using Scala Native yet - missing javalib dependencies / compiler integration"
         )
-      }
+      },
+      libraryDependencies += "com.indoorvivants" %%% "fxprof-tracer" % "0.0.2"
     )
     .withJUnitPlugin
     .withNativeCompilerPlugin
@@ -234,6 +235,7 @@ object Build {
     MultiScalaProject("tools", platform = MultiScalaProject.JVM)
       .settings(
         libraryDependencies ++= Deps.JUnitJvm,
+        libraryDependencies += "com.indoorvivants" %%% "fxprof-tracer" % "0.0.2",
         Test / fork := true
       )
       .withCommonTools
@@ -755,6 +757,9 @@ object Build {
       .withNativeCompilerPlugin
       .withScalaStandardLibrary
       .dependsOn(javalib, testInterface % "test", junitRuntime % "test")
+      .settings(
+        nativeConfig ~= { (_).withBuildTracing(true) }
+      )
 
 // Testing infrastructure ------------------------------------------------
   lazy val testingCompilerInterface =

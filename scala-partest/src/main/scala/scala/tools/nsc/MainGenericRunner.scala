@@ -70,7 +70,33 @@ class MainGenericRunner {
         .withBaseDir(dir)
 
       Scope { implicit s =>
-        val build = Build.build(config)
+        import fxprof._, tracer._
+        // Setup the metadata for the profile
+        val meta = ProfileMeta(
+          interval = 1.0,
+          startTime = System.currentTimeMillis(),
+          processType = 1.0,
+          product = ProfileMeta_Product.Other("scala-native-2"),
+          stackwalk = ProfileMeta_Stackwalk.False,
+          version = 1.0,
+          preprocessedProfileVersion = 58
+        )
+          // Categories defined below can be used to start spans
+          // if a span is started with a category that is not defined here, "default" will be used
+          // "default" is added implicitly to the profile when it's serialised
+          .withCategories(
+            Some(
+              Vector(
+                Category("linking", CategoryColor.Blue),
+                Category("emitting", CategoryColor.Green),
+                Category("optimising", CategoryColor.Red)
+              )
+            )
+          )
+
+        val tracer = Tracer(meta)
+
+        val build = Build.build(config.withTracer(tracer))
         Await.result(build, Duration.Inf)
       }
     }

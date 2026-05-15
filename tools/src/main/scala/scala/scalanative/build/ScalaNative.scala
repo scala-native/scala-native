@@ -45,7 +45,7 @@ private[scalanative] object ScalaNative {
       .getOrElse("detect")
     val linkingMsg = s"Linking (multithreadingEnabled=${mtSupport})"
     config.logger.time(linkingMsg) {
-      Link(config, entries)
+      config.tracing.use(Tracing.REACH)(t => Link(config, entries, t))
     }
   })
 
@@ -62,9 +62,15 @@ private[scalanative] object ScalaNative {
           dumpFile = "optimized",
           forceQuickCheck = false
         ) {
-          Interflow
-            .optimize(config, analysis)
-            .map(Link(config, analysis.entries, _))
+          config.tracing.useAsync(Tracing.INTERFLOW) { t =>
+            Interflow
+              .optimize(config, analysis, t)
+              .map(result =>
+                config.tracing.use(Tracing.INTERFLOW_RELINK) { t =>
+                  Link(config, analysis.entries, result, t)
+                }
+              )
+          }
         }
       }
     else {
@@ -207,7 +213,7 @@ private[scalanative] object ScalaNative {
   /** Given low-level assembly, emit LLVM IR for it to the buildDirectory. */
   def codegen(config: Config, analysis: ReachabilityAnalysis.Result)(implicit
       ec: ExecutionContext
-  ): Future[CodeGen.IRGenerators] = {
+  ): Future[Seq[Path]] = {
     val withMetadata =
       if (config.compilerConfig.sourceLevelDebuggingConfig.enabled)
         " (with debug metadata)"
@@ -215,7 +221,6 @@ private[scalanative] object ScalaNative {
     val codeGen = CodeGen(config, analysis)
     config.logger.timeAsync(s"Generating intermediate code$withMetadata") {
       codeGen
-        .flatMap(Future.sequence(_))
         .andThen {
           case Success(paths) =>
             config.logger.info(s"Produced ${paths.length} LLVM IR files")
