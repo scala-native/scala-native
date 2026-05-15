@@ -136,7 +136,11 @@ static bool detectStackBounds(void *onStackPointer) {
         currentThreadInfo.stackTop = alignToPageStart(onStackPointer);
         size_t usedStackSize = stackBottom - currentThreadInfo.stackTop;
         currentThreadInfo.stackSize = usedStackSize;
-        currentThreadInfo.maxStackSize = size - guardSize;
+        // Linux pthread_attr_getstack reports the currently-mapped region
+        // for the main thread, not RLIMIT_STACK
+        if (!currentThreadInfo.isMainThread) {
+            currentThreadInfo.maxStackSize = size - guardSize;
+        }
         if (currentThreadInfo.stackSize > currentThreadInfo.maxStackSize) {
             currentThreadInfo.stackSize = currentThreadInfo.maxStackSize;
         }
