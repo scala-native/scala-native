@@ -42,7 +42,8 @@ final class HexFormat private (
     else new HexFormat(delimiterString, prefixString, suffixString, true)
 
   def withLowerCase(): HexFormat =
-    if (uppercase) new HexFormat(delimiterString, prefixString, suffixString, false)
+    if (uppercase)
+      new HexFormat(delimiterString, prefixString, suffixString, false)
     else this
 
   def delimiter(): String = delimiterString
@@ -140,7 +141,11 @@ final class HexFormat private (
       parseHexWithMarkup(string, fromIndex, length)
   }
 
-  def parseHex(chars: Array[Char], fromIndex: Int, toIndex: Int): Array[Byte] = {
+  def parseHex(
+      chars: Array[Char],
+      fromIndex: Int,
+      toIndex: Int
+  ): Array[Byte] = {
     Objects.checkFromToIndex(fromIndex, toIndex, chars.length)
 
     val length = toIndex - fromIndex
@@ -224,7 +229,8 @@ final class HexFormat private (
       "\", suffix: \"" + suffixString + "\""
 
   private def hasNoMarkup: Boolean =
-    delimiterString.isEmpty() && prefixString.isEmpty() && suffixString.isEmpty()
+    delimiterString.isEmpty() && prefixString.isEmpty() && suffixString
+      .isEmpty()
 
   private def formattedLength(byteCount: Int): Int = {
     val valueLength = prefixString.length() + 2 + suffixString.length()
@@ -267,11 +273,10 @@ final class HexFormat private (
     var sourceIndex = fromIndex
     var destIndex = 0
     while (destIndex < bytes.length) {
-      bytes(destIndex) =
-        HexFormat.fromHexDigits(
-          string.charAt(sourceIndex),
-          string.charAt(sourceIndex + 1)
-        )
+      bytes(destIndex) = HexFormat.fromHexDigits(
+        string.charAt(sourceIndex),
+        string.charAt(sourceIndex + 1)
+      )
       sourceIndex += 2
       destIndex += 1
     }
@@ -309,11 +314,10 @@ final class HexFormat private (
     var destIndex = 0
     while (destIndex < byteCount) {
       sourceIndex = requireMatch(string, sourceIndex, prefixString)
-      bytes(destIndex) =
-        HexFormat.fromHexDigits(
-          string.charAt(sourceIndex),
-          string.charAt(sourceIndex + 1)
-        )
+      bytes(destIndex) = HexFormat.fromHexDigits(
+        string.charAt(sourceIndex),
+        string.charAt(sourceIndex + 1)
+      )
       sourceIndex += 2
       sourceIndex = requireMatch(string, sourceIndex, suffixString)
       if (destIndex != byteCount - 1)
@@ -458,7 +462,9 @@ object HexFormat {
     Objects.checkFromToIndex(fromIndex, toIndex, string.length())
     val length = toIndex - fromIndex
     if (length > 8)
-      throw new IllegalArgumentException("string length greater than 8: " + length)
+      throw new IllegalArgumentException(
+        "string length greater than 8: " + length
+      )
 
     var value = 0
     var i = fromIndex
@@ -480,7 +486,9 @@ object HexFormat {
     Objects.checkFromToIndex(fromIndex, toIndex, string.length())
     val length = toIndex - fromIndex
     if (length > 16)
-      throw new IllegalArgumentException("string length greater than 16: " + length)
+      throw new IllegalArgumentException(
+        "string length greater than 16: " + length
+      )
 
     var value = 0L
     var i = fromIndex

@@ -20,7 +20,11 @@ class HexFormatTest {
     assertFalse(default.isUpperCase())
 
     val custom =
-      HexFormat.ofDelimiter(", ").withPrefix("#").withSuffix(";").withUpperCase()
+      HexFormat
+        .ofDelimiter(", ")
+        .withPrefix("#")
+        .withSuffix(";")
+        .withUpperCase()
     assertEquals(", ", custom.delimiter())
     assertEquals("#", custom.prefix())
     assertEquals(";", custom.suffix())
@@ -98,7 +102,9 @@ class HexFormatTest {
     )
     assertThrows(
       classOf[NullPointerException],
-      HexFormat.of().formatHex(new jl.StringBuilder(), null.asInstanceOf[Array[Byte]])
+      HexFormat
+        .of()
+        .formatHex(new jl.StringBuilder(), null.asInstanceOf[Array[Byte]])
     )
 
     val failure = new IOException("boom")
@@ -133,7 +139,10 @@ class HexFormatTest {
       custom.parseHex(CharBuffer.wrap("__<0a>:<0B>__"), 2, 11)
     )
 
-    assertThrows(classOf[IllegalArgumentException], HexFormat.of().parseHex("0"))
+    assertThrows(
+      classOf[IllegalArgumentException],
+      HexFormat.of().parseHex("0")
+    )
     assertThrows(classOf[IllegalArgumentException], custom.parseHex("<0a><0b>"))
     assertThrows(classOf[IllegalArgumentException], custom.parseHex("<0g>"))
     assertThrows(
@@ -147,7 +156,10 @@ class HexFormatTest {
 
     val upperPrefix = HexFormat.of().withPrefix("0X")
     assertBytesEquals(Array[Byte](10), upperPrefix.parseHex("0X0a"))
-    assertThrows(classOf[IllegalArgumentException], upperPrefix.parseHex("0x0a"))
+    assertThrows(
+      classOf[IllegalArgumentException],
+      upperPrefix.parseHex("0x0a")
+    )
   }
 
   @Test def parseHexCharArrayRange(): Unit = {
@@ -228,7 +240,10 @@ class HexFormatTest {
     assertFalse(HexFormat.isHexDigit(0x10000))
     assertThrows(classOf[NumberFormatException], HexFormat.fromHexDigit(-1))
     assertThrows(classOf[NumberFormatException], HexFormat.fromHexDigit('g'))
-    assertThrows(classOf[NumberFormatException], HexFormat.fromHexDigit(0x10000))
+    assertThrows(
+      classOf[NumberFormatException],
+      HexFormat.fromHexDigit(0x10000)
+    )
 
     assertEquals(0, HexFormat.fromHexDigits(""))
     assertEquals(0x1234abcd, HexFormat.fromHexDigits("xx1234abcdyy", 2, 10))
@@ -240,7 +255,10 @@ class HexFormatTest {
     )
     assertEquals(-1L, HexFormat.fromHexDigitsToLong("ffffffffffffffff"))
 
-    assertThrows(classOf[IllegalArgumentException], HexFormat.fromHexDigits("100000000"))
+    assertThrows(
+      classOf[IllegalArgumentException],
+      HexFormat.fromHexDigits("100000000")
+    )
     assertThrows(
       classOf[IllegalArgumentException],
       HexFormat.fromHexDigitsToLong("10000000000000000")
@@ -268,14 +286,21 @@ class HexFormatTest {
       HexFormat.ofDelimiter(":"),
       HexFormat.ofDelimiter(":").withUpperCase(),
       HexFormat.of().withPrefix("0x").withSuffix(";"),
-      HexFormat.ofDelimiter(", ").withPrefix("#").withSuffix(";").withUpperCase()
+      HexFormat
+        .ofDelimiter(", ")
+        .withPrefix("#")
+        .withSuffix(";")
+        .withUpperCase()
     )
 
     for (format <- formats)
       assertBytesEquals(bytes, format.parseHex(format.formatHex(bytes)))
   }
 
-  private def assertBytesEquals(expected: Array[Byte], actual: Array[Byte]): Unit =
+  private def assertBytesEquals(
+      expected: Array[Byte],
+      actual: Array[Byte]
+  ): Unit =
     assertTrue(
       "expected: " + Arrays.toString(expected) +
         ", actual: " + Arrays.toString(actual),
