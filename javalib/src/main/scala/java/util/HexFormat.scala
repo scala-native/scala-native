@@ -403,21 +403,21 @@ object HexFormat {
   private[util] val UpperCaseDigits: Array[Char] =
     "0123456789ABCDEF".toCharArray()
 
-  private val DigitValues: Array[Int] = {
-    val values = Array.fill[Int](128)(-1)
+  private val DigitValues: Array[Byte] = {
+    val values = Array.fill[Byte](128)(-1)
     var ch = '0'
     while (ch <= '9') {
-      values(ch) = ch - '0'
+      values(ch) = (ch - '0').toByte
       ch = (ch + 1).toChar
     }
     ch = 'A'
     while (ch <= 'F') {
-      values(ch) = ch - 'A' + 10
+      values(ch) = (ch - 'A' + 10).toByte
       ch = (ch + 1).toChar
     }
     ch = 'a'
     while (ch <= 'f') {
-      values(ch) = ch - 'a' + 10
+      values(ch) = (ch - 'a' + 10).toByte
       ch = (ch + 1).toChar
     }
     values
@@ -435,9 +435,8 @@ object HexFormat {
 
   def fromHexDigit(ch: Int): Int = {
     if (ch >= 0 && ch < DigitValues.length) {
-      val value = DigitValues(ch)
-      if (value >= 0)
-        return value
+      val value = DigitValues(ch).toInt
+      if (value >= 0) return value
     }
 
     {
