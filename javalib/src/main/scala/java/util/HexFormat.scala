@@ -403,25 +403,15 @@ object HexFormat {
   private[util] val UpperCaseDigits: Array[Char] =
     "0123456789ABCDEF".toCharArray()
 
-  private val DigitValues: Array[Byte] = {
-    val values = Array.fill[Byte](128)(-1)
-    var ch = '0'
-    while (ch <= '9') {
-      values(ch) = (ch - '0').toByte
-      ch = (ch + 1).toChar
-    }
-    ch = 'A'
-    while (ch <= 'F') {
-      values(ch) = (ch - 'A' + 10).toByte
-      ch = (ch + 1).toChar
-    }
-    ch = 'a'
-    while (ch <= 'f') {
-      values(ch) = (ch - 'a' + 10).toByte
-      ch = (ch + 1).toChar
-    }
-    values
-  }
+  private val DigitValues: Array[Byte] = Array[Byte](
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, -1,
+    -1, -1, -1, -1, -1, -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+  )
 
   private val Default = new HexFormat("", "", "", false)
 
