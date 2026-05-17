@@ -10,7 +10,7 @@ import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
-class HexFormatTest {
+class HexFormatTestOnJDK17 {
 
   @Test def factoriesWithersAccessorsAndObjectMethods(): Unit = {
     val default = HexFormat.of()
