@@ -63,30 +63,46 @@ final class HexFormat private (
     val length = toIndex - fromIndex
     if (length == 0) ""
     else if (hasNoMarkup) {
+      val table = digits
       val chars = new Array[Char](length << 1)
       var byteIndex = fromIndex
       var charIndex = 0
       while (byteIndex < toIndex) {
         val value = bytes(byteIndex) & 0xff
-        chars(charIndex) = digits(value >>> 4)
-        chars(charIndex + 1) = digits(value & 0x0f)
+        chars(charIndex) = table(value >>> 4)
+        chars(charIndex + 1) = table(value & 0x0f)
         byteIndex += 1
         charIndex += 2
       }
       new String(chars)
     } else {
+      val table = digits
+      val prefix = prefixString
+      val suffix = suffixString
+      val delimiter = delimiterString
+      val prefixLen = prefix.length()
+      val suffixLen = suffix.length()
+      val delimiterLen = delimiter.length()
       val chars = new Array[Char](formattedLength(length))
       var byteIndex = fromIndex
       var charIndex = 0
       while (byteIndex < toIndex) {
-        if (byteIndex != fromIndex)
-          charIndex = putString(chars, charIndex, delimiterString)
-        charIndex = putString(chars, charIndex, prefixString)
+        if (byteIndex != fromIndex && delimiterLen != 0) {
+          delimiter.getChars(0, delimiterLen, chars, charIndex)
+          charIndex += delimiterLen
+        }
+        if (prefixLen != 0) {
+          prefix.getChars(0, prefixLen, chars, charIndex)
+          charIndex += prefixLen
+        }
         val value = bytes(byteIndex) & 0xff
-        chars(charIndex) = digits(value >>> 4)
-        chars(charIndex + 1) = digits(value & 0x0f)
+        chars(charIndex) = table(value >>> 4)
+        chars(charIndex + 1) = table(value & 0x0f)
         charIndex += 2
-        charIndex = putString(chars, charIndex, suffixString)
+        if (suffixLen != 0) {
+          suffix.getChars(0, suffixLen, chars, charIndex)
+          charIndex += suffixLen
+        }
         byteIndex += 1
       }
       new String(chars)
@@ -105,17 +121,36 @@ final class HexFormat private (
     Objects.requireNonNull(out, "out")
     Objects.checkFromToIndex(fromIndex, toIndex, bytes.length)
 
+    val table = digits
     try {
-      var byteIndex = fromIndex
-      while (byteIndex < toIndex) {
-        if (byteIndex != fromIndex)
-          appendString(out, delimiterString)
-        appendString(out, prefixString)
-        val value = bytes(byteIndex) & 0xff
-        out.append(digits(value >>> 4))
-        out.append(digits(value & 0x0f))
-        appendString(out, suffixString)
-        byteIndex += 1
+      if (hasNoMarkup) {
+        var byteIndex = fromIndex
+        while (byteIndex < toIndex) {
+          val value = bytes(byteIndex) & 0xff
+          out.append(table(value >>> 4))
+          out.append(table(value & 0x0f))
+          byteIndex += 1
+        }
+      } else {
+        val prefix = prefixString
+        val suffix = suffixString
+        val delimiter = delimiterString
+        val hasPrefix = !prefix.isEmpty()
+        val hasSuffix = !suffix.isEmpty()
+        val hasDelimiter = !delimiter.isEmpty()
+        var byteIndex = fromIndex
+        while (byteIndex < toIndex) {
+          if (byteIndex != fromIndex && hasDelimiter)
+            out.append(delimiter)
+          if (hasPrefix)
+            out.append(prefix)
+          val value = bytes(byteIndex) & 0xff
+          out.append(table(value >>> 4))
+          out.append(table(value & 0x0f))
+          if (hasSuffix)
+            out.append(suffix)
+          byteIndex += 1
+        }
       }
     } catch {
       case e: IOException => throw new UncheckedIOException(e.getMessage(), e)
@@ -243,17 +278,6 @@ final class HexFormat private (
     total.toInt
   }
 
-  private def putString(chars: Array[Char], index: Int, string: String): Int = {
-    val length = string.length()
-    string.getChars(0, length, chars, index)
-    index + length
-  }
-
-  private def appendString(out: jl.Appendable, string: String): Unit = {
-    if (!string.isEmpty())
-      out.append(string)
-  }
-
   private def twoDigits(value: Int): String = {
     val chars = new Array[Char](2)
     chars(0) = digits(value >>> 4)
@@ -270,13 +294,18 @@ final class HexFormat private (
       throw new IllegalArgumentException("string length not even: " + length)
 
     val bytes = new Array[Byte](length >>> 1)
+    val table = HexFormat.DigitValues
+    val tableLen = table.length
     var sourceIndex = fromIndex
     var destIndex = 0
     while (destIndex < bytes.length) {
-      bytes(destIndex) = HexFormat.fromHexDigits(
-        string.charAt(sourceIndex),
-        string.charAt(sourceIndex + 1)
-      )
+      val high = string.charAt(sourceIndex)
+      val low = string.charAt(sourceIndex + 1)
+      val hi = if (high < tableLen) table(high).toInt else -1
+      val lo = if (low < tableLen) table(low).toInt else -1
+      if ((hi | lo) < 0)
+        HexFormat.throwBadDigitPair(high, low, hi)
+      bytes(destIndex) = ((hi << 4) | lo).toByte
       sourceIndex += 2
       destIndex += 1
     }
@@ -292,11 +321,18 @@ final class HexFormat private (
       throw new IllegalArgumentException("string length not even: " + length)
 
     val bytes = new Array[Byte](length >>> 1)
+    val table = HexFormat.DigitValues
+    val tableLen = table.length
     var sourceIndex = fromIndex
     var destIndex = 0
     while (destIndex < bytes.length) {
-      bytes(destIndex) =
-        HexFormat.fromHexDigits(chars(sourceIndex), chars(sourceIndex + 1))
+      val high = chars(sourceIndex)
+      val low = chars(sourceIndex + 1)
+      val hi = if (high < tableLen) table(high).toInt else -1
+      val lo = if (low < tableLen) table(low).toInt else -1
+      if ((hi | lo) < 0)
+        HexFormat.throwBadDigitPair(high, low, hi)
+      bytes(destIndex) = ((hi << 4) | lo).toByte
       sourceIndex += 2
       destIndex += 1
     }
@@ -310,18 +346,31 @@ final class HexFormat private (
   ): Array[Byte] = {
     val byteCount = parsedByteCount(length)
     val bytes = new Array[Byte](byteCount)
+    val table = HexFormat.DigitValues
+    val tableLen = table.length
+    val prefix = prefixString
+    val suffix = suffixString
+    val delimiter = delimiterString
+    val prefixLen = prefix.length()
+    val suffixLen = suffix.length()
+    val delimiterLen = delimiter.length()
     var sourceIndex = fromIndex
     var destIndex = 0
     while (destIndex < byteCount) {
-      sourceIndex = requireMatch(string, sourceIndex, prefixString)
-      bytes(destIndex) = HexFormat.fromHexDigits(
-        string.charAt(sourceIndex),
-        string.charAt(sourceIndex + 1)
-      )
+      if (prefixLen != 0)
+        sourceIndex = requireMatch(string, sourceIndex, prefix, prefixLen)
+      val high = string.charAt(sourceIndex)
+      val low = string.charAt(sourceIndex + 1)
+      val hi = if (high < tableLen) table(high).toInt else -1
+      val lo = if (low < tableLen) table(low).toInt else -1
+      if ((hi | lo) < 0)
+        HexFormat.throwBadDigitPair(high, low, hi)
+      bytes(destIndex) = ((hi << 4) | lo).toByte
       sourceIndex += 2
-      sourceIndex = requireMatch(string, sourceIndex, suffixString)
-      if (destIndex != byteCount - 1)
-        sourceIndex = requireMatch(string, sourceIndex, delimiterString)
+      if (suffixLen != 0)
+        sourceIndex = requireMatch(string, sourceIndex, suffix, suffixLen)
+      if (destIndex != byteCount - 1 && delimiterLen != 0)
+        sourceIndex = requireMatch(string, sourceIndex, delimiter, delimiterLen)
       destIndex += 1
     }
     bytes
@@ -334,16 +383,31 @@ final class HexFormat private (
   ): Array[Byte] = {
     val byteCount = parsedByteCount(length)
     val bytes = new Array[Byte](byteCount)
+    val table = HexFormat.DigitValues
+    val tableLen = table.length
+    val prefix = prefixString
+    val suffix = suffixString
+    val delimiter = delimiterString
+    val prefixLen = prefix.length()
+    val suffixLen = suffix.length()
+    val delimiterLen = delimiter.length()
     var sourceIndex = fromIndex
     var destIndex = 0
     while (destIndex < byteCount) {
-      sourceIndex = requireMatch(chars, sourceIndex, prefixString)
-      bytes(destIndex) =
-        HexFormat.fromHexDigits(chars(sourceIndex), chars(sourceIndex + 1))
+      if (prefixLen != 0)
+        sourceIndex = requireMatch(chars, sourceIndex, prefix, prefixLen)
+      val high = chars(sourceIndex)
+      val low = chars(sourceIndex + 1)
+      val hi = if (high < tableLen) table(high).toInt else -1
+      val lo = if (low < tableLen) table(low).toInt else -1
+      if ((hi | lo) < 0)
+        HexFormat.throwBadDigitPair(high, low, hi)
+      bytes(destIndex) = ((hi << 4) | lo).toByte
       sourceIndex += 2
-      sourceIndex = requireMatch(chars, sourceIndex, suffixString)
-      if (destIndex != byteCount - 1)
-        sourceIndex = requireMatch(chars, sourceIndex, delimiterString)
+      if (suffixLen != 0)
+        sourceIndex = requireMatch(chars, sourceIndex, suffix, suffixLen)
+      if (destIndex != byteCount - 1 && delimiterLen != 0)
+        sourceIndex = requireMatch(chars, sourceIndex, delimiter, delimiterLen)
       destIndex += 1
     }
     bytes
@@ -370,29 +434,31 @@ final class HexFormat private (
   private def requireMatch(
       string: jl.CharSequence,
       index: Int,
-      expected: String
+      expected: String,
+      expectedLen: Int
   ): Int = {
     var i = 0
-    while (i < expected.length()) {
+    while (i < expectedLen) {
       if (string.charAt(index + i) != expected.charAt(i))
         throw HexFormat.invalidFormatException()
       i += 1
     }
-    index + expected.length()
+    index + expectedLen
   }
 
   private def requireMatch(
       chars: Array[Char],
       index: Int,
-      expected: String
+      expected: String,
+      expectedLen: Int
   ): Int = {
     var i = 0
-    while (i < expected.length()) {
+    while (i < expectedLen) {
       if (chars(index + i) != expected.charAt(i))
         throw HexFormat.invalidFormatException()
       i += 1
     }
-    index + expected.length()
+    index + expectedLen
   }
 }
 
@@ -455,10 +521,15 @@ object HexFormat {
         "string length greater than 8: " + length
       )
 
+    val table = DigitValues
+    val tableLen = table.length
     var value = 0
     var i = fromIndex
     while (i < toIndex) {
-      value = (value << 4) | fromHexDigit(string.charAt(i))
+      val ch = string.charAt(i)
+      val v = if (ch < tableLen) table(ch).toInt else -1
+      if (v < 0) fromHexDigit(ch.toInt)
+      value = (value << 4) | v
       i += 1
     }
     value
@@ -479,17 +550,28 @@ object HexFormat {
         "string length greater than 16: " + length
       )
 
+    val table = DigitValues
+    val tableLen = table.length
     var value = 0L
     var i = fromIndex
     while (i < toIndex) {
-      value = (value << 4) | fromHexDigit(string.charAt(i)).toLong
+      val ch = string.charAt(i)
+      val v = if (ch < tableLen) table(ch).toInt else -1
+      if (v < 0) fromHexDigit(ch.toInt)
+      value = (value << 4) | v.toLong
       i += 1
     }
     value
   }
 
-  private[util] def fromHexDigits(high: Char, low: Char): Byte =
-    ((fromHexDigit(high) << 4) | fromHexDigit(low)).toByte
+  private[util] def throwBadDigitPair(high: Char, low: Char, hi: Int): Nothing = {
+    if (hi < 0) {
+      fromHexDigit(high.toInt)
+    } else {
+      fromHexDigit(low.toInt)
+    }
+    throw new AssertionError("unreachable")
+  }
 
   private[util] def invalidFormatException(): IllegalArgumentException =
     new IllegalArgumentException(
