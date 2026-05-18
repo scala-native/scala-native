@@ -3,7 +3,10 @@ package java.util
 import java.io.{IOException, UncheckedIOException}
 import java.{lang => jl}
 
-final class HexFormat private (
+import scala.annotation.nowarn
+
+@nowarn
+final case class HexFormat private (
     private val delimiterString: String,
     private val prefixString: String,
     private val suffixString: String,
@@ -14,37 +17,19 @@ final class HexFormat private (
     if (uppercase) HexFormat.UpperCaseDigits else HexFormat.LowerCaseDigits
 
   def withDelimiter(delimiter: String): HexFormat =
-    new HexFormat(
-      Objects.requireNonNull(delimiter, "delimiter"),
-      prefixString,
-      suffixString,
-      uppercase
-    )
+    copy(delimiterString = Objects.requireNonNull(delimiter, "delimiter"))
 
   def withPrefix(prefix: String): HexFormat =
-    new HexFormat(
-      delimiterString,
-      Objects.requireNonNull(prefix, "prefix"),
-      suffixString,
-      uppercase
-    )
+    copy(prefixString = Objects.requireNonNull(prefix, "prefix"))
 
   def withSuffix(suffix: String): HexFormat =
-    new HexFormat(
-      delimiterString,
-      prefixString,
-      Objects.requireNonNull(suffix, "suffix"),
-      uppercase
-    )
+    copy(suffixString = Objects.requireNonNull(suffix, "suffix"))
 
   def withUpperCase(): HexFormat =
-    if (uppercase) this
-    else new HexFormat(delimiterString, prefixString, suffixString, true)
+    if (uppercase) this else copy(uppercase = true)
 
   def withLowerCase(): HexFormat =
-    if (uppercase)
-      new HexFormat(delimiterString, prefixString, suffixString, false)
-    else this
+    if (uppercase) copy(uppercase = false) else this
 
   def delimiter(): String = delimiterString
 
@@ -64,48 +49,29 @@ final class HexFormat private (
     if (length == 0) ""
     else if (hasNoMarkup) {
       val table = digits
-      val chars = new Array[Char](length << 1)
+      val sb = new jl.StringBuilder(length << 1)
       var byteIndex = fromIndex
-      var charIndex = 0
       while (byteIndex < toIndex) {
         val value = bytes(byteIndex) & 0xff
-        chars(charIndex) = table(value >>> 4)
-        chars(charIndex + 1) = table(value & 0x0f)
+        sb.append(table(value >>> 4))
+        sb.append(table(value & 0x0f))
         byteIndex += 1
-        charIndex += 2
       }
-      new String(chars)
+      sb.toString()
     } else {
       val table = digits
-      val prefix = prefixString
-      val suffix = suffixString
-      val delimiter = delimiterString
-      val prefixLen = prefix.length()
-      val suffixLen = suffix.length()
-      val delimiterLen = delimiter.length()
-      val chars = new Array[Char](formattedLength(length))
+      val sb = new jl.StringBuilder(formattedLength(length))
       var byteIndex = fromIndex
-      var charIndex = 0
       while (byteIndex < toIndex) {
-        if (byteIndex != fromIndex && delimiterLen != 0) {
-          delimiter.getChars(0, delimiterLen, chars, charIndex)
-          charIndex += delimiterLen
-        }
-        if (prefixLen != 0) {
-          prefix.getChars(0, prefixLen, chars, charIndex)
-          charIndex += prefixLen
-        }
+        if (byteIndex != fromIndex) sb.append(delimiterString)
+        sb.append(prefixString)
         val value = bytes(byteIndex) & 0xff
-        chars(charIndex) = table(value >>> 4)
-        chars(charIndex + 1) = table(value & 0x0f)
-        charIndex += 2
-        if (suffixLen != 0) {
-          suffix.getChars(0, suffixLen, chars, charIndex)
-          charIndex += suffixLen
-        }
+        sb.append(table(value >>> 4))
+        sb.append(table(value & 0x0f))
+        sb.append(suffixString)
         byteIndex += 1
       }
-      new String(chars)
+      sb.toString()
     }
   }
 
@@ -227,34 +193,15 @@ final class HexFormat private (
     if (digits < 0 || digits > 16)
       throw new IllegalArgumentException("number of digits: " + digits)
 
-    val chars = new Array[Char](digits)
+    val sb = new jl.StringBuilder(digits)
     var i = 0
     var shift = (digits - 1) << 2
     while (i < digits) {
-      chars(i) = this.digits(((value >>> shift) & 0x0fL).toInt)
+      sb.append(this.digits(((value >>> shift) & 0x0fL).toInt))
       i += 1
       shift -= 4
     }
-    new String(chars)
-  }
-
-  override def equals(other: Any): Boolean = {
-    other match {
-      case that: HexFormat =>
-        uppercase == that.uppercase &&
-          delimiterString == that.delimiterString &&
-          prefixString == that.prefixString &&
-          suffixString == that.suffixString
-      case _ => false
-    }
-  }
-
-  override def hashCode(): Int = {
-    var hash = if (uppercase) 1231 else 1237
-    hash = 31 * hash + delimiterString.hashCode()
-    hash = 31 * hash + prefixString.hashCode()
-    hash = 31 * hash + suffixString.hashCode()
-    hash
+    sb.toString()
   }
 
   override def toString(): String =
@@ -279,10 +226,10 @@ final class HexFormat private (
   }
 
   private def twoDigits(value: Int): String = {
-    val chars = new Array[Char](2)
-    chars(0) = digits(value >>> 4)
-    chars(1) = digits(value & 0x0f)
-    new String(chars)
+    val sb = new jl.StringBuilder(2)
+    sb.append(digits(value >>> 4))
+    sb.append(digits(value & 0x0f))
+    sb.toString()
   }
 
   private def parseHexWithoutMarkup(
@@ -469,15 +416,21 @@ object HexFormat {
   private[util] val UpperCaseDigits: Array[Char] =
     "0123456789ABCDEF".toCharArray()
 
+  // ASCII -> hex digit value, indexed by char code.
+  // Returns 0..15 for '0'-'9', 'A'-'F', 'a'-'f' and -1 otherwise.
+  // The table stops at 'f' (0x66, the highest valid input);
+  // callers must range-check the index before lookup.
+  // format: off
   private val DigitValues: Array[Byte] = Array[Byte](
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, -1,
-    -1, -1, -1, -1, -1, -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 0x00-0x0F
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 0x10-0x1F
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 0x20-0x2F
+     0,  1,  2,  3,  4,  5,  6,  7,  8,  9, -1, -1, -1, -1, -1, -1, // 0x30-0x3F  '0'-'9'
+    -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 0x40-0x4F  'A'-'F'
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, // 0x50-0x5F
+    -1, 10, 11, 12, 13, 14, 15                                      // 0x60-0x66  'a'-'f'
   )
+  // format: on
 
   private val Default = new HexFormat("", "", "", false)
 
@@ -495,15 +448,13 @@ object HexFormat {
       if (value >= 0) return value
     }
 
-    {
-      val value =
-        if (ch >= 0 && ch <= Character.MAX_CODE_POINT)
-          new String(Character.toChars(ch))
-        else Integer.toString(ch)
-      throw new NumberFormatException(
-        "not a hexadecimal digit: \"" + value + "\" = " + ch
-      )
-    }
+    val value =
+      if (ch >= 0 && ch <= Character.MAX_CODE_POINT)
+        new String(Character.toChars(ch))
+      else Integer.toString(ch)
+    throw new NumberFormatException(
+      "not a hexadecimal digit: \"" + value + "\" = " + ch
+    )
   }
 
   def fromHexDigits(string: jl.CharSequence): Int =
@@ -564,7 +515,11 @@ object HexFormat {
     value
   }
 
-  private[util] def throwBadDigitPair(high: Char, low: Char, hi: Int): Nothing = {
+  private[util] def throwBadDigitPair(
+      high: Char,
+      low: Char,
+      hi: Int
+  ): Nothing = {
     if (hi < 0) {
       fromHexDigit(high.toInt)
     } else {
