@@ -14,6 +14,7 @@ import java.nio.file.{Files, Path}
 import java.util.concurrent.atomic._
 import java.util.concurrent.locks.ReentrantLock
 
+import scala.annotation.nowarn
 import scala.annotation.tailrec
 import scala.concurrent.*
 import scala.concurrent.duration.Duration
@@ -458,7 +459,7 @@ object ScalaNativePluginInternal {
                   util.Logger.Null
                 )
               )
-              .flatMap(_.right.toOption)
+              .flatMap(_.right.toOption: @nowarn)
               .flatMap(_.allFiles)
               .filter(_.name.endsWith("-sources.jar"))
               .map(_.toPath())
