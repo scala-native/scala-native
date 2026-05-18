@@ -5,6 +5,7 @@ import sbt._
 import sbt.nio.Keys.fileTreeView
 
 import java.io.File
+import java.net.URI
 import java.util.Locale
 
 import scala.collection.mutable
@@ -13,7 +14,6 @@ import com.jsuereth.sbtpgp.PgpKeys
 import com.jsuereth.sbtpgp.PgpKeys.publishSigned
 import com.typesafe.tools.mima.core._
 import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
-import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 
 // Hack warning: special object mimicking build-info plugin outputs, defined in project/ScalaNativeBuildInfo
 import scala.scalanative.ScalaNativeBuildInfo
@@ -21,6 +21,7 @@ import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 
 import build.ScalaVersions.sbt2Version
 import sbtbuildinfo.BuildInfoPlugin.autoImport._
+import xsbti.HashedVirtualFileRef
 
 import MyScalaNativePlugin.isGeneratingForIDE
 import ScriptedPlugin.autoImport._
@@ -54,18 +55,26 @@ object Settings {
       v
     },
     Global / onLoad ~= { prev =>
-      if (!scala.util.Properties.isWin) {
+      if (!scala.util.Properties.isWin) try {
         import java.nio.file._
-        val prePush = Paths.get(".git", "hooks", "pre-push")
-        Files.createDirectories(prePush.getParent)
-        Files.write(
-          prePush,
-          """|#!/bin/sh
-             |set -eux
-             |CHECK_MODIFIED_ONLY=1 ./scripts/check-lint.sh
-             |""".stripMargin.getBytes()
-        )
-        prePush.toFile.setExecutable(true)
+        val gitPath = Paths.get(".git")
+        // git worktrees expose `.git` as a file pointing at the real git dir
+        if (Files.isDirectory(gitPath)) {
+          val hooksDir = gitPath.resolve("hooks")
+          val prePush = hooksDir.resolve("pre-push")
+          Files.createDirectories(hooksDir)
+          Files.write(
+            prePush,
+            """|#!/bin/sh
+               |set -eux
+               |CHECK_MODIFIED_ONLY=1 ./scripts/check-lint.sh
+               |""".stripMargin.getBytes()
+          )
+          prePush.toFile.setExecutable(true)
+        }
+      } catch {
+        case e: Exception =>
+          System.err.println(s"Error checking git hooks: ${e.getMessage}")
       }
       prev
     }
@@ -169,11 +178,10 @@ object Settings {
         case (3, _) => Seq.empty
       },
       // Add Java Scaladoc mapping
-      apiMappings ++= {
+      apiMappings ++= Def.uncached {
         val optRTJar = {
           val bootClasspath = System.getProperty("sun.boot.class.path")
           if (bootClasspath != null) {
-            // JDK <= 8, there is an rt.jar (or classes.jar) on the boot classpath
             val jars = bootClasspath.split(java.io.File.pathSeparator)
 
             def matches(path: String, name: String): Boolean =
@@ -183,23 +191,27 @@ object Settings {
               .find(matches(_, "rt")) // most JREs
               .map(file)
           } else {
-            // JDK >= 9, maybe sbt gives us a fake rt.jar in `scala.ext.dirs`
             val scalaExtDirs = Option(System.getProperty("scala.ext.dirs"))
             scalaExtDirs.map(extDirs => file(extDirs) / "rt.jar")
           }
         }
 
-        optRTJar.fold[Map[File, URL]] {
-          Map.empty
-        } { rtJar =>
-          assert(rtJar.exists, s"$rtJar does not exist")
-          Map(rtJar -> url(javaDocBaseURL))
+        optRTJar.fold(Map.empty[HashedVirtualFileRef, URI]) { rtJar =>
+          assert(rtJar.exists(), s"$rtJar does not exist")
+          Map(
+            fileConverter.value.toVirtualFile(rtJar.toPath) -> url(
+              javaDocBaseURL
+            )
+          )
         }
       },
       /* Add a second Java Scaladoc mapping for cases where Scala actually
        * understands the jrt:/ filesystem of Java 9.
        */
-      apiMappings += file("/modules/java.base") -> url(javaDocBaseURL),
+      apiMappings += Def.uncached {
+        val docsPath = file("/modules/java.base").toPath
+        fileConverter.value.toVirtualFile(docsPath) -> url(javaDocBaseURL)
+      },
       Compile / doc / sources := {
         val prev = (Compile / doc / sources).value
         val isWindows = System
@@ -242,7 +254,10 @@ object Settings {
     homepage := Some(url("http://www.scala-native.org")),
     startYear := Some(2015),
     licenses := Seq(
-      "BSD-like" -> url("http://www.scala-lang.org/downloads/license.html")
+      License(
+        "BSD-like",
+        url("http://www.scala-lang.org/downloads/license.html")
+      )
     ),
     developers := List(
       Developer(
@@ -330,9 +345,9 @@ object Settings {
   lazy val noPublishSettings = Def.settings(
     disabledDocsSettings,
     publishArtifact := false,
-    packagedArtifacts := Map.empty,
-    publish := {},
-    publishLocal := {},
+    packagedArtifacts := Def.uncached(Map.empty),
+    publish := Def.uncached(()),
+    publishLocal := Def.uncached(()),
     publish / skip := true
   )
 
@@ -352,14 +367,16 @@ object Settings {
     Test / testOptions ++= Seq(
       Tests.Argument(TestFrameworks.JUnit, "-a", "-s")
     ),
-    Test / envVars ++= Map(
-      "USER" -> System.getProperty("user.name"),
-      "HOME" -> System.getProperty("user.home"),
-      "SCALA_NATIVE_ENV_WITH_EQUALS" -> "1+1=2",
-      "SCALA_NATIVE_ENV_WITHOUT_VALUE" -> "",
-      "SCALA_NATIVE_ENV_WITH_UNICODE" -> 0x2192.toChar.toString,
-      "SCALA_NATIVE_USER_DIR" -> System.getProperty("user.dir")
-    ),
+    Test / envVars ++= Def.uncached {
+      Map(
+        "USER" -> System.getProperty("user.name"),
+        "HOME" -> System.getProperty("user.home"),
+        "SCALA_NATIVE_ENV_WITH_EQUALS" -> "1+1=2",
+        "SCALA_NATIVE_ENV_WITHOUT_VALUE" -> "",
+        "SCALA_NATIVE_ENV_WITH_UNICODE" -> 0x2192.toChar.toString,
+        "SCALA_NATIVE_USER_DIR" -> System.getProperty("user.dir")
+      )
+    },
     // Some of the tests are designed with an assumptions about default encoding
     // Make sure that tests run on JVM are using default defaults
     Test / javaOptions ++= Seq(
@@ -393,7 +410,8 @@ object Settings {
           testQuick / aggregate := false,
           testQuick := testsTaskUnsupported.value,
           executeTests / aggregate := false,
-          executeTests := testsTaskUnsupported[Tests.Output].value
+          executeTests := Def.uncached:
+            Tests.processResults(Seq.empty)
         )
       }
     )
@@ -416,7 +434,7 @@ object Settings {
 
   // Get all scala sources from a directory
   def allScalaFromDir(dir: File): Seq[(String, java.io.File)] =
-    (dir ** "*.scala").get.flatMap { file =>
+    (dir ** "*.scala").get().flatMap { file =>
       file.relativeTo(dir) match {
         case Some(rel) => List((rel.toString.replace('\\', '/'), file))
         case None      => Nil
@@ -534,8 +552,8 @@ object Settings {
             .foldLeft(IO.read(baseDir / relativePath.toString())) {
               case (source, jdkVersion) =>
                 source
-                  .replaceAllLiterally(s"/* >>REQUIRE-JDK-$jdkVersion", "")
-                  .replaceAllLiterally(s"<<REQUIRE-JDK-$jdkVersion */", "")
+                  .replace(s"/* >>REQUIRE-JDK-$jdkVersion", "")
+                  .replace(s"<<REQUIRE-JDK-$jdkVersion */", "")
             }
         )
         outFile
@@ -678,9 +696,9 @@ object Settings {
     CrossVersion
       .partialVersion(scalaVersion)
       .fold(Seq.empty[String]) {
-        case (2, 12) => Nil
         case (2, 13) => scala213StdLibDeprecations
         case (3, _)  => scala213StdLibDeprecations ++ scala3Deprecations
+        case _       => Nil
       }
   }
 
@@ -767,14 +785,19 @@ object Settings {
           Some("org.scala-lang" % scalaStdLibraryName % scalaVersion.value)
         else None
       },
-      fetchScalaSource / artifactPath :=
-        baseDirectory.value.getParentFile / "target" / "scalaSources" / scalaVersion.value,
+      fetchScalaSource / artifactPath := fileConverter.value.toVirtualFile(
+        baseDirectory.value.getParentFile
+          .toPath() / "target" / "scalaSources" / scalaVersion.value
+      ),
       // Create nir.SourceFile relative to Scala sources dir instead of root dir
       // It should use -sourcepath for both, but it fails to compile under Scala 2
-      scalacOptions ++=
+      scalacOptions ++= Def.uncached {
+        val sourcesPath =
+          fileConverter.value.toPath((fetchScalaSource / artifactPath).value)
         scalaNativeCompilerOptions(
-          s"positionRelativizationPaths:${crossTarget.value / "patched"};${(fetchScalaSource / artifactPath).value}"
-        ),
+          s"positionRelativizationPaths:${crossTarget.value / "patched"};${sourcesPath}"
+        )
+      },
       // Foreign sources, ignore all warnings and don't try to use custom -source version
       scalacOptions --= Seq(
         "-deprecation",
@@ -790,12 +813,14 @@ object Settings {
        * which we work around here by using `updateClassifiers` instead in
        * that case.
        */
-      fetchScalaSource / update := Def.taskDyn {
-        val version = scalaVersion.value
-        val usedScalaVersion = scala.util.Properties.versionNumberString
-        if (version == usedScalaVersion) updateClassifiers
-        else update
-      }.value,
+      fetchScalaSource / update := Def.uncached {
+        Def.taskDyn {
+          val version = scalaVersion.value
+          val usedScalaVersion = scala.util.Properties.versionNumberString
+          if (version == usedScalaVersion) updateClassifiers
+          else update
+        }.value
+      },
       // Scala.js always uses the same version of sources as used in the runtime
       // In Scala Native to 0.4.x we don't make a full cross version of Scala standard library
       // This means we need to have only 1 version of scalalib to not break current build tools
@@ -803,21 +828,18 @@ object Settings {
       // Becouse of that we compile Scala 3.2.x or newer sources with 3.1.3 compiler
       // In theory we can enforce usage of latest version of Scala for compiling only scalalib module,
       // as we don't store .tasty or .class files. This solution however might be more complicated and usnafe
-      fetchScalaSource := {
+      fetchScalaSource := Def.uncached {
+        import lmcoursier.*
         val version = scalaVersion.value
-        val trgDir = (fetchScalaSource / artifactPath).value
+        val trgDir = fileConverter.value
+          .toPath((fetchScalaSource / artifactPath).value)
+          .toFile()
         val s = streams.value
         val cacheDir = s.cacheDirectory
         val report = (fetchScalaSource / update).value
-        lazy val lm = {
-          import sbt.librarymanagement.ivy._
-          val ivyConfig = InlineIvyConfiguration()
-            .withLog(s.log)
-            .withResolvers(
-              resolvers.value.toVector ++ InlineIvyConfiguration().resolvers
-            )
-          IvyDependencyResolution(ivyConfig)
-        }
+        val lm = CoursierDependencyResolution(CoursierConfiguration())
+
+        // coursierint.LMCoursier.
         lazy val scalaLibSourcesJar = lm
           .retrieve(
             "org.scala-lang" % scalaStdLibraryName % version classifier "sources",
@@ -842,14 +864,15 @@ object Settings {
           cacheDir / s"fetchScalaSource-$version",
           FilesInfo.lastModified,
           FilesInfo.exists
-        ) { dependencies =>
+        ) { _ =>
           s.log.info(s"Unpacking Scala library sources to $trgDir...")
 
-          if (trgDir.exists)
+          if (trgDir.exists())
             IO.delete(trgDir)
           IO.createDirectory(trgDir)
           IO.unzip(scalaLibSourcesJar, trgDir)
         }(Set(scalaLibSourcesJar))
+
         trgDir
       },
       Compile / unmanagedSourceDirectories := scalaVersionDirectories(
