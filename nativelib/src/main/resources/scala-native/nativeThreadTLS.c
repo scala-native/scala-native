@@ -136,8 +136,10 @@ static bool detectStackBounds(void *onStackPointer) {
         currentThreadInfo.stackTop = alignToPageStart(onStackPointer);
         size_t usedStackSize = stackBottom - currentThreadInfo.stackTop;
         currentThreadInfo.stackSize = usedStackSize;
-        // Linux pthread_attr_getstack reports the currently-mapped region
-        // for the main thread, not RLIMIT_STACK
+        // For the main thread, Linux's pthread_attr_getstack reports the
+        // currently-mapped stack region rather than RLIMIT_STACK; overwriting
+        // would clobber the RLIMIT_STACK-derived value already set via
+        // scalanative_mainThreadMaxStackSize.
         if (!currentThreadInfo.isMainThread) {
             currentThreadInfo.maxStackSize = size - guardSize;
         }
