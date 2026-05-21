@@ -37,22 +37,29 @@ final class FileTime private (
    * saturate to Long.MIN_VALUE if negative or Long.MAX_VALUE if positive.
    */
   def to(unit: TimeUnit): Long = {
-    val fromDays = unit.convert(epochDays, TimeUnit.DAYS)
-    val fromNanos = unit.convert(dayNanos, TimeUnit.NANOSECONDS)
+    val unitNanos = unit.toNanos(1L)
+    val unitsPerDay = NanosInDay / unitNanos
+    val dayNanosUnits = dayNanos / unitNanos
+    val hasFraction = dayNanos % unitNanos != 0L
 
-    // TimeUnit conversion returns -Long.MaxValue in case of negative overflow instead of Long.MinValue
-    val fromDaysOverflow =
-      fromDays == Long.MaxValue || fromDays <= -Long.MaxValue
+    val maxDays = Long.MaxValue / unitsPerDay
+    val maxDayUnits = Long.MaxValue % unitsPerDay
+    val minDays = Math.floorDiv(Long.MinValue, unitsPerDay)
+    val minDayUnits = Math.floorMod(Long.MinValue, unitsPerDay)
 
-    if (fromDaysOverflow) fromDays
+    if (epochDays > maxDays ||
+        (epochDays == maxDays && dayNanosUnits > maxDayUnits)) Long.MaxValue
+    else if (epochDays < minDays ||
+        (epochDays == minDays && dayNanosUnits < minDayUnits))
+      Long.MinValue
     else {
-      try {
-        Math.addExact(fromDays, fromNanos)
-      } catch {
-        case _: ArithmeticException =>
-          if (fromDays > 0) Long.MaxValue
-          else Long.MinValue
-      }
+      val floorValue =
+        if (epochDays == minDays)
+          Long.MinValue + (dayNanosUnits - minDayUnits)
+        else Math.addExact(epochDays * unitsPerDay, dayNanosUnits)
+
+      if (epochDays < 0L && hasFraction) floorValue + 1L
+      else floorValue
     }
   }
 
