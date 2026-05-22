@@ -13,9 +13,9 @@ import java.util.concurrent.{
 }
 import java.util.function.{BiFunction, Predicate}
 import java.util.{
-  ArrayList, Arrays, BitSet, Collection, Comparator, Iterator, Map,
-  NavigableMap, NavigableSet, NoSuchElementException, Random, Set, SortedMap,
-  Spliterator
+  ArrayList, Arrays, BitSet, Collection, Collections, Comparator, HashMap,
+  Iterator, Map, NavigableMap, NavigableSet, NoSuchElementException, Random,
+  Set, SortedMap, Spliterator
 }
 
 import org.junit.Assert._
@@ -210,6 +210,112 @@ class ConcurrentSkipListMapTest extends JSR166Test {
     assertFalse(removed)
     mustEqual("changed", map.get(iOne))
     assertTrue(map.containsKey(iOne))
+  }
+
+  @Test def testKeySetEqualsReturnsFalseForSetContainingNull(): Unit = {
+    val map = new ConcurrentSkipListMap[Item, String]()
+    map.put(iOne, "A")
+
+    try {
+      assertFalse(map.keySet().equals(Collections.singleton(null)))
+    } catch {
+      case ex: NullPointerException =>
+        fail(
+          "JDK keySet.equals must swallow NullPointerException and return false: " +
+            ex
+        )
+    }
+  }
+
+  @Test def testEntrySetEqualsReturnsFalseForSetContainingNull(): Unit = {
+    val map = new ConcurrentSkipListMap[Item, String]()
+    map.put(iOne, "A")
+
+    try {
+      assertFalse(map.entrySet().equals(Collections.singleton(null)))
+    } catch {
+      case ex: NullPointerException =>
+        fail(
+          "JDK entrySet.equals must swallow NullPointerException and return false: " +
+            ex
+        )
+    }
+  }
+
+  @Test def testKeySetEqualsReturnsFalseForIncompatibleElement(): Unit = {
+    val map = new ConcurrentSkipListMap[Item, String]()
+    map.put(iOne, "A")
+
+    // Comparator cannot compare a non-Item, so containsAll throws CCE.
+    // JSR166 keySet.equals must catch and return false.
+    val foreign = Collections.singleton("not-an-item")
+    try {
+      assertFalse(map.keySet().equals(foreign))
+    } catch {
+      case ex: ClassCastException =>
+        fail(
+          "JDK keySet.equals must swallow ClassCastException and return false: " +
+            ex
+        )
+    }
+  }
+
+  @Test def testPutAllPropagatesPartialInsertOnNullValue(): Unit = {
+    val map = new ConcurrentSkipListMap[Item, String]()
+
+    val source = new HashMap[Item, String]()
+    source.put(iOne, "A")
+    source.put(iTwo, null)
+
+    assertThrows(
+      classOf[NullPointerException],
+      map.putAll(source.asInstanceOf[Map[Item, String]])
+    )
+
+    // JSR166 putAll inherits AbstractMap's per-entry put; entries inserted
+    // before the null value remain in the destination map.
+    assertTrue(
+      "iOne must be present (or absent if the iteration visited iTwo first)",
+      map.containsKey(iOne) || !map.containsKey(iTwo)
+    )
+    assertFalse(map.containsKey(iTwo))
+  }
+
+  @Test def testKeySetToArrayMatchesIteratorContents(): Unit = {
+    val map = map5()
+    val arr = map.keySet().toArray()
+    assertEquals(map.size(), arr.length)
+    var i = 0
+    while (i < arr.length) {
+      assertNotNull("toArray must not contain null entries", arr(i))
+      assertTrue(map.containsKey(arr(i).asInstanceOf[Item]))
+      i += 1
+    }
+  }
+
+  @Test def testValuesToArrayMatchesIteratorContents(): Unit = {
+    val map = map5()
+    val arr = map.values().toArray()
+    assertEquals(map.size(), arr.length)
+    var i = 0
+    while (i < arr.length) {
+      assertNotNull("toArray must not contain null entries", arr(i))
+      assertTrue(map.containsValue(arr(i)))
+      i += 1
+    }
+  }
+
+  @Test def testEntrySetToArrayMatchesIteratorContents(): Unit = {
+    val map = map5()
+    val arr = map.entrySet().toArray()
+    assertEquals(map.size(), arr.length)
+    var i = 0
+    while (i < arr.length) {
+      val e = arr(i).asInstanceOf[Map.Entry[Item, String]]
+      assertNotNull("toArray must not contain null entries", e)
+      assertEquals(map.get(e.getKey()), e.getValue())
+      i += 1
+    }
   }
 
   @Test def testMapBug8210280(): Unit = {
