@@ -10,8 +10,8 @@ package org.scalanative.testsuite.javalib.util.concurrent
 import java.util.concurrent.{ConcurrentNavigableMap, ConcurrentSkipListMap}
 import java.util.function.Predicate
 import java.util.{
-  ArrayList, Arrays, Collection, Iterator, Map, NavigableMap, Set, SortedMap,
-  Spliterator
+  ArrayList, Arrays, Collection, Collections, HashMap, Iterator, Map,
+  NavigableMap, Set, SortedMap, Spliterator
 }
 
 import org.junit.Assert._
@@ -156,6 +156,91 @@ class ConcurrentSkipListSubMapTest extends JSR166Test {
     assertFalse(removed)
     mustEqual("changed", map.get(iOne))
     assertTrue(map.containsKey(iOne))
+  }
+
+  @Test def testSubMapKeySetEqualsReturnsFalseForSetContainingNull(): Unit = {
+    val map = map5()
+    try {
+      assertFalse(map.keySet().equals(Collections.singleton(null)))
+    } catch {
+      case ex: NullPointerException =>
+        fail(
+          "JDK keySet.equals must swallow NullPointerException and return false: " +
+            ex
+        )
+    }
+  }
+
+  @Test def testSubMapEntrySetEqualsReturnsFalseForSetContainingNull(): Unit = {
+    val map = map5()
+    try {
+      assertFalse(map.entrySet().equals(Collections.singleton(null)))
+    } catch {
+      case ex: NullPointerException =>
+        fail(
+          "JDK entrySet.equals must swallow NullPointerException and return false: " +
+            ex
+        )
+    }
+  }
+
+  @Test def testSubMapPutAllPropagatesPartialInsertOnNullValue(): Unit = {
+    val map = map5()
+    map.clear()
+
+    val source = new HashMap[Item, String]()
+    source.put(iOne, "A")
+    source.put(iTwo, null)
+
+    assertThrows(
+      classOf[NullPointerException],
+      map.putAll(source.asInstanceOf[Map[Item, String]])
+    )
+
+    // JSR166 putAll inherits AbstractMap's per-entry put; entries inserted
+    // before the null value remain in the destination map.
+    assertTrue(
+      "iOne must be present (or absent if the iteration visited iTwo first)",
+      map.containsKey(iOne) || !map.containsKey(iTwo)
+    )
+    assertFalse(map.containsKey(iTwo))
+  }
+
+  @Test def testSubMapKeySetToArrayMatchesIteratorContents(): Unit = {
+    val map = map5()
+    val arr = map.keySet().toArray()
+    assertEquals(map.size(), arr.length)
+    var i = 0
+    while (i < arr.length) {
+      assertNotNull("toArray must not contain null entries", arr(i))
+      assertTrue(map.containsKey(arr(i).asInstanceOf[Item]))
+      i += 1
+    }
+  }
+
+  @Test def testSubMapValuesToArrayMatchesIteratorContents(): Unit = {
+    val map = map5()
+    val arr = map.values().toArray()
+    assertEquals(map.size(), arr.length)
+    var i = 0
+    while (i < arr.length) {
+      assertNotNull("toArray must not contain null entries", arr(i))
+      assertTrue(map.containsValue(arr(i)))
+      i += 1
+    }
+  }
+
+  @Test def testSubMapEntrySetToArrayMatchesIteratorContents(): Unit = {
+    val map = map5()
+    val arr = map.entrySet().toArray()
+    assertEquals(map.size(), arr.length)
+    var i = 0
+    while (i < arr.length) {
+      val e = arr(i).asInstanceOf[Map.Entry[Item, String]]
+      assertNotNull("toArray must not contain null entries", e)
+      assertEquals(map.get(e.getKey()), e.getValue())
+      i += 1
+    }
   }
 
   @Test def testClear(): Unit = {

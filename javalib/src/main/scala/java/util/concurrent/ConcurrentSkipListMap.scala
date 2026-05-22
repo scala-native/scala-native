@@ -631,21 +631,6 @@ class ConcurrentSkipListMap[K <: AnyRef, V <: AnyRef](
     doPut(key, value, onlyIfAbsent = false)
   }
 
-  override def putAll(m: Map[_ <: K, _ <: V]): Unit = {
-    Objects.requireNonNull(m)
-    val it = m.entrySet().iterator()
-    while (it.hasNext()) {
-      val e = it.next()
-      checkKey(e.getKey())
-      requireValue(e.getValue())
-    }
-    val it2 = m.entrySet().iterator()
-    while (it2.hasNext()) {
-      val e = it2.next()
-      doPut(e.getKey(), e.getValue(), onlyIfAbsent = false)
-    }
-  }
-
   override def remove(key: Any): V = {
     val k = requireKey(key)
     doRemove(k, null)
@@ -1180,6 +1165,16 @@ private object ConcurrentSkipListMap {
     if (comparator != null)
       comparator.asInstanceOf[Comparator[AnyRef]].compare(a, b)
     else a.asInstanceOf[Comparable[Any]].compareTo(b)
+
+  // Mirrors jsr166 Helpers.toList: drains a weakly-consistent collection
+  // through its iterator without sizing first, so the resulting snapshot
+  // matches whatever the iterator observes.
+  private def toList[E](c: Collection[E]): ArrayList[E] = {
+    val list = new ArrayList[E]()
+    val it = c.iterator()
+    while (it.hasNext()) list.add(it.next())
+    list
+  }
 
   private abstract class CSLMSpliterator[K <: AnyRef, V <: AnyRef, A](
       val comparator: Comparator[_ >: K],
@@ -1716,21 +1711,6 @@ private object ConcurrentSkipListMap {
       checkKeyBounds(key)
       requireValue(value)
       m.doPut(key, value, onlyIfAbsent = false)
-    }
-
-    override def putAll(map: Map[_ <: K, _ <: V]): Unit = {
-      Objects.requireNonNull(map)
-      val it = map.entrySet().iterator()
-      while (it.hasNext()) {
-        val e = it.next()
-        checkKeyBounds(e.getKey())
-        requireValue(e.getValue())
-      }
-      val it2 = map.entrySet().iterator()
-      while (it2.hasNext()) {
-        val e = it2.next()
-        m.doPut(e.getKey(), e.getValue(), onlyIfAbsent = false)
-      }
     }
 
     override def remove(key: Any): V = {
@@ -2288,6 +2268,23 @@ private object ConcurrentSkipListMap {
 
     override def reversed(): SequencedSet[Map.Entry[K, V]] =
       reversedFactory()
+
+    override def equals(o: Any): Boolean = o match {
+      case _ if o.asInstanceOf[AnyRef] eq this => true
+      case c: Set[_]                           =>
+        try containsAll(c) && c.containsAll(this)
+        catch {
+          case _: ClassCastException   => false
+          case _: NullPointerException => false
+        }
+      case _ => false
+    }
+
+    override def toArray(): Array[AnyRef] =
+      toList(this).toArray()
+
+    override def toArray[T <: AnyRef](a: Array[T]): Array[T] =
+      toList(this).toArray(a)
   }
 
   private final class Values[K <: AnyRef, V <: AnyRef](
@@ -2329,6 +2326,12 @@ private object ConcurrentSkipListMap {
 
     override def reversed(): SequencedCollection[V] =
       reversedFactory()
+
+    override def toArray(): Array[AnyRef] =
+      toList(this).toArray()
+
+    override def toArray[T <: AnyRef](a: Array[T]): Array[T] =
+      toList(this).toArray(a)
   }
 
   private final class KeySet[K <: AnyRef, V <: AnyRef](
@@ -2411,5 +2414,22 @@ private object ConcurrentSkipListMap {
 
     override def descendingSet(): NavigableSet[K] =
       map.descendingMap().navigableKeySet()
+
+    override def equals(o: Any): Boolean = o match {
+      case _ if o.asInstanceOf[AnyRef] eq this => true
+      case c: Set[_]                           =>
+        try containsAll(c) && c.containsAll(this)
+        catch {
+          case _: ClassCastException   => false
+          case _: NullPointerException => false
+        }
+      case _ => false
+    }
+
+    override def toArray(): Array[AnyRef] =
+      toList(this).toArray()
+
+    override def toArray[T <: AnyRef](a: Array[T]): Array[T] =
+      toList(this).toArray(a)
   }
 }
