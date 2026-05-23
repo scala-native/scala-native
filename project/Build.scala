@@ -208,6 +208,7 @@ object Build {
     .settings(
       // Multiple check warnings due to usage of self-types
       nativeConfig ~= { _.withCheckFatalWarnings(false) },
+      libraryDependencies += "com.indoorvivants" %% "merkle" % "0.1.0",
       // One of the biggest blockers is lack of ZipFileSystemProvider required to operate on JARs
       Test / test := {
         val log = streams.value.log
@@ -234,6 +235,7 @@ object Build {
     MultiScalaProject("tools", platform = MultiScalaProject.JVM)
       .settings(
         libraryDependencies ++= Deps.JUnitJvm,
+        libraryDependencies += "com.indoorvivants" %% "merkle" % "0.1.0",
         Test / fork := true
       )
       .withCommonTools
