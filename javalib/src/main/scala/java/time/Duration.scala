@@ -55,6 +55,8 @@ object Duration {
   private final val SecondsPerHour = 60L * SecondsPerMinute
   private final val SecondsPerDay = 24L * SecondsPerHour
 
+  final val ZERO: Duration = new Duration(0, 0)
+
   def ofNanos(nanos: Long): Duration =
     fromTotalNanos(BigInt(nanos))
 
