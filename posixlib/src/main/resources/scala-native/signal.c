@@ -2,6 +2,7 @@
 #if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
 #include <signal.h>
+#include <stddef.h>
 
 #ifdef __OpenBSD__
 
@@ -113,5 +114,51 @@ int scalanative_si_queue() { return SI_QUEUE; }
 int scalanative_si_timer() { return SI_TIMER; }
 int scalanative_si_asyncio() { return SI_ASYNCIO; }
 int scalanative_si_mesgq() { return SI_MESGQ; }
+
+// `stack_t` field order is platform-specific: Linux/glibc/musl declares
+// `{ ss_sp, ss_flags, ss_size }` while POSIX (followed by macOS and the
+// BSDs) declares `{ ss_sp, ss_size, ss_flags }`. The Scala binding
+// `type stack_t = CStruct3[CVoidPtr, size_t, CInt]` follows POSIX order;
+// this bridge translates between the SN-side layout and the host layout
+// so the same Scala code works on every platform.
+struct scalanative_stack_t {
+    void *ss_sp;
+    size_t ss_size;
+    int ss_flags;
+};
+
+static void scalanative_stack_t_copy_to_host(struct scalanative_stack_t *sn_ss,
+                                             stack_t *host_ss) {
+    host_ss->ss_sp = sn_ss->ss_sp;
+    host_ss->ss_size = sn_ss->ss_size;
+    host_ss->ss_flags = sn_ss->ss_flags;
+}
+
+static void scalanative_stack_t_copy_to_sn(struct scalanative_stack_t *sn_ss,
+                                           stack_t *host_ss) {
+    sn_ss->ss_sp = host_ss->ss_sp;
+    sn_ss->ss_size = host_ss->ss_size;
+    sn_ss->ss_flags = host_ss->ss_flags;
+}
+
+int scalanative_sigaltstack(struct scalanative_stack_t *sn_ss,
+                            struct scalanative_stack_t *sn_oss) {
+    stack_t host_ss = {0};
+    stack_t host_oss = {0};
+    stack_t *p_host_ss = NULL;
+    stack_t *p_host_oss = NULL;
+    if (sn_ss != NULL) {
+        scalanative_stack_t_copy_to_host(sn_ss, &host_ss);
+        p_host_ss = &host_ss;
+    }
+    if (sn_oss != NULL) {
+        p_host_oss = &host_oss;
+    }
+    int rc = sigaltstack(p_host_ss, p_host_oss);
+    if (sn_oss != NULL && rc == 0) {
+        scalanative_stack_t_copy_to_sn(sn_oss, &host_oss);
+    }
+    return rc;
+}
 #endif // is Unix or MacOS
 #endif
