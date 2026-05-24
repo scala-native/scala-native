@@ -1,6 +1,7 @@
 package java.util
 
 import java.util.random.{JuRandomFactory, RandomGenerator}
+import java.util.stream.{DoubleStream, IntStream, LongStream}
 
 import scala.annotation.tailrec
 
@@ -134,4 +135,136 @@ class Random(seed_in: Long)
     x * c
   }
 
+}
+
+object Random {
+  def from(generator: RandomGenerator): Random = {
+    Objects.requireNonNull(generator)
+
+    generator match {
+      case random: Random => random
+      case _              => new DelegatingRandom(generator)
+    }
+  }
+
+  private final class DelegatingRandom(generator: RandomGenerator)
+      extends Random(0L) {
+
+    override def setSeed(seed: Long): Unit =
+      throw new UnsupportedOperationException()
+
+    override protected def next(bits: Int): Int =
+      generator.nextInt() >>> (32 - bits)
+
+    override def nextBoolean(): Boolean =
+      generator.nextBoolean()
+
+    override def nextBytes(bytes: Array[Byte]): Unit =
+      generator.nextBytes(bytes)
+
+    override def nextDouble(): Double =
+      generator.nextDouble()
+
+    override def nextDouble(bound: Double): Double =
+      generator.nextDouble(bound)
+
+    override def nextDouble(origin: Double, bound: Double): Double =
+      generator.nextDouble(origin, bound)
+
+    override def nextExponential(): Double =
+      generator.nextExponential()
+
+    override def nextFloat(): Float =
+      generator.nextFloat()
+
+    override def nextFloat(bound: Float): Float =
+      generator.nextFloat(bound)
+
+    override def nextFloat(origin: Float, bound: Float): Float =
+      generator.nextFloat(origin, bound)
+
+    override def nextGaussian(): Double =
+      generator.nextGaussian()
+
+    override def nextGaussian(mean: Double, stddev: Double): Double =
+      generator.nextGaussian(mean, stddev)
+
+    override def nextInt(): Int =
+      generator.nextInt()
+
+    override def nextInt(bound: Int): Int =
+      generator.nextInt(bound)
+
+    override def nextInt(origin: Int, bound: Int): Int =
+      generator.nextInt(origin, bound)
+
+    override def nextLong(): Long =
+      generator.nextLong()
+
+    override def nextLong(bound: Long): Long =
+      generator.nextLong(bound)
+
+    override def nextLong(origin: Long, bound: Long): Long =
+      generator.nextLong(origin, bound)
+
+    override def doubles(): DoubleStream =
+      generator.doubles()
+
+    override def doubles(
+        randomNumberOrigin: Double,
+        randomNumberBound: Double
+    ): DoubleStream =
+      generator.doubles(randomNumberOrigin, randomNumberBound)
+
+    override def doubles(streamSize: Long): DoubleStream =
+      generator.doubles(streamSize)
+
+    override def doubles(
+        streamSize: Long,
+        randomNumberOrigin: Double,
+        randomNumberBound: Double
+    ): DoubleStream =
+      generator.doubles(streamSize, randomNumberOrigin, randomNumberBound)
+
+    override def ints(): IntStream =
+      generator.ints()
+
+    override def ints(
+        randomNumberOrigin: Int,
+        randomNumberBound: Int
+    ): IntStream =
+      generator.ints(randomNumberOrigin, randomNumberBound)
+
+    override def ints(streamSize: Long): IntStream =
+      generator.ints(streamSize)
+
+    override def ints(
+        streamSize: Long,
+        randomNumberOrigin: Int,
+        randomNumberBound: Int
+    ): IntStream =
+      generator.ints(streamSize, randomNumberOrigin, randomNumberBound)
+
+    override def isDeprecated(): Boolean =
+      generator.isDeprecated()
+
+    override def longs(): LongStream =
+      generator.longs()
+
+    override def longs(
+        randomNumberOrigin: Long,
+        randomNumberBound: Long
+    ): LongStream =
+      generator.longs(randomNumberOrigin, randomNumberBound)
+
+    override def longs(streamSize: Long): LongStream =
+      generator.longs(streamSize)
+
+    override def longs(
+        streamSize: Long,
+        randomNumberOrigin: Long,
+        randomNumberBound: Long
+    ): LongStream =
+      generator.longs(streamSize, randomNumberOrigin, randomNumberBound)
+  }
 }
