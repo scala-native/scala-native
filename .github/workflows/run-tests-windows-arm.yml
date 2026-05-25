@@ -1,6 +1,4 @@
-# Windows on ARM64 (WoA) CI — runtime tests only (experimental).
-#
-# Job failures do not fail the workflow check (continue-on-error) until WoA CI is stable.
+# Windows on ARM64 (WoA) CI — runtime tests (required on pull requests).
 #
 # Uses GitHub-hosted windows-11-arm runners (public repositories only).
 # See https://docs.github.com/actions/using-github-hosted-runners/about-github-hosted-runners#standard-github-hosted-runners-for-public-repositories
@@ -10,7 +8,7 @@
 # - Native dependencies are built for arm64-windows-static (matching aarch64-pc-windows-msvc).
 #   VCPKG_DEFAULT_HOST_TRIPLET=arm64-windows on the ARM64 host.
 # - The runner image must include MSVC ARM64 link libraries (libcpmt.lib, etc.).
-#   windows-arm-setup-env checks BuildTools and C:\Program\VC\Tools\MSVC layouts.
+#   windows-arm-setup-env verifies MSVC ARM64 link libs (VS Enterprise on the image).
 #   Local WoA contributor setups: docs/contrib/build-setup.md#windows-on-arm64.
 name: Run tests Windows ARM64
 on:
@@ -28,7 +26,6 @@ env:
 jobs:
   test-runtime:
     name: Test runtime (Windows ARM64)
-    continue-on-error: true # experimental — do not block PRs
     # windows-11-arm is only available for public repositories
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || (github.event_name == 'schedule' && github.repository == 'scala-native/scala-native')
     runs-on: windows-11-arm
