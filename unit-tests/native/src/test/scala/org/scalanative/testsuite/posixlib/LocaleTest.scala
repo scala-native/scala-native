@@ -78,6 +78,13 @@ class LocaleTest {
 
   @Test def localeconv_Using_en_US(): Unit = {
 
+    // musl reports setlocale(en_US) as successful but populates only
+    // C-equivalent locale data
+    assumeFalse(
+      "musl ships only C-equivalent locale data for en_US",
+      LinktimeInfo.target.env == "musl"
+    )
+
     // Multi-arch CI tests do not have an en_US locale; warn not fail
     assumeTrue(
       "setlocale() failed to set an en_US test locale",

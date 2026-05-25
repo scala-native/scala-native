@@ -32,6 +32,12 @@ class WordexpTest {
       "wordexp.scala is not implemented on Windows or OpenBSD",
       !isWindows && !isOpenBSD
     )
+    // musl's wordexp accepts ";" (returns 0 with the first word
+    // expanded only) where glibc returns WRDE_BADCHAR.
+    assumeFalse(
+      "musl wordexp does not return WRDE_BADCHAR for ';'",
+      target.env == "musl"
+    )
     if (!isWindows && !isOpenBSD) Zone.acquire { implicit z =>
       val wrdeP = stackalloc[wordexp_t]()
 
