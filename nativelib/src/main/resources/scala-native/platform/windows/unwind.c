@@ -146,13 +146,8 @@ static unsigned short capture_stack_rtl(UnwindContext *ucontext) {
 
         PVOID handlerData = NULL;
         DWORD64 establisherFrame = 0;
-#if defined(_M_ARM64) || defined(__aarch64__)
         RtlVirtualUnwind(UNW_FLAG_NHANDLER, imageBase, pc, runtimeFn, &ctx,
                          &handlerData, &establisherFrame, NULL);
-#else
-        RtlVirtualUnwind(UNW_FLAG_NHANDLER, imageBase, pc, runtimeFn, &ctx,
-                         &handlerData, &establisherFrame, &ucontext->history);
-#endif
     }
 
     return count;
