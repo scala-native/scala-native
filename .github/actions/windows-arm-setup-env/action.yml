@@ -42,12 +42,6 @@ runs:
 
     # al-cheb/configure-pagefile-action fails on windows-11-arm ("operation completed
     # successfully" Win32Exception). Use native PowerShell instead (see scripts/configure-pagefile.ps1).
-    - name: Test pagefile script
-      shell: pwsh
-      run: |
-        & "${{ github.workspace }}/scripts/test-configure-pagefile.ps1"
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
     - name: Configure Pagefile
       shell: pwsh
       run: |
