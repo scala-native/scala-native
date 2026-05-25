@@ -115,7 +115,7 @@ private[runtime] object PE {
   )(implicit stream: BinaryFile, endi: Endianness): String = {
     val shortName = new String(nameBytes.takeWhile(_ != 0), "ASCII")
     if (shortName.startsWith("/")) {
-      val index = shortName.drop(1).toIntOption.getOrElse(0)
+      val index = scala.util.Try(shortName.drop(1).toInt).getOrElse(0)
       stream.seek(coffStringTableOffset + index)
       new String(stream.readWhile(_ != 0), "ASCII")
     } else {
