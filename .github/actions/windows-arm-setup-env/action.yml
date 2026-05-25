@@ -126,8 +126,10 @@ runs:
     # Runner image must provide MSVC ARM64 link libs (libcpmt, legacy_stdio_definitions).
     # Layout varies: BuildTools under Program Files (x86), or C:\Program\VC on WoA.
     - name: Verify MSVC ARM64 link libraries
-      shell: cmd
-      run: call "%GITHUB_WORKSPACE%\scripts\check-msvc-arm64.cmd"
+      shell: pwsh
+      run: |
+        & "${{ github.workspace }}/scripts/check-msvc-arm64.ps1"
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
     - name: Install vcpkg libs (arm64-windows-static)
       shell: pwsh

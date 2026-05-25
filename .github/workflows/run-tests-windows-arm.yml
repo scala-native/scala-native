@@ -11,7 +11,7 @@
 #   VCPKG_DEFAULT_HOST_TRIPLET=arm64-windows on the ARM64 host.
 # - The runner image must include MSVC ARM64 link libraries (libcpmt.lib, etc.).
 #   windows-arm-setup-env checks BuildTools and C:\Program\VC\Tools\MSVC layouts.
-#   Local WoA setups: see docs/user/setup.md and scripts/install-vs-arm64-msvc.cmd.
+#   Local WoA contributor setups: docs/contrib/build-setup.md#windows-on-arm64.
 name: Run tests Windows ARM64
 on:
   pull_request:

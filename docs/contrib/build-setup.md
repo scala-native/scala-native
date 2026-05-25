@@ -6,6 +6,77 @@
 -   LLVM/Clang 16 or newer
 -   sbt
 
+## Windows
+
+When building the **scala-native** repository itself on Windows (not only
+consuming the compiler as a library), configure Git and symlinks as follows.
+
+### Git line endings
+
+Disable automatic CRLF conversion so `scalalib` patches apply (required on
+all Windows platforms, including CI):
+
+```powershell
+git config --global core.autocrlf false
+```
+
+### Symlinked patch files
+
+Several `scalalib` patch files are symlinks in git. Enable
+[Developer Mode](https://learn.microsoft.com/windows/apps/get-started/enable-your-device-for-development)
+(or clone in an elevated shell with `git config --global core.symlinks true`)
+so `git checkout` creates real symlinks instead of small text stubs.
+
+If patches still fail to apply after checkout, run `git reset --hard HEAD`
+once `core.autocrlf` is `false`.
+
+### Windows on ARM64
+
+End-user toolchain notes (JDK, LLVM, sbt, vcpkg) are in
+[Environment setup — Windows on ARM64](../user/setup.md#windows-on-arm64-woa).
+
+For a full local install on WoA, run `scripts/setup-windows.ps1` from an
+elevated **ARM64-native** PowerShell (mirrors
+[`.github/workflows/run-tests-windows-arm.yml`](https://github.com/scala-native/scala-native/blob/main/.github/workflows/run-tests-windows-arm.yml);
+runtime tests only on `windows-11-arm` runners, without Coursier).
+
+If linking fails with missing `libcpmt.lib` / `legacy_stdio_definitions.lib`:
+
+1. Run `scripts\check-msvc-arm64.ps1` (no admin; see script `.EXAMPLE`).
+2. If not READY, run `scripts\install-vs-arm64-msvc.ps1` (elevated; relaunches
+   as ARM64-native PowerShell and uses `setup.exe`, not x64-emulated install).
+3. MSVC ARM64 libs may live under `C:\Program\VC\Tools\MSVC\...\lib\arm64\`
+   after an ARM64-native install, not only under Build Tools in
+   `Program Files (x86)`.
+
+If `vcpkg install … arm64-windows-static` fails to build zlib, run
+`scripts\build-zlib-arm64.ps1` (see script `.EXAMPLE`), then reload the
+environment with `env-windows.ps1` as below.
+
+### Environment variables and PATH
+
+After tools are installed, load variables for the **current shell** (no admin
+required). If dot-sourcing fails with *running scripts is disabled*, allow
+scripts for this session only:
+
+```powershell
+cd <scala-native>
+Set-ExecutionPolicy -Scope Process Bypass
+. .\scripts\env-windows.ps1
+```
+
+To persist for your user account:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\env-windows.ps1 -Persist User
+```
+
+Then open a **new** terminal so PATH is picked up.
+
+This sets `JAVA_HOME`, `LLVM_BIN`, `SCALANATIVE_INCLUDE_DIRS`,
+`SCALANATIVE_LIB_DIRS`, `VCPKG_*`, and prepends PATH with JDK `bin`, LLVM,
+sbt, Git, and vcpkg.
+
 ## Use nix / devenv.sh
 
 The `flake.nix` and `flake.lock` files provide a build environment using nix
