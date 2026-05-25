@@ -8,8 +8,8 @@ inputs:
     description: "Java version to use in tests"
     default: "25"
   llvm-version:
-    description: "LLVM version for winget (LLVM.LLVM). Leave empty for the latest package version."
-    default: ""
+    description: "LLVM version for choco (llvm package). Matches windows-11-arm image default when unset."
+    default: "20.1.6"
 outputs:
   vcpkg-dir:
     description: "Directory containing installed libraries (arm64-windows-static triplet)"
@@ -17,7 +17,7 @@ outputs:
 runs:
   using: "composite"
   steps:
-    # Coursier has no native Windows ARM64 launcher; use setup-java + winget instead.
+    # Coursier has no native Windows ARM64 launcher; windows-11-arm ships sbt, LLVM, and Chocolatey (not winget).
     - name: Setup Java
       uses: actions/setup-java@v4
       with:
@@ -26,28 +26,23 @@ runs:
         architecture: aarch64
         cache: sbt
 
-    - name: Install sbt
+    - name: Ensure sbt on PATH
       shell: pwsh
       run: |
         if (-not (Get-Command sbt -ErrorAction SilentlyContinue)) {
-          winget install sbt.sbt `
-            --source winget `
-            --accept-package-agreements `
-            --accept-source-agreements `
-            --disable-interactivity
-          # 0 = installed; package already present is also acceptable
-          if ($LASTEXITCODE -notin 0, -1978335189) { exit $LASTEXITCODE }
-        }
-        $sbtBin = "${env:ProgramFiles(x86)}\sbt\bin"
-        if (Test-Path -LiteralPath $sbtBin) {
-          $sbtBin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-        } else {
-          Write-Error "sbt not found under $sbtBin after install"
-          exit 1
+          $sbtBin = "${env:ProgramFiles(x86)}\sbt\bin"
+          if (Test-Path -LiteralPath $sbtBin) {
+            $sbtBin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          } else {
+            Write-Error "sbt not found on PATH or under $sbtBin (expected on windows-11-arm image)"
+            exit 1
+          }
         }
         sbt --version
 
+    # Pagefile action can throw Win32Exception("The operation completed successfully") on ARM runners.
     - name: Configure Pagefile
+      continue-on-error: true
       uses: al-cheb/configure-pagefile-action@v1.5
       with:
         minimum-size: 4GB
@@ -84,24 +79,25 @@ runs:
       with:
         path: |
           ${{ steps.resolve-env.outputs.ProgramFiles }}\LLVM\
-        key: llvm-winget-arm-${{ inputs.llvm-version || 'latest' }}
+        key: llvm-choco-arm-${{ inputs.llvm-version }}
 
-    - name: Install LLVM (winget, ARM64)
+    - name: Install LLVM
       if: steps.cache-llvm.outputs.cache-hit != 'true'
       shell: pwsh
       run: |
-        $args = @(
-          'install', 'LLVM.LLVM',
-          '--source', 'winget',
-          '--accept-package-agreements',
-          '--accept-source-agreements',
-          '--disable-interactivity'
-        )
-        $version = '${{ inputs.llvm-version }}'
-        if (-not [string]::IsNullOrWhiteSpace($version)) {
-          $args += '--version', $version
+        $llvmBin = Join-Path (Join-Path $env:ProgramFiles 'LLVM') 'bin'
+        $clang = Join-Path $llvmBin 'clang.exe'
+        if (Test-Path -LiteralPath $clang) {
+          $verLine = (& $clang --version | Select-Object -First 1)
+          Write-Host "Using preinstalled LLVM: $verLine"
+          exit 0
         }
-        & winget @args
+        $version = '${{ inputs.llvm-version }}'
+        if ([string]::IsNullOrWhiteSpace($version)) {
+          Write-Error "clang.exe not found under $llvmBin and llvm-version input is empty"
+          exit 1
+        }
+        choco install llvm --version=$version --allow-downgrade --force
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
     - name: Expose LLVM to Scala Native (PATH and LLVM_BIN)
