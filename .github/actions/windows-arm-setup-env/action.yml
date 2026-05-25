@@ -1,0 +1,162 @@
+name: "Windows on ARM test env setup"
+description: "Setup Windows ARM64 runners without Coursier (no native ARM64 Coursier build)"
+inputs:
+  scala-version:
+    description: "Scala version used in the tests"
+    required: true
+  java-version:
+    description: "Java version to use in tests"
+    default: "25"
+  llvm-version:
+    description: "LLVM version for winget (LLVM.LLVM). Leave empty for the latest package version."
+    default: ""
+outputs:
+  vcpkg-dir:
+    description: "Directory containing installed libraries (arm64-windows-static triplet)"
+    value: ${{ steps.resolve-env.outputs.VcpkgLibs }}
+runs:
+  using: "composite"
+  steps:
+    # Coursier has no native Windows ARM64 launcher; use setup-java + winget instead.
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: microsoft
+        java-version: ${{ inputs.java-version }}
+        architecture: aarch64
+        cache: sbt
+
+    - name: Install sbt
+      shell: pwsh
+      run: |
+        if (-not (Get-Command sbt -ErrorAction SilentlyContinue)) {
+          winget install sbt.sbt `
+            --source winget `
+            --accept-package-agreements `
+            --accept-source-agreements `
+            --disable-interactivity
+          # 0 = installed; package already present is also acceptable
+          if ($LASTEXITCODE -notin 0, -1978335189) { exit $LASTEXITCODE }
+        }
+        $sbtBin = "${env:ProgramFiles(x86)}\sbt\bin"
+        if (Test-Path -LiteralPath $sbtBin) {
+          $sbtBin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        } else {
+          Write-Error "sbt not found under $sbtBin after install"
+          exit 1
+        }
+        sbt --version
+
+    - name: Configure Pagefile
+      uses: al-cheb/configure-pagefile-action@v1.5
+      with:
+        minimum-size: 4GB
+        maximum-size: 12GB
+        disk-root: "C:"
+
+    - name: Resolve env variables
+      id: resolve-env
+      shell: pwsh
+      env:
+        VCPKG_DEFAULT_HOST_TRIPLET: arm64-windows
+      run: |
+        "ProgramFiles=${env:ProgramFiles}" >> $env:GITHUB_OUTPUT
+        "LocalAppData=${env:LocalAppData}" >> $env:GITHUB_OUTPUT
+        "UserProfile=${env:UserProfile}" >> $env:GITHUB_OUTPUT
+        $vcpkgRoot = $env:VCPKG_INSTALLATION_ROOT
+        if ([string]::IsNullOrWhiteSpace($vcpkgRoot)) {
+          $vcpkgRoot = 'C:\vcpkg'
+          Write-Warning "VCPKG_INSTALLATION_ROOT is unset or empty; using fallback: $vcpkgRoot"
+        }
+        $vcpkgLibs = "$vcpkgRoot\installed\arm64-windows-static"
+        "VcpkgLibs=$vcpkgLibs" >> $env:GITHUB_OUTPUT
+        if ("${{inputs.scala-version}}".StartsWith("2.")) {
+          echo ("project-version=" + ("${{inputs.scala-version}}".Split(".")[0, 1] -join "_")) >> $env:GITHUB_ENV
+        } elseif ("${{inputs.scala-version}}".StartsWith("3-next")) {
+          echo ("project-version=3_next") >> $env:GITHUB_ENV
+        } else {
+          echo "project-version=3" >> $env:GITHUB_ENV
+        }
+
+    - name: Cache LLVM install
+      id: cache-llvm
+      uses: actions/cache@v5
+      with:
+        path: |
+          ${{ steps.resolve-env.outputs.ProgramFiles }}\LLVM\
+        key: llvm-winget-arm-${{ inputs.llvm-version || 'latest' }}
+
+    - name: Install LLVM (winget, ARM64)
+      if: steps.cache-llvm.outputs.cache-hit != 'true'
+      shell: pwsh
+      run: |
+        $args = @(
+          'install', 'LLVM.LLVM',
+          '--source', 'winget',
+          '--accept-package-agreements',
+          '--accept-source-agreements',
+          '--disable-interactivity'
+        )
+        $version = '${{ inputs.llvm-version }}'
+        if (-not [string]::IsNullOrWhiteSpace($version)) {
+          $args += '--version', $version
+        }
+        & winget @args
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+    - name: Expose LLVM to Scala Native (PATH and LLVM_BIN)
+      shell: pwsh
+      run: |
+        $llvmBin = Join-Path (Join-Path $env:ProgramFiles 'LLVM') 'bin'
+        $clang = Join-Path $llvmBin 'clang.exe'
+        if (Test-Path -LiteralPath $clang) {
+          Add-Content -Path $env:GITHUB_ENV -Value "LLVM_BIN=$llvmBin"
+          $llvmBin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          $verLine = (& $clang --version | Select-Object -First 1)
+          Write-Host "Using toolchain: $verLine"
+        } else {
+          Write-Error "No clang.exe under $llvmBin"
+          exit 1
+        }
+
+    - name: Assert clang installed and on path
+      shell: pwsh
+      run: clang --version
+
+    # Runner image must provide MSVC ARM64 link libs (libcpmt, legacy_stdio_definitions).
+    # Layout varies: BuildTools under Program Files (x86), or C:\Program\VC on WoA.
+    - name: Verify MSVC ARM64 link libraries
+      shell: cmd
+      run: call "%GITHUB_WORKSPACE%\scripts\check-msvc-arm64.cmd"
+
+    - name: Install vcpkg libs (arm64-windows-static)
+      shell: pwsh
+      env:
+        VCPKG_DEFAULT_HOST_TRIPLET: arm64-windows
+      run: vcpkg install bdwgc zlib --triplet=arm64-windows-static
+
+    - name: Normalize vcpkg zlib.lib name for linking
+      shell: pwsh
+      run: |
+        $libDir = Join-Path '${{ steps.resolve-env.outputs.VcpkgLibs }}' 'lib'
+        $zs = Join-Path $libDir 'zs.lib'
+        $zlib = Join-Path $libDir 'zlib.lib'
+        if (-not (Test-Path -LiteralPath $zlib) -and (Test-Path -LiteralPath $zs)) {
+          Copy-Item -LiteralPath $zs -Destination $zlib
+          Write-Host "Installed zlib.lib (copy of zs.lib) for @link(zlib)"
+        } elseif (Test-Path -LiteralPath $zlib) {
+          Write-Host "zlib.lib already present"
+        } else {
+          Write-Error "Neither zlib.lib nor zs.lib in $libDir"
+          exit 1
+        }
+
+    - name: Verify vcpkg static libs
+      shell: pwsh
+      run: |
+        $zlib = Join-Path '${{ steps.resolve-env.outputs.VcpkgLibs }}' 'lib\zlib.lib'
+        if (-not (Test-Path -LiteralPath $zlib)) {
+          Write-Error "Missing '$zlib' (javalib links zlib.lib). VcpkgLibs='${{ steps.resolve-env.outputs.VcpkgLibs }}'"
+          exit 1
+        }
+        Write-Host "OK: $zlib"
