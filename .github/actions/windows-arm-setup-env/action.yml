@@ -119,12 +119,31 @@ runs:
       shell: pwsh
       run: clang --version
 
-    # Runner image must provide MSVC ARM64 link libs (libcpmt, legacy_stdio_definitions).
-    # Layout varies: BuildTools under Program Files (x86), or C:\Program\VC on WoA.
+    # Runner image ships VS 2022 Enterprise (arm64) with VC.Tools.ARM64; libs may also be under C:\Program\VC.
     - name: Verify MSVC ARM64 link libraries
       shell: pwsh
       run: |
-        & "${{ github.workspace }}/scripts/check-msvc-arm64.ps1"
+        $check = "${{ github.workspace }}/scripts/check-msvc-arm64.ps1"
+        & $check
+        if ($LASTEXITCODE -eq 0) { exit 0 }
+
+        $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+        $setup = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\setup.exe'
+        $installPath = & $vswhere -latest -products * -property installationPath 2>$null | Select-Object -First 1
+        if (-not $installPath) {
+          Write-Error 'MSVC ARM64 libs missing and no Visual Studio installation found via vswhere'
+          exit 1
+        }
+        Write-Host "Adding VC.Tools.ARM64 to $installPath"
+        $p = Start-Process -FilePath $setup -ArgumentList @(
+          'modify', '--installPath', $installPath,
+          '--add', 'Microsoft.VisualStudio.Component.VC.Tools.ARM64',
+          '--add', 'Microsoft.VisualStudio.Workload.VCTools',
+          '--add', 'Microsoft.VisualStudio.Component.Windows11SDK.22621',
+          '--passive', '--norestart', '--wait'
+        ) -PassThru -Wait
+        if ($p.ExitCode -notin 0, 3010) { exit $p.ExitCode }
+        & $check
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
     - name: Install vcpkg libs (arm64-windows-static)
