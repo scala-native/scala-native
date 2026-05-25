@@ -37,14 +37,16 @@ End-user toolchain notes (JDK, LLVM, sbt, vcpkg) are in
 
 For a full local install on WoA, run `scripts/setup-windows.ps1` from an
 elevated **ARM64-native** PowerShell (mirrors
-[`.github/workflows/run-tests-windows-arm.yml`](https://github.com/scala-native/scala-native/blob/main/.github/workflows/run-tests-windows-arm.yml);
-runtime tests only on `windows-11-arm` runners, without Coursier).
+[`.github/workflows/run-tests-windows-arm.yml`](https://github.com/scala-native/scala-native/blob/main/.github/workflows/run-tests-windows-arm.yml),
+which runs on pull requests and must pass on `windows-11-arm` runners, without
+Coursier).
 
 If linking fails with missing `libcpmt.lib` / `legacy_stdio_definitions.lib`:
 
-1. Run `scripts\check-msvc-arm64.ps1` (no admin; see script `.EXAMPLE`).
+1. Run `scripts\check-msvc-arm64.ps1` (no admin; use `-Diagnostic` if NOT READY).
 2. If not READY, run `scripts\install-vs-arm64-msvc.ps1` (elevated; relaunches
    as ARM64-native PowerShell and uses `setup.exe`, not x64-emulated install).
+   CI uses `scripts\ensure-msvc-arm64-ci.ps1` (same `setup.exe` modify path).
 3. MSVC ARM64 libs may live under `C:\Program\VC\Tools\MSVC\...\lib\arm64\`
    after an ARM64-native install, not only under Build Tools in
    `Program Files (x86)`.
