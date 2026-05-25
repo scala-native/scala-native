@@ -99,13 +99,7 @@ private[scalanative] object LLVM {
         config.compilerConfig.targetTriple.map(_ => s"-Wno-override-module")
       multithreadingEnabled ++ usingCppExceptions ++ allowTargetOverrrides
     }
-    // Always generate debug metadata on Windows, it's required for stack traces to work
-    val debugFlags =
-      if (config.targetsWindows) List("-g")
-      else if (config.compilerConfig.sourceLevelDebuggingConfig.enabled) {
-        // newer LLVM uses DWARFv5 by default on Linux. We support only DWARFv4 for now
-        List("-gdwarf-4")
-      } else Nil
+    val debugFlags = sourceLevelDebugFlags
 
     val flags: Seq[String] =
       buildTargetCompileOpts ++ flto ++ sanitizer ++ target ++
@@ -227,9 +221,10 @@ private[scalanative] object LLVM {
       // We need extra linking dependencies for:
       // * libdl for our vendored libunwind implementation.
       // * libpthread for process APIs and parallel garbage collection.
-      // * Dbghelp for windows implementation of unwind libunwind API
+      // * dbghelp for Windows symbol/line lookup (embedded DWARF is primary when it matches)
       val platformsLinks =
-        if (config.targetsWindows) Seq("dbghelp")
+        if (config.targetsWindows)
+          Seq("dbghelp")
         else if (config.targetsOpenBSD || config.targetsNetBSD)
           Seq("pthread")
         else Seq("pthread", "dl", "m")
@@ -249,14 +244,7 @@ private[scalanative] object LLVM {
     val linkopts =
       asNeededLinkerFlags ++ config.linkingOptions ++ links.map("-l" + _)
 
-    val debugFlags =
-      if (config.targetsWindows) List("-g")
-      else if (config.compilerConfig.sourceLevelDebuggingConfig.enabled) {
-        List(
-          // newer LLVM uses DWARFv5 by default on Linux. We support only DWARF 4 for now
-          "-gdwarf-4"
-        )
-      } else Nil
+    val debugFlags = sourceLevelDebugFlags
 
     val platformFlags =
       if (!config.targetsWindows) Nil
@@ -421,6 +409,13 @@ private[scalanative] object LLVM {
     val outmax = out.toFile().lastModified()
     inmax > outmax
   }
+
+  /** DWARF debug sections embedded in the binary (PE or ELF), used by stack traces. */
+  private def sourceLevelDebugFlags(implicit config: Config): Seq[String] =
+    if (config.compilerConfig.sourceLevelDebuggingConfig.enabled) {
+      // newer LLVM defaults to DWARFv5 on some targets; runtime supports only v4 for now
+      Seq("-gdwarf-4")
+    } else Nil
 
   private def flto(implicit config: Config): Seq[String] =
     config.compilerConfig.lto match {

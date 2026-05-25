@@ -631,11 +631,10 @@ private[codegen] object MetadataCodeGen {
       }
       val ownerName = defn.name.owner.id
 
-      // On Windows if there are no method symbols (LTO enabled) stack traces might return linkage names from found debug symbols
-      // Use it to implement stacktraces
-      val useFQCName =
-        meta.buildConfig.targetsWindows &&
-          meta.config.lto != scalanative.build.LTO.None
+      // On Windows stack traces are resolved from embedded DWARF (__SM linkage
+      // names). DISubprogram names are fully qualified so SymbolFormatter can
+      // recover the class name when file:line is missing from the DIE.
+      val useFQCName = meta.buildConfig.targetsWindows
       def fqcn(methodName: String) = s"$ownerName.$methodName"
       def maybeFQCName(methodName: String) = if (useFQCName) fqcn(methodName) else methodName
       def methodNameInfo(sig: nir.Sig.Unmangled): (String, DIFlags) = sig match {
