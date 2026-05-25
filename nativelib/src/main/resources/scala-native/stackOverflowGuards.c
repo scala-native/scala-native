@@ -3,10 +3,6 @@
 #include <windows.h>
 #include <malloc.h>
 #else // Unix
-#if defined(__linux__)
-#define _GNU_SOURCE 1 /* To pick up REG_RIP */
-#include <ucontext.h>
-#endif
 #include <sys/resource.h>
 #include <sys/mman.h>
 #include <signal.h>
