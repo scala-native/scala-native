@@ -8,8 +8,8 @@ inputs:
     description: "Java version to use in tests"
     default: "25"
   llvm-version:
-    description: "LLVM version for choco (llvm package). Matches windows-11-arm image default when unset."
-    default: "20.1.6"
+    description: "LLVM version for choco (llvm package). Align with local/CI x64 matrix (22.1.x)."
+    default: "22.1.0"
 outputs:
   vcpkg-dir:
     description: "Directory containing installed libraries (arm64-windows-static triplet)"
@@ -85,20 +85,29 @@ runs:
       if: steps.cache-llvm.outputs.cache-hit != 'true'
       shell: pwsh
       run: |
-        $llvmBin = Join-Path (Join-Path $env:ProgramFiles 'LLVM') 'bin'
-        $clang = Join-Path $llvmBin 'clang.exe'
-        if (Test-Path -LiteralPath $clang) {
-          $verLine = (& $clang --version | Select-Object -First 1)
-          Write-Host "Using preinstalled LLVM: $verLine"
-          exit 0
-        }
         $version = '${{ inputs.llvm-version }}'
         if ([string]::IsNullOrWhiteSpace($version)) {
-          Write-Error "clang.exe not found under $llvmBin and llvm-version input is empty"
+          Write-Error 'llvm-version input is empty'
           exit 1
         }
-        choco install llvm --version=$version --allow-downgrade --force
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        $llvmBin = Join-Path (Join-Path $env:ProgramFiles 'LLVM') 'bin'
+        $clang = Join-Path $llvmBin 'clang.exe'
+        $needsInstall = $true
+        if (Test-Path -LiteralPath $clang) {
+          $verLine = (& $clang --version | Select-Object -First 1)
+          if ($verLine -match 'clang version (\d+\.\d+\.\d+)') {
+            if ($Matches[1] -eq $version) {
+              Write-Host "LLVM $version already active: $verLine"
+              $needsInstall = $false
+            } else {
+              Write-Host "Replacing $verLine with LLVM $version via choco"
+            }
+          }
+        }
+        if ($needsInstall) {
+          choco install llvm --version=$version --allow-downgrade --force
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        }
 
     - name: Expose LLVM to Scala Native (PATH and LLVM_BIN)
       shell: pwsh
