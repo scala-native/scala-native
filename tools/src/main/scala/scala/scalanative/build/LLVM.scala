@@ -250,14 +250,14 @@ private[scalanative] object LLVM {
       if (!config.targetsWindows) Nil
       else {
         // https://github.com/scala-native/scala-native/issues/2372
-        // When using LTO make sure to use lld linker instead of default one
-        // LLD might find some duplicated symbols defined in both C and C++,
-        // runtime libraries (libUCRT, libCPMT), we ignore these warnings.
-        val ltoSupport = config.compilerConfig.lto match {
-          case LTO.None => Nil
-          case _        => Seq("-fuse-ld=lld", "-Wl,/force:multiple")
+        // lld-link can report duplicate symbols in MSVC runtime libraries (libucrt
+        // vs libcpmt, e.g. _Sinh on ARM64). link.exe tolerates these; /force:multiple
+        // matches that behavior. Needed for LTO and for native ARM64 windows-msvc links.
+        val msvcDuplicateSymbols = Seq("-Wl,/force:multiple")
+        config.compilerConfig.lto match {
+          case LTO.None => msvcDuplicateSymbols
+          case _        => Seq("-fuse-ld=lld") ++ msvcDuplicateSymbols
         }
-        ltoSupport
       }
 
     // This is to ensure that the load path of the resulting dynamic library
