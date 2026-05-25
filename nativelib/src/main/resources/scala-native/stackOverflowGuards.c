@@ -255,12 +255,26 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
     }
 }
 
-#define SIG_HANDLER_STACK_SIZE SIGSTKSZ
+static size_t sigHandlerStackSize() {
+    // `SIGSTKSZ` is a compile-time constant on some libcs (e.g. musl
+    // 8192). On Linux 5.14+ the kernel enforces a runtime minimum
+    // (`AT_MINSIGSTKSZ`) that can be larger than that constant to
+    // accommodate XSAVE-class CPU state; modern libcs expose this via
+    // `sysconf(_SC_SIGSTKSZ)`. Use whichever is larger so `sigaltstack`
+    // does not return `ENOMEM`.
+    size_t size = (size_t)SIGSTKSZ;
+#ifdef _SC_SIGSTKSZ
+    long runtimeSize = sysconf(_SC_SIGSTKSZ);
+    if (runtimeSize > 0 && (size_t)runtimeSize > size) {
+        size = (size_t)runtimeSize;
+    }
+#endif
+    return size;
+}
 static void setupSignalHandlerAltstack() {
     stack_t handlerStack = {};
-    size_t pageSize = resolvePageSize();
     handlerStack.ss_size =
-        (size_t)alignToPageStart((void *)SIG_HANDLER_STACK_SIZE);
+        (size_t)alignToNextPage((void *)sigHandlerStackSize());
     handlerStack.ss_sp = malloc(handlerStack.ss_size);
     if (handlerStack.ss_sp == NULL) {
         perror(SN_ERROR_MSG("StackOverflowGuards failed to allocate alternate "
