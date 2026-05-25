@@ -181,10 +181,20 @@ foreach ($entry in $envVars.GetEnumerator()) {
 
 if (Test-WindowsArm64) {
     $arm64Libcpmt = $null
-    foreach ($msvcRoot in @(
-            "${env:ProgramFiles(x86)}\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC",
-            'C:\Program\VC\Tools\MSVC'
-        )) {
+    $msvcSearchRoots = [System.Collections.Generic.List[string]]::new()
+    foreach ($base in @(${env:ProgramFiles(x86)}, $env:ProgramFiles)) {
+        if ([string]::IsNullOrWhiteSpace($base)) { continue }
+        foreach ($edition in @('BuildTools', 'Community', 'Professional', 'Enterprise')) {
+            $candidate = Join-Path $base "Microsoft Visual Studio\2022\$edition\VC\Tools\MSVC"
+            if ((Test-Path -LiteralPath $candidate) -and ($msvcSearchRoots -notcontains $candidate)) {
+                [void]$msvcSearchRoots.Add($candidate)
+            }
+        }
+    }
+    if ((Test-Path -LiteralPath 'C:\Program\VC\Tools\MSVC') -and ($msvcSearchRoots -notcontains 'C:\Program\VC\Tools\MSVC')) {
+        [void]$msvcSearchRoots.Add('C:\Program\VC\Tools\MSVC')
+    }
+    foreach ($msvcRoot in $msvcSearchRoots) {
         if (-not (Test-Path -LiteralPath $msvcRoot)) { continue }
         $arm64Libcpmt = Get-ChildItem -LiteralPath $msvcRoot -Directory -ErrorAction SilentlyContinue |
             Sort-Object Name -Descending |

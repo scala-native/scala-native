@@ -91,12 +91,47 @@ function Write-Log {
 }
 
 function Get-MsvcArm64LibSearchRoots {
-    $roots = @($VsMsvcRoot)
+    $roots = [System.Collections.Generic.List[string]]::new()
+    if (Test-Path -LiteralPath $VsMsvcRoot) { [void]$roots.Add($VsMsvcRoot) }
+    $bases = @(
+        ${env:ProgramFiles(x86)},
+        $env:ProgramFiles
+    ) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+    foreach ($year in @('2022', '2019')) {
+        foreach ($edition in @('BuildTools', 'Community', 'Professional', 'Enterprise')) {
+            foreach ($base in $bases) {
+                $candidate = Join-Path $base "Microsoft Visual Studio\$year\$edition\VC\Tools\MSVC"
+                if ((Test-Path -LiteralPath $candidate) -and ($roots -notcontains $candidate)) {
+                    [void]$roots.Add($candidate)
+                }
+            }
+        }
+    }
     $programVc = 'C:\Program\VC\Tools\MSVC'
     if ((Test-Path -LiteralPath $programVc) -and ($roots -notcontains $programVc)) {
-        $roots += $programVc
+        [void]$roots.Add($programVc)
+    }
+    $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+    if (Test-Path -LiteralPath $vswhere) {
+        $installPaths = & $vswhere -latest -products * -property installationPath 2>$null
+        foreach ($installPath in @($installPaths)) {
+            if ([string]::IsNullOrWhiteSpace($installPath)) { continue }
+            $candidate = Join-Path $installPath 'VC\Tools\MSVC'
+            if ((Test-Path -LiteralPath $candidate) -and ($roots -notcontains $candidate)) {
+                [void]$roots.Add($candidate)
+            }
+        }
     }
     $roots
+}
+
+function Get-VisualStudioInstallPath {
+    if (Test-Path -LiteralPath $VsBuildToolsPath) { return $VsBuildToolsPath }
+    $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+    if (-not (Test-Path -LiteralPath $vswhere)) { return $null }
+    $path = & $vswhere -latest -products * -property installationPath 2>$null | Select-Object -First 1
+    if ([string]::IsNullOrWhiteSpace($path)) { return $null }
+    $path
 }
 
 function Get-LatestMsvcArm64LibDir {
@@ -153,14 +188,18 @@ function Install-Arm64Msvc {
 
     Wait-VisualStudioInstallerIdle
 
-    $vsAction = if (Test-Path -LiteralPath $VsBuildToolsPath) { 'modify' } else { 'install' }
+    $installPath = Get-VisualStudioInstallPath
+    if (-not $installPath) {
+        throw 'No Visual Studio 2022 installation found (Build Tools or Enterprise). Run scripts\setup-windows.ps1 first.'
+    }
+    $vsAction = 'modify'
     Write-Log "Running setup.exe $vsAction (MSVC ARM64 + x64/x86 + Windows SDK)"
     Write-Log "PROCESSOR_ARCHITECTURE=$($env:PROCESSOR_ARCHITECTURE)"
-    Write-Log "Install path: $VsBuildToolsPath"
+    Write-Log "Install path: $installPath"
 
     $argumentList = @(
         $vsAction,
-        '--installPath', $VsBuildToolsPath,
+        '--installPath', $installPath,
         '--add', 'Microsoft.VisualStudio.Workload.VCTools',
         '--add', 'Microsoft.VisualStudio.Component.VC.Tools.ARM64',
         '--add', 'Microsoft.VisualStudio.Component.VC.Tools.x86.x64',
