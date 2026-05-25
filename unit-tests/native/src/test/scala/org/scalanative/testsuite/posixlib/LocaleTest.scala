@@ -82,7 +82,7 @@ class LocaleTest {
     // C-equivalent locale data
     assumeFalse(
       "musl ships only C-equivalent locale data for en_US",
-      LinktimeInfo.target.env == "musl"
+      LinktimeInfo.isMusl
     )
 
     // Multi-arch CI tests do not have an en_US locale; warn not fail

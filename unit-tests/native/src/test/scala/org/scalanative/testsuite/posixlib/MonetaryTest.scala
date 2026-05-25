@@ -31,7 +31,7 @@ class MonetaryTest {
       // C-equivalent monetary data
       assumeFalse(
         "musl ships only C-equivalent locale data for en_US",
-        target.env == "musl"
+        isMusl
       )
       errno = 0
 

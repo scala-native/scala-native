@@ -6,9 +6,8 @@ import org.junit.Assert._
 import org.junit.Assume._
 import org.junit.{AfterClass, BeforeClass, Test}
 
-import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.meta.LinktimeInfo.{
-  isLinux, isMac, isNetBSD, isOpenBSD, isWindows
+  isLinux, isMac, isMusl, isNetBSD, isOpenBSD, isWindows
 }
 import scala.scalanative.posix.langinfo._
 import scala.scalanative.posix.locale.{LC_ALL, setlocale}
@@ -108,7 +107,7 @@ class LanginfoTest {
     // populates only C-equivalent locale data
     assumeFalse(
       "musl ships only C-equivalent locale data for en_US",
-      LinktimeInfo.target.env == "musl"
+      isMusl
     )
 
     /* Warn here instead of doing a hard fail.
