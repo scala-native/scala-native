@@ -40,14 +40,13 @@ runs:
         }
         sbt --version
 
-    # Pagefile action can throw Win32Exception("The operation completed successfully") on ARM runners.
+    # al-cheb/configure-pagefile-action fails on windows-11-arm ("operation completed
+    # successfully" Win32Exception). Use native PowerShell instead (see scripts/configure-pagefile.ps1).
     - name: Configure Pagefile
-      continue-on-error: true
-      uses: al-cheb/configure-pagefile-action@v1.5
-      with:
-        minimum-size: 4GB
-        maximum-size: 12GB
-        disk-root: "C:"
+      shell: pwsh
+      run: |
+        & "${{ github.workspace }}/scripts/configure-pagefile.ps1" -MinimumSizeGB 4 -MaximumSizeGB 12 -DiskRoot "C:"
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
     - name: Resolve env variables
       id: resolve-env
