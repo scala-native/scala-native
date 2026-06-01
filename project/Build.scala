@@ -47,7 +47,7 @@ object Build {
       tests, testsJVM, testsExt, testsExtJVM, sandbox,
       scalaPartest, scalaPartestRuntime,
       scalaPartestTests, scalaPartestJunitTests,
-      // toolsBenchmarks
+      toolsBenchmarks
     )
   lazy val testNoCrossProject = List(testingCompilerInterface)
 // format: on
