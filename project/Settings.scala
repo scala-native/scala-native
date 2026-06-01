@@ -957,12 +957,12 @@ object Settings {
             }
             val patchFile = sourcePath.toFile
             val patchLabel = patchFile.relativeTo(srcDir.getParentFile)
-            if (
-              outputFile.exists() &&
-              outputFile.lastModified() >= patchFile.lastModified() &&
-              outputFile.lastModified() >= scalaSourcePath.lastModified()
-            ) {
-              s.log.debug(s"Reusing cached patched source for $sourceName from $patchLabel")
+            if (outputFile.exists() &&
+                outputFile.lastModified() >= patchFile.lastModified() &&
+                outputFile.lastModified() >= scalaSourcePath.lastModified()) {
+              s.log.debug(
+                s"Reusing cached patched source for $sourceName from $patchLabel"
+              )
               return Some(outputFile)
             }
             // There is not a single JVM library for diff that can apply
@@ -973,12 +973,16 @@ object Settings {
             // mutated and concurrent or sequential patches cannot interfere.
             import java.nio.file.{Files => JFiles}
             val patchWorkRoot =
-              JFiles.createTempDirectory(crossTarget.value.toPath, "patch-work-").toFile()
+              JFiles
+                .createTempDirectory(crossTarget.value.toPath, "patch-work-")
+                .toFile()
             try {
               import scala.sys.process._
               def gitApply(args: String*)(cwd: File): Int =
                 Process(
-                  Seq("git", "apply") ++ args ++ Seq(patchFile.getAbsolutePath()),
+                  Seq("git", "apply") ++ args ++ Seq(
+                    patchFile.getAbsolutePath()
+                  ),
                   cwd = cwd
                 ).!(ProcessLogger(s.log.debug(_), s.log.debug(_)))
 
@@ -991,10 +995,13 @@ object Settings {
                 IO.delete(workSourcePath)
               }
               copy(scalaSourcePath, workSourcePath)
-              val canApplyForward = gitApply("--check", "--recount")(patchWorkRoot) == 0
+              val canApplyForward =
+                gitApply("--check", "--recount")(patchWorkRoot) == 0
               val alreadyPatched =
                 !canApplyForward &&
-                  gitApply("--reverse", "--check", "--recount")(patchWorkRoot) == 0
+                  gitApply("--reverse", "--check", "--recount")(
+                    patchWorkRoot
+                  ) == 0
               if (canApplyForward) {
                 val exitCode =
                   gitApply("--whitespace=fix", "--recount")(patchWorkRoot)
