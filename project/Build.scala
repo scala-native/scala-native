@@ -16,6 +16,7 @@ import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import pl.project13.scala.sbt.JmhPlugin
 import sbtbuildinfo.BuildInfoKeys._
 import sbtbuildinfo._
+import xsbti.HashedVirtualFileRef
 
 import Keys._
 
@@ -207,6 +208,44 @@ object Build {
     "3" -> Map("scalalib" -> "scala3lib"),
     "3-next" -> Map("scalalib" -> "scala3lib")
   )
+
+  /** Cache publishLocal using content hashes; skips when stamp matches prior publish. */
+  private def cachedPublishLocalSettings(
+      stamp: Def.Initialize[Task[String]]
+  ): Seq[Setting[_]] = {
+    val publishLocalCacheBase = settingKey[File]("publishLocalCacheBase")
+    val upToDateCheck = Def.task {
+      val cacheBase = publishLocalCacheBase.value
+      IO.createDirectory(cacheBase)
+      val stampFile = cacheBase / "stamp"
+      val inputStamp = stamp.value
+      stampFile.exists() && IO.read(stampFile) == inputStamp
+    }
+    Seq(
+      publishLocalCacheBase := {
+        val scalaVer = scalaVersion.value
+        val nativeVer = (ThisBuild / Keys.version).value
+        (ThisBuild / baseDirectory).value / "target" / "published-local-stamps" / name.value / s"$scalaVer-$nativeVer"
+      },
+      publishLocal / skip := Def.uncached(upToDateCheck.value),
+      publishLocal := Def.uncached {
+        Def.task {
+          val s = streams.value
+          if (!upToDateCheck.value) {
+            s.log.info(
+              s"Publishing ${name.value} locally (scala ${scalaVersion.value}, native ${(ThisBuild / Keys.version).value})"
+            )
+            val conf = publishLocalConfiguration.value
+            val module = ivyModule.value
+            publisher.value.publish(module, conf, s.log)
+            val cacheBase = publishLocalCacheBase.value
+            IO.createDirectory(cacheBase)
+            IO.write(cacheBase / "stamp", stamp.value)
+          }
+        }.value
+      }
+    )
+  }
 
   lazy val tools = MultiScalaProject("tools", platform = MultiScalaProject.Native, idNoSuffix = true)
     .settings(
@@ -499,6 +538,24 @@ object Build {
           shouldAddDependencyForVersion = usesSelfContainedStdlib(_)
         )
       )
+      .settings(
+        cachedPublishLocalSettings(
+          Def.taskDyn {
+            val binVersion = scalaBinaryVersion.value
+            Def.task {
+              import sbt.io.Hash
+              def contentStamp(ref: HashedVirtualFileRef): String = {
+                val file = fileConverter.value.toPath(ref).toFile
+                s"$file:${Hash.toHex(Hash(file))}"
+              }
+              Seq(
+                contentStamp((Compile / packageBin).value),
+                contentStamp((nscPlugin.forBinaryVersion(binVersion) / Compile / Keys.`package`).value)
+              ).mkString("\n")
+            }
+          }
+        )
+      )
       .withNativeCompilerPlugin
       .withJUnitPlugin // no actual tests, used only in the CI
       .mapBinaryVersions {
@@ -664,17 +721,27 @@ object Build {
                   .excludeAll(ExclusionRule(organization.value))
                   .cross(CrossVersion.for3Use2_13)
               }
-            },
-            update := Def.uncached {
-              update.dependsOn {
-                Def.taskDyn {
-                  if (usesSelfContainedStdlib(scalaVersion.value))
-                    scalalib.forBinaryVersion(version) / Compile / publishLocal
-                  else
-                    scalalib.v2_13 / Compile / publishLocal
-                }
-              }.value
             }
+          ).settings(
+            cachedPublishLocalSettings(
+              Def.taskDyn {
+                val scalalibProject =
+                  if (usesSelfContainedStdlib(scalaVersion.value))
+                    scalalib.forBinaryVersion(version)
+                  else scalalib.v2_13
+                Def.task {
+                  import sbt.io.Hash
+                  def contentStamp(ref: HashedVirtualFileRef): String = {
+                    val file = fileConverter.value.toPath(ref).toFile
+                    s"$file:${Hash.toHex(Hash(file))}"
+                  }
+                  Seq(
+                    contentStamp((Compile / packageBin).value),
+                    contentStamp((scalalibProject / Compile / packageBin).value)
+                  ).mkString("\n")
+                }
+              }
+            )*
           )
       }
       .dependsOn(auxlib)

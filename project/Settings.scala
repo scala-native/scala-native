@@ -782,7 +782,9 @@ object Settings {
       // than Scala.js. See commented starting with "SN Port:" below.
       libraryDependencies ++= {
         if (shouldAddDependencyForVersion(scalaVersion.value))
-          Some("org.scala-lang" % scalaStdLibraryName % scalaVersion.value)
+          Some(
+            "org.scala-lang" % scalaStdLibraryName % scalaVersion.value classifier "sources"
+          )
         else None
       },
       fetchScalaSource / artifactPath := fileConverter.value.toVirtualFile(
@@ -829,7 +831,6 @@ object Settings {
       // In theory we can enforce usage of latest version of Scala for compiling only scalalib module,
       // as we don't store .tasty or .class files. This solution however might be more complicated and usnafe
       fetchScalaSource := Def.uncached {
-        import lmcoursier.*
         val version = scalaVersion.value
         val trgDir = fileConverter.value
           .toPath((fetchScalaSource / artifactPath).value)
@@ -837,23 +838,13 @@ object Settings {
         val s = streams.value
         val cacheDir = s.cacheDirectory
         val report = (fetchScalaSource / update).value
-        val lm = CoursierDependencyResolution(CoursierConfiguration())
-
-        // coursierint.LMCoursier.
-        lazy val scalaLibSourcesJar = lm
-          .retrieve(
-            "org.scala-lang" % scalaStdLibraryName % version classifier "sources",
-            scalaModuleInfo = None,
-            retrieveDirectory = cacheDir,
-            log = s.log
+        val scalaLibSourcesJar = report
+          .select(
+            configuration = configurationFilter("compile"),
+            module = moduleFilter(name = scalaStdLibraryName),
+            artifact = artifactFilter(classifier = "sources")
           )
-          .map(
-            _.find(
-              _.name.endsWith(s"${scalaStdLibraryName}-$version-sources.jar")
-            )
-          )
-          .toOption
-          .flatten
+          .headOption
           .getOrElse {
             throw new Exception(
               s"Could not fetch ${scalaStdLibraryName} sources for version $version"
