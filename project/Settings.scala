@@ -30,6 +30,10 @@ object Settings {
     "Fetches the scala source for the current scala version"
   )
 
+  lazy val publishScalalibLocal = taskKey[Unit](
+    "Publish scalalib to the local Ivy cache for scala3lib dependency resolution"
+  )
+
   lazy val shouldPartest = settingKey[Boolean](
     "Whether we should partest the current scala version (or skip if we can't)"
   )

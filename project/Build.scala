@@ -1,6 +1,7 @@
 // scalafmt: { maxColumn = 120}
 package build
 
+import sbt.util.Digest
 import sbt.{given, *}
 
 import java.io.File.pathSeparator
@@ -60,6 +61,25 @@ object Build {
   lazy val testProjects =
     testMultiScalaProjects.flatMap(_.componentProjects) ::: testNoCrossProject
   lazy val allProjects = publishedProjects ::: testProjects
+
+  /** Path of the scalalib jar that `publishLocal` writes for a scala3lib dependency.
+   *
+   *  Scala 3.8+ depends on a self-contained scalalib artifact; older Scala 3 versions depend on the Scala 2.13
+   *  cross-built artifact instead.
+   */
+  private def expectedLocalScalalibJar(
+      org: String,
+      ivyHome: File,
+      selfContained: Boolean,
+      scalaVersion: String,
+      scalaBinVersion: String,
+      nativeVersion: String
+  ): File =
+    val (depScalaVersion, platformSuffix, artifactSuffix) =
+      if selfContained then (scalaVersion, scalaBinVersion, s"_$scalaBinVersion")
+      else (ScalaVersions.scala213, "2.13", "_2.13")
+    val revision = scalalibVersion(depScalaVersion, nativeVersion)
+    ivyHome / "local" / org / s"scalalib_native0.5_$platformSuffix" / revision / "jars" / s"scalalib$artifactSuffix.jar"
 
   private def setDependency[T](key: TaskKey[T], projects: Seq[Project]) = {
     key := Def.uncached {
@@ -665,15 +685,71 @@ object Build {
                   .cross(CrossVersion.for3Use2_13)
               }
             },
+            // scala3lib resolves scalalib from the local Ivy cache, not from this build's
+            // classpath. Ensure the artifact is published before `update`, but avoid
+            // repeating `publishLocal` on every compile when nothing relevant changed.
+            //
+            // The stamp file stores two lines:
+            //   1. a cache key derived from scalalib's scala version, compiler plugin,
+            //      and native toolchain settings
+            //   2. the absolute path of the published jar
+            //
+            // We republish when the cache key changes or when the stamped jar no longer
+            // exists (for example after cleaning ~/.ivy2/local).
+            publishScalalibLocal := Def.uncached {
+              Def.taskDyn {
+                val selfContained = usesSelfContainedStdlib(scalaVersion.value)
+                val scalalibProject =
+                  if selfContained then scalalib.forBinaryVersion(version)
+                  else scalalib.v2_13
+                val nscPluginProject =
+                  if selfContained then nscPlugin.forBinaryVersion(version)
+                  else nscPlugin.v2_13
+                val stampFile = crossTarget.value / "publish-scalalib-local.stamp"
+                val ivyHome = ivyPaths.value.ivyHome.map(file(_)).getOrElse(Path.userHome / ".ivy2")
+                val nativeVersion = (ThisBuild / Keys.version).value
+
+                val cacheCheck = Def.task {
+                  val sv = (scalalibProject / scalaVersion).value
+                  val pluginDigest = Digest.sha256Hash(
+                    (nscPluginProject / Compile / packageBin).value
+                      .contentHashStr()
+                      .getBytes("UTF-8")
+                  )
+                  val toolchainDigest = Digest.sha256Hash(
+                    (scalalibProject / nativeConfig).value.toString.getBytes("UTF-8")
+                  )
+                  val inputs = s"$sv:$pluginDigest:$toolchainDigest"
+                  val jar = expectedLocalScalalibJar(
+                    organization.value,
+                    ivyHome,
+                    selfContained,
+                    scalaVersion.value,
+                    scalaBinaryVersion.value,
+                    nativeVersion
+                  )
+                  val upToDate = stampFile.exists && {
+                    IO.read(stampFile).split("\n", 2) match
+                      case Array(storedInputs, storedJar) =>
+                        storedInputs == inputs && storedJar.nonEmpty && file(storedJar).exists()
+                      case _ => false
+                  }
+                  (upToDate, inputs, jar)
+                }
+
+                // taskDyn ensures only the selected scalalib project's publishLocal runs.
+                Def.taskDyn {
+                  val (upToDate, inputs, jar) = cacheCheck.value
+                  if upToDate then Def.task(())
+                  else
+                    (scalalibProject / Compile / publishLocal).map { _ =>
+                      IO.write(stampFile, s"$inputs\n${jar.getAbsolutePath}")
+                    }
+                }
+              }.value
+            },
             update := Def.uncached {
-              update
-                .dependsOn:
-                  Def.taskDyn:
-                    Def.cachedTask:
-                      if usesSelfContainedStdlib(scalaVersion.value) then
-                        scalalib.forBinaryVersion(version) / Compile / publishLocal
-                      else scalalib.v2_13 / Compile / publishLocal
-                .value
+              update.dependsOn(publishScalalibLocal).value
             }
           )
       }
