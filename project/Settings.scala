@@ -244,7 +244,13 @@ object Settings {
       binCompatVersions
         .map { version =>
           ModuleID(organization.value, moduleName.value, version)
-            .cross(crossVersion.value)
+            .cross {
+              platform.value match
+                case ScalaNativePlatform =>
+                  ScalaNativeCrossVersion.scalaNativeMapped(crossVersion.value)
+                case _ => crossVersion.value
+            }
+
         }
     }
   )
