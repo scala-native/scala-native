@@ -81,6 +81,42 @@ object Build {
     val revision = scalalibVersion(depScalaVersion, nativeVersion)
     ivyHome / "local" / org / s"scalalib_native0.5_$platformSuffix" / revision / "jars" / s"scalalib$artifactSuffix.jar"
 
+  private def checkoutScalaUpstreamSources(
+      log: sbt.util.Logger,
+      trgDir: File,
+      repoURL: String,
+      ref: String
+  ): Unit =
+    import org.eclipse.jgit.api._
+    import org.eclipse.jgit.transport.TagOpt
+
+    def incompleteClone(dir: File): Boolean =
+      val objectsDir = dir / ".git" / "objects"
+      objectsDir.exists &&
+        Option(objectsDir.listFiles()).exists(_.exists(_.getName.startsWith("incoming_")))
+
+    if !trgDir.exists() || incompleteClone(trgDir) then
+      if trgDir.exists() then
+        log.warn(s"Removing incomplete Scala source checkout at $trgDir")
+        IO.delete(trgDir)
+      log.info(s"Cloning Scala sources from $repoURL")
+      IO.createDirectory(trgDir)
+      new CloneCommand()
+        .setDirectory(trgDir)
+        .setURI(repoURL)
+        .call()
+
+    val git = Git.open(trgDir)
+    if git.getRepository.findRef(ref) == null then
+      log.info(s"Fetching tags from $repoURL")
+      git.fetch()
+        .setRemote("origin")
+        .setTagOpt(TagOpt.FETCH_TAGS)
+        .call()
+
+    log.info(s"Checking out Scala source ref $ref")
+    git.checkout().setName(ref).call()
+
   private def setDependency[T](key: TaskKey[T], projects: Seq[Project]) = {
     key := Def.uncached {
       key.dependsOn(projects.map(_ / key): _*).value
@@ -976,13 +1012,11 @@ object Build {
           baseDirectory.value.getParentFile.toPath() / "fetchedSources" / scalaVersion.value
         ),
         fetchScalaSource := Def.uncached {
-          import org.eclipse.jgit.api._
-
           val s = streams.value
           val ver = scalaVersion.value
           val trgDir = fileConverter.value.toPath((fetchScalaSource / artifactPath).value).toFile
 
-          val (repoURL, tag) = CrossVersion
+          val (repoURL, ref) = CrossVersion
             .partialVersion(ver)
             .collect {
               case (2, _) => "https://github.com/scala/scala.git" -> s"v$ver"
@@ -990,25 +1024,7 @@ object Build {
             }
             .getOrElse(throw new RuntimeException("Invalid Scala version"))
 
-          if (!trgDir.exists()) {
-            s.log.info(s"Fetching Scala source version $ver")
-
-            // Make parent dirs and stuff
-            sbt.IO.createDirectory(trgDir)
-
-            // Clone scala source code
-            new CloneCommand()
-              .setDirectory(trgDir)
-              .setURI(repoURL)
-              .call()
-          }
-
-          // Checkout proper ref. We do this anyway so we fail if
-          // something is wrong
-          val git = Git.open(trgDir)
-          s.log.info(s"Checking out Scala source version $ver")
-          git.checkout().setName(tag).call()
-
+          checkoutScalaUpstreamSources(s.log, trgDir, repoURL, ref)
           trgDir
         },
         Compile / unmanagedSourceDirectories ++= {
