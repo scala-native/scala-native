@@ -34,18 +34,18 @@ scalacOptions ++= Seq(
   "-feature",
   "-unchecked"
 ) ++ Seq(
-        // In 2.13 lineStream_! was replaced with lazyList_!.
-      "method lineStream_!",
-      // OpenHashMap is used with value class parameter type, we cannot replace it with AnyRefMap or LongMap
-      // Should not be replaced with HashMap due to performance reasons.
-      "class|object OpenHashMap",
-      "class Stream",
-      "method retain in trait SetOps",
-      "object AnyRefMap.*Use `scala.collection.mutable.HashMap` ",
+  // In 2.13 lineStream_! was replaced with lazyList_!.
+  "method lineStream_!",
+  // OpenHashMap is used with value class parameter type, we cannot replace it with AnyRefMap or LongMap
+  // Should not be replaced with HashMap due to performance reasons.
+  "class|object OpenHashMap",
+  "class Stream",
+  "method retain in trait SetOps",
+  "object AnyRefMap.*Use `scala.collection.mutable.HashMap` ",
 
-      "`= _` has been deprecated",
-      "`_` is deprecated for wildcard arguments of types",
-      /*The syntax `x: _* is */ "no longer supported for vararg splice",
-      "The syntax `<function> _` is no longer supported",
-      "Implicit parameters should be provided with a `using` clause"
-    ).map(msg => s"-Wconf:msg=$msg:s")
+  "`= _` has been deprecated",
+  "`_` is deprecated for wildcard arguments of types",
+  /*The syntax `x: _* is */ "no longer supported for vararg splice",
+  "The syntax `<function> _` is no longer supported",
+  "Implicit parameters should be provided with a `using` clause"
+).map(msg => s"-Wconf:msg=$msg:s")
