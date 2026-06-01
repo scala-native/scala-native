@@ -2,7 +2,6 @@ package build
 
 import sbt.Keys._
 import sbt._
-import sbt.nio.Keys.fileTreeView
 
 import java.io.File
 import java.net.URI
@@ -781,9 +780,9 @@ object Settings {
       // Scala Native build.sbt uses a slightly different baseDirectory
       // than Scala.js. See commented starting with "SN Port:" below.
       libraryDependencies ++= {
-        if (shouldAddDependencyForVersion(scalaVersion.value))
-          Some("org.scala-lang" % scalaStdLibraryName % scalaVersion.value)
-        else None
+        Option.when(shouldAddDependencyForVersion(scalaVersion.value)) {
+          ("org.scala-lang" % scalaStdLibraryName % scalaVersion.value classifier "sources")
+        }
       },
       fetchScalaSource / artifactPath := fileConverter.value.toVirtualFile(
         baseDirectory.value.getParentFile
@@ -829,7 +828,6 @@ object Settings {
       // In theory we can enforce usage of latest version of Scala for compiling only scalalib module,
       // as we don't store .tasty or .class files. This solution however might be more complicated and usnafe
       fetchScalaSource := Def.uncached {
-        import lmcoursier.*
         val version = scalaVersion.value
         val trgDir = fileConverter.value
           .toPath((fetchScalaSource / artifactPath).value)
@@ -837,23 +835,17 @@ object Settings {
         val s = streams.value
         val cacheDir = s.cacheDirectory
         val report = (fetchScalaSource / update).value
-        val lm = CoursierDependencyResolution(CoursierConfiguration())
-
-        // coursierint.LMCoursier.
-        lazy val scalaLibSourcesJar = lm
-          .retrieve(
-            "org.scala-lang" % scalaStdLibraryName % version classifier "sources",
-            scalaModuleInfo = None,
-            retrieveDirectory = cacheDir,
-            log = s.log
+        val scalaLibSourcesJar = report
+          .select(
+            configuration = configurationFilter(Compile.name),
+            module = moduleFilter(
+              organization = "org.scala-lang",
+              name = scalaStdLibraryName,
+              revision = version
+            ),
+            artifact = artifactFilter(classifier = "sources")
           )
-          .map(
-            _.find(
-              _.name.endsWith(s"${scalaStdLibraryName}-$version-sources.jar")
-            )
-          )
-          .toOption
-          .flatten
+          .headOption
           .getOrElse {
             throw new Exception(
               s"Could not fetch ${scalaStdLibraryName} sources for version $version"
@@ -894,176 +886,227 @@ object Settings {
         def normPath(f: File): String =
           f.getPath.replace(java.io.File.separator, "/")
 
-        val sources = mutable.ListBuffer.empty[File]
-        val paths = mutable.Set.empty[String]
-
         val s = streams.value
-        val fileTree = fileTreeView.value
-        def listFilesInOrder(patterns: Glob*) =
-          patterns.flatMap(fileTree.list(_))
+        val cacheDir =
+          s.cacheDirectory / s"scalalib-sources-${scalaVersion.value}"
+        val manifestFile = crossTarget.value / "sources-manifest"
+        val patchedRoot = crossTarget.value / "patched"
+        val skippedRoot = crossTarget.value / "patched-skipped"
 
-        /* Exclude files coming from Scala's `library-aux` directory, as they are not
-         * meant to be compiled. They are part of the source jar since Scala 2.13.14.
-         */
-        val ignoredSourceFiles = Set(
-          "Any.scala",
-          "AnyRef.scala",
-          "Singleton.scala",
-          "Nothing.scala",
-          "Null.scala",
-          // Since 3.5.1
-          "AnyKind.scala",
-          "Matchable.scala"
-        ).map(java.nio.file.Paths.get("scala", _))
-        var failedToApplyPatches = false
-        val claimedPatchSources = mutable.Set.empty[String]
-        val stalePatchWork = crossTarget.value / "patch-work"
-        if (stalePatchWork.exists()) {
-          IO.delete(stalePatchWork)
+        def listScalaAndPatches(srcDir: File): Seq[java.nio.file.Path] = {
+          if (!srcDir.isDirectory) Nil
+          else {
+            import scala.jdk.CollectionConverters.*
+            val root = srcDir.toPath
+            val all = java.nio.file.Files
+              .walk(root)
+              .iterator()
+              .asScala
+              .filter(java.nio.file.Files.isRegularFile(_))
+              .toSeq
+              .sortBy(_.toString)
+            val scalaFiles = all.filter { p =>
+              val path = normPath(p.toFile)
+              path.endsWith(".scala") && !path.endsWith(".scala.patch")
+            }
+            val patchFiles =
+              all.filter(p => normPath(p.toFile).endsWith(".scala.patch"))
+            scalaFiles ++ patchFiles
+          }
         }
-        for {
-          srcDir <- sourceDirectories
-          normSrcDir = normPath(srcDir)
-          scalaGlob = srcDir.toGlob / ** / "*.scala"
-          patchGlob = srcDir.toGlob / ** / "*.scala.patch"
-          (sourcePath, _) <- listFilesInOrder(scalaGlob, patchGlob)
-          if !ignoredSourceFiles.exists(sourcePath.endsWith(_))
-          path = normPath(sourcePath.toFile).substring(normSrcDir.length)
-        } {
-          def addSource(path: String)(optSource: => Option[File]): Unit = {
-            if (paths.contains(path)) s.log.debug(s"not including $path")
+
+        def allFilesUnder(dir: File): Set[File] =
+          if (dir.isDirectory) dir.allPaths.get().filter(_.isFile).toSet
+          else Set.empty
+
+        val inputFiles =
+          sourceDirectories.flatMap(listScalaAndPatches).map(_.toFile).toSet ++
+            allFilesUnder(scalaSrcDir)
+
+        FileFunction.cached(
+          cacheDir,
+          FilesInfo.lastModified,
+          FilesInfo.exists
+        ) { _ =>
+          val sources = mutable.ListBuffer.empty[File]
+          val paths = mutable.Set.empty[String]
+
+          /* Exclude files coming from Scala's `library-aux` directory, as they are not
+           * meant to be compiled. They are part of the source jar since Scala 2.13.14.
+           */
+          val ignoredSourceFiles = Set(
+            "Any.scala",
+            "AnyRef.scala",
+            "Singleton.scala",
+            "Nothing.scala",
+            "Null.scala",
+            // Since 3.5.1
+            "AnyKind.scala",
+            "Matchable.scala"
+          ).map(java.nio.file.Paths.get("scala", _))
+          var failedToApplyPatches = false
+          val claimedPatchSources = mutable.Set.empty[String]
+          val stalePatchWork = crossTarget.value / "patch-work"
+          if (stalePatchWork.exists()) {
+            IO.delete(stalePatchWork)
+          }
+          for {
+            srcDir <- sourceDirectories
+            normSrcDir = normPath(srcDir)
+            sourcePath <- listScalaAndPatches(srcDir)
+            if !ignoredSourceFiles.exists(sourcePath.endsWith(_))
+            path = normPath(sourcePath.toFile).substring(normSrcDir.length)
+          } {
+            def addSource(path: String)(optSource: => Option[File]): Unit = {
+              if (paths.contains(path)) s.log.debug(s"not including $path")
+              else {
+                optSource.foreach { source =>
+                  paths += path
+                  sources += source
+                }
+              }
+            }
+
+            def copy(source: File, destination: File) = {
+              import java.nio.file.Files
+              import java.nio.file.StandardCopyOption.*
+              Files.copy(
+                source.toPath(),
+                destination.toPath(),
+                COPY_ATTRIBUTES,
+                REPLACE_EXISTING
+              )
+            }
+
+            def tryApplyPatch(sourceName: String): Option[File] = {
+              val scalaSourcePath = scalaSrcDir / sourceName
+              val patchFile = sourcePath.toFile
+              val patchLabel = patchFile.relativeTo(srcDir.getParentFile)
+              if (!scalaSourcePath.exists()) {
+                val skipStamp = skippedRoot / sourceName
+                if (!skipStamp.exists() ||
+                    skipStamp.lastModified() < patchFile.lastModified()) {
+                  s.log.warn(
+                    s"Not found matching source file $sourceName for patch in Scala ${scalaVersion.value} sources, skipped"
+                  )
+                  IO.createDirectory(skipStamp.getParentFile)
+                  IO.touch(skipStamp)
+                }
+                return None
+              }
+              val outputFile = patchedRoot / sourceName
+              val outputDir = outputFile.getParentFile
+              if (!outputDir.exists()) {
+                IO.createDirectory(outputDir)
+              }
+              if (outputFile.exists() &&
+                  outputFile.lastModified() >= patchFile.lastModified() &&
+                  outputFile.lastModified() >= scalaSourcePath.lastModified()) {
+                s.log.debug(
+                  s"Reusing cached patched source for $sourceName from $patchLabel"
+                )
+                return Some(outputFile)
+              }
+              // There is not a single JVM library for diff that can apply
+              // patches in a fuzzy way (using context lines). We also
+              // canot use jgit to apply patches - it fails due to "invalid hunk headers".
+              // Becouse of that we use git apply instead.
+              // Each patch uses its own temp tree so fetched Scala sources are never
+              // mutated and concurrent or sequential patches cannot interfere.
+              import java.nio.file.{Files => JFiles}
+              val patchWorkRoot =
+                JFiles
+                  .createTempDirectory(crossTarget.value.toPath, "patch-work-")
+                  .toFile()
+              try {
+                import scala.sys.process.*
+                def gitApply(args: String*)(cwd: File): Int =
+                  Process(
+                    Seq("git", "apply") ++ args ++ Seq(
+                      patchFile.getAbsolutePath()
+                    ),
+                    cwd = cwd
+                  ).!(ProcessLogger(s.log.debug(_), s.log.debug(_)))
+
+                val workSourcePath = patchWorkRoot / sourceName
+                val workSourceParent = workSourcePath.getParentFile
+                if (!workSourceParent.exists()) {
+                  IO.createDirectory(workSourceParent)
+                }
+                if (workSourcePath.exists()) {
+                  IO.delete(workSourcePath)
+                }
+                copy(scalaSourcePath, workSourcePath)
+                val canApplyForward =
+                  gitApply("--check", "--recount")(patchWorkRoot) == 0
+                val alreadyPatched =
+                  !canApplyForward &&
+                    gitApply("--reverse", "--check", "--recount")(
+                      patchWorkRoot
+                    ) == 0
+                if (canApplyForward) {
+                  val exitCode =
+                    gitApply("--whitespace=fix", "--recount")(patchWorkRoot)
+                  if (exitCode != 0) {
+                    failedToApplyPatches = true
+                    s.log.error(
+                      s"Cannot apply patch for $patchLabel (git apply exit $exitCode)"
+                    )
+                    return None
+                  }
+                } else if (!alreadyPatched) {
+                  failedToApplyPatches = true
+                  s.log.error(
+                    s"Cannot apply patch for $patchLabel - source is neither pristine nor already patched"
+                  )
+                  return None
+                } else {
+                  s.log.debug(
+                    s"Patch for $sourceName already applied, reusing patched source"
+                  )
+                }
+                copy(workSourcePath, outputFile)
+                Some(outputFile)
+              } catch {
+                case ex: Exception =>
+                  // Postpone failing to check which other patches do not apply
+                  failedToApplyPatches = true
+                  s.log.error(s"Cannot apply patch for $patchLabel - $ex")
+                  None
+              } finally {
+                IO.delete(patchWorkRoot)
+              }
+            }
+
+            if (!normPath(sourcePath.toFile).endsWith(".scala.patch"))
+              addSource(path)(Some(sourcePath.toFile))
             else {
-              optSource.foreach { source =>
-                paths += path
-                sources += source
+              val sourceName = path.stripSuffix(".patch")
+              if (!claimedPatchSources.contains(sourceName)) {
+                claimedPatchSources += sourceName
+                addSource(sourceName)(
+                  tryApplyPatch(sourceName)
+                )
               }
             }
           }
 
-          def copy(source: File, destination: File) = {
-            import java.nio.file.Files
-            import java.nio.file.StandardCopyOption._
-            Files.copy(
-              source.toPath(),
-              destination.toPath(),
-              COPY_ATTRIBUTES,
-              REPLACE_EXISTING
+          if (failedToApplyPatches) {
+            throw new Exception(
+              "Failed to apply some of scalalib patches, check logs for more information"
             )
           }
 
-          def tryApplyPatch(sourceName: String): Option[File] = {
-            val scalaSourcePath = scalaSrcDir / sourceName
-            if (!scalaSourcePath.exists()) {
-              s.log.warn(
-                s"Not found matching source file $sourceName for patch in Scala ${scalaVersion.value} sources, skipped"
-              )
-              return None
-            }
-            val outputFile = crossTarget.value / "patched" / sourceName
-            val outputDir = outputFile.getParentFile
-            if (!outputDir.exists()) {
-              IO.createDirectory(outputDir)
-            }
-            val patchFile = sourcePath.toFile
-            val patchLabel = patchFile.relativeTo(srcDir.getParentFile)
-            if (outputFile.exists() &&
-                outputFile.lastModified() >= patchFile.lastModified() &&
-                outputFile.lastModified() >= scalaSourcePath.lastModified()) {
-              s.log.debug(
-                s"Reusing cached patched source for $sourceName from $patchLabel"
-              )
-              return Some(outputFile)
-            }
-            // There is not a single JVM library for diff that can apply
-            // patches in a fuzzy way (using context lines). We also
-            // canot use jgit to apply patches - it fails due to "invalid hunk headers".
-            // Becouse of that we use git apply instead.
-            // Each patch uses its own temp tree so fetched Scala sources are never
-            // mutated and concurrent or sequential patches cannot interfere.
-            import java.nio.file.{Files => JFiles}
-            val patchWorkRoot =
-              JFiles
-                .createTempDirectory(crossTarget.value.toPath, "patch-work-")
-                .toFile()
-            try {
-              import scala.sys.process._
-              def gitApply(args: String*)(cwd: File): Int =
-                Process(
-                  Seq("git", "apply") ++ args ++ Seq(
-                    patchFile.getAbsolutePath()
-                  ),
-                  cwd = cwd
-                ).!(ProcessLogger(s.log.debug(_), s.log.debug(_)))
+          val resolved = sources.result()
+          IO.writeLines(manifestFile, resolved.map(_.getAbsolutePath))
+          resolved.filter { file =>
+            val path = file.getAbsolutePath
+            path.startsWith(patchedRoot.getAbsolutePath) ||
+              path.startsWith(skippedRoot.getAbsolutePath)
+          }.toSet + manifestFile
+        }(inputFiles)
 
-              val workSourcePath = patchWorkRoot / sourceName
-              val workSourceParent = workSourcePath.getParentFile
-              if (!workSourceParent.exists()) {
-                IO.createDirectory(workSourceParent)
-              }
-              if (workSourcePath.exists()) {
-                IO.delete(workSourcePath)
-              }
-              copy(scalaSourcePath, workSourcePath)
-              val canApplyForward =
-                gitApply("--check", "--recount")(patchWorkRoot) == 0
-              val alreadyPatched =
-                !canApplyForward &&
-                  gitApply("--reverse", "--check", "--recount")(
-                    patchWorkRoot
-                  ) == 0
-              if (canApplyForward) {
-                val exitCode =
-                  gitApply("--whitespace=fix", "--recount")(patchWorkRoot)
-                if (exitCode != 0) {
-                  failedToApplyPatches = true
-                  s.log.error(
-                    s"Cannot apply patch for $patchLabel (git apply exit $exitCode)"
-                  )
-                  return None
-                }
-              } else if (!alreadyPatched) {
-                failedToApplyPatches = true
-                s.log.error(
-                  s"Cannot apply patch for $patchLabel - source is neither pristine nor already patched"
-                )
-                return None
-              } else {
-                s.log.debug(
-                  s"Patch for $sourceName already applied, reusing patched source"
-                )
-              }
-              copy(workSourcePath, outputFile)
-              Some(outputFile)
-            } catch {
-              case ex: Exception =>
-                // Postpone failing to check which other patches do not apply
-                failedToApplyPatches = true
-                s.log.error(s"Cannot apply patch for $patchLabel - $ex")
-                None
-            } finally {
-              IO.delete(patchWorkRoot)
-            }
-          }
-
-          if (!patchGlob.matches(sourcePath))
-            addSource(path)(Some(sourcePath.toFile))
-          else {
-            val sourceName = path.stripSuffix(".patch")
-            if (!claimedPatchSources.contains(sourceName)) {
-              claimedPatchSources += sourceName
-              addSource(sourceName)(
-                tryApplyPatch(sourceName)
-              )
-            }
-          }
-        }
-
-        if (failedToApplyPatches) {
-          throw new Exception(
-            "Failed to apply some of scalalib patches, check logs for more information"
-          )
-        }
-        sources.result()
+        IO.readLines(manifestFile).map(file => new File(file))
       },
       // Don't include classfiles/tasty for scalalib in the packaged jar.
       Compile / packageBin / mappings := {

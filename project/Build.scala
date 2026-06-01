@@ -666,14 +666,14 @@ object Build {
               }
             },
             update := Def.uncached {
-              update.dependsOn {
-                Def.taskDyn {
-                  if (usesSelfContainedStdlib(scalaVersion.value))
-                    scalalib.forBinaryVersion(version) / Compile / publishLocal
-                  else
-                    scalalib.v2_13 / Compile / publishLocal
-                }
-              }.value
+              update
+                .dependsOn:
+                  Def.taskDyn:
+                    Def.cachedTask:
+                      if usesSelfContainedStdlib(scalaVersion.value) then
+                        scalalib.forBinaryVersion(version) / Compile / publishLocal
+                      else scalalib.v2_13 / Compile / publishLocal
+                .value
             }
           )
       }
