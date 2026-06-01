@@ -109,7 +109,8 @@ object Build {
     val git = Git.open(trgDir)
     if git.getRepository.findRef(ref) == null then
       log.info(s"Fetching tags from $repoURL")
-      git.fetch()
+      git
+        .fetch()
         .setRemote("origin")
         .setTagOpt(TagOpt.FETCH_TAGS)
         .call()
