@@ -916,6 +916,11 @@ object Settings {
           "Matchable.scala"
         ).map(java.nio.file.Paths.get("scala", _))
         var failedToApplyPatches = false
+        val claimedPatchSources = mutable.Set.empty[String]
+        val stalePatchWork = crossTarget.value / "patch-work"
+        if (stalePatchWork.exists()) {
+          IO.delete(stalePatchWork)
+        }
         for {
           srcDir <- sourceDirectories
           normSrcDir = normPath(srcDir)
@@ -954,59 +959,82 @@ object Settings {
               )
               return None
             }
-            val scalaSourceCopyPath = scalaSrcDir / (sourceName + ".copy")
             val outputFile = crossTarget.value / "patched" / sourceName
             val outputDir = outputFile.getParentFile
             if (!outputDir.exists()) {
               IO.createDirectory(outputDir)
             }
+            val patchFile = sourcePath.toFile
+            val patchLabel = patchFile.relativeTo(srcDir.getParentFile)
+            if (
+              outputFile.exists() &&
+              outputFile.lastModified() >= patchFile.lastModified() &&
+              outputFile.lastModified() >= scalaSourcePath.lastModified()
+            ) {
+              s.log.debug(s"Reusing cached patched source for $sourceName from $patchLabel")
+              return Some(outputFile)
+            }
             // There is not a single JVM library for diff that can apply
             // patches in a fuzzy way (using context lines). We also
             // canot use jgit to apply patches - it fails due to "invalid hunk headers".
             // Becouse of that we use git apply instead.
-            // We need to create copy of original file and restore it after creating
-            // patched file to allow for recompilation of sources (re-applying patches)
-            // git apply command needs to be used from within fetchedScalaSource directory.
+            // Each patch uses its own temp tree so fetched Scala sources are never
+            // mutated and concurrent or sequential patches cannot interfere.
+            import java.nio.file.{Files => JFiles}
+            val patchWorkRoot =
+              JFiles.createTempDirectory(crossTarget.value.toPath, "patch-work-").toFile()
             try {
               import scala.sys.process._
-              copy(scalaSourcePath, scalaSourceCopyPath)
-              var hasErrors = false
-              Process(
-                command = Seq(
-                  "git",
-                  "apply",
-                  "--reject",
-                  "--whitespace=fix",
-                  "--recount",
-                  sourcePath.toAbsolutePath().toString()
-                ),
-                cwd = scalaSrcDir
-              ).!!(
-                ProcessLogger(
-                  stdout => (),
-                  stderr => {
-                    if (stderr.contains("error")) {
-                      hasErrors = true
-                    }
-                    if (hasErrors) s.log.warn(stderr)
-                    else s.log.debug(stderr)
-                  }
+              def gitApply(args: String*)(cwd: File): Int =
+                Process(
+                  Seq("git", "apply") ++ args ++ Seq(patchFile.getAbsolutePath()),
+                  cwd = cwd
+                ).!(ProcessLogger(s.log.debug(_), s.log.debug(_)))
+
+              val workSourcePath = patchWorkRoot / sourceName
+              val workSourceParent = workSourcePath.getParentFile
+              if (!workSourceParent.exists()) {
+                IO.createDirectory(workSourceParent)
+              }
+              if (workSourcePath.exists()) {
+                IO.delete(workSourcePath)
+              }
+              copy(scalaSourcePath, workSourcePath)
+              val canApplyForward = gitApply("--check", "--recount")(patchWorkRoot) == 0
+              val alreadyPatched =
+                !canApplyForward &&
+                  gitApply("--reverse", "--check", "--recount")(patchWorkRoot) == 0
+              if (canApplyForward) {
+                val exitCode =
+                  gitApply("--whitespace=fix", "--recount")(patchWorkRoot)
+                if (exitCode != 0) {
+                  failedToApplyPatches = true
+                  s.log.error(
+                    s"Cannot apply patch for $patchLabel (git apply exit $exitCode)"
+                  )
+                  return None
+                }
+              } else if (!alreadyPatched) {
+                failedToApplyPatches = true
+                s.log.error(
+                  s"Cannot apply patch for $patchLabel - source is neither pristine nor already patched"
                 )
-              )
-              copy(scalaSourcePath, outputFile)
+                return None
+              } else {
+                s.log.debug(
+                  s"Patch for $sourceName already applied, reusing patched source"
+                )
+              }
+              copy(workSourcePath, outputFile)
               Some(outputFile)
             } catch {
               case ex: Exception =>
                 // Postpone failing to check which other patches do not apply
                 failedToApplyPatches = true
-                val path = sourcePath.toFile.relativeTo(srcDir.getParentFile)
-                s.log.error(s"Cannot apply patch for $path - $ex")
+                s.log.error(s"Cannot apply patch for $patchLabel - $ex")
                 None
             } finally {
-              if (scalaSourceCopyPath.exists()) {
-                copy(scalaSourceCopyPath, scalaSourcePath)
-                scalaSourceCopyPath.delete()
-              }
+              IO.delete(patchWorkRoot)
             }
           }
 
@@ -1014,9 +1042,12 @@ object Settings {
             addSource(path)(Some(sourcePath.toFile))
           else {
             val sourceName = path.stripSuffix(".patch")
-            addSource(sourceName)(
-              tryApplyPatch(sourceName)
-            )
+            if (!claimedPatchSources.contains(sourceName)) {
+              claimedPatchSources += sourceName
+              addSource(sourceName)(
+                tryApplyPatch(sourceName)
+              )
+            }
           }
         }
 
