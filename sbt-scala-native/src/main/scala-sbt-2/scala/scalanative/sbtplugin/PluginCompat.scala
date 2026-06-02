@@ -82,9 +82,9 @@ private[scalanative] object PluginCompat:
     Keys.platform := ScalaNativePlatform.current,
     // On sbt 2, `platform` encodes the Native suffix; use Scala `CrossVersion.binary`
     // only (not ScalaNativeCrossVersion.binary) to avoid doubling native0.5 in ids.
-    // Redefines with sbt default implementation 
+    // Redefines with sbt default implementation
     Keys.crossVersion := {
-      if Keys.crossPaths.value then CrossVersion.binary 
+      if Keys.crossPaths.value then CrossVersion.binary
       else CrossVersion.disabled
     }
   )
