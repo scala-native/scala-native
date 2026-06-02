@@ -76,7 +76,9 @@ lazy val lib = project
       val wrongPrefix =
         s"lib_${CrossVersion.binaryScalaVersion(scalaVersion.value)}-"
       val wrongJars =
-        (target.value ** "*.jar").get().filter(pathFileName(_).startsWith(wrongPrefix))
+        (target.value ** "*.jar")
+          .get()
+          .filter(pathFileName(_).startsWith(wrongPrefix))
       assert(
         wrongJars.isEmpty,
         s"JVM-style artifacts under target (e.g. from sbt 2 target/out/jvm): ${wrongJars.mkString(", ")}"
