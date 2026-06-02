@@ -1048,12 +1048,17 @@ object Settings {
                 }
                 copy(scalaSourcePath, workSourcePath)
                 val canApplyForward =
-                  gitApply("--check", "--recount")(patchWorkRoot) == 0
+                  0 == gitApply("--check", "--whitespace=fix", "--recount")(
+                    patchWorkRoot
+                  )
                 val alreadyPatched =
                   !canApplyForward &&
-                    gitApply("--reverse", "--check", "--recount")(
-                      patchWorkRoot
-                    ) == 0
+                    gitApply(
+                      "--reverse",
+                      "--check",
+                      "--whitespace=fix",
+                      "--recount"
+                    )(patchWorkRoot) == 0
                 if (canApplyForward) {
                   val exitCode =
                     gitApply("--whitespace=fix", "--recount")(patchWorkRoot)
