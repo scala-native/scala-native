@@ -1,5 +1,8 @@
 package scala.scalanative
 
+import java.io.File.pathSeparator
+import java.nio.file.Paths
+
 import scala.scalanative.build._
 
 package object benchmarks {
@@ -10,7 +13,13 @@ package object benchmarks {
     .withLinkingOptions(Discover.linkingOptions())
 
   lazy val defaultConfig = Config.empty
-    .withClassPath(BuildInfo.fullTestSuiteClasspath.map(_.toPath))
+    .withClassPath(
+      BuildInfo.fullTestSuiteClasspath
+        .split(pathSeparator)
+        .filter(_.nonEmpty)
+        .map(Paths.get(_))
+        .toSeq
+    )
     .withLogger(Logger.nullLogger)
     .withCompilerConfig(defaultNativeConfig)
 
