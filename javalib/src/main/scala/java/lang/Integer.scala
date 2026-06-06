@@ -316,6 +316,66 @@ object Integer {
       radix: scala.Int,
       negative: scala.Boolean
   ): scala.Int = {
+    if (radix == 10) parseDecimal(s, _offset, negative)
+    else parseGeneric(s, _offset, radix, negative)
+  }
+
+  private def parseDecimal(
+      s: String,
+      _offset: scala.Int,
+      negative: scala.Boolean
+  ): scala.Int = {
+    val length = s.length()
+    val digitCount = length - _offset
+    if (digitCount <= 0) fail(s)
+    var offset = _offset
+    var result = 0
+
+    // Phase 1: up to 9 digits — no overflow possible
+    // (999_999_999 < 2_147_483_647)
+    val safeEnd = Math.min(length, offset + 9)
+    while (offset < safeEnd) {
+      val d = s.charAt(offset) - '0'
+      if (d < 0 || d > 9) {
+        val ud = Character.digit(s.charAt(offset), 10)
+        if (ud == -1) fail(s)
+        result = result * 10 - ud
+        offset += 1
+      } else {
+        result = result * 10 - d
+        offset += 1
+      }
+    }
+
+    // Phase 2: 10th digit — overflow check required
+    if (offset < length) {
+      val d = s.charAt(offset) - '0'
+      val digit = if (d < 0 || d > 9) {
+        val ud = Character.digit(s.charAt(offset), 10)
+        if (ud == -1) fail(s)
+        ud
+      } else d
+      offset += 1
+      if (-214748364 > result) fail(s)
+      val next = result * 10 - digit
+      if (next > result) fail(s)
+      result = next
+      if (offset < length) fail(s)
+    }
+
+    if (!negative) {
+      result = -result
+      if (result < 0) fail(s)
+    }
+    result
+  }
+
+  private def parseGeneric(
+      s: String,
+      _offset: scala.Int,
+      radix: scala.Int,
+      negative: scala.Boolean
+  ): scala.Int = {
     val max = MIN_VALUE / radix
     val length = s.length()
     var result = 0
@@ -546,6 +606,61 @@ object Integer {
   }
 
   private def parseUnsigned(s: String, _offset: Int, radix: Int): scala.Int = {
+    if (radix == 10) parseUnsignedDecimal(s, _offset)
+    else parseUnsignedGeneric(s, _offset, radix)
+  }
+
+  private def parseUnsignedDecimal(
+      s: String,
+      _offset: Int
+  ): scala.Int = {
+    val length = s.length()
+    val digitCount = length - _offset
+    if (digitCount <= 0) fail(s)
+    var offset = _offset
+    var result = 0
+
+    // Phase 1: up to 9 digits — no overflow possible
+    // (999_999_999 fits in signed Int, safe for unsigned accumulation)
+    val safeEnd = Math.min(length, offset + 9)
+    while (offset < safeEnd) {
+      val d = s.charAt(offset) - '0'
+      if (d < 0 || d > 9) {
+        val ud = Character.digit(s.charAt(offset), 10)
+        if (ud == -1) fail(s)
+        result = result * 10 + ud
+        offset += 1
+      } else {
+        result = result * 10 + d
+        offset += 1
+      }
+    }
+
+    // Phase 2: 10th digit — unsigned overflow check required
+    while (offset < length) {
+      val d = s.charAt(offset) - '0'
+      val digit = if (d < 0 || d > 9) {
+        val ud = Character.digit(s.charAt(offset), 10)
+        if (ud == -1) fail(s)
+        ud
+      } else d
+      offset += 1
+      if (compareUnsigned(result, 429496729) > 0) fail(s)
+      result = result * 10 + digit
+      if (compareUnsigned(digit, result) > 0)
+        throw new NumberFormatException(
+          s"""String value $s exceeds range of unsigned int."""
+        )
+    }
+
+    result
+  }
+
+  private def parseUnsignedGeneric(
+      s: String,
+      _offset: Int,
+      radix: Int
+  ): scala.Int = {
     val unsignedIntMaxValue = -1
     val max = divideUnsigned(unsignedIntMaxValue, radix)
     var result = 0
