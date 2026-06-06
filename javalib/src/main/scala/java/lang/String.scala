@@ -352,23 +352,24 @@ final class _String()
         // Process 4 chars (8 bytes) at a time
         while (i + 4 <= len) {
           val srcOffset = i * 2
-          val long = Intrinsics.loadLong(Intrinsics.elemRawPtr(srcRawPtr, srcOffset))
+          val long =
+            Intrinsics.loadLong(Intrinsics.elemRawPtr(srcRawPtr, srcOffset))
           // Extract low bytes of each char (little-endian)
           Intrinsics.storeByte(
             Intrinsics.elemRawPtr(dstRawPtr, i),
-            (long & 0xFF).toByte
+            (long & 0xff).toByte
           )
           Intrinsics.storeByte(
             Intrinsics.elemRawPtr(dstRawPtr, i + 1),
-            ((long >> 16) & 0xFF).toByte
+            ((long >> 16) & 0xff).toByte
           )
           Intrinsics.storeByte(
             Intrinsics.elemRawPtr(dstRawPtr, i + 2),
-            ((long >> 32) & 0xFF).toByte
+            ((long >> 32) & 0xff).toByte
           )
           Intrinsics.storeByte(
             Intrinsics.elemRawPtr(dstRawPtr, i + 3),
-            ((long >> 48) & 0xFF).toByte
+            ((long >> 48) & 0xff).toByte
           )
           i += 4
         }
@@ -468,7 +469,8 @@ final class _String()
       // Optimized BMP char search using SWAR (SIMD Within A Register).
       // Process 4 chars (8 bytes) at a time using Long loads.
       // Each char is 2 bytes; we compare all 4 chars simultaneously.
-      val charMask = ch.toLong | (ch.toLong << 16) | (ch.toLong << 32) | (ch.toLong << 48)
+      val charMask =
+        ch.toLong | (ch.toLong << 16) | (ch.toLong << 32) | (ch.toLong << 48)
       val srcRawPtr = value.atRawUnsafe(offset + start)
       val len = endIndex - start
       var i = 0
@@ -478,7 +480,8 @@ final class _String()
         val xored = long ^ charMask
         // Check if any 16-bit char matches (both low and high bytes are zero)
         // Use the SWAR zero-detection formula: has zero if any 16-bit lane is zero
-        val hasZero = ((xored - 0x0001000100010001L) & ~xored & 0x8000800080008000L) != 0
+        val hasZero =
+          ((xored - 0x0001000100010001L) & ~xored & 0x8000800080008000L) != 0
         if (hasZero) {
           // Found a match, check each char
           if (value(offset + start + i) == ch) return start + i
