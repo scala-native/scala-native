@@ -605,10 +605,13 @@ protected abstract class AbstractStringBuilder private (unit: Unit) {
     val wasted = value.length - count
     if (wasted >= 256 ||
         (wasted >= INITIAL_CAPACITY && wasted >= (count >> 1))) {
+      // Too much wasted space: copy the buffer to a right-sized array
       return new String(value, 0, count)
     }
+    // Share the buffer with the String (zero-copy). Set shared=true so that
+    // any subsequent modification to this StringBuilder triggers a copy-on-write.
     shared = true
-    return new String(value, 0, count)
+    new String(0, count, value)
   }
 
   def subSequence(start: scala.Int, end: scala.Int): CharSequence =
