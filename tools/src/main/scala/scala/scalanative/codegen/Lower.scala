@@ -873,7 +873,6 @@ private[scalanative] object Lower {
       }
       private val multithreadingEnabled = meta.platform.isMultithreadingEnabled
       private val usesGCYieldPoints = multithreadingEnabled && supportedGC
-      private val useYieldPointTraps = platform.useGCYieldPointTraps
 
       def apply(defn: nir.Defn.Define): Boolean = {
         if (!usesGCYieldPoints) false
@@ -983,6 +982,61 @@ private[scalanative] object Lower {
         buf.let(n, nir.Op.Conv(nir.Conv.Trunc, nir.Type.Long, high64), nir.Next.None)
     }
 
+    // Extern functions that don't block in strict mode
+    object isWellKnownNonBlockingExternFunction extends Function1[nir.Sig, Boolean] {
+      var nonBlocking = mutable.HashSet.empty[nir.Sig]
+      nonBlocking ++= Seq(
+        "scalanative_GC_alloc",
+        "scalanative_GC_alloc_small",
+        "scalanative_GC_alloc_large",
+        "scalanative_GC_alloc_array",
+        "memcpy",
+        "errno"
+      ).map(nir.Sig.Extern(_).mangled)
+      nonBlocking ++= Set(
+        GCYieldName.sig,
+        memsetName.sig
+      )
+
+      def apply(sig: nir.Sig): Boolean = {
+        nonBlocking.contains(sig) || {
+          sig.unmangled match {
+            case nir.Sig.Extern(name) =>
+              val isNonBlocking =
+                name.startsWith("scalanative_atomic_") ||
+                  name.startsWith("llvm.")
+              if (isNonBlocking) nonBlocking += sig
+              isNonBlocking
+            case _ => false
+          }
+        }
+      }
+    }
+    def shouldSwitchThreadState(name: nir.Global.Member) =
+      platform.isMultithreadingEnabled && analysis.infos.get(name).exists { info =>
+        val attrs = info.attrs
+        attrs.isExtern && {
+          config.semanticsConfig.strictExternCallSemantics match {
+            case false => attrs.isBlocking
+            case _     => !isWellKnownNonBlockingExternFunction(name.sig)
+          }
+        }
+      }
+
+    object shouldCarrierCompensateBlockingExtern {
+      private val usesVirtualThreads = platform.isMultithreadingEnabled && {
+        analysis.infos.get(RuntimeVirtualThread).exists {
+          case info: ScopeInfo => info.implementors.exists(_.allocations > 0)
+          case _               => false
+        }
+      }
+      def apply(name: nir.Global.Member) =
+        usesVirtualThreads && analysis.infos.get(name).exists { info =>
+          val attrs = info.attrs
+          attrs.isExtern && attrs.isBlocking
+        }
+    }
+
     def genCallOp(
         buf: nir.InstructionBuilder,
         n: nir.Local,
@@ -1008,53 +1062,35 @@ private[scalanative] object Lower {
         if (unwindHandler.isInitialized) unwind else nir.Next.None
       )
 
-      // Extern functions that don't block in strict mode
-      object isWellKnownNonBlockingExternFunction extends Function1[nir.Sig, Boolean] {
-        var nonBlocking = mutable.HashSet.empty[nir.Sig]
-        nonBlocking ++= Seq(
-          "scalanative_GC_alloc",
-          "scalanative_GC_alloc_small",
-          "scalanative_GC_alloc_large",
-          "scalanative_GC_alloc_array",
-          "memcpy",
-          "errno"
-        ).map(nir.Sig.Extern(_).mangled)
-        nonBlocking ++= Set(
-          GCYieldName.sig,
-          memsetName.sig
-        )
-
-        def apply(sig: nir.Sig): Boolean = {
-          nonBlocking.contains(sig) || {
-            sig.unmangled match {
-              case nir.Sig.Extern(name) =>
-                val isNonBlocking =
-                  name.startsWith("scalanative_atomic_") ||
-                    name.startsWith("llvm.")
-                if (isNonBlocking) nonBlocking += sig
-                isNonBlocking
-              case _ => false
-            }
-          }
-        }
-      }
-      def shouldSwitchThreadState(name: nir.Global.Member) =
-        platform.isMultithreadingEnabled && analysis.infos.get(name).exists { info =>
-          val attrs = info.attrs
-          attrs.isExtern && {
-            config.semanticsConfig.strictExternCallSemantics match {
-              case false => attrs.isBlocking
-              case _     => !isWellKnownNonBlockingExternFunction(name.sig)
-            }
-          }
-        }
-
       ptr match {
-        case nir.Val.Global(global: nir.Global.Member, _) if shouldSwitchThreadState(global) =>
-          switchThreadState(managed = false)
-          genCall()
-          genGCYieldpoint(buf, genUnwind = false)
-          switchThreadState(managed = true)
+        case nir.Val.Global(global: nir.Global.Member, _) =>
+          // Notify GC about entering blocking external call
+          def maybeSwitchThreadState(body: => Unit): Unit = {
+            if (shouldSwitchThreadState(global)) {
+              switchThreadState(managed = false)
+              body
+              genGCYieldpoint(buf, genUnwind = false)
+              switchThreadState(managed = true)
+            } else body
+          }
+
+          // Notify VT carrier thread scheduler about entering blocking external call
+          def maybeCarrierCompensateBlockingExtern(body: => Unit): Unit = {
+            if (shouldCarrierCompensateBlockingExtern(global)) {
+              val unwindForPrep =
+                if (unwindHandler.isInitialized) unwind
+                else nir.Next.None
+              val attemptedVal = buf.let(nir.Op.Call(Lower.RuntimeBlockerBeginTy, Lower.RuntimeBlockerBegin, Seq.empty), unwindForPrep)
+              body
+              buf.call(Lower.RuntimeBlockerEndTy, Lower.RuntimeBlockerEnd, Seq(attemptedVal), nir.Next.None)
+            } else body
+          }
+
+          maybeCarrierCompensateBlockingExtern {
+            maybeSwitchThreadState {
+              genCall()
+            }
+          }
 
         case _ => genCall()
       }
@@ -1523,9 +1559,19 @@ private[scalanative] object Lower {
 
           label(resultL, Seq(nir.Val.Local(n, op.resty)))
 
+        // Remove redundant `bitcast ptr %x to ptr`
+        case nir.Op.Conv(nir.Conv.Bitcast, toty, value) if platform.useOpaquePointers && isPtrInLLVM(toty) && isPtrInLLVM(value.ty) =>
+          let(n, nir.Op.Copy(genVal(buf, value)), unwind)
+
         case nir.Op.Conv(conv, ty, value) =>
           let(n, nir.Op.Conv(conv, ty, genVal(buf, value)), unwind)
       }
+    }
+
+    private def isPtrInLLVM(ty: nir.Type): Boolean = ty match {
+      case nir.Type.Unit                                         => false
+      case _: nir.Type.RefKind | nir.Type.Ptr | nir.Type.Nothing => true
+      case _                                                     => false
     }
 
     def genBinOp(
@@ -2373,6 +2419,17 @@ private[scalanative] object Lower {
     nir.Type.Ptr
   )
 
+  private val RuntimeVirtualThread = nir.Global.Top("scala.scalanative.runtime.VirtualThread")
+  private val RuntimeBlockerModule = nir.Global.Top("scala.scalanative.runtime.Blocker$")
+  private val RuntimeBlockerBeginSigUnmangled = nir.Sig.Method("begin", Seq(nir.Type.Bool), nir.Sig.Scope.Public)
+  private val RuntimeBlockerEndSigUnmangled = nir.Sig.Method("end", Seq(nir.Type.Bool, nir.Type.Unit), nir.Sig.Scope.Public)
+  val RuntimeBlockerBeginName = RuntimeBlockerModule.member(RuntimeBlockerBeginSigUnmangled)
+  val RuntimeBlockerEndName = RuntimeBlockerModule.member(RuntimeBlockerEndSigUnmangled)
+  val RuntimeBlockerBeginTy = nir.Type.Function(Nil, nir.Type.Bool)
+  val RuntimeBlockerEndTy = nir.Type.Function(Seq(nir.Type.Bool), nir.Type.Unit)
+  val RuntimeBlockerBegin = nir.Val.Global(RuntimeBlockerBeginName, nir.Type.Ptr)
+  val RuntimeBlockerEnd = nir.Val.Global(RuntimeBlockerEndName, nir.Type.Ptr)
+
   val memsetSig =
     nir.Type.Function(
       Seq(nir.Type.Ptr, nir.Type.Int, nir.Type.Size),
@@ -2441,6 +2498,8 @@ private[scalanative] object Lower {
       buf += GCYield.name
       if (platform.useGCYieldPointTraps) buf += GCYieldPointTrap.name
       buf += GCSetMutatorThreadState.name
+      buf += RuntimeBlockerBeginName
+      buf += RuntimeBlockerEndName
     }
     buf.toSeq
   }

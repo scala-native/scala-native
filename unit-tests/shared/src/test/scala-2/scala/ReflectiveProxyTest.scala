@@ -251,7 +251,13 @@ class ReflectiveProxyTest {
 
     class A
 
-    assertTrue(objNotifyTest(new A()) == 1)
+    assertThrows(classOf[IllegalMonitorStateException], objNotifyTest(new A()))
+    synchronized {
+      assertThrows(
+        classOf[IllegalMonitorStateException],
+        objNotifyTest(new A())
+      )
+    }
   }
 
   @Test def shouldWorkOnJavaLangObjectClone(): Unit = {

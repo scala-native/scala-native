@@ -76,9 +76,23 @@ class ArrayList[E] private (
   // cannot link: @java.util.ArrayList::isEmpty_bool
   override def isEmpty(): Boolean = _size == 0
 
-  override def indexOf(o: Any): Int = inner.indexOf(o)
+  override def indexOf(o: Any): Int = {
+    var i = 0
+    while (i < _size) {
+      if (Objects.equals(o, inner(i))) return i
+      i += 1
+    }
+    -1
+  }
 
-  override def lastIndexOf(o: Any): Int = inner.lastIndexOf(o)
+  override def lastIndexOf(o: Any): Int = {
+    var i = _size - 1
+    while (i >= 0) {
+      if (Objects.equals(o, inner(i))) return i
+      i -= 1
+    }
+    -1
+  }
 
   // shallow-copy
   override def clone(): AnyRef = new ArrayList(inner.clone(), _size)
@@ -146,13 +160,13 @@ class ArrayList[E] private (
     removed
   }
 
-  override def remove(o: Any): Boolean =
-    inner.indexOf(o) match {
-      case -1  => false
-      case idx =>
-        remove(idx)
-        true
-    }
+  override def remove(o: Any): Boolean = {
+    val idx = indexOf(o)
+    if (idx >= 0) {
+      remove(idx)
+      true
+    } else false
+  }
 
   override def removeRange(fromIndex: Int, toIndex: Int): Unit = {
 

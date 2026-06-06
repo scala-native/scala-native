@@ -11,7 +11,7 @@ import scala.util.control.NonFatal
 import scala.scalanative.build.Discover
 import scala.scalanative.codegen.llvm.Metadata.conversions._
 import scala.scalanative.codegen.llvm.compat.os.OsCompat
-import scala.scalanative.codegen.{Metadata => CodeGenMetadata}
+import scala.scalanative.codegen.{Lower, Metadata => CodeGenMetadata}
 import scala.scalanative.io.VirtualDirectory
 import scala.scalanative.nir.ControlFlow.{Block, Graph => CFG}
 import scala.scalanative.nir.Defn.Define.DebugInfo
@@ -36,7 +36,9 @@ private[codegen] abstract class AbstractCodeGen(
 
   private val copies = mutable.Map.empty[nir.Local, nir.Val]
   private val deps = mutable.Set.empty[nir.Global.Member]
+  deps.sizeHint(1024)
   private val generated = mutable.Set.empty[String]
+  generated.sizeHint(1024)
   private val externSigMembers = mutable.Map.empty[nir.Sig, nir.Global.Member]
 
   private def isGnu: Boolean = {
@@ -62,7 +64,7 @@ private[codegen] abstract class AbstractCodeGen(
     dir.write(metadata) { metadataWriter =>
       implicit val metadata: MetadataCodeGen.Context =
         new MetadataCodeGen.Context(this, new FileShowBuilder(metadataWriter))
-      genDebugMetadata()
+      genPlatformMetadata()
 
       dir.write(body) { writer =>
         implicit val fsb: ShowBuilder = new FileShowBuilder(writer)
@@ -83,15 +85,23 @@ private[codegen] abstract class AbstractCodeGen(
     dir.merge(Seq(body, metadata), headers)
   }
 
-  private def genDebugMetadata()(implicit
+  private def genPlatformMetadata()(implicit
       ctx: MetadataCodeGen.Context
   ): Unit = {
     import Metadata.Constants._
     import Metadata.ModFlagBehavior._
-    dbg("llvm.module.flags")(
-      tuple(Max, "Dwarf Version", DWARF_VERSION),
-      tuple(Warning, "Debug Info Version", DEBUG_INFO_VERSION)
-    )
+    val flags = List.newBuilder[Metadata.Node]
+    if (!platform.targetsWindows) {
+      flags += tuple(Min, "PIC Level", PIC_LEVEL)
+      flags += tuple(Max, "PIE Level", PIE_LEVEL)
+    }
+    if (generateDebugMetadata) {
+      flags += tuple(Max, "Dwarf Version", DWARF_VERSION)
+      flags += tuple(Warning, "Debug Info Version", DEBUG_INFO_VERSION)
+    }
+    val result = flags.result()
+    if (result.nonEmpty)
+      emitNamedMetadata("llvm.module.flags")(result: _*)
   }
 
   private def genDeps()(implicit
@@ -211,6 +221,12 @@ private[codegen] abstract class AbstractCodeGen(
       unsupported(defn)
   }
 
+  // Currently we have a single usage for interaction with GC
+  private def isThreadLocal(name: nir.Global): Boolean =
+    (name == Lower.GCYieldPointTrapName) &&
+      platform.isMultithreadingEnabled &&
+      platform.useGCYieldPointTraps
+
   private[codegen] def genGlobalDefn(
       attrs: nir.Attrs,
       name: nir.Global,
@@ -223,6 +239,9 @@ private[codegen] abstract class AbstractCodeGen(
     genGlobal(name)
     str(" = ")
     str(if (attrs.isExtern) "external " else "hidden ")
+    if (attrs.isExtern && isThreadLocal(name)) {
+      str("thread_local ")
+    }
     str(if (isConst) "constant" else "global")
     str(" ")
     if (attrs.isExtern) {
@@ -489,10 +508,11 @@ private[codegen] abstract class AbstractCodeGen(
   private[codegen] def genType(ty: nir.Type)(implicit sb: ShowBuilder): Unit = {
     import sb._
     ty match {
-      case nir.Type.Vararg => str("...")
-      case nir.Type.Unit   => str("void")
-      case _: nir.Type.RefKind | nir.Type.Ptr | nir.Type.Null |
-          nir.Type.Nothing =>
+      case nir.Type.Vararg =>
+        str("...")
+      case nir.Type.Unit =>
+        str("void")
+      case _: nir.Type.RefKind | nir.Type.Ptr | nir.Type.Nothing =>
         str(pointerType)
       case nir.Type.Bool          => str("i1")
       case i: nir.Type.FixedSizeI => str("i"); str(i.width)
@@ -578,7 +598,7 @@ private[codegen] abstract class AbstractCodeGen(
         rep(vs, sep = ", ")(genVal)
         str(" ]")
       case nir.Val.ByteString(v) =>
-        genByteString(v)
+        genByteString(v.toIndexedSeq)
       case nir.Val.Local(n, ty) =>
         str("%")
         genLocal(n)
@@ -1018,7 +1038,21 @@ private[codegen] abstract class AbstractCodeGen(
         )
 
       case Lower.GCYield if useGCYieldPointTraps =>
-        // We can't express volatile load in NIR, inline only expected usage
+        // We can't express volatile load in NIR, inline only expected usage.
+        //
+        // Both loads must be volatile. The first reads the per-thread trap
+        // cell pointer from the thread-local @scalanative_GC_yieldpoint_trap
+        // slot; without volatile, LLVM is free to CSE/hoist this load (and
+        // the underlying `mrs tpidr_el0` address calculation on AArch64) to
+        // a single read at function entry, spilling the result to the stack.
+        // Continuation suspend/resume can then move execution to a different
+        // OS thread mid-function; subsequent safepoint polls would reuse the
+        // spilled (stale) trap-cell pointer of the original carrier. When
+        // GC arms safepoints all carriers' trap pages get mprotected, so the
+        // stale dereference faults on a foreign mutator's page and the
+        // SafepointTrapHandler cannot match it against the current carrier.
+        // Marking the load volatile forbids LLVM from removing/merging it
+        // and forces a fresh TLS-slot read at every yield point.
         val trap = fresh()
         val nir.Sig.Extern(safepointTrapField) =
           Lower.GCYieldPointTrapName.sig.unmangled: @unchecked
@@ -1026,11 +1060,11 @@ private[codegen] abstract class AbstractCodeGen(
         str {
           if (useOpaquePointers)
             s"""|
-                |  %_${trap.id} = load ptr, ptr @${safepointTrapField}
+                |  %_${trap.id} = load volatile ptr, ptr @${safepointTrapField}
                 |  %_${fresh().id} = load volatile ptr, ptr %_${trap.id}""".stripMargin
           else
             s"""|
-                |  %_${trap.id} = load i8**, i8*** bitcast(i8** @$safepointTrapField to i8***)
+                |  %_${trap.id} = load volatile i8**, i8*** bitcast(i8** @$safepointTrapField to i8***)
                 |  %_${fresh().id} = load volatile i8*, i8** %_${trap.id}""".stripMargin
         }
 

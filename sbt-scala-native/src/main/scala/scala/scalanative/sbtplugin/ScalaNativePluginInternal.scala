@@ -14,11 +14,10 @@ import java.nio.file.{Files, Path}
 import java.util.concurrent.atomic._
 import java.util.concurrent.locks.ReentrantLock
 
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.concurrent.*
 import scala.concurrent.duration.Duration
 import scala.sys.process.Process
-import scala.util.Try
 
 import scala.scalanative.build.*
 import scala.scalanative.linker.LinkingException
@@ -50,9 +49,12 @@ import xsbti.FileConverter
  *      (currently 3), and test true and false for each
  */
 object ScalaNativePluginInternal {
+  private final val MinimumSupportedJDK = 8
+  private final val WarnOnJDKOlderThan = 17
 
+  @deprecated("Deprecated for removal in favor of internal logging", "0.5.12")
   val nativeWarnOldJVM =
-    taskKey[Unit]("Warn if JVM 7 or older is used.")
+    taskKey[Unit]("Report if using unsupported or deprecated JVM version")
 
   lazy val scalaNativeDependencySettings: Seq[Setting[_]] = {
     val nativeStandardLibraries =
@@ -115,7 +117,11 @@ object ScalaNativePluginInternal {
    *    [[ScalaNativePlugin#globalSettings]]
    */
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
-    nativeConfig := Def.uncached {
+    onLoad := {
+      checkJVMVersion(sLog.value)
+      onLoad.value
+    },
+    nativeConfig := {
       build.NativeConfig.empty
         .withClang(interceptBuildException(Discover.clang()))
         .withClangPP(interceptBuildException(Discover.clangpp()))
@@ -126,15 +132,11 @@ object ScalaNativePluginInternal {
         .withMode(Discover.mode())
         .withOptimize(Discover.optimize())
     },
+    ThisBuild / nativeConfig := (Global / nativeConfig).value,
     nativeWarnOldJVM := {
       val logger = streams.value.log
-      Try(Class.forName("java.util.function.Function")).toOption match {
-        case None =>
-          logger.warn("Scala Native is only supported on Java 8 or newer.")
-        case Some(_) =>
-          ()
-      }
-    },
+      checkJVMVersion(logger)
+    }: @annotation.nowarn,
     onComplete := {
       val prev: () => Unit = onComplete.value
       () => {
@@ -183,7 +185,7 @@ object ScalaNativePluginInternal {
   private def nativeLinkCachedTask(
       testConfig: Boolean,
       moduleSuffix: String,
-      configureNativeConfig: NativeConfig => NativeConfig
+      linkKey: TaskKey[FileRef]
   ): Def.Initialize[Task[FileRef]] =
     Def
       .task {
@@ -191,7 +193,7 @@ object ScalaNativePluginInternal {
         val sbtLogger = streams.value.log
         val nativeLogger = sbtLogger.toLogger
         val classpath = PluginCompat.toNioPaths(fullClasspath.value)
-        val userConfig = nativeConfig.value
+        val userConfig = (linkKey / nativeConfig).value
         val sourcesClassPath = resolveSourcesClassPath(
           userConfig,
           dependencyResolution.value,
@@ -200,7 +202,7 @@ object ScalaNativePluginInternal {
         )
 
         val artifactFile = nativeLinkImpl(
-          nativeConfig = configureNativeConfig(userConfig),
+          nativeConfig = userConfig,
           classpath = classpath,
           sourcesClassPath = sourcesClassPath,
           sbtLogger = sbtLogger,
@@ -226,20 +228,25 @@ object ScalaNativePluginInternal {
           s"-P:scalanative:positionRelativizationPaths:${sourceDirectories.value.map(_.getAbsolutePath()).mkString(";")}"
         )
     },
+    nativeLink / nativeConfig := nativeConfig.value,
+    nativeLinkReleaseFast / nativeConfig := nativeConfig.value
+      .withMode(Mode.releaseFast),
+    nativeLinkReleaseFull / nativeConfig := nativeConfig.value
+      .withMode(Mode.releaseFull),
     nativeLinkReleaseFull := nativeLinkCachedTask(
       testConfig,
       moduleSuffix = "-release-full",
-      configureNativeConfig = _.withMode(Mode.releaseFull)
+      linkKey = nativeLinkReleaseFull
     ).value,
     nativeLinkReleaseFast := nativeLinkCachedTask(
       testConfig,
       moduleSuffix = "-release-fast",
-      configureNativeConfig = _.withMode(Mode.releaseFast)
+      linkKey = nativeLinkReleaseFast
     ).value,
     nativeLink := nativeLinkCachedTask(
       testConfig,
       moduleSuffix = "",
-      configureNativeConfig = identity
+      linkKey = nativeLink
     ).value,
     console := console
       .dependsOn(Def.task {
@@ -358,7 +365,7 @@ object ScalaNativePluginInternal {
             .triggeredBy(loadedTestFrameworks)
             .value
         }
-      )
+      ) ++ PluginCompat.incrementalTestSettings
 
   /** Called by overridden method in plugin
    *
@@ -451,7 +458,7 @@ object ScalaNativePluginInternal {
                   util.Logger.Null
                 )
               )
-              .flatMap(_.right.toOption)
+              .flatMap(_.right.toOption: @nowarn)
               .flatMap(_.allFiles)
               .filter(_.name.endsWith("-sources.jar"))
               .map(_.toPath())
@@ -469,4 +476,31 @@ object ScalaNativePluginInternal {
     }
   }
 
+  private def hostJavaSpecificationVersion(): Int = {
+    val fullVersion = sys.props
+      .get("java.specification.version")
+      .orElse(sys.props.get("java.version"))
+      .getOrElse("")
+
+    fullVersion.stripPrefix("1.").takeWhile(_.isDigit) match {
+      case ""     => 0
+      case digits => digits.toInt
+    }
+  }
+
+  private def checkJVMVersion(logger: util.Logger): Unit = {
+    val currentVersion = hostJavaSpecificationVersion()
+    if (currentVersion < MinimumSupportedJDK) {
+      throw new MessageOnlyException(
+        s"Scala Native requires JDK $MinimumSupportedJDK or newer."
+      )
+    }
+    if (currentVersion < WarnOnJDKOlderThan) {
+      logger.warn(
+        s"Using JDK $currentVersion with Scala Native. " +
+          s"Support for running Scala Native on JDK < $WarnOnJDKOlderThan is deprecated - it would be removed in the future; " +
+          s"please upgrade to JDK $WarnOnJDKOlderThan or newer."
+      )
+    }
+  }
 }

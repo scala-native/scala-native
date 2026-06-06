@@ -16,6 +16,13 @@ class LinktimeInfoTest {
     assertEquals(LinktimeInfo.runtimeVersion, ScalaNativeBuildInfo.version)
   }
 
+  @Test def testVirtualThreadsSupport(): Unit = {
+    assertEquals(
+      LinktimeInfo.isMultithreadingEnabled && LinktimeInfo.isContinuationsSupported,
+      LinktimeInfo.isVirtualThreadsSupported
+    )
+  }
+
   @Test def testOS(): Unit = {
     assertEquals("FreeBSD", Platform.isFreeBSD(), LinktimeInfo.isFreeBSD)
     assertEquals("Linux", Platform.isLinux(), LinktimeInfo.isLinux)

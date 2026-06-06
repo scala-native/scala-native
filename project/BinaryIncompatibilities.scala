@@ -43,6 +43,9 @@ object BinaryIncompatibilities {
     exclude[Problem]("scala.scalanative.build.Config*Impl*"),
     // Should have never been public in the first place - contains local classpaths
     exclude[MissingClassProblem]("scala.scalanative.buildinfo.ScalaNativeBuildInfo*"),
+    // Package private
+    exclude[DirectMissingMethodProblem]("scala.scalanative.build.Discover.checkClangVersion"),
+    exclude[DirectMissingMethodProblem]("scala.scalanative.build.Discover.clangMinVersion"),
   )
 
   final val NativeLib = Seq(

@@ -3,6 +3,7 @@ package org.scalanative
 import java.nio.file.Files
 
 import org.junit.Assert._
+import org.junit.Assume._
 import org.junit.Test
 
 import scala.scalanative.api._
@@ -20,14 +21,19 @@ class NativeCompilerTest:
     }
   }
 
-  def compileAll(sources: (String, String)*): Unit = {
+  def compileAll(sources: (String, String)*): Unit =
+    compileAll(scalacOptions = Nil)(sources: _*)
+
+  def compileAll(
+      scalacOptions: Seq[String] = Nil
+  )(sources: (String, String)*): Unit = {
     Scope { implicit in =>
       val outDir = Files.createTempDirectory("native-test-out")
       val compiler = scalanative.NIRCompiler.getCompiler(outDir)
       val sourcesDir = scalanative.NIRCompiler.writeSources(sources.toMap)
       val dir = VirtualDirectory.real(outDir)
 
-      try scalanative.NIRCompiler(_.compile(sourcesDir))
+      try scalanative.NIRCompiler(_.compile(sourcesDir, scalacOptions.toArray))
       catch {
         case ex: CompilationFailedException =>
           fail(s"Failed to compile source: $ex")
@@ -222,3 +228,41 @@ class NativeCompilerTest:
           |}
           |""".stripMargin
   )
+
+  @Test def issue4869(): Unit = {
+    assumeTrue(
+      "Scala 3.3 LTS specific",
+      sys.props
+        .get("scalanative.scalaversion")
+        .map(_.split("[\\.-]").take(3).map(_.toInt))
+        .exists {
+          case Array(3, 3, patch) => patch >= 8
+          case _                  => false
+        }
+    )
+    assumeTrue(
+      "JDK 9+ specific",
+      sys.props
+        .get("java.specification.version")
+        .flatMap(_.toIntOption)
+        .exists(_ >= 9)
+    )
+    val testSources = Seq(
+      "Test.scala" ->
+        s"""|trait A:
+            |  def b: String
+            |
+            |object A:
+            |  def a(s: String): A = new A {
+            |    override lazy val b: String = s
+            |  }
+            |""".stripMargin
+    )
+    compileAll(scalacOptions = Seq())(testSources*)
+    compileAll(scalacOptions = Seq("-release:9", "-Yfuture-lazy-vals"))(
+      testSources*
+    )
+    compileAll(scalacOptions = Seq("-release:9", "-Ylegacy-lazy-vals"))(
+      testSources*
+    )
+  }

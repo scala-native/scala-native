@@ -66,17 +66,58 @@ often done in a project's `build.sbt`.
 **Warning**: If you change settings you should clean your project to
 remove generated code to be safe.
 
-Scala Native starts execution with a NativeConfig object, called
-nativeConfig, filled with default values:
+Scala Native starts execution with a `NativeConfig` value produced by
+the `nativeConfig` task, with defaults at `Global` scope (discovered
+compiler, LTO, GC, and so on). `ThisBuild / nativeConfig` is defined to
+delegate to that global default.
+
+Each `withX()` method creates a new `NativeConfig` with the indicated `X`
+value set. All other fields are copied from the object being transformed.
+
+To inspect the effective config at a scope:
 
     show ThisBuild / nativeConfig
+    show Compile / nativeConfig
 
-Each `withX()` method creates a new NativeConfig with the indicated `X`
-value set. All other settings are taken from the Config object being
-accessed.
+### Scoped `nativeConfig`
 
-To show nativeConfig values active in current scope at any point in
-time:
+`nativeConfig` is an sbt **task** (`TaskKey[NativeConfig]`). When a link
+task runs (`nativeLink`, `nativeLinkReleaseFast`, or
+`nativeLinkReleaseFull`), it resolves `nativeConfig` using sbt’s scope
+delegation, from more specific to more general, for example:
+
+`Compile / nativeLinkReleaseFull / nativeConfig` → `Compile / nativeConfig`
+→ `nativeConfig` (project) → `ThisBuild / nativeConfig` → `Global / nativeConfig`
+
+So you can set defaults for the whole build, override per project, per
+configuration (`Compile` / `Test`), or per link task, for example:
+
+```scala
+Compile / nativeConfig ~= { _.withLTO(LTO.none) }
+
+Compile / nativeLinkReleaseFast / nativeConfig ~= { _.withLTO(LTO.thin) }
+```
+
+The plugin pre-defines task defaults that apply the appropriate
+optimization mode to `nativeLinkReleaseFast / nativeConfig`
+(`Mode.releaseFast`) and `nativeLinkReleaseFull / nativeConfig`
+(`Mode.releaseFull`). Prefer `~=` when overriding these task-scoped
+configs so the mode default is preserved; using `:=` replaces the
+default and you must opt back into the desired mode yourself.
+
+Use `inspect tree Compile / nativeLinkReleaseFast` to see how scopes
+resolve in your build.
+
+On sbt 2.x, task results are cached using `sjsonnew.JsonFormat`. The Scala
+Native plugin exports a `given JsonFormat[NativeConfig]` from
+`ScalaNativePlugin.autoImport`, so `nativeConfig` assignments participate
+in caching like other tasks. The codec serializes `NativeConfig` as JSON
+objects and arrays (not a single opaque string). Link-time map entries must
+use the primitive and string types allowed by `nativeConfig`; values of type
+`nir.Val` are not supported in `linktimeProperties` for this serialization.
+
+To show `nativeConfig` in the enclosing scope (for example `Compile` when
+you are in a `compile` session):
 
     show nativeConfig
 
@@ -137,7 +178,7 @@ settings. See [Native Code in your Application or Library](native.md)
 | 0.1    | `package`               | `File`          | Similar to standard package with addition of NIR                              |
 | 0.1    | `publish`               | `Unit`          | Similar to standard publish with addition of NIR (1)                          |
 | 0.1    | `nativeLink`            | `File`          | Link NIR and generate native binary                                           |
-| 0.4.0  | `nativeConfig`          | `NativeConfig`  | Configuration of the Scala Native plugin                                      |
+| 0.4.0  | `nativeConfig`          | `Task[NativeConfig]` | Toolchain configuration (see scoped `nativeConfig` above)                |
 | 0.5.0  | `nativeLinkReleaseFast` | `File`          | Alias for `nativeLink` using fast release build mode (2)                      |
 | 0.5.0  | `nativeLinkReleaseFull` | `File`          | Alias for `nativeLink` using full release build mode (2)                      |
 

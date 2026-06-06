@@ -11,6 +11,8 @@ import scala.reflect.ClassTag
 import org.junit.Assert._
 import org.junit.Test
 
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+
 /** Tests the implementation of the java standard library Iterable
  */
 trait IterableTest {
@@ -33,6 +35,14 @@ trait IterableTest {
       def accept(x: Int): Unit = sum = sum + x
     })
     assertEquals(268, sum)
+  }
+
+  @Test def forEachThrowsNullPointerException(): Unit = {
+    val iter = factory.fromElements[Int](1)
+    assertThrows(
+      classOf[NullPointerException],
+      iter.forEach(null.asInstanceOf[Consumer[Int]])
+    )
   }
 }
 

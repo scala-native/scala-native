@@ -1,5 +1,7 @@
 enablePlugins(ScalaNativePlugin)
 
+Compile / mainClass := Some("Main")
+
 scalaVersion := {
   val scalaVersion = System.getProperty("scala.version")
   if (scalaVersion == null)

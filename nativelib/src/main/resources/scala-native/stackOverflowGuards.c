@@ -161,6 +161,15 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
     case SIGSEGV:
     case SIGBUS:;
         void *faultAddr = info->si_addr;
+        /* Fault outside this thread's stack (e.g. in delimcc heap fragment or
+         * allocator) must not be treated as stack overflow. Otherwise we
+         * mis-report "Unrecoverable StackOverflow" and exit. */
+        if (threadInfo.stackBottom != NULL && threadInfo.stackTop != NULL &&
+            !isInRange(faultAddr, threadInfo.stackBottom,
+                       threadInfo.stackTop)) {
+            currentThreadInfo.pendingStackOverflowException = false;
+            goto dispatchDefaultSignal;
+        }
         /* We cannot throw exception directly from signal handler - libunwind
          * would not be able to locate catch handler.
          * In the past we've tried to workaround it with:
@@ -295,8 +304,8 @@ void scalanative_StackOverflowGuards_setup(bool isMainThread) {
         setupSignalHandler(SIGSEGV);
 #if (defined(__APPLE__) && defined(__MACH__))
         setupSignalHandler(SIGBUS);
-        isHandlerConfigured = true;
 #endif // Apple
+        isHandlerConfigured = true;
     }
 }
 

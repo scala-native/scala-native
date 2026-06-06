@@ -18,6 +18,12 @@ class NIRCompiler(outputDir: Path) extends api.NIRCompiler {
   def this() = this(Files.createTempDirectory("scala-native-target"))
 
   override def compile(code: String): Array[Path] = {
+    compile(code, Array.empty[String])
+  }
+  override def compile(
+      code: String,
+      scalacOptions: Array[String]
+  ): Array[Path] = {
     val file = AbstractFile.getFile(
       File.createTempFile("scala-native-input", ".scala").toPath
     )
@@ -25,19 +31,27 @@ class NIRCompiler(outputDir: Path) extends api.NIRCompiler {
     output.write(code.getBytes(StandardCharsets.UTF_8))
     output.close()
     val source = SourceFile(file, io.Codec.UTF8)
-    compile(Seq(source)).toArray
+    compile(Seq(source), scalacOptions).toArray
   }
 
-  override def compile(base: Path): Array[Path] = {
+  override def compile(base: Path): Array[Path] =
+    compile(base, Array.empty[String])
+  override def compile(
+      base: Path,
+      scalacOptions: Array[String]
+  ): Array[Path] = {
     val sources = getFiles(base.toFile, _.getName.endsWith(".scala"))
     val sourceFiles = sources.map { s =>
       val abstractFile = AbstractFile.getFile(s.toPath)
       SourceFile(abstractFile, io.Codec.default)
     }
-    compile(sourceFiles).toArray
+    compile(sourceFiles, scalacOptions).toArray
   }
 
-  private def compile(sources: Seq[SourceFile]): Seq[Path] = {
+  private def compile(
+      sources: Seq[SourceFile],
+      scalacOptions: Seq[String]
+  ): Seq[Path] = {
     val outPath = outputDir.toAbsolutePath
     val jarPath = sys.props("scalanative.nscplugin.jar")
     val classpath = List(sys.props("scalanative.nativeruntime.cp"))
@@ -49,7 +63,7 @@ class NIRCompiler(outputDir: Path) extends api.NIRCompiler {
         s"-d $outPath -Xplugin:$jarPath $classpath"
       )
 
-    val args = arguments ++ sources.map(_.file.absolutePath)
+    val args = arguments ++ scalacOptions ++ sources.map(_.file.absolutePath)
     val res = Driver().process(args.toArray, TestReporter(), null)
     res.allErrors.headOption.foreach { error =>
       throw api.CompilationFailedException(error.message)

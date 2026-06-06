@@ -1555,7 +1555,7 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
           delta = begin - delta
 
           result
-            .append(CharZeros.substring(begin, delta))
+            .append(sb.substring(begin, delta))
             .append('.')
             .append(sb.substring(delta))
         }

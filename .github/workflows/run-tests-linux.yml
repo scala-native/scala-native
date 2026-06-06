@@ -11,6 +11,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  prepare-llvm:
+    name: Prepare LLVM cache
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: 3
+
   # Compile all sources for given Scala version
   # Cache external dependencies
   # Test tools, if any of them fails, further tests will not start.
@@ -18,6 +28,7 @@ jobs:
     name: Compile & test tools
     if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
     runs-on: ubuntu-22.04
+    needs: prepare-llvm
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
@@ -37,19 +48,22 @@ jobs:
     name: Compile sources with the Scala 3 version used for publishing artifacts
     if: github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
     runs-on: ubuntu-22.04
+    needs: prepare-llvm
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: 3
+          java-version: 17
 
       - name: Compile everything
         # Publish 2.13.latest artifacts locally first, these are required by scalalib3
-        run: sbt "scalalib2_13/publishLocal;clean; ++2.13.8; all Test/compile Compile/doc; ++3.1.3; all Test/compile Compile/doc"
+        run: sbt "scalalib2_13/publishLocal;clean; ++2.13.9; all Test/compile Compile/doc; ++3.1.3; all Test/compile Compile/doc"
 
     
   test-scala-cross-build:
     runs-on: ubuntu-22.04
+    needs: prepare-llvm
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
@@ -61,6 +75,7 @@ jobs:
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
+          java-version: 17
 
       # scalalib/Test/compile would force building both compiler plugins as well
       - name: Test cross compilation of compiler plugins and stdlib
@@ -70,13 +85,17 @@ jobs:
     name: Test runtime
     if: github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
     runs-on: ubuntu-22.04
-    needs: tests-tools
+    needs: [prepare-llvm]
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
       fail-fast: false
       matrix:
         scala: [3, 2.13, 2.12, 3-next]
+        build-mode: [debug]
+        include:
+          - scala: 3
+            build-mode: release-fast
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/linux-setup-env
@@ -89,13 +108,14 @@ jobs:
         timeout-minutes: 45
         env:
           SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
+          SCALANATIVE_MODE: ${{ matrix.build-mode }}
         run: sbt "test-runtime ${{ matrix.scala }}"      
 
   test-runtime-ext:
     name: Test runtime extension
     if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
     runs-on: ubuntu-22.04
-    needs: [tests-tools, test-runtime]
+    needs: [prepare-llvm, tests-tools, test-runtime]
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
@@ -152,7 +172,7 @@ jobs:
     name: Test runtime no-opt
     if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
     runs-on: ubuntu-22.04
-    needs: tests-tools
+    needs: [prepare-llvm, tests-tools]
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
@@ -181,7 +201,7 @@ jobs:
     name: Test scripted
     if: github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
     runs-on: ubuntu-22.04
-    needs: tests-tools
+    needs: [prepare-llvm, tests-tools]
     strategy:
       fail-fast: false
       matrix:
@@ -197,9 +217,7 @@ jobs:
           SCALANATIVE_MODE: release-fast
           SCALANATIVE_GC: immix
           SCALANATIVE_OPTIMIZE: true
-        run: |
-          export LLVM_BIN=$(dirname $(readlink -f /usr/bin/clang))
-          sbt "test-scripted ${{matrix.scala}}"
+        run: sbt "test-scripted ${{matrix.scala}}"
 
   test-llvm-versions:
     if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
@@ -208,7 +226,7 @@ jobs:
       fail-fast: false
       matrix:
         scala: [3]
-        llvm: [14, 15, 16, 17, 18, 19] # Last 3 stable versions + available future versions
+        llvm: [17, 18, 19, 20, 21, latest] # Last 3 stable versions + available future versions
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/linux-setup-env
@@ -221,13 +239,13 @@ jobs:
         env:
           SCALANATIVE_MODE: release-fast
           SCALANATIVE_LTO: thin
-          LLVM_BIN: "/usr/lib/llvm-${{ matrix.llvm }}/bin"
           SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
         run: sbt "test-runtime ${{ matrix.scala }}"
 
   test-scala-partests:
     if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-partest]'))
     runs-on: ubuntu-22.04
+    needs: prepare-llvm
     strategy:
       fail-fast: false
       matrix:
@@ -240,7 +258,7 @@ jobs:
 
         # Make sure that Scala partest denylisted tests contain only valid test names
       - name: Setup Scala-cli
-        uses: VirtusLab/scala-cli-setup@v1.12
+        uses: VirtusLab/scala-cli-setup@v1.14
 
       - name: Check partest disabled tests list
         # No partests support for Scala 3
@@ -270,4 +288,3 @@ jobs:
           sbt \
           "-J-Xmx3G" \
           "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff"
-

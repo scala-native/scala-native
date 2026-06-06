@@ -61,6 +61,9 @@ object Platform {
   final val isMultithreadingEnabled =
     scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 
+  final val supportsVirtualThreads =
+    scala.scalanative.meta.LinktimeInfo.isVirtualThreadsSupported
+
   final val isWeakReferenceSupported =
     scala.scalanative.meta.LinktimeInfo.isWeakReferenceSupported
 }

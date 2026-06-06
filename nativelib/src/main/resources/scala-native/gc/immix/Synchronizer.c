@@ -13,6 +13,7 @@
 #include "Settings.h"
 #include "shared/ThreadUtil.h"
 #include "shared/Log.h"
+#include "shared/MemoryInfo.h"
 #include "shared/Time.h"
 #include "MutatorThread.h"
 #include <signal.h>
@@ -75,20 +76,38 @@ static void Synchronizer_WaitForResumption(MutatorThread *selfThread);
 // =============================================================================
 // Uses signal handlers for low-overhead yieldpoints
 // See: https://dl.acm.org/doi/10.1145/2887746.2754187
+//
+// POSIX: On a matching fault, prefer scalanative_gc_safepoint_prepare_redirect
+// so Synchronizer_yield runs from the asm trampoline (normal context), not
+// inside the signal handler. See docs/contrib/gc-safepoint-trampoline.md.
+// Windows: still yields from the exception filter.
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
 #include "shared/YieldPointTrap.h"
+#include "shared/SafepointPollTrampoline.h"
 #include "StackTrace.h"
 #include <errno.h>
+#include <stdint.h>
 #ifdef _WIN32
 #include <errhandlingapi.h>
 #else
 #include <pthread.h>
-#include <sys/mman.h>
 #include <sys/time.h>
 #include <unistd.h>
 #endif
 
-void **scalanative_GC_yieldpoint_trap;
+SN_ThreadLocal void **scalanative_GC_yieldpoint_trap;
+
+static void YieldPointTrap_armAllMutators(void) {
+    MutatorThreads_foreach(mutatorThreads, node) {
+        YieldPointTrap_arm(node->value->yieldpointTrap);
+    }
+}
+
+static void YieldPointTrap_disarmAllMutators(void) {
+    MutatorThreads_foreach(mutatorThreads, node) {
+        YieldPointTrap_disarm(node->value->yieldpointTrap);
+    }
+}
 
 #ifdef _WIN32
 static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
@@ -96,7 +115,7 @@ static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
         switch (ex->ExceptionRecord->ExceptionCode) {
         case EXCEPTION_ACCESS_VIOLATION:
             ULONG_PTR addr = ex->ExceptionRecord->ExceptionInformation[1];
-            if ((void *)addr == scalanative_GC_yieldpoint_trap) {
+            if ((void *)addr == (void *)scalanative_GC_yieldpoint_trap) {
                 Synchronizer_yield();
                 return EXCEPTION_CONTINUE_EXECUTION;
             }
@@ -111,35 +130,117 @@ static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
     return EXCEPTION_CONTINUE_SEARCH;
 }
 #else
-#ifdef __APPLE__
-#define SAFEPOINT_TRAP_SIGNAL SIGBUS
-#else
-#define SAFEPOINT_TRAP_SIGNAL SIGSEGV
-#endif
 #define THREAD_WAKEUP_SIGNAL SIGCONT
-static struct sigaction previousSignalHandler = {};
 static sigset_t threadWakupSignals;
+static struct sigaction previousSigsegvHandler = {};
+#ifdef __APPLE__
+static struct sigaction previousSigbusHandler = {};
+#endif
+
+static bool isSafepointTrapSignal(int signal) {
+#ifdef __APPLE__
+    return signal == SIGBUS || signal == SIGSEGV;
+#else
+    return signal == SIGSEGV;
+#endif
+}
+
+static bool isTrapFaultAddress(const void *faultAddress, const void *trapCell) {
+    if (faultAddress == NULL || trapCell == NULL) {
+        return false;
+    }
+    uintptr_t pageSize = getPageSize();
+    uintptr_t faultPage = ((uintptr_t)faultAddress) / pageSize;
+    uintptr_t trapPage = ((uintptr_t)trapCell) / pageSize;
+    return faultPage == trapPage;
+}
+
+static struct sigaction *previousSignalHandlerFor(int signal) {
+    if (signal == SIGSEGV)
+        return &previousSigsegvHandler;
+#ifdef __APPLE__
+    if (signal == SIGBUS)
+        return &previousSigbusHandler;
+#endif
+    return NULL;
+}
+
+/*
+ * Continuation migration may leave a previous carrier's TLS-derived trap
+ * cell pointer cached in the resumed function's stack/registers (LLVM is
+ * free to CSE `mrs tpidr_el0` and the subsequent TLS-slot dereference
+ * across arbitrary call boundaries; the runtime cannot announce that a
+ * scalanative_continuation_resume call may have moved execution onto a
+ * different OS thread). The faulting load can therefore land on another
+ * armed mutator's trap page rather than the current carrier's. Because
+ * arming is global (Synchronizer_SuspendThreads sets stopThreads BEFORE
+ * arming every mutator's trap page), any access-permission fault from a
+ * registered mutator while stopThreads is set is a legitimate safepoint
+ * trap on the current carrier - yielding here makes the current carrier
+ * observe stopThreads and synchronise correctly on the next resume.
+ */
+static bool isAccessPermissionFault(int signal, int si_code) {
+    if (signal == SIGSEGV)
+        return si_code == SEGV_ACCERR;
+#ifdef __APPLE__
+    if (signal == SIGBUS)
+        return si_code == BUS_ADRERR;
+#endif
+    return false;
+}
+
+static bool isContinuationStaleTrapFault(int signal, siginfo_t *siginfo,
+                                         MutatorThread *self) {
+    if (self == NULL)
+        return false;
+    if (!isSafepointTrapSignal(signal))
+        return false;
+    if (!isAccessPermissionFault(signal, siginfo->si_code))
+        return false;
+    if (!atomic_load_explicit(&Synchronizer_stopThreads, memory_order_acquire))
+        return false;
+    return true;
+}
 
 static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
     int old_errno = errno;
-    if (signal == SAFEPOINT_TRAP_SIGNAL &&
-        siginfo->si_addr == scalanative_GC_yieldpoint_trap) {
+    void *trapCell = NULL;
+    MutatorThread *self = currentMutatorThread;
+    if (self != NULL) {
+        trapCell = (void *)self->yieldpointTrap;
+    }
+    if (trapCell == NULL) {
+        trapCell = (void *)scalanative_GC_yieldpoint_trap;
+    }
+    bool isOwnTrap = isSafepointTrapSignal(signal) && trapCell != NULL &&
+                     isTrapFaultAddress(siginfo->si_addr, trapCell);
+    bool isStaleCarrierTrap =
+        !isOwnTrap && isContinuationStaleTrapFault(signal, siginfo, self);
+    if (isOwnTrap || isStaleCarrierTrap) {
+#ifdef _WIN32
         Synchronizer_yield();
+#else
+        if (!scalanative_gc_safepoint_prepare_redirect(uap, self)) {
+            Synchronizer_yield();
+        }
+#endif
         errno = old_errno;
         return;
     }
 
     // Try call other handlers
-    if (previousSignalHandler.sa_handler != NULL) {
-        void *handler = previousSignalHandler.sa_handler;
+    struct sigaction *previousSignalHandler = previousSignalHandlerFor(signal);
+    if (previousSignalHandler != NULL &&
+        previousSignalHandler->sa_handler != NULL) {
+        void *handler = previousSignalHandler->sa_handler;
         if (handler != SIG_DFL && handler != SIG_IGN && handler != SIG_ERR &&
             handler != SafepointTrapHandler) {
-            if (previousSignalHandler.sa_flags & SA_SIGINFO) {
+            if (previousSignalHandler->sa_flags & SA_SIGINFO) {
                 void (*sigInfoHandler)(int, siginfo_t *, void *) = (void (*)(
-                    int, siginfo_t *, void *))previousSignalHandler.sa_handler;
+                    int, siginfo_t *, void *))previousSignalHandler->sa_handler;
                 return sigInfoHandler(signal, siginfo, uap);
             } else {
-                return previousSignalHandler.sa_handler(signal);
+                return previousSignalHandler->sa_handler(signal);
             }
         }
         return;
@@ -167,11 +268,20 @@ static void SetupYieldPointTrapHandler(void) {
     sigemptyset(&sa.sa_mask);
     sa.sa_sigaction = &SafepointTrapHandler;
     sa.sa_flags = SA_SIGINFO | SA_RESTART;
-    if (sigaction(SAFEPOINT_TRAP_SIGNAL, &sa, &previousSignalHandler) == -1) {
-        GC_LOG_ERROR("Cannot setup safepoint synchronization handler: %s",
+    if (sigaction(SIGSEGV, &sa, &previousSigsegvHandler) == -1) {
+        GC_LOG_ERROR("Cannot setup safepoint synchronization handler for "
+                     "SIGSEGV: %s",
                      strerror(errno));
         exit(errno);
     }
+#ifdef __APPLE__
+    if (sigaction(SIGBUS, &sa, &previousSigbusHandler) == -1) {
+        GC_LOG_ERROR("Cannot setup safepoint synchronization handler for "
+                     "SIGBUS: %s",
+                     strerror(errno));
+        exit(errno);
+    }
+#endif
 #endif
 }
 
@@ -213,11 +323,12 @@ static void Synchronizer_ResumeThread(MutatorThread *thread) {
 static void Synchronizer_SuspendThreads(void) {
     atomic_store_explicit(&Synchronizer_stopThreads, true,
                           memory_order_release);
-    YieldPointTrap_arm(scalanative_GC_yieldpoint_trap);
+    YieldPointTrap_resetTaskMachBadAccessPorts();
+    YieldPointTrap_armAllMutators();
 }
 
 static void Synchronizer_ResumeThreads(void) {
-    YieldPointTrap_disarm(scalanative_GC_yieldpoint_trap);
+    YieldPointTrap_disarmAllMutators();
     atomic_store_explicit(&Synchronizer_stopThreads, false,
                           memory_order_release);
     MutatorThreads_foreach(mutatorThreads, node) {
@@ -289,8 +400,6 @@ static void Synchronizer_ResumeThreads(void) {
 void Synchronizer_init(void) {
     mutex_init(&synchronizerLock);
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
-    scalanative_GC_yieldpoint_trap = YieldPointTrap_init();
-    YieldPointTrap_disarm(scalanative_GC_yieldpoint_trap);
     SetupYieldPointTrapHandler();
 #else
 #ifdef _WIN32
@@ -373,6 +482,9 @@ bool Synchronizer_acquire(void) {
                             "(%.1fs elapsed)",
                             activeThreads, elapsed / 1000.0);
                 Synchronizer_diagnoseStuckThreads(self, activeThreads);
+#ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
+                YieldPointTrap_resetTaskMachBadAccessPorts();
+#endif
             }
 
             // Check for timeout (0 = disabled)

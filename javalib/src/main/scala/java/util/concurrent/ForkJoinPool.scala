@@ -545,6 +545,22 @@ class ForkJoinPool private (
     getAndAddCtl(RC_UNIT)
   }
 
+  /** Package-private hook for virtual-thread carrier compensation; same
+   *  contract as JDK `ForkJoinPool.beginCompensatedBlock` /
+   *  `endCompensatedBlock` (see `CarrierThread` /
+   *  `scala.scalanative.runtime.Blocker`).
+   */
+  private[java] final def beginCompensatedBlock(): scala.Long = {
+    var c = 0
+    while ({ c = tryCompensate(ctl, false); c } < 0) {}
+    if (c == 0) 0L else RC_UNIT
+  }
+
+  private[java] final def endCompensatedBlock(post: scala.Long): Unit = {
+    if (post > 0L)
+      getAndAddCtl(post)
+  }
+
   private[concurrent] final def helpJoin(
       task: ForkJoinTask[_],
       w: WorkQueue,

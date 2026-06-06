@@ -11,6 +11,11 @@
 #include <setjmp.h>
 #endif
 
+#if defined(__SCALANATIVE_DELIMCC)
+#include "delimcc.h"
+#include <setjmp.h>
+#endif
+
 // gets the ExceptionWrapper from the _Unwind_Exception which is at the end of
 // it. +1 goes to the end of the struct since it adds with the size of
 // _Unwind_Exception, then we cast to ExceptionWrapper and we do - 1 to
@@ -295,6 +300,9 @@ __attribute__((noreturn)) void scalanative_throw(Exception obj) {
             longjmp(*env, 1);
             __builtin_unreachable();
         }
+        if (scalanative_continuation_exception_escape(obj)) {
+            __builtin_unreachable();
+        }
 #endif
         generic_exception_cleanup(code, &exceptionWrapper->unwindException);
         fprintf(stderr,
@@ -303,6 +311,8 @@ __attribute__((noreturn)) void scalanative_throw(Exception obj) {
                 "stack.\n",
                 snFatalErrorPrefix);
         scalanative_Throwable_showStackTrace(obj);
+        fflush(stderr);
+        fflush(stdout);
         abort();
     }
     scalanative_Throwable_showStackTrace(obj);

@@ -6,6 +6,7 @@ import scala.annotation.tailrec
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.meta.LinktimeInfo.{is32BitPlatform => is32bit}
 import scala.scalanative.runtime.Intrinsics._
+import scala.scalanative.runtime.VirtualThread
 import scala.scalanative.runtime.ffi._
 import scala.scalanative.runtime.ffi.stdatomic._
 import scala.scalanative.runtime.ffi.stdatomic.memory_order._
@@ -28,24 +29,32 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
   @alwaysinline def _notify(): Unit = {
     val current = lockWord
     if (current.isInflated) current.getObjectMonitor._notify()
+    else {
+      ensureCurrentThreadOwnsThinMonitor(current)
+      // Thin monitor has no wait queue, so notify is a no-op once ownership is verified.
+    }
   }
 
   @alwaysinline def _notifyAll(): Unit = {
     val current = lockWord
     if (current.isInflated) current.getObjectMonitor._notifyAll()
+    else {
+      ensureCurrentThreadOwnsThinMonitor(current)
+      // Thin monitor has no wait queue, so notifyAll is a no-op once ownership is verified.
+    }
   }
 
   @alwaysinline def _wait(): Unit =
-    getObjectMonitor()._wait()
+    getObjectMonitorForWait(Thread.currentThread())._wait()
 
   @alwaysinline def _wait(timeout: Long): Unit =
-    getObjectMonitor()._wait(timeout)
+    getObjectMonitorForWait(Thread.currentThread())._wait(timeout)
 
   @alwaysinline def _wait(timeout: Long, nanos: Int): Unit =
-    getObjectMonitor()._wait(timeout, nanos)
+    getObjectMonitorForWait(Thread.currentThread())._wait(timeout, nanos)
 
   @inline def enter(obj: Object): Unit = {
-    val thread = NativeThread.currentThread
+    val thread = Thread.currentThread()
     if (thread == null) return // Not yet initialized
 
     val threadId = getThreadId(thread)
@@ -71,7 +80,7 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
   }
 
   @inline def exit(obj: Object): Unit = {
-    val thread = NativeThread.currentThread
+    val thread = Thread.currentThread()
     if (thread == null) return // Not yet initialized
 
     val threadId = getThreadId(thread)
@@ -103,6 +112,18 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
     else inflate(Thread.currentThread())
   }
 
+  @inline private def getObjectMonitorForWait(thread: Thread): ObjectMonitor = {
+    if (thread == null) return getObjectMonitor()
+
+    val current = lockWord
+    if (current.isInflated) current.getObjectMonitor
+    else {
+      if (!ensureCurrentThreadOwnsThinMonitor(current))
+        return getObjectMonitor()
+      inflate(thread)
+    }
+  }
+
   @alwaysinline private def lockedWithThreadId(threadId: ThreadId): RawPtr =
     // lockType=0, recursion=0
     if (is32bit) castIntToRawPtr(castRawPtrToInt(threadId) << ThreadIdOffset)
@@ -112,6 +133,22 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
     val addr = castObjectToRawPtr(thread)
     if (is32bit) castIntToRawPtr(castRawPtrToInt(addr) & LockWord32.ThreadIdMax)
     else castLongToRawPtr(castRawPtrToLong(addr) & LockWord.ThreadIdMax)
+  }
+
+  /** `false` when `Thread.currentThread()` is null (caller should bail out). */
+  @noinline private def ensureCurrentThreadOwnsThinMonitor(
+      current: LockWord
+  ): Boolean = {
+    val thread = Thread.currentThread()
+    if (thread == null) false
+    else {
+      val threadId = getThreadId(thread)
+      if (current.isUnlocked || current.threadId != threadId)
+        throw new IllegalMonitorStateException(
+          "Thread is not an owner of this object"
+        )
+      true
+    }
   }
 
   @inline
@@ -139,11 +176,19 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
       def MaxSleepNanos = 128000
       if (!tryLock(threadId) && !lockWord.isInflated) {
         if (yields > 8) {
-          NativeThread.currentNativeThread.sleepNanos(backoffNanos)
-          waitForOwnership(
-            yields,
-            backoffNanos = (backoffNanos * 3 / 2).min(MaxSleepNanos)
-          )
+          thread match {
+            case vt: VirtualThread =>
+              // Avoid pinning a carrier while contending on a thin monitor.
+              // VirtualThread.yield() lets the owner run and release the lock.
+              Thread.`yield`()
+              waitForOwnership(yields, backoffNanos)
+            case _ =>
+              NativeThread.currentNativeThread.sleepNanos(backoffNanos)
+              waitForOwnership(
+                yields,
+                backoffNanos = (backoffNanos * 3 / 2).min(MaxSleepNanos)
+              )
+          }
         } else {
           NativeThread.onSpinWait()
           waitForOwnership(yields + 1, backoffNanos)

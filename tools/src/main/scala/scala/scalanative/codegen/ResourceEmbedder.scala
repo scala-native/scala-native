@@ -38,6 +38,7 @@ private[scalanative] object ResourceEmbedder {
         "/scala-native/**",
         "/LICENSE",
         "/NOTICE",
+        "/CONTRIBUTING",
         "/library.properties",
         "/BUILD",
         "/rootdoc.txt",

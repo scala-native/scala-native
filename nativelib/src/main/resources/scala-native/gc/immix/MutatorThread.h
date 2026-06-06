@@ -7,6 +7,7 @@
 #include <stdatomic.h>
 #include <stdbool.h>
 #include "nativeThreadTLS.h"
+#include <stdint.h>
 
 typedef struct {
     _Atomic(GC_MutatorThreadState) state;
@@ -30,6 +31,11 @@ typedef struct {
     LargeAllocator largeAllocator;
 
     ThreadInfo *threadInfo;
+#ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
+    void **yieldpointTrap;
+    /* Faulting PC when using deferred safepoint trampoline (POSIX). */
+    uintptr_t safepointResumePc;
+#endif
 } MutatorThread;
 
 typedef struct MutatorThreadNode {

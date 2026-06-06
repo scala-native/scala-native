@@ -5,7 +5,7 @@ Document built:
 ## Requirements
 
 -   Java 8 or newer
--   LLVM/Clang 15 or newer
+-   LLVM/Clang 16 or newer
 -   sbt
 
 See [here for details on the build environment setup](./build-setup.md).
