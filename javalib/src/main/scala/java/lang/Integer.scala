@@ -347,8 +347,8 @@ object Integer {
       }
     }
 
-    // Phase 2: 10th digit — overflow check required
-    if (offset < length) {
+    // Phase 2: remaining digits — overflow check required
+    while (offset < length) {
       val d = s.charAt(offset) - '0'
       val digit = if (d < 0 || d > 9) {
         val ud = Character.digit(s.charAt(offset), 10)
@@ -360,7 +360,6 @@ object Integer {
       val next = result * 10 - digit
       if (next > result) fail(s)
       result = next
-      if (offset < length) fail(s)
     }
 
     if (!negative) {
