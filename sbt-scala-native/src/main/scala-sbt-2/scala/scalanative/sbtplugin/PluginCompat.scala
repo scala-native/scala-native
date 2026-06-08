@@ -79,7 +79,7 @@ private[scalanative] object PluginCompat:
     toNioPaths(cp).map(_.toFile())
 
   val sbtVersionBaseSettings = Seq[Setting[?]](
-    Keys.platform := ScalaNativePlatform.current,
+    Keys.platform := ScalaNativePlatform.current
   )
 
   val incrementalTestSettings: Seq[Setting[?]] =
