@@ -6,7 +6,7 @@ import dotty.tools.dotc.ast.tpd._
 import dotty.tools.dotc.plugins.PluginPhase
 import dotty.tools.dotc.transform.SeqLiterals
 
-import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.setter
+import scala.scalanative.nscplugin.CompilerCompat.SymUtils.setter
 
 import NirGenUtil.ContextCached
 

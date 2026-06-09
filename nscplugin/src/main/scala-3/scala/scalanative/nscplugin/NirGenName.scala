@@ -1,12 +1,12 @@
 package scala.scalanative
 package nscplugin
 
-import dotty.tools.backend.jvm.DottyBackendInterface.symExtensions
 import dotty.tools.dotc.ast.tpd._
 import dotty.tools.dotc.core
 import scala.language.implicitConversions
 
-import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.*
+import scala.scalanative.nscplugin.CompilerCompat.SymUtils.*
+import scala.scalanative.nscplugin.CompilerCompat.SymbolExtensions.*
 import scalanative.util.unreachable
 
 import core.Contexts._
