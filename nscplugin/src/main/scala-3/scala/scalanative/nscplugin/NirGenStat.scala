@@ -12,7 +12,7 @@ import scala.language.implicitConversions
 
 import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.nir.Defn.Define.DebugInfo._
-import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat._
+import scala.scalanative.nscplugin.CompilerCompat.SymUtils._
 import scala.scalanative.util.ScopedVar.{scoped, toValue}
 import scala.scalanative.util.{ScopedVar, unsupported}
 

@@ -7,7 +7,7 @@ import dotty.tools.dotc.typer.TyperPhase
 import dotty.tools.dotc.{core, report}
 import scala.language.implicitConversions
 
-import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.*
+import scala.scalanative.nscplugin.CompilerCompat.SymUtils.*
 import scala.scalanative.util.unsupported
 
 import core.Contexts._
