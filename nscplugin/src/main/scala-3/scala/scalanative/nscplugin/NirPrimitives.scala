@@ -6,6 +6,8 @@ import dotty.tools.dotc.util.ReadOnlyMap
 import scala.collection.mutable
 
 import scala.scalanative.nscplugin.NirPrimitives
+import scala.scalanative.nscplugin.CompilerCompat.ScalaPrimitives
+
 
 import Contexts._
 import Names._
@@ -123,8 +125,7 @@ object NirPrimitives {
     code >= DIV_UINT && code <= ULONG_TO_DOUBLE
 }
 
-class NirPrimitives(using ctx: Context)
-    extends CompilerCompat.ScalaPrimitives(ctx) {
+class NirPrimitives(using ctx: Context)  extends CompilerCompat.ScalaPrimitives(ctx) {
   import NirPrimitives._
   override protected lazy val nirPrimitives: ReadOnlyMap[Symbol, Int] =
     initNirPrimitives
