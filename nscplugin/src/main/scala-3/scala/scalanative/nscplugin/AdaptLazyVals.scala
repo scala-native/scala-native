@@ -51,7 +51,7 @@ class AdaptLazyVals(defnNir: NirDefinitions) {
     name.startsWith(nme.LAZY_FIELD_OFFSET.toString)
 
   private def isLazyFieldHandle(name: Name) =
-    CompilerCompat.LazyValHandleNameCompat.exists(name.is(_))
+    CompilerCompat.LazyValHandleName.exists(name.is(_))
 
   private def isLazyFieldStore(name: Name)(using Context) =
     if compilerUsesVarHandles then isLazyFieldHandle(name)

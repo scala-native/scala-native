@@ -7,6 +7,8 @@ import scalanative.unsigned._
 
 object SymbolFormatter {
 
+  private final val EOF: Char = (-1).toChar
+
   /* Async-signal-safe stack trace symbol formatter function.
    * Uses only async-signal-safe methods to allow use in a signal handler.
    */
@@ -104,7 +106,7 @@ object SymbolFormatter {
         pos += 1
         res
       } else {
-        -1.toChar
+        EOF
       }
     }
 
@@ -112,7 +114,7 @@ object SymbolFormatter {
       if (inBounds(pos)) {
         sym(pos).toChar
       } else {
-        -1.toChar
+        EOF
       }
     }
 

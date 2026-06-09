@@ -1,14 +1,14 @@
 // scalafmt: { maxColumn = 120}
 package build
 
-import sbt._
+import sbt.util.Digest
+import sbt.{given, *}
 
 import java.io.File.pathSeparator
 
 import scala.language.implicitConversions
 
 import com.jsuereth.sbtpgp.PgpKeys.publishSigned
-import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 
 import scala.scalanative.ScalaNativeBuildInfo
 import scala.scalanative.build._
@@ -62,8 +62,66 @@ object Build {
     testMultiScalaProjects.flatMap(_.componentProjects) ::: testNoCrossProject
   lazy val allProjects = publishedProjects ::: testProjects
 
+  /** Path of the scalalib jar that `publishLocal` writes for a scala3lib dependency.
+   *
+   *  Scala 3.8+ depends on a self-contained scalalib artifact; older Scala 3 versions depend on the Scala 2.13
+   *  cross-built artifact instead.
+   */
+  private def expectedLocalScalalibJar(
+      org: String,
+      ivyHome: File,
+      selfContained: Boolean,
+      scalaVersion: String,
+      scalaBinVersion: String,
+      nativeVersion: String
+  ): File =
+    val (depScalaVersion, platformSuffix, artifactSuffix) =
+      if selfContained then (scalaVersion, scalaBinVersion, s"_$scalaBinVersion")
+      else (ScalaVersions.scala213, "2.13", "_2.13")
+    val revision = scalalibVersion(depScalaVersion, nativeVersion)
+    ivyHome / "local" / org / s"scalalib_native0.5_$platformSuffix" / revision / "jars" / s"scalalib$artifactSuffix.jar"
+
+  private def checkoutScalaUpstreamSources(
+      log: sbt.util.Logger,
+      trgDir: File,
+      repoURL: String,
+      ref: String
+  ): Unit =
+    import org.eclipse.jgit.api._
+    import org.eclipse.jgit.transport.TagOpt
+
+    def incompleteClone(dir: File): Boolean =
+      val objectsDir = dir / ".git" / "objects"
+      objectsDir.exists &&
+        Option(objectsDir.listFiles()).exists(_.exists(_.getName.startsWith("incoming_")))
+
+    if !trgDir.exists() || incompleteClone(trgDir) then
+      if trgDir.exists() then
+        log.warn(s"Removing incomplete Scala source checkout at $trgDir")
+        IO.delete(trgDir)
+      log.info(s"Cloning Scala sources from $repoURL")
+      IO.createDirectory(trgDir)
+      new CloneCommand()
+        .setDirectory(trgDir)
+        .setURI(repoURL)
+        .call()
+
+    val git = Git.open(trgDir)
+    if git.getRepository.findRef(ref) == null then
+      log.info(s"Fetching tags from $repoURL")
+      git
+        .fetch()
+        .setRemote("origin")
+        .setTagOpt(TagOpt.FETCH_TAGS)
+        .call()
+
+    log.info(s"Checking out Scala source ref $ref")
+    git.checkout().setName(ref).call()
+
   private def setDependency[T](key: TaskKey[T], projects: Seq[Project]) = {
-    key := key.dependsOn(projects.map(_ / key): _*).value
+    key := Def.uncached {
+      key.dependsOn(projects.map(_ / key): _*).value
+    }
   }
 
   private def setDependencyForCurrentBinVersion[T](
@@ -71,19 +129,21 @@ object Build {
       projects: Seq[MultiScalaProject],
       includeNoCrossProjects: Boolean = true
   ) = {
-    key := Def.taskDyn {
-      val binVersion = scalaBinaryVersion.value
-      // There is only 1 not cross build project, it can be compiled with any version,
-      // We choose 2.12 for historical reasons and to ensure during release only 1 package published these:
-      // javalib-intf which contains only Java code and can be compiled with any version
-      val optNoCrossProjects = noCrossProjects.filter(_ => includeNoCrossProjects && binVersion == "2.12")
-      val dependencies =
-        optNoCrossProjects ++ projects.flatMap(_.forBinaryVersionIfDefined(binVersion))
-      val prev = key.value
-      Def
-        .task { prev }
-        .dependsOn(dependencies.map(_ / key): _*)
-    }.value
+    key := Def.uncached {
+      Def.taskDyn {
+        val binVersion = scalaBinaryVersion.value
+        // There is only 1 not cross build project, it can be compiled with any version,
+        // We choose 2.12 for historical reasons and to ensure during release only 1 package published these:
+        // javalib-intf which contains only Java code and can be compiled with any version
+        val optNoCrossProjects = noCrossProjects.filter(_ => includeNoCrossProjects && binVersion == "2.12")
+        val dependencies =
+          optNoCrossProjects ++ projects.flatMap(_.forBinaryVersionIfDefined(binVersion))
+        val prev = key.value
+        Def
+          .task { prev }
+          .dependsOn(dependencies.map(_ / key): _*)
+      }.value
+    }
   }
 
   lazy val root: Project =
@@ -134,16 +194,17 @@ object Build {
     .dependsOnSource(utilJVM)
     .zippedSettings(Seq("testingCompiler", "nativelib")) {
       case Seq(testingCompiler, nativelib) =>
-        Test / javaOptions ++= {
+        Test / javaOptions ++= Def.uncached {
           val nscCompilerJar =
-            (Compile / Keys.`package`).value.getAbsolutePath()
+            fileConverter.value.toPath((Compile / Keys.`package`).value).toAbsolutePath.toString
           val testingCompilerCp =
-            (testingCompiler / Compile / fullClasspath).value.files
-              .map(_.getAbsolutePath)
+            (testingCompiler / Compile / fullClasspath).value
+              .map(attr => fileConverter.value.toPath(attr.data).toAbsolutePath.toString)
               .mkString(pathSeparator)
-          val nativelibCp = (nativelib / Compile / fullClasspath).value.files
-            .map(_.getAbsolutePath)
-            .mkString(pathSeparator)
+          val nativelibCp =
+            (nativelib / Compile / fullClasspath).value
+              .map(attr => fileConverter.value.toPath(attr.data).toAbsolutePath.toString)
+              .mkString(pathSeparator)
           Seq(
             "-Dscalanative.nscplugin.jar=" + nscCompilerJar,
             "-Dscalanative.testingcompiler.cp=" + testingCompilerCp,
@@ -214,6 +275,7 @@ object Build {
         log.warn(
           "Unable to test tools using Scala Native yet - missing javalib dependencies / compiler integration"
         )
+        sbt.protocol.testing.TestResult.Empty
       }
     )
     .withJUnitPlugin
@@ -270,33 +332,38 @@ object Build {
       javalib: LocalProject,
       scalalib: LocalProject
   ) = {
-    buildInfoKeys ++= Seq[BuildInfoKey](
-      BuildInfoKey.map(scalaInstance) {
-        case (_, v) =>
-          "scalacJars" -> v.allJars
+    buildInfoKeys ++= Seq(
+      BuildInfoKey.map(BuildInfoKey(scalaInstance)) {
+        case (_, instance) =>
+          "scalacJars" -> instance.allJars
             .map(_.getAbsolutePath())
             .mkString(pathSeparator)
       },
-      BuildInfoKey.map(Compile / managedClasspath) {
-        case (_, v) =>
-          "compileClasspath" -> v.files
-            .map(_.getAbsolutePath())
-            .mkString(pathSeparator)
+      BuildInfoKey.map(BuildInfoKey(Compile / managedClasspath)) {
+        case (_, classpath) =>
+          "compileClasspath" ->
+            classpath
+              .map(_.data)
+              .map(fileConverter.value.toPath(_).toAbsolutePath)
+              .mkString(pathSeparator)
       },
-      BuildInfoKey.map(nscPlugin / Compile / Keys.`package`) {
-        case (_, v) =>
-          "pluginJar" -> v.getAbsolutePath()
+      BuildInfoKey.map(BuildInfoKey(nscPlugin / Compile / Keys.`package`)) {
+        case (_, jar) =>
+          "pluginJar" -> fileConverter.value.toPath(jar).toAbsolutePath
       },
       BuildInfoKey.map(
-        for {
-          scalalibCp <- (scalalib / Compile / fullClasspath).taskValue
-          javalibCp <- (javalib / Compile / fullClasspath).taskValue
-        } yield scalalibCp ++ javalibCp
+        sbtbuildinfo.Entry.TaskValue(
+          for {
+            scalalibCp <- (scalalib / Compile / fullClasspath).taskValue
+            javalibCp <- (javalib / Compile / fullClasspath).taskValue
+          } yield scalalibCp ++ javalibCp
+        )
       ) {
-        case (_, v) =>
+        case (_, classpath) =>
           "nativeRuntimeClasspath" ->
-            v.files
-              .map(_.getAbsolutePath)
+            classpath
+              .map(_.data)
+              .map(fileConverter.value.toPath(_).toAbsolutePath)
               .distinct
               .mkString(pathSeparator)
       }
@@ -313,9 +380,9 @@ object Build {
         inConfig(Jmh)(
           Def.settings(
             sourceDirectory := (Compile / sourceDirectory).value,
-            classDirectory := (Compile / classDirectory).value,
-            dependencyClasspath := (Compile / dependencyClasspath).value,
-            compile := (Jmh / compile).dependsOn(Compile / compile).value,
+            classDirectory := Def.uncached { (Compile / classDirectory).value },
+            dependencyClasspath := Def.uncached { (Compile / dependencyClasspath).value },
+            compile := Def.uncached { (Jmh / compile).dependsOn(Compile / compile).value },
             run := (Jmh / run).dependsOn(Jmh / compile).evaluated
           )
         )
@@ -327,9 +394,12 @@ object Build {
             // Compile / buildInfoObject := "TestSuiteBuildInfo",
             Compile / buildInfoPackage := "scala.scalanative.benchmarks",
             Compile / buildInfoKeys := List(
-              BuildInfoKey.map(testInterface / Test / fullClasspath) {
-                case (key, value) =>
-                  ("fullTestSuiteClasspath", value.toList.map(_.data))
+              BuildInfoKey.map(BuildInfoKey(testInterface / Test / fullClasspath)) {
+                case (_, classpath) =>
+                  "fullTestSuiteClasspath" -> classpath
+                    .map(_.data)
+                    .map(fileConverter.value.toPath(_).toAbsolutePath)
+                    .mkString(pathSeparator)
               }
             )
           )
@@ -645,21 +715,79 @@ object Build {
             libraryDependencies += {
               val nativeVersion = (ThisBuild / Keys.version).value
               if (usesSelfContainedStdlib(scalaVersion.value)) {
-                organization.value %%% "scalalib" % scalalibVersion(scalaVersion.value, nativeVersion)
+                organization.value %% "scalalib" % scalalibVersion(scalaVersion.value, nativeVersion)
               } else {
-                (organization.value %%% "scalalib" % scalalibVersion(ScalaVersions.scala213, nativeVersion))
+                (organization.value %% "scalalib" % scalalibVersion(ScalaVersions.scala213, nativeVersion))
                   .excludeAll(ExclusionRule(organization.value))
                   .cross(CrossVersion.for3Use2_13)
               }
             },
-            update := update.dependsOn {
+            // scala3lib resolves scalalib from the local Ivy cache, not from this build's
+            // classpath. Ensure the artifact is published before `update`, but avoid
+            // repeating `publishLocal` on every compile when nothing relevant changed.
+            //
+            // The stamp file stores two lines:
+            //   1. a cache key derived from scalalib's scala version, compiler plugin,
+            //      and native toolchain settings
+            //   2. the absolute path of the published jar
+            //
+            // We republish when the cache key changes or when the stamped jar no longer
+            // exists (for example after cleaning ~/.ivy2/local).
+            publishScalalibLocal := Def.uncached {
               Def.taskDyn {
-                if (usesSelfContainedStdlib(scalaVersion.value))
-                  scalalib.forBinaryVersion(version) / Compile / publishLocal
-                else
-                  scalalib.v2_13 / Compile / publishLocal
-              }
-            }.value
+                val selfContained = usesSelfContainedStdlib(scalaVersion.value)
+                val scalalibProject =
+                  if selfContained then scalalib.forBinaryVersion(version)
+                  else scalalib.v2_13
+                val nscPluginProject =
+                  if selfContained then nscPlugin.forBinaryVersion(version)
+                  else nscPlugin.v2_13
+                val stampFile = crossTarget.value / "publish-scalalib-local.stamp"
+                val ivyHome = ivyPaths.value.ivyHome.map(file(_)).getOrElse(Path.userHome / ".ivy2")
+                val nativeVersion = (ThisBuild / Keys.version).value
+
+                val cacheCheck = Def.task {
+                  val sv = (scalalibProject / scalaVersion).value
+                  val pluginDigest = Digest.sha256Hash(
+                    (nscPluginProject / Compile / packageBin).value
+                      .contentHashStr()
+                      .getBytes("UTF-8")
+                  )
+                  val toolchainDigest = Digest.sha256Hash(
+                    (scalalibProject / nativeConfig).value.toString.getBytes("UTF-8")
+                  )
+                  val inputs = s"$sv:$pluginDigest:$toolchainDigest"
+                  val jar = expectedLocalScalalibJar(
+                    organization.value,
+                    ivyHome,
+                    selfContained,
+                    scalaVersion.value,
+                    scalaBinaryVersion.value,
+                    nativeVersion
+                  )
+                  val upToDate = stampFile.exists && {
+                    IO.read(stampFile).split("\n", 2) match
+                      case Array(storedInputs, storedJar) =>
+                        storedInputs == inputs && storedJar.nonEmpty && file(storedJar).exists()
+                      case _ => false
+                  }
+                  (upToDate, inputs, jar)
+                }
+
+                // taskDyn ensures only the selected scalalib project's publishLocal runs.
+                Def.taskDyn {
+                  val (upToDate, inputs, jar) = cacheCheck.value
+                  if upToDate then Def.task(())
+                  else
+                    (scalalibProject / Compile / publishLocal).map { _ =>
+                      IO.write(stampFile, s"$inputs\n${jar.getAbsolutePath}")
+                    }
+                }
+              }.value
+            },
+            update := Def.uncached {
+              update.dependsOn(publishScalalibLocal).value
+            }
           )
       }
       .dependsOn(auxlib)
@@ -881,16 +1009,15 @@ object Build {
         noPublishSettings,
         shouldPartestSetting,
         resolvers += Resolver.typesafeIvyRepo("releases"),
-        fetchScalaSource / artifactPath :=
-          baseDirectory.value.getParentFile / "fetchedSources" / scalaVersion.value,
-        fetchScalaSource := {
-          import org.eclipse.jgit.api._
-
+        fetchScalaSource / artifactPath := fileConverter.value.toVirtualFile(
+          baseDirectory.value.getParentFile.toPath() / "fetchedSources" / scalaVersion.value
+        ),
+        fetchScalaSource := Def.uncached {
           val s = streams.value
           val ver = scalaVersion.value
-          val trgDir = (fetchScalaSource / artifactPath).value
+          val trgDir = fileConverter.value.toPath((fetchScalaSource / artifactPath).value).toFile
 
-          val (repoURL, tag) = CrossVersion
+          val (repoURL, ref) = CrossVersion
             .partialVersion(ver)
             .collect {
               case (2, _) => "https://github.com/scala/scala.git" -> s"v$ver"
@@ -898,25 +1025,7 @@ object Build {
             }
             .getOrElse(throw new RuntimeException("Invalid Scala version"))
 
-          if (!trgDir.exists) {
-            s.log.info(s"Fetching Scala source version $ver")
-
-            // Make parent dirs and stuff
-            sbt.IO.createDirectory(trgDir)
-
-            // Clone scala source code
-            new CloneCommand()
-              .setDirectory(trgDir)
-              .setURI(repoURL)
-              .call()
-          }
-
-          // Checkout proper ref. We do this anyway so we fail if
-          // something is wrong
-          val git = Git.open(trgDir)
-          s.log.info(s"Checking out Scala source version $ver")
-          git.checkout().setName(tag).call()
-
+          checkoutScalaUpstreamSources(s.log, trgDir, repoURL, ref)
           trgDir
         },
         Compile / unmanagedSourceDirectories ++= {
@@ -984,7 +1093,9 @@ object Build {
                 (auxlib / Compile / packageBin).value,
                 (scalalib / Compile / packageBin).value,
                 (scalaPartestRuntime / Compile / packageBin).value
-              ).map(_.absolutePath).mkString(pathSeparator)
+              )
+                .map(fileConverter.value.toPath(_).toAbsolutePath)
+                .mkString(pathSeparator)
 
               Tests.Argument(s"--nativeClasspath=$nativeCp")
             }
@@ -1118,7 +1229,7 @@ object Build {
     /** Uses the Scala Native compiler plugin. */
     def withNativeCompilerPlugin: MultiScalaProject = {
       if (isGeneratingForIDE) project
-      else project.dependsOn(nscPlugin % "plugin")
+      else project.dependsOn((nscPlugin % "plugin"))
     }.enablePlugins(MyScalaNativePlugin)
 
     def withJUnitPlugin: MultiScalaProject = {
@@ -1132,7 +1243,7 @@ object Build {
             Test / scalacOptions += Def.taskDyn {
               val pluginProject = junitPlugin.forBinaryVersion(version)
               (pluginProject / Compile / packageBin).map { jar =>
-                s"-Xplugin:$jar"
+                s"-Xplugin:${fileConverter.value.toPath(jar).toAbsolutePath}"
               }
             }.value
           )
@@ -1158,7 +1269,10 @@ object Build {
         .settings(
           buildInfoPackage := buildInfoPkg.getOrElse("scala.scalanative.buildinfo"),
           buildInfoObject := "ScalaNativeBuildInfo",
-          buildInfoKeys := Seq[BuildInfoKey](version, scalaVersion)
+          buildInfoKeys := Seq(
+            BuildInfoKey(version),
+            BuildInfoKey(scalaVersion)
+          )
         )
         .settings(
           configuration match {
