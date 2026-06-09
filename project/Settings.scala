@@ -638,7 +638,42 @@ object Settings {
     exportJars := true,
     scalacOptions --= Seq("-Xfatal-warnings", "-Werror"),
     scalacOptions ++= ignoredScalaDeprecations(scalaVersion.value),
-    disableMimaSettings
+    disableMimaSettings,
+    Compile / unmanagedSourceDirectories ++= {
+      def parseVersionRange(dirName: String): Option[VersionsRange] =
+        dirName match {
+          case s"scala-since_${Version(version)}" =>
+            Some:
+              VersionsRange(start = version, end = Version.Max)
+          case s"scala-until_${Version(version)}" =>
+            Some:
+              VersionsRange(start = Version.Min, end = version)
+          case s"scala-between_${Version(start)}_${Version(end)}" =>
+            Some:
+              VersionsRange(start = start, end = end)
+          case _ => None
+        }
+      val currentVersion = Version
+        .unapply(scalaVersion.value)
+        .getOrElse(sys.error(s"Invalid Scala version: ${scalaVersion.value}"))
+
+      sbt.IO
+        .listFiles((Compile / sourceDirectory).value)
+        .filter(_.isDirectory)
+        .filter { dir =>
+          parseVersionRange(dir.name)
+            .exists(_.contains(currentVersion))
+        }
+        .toList
+        .match {
+          case List(dir) => List(dir)
+          case Nil       => Nil
+          case dirs      =>
+            sLog.value.error:
+              s"Multiple Scala version ranges found for ${scalaVersion.value}: ${dirs.map(_.name).mkString(", ")}"
+            Nil
+        }
+    }
   )
 
   lazy val sbtPluginSettings = Def.settings(
@@ -1175,4 +1210,28 @@ object Settings {
       .partialVersion(scalaVersion)
       .collect(matching)
       .getOrElse(default)
+}
+
+case class Version(major: Int, minor: Int, patch: Int)
+object Version {
+  val Min = Version(0, 0, 0)
+  val Max = Version(Byte.MaxValue, Byte.MaxValue, Byte.MaxValue)
+  given ordering: Ordering[Version] =
+    Ordering.by(v => (v.major, v.minor, v.patch))
+  def unapply(str: String): Option[Version] =
+    str
+      .split("[.\\-]")
+      .take(3)
+      .filter(_.forall(_.isDigit))
+      .map(_.toInt) match {
+      case Array(major, minor, patch) => Some(Version(major, minor, patch))
+      case Array(major, minor)        => Some(Version(major, minor, 0))
+      case Array(major)               => Some(Version(major, 0, 0))
+      case _                          => None
+    }
+}
+case class VersionsRange(start: Version, end: Version) {
+  def contains(version: Version): Boolean =
+    Version.ordering.compare(version, start) >= 0 &&
+      Version.ordering.compare(version, end) <= 0
 }
