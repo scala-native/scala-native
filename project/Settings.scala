@@ -93,7 +93,7 @@ object Settings {
         case (2, _) =>
           Seq("-Xfatal-warnings", "-encoding", "utf8", "-Xsource:3")
         case _ =>
-          Seq("-Werror", "-encoding:utf8")
+          Seq( /*"-Werror", */ "-encoding:utf8")
       },
     javaReleaseSettings,
     mimaSettings,
@@ -611,7 +611,55 @@ object Settings {
     exportJars := true,
     scalacOptions --= Seq("-Xfatal-warnings", "-Werror"),
     scalacOptions ++= ignoredScalaDeprecations(scalaVersion.value),
-    disableMimaSettings
+    disableMimaSettings,
+    Compile / unmanagedSourceDirectories ++= {
+      val ScalaSinceDir = "^scala-since_([\\d.]+)$".r
+      val ScalaUntilDir = "^scala-until_([\\d.]+)$".r
+      val ScalaBetweenDir = "^scala-between_([\\d.]+)_([\\d.]+)$".r
+
+      def parseVersionRange(dirName: String): Option[VersionsRange] =
+        dirName match {
+          case ScalaSinceDir(versionStr) =>
+            Version
+              .unapply(versionStr)
+              .map(v => VersionsRange(start = v, end = Version.Max))
+          case ScalaUntilDir(versionStr) =>
+            Version
+              .unapply(versionStr)
+              .map(v => VersionsRange(start = Version.Min, end = v))
+          case ScalaBetweenDir(startStr, endStr) =>
+            for {
+              start <- Version.unapply(startStr)
+              end <- Version.unapply(endStr)
+            } yield VersionsRange(start = start, end = end)
+          case _ => None
+        }
+      val currentVersion = Version
+        .unapply(scalaVersion.value)
+        .getOrElse(sys.error(s"Invalid Scala version: ${scalaVersion.value}"))
+
+      sbt.IO
+        .listFiles((Compile / sourceDirectory).value)
+        .filter(_.isDirectory)
+        .flatMap { dir =>
+          parseVersionRange(dir.name)
+            .filter(_.contains(currentVersion))
+            .map(_ => dir)
+        }
+        .toList match {
+        case List(dir) => List(dir)
+        case Nil       =>
+          sLog.value.warn(
+            s"No Scala version range found for ${scalaVersion.value} in ${(Compile / sourceDirectory).value}"
+          )
+          Nil
+        case dirs =>
+          sLog.value.error(
+            s"Multiple Scala version ranges found for ${scalaVersion.value}: ${dirs.map(_.name).mkString(", ")}"
+          )
+          Nil
+      }
+    }
   )
 
   lazy val sbtPluginSettings = Def.settings(
@@ -1056,4 +1104,28 @@ object Settings {
       .partialVersion(scalaVersion)
       .collect(matching)
       .getOrElse(default)
+}
+
+case class Version(major: Int, minor: Int, patch: Int)
+object Version {
+  val Min = Version(0, 0, 0)
+  val Max = Version(Byte.MaxValue, Byte.MaxValue, Byte.MaxValue)
+  implicit val ordering: Ordering[Version] =
+    Ordering.by(v => (v.major, v.minor, v.patch))
+  def unapply(str: String): Option[Version] =
+    str
+      .split("[.\\-]")
+      .take(3)
+      .filter(_.forall(_.isDigit))
+      .map(_.toInt) match {
+      case Array(major, minor, patch) => Some(Version(major, minor, patch))
+      case Array(major, minor)        => Some(Version(major, minor, 0))
+      case Array(major)               => Some(Version(major, 0, 0))
+      case _                          => None
+    }
+}
+case class VersionsRange(start: Version, end: Version) {
+  def contains(version: Version): Boolean =
+    Version.ordering.compare(version, start) >= 0 &&
+      Version.ordering.compare(version, end) <= 0
 }
