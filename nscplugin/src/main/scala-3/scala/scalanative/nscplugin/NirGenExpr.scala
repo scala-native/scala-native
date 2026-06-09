@@ -13,7 +13,6 @@ import scala.language.implicitConversions
 import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.nscplugin.CompilerCompat.SymUtils.*
 import scala.scalanative.nscplugin.CompilerCompat.SymbolExtensions.*
-
 import scala.scalanative.nscplugin.NirDefinitions.NonErasedType
 import scala.scalanative.util.ScopedVar.scoped
 import scala.scalanative.util.{StringUtils, unreachable, unsupported}

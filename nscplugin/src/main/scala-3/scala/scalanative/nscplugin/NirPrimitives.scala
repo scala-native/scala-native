@@ -123,9 +123,11 @@ object NirPrimitives {
     code >= DIV_UINT && code <= ULONG_TO_DOUBLE
 }
 
-class NirPrimitives(using ctx: Context) extends CompilerCompat.ScalaPrimitives(ctx) {
+class NirPrimitives(using ctx: Context)
+    extends CompilerCompat.ScalaPrimitives(ctx) {
   import NirPrimitives._
-  override protected lazy val nirPrimitives: ReadOnlyMap[Symbol, Int] = initNirPrimitives
+  override protected lazy val nirPrimitives: ReadOnlyMap[Symbol, Int] =
+    initNirPrimitives
 
   // Variant for source compatibility due to changes method signature
   def getPrimitiveCompat(app: Apply, tpe: Type): Int =

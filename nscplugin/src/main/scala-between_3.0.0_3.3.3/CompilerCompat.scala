@@ -2,18 +2,20 @@ package scala.scalanative.nscplugin
 
 import dotty.tools.dotc.ast.tpd.Tree
 import dotty.tools.dotc.core.Contexts.Context
-import dotty.tools.dotc.util.ReadOnlyMap
 import dotty.tools.dotc.core.Symbols.Symbol
+import dotty.tools.dotc.util.ReadOnlyMap
 
 object CompilerCompat {
   val SymUtils = dotty.tools.dotc.transform.SymUtils
-  val SymbolExtensions = dotty.tools.backend.jvm.DottyBackendInterface.symExtensions
-  
-  abstract class ScalaPrimitives(ctx: Context) extends dotty.tools.backend.jvm.DottyPrimitives(ctx){
+  val SymbolExtensions =
+    dotty.tools.backend.jvm.DottyBackendInterface.symExtensions
+
+  abstract class ScalaPrimitives(ctx: Context)
+      extends dotty.tools.backend.jvm.DottyPrimitives(ctx) {
     private given Context = ctx
     protected def nirPrimitives: ReadOnlyMap[Symbol, Int]
 
-    override def isPrimitive(tree: Tree): Boolean = 
+    override def isPrimitive(tree: Tree): Boolean =
       nirPrimitives.contains(tree.symbol) || super.isPrimitive(tree)
   }
   val LazyValHandleName = None
