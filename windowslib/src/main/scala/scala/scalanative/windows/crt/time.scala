@@ -26,6 +26,11 @@ object time {
 
 // format: on
 
+  // 64-bit time_t. Prefer this for any value that may exceed the
+  // 2038-01-19 ceiling of `__time32_t` (e.g. ZIP DOS dates extend to
+  // 2107).
+  type time64_t = CLongLong
+
   type errno_t = CInt
 
   def asctime(time_ptr: Ptr[tm]): CString = extern
@@ -39,6 +44,10 @@ object time {
   def localtime(time: Ptr[time_t]): Ptr[tm] = extern
   @name("_localtime32_s")
   def localtime_s(tm: Ptr[tm], time: Ptr[time_t]): errno_t = extern
+  @name("_localtime64_s")
+  def localtime64_s(tm: Ptr[tm], time: Ptr[time64_t]): errno_t = extern
+  @name("_mktime64")
+  def mktime64(time: Ptr[tm]): time64_t = extern
 
   def strftime(
       str: Ptr[CChar],

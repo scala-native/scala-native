@@ -6,7 +6,7 @@ import java.util.Arrays
 import java.util.zip.{ZipEntry, ZipFile, ZipOutputStream}
 
 import org.junit.Assert._
-import org.junit.{BeforeClass, Ignore, Test}
+import org.junit.{BeforeClass, Test}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
@@ -135,8 +135,49 @@ class ZipEntryIssuesTest {
     }
   }
 
-// Revert PR #3794 so I can chase intermittent bad values & Segfault
-  @Ignore
+  // Issue 3816 - stress the setTime/getTime path that previously
+  // segfaulted on macOS due to uninitialised stackalloc'd `tm`
+  // (mktime reads tm_gmtoff/tm_zone/tm_wday past the fields we set).
+  // Run a tight loop in case the segfault is intermittent.
+  @Test def setTimeGetTimeStressLoop(): Unit = {
+    // Y2K UTC; deterministic round-trip independent of local tz, since
+    // setTime(localtime) and getTime(mktime) cancel local offset.
+    val expectedMillis = 946684800000L
+    val ze = new ZipEntry("stress")
+    var i = 0
+    while (i < 100) {
+      ze.setTime(expectedMillis)
+      assertEquals("getTime round-trip", expectedMillis, ze.getTime())
+      i += 1
+    }
+  }
+
+  // Regression: msDosYears == 0 (year 1980, the MS-DOS epoch) is a
+  // valid encoding; the previous guard `<= 0` collapsed every 1980
+  // date to 1980-01-01 00:00.
+  @Test def setTimeMidYear1980RoundTrip(): Unit = {
+    // 1980-06-15 00:00:00 UTC — seconds-mod-2 == 0 so MS-DOS's 2-second
+    // granularity is lossless; mid-year so local-tz offset can't push
+    // the date out of 1980 in any sane zone.
+    val mid1980Millis = 329875200000L
+    val ze = new ZipEntry("y1980")
+    ze.setTime(mid1980Millis)
+    assertEquals("getTime round-trip", mid1980Millis, ze.getTime())
+  }
+
+  // Regression: timestamps past 2038-01-19 are within the DOS date
+  // range (1980..2107) but exceeded `__time32_t` on Windows. Linux/macOS
+  // already use 64-bit time_t; this guards against a future regression
+  // and exercises the same code path that the Windows 64-bit binding
+  // depends on.
+  @Test def setTimePost2038RoundTrip(): Unit = {
+    // 3_000_000_000 seconds since epoch ≈ 2065-01-24 UTC
+    val post2038Millis = 3000000000000L
+    val ze = new ZipEntry("post2038")
+    ze.setTime(post2038Millis)
+    assertEquals("getTime round-trip", post2038Millis, ze.getTime())
+  }
+
   // Issue 3787
   @Test def setEntryDosTime(): Unit = {
     val srcName =
