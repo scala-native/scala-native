@@ -2544,6 +2544,16 @@ class FilesTest {
     }
   }
 
+  @Test def newOutputStreamRejectsReadOption(): Unit = {
+    withTemporaryDirectory { dirFile =>
+      val f = dirFile.toPath.resolve("f")
+      assertThrows(
+        classOf[IllegalArgumentException],
+        Files.newOutputStream(f, StandardOpenOption.READ)
+      )
+    }
+  }
+
   @Test def setPosition(): Unit = {
     val offset = 42
     val target = Files.createTempFile("", "")

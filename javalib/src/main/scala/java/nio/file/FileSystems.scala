@@ -38,15 +38,26 @@ object FileSystems {
     val map = new HashMap[String, Object]()
     var i = 0
     var fs: Option[FileSystem] = None
+    // Only `UnsupportedOperationException` is interpreted as "this provider
+    // doesn't claim this path"; everything else (ZipException via IOException,
+    // FileSystemAlreadyExistsException, etc.) is a real failure and must
+    // surface to the caller — otherwise broken archives masquerade as
+    // ProviderNotFoundException.
+    var firstError: Throwable = null
     while (i < providers.size() && fs.isEmpty) {
       try {
         fs = Some(providers.get(i).newFileSystem(path, map))
       } catch {
-        case _: Throwable => ()
+        case _: UnsupportedOperationException => ()
+        case t: Throwable                     =>
+          if (firstError == null) firstError = t
       }
       i += 1
     }
-    fs.getOrElse(throw new ProviderNotFoundException)
+    fs.getOrElse {
+      if (firstError != null) throw firstError
+      else throw new ProviderNotFoundException
+    }
   }
 
   def newFileSystem(uri: URI, env: Map[String, _]): FileSystem = {

@@ -40,6 +40,13 @@ abstract class FileSystemProvider protected () {
   }
 
   def newOutputStream(path: Path, _options: Array[OpenOption]): OutputStream = {
+    // Match JDK spec: READ is incompatible with newOutputStream.
+    var i = 0
+    while (i < _options.length) {
+      if (_options(i) eq StandardOpenOption.READ)
+        throw new IllegalArgumentException("READ not allowed")
+      i += 1
+    }
     val options =
       if (_options.isEmpty)
         Array[OpenOption](
