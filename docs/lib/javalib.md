@@ -212,6 +212,48 @@ network is first used.
 
         System.setProperty("java.net.preferIPv6Addresses", "true")
 
+(zip_file_system)=
+## Zip file system (jar: URIs)
+
+Scala Native ships a read-only zip/jar file system provider,
+`scala.scalanative.nio.fs.zipfs.ZipFileSystemProvider`, the Native
+counterpart of the JDK's `jdk.zipfs` module. It allows reading entries
+of a zip or jar archive through the `java.nio.file` API:
+
+``` scala
+import java.nio.file.{FileSystems, Files, Paths}
+
+val fs = FileSystems.newFileSystem(
+  Paths.get("library.jar"),
+  null: ClassLoader
+)
+try {
+  val entry = fs.getPath("/META-INF/MANIFEST.MF")
+  val text = new String(Files.readAllBytes(entry), "UTF-8")
+} finally fs.close()
+```
+
+Limitations compared to `jdk.zipfs`:
+
+-   Mounts are always read-only. `accessMode=readOnly` is accepted;
+    `accessMode=readWrite` and `create=true` are rejected with
+    `UnsupportedOperationException` until write support is implemented.
+-   Only `file:`-based archives can be mounted (`jar:file:/...`).
+
+The provider is discovered through `java.util.ServiceLoader`, which on
+Scala Native resolves implementations at link time. To use the zip file
+system, register the provider in the build configuration as described
+in [service providers](service_providers) below:
+
+``` scala
+nativeConfig ~= { _.withServiceProviders(
+  Map(
+    "java.nio.file.spi.FileSystemProvider" -> Seq(
+      "scala.scalanative.nio.fs.zipfs.ZipFileSystemProvider")
+  )
+)}
+```
+
 (service_providers)=
 ## Support for discovering service providers
 
