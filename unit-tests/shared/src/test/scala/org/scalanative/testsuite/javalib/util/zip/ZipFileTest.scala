@@ -2,7 +2,8 @@ package org.scalanative.testsuite.javalib.util.zip
 
 // Ported from Apache Harmony
 
-import java.io.InputStream
+import java.io.{FileOutputStream, InputStream}
+import java.nio.file.Files
 import java.util.zip._
 
 import org.junit.Assert._
@@ -35,6 +36,94 @@ class ZipFileTest {
         new ZipFile(file, error)
       }
     )
+  }
+
+  @Test def opensEmptyArchive(): Unit = {
+    // EOCD-only archive: zero entries, zero comment, zero disks.
+    val emptyArchive: Array[Byte] = Array(
+      0x50.toByte,
+      0x4b.toByte,
+      0x05.toByte,
+      0x06.toByte, // EOCD signature
+      0,
+      0, // disk number
+      0,
+      0, // disk with start of CD
+      0,
+      0, // entries on this disk
+      0,
+      0, // total entries
+      0,
+      0,
+      0,
+      0, // CD size
+      0,
+      0,
+      0,
+      0, // CD offset
+      0,
+      0 // comment length
+    )
+    val file = Files.createTempFile("empty", ".zip").toFile
+    try {
+      val fos = new FileOutputStream(file)
+      try fos.write(emptyArchive)
+      finally fos.close()
+
+      val zip = new ZipFile(file)
+      try {
+        assertEquals(0, zip.size())
+        assertFalse(zip.entries().hasMoreElements)
+      } finally zip.close()
+    } finally file.delete()
+  }
+
+  // getInputStream used to skip the LFH file-name field using
+  // `String.length` (UTF-16 code units), so any entry whose name contained
+  // multi-byte UTF-8 characters mis-aligned the inflater and read garbage
+  // or threw ZipException.
+  @Test def getInputStreamWithNonAsciiEntryName(): Unit = {
+    val zipPath = Files.createTempFile("scala-native-utf8-entry", ".zip")
+    try {
+      // 4 Cyrillic chars (2 bytes each in UTF-8) + 4 ASCII = 12 UTF-8 bytes
+      // vs 8 UTF-16 code units — a 4-byte skew that breaks the inflater.
+      val entryName = "Тест.nir"
+      val payload =
+        "the quick brown fox jumps over the lazy dog".getBytes("UTF-8")
+
+      val zos = new ZipOutputStream(new FileOutputStream(zipPath.toFile))
+      try {
+        zos.putNextEntry(new ZipEntry(entryName))
+        zos.write(payload)
+        zos.closeEntry()
+      } finally {
+        zos.close()
+      }
+
+      val zf = new ZipFile(zipPath.toFile)
+      try {
+        val entry = zf.getEntry(entryName)
+        assertNotNull("entry not found by non-ASCII name", entry)
+
+        val in = zf.getInputStream(entry)
+        try {
+          val out = new java.io.ByteArrayOutputStream()
+          val buf = new Array[Byte](256)
+          var n = in.read(buf)
+          while (n > 0) {
+            out.write(buf, 0, n)
+            n = in.read(buf)
+          }
+          assertArrayEquals(payload, out.toByteArray)
+        } finally {
+          in.close()
+        }
+      } finally {
+        zf.close()
+      }
+    } finally {
+      Files.deleteIfExists(zipPath)
+    }
   }
 
   @Test def close(): Unit = {
