@@ -127,7 +127,10 @@ class ZipByteChannelTest {
     // Per the Files.newByteChannel contract, an empty option set opens
     // for reading.
     val ch =
-      Files.newByteChannel(fs.getPath("/hello.txt"), Array.empty[OpenOption]: _*)
+      Files.newByteChannel(
+        fs.getPath("/hello.txt"),
+        Array.empty[OpenOption]: _*
+      )
     try assertEquals("hello", readAll(ch))
     finally ch.close()
   }

@@ -19,9 +19,9 @@ import org.scalanative.testsuite.utils.Platform.executingInJVM
 /** Mount/close lifecycle, registry behaviour and `FileSystem` surface of the
  *  zip file system.
  *
- *  These tests run on the JVM too, where `jdk.zipfs` serves as the
- *  conformance oracle; Native-only assertions are guarded with assumptions
- *  that explain the divergence.
+ *  These tests run on the JVM too, where `jdk.zipfs` serves as the conformance
+ *  oracle; Native-only assertions are guarded with assumptions that explain the
+ *  divergence.
  */
 object ZipFileSystemTest {
   // Build a tiny but real jar in the per-test temp directory.
@@ -40,10 +40,10 @@ object ZipFileSystemTest {
   def emptyEnv(): java.util.Map[String, Object] =
     new HashMap[String, Object]()
 
-  /** Env that yields a read-only mount on both platforms: jdk.zipfs (JDK 14+)
-   *  and Native ZipFS both understand `accessMode=readOnly`. Native mounts
-   *  are read-only regardless, but asking explicitly keeps the two platforms
-   *  observably identical.
+  /** Env that asks for a read-only mount. Native ZipFS honours
+   *  `accessMode=readOnly` always; jdk.zipfs does so since JDK 23 (older JDKs
+   *  ignore the key and mount writable, so read-only-contract assertions must
+   *  be guarded with a JDK-version assumption).
    */
   def readOnlyEnv(): java.util.Map[String, Object] = {
     val m = new HashMap[String, Object]()
@@ -114,42 +114,22 @@ class ZipFileSystemTest {
     }
   }
 
-  @Test def defaultMountAccessMode(): Unit = {
+  @Test def defaultMountIsWritable(): Unit = {
+    // Matches jdk.zipfs: an empty env yields a writable mount; read-only
+    // is the opt-in accessMode=readOnly (covered separately).
     val jar = makeJar(tempDir, "defaultmode.jar")
     val fs = FileSystems.newFileSystem(jarUri(jar), emptyEnv())
-    try {
-      if (executingInJVM)
-        // jdk.zipfs mounts writable by default.
-        assertFalse("JVM default mount is writable", fs.isReadOnly())
-      else
-        // Native ZipFS does not implement write support yet; every mount
-        // is read-only.
-        assertTrue("Native mounts are read-only", fs.isReadOnly())
-    } finally fs.close()
+    try assertFalse("default mount is writable", fs.isReadOnly())
+    finally fs.close()
   }
 
-  @Test def accessModeReadWriteRejectedOnNative(): Unit = {
-    assumeFalse("jdk.zipfs supports writable mounts", executingInJVM)
+  @Test def accessModeReadWriteAccepted(): Unit = {
     val jar = makeJar(tempDir, "rw.jar")
     val env = new HashMap[String, Object]()
     env.put("accessMode", "readWrite")
-    try {
-      val fs = FileSystems.newFileSystem(jarUri(jar), env)
-      try fail("expected UnsupportedOperationException")
-      finally fs.close()
-    } catch { case _: UnsupportedOperationException => () }
-  }
-
-  @Test def createTrueRejectedOnNative(): Unit = {
-    assumeFalse("jdk.zipfs supports creating archives", executingInJVM)
-    val missing = tempDir.resolve("brand-new.jar")
-    val env = new HashMap[String, Object]()
-    env.put("create", java.lang.Boolean.TRUE)
-    try {
-      val fs = FileSystems.newFileSystem(jarUri(missing), env)
-      try fail("expected UnsupportedOperationException")
-      finally fs.close()
-    } catch { case _: UnsupportedOperationException => () }
+    val fs = FileSystems.newFileSystem(jarUri(jar), env)
+    try assertFalse("readWrite mount is writable", fs.isReadOnly())
+    finally fs.close()
   }
 
   @Test def bogusAccessModeRejected(): Unit = {

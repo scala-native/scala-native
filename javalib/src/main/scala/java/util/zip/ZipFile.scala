@@ -170,6 +170,39 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
     }
   }
 
+  /** Scala Native internal. Returns just the compressed payload bytes for
+   *  `entryName` — LFH header parsed and skipped, no inflater wrapping. The
+   *  returned stream yields exactly `entry.compressedSize` bytes regardless of
+   *  whether the entry uses STORED or DEFLATED. Returns `null` for an unknown
+   *  name.
+   *
+   *  Used (via [[ZipFileSystemSupport]]) by the zip file system to raw-copy
+   *  unchanged entries into a rewritten archive without re-inflating and
+   *  re-deflating them. The bit-3 data-descriptor span (if any) is NOT
+   *  included; the rewrite path always emits LFHs without bit 3.
+   */
+  private[zip] def getRawInputStream(entryName: String): InputStream = {
+    checkNotClosed()
+    if (entryName == null) throw new NullPointerException()
+    val entry = mEntries.getOrDefault(
+      entryName,
+      mEntries.getOrDefault(entryName + "/", null)
+    )
+    if (entry == null) null
+    else {
+      val raf = mRaf
+      raf.synchronized {
+        val rafstrm =
+          new ZipFile.RAFStream(raf, entry.mLocalHeaderRelOffset + 26)
+        val localNameLen = ler.readShortLE(rafstrm)
+        val localExtraLen = ler.readShortLE(rafstrm)
+        rafstrm.skip(localNameLen.toLong + localExtraLen.toLong)
+        rafstrm.mLength = rafstrm.mOffset + entry.compressedSize
+        rafstrm
+      }
+    }
+  }
+
   def getName(): String =
     fileName
 

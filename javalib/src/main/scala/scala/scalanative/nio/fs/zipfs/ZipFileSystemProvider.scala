@@ -1,22 +1,25 @@
 package scala.scalanative.nio.fs.zipfs
 
-import java.io.{ByteArrayInputStream, InputStream}
+import java.io.{ByteArrayInputStream, IOException, InputStream}
 import java.net.URI
 import java.nio.channels.SeekableByteChannel
+import java.nio.file.DirectoryStream.Filter
 import java.nio.file._
 import java.nio.file.attribute.{
-  BasicFileAttributeView, BasicFileAttributes, FileAttribute, FileAttributeView
+  BasicFileAttributeView, BasicFileAttributes, FileAttribute, FileAttributeView,
+  FileTime
 }
 import java.nio.file.spi.FileSystemProvider
 import java.util.concurrent.ConcurrentHashMap
-import java.util.zip.{ZipEntry, ZipException, ZipFile}
+import java.util.zip.{ZipEntry, ZipException, ZipFile, ZipFileSystemSupport}
 import java.util.{ArrayList, LinkedHashMap, LinkedHashSet, Map}
 
 /** `jar:`-scheme provider over zip/jar archives on the default file system.
  *
- *  Read-only for now: mounting with `accessMode=readWrite` or `create=true`
- *  is rejected with `UnsupportedOperationException`, and every mutating
- *  operation throws [[java.nio.file.ReadOnlyFileSystemException]].
+ *  Mounts are writable by default, matching jdk.zipfs: mutations are buffered
+ *  in an in-memory inode map and the archive is rewritten atomically when the
+ *  file system is closed. `accessMode=readOnly` opts into a read-only mount;
+ *  `create=true` creates a missing archive.
  *
  *  On Scala Native, providers are discovered through `ServiceLoader`, which
  *  resolves implementations at link time: user builds must register
@@ -24,6 +27,7 @@ import java.util.{ArrayList, LinkedHashMap, LinkedHashSet, Map}
  *  `java.nio.file.spi.FileSystemProvider` via `NativeConfig.serviceProviders`.
  */
 class ZipFileSystemProvider extends FileSystemProvider {
+  import ZipFileSystemProvider.{AccessModeOpt, OpenMode, ParsedCopyOptions}
 
   override def getScheme(): String = "jar"
 
@@ -57,17 +61,68 @@ class ZipFileSystemProvider extends FileSystemProvider {
       onWrongMagic: Path => Nothing
   ): FileSystem = {
     val canonical = ZipUtils.canonicalize(path)
-    validateEnv(env)
 
-    if (!Files.exists(canonical, Array.empty[LinkOption]))
+    // env-key parsing. Matches jdk.zipfs: mounts are writable by default;
+    // `accessMode=readOnly` opts the caller into read-only. `create=true`
+    // (string or boolean) skips the existence/magic checks for a missing
+    // archive and never downgrades to read-only.
+    val createIfMissing = ZipUtils.envFlag(env, "create")
+    val accessMode = parseAccessMode(env)
+    val defaultCompressionMethod = parseCompressionMethod(env)
+
+    val exists = Files.exists(canonical, Array.empty[LinkOption])
+
+    if (!exists && !createIfMissing)
       throw new java.nio.file.NoSuchFileException(canonical.toString)
 
-    if (!ZipUtils.looksLikeZip(canonical)) onWrongMagic(canonical)
+    if (exists && !ZipUtils.looksLikeZip(canonical)) onWrongMagic(canonical)
+
+    val isWritable = accessMode match {
+      case AccessModeOpt.ReadOnly  => false
+      case AccessModeOpt.ReadWrite => true
+      case AccessModeOpt.Default   => true
+    }
 
     // Magic ok — any ZipFile parse failure beyond this point is a corrupt
     // archive and propagates as ZipException (subclass of IOException).
-    val fs =
-      new ZipFileSystem(this, canonical, new ZipFile(canonical.toFile()))
+    val source: Option[ZipFile] =
+      if (exists) Some(new ZipFile(canonical.toFile()))
+      else None
+
+    val fs = new ZipFileSystem(
+      this,
+      canonical,
+      source,
+      isWritable,
+      defaultCompressionMethod
+    )
+
+    if (isWritable) {
+      // Populate inode map from source archive entries (insertion-order
+      // preserved by LinkedHashMap). Reject unsupported gp-flag bits or
+      // compression methods at mount time, before any mutation happens.
+      source.foreach { zf =>
+        val it = zf.entries()
+        while (it.hasMoreElements()) {
+          val e = it.nextElement()
+          validateForWritable(e)
+          // Bit 11 (UTF-8 names) is fine; bit 3 (data descriptor) is
+          // stripped — sizes/crc are populated on the cached entry by
+          // ZipFile when reading from the central directory, so the
+          // rewrite path can emit LFHs without bit 3.
+          val gpFlags = ZipFileSystemSupport.getGpFlags(e) & ~0x0008
+          fs.inodes.put(
+            e.getName(),
+            Inode.Original(e.getName(), e, gpFlags)
+          )
+        }
+      }
+      if (!exists) {
+        // Empty mount — force close-rewrite to emit a valid empty EOCD
+        // even if the caller never mutates anything.
+        fs.dirty = true
+      }
+    }
 
     val prev = ZipFileSystemProvider.registry.putIfAbsent(canonical, fs)
     if (prev != null) {
@@ -77,28 +132,58 @@ class ZipFileSystemProvider extends FileSystemProvider {
     fs
   }
 
-  /** Env keys follow jdk.zipfs: `accessMode` may be "readOnly" or
-   *  "readWrite", `create` may be true. Only read-only mounts are
-   *  implemented, so "readWrite" and `create=true` are rejected with
-   *  `UnsupportedOperationException` until write support lands.
-   */
-  private def validateEnv(env: Map[String, _]): Unit = {
-    if (env == null) return
-    if (ZipUtils.envFlag(env, "create"))
-      throw new UnsupportedOperationException(
-        "Creating zip archives is not supported yet (writable ZipFS)"
+  // Reject entries we can't safely re-emit. Read-only mounts skip this
+  // because they never rewrite.
+  private def validateForWritable(e: ZipEntry): Unit = {
+    val flags = ZipFileSystemSupport.getGpFlags(e)
+    // Only bit 3 (data descriptor, stripped on rewrite) and bit 11
+    // (UTF-8 names) are supported for writable mounts.
+    val mask = 0x0800 | 0x0008
+    if ((flags & ~mask) != 0) {
+      throw new java.io.IOException(
+        s"Unsupported entry flags 0x${Integer.toHexString(flags)}: ${e.getName()}"
       )
-    val v = env.get("accessMode")
-    if (v != null) {
-      val s = String.valueOf(v)
-      if ("readWrite" == s)
-        throw new UnsupportedOperationException(
-          "Writable zip file systems are not supported yet"
-        )
-      else if ("readOnly" != s)
-        throw new IllegalArgumentException(
-          s"Unsupported ZipFS accessMode: $s (expected readOnly|readWrite)"
-        )
+    }
+    val m = e.getMethod()
+    if (m != ZipEntry.STORED && m != ZipEntry.DEFLATED) {
+      throw new java.io.IOException(
+        s"Unsupported compression method $m for entry ${e.getName()}"
+      )
+    }
+  }
+
+  private def parseAccessMode(env: Map[String, _]): AccessModeOpt = {
+    if (env == null) AccessModeOpt.Default
+    else {
+      val v = env.get("accessMode")
+      if (v == null) AccessModeOpt.Default
+      else {
+        val s = String.valueOf(v)
+        // jdk.zipfs (JDK 23+) spelling: "readOnly" / "readWrite".
+        if ("readOnly" == s) AccessModeOpt.ReadOnly
+        else if ("readWrite" == s) AccessModeOpt.ReadWrite
+        else
+          throw new IllegalArgumentException(
+            s"Unsupported ZipFS accessMode: $s (expected readOnly|readWrite)"
+          )
+      }
+    }
+  }
+
+  private def parseCompressionMethod(env: Map[String, _]): Int = {
+    if (env == null) ZipEntry.DEFLATED
+    else {
+      val v = env.get("compressionMethod")
+      if (v == null) ZipEntry.DEFLATED
+      else {
+        val s = String.valueOf(v)
+        if ("STORED" == s) ZipEntry.STORED
+        else if ("DEFLATED" == s) ZipEntry.DEFLATED
+        else
+          throw new IllegalArgumentException(
+            s"Unsupported ZipFS compressionMethod: $s"
+          )
+      }
     }
   }
 
@@ -154,34 +239,65 @@ class ZipFileSystemProvider extends FileSystemProvider {
     val zp = asZipPath(path)
     val fs = zp.getFileSystem().asInstanceOf[ZipFileSystem]
     fs.ensureOpen()
-    validateReadOnlyChannelOptions(options)
-    new ZipSeekableByteChannel(readEntryBytes(zp))
-  }
+    val mode = parseOpenOptions(options)
+    if (!mode.writeMode) {
+      val data = readEntryBytes(zp)
+      new ZipSeekableByteChannel(data)
+    } else {
+      if (!fs.isWritable) throw new ReadOnlyFileSystemException()
+      val entryName = toEntryName(zp)
+      if (entryName.isEmpty)
+        throw new IOException(s"Is a directory: ${zp}")
+      if (isDirectoryPath(zp))
+        throw new IOException(s"Is a directory: ${zp}")
+      validateWritableParent(zp)
 
-  // Channel options legal on a read-only mount. Per the JDK spec CREATE,
-  // CREATE_NEW and TRUNCATE_EXISTING are ignored when opening for reading;
-  // WRITE / APPEND / DELETE_ON_CLOSE imply mutation and fail.
-  private def validateReadOnlyChannelOptions(
-      options: java.util.Set[_ <: OpenOption]
-  ): Unit = {
-    if (options == null) throw new NullPointerException("options")
-    val it = options.iterator()
-    while (it.hasNext()) {
-      it.next() match {
-        case null => throw new NullPointerException("option")
-        case StandardOpenOption.WRITE | StandardOpenOption.APPEND |
-            StandardOpenOption.DELETE_ON_CLOSE =>
-          throw new ReadOnlyFileSystemException()
-        case StandardOpenOption.READ | StandardOpenOption.CREATE |
-            StandardOpenOption.CREATE_NEW |
-            StandardOpenOption.TRUNCATE_EXISTING | StandardOpenOption.SPARSE |
-            StandardOpenOption.SYNC | StandardOpenOption.DSYNC =>
-          ()
-        case o =>
-          throw new UnsupportedOperationException(
-            s"ZipFS OpenOption not supported: $o"
-          )
+      val exists = existsFileEntry(zp)
+      if (mode.createNew && exists)
+        throw new FileAlreadyExistsException(zp.toString)
+      if (!exists && !mode.create && !mode.createNew)
+        throw new NoSuchFileException(zp.toString)
+
+      val truncatesExisting =
+        mode.write && !mode.readable && !mode.append ||
+          mode.truncate && !mode.append
+      val initial =
+        if (!exists || truncatesExisting) new Array[Byte](0)
+        else readEntryBytes(zp)
+      val existingMeta = lookupLiveInode(fs, entryName) match {
+        case Some(Inode.Original(_, e, _)) => e
+        case Some(Inode.Modified(_, e, _)) => e
+        case _                             => null
       }
+      new ZipWritableByteChannel(
+        initial,
+        readable = mode.readable,
+        writable = true,
+        appendOnly = mode.append,
+        deleteOnClose = mode.deleteOnClose,
+        onClose = (bytes, deleteOnClose) => {
+          if (deleteOnClose) {
+            // Tombstone only if there is something to delete; a
+            // CREATE_NEW + DELETE_ON_CLOSE channel whose entry never
+            // existed must not dirty the mount with a no-op rewrite.
+            if (lookupLiveInode(fs, entryName).exists(_ != Inode.Deleted)) {
+              fs.inodes.put(entryName, Inode.Deleted)
+              fs.dirty = true
+            }
+          } else {
+            val meta =
+              if (existingMeta != null) new ZipEntry(existingMeta)
+              else {
+                val e = new ZipEntry(entryName)
+                e.setMethod(fs.defaultCompressionMethod)
+                e.setTime(System.currentTimeMillis())
+                e
+              }
+            fs.inodes.put(entryName, Inode.Modified(bytes, meta, 0))
+            fs.dirty = true
+          }
+        }
+      )
     }
   }
 
@@ -197,11 +313,64 @@ class ZipFileSystemProvider extends FileSystemProvider {
     new ByteArrayInputStream(readEntryBytes(zp))
   }
 
-  // Options legal for newInputStream. Unlike the channel, write-side
-  // options are rejected outright per the Files.newInputStream contract.
+  private def parseOpenOptions(
+      options: java.util.Set[_ <: OpenOption]
+  ): OpenMode = {
+    if (options == null) throw new NullPointerException("options")
+    var read = false
+    var write = false
+    var append = false
+    var create = false
+    var createNew = false
+    var truncate = false
+    var deleteOnClose = false
+    val it = options.iterator()
+    while (it.hasNext()) {
+      it.next() match {
+        case null                    => throw new NullPointerException("option")
+        case StandardOpenOption.READ => read = true
+        case StandardOpenOption.WRITE             => write = true
+        case StandardOpenOption.APPEND            => append = true
+        case StandardOpenOption.CREATE            => create = true
+        case StandardOpenOption.CREATE_NEW        => createNew = true
+        case StandardOpenOption.TRUNCATE_EXISTING => truncate = true
+        case StandardOpenOption.DELETE_ON_CLOSE   => deleteOnClose = true
+        case StandardOpenOption.SPARSE | StandardOpenOption.SYNC |
+            StandardOpenOption.DSYNC =>
+          ()
+        case o =>
+          throw new UnsupportedOperationException(
+            s"ZipFS OpenOption not supported: $o"
+          )
+      }
+    }
+
+    val writeMode = write || append
+    if (append && truncate)
+      throw new IllegalArgumentException("APPEND conflicts with TRUNCATE")
+    // jdk.zipfs does NOT enforce JDK FileChannel's
+    // "TRUNCATE_EXISTING/CREATE without WRITE → IllegalArgumentException"
+    // rule — it routes the call to the read path and surfaces
+    // NoSuchFileException when the entry is absent. Match that to keep
+    // cross-conformance tests green.
+
+    OpenMode(
+      writeMode = writeMode,
+      readable = read,
+      append = append,
+      write = write,
+      create = create,
+      createNew = createNew,
+      truncate = truncate,
+      deleteOnClose = deleteOnClose
+    )
+  }
+
+  // Read-only options are used by newInputStream. newByteChannel has its
+  // own parser because it also supports writable modes.
   private def validateReadOption(o: OpenOption): Unit = o match {
     case null =>
-      // NIO treats null elements in option collections/varargs as
+      // NIO normally treats null elements in option collections/varargs as
       // programmer error (NPE), not "unsupported option" (UOE).
       throw new NullPointerException("option")
     case StandardOpenOption.READ => ()
@@ -227,13 +396,52 @@ class ZipFileSystemProvider extends FileSystemProvider {
     if (attrs.isDirectory())
       throw new java.io.IOException(s"Is a directory: ${zp}")
     val entryName = toEntryName(zp)
-    val zf = fs.zipFile
-    val entry = zf.getEntry(entryName)
-    if (entry == null)
-      throw new NoSuchFileException(zp.toString)
-    val in = zf.getInputStream(entry)
-    try ZipSeekableByteChannel.slurp(in, entry.getSize())
-    finally in.close()
+    lookupLiveInode(fs, entryName) match {
+      case Some(Inode.Modified(bytes, _, _))  => bytes.clone()
+      case Some(Inode.Original(_, cached, _)) =>
+        val in = fs.sourceZip.get.getInputStream(cached)
+        try ZipSeekableByteChannel.slurp(in, cached.getSize())
+        finally in.close()
+      case _ =>
+        val zf = fs.zipFile
+        val entry = zf.getEntry(entryName)
+        if (entry == null)
+          throw new NoSuchFileException(zp.toString)
+        val in = zf.getInputStream(entry)
+        try ZipSeekableByteChannel.slurp(in, entry.getSize())
+        finally in.close()
+    }
+  }
+
+  private def existsFileEntry(zp: ZipPath): Boolean =
+    try !readZipAttributes(zp).isDirectory()
+    catch { case _: NoSuchFileException => false }
+
+  private def isDirectoryPath(zp: ZipPath): Boolean =
+    try readZipAttributes(zp).isDirectory()
+    catch { case _: NoSuchFileException => false }
+
+  private def validateWritableParent(zp: ZipPath): Unit = {
+    val parent = zp.getParent()
+    if (parent == null) return
+    val fs = zp.getFileSystem().asInstanceOf[ZipFileSystem]
+    val p = parent.asInstanceOf[ZipPath]
+    val n = toEntryName(p)
+    if (n.isEmpty) return
+    lookupLiveInode(fs, n) match {
+      case Some(Inode.Original(_, e, _)) if !e.isDirectory() =>
+        throw new NoSuchFileException(zp.toString)
+      case Some(Inode.Modified(_, e, _)) if !e.isDirectory() =>
+        throw new NoSuchFileException(zp.toString)
+      case Some(Inode.Deleted) =>
+        throw new NoSuchFileException(zp.toString)
+      case _ => ()
+    }
+    lookupLiveInode(fs, n + "/") match {
+      case Some(Inode.Deleted) =>
+        throw new NoSuchFileException(zp.toString)
+      case _ => ()
+    }
   }
 
   override def newDirectoryStream(
@@ -252,9 +460,20 @@ class ZipFileSystemProvider extends FileSystemProvider {
 
     // Collect unique immediate children (files + synthesised sub-dirs).
     val seen = new LinkedHashSet[String]()
-    val it = fs.zipFile.entries()
-    while (it.hasMoreElements()) {
-      addDirectoryChild(seen, prefix, it.nextElement().getName())
+    if (fs.isWritable) {
+      val it = fs.inodes.entrySet().iterator()
+      while (it.hasNext()) {
+        val e = it.next()
+        e.getValue() match {
+          case Inode.Deleted => ()
+          case _             => addDirectoryChild(seen, prefix, e.getKey())
+        }
+      }
+    } else {
+      val it = fs.zipFile.entries()
+      while (it.hasMoreElements()) {
+        addDirectoryChild(seen, prefix, it.nextElement().getName())
+      }
     }
 
     // Resolve children against the *user-supplied* `dir`, not its absolute
@@ -283,14 +502,49 @@ class ZipFileSystemProvider extends FileSystemProvider {
       attrs: Array[FileAttribute[_]]
   ): Unit = {
     val zp = asZipPath(dir)
-    zp.getFileSystem().asInstanceOf[ZipFileSystem].ensureOpen()
-    throw new ReadOnlyFileSystemException()
+    val fs = zp.getFileSystem().asInstanceOf[ZipFileSystem]
+    fs.ensureOpen()
+    if (!fs.isWritable) throw new ReadOnlyFileSystemException()
+    val entryName = toEntryName(zp)
+    if (entryName.isEmpty)
+      throw new FileAlreadyExistsException(dir.toString)
+    try {
+      readZipAttributes(zp)
+      throw new FileAlreadyExistsException(dir.toString)
+    } catch {
+      case _: NoSuchFileException => ()
+    }
+    validateWritableParent(zp)
+
+    val name = entryName + "/"
+    val e = new ZipEntry(name)
+    e.setMethod(ZipEntry.STORED)
+    e.setTime(System.currentTimeMillis())
+    e.setSize(0L)
+    e.setCompressedSize(0L)
+    e.setCrc(0L)
+    fs.inodes.put(name, Inode.Modified(new Array[Byte](0), e, 0))
+    fs.dirty = true
   }
 
   override def delete(path: Path): Unit = {
     val zp = asZipPath(path)
-    zp.getFileSystem().asInstanceOf[ZipFileSystem].ensureOpen()
-    throw new ReadOnlyFileSystemException()
+    val fs = zp.getFileSystem().asInstanceOf[ZipFileSystem]
+    fs.ensureOpen()
+    if (!fs.isWritable) throw new ReadOnlyFileSystemException()
+    val entryName = toEntryName(zp)
+    if (entryName.isEmpty)
+      throw new DirectoryNotEmptyException(path.toString)
+    val key = existingInodeKey(fs, zp).getOrElse {
+      // An implied directory can only exist because it has live descendants.
+      if (hasPrefix(fs, entryName + "/"))
+        throw new DirectoryNotEmptyException(path.toString)
+      throw new NoSuchFileException(path.toString)
+    }
+    if (key.endsWith("/") && hasLiveChild(fs, key))
+      throw new DirectoryNotEmptyException(path.toString)
+    fs.inodes.put(key, Inode.Deleted)
+    fs.dirty = true
   }
 
   override def copy(
@@ -300,10 +554,30 @@ class ZipFileSystemProvider extends FileSystemProvider {
   ): Unit = {
     val src = asZipPath(source)
     val tgt = asZipPath(target)
-    if (tgt.getFileSystem() ne src.getFileSystem())
-      throw new ProviderMismatchException()
-    src.getFileSystem().asInstanceOf[ZipFileSystem].ensureOpen()
-    throw new ReadOnlyFileSystemException()
+    val fs = src.getFileSystem().asInstanceOf[ZipFileSystem]
+    if (tgt.getFileSystem() ne fs) throw new ProviderMismatchException()
+    fs.ensureOpen()
+    if (!fs.isWritable) throw new ReadOnlyFileSystemException()
+    val copyOptions = parseCopyOptions(options, isMove = false)
+    val srcKey = existingInodeKey(fs, src).getOrElse {
+      val srcName = toEntryName(src)
+      if (srcName.nonEmpty && hasPrefix(fs, srcName + "/"))
+        srcName + "/"
+      else throw new NoSuchFileException(source.toString)
+    }
+    val targetKey = targetKeyForSource(tgt, srcKey.endsWith("/"))
+    prepareTargetForWrite(fs, tgt, targetKey, copyOptions.replaceExisting)
+
+    if (srcKey.endsWith("/") && !hasExplicitLiveInode(fs, srcKey)) {
+      val e = newDirectoryEntry(targetKey)
+      fs.inodes.put(targetKey, Inode.Modified(new Array[Byte](0), e, 0))
+    } else {
+      val srcInode = liveInode(fs, srcKey).getOrElse(
+        throw new NoSuchFileException(source.toString)
+      )
+      fs.inodes.put(targetKey, cloneInode(srcInode, targetKey))
+    }
+    fs.dirty = true
   }
 
   override def move(
@@ -313,10 +587,31 @@ class ZipFileSystemProvider extends FileSystemProvider {
   ): Unit = {
     val src = asZipPath(source)
     val tgt = asZipPath(target)
-    if (tgt.getFileSystem() ne src.getFileSystem())
-      throw new ProviderMismatchException()
-    src.getFileSystem().asInstanceOf[ZipFileSystem].ensureOpen()
-    throw new ReadOnlyFileSystemException()
+    val fs = src.getFileSystem().asInstanceOf[ZipFileSystem]
+    if (tgt.getFileSystem() ne fs) throw new ProviderMismatchException()
+    fs.ensureOpen()
+    if (!fs.isWritable) throw new ReadOnlyFileSystemException()
+    val copyOptions = parseCopyOptions(options, isMove = true)
+    val srcName = toEntryName(src)
+    if (srcName.isEmpty)
+      throw new DirectoryNotEmptyException(source.toString)
+    val srcKey = existingInodeKey(fs, src).getOrElse {
+      if (hasPrefix(fs, srcName + "/")) srcName + "/"
+      else throw new NoSuchFileException(source.toString)
+    }
+    val targetKey = targetKeyForSource(tgt, srcKey.endsWith("/"))
+    if (srcKey == targetKey) return
+    prepareTargetForWrite(fs, tgt, targetKey, copyOptions.replaceExisting)
+
+    if (srcKey.endsWith("/")) moveDirectory(fs, srcKey, targetKey)
+    else {
+      val srcInode = liveInode(fs, srcKey).getOrElse(
+        throw new NoSuchFileException(source.toString)
+      )
+      fs.inodes.put(targetKey, cloneInode(srcInode, targetKey))
+      fs.inodes.put(srcKey, Inode.Deleted)
+    }
+    fs.dirty = true
   }
 
   override def isSameFile(path: Path, path2: Path): Boolean = {
@@ -343,6 +638,7 @@ class ZipFileSystemProvider extends FileSystemProvider {
 
   override def checkAccess(path: Path, modes: Array[AccessMode]): Unit = {
     val zp = asZipPath(path)
+    val fs = zp.getFileSystem().asInstanceOf[ZipFileSystem]
     // existence check — throws NoSuchFileException if absent
     readZipAttributes(zp)
     var i = 0
@@ -350,7 +646,7 @@ class ZipFileSystemProvider extends FileSystemProvider {
       val m = modes(i)
       if (m == AccessMode.EXECUTE)
         throw new AccessDeniedException(path.toString)
-      if (m == AccessMode.WRITE)
+      if (m == AccessMode.WRITE && !fs.isWritable)
         throw new AccessDeniedException(path.toString)
       i += 1
     }
@@ -413,7 +709,7 @@ class ZipFileSystemProvider extends FileSystemProvider {
         )
       else if (attrs.isEmpty) Array.empty[String]
       else attrs.split(",")
-    // jdk.zipfs silently ignores unrecognised attribute names in a
+    // JDK zipfs silently ignores unrecognised attribute names in a
     // comma-separated list (returns only the recognised ones), so match
     // that — throwing IAE here would diverge from jdk.zipfs on calls like
     // `readAttributes(p, "basic:size,unknown")`.
@@ -447,8 +743,40 @@ class ZipFileSystemProvider extends FileSystemProvider {
       options: Array[LinkOption]
   ): Unit = {
     val zp = asZipPath(path)
-    zp.getFileSystem().asInstanceOf[ZipFileSystem].ensureOpen()
-    throw new ReadOnlyFileSystemException()
+    val fs = zp.getFileSystem().asInstanceOf[ZipFileSystem]
+    fs.ensureOpen()
+    if (!fs.isWritable) throw new ReadOnlyFileSystemException()
+    val (view, attrName) = splitAttrSpec(attribute)
+    if (view != "basic")
+      throw new UnsupportedOperationException(
+        s"View $view is not supported (only 'basic')"
+      )
+    val ft = value match {
+      case t: FileTime => t
+      case null        => throw new NullPointerException("value")
+      case _           =>
+        throw new ClassCastException(
+          s"Expected FileTime for attribute $attribute"
+        )
+    }
+    val entryName = toEntryName(zp)
+    val inode = lookupLiveInode(fs, entryName).getOrElse(
+      throw new NoSuchFileException(zp.toString)
+    )
+    val updated = inode match {
+      case Inode.Original(src, e, gp) =>
+        val c = new ZipEntry(e)
+        setTimeAttribute(c, attrName, ft)
+        Inode.Original(src, c, gp)
+      case Inode.Modified(bytes, e, gp) =>
+        val c = new ZipEntry(e)
+        setTimeAttribute(c, attrName, ft)
+        Inode.Modified(bytes, c, gp)
+      case Inode.Deleted =>
+        throw new NoSuchFileException(zp.toString)
+    }
+    fs.inodes.put(entryName, updated)
+    fs.dirty = true
   }
 
   // --- internals ---
@@ -467,8 +795,13 @@ class ZipFileSystemProvider extends FileSystemProvider {
     else (spec.substring(0, idx), spec.substring(idx + 1))
   }
 
+  /** Resolve `path` against the file system's `ZipFile` and return its
+   *  attributes. Throws `NoSuchFileException` if neither a direct entry, a
+   *  `name/` entry, nor an implied-directory prefix match.
+   */
   // ZIP entry names never start with "/"; the root path "/" maps to the
-  // empty entry name.
+  // empty entry name. Used by readZipAttributes / newInputStream /
+  // newDirectoryStream.
   private[zipfs] def toEntryName(path: ZipPath): String = {
     val abs = path.toAbsolutePath().normalize().toString
     if (abs == "/") ""
@@ -476,10 +809,6 @@ class ZipFileSystemProvider extends FileSystemProvider {
     else abs
   }
 
-  /** Resolve `path` against the file system's `ZipFile` and return its
-   *  attributes. Throws `NoSuchFileException` if neither a direct entry, a
-   *  `name/` entry, nor an implied-directory prefix match.
-   */
   private[zipfs] def readZipAttributes(path: ZipPath): ZipFileAttributes = {
     val fs = path.getFileSystem().asInstanceOf[ZipFileSystem]
     fs.ensureOpen()
@@ -488,6 +817,31 @@ class ZipFileSystemProvider extends FileSystemProvider {
 
     if (entryName.isEmpty)
       return syntheticDirectoryAttrs()
+
+    if (fs.isWritable) {
+      lookupLiveInode(fs, entryName) match {
+        case Some(Inode.Original(_, e, _)) =>
+          return fromEntry(e, e.isDirectory())
+        case Some(Inode.Modified(bytes, e, _)) =>
+          return fromEntry(e, e.isDirectory(), Some(bytes.length.toLong))
+        case Some(Inode.Deleted) => ()
+        case None                => ()
+      }
+
+      lookupLiveInode(fs, entryName + "/") match {
+        case Some(Inode.Original(_, e, _)) =>
+          return fromEntry(e, _isDir = true)
+        case Some(Inode.Modified(_, e, _)) =>
+          return fromEntry(e, _isDir = true, Some(0L))
+        case Some(Inode.Deleted) => ()
+        case None                => ()
+      }
+
+      if (hasPrefix(fs, entryName + "/"))
+        return syntheticDirectoryAttrs()
+
+      throw new NoSuchFileException(path.toString)
+    }
 
     val zf = fs.zipFile
 
@@ -507,7 +861,11 @@ class ZipFileSystemProvider extends FileSystemProvider {
     throw new java.nio.file.NoSuchFileException(path.toString)
   }
 
-  private def fromEntry(e: ZipEntry, _isDir: Boolean): ZipFileAttributes = {
+  private def fromEntry(
+      e: ZipEntry,
+      _isDir: Boolean,
+      sizeOverride: Option[Long] = None
+  ): ZipFileAttributes = {
     // FileTime triple: prefer the structured accessors (which see UT/NTFS
     // extra fields populated by ZipEntry); fall back to mtime epoch-zero
     // when nothing is available. Matches jdk.zipfs semantics for entries
@@ -525,7 +883,8 @@ class ZipFileSystemProvider extends FileSystemProvider {
       if (ft != null) ft else mt
     }
     new ZipFileAttributes(
-      _size = if (_isDir) 0L else math.max(0L, e.getSize()),
+      _size =
+        if (_isDir) 0L else sizeOverride.getOrElse(math.max(0L, e.getSize())),
       _mtime = mt,
       _atime = at,
       _ctime = ct,
@@ -551,6 +910,26 @@ class ZipFileSystemProvider extends FileSystemProvider {
     false
   }
 
+  private def hasPrefix(fs: ZipFileSystem, prefix: String): Boolean = {
+    val it = fs.inodes.entrySet().iterator()
+    while (it.hasNext()) {
+      val e = it.next()
+      if (e.getValue() != Inode.Deleted && e.getKey().startsWith(prefix))
+        return true
+    }
+    false
+  }
+
+  private def lookupLiveInode(
+      fs: ZipFileSystem,
+      entryName: String
+  ): Option[Inode] =
+    if (!fs.isWritable) None
+    else {
+      val inode = fs.inodes.get(entryName)
+      if (inode == null) None else Some(inode)
+    }
+
   private def addDirectoryChild(
       seen: LinkedHashSet[String],
       prefix: String,
@@ -563,6 +942,218 @@ class ZipFileSystemProvider extends FileSystemProvider {
       if (child.length > 0) seen.add(child)
     }
   }
+
+  private def setTimeAttribute(
+      entry: ZipEntry,
+      attrName: String,
+      value: FileTime
+  ): Unit = attrName match {
+    case "lastModifiedTime" => entry.setLastModifiedTime(value)
+    case "lastAccessTime"   => entry.setLastAccessTime(value)
+    case "creationTime"     => entry.setCreationTime(value)
+    case _                  =>
+      throw new IllegalArgumentException(
+        s"Unknown basic attribute: $attrName"
+      )
+  }
+
+  private def parseCopyOptions(
+      options: Array[CopyOption],
+      isMove: Boolean
+  ): ParsedCopyOptions = {
+    if (options == null) throw new NullPointerException("options")
+    var replace = false
+    var i = 0
+    while (i < options.length) {
+      options(i) match {
+        case null => throw new NullPointerException("option")
+        case StandardCopyOption.REPLACE_EXISTING =>
+          replace = true
+        case StandardCopyOption.COPY_ATTRIBUTES =>
+          () // ZipFS copies basic metadata by default.
+        case LinkOption.NOFOLLOW_LINKS =>
+          () // ZipFS has no symbolic links.
+        case StandardCopyOption.ATOMIC_MOVE if isMove =>
+          throw new AtomicMoveNotSupportedException(
+            "",
+            "",
+            "ZipFS move is implemented as an inode-map update"
+          )
+        case o =>
+          throw new UnsupportedOperationException(
+            s"ZipFS CopyOption not supported: $o"
+          )
+      }
+      i += 1
+    }
+    ParsedCopyOptions(replace)
+  }
+
+  private def targetKeyForSource(
+      target: ZipPath,
+      isDirectory: Boolean
+  ): String = {
+    val name = toEntryName(target)
+    if (name.isEmpty) ""
+    else if (isDirectory) name + "/"
+    else name
+  }
+
+  private def existingInodeKey(
+      fs: ZipFileSystem,
+      path: ZipPath
+  ): Option[String] = {
+    val entryName = toEntryName(path)
+    if (entryName.isEmpty) None
+    else {
+      liveInode(fs, entryName) match {
+        case Some(_) => Some(entryName)
+        case None    =>
+          val dirName = entryName + "/"
+          liveInode(fs, dirName) match {
+            case Some(_) => Some(dirName)
+            case None    => None
+          }
+      }
+    }
+  }
+
+  private def liveInode(fs: ZipFileSystem, key: String): Option[Inode] =
+    lookupLiveInode(fs, key) match {
+      case Some(Inode.Deleted) => None
+      case other               => other
+    }
+
+  private def hasExplicitLiveInode(fs: ZipFileSystem, key: String): Boolean =
+    liveInode(fs, key).isDefined
+
+  private def prepareTargetForWrite(
+      fs: ZipFileSystem,
+      target: ZipPath,
+      targetKey: String,
+      replaceExisting: Boolean
+  ): Unit = {
+    if (targetKey.isEmpty)
+      throw new FileAlreadyExistsException(target.toString)
+    validateWritableParent(target)
+    existingInodeKey(fs, target) match {
+      case Some(existing) =>
+        if (!replaceExisting)
+          throw new FileAlreadyExistsException(target.toString)
+        if (existing.endsWith("/") && hasLiveChild(fs, existing))
+          throw new DirectoryNotEmptyException(target.toString)
+        fs.inodes.put(existing, Inode.Deleted)
+      case None =>
+        if (hasPrefix(fs, targetKey))
+          throw new FileAlreadyExistsException(target.toString)
+    }
+  }
+
+  private def hasLiveChild(fs: ZipFileSystem, dirKey: String): Boolean = {
+    val it = fs.inodes.entrySet().iterator()
+    while (it.hasNext()) {
+      val e = it.next()
+      if (e.getValue() != Inode.Deleted) {
+        val key = e.getKey()
+        if (key.length > dirKey.length && key.startsWith(dirKey))
+          return true
+      }
+    }
+    false
+  }
+
+  private def newDirectoryEntry(name: String): ZipEntry = {
+    val e = new ZipEntry(name)
+    e.setMethod(ZipEntry.STORED)
+    e.setTime(System.currentTimeMillis())
+    e.setSize(0L)
+    e.setCompressedSize(0L)
+    e.setCrc(0L)
+    e
+  }
+
+  private def cloneInode(inode: Inode, targetName: String): Inode =
+    inode match {
+      case Inode.Original(src, e, gp) =>
+        Inode.Original(src, cloneEntryForName(e, targetName), gp)
+      case Inode.Modified(bytes, e, gp) =>
+        Inode.Modified(bytes.clone(), cloneEntryForName(e, targetName), gp)
+      case Inode.Deleted =>
+        Inode.Deleted
+    }
+
+  private def cloneEntryForName(
+      source: ZipEntry,
+      targetName: String
+  ): ZipEntry = {
+    val e = new ZipEntry(targetName)
+    if (source.getComment() != null) e.setComment(source.getComment())
+    if (source.getMethod() != -1) e.setMethod(source.getMethod())
+    if (source.getSize() >= 0L) e.setSize(source.getSize())
+    if (source.getCompressedSize() >= 0L)
+      e.setCompressedSize(source.getCompressedSize())
+    if (source.getCrc() >= 0L) e.setCrc(source.getCrc())
+    val extra = source.getExtra()
+    if (extra != null) e.setExtra(extra.clone())
+    val mt = source.getLastModifiedTime()
+    if (mt != null) e.setLastModifiedTime(mt)
+    else if (source.getTime() != -1L) e.setTime(source.getTime())
+    val at = source.getLastAccessTime()
+    if (at != null) e.setLastAccessTime(at)
+    val ct = source.getCreationTime()
+    if (ct != null) e.setCreationTime(ct)
+    e
+  }
+
+  private def moveDirectory(
+      fs: ZipFileSystem,
+      srcKey: String,
+      targetKey: String
+  ): Unit = {
+    val moved = new java.util.ArrayList[(String, Inode)]()
+    liveInode(fs, srcKey) match {
+      case Some(inode) =>
+        moved.add((targetKey, cloneInode(inode, targetKey)))
+      case None =>
+        moved.add(
+          (
+            targetKey,
+            Inode.Modified(
+              new Array[Byte](0),
+              newDirectoryEntry(targetKey),
+              0
+            )
+          )
+        )
+    }
+
+    val it = fs.inodes.entrySet().iterator()
+    while (it.hasNext()) {
+      val e = it.next()
+      val key = e.getKey()
+      if (key.length > srcKey.length && key.startsWith(srcKey) &&
+          e.getValue() != Inode.Deleted) {
+        val movedKey = targetKey + key.substring(srcKey.length)
+        moved.add((movedKey, cloneInode(e.getValue(), movedKey)))
+      }
+    }
+
+    fs.inodes.put(srcKey, Inode.Deleted)
+    val dit = fs.inodes.entrySet().iterator()
+    while (dit.hasNext()) {
+      val e = dit.next()
+      val key = e.getKey()
+      if (key.length > srcKey.length && key.startsWith(srcKey))
+        fs.inodes.put(key, Inode.Deleted)
+    }
+
+    var i = 0
+    while (i < moved.size()) {
+      val (key, inode) = moved.get(i)
+      fs.inodes.put(key, inode)
+      i += 1
+    }
+  }
 }
 
 object ZipFileSystemProvider {
@@ -572,4 +1163,24 @@ object ZipFileSystemProvider {
   // would be lost between lookups.
   private val registry =
     new ConcurrentHashMap[Path, ZipFileSystem]()
+
+  private final case class OpenMode(
+      writeMode: Boolean,
+      readable: Boolean,
+      append: Boolean,
+      write: Boolean,
+      create: Boolean,
+      createNew: Boolean,
+      truncate: Boolean,
+      deleteOnClose: Boolean
+  )
+
+  private final case class ParsedCopyOptions(replaceExisting: Boolean)
+
+  private sealed trait AccessModeOpt
+  private object AccessModeOpt {
+    case object Default extends AccessModeOpt
+    case object ReadOnly extends AccessModeOpt
+    case object ReadWrite extends AccessModeOpt
+  }
 }

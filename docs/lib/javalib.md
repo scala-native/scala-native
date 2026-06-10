@@ -215,10 +215,11 @@ network is first used.
 (zip_file_system)=
 ## Zip file system (jar: URIs)
 
-Scala Native ships a read-only zip/jar file system provider,
+Scala Native ships a zip/jar file system provider,
 `scala.scalanative.nio.fs.zipfs.ZipFileSystemProvider`, the Native
-counterpart of the JDK's `jdk.zipfs` module. It allows reading entries
-of a zip or jar archive through the `java.nio.file` API:
+counterpart of the JDK's `jdk.zipfs` module. It allows reading and
+writing entries of a zip or jar archive through the `java.nio.file`
+API:
 
 ``` scala
 import java.nio.file.{FileSystems, Files, Paths}
@@ -233,12 +234,20 @@ try {
 } finally fs.close()
 ```
 
+Mounts are writable by default, matching `jdk.zipfs`: mutations are
+buffered in memory and the archive is rewritten atomically when the
+file system is closed. Supported env keys: `create` (create a missing
+archive), `accessMode` (`readOnly`/`readWrite`), `compressionMethod`
+(`STORED`/`DEFLATED`).
+
 Limitations compared to `jdk.zipfs`:
 
--   Mounts are always read-only. `accessMode=readOnly` is accepted;
-    `accessMode=readWrite` and `create=true` are rejected with
-    `UnsupportedOperationException` until write support is implemented.
 -   Only `file:`-based archives can be mounted (`jar:file:/...`).
+-   ZIP64 archives (more than 65535 entries, or entries/offsets past
+    4 GiB) are not supported; the writer rejects them with
+    `ZipException` instead of producing a corrupt archive.
+-   A writable mount buffers modified entries in memory, so very large
+    rewrites are bounded by available heap.
 
 The provider is discovered through `java.util.ServiceLoader`, which on
 Scala Native resolves implementations at link time. To use the zip file

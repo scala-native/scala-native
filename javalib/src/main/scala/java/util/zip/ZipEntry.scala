@@ -51,6 +51,7 @@ class ZipEntry private (
     this.mtimeFromExtra = e.mtimeFromExtra
     this.atimeFromExtra = e.atimeFromExtra
     this.ctimeFromExtra = e.ctimeFromExtra
+    this.gpFlags = e.gpFlags
   }
 
   if (name == null) {
@@ -70,6 +71,13 @@ class ZipEntry private (
   private[zip] var mtimeFromExtra: Boolean = false
   private[zip] var atimeFromExtra: Boolean = false
   private[zip] var ctimeFromExtra: Boolean = false
+
+  // General-purpose-flag bits captured at read time (LFH/CDH bit field).
+  // Set by `fromInputStream`; default 0 for entries built via `new
+  // ZipEntry(name)` from user code. Exposed to the zip file system via
+  // ZipFileSystemSupport so it can detect unsupported flag bits
+  // (encryption, patched data) before mounting an archive read-write.
+  private[zip] var gpFlags: Int = 0
 
   def getComment(): String =
     comment
@@ -403,6 +411,7 @@ object ZipEntry extends ZipConstants {
         extra,
         mLocalHeaderRelOffset
       )
+      ze.gpFlags = gpBitFlag & 0xffff
       parseExtraTimestamps(ze, extra)
       ze
     } catch {

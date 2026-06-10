@@ -6,42 +6,83 @@ import java.nio.file.spi.FileSystemProvider
 import java.util.zip.ZipFile
 import java.{util => ju}
 
-/** Read-only file-system view over a single zip/jar archive.
+/** File-system view over a single zip/jar archive.
  *
- *  Entry lookup is delegated to `java.util.zip.ZipFile`, which keeps the
- *  archive's central directory in memory. Write support is not implemented
- *  yet: every mount is read-only and mutating operations throw
- *  [[java.nio.file.ReadOnlyFileSystemException]].
+ *  Reads are delegated to `java.util.zip.ZipFile`, which keeps the archive's
+ *  central directory in memory. Writable mounts additionally keep an
+ *  insertion-ordered inode map overlaying the source archive; all mutations are
+ *  buffered in memory and the archive is rewritten atomically when the file
+ *  system is closed.
+ *
+ *  Not thread-safe for concurrent mutation: like most java.nio file-system
+ *  state, callers must synchronise externally if they mutate one writable mount
+ *  from multiple threads.
  */
 class ZipFileSystem private[zipfs] (
     fsProvider: ZipFileSystemProvider,
     val archivePath: Path,
-    private[zipfs] val zipFile: ZipFile
+    private[zipfs] val sourceZip: Option[ZipFile],
+    private[zipfs] val isWritable: Boolean,
+    private[zipfs] val defaultCompressionMethod: Int
 ) extends FileSystem {
 
   private val openFlag = new java.util.concurrent.atomic.AtomicBoolean(true)
 
   private[zipfs] val rootPath: ZipPath = new ZipPath(this, "/")
 
+  // Insertion-ordered inode map for writable mounts. For read-only
+  // mounts this is left null and reads go straight to `zipFile`.
+  private[zipfs] val inodes: ju.LinkedHashMap[String, Inode] =
+    if (isWritable) new ju.LinkedHashMap[String, Inode]() else null
+
+  // Set whenever inodes mutate; a `create=true` mount of a missing archive
+  // flips this at mount time so an empty writable mount still produces a
+  // valid empty archive (EOCD only) on close.
+  @volatile private[zipfs] var dirty: Boolean = false
+
+  // Read-side view of the source archive. Null only for a writable
+  // `create=true` mount whose archive does not exist yet.
+  private[zipfs] def zipFile: ZipFile = sourceZip.orNull
+
   override def provider(): FileSystemProvider = fsProvider
 
   override def isOpen(): Boolean = openFlag.get()
 
-  override def isReadOnly(): Boolean = true
+  override def isReadOnly(): Boolean = !isWritable
 
   override def getSeparator(): String = "/"
 
   override def close(): Unit = {
     if (openFlag.compareAndSet(true, false)) {
-      try zipFile.close()
-      finally fsProvider.unregister(archivePath, this)
+      try {
+        if (isWritable && dirty) {
+          // Two-phase rewrite so the source archive's OS handle is
+          // released before the rename: ZipWriter streams raw payloads
+          // out of `sourceZip` into a sibling temp file, we close the
+          // source, then atomically replace. On Windows the rename
+          // would fail with AccessDeniedException if the source were
+          // still open.
+          val tmp =
+            try ZipWriter.writeToTemp(this)
+            catch {
+              case t: Throwable =>
+                try sourceZip.foreach(_.close())
+                catch { case _: Throwable => () }
+                throw t
+            }
+          try sourceZip.foreach(_.close())
+          finally ZipWriter.commit(tmp, archivePath)
+        } else {
+          sourceZip.foreach(_.close())
+        }
+      } finally fsProvider.unregister(archivePath, this)
     }
   }
 
   // For races inside provider.newFileSystem: close without touching the
   // registry (we never put it there).
   private[zipfs] def closeQuietly(): Unit = {
-    if (openFlag.compareAndSet(true, false)) zipFile.close()
+    if (openFlag.compareAndSet(true, false)) sourceZip.foreach(_.close())
   }
 
   // Only real I/O enforces the closed state; path-level methods (getPath,

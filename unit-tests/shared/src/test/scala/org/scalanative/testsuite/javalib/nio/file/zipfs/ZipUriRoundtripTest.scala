@@ -13,8 +13,8 @@ import org.scalanative.testsuite.utils.Platform.executingInJVM
 
 /** `provider.getPath(uri)`, `isSameFile`, `isHidden`.
  *
- *  Drives the prebuilt `io-fixture.jar` fixture. Cross-checks Native
- *  ZipFS against jdk.zipfs.
+ *  Drives the prebuilt `io-fixture.jar` fixture. Cross-checks Native ZipFS
+ *  against jdk.zipfs.
  */
 object ZipUriRoundtripTest {
   private val fixtureResource = "io-fixture.jar"
