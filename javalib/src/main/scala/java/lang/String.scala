@@ -132,6 +132,14 @@ final class _String()
     count = length
   }
 
+  // Zero-copy: share the buffer with AbstractStringBuilder via copy-on-write.
+  private[lang] def this(asb: AbstractStringBuilder, sig: Void) = {
+    this()
+    value = asb.shareValue()
+    offset = 0
+    count = asb.length()
+  }
+
   def this(string: _String) = {
     this()
     value = string.value
