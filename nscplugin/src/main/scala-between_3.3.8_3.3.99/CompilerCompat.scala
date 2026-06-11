@@ -16,5 +16,7 @@ object CompilerCompat {
     override def isPrimitive(tree: Tree): Boolean =
       nirPrimitives.contains(tree.symbol) || super.isPrimitive(tree)
   }
-  val LazyValHandleName = Some(dotty.tools.dotc.core.NameKinds.LazyVarHandleName)
+  val LazyValHandleName = Some:
+    dotty.tools.dotc.core.NameKinds.LazyVarHandleName
+
 }
