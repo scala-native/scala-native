@@ -577,7 +577,7 @@ class FloatTest {
   @Test def testFloatToFloat16_Subnormals(): Unit = {
     /* This is a minimal smoke test. Future developers may will want
      * to add additional carefully chosen test points.
-     * 
+     *
      * Rounding is always tricky and prone to harbor bugs. half_even rounding
      * in particular, might benefit from additional cases.
      */

@@ -341,9 +341,10 @@ object Float {
       // 127 is binary32 bias. 15 is binary16 bias.
       val biasedExponentF32 = biasedExponentF16 + (127 - 15)
 
-      val intBits = (signF16 << 31)
-        | (biasedExponentF32 << 23)
-        | significandF16 << 13
+      val intBits =
+        (signF16 << 31) |
+          (biasedExponentF32 << 23) |
+          (significandF16 << 13)
 
       jl.Float.intBitsToFloat(intBits)
     } else if (floatBinary16 == 0x0) {
@@ -371,9 +372,10 @@ object Float {
        */
       val biasedExponentF32 = (127 - 15) - significandLeadingZeros
 
-      val intBits = (signF16 << 31)
-        | (biasedExponentF32 << 23)
-        | significandF16 << (13 + exponentShiftCount)
+      val intBits =
+        (signF16 << 31) |
+          (biasedExponentF32 << 23) |
+          significandF16 << (13 + exponentShiftCount)
 
       jl.Float.intBitsToFloat(intBits)
     } else if (floatBinary16 == 0x7c00) {
@@ -436,9 +438,10 @@ object Float {
 
       val biasedExponentF16 = biasedExponentF32 - 127 + 15
 
-      val intBits = (signF32 << 15)
-        | (biasedExponentF16 << 10)
-        | roundEvenTo10Bits(significandF32)
+      val intBits =
+        (signF32 << 15) |
+          (biasedExponentF16 << 10) |
+          roundEvenTo10Bits(significandF32)
 
       intBits.toShort
     } else if (absFloatBinary32 < smallestNormalF16) {
@@ -451,8 +454,9 @@ object Float {
 
         val shift = -14 - (biasedExponentF32 - 127)
 
-        val intBits = (signF32 << 15)
-          | roundEvenTo10Bits(adjSignificandF32 >>> shift)
+        val intBits =
+          (signF32 << 15) | // exponent bits are already 0 in both
+            roundEvenTo10Bits(adjSignificandF32 >>> shift)
 
         intBits.toShort
       }
