@@ -2,6 +2,7 @@ package java.lang
 
 import java.lang.IEEE754Helpers.parseIEEE754
 import java.lang.constant.{Constable, ConstantDesc}
+import java.{lang => jl, util => ju}
 
 import scalanative.libc
 import scalanative.runtime.Intrinsics
@@ -154,6 +155,19 @@ final class Float(val _value: scala.Float)
   protected def %(x: scala.Long): scala.Float = _value % x
   protected def %(x: scala.Float): scala.Float = _value % x
   protected def %(x: scala.Double): scala.Double = _value % x
+  /* Scala Native additions for features added after Java 8.
+   */
+
+  /** Since: Java 12 */
+  def describeConstable(): ju.Optional[jl.Float] =
+    ju.Optional.of(this)
+
+  /** Since: Java 12
+   *
+   *  resolveConstantDesc requires reflection so its Test can not presently (SN
+   *  0.5.12) be implemented.
+   */
+  // def resolveConstantDesc (): java.lang.Float
 }
 
 object Float {
@@ -169,6 +183,9 @@ object Float {
   final val SIZE = 32
   final val TYPE =
     scala.Predef.classOf[scala.scalanative.runtime.PrimitiveFloat]
+
+  /** Since: Java 19 */
+  final val PRECISION = 24
 
   @inline def compare(x: scala.Float, y: scala.Float): scala.Int =
     if (x > y) 1
@@ -306,4 +323,148 @@ object Float {
 
   @inline def valueOf(f: scala.Float): Float =
     new Float(f)
+
+  /* Scala Native additions for features added after Java 8.
+   */
+
+  /** Since: Java 20 */
+  def float16ToFloat(floatBinary16: scala.Short): scala.Float = {
+    val signF16 = floatBinary16 >>> 31
+    val biasedExponentF16 = (floatBinary16 & 0x7c00) >>> 10 // 5 bits
+    val significandF16 = floatBinary16 & 0x3ff // Low 10 bits
+
+    val absFloatBinary16 = floatBinary16 & (0x7fff)
+
+    // For amortized performance, test most commonly expected cases first.
+    if ((absFloatBinary16 >= 0x0400) &&
+        (absFloatBinary16 <= 0x7bff)) { // arg is an binary16 normal
+      // 127 is binary32 bias. 15 is binary16 bias.
+      val biasedExponentF32 = biasedExponentF16 + (127 - 15)
+
+      val intBits = (signF16 << 31)
+        | (biasedExponentF32 << 23)
+        | significandF16 << 13
+
+      jl.Float.intBitsToFloat(intBits)
+    } else if (floatBinary16 == 0x0) {
+      0.0f
+    } else if ((absFloatBinary16 > 0x0) &&
+        (absFloatBinary16 <= 0x03ff)) { // arg is a binary16 subnormal
+      /* Heads up! Here is where the magic happens.
+       * The binary16 subnormal will always be a binary32 normal so
+       * the former must be normalized.
+       */
+
+      val totalLeadingZeros = jl.Integer.numberOfLeadingZeros(significandF16)
+
+      /* Magic number 22 bears close attention. Six leading zeros
+       * come from the Short argument, or else execution would not have reached
+       * here. Sixteen leading zeros were added when the 10 bit significand
+       * field was extracted. The logical_and promoted its arguments and
+       * returned a 32 bit Int.
+       */
+      val significandLeadingZeros = totalLeadingZeros - 22
+      val exponentShiftCount = significandLeadingZeros + 1
+
+      /* 127 is the binary32 bias. 15 is the binary32 bias.
+       * significandLeadingZeros is normalization adjustment.
+       */
+      val biasedExponentF32 = (127 - 15) - significandLeadingZeros
+
+      val intBits = (signF16 << 31)
+        | (biasedExponentF32 << 23)
+        | significandF16 << (13 + exponentShiftCount)
+
+      jl.Float.intBitsToFloat(intBits)
+    } else if (floatBinary16 == 0x7c00) {
+      jl.Float.POSITIVE_INFINITY
+    } else if (floatBinary16 == 0xfc00.toShort) { // drop set Int rhs high bits
+      jl.Float.NEGATIVE_INFINITY
+    } else if (floatBinary16 == 0x8000.toShort) { // drop set Int rhs high bits
+      -0.0f
+    } else if (biasedExponentF16 == 0x1f) { // 5 bits, all 1's
+      jl.Float.NaN
+    } else { // Should never reach here
+      throw new IllegalArgumentException(
+        "Fatal internal error in float16ToFloat() decision tree"
+      )
+    }
+  }
+
+  def floatToFloat16(floatBinary32: scala.Float): scala.Short = {
+
+    def roundEvenTo10Bits(bits23: Int): Int = {
+      // Precondition: floatBinary32 values which would cause an
+      // f16 Infinity have been filtered out before calling this method.
+
+      val low23Bits = (bits23 & 0x7fffff)
+
+      val bit13 = (bits23 >>> 12) & 0x1
+      val low12Bits = (bits23 & 0xfff)
+
+      val roundUp =
+        if (bit13 == 0) false
+        else low12Bits != 0
+
+      val base = bits23 >>> 13 // use high 10 bits
+
+      /* If the addition happens, numerical overflow to +Infinity is not
+       * a concern. F32 values which would cause an F16 Infinity
+       * have been filtered out as a precondition. That leaves
+       * 65504, the largest F16 as the largest candidate. That is
+       * even, so it will not cause rounding. Incrementing any lesser
+       * value, negative or positive will not cause overflow. QED.
+       */
+
+      if (!roundUp) base
+      else base + 1
+    }
+
+    val absFloatBinary32 = Math.abs(floatBinary32)
+    val f32Bits = jl.Float.floatToIntBits(floatBinary32)
+
+    val signF32 = f32Bits >>> 31
+    val biasedExponentF32 = (f32Bits & 0x7f800000) >>> 23 // 8 bits
+    val significandF32 = f32Bits & 0x7fffff // Low 23 bits
+
+    val smallestNormalF16 = 0.00006103515625f
+
+    // For amortized performance, test most commonly expected cases first.
+    if ((absFloatBinary32 >= smallestNormalF16)
+        && (absFloatBinary32 <= 65504.0)) { // largest finite F16
+      // result is F16 normal
+
+      val biasedExponentF16 = biasedExponentF32 - 127 + 15
+
+      val intBits = (signF32 << 15)
+        | (biasedExponentF16 << 10)
+        | roundEvenTo10Bits(significandF32)
+
+      intBits.toShort
+    } else if (absFloatBinary32 < smallestNormalF16) {
+      if (absFloatBinary32 < 0.000000059604645f) { // smallest f16 subnorm
+        // underflow
+        if (signF32 == 0) 0.toShort
+        else 0x8000.toShort
+      } else { // result is an F16 subnormal
+        val adjSignificandF32 = significandF32 | 0x800000
+
+        val shift = -14 - (biasedExponentF32 - 127)
+
+        val intBits = (signF32 << 15)
+          | roundEvenTo10Bits(adjSignificandF32 >>> shift)
+
+        intBits.toShort
+      }
+    } else if (absFloatBinary32 > 65504.0f) { // largest F16
+      if (signF32 == 0) 0x7c00.toShort // positive Infinity
+      else 0xfc00.toShort // negative Infinity
+    } else if (floatBinary32.isNaN()) {
+      0x7e00.toShort
+    } else { // Should never reach here
+      throw new IllegalArgumentException(
+        "Fatal internal error in floatToFloat16() decision tree"
+      )
+    }
+  }
 }

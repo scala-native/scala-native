@@ -2,7 +2,7 @@ package java.lang
 
 import java.lang.IEEE754Helpers.parseIEEE754
 import java.lang.constant.{Constable, ConstantDesc}
-import java.{lang => jl}
+import java.{lang => jl, util => ju}
 
 import scalanative.libc
 import scalanative.runtime.Intrinsics
@@ -155,6 +155,20 @@ final class Double(val _value: scala.Double)
   protected def %(x: scala.Long): scala.Double = _value % x
   protected def %(x: scala.Float): scala.Double = _value % x
   protected def %(x: scala.Double): scala.Double = _value % x
+
+  /* Scala Native additions for features added after Java 8.
+   */
+
+  /** Since: Java 12 */
+  def describeConstable(): ju.Optional[jl.Double] =
+    ju.Optional.of(this)
+
+  /** Since: Java 12
+   *
+   *  resolveConstantDesc requires reflection so its Test can not presently (SN
+   *  0.5.12) be implemented.
+   */
+  // def resolveConstantDesc (): java.lang.Double
 }
 
 object Double {
@@ -170,6 +184,9 @@ object Double {
   final val SIZE = 64
   final val TYPE =
     scala.Predef.classOf[scala.scalanative.runtime.PrimitiveDouble]
+
+  /** Since: Java 19 */
+  final val PRECISION = 53
 
   @inline def compare(x: scala.Double, y: scala.Double): scala.Int =
     if (x > y) 1
