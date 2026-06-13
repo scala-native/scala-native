@@ -48,7 +48,7 @@ package java.util.concurrent
 import java.util.concurrent.atomic.{AtomicLong, AtomicReference}
 import java.util.concurrent.locks.LockSupport
 
-/** A reusable synchronization barrier, similar in functionality to
+/* A reusable synchronization barrier, similar in functionality to
  *  {@link CyclicBarrier} and {@link CountDownLatch} but supporting more
  *  flexible usage.
  *
@@ -227,10 +227,10 @@ object Phaser {
   private final val ONE_DEREGISTER = ONE_ARRIVAL | ONE_PARTY
   private final val EMPTY = 1
 
-  /** The number of CPUs, for spin control */
+  /* The number of CPUs, for spin control */
   private final val NCPU = Runtime.getRuntime().availableProcessors()
 
-  /** The number of times to spin before blocking while waiting for advance, per
+  /* The number of times to spin before blocking while waiting for advance, per
    *  arrival while waiting. On multiprocessors, fully blocking and waking up a
    *  large number of threads all at once is usually a very slow process, so we
    *  use rechargeable spins to avoid it when threads regularly arrive: When a
@@ -265,7 +265,7 @@ object Phaser {
       (counts >>> PARTIES_SHIFT) - (counts & UNARRIVED_MASK)
   }
 
-  /** Wait nodes for Treiber stack representing wait queue.
+  /* Wait nodes for Treiber stack representing wait queue.
    */
   final class QNode extends ForkJoinPool.ManagedBlocker {
     var phaser: Phaser = _
@@ -344,7 +344,7 @@ class Phaser(_parent: Phaser, _parties: Int) {
    * enhancements to extend functionality.
    */
 
-  /** Primary state representation, holding four bit-fields:
+  /* Primary state representation, holding four bit-fields:
    *
    *  unarrived -- the number of parties yet to hit barrier (bits 0-15) parties
    *  -- the number of parties to wait (bits 16-31) phase -- the generation of
@@ -377,11 +377,11 @@ class Phaser(_parent: Phaser, _parties: Int) {
 
   private var parent: Phaser = _
 
-  /** The root of phaser tree. Equals this if not in a tree.
+  /* The root of phaser tree. Equals this if not in a tree.
    */
   private var root: Phaser = _
 
-  /** Heads of Treiber stacks for waiting threads. To eliminate contention when
+  /* Heads of Treiber stacks for waiting threads. To eliminate contention when
    *  releasing some threads while adding others, we use two of them,
    *  alternating across even and odd phases. Subphasers share queues with root
    *  to speed up releases.
@@ -392,20 +392,20 @@ class Phaser(_parent: Phaser, _parties: Int) {
 
   initializePrimaryConstructor(_parent, _parties)
 
-  /** Returns message string for bounds exceptions on arrival.
+  /* Returns message string for bounds exceptions on arrival.
    */
   private def badArrive(s: Long): String = {
     s"Attempted arrival of unregistered party for ${stateToString(s)}"
   }
 
-  /** Returns message string for bounds exceptions on registration.
+  /* Returns message string for bounds exceptions on registration.
    */
   private def badRegister(s: Long): String = {
     val sts = stateToString(s)
     s"Attempt to register more than ${MAX_PARTIES} parties for ${sts}"
   }
 
-  /** Main implementation for methods arrive and arriveAndDeregister. Manually
+  /* Main implementation for methods arrive and arriveAndDeregister. Manually
    *  tuned to speed up and minimize race windows for the common case of just
    *  decrementing unarrived field.
    *
@@ -467,7 +467,7 @@ class Phaser(_parent: Phaser, _parties: Int) {
     phase
   }
 
-  /** Implementation of register, bulkRegister.
+  /* Implementation of register, bulkRegister.
    *
    *  @param registrations
    *    number to add to both parties and unarrived fields. Must be greater than
@@ -529,7 +529,7 @@ class Phaser(_parent: Phaser, _parties: Int) {
     phase
   }
 
-  /** Resolves lagged phase propagation from root if necessary. Reconciliation
+  /* Resolves lagged phase propagation from root if necessary. Reconciliation
    *  normally occurs when root has advanced but subphasers have not yet done
    *  so, in which case they must finish their own advance by setting unarrived
    *  to parties (or if parties is zero, resetting to unregistered EMPTY state).
@@ -569,7 +569,7 @@ class Phaser(_parent: Phaser, _parties: Int) {
     s
   }
 
-  /** Creates a new phaser with the given parent and number of registered
+  /* Creates a new phaser with the given parent and number of registered
    *  unarrived parties. When the given parent is non-null and the given number
    *  of parties is greater than zero, this child phaser is registered with its
    *  parent.
@@ -617,14 +617,14 @@ class Phaser(_parent: Phaser, _parties: Int) {
     )
   }
 
-  /** Creates a new phaser with no initially registered parties, no parent, and
+  /* Creates a new phaser with no initially registered parties, no parent, and
    *  initial phase number 0. Any thread using this phaser will need to first
    *  register for it.
    */
   def this() =
     this(null, 0)
 
-  /** Creates a new phaser with the given number of registered unarrived
+  /* Creates a new phaser with the given number of registered unarrived
    *  parties, no parent, and initial phase number 0.
    *
    *  @param parties
@@ -636,7 +636,7 @@ class Phaser(_parent: Phaser, _parties: Int) {
   def this(parties: Int) =
     this(null, parties)
 
-  /** Equivalent to {@code Phaser(Phaser, int) Phaser(parent, 0)}.
+  /* Equivalent to {@code Phaser(Phaser, int) Phaser(parent, 0)}.
    *
    *  @param parent
    *    the parent phaser
@@ -644,7 +644,7 @@ class Phaser(_parent: Phaser, _parties: Int) {
   def this(parent: Phaser) =
     this(parent, 0)
 
-  /** Adds a new unarrived party to this phaser. If an ongoing invocation of
+  /* Adds a new unarrived party to this phaser. If an ongoing invocation of
    *  {@code onAdvance} is in progress, this method may await its completion
    *  before returning. If this phaser has a parent, and this phaser previously
    *  had no registered parties, this child phaser is also registered with its
@@ -662,7 +662,7 @@ class Phaser(_parent: Phaser, _parties: Int) {
   def register(): Int =
     doRegister(1)
 
-  /** Adds the given number of new unarrived parties to this phaser. If an
+  /* Adds the given number of new unarrived parties to this phaser. If an
    *  ongoing invocation of {@code onAdvance} is in progress, this method may
    *  await its completion before returning. If this phaser has a parent, and
    *  the given number of parties is greater than zero, and this phaser
@@ -692,7 +692,7 @@ class Phaser(_parent: Phaser, _parties: Int) {
       doRegister(parties)
   }
 
-  /** Arrives at this phaser, without waiting for others to arrive.
+  /* Arrives at this phaser, without waiting for others to arrive.
    *
    *  <p>It is a usage error for an unregistered party to invoke this method.
    *  However, this error may result in an {@code IllegalStateException} only
@@ -707,7 +707,7 @@ class Phaser(_parent: Phaser, _parties: Int) {
   def arrive(): Int =
     doArrive(ONE_ARRIVAL)
 
-  /** Arrives at this phaser and deregisters from it without waiting for others
+  /* Arrives at this phaser and deregisters from it without waiting for others
    *  to arrive. Deregistration reduces the number of parties required to
    *  advance in future phases. If this phaser has a parent, and deregistration
    *  causes this phaser to have zero parties, this phaser is also deregistered
@@ -726,7 +726,7 @@ class Phaser(_parent: Phaser, _parties: Int) {
   def arriveAndDeregister(): Int =
     doArrive(ONE_DEREGISTER)
 
-  /** Arrives at this phaser and awaits others. Equivalent in effect to
+  /* Arrives at this phaser and awaits others. Equivalent in effect to
    *  {@code awaitAdvance(arrive())}. If you need to await with interruption or
    *  timeout, you can arrange this with an analogous construction using one of
    *  the other forms of the {@code awaitAdvance} method. If instead you need to
@@ -801,7 +801,7 @@ class Phaser(_parent: Phaser, _parties: Int) {
     phase
   }
 
-  /** Awaits the phase of this phaser to advance from the given phase value,
+  /* Awaits the phase of this phaser to advance from the given phase value,
    *  returning immediately if the current phase is not equal to the given phase
    *  value or this phaser is terminated.
    *
@@ -829,7 +829,7 @@ class Phaser(_parent: Phaser, _parties: Int) {
     p
   }
 
-  /** Awaits the phase of this phaser to advance from the given phase value,
+  /* Awaits the phase of this phaser to advance from the given phase value,
    *  throwing {@code InterruptedException} if interrupted while waiting, or
    *  returning immediately if the current phase is not equal to the given phase
    *  value or this phaser is terminated.
@@ -864,7 +864,7 @@ class Phaser(_parent: Phaser, _parties: Int) {
     p
   }
 
-  /** Awaits the phase of this phaser to advance from the given phase value or
+  /* Awaits the phase of this phaser to advance from the given phase value or
    *  the given timeout to elapse, throwing {@code InterruptedException} if
    *  interrupted while waiting, or returning immediately if the current phase
    *  is not equal to the given phase value or this phaser is terminated.
@@ -914,7 +914,7 @@ class Phaser(_parent: Phaser, _parties: Int) {
     p
   }
 
-  /** Forces this phaser to enter termination state. Counts of registered
+  /* Forces this phaser to enter termination state. Counts of registered
    *  parties are unaffected. If this phaser is a member of a tiered set of
    *  phasers, then all of the phasers in the set are terminated. If this phaser
    *  is already terminated, this method has no effect. This method may be
@@ -939,7 +939,7 @@ class Phaser(_parent: Phaser, _parties: Int) {
     }
   }
 
-  /** Returns the current phase number. The maximum phase number is
+  /* Returns the current phase number. The maximum phase number is
    *  {@code Integer.MAX_VALUE}, after which it restarts at zero. Upon
    *  termination, the phase number is negative, in which case the prevailing
    *  phase prior to termination may be obtained via
@@ -951,7 +951,7 @@ class Phaser(_parent: Phaser, _parties: Int) {
   def getPhase(): Int =
     (root.stateAtomic.get() >>> PHASE_SHIFT).toInt
 
-  /** Returns the number of parties registered at this phaser.
+  /* Returns the number of parties registered at this phaser.
    *
    *  @return
    *    the number of parties
@@ -959,7 +959,7 @@ class Phaser(_parent: Phaser, _parties: Int) {
   def getRegisteredParties(): Int =
     partiesOf(stateAtomic.get())
 
-  /** Returns the number of registered parties that have arrived at the current
+  /* Returns the number of registered parties that have arrived at the current
    *  phase of this phaser. If this phaser has terminated, the returned value is
    *  meaningless and arbitrary.
    *
@@ -969,7 +969,7 @@ class Phaser(_parent: Phaser, _parties: Int) {
   def getArrivedParties(): Int =
     arrivedOf(reconcileState())
 
-  /** Returns the number of registered parties that have not yet arrived at the
+  /* Returns the number of registered parties that have not yet arrived at the
    *  current phase of this phaser. If this phaser has terminated, the returned
    *  value is meaningless and arbitrary.
    *
@@ -979,7 +979,7 @@ class Phaser(_parent: Phaser, _parties: Int) {
   def getUnarrivedParties(): Int =
     unarrivedOf(reconcileState())
 
-  /** Returns the parent of this phaser, or {@code null} if none.
+  /* Returns the parent of this phaser, or {@code null} if none.
    *
    *  @return
    *    the parent of this phaser, or {@code null} if none
@@ -987,7 +987,7 @@ class Phaser(_parent: Phaser, _parties: Int) {
   def getParent(): Phaser =
     parent
 
-  /** Returns the root ancestor of this phaser, which is the same as this phaser
+  /* Returns the root ancestor of this phaser, which is the same as this phaser
    *  if it has no parent.
    *
    *  @return
@@ -996,7 +996,7 @@ class Phaser(_parent: Phaser, _parties: Int) {
   def getRoot(): Phaser =
     root
 
-  /** Returns {@code true} if this phaser has been terminated.
+  /* Returns {@code true} if this phaser has been terminated.
    *
    *  @return
    *    {@code true} if this phaser has been terminated
@@ -1004,7 +1004,7 @@ class Phaser(_parent: Phaser, _parties: Int) {
   def isTerminated(): Boolean =
     root.stateAtomic.get() < 0L
 
-  /** Overridable method to perform an action upon impending phase advance, and
+  /* Overridable method to perform an action upon impending phase advance, and
    *  to control termination. This method is invoked upon arrival of the party
    *  advancing this phaser (when all other waiting parties are dormant). If
    *  this method returns {@code true}, this phaser will be set to a final
@@ -1041,7 +1041,7 @@ class Phaser(_parent: Phaser, _parties: Int) {
   protected def onAdvance(phase: Int, registeredParties: Int): Boolean =
     registeredParties == 0
 
-  /** Returns a string identifying this phaser, as well as its state. The state,
+  /* Returns a string identifying this phaser, as well as its state. The state,
    *  in brackets, includes the String {@code "phase = "} followed by the phase
    *  number, {@code "parties = "} followed by the number of registered parties,
    *  and {@code "arrived = "} followed by the number of arrived parties.
@@ -1052,7 +1052,7 @@ class Phaser(_parent: Phaser, _parties: Int) {
   override def toString(): String =
     stateToString(reconcileState())
 
-  /** Implementation of toString and string-based error messages.
+  /* Implementation of toString and string-based error messages.
    */
   private def stateToString(s: Long): String = {
     super.toString() +
@@ -1063,7 +1063,7 @@ class Phaser(_parent: Phaser, _parties: Int) {
 
   // Waiting mechanics
 
-  /** Removes and signals threads from queue for phase.
+  /* Removes and signals threads from queue for phase.
    */
   private def releaseWaiters(phase: Int): Unit = {
     var q: QNode = null // first element of queue
@@ -1082,7 +1082,7 @@ class Phaser(_parent: Phaser, _parties: Int) {
     }
   }
 
-  /** Variant of releaseWaiters that additionally tries to remove any nodes no
+  /* Variant of releaseWaiters that additionally tries to remove any nodes no
    *  longer waiting for advance due to timeout or interrupt. Currently, nodes
    *  are removed only if they are at head of queue, which suffices to reduce
    *  memory footprint in most usages.
@@ -1116,7 +1116,7 @@ class Phaser(_parent: Phaser, _parties: Int) {
     p
   }
 
-  /** Possibly blocks and waits for phase to advance unless aborted. Call only
+  /* Possibly blocks and waits for phase to advance unless aborted. Call only
    *  on root phaser.
    *
    *  @param phase
