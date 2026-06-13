@@ -1,0 +1,181 @@
+package org.scalanative.testsuite.javalib.lang
+
+/* 2026-06-13
+ *
+ * This File is provided to allow manual testing of Process methods
+ * which use Duration.
+ *
+ * It is marked .DISABLED since it requires JDK 24 and the unit-tests-ext
+ * project currently runs in CI on an earlier version. unit-tests-ext does
+ * not have the useful but elaborated 'require-jdkN' feature of unit-tests.
+ */
+
+import java.time.Duration
+
+import org.junit.Assert._
+import org.junit.Assume._
+import org.junit.Test
+
+class ProcessTestOnJDK24 {
+  import ProcessUtils.processSleep
+
+  /* These Tests are the similar Tests from Process scala adapted
+   * to use Duration rather than TimeUnit.
+   */
+
+  @Test def waitForWithDurationTimeoutCompletes(): Unit = {
+    val proc = processSleep(0.1).start()
+
+    /* This is another Receiver Operating Characteristic (ROC) curve
+     * decision, where one tries to balance the rates of true failure
+     * and false failure detection.
+     *
+     * On contemporary machines, even virtual machines, a process should
+     * take only a few seconds to exit. Then there is Windows. Many CI
+     * failures having nothing to do with the PR under test have been seen,
+     * mostly on Windows, to have failed here with the previous
+     * "reasonable & conservative" value of 4. No best guess long survives
+     * first contact with the facts on the ground (actually, I think that
+     * was a 10th, or more, best guess).
+     */
+
+    val timeout = 30
+
+    assertTrue(
+      s"process should have exited but timed out (limit: ${timeout} seconds)",
+      proc.waitFor(Duration.ofSeconds(timeout))
+    )
+    assertEquals(0, proc.exitValue)
+  }
+
+  // See timing 'Design Notes' in ProcessTest.scala. Same considerations
+  // apply here.
+
+  @Test def waitForWithDurationTimeoutTimesOut(): Unit = {
+    val proc = processSleep(2.0).start()
+
+    val timeout = 500 // Make message distinguished.
+    assertTrue(
+      "process should have timed out but exited" +
+        s" (limit: ${timeout} milliseconds)",
+      !proc.waitFor(Duration.ofMillis(timeout))
+    )
+    assertTrue("process should be alive", proc.isAlive)
+
+    // await exit code to release resources. Attempt to force
+    // hanging processes to exit.
+    if (!proc.waitFor(Duration.ofSeconds(10)))
+      proc.destroyForcibly()
+  }
+
+  // Defensive code for Issue 3944
+  @Test def waitForWithDurationTimeoutIsRobustAfterProcessExit(): Unit = {
+    /* Check that waitFor(timeout) can safely be called more than once after a
+     * process exits. Both waitFor(timout) calls will probably return
+     * immediatly.
+     *
+     * The idea is to exercise the internals of the second call. How does it
+     * respond to a now invalid process id.
+     */
+
+    val proc = processSleep(0.1).start()
+
+    try {
+      val timeout = 30
+      assertTrue(
+        s"process should have exited but timed out (limit: ${timeout} seconds)",
+        proc.waitFor(Duration.ofSeconds(timeout))
+      )
+
+      /* DO NOT do the usual & expected 'assertEquals(0, proc.exitValue)' here.
+       * That would set the internal cached exitValue. Not doing that
+       * call here allows checking if waitFor() is caching that value
+       * to protect itself against a second call.
+       */
+
+      assertTrue(
+        s"Second waitFor after process exit should be robust.)",
+        proc.waitFor(Duration.ofSeconds(timeout))
+      )
+
+    } finally {
+      proc.destroyForcibly() // Let OS eliminate any child process still alive.
+    }
+  }
+
+  // Issue 3944, part 2
+  @Test def waitForWithDurationTimeoutAcceptsLargeMilliseconds(): Unit = {
+    val proc = processSleep(2.0).start()
+
+    try {
+      // for context: https://github.com/scala-native/scala-native/issues/3944
+      val timeout = 30 * 1000
+
+      /*  Exception before fix, where nnnn is a pid number:
+       *
+       *  Linux & non-BSD kin:
+       *   java.io.IOException: wait pid=nnnn, ppoll failed: 22
+       *
+       *  macOS, FreeBSD:
+       *   java.io.IOException: wait pid=nnnn, kevent failed: Invalid argument
+       *
+       *  After the corresponding PR, the messages should never be seen.
+       *  If one is, the Linux case should look like the macOS case.
+       *
+       *  A TimeUnit larger than MILLISECONDS will not trigger the I3944
+       *  defect.
+       *
+       *  The number of that unit needs to be more than those in a second.
+       *  say 1001 for MILLISECONDS. That gives a large number of
+       *  nanoseconds after full seconds (in nanos) have been subtracted off.
+       *  Be generous here, use the value from the Issue,  and not try to
+       *  find too fine an edge of failure.
+       */
+
+      assertTrue(
+        s"process should have exited but timed out (limit: ${timeout} millis)",
+        proc.waitFor(Duration.ofMillis(timeout))
+      )
+
+      assertFalse("process should have exited", proc.isAlive)
+      assertEquals(0, proc.exitValue)
+    } finally {
+      proc.destroyForcibly() // Let OS eliminate any child process still alive.
+    }
+  }
+}
+
+/* ProcessUtils.scala
+ */
+import java.util.concurrent.TimeUnit
+
+import scala.scalanative.runtime.Platform
+
+/* This is an adapted cut & paste from
+ * unit-tests/shared/src/test/scala/org/scalanative/testsuite/javalib/lang.
+ * Bad devo, no cookie!  The proper import from unit-tests-ext is too complex
+ * for available time and patience.
+ *
+ * It is in the same file as ProcessTestOnJDK24 to make it easier to
+ * Enable/DISABLE that Test.
+ */
+
+object ProcessUtils {
+
+  def processForCommand(args: String*): ProcessBuilder = {
+    if (Platform.isWindows())
+      new ProcessBuilder((Seq("cmd", "/c") ++ args): _*)
+    else
+      new ProcessBuilder(args: _*)
+  }
+
+  def processSleep(seconds: Double): ProcessBuilder = {
+    if (Platform.isWindows())
+      // Use Powershell Start-Sleep, cmd timeout can cause problems and
+      // does support only integer seconds arguments
+      new ProcessBuilder(
+        Seq("powershell", "Start-Sleep", "-Seconds", seconds.toString()): _*
+      )
+    else processForCommand("sleep", seconds.toString())
+  }
+}

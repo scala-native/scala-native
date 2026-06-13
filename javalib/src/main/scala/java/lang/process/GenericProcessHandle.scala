@@ -1,5 +1,6 @@
 package java.lang.process
 
+import java.time.Duration
 import java.util.concurrent.{CompletableFuture, TimeUnit, TimeoutException}
 import java.util.stream.Stream
 import java.util.{Optional, function}
@@ -104,11 +105,31 @@ private[process] abstract class GenericProcessHandle(
     hasExited || destroyImpl(force = force)
 
   private def waitForWith(check: => Boolean) = hasExited || check && hasExited
+
   def waitFor(): Boolean = waitForWith(exitChecker.waitAndReapSome(0, None))
+
   def waitFor(timeout: scala.Long, unit: TimeUnit): Boolean =
     waitForWith(
       timeout > 0L && exitChecker.waitAndReapSome(timeout, Some(unit))
     )
+
+  def waitFor(duration: java.time.Duration): Boolean = {
+    // Be robust to SN CI uncertainty, use only JDK 8 methods
+    val (timeout, unit) =
+      try {
+        (duration.toNanos(), TimeUnit.NANOSECONDS)
+      } catch {
+        /* Note: nanoseconds < 1 second will be lost
+         * after approx 292 years, 3 months, 9.7 days and change.
+         * Avoiding that loss is an exercise for the reader.
+         * Good problem to have when your machine stays up that long.
+         */
+        case _: ArithmeticException =>
+          (duration.getSeconds(), TimeUnit.SECONDS)
+      }
+
+    waitFor(timeout, unit)
+  }
 
   override def onExit(): CompletableFuture[ProcessHandle] =
     onExitApply(_ => this: ProcessHandle)
