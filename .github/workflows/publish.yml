@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-22.04
     if: github.repository == 'scala-native/scala-native'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Check if there are changes since last run
         id: check
@@ -48,7 +48,7 @@ jobs:
     needs: [load_tag]
     if: needs.load_tag.outputs.skip == 'false'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: "3" # unused
@@ -66,7 +66,7 @@ jobs:
         # Make sure to use JDK 8 to keep binary compatibility
         scala: ["2.12", "2.13", "3"]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{ matrix.scala }} #Unused, any version can be placed here
@@ -90,7 +90,7 @@ jobs:
     needs: [publish]
     if: github.event_name != 'workflow_dispatch' || github.ref_name == 'main'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Tag commit
         run: |
@@ -123,7 +123,7 @@ jobs:
         repo: ['scala-native/scala-native-cli']
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: "3" # unused
