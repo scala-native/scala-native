@@ -148,7 +148,7 @@ wget https://raw.githubusercontent.com/scala-native/scala-native/main/scripts/sc
 nix-shell scala-native.nix -A clangEnv
 ```
 
-**Windows**
+**Windows (x64)**
 
 Corporate environments and Windows policies can affect the method used
 to set up your environment. The following procedure involves downloading
@@ -201,5 +201,39 @@ Using the install path above, you would add the following:
 ``` powershell
 C:\Users\<login>\AppData\Local\LLVM\bin
 ```
+
+**Windows on ARM64 (WoA)**
+
+Windows on ARM64 machines (including Copilot+ PCs and GitHub's
+`windows-11-arm` hosted runners) can build and test Scala Native, with a
+few platform-specific constraints:
+
+* **JDK:** Use [Microsoft Build of OpenJDK](https://learn.microsoft.com/java/openjdk/)
+  (for example via `winget install Microsoft.OpenJDK.25`). Many other
+  distributions on winget ship **x64-only** installers and will not install
+  on ARM64.
+* **LLVM/Clang:** Install the **ARM64** LLVM package (winget `LLVM.LLVM`
+  installs `LLVM-*-woa64.exe`). Do **not** use the Visual Studio *C++
+  Clang tools for Windows* workload; use a standalone LLVM build as on
+  x64 Windows.
+* **sbt:** Install via `winget install sbt.sbt` or the [official
+  installer](https://www.scala-sbt.org/download.html). **Coursier** does not
+  provide a native Windows ARM64 launcher, so `cs install sbt` is not
+  supported on this platform.
+* **MSVC + Windows SDK:** Install Visual Studio 2022 Build Tools with the
+  *Desktop development with C++* workload, including **MSVC v143 for x64/x86**
+  and **ARM64** build tools, plus a recent **Windows SDK**.
+
+  **Install MSVC ARM64 from an ARM64-native shell** (required). If the Visual
+  Studio Installer runs as an x64 process (`PROCESSOR_ARCHITECTURE=AMD64`), it
+  skips ARM64 packages. This is common in x64-emulated terminals (for example
+  some Parallels setups). On WoA, use ARM64-native PowerShell at
+  `%WINDIR%\System32\WindowsPowerShell\v1.0\powershell.exe`.
+
+  Open **Visual Studio Installer** from that shell, modify Visual Studio 2022
+  Build Tools, and under *Individual components* enable:
+
+  - MSVC v143 - VS 2022 C++ **ARM64** build tools
+  - Windows 11 SDK (10.0.22621 or newer)
 
 Continue to [sbt](./sbt.md).
