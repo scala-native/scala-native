@@ -115,9 +115,12 @@ private[process] abstract class GenericProcessHandle(
 
   def waitFor(duration: java.time.Duration): Boolean = {
     // Be robust to SN CI uncertainty, use only JDK 8 methods
-    val (timeout, unit) =
+
+    var unit = TimeUnit.NANOSECONDS
+
+    val timeout: scala.Long =
       try {
-        (duration.toNanos(), TimeUnit.NANOSECONDS)
+        duration.toNanos()
       } catch {
         /* Note: nanoseconds < 1 second will be lost
          * after approx 292 years, 3 months, 9.7 days and change.
@@ -125,7 +128,8 @@ private[process] abstract class GenericProcessHandle(
          * Good problem to have when your machine stays up that long.
          */
         case _: ArithmeticException =>
-          (duration.getSeconds(), TimeUnit.SECONDS)
+          unit = TimeUnit.SECONDS
+          duration.getSeconds()
       }
 
     waitFor(timeout, unit)
