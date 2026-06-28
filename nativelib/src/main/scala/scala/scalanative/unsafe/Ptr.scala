@@ -11,16 +11,7 @@ import scala.scalanative.unsigned._
 
 final class Ptr[T] private[scalanative] (
     private[scalanative] val rawptr: RawPtr
-) {
-  @alwaysinline override def hashCode: Int =
-    java.lang.Long.hashCode(toLong)
-
-  @alwaysinline override def equals(other: Any): Boolean =
-    (this eq other.asInstanceOf[AnyRef]) || (other match {
-      case other: Ptr[_] => other.rawptr == rawptr
-      case _             => false
-    })
-
+) extends AnyVal {
   @alwaysinline override def toString: String =
     "Ptr@" + java.lang.Long.toHexString(toLong)
 
