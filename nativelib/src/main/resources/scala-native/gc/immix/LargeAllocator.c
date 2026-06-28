@@ -214,27 +214,30 @@ word_t *LargeAllocator_Alloc(Heap *heap, uint32_t size) {
     assert(size % ALLOCATION_ALIGNMENT == 0);
     assert(size >= MIN_BLOCK_SIZE);
     LargeAllocator *largeAllocator = &currentMutatorThread->largeAllocator;
-    word_t *object = LargeAllocator_tryAlloc(largeAllocator, size);
-    if (object != NULL) {
-    done:
-        assert(object != NULL);
-        assert(Heap_IsWordInHeap(heap, (word_t *)object));
-        return object;
-    }
+    // Retry until an allocation succeeds or Heap_Grow exits with OOM. A single
+    // tryAlloc after Heap_Grow can race with another mutator stealing the
+    // freshly grown superblock; returning NULL would crash the inlined callers
+    // at the header store.
+    do {
+        word_t *object = LargeAllocator_tryAlloc(largeAllocator, size);
+        if (object != NULL) {
+        done:
+            assert(object != NULL);
+            assert(Heap_IsWordInHeap(heap, (word_t *)object));
+            return object;
+        }
 
-    Heap_Collect(heap, &stack);
+        Heap_Collect(heap, &stack);
 
-    object = LargeAllocator_tryAlloc(largeAllocator, size);
-    if (object != NULL)
-        goto done;
+        object = LargeAllocator_tryAlloc(largeAllocator, size);
+        if (object != NULL)
+            goto done;
 
-    size_t increment = MathUtils_DivAndRoundUp(size, BLOCK_TOTAL_SIZE);
-    uint32_t pow2increment = 1U << MathUtils_Log2Ceil(increment);
-    Heap_Grow(heap, pow2increment);
-
-    object = LargeAllocator_tryAlloc(largeAllocator, size);
-
-    goto done;
+        size_t increment = MathUtils_DivAndRoundUp(size, BLOCK_TOTAL_SIZE);
+        uint32_t pow2increment = 1U << MathUtils_Log2Ceil(increment);
+        Heap_Grow(heap, pow2increment);
+    } while (true);
+    return NULL; // unreachable
 }
 
 #endif
