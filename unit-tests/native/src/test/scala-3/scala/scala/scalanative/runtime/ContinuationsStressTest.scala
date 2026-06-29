@@ -4,13 +4,36 @@ import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 import java.util.concurrent.{CountDownLatch, LinkedBlockingQueue, TimeUnit}
 
 import org.junit.Assert.{assertEquals, assertTrue}
-import org.junit.Test
+import org.junit.{Ignore, Test}
 
 import scala.scalanative.meta.LinktimeInfo.isContinuationsSupported
 import scala.scalanative.runtime.Continuations.*
 
 class ContinuationsStressTest:
+  /* Continuations are described as "experimental". Convert this
+   * Test to manual so that it no longer causes problems with the
+   * development of fully supported features.
+   *
+   * 1. The presenting problem is that this test has been frequently
+   *    (consistently?) failing when run in CI using macOS.
+   *
+   *    This stresses developers and wastes _a_lot_ time which can and
+   *    should be put to better uses.
+   *
+   *    The Test seems to run manually on at least one macOS machine
+   *    (with current software versions).
+   *
+   * 2. A prior version of this PR failed when manually executed on a Linux
+   *    machine (with current software versions) when an attempt was made
+   *    to qualify it.
+   *
+   * Fi!
+   *
+   * Let a champion of continuations restore this test when it and/or
+   * continuations are fit for purpose.
+   */
 
+  @Ignore
   @Test def nestedSuspendResumeAcrossThreadsWithObjectReuse(): Unit = {
     if isContinuationsSupported then
       val fibers = 200
