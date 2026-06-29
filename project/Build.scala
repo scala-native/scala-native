@@ -814,6 +814,9 @@ object Build {
               "org.scalanative.testsuite.javalib.util.MyService" -> Seq(
                 "org.scalanative.testsuite.javalib.util.MyServiceImpl1",
                 "org.scalanative.testsuite.javalib.util.MyServiceImpl2"
+              ),
+              "java.nio.file.spi.FileSystemProvider" -> Seq(
+                "scala.scalanative.nio.fs.zipfs.ZipFileSystemProvider"
               )
             )
           )

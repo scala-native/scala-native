@@ -34,6 +34,10 @@ import scalanative.windows.winnt.AccessRights._
 object Files {
   private final val emptyPath = Paths.get("", Array.empty)
 
+  private val acceptAllFilter = new DirectoryStream.Filter[Path] {
+    override def accept(p: Path): Boolean = true
+  }
+
   // def getFileStore(path: Path): FileStore
   // def probeContentType(path: Path): String
 
@@ -338,7 +342,65 @@ object Files {
       }
   }
 
+  /** Copy between paths on different providers by streaming bytes, per the
+   *  JDK's CopyMoveHelper semantics: only REPLACE_EXISTING, COPY_ATTRIBUTES and
+   *  NOFOLLOW_LINKS are supported, a directory source is recreated as an empty
+   *  directory at the target, and with COPY_ATTRIBUTES the lastModifiedTime is
+   *  copied afterwards — rolling the target back if that fails.
+   */
+  private def copyToForeignTarget(
+      source: Path,
+      target: Path,
+      options: Array[CopyOption]
+  ): Unit = {
+    var replace = false
+    var copyAttributes = false
+    options.foreach {
+      case REPLACE_EXISTING          => replace = true
+      case COPY_ATTRIBUTES           => copyAttributes = true
+      case LinkOption.NOFOLLOW_LINKS => ()
+      case null                      => throw new NullPointerException()
+      case opt                       =>
+        throw new UnsupportedOperationException(s"'$opt' is not supported")
+    }
+    val sourceAttrs = readAttributes(
+      source,
+      classOf[BasicFileAttributes],
+      Array(LinkOption.NOFOLLOW_LINKS)
+    )
+    if (replace) deleteIfExists(target)
+    if (sourceAttrs.isDirectory()) {
+      createDirectory(target, Array.empty[FileAttribute[_]])
+    } else {
+      val in = newInputStream(source, Array.empty[OpenOption])
+      try copy(in, target, Array.empty[CopyOption])
+      finally in.close()
+    }
+    if (copyAttributes) {
+      try setLastModifiedTime(target, sourceAttrs.lastModifiedTime())
+      catch {
+        case x: Throwable =>
+          try delete(target)
+          catch { case suppressed: Throwable => x.addSuppressed(suppressed) }
+          throw x
+      }
+    }
+  }
+
   def copy(source: Path, target: Path, options: Array[CopyOption]): Path = {
+    val sourceFs = source.getFileSystem()
+    val targetFs = target.getFileSystem()
+    val defaultFs = FileSystems.getDefault()
+
+    if ((sourceFs ne defaultFs) || (targetFs ne defaultFs)) {
+      if (sourceFs eq targetFs) {
+        sourceFs.provider().copy(source, target, options)
+      } else {
+        copyToForeignTarget(source, target, options)
+      }
+      return target
+    }
+
     val linkOpts = Array(LinkOption.NOFOLLOW_LINKS)
     val attrsCls =
       if (isWindows) classOf[DosFileAttributes]
@@ -415,7 +477,10 @@ object Files {
     }
 
   def createDirectory(dir: Path, attrs: Array[FileAttribute[_]]): Path =
-    if (exists(dir, Array.empty)) {
+    if (dir.getFileSystem() ne FileSystems.getDefault()) {
+      dir.getFileSystem().provider().createDirectory(dir, attrs)
+      dir
+    } else if (exists(dir, Array.empty)) {
       if (!isDirectory(dir, Array.empty)) {
         throw new FileAlreadyExistsException(dir.toString)
       } else if (list(dir).iterator().hasNext()) {
@@ -430,12 +495,27 @@ object Files {
     }
 
   def createFile(path: Path, attrs: Array[FileAttribute[_]]): Path = {
-    if (exists(path, Array.empty))
+    if (path.getFileSystem() ne FileSystems.getDefault()) {
+      val ch = path
+        .getFileSystem()
+        .provider()
+        .newByteChannel(
+          path, {
+            val s = new java.util.HashSet[OpenOption]()
+            s.add(StandardOpenOption.CREATE_NEW)
+            s.add(StandardOpenOption.WRITE)
+            s
+          },
+          attrs
+        )
+      ch.close()
+      path
+    } else if (exists(path, Array.empty))
       throw new FileAlreadyExistsException(path.toString)
     else if (FileHelpers.createNewFile(path.toString, throwOnError = true)) {
       setAttributes(path, attrs)
-    }
-    path
+      path
+    } else path
   }
 
   def createLink(link: Path, existing: Path): Path = Zone.acquire {
@@ -638,7 +718,9 @@ object Files {
   }
 
   def delete(path: Path): Unit = {
-    if (!exists(path, Array(LinkOption.NOFOLLOW_LINKS))) {
+    if (path.getFileSystem() ne FileSystems.getDefault()) {
+      path.getFileSystem().provider().delete(path)
+    } else if (!exists(path, Array(LinkOption.NOFOLLOW_LINKS))) {
       throw new NoSuchFileException(path.toString)
     } else if (isWindows) {
       windowsDeletePath(path)
@@ -653,10 +735,26 @@ object Files {
     } catch { case _: NoSuchFileException => false }
 
   def exists(path: Path, options: Array[LinkOption]): Boolean = {
-    def fileExists = path.toFile().exists()
-    def noFollowLinks = options.contains(LinkOption.NOFOLLOW_LINKS)
+    if (path.getFileSystem() ne FileSystems.getDefault()) {
+      try {
+        if (options.contains(LinkOption.NOFOLLOW_LINKS))
+          readAttributes(
+            path,
+            classOf[BasicFileAttributes],
+            Array(LinkOption.NOFOLLOW_LINKS)
+          )
+        else
+          path.getFileSystem().provider().checkAccess(path, Array.empty)
+        true
+      } catch {
+        case _: IOException => false
+      }
+    } else {
+      def fileExists = path.toFile().exists()
+      def noFollowLinks = options.contains(LinkOption.NOFOLLOW_LINKS)
 
-    fileExists || (noFollowLinks && isSymbolicLink(path))
+      fileExists || (noFollowLinks && isSymbolicLink(path))
+    }
   }
 
   def find(
@@ -906,24 +1004,36 @@ object Files {
   }
 
   def list(dir: Path): Stream[Path] = {
-    /* Fix Issue 3165 - From Java "Path" documentation URL:
-     * https://docs.oracle.com/javase/8/docs/api/java/nio/file/Path.html
-     *
-     * "Accessing a file using an empty path is equivalent to accessing the
-     * default directory of the file system."
-     *
-     * Operating Systems can not opendir() an empty string, so expand "" to
-     * "./".
-     */
+    if (dir.getFileSystem() ne FileSystems.getDefault()) {
+      val ds = dir
+        .getFileSystem()
+        .provider()
+        .newDirectoryStream(dir, acceptAllFilter)
+      val it = ds.iterator()
+      val spliterator =
+        Spliterators.spliteratorUnknownSize(it, Spliterator.DISTINCT)
+      StreamSupport.stream(spliterator, false).onClose(() => ds.close())
+    } else {
+      /* Fix Issue 3165 - From Java "Path" documentation URL:
+       * https://docs.oracle.com/javase/8/docs/api/java/nio/file/Path.html
+       *
+       * "Accessing a file using an empty path is equivalent to accessing the
+       * default directory of the file system."
+       *
+       * Operating Systems can not opendir() an empty string, so expand "" to
+       * "./".
+       */
 
-    val dirString =
-      if (dir.equals(emptyPath)) "./"
-      else dir.toString()
+      val dirString =
+        if (dir.equals(emptyPath)) "./"
+        else dir.toString()
 
-    if (!isWindows)
-      posixList(dir, dirString) // see comment re: args at top of that method
-    else {
-      Arrays.stream[Path](FileHelpers.list(dirString, (n, _) => dir.resolve(n)))
+      if (!isWindows)
+        posixList(dir, dirString) // see comment re: args at top of that method
+      else {
+        Arrays
+          .stream[Path](FileHelpers.list(dirString, (n, _) => dir.resolve(n)))
+      }
     }
   }
 
@@ -977,17 +1087,40 @@ object Files {
   def move(source: Path, target: Path, options: Array[CopyOption]): Path = {
     lazy val replaceExisting = options.contains(REPLACE_EXISTING)
 
-    if (!exists(source.toAbsolutePath(), Array(LinkOption.NOFOLLOW_LINKS))) {
+    val sourceFs = source.getFileSystem()
+    val targetFs = target.getFileSystem()
+    val defaultFs = FileSystems.getDefault()
+
+    if ((sourceFs ne defaultFs) || (targetFs ne defaultFs)) {
+      if (sourceFs eq targetFs) {
+        sourceFs.provider().move(source, target, options)
+      } else {
+        // Cross-provider: copy then delete source, per the JDK's
+        // CopyMoveHelper. An atomic move across providers is impossible.
+        if (options.contains(StandardCopyOption.ATOMIC_MOVE))
+          throw new AtomicMoveNotSupportedException(
+            source.toString,
+            target.toString,
+            "source and target are associated with different providers"
+          )
+        copyToForeignTarget(source, target, options :+ COPY_ATTRIBUTES)
+        delete(source)
+      }
+      target
+    } else if (!exists(
+          source.toAbsolutePath(),
+          Array(LinkOption.NOFOLLOW_LINKS)
+        )) {
       throw new NoSuchFileException(source.toString)
     } else if (!exists(
           target.toAbsolutePath(),
           Array.empty
         ) || replaceExisting) {
       moveImpl(source, target, replaceExisting)
+      target
     } else {
       throw new FileAlreadyExistsException(target.toString)
     }
-    target
   }
 
   private def moveImpl(
@@ -1120,68 +1253,78 @@ object Files {
   def notExists(path: Path, options: Array[LinkOption]): Boolean =
     !exists(path, options)
 
-  def readAllBytes(path: Path): Array[Byte] = Zone.acquire { implicit z =>
-    /* if 'path' does not exist at all, should get
-     * java.nio.file.NoSuchFileException here.
-     */
-    val pathSize: Long = size(path)
-    if (!pathSize.isValidInt) {
-      throw new OutOfMemoryError("Required array size too large")
-    }
+  def readAllBytes(path: Path): Array[Byte] = {
+    if (path.getFileSystem() ne FileSystems.getDefault()) {
+      val in =
+        path.getFileSystem().provider().newInputStream(path, Array.empty)
+      try in.readAllBytes()
+      finally in.close()
+    } else readAllBytesDefault(path)
+  }
 
-    if (pathSize == 0L) { // SN Issue #I4384, part 1.
-      Array.empty[Byte]
-    } else {
-      val len = pathSize.toInt
-      val bytes = scala.scalanative.runtime.ByteArray.alloc(len)
-
-      if (isWindows) {
-        val bytesRead = stackalloc[DWord]()
-
-        withFileOpen(
-          path.toString,
-          access = FILE_GENERIC_READ,
-          shareMode = FILE_SHARE_READ
-        ) { handle =>
-          if (!FileApi.ReadFile(
-                handle,
-                bytes.at(0),
-                pathSize.toUInt,
-                bytesRead,
-                null
-              )) {
-            throw WindowsException.onPath(path.toString())
-          }
-        }
-      } else {
-        errno = 0
-        val pathCString = toCString(path.toString)
-        val fd = fcntl.open(pathCString, fcntl.O_RDONLY, 0.toUInt)
-
-        if (fd == -1) {
-          val msg = LibcExt.strError()
-          throw new IOException(s"error opening path '${path}': ${msg}")
-        }
-
-        try {
-          var offset = 0
-          var read = 0
-          while ({
-            read = unistd.read(fd, bytes.at(offset), (len - offset).toUInt);
-            read != -1 && (offset + read) < len
-          }) {
-            offset += read
-          }
-
-          if (read == -1)
-            throw UnixException(path.toString, errno)
-        } finally {
-          unistd.close(fd)
-        }
+  private def readAllBytesDefault(path: Path): Array[Byte] = Zone.acquire {
+    implicit z =>
+      /* if 'path' does not exist at all, should get
+       * java.nio.file.NoSuchFileException here.
+       */
+      val pathSize: Long = size(path)
+      if (!pathSize.isValidInt) {
+        throw new OutOfMemoryError("Required array size too large")
       }
 
-      bytes.asInstanceOf[Array[Byte]]
-    }
+      if (pathSize == 0L) { // SN Issue #I4384, part 1.
+        Array.empty[Byte]
+      } else {
+        val len = pathSize.toInt
+        val bytes = scala.scalanative.runtime.ByteArray.alloc(len)
+
+        if (isWindows) {
+          val bytesRead = stackalloc[DWord]()
+
+          withFileOpen(
+            path.toString,
+            access = FILE_GENERIC_READ,
+            shareMode = FILE_SHARE_READ
+          ) { handle =>
+            if (!FileApi.ReadFile(
+                  handle,
+                  bytes.at(0),
+                  pathSize.toUInt,
+                  bytesRead,
+                  null
+                )) {
+              throw WindowsException.onPath(path.toString())
+            }
+          }
+        } else {
+          errno = 0
+          val pathCString = toCString(path.toString)
+          val fd = fcntl.open(pathCString, fcntl.O_RDONLY, 0.toUInt)
+
+          if (fd == -1) {
+            val msg = LibcExt.strError()
+            throw new IOException(s"error opening path '${path}': ${msg}")
+          }
+
+          try {
+            var offset = 0
+            var read = 0
+            while ({
+              read = unistd.read(fd, bytes.at(offset), (len - offset).toUInt);
+              read != -1 && (offset + read) < len
+            }) {
+              offset += read
+            }
+
+            if (read == -1)
+              throw UnixException(path.toString, errno)
+          } finally {
+            unistd.close(fd)
+          }
+        }
+
+        bytes.asInstanceOf[Array[Byte]]
+      }
   }
 
   def readAllLines(path: Path): List[String] =

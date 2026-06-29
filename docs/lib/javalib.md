@@ -212,6 +212,57 @@ network is first used.
 
         System.setProperty("java.net.preferIPv6Addresses", "true")
 
+(zip_file_system)=
+## Zip file system (jar: URIs)
+
+Scala Native ships a zip/jar file system provider,
+`scala.scalanative.nio.fs.zipfs.ZipFileSystemProvider`, the Native
+counterpart of the JDK's `jdk.zipfs` module. It allows reading and
+writing entries of a zip or jar archive through the `java.nio.file`
+API:
+
+``` scala
+import java.nio.file.{FileSystems, Files, Paths}
+
+val fs = FileSystems.newFileSystem(
+  Paths.get("library.jar"),
+  null: ClassLoader
+)
+try {
+  val entry = fs.getPath("/META-INF/MANIFEST.MF")
+  val text = new String(Files.readAllBytes(entry), "UTF-8")
+} finally fs.close()
+```
+
+Mounts are writable by default, matching `jdk.zipfs`: mutations are
+buffered in memory and the archive is rewritten atomically when the
+file system is closed. Supported env keys: `create` (create a missing
+archive), `accessMode` (`readOnly`/`readWrite`), `compressionMethod`
+(`STORED`/`DEFLATED`).
+
+Limitations compared to `jdk.zipfs`:
+
+-   Only `file:`-based archives can be mounted (`jar:file:/...`).
+-   ZIP64 archives (more than 65535 entries, or entries/offsets past
+    4 GiB) are not supported; the writer rejects them with
+    `ZipException` instead of producing a corrupt archive.
+-   A writable mount buffers modified entries in memory, so very large
+    rewrites are bounded by available heap.
+
+The provider is discovered through `java.util.ServiceLoader`, which on
+Scala Native resolves implementations at link time. To use the zip file
+system, register the provider in the build configuration as described
+in [service providers](service_providers) below:
+
+``` scala
+nativeConfig ~= { _.withServiceProviders(
+  Map(
+    "java.nio.file.spi.FileSystemProvider" -> Seq(
+      "scala.scalanative.nio.fs.zipfs.ZipFileSystemProvider")
+  )
+)}
+```
+
 (service_providers)=
 ## Support for discovering service providers
 
