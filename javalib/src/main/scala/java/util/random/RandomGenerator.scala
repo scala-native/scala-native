@@ -530,14 +530,25 @@ trait RandomGenerator {
     StreamSupport.doubleStream(downstreamSpliter, parallel = false)
   }
 
-  /*
-  // Since: Java 22
-   def equiDoubles(
-       left: scala.Double,
-       right: scala.Double,
-       isLeftIncluded: Boolean,
-      isRightIncluded: Boolean): DoubleStream
+  /* This implementation of equiDoubles() is scaffolding to allow
+   * implementation of Random.from() in a way that does not require
+   * re-visiting.  The intent is to provide a follow-on PR which
+   * implements the method correctly.
+   *
+   * Providing an empty stream is better than, say, calling doubles()
+   * because equiDoubles() is advertised as providing equidistant doubles
+   * to avoid known 'bunching' in doubles(). An empty stream makes
+   * the breakage evident.
    */
+
+  // Since: Java 22
+  def equiDoubles(
+      left: scala.Double,
+      right: scala.Double,
+      isLeftIncluded: Boolean,
+      isRightIncluded: Boolean
+  ): DoubleStream =
+    DoubleStream.empty() // Incorrect implementation.
 
   def ints(): IntStream =
     ints(jl.Long.MAX_VALUE)
