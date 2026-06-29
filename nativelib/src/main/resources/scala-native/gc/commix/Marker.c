@@ -510,8 +510,24 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
     word_t **rangeStart = stackTop < stackBottom ? stackTop : stackBottom;
     word_t **rangeEnd = stackTop < stackBottom ? stackBottom : stackTop;
     size_t rangeSize = rangeEnd - rangeStart;
-    Marker_markRange(heap, stats, outHolder, outWeakRefHolder, rangeStart,
-                     rangeSize, sizeof(word_t));
+    // stackGuardPage is PROT_NONE (stackOverflowGuards.c); scanning it faults.
+    // Live roots sit below it too, so scan around the page, not just above it.
+    word_t **guardPage = thread->threadInfo != NULL
+                             ? (word_t **)thread->threadInfo->stackGuardPage
+                             : NULL;
+    if (guardPage != NULL && guardPage >= rangeStart && guardPage < rangeEnd) {
+        word_t **afterGuard =
+            (word_t **)((char *)guardPage + resolvePageSize());
+        Marker_markRange(heap, stats, outHolder, outWeakRefHolder, rangeStart,
+                         (size_t)(guardPage - rangeStart), sizeof(word_t));
+        if (afterGuard < rangeEnd)
+            Marker_markRange(heap, stats, outHolder, outWeakRefHolder,
+                             afterGuard, (size_t)(rangeEnd - afterGuard),
+                             sizeof(word_t));
+    } else {
+        Marker_markRange(heap, stats, outHolder, outWeakRefHolder, rangeStart,
+                         rangeSize, sizeof(word_t));
+    }
 
     // Mark registers buffer
     size_t registersBufferBytes = sizeof(thread->registersBuffer);
