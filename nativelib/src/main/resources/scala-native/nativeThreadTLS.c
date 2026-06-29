@@ -3,9 +3,6 @@
 #include <windows.h>
 #else // Unix
 #include <pthread.h>
-#if defined(__linux__)
-#include <dlfcn.h>
-#endif // linux
 #include <sys/resource.h>
 #endif // Unix
 
@@ -75,30 +72,10 @@ static bool approximateStackBounds(void *stackBottom, size_t stackSize,
 }
 
 #if defined(__linux__)
-typedef int (*pthread_getattr_np_func)(pthread_t thread, pthread_attr_t *attr);
-static pthread_getattr_np_func get_pthread_getattr_np() {
-    static pthread_getattr_np_func fnHandle = NULL;
-    static bool computed = false;
-    if (!computed) {
-// fast-path
-#ifdef _GNU_SOURCE
-        fnHandle =
-            (pthread_getattr_np_func)dlsym(RTLD_DEFAULT, "pthread_getattr_np");
-#endif
-        // fallback
-        if (!fnHandle) {
-            void *libHandle = dlopen("libpthread.so.0", RTLD_NOW);
-            if (libHandle) {
-                // Get the address of pthread_getattr_np
-                fnHandle = (pthread_getattr_np_func)dlsym(libHandle,
-                                                          "pthread_getattr_np");
-                dlclose(libHandle);
-            }
-        }
-        computed = true;
-    }
-    return fnHandle;
-}
+/* GNU extension; <pthread.h> hides it without _GNU_SOURCE. Called directly
+ * rather than via dlopen/dlsym so it resolves at link time in fully-static
+ * binaries, where those fail (musl's static dlopen is a no-op stub). */
+extern int pthread_getattr_np(pthread_t thread, pthread_attr_t *attr);
 #endif
 
 static bool detectStackBounds(void *onStackPointer) {
@@ -112,11 +89,9 @@ static bool detectStackBounds(void *onStackPointer) {
     return true;
 #endif
 #elif defined(__linux__)
-    // GNU extension, might not be available
-    pthread_getattr_np_func pthread_getattr_np_ptr = get_pthread_getattr_np();
-    if (pthread_getattr_np_ptr) {
+    {
         pthread_attr_t attr;
-        if (pthread_getattr_np_ptr(pthread_self(), &attr) != 0) {
+        if (pthread_getattr_np(pthread_self(), &attr) != 0) {
             goto fallback;
         }
         void *stackTop;
