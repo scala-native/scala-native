@@ -2,9 +2,9 @@ package build
 
 import sbt.Keys._
 import sbt._
-import sbt.nio.Keys.fileTreeView
 
 import java.io.File
+import java.net.URI
 import java.util.Locale
 
 import scala.collection.mutable
@@ -13,7 +13,6 @@ import com.jsuereth.sbtpgp.PgpKeys
 import com.jsuereth.sbtpgp.PgpKeys.publishSigned
 import com.typesafe.tools.mima.core._
 import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
-import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
 
 // Hack warning: special object mimicking build-info plugin outputs, defined in project/ScalaNativeBuildInfo
 import scala.scalanative.ScalaNativeBuildInfo
@@ -21,6 +20,7 @@ import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 
 import build.ScalaVersions.sbt2Version
 import sbtbuildinfo.BuildInfoPlugin.autoImport._
+import xsbti.HashedVirtualFileRef
 
 import MyScalaNativePlugin.isGeneratingForIDE
 import ScriptedPlugin.autoImport._
@@ -28,6 +28,10 @@ import ScriptedPlugin.autoImport._
 object Settings {
   lazy val fetchScalaSource = taskKey[File](
     "Fetches the scala source for the current scala version"
+  )
+
+  lazy val publishScalalibLocal = taskKey[Unit](
+    "Publish scalalib to the local Ivy cache for scala3lib dependency resolution"
   )
 
   lazy val shouldPartest = settingKey[Boolean](
@@ -54,18 +58,26 @@ object Settings {
       v
     },
     Global / onLoad ~= { prev =>
-      if (!scala.util.Properties.isWin) {
+      if (!scala.util.Properties.isWin) try {
         import java.nio.file._
-        val prePush = Paths.get(".git", "hooks", "pre-push")
-        Files.createDirectories(prePush.getParent)
-        Files.write(
-          prePush,
-          """|#!/bin/sh
-             |set -eux
-             |CHECK_MODIFIED_ONLY=1 ./scripts/check-lint.sh
-             |""".stripMargin.getBytes()
-        )
-        prePush.toFile.setExecutable(true)
+        val gitPath = Paths.get(".git")
+        // git worktrees expose `.git` as a file pointing at the real git dir
+        if (Files.isDirectory(gitPath)) {
+          val hooksDir = gitPath.resolve("hooks")
+          val prePush = hooksDir.resolve("pre-push")
+          Files.createDirectories(hooksDir)
+          Files.write(
+            prePush,
+            """|#!/bin/sh
+               |set -eux
+               |CHECK_MODIFIED_ONLY=1 ./scripts/check-lint.sh
+               |""".stripMargin.getBytes()
+          )
+          prePush.toFile.setExecutable(true)
+        }
+      } catch {
+        case e: Exception =>
+          System.err.println(s"Error checking git hooks: ${e.getMessage}")
       }
       prev
     }
@@ -169,11 +181,10 @@ object Settings {
         case (3, _) => Seq.empty
       },
       // Add Java Scaladoc mapping
-      apiMappings ++= {
+      apiMappings ++= Def.uncached {
         val optRTJar = {
           val bootClasspath = System.getProperty("sun.boot.class.path")
           if (bootClasspath != null) {
-            // JDK <= 8, there is an rt.jar (or classes.jar) on the boot classpath
             val jars = bootClasspath.split(java.io.File.pathSeparator)
 
             def matches(path: String, name: String): Boolean =
@@ -183,23 +194,27 @@ object Settings {
               .find(matches(_, "rt")) // most JREs
               .map(file)
           } else {
-            // JDK >= 9, maybe sbt gives us a fake rt.jar in `scala.ext.dirs`
             val scalaExtDirs = Option(System.getProperty("scala.ext.dirs"))
             scalaExtDirs.map(extDirs => file(extDirs) / "rt.jar")
           }
         }
 
-        optRTJar.fold[Map[File, URL]] {
-          Map.empty
-        } { rtJar =>
-          assert(rtJar.exists, s"$rtJar does not exist")
-          Map(rtJar -> url(javaDocBaseURL))
+        optRTJar.fold(Map.empty[HashedVirtualFileRef, URI]) { rtJar =>
+          assert(rtJar.exists(), s"$rtJar does not exist")
+          Map(
+            fileConverter.value.toVirtualFile(rtJar.toPath) -> url(
+              javaDocBaseURL
+            )
+          )
         }
       },
       /* Add a second Java Scaladoc mapping for cases where Scala actually
        * understands the jrt:/ filesystem of Java 9.
        */
-      apiMappings += file("/modules/java.base") -> url(javaDocBaseURL),
+      apiMappings += Def.uncached {
+        val docsPath = file("/modules/java.base").toPath
+        fileConverter.value.toVirtualFile(docsPath) -> url(javaDocBaseURL)
+      },
       Compile / doc / sources := {
         val prev = (Compile / doc / sources).value
         val isWindows = System
@@ -229,7 +244,13 @@ object Settings {
       binCompatVersions
         .map { version =>
           ModuleID(organization.value, moduleName.value, version)
-            .cross(crossVersion.value)
+            .cross {
+              platform.value match
+                case ScalaNativePlatform =>
+                  ScalaNativeCrossVersion.scalaNativeMapped(crossVersion.value)
+                case _ => crossVersion.value
+            }
+
         }
     }
   )
@@ -242,7 +263,10 @@ object Settings {
     homepage := Some(url("http://www.scala-native.org")),
     startYear := Some(2015),
     licenses := Seq(
-      "BSD-like" -> url("http://www.scala-lang.org/downloads/license.html")
+      License(
+        "BSD-like",
+        url("http://www.scala-lang.org/downloads/license.html")
+      )
     ),
     developers := List(
       Developer(
@@ -330,9 +354,9 @@ object Settings {
   lazy val noPublishSettings = Def.settings(
     disabledDocsSettings,
     publishArtifact := false,
-    packagedArtifacts := Map.empty,
-    publish := {},
-    publishLocal := {},
+    packagedArtifacts := Def.uncached(Map.empty),
+    publish := Def.uncached(()),
+    publishLocal := Def.uncached(()),
     publish / skip := true
   )
 
@@ -352,14 +376,16 @@ object Settings {
     Test / testOptions ++= Seq(
       Tests.Argument(TestFrameworks.JUnit, "-a", "-s")
     ),
-    Test / envVars ++= Map(
-      "USER" -> System.getProperty("user.name"),
-      "HOME" -> System.getProperty("user.home"),
-      "SCALA_NATIVE_ENV_WITH_EQUALS" -> "1+1=2",
-      "SCALA_NATIVE_ENV_WITHOUT_VALUE" -> "",
-      "SCALA_NATIVE_ENV_WITH_UNICODE" -> 0x2192.toChar.toString,
-      "SCALA_NATIVE_USER_DIR" -> System.getProperty("user.dir")
-    ),
+    Test / envVars ++= Def.uncached {
+      Map(
+        "USER" -> System.getProperty("user.name"),
+        "HOME" -> System.getProperty("user.home"),
+        "SCALA_NATIVE_ENV_WITH_EQUALS" -> "1+1=2",
+        "SCALA_NATIVE_ENV_WITHOUT_VALUE" -> "",
+        "SCALA_NATIVE_ENV_WITH_UNICODE" -> 0x2192.toChar.toString,
+        "SCALA_NATIVE_USER_DIR" -> System.getProperty("user.dir")
+      )
+    },
     // Some of the tests are designed with an assumptions about default encoding
     // Make sure that tests run on JVM are using default defaults
     Test / javaOptions ++= Seq(
@@ -393,7 +419,8 @@ object Settings {
           testQuick / aggregate := false,
           testQuick := testsTaskUnsupported.value,
           executeTests / aggregate := false,
-          executeTests := testsTaskUnsupported[Tests.Output].value
+          executeTests := Def.uncached:
+            Tests.processResults(Seq.empty)
         )
       }
     )
@@ -416,7 +443,7 @@ object Settings {
 
   // Get all scala sources from a directory
   def allScalaFromDir(dir: File): Seq[(String, java.io.File)] =
-    (dir ** "*.scala").get.flatMap { file =>
+    (dir ** "*.scala").get().flatMap { file =>
       file.relativeTo(dir) match {
         case Some(rel) => List((rel.toString.replace('\\', '/'), file))
         case None      => Nil
@@ -534,8 +561,8 @@ object Settings {
             .foldLeft(IO.read(baseDir / relativePath.toString())) {
               case (source, jdkVersion) =>
                 source
-                  .replaceAllLiterally(s"/* >>REQUIRE-JDK-$jdkVersion", "")
-                  .replaceAllLiterally(s"<<REQUIRE-JDK-$jdkVersion */", "")
+                  .replace(s"/* >>REQUIRE-JDK-$jdkVersion", "")
+                  .replace(s"<<REQUIRE-JDK-$jdkVersion */", "")
             }
         )
         outFile
@@ -611,7 +638,42 @@ object Settings {
     exportJars := true,
     scalacOptions --= Seq("-Xfatal-warnings", "-Werror"),
     scalacOptions ++= ignoredScalaDeprecations(scalaVersion.value),
-    disableMimaSettings
+    disableMimaSettings,
+    Compile / unmanagedSourceDirectories ++= {
+      def parseVersionRange(dirName: String): Option[VersionsRange] =
+        dirName match {
+          case s"scala-since_${Version(version)}" =>
+            Some:
+              VersionsRange(start = version, end = Version.Max)
+          case s"scala-until_${Version(version)}" =>
+            Some:
+              VersionsRange(start = Version.Min, end = version)
+          case s"scala-between_${Version(start)}_${Version(end)}" =>
+            Some:
+              VersionsRange(start = start, end = end)
+          case _ => None
+        }
+      val currentVersion = Version
+        .unapply(scalaVersion.value)
+        .getOrElse(sys.error(s"Invalid Scala version: ${scalaVersion.value}"))
+
+      sbt.IO
+        .listFiles((Compile / sourceDirectory).value)
+        .filter(_.isDirectory)
+        .filter { dir =>
+          parseVersionRange(dir.name)
+            .exists(_.contains(currentVersion))
+        }
+        .toList
+        .match {
+          case List(dir) => List(dir)
+          case Nil       => Nil
+          case dirs      =>
+            sLog.value.error:
+              s"Multiple Scala version ranges found for ${scalaVersion.value}: ${dirs.map(_.name).mkString(", ")}"
+            Nil
+        }
+    }
   )
 
   lazy val sbtPluginSettings = Def.settings(
@@ -678,9 +740,9 @@ object Settings {
     CrossVersion
       .partialVersion(scalaVersion)
       .fold(Seq.empty[String]) {
-        case (2, 12) => Nil
         case (2, 13) => scala213StdLibDeprecations
         case (3, _)  => scala213StdLibDeprecations ++ scala3Deprecations
+        case _       => Nil
       }
   }
 
@@ -763,18 +825,23 @@ object Settings {
       // Scala Native build.sbt uses a slightly different baseDirectory
       // than Scala.js. See commented starting with "SN Port:" below.
       libraryDependencies ++= {
-        if (shouldAddDependencyForVersion(scalaVersion.value))
-          Some("org.scala-lang" % scalaStdLibraryName % scalaVersion.value)
-        else None
+        Option.when(shouldAddDependencyForVersion(scalaVersion.value)) {
+          ("org.scala-lang" % scalaStdLibraryName % scalaVersion.value classifier "sources")
+        }
       },
-      fetchScalaSource / artifactPath :=
-        baseDirectory.value.getParentFile / "target" / "scalaSources" / scalaVersion.value,
+      fetchScalaSource / artifactPath := fileConverter.value.toVirtualFile(
+        baseDirectory.value.getParentFile
+          .toPath() / "target" / "scalaSources" / scalaVersion.value
+      ),
       // Create nir.SourceFile relative to Scala sources dir instead of root dir
       // It should use -sourcepath for both, but it fails to compile under Scala 2
-      scalacOptions ++=
+      scalacOptions ++= Def.uncached {
+        val sourcesPath =
+          fileConverter.value.toPath((fetchScalaSource / artifactPath).value)
         scalaNativeCompilerOptions(
-          s"positionRelativizationPaths:${crossTarget.value / "patched"};${(fetchScalaSource / artifactPath).value}"
-        ),
+          s"positionRelativizationPaths:${crossTarget.value / "patched"};${sourcesPath}"
+        )
+      },
       // Foreign sources, ignore all warnings and don't try to use custom -source version
       scalacOptions --= Seq(
         "-deprecation",
@@ -790,12 +857,14 @@ object Settings {
        * which we work around here by using `updateClassifiers` instead in
        * that case.
        */
-      fetchScalaSource / update := Def.taskDyn {
-        val version = scalaVersion.value
-        val usedScalaVersion = scala.util.Properties.versionNumberString
-        if (version == usedScalaVersion) updateClassifiers
-        else update
-      }.value,
+      fetchScalaSource / update := Def.uncached {
+        Def.taskDyn {
+          val version = scalaVersion.value
+          val usedScalaVersion = scala.util.Properties.versionNumberString
+          if (version == usedScalaVersion) updateClassifiers
+          else update
+        }.value
+      },
       // Scala.js always uses the same version of sources as used in the runtime
       // In Scala Native to 0.4.x we don't make a full cross version of Scala standard library
       // This means we need to have only 1 version of scalalib to not break current build tools
@@ -803,35 +872,25 @@ object Settings {
       // Becouse of that we compile Scala 3.2.x or newer sources with 3.1.3 compiler
       // In theory we can enforce usage of latest version of Scala for compiling only scalalib module,
       // as we don't store .tasty or .class files. This solution however might be more complicated and usnafe
-      fetchScalaSource := {
+      fetchScalaSource := Def.uncached {
         val version = scalaVersion.value
-        val trgDir = (fetchScalaSource / artifactPath).value
+        val trgDir = fileConverter.value
+          .toPath((fetchScalaSource / artifactPath).value)
+          .toFile()
         val s = streams.value
         val cacheDir = s.cacheDirectory
         val report = (fetchScalaSource / update).value
-        lazy val lm = {
-          import sbt.librarymanagement.ivy._
-          val ivyConfig = InlineIvyConfiguration()
-            .withLog(s.log)
-            .withResolvers(
-              resolvers.value.toVector ++ InlineIvyConfiguration().resolvers
-            )
-          IvyDependencyResolution(ivyConfig)
-        }
-        lazy val scalaLibSourcesJar = lm
-          .retrieve(
-            "org.scala-lang" % scalaStdLibraryName % version classifier "sources",
-            scalaModuleInfo = None,
-            retrieveDirectory = cacheDir,
-            log = s.log
+        val scalaLibSourcesJar = report
+          .select(
+            configuration = configurationFilter(Compile.name),
+            module = moduleFilter(
+              organization = "org.scala-lang",
+              name = scalaStdLibraryName,
+              revision = version
+            ),
+            artifact = artifactFilter(classifier = "sources")
           )
-          .map(
-            _.find(
-              _.name.endsWith(s"${scalaStdLibraryName}-$version-sources.jar")
-            )
-          )
-          .toOption
-          .flatten
+          .headOption
           .getOrElse {
             throw new Exception(
               s"Could not fetch ${scalaStdLibraryName} sources for version $version"
@@ -842,14 +901,15 @@ object Settings {
           cacheDir / s"fetchScalaSource-$version",
           FilesInfo.lastModified,
           FilesInfo.exists
-        ) { dependencies =>
+        ) { _ =>
           s.log.info(s"Unpacking Scala library sources to $trgDir...")
 
-          if (trgDir.exists)
+          if (trgDir.exists())
             IO.delete(trgDir)
           IO.createDirectory(trgDir)
           IO.unzip(scalaLibSourcesJar, trgDir)
         }(Set(scalaLibSourcesJar))
+
         trgDir
       },
       Compile / unmanagedSourceDirectories := scalaVersionDirectories(
@@ -871,138 +931,232 @@ object Settings {
         def normPath(f: File): String =
           f.getPath.replace(java.io.File.separator, "/")
 
-        val sources = mutable.ListBuffer.empty[File]
-        val paths = mutable.Set.empty[String]
-
         val s = streams.value
-        val fileTree = fileTreeView.value
-        def listFilesInOrder(patterns: Glob*) =
-          patterns.flatMap(fileTree.list(_))
+        val cacheDir =
+          s.cacheDirectory / s"scalalib-sources-${scalaVersion.value}"
+        val manifestFile = crossTarget.value / "sources-manifest"
+        val patchedRoot = crossTarget.value / "patched"
+        val skippedRoot = crossTarget.value / "patched-skipped"
 
-        /* Exclude files coming from Scala's `library-aux` directory, as they are not
-         * meant to be compiled. They are part of the source jar since Scala 2.13.14.
-         */
-        val ignoredSourceFiles = Set(
-          "Any.scala",
-          "AnyRef.scala",
-          "Singleton.scala",
-          "Nothing.scala",
-          "Null.scala",
-          // Since 3.5.1
-          "AnyKind.scala",
-          "Matchable.scala"
-        ).map(java.nio.file.Paths.get("scala", _))
-        var failedToApplyPatches = false
-        for {
-          srcDir <- sourceDirectories
-          normSrcDir = normPath(srcDir)
-          scalaGlob = srcDir.toGlob / ** / "*.scala"
-          patchGlob = srcDir.toGlob / ** / "*.scala.patch"
-          (sourcePath, _) <- listFilesInOrder(scalaGlob, patchGlob)
-          if !ignoredSourceFiles.exists(sourcePath.endsWith(_))
-          path = normPath(sourcePath.toFile).substring(normSrcDir.length)
-        } {
-          def addSource(path: String)(optSource: => Option[File]): Unit = {
-            if (paths.contains(path)) s.log.debug(s"not including $path")
-            else {
-              optSource.foreach { source =>
-                paths += path
-                sources += source
-              }
-            }
-          }
-
-          def copy(source: File, destination: File) = {
-            import java.nio.file.Files
-            import java.nio.file.StandardCopyOption._
-            Files.copy(
-              source.toPath(),
-              destination.toPath(),
-              COPY_ATTRIBUTES,
-              REPLACE_EXISTING
-            )
-          }
-
-          def tryApplyPatch(sourceName: String): Option[File] = {
-            val scalaSourcePath = scalaSrcDir / sourceName
-            if (!scalaSourcePath.exists()) {
-              s.log.warn(
-                s"Not found matching source file $sourceName for patch in Scala ${scalaVersion.value} sources, skipped"
-              )
-              return None
-            }
-            val scalaSourceCopyPath = scalaSrcDir / (sourceName + ".copy")
-            val outputFile = crossTarget.value / "patched" / sourceName
-            val outputDir = outputFile.getParentFile
-            if (!outputDir.exists()) {
-              IO.createDirectory(outputDir)
-            }
-            // There is not a single JVM library for diff that can apply
-            // patches in a fuzzy way (using context lines). We also
-            // canot use jgit to apply patches - it fails due to "invalid hunk headers".
-            // Becouse of that we use git apply instead.
-            // We need to create copy of original file and restore it after creating
-            // patched file to allow for recompilation of sources (re-applying patches)
-            // git apply command needs to be used from within fetchedScalaSource directory.
-            try {
-              import scala.sys.process._
-              copy(scalaSourcePath, scalaSourceCopyPath)
-              var hasErrors = false
-              Process(
-                command = Seq(
-                  "git",
-                  "apply",
-                  "--reject",
-                  "--whitespace=fix",
-                  "--recount",
-                  sourcePath.toAbsolutePath().toString()
-                ),
-                cwd = scalaSrcDir
-              ).!!(
-                ProcessLogger(
-                  stdout => (),
-                  stderr => {
-                    if (stderr.contains("error")) {
-                      hasErrors = true
-                    }
-                    if (hasErrors) s.log.warn(stderr)
-                    else s.log.debug(stderr)
-                  }
-                )
-              )
-              copy(scalaSourcePath, outputFile)
-              Some(outputFile)
-            } catch {
-              case ex: Exception =>
-                // Postpone failing to check which other patches do not apply
-                failedToApplyPatches = true
-                val path = sourcePath.toFile.relativeTo(srcDir.getParentFile)
-                s.log.error(s"Cannot apply patch for $path - $ex")
-                None
-            } finally {
-              if (scalaSourceCopyPath.exists()) {
-                copy(scalaSourceCopyPath, scalaSourcePath)
-                scalaSourceCopyPath.delete()
-              }
-            }
-          }
-
-          if (!patchGlob.matches(sourcePath))
-            addSource(path)(Some(sourcePath.toFile))
+        def listScalaAndPatches(srcDir: File): Seq[java.nio.file.Path] = {
+          if (!srcDir.isDirectory) Nil
           else {
-            val sourceName = path.stripSuffix(".patch")
-            addSource(sourceName)(
-              tryApplyPatch(sourceName)
-            )
+            import scala.jdk.CollectionConverters.*
+            val root = srcDir.toPath
+            val all = java.nio.file.Files
+              .walk(root)
+              .iterator()
+              .asScala
+              .filter(java.nio.file.Files.isRegularFile(_))
+              .toSeq
+              .sortBy(_.toString)
+            val scalaFiles = all.filter { p =>
+              val path = normPath(p.toFile)
+              path.endsWith(".scala") && !path.endsWith(".scala.patch")
+            }
+            val patchFiles =
+              all.filter(p => normPath(p.toFile).endsWith(".scala.patch"))
+            scalaFiles ++ patchFiles
           }
         }
 
-        if (failedToApplyPatches) {
-          throw new Exception(
-            "Failed to apply some of scalalib patches, check logs for more information"
-          )
-        }
-        sources.result()
+        def allFilesUnder(dir: File): Set[File] =
+          if (dir.isDirectory) dir.allPaths.get().filter(_.isFile).toSet
+          else Set.empty
+
+        val inputFiles =
+          sourceDirectories.flatMap(listScalaAndPatches).map(_.toFile).toSet ++
+            allFilesUnder(scalaSrcDir)
+
+        FileFunction.cached(
+          cacheDir,
+          FilesInfo.lastModified,
+          FilesInfo.exists
+        ) { _ =>
+          val sources = mutable.ListBuffer.empty[File]
+          val paths = mutable.Set.empty[String]
+
+          /* Exclude files coming from Scala's `library-aux` directory, as they are not
+           * meant to be compiled. They are part of the source jar since Scala 2.13.14.
+           */
+          val ignoredSourceFiles = Set(
+            "Any.scala",
+            "AnyRef.scala",
+            "Singleton.scala",
+            "Nothing.scala",
+            "Null.scala",
+            // Since 3.5.1
+            "AnyKind.scala",
+            "Matchable.scala"
+          ).map(java.nio.file.Paths.get("scala", _))
+          var failedToApplyPatches = false
+          val claimedPatchSources = mutable.Set.empty[String]
+          val stalePatchWork = crossTarget.value / "patch-work"
+          if (stalePatchWork.exists()) {
+            IO.delete(stalePatchWork)
+          }
+          for {
+            srcDir <- sourceDirectories
+            normSrcDir = normPath(srcDir)
+            sourcePath <- listScalaAndPatches(srcDir)
+            if !ignoredSourceFiles.exists(sourcePath.endsWith(_))
+            path = normPath(sourcePath.toFile).substring(normSrcDir.length)
+          } {
+            def addSource(path: String)(optSource: => Option[File]): Unit = {
+              if (paths.contains(path)) s.log.debug(s"not including $path")
+              else {
+                optSource.foreach { source =>
+                  paths += path
+                  sources += source
+                }
+              }
+            }
+
+            def copy(source: File, destination: File) = {
+              import java.nio.file.Files
+              import java.nio.file.StandardCopyOption.*
+              Files.copy(
+                source.toPath(),
+                destination.toPath(),
+                COPY_ATTRIBUTES,
+                REPLACE_EXISTING
+              )
+            }
+
+            def tryApplyPatch(sourceName: String): Option[File] = {
+              val scalaSourcePath = scalaSrcDir / sourceName
+              val patchFile = sourcePath.toFile
+              val patchLabel = patchFile.relativeTo(srcDir.getParentFile)
+              if (!scalaSourcePath.exists()) {
+                val skipStamp = skippedRoot / sourceName
+                if (!skipStamp.exists() ||
+                    skipStamp.lastModified() < patchFile.lastModified()) {
+                  s.log.warn(
+                    s"Not found matching source file $sourceName for patch in Scala ${scalaVersion.value} sources, skipped"
+                  )
+                  IO.createDirectory(skipStamp.getParentFile)
+                  IO.touch(skipStamp)
+                }
+                return None
+              }
+              val outputFile = patchedRoot / sourceName
+              val outputDir = outputFile.getParentFile
+              if (!outputDir.exists()) {
+                IO.createDirectory(outputDir)
+              }
+              if (outputFile.exists() &&
+                  outputFile.lastModified() >= patchFile.lastModified() &&
+                  outputFile.lastModified() >= scalaSourcePath.lastModified()) {
+                s.log.debug(
+                  s"Reusing cached patched source for $sourceName from $patchLabel"
+                )
+                return Some(outputFile)
+              }
+              // There is not a single JVM library for diff that can apply
+              // patches in a fuzzy way (using context lines). We also
+              // canot use jgit to apply patches - it fails due to "invalid hunk headers".
+              // Becouse of that we use git apply instead.
+              // Each patch uses its own temp tree so fetched Scala sources are never
+              // mutated and concurrent or sequential patches cannot interfere.
+              import java.nio.file.{Files => JFiles}
+              val patchWorkRoot =
+                JFiles
+                  .createTempDirectory(crossTarget.value.toPath, "patch-work-")
+                  .toFile()
+              try {
+                import scala.sys.process.*
+                def gitApply(args: String*)(cwd: File): Int =
+                  Process(
+                    Seq("git", "apply") ++ args ++ Seq(
+                      patchFile.getAbsolutePath()
+                    ),
+                    cwd = cwd
+                  ).!(ProcessLogger(s.log.debug(_), s.log.debug(_)))
+
+                val workSourcePath = patchWorkRoot / sourceName
+                val workSourceParent = workSourcePath.getParentFile
+                if (!workSourceParent.exists()) {
+                  IO.createDirectory(workSourceParent)
+                }
+                if (workSourcePath.exists()) {
+                  IO.delete(workSourcePath)
+                }
+                copy(scalaSourcePath, workSourcePath)
+                val canApplyForward =
+                  0 == gitApply("--check", "--whitespace=fix", "--recount")(
+                    patchWorkRoot
+                  )
+                val alreadyPatched =
+                  !canApplyForward &&
+                    gitApply(
+                      "--reverse",
+                      "--check",
+                      "--whitespace=fix",
+                      "--recount"
+                    )(patchWorkRoot) == 0
+                if (canApplyForward) {
+                  val exitCode =
+                    gitApply("--whitespace=fix", "--recount")(patchWorkRoot)
+                  if (exitCode != 0) {
+                    failedToApplyPatches = true
+                    s.log.error(
+                      s"Cannot apply patch for $patchLabel (git apply exit $exitCode)"
+                    )
+                    return None
+                  }
+                } else if (!alreadyPatched) {
+                  failedToApplyPatches = true
+                  s.log.error(
+                    s"Cannot apply patch for $patchLabel - source is neither pristine nor already patched"
+                  )
+                  return None
+                } else {
+                  s.log.debug(
+                    s"Patch for $sourceName already applied, reusing patched source"
+                  )
+                }
+                copy(workSourcePath, outputFile)
+                Some(outputFile)
+              } catch {
+                case ex: Exception =>
+                  // Postpone failing to check which other patches do not apply
+                  failedToApplyPatches = true
+                  s.log.error(s"Cannot apply patch for $patchLabel - $ex")
+                  None
+              } finally {
+                IO.delete(patchWorkRoot)
+              }
+            }
+
+            if (!normPath(sourcePath.toFile).endsWith(".scala.patch"))
+              addSource(path)(Some(sourcePath.toFile))
+            else {
+              val sourceName = path.stripSuffix(".patch")
+              if (!claimedPatchSources.contains(sourceName)) {
+                claimedPatchSources += sourceName
+                addSource(sourceName)(
+                  tryApplyPatch(sourceName)
+                )
+              }
+            }
+          }
+
+          if (failedToApplyPatches) {
+            throw new Exception(
+              "Failed to apply some of scalalib patches, check logs for more information"
+            )
+          }
+
+          val resolved = sources.result()
+          IO.writeLines(manifestFile, resolved.map(_.getAbsolutePath))
+          resolved.filter { file =>
+            val path = file.getAbsolutePath
+            path.startsWith(patchedRoot.getAbsolutePath) ||
+              path.startsWith(skippedRoot.getAbsolutePath)
+          }.toSet + manifestFile
+        }(inputFiles)
+
+        IO.readLines(manifestFile).map(file => new File(file))
       },
       // Don't include classfiles/tasty for scalalib in the packaged jar.
       Compile / packageBin / mappings := {
@@ -1056,4 +1210,28 @@ object Settings {
       .partialVersion(scalaVersion)
       .collect(matching)
       .getOrElse(default)
+}
+
+case class Version(major: Int, minor: Int, patch: Int)
+object Version {
+  val Min = Version(0, 0, 0)
+  val Max = Version(Byte.MaxValue, Byte.MaxValue, Byte.MaxValue)
+  given ordering: Ordering[Version] =
+    Ordering.by(v => (v.major, v.minor, v.patch))
+  def unapply(str: String): Option[Version] =
+    str
+      .split("[.\\-]")
+      .take(3)
+      .filter(_.forall(_.isDigit))
+      .map(_.toInt) match {
+      case Array(major, minor, patch) => Some(Version(major, minor, patch))
+      case Array(major, minor)        => Some(Version(major, minor, 0))
+      case Array(major)               => Some(Version(major, 0, 0))
+      case _                          => None
+    }
+}
+case class VersionsRange(start: Version, end: Version) {
+  def contains(version: Version): Boolean =
+    Version.ordering.compare(version, start) >= 0 &&
+      Version.ordering.compare(version, end) <= 0
 }

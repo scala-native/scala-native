@@ -1,6 +1,6 @@
 package build
 
-import sbt._
+import sbt.{given, *}
 
 import scala.language.implicitConversions
 
@@ -78,14 +78,18 @@ final case class MultiScalaProject private (
       }
     } else {
       def classpathDependency(d: ScopedMultiScalaProject) =
-        strictMapValues(d.project.projects)(
-          ClasspathDependency(_, d.configuration)
-        )
+        strictMapValues(d.project.projects) { p =>
+          ClasspathDependency(p, d.configuration)
+        }
 
       val depsByVersion: Map[String, Seq[ClasspathDependency]] =
-        strictMapValues(deps.flatMap(classpathDependency).groupBy(_._1))(
-          _.map(_._2)
-        )
+        strictMapValues(
+          deps
+            .flatMap(classpathDependency)
+            .groupBy((conf, _) => conf)
+        ) { values =>
+          values.collect { case (_, dep: ClasspathDependency) => dep }
+        }
       zipped(depsByVersion)(_.dependsOn(_: _*))
     }
   }

@@ -607,8 +607,7 @@ protected abstract class AbstractStringBuilder private (unit: Unit) {
         (wasted >= INITIAL_CAPACITY && wasted >= (count >> 1))) {
       return new String(value, 0, count)
     }
-    shared = true
-    return new String(value, 0, count)
+    new String(this, null)
   }
 
   def subSequence(start: scala.Int, end: scala.Int): CharSequence =

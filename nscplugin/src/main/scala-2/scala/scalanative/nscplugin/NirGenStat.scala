@@ -280,7 +280,13 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val sym = cd.symbol
       val enableReflectiveInstantiation = {
         (sym :: sym.ancestors).exists { ancestor =>
-          ancestor.hasAnnotation(EnableReflectiveInstantiationAnnotation)
+          ancestor.hasAnnotation(EnableReflectiveInstantiationAnnotation) || {
+            // Force loading of the symbol info - allows to detect missing classpath entries
+            // Otherwise check can fail silently
+            ancestor.annotations.exists(
+              _.symbol.tpe.dealias.typeSymbol == EnableReflectiveInstantiationAnnotation
+            )
+          }
         }
       }
 

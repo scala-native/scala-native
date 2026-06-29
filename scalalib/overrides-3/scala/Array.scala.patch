@@ -1,4 +1,4 @@
---- 3.8.3-RC1/scala/Array.scala
+--- 3.9.0-RC1/scala/Array.scala
 +++ overrides-3/scala/Array.scala
 @@ -35,7 +35,7 @@
   *  where the array objects `a`, `b` and `c` have respectively the values
@@ -26,11 +26,11 @@
 +  @inline def emptyShortArray   = EmptyArrays.emptyShortArray
 +  @inline def emptyObjectArray  = EmptyArrays.emptyObjectArray
 +
-   /** Provides an implicit conversion from the Array object to a collection Factory. */
-   implicit def toFactory[A : ClassTag](dummy: Array.type): Factory[A, Array[A]] = new ArrayFactory(dummy)
-   @SerialVersionUID(3L)
-@@ -125,7 +137,8 @@
-    *  @see `java.util.Arrays#copyOf`
+   /** Provides an implicit conversion from the Array object to a collection Factory.
+    *
+    *  @tparam A the element type of the array to be created
+@@ -139,7 +151,8 @@
+    *  @return a copy of the original array, truncated or padded with default values to obtain the specified length
     */
    def copyOf[A](original: Array[A], newLength: Int): Array[A] = ((original: @unchecked) match {
 -    case original: Array[BoxedUnit]  => newUnitArray(newLength).asInstanceOf[Array[A]]

@@ -1,0 +1,9 @@
+# Native projects must publish with platform-aware artifact ids (e.g. lib_native0.5_3),
+# not JVM-style ids (lib_3). Works the same under sbt 1.x and sbt 2.x output layouts.
+
+> compile
+> package
+> verifyPackagePaths
+> verifyNoJvmStyleArtifacts
+> publishLocal
+> verifyNoJvmStyleArtifacts

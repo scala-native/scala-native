@@ -14,6 +14,7 @@ import java.{lang => jl}
 import scala.annotation.{switch, tailrec}
 
 import scalanative.libc.string.memcmp
+import scalanative.runtime.{Intrinsics, toRawPtr}
 import scalanative.unsafe._
 import scalanative.unsigned._
 
@@ -130,6 +131,14 @@ final class _String()
     value = data
     offset = start
     count = length
+  }
+
+  // Zero-copy: share the buffer with AbstractStringBuilder via copy-on-write.
+  private[lang] def this(asb: AbstractStringBuilder, sig: Void) = {
+    this()
+    value = asb.shareValue()
+    offset = 0
+    count = asb.length()
   }
 
   def this(string: _String) = {
@@ -341,12 +350,31 @@ final class _String()
       end += offset
 
       try {
-        var index = _index
-        var i = offset + start
-        while (i < end) {
-          data(index) = value(i).toByte
-          index += 1
-          i += 1
+        val len = end - (offset + start)
+        if (len > 0) {
+          if (_index < 0 || len > data.length - _index)
+            throw new ArrayIndexOutOfBoundsException()
+          val srcRaw = toRawPtr(value.at(offset + start))
+          val dstRaw = toRawPtr(data.at(_index))
+          var i = 0
+          // Process 4 chars (8 bytes) at a time using Long loads.
+          // Extract the low byte of each char and pack into a single Int.
+          while (i + 4 <= len) {
+            val long =
+              Intrinsics.loadLong(Intrinsics.elemRawPtr(srcRaw, i * 2))
+            val packed = ((long & 0xffL) |
+              ((long >> 8) & 0xff00L) |
+              ((long >> 16) & 0xff0000L) |
+              ((long >> 24) & 0xff000000L)).toInt
+            Intrinsics.storeInt(Intrinsics.elemRawPtr(dstRaw, i), packed)
+            i += 4
+          }
+          while (i < len) {
+            val ch =
+              Intrinsics.loadChar(Intrinsics.elemRawPtr(srcRaw, i * 2))
+            Intrinsics.storeByte(Intrinsics.elemRawPtr(dstRaw, i), ch.toByte)
+            i += 1
+          }
         }
       } catch {
         case e: ArrayIndexOutOfBoundsException =>
@@ -432,17 +460,40 @@ final class _String()
    *   For details, see note above indexOfImpl(str, fromIndex, toIndex).
    */
   private def indexOfImpl(ch: Int, beginIndex: Int, endIndex: Int): Int = {
-    // This is a good candidate for someday using memchr().
-
     var start = beginIndex
 
     if (ch >= 0 && ch <= Character.MAX_VALUE) {
-      var i = offset + start
-      while (i < offset + endIndex) {
-        if (value(i) == ch)
-          return i - offset
-
-        i += 1
+      val len = endIndex - start
+      if (len > 0) {
+        // SWAR (SIMD Within A Register) search for BMP chars.
+        // Process 4 chars (8 bytes) at a time using Long loads.
+        val charMask =
+          ch.toLong | (ch.toLong << 16) | (ch.toLong << 32) | (ch.toLong << 48)
+        val srcRaw = toRawPtr(value.at(offset + start))
+        var i = 0
+        while (i + 4 <= len) {
+          val long =
+            Intrinsics.loadLong(Intrinsics.elemRawPtr(srcRaw, i * 2))
+          val xored = long ^ charMask
+          // SWAR zero-detection: true if any 16-bit lane is zero after XOR
+          val hasZero =
+            ((xored - 0x0001000100010001L) & ~xored & 0x8000800080008000L) != 0
+          if (hasZero) {
+            val vi = offset + start + i
+            val si = start + i
+            if (value(vi) == ch) return si
+            if (value(vi + 1) == ch) return si + 1
+            if (value(vi + 2) == ch) return si + 2
+            if (value(vi + 3) == ch) return si + 3
+          }
+          i += 4
+        }
+        val vi0 = offset + start
+        while (i < len) {
+          if (value(vi0 + i) == ch)
+            return start + i
+          i += 1
+        }
       }
     } else if (ch > Character.MAX_VALUE && ch <= Character.MAX_CODE_POINT) {
       var i = start
