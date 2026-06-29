@@ -19,6 +19,8 @@ final class Duration(private val seconds: Long, private val nano: Int)
     extends Comparable[Duration]
     with java.io.Serializable {
 
+  import Duration._
+
   override def compareTo(that: Duration): Int = {
     val secondsCompare = seconds.compareTo(that.seconds)
     if (secondsCompare == 0) {
@@ -41,12 +43,37 @@ final class Duration(private val seconds: Long, private val nano: Int)
   override def hashCode(): Int =
     java.lang.Long.hashCode(seconds) ^ java.lang.Integer.hashCode(nano)
 
+  def toNanos(): scala.Long = {
+    val nanosFromSeconds = Math.multiplyExact(this.seconds, NANOS_PER_SECOND)
+    Math.addExact(nanosFromSeconds, this.nano)
+  }
+
   // non compliant, for debugging purposes only
   override def toString(): String =
     "Duration(" + seconds + ", " + nano + ")"
 }
 
 object Duration {
+
+  private final val MILLIS_PER_SECOND = 1000L
+  private final val NANOS_PER_SECOND = 1000L * 1000L * 1000L
+
+  def ofMillis(millis: Long): Duration = {
+    val nanosPart = (millis % MILLIS_PER_SECOND).toInt
+    val secondsPart = millis / MILLIS_PER_SECOND
+
+    new Duration(secondsPart, nanosPart)
+  }
+
+  def ofNanos(nanos: Long): Duration = {
+    val nanosPart = (nanos % NANOS_PER_SECOND).toInt
+    val secondsPart = nanos / NANOS_PER_SECOND
+
+    new Duration(secondsPart, nanosPart)
+  }
+
+  def ofSeconds(seconds: Long): Duration =
+    new Duration(seconds, 0)
 
   def ofSeconds(seconds: Long, nanoAdjustment: Long): Duration = {
     val adjustedSeconds =
