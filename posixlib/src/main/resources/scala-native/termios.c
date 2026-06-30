@@ -229,8 +229,8 @@ void scalanative_termios_copy_to_host(struct scalanative_termios *termios_sn,
     for (int i = 0; i < NCCS_L; i++) {
         termios->c_cc[i] = termios_sn->c_cc[i];
     }
-    termios->c_ispeed = termios_sn->c_ispeed;
-    termios->c_ospeed = termios_sn->c_ospeed;
+    cfsetispeed(termios, (speed_t)termios_sn->c_ispeed);
+    cfsetospeed(termios, (speed_t)termios_sn->c_ospeed);
 }
 
 void scalanative_termios_copy_to_sn(struct scalanative_termios *termios_sn,
@@ -242,8 +242,8 @@ void scalanative_termios_copy_to_sn(struct scalanative_termios *termios_sn,
     for (int i = 0; i < NCCS_L; i++) {
         termios_sn->c_cc[i] = termios->c_cc[i];
     }
-    termios_sn->c_ispeed = termios->c_ispeed;
-    termios_sn->c_ospeed = termios->c_ospeed;
+    termios_sn->c_ispeed = (unsigned int)cfgetispeed(termios);
+    termios_sn->c_ospeed = (unsigned int)cfgetospeed(termios);
 }
 
 // @name functions
