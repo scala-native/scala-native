@@ -72,9 +72,9 @@ static bool approximateStackBounds(void *stackBottom, size_t stackSize,
 }
 
 #if defined(__linux__)
-/* GNU extension; <pthread.h> hides it without _GNU_SOURCE. Called directly
- * rather than via dlopen/dlsym so it resolves at link time in fully-static
- * binaries, where those fail (musl's static dlopen is a no-op stub). */
+// GNU extension, hidden by <pthread.h> without _GNU_SOURCE. Declared and called
+// directly (not via dlopen/dlsym) so it resolves at link time in fully-static
+// binaries, where musl's dlopen is a no-op stub.
 extern int pthread_getattr_np(pthread_t thread, pthread_attr_t *attr);
 #endif
 
