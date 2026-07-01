@@ -3,8 +3,8 @@ package sbtplugin
 
 import sbt._
 
-import sjsonnew.{JsonFormat, HashWriter}
-import sjsonnew.BasicJsonProtocol.{mapFormat, given}
+import sjsonnew.BasicJsonProtocol.{given, mapFormat}
+import sjsonnew.{JsonFormat, JsonWriter}
 
 object ScalaNativePlugin extends AutoPlugin {
   override def requires: Plugins = plugins.JvmPlugin
@@ -63,29 +63,8 @@ object ScalaNativePlugin extends AutoPlugin {
     implicit def nativeConfigJsonFormat: JsonFormat[build.NativeConfig] =
       NativeConfigJsonFormats.NativeConfigCodec
 
-    implicit def nativeDiscoverEnvJsonWriter1: HashWriter[build.Discover.Env *: EmptyTuple] = ???
-
-    implicit def nativeDiscoverEnvJsonWriter: HashWriter[build.Discover.Env] =
-      new HashWriter[build.Discover.Env] {
-        override def write[J](obj: build.Discover.Env, builder: sjsonnew.Builder[J]): Unit = {
-          val mapValue = Map(
-            "SCALANATIVE_GC" -> obj.`SCALANATIVE_GC`,
-            "SCALANATIVE_INCLUDE_DIRS" -> obj.`SCALANATIVE_INCLUDE_DIRS`,
-            "SCALANATIVE_LIB_DIRS" -> obj.`SCALANATIVE_LIB_DIRS`,
-            "SCALANATIVE_LTO" -> obj.`SCALANATIVE_LTO`,
-            "SCALANATIVE_MODE" -> obj.`SCALANATIVE_MODE`,
-            "SCALANATIVE_OPTIMIZE" -> obj.`SCALANATIVE_OPTIMIZE`,
-            "LLVM_BIN" -> obj.`LLVM_BIN`
-          )
-
-          mapFormat[String, Option[String]].write(mapValue, builder)
-        }
-
-        override def addField[J](name: String, obj: build.Discover.Env, builder: sjsonnew.Builder[J]): Unit = {
-          builder.addFieldName(name)
-          write(obj, builder)
-        }
-      }
+    implicit def discoverEnvJsonFormat: JsonFormat[build.Discover.Env] =
+      DiscoverEnvJsonFormats.DiscoverEnvCodec
   }
 
   override def globalSettings: Seq[Setting[_]] =

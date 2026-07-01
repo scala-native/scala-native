@@ -136,19 +136,21 @@ object Discover {
         `SCALANATIVE_LTO` = getenv("SCALANATIVE_LTO"),
         `SCALANATIVE_MODE` = getenv("SCALANATIVE_MODE"),
         `SCALANATIVE_OPTIMIZE` = getenv("SCALANATIVE_OPTIMIZE"),
-        `LLVM_BIN` = getenv("LLVM_BIN")
+        `LLVM_BIN` = getenv("LLVM_BIN"),
+        `PATH` = getenv("PATH")
       )
     }
   }
 
   case class Env(
-    `SCALANATIVE_GC`: Option[String],
-    `SCALANATIVE_INCLUDE_DIRS`: Option[String],
-    `SCALANATIVE_LIB_DIRS`: Option[String],
-    `SCALANATIVE_LTO`: Option[String],
-    `SCALANATIVE_MODE`: Option[String],
-    `SCALANATIVE_OPTIMIZE`: Option[String],
-    `LLVM_BIN`: Option[String],
+      `SCALANATIVE_GC`: Option[String],
+      `SCALANATIVE_INCLUDE_DIRS`: Option[String],
+      `SCALANATIVE_LIB_DIRS`: Option[String],
+      `SCALANATIVE_LTO`: Option[String],
+      `SCALANATIVE_MODE`: Option[String],
+      `SCALANATIVE_OPTIMIZE`: Option[String],
+      `LLVM_BIN`: Option[String],
+      `PATH`: Option[String]
   )
 
   private case class ClangInfo(
