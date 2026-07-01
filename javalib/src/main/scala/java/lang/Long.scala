@@ -317,6 +317,65 @@ object Long {
       radix: Int,
       negative: scala.Boolean
   ): scala.Long = {
+    if (radix == 10) parseDecimal(s, _offset, negative)
+    else parseGeneric(s, _offset, radix, negative)
+  }
+
+  private def parseDecimal(
+      s: String,
+      _offset: Int,
+      negative: scala.Boolean
+  ): scala.Long = {
+    val length = s.length()
+    val digitCount = length - _offset
+    if (digitCount <= 0) fail(s)
+    var offset = _offset
+    var result = 0L
+
+    // Phase 1: up to 18 digits — no overflow possible
+    // (999_999_999_999_999_999 < 9_223_372_036_854_775_807)
+    val safeEnd = Math.min(length, offset + 18)
+    while (offset < safeEnd) {
+      val d = s.charAt(offset) - '0'
+      if (d < 0 || d > 9) {
+        val ud = Character.digit(s.charAt(offset), 10)
+        if (ud == -1) fail(s)
+        result = result * 10 - ud
+        offset += 1
+      } else {
+        result = result * 10 - d
+        offset += 1
+      }
+    }
+
+    // Phase 2: remaining digits — overflow check required
+    while (offset < length) {
+      val d = s.charAt(offset) - '0'
+      val digit = if (d < 0 || d > 9) {
+        val ud = Character.digit(s.charAt(offset), 10)
+        if (ud == -1) fail(s)
+        ud
+      } else d
+      offset += 1
+      if (-922337203685477580L > result) fail(s)
+      val next = result * 10 - digit
+      if (next > result) fail(s)
+      result = next
+    }
+
+    if (!negative) {
+      result = -result
+      if (result < 0) throw fail(s)
+    }
+    result
+  }
+
+  private def parseGeneric(
+      s: String,
+      _offset: Int,
+      radix: Int,
+      negative: scala.Boolean
+  ): scala.Long = {
     val max = MIN_VALUE / radix
     var result = 0L
     var offset = _offset
@@ -520,6 +579,61 @@ object Long {
   }
 
   private def parseUnsigned(s: String, _offset: Int, radix: Int): scala.Long = {
+    if (radix == 10) parseUnsignedDecimal(s, _offset)
+    else parseUnsignedGeneric(s, _offset, radix)
+  }
+
+  private def parseUnsignedDecimal(
+      s: String,
+      _offset: Int
+  ): scala.Long = {
+    val length = s.length()
+    val digitCount = length - _offset
+    if (digitCount <= 0) fail(s)
+    var offset = _offset
+    var result = 0L
+
+    // Phase 1: up to 18 digits — no overflow possible
+    // (999_999_999_999_999_999 fits in signed Long)
+    val safeEnd = Math.min(length, offset + 18)
+    while (offset < safeEnd) {
+      val d = s.charAt(offset) - '0'
+      if (d < 0 || d > 9) {
+        val ud = Character.digit(s.charAt(offset), 10)
+        if (ud == -1) fail(s)
+        result = result * 10 + ud
+        offset += 1
+      } else {
+        result = result * 10 + d
+        offset += 1
+      }
+    }
+
+    // Phase 2: 19th-20th digits — unsigned overflow check required
+    while (offset < length) {
+      val d = s.charAt(offset) - '0'
+      val digit = if (d < 0 || d > 9) {
+        val ud = Character.digit(s.charAt(offset), 10)
+        if (ud == -1) fail(s)
+        ud
+      } else d
+      offset += 1
+      if (compareUnsigned(result, 1844674407370955161L) > 0) fail(s)
+      result = result * 10 + digit
+      if (compareUnsigned(digit, result) > 0)
+        throw new NumberFormatException(
+          s"""String value $s exceeds range of unsigned long."""
+        )
+    }
+
+    result
+  }
+
+  private def parseUnsignedGeneric(
+      s: String,
+      _offset: Int,
+      radix: Int
+  ): scala.Long = {
     val unsignedLongMaxValue = -1L
     val max = divideUnsigned(unsignedLongMaxValue, radix)
     var result = 0L
