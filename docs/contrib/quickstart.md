@@ -58,7 +58,7 @@ as expected.
     of the sbt plugin (this takes a while and requires local publish of artifacts).
     Build against Scala 2.12 uses sbt 1.x, while Scala 3 uses sbt 2.x. Other versions are not supported.
 
--  `test-scritped <scala-binary-version> <optional-test-filters>` - run specific scripted tests of the sbt plugin. e.g. `test-scripted 3 run/backtrace`:
+-  `test-scripted <scala-binary-version> <optional-test-filters>` - run specific scripted tests of the sbt plugin. e.g. `test-scripted 3 run/backtrace`:
         -   Scripted tests are used when you need to interact with the
             file system, networking, or the build system that cannot be
             done with a unit test.

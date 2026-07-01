@@ -3,7 +3,7 @@ package sbtplugin
 
 import sbt._
 
-import sjsonnew.BasicJsonProtocol.{given, mapFormat}
+import sjsonnew.BasicJsonProtocol.{mapFormat, given}
 import sjsonnew.{JsonFormat, JsonWriter}
 
 object ScalaNativePlugin extends AutoPlugin {
