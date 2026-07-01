@@ -473,8 +473,14 @@ class SemaphoreTest extends JSR166Test {
     assertEquals(-11, s.availablePermits)
   }
 
-  // @Test def testSerialization(): Unit = { testSerialization(false) }
-  // @Test def testSerialization_fair(): Unit = { testSerialization(true) }
+  @Ignore(
+    "scala-native#4852: ObjectInputStream/ObjectOutputStream are unsupported"
+  )
+  @Test def testSerialization(): Unit = {}
+  @Ignore(
+    "scala-native#4852: ObjectInputStream/ObjectOutputStream are unsupported"
+  )
+  @Test def testSerialization_fair(): Unit = {}
   // def testSerialization(fair: Boolean): Unit = ???
 
   /** tryAcquire(n) succeeds when sufficient permits, else fails

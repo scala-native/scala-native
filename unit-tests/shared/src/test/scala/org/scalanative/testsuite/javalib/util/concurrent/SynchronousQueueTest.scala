@@ -475,7 +475,9 @@ class SynchronousQueueTest extends JSR166Test {
     }
   }
 
-  @Ignore("No Object Input Streams in Scala Native")
+  @Ignore(
+    "scala-native#4852: ObjectInputStream/ObjectOutputStream are unsupported"
+  )
   @Test def testSerialization(): Unit = {
     // val x = new SynchronousQueue[Any]
     // val y = new SynchronousQueue[Any](false)

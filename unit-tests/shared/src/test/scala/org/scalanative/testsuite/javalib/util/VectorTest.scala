@@ -16,20 +16,376 @@
  */
 package org.scalanative.testsuite.javalib.util
 
+import java.util.concurrent.ThreadLocalRandom
 import java.util.{
-  Arrays, Collection, HashSet, LinkedList, List, NoSuchElementException, Vector
+  Arrays, Collection, Collections, HashSet, LinkedList, List,
+  NoSuchElementException, Vector
 }
 
-import org.junit.Assert._
+import org.junit.Assert.{assertThrows => _, _}
 import org.junit._
+
+import org.scalanative.testsuite.javalib.util.concurrent.{Item, JSR166Test}
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 import scala.scalanative.junit.utils.AssumesHelper
 
-class VectorTest {
+class VectorTest extends JSR166Test {
+  import JSR166Test._
+
+  private val zeroItem = itemFor(0)
+  private val oneItem = itemFor(1)
+  private val twoItem = itemFor(2)
+  private val threeItem = itemFor(3)
+  private val fourItem = itemFor(4)
+  private val fiveItem = itemFor(5)
+  private val sixItem = itemFor(6)
+  private val minusTwo = itemFor(-2)
+  private val minusTen = itemFor(-10)
+
   private var tVector: Vector[AnyRef] = _
   private var objArray: Array[AnyRef] = _
   private val vString =
     "[Test 0, Test 1, Test 2, Test 3, Test 4, Test 5, Test 6, Test 7, Test 8, Test 9, Test 10, Test 11, Test 12, Test 13, Test 14, Test 15, Test 16, Test 17, Test 18, Test 19, Test 20, Test 21, Test 22, Test 23, Test 24, Test 25, Test 26, Test 27, Test 28, Test 29, Test 30, Test 31, Test 32, Test 33, Test 34, Test 35, Test 36, Test 37, Test 38, Test 39, Test 40, Test 41, Test 42, Test 43, Test 44, Test 45, Test 46, Test 47, Test 48, Test 49, Test 50, Test 51, Test 52, Test 53, Test 54, Test 55, Test 56, Test 57, Test 58, Test 59, Test 60, Test 61, Test 62, Test 63, Test 64, Test 65, Test 66, Test 67, Test 68, Test 69, Test 70, Test 71, Test 72, Test 73, Test 74, Test 75, Test 76, Test 77, Test 78, Test 79, Test 80, Test 81, Test 82, Test 83, Test 84, Test 85, Test 86, Test 87, Test 88, Test 89, Test 90, Test 91, Test 92, Test 93, Test 94, Test 95, Test 96, Test 97, Test 98, Test 99]"
+
+  private def populatedList(n: Int): Vector[Item] = {
+    val list = new Vector[Item]()
+    assertTrue(list.isEmpty())
+    var i = 0
+    while (i < n) {
+      mustAdd(list, i)
+      i += 1
+    }
+    assertEquals(n <= 0, list.isEmpty())
+    assertEquals(n, list.size())
+    list
+  }
+
+  @Test def testAddAll(): Unit = {
+    val list = populatedList(3)
+    assertTrue(list.addAll(Arrays.asList(threeItem, fourItem, fiveItem)))
+    assertEquals(6, list.size())
+    assertTrue(list.addAll(Arrays.asList(threeItem, fourItem, fiveItem)))
+    assertEquals(9, list.size())
+  }
+
+  @Test def testClear(): Unit = {
+    val list = populatedList(SIZE)
+    list.clear()
+    assertEquals(0, list.size())
+  }
+
+  @Test def testClone(): Unit = {
+    val l1 = populatedList(SIZE)
+    val l2 = l1.clone().asInstanceOf[Vector[Item]]
+    assertEquals(l1, l2)
+    l1.clear()
+    assertFalse(l1.equals(l2))
+  }
+
+  @Test def testContains(): Unit = {
+    val list = populatedList(3)
+    mustContain(list, oneItem)
+    mustNotContain(list, fiveItem)
+  }
+
+  @Test def testAddIndex(): Unit = {
+    val list = populatedList(3)
+    list.add(0, minusOne)
+    assertEquals(4, list.size())
+    mustEqual(minusOne, list.get(0))
+    mustEqual(zeroItem, list.get(1))
+
+    list.add(2, minusTwo)
+    assertEquals(5, list.size())
+    mustEqual(minusTwo, list.get(2))
+    mustEqual(twoItem, list.get(4))
+  }
+
+  @Test def testEquals(): Unit = {
+    val a = populatedList(3)
+    val b = populatedList(3)
+    assertTrue(a.equals(b))
+    assertTrue(b.equals(a))
+    assertTrue(a.containsAll(b))
+    assertTrue(b.containsAll(a))
+    assertEquals(a.hashCode(), b.hashCode())
+    a.add(minusOne)
+    assertFalse(a.equals(b))
+    assertFalse(b.equals(a))
+    assertTrue(a.containsAll(b))
+    assertFalse(b.containsAll(a))
+    b.add(minusOne)
+    assertTrue(a.equals(b))
+    assertTrue(b.equals(a))
+    assertTrue(a.containsAll(b))
+    assertTrue(b.containsAll(a))
+    assertEquals(a.hashCode(), b.hashCode())
+
+    assertFalse(a.equals(null))
+  }
+
+  @Test def testContainsAll(): Unit = {
+    val list = populatedList(3)
+    assertTrue(list.containsAll(Arrays.asList()))
+    assertTrue(list.containsAll(Arrays.asList(oneItem)))
+    assertTrue(list.containsAll(Arrays.asList(oneItem, twoItem)))
+    assertFalse(list.containsAll(Arrays.asList(oneItem, twoItem, sixItem)))
+    assertFalse(list.containsAll(Arrays.asList(sixItem)))
+    assertThrows(classOf[NullPointerException], list.containsAll(null))
+  }
+
+  @Test def testGet(): Unit = {
+    val list = populatedList(3)
+    mustEqual(0, list.get(0))
+  }
+
+  @Test def testIndexOf(): Unit = {
+    val list = populatedList(3)
+    assertEquals(-1, list.indexOf(minusTen))
+    val size = list.size()
+    var i = 0
+    while (i < size) {
+      val item = itemFor(i)
+      assertEquals(i, list.indexOf(item))
+      assertEquals(i, list.subList(0, size).indexOf(item))
+      assertEquals(i, list.subList(0, i + 1).indexOf(item))
+      assertEquals(-1, list.subList(0, i).indexOf(item))
+      assertEquals(0, list.subList(i, size).indexOf(item))
+      assertEquals(-1, list.subList(i + 1, size).indexOf(item))
+      i += 1
+    }
+
+    list.add(oneItem)
+    assertEquals(1, list.indexOf(oneItem))
+    assertEquals(1, list.subList(0, size + 1).indexOf(oneItem))
+    assertEquals(0, list.subList(1, size + 1).indexOf(oneItem))
+    assertEquals(size - 2, list.subList(2, size + 1).indexOf(oneItem))
+    assertEquals(0, list.subList(size, size + 1).indexOf(oneItem))
+    assertEquals(-1, list.subList(size + 1, size + 1).indexOf(oneItem))
+  }
+
+  @Test def testIndexOf2(): Unit = {
+    val list = populatedList(3)
+    val size = list.size()
+    assertEquals(-1, list.indexOf(minusTen, 0))
+    assertEquals(-1, list.indexOf(zeroItem, size))
+    assertEquals(-1, list.indexOf(zeroItem, Int.MaxValue))
+    assertThrows(classOf[IndexOutOfBoundsException], list.indexOf(zeroItem, -1))
+    assertThrows(
+      classOf[IndexOutOfBoundsException],
+      list.indexOf(zeroItem, Int.MinValue)
+    )
+
+    var i = 0
+    while (i < size) {
+      val item = itemFor(i)
+      assertEquals(i, list.indexOf(item, 0))
+      assertEquals(i, list.indexOf(item, i))
+      assertEquals(-1, list.indexOf(item, i + 1))
+      i += 1
+    }
+
+    list.add(oneItem)
+    assertEquals(1, list.indexOf(oneItem, 0))
+    assertEquals(1, list.indexOf(oneItem, 1))
+    assertEquals(size, list.indexOf(oneItem, 2))
+    assertEquals(size, list.indexOf(oneItem, size))
+  }
+
+  @Test def testIsEmpty(): Unit = {
+    val empty = new Vector[Item]()
+    assertTrue(empty.isEmpty())
+    assertTrue(empty.subList(0, 0).isEmpty())
+
+    val full = populatedList(SIZE)
+    assertFalse(full.isEmpty())
+    assertTrue(full.subList(0, 0).isEmpty())
+    assertTrue(full.subList(SIZE, SIZE).isEmpty())
+  }
+
+  @Test def testEmptyIterator(): Unit = {
+    val c: Collection[Item] = new Vector[Item]()
+    assertIteratorExhausted(c.iterator())
+  }
+
+  @Test def testLastIndexOf1(): Unit = {
+    val list = populatedList(3)
+    assertEquals(-1, list.lastIndexOf(minusTen))
+    val size = list.size()
+    var i = 0
+    while (i < size) {
+      val item = itemFor(i)
+      assertEquals(i, list.lastIndexOf(item))
+      assertEquals(i, list.subList(0, size).lastIndexOf(item))
+      assertEquals(i, list.subList(0, i + 1).lastIndexOf(item))
+      assertEquals(-1, list.subList(0, i).lastIndexOf(item))
+      assertEquals(0, list.subList(i, size).lastIndexOf(item))
+      assertEquals(-1, list.subList(i + 1, size).lastIndexOf(item))
+      i += 1
+    }
+
+    list.add(oneItem)
+    assertEquals(size, list.lastIndexOf(oneItem))
+    assertEquals(size, list.subList(0, size + 1).lastIndexOf(oneItem))
+    assertEquals(1, list.subList(0, size).lastIndexOf(oneItem))
+    assertEquals(0, list.subList(1, 2).lastIndexOf(oneItem))
+    assertEquals(-1, list.subList(0, 1).indexOf(oneItem))
+  }
+
+  @Test def testLastIndexOf2(): Unit = {
+    val list = populatedList(3)
+    assertEquals(-1, list.lastIndexOf(zeroItem, -1))
+    val size = list.size()
+    assertThrows(
+      classOf[IndexOutOfBoundsException],
+      list.lastIndexOf(zeroItem, size)
+    )
+    assertThrows(
+      classOf[IndexOutOfBoundsException],
+      list.lastIndexOf(zeroItem, Int.MaxValue)
+    )
+
+    var i = 0
+    while (i < size) {
+      val item = itemFor(i)
+      assertEquals(i, list.lastIndexOf(item, i))
+      assertEquals(list.indexOf(item), list.lastIndexOf(item, i))
+      if (i > 0) assertEquals(-1, list.lastIndexOf(item, i - 1))
+      i += 1
+    }
+
+    list.add(oneItem)
+    list.add(threeItem)
+    assertEquals(1, list.lastIndexOf(oneItem, 1))
+    assertEquals(1, list.lastIndexOf(oneItem, 2))
+    assertEquals(3, list.lastIndexOf(oneItem, 3))
+    assertEquals(3, list.lastIndexOf(oneItem, 4))
+    assertEquals(-1, list.lastIndexOf(threeItem, 3))
+  }
+
+  @Test def testSize(): Unit = {
+    val empty = new Vector[Item]()
+    assertEquals(0, empty.size())
+    assertEquals(0, empty.subList(0, 0).size())
+
+    val full = populatedList(SIZE)
+    assertEquals(SIZE, full.size())
+    assertEquals(0, full.subList(0, 0).size())
+    assertEquals(0, full.subList(SIZE, SIZE).size())
+  }
+
+  @Test def testSubList(): Unit = {
+    val a = populatedList(10)
+    assertTrue(a.subList(1, 1).isEmpty())
+    var j = 0
+    while (j < 9) {
+      var i = j
+      while (i < 10) {
+        val b = a.subList(j, i)
+        var k = j
+        while (k < i) {
+          mustEqual(k, b.get(k - j))
+          k += 1
+        }
+        i += 1
+      }
+      j += 1
+    }
+
+    val s = a.subList(2, 5)
+    assertEquals(3, s.size())
+    s.set(2, minusOne)
+    mustEqual(a.get(4), minusOne)
+    s.clear()
+    assertEquals(7, a.size())
+    assertThrows(classOf[IndexOutOfBoundsException], s.get(0))
+    assertThrows(classOf[IndexOutOfBoundsException], s.set(0, fortytwo))
+  }
+
+  @Ignore("scala-native#4845: reference arrays need runtime component types")
+  @Test def testToArray_ArrayStoreException(): Unit = ()
+
+  private def checkIndexOutOfBoundsException(list: List[AnyRef]): Unit = {
+    val size = list.size()
+    assertThrows(classOf[IndexOutOfBoundsException], list.get(-1))
+    assertThrows(classOf[IndexOutOfBoundsException], list.get(size))
+    assertThrows(classOf[IndexOutOfBoundsException], list.set(-1, "qwerty"))
+    assertThrows(classOf[IndexOutOfBoundsException], list.set(size, "qwerty"))
+    assertThrows(classOf[IndexOutOfBoundsException], list.add(-1, "qwerty"))
+    assertThrows(
+      classOf[IndexOutOfBoundsException],
+      list.add(size + 1, "qwerty")
+    )
+    assertThrows(classOf[IndexOutOfBoundsException], list.remove(-1))
+    assertThrows(classOf[IndexOutOfBoundsException], list.remove(size))
+    assertThrows(
+      classOf[IndexOutOfBoundsException],
+      list.addAll(-1, Collections.emptyList[AnyRef]())
+    )
+    assertThrows(
+      classOf[IndexOutOfBoundsException],
+      list.addAll(size + 1, Collections.emptyList[AnyRef]())
+    )
+    assertThrows(classOf[IndexOutOfBoundsException], list.listIterator(-1))
+    assertThrows(
+      classOf[IndexOutOfBoundsException],
+      list.listIterator(size + 1)
+    )
+    assertThrows(classOf[IndexOutOfBoundsException], list.subList(-1, size))
+    assertThrows(
+      classOf[IndexOutOfBoundsException],
+      list.subList(0, size + 1)
+    )
+
+    list.addAll(0, Collections.emptyList[AnyRef]())
+    list.addAll(size, Collections.emptyList[AnyRef]())
+    list.add(0, "qwerty")
+    list.add(list.size(), "qwerty")
+    list.get(0)
+    list.get(list.size() - 1)
+    list.set(0, "azerty")
+    list.set(list.size() - 1, "azerty")
+    list.listIterator(0)
+    list.listIterator(list.size())
+    list.subList(0, list.size())
+    list.remove(list.size() - 1)
+  }
+
+  @Test def testIndexOutOfBoundsException(): Unit = {
+    val rnd = ThreadLocalRandom.current()
+    val x = populatedList(rnd.nextInt(5)).asInstanceOf[List[AnyRef]]
+    checkIndexOutOfBoundsException(x)
+
+    val start = rnd.nextInt(x.size() + 1)
+    val end = rnd.nextInt(start, x.size() + 1)
+    assertThrows(
+      classOf[IllegalArgumentException],
+      x.subList(start, start - 1)
+    )
+
+    x.subList(start, end)
+    checkIndexOutOfBoundsException(x)
+  }
+
+  @Ignore(
+    "scala-native#4852: ObjectInputStream/ObjectOutputStream are unsupported"
+  )
+  @Test def testSerialization(): Unit = ()
+
+  @Test def testSetSize(): Unit = {
+    val v = new Vector[Item]()
+    for (n <- Array(100, 5, 50)) {
+      v.setSize(n)
+      assertEquals(n, v.size())
+      assertNull(v.get(0))
+      assertNull(v.get(n - 1))
+      assertThrows(classOf[ArrayIndexOutOfBoundsException], v.setSize(-1))
+      assertEquals(n, v.size())
+      assertNull(v.get(0))
+      assertNull(v.get(n - 1))
+    }
+  }
 
   @Before def setUp() = {
     tVector = new Vector[AnyRef]()

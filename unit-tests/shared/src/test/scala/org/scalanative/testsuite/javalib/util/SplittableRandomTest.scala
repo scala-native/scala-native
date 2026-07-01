@@ -1,3 +1,10 @@
+/*
+ * Includes tests ported from JSR-166 TCK tests and released to the public
+ * domain, as explained at http://creativecommons.org/publicdomain/zero/1.0/
+ *
+ * Modified for Scala Native.
+ */
+
 // Ported from Scala.js, revision c473689, dated 3 May 2021
 
 /*
@@ -15,11 +22,572 @@
 package org.scalanative.testsuite.javalib.util
 
 import java.util.SplittableRandom
+import java.util.concurrent.atomic.{AtomicInteger, LongAdder}
+import java.util.function.{DoubleConsumer, IntConsumer, LongConsumer}
 
 import org.junit.Assert._
 import org.junit.Test
 
-class SplittableRandomTest {
+import org.scalanative.testsuite.javalib.util.concurrent.JSR166Test
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+
+class SplittableRandomTest extends JSR166Test {
+  import SplittableRandomTest._
+
+  @Test def testNextInt(): Unit = {
+    val sr = new SplittableRandom()
+    val f = sr.nextInt()
+    var i = 0
+    while (i < NCALLS && sr.nextInt() == f) {
+      i += 1
+    }
+    assertTrue(i < NCALLS)
+  }
+
+  @Test def testNextLong(): Unit = {
+    val sr = new SplittableRandom()
+    val f = sr.nextLong()
+    var i = 0
+    while (i < NCALLS && sr.nextLong() == f) {
+      i += 1
+    }
+    assertTrue(i < NCALLS)
+  }
+
+  @Test def testNextDouble(): Unit = {
+    val sr = new SplittableRandom()
+    val f = sr.nextDouble()
+    var i = 0
+    while (i < NCALLS && sr.nextDouble() == f) {
+      i += 1
+    }
+    assertTrue(i < NCALLS)
+  }
+
+  @Test def testSeedConstructor(): Unit = {
+    var seed = 2L
+    while (seed < MAX_LONG_BOUND) {
+      val sr1 = new SplittableRandom(seed)
+      val sr2 = new SplittableRandom(seed)
+      var i = 0
+      while (i < REPS) {
+        assertEquals(sr1.nextLong(), sr2.nextLong())
+        i += 1
+      }
+      seed += 15485863L
+    }
+  }
+
+  @Test def testSplit1(): Unit = {
+    val sr = new SplittableRandom()
+    var reps = 0
+    while (reps < REPS) {
+      val sc = sr.split()
+      var i = 0
+      while (i < NCALLS && sr.nextLong() == sc.nextLong()) {
+        i += 1
+      }
+      assertTrue(i < NCALLS)
+      reps += 1
+    }
+  }
+
+  @Test def testSplit2(): Unit = {
+    val sr = new SplittableRandom(12345L)
+    var reps = 0
+    while (reps < REPS) {
+      val sc = sr.split()
+      var i = 0
+      while (i < NCALLS && sr.nextLong() == sc.nextLong()) {
+        i += 1
+      }
+      assertTrue(i < NCALLS)
+      reps += 1
+    }
+  }
+
+  @Test def testNextIntBoundNonPositive(): Unit = {
+    val sr = new SplittableRandom()
+    assertThrows(classOf[IllegalArgumentException], sr.nextInt(-17))
+    assertThrows(classOf[IllegalArgumentException], sr.nextInt(0))
+    assertThrows(classOf[IllegalArgumentException], sr.nextInt(Int.MinValue))
+  }
+
+  @Test def testNextIntBadBounds(): Unit = {
+    val sr = new SplittableRandom()
+    assertThrows(classOf[IllegalArgumentException], sr.nextInt(17, 2))
+    assertThrows(classOf[IllegalArgumentException], sr.nextInt(-42, -42))
+    assertThrows(
+      classOf[IllegalArgumentException],
+      sr.nextInt(Int.MaxValue, Int.MinValue)
+    )
+  }
+
+  @Test def testNextIntBounded(): Unit = {
+    val sr = new SplittableRandom()
+    var i0 = 0
+    while (i0 < 2) {
+      assertEquals(0, sr.nextInt(1))
+      i0 += 1
+    }
+
+    var bound = 2
+    while (bound < MAX_INT_BOUND) {
+      val f = sr.nextInt(bound)
+      assertTrue(0 <= f && f < bound)
+      var i = 0
+      var j = 0
+      while (i < NCALLS && {
+            j = sr.nextInt(bound)
+            j == f
+          }) {
+        assertTrue(0 <= j && j < bound)
+        i += 1
+      }
+      assertTrue(i < NCALLS)
+      bound += 524959
+    }
+  }
+
+  @Test def testNextIntBounded2(): Unit = {
+    val sr = new SplittableRandom()
+    var least = -15485863
+    while (least < MAX_INT_BOUND) {
+      var bound = least + 2
+      while (bound > least && bound < MAX_INT_BOUND) {
+        val f = sr.nextInt(least, bound)
+        assertTrue(least <= f && f < bound)
+        var i = 0
+        var j = 0
+        while (i < NCALLS && {
+              j = sr.nextInt(least, bound)
+              j == f
+            }) {
+          assertTrue(least <= j && j < bound)
+          i += 1
+        }
+        assertTrue(i < NCALLS)
+        bound += 49979687
+      }
+      least += 524959
+    }
+  }
+
+  @Test def testNextLongBoundNonPositive(): Unit = {
+    val sr = new SplittableRandom()
+    assertThrows(classOf[IllegalArgumentException], sr.nextLong(-17L))
+    assertThrows(classOf[IllegalArgumentException], sr.nextLong(0L))
+    assertThrows(classOf[IllegalArgumentException], sr.nextLong(Long.MinValue))
+  }
+
+  @Test def testNextLongBadBounds(): Unit = {
+    val sr = new SplittableRandom()
+    assertThrows(classOf[IllegalArgumentException], sr.nextLong(17L, 2L))
+    assertThrows(classOf[IllegalArgumentException], sr.nextLong(-42L, -42L))
+    assertThrows(
+      classOf[IllegalArgumentException],
+      sr.nextLong(Long.MaxValue, Long.MinValue)
+    )
+  }
+
+  @Test def testNextLongBounded(): Unit = {
+    val sr = new SplittableRandom()
+    var i0 = 0
+    while (i0 < 2) {
+      assertEquals(0L, sr.nextLong(1L))
+      i0 += 1
+    }
+
+    var bound = 2L
+    while (bound < MAX_LONG_BOUND) {
+      val f = sr.nextLong(bound)
+      assertTrue(0L <= f && f < bound)
+      var i = 0
+      var j = 0L
+      while (i < NCALLS && {
+            j = sr.nextLong(bound)
+            j == f
+          }) {
+        assertTrue(0L <= j && j < bound)
+        i += 1
+      }
+      assertTrue(i < NCALLS)
+      bound += 15485863L
+    }
+  }
+
+  @Test def testNextLongBounded2(): Unit = {
+    val sr = new SplittableRandom()
+    var least = -86028121L
+    while (least < MAX_LONG_BOUND) {
+      var bound = least + 2L
+      while (bound > least && bound < MAX_LONG_BOUND) {
+        val f = sr.nextLong(least, bound)
+        assertTrue(least <= f && f < bound)
+        var i = 0
+        var j = 0L
+        while (i < NCALLS && {
+              j = sr.nextLong(least, bound)
+              j == f
+            }) {
+          assertTrue(least <= j && j < bound)
+          i += 1
+        }
+        assertTrue(i < NCALLS)
+        bound += Math.abs(bound * 7919L)
+      }
+      least += 982451653L
+    }
+  }
+
+  @Test def testNextDoubleBoundNonPositive(): Unit = {
+    val sr = new SplittableRandom()
+    assertThrows(classOf[IllegalArgumentException], sr.nextDouble(-17.0d))
+    assertThrows(classOf[IllegalArgumentException], sr.nextDouble(0.0d))
+    assertThrows(
+      classOf[IllegalArgumentException],
+      sr.nextDouble(-java.lang.Double.MIN_VALUE)
+    )
+    assertThrows(
+      classOf[IllegalArgumentException],
+      sr.nextDouble(java.lang.Double.NEGATIVE_INFINITY)
+    )
+    assertThrows(
+      classOf[IllegalArgumentException],
+      sr.nextDouble(java.lang.Double.NaN)
+    )
+  }
+
+  @Test def testNextDoubleBadBounds(): Unit = {
+    val sr = new SplittableRandom()
+    assertThrows(classOf[IllegalArgumentException], sr.nextDouble(17.0d, 2.0d))
+    assertThrows(
+      classOf[IllegalArgumentException],
+      sr.nextDouble(-42.0d, -42.0d)
+    )
+    assertThrows(
+      classOf[IllegalArgumentException],
+      sr.nextDouble(java.lang.Double.MAX_VALUE, java.lang.Double.MIN_VALUE)
+    )
+    assertThrows(
+      classOf[IllegalArgumentException],
+      sr.nextDouble(java.lang.Double.NaN, 0.0d)
+    )
+    assertThrows(
+      classOf[IllegalArgumentException],
+      sr.nextDouble(0.0d, java.lang.Double.NaN)
+    )
+  }
+
+  @Test def testNextDoubleBounded2(): Unit = {
+    val sr = new SplittableRandom()
+    var least = 0.0001d
+    while (least < 1.0e20) {
+      var bound = least * 1.001d
+      while (bound < 1.0e20) {
+        val f = sr.nextDouble(least, bound)
+        assertTrue(least <= f && f < bound)
+        var i = 0
+        var j = 0.0d
+        while (i < NCALLS && {
+              j = sr.nextDouble(least, bound)
+              j == f
+            }) {
+          assertTrue(least <= j && j < bound)
+          i += 1
+        }
+        assertTrue(i < NCALLS)
+        bound *= 16.0d
+      }
+      least *= 8.0d
+    }
+  }
+
+  @Test def testBadStreamSize(): Unit = {
+    val r = new SplittableRandom()
+    assertThrows(classOf[IllegalArgumentException], r.ints(-1L))
+    assertThrows(classOf[IllegalArgumentException], r.ints(-1L, 2, 3))
+    assertThrows(classOf[IllegalArgumentException], r.longs(-1L))
+    assertThrows(classOf[IllegalArgumentException], r.longs(-1L, -1L, 1L))
+    assertThrows(classOf[IllegalArgumentException], r.doubles(-1L))
+    assertThrows(classOf[IllegalArgumentException], r.doubles(-1L, .5, .6))
+  }
+
+  @Test def testBadStreamBounds(): Unit = {
+    val r = new SplittableRandom()
+    assertThrows(classOf[IllegalArgumentException], r.ints(2, 1))
+    assertThrows(classOf[IllegalArgumentException], r.ints(10, 42, 42))
+    assertThrows(classOf[IllegalArgumentException], r.longs(-1L, -1L))
+    assertThrows(classOf[IllegalArgumentException], r.longs(10, 1L, -2L))
+    assertThrows(classOf[IllegalArgumentException], r.doubles(0.0d, 0.0d))
+    assertThrows(classOf[IllegalArgumentException], r.doubles(10L, .5, .4))
+  }
+
+  @Test def testIntsCount(): Unit = {
+    val counter = new LongAdder()
+    val r = new SplittableRandom()
+    var size = 0L
+    var reps = 0
+    while (reps < REPS) {
+      counter.reset()
+      r.ints(size)
+        .parallel()
+        .forEach(new IntConsumer {
+          override def accept(x: Int): Unit = counter.increment()
+        })
+      assertEquals(size, counter.sum())
+      size += 524959L
+      reps += 1
+    }
+  }
+
+  @Test def testLongsCount(): Unit = {
+    val counter = new LongAdder()
+    val r = new SplittableRandom()
+    var size = 0L
+    var reps = 0
+    while (reps < REPS) {
+      counter.reset()
+      r.longs(size)
+        .parallel()
+        .forEach(new LongConsumer {
+          override def accept(x: Long): Unit = counter.increment()
+        })
+      assertEquals(size, counter.sum())
+      size += 524959L
+      reps += 1
+    }
+  }
+
+  @Test def testDoublesCount(): Unit = {
+    val counter = new LongAdder()
+    val r = new SplittableRandom()
+    var size = 0L
+    var reps = 0
+    while (reps < REPS) {
+      counter.reset()
+      r.doubles(size)
+        .parallel()
+        .forEach(new DoubleConsumer {
+          override def accept(x: Double): Unit = counter.increment()
+        })
+      assertEquals(size, counter.sum())
+      size += 524959L
+      reps += 1
+    }
+  }
+
+  @Test def testBoundedInts(): Unit = {
+    val fails = new AtomicInteger(0)
+    val r = new SplittableRandom()
+    val size = 12345L
+    var least = -15485867
+    while (least < MAX_INT_BOUND) {
+      var bound = least + 2
+      while (bound > least && bound < MAX_INT_BOUND) {
+        val lo = least
+        val hi = bound
+        r.ints(size, lo, hi)
+          .parallel()
+          .forEach(new IntConsumer {
+            override def accept(x: Int): Unit =
+              if (x < lo || x >= hi) fails.getAndIncrement()
+          })
+        bound += 67867967
+      }
+      least += 524959
+    }
+    assertEquals(0, fails.get())
+  }
+
+  @Test def testBoundedLongs(): Unit = {
+    val fails = new AtomicInteger(0)
+    val r = new SplittableRandom()
+    val size = 123L
+    var least = -86028121L
+    while (least < MAX_LONG_BOUND) {
+      var bound = least + 2L
+      while (bound > least && bound < MAX_LONG_BOUND) {
+        val lo = least
+        val hi = bound
+        r.longs(size, lo, hi)
+          .parallel()
+          .forEach(new LongConsumer {
+            override def accept(x: Long): Unit =
+              if (x < lo || x >= hi) fails.getAndIncrement()
+          })
+        bound += Math.abs(bound * 7919L)
+      }
+      least += 1982451653L
+    }
+    assertEquals(0, fails.get())
+  }
+
+  @Test def testBoundedDoubles(): Unit = {
+    val fails = new AtomicInteger(0)
+    val r = new SplittableRandom()
+    val size = 456L
+    var least = 0.00011d
+    while (least < 1.0e20) {
+      var bound = least * 1.0011d
+      while (bound < 1.0e20) {
+        val lo = least
+        val hi = bound
+        r.doubles(size, lo, hi)
+          .parallel()
+          .forEach(new DoubleConsumer {
+            override def accept(x: Double): Unit =
+              if (x < lo || x >= hi) fails.getAndIncrement()
+          })
+        bound *= 17.0d
+      }
+      least *= 9.0d
+    }
+    assertEquals(0, fails.get())
+  }
+
+  @Test def testUnsizedIntsCount(): Unit = {
+    val counter = new LongAdder()
+    new SplittableRandom()
+      .ints()
+      .limit(100L)
+      .parallel()
+      .forEach(
+        new IntConsumer {
+          override def accept(x: Int): Unit = counter.increment()
+        }
+      )
+    assertEquals(100L, counter.sum())
+  }
+
+  @Test def testUnsizedLongsCount(): Unit = {
+    val counter = new LongAdder()
+    new SplittableRandom()
+      .longs()
+      .limit(100L)
+      .parallel()
+      .forEach(
+        new LongConsumer {
+          override def accept(x: Long): Unit = counter.increment()
+        }
+      )
+    assertEquals(100L, counter.sum())
+  }
+
+  @Test def testUnsizedDoublesCount(): Unit = {
+    val counter = new LongAdder()
+    new SplittableRandom()
+      .doubles()
+      .limit(100L)
+      .parallel()
+      .forEach(
+        new DoubleConsumer {
+          override def accept(x: Double): Unit = counter.increment()
+        }
+      )
+    assertEquals(100L, counter.sum())
+  }
+
+  @Test def testUnsizedIntsCountSeq(): Unit = {
+    val counter = new LongAdder()
+    new SplittableRandom()
+      .ints()
+      .limit(100L)
+      .forEach(new IntConsumer {
+        override def accept(x: Int): Unit = counter.increment()
+      })
+    assertEquals(100L, counter.sum())
+  }
+
+  @Test def testUnsizedLongsCountSeq(): Unit = {
+    val counter = new LongAdder()
+    new SplittableRandom()
+      .longs()
+      .limit(100L)
+      .forEach(new LongConsumer {
+        override def accept(x: Long): Unit = counter.increment()
+      })
+    assertEquals(100L, counter.sum())
+  }
+
+  @Test def testUnsizedDoublesCountSeq(): Unit = {
+    val counter = new LongAdder()
+    new SplittableRandom()
+      .doubles()
+      .limit(100L)
+      .forEach(new DoubleConsumer {
+        override def accept(x: Double): Unit = counter.increment()
+      })
+    assertEquals(100L, counter.sum())
+  }
+
+  @Test def testShouldImplementMostRandomMethods(): Unit = {
+    val r = new SplittableRandom(123L)
+    val bytes = new Array[Byte](1)
+
+    if (SplittableRandomTestPlatform.hasNextBytes)
+      SplittableRandomTestPlatform.nextBytes(r, bytes)
+    r.nextBoolean()
+    r.nextInt()
+    r.nextInt(2)
+    r.nextLong()
+    r.nextDouble()
+
+    r.ints()
+    r.ints(1L)
+    r.ints(0, 1)
+    r.ints(1L, 0, 1)
+    r.longs()
+    r.longs(1L)
+    r.longs(0L, 1L)
+    r.longs(1L, 0L, 1L)
+    r.doubles()
+    r.doubles(1L)
+    r.doubles(0.0d, 1.0d)
+    r.doubles(1L, 0.0d, 1.0d)
+  }
+
+  @Test def testNextBytes(): Unit = {
+    SplittableRandomTestPlatform.assumeNextBytes()
+
+    val sr = new SplittableRandom()
+    val n = sr.nextInt(1, 20)
+    val bytes = new Array[Byte](n)
+    var i = 0
+    while (i < n) {
+      var tries = NCALLS
+      var varied = false
+      while (tries > 0 && !varied) {
+        val before = bytes(i)
+        SplittableRandomTestPlatform.nextBytes(sr, bytes)
+        val after = bytes(i)
+        if (after * before < 0) {
+          varied = true
+        }
+        tries -= 1
+      }
+      if (!varied) {
+        fail("not enough variation in random bytes")
+      }
+      i += 1
+    }
+  }
+
+  @Test def testNextBytes_emptyArray(): Unit = {
+    SplittableRandomTestPlatform.assumeNextBytes()
+    SplittableRandomTestPlatform.nextBytes(
+      new SplittableRandom(),
+      new Array[Byte](0)
+    )
+  }
+
+  @Test def testNextBytes_nullArray(): Unit = {
+    SplittableRandomTestPlatform.assumeNextBytes()
+    assertThrows(
+      classOf[NullPointerException],
+      SplittableRandomTestPlatform.nextBytes(new SplittableRandom(), null)
+    )
+  }
 
   @Test def nextLong(): Unit = {
     val sr1 = new SplittableRandom(205620432625028L)
@@ -159,4 +727,12 @@ class SplittableRandomTest {
     assertEquals(6163667569279435512L, sr8.nextLong())
   }
 
+}
+
+object SplittableRandomTest {
+  private final val NCALLS = 10000
+  private final val MAX_INT_BOUND = 1 << 26
+  private final val MAX_LONG_BOUND = 1L << 40
+  private final val REPS =
+    Integer.getInteger("SplittableRandomTest.reps", 4).intValue()
 }

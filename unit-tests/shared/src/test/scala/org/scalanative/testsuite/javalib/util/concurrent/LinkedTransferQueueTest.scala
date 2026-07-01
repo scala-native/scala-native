@@ -449,15 +449,10 @@ class LinkedTransferQueueTest extends JSR166Test {
    *
    *  We don't have this, because SN doesn't yet do runtime variance check.
    */
-  // @Test def testToArray_incompatibleArrayType() = {
-  //   val q = populatedQueue(SIZE)
-  //   try {
-  //     val ss: Array[String] = q.toArray(new Array[String](10))
-  //     shouldThrow()
-  //   } catch {
-  //     case _: ArrayStoreException => {}
-  //   }
-  // }
+  @Ignore(
+    "Scala Native reference arrays do not preserve runtime component types (#4845)"
+  )
+  @Test def testToArray_incompatibleArrayType(): Unit = ()
 
   /** iterator iterates through all elements
    */
@@ -590,24 +585,21 @@ class LinkedTransferQueueTest extends JSR166Test {
     }
   }
 
+  /** toString contains toStrings of elements */
+  @Test def testToString(): Unit = {
+    val q = populatedQueue(SIZE)
+    val s = q.toString()
+    for (i <- 0 until SIZE)
+      assertTrue(s.contains(String.valueOf(i)))
+  }
+
   /** A deserialized/reserialized queue has same elements in same order
    *
    *  We don't have `serialClone`, since ObjectInputStream is not in Scala
    *  Native.
    */
-  // @Test def testSerialization() = {
-  //   val x: Queue[Item] = populatedQueue(SIZE)
-  //   val y: Queue[Item] = serialClone(x)
-  //   assertNotSame(y, x)
-  //   mustEqual(x.size(), y.size())
-  //   mustEqual(x.toString(), y.toString())
-  //   assertTrue(Arrays.equals(x.toArray(), y.toArray()))
-  //   while (!x.isEmpty()) {
-  //     assertFalse(y.isEmpty())
-  //     mustEqual(x.remove(), y.remove())
-  //   }
-  //   assertTrue(y.isEmpty())
-  // }
+  @Ignore("scala-native#4852: ObjectInputStream is unsupported")
+  @Test def testSerialization(): Unit = ()
 
   /** drainTo(c) empties queue into another collection c
    */

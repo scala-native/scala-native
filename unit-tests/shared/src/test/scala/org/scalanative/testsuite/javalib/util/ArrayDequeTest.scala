@@ -1711,6 +1711,16 @@ class ArrayDequeJSR166Test {
     )
   }
 
+  /** toArray(incompatible array type) throws ArrayStoreException
+   */
+  @Ignore("scala-native#4845: arrays lose runtime component type")
+  @Test def testToArray_incompatibleArrayType(): Unit = {
+    val l = new ArrayDeque[Integer]()
+    l.add(5)
+    assertThrows(classOf[ArrayStoreException], l.toArray(new Array[String](10)))
+    assertThrows(classOf[ArrayStoreException], l.toArray(new Array[String](0)))
+  }
+
   /** Iterator iterates through all elements
    */
   @Test def testIterator(): Unit = {
@@ -1852,6 +1862,13 @@ class ArrayDequeJSR166Test {
       assertTrue(s.contains(String.valueOf(i)))
     }
   }
+
+  /** A deserialized/reserialized deque has same elements in same order
+   */
+  @Ignore(
+    "scala-native#4852: ObjectInputStream/ObjectOutputStream are unsupported"
+  )
+  @Test def testSerialization(): Unit = ()
 
   /** A cloned deque has same elements in same order
    */
