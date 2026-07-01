@@ -121,16 +121,21 @@ object ScalaNativePluginInternal {
       checkJVMVersion(sLog.value)
       onLoad.value
     },
+    nativeDiscoverEnv := {
+      build.Discover.Env.fromSysEnv
+    },
     nativeConfig := {
+      val discover = new Discover(nativeDiscoverEnv.value)
+
       build.NativeConfig.empty
-        .withClang(interceptBuildException(Discover.clang()))
-        .withClangPP(interceptBuildException(Discover.clangpp()))
-        .withCompileOptions(Discover.compileOptions())
-        .withLinkingOptions(Discover.linkingOptions())
-        .withLTO(Discover.LTO())
-        .withGC(Discover.GC())
-        .withMode(Discover.mode())
-        .withOptimize(Discover.optimize())
+        .withClang(interceptBuildException(discover.clang()))
+        .withClangPP(interceptBuildException(discover.clangpp()))
+        .withCompileOptions(discover.compileOptions())
+        .withLinkingOptions(discover.linkingOptions())
+        .withLTO(discover.LTO())
+        .withGC(discover.GC())
+        .withMode(discover.mode())
+        .withOptimize(discover.optimize())
     },
     ThisBuild / nativeConfig := (Global / nativeConfig).value,
     nativeWarnOldJVM := {
