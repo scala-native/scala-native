@@ -79,7 +79,7 @@ static struct sigaction *resolvePreviousSignalHandler(int sig) {
                 "%s StackOverflowHandler does not define handler "
                 "for %d signal\n",
                 snErrorPrefix, sig);
-        exit(sig);
+        _exit(sig);
     }
 }
 
@@ -88,7 +88,8 @@ static void protectStackGuardPage() {
                  PROT_NONE) == -1) {
         perror(SN_FATAL_ERROR_MSG("StackOverflowHandler guard "
                                   "protection failed"));
-        exit(EXIT_FAILURE);
+        // _exit rather than exit: reachable from the signal handler.
+        _exit(EXIT_FAILURE);
     }
 }
 static void unprotectStackGuardPage() {
@@ -96,7 +97,8 @@ static void unprotectStackGuardPage() {
                  PROT_READ | PROT_WRITE) == -1) {
         perror(SN_FATAL_ERROR_MSG("StackOverflowHandler guard "
                                   "unprotection failed"));
-        exit(EXIT_FAILURE);
+        // _exit rather than exit: reachable from the signal handler.
+        _exit(EXIT_FAILURE);
     }
 }
 
@@ -137,7 +139,8 @@ static void setupStackOverflowGuards() {
         } else {
             fprintf(stderr, "%s Cannot setup StackOverflowGuards handler\n",
                     snErrorPrefix);
-            exit(EXIT_FAILURE);
+            // _exit rather than exit: reachable from the signal handler.
+            _exit(EXIT_FAILURE);
         }
     }
     assert(currentThreadInfo.stackGuardPage > currentThreadInfo.stackTop);
@@ -216,14 +219,14 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
                     snErrorPrefix, threadInfo.isMainThread ? "main" : "user",
                     threadInfo.stackSize / 1024);
             StackTrace_PrintStackTrace();
-            exit(sig);
+            _exit(sig);
         } else if (faultAddr == NULL) {
             fprintf(stderr,
                     "%s Unrecoverable NullPointerException in %s "
                     "thread\n",
                     snErrorPrefix, threadInfo.isMainThread ? "main" : "user");
             StackTrace_PrintStackTrace();
-            exit(sig);
+            _exit(sig);
         }
     default:
     dispatchDefaultSignal:;
@@ -247,7 +250,10 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
         fprintf(stderr, "%s Unhandled signal %d, si_addr=%p\n", snErrorPrefix,
                 sig, faultAddr);
         StackTrace_PrintStackTrace();
-        exit(sig);
+        // _exit rather than exit: exit() is not async-signal-safe, and would
+        // run shutdown hooks on a spawned thread that can deadlock on a GC lock
+        // the faulting thread holds.
+        _exit(sig);
     }
 }
 

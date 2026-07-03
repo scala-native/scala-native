@@ -26,7 +26,11 @@
 void Heap_exitWithOutOfMemory(const char *details) {
     GC_LOG_ERROR("Out of heap space %s", details);
     StackTrace_PrintStackTrace();
-    exit(1);
+    fflush(stdout);
+    // _Exit rather than exit: Heap_Grow holds the blockAllocator lock here, and
+    // exit() would run shutdown hooks on a spawned thread whose
+    // MutatorThread_init blocks on that same lock, hanging the process.
+    _Exit(1);
 }
 
 bool Heap_isGrowingPossible(Heap *heap, uint32_t incrementInBlocks) {
