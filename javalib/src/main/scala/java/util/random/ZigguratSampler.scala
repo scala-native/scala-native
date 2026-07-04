@@ -18,9 +18,15 @@
  *   2. Converted Javadoc "/** */" comments to C style "/* */" comments
  *      to avoid CI doc build failures.
  *
+ *      The commons-rng comments are essential to understanding the
+ *      code.  In many places they contain inline markup which
+ *      can break javalib doc Javadoc generation. The fix is to
+ *      use C style comments and let the reader sort it out.
+ *
  *   3. Original comments are mostly as-is to aid matching
  *      against Apache .java original. In some cases they
- *      make no sense for Scala Native. Treat them advisedly, as you
+ *      make no sense for Scala Native. Some but probably not all
+ *      such surds are noted. Treat commons-rng comments advisedly, as you
  *      would treat LLM answers.
  */
 
@@ -716,6 +722,8 @@ private[random] class ExponentialZiggurat(rng: RandomGenerator)
     toString("exponential")
 
   def sample(): Double = {
+    // SN: this comment is probably not revelant to Scala Native.
+    //
     // Ideally this method byte code size should be below -XX:MaxInlineSize
     // (which defaults to 35 bytes). This compiles to 35 bytes.
 
@@ -1201,6 +1209,8 @@ private[random] class GaussianZiggurat(rng: RandomGenerator)
     toString("normalized Gaussian")
 
   def sample(): Double = {
+    // SN: this comment is probably not revelant to Scala Native.
+    //
     // Ideally this method byte code size should be below -XX:MaxInlineSize
     // (which defaults to 35 bytes). This compiles to 33 bytes.
 
