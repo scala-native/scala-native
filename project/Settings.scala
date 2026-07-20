@@ -202,7 +202,7 @@ object Settings {
         optRTJar.fold(Map.empty[HashedVirtualFileRef, URI]) { rtJar =>
           assert(rtJar.exists(), s"$rtJar does not exist")
           Map(
-            fileConverter.value.toVirtualFile(rtJar.toPath) -> url(
+            fileConverter.value.toVirtualFile(rtJar.toPath) -> uri(
               javaDocBaseURL
             )
           )
@@ -213,7 +213,7 @@ object Settings {
        */
       apiMappings += Def.uncached {
         val docsPath = file("/modules/java.base").toPath
-        fileConverter.value.toVirtualFile(docsPath) -> url(javaDocBaseURL)
+        fileConverter.value.toVirtualFile(docsPath) -> uri(javaDocBaseURL)
       },
       Compile / doc / sources := {
         val prev = (Compile / doc / sources).value
@@ -260,12 +260,12 @@ object Settings {
 
   // Publishing
   lazy val basePublishSettings: Seq[Setting[_]] = Seq(
-    homepage := Some(url("http://www.scala-native.org")),
+    homepage := Some(uri("http://www.scala-native.org")),
     startYear := Some(2015),
     licenses := Seq(
       License(
         "BSD-like",
-        url("http://www.scala-lang.org/downloads/license.html")
+        uri("http://www.scala-lang.org/downloads/license.html")
       )
     ),
     developers := List(
@@ -273,18 +273,18 @@ object Settings {
         email = "denys.shabalin@epfl.ch",
         id = "densh",
         name = "Denys Shabalin",
-        url = url("http://den.sh")
+        url = uri("http://den.sh")
       ),
       Developer(
         id = "wojciechmazur",
         name = "Wojciech Mazur",
         email = "wmazur@virtuslab.com",
-        url = url("https://github.com/WojciechMazur")
+        url = uri("https://github.com/WojciechMazur")
       )
     ),
     scmInfo := Some(
       ScmInfo(
-        browseUrl = url("https://github.com/scala-native/scala-native"),
+        browseUrl = uri("https://github.com/scala-native/scala-native"),
         connection = "scm:git:git@github.com:scala-native/scala-native.git"
       )
     ),
