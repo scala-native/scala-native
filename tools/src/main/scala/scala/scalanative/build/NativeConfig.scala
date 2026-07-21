@@ -562,6 +562,7 @@ object NativeConfig {
           | - linkStubs:               $linkStubs
           | - optimize                 $optimize
           | - incrementalCompilation:  $useIncrementalCompilation
+          | - buildTracing:            $buildTracing
           | - multithreading           ${multithreading.getOrElse("detect")}
           | - linktimeProperties:      ${showMap(linktimeProperties)}
           | - embedResources:          $embedResources

@@ -277,7 +277,7 @@ object Build {
         )
         sbt.protocol.testing.TestResult.Empty
       },
-      libraryDependencies += "com.indoorvivants" %%% "fxprof-tracer" % "0.0.2"
+      libraryDependencies += "com.indoorvivants" %% "fxprof-tracer" % "0.0.2+3-c36ccc69-SNAPSHOT"
     )
     .withJUnitPlugin
     .withNativeCompilerPlugin
@@ -297,7 +297,7 @@ object Build {
     MultiScalaProject("tools", platform = MultiScalaProject.JVM)
       .settings(
         libraryDependencies ++= Deps.JUnitJvm,
-        libraryDependencies += "com.indoorvivants" %%% "fxprof-tracer" % "0.0.2",
+        libraryDependencies += "com.indoorvivants" %% "fxprof-tracer" % "0.0.2+3-c36ccc69-SNAPSHOT",
         Test / fork := true
       )
       .withCommonTools
@@ -886,7 +886,9 @@ object Build {
       .withScalaStandardLibrary
       .dependsOn(javalib, testInterface % "test", junitRuntime % "test")
       .settings(
-        nativeConfig ~= { (_).withBuildTracing(true) }
+        nativeConfig ~= { (_).withBuildTracing(true) },
+        nativeLink / nativeConfig ~= { (_).withBuildTracing(true) },
+        nativeLinkReleaseFast / nativeConfig ~= { (_).withBuildTracing(true) }
       )
 
 // Testing infrastructure ------------------------------------------------

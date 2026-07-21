@@ -218,8 +218,10 @@ sealed trait Config {
       !disabled && (enabled || enabledLTO)
     }
 
-  private[scalanative] lazy val tracing: Tracing =
+  private[scalanative] lazy val tracing: Tracing = {
+    println(s"Creating tracer: ${buildTracing}")
     if (buildTracing) Tracing.real(baseDir, logger) else Tracing.noop
+  }
 
 }
 

@@ -503,6 +503,7 @@ object NativeConfigJsonFormats {
       final val LinkStubs = "linkStubs"
       final val Optimize = "optimize"
       final val UseIncrementalCompilation = "useIncrementalCompilation"
+      final val BuildTracing = "buildTracing"
       final val Multithreading = "multithreading"
       final val LinktimeProperties = "linktimeProperties"
       final val EmbedResources = "embedResources"
@@ -536,6 +537,7 @@ object NativeConfigJsonFormats {
       builder.addField(Field.LinkStubs, obj.linkStubs)
       builder.addField(Field.Optimize, obj.optimize)
       builder.addField(Field.UseIncrementalCompilation, obj.useIncrementalCompilation)
+      builder.addField(Field.BuildTracing, obj.buildTracing)
       builder.addField(Field.Multithreading, obj.multithreading)
       builder.addField(Field.LinktimeProperties, obj.linktimeProperties)
       builder.addField(Field.EmbedResources, obj.embedResources)
@@ -573,6 +575,7 @@ object NativeConfigJsonFormats {
           .withLinkStubs(unbuilder.readField[Boolean](Field.LinkStubs))
           .withOptimize(unbuilder.readField[Boolean](Field.Optimize))
           .withIncrementalCompilation(unbuilder.readField[Boolean](Field.UseIncrementalCompilation))
+          .withBuildTracing(unbuilder.readField[Boolean](Field.BuildTracing))
           .withMultithreading(unbuilder.readField[Option[Boolean]](Field.Multithreading))
           .withLinktimeProperties(_ => unbuilder.readField[NativeConfig.LinktimeProperites](Field.LinktimeProperties))
           .withEmbedResources(unbuilder.readField[Boolean](Field.EmbedResources))
