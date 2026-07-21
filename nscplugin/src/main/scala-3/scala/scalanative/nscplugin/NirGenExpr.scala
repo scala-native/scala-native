@@ -3,7 +3,6 @@ package nscplugin
 
 import dotty.tools.FatalError
 import dotty.tools.backend.ScalaPrimitivesOps._
-import dotty.tools.backend.jvm.DottyBackendInterface.symExtensions
 import dotty.tools.dotc.ast.desugar
 import dotty.tools.dotc.util.Property
 import dotty.tools.dotc.util.Spans.*
@@ -12,7 +11,8 @@ import scala.annotation.{switch, tailrec}
 import scala.language.implicitConversions
 
 import scala.scalanative.nir.Defn.Define.DebugInfo
-import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.*
+import scala.scalanative.nscplugin.CompilerCompat.SymUtils.*
+import scala.scalanative.nscplugin.CompilerCompat.SymbolExtensions.*
 import scala.scalanative.nscplugin.NirDefinitions.NonErasedType
 import scala.scalanative.util.ScopedVar.scoped
 import scala.scalanative.util.{StringUtils, unreachable, unsupported}
@@ -479,11 +479,7 @@ trait NirGenExpr(using Context) {
     def genIf(tree: If): nir.Val = {
       given nir.SourcePosition = tree.span
       val If(cond, thenp, elsep) = tree
-      def isUnitType(tpe: Type) =
-        tpe =:= defn.UnitType || defn.isBoxedUnitClass(tpe.typeSymbol)
-      val retty =
-        if (isUnitType(thenp.tpe) || isUnitType(elsep.tpe)) nir.Type.Unit
-        else genType(tree.tpe)
+      val retty = genType(tree.tpe)
       genIf(retty, cond, thenp, elsep)
     }
 
@@ -1117,7 +1113,7 @@ trait NirGenExpr(using Context) {
       val Apply(fun @ DesugaredSelect(receiver, _), args) = app: @unchecked
 
       val sym = app.symbol
-      val code = nirPrimitives.getPrimitive(app, receiver.tpe)
+      val code = nirPrimitives.getPrimitiveCompat(app, receiver.tpe)
       def arg = args.head
 
       (code: @switch) match {
@@ -1849,7 +1845,7 @@ trait NirGenExpr(using Context) {
     def liftStringConcat(tree: Tree): List[Tree] = tree match {
       case tree @ Apply(fun @ DesugaredSelect(larg, method), rarg) =>
         if (nirPrimitives.isPrimitive(fun) &&
-            nirPrimitives.getPrimitive(tree, larg.tpe) == CONCAT)
+            nirPrimitives.getPrimitiveCompat(tree, larg.tpe) == CONCAT)
           liftStringConcat(larg) ::: rarg
         else
           tree :: Nil
@@ -1941,9 +1937,9 @@ trait NirGenExpr(using Context) {
             .toList
           // Estimate capacity needed for the string builder
           val approxBuilderSize = concatArguments.view.map {
-            case Literal(Constant(s: String))              => s.length
-            case Literal(c: Constant) if c.isNonUnitAnyVal =>
-              String.valueOf(c).length
+            case Literal(Constant(s: String))       => s.length
+            case Literal(c: Constant) if c.isAnyVal =>
+              String.valueOf(c.value).length
             case _ => 0
           }.sum
 
@@ -2677,7 +2673,8 @@ trait NirGenExpr(using Context) {
       }
 
       val allFields =
-        classInfoSym.info.fields ++ classInfoSym.info.parents.flatMap(_.fields)
+        classInfo.baseClasses
+          .flatMap(baseSym => classInfo.baseType(baseSym).fields)
       allFields
         .collectFirst {
           case f if matchesName(f) =>

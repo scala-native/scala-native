@@ -5,9 +5,11 @@
 #include "Allocator.h"
 #include "LargeAllocator.h"
 #include <stdatomic.h>
+#include <stdbool.h>
 #include <shared/ThreadUtil.h>
 #include "immix_commix/RegistersCapture.h"
 #include "nativeThreadTLS.h"
+#include <stdint.h>
 
 typedef struct {
     _Atomic(GC_MutatorThreadState) state;
@@ -18,15 +20,23 @@ typedef struct {
     word_t **stackBottom;
     Allocator allocator;
     LargeAllocator largeAllocator;
-#ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
+
+    // Thread handles for liveness checking and signal delivery
 #ifdef _WIN32
-    HANDLE wakeupEvent;
-#else
-    thread_t thread;
+    HANDLE threadHandle; // Duplicated handle for liveness checking
+#ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
+    HANDLE wakeupEvent; // Used for thread wake-up (trap mode only)
 #endif
-#endif // SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
-#ifdef SCALANATIVE_THREAD_ALT_STACK
+#else
+    thread_t thread; // pthread_t - used for liveness check and signals
+#endif
     ThreadInfo *threadInfo;
+#ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
+    /* Per-mutator trap cell (distinct VM page); mirrored in TLS
+     * scalanative_GC_yieldpoint_trap for generated yieldpoint loads. */
+    void **yieldpointTrap;
+    /* Faulting PC when using deferred safepoint trampoline (POSIX). */
+    uintptr_t safepointResumePc;
 #endif
 } MutatorThread;
 
@@ -37,15 +47,43 @@ typedef struct MutatorThreadNode {
 
 typedef MutatorThreadNode *MutatorThreads;
 
+// =============================================================================
+// MutatorThread Lifecycle API
+// =============================================================================
 void MutatorThread_init(word_t **stackBottom);
 void MutatorThread_delete(MutatorThread *self);
 void MutatorThread_switchState(MutatorThread *self,
                                GC_MutatorThreadState newState);
-void MutatorThreads_init();
+
+// =============================================================================
+// Thread State Checks
+// =============================================================================
+
+// Stack bounds accessors
+word_t **MutatorThread_getStackBottom(MutatorThread *thread);
+// allowEstimated: if true, may return estimated stack top from threadInfo when
+// not at safepoint May return NULL if not at safepoint and allowEstimated is
+// false
+word_t **MutatorThread_getStackTop(MutatorThread *thread, bool allowEstimated);
+
+// Check if thread has reached a safepoint (stopped and saved its stack)
+// Returns true if thread is at safepoint (stackTop is set), false if still
+// running Note: A thread at safepoint has switched to Unmanaged state and saved
+// registers
+bool MutatorThread_isAtSafepoint(MutatorThread *thread);
+
+// Check if a mutator thread is still alive (useful for detecting zombie
+// threads) Returns true if thread exists, false if thread has terminated
+bool MutatorThread_isAlive(MutatorThread *thread);
+
+// =============================================================================
+// MutatorThreads List Management
+// =============================================================================
+void MutatorThreads_init(void);
 void MutatorThreads_add(MutatorThread *node);
 void MutatorThreads_remove(MutatorThread *node);
-void MutatorThreads_lockRead();
-void MutatorThreads_unlockRead();
+void MutatorThreads_lockRead(void);
+void MutatorThreads_unlockRead(void);
 
 #define MutatorThreads_foreach(list, node)                                     \
     for (MutatorThreads node = list; node != NULL; node = node->next)

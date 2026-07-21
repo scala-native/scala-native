@@ -454,6 +454,40 @@ class BigDecimalConvertTest {
     assertTrue(aNumber.toPlainString() == result)
   }
 
+  @Test def testToPlainStringWithIntegerAndFractionalPart(): Unit = {
+    assertEquals("3.14", new BigDecimal("3.14").toPlainString())
+    assertEquals("3.140000", new BigDecimal("3.140000").toPlainString())
+    assertEquals("123.456", new BigDecimal("123.456").toPlainString())
+    assertEquals("1.0", new BigDecimal("1.0").toPlainString())
+    assertEquals("10.5", new BigDecimal("10.5").toPlainString())
+    assertEquals("100.01", new BigDecimal("100.01").toPlainString())
+  }
+
+  @Test def testToPlainStringNegativeWithIntegerAndFractionalPart(): Unit = {
+    assertEquals("-3.14", new BigDecimal("-3.14").toPlainString())
+    assertEquals("-123.456", new BigDecimal("-123.456").toPlainString())
+    assertEquals("-10.5", new BigDecimal("-10.5").toPlainString())
+  }
+
+  @Test def testToPlainStringAfterStripTrailingZeros(): Unit = {
+    assertEquals(
+      "3.14",
+      new BigDecimal("3.140000").stripTrailingZeros().toPlainString()
+    )
+    assertEquals(
+      "3.14",
+      new BigDecimal("3.1400").stripTrailingZeros().toPlainString()
+    )
+    assertEquals(
+      "-3.14",
+      new BigDecimal("-3.140000").stripTrailingZeros().toPlainString()
+    )
+    assertEquals(
+      "123.456",
+      new BigDecimal("123.45600").stripTrailingZeros().toPlainString()
+    )
+  }
+
   @Test def testToStringNeg(): Unit = {
     val a =
       "-123.4564563673567380964839238475457356735674573563567890295784902768787678287E-5"

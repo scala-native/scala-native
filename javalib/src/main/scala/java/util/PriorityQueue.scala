@@ -81,6 +81,8 @@ class PriorityQueue[E] private (
   override def add(e: E): Boolean = {
     if (e == null)
       throw new NullPointerException()
+    if (comp eq NaturalComparator)
+      comp.compare(e, e)
     if (innerNextIdx >= inner.length) {
       val cpy = new Array[Any](inner.length * 2).asInstanceOf[Array[E]]
       Array.copy(inner, 0, cpy, 0, innerNextIdx)

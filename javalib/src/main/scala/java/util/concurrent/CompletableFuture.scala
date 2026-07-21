@@ -18,6 +18,7 @@ import scala.scalanative.annotation.alwaysinline
 // import java.lang.invoke.VarHandle
 import scala.scalanative.libc.stdatomic.AtomicRef
 import scala.scalanative.libc.stdatomic.memory_order.memory_order_release
+import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
 import scala.scalanative.runtime.fromRawPtr
 
@@ -843,9 +844,6 @@ object CompletableFuture {
   )
 
   /* ------------- Arbitrary-arity constructions -------------- */
-  // TODO: check
-  // def allOf(cfs: CompletableFuture[_ <: AnyRef]*): CompletableFuture[Void] = andTree(cfs, 0, cfs.length - 1)
-  // def anyOf(cfs: CompletableFuture[_ <: AnyRef]*): CompletableFuture[AnyRef] = {
   def allOf(cfs: Array[CompletableFuture[_ <: AnyRef]]): CompletableFuture[Void] = andTree(cfs, 0, cfs.length - 1)
   def anyOf(_cfs: Array[CompletableFuture[_ <: AnyRef]]): CompletableFuture[AnyRef] = {
     val n: Int = _cfs.length
@@ -1331,7 +1329,9 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
     var s: S = null.asInstanceOf[S]
     var x: Throwable = null
     if (result == null) try {
-      if (c != null && !(c.claim())) return false
+      if (LinktimeInfo.isMultithreadingEnabled) {
+        if (c != null && !(c.claim())) return false
+      }
       if (r.isInstanceOf[AltResult]) {
         x = (r.asInstanceOf[AltResult]).ex
         s = null.asInstanceOf[S]
@@ -1356,7 +1356,10 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
     val d: CompletableFuture[V] = newIncompleteFuture
     var r: AnyRef = null
     if ({ r = result; r == null }) unipush(new UniHandle[T, V](e, d, this, f))
-    else if (e == null) d.uniHandle[T](r, f, null)
+    else if (e == null)
+      d.uniHandle[T](r, f, null)
+    else if (!LinktimeInfo.isMultithreadingEnabled)
+      d.uniHandle[T](r, f, null)
     else
       try e.execute(new UniHandle[T, V](null, d, this, f))
       catch {
@@ -1915,21 +1918,21 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
 
   override def applyToEither[U <: AnyRef](
       other: CompletionStage[_ <: T],
-      fn: Function[_ >: T, U]
+      fn: Function[_ >: T, _ <: U]
   ): CompletableFuture[U] = {
     return orApplyStage(null, other, fn)
   }
 
   override def applyToEitherAsync[U <: AnyRef](
       other: CompletionStage[_ <: T],
-      fn: Function[_ >: T, U]
+      fn: Function[_ >: T, _ <: U]
   ): CompletableFuture[U] = {
     return orApplyStage(defaultExecutor(), other, fn)
   }
 
   override def applyToEitherAsync[U <: AnyRef](
       other: CompletionStage[_ <: T],
-      fn: Function[_ >: T, U],
+      fn: Function[_ >: T, _ <: U],
       executor: Executor
   ): CompletableFuture[U] = {
     return orApplyStage(screenExecutor(executor), other, fn)

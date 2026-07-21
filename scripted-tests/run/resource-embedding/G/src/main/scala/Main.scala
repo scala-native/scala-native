@@ -12,5 +12,16 @@ object Main {
       getClass().getResourceAsStream("exclude/b.txt") == null,
       "exclude/b.txt shouldn't be embedded even though it matches with the include pattern '**' because it also matches with exclude pattern"
     )
+    List(
+      "/library.properties",
+      "/META-INF/MANIFEST.MF",
+      "/scala-native/stdlib.c",
+      "/scala-native/gc/shared/ScalaNativeGC.h"
+    ).foreach { file =>
+      assert(
+        getClass().getResourceAsStream(file) == null,
+        s"$file should stay excluded by Scala Native internal resource filters"
+      )
+    }
   }
 }

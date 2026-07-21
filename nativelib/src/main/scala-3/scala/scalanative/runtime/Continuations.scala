@@ -1,7 +1,7 @@
 package scala.scalanative.runtime
 
 import scala.collection.mutable
-import scala.util.Try
+import scala.util.{Failure, Try}
 
 import scala.scalanative.meta.LinktimeInfo.isContinuationsSupported
 import scala.scalanative.runtime.Intrinsics.*
@@ -81,7 +81,8 @@ object Continuations:
     val call: SuspendFn[R, T] = innerContinuation =>
       continuation.inner = innerContinuation
       Try(onSuspend(continuation))
-    Impl.suspend(label, suspendFn, call, continuation)
+    try Impl.suspend(label, suspendFn, call, continuation)
+    finally reachabilityFence(continuation)
 
   /** A `Continuation` holds the C implementation continuation pointer,
    *  alongside a list of `ObjectArray`s, used for storing suspended fragments
@@ -96,7 +97,8 @@ object Continuations:
     private val allocas = mutable.ArrayBuffer[BlobArray]()
 
     def apply(x: R): T =
-      resume(inner, x).get
+      try resume(inner, x).get
+      finally reachabilityFence(this)
 
     private[Continuations] def alloc(size: CUnsignedLong): Ptr[?] =
       val obj = BlobArray.alloc(size.toInt) // round up the blob size
@@ -133,6 +135,10 @@ object Continuations:
   private val boundaryBodyFnAny: ContinuationBodyPtr[Any] =
     CFuncPtr2.fromScalaFunction((label, arg) => arg(label))
 
+  @exported("scalanative_continuation_exception_to_failure")
+  def continuationExceptionToFailure(exception: java.lang.Throwable): Try[Any] =
+    Failure(exception)
+
   /** Allocate a blob of memory of `size` bytes, from `continuation`'s
    *  implementation of `Continuation.alloc`.
    */
@@ -140,6 +146,8 @@ object Continuations:
       size: CUnsignedLong,
       continuation: Continuation[Any, Any]
   ): Ptr[?] = continuation.alloc(size)
+
+  @noinline private def reachabilityFence(target: Any): Unit = ()
 
   /** Continuations implementation imported from C (see `delimcc.h`) */
   @extern @define("__SCALANATIVE_DELIMCC") private object Impl:
@@ -184,5 +192,20 @@ object Continuations:
         ]
     ): Unit =
       extern
+
+    /** Reset thread-local handler chain. Call before entering a new boundary
+     *  (e.g. before dispatching a VT) so the carrier does not inherit stale
+     *  handlers from a previous virtual thread.
+     */
+    @name("scalanative_continuation_handlers_reset")
+    def handlersReset(): Unit = extern
   end Impl
+
+  /** Resets the thread-local delimcc handler chain. Safe to call from the
+   *  virtual-thread run loop before starting a new boundary so the carrier does
+   *  not inherit handlers from a previous VT. No-op if continuations are not
+   *  supported.
+   */
+  def handlersReset(): Unit =
+    if isContinuationsSupported then Impl.handlersReset()
 end Continuations

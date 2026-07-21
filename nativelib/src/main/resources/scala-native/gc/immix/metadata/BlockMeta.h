@@ -7,8 +7,8 @@
 #include "LineMeta.h"
 #include "shared/GCTypes.h"
 #include "immix/Constants.h"
-#include "immix_commix/Log.h"
 #include "immix_commix/UInt24.h"
+#include <assert.h>
 
 typedef enum {
     block_free = 0x0,

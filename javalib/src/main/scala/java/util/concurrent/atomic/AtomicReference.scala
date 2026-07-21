@@ -112,10 +112,7 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
    *  @since 9
    */
   final def weakCompareAndSetPlain(expectedValue: V, newValue: V): Boolean = {
-    if (value eq expectedValue) {
-      value = newValue
-      true
-    } else false
+    valueRef.compareExchangeWeak(expectedValue, newValue, memory_order_relaxed)
   }
 
   /** Atomically sets the value to {@code newValue} and returns the old value,

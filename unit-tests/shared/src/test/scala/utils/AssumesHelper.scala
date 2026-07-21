@@ -28,6 +28,14 @@ object AssumesHelper {
       Platform.isMultithreadingEnabled
     )
 
+  def assumeSupportsVirtualThreads(): Unit = {
+    assumeMultithreadingIsEnabled()
+    Assume.assumeTrue(
+      "Requires virtual thread support",
+      Platform.supportsVirtualThreads
+    )
+  }
+
   def assumeSupportsStackTraces() = {
     Assume.assumeFalse(
       "NetBSD doesn't work well with unwind, disable stacktrace tests",

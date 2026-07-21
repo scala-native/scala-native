@@ -86,24 +86,25 @@ class LexicalScopesTest {
 
   // Ensure to use all the vals/vars, otherwise they might not be emmited by the compiler
   @Test def scopesHierarchy(): Unit = compileAndLoad(
-    sources = "Test.scala" -> """|
-                                 |object Test {
-                                 |  def main(args: Array[String]): Unit = {
-                                 |    val a = args.size
-                                 |    val b = a + this.##
-                                 |    val result = {
-                                 |      val innerA = args.size + a
-                                 |      val innerB = innerA + b
-                                 |      val innerResult = {
-                                 |         val deep = innerA + innerB
-                                 |         deep * 42
-                                 |      }
-                                 |      innerA * innerB * innerResult
-                                 |     }
-                                 |    assert(result != 0)
-                                 |  }
-                                 |}
-                                 |""".stripMargin
+    sources = "Test.scala" ->
+      """|
+         |object Test {
+         |  def main(args: Array[String]): Unit = {
+         |    val a = args.size
+         |    val b = a + this.##
+         |    val result = {
+         |      val innerA = args.size + a
+         |      val innerB = innerA + b
+         |      val innerResult = {
+         |         val deep = innerA + innerB
+         |         deep * 42
+         |      }
+         |      innerA * innerB * innerResult
+         |     }
+         |    assert(result != 0)
+         |  }
+         |}
+         |""".stripMargin
   ) { loaded =>
     findDefinition(loaded).foreach { implicit defn =>
       assertContainsAll(
@@ -133,28 +134,29 @@ class LexicalScopesTest {
   }
 
   @Test def tryCatchFinalyBlocks(): Unit = compileAndLoad(
-    sources = "Test.scala" -> """|
-                                 |object Test {
-                                 |  def main(args: Array[String]): Unit = {
-                                 |    val a = args.size
-                                 |    val b =
-                                 |      try {
-                                 |        val inTry = args(0).toInt
-                                 |        inTry + 1
-                                 |      }catch{
-                                 |        case ex1: Exception =>
-                                 |          val n = args(0)
-                                 |          n.size
-                                 |        case ex2: Throwable =>
-                                 |          val m = args.size
-                                 |          throw ex2
-                                 |      } finally {
-                                 |        val finalVal = "fooBar"
-                                 |        println(finalVal)
-                                 |      }
-                                 |  }
-                                 |}
-                                 |""".stripMargin
+    sources = "Test.scala" ->
+      """|
+         |object Test {
+         |  def main(args: Array[String]): Unit = {
+         |    val a = args.size
+         |    val b =
+         |      try {
+         |        val inTry = args(0).toInt
+         |        inTry + 1
+         |      }catch{
+         |        case ex1: Exception =>
+         |          val n = args(0)
+         |          n.size
+         |        case ex2: Throwable =>
+         |          val m = args.size
+         |          throw ex2
+         |      } finally {
+         |        val finalVal = "fooBar"
+         |        println(finalVal)
+         |      }
+         |  }
+         |}
+         |""".stripMargin
   ) { loaded =>
     findDefinition(loaded).foreach { implicit defn =>
       assertContainsAll(

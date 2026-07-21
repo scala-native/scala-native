@@ -16,12 +16,13 @@ jobs:
     name: Publish
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.scala-native-version }}
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{ inputs.scala-version }}
+          java-version: 17
 
       - name: Setup PGP Key
         run: |

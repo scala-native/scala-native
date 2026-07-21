@@ -34,8 +34,9 @@ class NIRCompilerTest {
       "A.scala" -> "class A",
       "B.scala" -> "class B extends A",
       "C.scala" -> "trait C",
-      "D.scala" -> """|class D extends B with C
-                      |object E""".stripMargin
+      "D.scala" ->
+        """|class D extends B with C
+           |object E""".stripMargin
     )
 
     NIRCompiler.withSources(sources) {
@@ -192,10 +193,19 @@ class NIRCompilerTest {
 
     // Order of error might differ
     val expectedMsg =
-      if (scalaVersion.startsWith("3."))
-        "methods in extern objects must have extern body"
-      else "Extern object can only extend extern traits"
-    assertTrue(err.getMessage().contains(expectedMsg))
+      buildinfo.ScalaNativeBuildInfo.scalaVersion
+        .split("\\D")
+        .take(3)
+        .map(_.toInt) match {
+        case Array(3, minor, _) if minor < 8 =>
+          "methods in extern objects must have extern body"
+        case _ =>
+          "Extern object can only extend extern traits"
+      }
+    assertTrue(
+      s"Expected: '$expectedMsg', got '${err.getMessage()}'",
+      err.getMessage().contains(expectedMsg)
+    )
   }
 
   @Test def mixExternObjectWithNonExternClass(): Unit = {
@@ -734,20 +744,22 @@ class NIRCompilerTest {
       classOf[CompilationFailedException],
       () =>
         linkWithProps(
-          "props.scala" -> """|
-                              |package scala.scalanative
-                              |object props{
-                              |   @scalanative.unsafe.resolvedAtLinktime("prop")
-                              |   def linktimeProperty: Boolean = null.asInstanceOf[Boolean]
-                              |}
-                              |""".stripMargin,
-          "main.scala" -> """|
-                             |import scala.scalanative.props._
-                             |object Main {
-                             |  def main(args: Array[String]): Unit = {
-                             |    if(linktimeProperty) ???
-                             |  }
-                             |}""".stripMargin
+          "props.scala" ->
+            """|
+               |package scala.scalanative
+               |object props{
+               |   @scalanative.unsafe.resolvedAtLinktime("prop")
+               |   def linktimeProperty: Boolean = null.asInstanceOf[Boolean]
+               |}
+               |""".stripMargin,
+          "main.scala" ->
+            """|
+               |import scala.scalanative.props._
+               |object Main {
+               |  def main(args: Array[String]): Unit = {
+               |    if(linktimeProperty) ???
+               |  }
+               |}""".stripMargin
         )
     )
     assertTrue(
@@ -824,13 +836,14 @@ class NIRCompilerTest {
                |   def runtimeProperty = true
                |}
                |""".stripMargin,
-          "main.scala" -> """|
-                             |import scala.scalanative.props._
-                             |object Main {
-                             |  def main(args: Array[String]): Unit = {
-                             |    if(linktimeProperty || runtimeProperty) ??? 
-                             |  }
-                             |}""".stripMargin
+          "main.scala" ->
+            """|
+               |import scala.scalanative.props._
+               |object Main {
+               |  def main(args: Array[String]): Unit = {
+               |    if(linktimeProperty || runtimeProperty) ??? 
+               |  }
+               |}""".stripMargin
         )
     )
     assertEquals(
@@ -849,6 +862,21 @@ class NIRCompilerTest {
            |}
            | 
            |class StringSource extends Source
+           |""".stripMargin
+      )
+    )
+  }
+
+  @Test def issue4709(): Unit = {
+    // Crashed becouse clouse call to static method of non extern EasyBeast$BeastBody$anon was checked after moving it to owner EasyBeast$ which is extern
+    NIRCompiler(
+      _.compile(
+        """|import scala.scalanative.unsafe.extern
+           |@extern object EasyBeast {
+           |  object BeastBody {
+           |    def apply(arg: Option[Int]): Option[Int] = arg.map(_ + 1)
+           |  }
+           |}
            |""".stripMargin
       )
     )

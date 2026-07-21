@@ -57,6 +57,36 @@ class SystemTest {
 
   }
 
+  @Test def propertyOsNameShouldBeSet(): Unit = {
+    val osName = System.getProperty("os.name")
+    assertNotNull("os.name should not be null", osName)
+    assertTrue("os.name should not be empty", osName.nonEmpty)
+    if (isMacOs) {
+      assertEquals("Mac OS X", osName)
+    }
+  }
+
+  @Test def propertyOsVersionShouldBeSet(): Unit = {
+    if (!isWindows) {
+      val osVersion = System.getProperty("os.version")
+      assertNotNull("os.version should not be null", osVersion)
+      assertTrue("os.version should not be empty", osVersion.nonEmpty)
+      if (isMacOs) {
+        // macOS version should be a dotted numeric string like "15.4" or "14.2.1"
+        assertTrue(
+          s"os.version '$osVersion' should match macOS version pattern",
+          osVersion.matches("""\d+\.\d+(\.\d+)?""")
+        )
+      } else if (isLinux) {
+        // Linux kernel version like "6.5.0-44-generic" or "7.0-RC1"
+        assertTrue(
+          s"os.version '$osVersion' should match Linux kernel version pattern",
+          osVersion.matches("""\d+\.\d+.*""")
+        )
+      }
+    }
+  }
+
   @Test def propertyUserHomeShouldBeSet(): Unit = {
     assertEquals(
       System.getProperty("user.home").toLowerCase(),

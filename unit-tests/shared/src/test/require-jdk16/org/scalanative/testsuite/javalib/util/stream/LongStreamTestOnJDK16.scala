@@ -71,4 +71,47 @@ class LongStreamTestOnJDK16 {
     assertEquals("unexpected number of elements", expectedCount, count)
   }
 
+  // SN Issue 4742
+  @Test def streamFilter_ShrinkingDownstream(): Unit = {
+
+    val ls = LongStream.of(
+      55L, 44L, -11L, 0L, -22L, 33L
+    )
+
+    val expectedCount = 2
+
+    val expectedData = new Array[scala.Long](expectedCount)
+    expectedData(0) = -11
+    expectedData(1) = -22
+
+    val filtered: Array[scala.Long] = ls.filter(i => i < 0L).toArray()
+
+    assertEquals("filtered size", expectedCount, filtered.size)
+    for (j <- 0 until expectedCount)
+      assertEquals("contents j: $j", expectedData(j), filtered(j))
+  }
+
+  // SN Issue 4743
+  @Test def streamDistinct_ShrinkingDownstream(): Unit = {
+
+    val ls = LongStream.of(
+      55L, 0L, 44L, -11L, -11L, 44L, -22L, -22L, 33L, 44L
+    )
+
+    val expectedCount = 6
+
+    val expectedData = new Array[scala.Long](expectedCount)
+    expectedData(0) = 55L
+    expectedData(1) = 0L
+    expectedData(2) = 44L
+    expectedData(3) = -11L
+    expectedData(4) = -22L
+    expectedData(5) = 33L
+
+    val distinctElements: Array[scala.Long] = ls.distinct().toArray()
+
+    assertEquals("distinct size", expectedCount, distinctElements.size)
+    for (j <- 0 until expectedCount)
+      assertEquals("contents j: $j", expectedData(j), distinctElements(j))
+  }
 }

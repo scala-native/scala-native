@@ -50,7 +50,12 @@ object LinktimeInfo {
   @resolvedAtLinktime()
   def isContinuationsSupported: Boolean =
     (isLinux || isMac || isFreeBSD || isOpenBSD || isNetBSD) &&
-      (target.arch != "arm" && !is32BitPlatform)
+      !is32BitPlatform &&
+      (target.arch == "x86_64" || target.arch == "aarch64")
+
+  @resolvedAtLinktime()
+  def isVirtualThreadsSupported: Boolean =
+    isMultithreadingEnabled && isContinuationsSupported
 
   @resolvedAtLinktime(
     "scala.scalanative.meta.linktimeinfo.isMultithreadingEnabled"
@@ -72,6 +77,12 @@ object LinktimeInfo {
     "scala.scalanative.meta.linktimeinfo.garbageCollector"
   )
   def garbageCollector: String = resolved
+  object gc {
+    @resolvedAtLinktime def isBoehm: Boolean = garbageCollector == "boehm"
+    @resolvedAtLinktime def isImmix: Boolean = garbageCollector == "immix"
+    @resolvedAtLinktime def isCommix: Boolean = garbageCollector == "commix"
+    @resolvedAtLinktime def isNone: Boolean = garbageCollector == "none"
+  }
 
   object target {
     @resolvedAtLinktime("scala.scalanative.meta.linktimeinfo.target.arch")

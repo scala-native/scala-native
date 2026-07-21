@@ -6,31 +6,32 @@ import org.junit._
 class IdentifiersSuite extends ReachabilitySuite {
 
   @Test def replaceDoubleQuotedIdentifiers(): Unit = testReachable() {
-    val source = """|
-                    |object `"Foo"Bar"` {
-                    |  val x: `"Foo"Bar"`.type       = this
-                    |  val `"x"`: `"Foo"Bar"`.type   = this
-                    |  val `"x"x"`: `"Foo"Bar"`.type = this
-                    |
-                    |  def y(): `"Foo"Bar"`.type     = this
-                    |  def `"y"`(): `"Foo"Bar"`.type   = this
-                    |  def `"y"y"`(): `"Foo"Bar"`.type = this
-                    |}
-                    |
-                    |object Main {
-                    |  def main(args: Array[String]): Unit = ()
-                    |  import `"Foo"Bar"`._
-                    |  x
-                    |  `x`
-                    |  `"x"`
-                    |  `"x"x"`
-                    |
-                    |  y()
-                    |  `y`()
-                    |  `"y"`()
-                    |  `"y"y"`()
-                    |}
-                    |""".stripMargin
+    val source =
+      """|
+         |object `"Foo"Bar"` {
+         |  val x: `"Foo"Bar"`.type       = this
+         |  val `"x"`: `"Foo"Bar"`.type   = this
+         |  val `"x"x"`: `"Foo"Bar"`.type = this
+         |
+         |  def y(): `"Foo"Bar"`.type     = this
+         |  def `"y"`(): `"Foo"Bar"`.type   = this
+         |  def `"y"y"`(): `"Foo"Bar"`.type = this
+         |}
+         |
+         |object Main {
+         |  def main(args: Array[String]): Unit = ()
+         |  import `"Foo"Bar"`._
+         |  x
+         |  `x`
+         |  `"x"`
+         |  `"x"x"`
+         |
+         |  y()
+         |  `y`()
+         |  `"y"`()
+         |  `"y"y"`()
+         |}
+         |""".stripMargin
 
     val FooBar = nir.Global.Top("$u0022Foo$u0022Bar$u0022$")
     val Main = nir.Global.Top("Main")

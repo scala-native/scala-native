@@ -14,6 +14,7 @@
 #include "shared/Parsing.h"
 #include "shared/ThreadUtil.h"
 #include "shared/ScalaNativeGC.h"
+#include "shared/Log.h"
 #include <assert.h>
 
 // Dummy GC that maps chunks of memory and allocates but never frees.
@@ -36,7 +37,7 @@ static size_t DO_PREALLOC = 0L;     // No Preallocation.
 static size_t TOTAL_ALLOCATED = 0L; // Track total allocated memory
 
 static void exitWithOutOfMemory() {
-    fprintf(stderr, "Out of heap space\n");
+    GC_LOG_ERROR("Out of heap space");
     exit(1);
 }
 
@@ -97,19 +98,19 @@ void Prealloc_Or_Default() {
 }
 
 void scalanative_GC_init() {
+    GC_Log_Init();
 #ifndef GC_ASAN
     Prealloc_Or_Default();
     current = memoryMapPrealloc(CHUNK, DO_PREALLOC);
     if (current == NULL) {
         const float bytesToMB = 1024.0 * 1024.0;
-        fprintf(stderr,
-                "[Scala Native None GC] Failed to allocate or grow heap space, "
-                "requested size=%.2fMB, available memory=%.2fMB, already "
-                "allocated=%.2fMB, should preallocate=%s. Consider setting "
-                "GC_MAXIMUM_HEAP_SIZE env variable to limit maximal heap size",
-                CHUNK / bytesToMB, getFreeMemorySize() / bytesToMB,
-                TOTAL_ALLOCATED / bytesToMB,
-                DO_PREALLOC == 0 ? "false" : "true");
+        GC_LOG_ERROR(
+            "Failed to allocate or grow heap space, "
+            "requested size=%.2fMB, available memory=%.2fMB, already "
+            "allocated=%.2fMB, should preallocate=%s. Consider setting "
+            "GC_MAXIMUM_HEAP_SIZE env variable to limit maximal heap size",
+            CHUNK / bytesToMB, getFreeMemorySize() / bytesToMB,
+            TOTAL_ALLOCATED / bytesToMB, DO_PREALLOC == 0 ? "false" : "true");
         exit(1);
     }
     end = current + CHUNK;

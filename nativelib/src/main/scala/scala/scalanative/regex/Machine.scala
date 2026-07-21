@@ -52,7 +52,7 @@ class Machine(re2: RE2) {
 
   def submatches(): Array[Int] = {
     if (matchcap.length == 0) {
-      return Utils.EMPTY_INTS
+      return Array.emptyIntArray
     }
     val cap = new Array[Int](matchcap.length)
     System.arraycopy(matchcap, 0, cap, 0, matchcap.length)

@@ -206,7 +206,7 @@ object VirtualDirectory {
     override def path: Path = Paths.get("")
     val uri: URI = URI.create("")
 
-    override def files = Seq.empty
+    override def files = Seq.empty[Path]
 
     override def read(path: Path): ByteBuffer =
       throw new UnsupportedOperationException(

@@ -17,7 +17,7 @@ object MyScalaNativePlugin extends AutoPlugin {
   override def requires: Plugins = ScalaNativePlugin
 
   lazy val nativeLinkProfiling =
-    inputKey[File]("Running nativeLink with AsyncProfiler.")
+    inputKey[NativeLinkResult]("Running nativeLink with AsyncProfiler.")
 
   // see: https://github.com/scalameta/metals/blob/0176a491cd209a09852ab33f99fd7de639e8e2dd/metals/src/main/scala/scala/meta/internal/builds/BloopInstall.scala#L81
   final val isGeneratingForIDE =

@@ -68,6 +68,9 @@ class ProcessTestOnJDK9 {
 
   // copy from ProcessTest
   private def processForDestruction(): Process = {
+    /* Ensure child process stays alive long enough to generate
+     * either info() or be 'destroy'ed.
+     */
     val proc = processForCommand("ping", "-c", "2", "-i", "10", "127.0.0.1")
       .start()
     proc.getInputStream().read()
@@ -152,14 +155,17 @@ class ProcessTestOnJDK9 {
   }
 
   private def runPingWith(redirect: ProcessBuilder.Redirect): String = {
-    val argv =
-      if (Platform.isWindows) Seq("ping", "-n", "2", "127.0.0.1")
-      else Seq("ping", "-c", "2", "-i", "10", "127.0.0.1")
+    // Child sends one ping packet to IPv4 localhost; then returns the output.
+    val countOption = if (Platform.isWindows) "-n" else "-c"
+    val argv = Seq("ping", countOption, "1", "127.0.0.1")
+
     val proc: Process =
       processForCommand(argv: _*).redirectOutput(redirect).start()
+
     val stdout =
       new String(proc.getInputStream.readAllBytes(), StandardCharsets.UTF_8)
-    proc.waitFor()
+
+    proc.waitFor(5, TimeUnit.SECONDS) // Report any unexpected exit latency.
     stdout
   }
 

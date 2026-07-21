@@ -257,6 +257,8 @@ package object runtime {
         ex.setStackTrace(error.getStackTrace())
         saveResult(ex)
         throw error
+    } finally {
+      cls.notifyAll()
     }
   }
 
@@ -266,8 +268,7 @@ package object runtime {
       moduleSlot: unsafe.Ptr[AnyRef],
       cls: Class[_]
   ): AnyRef = cls.synchronized {
-    var spins = 32
-    while (spins > 0) {
+    while (true) {
       // The slot can contain one of the 3 values:
       // - Fully initialized object of type `cls`
       // - ExceptionInInitializerError object set by exception cought when executing constructor
@@ -290,16 +291,9 @@ package object runtime {
         ).initCause(ex)
       }
 
-      // Not yet initialized
-      cls.wait(1)
-      spins -= 1
+      cls.wait()
     }
-    throw new NoClassDefFoundError(cls.getName())
-      .initCause(
-        new IllegalStateException(
-          "Failed to load module initialized by other thread"
-        )
-      )
+    ??? // Unreachable
   }
 
   @extern private[runtime] object StackOverflowGuards {

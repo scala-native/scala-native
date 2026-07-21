@@ -1,7 +1,7 @@
 /* Ported from Oswego revision: 1.66 dated: 2021-01-27 02:55:18
  * URL:
  *   http://gee.cs.oswego.edu/cgi-bin/viewcvs.cgi/jsr166/jsr166/src/tests/tck/
- * 
+ *
  * Modified for Scala Native.
  */
 

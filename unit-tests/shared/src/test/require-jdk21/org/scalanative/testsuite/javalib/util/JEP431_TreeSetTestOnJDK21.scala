@@ -10,7 +10,7 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 /* This file exercises local overrides of methods in SortedSet and
  * NavigableSet.
- * 
+ *
  * See JEP431_ReverseOrderTreeSetTestOnJDK21 for more Tests using forward
  * and reversed() TreeSets.
  */

@@ -6,6 +6,7 @@
 #include "Marker.h"
 #include "Phase.h"
 #include "WeakReferences.h"
+#include "shared/Log.h"
 #include <errno.h>
 #include <stdlib.h>
 #include "State.h"
@@ -110,10 +111,9 @@ void *GCThread_loop(void *arg) {
     while (true) {
         thread->active = false;
         if (!semaphore_wait(start)) {
-            fprintf(stderr,
-                    "Acquiring semaphore failed in commix GCThread_loop, "
-                    "error=%" PRIdErr "\n",
-                    LastError);
+            GC_LOG_ERROR("Acquiring semaphore failed in commix GCThread_loop, "
+                         "error=%" PRIdErr,
+                         LastError);
             exit(ExitValue);
         }
         thread->active = true;
@@ -149,10 +149,10 @@ void *GCThread_loopMaster(void *arg) {
     while (true) {
         thread->active = false;
         if (!semaphore_wait(start)) {
-            fprintf(stderr,
-                    "Acquiring semaphore failed in commix GCThread_loopMaster "
-                    "error=%" PRIdErr "\n",
-                    LastError);
+            GC_LOG_ERROR(
+                "Acquiring semaphore failed in commix GCThread_loopMaster, "
+                "error=%" PRIdErr,
+                LastError);
             exit(ExitValue);
         }
         thread->active = true;
@@ -221,10 +221,10 @@ int GCThread_ActiveCount(Heap *heap) {
 
 INLINE void GCThread_WakeMaster(Heap *heap) {
     if (!semaphore_unlock(heap->gcThreads.startMaster)) {
-        fprintf(stderr,
-                "Releasing semaphore failed in commix GCThread_WakeMaster, "
-                "error=%" PRIdErr "\n",
-                LastError);
+        GC_LOG_ERROR(
+            "Releasing semaphore failed in commix GCThread_WakeMaster, "
+            "error=%" PRIdErr,
+            LastError);
         exit(ExitValue);
     }
 }
@@ -242,10 +242,9 @@ INLINE void GCThread_WakeWorkers(Heap *heap, int toWake) {
 #else
         if (!semaphore_unlock(startWorkers)) {
 #endif
-            fprintf(stderr,
-                    "Releasing semaphore failed in commix "
-                    "GCThread_WakeWorkers, error=%" PRIdErr "\n",
-                    LastError);
+            GC_LOG_ERROR("Releasing semaphore failed in commix "
+                         "GCThread_WakeWorkers, error=%" PRIdErr,
+                         LastError);
             exit(ExitValue);
         }
     }

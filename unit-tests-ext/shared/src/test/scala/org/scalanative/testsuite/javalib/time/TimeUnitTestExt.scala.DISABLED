@@ -1,0 +1,102 @@
+package org.scalanative.testsuite.javalib.time
+
+/* SN Devo Notes:
+ *
+ *  1) This is a set of manual tests for TimeUnit methods introduced
+ *     in Java 9 and 11. It a manual internal development test, not intended
+ *     for current Continuous Integration.
+ *
+ *     These tests require a JDK >= 11 in order to compile. The testsExt
+ *     project does not support the rich 'requires-*' tree available
+ *     in the "normal" units-tests environment. Implementing that tree
+ *     in testsExt is simply not economic.
+ *
+ *     The testsExt project adds the location of Scala Native internal
+ *     testing-only near minimal implementations to the build path.
+ *     This allows these tests to link when executed from that project:
+ *       a) Copy file to one with a .scala suffix, say TimeUnitTestExt.scala.
+ *       b) Ensure active JDK is >= 11.
+ *       b) sbt> testsExt3/testOnly *.TimeUnitTestExt 
+ *
+ *  2) When Scala Native requires a suitable JDK version, this test
+ *     can be moved to the "normal" 'tests' project.
+ */
+
+import java.time.Duration
+import java.time.temporal.ChronoUnit
+import java.util.concurrent.TimeUnit
+import java.{lang => jl}
+
+import org.junit.Assert._
+import org.junit.Test
+
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+
+/** Minimal tests for `java.time.TimeUnit` use of Scala Native dummy
+ *  implementations of java.time.Duration and java.time.ChronoUnit. Scala Native
+ *  javalib does not implement these methods and requires applictions use a
+ *  third party library.
+ */
+class TimeUnitTestExt {
+  @Test def testConvertDuration(): Unit = {
+    val NanosInMillisecond = 1000 * 1000
+    val MaxSubsecondNanos = (NanosInMillisecond * 1000) - 1
+
+    assertThrows(
+      classOf[NullPointerException],
+      TimeUnit.DAYS.convert(null.asInstanceOf[Duration])
+    )
+
+    // Java 26 Duration.MAX backfitted to JDK 9 &  11
+    val maxDuration = Duration.ofSeconds(jl.Long.MAX_VALUE, MaxSubsecondNanos)
+
+    assertEquals(
+      "expect saturation not ArithmeticException",
+      jl.Long.MAX_VALUE,
+      TimeUnit.NANOSECONDS.convert(maxDuration)
+    )
+
+    // In  the sweet bye-and-bye, implement the full NxM cross matrix.
+    assertEquals(
+      "convert milliseconds",
+      1,
+      TimeUnit.MILLISECONDS.convert(
+        Duration.ofSeconds(0, NanosInMillisecond)
+      )
+    )
+  }
+
+  @Test def testOfChronoUnit(): Unit = {
+
+    assertThrows(
+      classOf[NullPointerException],
+      TimeUnit.of(null.asInstanceOf[ChronoUnit])
+    )
+
+    assertThrows(
+      classOf[IllegalArgumentException],
+      TimeUnit.of(ChronoUnit.FOREVER)
+    )
+
+    assertEquals(
+      "convert microseconds",
+      TimeUnit.MICROSECONDS,
+      TimeUnit.of(ChronoUnit.MICROS)
+    )
+
+    assertNotEquals(
+      "micros-to-nanos conversion",
+      TimeUnit.NANOSECONDS,
+      TimeUnit.of(ChronoUnit.MICROS)
+    )
+  }
+
+  @Test def testToChronoUnit(): Unit = {
+
+    assertEquals(
+      "microseconds",
+      ChronoUnit.MICROS,
+      TimeUnit.MICROSECONDS.toChronoUnit()
+    )
+  }
+}

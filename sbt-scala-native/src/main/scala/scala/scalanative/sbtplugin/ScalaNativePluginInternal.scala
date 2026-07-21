@@ -1,28 +1,27 @@
 package scala.scalanative
 package sbtplugin
 
-import sbt.Keys._
-import sbt._
+import sbt.Keys.*
 import sbt.complete.DefaultParsers._
+import sbt.librarymanagement.LibraryManagementCodec.{given, *}
 import sbt.librarymanagement.{
   DependencyResolution, UnresolvedWarningConfiguration, UpdateConfiguration
 }
+import sbt.{given, *}
 
 import java.lang.Runtime
 import java.nio.file.{Files, Path}
 import java.util.concurrent.atomic._
 import java.util.concurrent.locks.ReentrantLock
 
-import scala.annotation.tailrec
-import scala.concurrent._
+import scala.annotation.{nowarn, tailrec}
+import scala.concurrent.*
 import scala.concurrent.duration.Duration
 import scala.sys.process.Process
-import scala.util.Try
 
-import org.portablescala.sbtplatformdeps.PlatformDepsPlugin.autoImport._
-
-import scala.scalanative.build._
+import scala.scalanative.build.*
 import scala.scalanative.linker.LinkingException
+import scala.scalanative.sbtplugin.PluginCompat.{*, given}
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport.{
   ScalaNativeCrossVersion => _, _
 }
@@ -30,7 +29,9 @@ import scala.scalanative.sbtplugin.Utilities._
 import scala.scalanative.testinterface.adapter.TestAdapter
 import scala.scalanative.util.Scope
 
-import sjsonnew.BasicJsonProtocol._
+import sjsonnew.BasicJsonProtocol.{*, given}
+import sjsonnew.JsonFormat
+import xsbti.FileConverter
 
 /** ScalaNativePlugin delegates to this object
  *
@@ -48,9 +49,12 @@ import sjsonnew.BasicJsonProtocol._
  *      (currently 3), and test true and false for each
  */
 object ScalaNativePluginInternal {
+  private final val MinimumSupportedJDK = 8
+  private final val WarnOnJDKOlderThan = 17
 
+  @deprecated("Deprecated for removal in favor of internal logging", "0.5.12")
   val nativeWarnOldJVM =
-    taskKey[Unit]("Warn if JVM 7 or older is used.")
+    taskKey[Unit]("Report if using unsupported or deprecated JVM version")
 
   lazy val scalaNativeDependencySettings: Seq[Setting[_]] = {
     val nativeStandardLibraries =
@@ -65,11 +69,16 @@ object ScalaNativePluginInternal {
           case Some((3, _)) => "scala3lib"
           case _ => throw new RuntimeException("Unsupported Scala Version")
         }
+        val runtimeDependencies = Seq(
+          org %% "test-interface" % ver % Test,
+          org %% scalalib % scalalibVersion(scalaVersion.value, ver)
+        ) ++ nativeStandardLibraries.map(org %% _ % ver)
+
         Seq(
-          org %%% "test-interface" % ver % Test,
-          org %%% scalalib % scalalibVersion(scalaVersion.value, ver),
-          compilerPlugin(org % "nscplugin" % ver cross CrossVersion.full)
-        ) ++ nativeStandardLibraries.map(org %%% _ % ver)
+          PluginCompat.crossJVM(
+            compilerPlugin(org % "nscplugin" % ver).cross(CrossVersion.full)
+          )
+        ) ++ runtimeDependencies.map(PluginCompat.crossScalaNative)
       },
       excludeDependencies ++= {
         // Exclude cross published version dependencies leading to conflicts in Scala 3 vs 2.13
@@ -77,25 +86,26 @@ object ScalaNativePluginInternal {
         // when using Scala 2.13 exclude Scala 3 standard native libraries
         // Use full name, Maven style published artifacts cannot use artifact/cross version for exclusion rules
         (CrossVersion.partialVersion(scalaVersion.value) match {
-          case Some((2, 13)) => Some("_3")
-          case Some((3, _))  => Some("_2.13")
-          case _             => None
-        }).fold(Seq.empty[ExclusionRule]) { scalaBinSuffix =>
-          val suffix = "_" +
-            ScalaNativeCrossVersion.scalaNativePrefix + scalaBinSuffix
-          val exclRule = ExclusionRule(nativeOrgName)
-          nativeStandardLibraries.map { lib =>
-            exclRule.withName(lib + suffix)
-          }
+          case Some((2, 13))    => Some("_3" -> Nil)
+          case Some((3, minor)) =>
+            val excludeScalalib = if (minor >= 8) Seq("scalalib") else Nil
+            Some("_2.13" -> excludeScalalib)
+          case _ => None
+        }).fold(Seq.empty[ExclusionRule]) {
+          case (scalaBinSuffix, excludeScalaLib) =>
+            val suffix = "_" +
+              ScalaNativeCrossVersion.scalaNativePrefix + scalaBinSuffix
+            val exclRule = ExclusionRule(nativeOrgName)
+            (nativeStandardLibraries ++ excludeScalaLib).map { lib =>
+              exclRule.withName(lib + suffix)
+            }
         }
       }
     )
   }
 
-  lazy val scalaNativeBaseSettings: Seq[Setting[_]] = Seq(
-    crossVersion := ScalaNativeCrossVersion.binary,
-    platformDepsCrossVersion := ScalaNativeCrossVersion.binary
-  )
+  lazy val scalaNativeBaseSettings: Seq[Setting[_]] =
+    PluginCompat.sbtVersionBaseSettings
 
   /** Called by overridden method in plugin
    *
@@ -107,24 +117,26 @@ object ScalaNativePluginInternal {
    *    [[ScalaNativePlugin#globalSettings]]
    */
   lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
-    nativeConfig := build.NativeConfig.empty
-      .withClang(interceptBuildException(Discover.clang()))
-      .withClangPP(interceptBuildException(Discover.clangpp()))
-      .withCompileOptions(Discover.compileOptions())
-      .withLinkingOptions(Discover.linkingOptions())
-      .withLTO(Discover.LTO())
-      .withGC(Discover.GC())
-      .withMode(Discover.mode())
-      .withOptimize(Discover.optimize()),
+    onLoad := {
+      checkJVMVersion(sLog.value)
+      onLoad.value
+    },
+    nativeConfig := {
+      build.NativeConfig.empty
+        .withClang(interceptBuildException(Discover.clang()))
+        .withClangPP(interceptBuildException(Discover.clangpp()))
+        .withCompileOptions(Discover.compileOptions())
+        .withLinkingOptions(Discover.linkingOptions())
+        .withLTO(Discover.LTO())
+        .withGC(Discover.GC())
+        .withMode(Discover.mode())
+        .withOptimize(Discover.optimize())
+    },
+    ThisBuild / nativeConfig := (Global / nativeConfig).value,
     nativeWarnOldJVM := {
       val logger = streams.value.log
-      Try(Class.forName("java.util.function.Function")).toOption match {
-        case None =>
-          logger.warn("Scala Native is only supported on Java 8 or newer.")
-        case Some(_) =>
-          ()
-      }
-    },
+      checkJVMVersion(logger)
+    }: @annotation.nowarn,
     onComplete := {
       val prev: () => Unit = onComplete.value
       () => {
@@ -171,24 +183,18 @@ object ScalaNativePluginInternal {
   private final val isGeneratingForIDE =
     sys.env.getOrElse("METALS_ENABLED", "false").toBoolean
 
-  /** Config settings are called for each project, for each Scala version, and
-   *  for test and app configurations. The total with 3 Scala versions equals 6
-   *  times per project.
-   */
-  def scalaNativeConfigSettings(testConfig: Boolean): Seq[Setting[_]] = Seq(
-    scalacOptions ++= {
-      if (isGeneratingForIDE) None
-      else
-        Some(
-          s"-P:scalanative:positionRelativizationPaths:${sourceDirectories.value.map(_.getAbsolutePath()).mkString(";")}"
-        )
-    },
-    nativeLinkReleaseFull := Def
+  private def nativeLinkCachedTask(
+      testConfig: Boolean,
+      moduleSuffix: String,
+      linkKey: TaskKey[FileRef]
+  ): Def.Initialize[Task[FileRef]] =
+    Def
       .task {
+        implicit val conv: FileConverter = Keys.fileConverter.value
         val sbtLogger = streams.value.log
         val nativeLogger = sbtLogger.toLogger
-        val classpath = fullClasspath.value.map(_.data.toPath)
-        val userConfig = nativeConfig.value
+        val classpath = PluginCompat.toNioPaths(fullClasspath.value)
+        val userConfig = (linkKey / nativeConfig).value
         val sourcesClassPath = resolveSourcesClassPath(
           userConfig,
           dependencyResolution.value,
@@ -196,61 +202,7 @@ object ScalaNativePluginInternal {
           sbtLogger
         )
 
-        nativeLinkImpl(
-          nativeConfig = userConfig.withMode(Mode.releaseFull),
-          classpath = classpath,
-          sourcesClassPath = sourcesClassPath,
-          sbtLogger = sbtLogger,
-          nativeLogger = nativeLogger,
-          mainClass = selectMainClass.value,
-          baseDir = crossTarget.value.toPath(),
-          testConfig = testConfig,
-          moduleName = moduleName.value + "-release-full"
-        )
-      }
-      .tag(NativeTags.Link)
-      .value,
-    nativeLinkReleaseFast := Def
-      .task {
-        val sbtLogger = streams.value.log
-        val nativeLogger = sbtLogger.toLogger
-        val classpath = fullClasspath.value.map(_.data.toPath)
-        val userConfig = nativeConfig.value
-        val sourcesClassPath = resolveSourcesClassPath(
-          userConfig,
-          dependencyResolution.value,
-          externalDependencyClasspath.value,
-          sbtLogger
-        )
-
-        nativeLinkImpl(
-          nativeConfig = userConfig.withMode(Mode.releaseFast),
-          classpath = classpath,
-          sourcesClassPath = sourcesClassPath,
-          sbtLogger = sbtLogger,
-          nativeLogger = nativeLogger,
-          mainClass = selectMainClass.value,
-          baseDir = crossTarget.value.toPath(),
-          testConfig = testConfig,
-          moduleName = moduleName.value + "-release-fast"
-        )
-      }
-      .tag(NativeTags.Link)
-      .value,
-    nativeLink := Def
-      .task {
-        val sbtLogger = streams.value.log
-        val nativeLogger = sbtLogger.toLogger
-        val classpath = fullClasspath.value.map(_.data.toPath)
-        val userConfig = nativeConfig.value
-        val sourcesClassPath = resolveSourcesClassPath(
-          userConfig,
-          dependencyResolution.value,
-          externalDependencyClasspath.value,
-          sbtLogger
-        )
-
-        nativeLinkImpl(
+        val artifactFile = nativeLinkImpl(
           nativeConfig = userConfig,
           classpath = classpath,
           sourcesClassPath = sourcesClassPath,
@@ -259,11 +211,44 @@ object ScalaNativePluginInternal {
           mainClass = selectMainClass.value,
           baseDir = crossTarget.value.toPath(),
           testConfig = testConfig,
-          moduleName = moduleName.value
+          moduleName = moduleName.value + moduleSuffix
         )
+        toFileRef(artifactFile)
       }
       .tag(NativeTags.Link)
-      .value,
+
+  /** Config settings are called for each project, for each Scala version, and
+   *  for test and app configurations. The total with 3 Scala versions equals 6
+   *  times per project.
+   */
+  def scalaNativeConfigSettings(testConfig: Boolean): Seq[Setting[_]] = Seq(
+    compile / scalacOptions ++= {
+      if (isGeneratingForIDE) None
+      else
+        Some(
+          s"-P:scalanative:positionRelativizationPaths:${sourceDirectories.value.map(_.getAbsolutePath()).mkString(";")}"
+        )
+    },
+    nativeLink / nativeConfig := nativeConfig.value,
+    nativeLinkReleaseFast / nativeConfig := nativeConfig.value
+      .withMode(Mode.releaseFast),
+    nativeLinkReleaseFull / nativeConfig := nativeConfig.value
+      .withMode(Mode.releaseFull),
+    nativeLinkReleaseFull := nativeLinkCachedTask(
+      testConfig,
+      moduleSuffix = "-release-full",
+      linkKey = nativeLinkReleaseFull
+    ).value,
+    nativeLinkReleaseFast := nativeLinkCachedTask(
+      testConfig,
+      moduleSuffix = "-release-fast",
+      linkKey = nativeLinkReleaseFast
+    ).value,
+    nativeLink := nativeLinkCachedTask(
+      testConfig,
+      moduleSuffix = "",
+      linkKey = nativeLink
+    ).value,
     console := console
       .dependsOn(Def.task {
         streams.value.log.warn(
@@ -273,22 +258,52 @@ object ScalaNativePluginInternal {
       })
       .value,
     run := {
+      implicit val conv: FileConverter = Keys.fileConverter.value
       val env = (run / envVars).value.toSeq
       val logger = streams.value.log
-      val binary = nativeLink.value.getAbsolutePath
+      val binary = toFile(nativeLink.value).getAbsolutePath
       val args = binary +: spaceDelimited("<arg>").parsed
+
+      @volatile var pipeOutputThreads: List[Thread] = Nil
 
       logger.running(args)
 
-      val exitCode = {
-        val proc = new ProcessBuilder(args: _*).inheritIO()
-        env.foreach((proc.environment.put _).tupled)
-        proc.start().waitFor()
-      }
+      val message = try {
+        val exitCode = {
+          val proc =
+            new ProcessBuilder(args: _*)
 
-      val message =
+          env.foreach { case (k, v) => proc.environment().put(k, v) }
+
+          val process = proc.start()
+
+          /*
+           * Comment copied from Scala.js:
+           * https://github.com/scala-js/scala-js/blob/35c206173ad3b6626a8bd02b687690fcfba93c31/sbt-plugin/src/main/scala/org/scalajs/sbtplugin/ScalaJSPluginInternal.scala#L598-L603
+           *
+           * #4560 Explicitly redirect out/err to System.out/System.err, instead
+           * of relying on `inheritOut` and `inheritErr`, so that streams
+           * installed with `System.setOut` and `System.setErr` are always taken
+           * into account. sbt installs such alternative outputs when it runs in
+           * server mode.
+           */
+          val err = process.getErrorStream()
+          val out = process.getInputStream()
+          pipeOutputThreads = List(
+            PipeOutputThread.start(err, System.err),
+            PipeOutputThread.start(out, System.out)
+          )
+
+          process.waitFor()
+        }
+
         if (exitCode == 0) None
         else Some("Nonzero exit code: " + exitCode)
+      } finally {
+        // always shutdown the output piping threads
+        for (pipeOutputThread <- pipeOutputThreads)
+          pipeOutputThread.join()
+      }
 
       message.foreach(sys.error)
     },
@@ -308,7 +323,8 @@ object ScalaNativePluginInternal {
       Seq(
         mainClass := Some("scala.scalanative.testinterface.TestMain"),
         nativeConfig ~= { _.withBuildTarget(build.BuildTarget.application) },
-        loadedTestFrameworks := {
+        loadedTestFrameworks := Def.uncached {
+          implicit val conv: FileConverter = Keys.fileConverter.value
           val configName = configuration.value.name
 
           if (fork.value) {
@@ -321,7 +337,7 @@ object ScalaNativePluginInternal {
           val frameworkNames = frameworks.map(_.implClassNames.toList).toList
 
           val logger = streams.value.log.toLogger
-          val testBinary = nativeLink.value
+          val testBinary = toFile(nativeLink.value)
           val envVars = (test / Keys.envVars).value
 
           val config = TestAdapter
@@ -350,7 +366,7 @@ object ScalaNativePluginInternal {
             .triggeredBy(loadedTestFrameworks)
             .value
         }
-      )
+      ) ++ PluginCompat.incrementalTestSettings
 
   /** Called by overridden method in plugin
    *
@@ -423,14 +439,15 @@ object ScalaNativePluginInternal {
       dependencyResolution: DependencyResolution,
       externalClassPath: Classpath,
       log: util.Logger
-  ): Seq[Path] = {
+  )(implicit conv: FileConverter): Seq[Path] = {
     if (!userConfig.sourceLevelDebuggingConfig.enabled) Nil
-    else
-      externalClassPath.par
-        .flatMap { classpath =>
+    else {
+      import scala.concurrent.ExecutionContext.Implicits.global
+      val tasks = Future.traverse(externalClassPath)(classpath =>
+        Future {
           try {
-            classpath.metadata
-              .get(moduleID.key)
+            PluginCompat
+              .classpathEntryToModuleID(classpath)
               .toSeq
               .map(_.classifier("sources").withConfigurations(None))
               .map(dependencyResolution.wrapDependencyInModule)
@@ -442,7 +459,7 @@ object ScalaNativePluginInternal {
                   util.Logger.Null
                 )
               )
-              .flatMap(_.right.toOption)
+              .flatMap(_.right.toOption: @nowarn)
               .flatMap(_.allFiles)
               .filter(_.name.endsWith("-sources.jar"))
               .map(_.toPath())
@@ -455,8 +472,36 @@ object ScalaNativePluginInternal {
               Nil
           }
         }
-        .seq
-        .sorted
+      )
+      Await.result(tasks, Duration.Inf).flatten.sorted
+    }
   }
 
+  private def hostJavaSpecificationVersion(): Int = {
+    val fullVersion = sys.props
+      .get("java.specification.version")
+      .orElse(sys.props.get("java.version"))
+      .getOrElse("")
+
+    fullVersion.stripPrefix("1.").takeWhile(_.isDigit) match {
+      case ""     => 0
+      case digits => digits.toInt
+    }
+  }
+
+  private def checkJVMVersion(logger: util.Logger): Unit = {
+    val currentVersion = hostJavaSpecificationVersion()
+    if (currentVersion < MinimumSupportedJDK) {
+      throw new MessageOnlyException(
+        s"Scala Native requires JDK $MinimumSupportedJDK or newer."
+      )
+    }
+    if (currentVersion < WarnOnJDKOlderThan) {
+      logger.warn(
+        s"Using JDK $currentVersion with Scala Native. " +
+          s"Support for running Scala Native on JDK < $WarnOnJDKOlderThan is deprecated - it would be removed in the future; " +
+          s"please upgrade to JDK $WarnOnJDKOlderThan or newer."
+      )
+    }
+  }
 }

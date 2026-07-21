@@ -40,11 +40,12 @@ class IssuesSpec extends LinkerSpec {
     val fqcn = s"$packageName.$mainClass".replace("`", "")
     checkNoLinkageErrors(
       mainClass = fqcn,
-      source = s"""|package $packageName
-                   |object `$mainClass`{
-                   |  def main(args: Array[String]) = ()
-                   |}
-                   |""".stripMargin
+      source =
+        s"""|package $packageName
+            |object `$mainClass`{
+            |  def main(args: Array[String]) = ()
+            |}
+            |""".stripMargin
     )
   }
 

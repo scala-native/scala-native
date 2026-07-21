@@ -1,10 +1,12 @@
 package java.lang.process
 
+import java.time.Duration
 import java.util.concurrent.{CompletableFuture, TimeUnit, TimeoutException}
 import java.util.stream.Stream
 import java.util.{Optional, function}
 
 import scala.scalanative.javalib.io.ObjectHandle
+import scala.scalanative.meta.LinktimeInfo
 
 // Represents ProcessHandle for process started by Scala Native runtime
 // Cannot be used with processes started by other programs
@@ -35,19 +37,19 @@ private[process] abstract class GenericProcessHandle(
    * attempts to waitpid (hoping for an ECHILD), a completely new child
    * had been forked with the same pid. */
   protected val exitChecker: ProcessExitChecker = {
-    val useWatcher = // see if we use GenericProcessWatcher
-      if (GenericProcessWatcher.isEnabled)
-        ProcessExitChecker.factory.isInstanceOf[ProcessExitChecker.MultiFactory]
-      else false
-    if (useWatcher)
-      ProcessExitCheckerCompletion
-    else {
+    def createSingle() = {
       implicit val processRegistry: ProcessRegistry = new ProcessRegistry {
         override def completeWith(pid: Long)(ec: Int): Boolean =
           setOrCheckCachedExitCode(ec)
       }
       ProcessExitChecker.factory.createSingle(processId)
     }
+    if (!GenericProcessWatcher.isEnabled) createSingle()
+    else
+      ProcessExitChecker.factory match {
+        case _: ProcessExitChecker.MultiFactory => ProcessExitCheckerCompletion
+        case _                                  => createSingle()
+      }
   }
 
   override final def isAlive(): Boolean = !hasExited
@@ -86,7 +88,10 @@ private[process] abstract class GenericProcessHandle(
   def onExitHandle[A <: AnyRef](
       fn: function.BiFunction[java.lang.Integer, Throwable, A]
   ): CompletableFuture[A] =
-    completion.handleAsync(fn)
+    if (LinktimeInfo.isMultithreadingEnabled)
+      completion.handleAsync(fn)
+    else
+      completion.handle(fn)
 
   override def parent(): Optional[ProcessHandle] = Optional.empty()
 
@@ -100,11 +105,35 @@ private[process] abstract class GenericProcessHandle(
     hasExited || destroyImpl(force = force)
 
   private def waitForWith(check: => Boolean) = hasExited || check && hasExited
+
   def waitFor(): Boolean = waitForWith(exitChecker.waitAndReapSome(0, None))
+
   def waitFor(timeout: scala.Long, unit: TimeUnit): Boolean =
     waitForWith(
       timeout > 0L && exitChecker.waitAndReapSome(timeout, Some(unit))
     )
+
+  def waitFor(duration: java.time.Duration): Boolean = {
+    // Be robust to SN CI uncertainty, use only JDK 8 methods
+
+    var unit = TimeUnit.NANOSECONDS
+
+    val timeout: scala.Long =
+      try {
+        duration.toNanos()
+      } catch {
+        /* Note: nanoseconds < 1 second will be lost
+         * after approx 292 years, 3 months, 9.7 days and change.
+         * Avoiding that loss is an exercise for the reader.
+         * Good problem to have when your machine stays up that long.
+         */
+        case _: ArithmeticException =>
+          unit = TimeUnit.SECONDS
+          duration.getSeconds()
+      }
+
+    waitFor(timeout, unit)
+  }
 
   override def onExit(): CompletableFuture[ProcessHandle] =
     onExitApply(_ => this: ProcessHandle)

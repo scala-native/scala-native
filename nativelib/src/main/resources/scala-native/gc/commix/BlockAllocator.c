@@ -1,7 +1,7 @@
 #if defined(SCALANATIVE_GC_COMMIX)
 
 #include "BlockAllocator.h"
-#include "immix_commix/Log.h"
+#include "shared/Log.h"
 #include "immix_commix/utils/MathUtils.h"
 #include "Heap.h"
 #include "shared/ThreadUtil.h"
@@ -174,12 +174,10 @@ INLINE BlockMeta *BlockAllocator_GetFreeBlock(BlockAllocator *blockAllocator) {
 
     BlockAllocator_Release(blockAllocator);
 
-// not decrementing freeBlockCount, because it is only used after sweep
-#ifdef DEBUG_PRINT
-    printf("BlockAllocator_GetFreeBlock = %p %" PRIu32 "\n", block,
-           BlockMeta_GetBlockIndex(blockAllocator->blockMetaStart, block));
-    fflush(stdout);
-#endif
+    // not decrementing freeBlockCount, because it is only used after sweep
+    GC_LOG_DEBUG(
+        "BlockAllocator_GetFreeBlock = %p %" PRIu32, block,
+        BlockMeta_GetBlockIndex(blockAllocator->blockMetaStart, block));
     return block;
 }
 
@@ -247,13 +245,11 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
         BlockMeta_SetFlag(current, block_superblock_tail);
     }
     BlockAllocator_Release(blockAllocator);
-// not decrementing freeBlockCount, because it is only used after sweep
-#ifdef DEBUG_PRINT
-    printf("BlockAllocator_GetFreeSuperblock(%" PRIu32 ") = %p %" PRIu32 "\n",
-           size, superblock,
-           BlockMeta_GetBlockIndex(blockAllocator->blockMetaStart, superblock));
-    fflush(stdout);
-#endif
+    // not decrementing freeBlockCount, because it is only used after sweep
+    GC_LOG_DEBUG(
+        "BlockAllocator_GetFreeSuperblock(%" PRIu32 ") = %p %" PRIu32, size,
+        superblock,
+        BlockMeta_GetBlockIndex(blockAllocator->blockMetaStart, superblock));
     atomic_fetch_add_explicit(&blockAllocator->freeBlockCount, -size,
                               memory_order_relaxed);
     return superblock;
@@ -305,14 +301,11 @@ void BlockAllocator_AddFreeSuperblockLocal(BlockAllocator *blockAllocator,
                                            BlockMeta *superblock,
                                            uint32_t count) {
 
-#ifdef DEBUG_PRINT
-    printf("BlockAllocator_AddFreeSuperblock %p %" PRIu32 " count = %" PRIu32
-           "\n",
-           superblock,
-           BlockMeta_GetBlockIndex(blockAllocator->blockMetaStart, superblock),
-           count);
-    fflush(stdout);
-#endif
+    GC_LOG_DEBUG(
+        "BlockAllocator_AddFreeSuperblockLocal %p %" PRIu32 " count = %" PRIu32,
+        superblock,
+        BlockMeta_GetBlockIndex(blockAllocator->blockMetaStart, superblock),
+        count);
     BlockMeta *limit = superblock + count;
     for (BlockMeta *current = superblock; current < limit; current++) {
         // check for double sweeping
@@ -331,14 +324,11 @@ void BlockAllocator_AddFreeSuperblockLocal(BlockAllocator *blockAllocator,
 void BlockAllocator_AddFreeSuperblock(BlockAllocator *blockAllocator,
                                       BlockMeta *superblock, uint32_t count) {
 
-#ifdef DEBUG_PRINT
-    printf("BlockAllocator_AddFreeSuperblock %p %" PRIu32 " count = %" PRIu32
-           "\n",
-           superblock,
-           BlockMeta_GetBlockIndex(blockAllocator->blockMetaStart, superblock),
-           count);
-    fflush(stdout);
-#endif
+    GC_LOG_DEBUG(
+        "BlockAllocator_AddFreeSuperblock %p %" PRIu32 " count = %" PRIu32,
+        superblock,
+        BlockMeta_GetBlockIndex(blockAllocator->blockMetaStart, superblock),
+        count);
     BlockMeta *limit = superblock + count;
     for (BlockMeta *current = superblock; current < limit; current++) {
         // check for double sweeping
@@ -356,13 +346,11 @@ void BlockAllocator_AddFreeSuperblock(BlockAllocator *blockAllocator,
 
 void BlockAllocator_AddFreeBlocks(BlockAllocator *blockAllocator,
                                   BlockMeta *superblock, uint32_t count) {
-#ifdef DEBUG_PRINT
-    printf("BlockAllocator_AddFreeBlocks %p %" PRIu32 " count = %" PRIu32 "\n",
-           superblock,
-           BlockMeta_GetBlockIndex(blockAllocator->blockMetaStart, superblock),
-           count);
-    fflush(stdout);
-#endif
+    GC_LOG_DEBUG(
+        "BlockAllocator_AddFreeBlocks %p %" PRIu32 " count = %" PRIu32,
+        superblock,
+        BlockMeta_GetBlockIndex(blockAllocator->blockMetaStart, superblock),
+        count);
     assert(count > 0);
     BlockMeta *limit = superblock + count;
     for (BlockMeta *current = superblock; current < limit; current++) {

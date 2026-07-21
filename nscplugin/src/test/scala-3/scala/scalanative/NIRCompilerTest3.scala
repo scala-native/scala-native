@@ -154,18 +154,19 @@ class NIRCompilerTest3 {
 
   @Test def topLevelExports(): Unit = {
     compileAndLoad(
-      "source.scala" -> """|
-                           |import scala.scalanative.unsafe.*
-                           |
-                           |@exported
-                           |def foo: Int = 42
-                           |
-                           |@exportAccessors("my_get_bar")
-                           |val bar: Long = 42L
-                           |
-                           |@exportAccessors("my_get_baz", "my_set_baz")
-                           |var baz: Byte = 42
-                           |""".stripMargin
+      "source.scala" ->
+        """|
+           |import scala.scalanative.unsafe.*
+           |
+           |@exported
+           |def foo: Int = 42
+           |
+           |@exportAccessors("my_get_bar")
+           |val bar: Long = 42L
+           |
+           |@exportAccessors("my_get_baz", "my_set_baz")
+           |var baz: Byte = 42
+           |""".stripMargin
     ) { defns =>
       val Owner = Global.Top("source$package$")
       val expected = Seq(

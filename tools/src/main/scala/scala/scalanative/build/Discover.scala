@@ -1,8 +1,9 @@
 package scala.scalanative
 package build
 
-import java.io.File
-import java.nio.file.{Files, Path, Paths}
+import java.io.{File, IOException}
+import java.nio.file.{Files, LinkOption, Path, Paths}
+import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.reflect.ClassTag
 import scala.sys.process._
@@ -43,14 +44,14 @@ object Discover {
   /** Use the clang binary on the path or via LLVM_BIN env var. */
   def clang(): Path = {
     val path = discover("clang", "LLVM_BIN")
-    checkClangVersion(path)
+    checkClangVersion(path, Logger.default)
     path
   }
 
   /** Use the clang++ binary on the path or via LLVM_BIN env var. */
   def clangpp(): Path = {
     val path = discover("clang++", "LLVM_BIN")
-    checkClangVersion(path)
+    checkClangVersion(path, Logger.default)
     path
   }
 
@@ -90,23 +91,35 @@ object Discover {
 
   /** Find default options passed to the system's native linker. */
   def linkingOptions(): Seq[String] = {
-    val libs = {
-      val llvmLibDir =
-        Try(Process(s"$llvmConfigCLI --libdir").lineStream_!.toSeq)
-          .getOrElse(Seq.empty)
+    val llvmLibDirs =
+      Try(Process(s"$llvmConfigCLI --libdir").lineStream_!.toSeq)
+        .getOrElse(Seq.empty)
 
-      val libDirs =
-        getenv("SCALANATIVE_LIB_DIRS")
-          .map(_.split(File.pathSeparatorChar).toSeq)
-          .getOrElse(
-            filterExisting(
-              Seq("/usr/local/lib", "/opt/local/lib", "/opt/homebrew/lib")
-            )
+    val libDirs =
+      getenv("SCALANATIVE_LIB_DIRS")
+        .map(_.split(File.pathSeparatorChar).toSeq)
+        .getOrElse(
+          filterExisting(
+            Seq("/usr/local/lib", "/opt/local/lib", "/opt/homebrew/lib")
           )
+        )
 
-      (libDirs ++ llvmLibDir).map(s => s"-L$s")
-    }
-    libs
+    defaultLinkingOptions(
+      libDirs = libDirs,
+      llvmLibDirs = llvmLibDirs,
+      targetsMac = Platform.isMac
+    )
+  }
+
+  private[scalanative] def defaultLinkingOptions(
+      libDirs: Seq[String],
+      llvmLibDirs: Seq[String],
+      targetsMac: Boolean
+  ): Seq[String] = {
+    // On Darwin, adding LLVM's own libdir pollutes application links with
+    // Homebrew runtime libraries such as libunwind and produces linker noise.
+    val extraLibDirs = if (targetsMac) Nil else llvmLibDirs
+    (libDirs ++ extraLibDirs).map(s => s"-L$s")
   }
 
   private case class ClangInfo(
@@ -159,20 +172,62 @@ object Discover {
   /** Tests whether the clang compiler is greater or equal to the minumum
    *  version required.
    */
-  private[scalanative] def checkClangVersion(pathToClangBinary: Path): Unit = {
+  private[scalanative] def checkClangVersion(
+      pathToClangBinary: Path,
+      logger: Logger
+  ): Unit = {
     val ClangInfo(majorVersion, version, _) = clangInfo(pathToClangBinary)
+    resetWarningOnClangChange(pathToClangBinary)
+    checkClangVersion(
+      majorVersion,
+      version,
+      logger
+    )
+  }
 
-    if (majorVersion < clangMinVersion) {
+  private[scalanative] def checkClangVersion(
+      majorVersion: Int,
+      version: String,
+      logger: Logger
+  ): Unit = {
+    if (majorVersion < MinimumSupportedClangVersion) {
       throw new BuildException(
-        s"""|Minimum version of clang is '$clangMinVersion'.
+        s"""|Minimum version of clang is '$MinimumSupportedClangVersion'.
             |Discovered version '$version'.
             |Please refer to ($docSetup)""".stripMargin
+      )
+    }
+    // Warn once about deprecated clang version (so that we don't spam users since nativeConfig is a task)
+    if (majorVersion < WarnOnClangOlderThan &&
+        warnedAboutDeprecatedClangVersion.compareAndSet(false, true)) {
+      logger.warn(
+        s"""|Using deprecated clang version '$version'.
+            |Versions older than clang '$WarnOnClangOlderThan' can contain known bugs and runtime issues.
+            |Please upgrade to clang '$WarnOnClangOlderThan' or newer.
+            |Refer to ($docSetup)""".stripMargin
       )
     }
   }
 
   /** Minimum version of clang */
-  private[scalanative] final val clangMinVersion = 6
+  private[scalanative] final val MinimumSupportedClangVersion = 6
+
+  /** Minimum clang version that does not emit a deprecation warning. */
+  private[scalanative] final val WarnOnClangOlderThan = 16
+
+  private var lastCheckedClangPath: Option[Path] = None
+  private val warnedAboutDeprecatedClangVersion = new AtomicBoolean(false)
+  private def resetWarningOnClangChange(pathToClangBinary: Path): Unit =
+    try {
+      val llvmBinDir = pathToClangBinary.toRealPath().getParent()
+      if (!lastCheckedClangPath.contains(llvmBinDir)) {
+        lastCheckedClangPath = Some(llvmBinDir)
+        warnedAboutDeprecatedClangVersion.set(false)
+      }
+    } catch {
+      // ignore broken symlinks, we just want to check version
+      case _: IOException => ()
+    }
 
   /** Link to setup documentation */
   private[scalanative] val docSetup =

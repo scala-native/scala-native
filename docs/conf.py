@@ -64,9 +64,9 @@ def tag_commit_date_utc(tag: str) -> str:
 
 # The short X.Y version (binary version)
 version = u'0.5'
-last_stable_release = "0.5.9"
+last_stable_release = "0.5.12"
 # The next version to be releaed, used to calculate snapshot versions
-developed_version   = "0.5.10"
+developed_version   = "0.5.13"
 # The full version, including alpha/beta/rc tags.
 release = lastSnapshotVersion()
 # release = developed_version
@@ -75,6 +75,7 @@ release = lastSnapshotVersion()
 
 rst_epilog = f"""
 .. |last_stable_release| replace:: {last_stable_release}
+.. |release| replace:: {release}
 """
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -85,7 +86,10 @@ rst_epilog = f"""
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 # myst_parser provides support for '.md' files
-extensions = ['myst_parser', 'sphinx_last_updated_by_git', 'sphinx_markdown_tables']
+extensions = ['myst_parser', 'sphinx_last_updated_by_git']
+
+# Enable substitution extension for myst-parser
+myst_enable_extensions = ["substitution"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -401,3 +405,9 @@ texinfo_documents = [
 
 # permit references to ### level sections
 myst_heading_anchors = 3
+
+# Substitutions for markdown files (using {variable} syntax)
+myst_substitutions = {
+    "last_stable_release": str(last_stable_release),
+    "release": str(release),
+}

@@ -4,7 +4,6 @@
 #include <memory.h>
 #include "Block.h"
 #include "metadata/ObjectMeta.h"
-#include "immix_commix/Log.h"
 #include "Allocator.h"
 
 INLINE void Block_recycleUnmarkedBlock(Allocator *allocator,

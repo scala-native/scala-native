@@ -197,14 +197,17 @@ object Tag {
       % end
       res
     }
+    % for fld in range(1, N + 1):
+    @alwaysinline final def offset${fld - 1}: Int =
+      % if fld == 1:
+      align(0, _1.alignment)
+      % else:
+      align(offset${fld - 2} + _${fld - 1}.size, _${fld}.alignment)
+      % end
+    % end
     @alwaysinline override def offset(idx: Int): Int = idx.toInt match {
       % for fld in range(1, N + 1):
-      case ${fld - 1} =>
-        var res = 0
-        % for i in range(1, fld):
-        res = align(res, _${i}.alignment) + _${i}.size
-        % end
-        align(res, _${fld}.alignment)
+      case ${fld - 1} => offset${fld - 1}
       % end
       case _ =>
         throwUndefined()

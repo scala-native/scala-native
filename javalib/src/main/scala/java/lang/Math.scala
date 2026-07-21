@@ -1,5 +1,7 @@
 package java.lang
 
+import java.{lang => jl}
+
 import scalanative.annotation.alwaysinline
 import scalanative.libc.{math => cmath}
 import scalanative.runtime.LLVMIntrinsics._
@@ -71,6 +73,84 @@ object Math {
   @alwaysinline def ceil(a: scala.Double): scala.Double =
     `llvm.ceil.f64`(a)
 
+  /** @since JDK 18 */
+  def ceilDiv(dividend: scala.Int, divisor: scala.Int): scala.Int = {
+    if ((dividend == jl.Integer.MIN_VALUE) && (divisor == -1))
+      jl.Integer.MIN_VALUE
+    else
+      ceilDiv(dividend.toLong, divisor.toLong).toInt
+  }
+
+  /** @since JDK 18 */
+  def ceilDiv(dividend: scala.Long, divisor: scala.Int): scala.Long =
+    ceilDiv(dividend, divisor.toLong)
+
+  /** @since JDK 18 */
+  def ceilDiv(dividend: scala.Long, divisor: scala.Long): scala.Long = {
+    if (divisor == 0L)
+      throw new ArithmeticException("/ by zero")
+
+    if ((dividend == jl.Long.MIN_VALUE) && (divisor == -1L)) {
+      jl.Long.MIN_VALUE
+    } else {
+      val quotient = dividend / divisor
+      var result = quotient
+
+      if (quotient > 0) {
+        if (Math.abs(dividend) != Math.abs(divisor))
+          result += 1
+      } else if (quotient == 0) {
+        val shiftCount = jl.Long.SIZE - 1
+        val signsMatch =
+          (dividend >>> shiftCount) == (divisor >>> shiftCount)
+
+        if (signsMatch && (dividend != 0))
+          result += 1
+      }
+      // else < 0, result is the same as Integer truncating division: '/'.
+
+      result
+    }
+  }
+
+  /** @since JDK 25 */
+  def ceilDivExact(dividend: scala.Int, divisor: scala.Int): scala.Int = {
+    if ((dividend == jl.Integer.MIN_VALUE) && (divisor == -1))
+      throw new ArithmeticException("integer overflow")
+
+    ceilDiv(dividend, divisor)
+  }
+
+  /** @since JDK 25 */
+  def ceilDivExact(dividend: scala.Long, divisor: scala.Long): scala.Long = {
+    if (divisor == 0L)
+      throw new ArithmeticException("/ by zero")
+
+    if ((dividend == jl.Long.MIN_VALUE) && (divisor == -1))
+      throw new ArithmeticException("integer overflow")
+
+    ceilDiv(dividend, divisor)
+  }
+
+  /** @since JDK 18 */
+  def ceilMod(dividend: scala.Int, divisor: scala.Int): scala.Int =
+    ceilMod(dividend.toLong, divisor.toLong).toInt
+
+  /** @since JDK 18 */
+  def ceilMod(dividend: scala.Long, divisor: scala.Int): scala.Int = {
+    // Note Well: the return type differs from corresponding ceilDiv(long, int)
+    ceilMod(dividend, divisor.toLong).toInt
+  }
+
+  /** @since JDK 18 */
+  def ceilMod(dividend: scala.Long, divisor: scala.Long): scala.Long = {
+    if (divisor == 0L)
+      throw new ArithmeticException("/ by zero")
+
+    dividend - (ceilDiv(dividend, divisor) * divisor)
+  }
+
+  /** @since JDK 21 */
   def clamp(
       value: scala.Double,
       min: scala.Double,
@@ -90,6 +170,7 @@ object Math {
     Math.min(Math.max(value, min), max)
   }
 
+  /** @since JDK 21 */
   def clamp(
       value: scala.Float,
       min: scala.Float,
@@ -109,6 +190,7 @@ object Math {
     Math.min(Math.max(value, min), max)
   }
 
+  /** @since JDK 21 */
   def clamp(
       value: scala.Long,
       min: scala.Int,
@@ -118,11 +200,12 @@ object Math {
       throw new IllegalArgumentException(s"${min} > ${max}")
 
     /* The toInt call is safe. 'min' and 'max' arguments are Ints, so computed
-     * result is known to be in range [Integer.MIN_Value, Integer.MAX_VALUE].
+     * result is known to be in range [Integer.MIN_VALUE, Integer.MAX_VALUE].
      */
     Math.min(Math.max(value, min), max).toInt
   }
 
+  /** @since JDK 21 */
   def clamp(
       value: scala.Long,
       min: scala.Long,
@@ -154,6 +237,28 @@ object Math {
   @alwaysinline def decrementExact(a: scala.Long): scala.Long =
     subtractExact(a, 1L)
 
+  /** @since JDK 25 */
+  def divideExact(dividend: scala.Int, divisor: scala.Int): scala.Int = {
+    if (divisor == 0L)
+      throw new ArithmeticException("/ by zero")
+
+    if ((dividend == jl.Integer.MIN_VALUE) && (divisor == -1))
+      throw new ArithmeticException("integer overflow")
+
+    dividend / divisor
+  }
+
+  /** @since JDK 25 */
+  def divideExact(dividend: scala.Long, divisor: scala.Long): scala.Long = {
+    if (divisor == 0L)
+      throw new ArithmeticException("/ by zero")
+
+    if ((dividend == jl.Long.MIN_VALUE) && (divisor == -1))
+      throw new ArithmeticException("integer overflow")
+
+    dividend / divisor
+  }
+
   @alwaysinline def exp(a: scala.Double): scala.Double =
     `llvm.exp.f64`(a)
 
@@ -177,6 +282,25 @@ object Math {
 
   @alwaysinline def floorDiv(a: scala.Long, b: scala.Int): scala.Long =
     floorDiv(a, b.toLong)
+
+  /** @since JDK 25 */
+  def floorDivExact(dividend: scala.Int, divisor: scala.Int): scala.Int = {
+    if ((dividend == jl.Integer.MIN_VALUE) && (divisor == -1))
+      throw new ArithmeticException("integer overflow")
+
+    floorDiv(dividend, divisor)
+  }
+
+  /** @since JDK 25 */
+  def floorDivExact(dividend: scala.Long, divisor: scala.Long): scala.Long = {
+    if (divisor == 0L)
+      throw new ArithmeticException("/ by zero")
+
+    if ((dividend == jl.Long.MIN_VALUE) && (divisor == -1))
+      throw new ArithmeticException("integer overflow")
+
+    floorDiv(dividend, divisor)
+  }
 
   @inline def floorMod(a: scala.Int, b: scala.Int): scala.Int = {
     val rem = a % b

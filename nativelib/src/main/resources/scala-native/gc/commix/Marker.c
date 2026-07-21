@@ -5,7 +5,6 @@
 #include <setjmp.h>
 #include "Marker.h"
 #include "Object.h"
-#include "immix_commix/Log.h"
 #include "State.h"
 #include "immix_commix/headers/ObjectHeader.h"
 #include "datastructures/GreyPacket.h"
@@ -64,8 +63,19 @@ extern int __modules_size;
 // continuously query for new packets spending CPU resources, slowing other
 // threads and not doing any work.
 
-static inline GreyPacket *Marker_takeEmptyPacket(Heap *heap, Stats *stats) {
+/* May return NULL when all grey packets are in flight (e.g. many refrange
+ * slices queued). Callers that must have a packet should use
+ * `Marker_takeEmptyPacket`. */
+static inline GreyPacket *Marker_tryTakeEmptyPacket(Heap *heap, Stats *stats) {
     return SyncGreyLists_takeEmptyPacket(heap, stats);
+}
+
+static GreyPacket *Marker_takeEmptyPacket(Heap *heap, Stats *stats) {
+    GreyPacket *packet;
+    while ((packet = Marker_tryTakeEmptyPacket(heap, stats)) == NULL) {
+        thread_yield();
+    }
+    return packet;
 }
 
 static inline GreyPacket *Marker_takeFullPacket(Heap *heap, Stats *stats) {
@@ -241,20 +251,29 @@ int Marker_splitObjectArray(Heap *heap, Stats *stats, GreyPacket **outHolder,
         fields + (length / ARRAY_SPLIT_BATCH) * ARRAY_SPLIT_BATCH;
 
     assert(lastBatch <= limit);
-    for (word_t **batchFields = fields; batchFields < limit;
+    int objectsTraced = 0;
+    /* Full batches only; remainder is `lastBatchSize` below. */
+    for (word_t **batchFields = fields; batchFields < lastBatch;
          batchFields += ARRAY_SPLIT_BATCH) {
-        GreyPacket *slice = Marker_takeEmptyPacket(heap, stats);
-        assert(slice != NULL);
-        slice->type = grey_packet_refrange;
-        slice->items[0] = (Stack_Type)batchFields;
-        // no point writing the size, because it is constant
-        Marker_giveFullPacket(heap, stats, slice);
+        GreyPacket *slice = Marker_tryTakeEmptyPacket(heap, stats);
+        if (slice == NULL) {
+            /* Not enough grey packets to enqueue one refrange slice per batch
+             * (pool size scales with max heap; batch count scales with array
+             * length). Mark this batch on the current thread instead. */
+            objectsTraced += Marker_markRange(
+                heap, stats, outHolder, outWeakRefHolder, batchFields,
+                ARRAY_SPLIT_BATCH, sizeof(word_t));
+        } else {
+            slice->type = grey_packet_refrange;
+            slice->items[0] = (Stack_Type)batchFields;
+            // no point writing the size, because it is constant
+            Marker_giveFullPacket(heap, stats, slice);
+        }
     }
 
     size_t lastBatchSize = limit - lastBatch;
-    int objectsTraced = 0;
     if (lastBatchSize > 0) {
-        objectsTraced =
+        objectsTraced +=
             Marker_markRange(heap, stats, outHolder, outWeakRefHolder,
                              lastBatch, lastBatchSize, sizeof(word_t));
     }
@@ -286,7 +305,7 @@ static int Marker_markBlobArray(Heap *heap, Stats *stats, Object *object,
                                 GreyPacket **outWeakRefHolder) {
     ArrayHeader *arrayHeader = (ArrayHeader *)object;
     size_t bytesLength = BlobArray_ScannableLimit(arrayHeader);
-    size_t objectsLength = bytesLength / sizeof(word_t);
+    size_t objectsLength = (bytesLength + sizeof(word_t) - 1) / sizeof(word_t);
     word_t **blobStart = (word_t **)(arrayHeader + 1);
     int objectsTraced;
     // From that point we can treat it similary as object array
@@ -307,19 +326,18 @@ static inline void Marker_splitIncomingPacket(Heap *heap, Stats *stats,
                                               GreyPacket *in) {
     int toMove = in->size / 2;
     if (toMove > 0) {
-        GreyPacket *slice = Marker_takeEmptyPacket(heap, stats);
-        assert(slice != NULL);
-        GreyPacket_MoveItems(in, slice, toMove);
-        Marker_giveFullPacket(heap, stats, slice);
+        GreyPacket *slice = Marker_tryTakeEmptyPacket(heap, stats);
+        if (slice != NULL) {
+            GreyPacket_MoveItems(in, slice, toMove);
+            Marker_giveFullPacket(heap, stats, slice);
+        }
     }
 }
 
 static inline void Marker_RetakeIfNull(Heap *heap, Stats *stats,
                                        GreyPacket **outHolder) {
     if (*outHolder == NULL) {
-        GreyPacket *fresh = Marker_takeEmptyPacket(heap, stats);
-        assert(fresh != NULL);
-        *outHolder = fresh;
+        *outHolder = Marker_takeEmptyPacket(heap, stats);
     }
 }
 
@@ -459,33 +477,30 @@ void Marker_MarkUntilDone(Heap *heap, Stats *stats) {
 NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
                                          Stats *stats, GreyPacket **outHolder,
                                          GreyPacket **outWeakRefHolder) {
-    word_t **stackBottom = thread->stackBottom;
+    word_t **stackBottom = MutatorThread_getStackBottom(thread);
     word_t **stackTop = NULL;
     do {
         // Can spuriously fail, very rare, yet deadly
-        stackTop = (word_t **)atomic_load_explicit(&thread->stackTop,
-                                                   memory_order_acquire);
+        stackTop = MutatorThread_getStackTop(thread, false);
     } while (stackTop == NULL);
 
 #ifdef SCALANATIVE_THREAD_ALT_STACK
     // If signal handler is executing in alternative stack we need to mark the
     // whole thread stack
-    if (!isInRange(stackTop, thread->threadInfo->stackTop,
+    if (thread->threadInfo != NULL &&
+        !isInRange(stackTop, thread->threadInfo->stackTop,
                    thread->threadInfo->stackBottom)) {
         // Area between thread-stackTop and stackGaurdPage might be guarded
         void *stackScanLimit = threadStackScanableLimit(thread->threadInfo);
         stackTop =
             (stackScanLimit != NULL)
-                ? stackScanLimit
+                ? (word_t **)stackScanLimit
                 : stackBottom - 64 * 1024; // not yet initialized, approximate
-                                           // safe scanning limit
         if (thread->threadInfo->signalHandlerStack != NULL) {
             // Marking alternative stack should not be needed, but tests showed
             // that it might contain some pointer to managed object
-            word_t **signalHandlerStack =
-                thread->threadInfo->signalHandlerStack;
             Marker_markRange(heap, stats, outHolder, outWeakRefHolder,
-                             thread->threadInfo->signalHandlerStack,
+                             (word_t **)thread->threadInfo->signalHandlerStack,
                              thread->threadInfo->signalHandlerStackSize /
                                  sizeof(word_t),
                              sizeof(word_t));

@@ -9,7 +9,7 @@ private[java] object MemmemImpl {
    *
    * Unix-like systems, listed below, are known to have implemented memmem()
    * in libc for at least a few decades. The POSIX version may be less than 8
-   * 
+   *
    * ScalaNativeMemmem.memmem() will use posix.string.memmem on unspecified
    * systems which implement Open Group Issue 8 or above. Otherwise,
    * such as on Windows, it will use the local implementation.

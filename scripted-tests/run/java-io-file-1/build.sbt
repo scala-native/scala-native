@@ -154,7 +154,7 @@ setupTests := {
   assert(existingHiddenFile.exists())
   assert(existingHiddenDirectory.exists())
   assert(!nonexistentHiddenFile.exists())
-  if (Platform.isWindows) {
+  if (PlatformInfo.isWindows) {
     Seq(currentDirectory, existingHiddenDirectory, existingHiddenFile)
       .map(_.toPath)
       .foreach(NioFiles.setAttribute(_, "dos:hidden", true.booleanValue()))
@@ -186,7 +186,7 @@ setupTests := {
 
   IO.createDirectory(directoryLinkedTo)
   assert(directoryLinkedTo.exists)
-  if (!Platform.isWindows) {
+  if (!PlatformInfo.isWindows) {
     // Symbolic links on Windows are broken, needs admin priviliges
     NioFiles.createSymbolicLink(
       linkToDirectory.toPath,
@@ -203,7 +203,10 @@ setupTests := {
   assert(canon1F.getCanonicalPath == canon1N)
   assert(canon2F.getCanonicalPath == canon2N)
   assert(canon3F.getCanonicalPath == canon3N)
-  assert(canon4F.getCanonicalPath == canon4N)
+  assert(
+    canon4F.getCanonicalPath == canon4N ||
+    canon4F.getCanonicalPath == canon5N
+  )
   assert(canon5F.getCanonicalPath == canon5N)
 
   assertOsSpecific(

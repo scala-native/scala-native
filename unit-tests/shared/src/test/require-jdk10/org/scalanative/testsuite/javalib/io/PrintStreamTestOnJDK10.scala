@@ -18,7 +18,8 @@ class PrintStreamTestOnJDK10 {
    * More extensive tests could be written, given extended resources and time.
    */
 
-  final val secondComing = """|
+  final val secondComing =
+    """|
                |""Things fall apart; the centre cannot hold;
                |Mere anarchy is loosed upon the world,
                """

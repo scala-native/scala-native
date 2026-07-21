@@ -297,13 +297,13 @@ object ReachabilityAnalysis {
           from: nir.Global.Member
       ): Boolean = {
         val todo = mutable.Queue.empty[nir.Global.Member]
-        methodDirectSymbolRefs.get(from).foreach(todo ++= _.toList)
+        methodDirectSymbolRefs.get(from).foreach(todo ++= _)
         val visited = mutable.HashSet.empty[nir.Global.Member]
         while (todo.nonEmpty) {
           val next = todo.dequeue()
           if (visited.add(next)) {
             if (next == symbol) return true
-            methodDirectSymbolRefs.get(next).foreach(todo ++= _.toList)
+            methodDirectSymbolRefs.get(next).foreach(todo ++= _)
           }
         }
         false

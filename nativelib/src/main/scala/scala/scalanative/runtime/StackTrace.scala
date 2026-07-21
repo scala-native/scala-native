@@ -27,7 +27,7 @@ private[runtime] object StackTrace {
           Intrinsics.castRawSizeToLongUnsigned(Intrinsics.loadRawSize(ip))
         tlContext.cache.getOrElseUpdate(
           addr,
-          makeStackTraceElement(cursor, addr)
+          makeStackTraceElement(addr)
         )
       }
     }
@@ -92,14 +92,6 @@ private[runtime] object StackTrace {
       return emptyStackTrace
 
     implicit val tlContext: Context = ThreadLocalContext.get()
-    val context = tlContext.unwindContext
-    if (unwind.get_context(context) < 0)
-      return emptyStackTrace
-
-    val cursor = tlContext.unwindCursor
-    if (unwind.init_local(cursor, context) < 0)
-      return emptyStackTrace
-
     val buffer = scala.Array.newBuilder[StackTraceElement]
     buffer.sizeHint(raw.length)
 
@@ -107,13 +99,13 @@ private[runtime] object StackTrace {
     while (ipIdx < raw.length) {
       val addr = raw(ipIdx)
 
-      /* Creates a stack trace element in given unwind context. Finding a
-       *  name of the symbol for current function is expensive, so we cache
-       *  stack trace elements based on current instruction pointer.
+      /* Creates a stack trace element. Finding a name of the symbol for
+       * current function is expensive, so we cache stack trace elements
+       * based on current instruction pointer.
        */
       val elem = tlContext.cache.getOrElseUpdate(
         addr,
-        makeStackTraceElement(cursor, addr)
+        makeStackTraceElement(addr)
       )
       buffer += elem
 
@@ -164,13 +156,13 @@ private[runtime] object StackTrace {
         if (unwind.get_reg(cursor, unwind.UNW_REG_IP, ip) == 0) {
           val addr =
             Intrinsics.castRawSizeToLongUnsigned(Intrinsics.loadRawSize(ip))
-          /* Creates a stack trace element in given unwind context. Finding a
-           *  name of the symbol for current function is expensive, so we cache
-           *  stack trace elements based on current instruction pointer.
+          /* Creates a stack trace element. Finding a name of the symbol for
+           * current function is expensive, so we cache stack trace elements
+           * based on current instruction pointer.
            */
           val elem = tlContext.cache.getOrElseUpdate(
             addr,
-            makeStackTraceElement(cursor, addr)
+            makeStackTraceElement(addr)
           )
           buffer += elem
 
@@ -200,7 +192,6 @@ private[runtime] object StackTrace {
       LinktimeInfo.sourceLevelDebuging.generateFunctionSourcePositions
 
   private def makeStackTraceElement(
-      cursor: CVoidPtr,
       ip: Long
   )(implicit tlContext: Context): StackTraceElement = {
 
@@ -229,8 +220,11 @@ private[runtime] object StackTrace {
       import Context._
       val symbol = tlContext.freshSymbolBuffer
       val offset = Intrinsics.stackalloc[Long]()
-      unwind.get_proc_name(
-        cursor,
+      // Use address-based lookup instead of cursor-based.
+      // This is required for materializeStackTrace where the cursor
+      // is not at the correct stack frame position.
+      unwind.get_proc_name_by_ip(
+        Intrinsics.castLongToRawSize(ip),
         symbol,
         Intrinsics.castIntToRawSize(SymbolMaxLength),
         offset

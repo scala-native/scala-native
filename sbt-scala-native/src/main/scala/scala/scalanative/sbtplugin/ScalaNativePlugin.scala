@@ -3,12 +3,16 @@ package sbtplugin
 
 import sbt._
 
+import sjsonnew.JsonFormat
+
 object ScalaNativePlugin extends AutoPlugin {
   override def requires: Plugins = plugins.JvmPlugin
 
   object autoImport {
+    type NativeLinkResult = PluginCompat.FileRef
 
     val ScalaNativeCrossVersion = sbtplugin.ScalaNativeCrossVersion
+    val ScalaNativePlatform: String = sbtplugin.ScalaNativePlatform.current
 
     private[sbtplugin] val nativeOrgName = "org.scala-native"
     val nativeVersion = nir.Versions.current
@@ -38,18 +42,20 @@ object ScalaNativePlugin extends AutoPlugin {
       )
 
     val nativeLink =
-      taskKey[File]("Generates native binary without running it.")
+      taskKey[NativeLinkResult]("Generates native binary without running it.")
 
     val nativeLinkReleaseFast =
-      taskKey[File](
+      taskKey[NativeLinkResult](
         "Generates native binary in release-fast configuration without running it."
       )
 
     val nativeLinkReleaseFull =
-      taskKey[File](
+      taskKey[NativeLinkResult](
         "Generates native binary in release-full configuration without running it."
       )
 
+    implicit def nativeConfigJsonFormat: JsonFormat[build.NativeConfig] =
+      NativeConfigJsonFormats.NativeConfigCodec
   }
 
   override def globalSettings: Seq[Setting[_]] =

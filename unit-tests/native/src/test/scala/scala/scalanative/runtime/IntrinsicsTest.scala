@@ -269,4 +269,26 @@ class IntrinsicsTest {
     assertEquals("c1", 4, alignmentOf[C1])
   }
 
+  @Test def classFieldRawPtrDeepInheritance(): Unit = {
+    class A {
+      var a: Int = 42
+    }
+    class B extends A {
+      var b: Int = 52
+    }
+    class C extends B
+
+    val c = new C
+
+    val aPtr = fromRawPtr[Int](Intrinsics.classFieldRawPtr(c, "a"))
+    assertEquals(c.a, 42)
+    !aPtr = 10
+    assertEquals(c.a, 10)
+
+    val bPtr = fromRawPtr[Int](Intrinsics.classFieldRawPtr(c, "b"))
+    assertEquals(c.b, 52)
+    !bPtr = 20
+    assertEquals(c.b, 20)
+  }
+
 }

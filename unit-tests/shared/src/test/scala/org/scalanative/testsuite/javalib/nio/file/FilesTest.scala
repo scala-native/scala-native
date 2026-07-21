@@ -17,7 +17,8 @@ import org.junit.Assume._
 import org.junit.{Ignore, Test}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import org.scalanative.testsuite.utils.Platform.{executingInJVM, isWindows}
+import org.scalanative.testsuite.utils.Platform
+import org.scalanative.testsuite.utils.Platform.isWindows
 
 import scala.scalanative.junit.utils.AssumesHelper.assumeNotJVMCompliant
 import scala.scalanative.junit.utils.CollectionConverters._
@@ -327,18 +328,6 @@ class FilesTest {
 
       val copyAttrs = Files.readAttributes(fooCopy, attrsCls)
 
-      // Note Well:
-      //   If/When attempting to verify the matches below by using
-      //   the operating system stat command or equivalent, be
-      //   aware that many Scala Native versions truncate
-      //   file times to seconds. The operating system may report
-      //   microseconds or nanoseconds. The assertions below may
-      //   pass when, at first blush, a visual inspection would lead
-      //   one to wonder why they were passing.
-      //
-      //   File times as seconds can lead to other visual anomalies,
-      //   such as lastModified times being before birth times. Go figure!
-
       assertEquals(
         "lastModifiedTime",
         attrs.lastModifiedTime,
@@ -600,7 +589,7 @@ class FilesTest {
   /* If you live a Good Life, you will never have to parse this regex by hand.
    *
    * Java uses simple ASCII for numeric '\d', and alphanumeric '\w'.
-   * 
+   *
    * The parse goes:
    *   - an optional single character 'a'
    *   - 1 to 19 digit characters
@@ -1949,12 +1938,66 @@ class FilesTest {
       val filetimeMs = Files.getLastModifiedTime(f0).toMillis()
 
       // Last 3 digits tend to be ignored by JVM
+      // May be a Java 8 bug, reported fixed in JDK 9.
       val lastModifiedResolution = 1000
       assertEquals(
         "a2",
         referenceMs / lastModifiedResolution,
         filetimeMs / lastModifiedResolution
       )
+    }
+  }
+
+  // Issue 4819
+  @Test def filesGetLastModifiedTimeUsesMilliseconds(): Unit = {
+    /* Files.getLastModifiedTime on JVM 8 is documented to use milliseconds,
+     * if available, but is reported to have a bug, fixed in JDK 9, of only
+     * using seconds. The millisecond are truncated to 000, so no sense
+     * running this test on JVM < 9.
+     */
+    val hasJVM8SecondsOnlyBug = Platform.executingInJVMOnLowerThanJDK(9)
+
+    assumeFalse(
+      "Not testing JVM with JDK 8 getLastModifiedTime seconds-only bug",
+      hasJVM8SecondsOnlyBug
+    )
+
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val path = dir.resolve("myfile")
+
+      Files.write(
+        path,
+        "howdy".getBytes(),
+        StandardOpenOption.CREATE_NEW,
+        StandardOpenOption.SYNC
+      )
+
+      val now = System.currentTimeMillis()
+
+      val before = Files.getLastModifiedTime(path).toMillis()
+
+      /* Detect & report wildly out of range lastModifiedTime values.
+       * An instance of the classic ROC (Receiver Operating Characteristics)
+       * decision choice. Pick a value which is small enough to detect
+       * true failures but large enough to avoid failures due to
+       * vagaries in CI execution.
+       */
+      assertEquals(
+        "unreasonable lastModifiedTime",
+        now.toDouble,
+        before.toDouble,
+        500.0 // an arbitrary, small value for slooow CI machines
+      )
+
+      // Sleep so that the modified time is definitely different
+      Thread.sleep(500L)
+
+      Files.write(path, "byebyebye".getBytes(), StandardOpenOption.SYNC)
+
+      val after = Files.getLastModifiedTime(path).toMillis()
+
+      assertNotEquals(s"before and after are the same", before, after)
     }
   }
 

@@ -43,6 +43,7 @@ object spawn {
   type sigset_t = signal.sigset_t
   type sched_param = sched.sched_param
 
+  @blocking
   def posix_spawn(
       pid: Ptr[pid_t],
       path: CString,
@@ -54,7 +55,7 @@ object spawn {
 
   def posix_spawn_file_actions_addchdir(
       file_actions: Ptr[posix_spawn_file_actions_t],
-      path: Ptr[CString]
+      path: CString
   ): CInt = extern
 
   def posix_spawn_file_actions_addclose(
@@ -161,6 +162,7 @@ object spawn {
       sigmask: Ptr[sigset_t]
   ): CInt = extern
 
+  @blocking
   def posix_spawnp(
       pid: Ptr[pid_t],
       file: CString,

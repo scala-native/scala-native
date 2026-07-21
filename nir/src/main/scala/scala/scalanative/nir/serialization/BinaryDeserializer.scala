@@ -166,7 +166,13 @@ final class BinaryDeserializer(buffer: ByteBuffer, nirSource: NIRSource) {
     else Some(getT)
 
   private def getString(): String = in(prelude.sections.strings) {
-    val chars = Array.fill(getLebUnsignedInt())(getLebChar())
+    val length = getLebUnsignedInt()
+    val chars = new Array[Char](length)
+    var i = 0
+    while (i < length) {
+      chars(i) = getLebChar()
+      i += 1
+    }
     new String(chars)
   }
 

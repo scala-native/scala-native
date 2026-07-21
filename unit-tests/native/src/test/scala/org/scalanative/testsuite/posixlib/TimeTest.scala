@@ -430,7 +430,7 @@ class TimeTest {
       val localTime: Ptr[time.tm] = time.localtime_r(timePtr, out)
 
       /* CI can check if values returned by OS are reasonable.
-       * 
+       *
        * Developers should manually & visually check for values being
        * correct for the timezone in which the test is being run.
        */

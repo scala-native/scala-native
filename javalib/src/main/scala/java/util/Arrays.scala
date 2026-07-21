@@ -1,5 +1,5 @@
 /* Ported from Scala.js commit: ba618ed dated: 2020-10-05
- * 
+ *
  *  Contains Scala Native specific updates subsequent to original port.
  *  See Scala Native git repository history.
  */

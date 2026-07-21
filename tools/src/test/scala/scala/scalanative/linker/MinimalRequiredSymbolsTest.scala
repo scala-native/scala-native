@@ -120,11 +120,12 @@ class MinimalRequiredSymbolsTest extends LinkerSpec {
     entry = mainClass,
     setupConfig = setupConfig,
     sources = Map(
-      sourceFile -> s"""|
-                        |object $mainClass{
-                        |  def main(args: Array[String]): Unit = ()
-                        |}
-                        |""".stripMargin
+      sourceFile ->
+        s"""|
+            |object $mainClass{
+            |  def main(args: Array[String]): Unit = ()
+            |}
+            |""".stripMargin
     )
   ) { case (config, result) => fn(config, result) }
 

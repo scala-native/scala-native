@@ -15,27 +15,28 @@ class InliningTest extends OptimizerSpec {
       setupConfig = _.withMode(scalanative.build.Mode.releaseFast),
       entry = "Test",
       sources = Map(
-        "Test.scala" -> """|
-                           |import scala.scalanative.annotation.alwaysinline
-                           |
-                           |object Test {
-                           |  abstract class NatTag {
-                           |    def toInt: Int
-                           |  }
-                           |
-                           |  class Base(value: Int) extends NatTag {
-                           |    def toInt: Int = value
-                           |  }
-                           |
-                           |  class Digit2(a: NatTag, b: NatTag) extends NatTag {
-                           |    @alwaysinline def toInt: Int = a.toInt + b.toInt
-                           |  }
-                           |
-                           |  def main(args: Array[String]): Unit = {
-                           |    println(new Digit2(new Base(1), new Base(2)).toInt)
-                           |  }
-                           |}
-                           |""".stripMargin
+        "Test.scala" ->
+          """|
+             |import scala.scalanative.annotation.alwaysinline
+             |
+             |object Test {
+             |  abstract class NatTag {
+             |    def toInt: Int
+             |  }
+             |
+             |  class Base(value: Int) extends NatTag {
+             |    def toInt: Int = value
+             |  }
+             |
+             |  class Digit2(a: NatTag, b: NatTag) extends NatTag {
+             |    @alwaysinline def toInt: Int = a.toInt + b.toInt
+             |  }
+             |
+             |  def main(args: Array[String]): Unit = {
+             |    println(new Digit2(new Base(1), new Base(2)).toInt)
+             |  }
+             |}
+             |""".stripMargin
       )
     ) {
       case (_, result) =>
@@ -51,19 +52,20 @@ class InliningTest extends OptimizerSpec {
       setupConfig = _.withMode(scalanative.build.Mode.releaseFast),
       entry = "Test",
       sources = Map(
-        "Test.scala" -> """|
-                           |import scala.scalanative.unsafe._
-                           |
-                           |object Test {
-                           |  def main(args: Array[String]): Unit = {
-                           |    println(Tag.materializeNatDigit2Tag[Nat._1, Nat._2].toInt)
-                           |    println(implicitly[Tag[CArray[Int, Nat.Digit5[Nat._1, Nat._2, Nat._5, Nat._8, Nat._2]]]].size)
-                           |    val cArr = stackalloc[CArray[Long, Nat.Digit2[Nat._3, Nat._2]]]()
-                           |    println(cArr.length)
-                           | }
-                           |}
-                           |
-                           |""".stripMargin
+        "Test.scala" ->
+          """|
+             |import scala.scalanative.unsafe._
+             |
+             |object Test {
+             |  def main(args: Array[String]): Unit = {
+             |    println(Tag.materializeNatDigit2Tag[Nat._1, Nat._2].toInt)
+             |    println(implicitly[Tag[CArray[Int, Nat.Digit5[Nat._1, Nat._2, Nat._5, Nat._8, Nat._2]]]].size)
+             |    val cArr = stackalloc[CArray[Long, Nat.Digit2[Nat._3, Nat._2]]]()
+             |    println(cArr.length)
+             | }
+             |}
+             |
+             |""".stripMargin
       )
     ) {
       case (_, result) =>

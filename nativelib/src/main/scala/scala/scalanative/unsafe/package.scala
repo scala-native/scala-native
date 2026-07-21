@@ -215,7 +215,7 @@ package object unsafe extends unsafe.UnsafePackageCompat {
     // Set null termination bytes (z.alloc does not initialize memory)
     val cstrEndRaw = elemRawPtr(cstr.rawptr, size)
     if (charSize == 1) storeByte(cstrEndRaw, 0) // most common case
-    else ffi.memset(cstrEndRaw, 0, charSize.toRawSize)
+    else ffi.memset(cstrEndRaw, 0, charSize.toRawSize): Unit
 
     cstr
   }
@@ -266,7 +266,7 @@ package object unsafe extends unsafe.UnsafePackageCompat {
   }
 
   // wchar_t size may vary across platforms from 2 to 4 bytes.
-  final val WideCharSize = Platform.SizeOfWChar.toInt
+  final def WideCharSize = Platform.SizeOfWChar.toInt
 
   /** Convert a java.lang.String to a CWideString using given charset and
    *  allocator.

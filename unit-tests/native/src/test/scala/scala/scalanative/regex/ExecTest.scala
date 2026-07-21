@@ -579,7 +579,7 @@ class ExecTest {
           }
           var haveArray = re.findSubmatchIndex(text)
           if (haveArray == null)
-            haveArray = Utils.EMPTY_INTS // to make .length and printing safe
+            haveArray = Array.emptyIntArray // to make .length and printing safe
           if ((haveArray.length > 0) != match0) {
             System.err.println(
               "%s:%d: %s.match(%s) = %s, " + "but %s.findSubmatchIndex(%s) = %s\n"

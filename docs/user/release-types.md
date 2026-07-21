@@ -8,6 +8,8 @@
   Stable releases may be updated without a change of version number to
   support versions of Scala released after date of that Scala Native version.
 
+  > The most recent stable version is **{{ last_stable_release }}**
+  
 ## Latest
 
    A 'Latest' release is intended for developers who want to 
@@ -28,6 +30,7 @@
    currently, but not guaranteed to stay, 3 months. For complex reasons,
    there is no easy way to list prior SNAPSHOT releases.
 
+   > The latest nightly version is **{{ release }}**
 
 ### Using Latest releases   
 
@@ -64,7 +67,7 @@
 
      ```
        addSbtPlugin("org.scala-native" %% "sbt-scala-native" %
-               "0.5.10-20251101-14920c7-SNAPSHOT")
+               "{{ release }}")
      ```
 
    * mill (1.0.6) build.mill:
@@ -82,7 +85,7 @@
            )
        }
 	   
-	   def scalaNativeVersion = "0.5.10-20251101-14920c7-SNAPSHOT"
+	   def scalaNativeVersion = "{{ release }}"
 	   
      } 
      ```
@@ -92,6 +95,6 @@
      $ # Or Mill equivalent
      sbt> show libraryDependencies 
      ...
-     [info] * org.scala-native:javalib:0.5.10-20251101-14920c7-SNAPSHOT
+     [info] * org.scala-native:javalib:{{ release }}
      ```
 Continue to [lib](../lib/communitylib.md)

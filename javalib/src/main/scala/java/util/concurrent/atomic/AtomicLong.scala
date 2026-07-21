@@ -125,10 +125,7 @@ class AtomicLong(private var value: Long) extends Number with Serializable {
       expectedValue: Long,
       newValue: Long
   ): Boolean = {
-    if (value == expectedValue) {
-      value = newValue
-      true
-    } else false
+    valueRef.compareExchangeWeak(expectedValue, newValue, memory_order_relaxed)
   }
 
   /** Atomically increments the current value, with memory effects as specified

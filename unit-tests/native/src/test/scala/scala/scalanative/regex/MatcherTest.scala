@@ -337,10 +337,11 @@ class MatcherTest {
 
     val p = Pattern.compile("^( *)([*] *)?.*$", Pattern.MULTILINE)
 
-    val text = """|/** foo
-                  | * bar
-                  | baz */
-                  |""".stripMargin
+    val text =
+      """|/** foo
+         | * bar
+         | baz */
+         |""".stripMargin
 
     // with region
     val mr = p.matcher(text)

@@ -2,7 +2,6 @@
 
 #include "Bytemap.h"
 #include "commix/Constants.h"
-#include "immix_commix/Log.h"
 #include "immix_commix/utils/MathUtils.h"
 #include <stdio.h>
 

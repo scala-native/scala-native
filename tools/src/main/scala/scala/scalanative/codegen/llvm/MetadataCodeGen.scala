@@ -30,14 +30,17 @@ private[codegen] trait MetadataCodeGen { self: AbstractCodeGen =>
 
   /* Create a name debug metadata entry and write it on the metadata section */
   def dbg(name: => String)(values: Metadata.Node*)(implicit ctx: Context): Unit =
-    if (generateDebugMetadata) {
-      // Named metadata is always stored in metadata section
-      import ctx.sb._
-      values.foreach(Writer.ofNode.intern)
-      newline()
-      str(s"!$name = ")
-      Metadata.Tuple(values).write()
-    }
+    if (generateDebugMetadata) emitNamedMetadata(name)(values: _*)
+
+  def emitNamedMetadata(name: String)(values: Metadata.Node*)(implicit
+      ctx: Context
+  ): Unit = {
+    import ctx.sb._
+    values.foreach(Writer.ofNode.intern)
+    newline()
+    str(s"!$name = ")
+    Metadata.Tuple(values).write()
+  }
 
   def dbgUsing[T <: Metadata.Node: InternedWriter](
       v: => T
@@ -227,7 +230,7 @@ private[codegen] trait MetadataCodeGen { self: AbstractCodeGen =>
     import nir.Type._
     Seq(Byte, Char, Short, Int, Long, Size, Float, Double, Bool, Ptr).map { tpe =>
       val name = tpe.show
-      val nameCapitalize = name.head.toUpper + name.tail
+      val nameCapitalize = name.head.toUpper.toString + name.tail
       tpe -> DIBasicType(
         name = nameCapitalize,
         size = MemoryLayout.sizeOf(tpe).toDISize,
@@ -692,13 +695,13 @@ private[codegen] object MetadataCodeGen {
     }
   }
 
-  trait Writer[T <: Metadata] {
+  abstract class Writer[T <: Metadata] {
     final def sb(implicit ctx: Context): ShowBuilder = ctx.sb
     final def write(v: T)(implicit ctx: Context): Unit = writeMetadata(v, ctx)
     def writeMetadata(v: T, ctx: Context): Unit
   }
 
-  trait InternedWriter[T <: Metadata.Node] extends Writer[T] {
+  abstract class InternedWriter[T <: Metadata.Node] extends Writer[T] {
     import Writer._
     private def asssignedId(v: T)(implicit ctx: Context): Option[Metadata.Id] =
       v.assignedId.orElse(cache(v).get(v))
@@ -756,7 +759,7 @@ private[codegen] object MetadataCodeGen {
     }
   }
 
-  trait Dispatch[T <: Metadata.Node] extends InternedWriter[T] {
+  abstract class Dispatch[T <: Metadata.Node] extends InternedWriter[T] {
     import Writer.MetadataInternedWriterOps
     override final def writeMetadata(v: T, ctx: Context): Unit = delegate(v).writeMetadata(v, ctx)
 
@@ -918,7 +921,7 @@ private[codegen] object MetadataCodeGen {
         }
       }
     }
-    trait Specialized[T <: Metadata.SpecializedNode] extends InternedWriter[T] {
+    abstract class Specialized[T <: Metadata.SpecializedNode] extends InternedWriter[T] {
       def writeFields(v: T): Specialized.Builder[T] => Unit
       override def writeMetadata(v: T, ctx: Context): Unit = {
         implicit def _ctx: Context = ctx

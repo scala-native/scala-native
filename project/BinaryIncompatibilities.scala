@@ -22,6 +22,8 @@ object BinaryIncompatibilities {
     exclude[DirectMissingMethodProblem]("scala.scalanative.nir.Attrs.fromProduct"),
     exclude[IncompatibleResultTypeProblem]("scala.scalanative.nir.Attrs.unapply"),
     exclude[MissingTypesProblem]("scala.scalanative.nir.Attrs$"),
+    // since 0.4.10 - incorrectlly defined 
+    exclude[DirectMissingMethodProblem]("scala.scalanative.nir.Global#None.member"),
   )
 
   final val Tools: Filters = Seq(
@@ -41,6 +43,9 @@ object BinaryIncompatibilities {
     exclude[Problem]("scala.scalanative.build.Config*Impl*"),
     // Should have never been public in the first place - contains local classpaths
     exclude[MissingClassProblem]("scala.scalanative.buildinfo.ScalaNativeBuildInfo*"),
+    // Package private
+    exclude[DirectMissingMethodProblem]("scala.scalanative.build.Discover.checkClangVersion"),
+    exclude[DirectMissingMethodProblem]("scala.scalanative.build.Discover.clangMinVersion"),
   )
 
   final val NativeLib = Seq(
@@ -62,7 +67,9 @@ object BinaryIncompatibilities {
     exclude[Problem]("scala.scalanative.posix.string.stroll"), // remove typo 
     exclude[Problem]("scala.scalanative.posix.string.stroll_l"), // remove typo
     exclude[Problem]("scala.scalanative.posix.string.strcpy"), // libc not CX
-    exclude[Problem]("scala.scalanative.posix.termios*") // maybe can be more specific
+    exclude[Problem]("scala.scalanative.posix.termios*"), // maybe can be more specific
+    exclude[Problem]("scala.scalanative.posix.pollEvents"), // not Open Group
+    exclude[Problem]("scala.scalanative.posix.pollEvents$") // not Open Group
   )
 
   final val WindowsLib: Filters = Nil

@@ -8,13 +8,17 @@ abstract class AbstractQueue[E] protected ()
     if (offer(e)) true
     else throw new IllegalStateException()
 
-  def remove(): E =
-    if (!isEmpty()) poll()
+  def remove(): E = {
+    val e = poll()
+    if (e != null) e
     else throw new NoSuchElementException()
+  }
 
-  def element(): E =
-    if (!isEmpty()) peek()
+  def element(): E = {
+    val e = peek()
+    if (e != null) e
     else throw new NoSuchElementException()
+  }
 
   override def clear(): Unit = {
     while (poll() != null) {}

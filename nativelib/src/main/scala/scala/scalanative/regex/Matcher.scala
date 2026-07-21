@@ -451,7 +451,20 @@ final class Matcher private (private var _pattern: Pattern) {
   // @throws IllegalStateException if there was no most recent match
   // @throws IndexOutOfBoundsException if replacement refers to an invalid group
   // @throws IllegalArgumentException if replacement has unclosed named group
-  def appendReplacement(sb: StringBuffer, replacement: String): Matcher = {
+
+  /* Scala Native
+   * Change type of sb argument from StringBuffer to Appendable
+   * in order to handle both JDK 9 overloads in it's sole intended user
+   * java.util.regex.Matcher.
+   *
+   * The type is Appendable, but it has only been exercised using
+   * StringBuilder & StringBuffer.
+   */
+
+  def appendReplacement[T <: jl.Appendable](
+      sb: T,
+      replacement: String
+  ): Matcher = {
     checkHasMatch()
     val s = abspos(_lastMatchStart)
     val e = abspos(_lastMatchEnd)
@@ -527,11 +540,31 @@ final class Matcher private (private var _pattern: Pattern) {
     this
   }
 
+  // SN: for binary compatibility
+  def appendReplacement(sb: StringBuffer, replacement: String): Matcher =
+    this.appendReplacement(sb.asInstanceOf[Appendable], replacement)
+
   // Appends to {@code sb} the substring of the input from the
   // append position to the end of the input.
   //
   // @param sb the {@link StringBuffer} to append to
   // @return the argument {@code sb}, for method chaining
+
+  /* Scala Native
+   * Change type of sb argument from StringBuffer to Appendable
+   * in order to handle both JDK 9 overloads in it's sole intended user
+   * java.util.regex.Matcher.
+   *
+   * The type is Appendable, but it has only been exercised using
+   * StringBuilder & StringBuffer.
+   */
+
+  def appendTail[T <: jl.Appendable](sb: T): T = {
+    sb.append(_inputSequence, _appendPos, _inputLength)
+    sb
+  }
+
+  // SN: for binary compatibility
   def appendTail(sb: StringBuffer): StringBuffer = {
     sb.append(_inputSequence, _appendPos, _inputLength)
     sb

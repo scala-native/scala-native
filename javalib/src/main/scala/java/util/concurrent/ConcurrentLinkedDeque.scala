@@ -1516,7 +1516,7 @@ class ConcurrentLinkedDeque[E <: AnyRef]
    *    a {@code Spliterator} over the elements in this deque
    *  @since 1.8
    */
-  override def spliterator() = new CLDSpliterator[E](this)
+  override def spliterator(): Spliterator[E] = new CLDSpliterator[E](this)
 
   private def casHead(cmp: Node[E], `val`: Node[E]): Boolean =
     HEAD.compareExchangeStrong(cmp, `val`)

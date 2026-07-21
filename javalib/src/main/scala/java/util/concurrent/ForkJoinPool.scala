@@ -185,7 +185,7 @@ class ForkJoinPool private (
         val n = if (qs != null) qs.length else 0
         val i = cfg & (n - 1)
         if (n > 0 && (qs(i) eq w))
-          qs(i) == null
+          qs(i) = null
         stealCount += ns // accumulate steals
         lock.unlock()
       }
@@ -441,6 +441,28 @@ class ForkJoinPool private (
     0
   }
 
+  /** Detect workers that are running, scanning, or executing a task (including
+   *  inside blocking user code after the task was dequeued). Without this,
+   *  `hasTasks` and `RC_MASK` alone can read "empty" while a worker is still in
+   *  `doExec`, so `tryTerminate` wrongly sets STOP and interrupts orderly
+   *  shutdown (`ExecutorService.close`).
+   */
+  private def hasApparentlyActiveWorker(): Boolean = {
+    val qs = queues
+    val n = if (qs != null) qs.length else 0
+    var i = 1
+    while (i < n) {
+      qs(i) match {
+        case null => ()
+        case q    =>
+          if (q.owner != null && (q.phase & INACTIVE) == 0)
+            return true
+      }
+      i += 2
+    }
+    false
+  }
+
   /** Non-overridable version of isQuiescent. Returns true if quiescent or
    *  already terminating.
    */
@@ -449,7 +471,7 @@ class ForkJoinPool private (
     while ({
       if (runState < 0)
         return true
-      if ((c & RC_MASK) > 0L || hasTasks(false))
+      if ((c & RC_MASK) > 0L || hasTasks(false) || hasApparentlyActiveWorker())
         return false
       c != { c = ctl; c } // validate
     }) ()
@@ -521,6 +543,22 @@ class ForkJoinPool private (
 
   private[concurrent] final def uncompensate(): Unit = {
     getAndAddCtl(RC_UNIT)
+  }
+
+  /** Package-private hook for virtual-thread carrier compensation; same
+   *  contract as JDK `ForkJoinPool.beginCompensatedBlock` /
+   *  `endCompensatedBlock` (see `CarrierThread` /
+   *  `scala.scalanative.runtime.Blocker`).
+   */
+  private[java] final def beginCompensatedBlock(): scala.Long = {
+    var c = 0
+    while ({ c = tryCompensate(ctl, false); c } < 0) {}
+    if (c == 0) 0L else RC_UNIT
+  }
+
+  private[java] final def endCompensatedBlock(post: scala.Long): Unit = {
+    if (post > 0L)
+      getAndAddCtl(post)
   }
 
   private[concurrent] final def helpJoin(

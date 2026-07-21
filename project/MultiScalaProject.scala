@@ -1,6 +1,6 @@
 package build
 
-import sbt._
+import sbt.{given, *}
 
 import scala.language.implicitConversions
 
@@ -11,7 +11,9 @@ import MyScalaNativePlugin.{enableExperimentalCompiler, ideScalaVersion}
 final case class MultiScalaProject private (
     name: String,
     private val projects: Map[String, Project],
-    dependsOnSourceInIDE: Boolean
+    dependsOnSourceInIDE: Boolean,
+    // Explicit list of enabled binary cross versions. If not provided, all cross versions are enabled.
+    binCrossVersions: Option[Seq[String]]
 ) extends CompositeProject {
   import MultiScalaProject._
 
@@ -32,8 +34,12 @@ final case class MultiScalaProject private (
       publishLocal / skip := false
     )
 
-  override def componentProjects: Seq[Project] = Seq(v2_12, v2_13, v3) ++ {
-    if (enableExperimentalCompiler) Some(v3Next) else None
+  override def componentProjects: Seq[Project] = binCrossVersions match {
+    case Some(versions) => versions.map(project(_))
+    case None           =>
+      Seq(v2_12, v2_13, v3) ++ {
+        if (enableExperimentalCompiler) Some(v3Next) else None
+      }
   }
 
   def mapBinaryVersions(
@@ -43,6 +49,9 @@ final case class MultiScalaProject private (
       case (binVersion, project) => (binVersion, mapping(binVersion)(project))
     })
   }
+
+  def forBinaryVersionIfDefined(version: String): Option[Project] =
+    projects.get(version)
 
   def forBinaryVersion(version: String): Project = project(version)
 
@@ -69,14 +78,18 @@ final case class MultiScalaProject private (
       }
     } else {
       def classpathDependency(d: ScopedMultiScalaProject) =
-        strictMapValues(d.project.projects)(
-          ClasspathDependency(_, d.configuration)
-        )
+        strictMapValues(d.project.projects) { p =>
+          ClasspathDependency(p, d.configuration)
+        }
 
       val depsByVersion: Map[String, Seq[ClasspathDependency]] =
-        strictMapValues(deps.flatMap(classpathDependency).groupBy(_._1))(
-          _.map(_._2)
-        )
+        strictMapValues(
+          deps
+            .flatMap(classpathDependency)
+            .groupBy((conf, _) => conf)
+        ) { values =>
+          values.collect { case (_, dep: ClasspathDependency) => dep }
+        }
       zipped(depsByVersion)(_.dependsOn(_: _*))
     }
   }
@@ -200,6 +213,7 @@ object MultiScalaProject {
       name: String,
       base: Option[File] = None,
       additionalIDEScalaVersions: List[String] = Nil,
+      crossVersions: Option[Map[String, Seq[String]]] = None,
       platform: Platform = NoPlatform,
       idNoSuffix: Boolean = false,
       nameSuffix: Boolean = false
@@ -215,12 +229,12 @@ object MultiScalaProject {
       }
 
     val projects = for {
-      (major, minors) <- scalaCrossVersions
+      (major, minors) <- crossVersions.getOrElse(scalaCrossVersions)
     } yield {
       val ideScalaVersions = additionalIDEScalaVersions :+ ideScalaVersion
       val noIDEExportSettings =
         if (ideScalaVersions.contains(major)) Nil
-        else NoIDEExport.noIDEExportSettings
+        else Seq(bspEnabled := false)
 
       major -> Project(
         id = projectID(idWithSuffix, major),
@@ -228,7 +242,11 @@ object MultiScalaProject {
       ).settings(
         Settings.commonSettings,
         Keys.name := Settings.projectName(nameWithSuffix),
-        scalaVersion := scalaVersions(major),
+        // Use the last version of the explicit cross versions list if defined, otherwise fallaback to default crossVersions list
+        scalaVersion := {
+          if (crossVersions.isDefined) minors.last
+          else scalaVersions(major)
+        },
         crossScalaVersions := minors,
         sourceDirectory :=
           srcDir((ThisBuild / baseDirectory).value, platformBase),
@@ -240,7 +258,8 @@ object MultiScalaProject {
     new MultiScalaProject(
       nameWithSuffix,
       projects,
-      dependsOnSourceInIDE = additionalIDEScalaVersions.nonEmpty
+      dependsOnSourceInIDE = additionalIDEScalaVersions.nonEmpty,
+      binCrossVersions = crossVersions.map(_.keys.toSeq)
     )
   }
 

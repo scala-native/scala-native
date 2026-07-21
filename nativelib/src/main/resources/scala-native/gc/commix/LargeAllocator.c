@@ -8,7 +8,7 @@
 #include "Object.h"
 #include "State.h"
 #include "Sweeper.h"
-#include "immix_commix/Log.h"
+#include "shared/Log.h"
 #include "immix_commix/headers/ObjectHeader.h"
 #include "shared/ThreadUtil.h"
 
@@ -188,13 +188,8 @@ INLINE
 word_t *LargeAllocator_lazySweep(LargeAllocator *largeAllocator, Heap *heap,
                                  uint32_t size) {
     word_t *object = NULL;
-#ifdef DEBUG_PRINT
-    uint32_t increment =
-        (uint32_t)MathUtils_DivAndRoundUp(size, BLOCK_TOTAL_SIZE);
-    printf("Sweeper_LazySweepLarge (%" PRIu32 ") => %" PRIu32 "\n", size,
-           increment);
-    fflush(stdout);
-#endif
+    GC_LOG_DEBUG("Sweeper_LazySweepLarge (%" PRIu32 ") => %" PRIu32, size,
+                 (uint32_t)MathUtils_DivAndRoundUp(size, BLOCK_TOTAL_SIZE));
     // lazy sweep will happen
     Stats_DefineOrNothing(stats, heap->stats);
     Stats_RecordTime(stats, start_ns);

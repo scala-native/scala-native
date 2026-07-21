@@ -97,6 +97,12 @@ object stat {
   @name("scalanative_fstat")
   def fstat(fildes: CInt, buf: Ptr[stat]): CInt = extern
 
+  /** Open Group Issue 7 or greater.
+   */
+  @name("scalanative_fstatat")
+  def fstatat(fildes: CInt, path: CString, buf: Ptr[stat], flag: CInt): CInt =
+    extern
+
   /** similar to [[stat]], but different in that `lstat` gets stat of the link
    *  itself instead of that of file the link refers to when path points to
    *  link.
@@ -104,10 +110,34 @@ object stat {
   @name("scalanative_lstat")
   def lstat(path: CString, buf: Ptr[stat]): CInt = extern
 
-  // mkdir(), chmod(), & fchmod() are straight passthrough; "glue" needed.
-  def mkdir(path: CString, mode: mode_t): CInt = extern
+  // The methods below are all straight passthrough; no "glue" needed.
   def chmod(pathname: CString, mode: mode_t): CInt = extern
+
   def fchmod(fd: CInt, mode: mode_t): CInt = extern
+  def fchmodat(fd: CInt, path: CString, mode: mode_t, flag: CInt): CInt = extern
+  def futimens(fd: CInt, times: Ptr[timespec]): CInt = extern
+
+  def mkdir(path: CString, mode: mode_t): CInt = extern
+  def mkdirat(dirfd: CInt, path: CString, mode: mode_t): CInt = extern
+  def mkfifo(path: CString, mode: mode_t): CInt = extern
+  def mkfifoat(dirfd: CInt, path: CString, mode: mode_t): CInt = extern
+
+  /** XSI
+   */
+  def mknod(path: CString, mode: mode_t, dev: dev_t): CInt = extern
+
+  /** XSI
+   */
+  def mknodat(dirfd: CInt, path: CString, mode: mode_t, dev: dev_t): CInt =
+    extern
+
+  def umask(mode: mode_t): mode_t = extern
+  def utimensat(
+      dirfd: CInt,
+      path: CString,
+      times: Ptr[timespec],
+      flags: Int
+  ): CInt = extern
 
   @name("scalanative_s_isdir")
   def S_ISDIR(mode: mode_t): CInt = extern
@@ -166,6 +196,11 @@ object stat {
   @name("scalanative_s_ixoth")
   def S_IXOTH: mode_t = extern
 
+  @name("scalanative_utime_now")
+  def UTIME_NOW: CInt = extern
+
+  @name("scalanative_utime_omit")
+  def UTIME_OMIT: CInt = extern
 }
 
 object statOps {

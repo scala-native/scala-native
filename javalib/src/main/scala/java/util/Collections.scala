@@ -1,5 +1,5 @@
 /* Ported from Scala.js commit: 2253950 dated: 2022-10-02
- * 
+ *
  * Contains Scala Native specific updates subsequent to original port.
  * See Scala Native git repository history.
  */
@@ -292,7 +292,7 @@ object Collections {
     min(coll, Comparator.naturalOrder[T]())
 
   def min[T](coll: Collection[_ <: T], comp: Comparator[_ >: T]): T =
-    coll.scalaOps.reduceLeft((a, b) => if (comp.compare(a, b) <= 0) a else b)
+    coll.scalaOps.reduceLeft[T]((a, b) => if (comp.compare(a, b) <= 0) a else b)
 
   // Differs from original type definition, original: [T <: jl.Comparable[_ >: T]], returning
   def max[T <: AnyRef with jl._Comparable[T]](
@@ -301,7 +301,7 @@ object Collections {
     max(coll, Comparator.naturalOrder[T]())
 
   def max[T](coll: Collection[_ <: T], comp: Comparator[_ >: T]): T =
-    coll.scalaOps.reduceLeft((a, b) => if (comp.compare(a, b) >= 0) a else b)
+    coll.scalaOps.reduceLeft[T]((a, b) => if (comp.compare(a, b) >= 0) a else b)
 
   def rotate(list: List[_], distance: Int): Unit =
     rotateImpl(list, distance)

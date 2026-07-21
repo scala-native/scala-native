@@ -66,16 +66,18 @@ class UNIXBufferedReader(r: Reader) extends Reader {
 
   // Unimplemented:
 
-  override def read(buf: Array[Char], off: Int, len: Int) =
+  override def read(buf: Array[Char], off: Int, len: Int): Int =
     throw new UnsupportedOperationException
 
-  override def read = throw new UnsupportedOperationException
+  override def read: Int = throw new UnsupportedOperationException
 
-  override def skip(n: Long) = throw new UnsupportedOperationException
+  override def skip(n: Long): scala.Long =
+    throw new UnsupportedOperationException
 
-  override def ready = throw new UnsupportedOperationException
+  override def ready: scala.Boolean = throw new UnsupportedOperationException
 
-  override def markSupported = throw new UnsupportedOperationException
+  override def markSupported: scala.Boolean =
+    throw new UnsupportedOperationException
 
   override def mark(readAheadLimit: Int): Unit = {
     throw new UnsupportedOperationException

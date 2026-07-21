@@ -1,11 +1,11 @@
 #if defined(SCALANATIVE_GC_IMMIX)
 
 #include "BlockAllocator.h"
-#include "immix_commix/Log.h"
 #include "immix_commix/utils/MathUtils.h"
 #include <stdio.h>
 #include "shared/ThreadUtil.h"
 #include <stdatomic.h>
+#include <assert.h>
 
 void BlockAllocator_addFreeBlocksInternal(BlockAllocator *blockAllocator,
                                           BlockMeta *block, uint32_t count);

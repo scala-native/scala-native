@@ -6,7 +6,7 @@ import dotty.tools.dotc.ast.tpd._
 import dotty.tools.dotc.config.*
 import dotty.tools.dotc.plugins.PluginPhase
 
-import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.*
+import scala.scalanative.nscplugin.CompilerCompat.SymUtils.*
 
 /** This phase does:
  *    - Rewrite calls to scala.Enumeration.Value (include name string) (Ported

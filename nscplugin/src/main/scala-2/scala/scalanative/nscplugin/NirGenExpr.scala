@@ -230,11 +230,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genIf(tree: If): nir.Val = {
       val If(cond, thenp, elsep) = tree
-      def isUnitType(tpe: Type) =
-        defn.isUnitType(tpe) || tpe =:= defn.BoxedUnitTpe
-      val retty =
-        if (isUnitType(thenp.tpe) || isUnitType(elsep.tpe)) nir.Type.Unit
-        else genType(tree.tpe)
+      val retty = genType(tree.tpe)
       genIf(retty, cond, thenp, elsep)(tree.pos.orElse(fallbackSourcePosition))
     }
 
@@ -2580,7 +2576,8 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
 
       val candidates =
-        (classInfo.decls ++ classInfoSym.parentSymbols.flatMap(_.info.decls))
+        classInfo.baseClasses
+          .flatMap(base => classInfo.baseType(base).decls)
           .filter(f => f.isField && matchesName(f))
 
       candidates.find(!_.isVar).foreach { f =>

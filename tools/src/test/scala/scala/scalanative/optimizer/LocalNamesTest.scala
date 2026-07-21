@@ -30,20 +30,21 @@ class LocalNamesTest extends OptimizerSpec {
   @Test def localNamesExistence(): Unit = super.optimize(
     entry = "Test",
     sources = Map(
-      "Test.scala" -> """|
-                         |object Test {
-                         |  def main(args: Array[String]): Unit = {
-                         |    var localVar = args.size
-                         |    val localVal = localVar + this.##
-                         |    val scoped = {
-                         |      var innerVar = args.size
-                         |      val innerVal = innerVar + 1
-                         |      innerVal + localVal
-                         |     }
-                         |    assert(scoped != 0)
-                         |  }
-                         |}
-                         |""".stripMargin
+      "Test.scala" ->
+        """|
+           |object Test {
+           |  def main(args: Array[String]): Unit = {
+           |    var localVar = args.size
+           |    val localVal = localVar + this.##
+           |    val scoped = {
+           |      var innerVar = args.size
+           |      val innerVal = innerVar + 1
+           |      innerVal + localVal
+           |     }
+           |    assert(scoped != 0)
+           |  }
+           |}
+           |""".stripMargin
     ),
     setupConfig = _.withSourceLevelDebuggingConfig(_.enableAll)
   ) {
@@ -85,72 +86,73 @@ class LocalNamesTest extends OptimizerSpec {
   @Test def opsNames(): Unit = optimize(
     entry = "Test",
     sources = Map(
-      "Test.scala" -> """|
-                         |import scala.scalanative.unsafe
-                         |import scala.scalanative.unsafe._
-                         |import scala.scalanative.annotation.nooptimize
-                         |import scala.scalanative.runtime.Intrinsics
-                         |import scala.scalanative.runtime.toRawPtr
-                         |import scala.scalanative.unsigned._
-                         |
-                         |object Test {
-                         |  class Foo()
-                         |
-                         |  @noinline def method(n: Int): String = n.toString
-                         |  @noinline def getInteger: Integer = 42
-                         |  @noinline def getArray: Array[Int] = Array(42)
-                         |  private var field: Int = _
-                         |
-                         |  def main(args: Array[String]): Unit = {
-                         |    val call = Test.method(0)
-                         |    val sizeOf = Intrinsics.sizeOf[String]
-                         |    val alignmentOf = Intrinsics.alignmentOf[String]
-                         |    val stackalloc = Intrinsics.stackalloc[Byte](sizeOf)
-                         |    val elem = Intrinsics.elemRawPtr(stackalloc, alignmentOf)
-                         |    val store = Intrinsics.storeInt(elem, Intrinsics.castRawSizeToInt(sizeOf))
-                         |    val load = Intrinsics.loadInt(elem)
-                         |    // val extract = ???
-                         |    // val insert = ???
-                         |    val bin = Intrinsics.remUInt(load, 4)
-                         |    val comp = bin == 2
-                         |    val conv = Intrinsics.castIntToFloat(bin)
-                         |    // val fence = ???
-                         |    val classalloc = new Foo()
-                         |    val fieldStore = this.field = bin + classalloc.##
-                         |    val fieldLoad = this.field
-                         |    val field = Intrinsics.classFieldRawPtr[Test.type](this, "field")
-                         |    // val method: Int => String = Test.method _
-                         |    // val dynMethod = ???
-                         |    val module = scala.Predef
-                         |    val as = Test.asInstanceOf[Option[_]]
-                         |    val is = as.isInstanceOf[Some[_]]
-                         |    val copy = 42
-                         |    val intArg: Int = Intrinsics.castRawSizeToInt(sizeOf) + copy
-                         |    val box: Any = intArg.asInstanceOf[Integer]
-                         |    val unbox: Int = getInteger.asInstanceOf[Int]
-                         |    var `var` = unbox + 1
-                         |    while(`var` < 2) {
-                         |       val varStore = `var` = `var` + getInteger
-                         |    }
-                         |    val varLoad = `var`
-                         |    val arrayAlloc = new Array[Int](4)
-                         |    val arrayStore = arrayAlloc(0) = varLoad
-                         |    val arrayLoad = getArray(1)
-                         |    val arrayLength = getArray.length
-                         |
-                         |    // forced materialization
-                         |    println(sizeOf == alignmentOf)
-                         |    println(classalloc != null)
-                         |    println(fieldLoad == Intrinsics.loadInt(field))
-                         |    println(comp == is)
-                         |    println(conv == Intrinsics.loadFloat(field))
-                         |    println(box != getInteger)
-                         |    println(module != null)
-                         |    println(arrayLoad != `var`)
-                         |    println(arrayLength != varLoad )
-                         |    println(arrayAlloc)
-                         |  }
-                         |}""".stripMargin
+      "Test.scala" ->
+        """|
+           |import scala.scalanative.unsafe
+           |import scala.scalanative.unsafe._
+           |import scala.scalanative.annotation.nooptimize
+           |import scala.scalanative.runtime.Intrinsics
+           |import scala.scalanative.runtime.toRawPtr
+           |import scala.scalanative.unsigned._
+           |
+           |object Test {
+           |  class Foo()
+           |
+           |  @noinline def method(n: Int): String = n.toString
+           |  @noinline def getInteger: Integer = 42
+           |  @noinline def getArray: Array[Int] = Array(42)
+           |  private var field: Int = _
+           |
+           |  def main(args: Array[String]): Unit = {
+           |    val call = Test.method(0)
+           |    val sizeOf = Intrinsics.sizeOf[String]
+           |    val alignmentOf = Intrinsics.alignmentOf[String]
+           |    val stackalloc = Intrinsics.stackalloc[Byte](sizeOf)
+           |    val elem = Intrinsics.elemRawPtr(stackalloc, alignmentOf)
+           |    val store = Intrinsics.storeInt(elem, Intrinsics.castRawSizeToInt(sizeOf))
+           |    val load = Intrinsics.loadInt(elem)
+           |    // val extract = ???
+           |    // val insert = ???
+           |    val bin = Intrinsics.remUInt(load, 4)
+           |    val comp = bin == 2
+           |    val conv = Intrinsics.castIntToFloat(bin)
+           |    // val fence = ???
+           |    val classalloc = new Foo()
+           |    val fieldStore = this.field = bin + classalloc.##
+           |    val fieldLoad = this.field
+           |    val field = Intrinsics.classFieldRawPtr[Test.type](this, "field")
+           |    // val method: Int => String = Test.method _
+           |    // val dynMethod = ???
+           |    val module = scala.Predef
+           |    val as = Test.asInstanceOf[Option[_]]
+           |    val is = as.isInstanceOf[Some[_]]
+           |    val copy = 42
+           |    val intArg: Int = Intrinsics.castRawSizeToInt(sizeOf) + copy
+           |    val box: Any = intArg.asInstanceOf[Integer]
+           |    val unbox: Int = getInteger.asInstanceOf[Int]
+           |    var `var` = unbox + 1
+           |    while(`var` < 2) {
+           |       val varStore = `var` = `var` + getInteger
+           |    }
+           |    val varLoad = `var`
+           |    val arrayAlloc = new Array[Int](4)
+           |    val arrayStore = arrayAlloc(0) = varLoad
+           |    val arrayLoad = getArray(1)
+           |    val arrayLength = getArray.length
+           |
+           |    // forced materialization
+           |    println(sizeOf == alignmentOf)
+           |    println(classalloc != null)
+           |    println(fieldLoad == Intrinsics.loadInt(field))
+           |    println(comp == is)
+           |    println(conv == Intrinsics.loadFloat(field))
+           |    println(box != getInteger)
+           |    println(module != null)
+           |    println(arrayLoad != `var`)
+           |    println(arrayLength != varLoad )
+           |    println(arrayAlloc)
+           |  }
+           |}""".stripMargin
     )
   ) {
     case (config, result) =>
@@ -249,27 +251,28 @@ class LocalNamesTest extends OptimizerSpec {
   @Test def delayedVars(): Unit = optimize(
     entry = "Test",
     sources = Map(
-      "Test.scala" -> """|
-                         |import scala.scalanative.annotation.nooptimize
-                         |
-                         |object Test {
-                         |  @noinline @nooptimize def parse(v: String): Int = v.toInt
-                         |  def main(args: Array[String]): Unit = {
-                         |    val bits = parse(args(0))
-                         |    val a = parse(args(1))
-                         |    val b = bits & 0xFF
-                         |    var x = 0
-                         |    var y = 0L
-                         |    if (a == 0) {
-                         |      x = bits
-                         |      y = b
-                         |    } else {
-                         |      x = a
-                         |      y = b | (1L << 0xFF)
-                         |    }
-                         |    assert(x != y)
-                         |  }
-                         |}""".stripMargin
+      "Test.scala" ->
+        """|
+           |import scala.scalanative.annotation.nooptimize
+           |
+           |object Test {
+           |  @noinline @nooptimize def parse(v: String): Int = v.toInt
+           |  def main(args: Array[String]): Unit = {
+           |    val bits = parse(args(0))
+           |    val a = parse(args(1))
+           |    val b = bits & 0xFF
+           |    var x = 0
+           |    var y = 0L
+           |    if (a == 0) {
+           |      x = bits
+           |      y = b
+           |    } else {
+           |      x = a
+           |      y = b | (1L << 0xFF)
+           |    }
+           |    assert(x != y)
+           |  }
+           |}""".stripMargin
     )
   ) {
     case (config, result) =>
@@ -309,27 +312,28 @@ class LocalNamesTest extends OptimizerSpec {
   @Test def inlinedNames(): Unit = optimize(
     entry = "Test",
     sources = Map(
-      "Test.scala" -> """|
-                         |import scala.scalanative.annotation.alwaysinline
-                         |object Test {
-                         |  @alwaysinline def fn1(n: Int, m: Int, p: Int): Int = {
-                         |    val temp = n * m
-                         |    val temp2 = (temp % 3) match {
-                         |      case 0 => n
-                         |      case 1 => val a = n * p; a + 1
-                         |      case 2 => val b = n * p; val c = b + n; c + 1
-                         |      case _ => 42
-                         |    }
-                         |    temp2 * n
-                         |  }
-                         |
-                         |  def main(args: Array[String]): Unit = {
-                         |    val argInt = args.size
-                         |    val result = fn1(argInt, argInt * 2, 42)
-                         |    val result2 =  fn1(argInt, argInt * 21, 37)
-                         |    assert(result == result2)
-                         |  }
-                         |}""".stripMargin
+      "Test.scala" ->
+        """|
+           |import scala.scalanative.annotation.alwaysinline
+           |object Test {
+           |  @alwaysinline def fn1(n: Int, m: Int, p: Int): Int = {
+           |    val temp = n * m
+           |    val temp2 = (temp % 3) match {
+           |      case 0 => n
+           |      case 1 => val a = n * p; a + 1
+           |      case 2 => val b = n * p; val c = b + n; c + 1
+           |      case _ => 42
+           |    }
+           |    temp2 * n
+           |  }
+           |
+           |  def main(args: Array[String]): Unit = {
+           |    val argInt = args.size
+           |    val result = fn1(argInt, argInt * 2, 42)
+           |    val result2 =  fn1(argInt, argInt * 21, 37)
+           |    assert(result == result2)
+           |  }
+           |}""".stripMargin
     )
   ) {
     // TODO: How to effectively distinguish inlined `temp2` in `result` and `result2`? Maybe concatenation of owner strings, e.g. `result.temp2`
@@ -358,32 +362,33 @@ class LocalNamesTest extends OptimizerSpec {
   @Test def inlinedNames2(): Unit = optimize(
     entry = "Test",
     sources = Map(
-      "Test.scala" -> """|
-                         |import scala.scalanative.annotation._
-                         |
-                         |sealed trait Interface {
-                         |  def execute(arg: Int): Int = { val temp = arg * arg; temp % arg}
-                         |}
-                         |class Impl1 extends Interface {
-                         |  override def execute(arg: Int): Int = {val temp1 = arg * arg; temp1 + arg }
-                         |}
-                         |class Impl2 extends Interface {
-                         |  override def execute(arg: Int): Int = {val temp2 = super.execute(arg); temp2 * arg }
-                         |}
-                         |class Impl3 extends Impl2 {
-                         |  override def execute(arg: Int): Int = {val temp3 = super.execute(arg); temp3 * arg }
-                         |}
-                         |
-                         |object Test {
-                         |  @noinline def impls = Array(new Interface{}, new Impl1(), new Impl2(), new Impl3())
-                         |
-                         |  def main(args: Array[String]): Unit = {
-                         |    val argInt = args.size
-                         |    val impl: Interface = impls(argInt)
-                         |    val result = impl.execute(argInt)
-                         |    assert(result > 0)
-                         |  }
-                         |}""".stripMargin
+      "Test.scala" ->
+        """|
+           |import scala.scalanative.annotation._
+           |
+           |sealed trait Interface {
+           |  def execute(arg: Int): Int = { val temp = arg * arg; temp % arg}
+           |}
+           |class Impl1 extends Interface {
+           |  override def execute(arg: Int): Int = {val temp1 = arg * arg; temp1 + arg }
+           |}
+           |class Impl2 extends Interface {
+           |  override def execute(arg: Int): Int = {val temp2 = super.execute(arg); temp2 * arg }
+           |}
+           |class Impl3 extends Impl2 {
+           |  override def execute(arg: Int): Int = {val temp3 = super.execute(arg); temp3 * arg }
+           |}
+           |
+           |object Test {
+           |  @noinline def impls = Array(new Interface{}, new Impl1(), new Impl2(), new Impl3())
+           |
+           |  def main(args: Array[String]): Unit = {
+           |    val argInt = args.size
+           |    val impl: Interface = impls(argInt)
+           |    val result = impl.execute(argInt)
+           |    assert(result > 0)
+           |  }
+           |}""".stripMargin
     )
   ) {
     case (config, result) =>
@@ -407,29 +412,30 @@ class LocalNamesTest extends OptimizerSpec {
   @Test def polyInlinedNames(): Unit = optimize(
     entry = "Test",
     sources = Map(
-      "Test.scala" -> """|
-                         |import scala.scalanative.annotation._
-                         |
-                         |sealed trait Interface {
-                         |  @noinline def execute(arg: Int): Int = { val temp = arg * arg; temp % arg}
-                         |}
-                         |class Impl1 extends Interface {
-                         |  @noinline override def execute(arg: Int): Int = {val temp1 = arg * arg; temp1 + arg }
-                         |}
-                         |class Impl2 extends Interface {
-                         |  @noinline override def execute(arg: Int): Int = {val temp2 = super.execute(arg); temp2 * arg }
-                         |}
-                         |
-                         |object Test {
-                         |  @noinline def impls = Array(new Interface{}, new Impl1(), new Impl2())
-                         |
-                         |  def main(args: Array[String]): Unit = {
-                         |    val argInt = args.size
-                         |    val impl: Interface = impls(argInt)
-                         |    val result = impl.execute(argInt)
-                         |    assert(result > 0)
-                         |  }
-                         |}""".stripMargin
+      "Test.scala" ->
+        """|
+           |import scala.scalanative.annotation._
+           |
+           |sealed trait Interface {
+           |  @noinline def execute(arg: Int): Int = { val temp = arg * arg; temp % arg}
+           |}
+           |class Impl1 extends Interface {
+           |  @noinline override def execute(arg: Int): Int = {val temp1 = arg * arg; temp1 + arg }
+           |}
+           |class Impl2 extends Interface {
+           |  @noinline override def execute(arg: Int): Int = {val temp2 = super.execute(arg); temp2 * arg }
+           |}
+           |
+           |object Test {
+           |  @noinline def impls = Array(new Interface{}, new Impl1(), new Impl2())
+           |
+           |  def main(args: Array[String]): Unit = {
+           |    val argInt = args.size
+           |    val impl: Interface = impls(argInt)
+           |    val result = impl.execute(argInt)
+           |    assert(result > 0)
+           |  }
+           |}""".stripMargin
     )
   ) {
     case (config, result) =>

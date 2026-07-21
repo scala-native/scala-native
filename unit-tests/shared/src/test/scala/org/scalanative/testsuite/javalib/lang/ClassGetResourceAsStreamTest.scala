@@ -122,4 +122,14 @@ class ClassGetResourceAsStreamTest {
     assertNull(inputStream)
   }
 
+  @Test def resourceInputStreamAbsoluteVsRelative(): Unit = {
+    val classLoader = getClass().getClassLoader()
+
+    val relative = "embedded-resources-tests/basic-file.txt"
+    val absolute = "/embedded-resources-tests/basic-file.txt"
+
+    assertNotNull(classLoader.getResourceAsStream(relative))
+    assertNull(classLoader.getResourceAsStream(absolute))
+  }
+
 }

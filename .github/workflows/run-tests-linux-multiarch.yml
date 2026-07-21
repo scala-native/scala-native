@@ -24,12 +24,12 @@ jobs:
         # Scala 2.13 only for increased tests coverage (Scala2 partests) while keeping total number of jobs low
         scala: [2.13]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
       - name: Cache docker
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: /tmp/docker-registry
           key: docker-registry-${{ matrix.arch }}-${{ hashFiles('ci-docker/Dockerfile', format('ci-docker/env/{0}', matrix.arch)) }}
@@ -87,7 +87,7 @@ jobs:
             set junitTestOutputsNative.forBinaryVersion("${{ matrix.scala }}")/${{env.set-native-config}};
             clean;
             test-gc ${{ matrix.scala }}
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           timeout_minutes: 90
           max_attempts: 3
@@ -110,7 +110,7 @@ jobs:
             tests${{env.project-version}}/test;
             scalaPartestJunitTests${{env.project-version}}/clean;
             scalaPartestJunitTests${{env.project-version}}/test
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           timeout_minutes: 90
           max_attempts: 3

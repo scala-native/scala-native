@@ -3,7 +3,7 @@
 ## Requirements
 
 -   Java 8 or newer
--   LLVM/Clang 15 or newer
+-   LLVM/Clang 16 or newer
 -   sbt
 
 ## Use nix / devenv.sh
@@ -46,5 +46,4 @@ nix flakes has contentious points but, arguably, is uniquely capable. For scala-
 work required to, for example, enable packages to depend on a nix scala-native compiler build. So this use of
 nix flakes here is more aspirational than immediately useful. The primary value is providing a reasonably nice
 developer experience for an automatic and correct developer environment.
-
 

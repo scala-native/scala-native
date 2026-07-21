@@ -1,5 +1,25 @@
+/* Ported from Scala.js, revision ec95c6f, dated 2026-04-10
+ *
+ * Original: Ported from Scala.js, revision UNKNOWN, dated before 2016-05-05
+ * Updated:  Ported from Scala.js, revision UNKNOWN, dated before 2020-11-12
+ */
+
+/* "Programs, Programs…you can't tell the players with a program."
+ *
+ * Contains at least:
+ *
+ *  a. Scala.js commit 2db2858
+ *       "Avoid relying on BoxesRunTime when comparing BigIntegers"
+ *
+ *  b. SN PR #1916 "Add Scala 2.13.x support"
+ *
+ *  c. SN PR #4427, "Fix typos in codebase"
+ *
+ *  d. An additional typo correction
+ */
+
 /*
- * Ported by Alistair Johnson from
+ * ported by Alistair Johnson from
  * https://android.googlesource.com/platform/libcore/+/master/luni/src/main/java/java/math/Logical.java
  * Original license copied below:
  */
@@ -38,7 +58,7 @@ private[math] object Logical {
     // scalastyle:off return
     if (bi.sign == 0) {
       BigInteger.MINUS_ONE
-    } else if (bi == BigInteger.MINUS_ONE) {
+    } else if (bi.equals(BigInteger.MINUS_ONE)) {
       BigInteger.ZERO
     } else {
       val resDigits = new Array[Int](bi.numberLength + 1)
@@ -82,9 +102,9 @@ private[math] object Logical {
   def and(bi: BigInteger, that: BigInteger): BigInteger = {
     if (that.sign == 0 || bi.sign == 0)
       BigInteger.ZERO
-    else if (that == BigInteger.MINUS_ONE)
+    else if (that.equals(BigInteger.MINUS_ONE))
       bi
-    else if (bi == BigInteger.MINUS_ONE)
+    else if (bi.equals(BigInteger.MINUS_ONE))
       that
     else if (bi.sign > 0 && that.sign > 0)
       andPositive(bi, that)
@@ -174,10 +194,11 @@ private[math] object Logical {
       longer
     } else {
       var i = Math.max(iShorter, iLonger)
-      var digit: Int =
+      var digit: Int = {
         if (iShorter > iLonger) -shorter.digits(i) & ~longer.digits(i)
         else if (iShorter < iLonger) ~shorter.digits(i) & -longer.digits(i)
         else -shorter.digits(i) & -longer.digits(i)
+      }
 
       if (digit == 0) {
         i += 1
@@ -231,9 +252,9 @@ private[math] object Logical {
       bi
     else if (bi.sign == 0)
       BigInteger.ZERO
-    else if (bi == BigInteger.MINUS_ONE)
+    else if (bi.equals(BigInteger.MINUS_ONE))
       that.not()
-    else if (that == BigInteger.MINUS_ONE)
+    else if (that.equals(BigInteger.MINUS_ONE))
       BigInteger.ZERO
     else if (bi.sign > 0 && that.sign > 0)
       andNotPositive(bi, that)
@@ -452,7 +473,7 @@ private[math] object Logical {
 
   /** @see BigInteger#or(BigInteger) */
   def or(bi: BigInteger, that: BigInteger): BigInteger = {
-    if (that == BigInteger.MINUS_ONE || bi == BigInteger.MINUS_ONE) {
+    if (that.equals(BigInteger.MINUS_ONE) || bi.equals(BigInteger.MINUS_ONE)) {
       BigInteger.MINUS_ONE
     } else if (that.sign == 0) {
       bi
@@ -601,9 +622,9 @@ private[math] object Logical {
       bi
     } else if (bi.sign == 0) {
       that
-    } else if (that == BigInteger.MINUS_ONE) {
+    } else if (that.equals(BigInteger.MINUS_ONE)) {
       bi.not()
-    } else if (bi == BigInteger.MINUS_ONE) {
+    } else if (bi.equals(BigInteger.MINUS_ONE)) {
       that.not()
     } else if (bi.sign > 0) {
       if (that.sign > 0) {
@@ -664,7 +685,7 @@ private[math] object Logical {
       }
       // Remains digits in that?
       if (i == that.numberLength) {
-        // Jumping over the remaining zero to the first non one
+        // Jumping over the remaining zero to the first non-one
         while (i < iVal) {
           resDigits(i) = -1
           i += 1
@@ -740,7 +761,9 @@ private[math] object Logical {
       // When the first non-zero digit of the negative is reached, must apply
       // two complement (arithmetic negation) to it, and then operate
       if (i == iNeg) {
-        resDigits(i) = ~(positive.digits(i) ^ -negative.digits(i))
+        val posDigit =
+          if (i == positive.numberLength) 0 else positive.digits(i) // #5345
+        resDigits(i) = ~(posDigit ^ -negative.digits(i))
         i += 1
       } else {
         // if the positive has no more elements must fill the remaining digits with
