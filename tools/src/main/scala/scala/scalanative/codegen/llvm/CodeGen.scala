@@ -11,7 +11,7 @@ import scala.util.Success
 
 import scala.scalanative.build
 import scala.scalanative.build.ScalaNative.{dumpDefns, encodedMainClass}
-import scala.scalanative.build.{Build, Config, IO}
+import scala.scalanative.build.{Build, Config, IO, Timer}
 import scala.scalanative.codegen.llvm.compat.os.OsCompat
 import scala.scalanative.codegen.{Metadata => CodeGenMetadata}
 import scala.scalanative.io.VirtualDirectory
@@ -19,27 +19,53 @@ import scala.scalanative.linker.ReachabilityAnalysis
 import scala.scalanative.util.{Scope, ShowBuilder, partitionBy, procs}
 
 object CodeGen {
-  type IRGenerator = Future[Path]
-  type IRGenerators = Seq[IRGenerator]
+  // type IRGenerator = Future[Path]
+  // type IRGenerators = Seq[IRGenerator]
 
   /** Lower and generate code for given assembly. */
   def apply(config: build.Config, analysis: ReachabilityAnalysis.Result)(
-      implicit ec: ExecutionContext
-  ): Future[IRGenerators] = {
+      implicit
+      ec: ExecutionContext,
+      timer: Timer
+  ): Future[Seq[Path]] = {
     val defns = analysis.defns
     val proxies = GenerateReflectiveProxies(analysis.dynimpls, defns)
 
     implicit def logger: build.Logger = config.logger
     implicit val platform: PlatformInfo = PlatformInfo(config)
-    implicit val meta: CodeGenMetadata =
-      new CodeGenMetadata(analysis, config, proxies)
+    implicit val metaF: Future[CodeGenMetadata] =
+      timer.measureAsync("Generating metadata") {
+        Future(new CodeGenMetadata(analysis, config, proxies))
+      }
 
-    val generated = Generate(encodedMainClass(config), defns ++ proxies)
-    val embedded = ResourceEmbedder(config)
-    val lowered = lower(generated ++ embedded)
-    lowered
-      .andThen { case Success(defns) => dumpDefns(config, "lowered", defns) }
-      .map(emit(config, _))
+    val sourceCodeCache =
+      new SourceCodeCache(config).warmup()
+
+    metaF.flatMap { implicit meta: CodeGenMetadata =>
+      val generated = timer.measure("Generating assembly") {
+        Generate(encodedMainClass(config), defns ++ proxies)
+      }
+      val embedded = timer.measure("Embedding resources") {
+        ResourceEmbedder(config)
+      }
+      val lowered = timer.measureAsync("Lowering definitions") {
+        lower(generated ++ embedded)
+      }
+
+      for {
+        cache <- sourceCodeCache
+        files <-
+          lowered
+            .andThen {
+              case Success(defns) => dumpDefns(config, "lowered", defns)
+            }
+            .flatMap(assembly =>
+              timer.async("Writing LLVM IR assembly files") { implicit timer =>
+                emit(config, cache, assembly)
+              }
+            )
+      } yield files
+    }
   }
 
   private[scalanative] def lower(
@@ -50,24 +76,32 @@ object CodeGen {
       ec: ExecutionContext
   ): Future[Seq[nir.Defn]] = {
 
-    val loweringJobs = partitionBy(defns)(_.name).map {
-      case (_, defns) => Future(Lower(defns))
+    meta.buildConfig.tracing.useAsync(scalanative.build.Tracing.LOWER) { t =>
+      val loweringJobs = partitionBy(defns)(_.name).map {
+        case (_, defns) =>
+          Future(Lower(defns, t))
+      }
+
+      Future
+        .foldLeft(loweringJobs)(mutable.UnrolledBuffer.empty[nir.Defn]) {
+          case (buffer, defns) => buffer ++= defns
+        }
+        .map(_.toSeq)
     }
 
-    Future
-      .foldLeft(loweringJobs)(mutable.UnrolledBuffer.empty[nir.Defn]) {
-        case (buffer, defns) => buffer ++= defns
-      }
-      .map(_.toSeq)
   }
 
   private final val EmptyPath = "__empty"
 
   /** Generate code for given assembly. */
-  private def emit(config: build.Config, assembly: Seq[nir.Defn])(implicit
+  private def emit(
+      config: build.Config,
+      sourceCodeCache: SourceCodeCache,
+      assembly: Seq[nir.Defn]
+  )(implicit
       meta: CodeGenMetadata,
       ec: ExecutionContext
-  ): IRGenerators =
+  ): Future[Seq[Path]] =
     Scope { implicit in =>
       val env = assembly.map(defn => defn.name -> defn).toMap
       val outputDirPath = config.workDir.resolve("generated")
@@ -75,7 +109,6 @@ object CodeGen {
         IO.deleteRecursive(outputDirPath)
       Files.createDirectories(outputDirPath)
       val outputDir = VirtualDirectory.real(outputDirPath)
-      val sourceCodeCache = new SourceCodeCache(config)
 
       def outputFileId(defn: nir.Defn): String =
         defn.pos.source.directory
@@ -84,17 +117,22 @@ object CodeGen {
       // Partition into multiple LLVM IR files proportional to number
       // of available processors. This prevents LLVM from optimizing
       // across IR module boundary unless LTO is turned on.
-      def separate(): IRGenerators =
+      def separate(tracer: build.ScalaNativeTracer): Seq[Future[Path]] =
         partitionBy(assembly, procs)(outputFileId).toSeq.map {
           case (id, defns) =>
             Future {
               val sorted = defns.sortBy(_.name)
-              Impl(env, sorted, sourceCodeCache).gen(id.toString, outputDir)
+              Impl(env, sorted, sourceCodeCache, tracer).gen(
+                id.toString,
+                outputDir
+              )
             }
         }
 
       // Incremental compilation code generation
-      def separateIncrementally(): IRGenerators = {
+      def separateIncrementally(
+          tracer: build.ScalaNativeTracer
+      ): Seq[Future[Path]] = {
         val ctx = new IncrementalCodeGenContext(config)
         ctx.collectFromPreviousState()
 
@@ -126,7 +164,9 @@ object CodeGen {
                 val sorted = defns.sortBy(_.name)
                 if (!Files.exists(ownerDirectory))
                   Files.createDirectories(ownerDirectory)
-                Impl(env, sorted, sourceCodeCache).gen(hash, outputDir)
+                // config.tracing.use(build.Tracing.EMIT) { t =>
+                Impl(env, sorted, sourceCodeCache, tracer).gen(hash, outputDir)
+                // }
               } else {
                 assert(ownerDirectory.toFile.exists())
                 config.logger.debug(
@@ -149,11 +189,13 @@ object CodeGen {
         .generateIfSupported(outputDir, config)
         .map(Future.successful)
 
-      val llvmIRGenerators =
-        if (config.compilerConfig.useIncrementalCompilation)
-          separateIncrementally()
-        else separate()
-      llvmIRGenerators ++ maybeBuildInfoGenerator
+      config.tracing.useAsync(build.Tracing.EMIT) { t =>
+        val llvmIRGenerators =
+          if (config.compilerConfig.useIncrementalCompilation)
+            separateIncrementally(t)
+          else separate(t)
+        Future.sequence(llvmIRGenerators ++ maybeBuildInfoGenerator)
+      }
     }
 
   private object Impl {
@@ -161,24 +203,26 @@ object CodeGen {
     def apply(
         env: Map[nir.Global, nir.Defn],
         defns: Seq[nir.Defn],
-        sourcesCache: SourceCodeCache
+        sourcesCache: SourceCodeCache,
+        tracer: build.ScalaNativeTracer
     )(implicit
         meta: CodeGenMetadata
-    ): AbstractCodeGen = new StdCodeGen(env, defns, sourcesCache)
+    ): AbstractCodeGen = new StdCodeGen(env, defns, sourcesCache, tracer)
 
     private class StdCodeGen(
         env: Map[nir.Global, nir.Defn],
         defns: Seq[nir.Defn],
-        sourcesCache: SourceCodeCache
+        sourcesCache: SourceCodeCache,
+        tracer: build.ScalaNativeTracer
     )(implicit
         meta: CodeGenMetadata
-    ) extends AbstractCodeGen(env, defns) {
+    ) extends AbstractCodeGen(env, defns, tracer) {
       override def sourceCodeCache: SourceCodeCache = sourcesCache
     }
 
     class BuildInfoCodegen(env: Map[nir.Global, nir.Defn])(implicit
         meta: CodeGenMetadata
-    ) extends AbstractCodeGen(env, Nil) {
+    ) extends AbstractCodeGen(env, Nil, build.ScalaNativeTracer.noop) {
       import meta.config
       val buildInfos: Map[String, Any] = Map(
         "Sanitizer" -> config.sanitizer.map(_.name).getOrElse("disabled"),

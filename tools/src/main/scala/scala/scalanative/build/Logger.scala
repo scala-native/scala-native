@@ -2,6 +2,7 @@ package scala.scalanative.build
 
 import java.lang.System.{err, lineSeparator => nl, out}
 
+import scala.collection.mutable.ArrayBuffer
 import scala.concurrent._
 import scala.sys.process.ProcessLogger
 
@@ -53,6 +54,69 @@ trait Logger {
   }
 }
 
+import java.lang.System.nanoTime
+
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext}
+
+import Timer.*
+class Timer private (log: Node => Unit, tree: Node) {
+  def apply[A](label: String)(f: Timer => A): A = {
+    val childNode = Node(label, 0, ArrayBuffer.empty)
+    val child = new Timer(_ => (), childNode)
+    val start = nanoTime()
+    val res = f(child)
+    val duration = nanoTime() - start
+
+    val updated = childNode.copy(wallClock = duration)
+
+    tree.synchronized {
+      tree.children += updated
+    }
+
+    log(updated)
+
+    res
+  }
+
+  def measure[A](label: String)(f: => A): A =
+    apply(label)(_ => f)
+
+  def measureAsync[A](label: String)(f: => Future[A])(implicit
+      ec: ExecutionContext
+  ): Future[A] =
+    async(label)(_ => f)
+
+  def async[A](
+      label: String
+  )(f: Timer => Future[A])(implicit ec: ExecutionContext): Future[A] = {
+    val childNode = Node(label, 0, ArrayBuffer.empty)
+    val child = new Timer(_ => (), childNode)
+
+    val start = nanoTime()
+    f(child).map { result =>
+      val duration = nanoTime() - start
+      val updated = childNode.copy(wallClock = duration)
+
+      tree.synchronized {
+        tree.children += updated
+      }
+
+      log(updated)
+      result
+    }
+
+  }
+}
+
+object Timer {
+  case class Node(label: String, wallClock: Long, children: ArrayBuffer[Node])
+
+  def apply(label: String, log: Node => Unit): Timer =
+    new Timer(log, Node(label, 0, ArrayBuffer.empty))
+
+}
+
 object Logger {
 
   /** A `Logger` that writes `info` and `warn` messages to `stdout`, and
@@ -66,6 +130,7 @@ object Logger {
     def info(msg: String): Unit = out.println(s"[info] $msg")
     def warn(msg: String): Unit = out.println(s"[warn] $msg")
     def error(msg: String): Unit = err.println(s"[error] $msg")
+
   }
 
   /** A 'Logger' that discards all messagess
