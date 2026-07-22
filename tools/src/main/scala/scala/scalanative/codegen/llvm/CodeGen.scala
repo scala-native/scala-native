@@ -11,7 +11,7 @@ import scala.util.Success
 
 import scala.scalanative.build
 import scala.scalanative.build.ScalaNative.{dumpDefns, encodedMainClass}
-import scala.scalanative.build.{Build, Config, IO}
+import scala.scalanative.build.{Build, Config, IO, Timer}
 import scala.scalanative.codegen.llvm.compat.os.OsCompat
 import scala.scalanative.codegen.{Metadata => CodeGenMetadata}
 import scala.scalanative.io.VirtualDirectory
@@ -24,30 +24,48 @@ object CodeGen {
 
   /** Lower and generate code for given assembly. */
   def apply(config: build.Config, analysis: ReachabilityAnalysis.Result)(
-      implicit ec: ExecutionContext
+      implicit
+      ec: ExecutionContext,
+      timer: Timer
   ): Future[Seq[Path]] = {
     val defns = analysis.defns
     val proxies = GenerateReflectiveProxies(analysis.dynimpls, defns)
 
     implicit def logger: build.Logger = config.logger
     implicit val platform: PlatformInfo = PlatformInfo(config)
-    implicit val meta: CodeGenMetadata =
-      new CodeGenMetadata(analysis, config, proxies)
-
-    val sourceCodeCache =
-      logger.time("Warming up source code cache") {
-        val cache = new SourceCodeCache(config)
-        cache.warmup()
-        cache
+    implicit val metaF: Future[CodeGenMetadata] =
+      timer.measureAsync("Generating metadata") {
+        Future(new CodeGenMetadata(analysis, config, proxies))
       }
 
-    val generated = Generate(encodedMainClass(config), defns ++ proxies)
-    val embedded = ResourceEmbedder(config)
-    val lowered = lower(generated ++ embedded)
+    val sourceCodeCache =
+      new SourceCodeCache(config).warmup()
 
-    lowered
-      .andThen { case Success(defns) => dumpDefns(config, "lowered", defns) }
-      .flatMap(emit(config, sourceCodeCache, _))
+    metaF.flatMap { implicit meta: CodeGenMetadata =>
+      val generated = timer.measure("Generating assembly") {
+        Generate(encodedMainClass(config), defns ++ proxies)
+      }
+      val embedded = timer.measure("Embedding resources") {
+        ResourceEmbedder(config)
+      }
+      val lowered = timer.measureAsync("Lowering definitions") {
+        lower(generated ++ embedded)
+      }
+
+      for {
+        cache <- sourceCodeCache
+        files <-
+          lowered
+            .andThen {
+              case Success(defns) => dumpDefns(config, "lowered", defns)
+            }
+            .flatMap(assembly =>
+              timer.async("Writing LLVM IR assembly files") { implicit timer =>
+                emit(config, cache, assembly)
+              }
+            )
+      } yield files
+    }
   }
 
   private[scalanative] def lower(

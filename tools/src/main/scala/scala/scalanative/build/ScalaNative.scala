@@ -34,7 +34,8 @@ private[scalanative] object ScalaNative {
    */
   def link(config: Config, entries: Seq[nir.Global])(implicit
       scope: Scope,
-      ec: ExecutionContext
+      ec: ExecutionContext,
+      timer: Timer
   ): Future[ReachabilityAnalysis.Result] = withReachabilityPostprocessing(
     config,
     stage = "classloading",
@@ -45,19 +46,20 @@ private[scalanative] object ScalaNative {
       val mtSupport = config.compilerConfig.multithreading
         .getOrElse("detect")
       val linkingMsg = s"Linking (multithreadingEnabled=${mtSupport})"
-      config.logger.time(linkingMsg) {
-      config.tracing.use(Tracing.REACH)(t => Link(config, entries, t))
+      timer(linkingMsg) { implicit timer: Timer =>
+        config.tracing.use(Tracing.REACH)(t => Link(config, entries, t))
       }
     }
   )
 
   /** Optimizer high-level NIR under closed-world assumption. */
   def optimize(config: Config, analysis: ReachabilityAnalysis.Result)(implicit
-      ec: ExecutionContext
+      ec: ExecutionContext,
+      timer: Timer
   ): Future[ReachabilityAnalysis.Result] = {
     import config.logger
     if (config.compilerConfig.optimize)
-      logger.timeAsync(s"Optimizing (${config.mode} mode)") {
+      timer.async(s"Optimizing (${config.mode} mode)") { implicit timer =>
         withReachabilityPostprocessing(
           config,
           stage = "optimization",
@@ -88,7 +90,10 @@ private[scalanative] object ScalaNative {
       forceQuickCheck: Boolean
   )(
       analysis: Future[ReachabilityAnalysis]
-  )(implicit ec: ExecutionContext): Future[ReachabilityAnalysis.Result] = {
+  )(implicit
+      ec: ExecutionContext,
+      timer: Timer
+  ): Future[ReachabilityAnalysis.Result] = {
     analysis
       .andThen {
         case Success(result) => dumpDefns(config, dumpFile, result.defns)
@@ -214,40 +219,45 @@ private[scalanative] object ScalaNative {
 
   /** Given low-level assembly, emit LLVM IR for it to the buildDirectory. */
   def codegen(config: Config, analysis: ReachabilityAnalysis.Result)(implicit
-      ec: ExecutionContext
+      ec: ExecutionContext,
+      timer: Timer
   ): Future[Seq[Path]] = {
     val withMetadata =
       if (config.compilerConfig.sourceLevelDebuggingConfig.enabled)
         " (with debug metadata)"
       else ""
-    val codeGen = CodeGen(config, analysis)
-    config.logger.timeAsync(s"Generating intermediate code$withMetadata") {
-      codeGen
-        .andThen {
+    timer.async(s"Generating intermediate code$withMetadata") {
+      implicit timer: Timer =>
+        CodeGen(config, analysis).andThen {
           case Success(paths) =>
             config.logger.info(s"Produced ${paths.length} LLVM IR files")
         }
     }
-    codeGen
   }
 
   /** Run NIR checker on the linker result. */
   def check(config: Config)(
       analysis: ReachabilityAnalysis.Result
-  )(implicit ec: ExecutionContext): Future[ReachabilityAnalysis.Result] = {
+  )(implicit
+      ec: ExecutionContext,
+      timer: Timer
+  ): Future[ReachabilityAnalysis.Result] = {
     check(config, forceQuickCheck = false)(analysis)
   }
 
   private def check(config: Config, forceQuickCheck: Boolean)(
       analysis: ReachabilityAnalysis.Result
-  )(implicit ec: ExecutionContext): Future[ReachabilityAnalysis.Result] = {
+  )(implicit
+      ec: ExecutionContext,
+      timer: Timer
+  ): Future[ReachabilityAnalysis.Result] = {
     val performFullCheck = config.check
     val checkMode = if (performFullCheck) "full" else "quick"
     val fatalWarnings = config.compilerConfig.checkFatalWarnings
 
     if (config.check || forceQuickCheck) {
-      config.logger
-        .timeAsync(s"Checking intermediate code ($checkMode)") {
+      timer
+        .async(s"Checking intermediate code ($checkMode)") { implicit timer =>
           if (performFullCheck) Check(analysis)
           else Check.quick(analysis)
         }
@@ -303,9 +313,11 @@ private[scalanative] object ScalaNative {
     log(s"\n${errors.size} errors found")
   }
 
-  def dumpDefns(config: Config, phase: String, defns: Seq[nir.Defn]): Unit = {
+  def dumpDefns(config: Config, phase: String, defns: Seq[nir.Defn])(implicit
+      timer: Timer
+  ): Unit = {
     if (config.dump) {
-      config.logger.time(s"Dumping intermediate code ($phase)") {
+      timer(s"Dumping intermediate code ($phase)") { _ =>
         val path = config.workDir.resolve(phase + ".hnir")
         nir.Show.dump(defns, path.toFile.getAbsolutePath)
       }

@@ -158,8 +158,6 @@ object ScalaNativePluginInternal {
       nativeLogger: build.Logger
   ) = {
 
-    println(s"Creating build config: ${nativeConfig.buildTracing}")
-
     val config =
       build.Config.empty
         .withLogger(nativeLogger)
@@ -196,7 +194,6 @@ object ScalaNativePluginInternal {
         val sbtLogger = streams.value.log
         val nativeLogger = sbtLogger.toLogger
         val classpath = PluginCompat.toNioPaths(fullClasspath.value)
-        println(linkKey)
         val userConfig = (linkKey / nativeConfig).value
         val sourcesClassPath = resolveSourcesClassPath(
           userConfig,

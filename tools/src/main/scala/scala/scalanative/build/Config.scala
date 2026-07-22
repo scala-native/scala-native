@@ -1,6 +1,7 @@
 package scala.scalanative
 package build
 
+import java.io.FileWriter
 import java.nio.file.{Files, Path, Paths}
 
 /** An object describing how to configure the Scala Native toolchain. */
@@ -219,7 +220,6 @@ sealed trait Config {
     }
 
   private[scalanative] lazy val tracing: Tracing = {
-    println(s"Creating tracer: ${buildTracing}")
     if (buildTracing) Tracing.real(baseDir, logger) else Tracing.noop
   }
 

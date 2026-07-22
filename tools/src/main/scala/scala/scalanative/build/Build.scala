@@ -6,7 +6,10 @@ import java.nio.file.{FileVisitOption, Files, Path, Paths, StandardOpenOption}
 import java.util.Optional
 import java.util.concurrent.Executors
 
+import scala.annotation.tailrec
 import scala.collection.immutable
+import scala.collection.immutable.Queue
+import scala.collection.mutable.ArrayBuffer
 import scala.concurrent._
 import scala.concurrent.duration.Duration
 import scala.util.{Properties, Success, Try}
@@ -129,7 +132,68 @@ object Build {
   )(implicit scope: Scope, ec: ExecutionContext): Future[Path] = {
     val initialConfig = config
     import config.logger
-    logger.timeAsync("Total") {
+
+    import Timer.Node
+
+    def log(n: Node): Unit = {
+
+      def dfs[A](node: Node, f: (Node, Int) => A) = {
+        def go(remaining: List[Node], level: Int, acc: Queue[A]): Queue[A] =
+          remaining match {
+            case head :: next =>
+              go(
+                next,
+                level,
+                (acc :+ f(head, level)) ++ go(
+                  head.children.toList,
+                  level + 1,
+                  Queue.empty
+                )
+              )
+            case Nil =>
+              acc
+          }
+
+        go(List(node), 0, Queue.empty)
+      }
+
+      val totalTime = n.wallClock.toDouble
+
+      def duration(ms: Long, l: Int) =
+        if (l == -1)
+          ms.toString
+        else ms.toString.reverse.padTo(l, ' ').reverse
+
+      val maxL = duration(n.wallClock / 1000000, -1).length
+
+      def go(
+          remaining: List[Node],
+          level: Int,
+          result: List[String]
+      ): List[String] = {
+        remaining match {
+          case Nil       => result
+          case h :: rest =>
+            val relative =
+              (100.0 * (h.wallClock / totalTime)).toInt.toString.reverse
+                .padTo(3, ' ')
+                .reverse + "%"
+            val relativePct = Console.YELLOW + relative + Console.RESET
+            val dur = duration(h.wallClock / 1000000, maxL)
+            val line =
+              s"⏱️ ${relativePct} ${dur} ms ${"  " * level} ${h.label}"
+
+            go(
+              rest,
+              level,
+              (result :+ line) ++ go(h.children.toList, level + 1, Nil)
+            )
+        }
+      }
+      logger.info(go(List(n), 0, Nil).mkString("\n"))
+    }
+
+    Timer("Build", log(_)).async("Total") { implicit timer: Timer =>
       // called each time for clean or directory removal
       checkWorkdirExists(initialConfig)
 
@@ -165,8 +229,8 @@ object Build {
       config: Config,
       analysis: ReachabilityAnalysis.Result,
       irFiles: Seq[Path]
-  )(implicit ec: ExecutionContext): Future[Seq[Path]] =
-    config.logger.timeAsync("Compiling to native code") {
+  )(implicit ec: ExecutionContext, timer: Timer): Future[Seq[Path]] =
+    timer.async("Compiling to native code") { _ =>
       // compile generated LLVM IR
       val compileGeneratedIR =
         Future.traverse(irFiles)(file => LLVM.compile(config, analysis, file))
@@ -186,9 +250,9 @@ object Build {
       config: Config,
       analysis: ReachabilityAnalysis.Result,
       compiled: Seq[Path]
-  ): Path = config.logger.time(
+  )(implicit timer: Timer): Path = timer(
     s"Linking native code (${config.gc.name} gc, ${config.LTO.name} lto)"
-  ) {
+  ) { _ =>
     LLVM.link(config, analysis, compiled)
   }
 
@@ -236,8 +300,10 @@ object Build {
   }
 
   /** Links the DWARF debug information found in the object files. */
-  private def postProcess(config: Config, artifact: Path): Path =
-    config.logger.time("Postprocessing") {
+  private def postProcess(config: Config, artifact: Path)(implicit
+      timer: Timer
+  ): Path =
+    timer("Postprocessing") { _ =>
       if (config.targetsMac && config.compilerConfig.sourceLevelDebuggingConfig.generateFunctionSourcePositions) {
         LLVM.dsymutil(config, artifact)
       }

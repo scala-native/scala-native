@@ -8,7 +8,9 @@ import java.nio.file.attribute.BasicFileAttributes
 import scala.annotation.nowarn
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
+import scala.concurrent.{ExecutionContext, Future}
 
+import scala.scalanative.build.Timer
 import scala.scalanative.io.VirtualDirectory
 
 private[codegen] class SourceCodeCache(config: build.Config) {
@@ -42,10 +44,24 @@ private[codegen] class SourceCodeCache(config: build.Config) {
     TrieMap.empty
   private val loggedMissingSourcesForCp = mutable.Set.empty[Path]
 
-  def warmup() = {
-    localSourceDirs
-    classpathJarsSources
-    customSourceRootJars
+  def warmup()(implicit
+      ec: ExecutionContext,
+      timer: Timer
+  ): Future[SourceCodeCache] = {
+    timer.async("Source cache warmup") { implicit timer =>
+      val ls = timer.measureAsync("Reading local source folders") {
+        Future(localSourceDirs)
+      }
+      val cp =
+        timer.measureAsync("Reading classpath jar sources") {
+          Future(classpathJarsSources)
+        }
+      val roots = timer.measureAsync("Reading source root jars") {
+        Future(customSourceRootJars)
+      }
+
+      Future.sequence(Seq(ls, cp, roots)).map(_ => this)
+    }
   }
 
   private val cwd = Paths.get(".").toRealPath()
@@ -95,7 +111,7 @@ private[codegen] class SourceCodeCache(config: build.Config) {
   ): Option[Path] = {
     assert(
       config.compilerConfig.sourceLevelDebuggingConfig.enabled,
-      "Sources shall not be reoslved in source level debuging is disabled"
+      "Sources shall not be resolved in source level debuging is disabled"
     )
     assert(
       pos.source eq source,
@@ -128,7 +144,7 @@ private[codegen] class SourceCodeCache(config: build.Config) {
             .map(_.resolve(packageBasedSourcePath))
             .find(Files.exists(_))
 
-        // likekly for local sub-projects
+        // likely for local sub-projects
         def fromRelativePath = {
           val filename = source.path.getFileName()
           source.directory

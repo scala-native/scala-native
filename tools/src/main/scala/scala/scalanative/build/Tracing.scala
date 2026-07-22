@@ -1,5 +1,7 @@
 package scala.scalanative.build
 
+import java.io.{FileDescriptor, FileWriter, Writer}
+
 import com.github.plokhotnyuk.jsoniter_scala.core._
 
 import concurrent.*
@@ -17,11 +19,23 @@ trait Tracing {
 
 class ScalaNativeTracer(
     defaultCategory: String,
-    tracer: fxprof.tracer.Tracer
+    tracer: fxprof.tracer.Tracer,
+    logWriter: Writer
 ) extends Tracer {
 
   def symSpan[A](sym: scala.scalanative.nir.Global)(f: => A) =
-    tracer.span(sym.mangle, defaultCategory)(f)
+    try {
+      logWriter.write(
+        s"START; $defaultCategory; ${System.currentTimeMillis()}; ${sym.mangle}\n"
+      )
+
+      tracer.span("__S" + sym.mangle, defaultCategory)(f)
+    } finally {
+      logWriter.write(
+        s"END; $defaultCategory; ${System.currentTimeMillis()}; ${sym.mangle}\n"
+      )
+
+    }
 
   override def span[A](name: String)(f: => A): A =
     tracer.span(name, defaultCategory)(f)
@@ -29,11 +43,15 @@ class ScalaNativeTracer(
   override def span[A](name: String, category: String)(f: => A): A =
     tracer.span(name, category)(f)
 
-  override def close(): Unit = tracer.close()
+  override def close(): Unit = {
+    tracer.close()
+    logWriter.close()
+  }
 }
 
 object ScalaNativeTracer {
-  val noop = new ScalaNativeTracer("", Tracer.noop)
+  val noop =
+    new ScalaNativeTracer("", Tracer.noop, Writer.nullWriter())
 }
 
 class RealTracing private[build] (
@@ -49,7 +67,11 @@ class RealTracing private[build] (
     val tracerInstance = tracer(Tracing.meta)
     opened.synchronized {
       opened(label) = tracerInstance
-      new ScalaNativeTracer(label, tracerInstance)
+      new ScalaNativeTracer(
+        label,
+        tracerInstance,
+        new FileWriter(dest.resolve(s"fxprof-$label.log").toFile())
+      )
     }
   }
 
@@ -62,6 +84,7 @@ class RealTracing private[build] (
     val fw = new java.io.FileWriter(tracerDest.toFile)
     fw.write(writeToString(tracerInstance.build()))
     fw.close()
+    tracerInstance.close()
   }
 
   def useAsync[A](
@@ -70,15 +93,23 @@ class RealTracing private[build] (
       f: ScalaNativeTracer => Future[A]
   )(implicit ec: ExecutionContext): Future[A] = {
     val tracerDest = dest.resolve(s"fxprof-$category.json")
+    val tracerLogDest = dest.resolve(s"fxprof-$category.log")
 
     val tracerInstance = tracer(Tracing.meta)
-    val result = f(new ScalaNativeTracer(category, tracerInstance))
+    val snTracer = new ScalaNativeTracer(
+      category,
+      tracerInstance,
+      new FileWriter(tracerLogDest.toFile())
+    )
+    val result = f(snTracer)
 
     result.onComplete {
       case util.Success(value) =>
         val fw = new java.io.FileWriter(tracerDest.toFile)
         fw.write(writeToString(tracerInstance.build()))
         fw.close()
+
+        snTracer.close()
 
         logger.info(
           s"Firefox Profiler file ($category) was written to $tracerDest"
@@ -91,13 +122,20 @@ class RealTracing private[build] (
 
   def use[A](category: String)(f: ScalaNativeTracer => A) = {
     val tracerDest = dest.resolve(s"fxprof-$category.json")
+    val tracerLogDest = dest.resolve(s"fxprof-$category.log")
 
     val tracerInstance = tracer(Tracing.meta)
-    val result = f(new ScalaNativeTracer(category, tracerInstance))
+    val snTracer = new ScalaNativeTracer(
+      category,
+      tracerInstance,
+      new FileWriter(tracerLogDest.toFile())
+    )
+    val result = f(snTracer)
 
     val fw = new java.io.FileWriter(tracerDest.toFile)
     fw.write(writeToString(tracerInstance.build()))
     fw.close()
+    snTracer.close()
 
     logger.info(
       s"Firefox Profiler file ($category) was written to $tracerDest"
@@ -108,7 +146,10 @@ class RealTracing private[build] (
 }
 
 object Tracing {
-  def real(destDir: java.nio.file.Path, logger: Logger): Tracing =
+  def real(
+      destDir: java.nio.file.Path,
+      logger: Logger
+  ): Tracing =
     new RealTracing(Tracer(_), destDir, logger)
 
   val noop: Tracing = new Tracing {
