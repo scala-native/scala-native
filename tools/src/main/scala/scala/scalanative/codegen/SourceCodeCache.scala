@@ -42,6 +42,12 @@ private[codegen] class SourceCodeCache(config: build.Config) {
     TrieMap.empty
   private val loggedMissingSourcesForCp = mutable.Set.empty[Path]
 
+  def warmup() = {
+    localSourceDirs
+    classpathJarsSources
+    customSourceRootJars
+  }
+
   private val cwd = Paths.get(".").toRealPath()
   private lazy val localSourceDirs = {
     val directories = IndexedSeq.newBuilder[Path]

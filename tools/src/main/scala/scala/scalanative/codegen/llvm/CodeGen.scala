@@ -34,12 +34,20 @@ object CodeGen {
     implicit val meta: CodeGenMetadata =
       new CodeGenMetadata(analysis, config, proxies)
 
+    val sourceCodeCache =
+      logger.time("Warming up source code cache") {
+        val cache = new SourceCodeCache(config)
+        cache.warmup()
+        cache
+      }
+
     val generated = Generate(encodedMainClass(config), defns ++ proxies)
     val embedded = ResourceEmbedder(config)
     val lowered = lower(generated ++ embedded)
+
     lowered
       .andThen { case Success(defns) => dumpDefns(config, "lowered", defns) }
-      .flatMap(emit(config, _))
+      .flatMap(emit(config, sourceCodeCache, _))
   }
 
   private[scalanative] def lower(
@@ -68,7 +76,11 @@ object CodeGen {
   private final val EmptyPath = "__empty"
 
   /** Generate code for given assembly. */
-  private def emit(config: build.Config, assembly: Seq[nir.Defn])(implicit
+  private def emit(
+      config: build.Config,
+      sourceCodeCache: SourceCodeCache,
+      assembly: Seq[nir.Defn]
+  )(implicit
       meta: CodeGenMetadata,
       ec: ExecutionContext
   ): Future[Seq[Path]] =
@@ -79,7 +91,6 @@ object CodeGen {
         IO.deleteRecursive(outputDirPath)
       Files.createDirectories(outputDirPath)
       val outputDir = VirtualDirectory.real(outputDirPath)
-      val sourceCodeCache = new SourceCodeCache(config)
 
       def outputFileId(defn: nir.Defn): String =
         defn.pos.source.directory
