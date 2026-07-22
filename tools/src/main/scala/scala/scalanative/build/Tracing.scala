@@ -20,20 +20,20 @@ trait Tracing {
 class ScalaNativeTracer(
     defaultCategory: String,
     tracer: fxprof.tracer.Tracer,
-    logWriter: Writer
+    // logWriter: Writer
 ) extends Tracer {
 
   def symSpan[A](sym: scala.scalanative.nir.Global)(f: => A) =
     try {
-      logWriter.write(
-        s"START; $defaultCategory; ${System.currentTimeMillis()}; ${sym.mangle}\n"
-      )
+      // logWriter.write(
+      //   s"START; $defaultCategory; ${System.currentTimeMillis()}; ${sym.mangle}\n"
+      // )
 
       tracer.span("__S" + sym.mangle, defaultCategory)(f)
     } finally {
-      logWriter.write(
-        s"END; $defaultCategory; ${System.currentTimeMillis()}; ${sym.mangle}\n"
-      )
+      // logWriter.write(
+      //   s"END; $defaultCategory; ${System.currentTimeMillis()}; ${sym.mangle}\n"
+      // )
 
     }
 
@@ -45,13 +45,13 @@ class ScalaNativeTracer(
 
   override def close(): Unit = {
     tracer.close()
-    logWriter.close()
+    // logWriter.close()
   }
 }
 
 object ScalaNativeTracer {
   val noop =
-    new ScalaNativeTracer("", Tracer.noop, Writer.nullWriter())
+    new ScalaNativeTracer("", Tracer.noop)
 }
 
 class RealTracing private[build] (
@@ -70,7 +70,7 @@ class RealTracing private[build] (
       new ScalaNativeTracer(
         label,
         tracerInstance,
-        new FileWriter(dest.resolve(s"fxprof-$label.log").toFile())
+        // new FileWriter(dest.resolve(s"fxprof-$label.log").toFile())
       )
     }
   }
@@ -99,7 +99,7 @@ class RealTracing private[build] (
     val snTracer = new ScalaNativeTracer(
       category,
       tracerInstance,
-      new FileWriter(tracerLogDest.toFile())
+      // new FileWriter(tracerLogDest.toFile())
     )
     val result = f(snTracer)
 
@@ -128,7 +128,7 @@ class RealTracing private[build] (
     val snTracer = new ScalaNativeTracer(
       category,
       tracerInstance,
-      new FileWriter(tracerLogDest.toFile())
+      // new FileWriter(tracerLogDest.toFile())
     )
     val result = f(snTracer)
 
@@ -173,7 +173,7 @@ object Tracing {
 
   private[build] def meta = ProfileMeta(
     interval = 1.0,
-    startTime = System.currentTimeMillis(),
+    startTime = System.currentTimeMillis().toDouble,
     processType = 1.0,
     product = ProfileMeta_Product.Other("scala-native"),
     stackwalk = ProfileMeta_Stackwalk.False,

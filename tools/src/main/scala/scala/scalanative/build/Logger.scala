@@ -71,7 +71,7 @@ class Timer private (log: Node => Unit, tree: Node) {
     val updated = childNode.copy(wallClock = duration)
 
     tree.synchronized {
-      tree.children.addOne(updated)
+      tree.children += updated
     }
 
     log(updated)
@@ -99,7 +99,7 @@ class Timer private (log: Node => Unit, tree: Node) {
       val updated = childNode.copy(wallClock = duration)
 
       tree.synchronized {
-        tree.children.addOne(updated)
+        tree.children += updated
       }
 
       log(updated)
