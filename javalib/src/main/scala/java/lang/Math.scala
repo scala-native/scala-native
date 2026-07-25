@@ -46,6 +46,10 @@ object Math {
   @alwaysinline def acos(a: scala.Double): scala.Double =
     cmath.acos(a)
 
+  /** @since JDK 27 */
+  @alwaysinline def acosh(a: scala.Double): scala.Double =
+    cmath.acosh(a)
+
   @inline def addExact(a: scala.Int, b: scala.Int): scala.Int = {
     val overflow = `llvm.sadd.with.overflow.i32`(a, b)
     if (overflow.flag) throw new ArithmeticException("Integer overflow")
@@ -61,11 +65,19 @@ object Math {
   @alwaysinline def asin(a: scala.Double): scala.Double =
     cmath.asin(a)
 
+  /** @since JDK 27 */
+  @alwaysinline def asinh(a: scala.Double): scala.Double =
+    cmath.asinh(a)
+
   @alwaysinline def atan(a: scala.Double): scala.Double =
     cmath.atan(a)
 
   @alwaysinline def atan2(y: scala.Double, x: scala.Double): scala.Double =
     cmath.atan2(y, x)
+
+  /** @since JDK 27 */
+  @alwaysinline def atanh(a: scala.Double): scala.Double =
+    cmath.atanh(a)
 
   @alwaysinline def cbrt(a: scala.Double): scala.Double =
     cmath.cbrt(a)
