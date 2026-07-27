@@ -143,15 +143,16 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
       val raf = mRaf
       raf.synchronized {
         // We don't know the entry data's start position. All we have is the
-        // position of the entry's local header. At position 28 we find the
-        // length of the extra data. In some cases this length differs from
-        // the one coming in the central header.
+        // position of the entry's local header. At LFH offset 26 we find the
+        // file-name length (in bytes — the encoded form, not Java String
+        // code units), and at offset 28 the extra-field length. Either may
+        // differ from the central-directory copy.
         val rafstrm =
-          new ZipFile.RAFStream(raf, entry.mLocalHeaderRelOffset + 28)
-        val localExtraLenOrWhatever = ler.readShortLE(rafstrm)
+          new ZipFile.RAFStream(raf, entry.mLocalHeaderRelOffset + 26)
+        val localNameLen = ler.readShortLE(rafstrm)
+        val localExtraLen = ler.readShortLE(rafstrm)
 
-        // Skip the name and this "extra" data or whatever it is:
-        rafstrm.skip(entry.name.length() + localExtraLenOrWhatever)
+        rafstrm.skip(localNameLen.toLong + localExtraLen.toLong)
 
         rafstrm.mLength = rafstrm.mOffset + entry.compressedSize
         if (entry.compressionMethod == ZipEntry.DEFLATED) {
@@ -165,6 +166,39 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
         } else {
           rafstrm
         }
+      }
+    }
+  }
+
+  /** Scala Native internal. Returns just the compressed payload bytes for
+   *  `entryName` — LFH header parsed and skipped, no inflater wrapping. The
+   *  returned stream yields exactly `entry.compressedSize` bytes regardless of
+   *  whether the entry uses STORED or DEFLATED. Returns `null` for an unknown
+   *  name.
+   *
+   *  Used (via [[ZipFileSystemSupport]]) by the zip file system to raw-copy
+   *  unchanged entries into a rewritten archive without re-inflating and
+   *  re-deflating them. The bit-3 data-descriptor span (if any) is NOT
+   *  included; the rewrite path always emits LFHs without bit 3.
+   */
+  private[zip] def getRawInputStream(entryName: String): InputStream = {
+    checkNotClosed()
+    if (entryName == null) throw new NullPointerException()
+    val entry = mEntries.getOrDefault(
+      entryName,
+      mEntries.getOrDefault(entryName + "/", null)
+    )
+    if (entry == null) null
+    else {
+      val raf = mRaf
+      raf.synchronized {
+        val rafstrm =
+          new ZipFile.RAFStream(raf, entry.mLocalHeaderRelOffset + 26)
+        val localNameLen = ler.readShortLE(rafstrm)
+        val localExtraLen = ler.readShortLE(rafstrm)
+        rafstrm.skip(localNameLen.toLong + localExtraLen.toLong)
+        rafstrm.mLength = rafstrm.mOffset + entry.compressedSize
+        rafstrm
       }
     }
   }
@@ -237,6 +271,16 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
       throw new ZipException("spanned archves not supported")
     }
 
+    rafs.close()
+    bin.close()
+
+    if (numEntries == 0) {
+      // Empty archive: the EOCD's central-directory offset points at the
+      // EOCD itself (no CDH records). Skip the CENSIG probe; there is
+      // nothing to read.
+      return
+    }
+
     /*
      * Seek to the first CDE and read all entries.
      * However, when Z_SYNC_FLUSH is used the offset may not point directly
@@ -259,9 +303,6 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
         }
       }
     }
-
-    rafs.close()
-    bin.close()
 
 // Also, should probably explicitly close both of the new ones here
 // after they are done.  Done reasonably right, that means some

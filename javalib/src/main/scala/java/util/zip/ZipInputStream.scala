@@ -228,7 +228,7 @@ class ZipInputStream(_in: InputStream, charset: Charset)
             throw new EOFException()
           }
         }
-        currentEntry.setExtra(e)
+        currentEntry.setExtra(e) // also populates UT/NTFS FileTimes
       }
 
       currentEntry

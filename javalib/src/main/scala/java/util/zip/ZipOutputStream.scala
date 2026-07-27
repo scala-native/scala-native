@@ -29,6 +29,12 @@ class ZipOutputStream(_out: OutputStream, charset: Charset)
   private var offset = 0
   private var curOffset = 0
   private var nameBytes: Array[Byte] = null
+  // LFH/CDH `extra` payloads for the current entry. The LFH form may
+  // carry the full mtime/atime/ctime triple via UT (0x5455); the CDH
+  // form by spec carries only mtime, so we recompute it. Both default
+  // to the entry's existing `extra` when no FileTime is set.
+  private var lfhExtra: Array[Byte] = null
+  private var cdhExtra: Array[Byte] = null
 
   private var gpFlags: Short = 0 // Zip general purpose flags
 
@@ -102,9 +108,16 @@ class ZipOutputStream(_out: OutputStream, charset: Charset)
         curOffset += writeLong(cDir, crc.tbytes).toInt
         writeLong(cDir, crc.tbytes)
       }
+      // `curOffset` tracks the on-disk size of the LFH (header + name
+      // + extra + data + optional data descriptor). The CDH may store
+      // a different `extra` size (UT in the CDH only carries mtime,
+      // while the LFH variant can also carry atime/ctime), so we use
+      // the LFH length here and pass `cdhExtra.length` separately to
+      // the CDH write.
       curOffset += writeShort(cDir, nameBytes.length)
-      if (currentEntry.extra != null) {
-        curOffset += writeShort(cDir, currentEntry.extra.length)
+      curOffset += (if (lfhExtra != null) lfhExtra.length else 0)
+      if (cdhExtra != null) {
+        writeShort(cDir, cdhExtra.length)
       } else {
         writeShort(cDir, 0)
       }
@@ -125,8 +138,8 @@ class ZipOutputStream(_out: OutputStream, charset: Charset)
 
       cDir.write(nameBytes)
 
-      if (currentEntry.extra != null) {
-        cDir.write(currentEntry.extra)
+      if (cdhExtra != null) {
+        cDir.write(cdhExtra)
       }
       offset += curOffset
 
@@ -220,21 +233,70 @@ class ZipOutputStream(_out: OutputStream, charset: Charset)
         throw new IllegalArgumentException(s"Name too long: ${ze.name}")
       }
 
+      // Settle method/time on the entry before building the extras
+      // and writing the LFH. Both bits are part of the LFH the writer
+      // will produce, and FileTime presence affects the UT block.
+      if (ze.getMethod() == -1) ze.setMethod(compressMethod)
+      if (ze.time == -1 || ze.modDate == -1) {
+        if (ze.mtime != Long.MinValue) {
+          val preservedMtime = ze.mtime
+          val preservedMtimeFromExtra = ze.mtimeFromExtra
+          ze.setTime(preservedMtime)
+          ze.mtime = preservedMtime
+          ze.mtimeFromExtra = preservedMtimeFromExtra
+        } else {
+          ze.setTime(System.currentTimeMillis())
+        }
+      }
+
+      // Build the extra blocks. Whenever any FileTime is set on the
+      // entry we strip any pre-existing UT (0x5455) or NTFS (0x000A)
+      // timestamp blocks first, so re-writes don't (a) leave duplicate
+      // records when we emit a replacement, or (b) leave stale records
+      // when we *cannot* emit a replacement (e.g. mtime is outside the
+      // UT-representable range) — in either case the user's intent is
+      // the freshly-set FileTime, not whatever the source archive
+      // happened to carry. LFH carries the full mtime/atime/ctime
+      // triple; CDH carries only mtime per APPNOTE 4.5.7.
+      val hasFileTimes =
+        ze.mtime != Long.MinValue ||
+          ze.atime != Long.MinValue ||
+          ze.ctime != Long.MinValue
+      val cleanExtra =
+        if (hasFileTimes) ZipEntry.stripTimestampBlocks(ze.extra)
+        else ze.extra
+      val lfhUT = ZipEntry.buildUTExtraBlock(ze, true)
+      val cdhUT = ZipEntry.buildUTExtraBlock(ze, false)
+      val newLfhExtra = ZipEntry.mergeExtra(cleanExtra, lfhUT)
+      val newCdhExtra = ZipEntry.mergeExtra(cleanExtra, cdhUT)
+
+      // The on-disk LFH/CDH extra-length field is 16 bits. setExtra
+      // already caps user-supplied bytes at 0xffff, but appending a UT
+      // block can push the total past that limit, after which
+      // writeShort(...) would silently truncate the length and leave
+      // out.write(lfhExtra) writing past the declared bound — yielding
+      // an unreadable archive. Validate BEFORE any state commit or
+      // LFH write so a thrown exception leaves the stream and the
+      // `entries` set untouched and the caller can recover.
+      if (newLfhExtra != null && newLfhExtra.length > 0xffff)
+        throw new ZipException(s"LFH extra too large: ${newLfhExtra.length}")
+      if (newCdhExtra != null && newCdhExtra.length > 0xffff)
+        throw new ZipException(s"CDH extra too large: ${newCdhExtra.length}")
+
+      // Commit: from here on `currentEntry` is set and the on-disk
+      // LFH is being produced.
       `def`.setLevel(compressLevel)
       currentEntry = ze
       entries += currentEntry.name
-      if (currentEntry.getMethod() == -1) {
-        currentEntry.setMethod(compressMethod)
-      }
+      lfhExtra = newLfhExtra
+      cdhExtra = newCdhExtra
+
       writeLong(out, LOCSIG) // Entry header
       writeShort(out, ZIPLocalHeaderVersionNeeded) // Extraction version
 
       writeShort(out, gpFlags)
 
       writeShort(out, currentEntry.getMethod())
-      if (currentEntry.getTime() == -1) {
-        currentEntry.setTime(System.currentTimeMillis())
-      }
       writeShort(out, currentEntry.time)
       writeShort(out, currentEntry.modDate)
 
@@ -255,16 +317,16 @@ class ZipOutputStream(_out: OutputStream, charset: Charset)
 
       writeShort(out, nameLength)
 
-      if (currentEntry.extra != null) {
-        writeShort(out, currentEntry.extra.length)
+      if (lfhExtra != null) {
+        writeShort(out, lfhExtra.length)
       } else {
         writeShort(out, 0)
       }
 
       out.write(nameBytes)
 
-      if (currentEntry.extra != null)
-        out.write(currentEntry.extra)
+      if (lfhExtra != null)
+        out.write(lfhExtra)
     }
   }
 

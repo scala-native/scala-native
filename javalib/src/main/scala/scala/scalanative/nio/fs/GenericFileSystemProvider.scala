@@ -49,7 +49,11 @@ abstract class GenericFileSystemProvider extends FileSystemProvider {
     }
 
   override def newFileSystem(path: Path, env: Map[String, _]): FileSystem =
-    newFileSystem(path.toUri(), env)
+    // Path-based probing contract: a provider that doesn't recognise a path
+    // must throw UnsupportedOperationException so the dispatcher in
+    // `FileSystems.newFileSystem(Path, ClassLoader)` can advance to the next
+    // provider without conflating "not mine" with real failures.
+    throw new UnsupportedOperationException()
 
   override def newFileChannel(
       path: Path,
