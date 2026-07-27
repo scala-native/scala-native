@@ -10,14 +10,23 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 class LongTest {
   val signedMaxValue = Long.MAX_VALUE
   val signedMaxValueText = "9223372036854775807"
+  val signedMaxValueArabicIndicText =
+    "\u0669\u0662\u0662\u0663\u0663\u0667\u0662\u0660\u0663\u0666" +
+      "\u0668\u0665\u0664\u0667\u0667\u0665\u0668\u0660\u0667"
   val signedMinValue = Long.MIN_VALUE
   val signedMinValueText = "-9223372036854775808"
+  val signedMinValueArabicIndicText =
+    "-\u0669\u0662\u0662\u0663\u0663\u0667\u0662\u0660\u0663\u0666" +
+      "\u0668\u0665\u0664\u0667\u0667\u0665\u0668\u0660\u0668"
 
   val signedMaxPlusOneText = "9223372036854775808"
   val signedMinMinusOneText = "-9223372036854775809"
 
   val unsignedMaxValue = -1L
   val unsignedMaxValueText = "18446744073709551615"
+  val unsignedMaxValueArabicIndicText =
+    "\u0661\u0668\u0664\u0664\u0666\u0667\u0664\u0664\u0660\u0667" +
+      "\u0663\u0667\u0660\u0669\u0665\u0665\u0661\u0666\u0661\u0665"
   val unsignedMaxPlusOneText = "18446744073709551616"
 
   def assertThrowsAndMessage[T <: Throwable, U](
@@ -137,7 +146,11 @@ class LongTest {
     assertEquals(0L, parse("+0"))
     assertEquals(0L, parse("00"))
     assertEquals(signedMaxValue, parse(signedMaxValueText))
+    assertEquals(signedMaxValue, parse(signedMaxValueArabicIndicText))
     assertEquals(signedMinValue, parse(signedMinValueText))
+    assertEquals(signedMinValue, parse(signedMinValueArabicIndicText))
+    assertEquals(-123L, parse("-\u0661\u0662\u0663"))
+    assertEquals(123L, parse("1\u06623"))
 
     assertThrowsAndMessage(classOf[NumberFormatException], parse(null))(
       "java.lang.NumberFormatException: null"
@@ -190,6 +203,10 @@ class LongTest {
     assertEquals(4L, parse("+100", 2))
     assertEquals(4L, parse("100", 2))
     assertEquals(unsignedMaxValue, parse(unsignedMaxValueText))
+    assertEquals(unsignedMaxValue, parse(unsignedMaxValueArabicIndicText))
+    assertEquals(-6L, parse("18446744073709551610"))
+    assertEquals(123L, parse("\u0661\u0662\u0663"))
+    assertEquals(123L, parse("1\u06623"))
 
     assertThrowsAndMessage(classOf[NumberFormatException], parse(null))(
       """java.lang.NumberFormatException: null"""
@@ -227,6 +244,7 @@ class LongTest {
     )(
       s"""java.lang.NumberFormatException: String value $unsignedMaxPlusOneText exceeds range of unsigned long."""
     )
+    assertThrows(classOf[NumberFormatException], parse("18446744073709551620"))
 
     val octalMulOverflow = "5777777777777777777770"
     // in binary:

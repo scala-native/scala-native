@@ -176,6 +176,8 @@ object Long {
   final val SIZE = 64
   final val BYTES = 8
 
+  import DecimalParseHelpers.parseDecimalDigit
+
   @inline def bitCount(l: scala.Long): scala.Int =
     LLVMIntrinsics.`llvm.ctpop.i64`(l).toInt
 
@@ -190,6 +192,12 @@ object Long {
   private def fail(s: String): Nothing =
     throw new NumberFormatException(s"""For input string: "$s"""")
 
+  private final val SignedMinValueQuotient = -922337203685477580L
+  private final val SignedMaxValueLastDigit = 7
+  private final val SignedMinValueLastDigit = 8
+  private final val UnsignedMaxValueQuotient = 1844674407370955161L
+  private final val UnsignedMaxValueLastDigit = 5
+
   def decode(nm: String): Long = {
     if (nm == null)
       throw new NumberFormatException("null")
@@ -198,10 +206,10 @@ object Long {
 
     var i = 0
     var firstDigit = nm.charAt(i)
-    val negative = firstDigit == '-'
-    val positive = firstDigit == '+'
+    val hasNegativeSign = firstDigit == '-'
+    val hasPlusSign = firstDigit == '+'
 
-    if (negative || positive) {
+    if (hasNegativeSign || hasPlusSign) {
       if (length == 1) fail(nm)
       i += 1
       firstDigit = nm.charAt(i)
@@ -228,7 +236,7 @@ object Long {
       base = 16
     }
 
-    valueOf(parse(nm, i, base, negative))
+    valueOf(parse(nm, i, base, hasNegativeSign))
   }
 
   @inline
@@ -282,8 +290,27 @@ object Long {
   @inline def numberOfTrailingZeros(l: scala.Long): Int =
     LLVMIntrinsics.`llvm.cttz.i64`(l, iszeroundef = false).toInt
 
-  @inline def parseLong(s: String): scala.Long =
-    parseLong(s, 10)
+  @inline def parseLong(s: String): scala.Long = {
+    if (s == null)
+      throw new NumberFormatException("null")
+    parseLongDecimal(s)
+  }
+
+  private def parseLongDecimal(s: String): scala.Long = {
+    val length = s.length()
+
+    if (length == 0) fail(s)
+
+    val first = s.charAt(0)
+    val hasNegativeSign = first == '-'
+    val hasPlusSign = first == '+'
+
+    if ((hasNegativeSign || hasPlusSign) && length == 1) fail(s)
+
+    val offset = if (hasNegativeSign || hasPlusSign) 1 else 0
+
+    parseDecimal(s, offset, hasNegativeSign)
+  }
 
   @inline def parseLong(s: String, radix: Int): scala.Long = {
     if (s == null)
@@ -297,21 +324,69 @@ object Long {
         s"radix $radix greater than Character.MAX_RADIX"
       )
 
-    val length = s.length()
+    if (radix == 10) parseLongDecimal(s)
+    else {
+      val length = s.length()
+      if (length == 0) fail(s)
 
-    if (length == 0) fail(s)
+      val first = s.charAt(0)
+      val hasNegativeSign = first == '-'
+      val hasPlusSign = first == '+'
 
-    val negative = s.charAt(0) == '-'
-    val hasPlusSign = s.charAt(0) == '+'
+      if ((hasNegativeSign || hasPlusSign) && length == 1) fail(s)
 
-    if ((negative || hasPlusSign) && length == 1) fail(s)
+      val offset = if (hasNegativeSign || hasPlusSign) 1 else 0
 
-    val offset = if (negative || hasPlusSign) 1 else 0
-
-    parse(s, offset, radix, negative)
+      parseGeneric(s, offset, radix, hasNegativeSign)
+    }
   }
 
   private def parse(
+      s: String,
+      _offset: Int,
+      radix: Int,
+      negative: scala.Boolean
+  ): scala.Long = {
+    if (radix == 10) parseDecimal(s, _offset, negative)
+    else parseGeneric(s, _offset, radix, negative)
+  }
+
+  private def parseDecimal(
+      s: String,
+      _offset: Int,
+      negative: scala.Boolean
+  ): scala.Long = {
+    val length = s.length()
+    val digitCount = length - _offset
+    if (digitCount <= 0) fail(s)
+    var offset = _offset
+    var result = 0L
+
+    // Phase 1: up to 18 digits — no overflow possible
+    // (999_999_999_999_999_999 < 9_223_372_036_854_775_807)
+    val safeEnd = Math.min(length, offset + 18)
+    while (offset < safeEnd) {
+      result = result * 10 - parseDecimalDigit(s, offset)
+      offset += 1
+    }
+
+    // Phase 2: remaining digits — overflow check required
+    val maxLastDigit =
+      if (negative) SignedMinValueLastDigit
+      else SignedMaxValueLastDigit
+    while (offset < length) {
+      val digit = parseDecimalDigit(s, offset)
+      offset += 1
+      if (result < SignedMinValueQuotient ||
+          (result == SignedMinValueQuotient && digit > maxLastDigit)) fail(s)
+      result = result * 10 - digit
+    }
+
+    if (negative) result
+    else -result
+  }
+
+  private def parseGeneric(
       s: String,
       _offset: Int,
       radix: Int,
@@ -488,8 +563,29 @@ object Long {
   @inline def valueOf(s: String, radix: Int): Long =
     valueOf(parseLong(s, radix))
 
-  @inline def parseUnsignedLong(s: String): scala.Long =
-    parseUnsignedLong(s, 10)
+  @inline def parseUnsignedLong(s: String): scala.Long = {
+    if (s == null)
+      throw new NumberFormatException("null")
+    parseUnsignedLongDecimal(s)
+  }
+
+  private def parseUnsignedLongDecimal(s: String): scala.Long = {
+    val len = s.length()
+    if (len == 0) fail(s)
+
+    val first = s.charAt(0)
+    val hasPlusSign = first == '+'
+    val hasNegativeSign = first == '-'
+    if ((hasPlusSign || hasNegativeSign) && len == 1) fail(s)
+    if (hasNegativeSign)
+      throw new NumberFormatException(
+        s"""Illegal leading minus sign on unsigned string $s."""
+      )
+
+    val offset = if (hasPlusSign) 1 else 0
+
+    parseUnsignedDecimal(s, offset)
+  }
 
   def parseUnsignedLong(s: String, radix: Int): scala.Long = {
     if (s == null)
@@ -503,23 +599,64 @@ object Long {
         s"radix $radix greater than Character.MAX_RADIX"
       )
 
-    val len = s.length()
-    if (len == 0) fail(s)
+    if (radix == 10) parseUnsignedLongDecimal(s)
+    else {
+      val len = s.length()
+      if (len == 0) fail(s)
 
-    val hasPlusSign = s.charAt(0) == '+'
-    val hasMinusSign = s.charAt(0) == '-'
-    if ((hasPlusSign || hasMinusSign) && len == 1) fail(s)
-    if (hasMinusSign)
-      throw new NumberFormatException(
-        s"""Illegal leading minus sign on unsigned string $s."""
-      )
+      val first = s.charAt(0)
+      val hasPlusSign = first == '+'
+      val hasNegativeSign = first == '-'
+      if ((hasPlusSign || hasNegativeSign) && len == 1) fail(s)
+      if (hasNegativeSign)
+        throw new NumberFormatException(
+          s"""Illegal leading minus sign on unsigned string $s."""
+        )
 
-    val offset = if (hasPlusSign) 1 else 0
+      val offset = if (hasPlusSign) 1 else 0
 
-    parseUnsigned(s, offset, radix)
+      parseUnsignedGeneric(s, offset, radix)
+    }
   }
 
-  private def parseUnsigned(s: String, _offset: Int, radix: Int): scala.Long = {
+  private def parseUnsignedDecimal(
+      s: String,
+      _offset: Int
+  ): scala.Long = {
+    val length = s.length()
+    val digitCount = length - _offset
+    if (digitCount <= 0) fail(s)
+    var offset = _offset
+    var result = 0L
+
+    // Phase 1: up to 18 digits — no overflow possible
+    // (999_999_999_999_999_999 fits in signed Long)
+    val safeEnd = Math.min(length, offset + 18)
+    while (offset < safeEnd) {
+      result = result * 10 + parseDecimalDigit(s, offset)
+      offset += 1
+    }
+
+    // Phase 2: 19th-20th digits — unsigned overflow check required
+    while (offset < length) {
+      val digit = parseDecimalDigit(s, offset)
+      offset += 1
+      if (compareUnsigned(result, UnsignedMaxValueQuotient) > 0) fail(s)
+      if (result == UnsignedMaxValueQuotient && digit > UnsignedMaxValueLastDigit)
+        throw new NumberFormatException(
+          s"""String value $s exceeds range of unsigned long."""
+        )
+      result = result * 10 + digit
+    }
+
+    result
+  }
+
+  private def parseUnsignedGeneric(
+      s: String,
+      _offset: Int,
+      radix: Int
+  ): scala.Long = {
     val unsignedLongMaxValue = -1L
     val max = divideUnsigned(unsignedLongMaxValue, radix)
     var result = 0L

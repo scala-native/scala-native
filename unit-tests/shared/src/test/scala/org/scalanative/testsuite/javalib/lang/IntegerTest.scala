@@ -10,14 +10,20 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 class IntegerTest {
   val signedMaxValue = Integer.MAX_VALUE
   val signedMaxValueText = "2147483647"
+  val signedMaxValueArabicIndicText =
+    "\u0662\u0661\u0664\u0667\u0664\u0668\u0663\u0666\u0664\u0667"
   val signedMinValue = Integer.MIN_VALUE
   val signedMinValueText = "-2147483648"
+  val signedMinValueArabicIndicText =
+    "-\u0662\u0661\u0664\u0667\u0664\u0668\u0663\u0666\u0664\u0668"
 
   val signedMaxPlusOneText = "2147483648"
   val signedMinMinusOneText = "-2147483649"
 
   val unsignedMaxValue = -1
   val unsignedMaxValueText = "4294967295"
+  val unsignedMaxValueArabicIndicText =
+    "\u0664\u0662\u0669\u0664\u0669\u0666\u0667\u0662\u0669\u0665"
   val unsignedMaxPlusOneText = "4294967296"
 
   def assertThrowsAndMessage[T <: Throwable, U](
@@ -137,7 +143,11 @@ class IntegerTest {
     assertEquals(0, parse("+0"))
     assertEquals(0, parse("00"))
     assertEquals(signedMaxValue, parse(signedMaxValueText))
+    assertEquals(signedMaxValue, parse(signedMaxValueArabicIndicText))
     assertEquals(signedMinValue, parse(signedMinValueText))
+    assertEquals(signedMinValue, parse(signedMinValueArabicIndicText))
+    assertEquals(-123, parse("-\u0661\u0662\u0663"))
+    assertEquals(123, parse("1\u06623"))
 
     assertThrowsAndMessage(classOf[NumberFormatException], parse(null))(
       "java.lang.NumberFormatException: null"
@@ -190,6 +200,10 @@ class IntegerTest {
     assertEquals(4, parse("+100", 2))
     assertEquals(4, parse("100", 2))
     assertEquals(unsignedMaxValue, parse(unsignedMaxValueText))
+    assertEquals(unsignedMaxValue, parse(unsignedMaxValueArabicIndicText))
+    assertEquals(-6, parse("4294967290"))
+    assertEquals(123, parse("\u0661\u0662\u0663"))
+    assertEquals(123, parse("1\u06623"))
 
     assertThrowsAndMessage(classOf[NumberFormatException], parse(null))(
       """java.lang.NumberFormatException: null"""
@@ -227,6 +241,7 @@ class IntegerTest {
     )(
       s"""java.lang.NumberFormatException: String value $unsignedMaxPlusOneText exceeds range of unsigned int."""
     )
+    assertThrows(classOf[NumberFormatException], parse("4294967300"))
 
     val octalMulOverflow = "137777777770"
     // in binary:
