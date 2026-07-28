@@ -1,15 +1,22 @@
-// Ported from Scala.js commit: e20d6d6 dated: 2023-07-19
+// Ported from Scala.js commit: dbca410 dated: 2026-01-17
+
+/* That Scala.js commit contains the Scala.js change which motivated
+ * re-porting:
+ *   "Use two fields of type Long in ju.UUID."
+ *   commit: 8d6664a dated: 2025-12-15
+ *
+ * 2026-07-28
+ *  - Implement Java 26 UUID#ofEpochMillis which implements
+ *    IETF RFC 9562 UUID version 7.
+ */
 
 package java.util
 
 import java.security.SecureRandom
+import java.{lang => jl}
 
-final class UUID private (
-    private val i1: Int,
-    private val i2: Int,
-    private val i3: Int,
-    private val i4: Int
-) extends AnyRef
+final class UUID(private val mostSigBits: Long, private val leastSigBits: Long)
+    extends AnyRef
     with java.io.Serializable
     with Comparable[UUID] {
 
@@ -29,27 +36,19 @@ final class UUID private (
    *  0x0000FFFFFFFFFFFF node
    */
 
-  def this(mostSigBits: Long, leastSigBits: Long) = {
-    this(
-      (mostSigBits >>> 32).toInt,
-      mostSigBits.toInt,
-      (leastSigBits >>> 32).toInt,
-      leastSigBits.toInt
-    )
-  }
-
   @inline
   def getLeastSignificantBits(): Long =
-    (i3.toLong << 32) | (i4.toLong & 0xffffffffL)
+    leastSigBits
 
   @inline
   def getMostSignificantBits(): Long =
-    (i1.toLong << 32) | (i2.toLong & 0xffffffffL)
+    mostSigBits
 
   def version(): Int =
-    (i2 & 0xf000) >> 12
+    (mostSigBits.toInt & 0xf000) >> 12
 
   def variant(): Int = {
+    val i3 = (leastSigBits >>> 32).toInt // 3rd most significant Int
     if ((i3 & 0x80000000) == 0) {
       // MSB0 not set: NCS backwards compatibility variant
       0
@@ -65,49 +64,62 @@ final class UUID private (
   def timestamp(): Long = {
     if (version() != TimeBased)
       throw new UnsupportedOperationException("Not a time-based UUID")
-    (((i2 >>> 16) | ((i2 & 0x0fff) << 16)).toLong << 32) | (i1.toLong & 0xffffffffL)
+    val mostSigBits = this.mostSigBits // local copy
+    val lo = mostSigBits.toInt
+    val resHi = (lo >>> 16) | ((lo & 0x0fff) << 16)
+    (resHi.toLong << 32) | (mostSigBits >>> 32)
   }
 
   def clockSequence(): Int = {
     if (version() != TimeBased)
       throw new UnsupportedOperationException("Not a time-based UUID")
-    (i3 & 0x3fff0000) >> 16
+    (leastSigBits >>> 48).toInt & 0x3fff
   }
 
   def node(): Long = {
     if (version() != TimeBased)
       throw new UnsupportedOperationException("Not a time-based UUID")
-    ((i3 & 0xffff).toLong << 32) | (i4.toLong & 0xffffffffL)
+    leastSigBits & 0x0000ffffffffffffL
   }
 
   override def toString(): String = {
-    @inline def paddedHex8(i: Int): String = {
-      val s = Integer.toHexString(i)
+    @inline def paddedHex8(x: Long, offset: Int): String = {
+      val s = Integer.toHexString((x >>> offset).toInt)
       "00000000".substring(s.length) + s
     }
 
-    @inline def paddedHex4(i: Int): String = {
-      val s = Integer.toHexString(i)
+    @inline def paddedHex4(x: Long, offset: Int): String = {
+      val s = Integer.toHexString((x >>> offset).toInt & 0xffff)
       "0000".substring(s.length) + s
     }
 
-    paddedHex8(i1) + "-" + paddedHex4(i2 >>> 16) + "-" +
-      paddedHex4(i2 & 0xffff) + "-" + paddedHex4(i3 >>> 16) + "-" + paddedHex4(
-        i3 & 0xffff
-      ) + paddedHex8(i4)
+    // local copies
+    val mostSigBits = this.mostSigBits
+    val leastSigBits = this.leastSigBits
+
+    paddedHex8(mostSigBits, 32) + "-" + paddedHex4(
+      mostSigBits,
+      16
+    ) + "-" + paddedHex4(mostSigBits, 0) + "-" +
+      paddedHex4(leastSigBits, 48) + "-" + paddedHex4(
+        leastSigBits,
+        32
+      ) + paddedHex8(leastSigBits, 0)
   }
 
   override def hashCode(): Int =
-    i1 ^ i2 ^ i3 ^ i4
+    java.lang.Long.hashCode(mostSigBits) ^ java.lang.Long.hashCode(leastSigBits)
 
   override def equals(that: Any): Boolean = that match {
     case that: UUID =>
-      i1 == that.i1 && i2 == that.i2 && i3 == that.i3 && i4 == that.i4
+      this.mostSigBits == that.getMostSignificantBits() &&
+        this.leastSigBits == that.getLeastSignificantBits()
     case _ =>
       false
   }
 
   def compareTo(that: UUID): Int = {
+    // See #4882 and the test `UUIDTest.compareTo()` for context
     val thisHi = this.getMostSignificantBits()
     val thatHi = that.getMostSignificantBits()
     if (thisHi != thatHi) {
@@ -131,36 +143,31 @@ object UUID {
   private final val DCESecurity = 2
   private final val NameBased = 3
   private final val Random = 4
+  private final val UnixEpochTimeBased = 7
 
-  private lazy val rng = new SecureRandom()
+  // Typed as `Random` so that the IR typechecks when SecureRandom is not available
+  private lazy val csprng: Random = new java.security.SecureRandom()
+  private lazy val randomUUIDBuffer: Array[Byte] = new Array[Byte](16)
 
   def randomUUID(): UUID = {
-    // ported from Apache Harmony
+    val buffer = randomUUIDBuffer // local copy
 
-    val data = new Array[Byte](16)
-    rng.nextBytes(data)
+    /* We use nextBytes() because that is the primitive of most secure RNGs,
+     * and therefore it allows to perform a unique call to the underlying
+     * secure RNG.
+     */
+    csprng.nextBytes(randomUUIDBuffer)
 
-    var msb = (data(0) & 0xffL) << 56
-    msb |= (data(1) & 0xffL) << 48
-    msb |= (data(2) & 0xffL) << 40
-    msb |= (data(3) & 0xffL) << 32
-    msb |= (data(4) & 0xffL) << 24
-    msb |= (data(5) & 0xffL) << 16
-    msb |= (data(6) & 0x0fL) << 8
-    msb |= (0x4L << 12) // set the version to 4
-    msb |= (data(7) & 0xffL)
+    @inline def longFromBuffer(i: Int): Long = {
+      @inline def b(j: Int): Long = (buffer(i + j).toLong & 0xffL) << (8 * j)
+      b(0) | b(1) | b(2) | b(3) | b(4) | b(5) | b(6) | b(7)
+    }
 
-    var lsb = (data(8) & 0x3fL) << 56
-    lsb |= (0x2L << 62) // set the variant to bits 01
-    lsb |= (data(9) & 0xffL) << 48
-    lsb |= (data(10) & 0xffL) << 40
-    lsb |= (data(11) & 0xffL) << 32
-    lsb |= (data(12) & 0xffL) << 24
-    lsb |= (data(13) & 0xffL) << 16
-    lsb |= (data(14) & 0xffL) << 8
-    lsb |= (data(15) & 0xffL)
-
-    new UUID(msb, lsb)
+    val mostSigBits =
+      (longFromBuffer(0) & ~0x000000000000f000L) | 0x0000000000004000L
+    val leastSigBits =
+      (longFromBuffer(8) & ~0xc000000000000000L) | 0x8000000000000000L
+    new UUID(mostSigBits, leastSigBits)
   }
 
   // Not implemented (requires messing with MD5 or SHA-1):
@@ -175,18 +182,106 @@ object UUID {
     @inline def parseHex8(his: String, los: String): Int =
       (parseInt(his, 16) << 16) | parseInt(los, 16)
 
-    if (name.length != 36 || name.charAt(8) != '-' || name.charAt(13) != '-' ||
-        name.charAt(18) != '-' || name.charAt(23) != '-')
+    if (name.length != 36 || name.charAt(8) != '-' ||
+        name.charAt(13) != '-' || name
+          .charAt(18) != '-' || name.charAt(23) != '-') {
       fail()
+    }
 
     try {
       val i1 = parseHex8(name.substring(0, 4), name.substring(4, 8))
       val i2 = parseHex8(name.substring(9, 13), name.substring(14, 18))
       val i3 = parseHex8(name.substring(19, 23), name.substring(24, 28))
       val i4 = parseHex8(name.substring(28, 32), name.substring(32, 36))
-      new UUID(i1, i2, i3, i4)
+      val mostSigBits = (i1.toLong << 32) | Integer.toUnsignedLong(i2)
+      val leastSigBits = (i3.toLong << 32) | Integer.toUnsignedLong(i4)
+      new UUID(mostSigBits, leastSigBits)
     } catch {
       case _: NumberFormatException => fail()
     }
+  }
+
+// Scala Native additions -----------------------------------------------
+
+  /** @since 26 */
+  def ofEpochMillis(timestamp: scala.Long): UUID = {
+    /* Return an IETF RFC 9562 version 7 UUID as described
+     * by https://www.rfc-editor.org/rfc/rfc9562.html and
+     * the JDK 26 documentation for this method.
+     */
+
+    if ((timestamp < 0) ||
+        (timestamp > ((1L << 48) - 1)))
+      // JVM 26 message has typo of no blank before "does"; corrected it here.
+      throw new IllegalArgumentException(
+        s"Supplied timestamp: ${timestamp} does not fit within 48 bits"
+      )
+
+    /* On the magic number 10:
+     *
+     *  First assume that it is more efficient to ask the underlying
+     *  RNG for only the number of bytes used, even if that is not
+     *  a power of two.
+     *
+     *  The RFC describe using 74 bytes, which is not an even power of
+     *  8 bits to the byte.
+     *
+     *    * One of the random fields is 12 bits. It is convenient
+     *      for internal manipulation to round this up to 2 full byte2.
+     *
+     *    * One of the random fields is 62 bits. It is convenient
+     *      for internal manipulation to round this up to 8 full bytes.
+
+     *  This gives the math: 10 = (74 + (12 + 4) + (62 + 2)) / 8
+     */
+
+    val buffer = new Array[Byte](10)
+
+    csprng.nextBytes(buffer)
+
+    @inline def twelveBitsOfRandomnessAsMask(): scala.Long = {
+      /* Return a bitmask containing twelve bits of randomness
+       * as the least significant bits of an otherwise zero filled Long.
+       *
+       * With a sufficient rng, it should not matter which 12 are used
+       * as long as they are used only at most once.
+       *
+       * It is convenient for development and developing to have the
+       * first byte of the buffer be the higher of the two low bytes.
+       * This aids matching the position immediately to the right of the
+       * UUID version (7) when examining .toString() output. In turn,
+       * this aids ensuring that any given byte is once.
+       */
+
+      @inline def b(i: Int): scala.Long =
+        buffer(i).toLong & 0xffL
+
+      ((b(0) << 8) | b(1)) >> 4
+    }
+
+    /* Re-using the Scala.js original internal method is useful if one
+     * stays aware of the byte order. For its reasons, Scala.js does
+     * not consider the first (lowest indexed) byte in the buffer to
+     * be RFC network order most significant byte first (MSB), but
+     * Java least significant byte first (LSB).
+     */
+    @inline def longFromBuffer(i: Int): scala.Long = {
+      @inline def b(j: Int): scala.Long =
+        (buffer(i + j).toLong & 0xffL) << (8 * j)
+      b(0) | b(1) | b(2) | b(3) | b(4) | b(5) | b(6) | b(7)
+    }
+
+    val mostSigBits = (
+      (timestamp << 16) |
+        0x0000000000007000L | // UUID version 7
+        twelveBitsOfRandomnessAsMask()
+    )
+
+    // Recall: IETF RFC 9562/4122 variant here is always 0x0b10
+    val leastSigBits =
+      (longFromBuffer(2) & 0x0fffffffffffffffL) |
+        0x8000000000000000L // UUID variant
+
+    new UUID(mostSigBits, leastSigBits)
   }
 }
