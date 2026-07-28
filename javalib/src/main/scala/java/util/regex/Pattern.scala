@@ -1,140 +1,252 @@
-package java.util
-package regex
+// format: off
+/*
+ * Derived from the Scala.js / scala-wasm ECMA-262 RegExp sources
+ * (https://www.scala-js.org/).
+ *
+ * Copyright EPFL.
+ *
+ * Licensed under Apache License 2.0
+ * (https://www.apache.org/licenses/LICENSE-2.0).
+ */
+
+package java.util.regex
+
+import scala.annotation.tailrec
 
 import java.util.Arrays
 import java.util.function.Predicate
 import java.util.stream.Stream
 
-import scalanative.{regex => snRegex}
+import PatternCompiler.Support._
 
-// Inspired & informed by:
-// https://github.com/google/re2j/blob/master/java/com/google/re2j/Pattern.java
+final class Pattern private[regex] (
+    _pattern: String,
+    _flags: Int,
+    jsPattern: String,
+    jsFlags: String,
+    sticky: Boolean,
+    private[regex] val groupCount: Int,
+    groupNumberMap: Array[Int],
+    namedGroups: Engine.engine.Dictionary[Int]
+) extends Serializable {
 
-object Pattern {
+  import Pattern._
+  import Engine.engine
 
-  def CANON_EQ: Int = 128
-  def CASE_INSENSITIVE: Int = 2
-  def COMMENTS: Int = 4
-  def DOTALL: Int = 32
-  def LITERAL: Int = 16
-  def MULTILINE: Int = 8
-  def UNICODE_CASE: Int = 64
-  def UNICODE_CHARACTER_CLASS: Int = 256
-  def UNIX_LINES: Int = 1
+  @inline private def jsFlagsForFind: String =
+    jsFlags + (if (sticky && supportsSticky) "gy" else "g")
 
-  private def validateJavaFlags(flags: Int): Unit = {
+  /** The RegExp that is used for `Matcher.find()`. */
+  private val jsRegExpForFindPrototype: engine.RegExp =
+    engine.compile(jsPattern, jsFlagsForFind)
 
-    def notSupported(flag: Int, flagName: String): Unit = {
-      if ((flags & flag) == flag) {
-        throw new UnsupportedOperationException(
-          s"regex flag $flagName is not supported."
-        )
-      }
-    }
+  /** RegExp used by `Matcher.matches()`. */
+  private val jsRegExpForMatchesPrototype: engine.RegExp =
+    engine.compile(wrapJSPatternForMatches(jsPattern), jsFlags)
 
-    val unsupportedOptions = Array[(Int, String)](
-      (CANON_EQ, "CANON_EQ(canonical equivalences)"),
-      (COMMENTS, "COMMENTS"),
-      (UNICODE_CASE, "UNICODE_CASE"),
-      (UNICODE_CHARACTER_CLASS, "UNICODE_CHARACTER_CLASS"),
-      (UNIX_LINES, "UNIX_LINES")
-    )
+  private[regex] def newExecMatchesRegExp(): engine.RegExp =
+    engine.duplicate(jsRegExpForMatchesPrototype)
 
-    for (i <- 0 until unsupportedOptions.length) {
-      notSupported(unsupportedOptions(i)._1, unsupportedOptions(i)._2)
-    }
+  private[regex] def newExecFindRegExp(): engine.RegExp =
+    engine.duplicate(jsRegExpForFindPrototype)
 
-    // Any bit set other than given set throws.
-    if ((flags & ~(CASE_INSENSITIVE | DOTALL | LITERAL | MULTILINE)) != 0) {
-      throw new IllegalArgumentException(s"Unknown flag ${flags}")
-    }
+  private[regex] def execMatches(
+      input: String,
+      regexp: engine.RegExp
+  ): engine.ExecResult =
+    engine.exec(regexp, input)
+
+  @inline // to stack-allocate the tuple
+  private[regex] def execFind(
+      input: String,
+      start: Int,
+      regexp: engine.RegExp
+  ): (engine.ExecResult, Int) = {
+    val mtch = execFindInternal(input, start, regexp)
+    val end = engine.getLastIndex(regexp)
+    (mtch, end)
   }
 
-  private def toRe2Flags(flags: Int): Int = {
-
-    // Pass snRegex only the flags it knows about and clear the rest.
-    //
-    // j.u.regex LITERAL is handled in j.u.regex.Pattern#compile
-    // so OK to clear that bit. java bits not known to snRegex will cause
-    // it to throw, so clear them also.
-    //
-    // snRegex supports only CASE_INSENSITIVE | DOTALL | MULTILINE |
-    //                    DISABLE_UNICODE_GROUPS))
-    //
-    // DISABLE_UNICODE_GROUPS causes rejectUnsupportedOptions()
-    // to be thrown, so only CASE_INSENSITIVE, DOTALL, and MULTILINE are
-    // left when execution reaches this point.
-    //
-    // The constants for these three definitely differ between j.u.regex
-    // and snRegex and must be translated.
-
-    val optionTranslations = Array[(Int, Int)](
-      (CASE_INSENSITIVE, snRegex.Pattern.CASE_INSENSITIVE),
-      (DOTALL, snRegex.Pattern.DOTALL),
-      (MULTILINE, snRegex.Pattern.MULTILINE)
-    )
-
-    var re2Flags = 0
-
-    // Optimize for most common case of no flags. Skip loop if no work to do.
-    if (flags != 0) {
-      // use for(range) used to get loop optimized.
-      for (i <- 0 until optionTranslations.length) {
-        if ((flags & optionTranslations(i)._1) != 0) {
-          re2Flags = re2Flags | optionTranslations(i)._2
+  private def execFindInternal(
+      input: String,
+      start: Int,
+      regexp: engine.RegExp
+  ): engine.ExecResult = {
+    if (!supportsSticky && sticky) {
+      engine.setLastIndex(regexp, start)
+      val mtch = engine.exec(regexp, input)
+      if (mtch == null || engine.getIndex(mtch) > start)
+        null
+      else
+        mtch
+    } else if (supportsUnicode) {
+      engine.setLastIndex(regexp, start)
+      engine.exec(regexp, input)
+    } else {
+      @tailrec
+      def loop(start: Int): engine.ExecResult = {
+        engine.setLastIndex(regexp, start)
+        val mtch = engine.exec(regexp, input)
+        if (mtch == null) {
+          null
+        } else {
+          val index = engine.getIndex(mtch)
+          if (index > start && index < input.length() &&
+              Character.isLowSurrogate(input.charAt(index)) &&
+              Character.isHighSurrogate(input.charAt(index - 1))) {
+            loop(index + 1)
+          } else {
+            mtch
+          }
         }
       }
+      loop(start)
     }
-
-    re2Flags
   }
 
-  def compile(regex: String): Pattern = compile(regex, 0)
-
-  def compile(regex: String, flags: Int): Pattern = {
-
-    validateJavaFlags(flags)
-
-    val r = if ((flags & LITERAL) == 0) regex else quote(regex)
-
-    new Pattern(r, flags)
+  private[regex] def numberedGroup(group: Int): Int = {
+    if (group < 0 || group > groupCount)
+      throw new IndexOutOfBoundsException(group.toString())
+    groupNumberMap(group)
   }
 
-  def matches(regex: String, input: CharSequence): Boolean =
-    compile(regex).matcher(input).matches()
-
-  def quote(s: String): String = s"\\Q${s}\\E"
-}
-
-final class Pattern private[regex] (_regex: String, _flags: Int) {
-
-  private[regex] val compiled = {
-    val re2Flags = Pattern.toRe2Flags(_flags)
-    snRegex.Pattern.compile(_regex, re2Flags)
+  private[regex] def namedGroup(name: String): Int = {
+    groupNumberMap(engine.dictGetOrElse(namedGroups, name) { () =>
+      throw new IllegalArgumentException(s"No group with name <$name>")
+    })
   }
 
-  def asPredicate(): Predicate[String] = {
+  private[regex] def getIndices(lastMatch: engine.ExecResult,
+      _forMatches: Boolean): engine.IndicesArray = {
+    val indices = engine.getIndices(lastMatch)
+    if (indices == null)
+      throw new AssertionError(
+        "Unreachable; Ecma262RegExpEngine always supports and produces indices"
+      )
+    indices
+  }
+
+  def pattern(): String = _pattern
+  def flags(): Int = _flags
+
+  override def toString(): String = pattern()
+
+  @inline
+  def matcher(input: CharSequence): Matcher =
+    new Matcher(this, input.toString())
+
+  def asPredicate(): Predicate[String] =
     new Predicate[String] {
-      override def test(t: String): Boolean =
-        matcher(t).matches()
+      def test(t: String): Boolean = matcher(t).matches()
     }
-  }
 
-  def flags: Int = _flags
+  @inline
+  def split(input: CharSequence): Array[String] =
+    split(input, 0)
 
-  def matcher(input: CharSequence): Matcher = new Matcher(this, input)
-
-  def pattern: String = _regex
-
-  def split(input: CharSequence): Array[String] = split(input, 0)
-
+  @inline
   def split(input: CharSequence, limit: Int): Array[String] =
-    compiled.split(input, limit)
+    split(input.toString(), limit)
 
   def splitAsStream(input: CharSequence): Stream[String] =
-    Arrays
-      .stream(split(input))
-      .asInstanceOf[Stream[String]]
+    Arrays.stream(split(input)).asInstanceOf[Stream[String]]
 
-  override def toString: String = _regex
+  private def split(inputStr: String, limit: Int): Array[String] = {
+    if (inputStr == "") {
+      Array("")
+    } else {
+      val lim = if (limit > 0) limit else Int.MaxValue
+      val matcher = this.matcher(inputStr)
+      val result = new SplitBuilder(if (limit > 0) limit else 16)
+      var prevEnd = 0
+      while ((result.length < lim - 1) && matcher.find()) {
+        if (matcher.end() == 0) {
+          ()
+        } else {
+          result.push(inputStr.substring(prevEnd, matcher.start()))
+        }
+        prevEnd = matcher.end()
+      }
+      result.push(inputStr.substring(prevEnd))
+
+      var actualLength = result.length
+      if (limit == 0) {
+        while (actualLength != 0 && result(actualLength - 1) == "")
+          actualLength -= 1
+      }
+
+      result.build(actualLength)
+    }
+  }
+}
+
+object Pattern {
+  final val UNIX_LINES = 0x01
+  final val CASE_INSENSITIVE = 0x02
+  final val COMMENTS = 0x04
+  final val MULTILINE = 0x08
+  final val LITERAL = 0x10
+  final val DOTALL = 0x20
+  final val UNICODE_CASE = 0x40
+  final val CANON_EQ = 0x80
+  final val UNICODE_CHARACTER_CLASS = 0x100
+
+  private def validateCompileFlags(flags: Int): Unit = {
+    val known = UNIX_LINES | CASE_INSENSITIVE | COMMENTS | MULTILINE | LITERAL | DOTALL |
+      UNICODE_CASE | CANON_EQ | UNICODE_CHARACTER_CLASS
+    if ((flags & ~known) != 0)
+      throw new IllegalArgumentException(s"Unknown flag $flags")
+  }
+
+  def compile(regex: String, flags: Int): Pattern = {
+    validateCompileFlags(flags)
+    PatternCompiler.compile(regex, flags)
+  }
+
+  def compile(regex: String): Pattern =
+    compile(regex, 0)
+
+  @inline
+  def matches(regex: String, input: CharSequence): Boolean =
+    matches(regex, input.toString())
+
+  private def matches(regex: String, input: String): Boolean =
+    compile(regex).matcher(input).matches()
+
+  def quote(s: String): String = {
+    var result = "\\Q"
+    var start = 0
+    var end = s.indexOf("\\E", start)
+    while (end >= 0) {
+      result += s.substring(start, end) + "\\E\\\\E\\Q"
+      start = end + 2
+      end = s.indexOf("\\E", start)
+    }
+    result + s.substring(start) + "\\E"
+  }
+
+  @inline
+  private[regex] def wrapJSPatternForMatches(jsPattern: String): String =
+    "^(?:" + jsPattern + ")$"
+
+  @inline
+  private class SplitBuilder(initialCapacity: Int) {
+    private var array: Array[String] = new Array[String](initialCapacity)
+    private var _length = 0
+
+    def length: Int = _length
+
+    def apply(index: Int): String = array(index)
+
+    def push(x: String): Unit = {
+      if (_length == array.length)
+        array = Arrays.copyOf(array, _length * 2)
+      array(_length) = x
+      _length += 1
+    }
+
+    def build(actualLength: Int): Array[String] =
+      if (actualLength == array.length) array
+      else Arrays.copyOf(array, actualLength)
+  }
 }
