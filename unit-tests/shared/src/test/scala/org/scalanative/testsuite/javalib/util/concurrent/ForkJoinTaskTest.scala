@@ -700,9 +700,6 @@ class ForkJoinTaskTest extends JSR166Test {
 
   /** ForkJoinTask.getPool() of non-FJ task returns null
    */
-  @Ignore(
-    "Test-infrastructure limitation, all tests are executed in ForkJoinPool due to usage of Future in RPCCore"
-  )
   @Test def testGetPool2(): Unit = {
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
