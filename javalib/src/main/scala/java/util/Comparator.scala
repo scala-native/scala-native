@@ -1,4 +1,7 @@
 // Ported from Scala.js commit 00e462d dated: 2023-01-22
+/* Scala Native Additions
+ *  2026-07-29 - Added JDK 26 max() and min() methods.
+ */
 
 package java.util
 
@@ -22,7 +25,26 @@ trait Comparator[A] { self =>
   import Comparator._
 
   def compare(o1: A, o2: A): Int
+
   def equals(obj: Any): Boolean
+
+  /** @since JDK 26 */
+  def max[U <: A](o1: U, o2: U): U = {
+    /* Rely upon compare()'s use of Comparable#compareTo to handle
+     * documented NullPointerException and ClassCastException, Java does.
+     */
+    if (compare(o1, o2) >= 0) o1
+    else o2
+  }
+
+  /** @since JDK 26 */
+  def min[U <: A](o1: U, o2: U): U = {
+    /* Rely upon compare()'s use of Comparable#compareTo to handle
+     * documented NullPointerException and ClassCastException, Java does.
+     */
+    if (compare(o1, o2) <= 0) o1
+    else o2
+  }
 
   def reversed(): Comparator[A] =
     Collections.reverseOrder(this)
