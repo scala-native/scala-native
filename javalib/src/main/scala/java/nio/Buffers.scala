@@ -134,10 +134,12 @@ abstract class ByteBuffer private[nio] (
   def get(dst: Array[Byte]): ByteBuffer =
     get(dst, 0, dst.length)
 
+
   @noinline
   def put(src: ByteBuffer): ByteBuffer =
     genBuffer.generic_put(src)
-    // Since: JDK16
+
+  // Since: JDK16
   def put(index: Int, src: ByteBuffer, offset: Int, length: Int) = GenBuffer[ByteBuffer](this).generic_put(index, src, offset, length)
 
   @noinline
@@ -525,10 +527,27 @@ abstract class CharBuffer private[nio] (
   def get(dst: Array[Char]): CharBuffer =
     get(dst, 0, dst.length)
 
+  // Since: JDK25
+  def getChars(
+      srcBegin: Int,
+      srcEnd: Int,
+      dst: Array[Char],
+      dstBegin: Int
+  ): Unit = {
+    ju.Objects.checkFromToIndex(
+      srcBegin,
+      srcEnd,
+      this.limit() - this.position()
+    )
+
+    get(position() + srcBegin, dst, dstBegin, srcEnd - srcBegin)
+  }
+
   @noinline
   def put(src: CharBuffer): CharBuffer =
     genBuffer.generic_put(src)
-    // Since: JDK16
+
+  // Since: JDK16
   def put(index: Int, src: CharBuffer, offset: Int, length: Int) = GenBuffer[CharBuffer](this).generic_put(index, src, offset, length)
 
   @noinline
@@ -802,10 +821,12 @@ abstract class ShortBuffer private[nio] (
   def get(dst: Array[Short]): ShortBuffer =
     get(dst, 0, dst.length)
 
+
   @noinline
   def put(src: ShortBuffer): ShortBuffer =
     genBuffer.generic_put(src)
-    // Since: JDK16
+
+  // Since: JDK16
   def put(index: Int, src: ShortBuffer, offset: Int, length: Int) = GenBuffer[ShortBuffer](this).generic_put(index, src, offset, length)
 
   @noinline
@@ -1029,10 +1050,12 @@ abstract class IntBuffer private[nio] (
   def get(dst: Array[Int]): IntBuffer =
     get(dst, 0, dst.length)
 
+
   @noinline
   def put(src: IntBuffer): IntBuffer =
     genBuffer.generic_put(src)
-    // Since: JDK16
+
+  // Since: JDK16
   def put(index: Int, src: IntBuffer, offset: Int, length: Int) = GenBuffer[IntBuffer](this).generic_put(index, src, offset, length)
 
   @noinline
@@ -1256,10 +1279,12 @@ abstract class LongBuffer private[nio] (
   def get(dst: Array[Long]): LongBuffer =
     get(dst, 0, dst.length)
 
+
   @noinline
   def put(src: LongBuffer): LongBuffer =
     genBuffer.generic_put(src)
-    // Since: JDK16
+
+  // Since: JDK16
   def put(index: Int, src: LongBuffer, offset: Int, length: Int) = GenBuffer[LongBuffer](this).generic_put(index, src, offset, length)
 
   @noinline
@@ -1483,10 +1508,12 @@ abstract class FloatBuffer private[nio] (
   def get(dst: Array[Float]): FloatBuffer =
     get(dst, 0, dst.length)
 
+
   @noinline
   def put(src: FloatBuffer): FloatBuffer =
     genBuffer.generic_put(src)
-    // Since: JDK16
+
+  // Since: JDK16
   def put(index: Int, src: FloatBuffer, offset: Int, length: Int) = GenBuffer[FloatBuffer](this).generic_put(index, src, offset, length)
 
   @noinline
@@ -1710,10 +1737,12 @@ abstract class DoubleBuffer private[nio] (
   def get(dst: Array[Double]): DoubleBuffer =
     get(dst, 0, dst.length)
 
+
   @noinline
   def put(src: DoubleBuffer): DoubleBuffer =
     genBuffer.generic_put(src)
-    // Since: JDK16
+
+  // Since: JDK16
   def put(index: Int, src: DoubleBuffer, offset: Int, length: Int) = GenBuffer[DoubleBuffer](this).generic_put(index, src, offset, length)
 
   @noinline
