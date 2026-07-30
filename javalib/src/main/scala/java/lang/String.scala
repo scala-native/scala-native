@@ -406,7 +406,12 @@ final class _String()
     bytes
   }
 
-  def getChars(start: Int, end: Int, buffer: Array[Char], index: Int): Unit = {
+  override def getChars(
+      start: Int,
+      end: Int,
+      buffer: Array[Char],
+      index: Int
+  ): Unit = {
     if (0 <= start && start <= end && end <= count) {
       System.arraycopy(value, start + offset, buffer, index, end - start)
     } else {

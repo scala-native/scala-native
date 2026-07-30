@@ -127,6 +127,14 @@ final class StringBuilder
     this
   }
 
+  override def getChars(
+      start: scala.Int,
+      end: scala.Int,
+      buffer: Array[scala.Char],
+      idx: scala.Int
+  ): Unit =
+    super.getChars(start, end, buffer, idx)
+
   def insert(offset: scala.Int, b: scala.Boolean): StringBuilder = {
     insert0(offset, if (b) "true" else "false")
     this

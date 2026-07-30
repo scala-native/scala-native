@@ -273,7 +273,7 @@ protected abstract class AbstractStringBuilder private (unit: Unit) {
     }
   }
 
-  def getChars(
+  protected def getChars(
       start: scala.Int,
       end: scala.Int,
       dest: Array[scala.Char],
