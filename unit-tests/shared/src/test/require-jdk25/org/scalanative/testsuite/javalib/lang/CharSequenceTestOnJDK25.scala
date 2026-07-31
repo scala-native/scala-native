@@ -14,7 +14,7 @@ class CharSequenceTestOnJDK25 {
       underlying.subSequence(x0, x1)
   }
 
-  @Test def getBytes_Exceptions(): Unit = {
+  @Test def getChars_Exceptions(): Unit = {
     val cs = new TestCharSequence("Exceptions")
     val dst = new Array[Char](cs.length)
 
@@ -58,7 +58,7 @@ class CharSequenceTestOnJDK25 {
     )
   }
 
-  @Test def getBytes_String(): Unit = {
+  @Test def getChars_String(): Unit = {
     val src = "There's a train every day leaving either way"
 
     val srcBegin = 8
