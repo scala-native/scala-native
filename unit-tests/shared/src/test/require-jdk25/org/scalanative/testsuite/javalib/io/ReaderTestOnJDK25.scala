@@ -58,7 +58,7 @@ class ReaderTestOnJDK25 {
   )
 
   /* The final line does not get terminated to test non-terminated EOF.
-   * A similar condition holds for <CR> and <CR><LF> variants.
+   * A similar condition holds for both <CR> and <CR><LF> variants.
    */
   val poemNlTerminated = poemByLine
     .stream()
