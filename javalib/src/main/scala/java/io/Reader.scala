@@ -5,7 +5,7 @@ package java.io
 
 import java.nio.CharBuffer
 import java.util.Objects
-import java.{nio => jnio, util => ju}
+import java.{lang => jl, nio => jnio, util => ju}
 
 import scala.annotation.tailrec
 
@@ -62,7 +62,7 @@ abstract class Reader() extends Readable with Closeable {
     val cbuf = new Array[Char](256)
 
     // 256 is a generous guess to avoid initial ramp-up allocations.
-    val sBldr = new StringBuilder(256)
+    val sBldr = new jl.StringBuilder(256)
 
     var done = false
 
@@ -95,7 +95,7 @@ abstract class Reader() extends Readable with Closeable {
     val cbuf = new Array[Char](256)
 
     // 256 is a generous guess to avoid initial ramp-up allocations.
-    val sBldr = new StringBuilder(256)
+    val sBldr = new jl.StringBuilder(256)
 
     val al = new ju.ArrayList[String](256) // arbitrary generous estimate
 
