@@ -2218,6 +2218,49 @@ class FilesTest {
     }
   }
 
+  @Test def filesMoveAtomicallyMovesFiles(): Unit = {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val f0 = dir.resolve("f0")
+      val f1 = dir.resolve("f1")
+
+      Files.write(f0, "foo\n".getBytes)
+      Files.move(f0, f1, ATOMIC_MOVE)
+
+      assertFalse("a1", Files.exists(f0))
+      assertArrayEquals("a2", "foo\n".getBytes, Files.readAllBytes(f1))
+    }
+  }
+
+  /* ATOMIC_MOVE publishes a file over an existing one, the way rename(2) and
+   * MOVEFILE_REPLACE_EXISTING do. REPLACE_EXISTING is not needed for that, and
+   * every other option is ignored when ATOMIC_MOVE is given.
+   */
+  @Test def filesMoveAtomicallyReplacesExistingFile(): Unit = {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val f0 = dir.resolve("f0")
+      val f1 = dir.resolve("f1")
+
+      Files.write(f0, "foo\n".getBytes)
+      Files.write(f1, "bar\n".getBytes)
+      Files.move(f0, f1, ATOMIC_MOVE)
+
+      assertFalse("a1", Files.exists(f0))
+      assertArrayEquals("a2", "foo\n".getBytes, Files.readAllBytes(f1))
+    }
+  }
+
+  @Test def filesMoveAtomicallyThrowsIfSourceDoesNotExist(): Unit = {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      assertThrows(
+        classOf[NoSuchFileException],
+        Files.move(dir.resolve("f0"), dir.resolve("f1"), ATOMIC_MOVE)
+      )
+    }
+  }
+
   def moveDirectoryTest(
       delete: Boolean,
       populateTarget: Boolean,

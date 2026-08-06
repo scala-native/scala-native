@@ -4,7 +4,9 @@ import java.io._
 import java.lang.Iterable
 import java.nio.channels.SeekableByteChannel
 import java.nio.charset.{Charset, StandardCharsets}
-import java.nio.file.StandardCopyOption.{COPY_ATTRIBUTES, REPLACE_EXISTING}
+import java.nio.file.StandardCopyOption.{
+  ATOMIC_MOVE, COPY_ATTRIBUTES, REPLACE_EXISTING
+}
 import java.nio.file.attribute.PosixFilePermission._
 import java.nio.file.attribute._
 import java.util.WindowsHelperMethods._
@@ -976,14 +978,20 @@ object Files {
 
   def move(source: Path, target: Path, options: Array[CopyOption]): Path = {
     lazy val replaceExisting = options.contains(REPLACE_EXISTING)
+    val atomicMove = options.contains(ATOMIC_MOVE)
 
     if (!exists(source.toAbsolutePath(), Array(LinkOption.NOFOLLOW_LINKS))) {
       throw new NoSuchFileException(source.toString)
+    } else if (atomicMove) {
+      /* An atomic move is a single rename(2) / MoveFileEx call, which replaces
+       * an existing target. Every other option is ignored, as on the JVM.
+       */
+      moveImpl(source, target, replaceExisting = true, atomicMove = true)
     } else if (!exists(
           target.toAbsolutePath(),
           Array.empty
         ) || replaceExisting) {
-      moveImpl(source, target, replaceExisting)
+      moveImpl(source, target, replaceExisting, atomicMove = false)
     } else {
       throw new FileAlreadyExistsException(target.toString)
     }
@@ -993,13 +1001,18 @@ object Files {
   private def moveImpl(
       source: Path,
       target: Path,
-      replaceExisting: => Boolean
+      replaceExisting: => Boolean,
+      atomicMove: Boolean
   ) =
     Zone.acquire { implicit z =>
       val sourceAbs = source.toAbsolutePath().toString
       val targetAbs = target.toAbsolutePath().toString
 
-      if (replaceExisting && target.toFile().isDirectory()) {
+      /* Deleting the target first would break atomicity, and is not needed:
+       * rename(2) replaces an empty directory, and MoveFileEx is given
+       * MOVEFILE_REPLACE_EXISTING below.
+       */
+      if (!atomicMove && replaceExisting && target.toFile().isDirectory()) {
         val mustDeleteTarget =
           if (isWindows) {
             // We can not replace directory at all, it must be removed first.
@@ -1018,19 +1031,31 @@ object Files {
         val targetCString = toCWideStringUTF16LE(targetAbs)
 
         // stdio.rename on Windows does not replace existing file
-        if (replaceExisting && target.toFile().isDirectory())
+        if (!atomicMove && replaceExisting && target.toFile().isDirectory())
           Files.delete(target)
 
-        val flags = {
-          val replace =
-            if (replaceExisting) MOVEFILE_REPLACE_EXISTING else 0.toUInt
-          MOVEFILE_COPY_ALLOWED | // Allow coping betwen volumes
-            MOVEFILE_WRITE_THROUGH | // Block until actually moved
-            replace
-        }
+        val flags =
+          if (atomicMove)
+            /* No MOVEFILE_COPY_ALLOWED: a copy between volumes is not atomic,
+             * it must be reported as unsupported instead.
+             */
+            MOVEFILE_REPLACE_EXISTING
+          else {
+            val replace =
+              if (replaceExisting) MOVEFILE_REPLACE_EXISTING else 0.toUInt
+            MOVEFILE_COPY_ALLOWED | // Allow coping betwen volumes
+              MOVEFILE_WRITE_THROUGH | // Block until actually moved
+              replace
+          }
         if (!MoveFileExW(sourceCString, targetCString, flags)) {
           GetLastError() match {
-            case ErrorCodes.ERROR_SUCCESS => ()
+            case ErrorCodes.ERROR_SUCCESS                       => ()
+            case ErrorCodes.ERROR_NOT_SAME_DEVICE if atomicMove =>
+              throw new AtomicMoveNotSupportedException(
+                sourceAbs,
+                targetAbs,
+                "Unable to move file to a different volume"
+              )
             case _ => throw WindowsException.onPath(target.toString())
           }
         }
@@ -1038,6 +1063,12 @@ object Files {
         val sourceCString = toCString(sourceAbs)
         val targetCString = toCString(targetAbs)
         if (stdio.rename(sourceCString, targetCString) != 0) {
+          if (atomicMove && errno == EXDEV)
+            throw new AtomicMoveNotSupportedException(
+              sourceAbs,
+              targetAbs,
+              "Unable to move file to a different file system"
+            )
           throw UnixException(target.toString, errno)
         }
       }
