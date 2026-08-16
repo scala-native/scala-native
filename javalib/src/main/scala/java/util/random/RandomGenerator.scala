@@ -134,6 +134,8 @@ trait RandomGenerator {
 
 // Begin Ported from Scala.js commit: 9cb865f dated: 2025-03-16
 
+  // scalafmt keeps deleting this block comment, fi!
+  // format: off
   /* 2026-08-16
    *   There have been three commits to Scala.js RandomGenerator since
    *   the Scala.js commit 9cb865f. A total re-report was attempted
@@ -154,6 +156,7 @@ trait RandomGenerator {
    *   Here correctness is the greater concern for the current and few
    *   following evolutions.
    */
+  // format: on
 
   import scala.annotation.tailrec
 
