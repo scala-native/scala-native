@@ -132,6 +132,29 @@ trait RandomGenerator {
 
   import java.util.ScalaOps._
 
+// Begin Ported from Scala.js commit: 9cb865f dated: 2025-03-16
+
+  /* 2026-08-16
+   *   There have been three commits to Scala.js RandomGenerator since
+   *   the Scala.js commit 9cb865f. A total re-report was attempted
+   *   but committed here.
+   *
+   *   The first 2025-12-15 commit was a large refactoring.
+   *   One import imported another and so on. The changes here rippled to the
+   *   point of infeasiblity within the available constraints.
+   *
+   *   The other two changes seemed at first examination to be performance
+   *   changes. Given correctness, one seldom wants to leave performance on
+   *   the table. Those changes, particularly the 'Smarter use of long
+   *   divisions and remainders" or close relatives could be considered
+   *   for a later evolution. The other is removing one branch and
+   *   may not be cost effective for Scala Native (forcing lots of types
+   *   to change to 'unsigned').
+   *
+   *   Here correctness is the greater concern for the current and few
+   *   following evolutions.
+   */
+
   import scala.annotation.tailrec
 
   // Comments starting with `// >` are cited from the JavaDoc.
