@@ -157,7 +157,7 @@ Certain settings such as standard settings and exception settings only apply to
 C files and C++ files respectively. Refer to the
 [Clang Command Guide](https://clang.llvm.org/docs/CommandGuide/clang.html).
 
-Set C and C++ only options using the folowing in `sbt`:
+Set C and C++ only options using the following in `sbt`:
 
 ```scala
 // Example setting standard flags
