@@ -1,6 +1,6 @@
 package scala.scalanative.nscplugin
 
-import java.nio.file.{Path, Paths}
+import java.nio.file.Path
 
 import dotty.tools.dotc.core._
 import dotty.tools.dotc.util.Spans.Span
@@ -46,23 +46,18 @@ class NirPositions(positionRelativizationPaths: Seq[Path])(using Context) {
       lastNIRSource
     }
 
-    private val sourceRoot = Paths
-      .get(
-        if !ctx.settings.sourcepath.isDefault
-        then ctx.settings.sourcepath.value
-        else ctx.settings.sourceroot.value
-      )
-      .toAbsolutePath()
+    private val sourceRoot = CompilerCompat.sourceRootPath
     private def convert(dotcSource: SourceFile): nir.SourceFile = {
       if dotcSource.file.isVirtual
       then nir.SourceFile.Virtual
       else {
-        val absSourcePath = dotcSource.file.absolute.jpath
+        val absSourcePath = CompilerCompat.absoluteSourcePath(dotcSource)
         val relativeTo = positionRelativizationPaths
           .find(absSourcePath.startsWith(_))
           .getOrElse(sourceRoot)
-          .toString()
-        nir.SourceFile.Relative(SourceFile.relativePath(dotcSource, relativeTo))
+        nir.SourceFile.Relative(
+          CompilerCompat.relativeSourcePath(dotcSource, relativeTo)
+        )
       }
     }
   }

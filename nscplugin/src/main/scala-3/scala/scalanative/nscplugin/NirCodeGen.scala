@@ -153,7 +153,7 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
       outfile: dotty.tools.io.AbstractFile,
       defns: Seq[nir.Defn]
   ): Unit = {
-    val channel = Channels.newChannel(outfile.bufferedOutput)
+    val channel = Channels.newChannel(CompilerCompat.abstractFileOutput(outfile))
     try serializeBinary(defns, channel)
     finally channel.close()
   }

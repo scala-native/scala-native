@@ -6,8 +6,6 @@ import dotty.tools.dotc.util.ReadOnlyMap
 import scala.collection.mutable
 
 import scala.scalanative.nscplugin.NirPrimitives
-import scala.scalanative.nscplugin.CompilerCompat.ScalaPrimitives
-
 
 import Contexts._
 import Names._
@@ -125,7 +123,7 @@ object NirPrimitives {
     code >= DIV_UINT && code <= ULONG_TO_DOUBLE
 }
 
-class NirPrimitives(using ctx: Context) extends ScalaPrimitives(ctx) {
+class NirPrimitives(using ctx: Context) extends NirPrimitivesBase(using ctx) {
   import NirPrimitives._
   protected lazy val nirPrimitives: ReadOnlyMap[Symbol, Int] = initNirPrimitives
 
@@ -133,13 +131,13 @@ class NirPrimitives(using ctx: Context) extends ScalaPrimitives(ctx) {
   def getPrimitiveCompat(app: Apply, tpe: Type): Int =
     nirPrimitives.getOrElse(app.fun.symbol, super.getPrimitive(app, tpe))
 
+  def isPrimitiveTree(tree: Tree): Boolean =
+    nirPrimitives.contains(tree.symbol) || super.isPrimitive(tree)
+
   override def getPrimitive(sym: Symbol): Int =
     nirPrimitives.getOrElse(sym, super.getPrimitive(sym))
   override def isPrimitive(sym: Symbol): Boolean = {
     nirPrimitives.contains(sym) || super.isPrimitive(sym)
-  }
-  override def isPrimitive(tree: Tree): Boolean = {
-    nirPrimitives.contains(tree.symbol) || super.isPrimitive(tree)
   }
 
   private def initNirPrimitives(using Context): ReadOnlyMap[Symbol, Int] = {

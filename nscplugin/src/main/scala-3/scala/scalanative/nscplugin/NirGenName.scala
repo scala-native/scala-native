@@ -57,7 +57,7 @@ trait NirGenName(using Context) {
       /* Variables are internally private, but with public setter/getter.
        * Removing this check would cause problems with reachability
        */
-      if (sym.isPrivate && !sym.is(Mutable))
+      if (sym.is(Private) && !sym.is(Mutable))
         nir.Sig.Scope.Private(owner)
       else nir.Sig.Scope.Public
     }
@@ -72,7 +72,7 @@ trait NirGenName(using Context) {
     def owner = genTypeName(sym.owner)
     def id = nativeIdOf(sym)
     def scope =
-      if (sym.isPrivate)
+      if (sym.is(Private))
         if (sym.isStaticMethod) nir.Sig.Scope.PrivateStatic(owner)
         else nir.Sig.Scope.Private(owner)
       else if (sym.isStaticMethod) nir.Sig.Scope.PublicStatic
@@ -125,7 +125,7 @@ trait NirGenName(using Context) {
     }
     val id = nativeIdOf(sym)
     val scope =
-      if (sym.isPrivate) nir.Sig.Scope.PrivateStatic(owner)
+      if (sym.is(Private)) nir.Sig.Scope.PrivateStatic(owner)
       else nir.Sig.Scope.PublicStatic
 
     val paramTypes = sym.info.paramInfoss.flatten
