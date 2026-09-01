@@ -18,7 +18,7 @@ object JUnitTestPlatformImpl {
   @tailrec
   def executeLoop(
       tasks: Array[Task],
-      recorder: Logger with EventHandler
+      recorder: Logger & EventHandler
   ): Future[Unit] = {
     if (tasks.nonEmpty) {
       executeLoop(tasks.flatMap(_.execute(recorder, Array(recorder))), recorder)

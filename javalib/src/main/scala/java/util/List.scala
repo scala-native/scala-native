@@ -85,7 +85,7 @@ trait List[E] extends SequencedCollection[E] {
 
   def sort(c: Comparator[_ >: E]): Unit = {
     val arrayBuf = toArray()
-    Arrays.sort[AnyRef with E](arrayBuf.asInstanceOf[Array[AnyRef with E]], c)
+    Arrays.sort[AnyRef & E](arrayBuf.asInstanceOf[Array[AnyRef & E]], c)
 
     val len = arrayBuf.length
 
