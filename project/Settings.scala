@@ -125,7 +125,12 @@ object Settings {
         case (2, _) =>
           Seq("-Xfatal-warnings", "-encoding", "utf8", "-Xsource:3")
         case _ =>
-          Seq("-Werror", "-encoding:utf8")
+          Seq(
+            "-Werror",
+            "-encoding:utf8",
+            // Tests intentionally use expressions like `-1.toUByte`
+            "-Wconf:msg=Illegal literal:s"
+          )
       },
     javaReleaseSettings,
     mimaSettings,
