@@ -53,22 +53,22 @@ object Settings {
         )
       v
     },
-    Global / onLoad ~= { prev =>
-      if (!scala.util.Properties.isWin) {
-        import java.nio.file._
-        val prePush = Paths.get(".git", "hooks", "pre-push")
-        Files.createDirectories(prePush.getParent)
-        Files.write(
-          prePush,
-          """|#!/bin/sh
-             |set -eux
-             |CHECK_MODIFIED_ONLY=1 ./scripts/check-lint.sh
-             |""".stripMargin.getBytes()
-        )
-        prePush.toFile.setExecutable(true)
-      }
-      prev
-    }
+    // Global / onLoad ~= { prev =>
+    //   if (!scala.util.Properties.isWin) {
+    //     import java.nio.file._
+    //     val prePush = Paths.get(".git", "hooks", "pre-push")
+    //     Files.createDirectories(prePush.getParent)
+    //     Files.write(
+    //       prePush,
+    //       """|#!/bin/sh
+    //          |set -eux
+    //          |CHECK_MODIFIED_ONLY=1 ./scripts/check-lint.sh
+    //          |""".stripMargin.getBytes()
+    //     )
+    //     prePush.toFile.setExecutable(true)
+    //   }
+    //   prev
+    // }
   )
 
 // Generate project name from project id.
