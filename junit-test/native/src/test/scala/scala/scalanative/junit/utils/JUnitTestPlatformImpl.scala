@@ -17,7 +17,7 @@ object JUnitTestPlatformImpl {
 
   def executeLoop(
       tasks: Array[Task],
-      recorder: Logger with EventHandler
+      recorder: Logger & EventHandler
   ): Future[Unit] = {
     if (tasks.isEmpty) {
       Future.successful(())
@@ -30,7 +30,7 @@ object JUnitTestPlatformImpl {
 
   private def executeTask(
       task: Task,
-      recorder: Logger with EventHandler
+      recorder: Logger & EventHandler
   ): Future[Array[Task]] = {
     val p = Promise[Array[Task]]()
     p.success(task.execute(recorder, Array(recorder)))
