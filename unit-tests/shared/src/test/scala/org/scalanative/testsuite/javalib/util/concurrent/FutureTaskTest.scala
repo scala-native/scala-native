@@ -129,8 +129,7 @@ object FutureTaskTest {
 }
 
 class FutureTaskTest extends JSR166Test {
-  type PublicFutureTask = FutureTask[AnyRef]
-    with FutureTaskTest.PublicFutureTask
+  type PublicFutureTask = FutureTask[AnyRef] & FutureTaskTest.PublicFutureTask
 
   def checkIsDone[T <: AnyRef](f: Future[T]): Unit = {
     assertTrue(f.isDone())
