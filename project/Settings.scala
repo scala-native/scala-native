@@ -159,13 +159,15 @@ object Settings {
     )
   }
 
-  def isScalacJDKTargetOption(scalacOption: String) = {}
+  def isScalacJDKTargetOption(scalacOption: String): Boolean = {
+    def isFlag(name: String) =
+      scalacOption == name || scalacOption.startsWith(s"$name:")
+    isFlag("-target") || isFlag("-Xtarget") || isFlag("-release")
+  }
 
   def noJavaReleaseSettings(scope: Configuration) = Def.settings(
     scope / scalacOptions ~= {
-      _.filterNot { opt =>
-        Seq("-target", "-Xtarget", "-release").exists(opt.contains)
-      }
+      _.filterNot(isScalacJDKTargetOption)
     },
     scope / javacOptions := {
       val prev = javacOptions.value
@@ -173,7 +175,8 @@ object Settings {
         targetJDKVersionString(targetJDKVersion(scalaVersion.value))
       prev.filterNot { opt =>
         opt == targetVersion ||
-        Seq("-source", "-target").exists(opt.contains)
+        opt == "-source" || opt.startsWith("-source") ||
+        opt == "-target" || opt.startsWith("-target")
       }
     }
   )
