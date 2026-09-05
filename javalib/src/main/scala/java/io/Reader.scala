@@ -5,6 +5,7 @@ package java.io
 
 import java.nio.CharBuffer
 import java.util.Objects
+import java.{lang => jl, nio => jnio, util => ju}
 
 import scala.annotation.tailrec
 
@@ -50,6 +51,127 @@ abstract class Reader() extends Readable with Closeable {
     read(cbuf, 0, cbuf.length)
 
   def read(cbuf: Array[Char], off: Int, len: Int): Int
+
+  /** @since JDK 25 */
+  def readAllAsString(): String = {
+    /* Maintainer:
+     *   if cbuf.length get increased, change ReaderTestOnJDK25 so
+     *   the while loop below is exercised more than once. See comments there.
+     *   That Test exercises buffer re-fill logic.
+     */
+    val cbuf = new Array[Char](256)
+
+    // 256 is a generous guess to avoid initial ramp-up allocations.
+    val sBldr = new jl.StringBuilder(256)
+
+    var done = false
+
+    while (!done) {
+      val nRead = read(cbuf, 0, cbuf.length)
+
+      /* else clause works around suspected bug in sBldr.append(cbuf, 0, nRead)
+       * where the cbuf gets appended as an Object, and not its constituent
+       * characters.
+       */
+
+      if (nRead < 0) done = true
+      else sBldr.append(String.valueOf(cbuf, 0, nRead))
+    }
+
+    sBldr.toString()
+  }
+
+  /** @since JDK 25 */
+  def readAllLines(): ju.List[String] = {
+    /* Someday it would be nice to reduce duplication between this code
+     * and earlier, similar code in BufferedReader.scala.
+     */
+
+    /* Maintainer:
+     *   if cbuf.length get increased, change ReaderTestOnJDK25 so
+     *   the while loop below is exercised more than once. See comments there.
+     *   That Test exercises buffer re-fill logic.
+     */
+    val cbuf = new Array[Char](256)
+
+    // 256 is a generous guess to avoid initial ramp-up allocations.
+    val sBldr = new jl.StringBuilder(256)
+
+    val al = new ju.ArrayList[String](256) // arbitrary generous estimate
+
+    var crSeenAt = -1 // -1 indicates 'not encountered', else in [0, nRead)
+
+    var done = false
+
+    while (!done) {
+      val nRead = read(cbuf, 0, cbuf.length)
+
+      if (nRead <= 0) {
+        done = true
+
+        if (sBldr.length() != 0)
+          al.addLast(sBldr.toString())
+      } else {
+        var start = 0
+
+        for (j <- 0 until nRead) {
+          if ((cbuf(j) == '\n') || (cbuf(j) == '\r')) {
+
+            /* The JVM readAllLines() specification of line terminators
+             * taken with the need to read a finite number of characters
+             * is a recipe for bugs, especially off-by-one bugs.
+             * Sigh, wimper, moan.
+             *
+             * The following 'if()' clause is hard to read and comprehend
+             * on-the-fly.
+             *
+             * The idea and intent is skip '\n' _immediately_ after '\r'
+             * but only then.
+             *
+             * An English translation so somewhat like the following:
+             *   if a '\r' has been recently encountered
+             *     if looking at a '\n'
+             *   and either, in order
+             *     if
+             *       at the beginning of the characters just read,
+             *       meaning the '\r' was the final character of the
+             *       previous read.
+             *     or
+             *       now j is known to be >= 1, so can safely look back one
+             *       to see if the '\r' was immediately preceeding current '\n'
+             *
+             *  Extracting into a method would probably be just as messy.
+             *
+             *  Any section of code which has 13 times more comment lines
+             *  explaining it is probably going to be visited again.
+             */
+            if ((crSeenAt >= 0) && (cbuf(j) == '\n') &&
+                ((j == 0) || (crSeenAt == j - 1))) {
+              crSeenAt = -1 // unseen
+              start = j + 1 // skip current '\n'
+            } else {
+              if (cbuf(j) == '\r')
+                crSeenAt = j
+
+              // count (j - start) skips <LF> & solo <CR>terminators by intent
+              sBldr.append(String.valueOf(cbuf, start, j - start))
+
+              al.addLast(sBldr.toString())
+              sBldr.setLength(0)
+
+              // OK if + 1 is past nRead, next buffered read will reset to 0.
+              start = j + 1
+            }
+          } else if (j == (nRead - 1)) { // partial line, cache it.
+            sBldr.append(String.valueOf(cbuf, start, j - start + 1))
+          }
+        }
+      }
+    }
+
+    al.trimToSize()
+    al.asInstanceOf[ju.List[String]]
+  }
 
   def skip(n: Long): Long = {
     if (n < 0)
