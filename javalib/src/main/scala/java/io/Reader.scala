@@ -270,4 +270,10 @@ object Reader {
       }
     }
   }
+
+  /** @since JDK 24 */
+  def of(cs: CharSequence): Reader = {
+    Objects.requireNonNull(cs, "cs") // JVM uses immensely helpful null msg
+    new CharSequenceReader(cs)
+  }
 }
