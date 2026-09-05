@@ -138,7 +138,7 @@ abstract class AbstractList[E] protected ()
   }
 
   override def hashCode(): Int = {
-    var hash = 0
+    var hash = 1
     val iter = listIterator()
     while (iter.hasNext()) {
       val elem = iter.next()

@@ -13,7 +13,7 @@ import java.util.concurrent.atomic._
 import java.util.concurrent.locks._
 
 import org.junit.Assert._
-import org.junit.Test
+import org.junit.{Ignore, Test}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
@@ -193,7 +193,7 @@ class ForkJoinPoolTest extends JSR166Test {
   }
 
   // awaitTermination on a non-shutdown pool times out
-  @Test def testAwaitTerminationTimesOut(): Unit = {
+  @Test def testAwaitTermination_timesOut(): Unit = {
     usingPoolCleaner(new ForkJoinPool(1)) { p =>
       assertFalse(p.isTerminated())
       assertFalse(p.awaitTermination(java.lang.Long.MIN_VALUE, NANOSECONDS))
@@ -395,10 +395,18 @@ class ForkJoinPoolTest extends JSR166Test {
       assertFalse(future.isCancelled())
     }
 
-  // tests not making sense in Scala Native due to java.lang.security.PrivilagedAction
-  // @Test def testSubmitPrivilegedAction(): Unit = ()
-  // @Test def testSubmitPrivilegedExceptionAction(): Unit = ()
-  // @Test def testSubmitFailedPrivilegedExceptionAction(): Unit = ()
+  @Ignore(
+    "scala-native#4848: java.security PrivilegedAction types are not linkable in Scala Native"
+  )
+  @Test def testSubmitPrivilegedAction(): Unit = ()
+  @Ignore(
+    "scala-native#4848: java.security PrivilegedExceptionAction types are not linkable in Scala Native"
+  )
+  @Test def testSubmitPrivilegedExceptionAction(): Unit = ()
+  @Ignore(
+    "scala-native#4848: java.security PrivilegedExceptionAction types are not linkable in Scala Native"
+  )
+  @Test def testSubmitFailedPrivilegedExceptionAction(): Unit = ()
 
   @Test def testExecuteNullRunnable(): Unit =
     usingPoolCleaner(new ForkJoinPool(1)) { (e: ExecutorService) =>

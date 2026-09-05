@@ -623,8 +623,8 @@ class LinkedBlockingQueueTest extends JSR166Test {
 
   /** toArray(incompatible array type) throws ArrayStoreException
    */
-  @Ignore("No distinguishment in Array component types in Scala Native")
-  @Test def testToArray1_BadArg(): Unit = {
+  @Ignore("scala-native#4845: arrays lose runtime component type")
+  @Test def testToArray_incompatibleArrayType(): Unit = {
     val q = LinkedBlockingQueueTest.populatedQueue(SIZE)
     try {
       q.toArray(new Array[String](10))
@@ -773,7 +773,7 @@ class LinkedBlockingQueueTest extends JSR166Test {
   /** A deserialized/reserialized queue has same elements in same order
    */
   @throws[Exception]
-  @Ignore("No ObjectInputStream in Scala Native")
+  @Ignore("scala-native#4852: ObjectInputStream is unsupported")
   @Test def testSerialization(): Unit = {}
 
   /** drainTo(c) empties queue into another collection c

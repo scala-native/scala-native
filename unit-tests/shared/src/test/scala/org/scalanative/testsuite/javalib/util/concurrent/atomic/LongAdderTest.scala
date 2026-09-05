@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.LongAdder
 import java.util.concurrent.{CyclicBarrier, ExecutorService, Executors}
 
 import org.junit.Assert._
-import org.junit.Test
+import org.junit.{Ignore, Test}
 
 import org.scalanative.testsuite.javalib.util.concurrent.JSR166Test
 
@@ -73,6 +73,9 @@ class LongAdderTest extends JSR166Test {
     assertEquals(2, ai.sumThenReset)
     assertEquals(0, ai.sum)
   }
+
+  @Ignore("scala-native#4852: ObjectInputStream is unsupported")
+  @Test def testSerialization(): Unit = ()
 
   /** toString returns current value.
    */

@@ -328,7 +328,7 @@ class ReentrantLockTest extends JSR166Test {
   /** getQueuedThreads() includes waiting threads
    */
   @Test def testGetQueuedThreads(): Unit = { testGetQueuedThreads(false) }
-  @Test def testGetQueuedThreadfair(): Unit = { testGetQueuedThreads(true) }
+  @Test def testGetQueuedThreads_fair(): Unit = { testGetQueuedThreads(true) }
   def testGetQueuedThreads(fair: Boolean): Unit = {
     val lock = new ReentrantLockTest.PublicReentrantLock(fair)
     val t1 = new Thread(new InterruptedLockRunnable(lock))
@@ -1171,8 +1171,14 @@ class ReentrantLockTest extends JSR166Test {
   // No Object Input Stream
   // /** A serialized lock deserializes as unlocked
   //  */
-  // @Test def testSerialization(): Unit = {}
-  // @Test def testSerialization_fair(): Unit = {}
+  @Ignore(
+    "scala-native#4852: ObjectInputStream/ObjectOutputStream are unsupported"
+  )
+  @Test def testSerialization(): Unit = {}
+  @Ignore(
+    "scala-native#4852: ObjectInputStream/ObjectOutputStream are unsupported"
+  )
+  @Test def testSerialization_fair(): Unit = {}
 
   /** toString indicates current lock state
    */
@@ -1252,7 +1258,10 @@ class ReentrantLockTest extends JSR166Test {
 
   /** ThreadMXBean reports the blockers that we expect.
    */
-  // @Test def testBlockers(): Unit = ()
+  @Ignore(
+    "scala-native#4853: ThreadInfo lock blocker metadata is not implemented"
+  )
+  @Test def testBlockers(): Unit = ()
 
   // Tests ported from Scala.js
   @Test def lockAndUnlock(): Unit = {

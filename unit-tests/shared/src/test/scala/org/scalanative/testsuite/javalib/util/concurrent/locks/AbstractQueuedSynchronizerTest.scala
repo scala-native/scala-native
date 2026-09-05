@@ -1064,8 +1064,9 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
 
   /** A serialized AQS deserializes with current state, but no queued threads
    */
-  @Ignore("No ObjectInputStreams in Scala Native") @Test def testSerialization()
-      : Unit = {
+  @Ignore(
+    "scala-native#4852: ObjectInputStream/ObjectOutputStream are unsupported"
+  ) @Test def testSerialization(): Unit = {
     // val sync = new Mutex()
     // assertFalse(serialClone(sync).isHeldExclusively())
     // sync.acquire()
