@@ -47,8 +47,7 @@ class CountDownLatch private (@safePublish sync: CountDownLatch.Sync) {
     this(sync = {
       if (count < 0) throw new IllegalArgumentException("count < 0")
       new CountDownLatch.Sync(count)
-    }
-    )
+    })
   }
 
   @throws[InterruptedException]

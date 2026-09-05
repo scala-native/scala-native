@@ -29,6 +29,12 @@ private final class L32X64MixRandom private[random] (
    * constructor forces a & s to be odd and x0 & x1 to be "both not zero"
    */
 
+  /* This and other magic constants from JDK 17 documentation:
+   *   https://docs.oracle.com/en/java/javase/17/docs/api/java.base
+   *     /java/util/random/package-summary.html
+   *
+   * JDK 26 appears to specify the same constants.
+   */
   final val M = 0xadb4a92d; // Fixed multiplier
 
   def this(buf: Array[Int]) =
@@ -74,7 +80,7 @@ private final class L32X64MixRandom private[random] (
 
   // JVM fills upper 32 bits, not a nextInt().toLong which clears them.
   def nextLong(): scala.Long =
-    (nextInt().toLong << 32) | nextInt().toLong
+    (nextInt().toLong << 32) | (nextInt().toLong & 0x00000000ffffffffL)
 
   /* Since most callers will want 32 bit results, implement nextLong()
    * in terms of nextInt(). The other way around is the usual practice

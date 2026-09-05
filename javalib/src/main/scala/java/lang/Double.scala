@@ -174,10 +174,10 @@ final class Double(val _value: scala.Double)
 object Double {
   final val BYTES = 8
   final val MAX_EXPONENT = 1023
-  final val MAX_VALUE = 1.79769313486231570e+308
+  final val MAX_VALUE = scala.Double.MaxValue
   final val MIN_EXPONENT = -1022
   final val MIN_NORMAL = 2.2250738585072014e-308
-  final val MIN_VALUE = 5e-324
+  final val MIN_VALUE = scala.Double.MinPositiveValue
   final val NaN = 0.0 / 0.0
   final val NEGATIVE_INFINITY = 1.0 / -0.0
   final val POSITIVE_INFINITY = 1.0 / 0.0

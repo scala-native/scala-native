@@ -1,8 +1,5 @@
 package org.scalanative.testsuite.javalib.util
 
-// import java.util._
-// import java.util.function.{DoubleConsumer, IntConsumer, LongConsumer}
-
 import java.{lang => jl, util => ju}
 
 import org.junit.Assert._
