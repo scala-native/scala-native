@@ -1,6 +1,7 @@
 package java.lang
 
 import java.lang.constant.{Constable, ConstantDesc}
+import java.{util => ju}
 
 import scalanative.runtime.Intrinsics.{divUInt, intToULong, remUInt}
 import scalanative.runtime.LLVMIntrinsics
@@ -287,6 +288,21 @@ object Integer {
   @inline def parseInt(s: String): scala.Int =
     parseInt(s, 10)
 
+  /** @since JDK 9 */
+  def parseInt(
+      s: CharSequence,
+      beginIndex: Int,
+      endIndex: Int,
+      radix: Int
+  ): scala.Int = {
+    ju.Objects.requireNonNull(s)
+    ju.Objects.checkFromToIndex(beginIndex, endIndex, s.length())
+    // let callee check radix
+
+    val extracted = s.subSequence(beginIndex, endIndex).toString()
+    parseInt(extracted, radix)
+  }
+
   def parseInt(s: String, radix: scala.Int): scala.Int = {
     if (s == null)
       throw new NumberFormatException("null")
@@ -516,6 +532,20 @@ object Integer {
     valueOf(parseInt(s, radix))
 
   @inline def parseUnsignedInt(s: String): scala.Int = parseUnsignedInt(s, 10)
+
+  def parseUnsignedInt(
+      s: CharSequence,
+      beginIndex: Int,
+      endIndex: Int,
+      radix: Int
+  ): scala.Int = {
+    ju.Objects.requireNonNull(s)
+    ju.Objects.checkFromToIndex(beginIndex, endIndex, s.length())
+    // let callee check radix
+
+    val extracted = s.subSequence(beginIndex, endIndex).toString()
+    parseUnsignedInt(extracted, radix)
+  }
 
   def parseUnsignedInt(s: String, radix: scala.Int): scala.Int = {
     if (s == null)
