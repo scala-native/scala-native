@@ -165,7 +165,7 @@ abstract class ${T}Buffer private[nio] (
 
 % if T == 'Char':
   // Since: JDK25
-  def getChars(
+  override def getChars(
       srcBegin: Int,
       srcEnd: Int,
       dst: Array[Char],

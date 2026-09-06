@@ -173,7 +173,7 @@ final class StringBuffer
       idx: scala.Int
   ): Unit =
     synchronized {
-      super.getChars(start, end, buffer, idx)
+      super.fastGetChars(start, end, buffer, idx)
     }
 
   override def indexOf(subString: String, start: scala.Int): scala.Int =

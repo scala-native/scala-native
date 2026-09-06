@@ -133,7 +133,7 @@ final class StringBuilder
       buffer: Array[scala.Char],
       idx: scala.Int
   ): Unit =
-    super.getChars(start, end, buffer, idx)
+    super.fastGetChars(start, end, buffer, idx)
 
   def insert(offset: scala.Int, b: scala.Boolean): StringBuilder = {
     insert0(offset, if (b) "true" else "false")

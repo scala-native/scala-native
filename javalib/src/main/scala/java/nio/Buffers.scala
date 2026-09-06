@@ -528,7 +528,7 @@ abstract class CharBuffer private[nio] (
     get(dst, 0, dst.length)
 
   // Since: JDK25
-  def getChars(
+  override def getChars(
       srcBegin: Int,
       srcEnd: Int,
       dst: Array[Char],
