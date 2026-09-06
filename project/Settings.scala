@@ -740,8 +740,9 @@ object Settings {
           "-Dscala213.version=" + ScalaVersions.scala213,
           "-Dscala3.version=" + ScalaVersions.scriptedTestsScala3Version,
           "-Dfile.encoding=UTF-8", // Windows uses Cp1250 as default
-          // Don't start an sbt server in nested scripted (Windows named-pipe races).
-          "-Dsbt.server.autostart=false"
+          // Nested scripted (esp. Windows): BootServerSocket named-pipe races.
+          "-Dsbt.server.autostart=false",
+          "-Dsbt.server.forcestart=true"
         ) ++
         nestedCiMitigations ++
         ivyPaths.value.ivyHome.map(home => s"-Dsbt.ivy.home=$home").toSeq
