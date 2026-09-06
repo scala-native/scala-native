@@ -2,8 +2,7 @@ package build
 
 import sbt.Keys._
 import sbt._
-import sbt.util.AggregateActionCacheStore
-import sbt.util.InMemoryActionCacheStore
+import sbt.util.{AggregateActionCacheStore, InMemoryActionCacheStore}
 
 import java.io.File
 import java.net.URI
