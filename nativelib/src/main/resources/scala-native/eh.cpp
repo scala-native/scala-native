@@ -1,18 +1,13 @@
 #if defined(SCALANATIVE_USING_CPP_EXCEPTIONS)
 
+#include <cstdlib>
 #include <exception>
 #include <mutex>
 
 #if defined(__SCALANATIVE_DELIMCC)
 #include "delimcc.h"
 #include "string_constants.h"
-#include <stdio.h>
-#endif
-
-#if defined(__SCALANATIVE_DELIMCC)
-#include "delimcc.h"
-#include "string_constants.h"
-#include <stdio.h>
+#include <cstdio>
 #endif
 
 // Scala Native compiles Scala's exception in C++-compatible
