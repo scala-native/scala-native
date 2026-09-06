@@ -134,6 +134,12 @@ runs:
           }
         }
 
+    # Avoid background sbt server holding jar locks across workflow steps (AccessDenied on packageBin).
+    - name: Disable sbt server autostart
+      shell: pwsh
+      run: |
+        "SBT_OPTS=-Dsbt.server.autostart=false $($env:SBT_OPTS)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
     - name: Assert clang installed and on path
       shell: pwsh
       run: clang --version

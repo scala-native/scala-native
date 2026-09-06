@@ -2,6 +2,7 @@ package build
 
 import sbt.Keys._
 import sbt._
+import sbt.util.AggregateActionCacheStore
 import sbt.util.InMemoryActionCacheStore
 
 import java.io.File
@@ -61,17 +62,15 @@ object Settings {
         )
       v
     },
-    // CI: avoid DiskActionCacheStore. AggregateActionCacheStore.empty makes put() fail
-    // (Left(notFound)), which races with declareOutput and surfaces as missing
-    // inc_compile_*.zip. InMemory accepts put without sharing zip files across tasks.
-    // Windows still needs Compile serialization (jar / sbtdir AccessDenied).
     Global / cacheStores := {
-      if (isCI) Seq(new InMemoryActionCacheStore)
+      if (isCI && isWindows) Seq(AggregateActionCacheStore.empty)
+      else if (isCI) Seq(new InMemoryActionCacheStore)
       else (Global / cacheStores).value
     },
     Global / concurrentRestrictions += Tags.limit(Tags.Publish, 1),
     Global / concurrentRestrictions ++= {
-      if (isCI) Seq(Tags.limit(Tags.Compile, 1))
+      if (isCI && isWindows) Seq(Tags.limitAll(1))
+      else if (isCI) Seq(Tags.limit(Tags.Compile, 1))
       else Nil
     },
     Global / onLoad ~= { prev =>
@@ -716,10 +715,16 @@ object Settings {
         val globalBase = baseDirectory.value / "target" / "scripted-ci-global"
         val versioned = globalBase / "1.0"
         val lines =
-          """|Global / cacheStores := Seq(new sbt.util.InMemoryActionCacheStore)
-             |Global / concurrentRestrictions += sbt.Tags.limit(sbt.Tags.Publish, 1)
-             |Global / concurrentRestrictions += sbt.Tags.limit(sbt.Tags.Compile, 1)
-             |""".stripMargin
+          if (isWindows)
+            """|Global / cacheStores := Seq(sbt.util.AggregateActionCacheStore.empty)
+               |Global / concurrentRestrictions += sbt.Tags.limit(sbt.Tags.Publish, 1)
+               |Global / concurrentRestrictions += sbt.Tags.limitAll(1)
+               |""".stripMargin
+          else
+            """|Global / cacheStores := Seq(new sbt.util.InMemoryActionCacheStore)
+               |Global / concurrentRestrictions += sbt.Tags.limit(sbt.Tags.Publish, 1)
+               |Global / concurrentRestrictions += sbt.Tags.limit(sbt.Tags.Compile, 1)
+               |""".stripMargin
         IO.createDirectory(versioned)
         IO.write(
           versioned / "global.sbt",
