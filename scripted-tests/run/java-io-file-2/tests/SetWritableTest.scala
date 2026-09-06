@@ -1,7 +1,7 @@
 object SetWritableTest {
   import Files._
   import Utils._
-  def main(args: Array[String]): Unit = {
+  def run(): Unit = {
     assert(willBeSetWritableFile.exists())
     assertOsSpecific(
       willBeSetWritableFile.canExecute(),

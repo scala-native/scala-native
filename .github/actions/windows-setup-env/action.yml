@@ -116,6 +116,30 @@ runs:
           Write-Host "::warning::No clang.exe under $llvmBin; set LLVM_BIN on the step if needed."
         }
 
+    - name: Exclude workspace from Windows Defender
+      shell: pwsh
+      run: |
+        # Hypothesis: Defender real-time scanning may briefly lock jars/zips and cause
+        # AccessDeniedException on sbt's atomic Files.move (ActionCache / packageBin).
+        $paths = @(
+          "${{ github.workspace }}",
+          "$env:USERPROFILE\.sbt",
+          "$env:USERPROFILE\.ivy2",
+          "$env:LOCALAPPDATA\Coursier"
+        )
+        foreach ($p in $paths) {
+          if ($p -and (Test-Path -LiteralPath $p)) {
+            Add-MpPreference -ExclusionPath $p -ErrorAction SilentlyContinue
+            Write-Host "Defender exclusion: $p"
+          }
+        }
+
+    # Avoid background sbt server holding jar locks across workflow steps (AccessDenied on packageBin).
+    - name: Disable sbt server autostart
+      shell: pwsh
+      run: |
+        "SBT_OPTS=-Dsbt.server.autostart=false $($env:SBT_OPTS)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
     - name: Assert clang installed and on path
       shell: pwsh
       run: clang --version

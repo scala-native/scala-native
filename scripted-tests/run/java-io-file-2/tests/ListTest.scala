@@ -1,7 +1,7 @@
 object ListTest {
   import Files._
 
-  def main(args: Array[String]): Unit = {
+  def run(): Unit = {
     val listedFiles = nonEmptyDirectory.list().sorted
     assert(listedFiles.length == 3)
     assert(listedFiles(0) == firstChildFile.getName)

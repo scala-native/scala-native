@@ -3,7 +3,7 @@ import java.io.{File, IOException}
 object CreateNewFileTest {
   import Files._
 
-  def main(args: Array[String]): Unit = {
+  def run(): Unit = {
     assert(!willBeCreatedFile.exists())
     assert(willBeCreatedFile.createNewFile())
     assert(willBeCreatedFile.exists())
