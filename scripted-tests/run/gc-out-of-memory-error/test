@@ -1,0 +1,8 @@
+> set nativeConfig ~= { _.withGC(scala.scalanative.build.GC.immix) }
+> set nativeConfig ~= { _.withGC(scala.scalanative.build.GC.immix) }
+> runHeapExhaustion
+> set nativeConfig ~= { _.withGC(scala.scalanative.build.GC.commix) }
+> runHeapExhaustion
+
+> set nativeConfig ~= { _.withGC(scala.scalanative.build.GC.commix) }
+> runHeapExhaustion

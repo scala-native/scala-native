@@ -16,6 +16,7 @@
 #include "shared/ScalaNativeGC.h"
 #include "shared/Log.h"
 #include <assert.h>
+#include <stdatomic.h>
 
 // Dummy GC that maps chunks of memory and allocates but never frees.
 #define DEFAULT_CHUNK_SIZE "64M"
@@ -29,16 +30,54 @@
 SN_ThreadLocal void *current = 0;
 SN_ThreadLocal void *end = 0;
 
+#define EMERGENCY_BLOCK_SIZE (32 * 1024)
+
+extern void *scalanative_createOutOfMemoryError(void);
+__attribute__((noreturn)) extern void scalanative_throw(void *obj);
+__attribute__((noreturn)) extern void
+scalanative_throwOutOfMemoryErrorFallback(void);
+
 static size_t DEFAULT_CHUNK;
 static size_t PREALLOC_CHUNK;
 static size_t CHUNK;
 static size_t TO_NORMAL_MMAP = 1L;
 static size_t DO_PREALLOC = 0L;     // No Preallocation.
 static size_t TOTAL_ALLOCATED = 0L; // Track total allocated memory
+static void *emergencyBlock;
+static void *emergencyEnd;
+static atomic_bool emergencyBlockClaimed = false;
 
 static void exitWithOutOfMemory() {
     GC_LOG_ERROR("Out of heap space");
     exit(1);
+}
+
+static bool initEmergencyBlock() {
+    if (emergencyBlock != NULL)
+        return true;
+
+    emergencyBlock = memoryMapPrealloc(EMERGENCY_BLOCK_SIZE, 1);
+#ifdef _WIN32
+    if (emergencyBlock != NULL &&
+        !memoryCommit(emergencyBlock, EMERGENCY_BLOCK_SIZE)) {
+        emergencyBlock = NULL;
+    }
+#endif
+    if (emergencyBlock != NULL)
+        emergencyEnd = (char *)emergencyBlock + EMERGENCY_BLOCK_SIZE;
+    return emergencyBlock != NULL;
+}
+
+static void throwOutOfMemory() {
+    if (emergencyBlock == NULL ||
+        atomic_exchange(&emergencyBlockClaimed, true)) {
+        scalanative_throwOutOfMemoryErrorFallback();
+    }
+
+    current = emergencyBlock;
+    end = emergencyEnd;
+    void *error = scalanative_createOutOfMemoryError();
+    scalanative_throw(error);
 }
 
 size_t scalanative_GC_get_init_heapsize() {
@@ -97,29 +136,27 @@ void Prealloc_Or_Default() {
     }
 }
 
-void scalanative_GC_init() {
-    GC_Log_Init();
+static bool allocateChunk() {
 #ifndef GC_ASAN
     Prealloc_Or_Default();
     current = memoryMapPrealloc(CHUNK, DO_PREALLOC);
     if (current == NULL) {
-        const float bytesToMB = 1024.0 * 1024.0;
-        GC_LOG_ERROR(
-            "Failed to allocate or grow heap space, "
-            "requested size=%.2fMB, available memory=%.2fMB, already "
-            "allocated=%.2fMB, should preallocate=%s. Consider setting "
-            "GC_MAXIMUM_HEAP_SIZE env variable to limit maximal heap size",
-            CHUNK / bytesToMB, getFreeMemorySize() / bytesToMB,
-            TOTAL_ALLOCATED / bytesToMB, DO_PREALLOC == 0 ? "false" : "true");
-        exit(1);
+        return false;
     }
     end = current + CHUNK;
 #ifdef _WIN32
     if (!memoryCommit(current, CHUNK)) {
-        exitWithOutOfMemory();
+        return false;
     };
 #endif // _WIN32
 #endif // GC_ASAN
+    return true;
+}
+
+void scalanative_GC_init() {
+    GC_Log_Init();
+    if (!initEmergencyBlock() || !allocateChunk())
+        exitWithOutOfMemory();
 }
 
 void *scalanative_GC_alloc(Rtti *info, size_t size) {
@@ -132,11 +169,16 @@ void *scalanative_GC_alloc(Rtti *info, size_t size) {
         TOTAL_ALLOCATED += size;
         return alloc;
     } else {
-        scalanative_GC_init();
+        if (end == emergencyEnd)
+            scalanative_throwOutOfMemoryErrorFallback();
+        if (!allocateChunk())
+            throwOutOfMemory();
         return scalanative_GC_alloc(info, size);
     }
 #else
     Object *alloc = (Object *)calloc(size, 1);
+    if (alloc == NULL)
+        throwOutOfMemory();
     alloc->rtti = info;
     TOTAL_ALLOCATED += size;
     return alloc;

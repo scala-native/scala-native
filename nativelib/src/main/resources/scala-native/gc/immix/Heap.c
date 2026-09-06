@@ -18,6 +18,11 @@
 #include "WeakReferences.h"
 #include "immix_commix/Synchronizer.h"
 
+extern void *scalanative_createOutOfMemoryError(void);
+__attribute__((noreturn)) extern void scalanative_throw(void *obj);
+__attribute__((noreturn)) extern void
+scalanative_throwOutOfMemoryErrorFallback(void);
+
 void Heap_exitWithOutOfMemory(const char *details) {
     GC_LOG_ERROR("Out of heap space %s", details);
     StackTrace_PrintStackTrace();
@@ -90,10 +95,16 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     }
 
     uint32_t maxNumberOfBlocks = maxHeapSize / SPACE_USED_PER_BLOCK;
+    assert(maxNumberOfBlocks > 1);
     uint32_t initialBlockCount = minHeapSize / SPACE_USED_PER_BLOCK;
+    uint32_t normalMaxBlockCount = maxNumberOfBlocks - 1;
+    if (initialBlockCount > normalMaxBlockCount) {
+        initialBlockCount = normalMaxBlockCount;
+    }
     heap->maxHeapSize = maxHeapSize;
     heap->blockCount = initialBlockCount;
-    heap->maxBlockCount = maxNumberOfBlocks;
+    heap->maxBlockCount = normalMaxBlockCount;
+    atomic_init(&heap->emergencyBlockClaimed, false);
 
     // reserve space for block headers
     size_t blockMetaSpaceSize = maxNumberOfBlocks * sizeof(BlockMeta);
@@ -130,9 +141,13 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
                      getFreeMemorySize() / (1024.0 * 1024.0));
         exit(1);
     }
-    heap->heapSize = minHeapSize;
+    heap->heapSize = initialBlockCount * SPACE_USED_PER_BLOCK;
     heap->heapStart = heapStart;
-    heap->heapEnd = heapStart + minHeapSize / WORD_SIZE;
+    heap->heapEnd = heapStart + initialBlockCount * WORDS_IN_BLOCK;
+    heap->emergencyBlockStart =
+        heapStart + normalMaxBlockCount * WORDS_IN_BLOCK;
+    heap->emergencyBlockMeta =
+        (BlockMeta *)blockMetaStart + normalMaxBlockCount;
 
 #ifdef _WIN32
     // Commit memory chunks reserved using mapMemory
@@ -144,7 +159,8 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
         // chunk equal to maximal size of heap, but commit only minimal needed
         // chunk of memory. Additional chunks of heap should be committed on
         // demand when growing the heap.
-        memoryCommit(heapStart, minHeapSize);
+        memoryCommit(heapStart, minHeapSize) &&
+        memoryCommit(heap->emergencyBlockStart, BLOCK_TOTAL_SIZE);
     if (!commitStatus) {
         Heap_exitWithOutOfMemory("commit memmory");
     }
@@ -158,6 +174,65 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
         Stats_Init(heap->stats, statsFile);
     }
     mutex_init(&heap->lock);
+}
+
+bool Heap_BeginEmergencyAllocation(Heap *heap) {
+    bool expected = false;
+    if (heap->emergencyBlockStart == NULL ||
+        !atomic_compare_exchange_strong(&heap->emergencyBlockClaimed, &expected,
+                                        true)) {
+        return false;
+    }
+
+    BlockMeta *blockMeta = (BlockMeta *)heap->emergencyBlockMeta;
+    word_t *blockStart = heap->emergencyBlockStart;
+    bool isHeapEnd = blockStart == heap->heapEnd;
+    heap->emergencyBlockStart = NULL;
+    heap->emergencyBlockMeta = NULL;
+    BlockMeta_SetFlag(blockMeta, block_simple);
+    BlockMeta_SetFirstFreeLine(blockMeta, LAST_HOLE);
+    ObjectMeta_ClearBlockAt(Bytemap_Get(heap->bytemap, blockStart));
+
+    if (isHeapEnd) {
+        assert(blockMeta == (BlockMeta *)heap->blockMetaEnd);
+        heap->heapEnd = blockStart + WORDS_IN_BLOCK;
+        heap->blockMetaEnd = (word_t *)(blockMeta + 1);
+        heap->lineMetaEnd += LINE_COUNT * LINE_METADATA_SIZE / WORD_SIZE;
+        heap->heapSize += SPACE_USED_PER_BLOCK;
+        heap->blockCount += 1;
+        heap->maxBlockCount += 1;
+    }
+    Allocator *allocator = &currentMutatorThread->allocator;
+    allocator->block = blockMeta;
+    allocator->blockStart = blockStart;
+    allocator->cursor = blockStart;
+    allocator->limit = heap->heapEnd;
+    atomic_thread_fence(memory_order_release);
+    return true;
+}
+
+void Heap_RefillEmergencyBlock(Heap *heap) {
+    if (heap->emergencyBlockStart != NULL)
+        return;
+
+    BlockMeta *block = BlockAllocator_GetFreeBlock(&blockAllocator);
+    if (block == NULL)
+        return;
+
+    heap->emergencyBlockMeta = block;
+    heap->emergencyBlockStart =
+        BlockMeta_GetBlockStart(heap->blockMetaStart, heap->heapStart, block);
+    BlockMeta_SetFlag(block, block_reserved);
+    atomic_store_explicit(&heap->emergencyBlockClaimed, false,
+                          memory_order_release);
+}
+
+void Heap_ThrowOutOfMemory(Heap *heap) {
+    if (!Heap_BeginEmergencyAllocation(heap)) {
+        scalanative_throwOutOfMemoryErrorFallback();
+    }
+    void *error = scalanative_createOutOfMemoryError();
+    scalanative_throw(error);
 }
 
 void Heap_Collect(Heap *heap, Stack *stack) {
@@ -249,7 +324,10 @@ void Heap_Recycle(Heap *heap) {
         int size = 1;
 
         assert(!BlockMeta_IsSuperblockMiddle(current));
-        if (BlockMeta_IsSimpleBlock(current)) {
+        if (BlockMeta_IsReserved(current)) {
+            // Keep the empty reserve out of the allocator while it is held.
+            BlockAllocator_SweepDone(&blockAllocator);
+        } else if (BlockMeta_IsSimpleBlock(current)) {
             MutatorThread *recycleBlocksTo = NextMutatorThread();
             Block_Recycle(&recycleBlocksTo->allocator, current,
                           currentBlockStart, lineMetas);
@@ -289,25 +367,20 @@ void Heap_Recycle(Heap *heap) {
         }
     }
     BlockAllocator_SweepDone(&blockAllocator);
-    MutatorThreads_foreach(mutatorThreads, node) {
-        MutatorThread *thread = node->value;
-        if (!Allocator_CanInitCursors(&thread->allocator)) {
-            Heap_exitWithOutOfMemory("growIfNeeded:re-init cursors");
-        }
-        Allocator_InitCursors(&thread->allocator, false);
-    }
+    Heap_RefillEmergencyBlock(heap);
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     atomic_thread_fence(memory_order_seq_cst);
 #endif
 }
 
-void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
+bool Heap_TryGrow(Heap *heap, uint32_t incrementInBlocks) {
     BlockAllocator_Acquire(&blockAllocator);
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     atomic_thread_fence(memory_order_seq_cst);
 #endif
     if (!Heap_isGrowingPossible(heap, incrementInBlocks)) {
-        Heap_exitWithOutOfMemory("grow heap");
+        BlockAllocator_Release(&blockAllocator);
+        return false;
     }
     size_t incrementInBytes = incrementInBlocks * SPACE_USED_PER_BLOCK;
 
@@ -342,6 +415,13 @@ void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
     // immediately add the block to freelists
     BlockAllocator_SweepDone(&blockAllocator);
     BlockAllocator_Release(&blockAllocator);
+    return true;
+}
+
+void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
+    if (!Heap_TryGrow(heap, incrementInBlocks)) {
+        Heap_exitWithOutOfMemory("grow heap");
+    }
 }
 
 #endif

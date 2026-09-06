@@ -1,0 +1,11 @@
+# The low initial heap forces GC cursor re-initialization to grow the heap after
+# a large number of mutator threads have registered.
+
+> set nativeConfig ~= { _.withGC(scala.scalanative.build.GC.immix) }
+> set nativeConfig ~= { _.withGC(scala.scalanative.build.GC.immix) }
+> runThreadBurst
+> set nativeConfig ~= { _.withGC(scala.scalanative.build.GC.commix) }
+> runThreadBurst
+
+> set nativeConfig ~= { _.withGC(scala.scalanative.build.GC.commix) }
+> runThreadBurst

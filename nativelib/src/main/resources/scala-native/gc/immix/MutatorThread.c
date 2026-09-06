@@ -67,9 +67,6 @@ void MutatorThread_init(Field_t *stackbottom) {
     LargeAllocator_Init(&self->largeAllocator, &blockAllocator, heap.bytemap,
                         heap.blockMetaStart, heap.heapStart);
     MutatorThreads_add(self);
-    // Following init operations might trigger GC, needs to be executed after
-    // acknowledging the new thread in MutatorThreads_add
-    Allocator_InitCursors(&self->allocator, true);
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     // Stop if there is ongoing GC_collection
     scalanative_GC_yield();

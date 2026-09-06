@@ -37,6 +37,11 @@ abstract class Throwable @noinline protected (
     this
   }
 
+  private[runtime] def clearStackTrace(): Unit = {
+    stackTrace = null
+    rawStackTrace = null
+  }
+
   def setStackTrace(stackTrace: scala.Array[StackTraceElement]): Unit = {
     if (writableStackTrace) this.synchronized {
       var i = 0
@@ -146,7 +151,8 @@ private object Throwable {
 
   @exported("scalanative_Throwable_exceptionWrapper")
   def exceptionWrapper(self: Throwable): RawPtr =
-    self.exceptionWrapper.atRawUnsafe(0)
+    if (OutOfMemory.isFallback(self)) null
+    else self.exceptionWrapper.atRawUnsafe(0)
 
   @exported("scalanative_Throwable_onCatchHandler")
   def onCatchHandler(self: Throwable): CFuncPtr1[Throwable, Unit] /* | Null*/ =
