@@ -1,4 +1,4 @@
-object RenamedToTest {
+object RenameToTest {
   import Files._
 
   def run(): Unit = {
