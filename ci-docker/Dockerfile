@@ -10,9 +10,12 @@ ENV DEFAULT_DOCKCROSS_IMAGE=${IMAGE_NAME}
 RUN echo "BASE_IMAGE: $BASE_IMAGE, LLVM toolchain: $LLVM_VERSION"
 RUN apt-get update && apt-get install -y zip unzip lsb-release curl wget software-properties-common iputils-ping libgc-dev libz-dev git
 
-RUN wget -O - https://apt.llvm.org/llvm.sh | bash /dev/stdin $LLVM_VERSION
-RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-$LLVM_VERSION 100
-RUN update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-$LLVM_VERSION 100
+# Force IPv4: GitHub runners often have no IPv6, and apt.llvm.org prefers AAAA.
+RUN set -eux; \
+    wget -4 -O /tmp/llvm.sh https://apt.llvm.org/llvm.sh; \
+    bash /tmp/llvm.sh "$LLVM_VERSION"; \
+    update-alternatives --install /usr/bin/clang clang /usr/bin/clang-"$LLVM_VERSION" 100; \
+    update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-"$LLVM_VERSION" 100
 
 # We cannot easily install dependencies, clone and build zlib and Boehm locally
 RUN git clone https://github.com/madler/zlib /tmp/zlib \
