@@ -2,7 +2,7 @@ package build
 
 import sbt.Keys._
 import sbt._
-import sbt.util.InMemoryActionCacheStore
+import sbt.util.DiskActionCacheStore
 
 import java.io.File
 import java.net.URI
@@ -61,10 +61,15 @@ object Settings {
         )
       v
     },
-    // CI: InMemory ActionCache (Seq.empty falls back to Disk).
+    // Windows: Disk ActionCache rewrites same-digest jars into CAS symlinks; skip that
+    // when the compiler still holds exportJars plugin jars open.
     Global / cacheStores := {
-      if (isCI) Seq(new InMemoryActionCacheStore)
-      else (Global / cacheStores).value
+      if (isWindows) {
+        val converter = fileConverter.value
+        val disk =
+          DiskActionCacheStore(localCacheDirectory.value.toPath, converter)
+        Seq(new SameDigestSafeActionCacheStore(disk, converter))
+      } else (Global / cacheStores).value
     },
     Global / concurrentRestrictions += Tags.limit(Tags.Publish, 1),
     Global / concurrentRestrictions ++= {
