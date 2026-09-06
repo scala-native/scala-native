@@ -390,13 +390,15 @@ class ProcessTest {
     /* "ping" is used here as a timing ~~hack~~ felicity, not
      * to do anything actually sensible with a network.
      *
-     * Send two packets, one immediately sends I/O to parent.
-     * Then the process expects to live long enough to send a second
-     * in 10 seconds. When either SIGTERM or SIGKILL arrives, only the
-     * necessary minimum time will have actually been taken.
+     * Unix: two packets with 10s interval — first reply proves we are past
+     * exec; second keeps the child alive until destroy.
+     * Windows: `-n` count with ~1s between echoes (no Unix-style `-i`).
      */
-    val proc = processForCommand("ping", "-c", "2", "-i", "10", "127.0.0.1")
-      .start()
+    val proc =
+      if (isWindows)
+        processForCommand("ping", "-n", "20", "127.0.0.1").start()
+      else
+        processForCommand("ping", "-c", "2", "-i", "10", "127.0.0.1").start()
 
     // When process has produced a byte of output, it should be past 'exec'.
     proc.getInputStream().read()

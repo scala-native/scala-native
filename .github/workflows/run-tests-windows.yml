@@ -43,6 +43,13 @@ jobs:
           SCALANATIVE_MODE: ${{ matrix.build-mode }}
         run: sbt "test-gc ${{ matrix.scala }}"
 
+      # sbt 2 leaves a background server that can keep nscplugin.jar locked on Windows;
+      - name: Shutdown sbt server
+        if: always()
+        continue-on-error: true
+        run: sbt shutdown
+        shell: cmd
+
       # None GC takes too much memory on Windows to execute partest JUnit tests
       # leading to spurious failures in the CI. Perform subset of tests instead
       # Execution with enabled multithreading increases memory usage, run only minimal tests

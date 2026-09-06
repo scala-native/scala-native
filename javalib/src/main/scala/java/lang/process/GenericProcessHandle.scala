@@ -83,7 +83,7 @@ private[process] abstract class GenericProcessHandle(
   def onExitApply[A <: AnyRef](
       fn: function.Function[java.lang.Integer, A]
   ): CompletableFuture[A] =
-    completion.thenApplyAsync(fn)
+    completion.thenApply(fn)
 
   def onExitHandle[A <: AnyRef](
       fn: function.BiFunction[java.lang.Integer, Throwable, A]

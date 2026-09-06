@@ -2,7 +2,7 @@ object IsHiddenTest {
   import Files._
   import Utils._
 
-  def main(args: Array[String]): Unit = {
+  def run(): Unit = {
     assert(currentDirectory.isHidden())
     assert(existingHiddenFile.exists())
     assert(existingHiddenFile.isHidden())
