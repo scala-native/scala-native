@@ -1,22 +1,20 @@
 package build
 
+import sbt.util.{
+  AbstractActionCacheStore, Digest, DiskActionCacheStore,
+  GetActionResultRequest, UpdateActionResultRequest
+}
+
 import java.nio.file.{Files, Path}
 
-import sbt.util.{
-  AbstractActionCacheStore,
-  Digest,
-  DiskActionCacheStore,
-  GetActionResultRequest,
-  UpdateActionResultRequest
-}
 import xsbti.{FileConverter, HashedVirtualFileRef, VirtualFile}
 
 /** Disk ActionCache that does not rewrite same-digest outputs.
  *
- * Upstream [[DiskActionCacheStore]] replaces regular files with CAS symlinks when
- * symlink creation works. On Windows that delete+replace fails if the compiler
- * still holds an `exportJars` plugin jar open (`AccessDeniedException` on
- * `packageBin`).
+ *  Upstream [[DiskActionCacheStore]] replaces regular files with CAS symlinks
+ *  when symlink creation works. On Windows that delete+replace fails if the
+ *  compiler still holds an `exportJars` plugin jar open
+ *  (`AccessDeniedException` on `packageBin`).
  */
 final class SameDigestSafeActionCacheStore(
     disk: DiskActionCacheStore,
