@@ -2,7 +2,7 @@ package build
 
 import sbt.Keys._
 import sbt._
-import sbt.util.{AggregateActionCacheStore, InMemoryActionCacheStore}
+import sbt.util.InMemoryActionCacheStore
 
 import java.io.File
 import java.net.URI
@@ -61,9 +61,9 @@ object Settings {
         )
       v
     },
+    // CI: InMemory ActionCache (Seq.empty falls back to Disk).
     Global / cacheStores := {
-      if (isCI && isWindows) Seq(AggregateActionCacheStore.empty)
-      else if (isCI) Seq(new InMemoryActionCacheStore)
+      if (isCI) Seq(new InMemoryActionCacheStore)
       else (Global / cacheStores).value
     },
     Global / concurrentRestrictions += Tags.limit(Tags.Publish, 1),
@@ -715,7 +715,7 @@ object Settings {
         val versioned = globalBase / "1.0"
         val lines =
           if (isWindows)
-            """|Global / cacheStores := Seq(sbt.util.AggregateActionCacheStore.empty)
+            """|Global / cacheStores := Seq(new sbt.util.InMemoryActionCacheStore)
                |Global / concurrentRestrictions += sbt.Tags.limit(sbt.Tags.Publish, 1)
                |Global / concurrentRestrictions += sbt.Tags.limitAll(1)
                |""".stripMargin
