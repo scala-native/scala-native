@@ -43,7 +43,7 @@ object ScalaVersions {
 
   // List of nightly versions can be found here: https://repo.scala-lang.org/ui/native/maven-nightlies/org/scala-lang/scala3-compiler_3
   // or check outputs of `scala -O --version -S 3.nightly`
-  val scala3Nightly = "3.10.1-RC1-bin-20260905-8163579-NIGHTLY"
+  val scala3Nightly = "3.10.0-RC1-bin-20260817-3adfcbd-NIGHTLY"
 
   // Scala versions used for publishing libraries
   val scala212: String = crossScala212.last
@@ -53,9 +53,6 @@ object ScalaVersions {
   // The latest version of minimal Scala 3 minor version used to publish artifacts
   val scala3PublishVersion = "3.1.3"
   val scala213PublishVersion = crossScala213.head
-
-  // minimum version rationale:
-  //   An sbt version after 1.12.8, which fixed a CVE on Windows.
 
   val sbt10Version: String = "1.12.14"
   val sbt10ScalaVersion: String = scala212

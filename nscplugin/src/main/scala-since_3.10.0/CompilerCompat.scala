@@ -16,8 +16,9 @@ object CompilerCompat {
     dotty.tools.dotc.core.NameKinds.LazyVarHandleName
   )
 
+  // `AbstractFile.bufferedOutput` is gone since 3.10.0, buffer it ourselves
   def abstractFileOutput(file: AbstractFile): java.io.OutputStream =
-    file.output
+    new java.io.BufferedOutputStream(file.output)
 
   def sourceRootPath(using ctx: Context): Path = {
     val path =
@@ -28,10 +29,10 @@ object CompilerCompat {
   }
 
   def absoluteSourcePath(source: SourceFile): Path =
-    source.file.jpath
+    source.file.jpath.toAbsolutePath.normalize()
 
   def relativeSourcePath(source: SourceFile, relativeTo: Path): String = {
-    val absSourcePath = source.file.jpath.toAbsolutePath.normalize()
+    val absSourcePath = absoluteSourcePath(source)
     val refPath = relativeTo.toAbsolutePath.normalize()
     if absSourcePath.startsWith(refPath) then
       refPath

@@ -319,7 +319,7 @@ object Build {
             .collect {
               case (2, 12)                  => Seq("-opt:inline", s"-opt-inline-from:${inlineFrom}")
               case (2, 13)                  => Seq(s"-opt:inline:${inlineFrom}")
-              case (3, minor) if minor >= 9 => Seq("-opt", s"-opt-inline-from:${inlineFrom}")
+              case (3, minor) if minor >= 9 => Seq("-opt", s"-opt-inline:${inlineFrom}")
             }
             .filter(_ => enableOptimizer)
             .getOrElse(Nil)
