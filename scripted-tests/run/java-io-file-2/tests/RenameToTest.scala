@@ -1,7 +1,7 @@
 object RenamedToTest {
   import Files._
 
-  def main(args: Array[String]): Unit = {
+  def run(): Unit = {
     assert(willBeRenamedFrom.exists)
     assert(!willBeRenamedTo.exists)
     assert(willBeRenamedFrom.renameTo(willBeRenamedTo))

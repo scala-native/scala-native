@@ -2,7 +2,7 @@ object CanWriteTest {
   import Files._
   import Utils._
 
-  def main(args: Array[String]): Unit = {
+  def run(): Unit = {
     assert(!emptyNameFile.canWrite())
 
     assert(writableFile.canWrite())

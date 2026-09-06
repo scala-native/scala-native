@@ -1,7 +1,7 @@
 object IsFileTest {
   import Files._
 
-  def main(args: Array[String]): Unit = {
+  def run(): Unit = {
     assert(executableFile.isFile())
     assert(unexecutableFile.isFile())
     assert(readableFile.isFile())

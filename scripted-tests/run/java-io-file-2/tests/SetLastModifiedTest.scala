@@ -1,7 +1,7 @@
 object SetLastModifiedTest {
   import Files._
 
-  def main(args: Array[String]): Unit = {
+  def run(): Unit = {
     assert(!nonexistentFile.exists())
     assert(!nonexistentFile.setLastModified(10000))
 
