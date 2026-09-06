@@ -20,7 +20,8 @@ def nativeExecutable(
   case ref: xsbti.VirtualFileRef => conv.toPath(ref).toFile()
 }
 
-lazy val runHeapExhaustion = taskKey[Unit]("Run with a constrained managed heap")
+lazy val runHeapExhaustion =
+  taskKey[Unit]("Run with a constrained managed heap")
 
 runHeapExhaustion := {
   implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
