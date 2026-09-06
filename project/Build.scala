@@ -906,7 +906,7 @@ object Build {
           val base = baseDirectory.value.getParentFile()
           val oldCompat: File = base / "src/main/compat-old"
           val newCompat: File = base / "src/main/compat-new"
-          CrossVersion
+          val scala2Compat = CrossVersion
             .partialVersion(scalaVersion.value)
             .collect {
               case (2, 12) =>
@@ -919,7 +919,13 @@ object Build {
                 else newCompat
               case (2, 13) => newCompat
             }
-            .toSeq
+          val scala3Compat =
+            Settings.compilerVersionSpecificSourceDirs(
+              (Compile / sourceDirectory).value,
+              scalaVersion.value,
+              sLog.value
+            )
+          scala2Compat.toSeq ++ scala3Compat
         },
         exportJars := true
       )

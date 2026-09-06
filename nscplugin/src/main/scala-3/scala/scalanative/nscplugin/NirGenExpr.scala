@@ -135,7 +135,7 @@ trait NirGenExpr(using Context) {
             )
           else genApplyMethod(sym, statically = isStatic, qualifier, args)
         case _ =>
-          if (nirPrimitives.isPrimitive(fun)) genApplyPrimitive(app)
+          if (nirPrimitives.isPrimitiveTree(fun)) genApplyPrimitive(app)
           else if (Erasure.Boxing.isBox(sym)) genApplyBox(arg.tpe, arg)
           else if (Erasure.Boxing.isUnbox(sym)) genApplyUnbox(app.tpe, arg)
           else
@@ -1844,7 +1844,7 @@ trait NirGenExpr(using Context) {
      */
     def liftStringConcat(tree: Tree): List[Tree] = tree match {
       case tree @ Apply(fun @ DesugaredSelect(larg, method), rarg) =>
-        if (nirPrimitives.isPrimitive(fun) &&
+        if (nirPrimitives.isPrimitiveTree(fun) &&
             nirPrimitives.getPrimitiveCompat(tree, larg.tpe) == CONCAT)
           liftStringConcat(larg) ::: rarg
         else

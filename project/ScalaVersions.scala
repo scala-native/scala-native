@@ -34,7 +34,7 @@ object ScalaVersions {
     crossScalaVersions("3.6", 2 to 4), // 3.6.0 is broken, 3.6.1 is hotfix
     crossScalaVersions("3.7", 0 to 4),
     crossScalaVersions("3.8", 0 to 4),
-    crossScalaVersions("3.9", 0 to 0), // LTS
+    crossScalaVersions("3.9", 0 to 0) // LTS
   ).flatten.distinct
 
   // Tested in scheduled nightly CI to check compiler plugins

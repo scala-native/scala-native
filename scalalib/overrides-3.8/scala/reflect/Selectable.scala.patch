@@ -1,6 +1,6 @@
---- 3.10.0-RC1/scala/reflect/Selectable.scala
+--- 3.8.0-RC4/scala/reflect/Selectable.scala
 +++ overrides-3/scala/reflect/Selectable.scala
-@@ -18,19 +18,20 @@
+@@ -18,16 +18,17 @@
     */
    protected def selectedValue: Any = this
  
@@ -12,10 +12,7 @@
 +    )
 +
    // The Scala.js codegen relies on this method being final for correctness
-   /** Selects member with given name.
-    *
-    *  @param name the name of the structural member (field or no-arg method) to select
-    */
+   /** Selects member with given name. */
    final def selectDynamic(name: String): Any =
 -    val rcls = selectedValue.getClass
 -    try
@@ -28,8 +25,8 @@
  
    // The Scala.js codegen relies on this method being final for correctness
    /** Selects method and applies to arguments.
-@@ -39,10 +40,7 @@
-    *  @param args       the arguments to pass to the selected method
+@@ -36,10 +37,7 @@
+    *  @param args       The arguments to pass to the selected method
     */
    final def applyDynamic(name: String, paramTypes: Class[?]*)(args: Any*): Any =
 -    val rcls = selectedValue.getClass

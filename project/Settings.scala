@@ -654,6 +654,46 @@ object Settings {
   }
 
   // Projects
+  def compilerVersionSpecificSourceDirs(
+      sourceDirectory: File,
+      scalaVersion: String,
+      log: sbt.util.Logger
+  ): List[File] = {
+    def parseVersionRange(dirName: String): Option[VersionsRange] =
+      dirName match {
+        case s"scala-since_${Version(version)}" =>
+          Some:
+            VersionsRange(start = version, end = Version.Max)
+        case s"scala-until_${Version(version)}" =>
+          Some:
+            VersionsRange(start = Version.Min, end = version)
+        case s"scala-between_${Version(start)}_${Version(end)}" =>
+          Some:
+            VersionsRange(start = start, end = end)
+        case _ => None
+      }
+    val currentVersion = Version
+      .unapply(scalaVersion)
+      .getOrElse(sys.error(s"Invalid Scala version: $scalaVersion"))
+
+    sbt.IO
+      .listFiles(sourceDirectory)
+      .filter(_.isDirectory)
+      .filter { dir =>
+        parseVersionRange(dir.name)
+          .exists(_.contains(currentVersion))
+      }
+      .toList
+      .match {
+        case List(dir) => List(dir)
+        case Nil       => Nil
+        case dirs      =>
+          log.error:
+            s"Multiple Scala version ranges found for $scalaVersion: ${dirs.map(_.name).mkString(", ")}"
+          Nil
+      }
+  }
+
   lazy val compilerPluginSettings = Def.settings(
     crossVersion := CrossVersion.full,
     libraryDependencies ++= Deps.compilerPluginDependencies(scalaVersion.value),
@@ -663,41 +703,12 @@ object Settings {
     scalacOptions --= Seq("-Xfatal-warnings", "-Werror"),
     scalacOptions ++= ignoredScalaDeprecations(scalaVersion.value),
     disableMimaSettings,
-    Compile / unmanagedSourceDirectories ++= {
-      def parseVersionRange(dirName: String): Option[VersionsRange] =
-        dirName match {
-          case s"scala-since_${Version(version)}" =>
-            Some:
-              VersionsRange(start = version, end = Version.Max)
-          case s"scala-until_${Version(version)}" =>
-            Some:
-              VersionsRange(start = Version.Min, end = version)
-          case s"scala-between_${Version(start)}_${Version(end)}" =>
-            Some:
-              VersionsRange(start = start, end = end)
-          case _ => None
-        }
-      val currentVersion = Version
-        .unapply(scalaVersion.value)
-        .getOrElse(sys.error(s"Invalid Scala version: ${scalaVersion.value}"))
-
-      sbt.IO
-        .listFiles((Compile / sourceDirectory).value)
-        .filter(_.isDirectory)
-        .filter { dir =>
-          parseVersionRange(dir.name)
-            .exists(_.contains(currentVersion))
-        }
-        .toList
-        .match {
-          case List(dir) => List(dir)
-          case Nil       => Nil
-          case dirs      =>
-            sLog.value.error:
-              s"Multiple Scala version ranges found for ${scalaVersion.value}: ${dirs.map(_.name).mkString(", ")}"
-            Nil
-        }
-    }
+    Compile / unmanagedSourceDirectories ++=
+      compilerVersionSpecificSourceDirs(
+        (Compile / sourceDirectory).value,
+        scalaVersion.value,
+        sLog.value
+      )
   )
 
   lazy val sbtPluginSettings = Def.settings(
