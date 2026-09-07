@@ -1,0 +1,6 @@
+# Phase 1: pin the module-init contract and run as a crash canary.
+> stress
+
+# Phase 2: enable ThreadSanitizer (skipped on Windows) and detect the race.
+> set nativeConfig ~= { c => if (scala.util.Properties.isWin) c else c.withSanitizer(scala.scalanative.build.Sanitizer.ThreadSanitizer) }
+> stressSanitized
