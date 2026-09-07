@@ -23,6 +23,11 @@
 #include "WeakReferences.h"
 #include "immix_commix/Synchronizer.h"
 
+extern void *scalanative_createOutOfMemoryError(void);
+__attribute__((noreturn)) extern void scalanative_throw(void *obj);
+__attribute__((noreturn)) extern void
+scalanative_throwOutOfMemoryErrorFallback(void);
+
 void Heap_exitWithOutOfMemory(const char *details) {
     GC_LOG_ERROR("Out of heap space %s", details);
     StackTrace_PrintStackTrace();
@@ -123,10 +128,14 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     }
 
     uint32_t maxNumberOfBlocks = maxHeapSize / SPACE_USED_PER_BLOCK;
+    assert(maxNumberOfBlocks > 1);
     uint32_t initialBlockCount = minHeapSize / SPACE_USED_PER_BLOCK;
     heap->maxHeapSize = maxHeapSize;
     heap->blockCount = initialBlockCount;
     heap->maxBlockCount = maxNumberOfBlocks;
+    heap->emergencyBlockStart = NULL;
+    heap->emergencyBlockMeta = NULL;
+    atomic_init(&heap->emergencyBlockClaimed, false);
     heap->maxMarkTimeRatio = Settings_MaxMarkTimeRatio();
     heap->minFreeRatio = Settings_MinFreeRatio();
 
@@ -173,9 +182,9 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
                      getFreeMemorySize() / (1024.0 * 1024.0));
         exit(1);
     }
-    heap->heapSize = minHeapSize;
+    heap->heapSize = initialBlockCount * SPACE_USED_PER_BLOCK;
     heap->heapStart = heapStart;
-    heap->heapEnd = heapStart + minHeapSize / WORD_SIZE;
+    heap->heapEnd = heapStart + initialBlockCount * WORDS_IN_BLOCK;
 
 #ifdef _WIN32
     // Commit memory chunks reserved using mapMemory
@@ -205,6 +214,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     Phase_Init(heap, initialBlockCount);
 
     Bytemap_Init(bytemap, heapStart, maxHeapSize);
+    Heap_RefillEmergencyBlock(heap);
 
     // Init all GCThreads
     // Init stats if enabled.
@@ -225,6 +235,58 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
 
     mutex_init(&heap->sweep.growMutex);
     mutex_init(&heap->lock);
+}
+
+bool Heap_BeginEmergencyAllocation(Heap *heap) {
+    bool expected = false;
+    if (heap->emergencyBlockStart == NULL ||
+        !atomic_compare_exchange_strong(&heap->emergencyBlockClaimed, &expected,
+                                        true)) {
+        return false;
+    }
+
+    BlockMeta *blockMeta = (BlockMeta *)heap->emergencyBlockMeta;
+    word_t *blockStart = heap->emergencyBlockStart;
+    heap->emergencyBlockStart = NULL;
+    heap->emergencyBlockMeta = NULL;
+    BlockMeta_SetFlag(blockMeta, block_simple);
+    BlockMeta_SetFirstFreeLine(blockMeta, LAST_HOLE);
+    ObjectMeta_ClearBlockAt(Bytemap_Get(heap->bytemap, blockStart));
+#ifdef GC_ASSERTIONS
+    blockMeta->debugFlag = dbg_in_use;
+#endif
+
+    Allocator *allocator = &currentMutatorThread->allocator;
+    allocator->block = blockMeta;
+    allocator->blockStart = blockStart;
+    allocator->cursor = blockStart;
+    allocator->limit = Block_GetBlockEnd(blockStart);
+    atomic_thread_fence(memory_order_release);
+    return true;
+}
+
+void Heap_RefillEmergencyBlock(Heap *heap) {
+    if (heap->emergencyBlockStart != NULL)
+        return;
+
+    BlockMeta *block = BlockAllocator_GetFreeBlock(&blockAllocator);
+    if (block == NULL)
+        return;
+
+    heap->emergencyBlockMeta = block;
+    heap->emergencyBlockStart =
+        BlockMeta_GetBlockStart(heap->blockMetaStart, heap->heapStart, block);
+    BlockMeta_SetFlag(block, block_reserved);
+    atomic_store_explicit(&heap->emergencyBlockClaimed, false,
+                          memory_order_release);
+}
+
+void Heap_ThrowOutOfMemory(Heap *heap) {
+    if (!Heap_BeginEmergencyAllocation(heap)) {
+        scalanative_throwOutOfMemoryErrorFallback();
+    }
+    void *error = scalanative_createOutOfMemoryError();
+    scalanative_throw(error);
 }
 
 void Heap_Collect(Heap *heap) {
@@ -317,19 +379,15 @@ void Heap_GrowIfNeeded(Heap *heap) {
             }
         }
     }
-    MutatorThreads_foreach(mutatorThreads, node) {
-        MutatorThread *thread = node->value;
-        if (!Allocator_CanInitCursors(&thread->allocator)) {
-            Heap_exitWithOutOfMemory("growIfNeeded:re-init cursors");
-        }
-    }
 }
 
-void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
+bool Heap_TryGrow(Heap *heap, uint32_t incrementInBlocks) {
     BlockAllocator_Acquire(&blockAllocator);
     mutex_lock(&heap->sweep.growMutex);
     if (!Heap_isGrowingPossible(heap, incrementInBlocks)) {
-        Heap_exitWithOutOfMemory("grow heap");
+        BlockAllocator_Release(&blockAllocator);
+        mutex_unlock(&heap->sweep.growMutex);
+        return false;
     }
     size_t incrementInBytes = incrementInBlocks * SPACE_USED_PER_BLOCK;
 
@@ -369,6 +427,13 @@ void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
     heap->blockCount += incrementInBlocks;
     BlockAllocator_Release(&blockAllocator);
     mutex_unlock(&heap->sweep.growMutex);
+    return true;
+}
+
+void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
+    if (!Heap_TryGrow(heap, incrementInBlocks)) {
+        Heap_exitWithOutOfMemory("grow heap");
+    }
 }
 
 #endif

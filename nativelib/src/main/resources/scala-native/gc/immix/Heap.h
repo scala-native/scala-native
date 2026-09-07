@@ -7,6 +7,7 @@
 #include "metadata/LineMeta.h"
 #include "Stats.h"
 #include "shared/ThreadUtil.h"
+#include <stdatomic.h>
 
 typedef struct {
     word_t *blockMetaStart;
@@ -19,6 +20,9 @@ typedef struct {
     size_t maxHeapSize;
     uint32_t blockCount;
     uint32_t maxBlockCount;
+    word_t *emergencyBlockStart;
+    void *emergencyBlockMeta;
+    atomic_bool emergencyBlockClaimed;
     Bytemap *bytemap;
     Stats *stats;
     mutex_t lock;
@@ -45,7 +49,11 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize);
 bool Heap_isGrowingPossible(Heap *heap, uint32_t incrementInBlocks);
 void Heap_Collect(Heap *heap, Stack *stack);
 void Heap_Recycle(Heap *heap);
+bool Heap_TryGrow(Heap *heap, uint32_t increment);
 void Heap_Grow(Heap *heap, uint32_t increment);
+bool Heap_BeginEmergencyAllocation(Heap *heap);
+void Heap_RefillEmergencyBlock(Heap *heap);
+void Heap_ThrowOutOfMemory(Heap *heap);
 void Heap_exitWithOutOfMemory(const char *details);
 size_t Heap_getMemoryLimit();
 size_t Heap_getMemoryUsed(Heap *heap);

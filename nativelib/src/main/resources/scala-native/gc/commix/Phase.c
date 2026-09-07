@@ -172,6 +172,7 @@ void Phase_SweepDone(Heap *heap, Stats *stats) {
     if (!heap->sweep.postSweepDone) {
         Heap_GrowIfNeeded(heap);
         BlockAllocator_ReserveBlocks(&blockAllocator);
+        Heap_RefillEmergencyBlock(heap);
         BlockAllocator_FinishCoalescing(&blockAllocator);
         Phase_Set(heap, gc_idle);
 

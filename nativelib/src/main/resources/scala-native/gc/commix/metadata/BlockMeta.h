@@ -16,6 +16,7 @@ typedef enum {
     block_simple = 0x1,
     block_superblock_start = 0x2,
     block_superblock_tail = 0x3,
+    block_reserved = 0x4,
     block_marked = 0x5,              // 0x4 | block_simple
     block_superblock_start_me = 0xb, // block_superblock_tail | 0x8
     block_coalesce_me = 0x13         // block_superblock_tail | 0x10
@@ -66,6 +67,9 @@ static inline bool BlockMeta_IsFree(BlockMeta *blockMeta) {
 static inline bool BlockMeta_IsSimpleBlock(BlockMeta *blockMeta) {
     uint8_t flags = blockMeta->block.simple.flags;
     return flags == block_simple || flags == block_marked;
+}
+static inline bool BlockMeta_IsReserved(BlockMeta *blockMeta) {
+    return blockMeta->block.simple.flags == block_reserved;
 }
 static inline bool BlockMeta_IsSuperblockStart(BlockMeta *blockMeta) {
     return blockMeta->block.simple.flags == block_superblock_start;

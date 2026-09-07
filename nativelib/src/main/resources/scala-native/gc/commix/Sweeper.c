@@ -373,7 +373,8 @@ void Sweeper_Sweep(Stats *stats, atomic_uint_fast32_t *cursorDone,
     BlockMeta *limit = BlockMeta_GetFromIndex(heap.blockMetaStart, limitIdx);
 
     BlockMeta *reserveFirst = (BlockMeta *)blockAllocator.reservedSuperblock;
-    BlockMeta *reserveLimit = reserveFirst + SWEEP_RESERVE_BLOCKS;
+    BlockMeta *reserveLimit =
+        reserveFirst == NULL ? NULL : reserveFirst + SWEEP_RESERVE_BLOCKS;
 
     // reserved block are at the start
 
@@ -421,13 +422,32 @@ void Sweeper_Sweep(Stats *stats, atomic_uint_fast32_t *cursorDone,
         int size = 1;
         uint32_t freeCount = 0;
         assert(!BlockMeta_IsCoalesceMe(current));
-        assert(current >= reserveFirst && current < reserveLimit ||
+        assert((reserveFirst != NULL && current >= reserveFirst &&
+                current < reserveLimit) ||
                !BlockMeta_IsSuperblockTail(current));
         assert(!BlockMeta_IsSuperblockStartMe(current));
-        if (current >= reserveFirst && current < reserveLimit) {
+        if (BlockMeta_IsReserved(current) ||
+            (reserveFirst != NULL && current >= reserveFirst &&
+             current < reserveLimit)) {
             // skip reserved block
             assert(reserveFirst != NULL);
             // size = 1, freeCount = 0
+            if (BlockMeta_IsReserved(current) && lastFreeBlockStart != NULL) {
+                BlockMeta *freeLimit = current;
+                uint32_t totalSize = (uint32_t)(freeLimit - lastFreeBlockStart);
+                if (lastFreeBlockStart == first || freeLimit >= limit) {
+                    BlockMeta_SetFlagAndSuperblockSize(
+                        lastFreeBlockStart, block_coalesce_me, totalSize);
+                } else if (totalSize >= SUPERBLOCK_LOCAL_LIST_MAX) {
+                    BlockAllocator_AddFreeSuperblock(
+                        &blockAllocator, lastFreeBlockStart, totalSize);
+                } else {
+                    BlockAllocator_AddFreeSuperblockLocal(
+                        &blockAllocator, sweepResult.freeSuperblocks,
+                        lastFreeBlockStart, totalSize);
+                }
+                lastFreeBlockStart = NULL;
+            }
         } else if (BlockMeta_IsSimpleBlock(current)) {
             if (useThreadsIterator)
                 NextMutatorThread(&recycleBlocksTo);
