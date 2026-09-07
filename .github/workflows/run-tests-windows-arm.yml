@@ -1,0 +1,66 @@
+# Windows on ARM64 (WoA) CI — runtime tests (required on pull requests).
+#
+# Uses GitHub-hosted windows-11-arm runners (public repositories only).
+# See https://docs.github.com/actions/using-github-hosted-runners/about-github-hosted-runners#standard-github-hosted-runners-for-public-repositories
+#
+# Platform notes:
+# - coursier/setup-action is not used: Coursier has no native Windows ARM64 build.
+# - Native dependencies are built for arm64-windows-static (matching aarch64-pc-windows-msvc).
+#   VCPKG_DEFAULT_HOST_TRIPLET=arm64-windows on the ARM64 host.
+# - The runner image must include MSVC ARM64 link libraries (libcpmt.lib, etc.).
+#   windows-arm-setup-env verifies MSVC ARM64 link libs (VS Enterprise on the image).
+#   Local WoA contributor setups: docs/contrib/build-setup.md#windows-on-arm64.
+name: Run tests Windows ARM64
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: windows-arm-${{ github.head_ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+env:
+  ENABLE_EXPERIMENTAL_COMPILER: true
+  VCPKG_DEFAULT_HOST_TRIPLET: arm64-windows
+
+jobs:
+  test-runtime:
+    name: Test runtime (Windows ARM64)
+    # windows-11-arm is only available for public repositories
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' || (github.event_name == 'schedule' && github.repository == 'scala-native/scala-native')
+    runs-on: windows-11-arm
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [3]
+        build-mode: [debug, release-fast]
+    steps:
+      - name: Setup git config
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/windows-arm-setup-env
+        id: setup
+        with:
+          scala-version: ${{ matrix.scala }}
+
+      - name: Test GC
+        timeout-minutes: 30
+        env:
+          SCALANATIVE_INCLUDE_DIRS: ${{ steps.setup.outputs.vcpkg-dir }}\include
+          SCALANATIVE_LIB_DIRS: ${{ steps.setup.outputs.vcpkg-dir }}\lib
+          SCALANATIVE_MODE: ${{ matrix.build-mode }}
+        run: sbt "test-gc ${{ matrix.scala }}"
+        shell: cmd
+
+      - name: Test runtime
+        timeout-minutes: 45
+        run: >
+          set SCALANATIVE_MODE=${{ matrix.build-mode }}&
+          set SCALANATIVE_INCLUDE_DIRS=${{ steps.setup.outputs.vcpkg-dir }}\include&
+          set SCALANATIVE_LIB_DIRS=${{ steps.setup.outputs.vcpkg-dir }}\lib&
+          set SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1&
+          set SCALANATIVE&
+          sbt
+          "test-runtime ${{ matrix.scala }}"
+          "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
+        shell: cmd

@@ -2,6 +2,8 @@ package org.scalanative.testsuite.utils
 
 // See also the scala.scalanative.runtime.Platform package.
 
+import java.nio.file.{Files => JFiles, Path}
+
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo
 import scala.scalanative.runtime
 
@@ -40,6 +42,37 @@ object Platform {
   final val isLinux = runtime.Platform.isLinux()
   final val isMacOs = runtime.Platform.isMac()
   final val isWindows = runtime.Platform.isWindows()
+
+  /** True when the current process can create symbolic links. */
+  lazy val canCreateSymbolicLinks: Boolean =
+    probeCanCreateSymbolicLinks(isWindows)
+
+  private def probeCanCreateSymbolicLinks(isWindows: Boolean): Boolean = {
+    if (!isWindows) true
+    else {
+      var dir: Path = null
+      try {
+        dir = JFiles.createTempDirectory("scala-native-symlink-probe-")
+        val target = dir.resolve("target")
+        val link = dir.resolve("link")
+        JFiles.createFile(target)
+        JFiles.createSymbolicLink(link, target)
+        JFiles.isSymbolicLink(link)
+      } catch {
+        case _: Exception => false
+      } finally {
+        if (dir != null) {
+          try {
+            JFiles.deleteIfExists(dir.resolve("link"))
+            JFiles.deleteIfExists(dir.resolve("target"))
+            JFiles.deleteIfExists(dir)
+          } catch {
+            case _: Exception => ()
+          }
+        }
+      }
+    }
+  }
 
   final val isArm64 = runtime.PlatformExt.isArm64
   final val is32BitPlatform =

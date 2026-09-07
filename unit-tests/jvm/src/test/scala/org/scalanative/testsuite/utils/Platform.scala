@@ -1,5 +1,6 @@
 package org.scalanative.testsuite.utils
 
+import java.nio.file.{Files => JFiles, Path}
 import java.util.Locale
 
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo
@@ -46,6 +47,37 @@ object Platform {
   final val isLinux = osNameProp.toLowerCase.contains("linux")
   final val isMacOs = osNameProp.toLowerCase.contains("mac")
   final val isWindows = osNameProp.toLowerCase.startsWith("windows")
+
+  /** True when the current process can create symbolic links. */
+  lazy val canCreateSymbolicLinks: Boolean =
+    probeCanCreateSymbolicLinks(isWindows)
+
+  private def probeCanCreateSymbolicLinks(isWindows: Boolean): Boolean = {
+    if (!isWindows) true
+    else {
+      var dir: Path = null
+      try {
+        dir = JFiles.createTempDirectory("scala-native-symlink-probe-")
+        val target = dir.resolve("target")
+        val link = dir.resolve("link")
+        JFiles.createFile(target)
+        JFiles.createSymbolicLink(link, target)
+        JFiles.isSymbolicLink(link)
+      } catch {
+        case _: Exception => false
+      } finally {
+        if (dir != null) {
+          try {
+            JFiles.deleteIfExists(dir.resolve("link"))
+            JFiles.deleteIfExists(dir.resolve("target"))
+            JFiles.deleteIfExists(dir)
+          } catch {
+            case _: Exception => ()
+          }
+        }
+      }
+    }
+  }
 
   private val osArch = System.getProperty("os.arch").toLowerCase(Locale.ROOT)
   final val isArm64 = {

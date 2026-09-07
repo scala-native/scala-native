@@ -10,7 +10,7 @@ import scala.scalanative.meta.LinktimeInfo
  *
  *  Symbol resolution varies by configuration:
  *    - With source-level debugging: DWARF-based symbol lookup
- *    - Without source-level debugging: dladdr (POSIX) / SymFromAddrW (Windows)
+ *    - Without source-level debugging: dladdr (POSIX); Windows has no fallback
  *
  *  In debug mode: all methods should be present in stack trace In release mode:
  *  LLVM may inline functions, so only key methods are required

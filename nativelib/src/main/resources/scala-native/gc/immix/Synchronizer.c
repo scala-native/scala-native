@@ -109,25 +109,77 @@ static void YieldPointTrap_disarmAllMutators(void) {
     }
 }
 
-#ifdef _WIN32
-static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
-    if (ex->ExceptionRecord->ExceptionFlags == 0) {
-        switch (ex->ExceptionRecord->ExceptionCode) {
-        case EXCEPTION_ACCESS_VIOLATION:
-            ULONG_PTR addr = ex->ExceptionRecord->ExceptionInformation[1];
-            if ((void *)addr == (void *)scalanative_GC_yieldpoint_trap) {
-                Synchronizer_yield();
-                return EXCEPTION_CONTINUE_EXECUTION;
-            }
-            GC_LOG_WARN("Caught exception code %p in GC exception handler\n",
-                        (void *)(uintptr_t)ex->ExceptionRecord->ExceptionCode);
-            StackTrace_PrintStackTrace();
-        // pass-through
-        default:
-            return EXCEPTION_CONTINUE_SEARCH;
-        }
+static bool isTrapFaultAddress(const void *faultAddress, const void *trapCell) {
+    if (faultAddress == NULL || trapCell == NULL) {
+        return false;
     }
-    return EXCEPTION_CONTINUE_SEARCH;
+    uintptr_t pageSize = getPageSize();
+    uintptr_t faultPage = ((uintptr_t)faultAddress) / pageSize;
+    uintptr_t trapPage = ((uintptr_t)trapCell) / pageSize;
+    return faultPage == trapPage;
+}
+
+#ifdef _WIN32
+static bool isWin32AccessPermissionFault(EXCEPTION_POINTERS *ex) {
+    if (ex->ExceptionRecord->ExceptionCode != EXCEPTION_ACCESS_VIOLATION) {
+        return false;
+    }
+    ULONG_PTR type = ex->ExceptionRecord->ExceptionInformation[0];
+    return type == 0 || type == 1;
+}
+
+static bool isWin32ContinuationStaleTrapFault(EXCEPTION_POINTERS *ex,
+                                              MutatorThread *self) {
+    if (self == NULL) {
+        return false;
+    }
+    if (!isWin32AccessPermissionFault(ex)) {
+        return false;
+    }
+    if (!atomic_load_explicit(&Synchronizer_stopThreads, memory_order_acquire)) {
+        return false;
+    }
+    return true;
+}
+
+static void *currentYieldpointTrapCell(void) {
+    void *trapCell = NULL;
+    MutatorThread *self = currentMutatorThread;
+    if (self != NULL) {
+        trapCell = (void *)self->yieldpointTrap;
+    }
+    if (trapCell == NULL) {
+        trapCell = (void *)scalanative_GC_yieldpoint_trap;
+    }
+    return trapCell;
+}
+
+static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
+    if (ex->ExceptionRecord->ExceptionFlags != 0) {
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
+    switch (ex->ExceptionRecord->ExceptionCode) {
+    case EXCEPTION_ACCESS_VIOLATION: {
+        void *faultAddress =
+            (void *)(uintptr_t)ex->ExceptionRecord->ExceptionInformation[1];
+        void *trapCell = currentYieldpointTrapCell();
+        MutatorThread *self = currentMutatorThread;
+        bool isOwnTrap =
+            trapCell != NULL && isTrapFaultAddress(faultAddress, trapCell);
+        bool isStaleCarrierTrap =
+            !isOwnTrap && isWin32ContinuationStaleTrapFault(ex, self);
+        if (isOwnTrap || isStaleCarrierTrap) {
+            Synchronizer_yield();
+            return EXCEPTION_CONTINUE_EXECUTION;
+        }
+        GC_LOG_WARN("Caught exception code %p in GC exception handler\n",
+                    (void *)(uintptr_t)ex->ExceptionRecord->ExceptionCode);
+        StackTrace_PrintStackTrace();
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
+    default:
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
 }
 #else
 #define THREAD_WAKEUP_SIGNAL SIGCONT
@@ -143,16 +195,6 @@ static bool isSafepointTrapSignal(int signal) {
 #else
     return signal == SIGSEGV;
 #endif
-}
-
-static bool isTrapFaultAddress(const void *faultAddress, const void *trapCell) {
-    if (faultAddress == NULL || trapCell == NULL) {
-        return false;
-    }
-    uintptr_t pageSize = getPageSize();
-    uintptr_t faultPage = ((uintptr_t)faultAddress) / pageSize;
-    uintptr_t trapPage = ((uintptr_t)trapCell) / pageSize;
-    return faultPage == trapPage;
 }
 
 static struct sigaction *previousSignalHandlerFor(int signal) {

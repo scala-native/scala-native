@@ -8,7 +8,7 @@ import scala.annotation.tailrec
 
 import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.runtime.dwarf.DWARF.{DIE, DIEUnit}
-import scala.scalanative.runtime.dwarf.{BinaryFile, DWARF, ELF, MachO, PIE}
+import scala.scalanative.runtime.dwarf.{BinaryFile, DWARF, ELF, MachO, PE, PIE}
 import scala.scalanative.unsafe.{CString, Tag, UnsafeRichArray, Zone}
 import scala.scalanative.unsigned.UInt
 import scalanative.unsigned._
@@ -17,9 +17,11 @@ private[runtime] object Backtrace {
   private case class DwarfInfo(
       subprograms: scala.Array[DWARF.SubprogramDIE],
       strings: DWARF.Strings,
-      /** ASLR offset (minus __PAGEZERO size for macho) */
+      /** ASLR offset (minus __PAGEZERO size for macho); runtime load base on Windows */
       offset: Long,
-      isPositionIndependentBinary: Boolean
+      isPositionIndependentBinary: Boolean,
+      /** PE preferred ImageBase from the file header (Windows only) */
+      preferredImageBase: Long = 0L
   )
 
   private val dwarfInfo: Option[DwarfInfo] = processFile()
@@ -37,7 +39,13 @@ private[runtime] object Backtrace {
         // at runtime. which has a random offset (called ASLR offset or slide) that is different for every run because of
         // Address Space Layout Randomization (ASLR) when the executable is built as PIE.
         // Subtract the offset to match the pc address from libunwind (runtime) and address in debug info (compile/link time).
-        val address = pc - info.offset
+        // preferredImageBase is non-zero only for PE; it re-bases runtime PCs to
+        // link-time VAs used in DWARF (ImageBase + RVA).
+        val address =
+          if (info.preferredImageBase != 0L)
+            pc - info.offset + info.preferredImageBase
+          else
+            pc - info.offset
         val virtualAddress = if (LinktimeInfo.isLinux) {
           if (info.isPositionIndependentBinary) PIE.virtualAddress(address)
           else address
@@ -83,6 +91,38 @@ private[runtime] object Backtrace {
       }
     }
     binarySearch(0, length)
+  }
+
+  private def processPE(
+      pe: PE
+  )(implicit
+      bf: BinaryFile
+  ): Option[(scala.Array[DWARF.SubprogramDIE], DWARF.Strings)] = {
+    var debug_info_opt = Option.empty[PE.SectionHeader]
+    var debug_abbrev_opt = Option.empty[PE.SectionHeader]
+    var debug_str_opt = Option.empty[PE.SectionHeader]
+
+    pe.sectionHeaders.foreach { section =>
+      section.name match {
+        case ".debug_info"   => debug_info_opt = Some(section)
+        case ".debug_abbrev" => debug_abbrev_opt = Some(section)
+        case ".debug_str"    => debug_str_opt = Some(section)
+        case _               =>
+      }
+    }
+
+    for {
+      debug_info <- debug_info_opt
+      debug_abbrev <- debug_abbrev_opt
+      debug_str <- debug_str_opt
+    } yield {
+      readDWARF(
+        debug_info = DWARF.Section(debug_info.offset.toUInt, debug_info.size),
+        debug_abbrev =
+          DWARF.Section(debug_abbrev.offset.toUInt, debug_abbrev.size),
+        debug_str = DWARF.Section(debug_str.offset.toUInt, debug_str.size)
+      )
+    }
   }
 
   private def processELF(
@@ -153,6 +193,7 @@ private[runtime] object Backtrace {
 
   private final val MACHO_MAGIC = 0xcffaedfe
   private final val ELF_MAGIC = 0x7f454c46
+  private final val MZ_MAGIC = 0x5a4d
 
   private def processFile(): Option[DwarfInfo] = {
     implicit val bf: BinaryFile = new BinaryFile(new File(ExecInfo.filename))
@@ -160,11 +201,15 @@ private[runtime] object Backtrace {
     val magic = bf.readInt()
     bf.seek(head)
     val dwarfInfo
-        : Option[(scala.Array[DWARF.SubprogramDIE], DWARF.Strings, Boolean)] =
+        : Option[
+          (scala.Array[DWARF.SubprogramDIE], DWARF.Strings, Boolean, Long)
+        ] =
       if (LinktimeInfo.isMac) {
         if (magic == MACHO_MAGIC) {
           val macho = MachO.parse(bf)
-          processMacho(macho).orElse {
+          processMacho(macho).map { case (dies, strings, isPIE) =>
+            (dies, strings, isPIE, 0L)
+          }.orElse {
             val basename = new File(ExecInfo.filename).getName()
             // dsymutil `foo` will assemble the debug information into `foo.dSYM/Contents/Resources/DWARF/foo`.
             // Coulnt't find the official source, but at least libbacktrace locate the dSYM file from this location.
@@ -177,19 +222,26 @@ private[runtime] object Backtrace {
               )
               val dSYMMacho = MachO.parse(dSYMBin)
               if (dSYMMacho.uuid == macho.uuid) // Validate the macho in dSYM has the same build uuid.
-                processMacho(dSYMMacho)(dSYMBin)
+                processMacho(dSYMMacho)(dSYMBin).map { case (dies, strings, _) =>
+                  (dies, strings, false, 0L)
+                }
               else None
             } else None
           }
         } else None
-      } else {
-        if (magic == ELF_MAGIC) {
-          val elf = ELF.parse(bf)
-          processELF(elf).map {
-            case (dies, strings) =>
-              (dies, strings, elf.isPositionIndependentBinary)
+      } else if (magic == ELF_MAGIC) {
+        val elf = ELF.parse(bf)
+        processELF(elf).map { case (dies, strings) =>
+          (dies, strings, elf.isPositionIndependentBinary, 0L)
+        }
+      } else if ((magic & 0xffff) == MZ_MAGIC) {
+        scala.util.Try(PE.parse(bf)).toOption.flatMap { pe =>
+          processPE(pe).map { case (dies, strings) =>
+            (dies, strings, pe.isPositionIndependentBinary, pe.preferredImageBase)
           }
-        } else None
+        }
+      } else {
+        None
       }
 
     for {
@@ -200,7 +252,8 @@ private[runtime] object Backtrace {
         subprograms = dwarf._1,
         strings = dwarf._2,
         offset = offset,
-        isPositionIndependentBinary = dwarf._3
+        isPositionIndependentBinary = dwarf._3,
+        preferredImageBase = dwarf._4
       )
     }
   }

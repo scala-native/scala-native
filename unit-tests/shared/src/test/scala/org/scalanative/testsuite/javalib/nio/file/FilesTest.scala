@@ -32,9 +32,9 @@ class FilesTest {
   import FilesTest._
 
   def assumeShouldTestSymlinks(): Unit = {
-    assumeFalse(
-      "Do not test symlinks on windows, admin privilege needed",
-      isWindows
+    assumeTrue(
+      "Symbolic link creation requires admin privileges or Developer Mode on Windows",
+      Platform.canCreateSymbolicLinks
     )
   }
 
@@ -359,6 +359,8 @@ class FilesTest {
   }
 
   @Test def filesCreateSymbolicLinkCanCreateSymbolicLinks(): Unit = {
+    assumeShouldTestSymlinks()
+
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath()
       val link = dir.resolve("link")
@@ -369,6 +371,8 @@ class FilesTest {
   }
 
   @Test def filesCreateSymbolicLinkThrowsIfTheLinkAlreadyExists(): Unit = {
+    assumeShouldTestSymlinks()
+
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath
       val link = dir.resolve("link")
@@ -2091,6 +2095,8 @@ class FilesTest {
   }
 
   @Test def filesGetAttributeObeysGivenLinkOption(): Unit = {
+    assumeShouldTestSymlinks()
+
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath()
       val f0 = dir.resolve("f0")
