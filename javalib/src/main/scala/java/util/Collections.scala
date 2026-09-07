@@ -164,7 +164,7 @@ object Collections {
       list: List[T],
       rng: R
   ): Unit = {
-    def shuffleInPlace(list: List[T] with RandomAccess): Unit = {
+    def shuffleInPlace(list: List[T] & RandomAccess): Unit = {
       @inline
       def swap(i1: Int, i2: Int): Unit = {
         val tmp = list.get(i1)
@@ -236,15 +236,15 @@ object Collections {
   }
 
   private def copyImpl[T](
-      source: List[_ <: T] with RandomAccess,
-      dest: List[T] with RandomAccess
+      source: List[_ <: T] & RandomAccess,
+      dest: List[T] & RandomAccess
   ): Unit = {
     (0 until source.size()).foreach(i => dest.set(i, source.get(i)))
   }
 
   private def copyImpl[T](
       source: Iterator[_ <: T],
-      dest: List[T] with RandomAccess
+      dest: List[T] & RandomAccess
   ): Unit = {
     val destEnd = dest.size()
     var i = 0
@@ -258,7 +258,7 @@ object Collections {
   }
 
   private def copyImpl[T](
-      source: List[_ <: T] with RandomAccess,
+      source: List[_ <: T] & RandomAccess,
       dest: ListIterator[T]
   ): Unit = {
     for (i <- 0 until source.size()) {
@@ -286,7 +286,7 @@ object Collections {
   }
 
   // Differs from original type definition, original: [T <: jl.Comparable[_ >: T]], returning T
-  def min[T <: AnyRef with jl._Comparable[T]](
+  def min[T <: (AnyRef & jl._Comparable[T])](
       coll: Collection[_ <: T]
   ): AnyRef =
     min(coll, Comparator.naturalOrder[T]())
@@ -295,7 +295,7 @@ object Collections {
     coll.scalaOps.reduceLeft[T]((a, b) => if (comp.compare(a, b) <= 0) a else b)
 
   // Differs from original type definition, original: [T <: jl.Comparable[_ >: T]], returning
-  def max[T <: AnyRef with jl._Comparable[T]](
+  def max[T <: (AnyRef & jl._Comparable[T])](
       coll: Collection[_ <: T]
   ): AnyRef =
     max(coll, Comparator.naturalOrder[T]())
