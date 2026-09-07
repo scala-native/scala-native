@@ -1,6 +1,7 @@
 package java.lang.process
 
 import java.io.{FileDescriptor, InputStream, OutputStream}
+import java.time.Duration
 import java.util.concurrent.{CompletableFuture, TimeUnit}
 import java.util.stream.Stream
 
@@ -63,6 +64,9 @@ private[process] abstract class GenericProcess(val handle: GenericProcessHandle)
 
   override final def waitFor(timeout: scala.Long, unit: TimeUnit): Boolean =
     handle.waitFor(timeout, unit)
+
+  override final def waitFor(duration: Duration): Boolean =
+    handle.waitFor(duration)
 
   override def equals(that: Any): Boolean = that match {
     case other: GenericProcess => handle.compareTo(other.handle) == 0

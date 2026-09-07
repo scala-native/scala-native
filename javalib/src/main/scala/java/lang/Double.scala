@@ -2,7 +2,7 @@ package java.lang
 
 import java.lang.IEEE754Helpers.parseIEEE754
 import java.lang.constant.{Constable, ConstantDesc}
-import java.{lang => jl}
+import java.{lang => jl, util => ju}
 
 import scalanative.libc
 import scalanative.runtime.Intrinsics
@@ -155,21 +155,38 @@ final class Double(val _value: scala.Double)
   protected def %(x: scala.Long): scala.Double = _value % x
   protected def %(x: scala.Float): scala.Double = _value % x
   protected def %(x: scala.Double): scala.Double = _value % x
+
+  /* Scala Native additions for features added after Java 8.
+   */
+
+  /** Since: Java 12 */
+  def describeConstable(): ju.Optional[jl.Double] =
+    ju.Optional.of(this)
+
+  /** Since: Java 12
+   *
+   *  resolveConstantDesc requires reflection so its Test can not presently (SN
+   *  0.5.12) be implemented.
+   */
+  // def resolveConstantDesc (): java.lang.Double
 }
 
 object Double {
   final val BYTES = 8
   final val MAX_EXPONENT = 1023
-  final val MAX_VALUE = 1.79769313486231570e+308
+  final val MAX_VALUE = scala.Double.MaxValue
   final val MIN_EXPONENT = -1022
   final val MIN_NORMAL = 2.2250738585072014e-308
-  final val MIN_VALUE = 5e-324
+  final val MIN_VALUE = scala.Double.MinPositiveValue
   final val NaN = 0.0 / 0.0
   final val NEGATIVE_INFINITY = 1.0 / -0.0
   final val POSITIVE_INFINITY = 1.0 / 0.0
   final val SIZE = 64
   final val TYPE =
     scala.Predef.classOf[scala.scalanative.runtime.PrimitiveDouble]
+
+  /** Since: Java 19 */
+  final val PRECISION = 53
 
   @inline def compare(x: scala.Double, y: scala.Double): scala.Int =
     if (x > y) 1

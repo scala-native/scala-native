@@ -15,6 +15,12 @@ scalaVersion := {
   else scalaVersion
 }
 
+Compile / unmanagedSourceDirectories += baseDirectory.value / "tests"
+Compile / unmanagedSources ++= {
+  val p = baseDirectory.value / "project"
+  Seq(p / "Files.scala", p / "Utils.scala")
+}
+
 lazy val setupTests = taskKey[Unit]("")
 
 setupTests := {

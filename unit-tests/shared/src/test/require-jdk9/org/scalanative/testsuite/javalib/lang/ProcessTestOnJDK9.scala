@@ -66,13 +66,17 @@ class ProcessTestOnJDK9 {
     assertFalse(proc.isAlive())
   }
 
+  // Windows ping has no interval flag like Unix `-i`; `-n` is echo count (~1s each).
+  private val pingForDestruction: Seq[String] =
+    if (isWindows) Seq("ping", "-n", "20", "127.0.0.1")
+    else Seq("ping", "-c", "2", "-i", "10", "127.0.0.1")
+
   // copy from ProcessTest
   private def processForDestruction(): Process = {
     /* Ensure child process stays alive long enough to generate
      * either info() or be 'destroy'ed.
      */
-    val proc = processForCommand("ping", "-c", "2", "-i", "10", "127.0.0.1")
-      .start()
+    val proc = processForCommand(pingForDestruction: _*).start()
     proc.getInputStream().read()
     proc
   }
@@ -96,7 +100,7 @@ class ProcessTestOnJDK9 {
         Seq("ping", "cmd").exists(info.command().get().contains(_))
       )
       // On windows first argument would be ping
-      val expectedArgs = Seq("-c", "2", "-i", "10", "127.0.0.1")
+      val expectedArgs = pingForDestruction.tail
       assertEquals(
         expectedArgs,
         info.arguments().get().toSeq.takeRight(expectedArgs.size)
@@ -107,7 +111,7 @@ class ProcessTestOnJDK9 {
       )
       assertTrue(
         s"command line (args): ${info.commandLine()}",
-        info.commandLine().get().contains("-c")
+        info.commandLine().get().contains(expectedArgs.head)
       )
       // TODO not implemented:
       // startInstant: Optional[Instant]
@@ -122,10 +126,15 @@ class ProcessTestOnJDK9 {
 
     assertTrue("destroy()", handle.destroy())
 
-    // Throws on timeout
+    // waitFor reaps the child; do not rely on a short onExit().get alone
+    // (async completion has been flaky under Windows CI load).
+    assertTrue(
+      "process should have exited",
+      proc.waitFor(30, TimeUnit.SECONDS)
+    )
     assertFalse(
       "process should have been terminated",
-      handle.onExit().get(2, TimeUnit.SECONDS).isAlive()
+      handle.onExit().get(5, TimeUnit.SECONDS).isAlive()
     )
     assertEquals(
       "exitValue",
@@ -141,10 +150,13 @@ class ProcessTestOnJDK9 {
 
     assertTrue("destroyForcibly()", handle.destroyForcibly())
 
-    // Throws on timeout
+    assertTrue(
+      "process should have exited",
+      proc.waitFor(30, TimeUnit.SECONDS)
+    )
     assertFalse(
       "process should have been terminated",
-      handle.onExit().get(2, TimeUnit.SECONDS).isAlive()
+      handle.onExit().get(5, TimeUnit.SECONDS).isAlive()
     )
     assertEquals(
       "exitValue",

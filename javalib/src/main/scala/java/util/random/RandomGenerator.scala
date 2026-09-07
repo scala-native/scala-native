@@ -133,6 +133,31 @@ trait RandomGenerator {
   import java.util.ScalaOps._
 
 // Begin Ported from Scala.js commit: 9cb865f dated: 2025-03-16
+
+  // scalafmt keeps deleting this block comment, fi!
+  // format: off
+  /* 2026-08-16
+   *   There have been three commits to Scala.js RandomGenerator since
+   *   the Scala.js commit 9cb865f. A total re-report was attempted
+   *   but committed here.
+   *
+   *   The first 2025-12-15 commit was a large refactoring.
+   *   One import imported another and so on. The changes here rippled to the
+   *   point of infeasiblity within the available constraints.
+   *
+   *   The other two changes seemed at first examination to be performance
+   *   changes. Given correctness, one seldom wants to leave performance on
+   *   the table. Those changes, particularly the 'Smarter use of long
+   *   divisions and remainders" or close relatives could be considered
+   *   for a later evolution. The other is removing one branch and
+   *   may not be cost effective for Scala Native (forcing lots of types
+   *   to change to 'unsigned').
+   *
+   *   Here correctness is the greater concern for the current and few
+   *   following evolutions.
+   */
+  // format: on
+
   import scala.annotation.tailrec
 
   // Comments starting with `// >` are cited from the JavaDoc.
@@ -530,14 +555,99 @@ trait RandomGenerator {
     StreamSupport.doubleStream(downstreamSpliter, parallel = false)
   }
 
-  /*
   // Since: Java 22
-   def equiDoubles(
-       left: scala.Double,
-       right: scala.Double,
-       isLeftIncluded: Boolean,
-      isRightIncluded: Boolean): DoubleStream
-   */
+  def equiDoubles(
+      left: scala.Double,
+      right: scala.Double,
+      isLeftIncluded: Boolean,
+      isRightIncluded: Boolean
+  ): DoubleStream = {
+    /* The current evolution is focused on a believable and useful
+     * equidistribution across a number of scales.
+     *
+     * A future evolution to Industrial Strength could look at reducing the
+     * length of execution paths and number of allocations. In particular,
+     * there are two divisions where the denominator 'delta' is known to be
+     * an exact power of two. Modern compilers often have fast paths for
+     * such exact powers of two. Is there any runtime speedup from
+     * open coding a powers-of-two division bit twiddle here? Is it worth
+     * the development complexity?  To be determined as demand warrants.
+     * That will be a good problem to have. Even better, it is not
+     * today's problem.
+     */
+
+    val illegalArgumentMsg =
+      "the boundaries must be finite and the interval must not be empty"
+
+    /* Filter out Infinities & NaNs before getting down to work.
+     * JVM tests 'left' & 'right' as given and does consider is*Included yet.
+     */
+    if (!(jl.Double.isFinite(left) && jl.Double.isFinite(right)))
+      throw new IllegalArgumentException(illegalArgumentMsg)
+
+    // both 'low' and 'high' will be inclusive; makes math easier.
+    val low =
+      if (isLeftIncluded) left
+      else Math.nextUp(left)
+
+    val high =
+      if (isRightIncluded) right
+      else Math.nextDown(right)
+
+    var delta = 0.0
+    var kl = 0L
+    var n = 0L
+
+    def setup(): Unit = {
+      /* Returning a 3-tuple here would be more readable and would avoid
+       * using 'var's. Unfortunately reviewers strongly discourage that idiom.
+       */
+      val magnitudeOfLow = Math.abs(low)
+      val magnitudeOfHigh = Math.abs(high)
+
+      val maxMagnitude = Math.max(magnitudeOfLow, magnitudeOfHigh)
+      val ulpOfMaxMagnitude = Math.ulp(maxMagnitude)
+
+      delta = ulpOfMaxMagnitude
+
+      // If low == 0.0, kl is already 0L
+      if (low != 0.0) // exact integer test, so ==, no epsilon is OK.
+        kl = jl.Math.ceil(low / delta).longValue()
+
+      /* Overflowing a Long is not a concern here. The number of ulps
+       * Math.ulp(Double.MAX_VALUE) between and
+       * -Double.MAX_VALUE and Double.MAX_VALUE is known to be well less than
+       * Long.MAX_VALUE.
+       */
+
+      // Careful; counter intuitive but useful, kh can be negative
+      val kh = (high / delta).longValue() // kHigh
+
+      /* Snapping low up to exact delta kl may have emptied emptied range
+       * if it was not already empty.
+       */
+      if (kl >= kh)
+        throw new IllegalArgumentException(illegalArgumentMsg)
+
+      // +1 to be just above range high for nextDouble(n), n exclusive
+      n = (kh - kl) + 1
+    }
+
+    val spliter = new AbstractDoubleSpliterator(
+      jl.Long.MAX_VALUE,
+      Spliterator.IMMUTABLE //  0x400, decimal 1024, same as doubles()
+    ) {
+
+      def tryAdvance(action: DoubleConsumer): Boolean = {
+        val equiDouble = (kl + nextLong(n)) * delta
+        action.accept(equiDouble)
+        true
+      }
+    }
+
+    setup()
+    StreamSupport.doubleStream(spliter, parallel = false)
+  }
 
   def ints(): IntStream =
     ints(jl.Long.MAX_VALUE)

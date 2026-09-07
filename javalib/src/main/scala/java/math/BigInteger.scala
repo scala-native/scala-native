@@ -5,6 +5,10 @@
  * 2025-02-10
  *    - May be possible earlier changes, check Repository history.
  *    - Added Java 9 BigInteger.TWO.
+ *
+ * 2026-07-09
+ *    - Added Java 9 sqrt() and sqrtAndRemainder()
+ *    - Added Java 26 rootn() and rootNAndRemainder()
  */
 
 /*
@@ -1061,5 +1065,129 @@ class BigInteger extends Number with Comparable[BigInteger] {
     this.numberLength = digitIndex
     this.digits = _digits
     this.cutOffLeadingZeroes()
+  }
+
+  // Scala Native additions -----------------------------------------------
+
+  /** @since 9
+   */
+  def sqrt(): BigInteger =
+    this.rootnAndRemainder(2)(0)
+
+  /** @since 9
+   */
+  def sqrtAndRemainder(): Array[BigInteger] =
+    this.rootnAndRemainder(2)
+
+  /** @since 26
+   */
+  def rootn(n: scala.Int): BigInteger =
+    this.rootnAndRemainder(n)(0)
+
+  /** @since 26
+   */
+  def rootnAndRemainder(n: scala.Int): Array[BigInteger] = {
+    val radicand = this
+    val degree = n
+
+    def firstGuess(): BigInteger = {
+      /* A heuristic to possibly save iterations.
+       * One could spend professional lifetimes determining
+       * better heuristics.
+       *
+       * The classical choice of guess is the signum of the radicand.
+       * Because of code above, that will always be 1.0 here. Values
+       * less than 1.0 lead to poor behavior. This huristic will use 1.0
+       * for small radicands, say 5, even to high degree, say 99.
+       * It will then shift to larger values as the magnitude of the
+       * radicand increases, as one would expect the true root to increase.
+       *
+       * Assumes/requires a positive radicand.
+       */
+
+      val shiftCount = ((radicand.bitLength() + degree - 1) / degree)
+      BigInteger.ONE.max(BigInteger.ONE.shiftLeft(shiftCount))
+    }
+
+    // pass known & invariant degree values to avoid runtime expense in loop
+    @inline def nextGuess(
+        guess: BigInteger,
+        nextGuessDegreeInt: scala.Int,
+        nextGuessDegreeBI: BigInteger,
+        degreeBI: BigInteger
+    ): BigInteger = {
+      val term_1 = guess.multiply(nextGuessDegreeBI)
+      val term_2 = radicand.divide(guess.pow(nextGuessDegreeInt))
+
+      val inner = term_1.add(term_2)
+      inner.divide(degreeBI)
+    }
+
+    val penultimateDegree = degree - 1
+    val penultimateDegreeBI = new BigInteger(penultimateDegree.toString)
+
+    @inline def testDone(guess: BigInteger): Boolean = {
+      // if remainder is < 0, then guess is too large.
+
+      /* This implementation is, I believe, mathematically correct.
+       * Unfortunately its use of "pow(degree)" is somewhat expensive,
+       * especially at scale.
+       *
+       * When/if benchmarks show this to be rate-limiting, this termination
+       * condition can be re-visited.
+       *
+       * Obvious alternatives for ending the loop add complexity.
+       */
+      val nextGreater = guess.add(BigInteger.ONE)
+      nextGreater.pow(degree).compareTo(radicand) == 1
+    }
+
+    if (degree <= 0)
+      throw new ArithmeticException("Non-positive root degree")
+
+    val results = Array[BigInteger](BigInteger.ZERO, BigInteger.ZERO)
+
+    if (radicand.compareTo(BigInteger.ZERO) < 0) {
+      if ((degree & 0x1) == 0) // isEven
+        throw new ArithmeticException("Negative BigInteger")
+      else {
+        /* Simplify the initial guess and other calculations by ensuring
+         * a positive radicand. Results are symmetrical.
+         */
+        val reflected = radicand.negate().rootnAndRemainder(degree)
+
+        results(0) = reflected(0).negate()
+        results(1) = reflected(1).negate()
+      }
+    } else if (radicand.compareTo(BigInteger.ZERO) == 0) results
+    else if (degree == 1) results(0) = radicand // min degree known to be > 0
+    else { // strictly positive radicand with degree >= 2
+      val degreeBI = new BigInteger(degree.toString)
+
+      var guess = firstGuess()
+      var remainder = BigInteger.ZERO
+
+      var done = false
+
+      while (!done) {
+        val guessToPenultimateDegree = guess.pow(penultimateDegree)
+        val guessToDegree = guess.multiply(guessToPenultimateDegree)
+
+        remainder = radicand.subtract(guessToDegree)
+        val cmpZero = remainder.compareTo(BigInteger.ZERO)
+
+        if (cmpZero == 0) done = true
+        else if ((cmpZero == 1) && testDone(guess)) done = true
+        else { // continue iterating
+          guess =
+            nextGuess(guess, penultimateDegree, penultimateDegreeBI, degreeBI)
+        }
+      }
+
+      results(0) = guess
+      results(1) = remainder
+    }
+
+    results
   }
 }

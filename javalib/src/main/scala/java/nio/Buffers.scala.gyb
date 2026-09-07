@@ -163,10 +163,29 @@ abstract class ${T}Buffer private[nio] (
   def get(dst: Array[${T}]): ${T}Buffer =
     get(dst, 0, dst.length)
 
+% if T == 'Char':
+  // Since: JDK25
+  def getChars(
+      srcBegin: Int,
+      srcEnd: Int,
+      dst: Array[Char],
+      dstBegin: Int
+  ): Unit = {
+    ju.Objects.checkFromToIndex(
+      srcBegin,
+      srcEnd,
+      this.limit() - this.position()
+    )
+
+    get(position() + srcBegin, dst, dstBegin, srcEnd - srcBegin)
+  }
+% end
+
   @noinline
   def put(src: ${T}Buffer): ${T}Buffer =
     genBuffer.generic_put(src)
-    // Since: JDK16
+
+  // Since: JDK16
   def put(index: Int, src: ${T}Buffer, offset: Int, length: Int) = GenBuffer[${T}Buffer](this).generic_put(index, src, offset, length)
 
   @noinline

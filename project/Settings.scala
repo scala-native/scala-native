@@ -2,6 +2,7 @@ package build
 
 import sbt.Keys._
 import sbt._
+import sbt.util.DiskActionCacheStore
 
 import java.io.File
 import java.net.URI
@@ -26,6 +27,9 @@ import MyScalaNativePlugin.isGeneratingForIDE
 import ScriptedPlugin.autoImport._
 
 object Settings {
+  private lazy val isCI: Boolean = sys.env.contains("CI")
+  private lazy val isWindows: Boolean = scala.util.Properties.isWin
+
   lazy val fetchScalaSource = taskKey[File](
     "Fetches the scala source for the current scala version"
   )
@@ -57,8 +61,24 @@ object Settings {
         )
       v
     },
+    // Windows: Disk ActionCache rewrites same-digest jars into CAS symlinks; skip that
+    // when the compiler still holds exportJars plugin jars open.
+    Global / cacheStores := {
+      if (isWindows) {
+        val converter = fileConverter.value
+        val disk =
+          DiskActionCacheStore(localCacheDirectory.value.toPath, converter)
+        Seq(new SameDigestSafeActionCacheStore(disk, converter))
+      } else (Global / cacheStores).value
+    },
+    Global / concurrentRestrictions += Tags.limit(Tags.Publish, 1),
+    Global / concurrentRestrictions ++= {
+      if (isCI && isWindows) Seq(Tags.limitAll(1))
+      else if (isCI) Seq(Tags.limit(Tags.Compile, 1))
+      else Nil
+    },
     Global / onLoad ~= { prev =>
-      if (!scala.util.Properties.isWin) try {
+      if (!isWindows) try {
         import java.nio.file._
         val gitPath = Paths.get(".git")
         // git worktrees expose `.git` as a file pointing at the real git dir
@@ -105,13 +125,22 @@ object Settings {
         case (2, _) =>
           Seq("-Xfatal-warnings", "-encoding", "utf8", "-Xsource:3")
         case _ =>
-          Seq("-Werror", "-encoding:utf8")
+          Seq(
+            "-Werror",
+            "-encoding:utf8",
+            // Tests intentionally use expressions like `-1.toUByte`
+            "-Wconf:msg=Illegal literal:s",
+            // Test names ported from JVM testsuites encode JVM method signatures,
+            // e.g. test_write_$CII, which requires `$` in identifiers
+            "-Wconf:msg=which is reserved for internal compiler use:s"
+          )
       },
     javaReleaseSettings,
     mimaSettings,
     docsSettings,
     scalacOptions ++= ignoredScalaDeprecations(scalaVersion.value),
-    resolvers += Resolver.scalaNightlyRepository
+    resolvers += Resolver.scalaNightlyRepository,
+    publishLocal := publishLocal.tag(Tags.Publish).value
   )
 
   def targetJDKVersion(scalaVersion: String) =
@@ -138,13 +167,15 @@ object Settings {
     )
   }
 
-  def isScalacJDKTargetOption(scalacOption: String) = {}
+  def isScalacJDKTargetOption(scalacOption: String): Boolean = {
+    def isFlag(name: String) =
+      scalacOption == name || scalacOption.startsWith(s"$name:")
+    isFlag("-target") || isFlag("-Xtarget") || isFlag("-release")
+  }
 
   def noJavaReleaseSettings(scope: Configuration) = Def.settings(
     scope / scalacOptions ~= {
-      _.filterNot { opt =>
-        Seq("-target", "-Xtarget", "-release").exists(opt.contains)
-      }
+      _.filterNot(isScalacJDKTargetOption)
     },
     scope / javacOptions := {
       val prev = javacOptions.value
@@ -152,7 +183,8 @@ object Settings {
         targetJDKVersionString(targetJDKVersion(scalaVersion.value))
       prev.filterNot { opt =>
         opt == targetVersion ||
-        Seq("-source", "-target").exists(opt.contains)
+        opt == "-source" || opt.startsWith("-source") ||
+        opt == "-target" || opt.startsWith("-target")
       }
     }
   )
@@ -202,7 +234,7 @@ object Settings {
         optRTJar.fold(Map.empty[HashedVirtualFileRef, URI]) { rtJar =>
           assert(rtJar.exists(), s"$rtJar does not exist")
           Map(
-            fileConverter.value.toVirtualFile(rtJar.toPath) -> url(
+            fileConverter.value.toVirtualFile(rtJar.toPath) -> uri(
               javaDocBaseURL
             )
           )
@@ -213,7 +245,7 @@ object Settings {
        */
       apiMappings += Def.uncached {
         val docsPath = file("/modules/java.base").toPath
-        fileConverter.value.toVirtualFile(docsPath) -> url(javaDocBaseURL)
+        fileConverter.value.toVirtualFile(docsPath) -> uri(javaDocBaseURL)
       },
       Compile / doc / sources := {
         val prev = (Compile / doc / sources).value
@@ -221,9 +253,7 @@ object Settings {
           .getProperty("os.name", "unknown")
           .toLowerCase(Locale.ROOT)
           .startsWith("windows")
-        if (isWindows &&
-            sys.env.contains("CI") // Always present in GitHub Actions
-        ) Nil
+        if (isWindows && isCI) Nil
         else prev
       }
     )
@@ -244,13 +274,7 @@ object Settings {
       binCompatVersions
         .map { version =>
           ModuleID(organization.value, moduleName.value, version)
-            .cross {
-              platform.value match
-                case ScalaNativePlatform =>
-                  ScalaNativeCrossVersion.scalaNativeMapped(crossVersion.value)
-                case _ => crossVersion.value
-            }
-
+            .cross(crossVersion.value)
         }
     }
   )
@@ -260,12 +284,12 @@ object Settings {
 
   // Publishing
   lazy val basePublishSettings: Seq[Setting[_]] = Seq(
-    homepage := Some(url("http://www.scala-native.org")),
+    homepage := Some(uri("http://www.scala-native.org")),
     startYear := Some(2015),
     licenses := Seq(
       License(
         "BSD-like",
-        url("http://www.scala-lang.org/downloads/license.html")
+        uri("http://www.scala-lang.org/downloads/license.html")
       )
     ),
     developers := List(
@@ -273,18 +297,18 @@ object Settings {
         email = "denys.shabalin@epfl.ch",
         id = "densh",
         name = "Denys Shabalin",
-        url = url("http://den.sh")
+        url = uri("http://den.sh")
       ),
       Developer(
         id = "wojciechmazur",
         name = "Wojciech Mazur",
         email = "wmazur@virtuslab.com",
-        url = url("https://github.com/WojciechMazur")
+        url = uri("https://github.com/WojciechMazur")
       )
     ),
     scmInfo := Some(
       ScmInfo(
-        browseUrl = url("https://github.com/scala-native/scala-native"),
+        browseUrl = uri("https://github.com/scala-native/scala-native"),
         connection = "scm:git:git@github.com:scala-native/scala-native.git"
       )
     ),
@@ -630,6 +654,46 @@ object Settings {
   }
 
   // Projects
+  def compilerVersionSpecificSourceDirs(
+      sourceDirectory: File,
+      scalaVersion: String,
+      log: sbt.util.Logger
+  ): List[File] = {
+    def parseVersionRange(dirName: String): Option[VersionsRange] =
+      dirName match {
+        case s"scala-since_${Version(version)}" =>
+          Some:
+            VersionsRange(start = version, end = Version.Max)
+        case s"scala-until_${Version(version)}" =>
+          Some:
+            VersionsRange(start = Version.Min, end = version)
+        case s"scala-between_${Version(start)}_${Version(end)}" =>
+          Some:
+            VersionsRange(start = start, end = end)
+        case _ => None
+      }
+    val currentVersion = Version
+      .unapply(scalaVersion)
+      .getOrElse(sys.error(s"Invalid Scala version: $scalaVersion"))
+
+    sbt.IO
+      .listFiles(sourceDirectory)
+      .filter(_.isDirectory)
+      .filter { dir =>
+        parseVersionRange(dir.name)
+          .exists(_.contains(currentVersion))
+      }
+      .toList
+      .match {
+        case List(dir) => List(dir)
+        case Nil       => Nil
+        case dirs      =>
+          log.error:
+            s"Multiple Scala version ranges found for $scalaVersion: ${dirs.map(_.name).mkString(", ")}"
+          Nil
+      }
+  }
+
   lazy val compilerPluginSettings = Def.settings(
     crossVersion := CrossVersion.full,
     libraryDependencies ++= Deps.compilerPluginDependencies(scalaVersion.value),
@@ -639,41 +703,12 @@ object Settings {
     scalacOptions --= Seq("-Xfatal-warnings", "-Werror"),
     scalacOptions ++= ignoredScalaDeprecations(scalaVersion.value),
     disableMimaSettings,
-    Compile / unmanagedSourceDirectories ++= {
-      def parseVersionRange(dirName: String): Option[VersionsRange] =
-        dirName match {
-          case s"scala-since_${Version(version)}" =>
-            Some:
-              VersionsRange(start = version, end = Version.Max)
-          case s"scala-until_${Version(version)}" =>
-            Some:
-              VersionsRange(start = Version.Min, end = version)
-          case s"scala-between_${Version(start)}_${Version(end)}" =>
-            Some:
-              VersionsRange(start = start, end = end)
-          case _ => None
-        }
-      val currentVersion = Version
-        .unapply(scalaVersion.value)
-        .getOrElse(sys.error(s"Invalid Scala version: ${scalaVersion.value}"))
-
-      sbt.IO
-        .listFiles((Compile / sourceDirectory).value)
-        .filter(_.isDirectory)
-        .filter { dir =>
-          parseVersionRange(dir.name)
-            .exists(_.contains(currentVersion))
-        }
-        .toList
-        .match {
-          case List(dir) => List(dir)
-          case Nil       => Nil
-          case dirs      =>
-            sLog.value.error:
-              s"Multiple Scala version ranges found for ${scalaVersion.value}: ${dirs.map(_.name).mkString(", ")}"
-            Nil
-        }
-    }
+    Compile / unmanagedSourceDirectories ++=
+      compilerVersionSpecificSourceDirs(
+        (Compile / sourceDirectory).value,
+        scalaVersion.value,
+        sLog.value
+      )
   )
 
   lazy val sbtPluginSettings = Def.settings(
@@ -695,7 +730,35 @@ object Settings {
         sbt.Defaults.sbtPluginExtra(dependency, sbtV, scalaV)
       }
     },
+    scriptedBatchExecution := {
+      // Windows: one sbt process per scripted test (batch reuses one and races on named pipes).
+      if (isWindows) false
+      else scriptedBatchExecution.value
+    },
     scriptedLaunchOpts := {
+      // Nested scripted does not load this Settings; inject CI mitigations via global.sbt.
+      val nestedCiMitigations = Option.when(isCI) {
+        val globalBase = baseDirectory.value / "target" / "scripted-ci-global"
+        val versioned = globalBase / "1.0"
+        val lines =
+          if (isWindows)
+            """|Global / cacheStores := Seq(new sbt.util.InMemoryActionCacheStore)
+               |Global / concurrentRestrictions += sbt.Tags.limit(sbt.Tags.Publish, 1)
+               |Global / concurrentRestrictions += sbt.Tags.limitAll(1)
+               |""".stripMargin
+          else
+            """|Global / cacheStores := Seq(new sbt.util.InMemoryActionCacheStore)
+               |Global / concurrentRestrictions += sbt.Tags.limit(sbt.Tags.Publish, 1)
+               |Global / concurrentRestrictions += sbt.Tags.limit(sbt.Tags.Compile, 1)
+               |""".stripMargin
+        IO.createDirectory(versioned)
+        IO.write(
+          versioned / "global.sbt",
+          s"""|// Generated by scala-native Settings.sbtPluginSettings for CI scripted.
+              |$lines""".stripMargin
+        )
+        s"-Dsbt.global.base=${globalBase.getAbsolutePath}"
+      }
       scriptedLaunchOpts.value ++
         Seq(
           "-Xmx1024M",
@@ -703,8 +766,12 @@ object Settings {
           "-Dscala.version=" + scalaVersion.value,
           "-Dscala213.version=" + ScalaVersions.scala213,
           "-Dscala3.version=" + ScalaVersions.scriptedTestsScala3Version,
-          "-Dfile.encoding=UTF-8" // Windows uses Cp1250 as default
+          "-Dfile.encoding=UTF-8", // Windows uses Cp1250 as default
+          // Nested scripted (esp. Windows): BootServerSocket named-pipe races.
+          "-Dsbt.server.autostart=false",
+          "-Dsbt.server.forcestart=true"
         ) ++
+        nestedCiMitigations ++
         ivyPaths.value.ivyHome.map(home => s"-Dsbt.ivy.home=$home").toSeq
     }
   )

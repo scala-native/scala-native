@@ -30,6 +30,10 @@
  *
  * 2025-02-10
  *    - Added Java 19 BigDecimal.TWO
+ *
+ * 2026-07-01 10:13 -0400
+ *    - Ported Scala.js commit 0d6509a, dated 2026-06-28.
+ *      That fixes Scala.js Issue #5381, also identical SN Issue #4967
  */
 
 /* 2025-01-27
@@ -67,7 +71,7 @@
 
 package java.math
 
-import java.lang.{Double => JDouble}
+import java.lang.{Double => JDouble, Long => JLong}
 import java.util.Arrays
 import java.{lang => jl}
 
@@ -589,14 +593,15 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
       }
     }
     // Calculating the new unscaled value and the new scale
-    val mantissa3 = if ((bits >> 63) != 0) -mantissa2 else mantissa2
+    val mantissa3 = if (bits < 0L) -mantissa2 else mantissa2
     val mantissaBits = bitLength(mantissa3)
     if (_scale < 0) {
       _bitLength = if (mantissaBits == 0) 0 else mantissaBits - _scale
       if (_bitLength < 64)
         _smallValue = mantissa3 << (-_scale)
       else
-        _intVal = new BigInteger(1, mantissa3).shiftLeft(-_scale)
+        _intVal =
+          new BigInteger(JLong.signum(bits), mantissa2).shiftLeft(-_scale)
       _scale = 0
     } else if (_scale > 0) {
       def mSum = mantissaBits + LongFivePowsBitLength(_scale)
@@ -605,8 +610,12 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
         _bitLength = bitLength(_smallValue)
       } else {
         setUnscaledValue(
-          multiplyByFivePow(BigInteger.valueOf(mantissa3), _scale)
+          multiplyByFivePow(
+            new BigInteger(JLong.signum(bits), mantissa2),
+            _scale
+          )
         )
+
       }
     } else {
       _smallValue = mantissa3

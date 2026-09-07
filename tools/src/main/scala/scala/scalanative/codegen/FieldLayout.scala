@@ -13,7 +13,7 @@ private[codegen] class FieldLayout(cls: Class)(implicit meta: Metadata) {
   def entries: Seq[Field] = entries0
   def layout: MemoryLayout = layout0
 
-  private lazy val (entries0, layout0): (Seq[Field], MemoryLayout) = {
+  private lazy val (entries0, layout0) = {
     val entries: Seq[Field] = {
       val base = cls.parent.fold {
         Seq.empty[Field]

@@ -123,15 +123,17 @@ object NirPrimitives {
     code >= DIV_UINT && code <= ULONG_TO_DOUBLE
 }
 
-class NirPrimitives(using ctx: Context)
-    extends CompilerCompat.ScalaPrimitives(ctx) {
+class NirPrimitives(using ctx: Context) extends NirPrimitivesBase(using ctx) {
   import NirPrimitives._
-  override protected lazy val nirPrimitives: ReadOnlyMap[Symbol, Int] =
-    initNirPrimitives
+  protected lazy val nirPrimitives: ReadOnlyMap[Symbol, Int] = initNirPrimitives
 
   // Variant for source compatibility due to changes method signature
   def getPrimitiveCompat(app: Apply, tpe: Type): Int =
     nirPrimitives.getOrElse(app.fun.symbol, super.getPrimitive(app, tpe))
+
+  def isPrimitiveTree(tree: Tree): Boolean =
+    nirPrimitives.contains(tree.symbol) || super.isPrimitive(tree)
+
   override def getPrimitive(sym: Symbol): Int =
     nirPrimitives.getOrElse(sym, super.getPrimitive(sym))
   override def isPrimitive(sym: Symbol): Boolean = {

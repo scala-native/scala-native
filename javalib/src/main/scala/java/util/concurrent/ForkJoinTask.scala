@@ -604,7 +604,7 @@ object ForkJoinTask {
     }
 
     tasks match {
-      case list: java.util.List[T] with RandomAccess @unchecked =>
+      case list: (java.util.List[T] & RandomAccess) @unchecked =>
         invokeAllImpl(list)
       case _ =>
         invokeAll(tasks.toArray(Array.empty[ForkJoinTask[_]]))
