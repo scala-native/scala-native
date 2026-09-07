@@ -65,6 +65,8 @@ package object runtime {
     )
     StackOverflowGuards.setup(isMainThread = true)
 
+    OutOfMemory.preallocateFallback()
+
     val mainThread = Thread.currentThread()
     if (mainThread == null) {
       ffi.printf(

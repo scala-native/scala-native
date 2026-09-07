@@ -39,6 +39,8 @@ typedef struct ExceptionWrapper {
     _Unwind_Exception unwindException;
 } ExceptionWrapper;
 
+static _Thread_local ExceptionWrapper fallbackExceptionWrapper;
+
 extern OnCatchHandler scalanative_Throwable_onCatchHandler(Exception exception);
 extern void scalanative_Throwable_showStackTrace(Exception exception);
 extern ExceptionWrapper *
@@ -278,6 +280,8 @@ Exception scalanative_catch(_Unwind_Exception *unwindException) {
 __attribute__((noreturn)) void scalanative_throw(Exception obj) {
     ExceptionWrapper *exceptionWrapper =
         scalanative_Throwable_exceptionWrapper(obj);
+    if (exceptionWrapper == NULL)
+        exceptionWrapper = &fallbackExceptionWrapper;
     exceptionWrapper->unwindException.exception_cleanup =
         generic_exception_cleanup;
     exceptionWrapper->obj = obj;

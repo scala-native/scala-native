@@ -230,7 +230,10 @@ word_t *LargeAllocator_Alloc(Heap *heap, uint32_t size) {
 
     size_t increment = MathUtils_DivAndRoundUp(size, BLOCK_TOTAL_SIZE);
     uint32_t pow2increment = 1U << MathUtils_Log2Ceil(increment);
-    Heap_Grow(heap, pow2increment);
+    if (!Heap_TryGrow(heap, pow2increment) &&
+        !Heap_TryGrow(heap, (uint32_t)increment)) {
+        Heap_ThrowOutOfMemory(heap);
+    }
 
     object = LargeAllocator_tryAlloc(largeAllocator, size);
 
