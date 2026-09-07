@@ -39,8 +39,6 @@ typedef struct {
 void Allocator_Init(Allocator *allocator, BlockAllocator *blockAllocator,
                     Bytemap *bytemap, word_t *blockMetaStart,
                     word_t *heapStart);
-bool Allocator_CanInitCursors(Allocator *allocator);
-void Allocator_InitCursors(Allocator *allocator, bool canCollect);
 void Allocator_Clear(Allocator *allocator);
 word_t *Allocator_Alloc(Heap *heap, uint32_t objectSize);
 

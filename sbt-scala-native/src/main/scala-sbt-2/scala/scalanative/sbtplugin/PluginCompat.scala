@@ -82,6 +82,9 @@ private[scalanative] object PluginCompat:
     Keys.platform := ScalaNativePlatform.current
   )
 
+  val incrementalTestSettings: Seq[Setting[?]] =
+    NativeIncrementalTest.incrementalTestSettings
+
   def crossScalaNative(module: ModuleID): ModuleID =
     module.platform(ScalaNativePlatform.current)
 

@@ -230,7 +230,7 @@ private[codegen] trait MetadataCodeGen { self: AbstractCodeGen =>
     import nir.Type._
     Seq(Byte, Char, Short, Int, Long, Size, Float, Double, Bool, Ptr).map { tpe =>
       val name = tpe.show
-      val nameCapitalize = name.head.toUpper + name.tail
+      val nameCapitalize = name.head.toUpper.toString + name.tail
       tpe -> DIBasicType(
         name = nameCapitalize,
         size = MemoryLayout.sizeOf(tpe).toDISize,

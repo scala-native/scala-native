@@ -14,7 +14,7 @@ import java.nio.file.{Files, Path}
 import java.util.concurrent.atomic._
 import java.util.concurrent.locks.ReentrantLock
 
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.concurrent.*
 import scala.concurrent.duration.Duration
 import scala.sys.process.Process
@@ -365,7 +365,7 @@ object ScalaNativePluginInternal {
             .triggeredBy(loadedTestFrameworks)
             .value
         }
-      )
+      ) ++ PluginCompat.incrementalTestSettings
 
   /** Called by overridden method in plugin
    *
@@ -458,7 +458,7 @@ object ScalaNativePluginInternal {
                   util.Logger.Null
                 )
               )
-              .flatMap(_.right.toOption)
+              .flatMap(_.right.toOption: @nowarn)
               .flatMap(_.allFiles)
               .filter(_.name.endsWith("-sources.jar"))
               .map(_.toPath())

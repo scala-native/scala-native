@@ -89,3 +89,7 @@ scalanative_gc_safepoint_poll_trampoline:
 scalanative_gc_safepoint_trampoline_aarch64_skipped:
     ret
 #endif
+
+#if defined(__linux__) && defined(__ELF__)
+.section .note.GNU-stack,"",%progbits
+#endif

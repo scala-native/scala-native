@@ -40,14 +40,16 @@ private[scalanative] object ScalaNative {
     stage = "classloading",
     dumpFile = "linked",
     forceQuickCheck = true
-  )(Future {
-    val mtSupport = config.compilerConfig.multithreading
-      .getOrElse("detect")
-    val linkingMsg = s"Linking (multithreadingEnabled=${mtSupport})"
-    config.logger.time(linkingMsg) {
-      Link(config, entries)
+  )(
+    Future {
+      val mtSupport = config.compilerConfig.multithreading
+        .getOrElse("detect")
+      val linkingMsg = s"Linking (multithreadingEnabled=${mtSupport})"
+      config.logger.time(linkingMsg) {
+        Link(config, entries)
+      }
     }
-  })
+  )
 
   /** Optimizer high-level NIR under closed-world assumption. */
   def optimize(config: Config, analysis: ReachabilityAnalysis.Result)(implicit

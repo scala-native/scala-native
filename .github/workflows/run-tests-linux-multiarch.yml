@@ -24,12 +24,12 @@ jobs:
         # Scala 2.13 only for increased tests coverage (Scala2 partests) while keeping total number of jobs low
         scala: [2.13]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
       - name: Cache docker
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: /tmp/docker-registry
           key: docker-registry-${{ matrix.arch }}-${{ hashFiles('ci-docker/Dockerfile', format('ci-docker/env/{0}', matrix.arch)) }}

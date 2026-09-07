@@ -1,0 +1,178 @@
+package org.scalanative.testsuite.javalib.util
+
+import java.util.UUID
+
+import org.junit.Assert._
+import org.junit.Test
+
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+
+/** Additional tests for `java.util.UUID` that require
+ *  `java.security.SecureRandom`.
+ *
+ *  Influenced by original Scala.js UUIDTestEx.scala (slight name difference).
+ */
+class UUIDTestExtOnJDK26 {
+
+  /* For some reason, compiler does not allow strings as first argument
+   * to assertThrows() in this file. Same idiom works in many other places.
+   * A quirk of testExt environment?
+   *
+   * Adapt and overcome! Criterion of success is honorable completion.
+   */
+
+  @Test def ofEpochMillis_NegativeTimeStampArg(): Unit = {
+    assertThrows(
+      classOf[IllegalArgumentException],
+      UUID.ofEpochMillis(-1L)
+    )
+  }
+
+  @Test def ofEpochMillis_TooLargeTimeStampArg(): Unit = {
+    val maxValidTimestamp = (1L << 48) - 1 // From JDK 26 UUID doc
+
+    assertThrows(
+      classOf[IllegalArgumentException],
+      UUID.ofEpochMillis(maxValidTimestamp + 1)
+    )
+  }
+
+  @Test def ofEpochMillis_NotUUIDv1_Exceptions(): Unit = {
+    /* Exercise methods which are expected to throw with this UUID version 7.
+     * Yes, they are consolidated here without distinguishing messages.
+     * Will be a pain to debug should one fail.
+     */
+
+    val uuid = UUID.ofEpochMillis(3L)
+
+    assertThrows(
+      classOf[UnsupportedOperationException],
+      uuid.clockSequence()
+    )
+
+    assertThrows(
+      classOf[UnsupportedOperationException],
+      uuid.node()
+    )
+
+    assertThrows(
+      classOf[UnsupportedOperationException],
+      uuid.timestamp()
+    )
+  }
+
+  @Test def ofEpochMillis(): Unit = {
+    locally {
+      val uuid1 = UUID.ofEpochMillis(1L)
+      assertEquals("uuid1 variant", 2, uuid1.variant())
+      assertEquals("uuid1 version", 7, uuid1.version())
+
+      val uuid2 = UUID.ofEpochMillis(2L)
+      assertEquals("uuid2 variant", 2, uuid2.variant())
+      assertEquals("uuid2 version", 7, uuid2.version())
+
+      assertFalse(s"fields for random bits must differ", uuid1.equals(uuid2))
+    }
+
+    case class TestCase(millis: Long, expectedPrefix: String)
+
+    /* The terminal 7 is the UUID version under test.
+     * The characters before that should be reproducible for any
+     * given time. Bits other than the variant must be random.
+     */
+
+    val testCases = Array(
+      TestCase(
+        1783156200L, // 2026-07-04:06:30 EDT
+        "00006a48-cde8-7"
+      ),
+      TestCase(
+        946684800L, // 2000-01-01:00:00 EST
+        "0000386d-4380-7"
+      )
+      // and so on
+    )
+
+    locally {
+      for (j <- 0 until testCases.length) {
+        val tc = testCases(j)
+
+        val uuid = UUID.ofEpochMillis(tc.millis)
+
+        assertEquals("uuid variant", 2, uuid.variant())
+        assertEquals("uuid version", 7, uuid.version())
+
+        val timePrefix = tc.expectedPrefix
+        val received = uuid.toString()
+
+        // Check timestamp field & confirm version field.
+        assertTrue(
+          s"time bits \n\tprefix  : ${timePrefix}\n\treceived: ${received}\n",
+          received.startsWith(timePrefix)
+        )
+      }
+    }
+  }
+
+  @Test def ofEpochMillis_compareTo(): Unit = {
+    /* The JDK 26 description of UUID.compareTo leaves at least this Test
+     * author guessing. Exercising the JVM seems to show that it is
+     * doing bit for bit matching and not just the IETF RFC 9562 initial
+     * 48 bits.
+     */
+    val uuid3 = UUID.ofEpochMillis(3L)
+    val uuid3A = UUID.ofEpochMillis(3L) // different random bits
+
+    val uuid4 = UUID.ofEpochMillis(4L)
+
+    assertTrue(
+      s"lhs ${uuid3} should be less than rhs ${uuid4}\n",
+      uuid3.compareTo(uuid4) == -1
+    )
+
+    assertTrue(
+      s"lhs ${uuid4} should be greater than rhs ${uuid3}\n",
+      uuid4.compareTo(uuid3) == 1
+    )
+
+    assertTrue(
+      s"eq() UUIDs  should compare == 0: ${uuid4}\n",
+      uuid4.compareTo(uuid4) == 0
+    )
+
+    assertTrue(
+      s"same timstamp, different random bits should compare != 0\n",
+      uuid3.compareTo(uuid3A) != 0
+    )
+
+  }
+
+  @Test def ofEpochMillis_equals(): Unit = {
+
+    val uuid3 = UUID.ofEpochMillis(3L)
+    val uuid3A = UUID.ofEpochMillis(3L) // different random bits
+
+    val uuid4 = UUID.ofEpochMillis(4L)
+
+    assertFalse(
+      s"${uuid3} should not .equals() ${uuid4}\n",
+      uuid3.equals(uuid4)
+    )
+
+    assertFalse(
+      s"${uuid4} should not .equals() ${uuid3}\n",
+      uuid4.equals(uuid3)
+    )
+
+    assertTrue(
+      s"${uuid3} should .equals() itself \n",
+      uuid3.equals(uuid3)
+    )
+
+    assertFalse(
+      s"${uuid3} should .equals() same timestamp, different random bits \n",
+      uuid3.equals(uuid3A)
+    )
+  }
+
+}

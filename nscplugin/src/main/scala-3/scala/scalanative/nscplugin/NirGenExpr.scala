@@ -3,7 +3,6 @@ package nscplugin
 
 import dotty.tools.FatalError
 import dotty.tools.backend.ScalaPrimitivesOps._
-import dotty.tools.backend.jvm.DottyBackendInterface.symExtensions
 import dotty.tools.dotc.ast.desugar
 import dotty.tools.dotc.util.Property
 import dotty.tools.dotc.util.Spans.*
@@ -12,7 +11,8 @@ import scala.annotation.{switch, tailrec}
 import scala.language.implicitConversions
 
 import scala.scalanative.nir.Defn.Define.DebugInfo
-import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.*
+import scala.scalanative.nscplugin.CompilerCompat.SymUtils.*
+import scala.scalanative.nscplugin.CompilerCompat.SymbolExtensions.*
 import scala.scalanative.nscplugin.NirDefinitions.NonErasedType
 import scala.scalanative.util.ScopedVar.scoped
 import scala.scalanative.util.{StringUtils, unreachable, unsupported}
@@ -135,7 +135,7 @@ trait NirGenExpr(using Context) {
             )
           else genApplyMethod(sym, statically = isStatic, qualifier, args)
         case _ =>
-          if (nirPrimitives.isPrimitive(fun)) genApplyPrimitive(app)
+          if (nirPrimitives.isPrimitiveTree(fun)) genApplyPrimitive(app)
           else if (Erasure.Boxing.isBox(sym)) genApplyBox(arg.tpe, arg)
           else if (Erasure.Boxing.isUnbox(sym)) genApplyUnbox(app.tpe, arg)
           else
@@ -1844,7 +1844,7 @@ trait NirGenExpr(using Context) {
      */
     def liftStringConcat(tree: Tree): List[Tree] = tree match {
       case tree @ Apply(fun @ DesugaredSelect(larg, method), rarg) =>
-        if (nirPrimitives.isPrimitive(fun) &&
+        if (nirPrimitives.isPrimitiveTree(fun) &&
             nirPrimitives.getPrimitiveCompat(tree, larg.tpe) == CONCAT)
           liftStringConcat(larg) ::: rarg
         else

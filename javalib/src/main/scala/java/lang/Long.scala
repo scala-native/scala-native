@@ -1,6 +1,7 @@
 package java.lang
 
 import java.lang.constant.{Constable, ConstantDesc}
+import java.{util => ju}
 
 import scalanative.runtime.Intrinsics.{divULong, remULong}
 import scalanative.runtime.LLVMIntrinsics
@@ -282,6 +283,21 @@ object Long {
   @inline def numberOfTrailingZeros(l: scala.Long): Int =
     LLVMIntrinsics.`llvm.cttz.i64`(l, iszeroundef = false).toInt
 
+  /** @since JDK 9 */
+  def parseLong(
+      s: CharSequence,
+      beginIndex: Int,
+      endIndex: Int,
+      radix: Int
+  ): scala.Long = {
+    ju.Objects.requireNonNull(s)
+    ju.Objects.checkFromToIndex(beginIndex, endIndex, s.length())
+    // let callee check radix
+
+    val extracted = s.subSequence(beginIndex, endIndex).toString()
+    parseLong(extracted, radix)
+  }
+
   @inline def parseLong(s: String): scala.Long =
     parseLong(s, 10)
 
@@ -487,6 +503,21 @@ object Long {
 
   @inline def valueOf(s: String, radix: Int): Long =
     valueOf(parseLong(s, radix))
+
+  /** @since JDK 9 */
+  def parseUnsignedLong(
+      s: CharSequence,
+      beginIndex: Int,
+      endIndex: Int,
+      radix: Int
+  ): scala.Long = {
+    ju.Objects.requireNonNull(s)
+    ju.Objects.checkFromToIndex(beginIndex, endIndex, s.length())
+    // let callee check radix
+
+    val extracted = s.subSequence(beginIndex, endIndex).toString()
+    parseUnsignedLong(extracted, radix)
+  }
 
   @inline def parseUnsignedLong(s: String): scala.Long =
     parseUnsignedLong(s, 10)

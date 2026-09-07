@@ -285,7 +285,7 @@ class SubmissionPublisherTest extends JSR166Test {
     s.awaitComplete()
     assertEquals(0, s.nexts)
     assertEquals(0, s.errors)
-    assertEquals(1, s.completes, 1)
+    assertEquals(1, s.completes)
   }
 
   /** If closedExceptionally, upon subscription, the subscriber's onError method

@@ -24,6 +24,7 @@ package java.util.concurrent
 import java.util._
 import java.util.concurrent.atomic._
 import java.util.function._
+import java.util.random.RandomGenerator
 
 import scala.scalanative.annotation.safePublish
 import scala.scalanative.meta.LinktimeInfo
@@ -117,7 +118,7 @@ object ThreadLocalRandom {
 }
 
 @SerialVersionUID(-5851777807851030925L)
-class ThreadLocalRandom extends Random {
+class ThreadLocalRandom extends Random with RandomGenerator {
 
   private var initialized = true
 
@@ -145,4 +146,13 @@ class ThreadLocalRandom extends Random {
 
   override def nextLong(): Long = ThreadLocalRandom.mix64(nextSeed())
 
+  /* @since JDK 26
+   *
+   * Method has existed since JDK 1.7 but has a complicated implementation
+   * history. Some JDK versions use original Box-Muller algorithm and
+   * some use McFarland's fast modified ziggurat algorithm as in
+   * RandomGenerator. Follow JDK 26 practice across the board.
+   */
+  override def nextGaussian(): Double =
+    super[RandomGenerator].nextGaussian()
 }

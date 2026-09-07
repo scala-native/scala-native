@@ -82,11 +82,17 @@ __scalanative_waitForModuleInitialization(ModuleSlot slot, void *classInfo) {
 NOINLINE static ModuleRef __scalanative_startAndWaitForModuleInitialization(
     ModuleSlot slot, void *classInfo, size_t size, ModuleCtor ctor) {
     InitializationContext ctx = {};
+    // Populate the context before publishing &ctx into the slot. The winning
+    // atomic_compare_exchange_strong is a release operation, so any thread that
+    // later acquire-loads the slot and observes &ctx also observes the fully
+    // written fields. Writing initThreadId and instance after the publish (the
+    // previous ordering) left a window in which another thread could read them
+    // before they were set, a data race on those fields.
+    ctx.initThreadId = getThreadId();
+    ModuleRef instance = scalanative_GC_alloc(classInfo, size);
+    ctx.instance = instance;
     void **expected = NULL;
     if (atomic_compare_exchange_strong(slot, &expected, (void **)&ctx)) {
-        ModuleRef instance = scalanative_GC_alloc(classInfo, size);
-        ctx.initThreadId = getThreadId();
-        ctx.instance = instance;
         return scalanative_initializeModule(ctor, instance, slot, classInfo);
     } else {
         return __scalanative_waitForModuleInitialization(slot, classInfo);

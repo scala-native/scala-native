@@ -2,7 +2,7 @@ object SetExecutableTest {
   import Files._
   import Utils._
 
-  def main(args: Array[String]): Unit = {
+  def run(): Unit = {
     assert(willBeSetExecutableFile.exists())
     // Windows (JVM) does not allow for setExecutable(false),
     // at this point it would always return true

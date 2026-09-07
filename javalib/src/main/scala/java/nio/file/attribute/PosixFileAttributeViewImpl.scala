@@ -62,7 +62,7 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
         case _ =>
           throw new IllegalArgumentException("unsupported UserPrincipal")
       }
-      if (unistd.chown(toCString(path.toString), uid, -1.toUInt) != 0) {
+      if (unistd.chown(toCString(path.toString), uid, (-1).toUInt) != 0) {
         throwIOException()
       }
     }
@@ -89,7 +89,7 @@ final class PosixFileAttributeViewImpl(path: Path, options: Array[LinkOption])
           throw new IllegalArgumentException("unsupported GroupPrincipal")
       }
 
-      if (unistd.chown(toCString(path.toString), -1.toUInt, gid) != 0) {
+      if (unistd.chown(toCString(path.toString), (-1).toUInt, gid) != 0) {
         throwIOException()
       }
     }

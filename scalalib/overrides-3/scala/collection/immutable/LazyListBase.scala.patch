@@ -1,0 +1,42 @@
+--- 3.10.0-RC1/scala/collection/immutable/LazyListBase.scala
++++ overrides-3/scala/collection/immutable/LazyListBase.scala
+@@ -17,6 +17,9 @@
+ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater
+ import java.util.concurrent.locks.AbstractQueuedSynchronizer
+ 
++import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
++import scala.scalanative.runtime.fromRawPtr
++
+ /**
+  * Base class for [[LazyList]] to split out code that uses concurrency utilities that are not available
+  * on Scala.js. This way, Scala.js does not need to override all of LazyList.
+@@ -34,10 +37,28 @@
+   private[immutable] def setRawTail(value: AnyRef): Unit = _tail = value
+ 
+   @noinline private[immutable] def makeTailUpdater: LazyListBase.TailUpdater =
+-    new LazyListBase.TailUpdater(AtomicReferenceFieldUpdater.newUpdater(classOf[LazyListBase[?]], classOf[AnyRef], "_tail"))
++    new LazyListBase.TailUpdater(new LazyListBase.IntrinsicAtomicReferenceFieldUpdater[LazyListBase[?], AnyRef](obj => fromRawPtr(classFieldRawPtr(obj, "_tail"))))
+ }
+ 
+ private[immutable] object LazyListBase {
++  // ScalaNative specific implementaiton of atomic reference field updater
++  import scala.scalanative.annotation.alwaysinline
++  import scala.scalanative.libc.stdatomic.AtomicRef
++  import scala.scalanative.libc.stdatomic.memory_order.memory_order_release
++  import scala.scalanative.unsafe.Ptr
++
++  private[immutable] class IntrinsicAtomicReferenceFieldUpdater[
++      T <: AnyRef,
++      V <: AnyRef
++  ](@alwaysinline selector: T => Ptr[V]) extends AtomicReferenceFieldUpdater[T, V]() {
++    @alwaysinline private def atomicRef(obj: T) = new AtomicRef(selector(obj))
++    @alwaysinline def compareAndSet(obj: T, expect: V, update: V): Boolean = atomicRef(obj).compareExchangeStrong(expect, update)
++    @alwaysinline def weakCompareAndSet(obj: T, expect: V, update: V): Boolean = atomicRef(obj).compareExchangeWeak(expect, update)
++    @alwaysinline def set(obj: T, newValue: V): Unit = atomicRef(obj).store(newValue)
++    @alwaysinline def lazySet(obj: T, newValue: V): Unit = atomicRef(obj).store(newValue, memory_order_release)
++    @alwaysinline def get(obj: T): V = atomicRef(obj).load()
++  }
++
+   final class TailUpdater(u: AtomicReferenceFieldUpdater[LazyListBase[?], AnyRef]) {
+     def compareAndSet(ll: LazyListBase[?], expected: AnyRef, value: AnyRef): Boolean = u.compareAndSet(ll, expected, value)
+     def getAndSet(ll: LazyListBase[?], value: AnyRef | Null): AnyRef | Null = u.getAndSet(ll, value)

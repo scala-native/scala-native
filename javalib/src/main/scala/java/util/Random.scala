@@ -1,6 +1,8 @@
 package java.util
 
 import java.util.random.{JuRandomFactory, RandomGenerator}
+import java.util.stream._
+import java.{lang => jl}
 
 import scala.annotation.tailrec
 
@@ -134,4 +136,177 @@ class Random(seed_in: Long)
     x * c
   }
 
+}
+
+object Random {
+
+  private final class RandomFromGenerator(generator: RandomGenerator)
+      extends Random {
+
+    /* protected def next(bits: Int): Int
+     * does not delegate to 'generator' because RandomGenerator does
+     * not have that method. This is not a problem, since the the method
+     * in this class can never be accessed outside of it.
+     * The super Random method can never is protected and this class is
+     * private final.
+     */
+
+    /* There must be a more elegant way of doing these declarations.
+     */
+
+    override def doubles(): DoubleStream =
+      generator.doubles()
+
+    override def doubles(
+        randomNumberOrigin: scala.Double,
+        randomNumberBound: scala.Double
+    ): DoubleStream =
+      generator.doubles(randomNumberOrigin, randomNumberBound)
+
+    override def doubles(streamSize: Long): DoubleStream =
+      generator.doubles(streamSize)
+
+    override def doubles(
+        streamSize: Long,
+        randomNumberOrigin: Double,
+        randomNumberBound: Double
+    ): DoubleStream =
+      generator.doubles(
+        streamSize,
+        randomNumberOrigin,
+        randomNumberBound
+      )
+
+    override def equiDoubles(
+        left: scala.Double,
+        right: scala.Double,
+        isLeftIncluded: Boolean,
+        isRightIncluded: Boolean
+    ): DoubleStream =
+      generator.equiDoubles(left, right, isLeftIncluded, isRightIncluded)
+
+    override def ints(): IntStream =
+      generator.ints()
+
+    override def ints(
+        randomNumberOrigin: Int,
+        randomNumberBound: Int
+    ): IntStream =
+      generator.ints(
+        randomNumberOrigin,
+        randomNumberBound
+      )
+
+    override def ints(streamSize: scala.Long): IntStream =
+      generator.ints(streamSize)
+
+    override def ints(
+        streamSize: scala.Long,
+        randomNumberOrigin: Int,
+        randomNumberBound: Int
+    ): IntStream =
+      generator.ints(
+        streamSize,
+        randomNumberOrigin,
+        randomNumberBound
+      )
+
+    override def isDeprecated() =
+      generator.isDeprecated()
+
+    override def longs(): LongStream =
+      generator.longs(jl.Long.MAX_VALUE)
+
+    override def longs(
+        randomNumberOrigin: scala.Long,
+        randomNumberBound: scala.Long
+    ): LongStream =
+      generator.longs(
+        randomNumberOrigin,
+        randomNumberBound
+      )
+
+    override def longs(streamSize: Long): LongStream =
+      generator.longs(streamSize)
+
+    override def longs(
+        streamSize: Long,
+        randomNumberOrigin: Long,
+        randomNumberBound: Long
+    ): LongStream =
+      generator.longs(
+        streamSize,
+        randomNumberOrigin,
+        randomNumberBound
+      )
+
+    override def nextBoolean(): Boolean =
+      generator.nextBoolean()
+
+    override def nextBytes(bytes: Array[Byte]): Unit =
+      generator.nextBytes(bytes)
+
+    override def nextDouble(): Double =
+      generator.nextDouble()
+
+    override def nextDouble(bound: scala.Double): scala.Double =
+      generator.nextDouble(bound)
+
+    override def nextDouble(
+        origin: scala.Double,
+        bound: scala.Double
+    ): scala.Double =
+      generator.nextDouble(origin, bound)
+
+    override def nextExponential(): scala.Double =
+      generator.nextExponential()
+
+    override def nextFloat(): Float =
+      generator.nextFloat()
+
+    override def nextFloat(bound: scala.Float): scala.Float =
+      generator.nextFloat(bound)
+
+    override def nextFloat(
+        origin: scala.Float,
+        bound: scala.Float
+    ): scala.Float =
+      generator.nextFloat(origin, bound)
+
+    override def nextGaussian(): Double =
+      generator.nextGaussian()
+
+    override def nextGaussian(
+        mean: scala.Double,
+        stddev: scala.Double
+    ): scala.Double =
+      generator.nextGaussian(mean, stddev)
+
+    override def nextInt(): Int =
+      generator.nextInt()
+
+    override def nextInt(n: Int): Int =
+      generator.nextInt(n)
+
+    override def nextInt(origin: Int, bound: Int): Int =
+      generator.nextInt(origin, bound)
+
+    override def nextLong(): Long =
+      generator.nextLong()
+
+    override def nextLong(bound: scala.Long): scala.Long =
+      generator.nextLong(bound)
+
+    override def nextLong(origin: scala.Long, bound: scala.Long): scala.Long =
+      generator.nextLong(origin, bound)
+
+    override def setSeed(seed: Long): Unit =
+      throw new java.lang.UnsupportedOperationException
+  }
+
+  /** Since: Java 19 */
+  def from(generator: RandomGenerator): Random = {
+    if (generator.isInstanceOf[Random]) generator.asInstanceOf[Random]
+    else new RandomFromGenerator(generator)
+  }
 }

@@ -25,6 +25,8 @@ private[scalanative] object PluginCompat {
     platformDepsCrossVersion := ScalaNativeCrossVersion.binary
   )
 
+  val incrementalTestSettings: Seq[Setting[_]] = Nil
+
   def crossScalaNative(module: ModuleID): ModuleID =
     module.cross(ScalaNativeCrossVersion.binary)
 

@@ -2,7 +2,7 @@ import java.io.{File, IOException}
 
 object CreateTempFileTest {
   import Files._
-  def main(args: Array[String]): Unit = {
+  def run(): Unit = {
     assert(existingTempTarget.exists)
     assert(existingTempTarget.isDirectory)
     assert(!nonexistingTempTarget.exists)

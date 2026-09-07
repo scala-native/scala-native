@@ -12,9 +12,9 @@ import scala.language.implicitConversions
 
 import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.nir.Defn.Define.DebugInfo._
-import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat._
+import scala.scalanative.nscplugin.CompilerCompat.SymUtils._
+import scala.scalanative.util.ScopedVar
 import scala.scalanative.util.ScopedVar.{scoped, toValue}
-import scala.scalanative.util.{ScopedVar, unsupported}
 
 import core.Constants._
 import core.Contexts._
@@ -382,7 +382,6 @@ trait NirGenStat(using Context) {
     given fresh: nir.Fresh = curFresh.get
     val buf = ExprBuffer()
     val isStatic = dd.symbol.isStaticInNIR
-    val isSynchronized = dd.symbol.is(Synchronized)
 
     val sym = curMethodSym.get
     val argParamSyms = for {
@@ -423,17 +422,6 @@ trait NirGenStat(using Context) {
         }
     }
 
-    def withOptSynchronized(bodyGen: ExprBuffer => nir.Val): nir.Val = {
-      if (!isSynchronized) bodyGen(buf)
-      else {
-        val syncedIn = curMethodThis.getOrElse {
-          unsupported(
-            s"cannot generate `synchronized` for method ${curMethodSym.name}, curMethodThis was empty"
-          )
-        }
-        buf.genSynchronized(ValTree(dd)(syncedIn))(bodyGen)
-      }
-    }
     def genBody(): Unit = {
       if (curMethodSym.get == defnNir.NObject_init)
         scoped(
@@ -443,7 +431,7 @@ trait NirGenStat(using Context) {
         }
       else
         scoped(curMethodThis := thisParam, curMethodIsExtern := isExtern) {
-          buf.genReturn(withOptSynchronized(_.genExpr(bodyp)) match {
+          buf.genReturn(genSynchronizedMethod(dd, buf)(_.genExpr(bodyp)) match {
             case nir.Val.Zero(_) =>
               nir.Val.Zero(genType(curMethodSym.get.info.resultType))
             case v => v
@@ -458,6 +446,26 @@ trait NirGenStat(using Context) {
       nir.ControlFlow.removeDeadBlocks(buf.toSeq)
     }
   }
+
+  /** Re-introduce a synchronized scope around a method whose `Synchronized`
+   *  flag was set by the frontend (`SimplifySynchronized` on Scala 3).
+   *
+   *  Instance methods lock on `this`. Static methods have no `this`; they lock
+   *  on the `Class` of the enclosing class, matching JVM `ACC_SYNCHRONIZED`.
+   */
+  private def genSynchronizedMethod(
+      dd: DefDef,
+      buf: ExprBuffer
+  )(bodyGen: ExprBuffer => nir.Val)(using nir.SourcePosition): nir.Val = {
+    if (!dd.symbol.is(Synchronized)) bodyGen(buf)
+    else
+      buf.genSynchronized(ValTree(dd)(genSynchronizedMethodReceiver()))(bodyGen)
+  }
+
+  private def genSynchronizedMethodReceiver(): nir.Val =
+    curMethodThis.get.getOrElse {
+      nir.Val.ClassOf(genTypeName(curClassSym.get))
+    }
 
   private def genStruct(td: TypeDef): Unit = {
     given nir.SourcePosition = td.span

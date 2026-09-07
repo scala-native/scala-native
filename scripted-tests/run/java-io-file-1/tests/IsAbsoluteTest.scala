@@ -2,7 +2,7 @@ object IsAbsoluteTest {
   import Files._
   import Utils._
 
-  def main(args: Array[String]): Unit = {
+  def run(): Unit = {
     assertOsSpecific(
       absoluteUnixStyle.isAbsolute,
       "absoluteUnixStyle.isAbsolute"

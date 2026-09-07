@@ -14,6 +14,7 @@ import java.{lang => jl}
 import scala.annotation.{switch, tailrec}
 
 import scalanative.libc.string.memcmp
+import scalanative.runtime.{Intrinsics, toRawPtr}
 import scalanative.unsafe._
 import scalanative.unsigned._
 
@@ -130,6 +131,14 @@ final class _String()
     value = data
     offset = start
     count = length
+  }
+
+  // Zero-copy: share the buffer with AbstractStringBuilder via copy-on-write.
+  private[lang] def this(asb: AbstractStringBuilder, sig: Void) = {
+    this()
+    value = asb.shareValue()
+    offset = 0
+    count = asb.length()
   }
 
   def this(string: _String) = {
@@ -341,12 +350,31 @@ final class _String()
       end += offset
 
       try {
-        var index = _index
-        var i = offset + start
-        while (i < end) {
-          data(index) = value(i).toByte
-          index += 1
-          i += 1
+        val len = end - (offset + start)
+        if (len > 0) {
+          if (_index < 0 || len > data.length - _index)
+            throw new ArrayIndexOutOfBoundsException()
+          val srcRaw = toRawPtr(value.at(offset + start))
+          val dstRaw = toRawPtr(data.at(_index))
+          var i = 0
+          // Process 4 chars (8 bytes) at a time using Long loads.
+          // Extract the low byte of each char and pack into a single Int.
+          while (i + 4 <= len) {
+            val long =
+              Intrinsics.loadLong(Intrinsics.elemRawPtr(srcRaw, i * 2))
+            val packed = ((long & 0xffL) |
+              ((long >> 8) & 0xff00L) |
+              ((long >> 16) & 0xff0000L) |
+              ((long >> 24) & 0xff000000L)).toInt
+            Intrinsics.storeInt(Intrinsics.elemRawPtr(dstRaw, i), packed)
+            i += 4
+          }
+          while (i < len) {
+            val ch =
+              Intrinsics.loadChar(Intrinsics.elemRawPtr(srcRaw, i * 2))
+            Intrinsics.storeByte(Intrinsics.elemRawPtr(dstRaw, i), ch.toByte)
+            i += 1
+          }
         }
       } catch {
         case e: ArrayIndexOutOfBoundsException =>
@@ -428,21 +456,42 @@ final class _String()
    *   By convention, caller has validated arguments, but strangely.
    *   beginIndex is usually guaranteed to be within 'this' but there is no
    *   such guarantee here.
-   *
-   *   For details, see note above indexOfImpl(str, fromIndex, toIndex).
    */
   private def indexOfImpl(ch: Int, beginIndex: Int, endIndex: Int): Int = {
-    // This is a good candidate for someday using memchr().
-
     var start = beginIndex
 
     if (ch >= 0 && ch <= Character.MAX_VALUE) {
-      var i = offset + start
-      while (i < offset + endIndex) {
-        if (value(i) == ch)
-          return i - offset
-
-        i += 1
+      val len = endIndex - start
+      if (len > 0) {
+        // SWAR (SIMD Within A Register) search for BMP chars.
+        // Process 4 chars (8 bytes) at a time using Long loads.
+        val charMask =
+          ch.toLong | (ch.toLong << 16) | (ch.toLong << 32) | (ch.toLong << 48)
+        val srcRaw = toRawPtr(value.at(offset + start))
+        var i = 0
+        while (i + 4 <= len) {
+          val long =
+            Intrinsics.loadLong(Intrinsics.elemRawPtr(srcRaw, i * 2))
+          val xored = long ^ charMask
+          // SWAR zero-detection: true if any 16-bit lane is zero after XOR
+          val hasZero =
+            ((xored - 0x0001000100010001L) & ~xored & 0x8000800080008000L) != 0
+          if (hasZero) {
+            val vi = offset + start + i
+            val si = start + i
+            if (value(vi) == ch) return si
+            if (value(vi + 1) == ch) return si + 1
+            if (value(vi + 2) == ch) return si + 2
+            if (value(vi + 3) == ch) return si + 3
+          }
+          i += 4
+        }
+        val vi0 = offset + start
+        while (i < len) {
+          if (value(vi0 + i) == ch)
+            return start + i
+          i += 1
+        }
       }
     } else if (ch > Character.MAX_VALUE && ch <= Character.MAX_CODE_POINT) {
       var i = start
@@ -473,71 +522,68 @@ final class _String()
     validateFromToIndex(beginIndex, endIndex, count)
     indexOfImpl(ch, beginIndex, endIndex)
   }
-
-  /* Preconditions:
-   *   By convention, caller has validated index arguments so that:
-   *     - beginIndex >= 0
-   *     - beginIndex <= endIndex
-   *     - endIndex <= this.count
+// ---
+  /* Development Notes:
    *
-   *   Beware & handle an empty 'this' or an empty slice range!
-   *   beginIndex is usually guaranteed to be a valid index for this.value
-   *   but there is no such guarantee here.
+   * 1) This method uses he "naive" algorithm, which was state of the art
+   *    circa 1974.  It's performance is probably acceptable when the
+   *    "haystack is short-to-moderate and "the "needle" is tiny
+   *    (10 characters?) . Probably faster than regex in that case.
    *
-   *   Especially note that when (this.count == 0) indexOf(str, 0, 0)
-   *   fulfills the preconditions but 'this(beginIndex)' will throw.
+   *    The algorithm is known to get drastically slower with increasing
+   *    needle size.
+   *
+   *    Over the past half century, an extensive literature on the this
+   *    specific topic of sub-string matching has evolved.
+   *    A number of contemporary algorithms use the full Unicode alphabet
+   *    and have better performance for moderate to huge data.  Even the
+   *    venerable, but proven, Boyer-Moore algorithm would be faster.
+   *
+   * 2) When Arrays.mismatch(Array[Char]) becomes available, consider
+   *    re-writing this section to use that method.  That way, resource
+   *    can be spent on optimizing common code rather than N duplicates,
+   *    each with their own essential quirks & time honored bugs.
    */
+
+  // By convention, caller has validated arguments.
   private def indexOfImpl(str: _String, beginIndex: Int, endIndex: Int): Int = {
-    val needleLen = str.count
+    val thatCount = str.count
 
-    if (needleLen == 0) {
+    if (thatCount == 0) {
       beginIndex
-    } else if (needleLen > (endIndex - beginIndex)) {
-      /* needleLen is now known to be >= 1.
-       * If needle is longer than haystack slice, it will never match.
-       * Given prior precondition checking, this also filters out either
-       * or both of 'this' or the slice being a zero length empty _String,
-       * a.k.a "".
-       */
-      -1
+    } else if (thatCount + beginIndex > endIndex) {
+      -1 // also catches if 'this' is a zero length null _String, a.k.a ""
     } else {
-      val haystackStartPtr =
-        this.value.at(offset + beginIndex).asInstanceOf[Ptr[Byte]]
+      val needle = str.value
+      val needleOffset = str.offset
+      val needleFirstChar = needle(needleOffset)
+      val needleEnd = needleOffset + thatCount
 
-      val haystackEndPtr =
-        haystackStartPtr + ((endIndex - beginIndex) * 2) // First excluded byte
+      var foundAt = -1 // not found until shown otherwise
 
-      var result = -1
+      var done = false
+      var cursor = beginIndex
 
-      var cursor = haystackStartPtr
+      while ((!done) && (cursor < endIndex)) {
+        val i = indexOfImpl(needleFirstChar, cursor, endIndex)
 
-      while (cursor.toLong < haystackEndPtr.toLong) {
-        val nHaystackBytesRemaining = (haystackEndPtr - cursor).toInt
-
-        val foundAt = MemmemImpl
-          .memmem(
-            cursor,
-            nHaystackBytesRemaining,
-            str.value.at(str.offset),
-            str.count * 2
-          )
-          .asInstanceOf[Ptr[Byte]]
-
-        if (foundAt == null) {
-          cursor = haystackEndPtr
-        } else if ((foundAt.toInt & 0x1) == 1) { // found on odd bit boundary
-          cursor = foundAt + 1 // skip to next 16 bit Character boundary
-        } else { // found on even bit boundary
-          cursor = haystackEndPtr
-          val foundOffsetCharCount =
-            ((foundAt.toLong - haystackStartPtr.toLong) >> 1).toInt
-
-          // Make relative to public start of 'this': (this.value + offset)
-          result = beginIndex + foundOffsetCharCount
+        if ((i == -1) || (thatCount + i > endIndex)) {
+          done = true
+        } else {
+          var o1 = offset + i
+          var o2 = needleOffset
+          while (({ o2 += 1; o2 } < needleEnd) &&
+              (value({ o1 += 1; o1 }) == needle(o2))) ()
+          if (o2 < needleEnd) {
+            cursor = i + 1 // no match
+          } else {
+            foundAt = i
+            done = true
+          }
         }
       }
 
-      result
+      foundAt
     }
   }
 

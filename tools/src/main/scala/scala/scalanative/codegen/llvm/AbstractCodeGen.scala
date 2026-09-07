@@ -598,7 +598,7 @@ private[codegen] abstract class AbstractCodeGen(
         rep(vs, sep = ", ")(genVal)
         str(" ]")
       case nir.Val.ByteString(v) =>
-        genByteString(v)
+        genByteString(v.toIndexedSeq)
       case nir.Val.Local(n, ty) =>
         str("%")
         genLocal(n)
