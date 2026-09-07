@@ -130,13 +130,11 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     uint32_t maxNumberOfBlocks = maxHeapSize / SPACE_USED_PER_BLOCK;
     assert(maxNumberOfBlocks > 1);
     uint32_t initialBlockCount = minHeapSize / SPACE_USED_PER_BLOCK;
-    uint32_t normalMaxBlockCount = maxNumberOfBlocks - 1;
-    if (initialBlockCount > normalMaxBlockCount) {
-        initialBlockCount = normalMaxBlockCount;
-    }
     heap->maxHeapSize = maxHeapSize;
     heap->blockCount = initialBlockCount;
-    heap->maxBlockCount = normalMaxBlockCount;
+    heap->maxBlockCount = maxNumberOfBlocks;
+    heap->emergencyBlockStart = NULL;
+    heap->emergencyBlockMeta = NULL;
     atomic_init(&heap->emergencyBlockClaimed, false);
     heap->maxMarkTimeRatio = Settings_MaxMarkTimeRatio();
     heap->minFreeRatio = Settings_MinFreeRatio();
@@ -187,10 +185,6 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     heap->heapSize = initialBlockCount * SPACE_USED_PER_BLOCK;
     heap->heapStart = heapStart;
     heap->heapEnd = heapStart + initialBlockCount * WORDS_IN_BLOCK;
-    heap->emergencyBlockStart =
-        heapStart + normalMaxBlockCount * WORDS_IN_BLOCK;
-    heap->emergencyBlockMeta =
-        (BlockMeta *)blockMetaStart + normalMaxBlockCount;
 
 #ifdef _WIN32
     // Commit memory chunks reserved using mapMemory
@@ -203,8 +197,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
         // chunk equal to maximal size of heap, but commit only minimal needed
         // chunk of memory. Additional chunks of heap should be committed on
         // demend when growing the heap.
-        memoryCommit(heapStart, minHeapSize) &&
-        memoryCommit(heap->emergencyBlockStart, BLOCK_TOTAL_SIZE);
+        memoryCommit(heapStart, minHeapSize);
     if (!commitStatus) {
         Heap_exitWithOutOfMemory("Failed to commit memory");
     }
@@ -221,6 +214,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     Phase_Init(heap, initialBlockCount);
 
     Bytemap_Init(bytemap, heapStart, maxHeapSize);
+    Heap_RefillEmergencyBlock(heap);
 
     // Init all GCThreads
     // Init stats if enabled.
@@ -253,7 +247,6 @@ bool Heap_BeginEmergencyAllocation(Heap *heap) {
 
     BlockMeta *blockMeta = (BlockMeta *)heap->emergencyBlockMeta;
     word_t *blockStart = heap->emergencyBlockStart;
-    bool isHeapEnd = blockStart == heap->heapEnd;
     heap->emergencyBlockStart = NULL;
     heap->emergencyBlockMeta = NULL;
     BlockMeta_SetFlag(blockMeta, block_simple);
@@ -263,20 +256,11 @@ bool Heap_BeginEmergencyAllocation(Heap *heap) {
     blockMeta->debugFlag = dbg_in_use;
 #endif
 
-    if (isHeapEnd) {
-        assert(blockMeta == (BlockMeta *)heap->blockMetaEnd);
-        heap->heapEnd = blockStart + WORDS_IN_BLOCK;
-        heap->blockMetaEnd = (word_t *)(blockMeta + 1);
-        heap->lineMetaEnd += LINE_COUNT * LINE_METADATA_SIZE / WORD_SIZE;
-        heap->heapSize += SPACE_USED_PER_BLOCK;
-        heap->blockCount += 1;
-        heap->maxBlockCount += 1;
-    }
     Allocator *allocator = &currentMutatorThread->allocator;
     allocator->block = blockMeta;
     allocator->blockStart = blockStart;
     allocator->cursor = blockStart;
-    allocator->limit = heap->heapEnd;
+    allocator->limit = Block_GetBlockEnd(blockStart);
     atomic_thread_fence(memory_order_release);
     return true;
 }

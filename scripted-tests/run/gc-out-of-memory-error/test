@@ -1,8 +1,19 @@
+# =============================================================================
+# GC OutOfMemoryError Tests
+# =============================================================================
+# Runs allocation failures against a heap with a hard upper bound to check that
+# they are reported as OutOfMemoryError instead of aborting the process, that
+# the GC reserve leaves room to record the stack of the failed allocation, and
+# that concurrent failures share the preallocated fallback error.
+
+# -----------------------------------------------------------------------------
+# Phase 1: Run with Immix GC
+# -----------------------------------------------------------------------------
 > set nativeConfig ~= { _.withGC(scala.scalanative.build.GC.immix) }
-> set nativeConfig ~= { _.withGC(scala.scalanative.build.GC.immix) }
-> runHeapExhaustion
-> set nativeConfig ~= { _.withGC(scala.scalanative.build.GC.commix) }
 > runHeapExhaustion
 
+# -----------------------------------------------------------------------------
+# Phase 2: Run with Commix GC
+# -----------------------------------------------------------------------------
 > set nativeConfig ~= { _.withGC(scala.scalanative.build.GC.commix) }
 > runHeapExhaustion

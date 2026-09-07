@@ -1,40 +1,54 @@
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 object Main {
-  private final val Slots = 128
-  private final val AllocationSize = 64 * 1024
-  private final val FallbackThreads = 4
+  /* Larger than the maximal heap size configured by the test runner, so the
+   * allocation can never be satisfied, no matter how far the heap grows. The
+   * heap itself stays almost empty, which keeps the reporting of the error
+   * (including symbolication of its stack trace) affordable.
+   */
+  private final val Oversized = 512 * 1024 * 1024
+  private final val ChunkSize = 64 * 1024
+  private final val RetainedSlots = 8192
+  private final val ConcurrentAllocators = 4
 
-  private final class FallbackWorker(
-      ready: CountDownLatch,
-      start: CountDownLatch,
-      done: CountDownLatch
-  ) extends Thread {
-    @volatile var error: OutOfMemoryError = null
+  @volatile private var sink: AnyRef = null
 
-    override def run(): Unit = {
-      ready.countDown()
-      start.await()
-      try new Array[Byte](AllocationSize)
-      catch { case ex: OutOfMemoryError => error = ex }
-      finally done.countDown()
-    }
-  }
+  private def check(condition: Boolean, message: String): Unit =
+    if (!condition) throw new AssertionError(message)
 
-  private def allocateUntilOom(retained: Array[AnyRef]): OutOfMemoryError = {
+  private def allocateOversized(): OutOfMemoryError =
     try {
-      var index = 0
-      while (true) {
-        retained(index) = new Array[Byte](AllocationSize)
-        index += 1
-      }
-      throw new AssertionError("unreachable")
+      sink = new Array[Byte](Oversized)
+      throw new AssertionError(s"allocation of $Oversized bytes succeeded")
     } catch {
       case error: OutOfMemoryError => error
     }
-  }
 
-  private def clear(retained: Array[AnyRef]): Unit = {
+  // The method name is mangled for private methods, match on the suffix.
+  private def hasAllocationFrame(error: OutOfMemoryError): Boolean =
+    error
+      .getStackTrace()
+      .exists(_.getMethodName().endsWith("allocateOversized"))
+
+  /* Keeps allocating until the managed heap runs out. The stack trace of the
+   * reported error is deliberately not inspected: symbolicating it needs more
+   * memory than the exhausted heap can hand out.
+   */
+  private def exhaustHeap(retained: Array[AnyRef]): Unit =
+    try {
+      var index = 0
+      while (index < retained.length) {
+        retained(index) = new Array[Byte](ChunkSize)
+        index += 1
+      }
+      throw new AssertionError(
+        s"heap was not exhausted after $RetainedSlots allocations"
+      )
+    } catch {
+      case _: OutOfMemoryError => ()
+    }
+
+  private def release(retained: Array[AnyRef]): Unit = {
     var index = 0
     while (index < retained.length) {
       retained(index) = null
@@ -43,53 +57,70 @@ object Main {
     System.gc()
   }
 
-  def main(args: Array[String]): Unit = {
-    val retained = new Array[AnyRef](Slots)
+  private final class Allocator(ready: CountDownLatch, start: CountDownLatch)
+      extends Thread {
+    @volatile var error: OutOfMemoryError = null
 
-    val withTrace = allocateUntilOom(retained)
-    clear(retained)
-    assert(
-      withTrace.getStackTrace().exists(_.getMethodName() == "allocateUntilOom"),
-      "first OutOfMemoryError did not retain its allocation stack"
-    )
-
-    val withTraceAgain = allocateUntilOom(retained)
-    assert(
-      withTraceAgain
-        .getStackTrace()
-        .exists(_.getMethodName() == "allocateUntilOom"),
-      "refilled reserve did not retain the allocation stack"
-    )
-
-    val ready = new CountDownLatch(FallbackThreads)
-    val start = new CountDownLatch(1)
-    val done = new CountDownLatch(FallbackThreads)
-    val workers = new Array[FallbackWorker](FallbackThreads)
-    var index = 0
-    while (index < FallbackThreads) {
-      val worker = new FallbackWorker(ready, start, done)
-      workers(index) = worker
-      worker.start()
-      index += 1
+    override def run(): Unit = {
+      ready.countDown()
+      start.await()
+      error = allocateOversized()
     }
-    assert(ready.await(30, TimeUnit.SECONDS), "fallback workers did not start")
+  }
 
-    val fallback = allocateUntilOom(retained)
-    assert(
-      fallback.getStackTrace().isEmpty,
-      "fallback OutOfMemoryError unexpectedly contains a stack trace"
+  private def concurrentErrors(): Array[OutOfMemoryError] = {
+    val ready = new CountDownLatch(ConcurrentAllocators)
+    val start = new CountDownLatch(1)
+    val allocators =
+      Array.fill(ConcurrentAllocators)(new Allocator(ready, start))
+    allocators.foreach(_.start())
+    check(ready.await(30, TimeUnit.SECONDS), "allocator threads did not start")
+    start.countDown()
+    allocators.foreach(_.join(30000L))
+    allocators.map { allocator =>
+      check(!allocator.isAlive(), "allocator thread did not finish in time")
+      check(allocator.error != null, "allocator thread did not report an error")
+      allocator.error
+    }
+  }
+
+  def main(args: Array[String]): Unit = {
+    // A failed allocation reports an OutOfMemoryError instead of aborting the
+    // process, and the reserve kept by the GC leaves enough room to record the
+    // stack of the allocation that failed.
+    val first = allocateOversized()
+    check(hasAllocationFrame(first), "first error did not retain its stack")
+
+    // The reserve is refilled by the collection that follows, so the next
+    // failure is reported the same way instead of degrading to the fallback.
+    val second = allocateOversized()
+    check(!(first eq second), "second error reused the first instance")
+    check(hasAllocationFrame(second), "refilled reserve lost the stack")
+
+    // Running out of the managed heap is recoverable too: the error unwinds to
+    // the mutator, and once the retained objects are dropped the program keeps
+    // allocating normally.
+    val retained = new Array[AnyRef](RetainedSlots)
+    exhaustHeap(retained)
+    release(retained)
+    check(
+      hasAllocationFrame(allocateOversized()),
+      "error after releasing the heap did not retain its stack"
     )
 
-    start.countDown()
-    assert(done.await(30, TimeUnit.SECONDS), "fallback workers did not finish")
-    index = 0
-    while (index < FallbackThreads) {
-      workers(index).join()
-      assert(
-        workers(index).error eq fallback,
-        "concurrent OOM did not use the shared fallback"
+    // Only one thread at a time can take the reserve. The others fall back to
+    // the preallocated error, which is shared and carries no stack trace.
+    val errors = concurrentErrors()
+    val fallbacks = errors.filter(_.getStackTrace().isEmpty)
+    check(
+      fallbacks.headOption.forall(shared => fallbacks.forall(_ eq shared)),
+      "concurrent OOM used more than one fallback instance"
+    )
+    errors.filter(_.getStackTrace().nonEmpty).foreach { error =>
+      check(
+        hasAllocationFrame(error),
+        "concurrent OOM reported an unrelated stack"
       )
-      index += 1
     }
 
     println("gc-out-of-memory-error: OK")
