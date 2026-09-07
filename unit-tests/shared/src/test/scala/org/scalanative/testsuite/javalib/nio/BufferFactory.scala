@@ -7,7 +7,7 @@ import scala.reflect._
 
 // Ported from Scala.js
 sealed abstract class BufferFactory {
-  type BufferType <: Buffer with Comparable[BufferType]
+  type BufferType <: (Buffer & Comparable[BufferType])
   type ElementType
 
   implicit val elemClassTag: ClassTag[ElementType]

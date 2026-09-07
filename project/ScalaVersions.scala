@@ -33,16 +33,17 @@ object ScalaVersions {
     crossScalaVersions("3.5", 0 to 2),
     crossScalaVersions("3.6", 2 to 4), // 3.6.0 is broken, 3.6.1 is hotfix
     crossScalaVersions("3.7", 0 to 4),
-    crossScalaVersions("3.8", 0 to 4)
+    crossScalaVersions("3.8", 0 to 4),
+    crossScalaVersions("3.9", 0 to 0) // LTS
   ).flatten.distinct
 
   // Tested in scheduled nightly CI to check compiler plugins
   // List maintains only upcoming releases, removed from the list after reaching stable status
-  lazy val scala3RCVersions = List("3.9.0-RC3")
+  lazy val scala3RCVersions = List("3.10.0-RC1")
 
   // List of nightly versions can be found here: https://repo.scala-lang.org/ui/native/maven-nightlies/org/scala-lang/scala3-compiler_3
   // or check outputs of `scala -O --version -S 3.nightly`
-  val scala3Nightly = "3.10.0-RC1-bin-20260609-b34a019-NIGHTLY"
+  val scala3Nightly = "3.10.0-RC1-bin-20260817-3adfcbd-NIGHTLY"
 
   // Scala versions used for publishing libraries
   val scala212: String = crossScala212.last
@@ -52,9 +53,6 @@ object ScalaVersions {
   // The latest version of minimal Scala 3 minor version used to publish artifacts
   val scala3PublishVersion = "3.1.3"
   val scala213PublishVersion = crossScala213.head
-
-  // minimum version rationale:
-  //   An sbt version after 1.12.8, which fixed a CVE on Windows.
 
   val sbt10Version: String = "1.12.14"
   val sbt10ScalaVersion: String = scala212
