@@ -48,7 +48,7 @@ final class TrivialImmutableCollection[A] private (contents: Array[AnyRef])
   def toArray(): Array[AnyRef] =
     contents.clone()
 
-  def toArray[T](a: Array[T with AnyRef]): Array[T with AnyRef] =
+  def toArray[T](a: Array[T & AnyRef]): Array[T & AnyRef] =
     ju.Arrays.copyOf[T, AnyRef](contents, contents.length, a.getClass())
 
   def add(e: A): Boolean =

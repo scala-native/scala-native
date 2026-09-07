@@ -7,7 +7,6 @@ import scala.tools.nsc
 
 import scala.scalanative.nir.Defn.Define.DebugInfo
 import scala.scalanative.util.ScopedVar.scoped
-import scala.scalanative.util.unsupported
 
 trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
@@ -1046,7 +1045,6 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     ): Seq[nir.Inst] = {
       val fresh = curFresh.get
       val buf = new ExprBuffer()(fresh)
-      val isSynchronized = dd.symbol.hasFlag(SYNCHRONIZED)
       val sym = dd.symbol
       val isStatic = sym.isStaticInNIR
 
@@ -1080,18 +1078,6 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         }
       }
 
-      def withOptSynchronized(bodyGen: ExprBuffer => nir.Val): nir.Val = {
-        if (!isSynchronized) bodyGen(buf)
-        else {
-          val syncedIn = curMethodThis.getOrElse {
-            unsupported(
-              s"cannot generate `synchronized` for method ${curMethodSym.name}, curMethodThis was empty"
-            )
-          }
-          buf.genSynchronized(ValTree(syncedIn)())(bodyGen)
-        }
-      }
-
       def genBody(): nir.Val = bodyp match {
         // Tailrec emits magical labeldefs that can hijack this reference is
         // current method. This requires special treatment on our side.
@@ -1111,7 +1097,9 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             curMethodIsExtern := isExtern
           ) {
             buf.genReturn {
-              withOptSynchronized(_.genTailRecLabel(dd, isStatic, label))
+              genSynchronizedMethod(dd, buf)(
+                _.genTailRecLabel(dd, isStatic, label)
+              )
             }
           }
 
@@ -1131,7 +1119,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             curMethodIsExtern := isExtern
           ) {
             buf.genReturn {
-              withOptSynchronized(_.genExpr(bodyp))
+              genSynchronizedMethod(dd, buf)(_.genExpr(bodyp))
             }
           }
       }
@@ -1141,6 +1129,29 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       genBody()
       nir.ControlFlow.removeDeadBlocks(buf.toSeq)
     }
+
+    /** Re-introduce a synchronized scope around a method whose `SYNCHRONIZED`
+     *  flag was set by UnCurry.
+     *
+     *  Instance methods lock on `this`. Static methods have no `this`; they
+     *  lock on the `Class` of the enclosing class, matching JVM
+     *  `ACC_SYNCHRONIZED`.
+     */
+    def genSynchronizedMethod(
+        dd: DefDef,
+        buf: ExprBuffer
+    )(
+        bodyGen: ExprBuffer => nir.Val
+    )(implicit pos: nir.SourcePosition): nir.Val = {
+      if (!dd.symbol.hasFlag(SYNCHRONIZED)) bodyGen(buf)
+      else
+        buf.genSynchronized(ValTree(genSynchronizedMethodReceiver())())(bodyGen)
+    }
+
+    def genSynchronizedMethodReceiver(): nir.Val =
+      curMethodThis.get.getOrElse {
+        nir.Val.ClassOf(genTypeName(curClassSym.get))
+      }
   }
 
   // Static forwarders -------------------------------------------------------
