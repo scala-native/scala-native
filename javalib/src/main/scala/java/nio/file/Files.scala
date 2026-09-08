@@ -1069,7 +1069,15 @@ object Files {
               targetAbs,
               "Unable to move file to a different file system"
             )
-          throw UnixException(target.toString, errno)
+          // POSIX rename permits either ENOTEMPTY or EEXIST when the
+          // target is a non-empty directory. glibc returns ENOTEMPTY;
+          // musl returns EEXIST. Normalise EEXIST to ENOTEMPTY so the
+          // JDK-compatible DirectoryNotEmptyException is raised
+          // instead of FileAlreadyExistsException.
+          throw UnixException(
+            target.toString,
+            if (errno == EEXIST) ENOTEMPTY else errno
+          )
         }
       }
     }

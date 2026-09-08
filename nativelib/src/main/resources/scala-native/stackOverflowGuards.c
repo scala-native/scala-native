@@ -3,10 +3,6 @@
 #include <windows.h>
 #include <malloc.h>
 #else // Unix
-#if defined(__linux__)
-#define _GNU_SOURCE 1 /* To pick up REG_RIP */
-#include <ucontext.h>
-#endif
 #include <sys/resource.h>
 #include <sys/mman.h>
 #include <signal.h>
@@ -83,7 +79,7 @@ static struct sigaction *resolvePreviousSignalHandler(int sig) {
                 "%s StackOverflowHandler does not define handler "
                 "for %d signal\n",
                 snErrorPrefix, sig);
-        exit(sig);
+        _exit(sig);
     }
 }
 
@@ -92,7 +88,8 @@ static void protectStackGuardPage() {
                  PROT_NONE) == -1) {
         perror(SN_FATAL_ERROR_MSG("StackOverflowHandler guard "
                                   "protection failed"));
-        exit(EXIT_FAILURE);
+        // _exit rather than exit: reachable from the signal handler.
+        _exit(EXIT_FAILURE);
     }
 }
 static void unprotectStackGuardPage() {
@@ -100,7 +97,8 @@ static void unprotectStackGuardPage() {
                  PROT_READ | PROT_WRITE) == -1) {
         perror(SN_FATAL_ERROR_MSG("StackOverflowHandler guard "
                                   "unprotection failed"));
-        exit(EXIT_FAILURE);
+        // _exit rather than exit: reachable from the signal handler.
+        _exit(EXIT_FAILURE);
     }
 }
 
@@ -141,7 +139,8 @@ static void setupStackOverflowGuards() {
         } else {
             fprintf(stderr, "%s Cannot setup StackOverflowGuards handler\n",
                     snErrorPrefix);
-            exit(EXIT_FAILURE);
+            // _exit rather than exit: reachable from the signal handler.
+            _exit(EXIT_FAILURE);
         }
     }
     assert(currentThreadInfo.stackGuardPage > currentThreadInfo.stackTop);
@@ -220,14 +219,14 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
                     snErrorPrefix, threadInfo.isMainThread ? "main" : "user",
                     threadInfo.stackSize / 1024);
             StackTrace_PrintStackTrace();
-            exit(sig);
+            _exit(sig);
         } else if (faultAddr == NULL) {
             fprintf(stderr,
                     "%s Unrecoverable NullPointerException in %s "
                     "thread\n",
                     snErrorPrefix, threadInfo.isMainThread ? "main" : "user");
             StackTrace_PrintStackTrace();
-            exit(sig);
+            _exit(sig);
         }
     default:
     dispatchDefaultSignal:;
@@ -251,16 +250,33 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
         fprintf(stderr, "%s Unhandled signal %d, si_addr=%p\n", snErrorPrefix,
                 sig, faultAddr);
         StackTrace_PrintStackTrace();
-        exit(sig);
+        // _exit rather than exit: exit() is not async-signal-safe, and would
+        // run shutdown hooks on a spawned thread that can deadlock on a GC lock
+        // the faulting thread holds.
+        _exit(sig);
     }
 }
 
-#define SIG_HANDLER_STACK_SIZE SIGSTKSZ
+static size_t sigHandlerStackSize() {
+    // `SIGSTKSZ` is a compile-time constant on some libcs (e.g. musl
+    // 8192). On Linux 5.14+ the kernel enforces a runtime minimum
+    // (`AT_MINSIGSTKSZ`) that can be larger than that constant to
+    // accommodate XSAVE-class CPU state; modern libcs expose this via
+    // `sysconf(_SC_SIGSTKSZ)`. Use whichever is larger so `sigaltstack`
+    // does not return `ENOMEM`.
+    size_t size = (size_t)SIGSTKSZ;
+#ifdef _SC_SIGSTKSZ
+    long runtimeSize = sysconf(_SC_SIGSTKSZ);
+    if (runtimeSize > 0 && (size_t)runtimeSize > size) {
+        size = (size_t)runtimeSize;
+    }
+#endif
+    return size;
+}
 static void setupSignalHandlerAltstack() {
     stack_t handlerStack = {};
-    size_t pageSize = resolvePageSize();
     handlerStack.ss_size =
-        (size_t)alignToPageStart((void *)SIG_HANDLER_STACK_SIZE);
+        (size_t)alignToNextPage((void *)sigHandlerStackSize());
     handlerStack.ss_sp = malloc(handlerStack.ss_size);
     if (handlerStack.ss_sp == NULL) {
         perror(SN_ERROR_MSG("StackOverflowGuards failed to allocate alternate "
