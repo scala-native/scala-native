@@ -41,6 +41,7 @@ private[java] class PosixThread(
   @volatile private var counter: Int = 0
   // index of currently used condition
   @volatile private var conditionIdx = ConditionUnset
+  @volatile private var terminated = false
 
   if (isMultithreadingEnabled) {
     // Init locks/conditions before starting the thread
@@ -92,12 +93,15 @@ private[java] class PosixThread(
     }
 
   override def onTermination(): Unit = {
-    super.onTermination()
     if (isMultithreadingEnabled) {
-      pthread_cond_destroy(condition(0))
-      pthread_cond_destroy(condition(1))
-      pthread_mutex_destroy(lock)
+      this.synchronized {
+        terminated = true
+        pthread_cond_destroy(condition(0))
+        pthread_cond_destroy(condition(1))
+        pthread_mutex_destroy(lock)
+      }
     }
+    super.onTermination()
   }
 
   override def setPriority(
@@ -187,14 +191,16 @@ private[java] class PosixThread(
   }
 
   override def unpark(): Unit = if (isMultithreadingEnabled) {
-    pthread_mutex_lock(lock)
-    val s = counter
-    counter = 1
-    val index = conditionIdx
-    pthread_mutex_unlock(lock)
-
-    if (s < 1 && index != ConditionUnset) {
-      pthread_cond_signal(condition(index))
+    if (terminated) return
+    this.synchronized {
+      if (terminated) return
+      pthread_mutex_lock(lock)
+      val s = counter
+      counter = 1
+      val index = conditionIdx
+      if (s < 1 && index != ConditionUnset)
+        pthread_cond_signal(condition(index))
+      pthread_mutex_unlock(lock)
     }
   }
 
