@@ -51,6 +51,14 @@ class ClassTest {
     assertFalse(classOf[java.lang.String].isPrimitive)
   }
 
+  @Test def getSimpleName(): Unit = {
+    class LocalClass
+
+    assertEquals("A", classOf[A].getSimpleName())
+    assertEquals("LocalClass", classOf[LocalClass].getSimpleName())
+    assertEquals("", new Object {}.getClass().getSimpleName())
+  }
+
   @Test def isArray(): Unit = {
     assertTrue(classOf[Array[scala.Boolean]].isArray)
     assertTrue(classOf[Array[scala.Char]].isArray)
