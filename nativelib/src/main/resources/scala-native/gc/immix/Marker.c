@@ -184,7 +184,12 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
         }
     }
 #endif
-    Marker_markRange(heap, stack, stackTop, stackBottom, sizeof(word_t));
+    StackScanRange ranges[2];
+    int nRanges = threadStackScanableRanges(stackTop, stackBottom,
+                                            thread->threadInfo, ranges);
+    for (int i = 0; i < nRanges; i++)
+        Marker_markRange(heap, stack, (word_t **)ranges[i].from,
+                         (word_t **)ranges[i].to, sizeof(word_t));
 
     // Mark registers buffer
     size_t registerBufferStride =

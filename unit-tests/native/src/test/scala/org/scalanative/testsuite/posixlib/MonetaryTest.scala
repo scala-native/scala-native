@@ -27,6 +27,12 @@ class MonetaryTest {
 
   @Test def strfmon_l_Using_en_US(): Unit =
     if (!isWindows && !isOpenBSD) {
+      // musl reports newlocale(en_US) as successful but populates only
+      // C-equivalent monetary data
+      assumeFalse(
+        "musl ships only C-equivalent locale data for en_US",
+        isMusl
+      )
       errno = 0
 
       val locale = {
