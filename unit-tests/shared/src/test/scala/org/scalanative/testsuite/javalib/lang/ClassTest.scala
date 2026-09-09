@@ -5,6 +5,8 @@ import java.lang._
 import org.junit.Assert._
 import org.junit.{Ignore, Test}
 
+import org.scalanative.testsuite.utils.Platform
+
 class ClassTest {
 
   @Test def primitivesHaveTheirOwnClasses(): Unit = {
@@ -62,7 +64,8 @@ class ClassTest {
       classOf[ClassTestModule.NestedClass].getSimpleName()
     )
     assertEquals(
-      if (scala.util.Properties.versionNumberString.startsWith("2."))
+      if (Platform.executingInJVM &&
+          scala.util.Properties.versionNumberString.startsWith("2."))
         "LocalClass$1"
       else "LocalClass",
       classOf[LocalClass].getSimpleName()

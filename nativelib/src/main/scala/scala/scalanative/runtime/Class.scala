@@ -83,7 +83,7 @@ private[runtime] final class _Class[A] {
             lastDollar - previousDollar == 5 &&
             name.charAt(previousDollar - 1) == '$' &&
             name.regionMatches(previousDollar + 1, "anon", 0, 4)) ""
-        else name.substring(previousDollar + 1)
+        else name.substring(previousDollar + 1, lastDollar)
       }
     }
   }
