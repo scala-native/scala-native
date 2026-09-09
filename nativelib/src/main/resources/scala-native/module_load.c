@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
 #include "stdatomic.h"
 #include <stdint.h>
@@ -145,4 +147,14 @@ INLINE ModuleRef __scalanative_loadModule(ModuleSlot slot, void *classInfo,
         return __scalanative_waitForModuleInitialization(slot, classInfo);
 }
 
+#else
+bool scalanative_isModuleInitializationContext(void *module) {
+    (void)module;
+    return false;
+}
+
+void *scalanative_moduleInitializationInstanceForCurrentThread(void *module) {
+    (void)module;
+    return (void *)0;
+}
 #endif
