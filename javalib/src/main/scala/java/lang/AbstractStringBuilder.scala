@@ -273,15 +273,32 @@ protected abstract class AbstractStringBuilder private (unit: Unit) {
     }
   }
 
-  def getChars(
+  /* Design Note:
+   *   Java 25 introduced a default 'CharSequence#getChars' method.
+   *   That default method is incredibly slow. It is explicitly intended
+   *   that classes override it.
+   *
+   *   AbstractStringBuilder inherits from 'CharSequence'. Change the
+   *   name of the previous 'AbstractStringBuilder#getChars()'
+   *   class method to assure that the fast System.arraycopy implementation
+   *   is used with no chance of silently using the slow method. Early
+   *   evolutions of this JDK 25+ method had exactly that near-catastrophic
+   *   flaw.
+   *
+   *   This also avoids depending upon an intimate knowledge of and dependency
+   *   on Scala trait linearization.  Sometimes dumb is more maintainable
+   *   than esoteric.
+   */
+
+  protected def fastGetChars(
       start: scala.Int,
       end: scala.Int,
       dest: Array[scala.Char],
       destStart: scala.Int
   ): Unit = {
-    if (start > count || end > count || start > end) {
+    if (start > count || end > count || start > end)
       throw new StringIndexOutOfBoundsException()
-    }
+
     System.arraycopy(value, start, dest, destStart, end - start)
   }
 

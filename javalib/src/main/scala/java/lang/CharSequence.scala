@@ -2,7 +2,7 @@ package java.lang
 
 import java.util.function.IntConsumer
 import java.util.stream.{IntStream, StreamSupport}
-import java.util.{Spliterator, Spliterators}
+import java.util.{Objects, Spliterator, Spliterators}
 
 trait CharSequence {
 
@@ -118,8 +118,24 @@ trait CharSequence {
 
   def charAt(index: scala.Int): scala.Char
 
-  /** @since JDK 15 */
+  /** @since JDK 25 */
+  def getChars(
+      srcBegin: scala.Int,
+      srcEnd: scala.Int,
+      dst: Array[scala.Char],
+      dstBegin: scala.Int
+  ): Unit = {
+    Objects.checkFromToIndex(
+      srcBegin,
+      srcEnd,
+      this.length()
+    )
 
+    for (j <- 0 until (srcEnd - srcBegin))
+      dst(dstBegin + j) = this.charAt(srcBegin + j)
+  }
+
+  /** @since JDK 15 */
   def isEmpty(): scala.Boolean = length() == 0
 
   def length(): scala.Int
