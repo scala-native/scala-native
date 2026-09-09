@@ -56,7 +56,36 @@ private[runtime] final class _Class[A] {
 
   def getSimpleName(): String = {
     val lastDot = name.lastIndexOf('.'.toInt)
-    name.substring(lastDot + 1).split('$').last
+    val lastDollar = name.lastIndexOf('$'.toInt)
+    if (lastDollar < 0) name.substring(lastDot + 1)
+    else getSimpleNameSlowPath(lastDot, lastDollar)
+  }
+
+  @noinline private def getSimpleNameSlowPath(
+      lastDot: Int,
+      lastDollar: Int
+  ): String = {
+    if (lastDollar < lastDot) name.substring(lastDot + 1)
+    else {
+      var suffixEnd = lastDollar + 1
+      while (suffixEnd < name.length() && {
+            val c = name.charAt(suffixEnd)
+            c >= '0' && c <= '9'
+          }) suffixEnd += 1
+
+      if (suffixEnd < name.length()) name.substring(suffixEnd)
+      else {
+        val previousDollar = name.lastIndexOf('$'.toInt, lastDollar - 1)
+        if (lastDollar == name.length() - 1) {
+          if (previousDollar <= lastDot) name.substring(lastDot + 1)
+          else name.substring(previousDollar + 1)
+        } else if (previousDollar <= lastDot ||
+            lastDollar - previousDollar == 5 &&
+            name.charAt(previousDollar - 1) == '$' &&
+            name.regionMatches(previousDollar + 1, "anon", 0, 4)) ""
+        else name.substring(previousDollar + 1, lastDollar)
+      }
+    }
   }
 
   // Based on fixed ordering in scala.scalanative.codegen.Metadata.initClassIdsAndRanges

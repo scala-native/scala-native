@@ -5,6 +5,8 @@ import java.lang._
 import org.junit.Assert._
 import org.junit.{Ignore, Test}
 
+import org.scalanative.testsuite.utils.Platform
+
 class ClassTest {
 
   @Test def primitivesHaveTheirOwnClasses(): Unit = {
@@ -49,6 +51,26 @@ class ClassTest {
     assertTrue(classOf[scala.Unit].isPrimitive)
     assertFalse(classOf[java.lang.Object].isPrimitive)
     assertFalse(classOf[java.lang.String].isPrimitive)
+  }
+
+  @Test def getSimpleName(): Unit = {
+    class LocalClass
+
+    assertEquals("ClassTest", classOf[ClassTest].getSimpleName())
+    assertEquals("A", classOf[A].getSimpleName())
+    assertEquals("ClassTestModule$", ClassTestModule.getClass.getSimpleName())
+    assertEquals(
+      "NestedClass",
+      classOf[ClassTestModule.NestedClass].getSimpleName()
+    )
+    assertEquals(
+      if (Platform.executingInJVM &&
+          scala.util.Properties.versionNumberString.startsWith("2."))
+        "LocalClass$1"
+      else "LocalClass",
+      classOf[LocalClass].getSimpleName()
+    )
+    assertEquals("", new Object {}.getClass().getSimpleName())
   }
 
   @Test def isArray(): Unit = {
@@ -282,4 +304,8 @@ class ClassTest {
     val cl = getClass().getClassLoader()
     assertTrue(cl != null)
   }
+}
+
+object ClassTestModule {
+  class NestedClass
 }
