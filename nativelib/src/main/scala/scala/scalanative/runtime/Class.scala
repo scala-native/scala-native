@@ -76,11 +76,14 @@ private[runtime] final class _Class[A] {
       if (suffixEnd < name.length()) name.substring(suffixEnd)
       else {
         val previousDollar = name.lastIndexOf('$'.toInt, lastDollar - 1)
-        if (previousDollar <= lastDot ||
+        if (lastDollar == name.length() - 1) {
+          if (previousDollar <= lastDot) name.substring(lastDot + 1)
+          else name.substring(previousDollar + 1)
+        } else if (previousDollar <= lastDot ||
             lastDollar - previousDollar == 5 &&
             name.charAt(previousDollar - 1) == '$' &&
             name.regionMatches(previousDollar + 1, "anon", 0, 4)) ""
-        else name.substring(previousDollar + 1, lastDollar)
+        else name.substring(previousDollar + 1)
       }
     }
   }

@@ -54,8 +54,19 @@ class ClassTest {
   @Test def getSimpleName(): Unit = {
     class LocalClass
 
+    assertEquals("ClassTest", classOf[ClassTest].getSimpleName())
     assertEquals("A", classOf[A].getSimpleName())
-    assertEquals("LocalClass", classOf[LocalClass].getSimpleName())
+    assertEquals("ClassTestModule$", ClassTestModule.getClass.getSimpleName())
+    assertEquals(
+      "NestedClass",
+      classOf[ClassTestModule.NestedClass].getSimpleName()
+    )
+    assertEquals(
+      if (scala.util.Properties.versionNumberString.startsWith("2."))
+        "LocalClass$1"
+      else "LocalClass",
+      classOf[LocalClass].getSimpleName()
+    )
     assertEquals("", new Object {}.getClass().getSimpleName())
   }
 
@@ -290,4 +301,8 @@ class ClassTest {
     val cl = getClass().getClassLoader()
     assertTrue(cl != null)
   }
+}
+
+object ClassTestModule {
+  class NestedClass
 }
