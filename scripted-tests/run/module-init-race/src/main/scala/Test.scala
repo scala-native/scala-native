@@ -75,6 +75,12 @@ object M29 extends Mod(29)
 object M30 extends Mod(30)
 object M31 extends Mod(31)
 
+// The initializer must be able to see its own partially constructed module.
+// This takes the reentrant path through the tagged InitializationContext.
+object Reentrant {
+  val self: Reentrant.type = Reentrant
+}
+
 object Test {
   // Deferred first-touch thunks: referencing Mxx here rather than eagerly is
   // what makes each module's initialization happen on a worker thread once the
@@ -139,6 +145,8 @@ object Test {
   def main(args: Array[String]): Unit = {
     val k = Config.K
     val t = Config.T
+
+    check(Reentrant.self eq Reentrant, "recursive module initialization failed")
 
     // Force the support holders to initialize before any worker starts.
     Counters.runs(0)

@@ -1,5 +1,6 @@
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
 #include "stdatomic.h"
+#include <stdint.h>
 #include "gc/shared/ScalaNativeGC.h"
 #include "gc/shared/ThreadUtil.h"
 
@@ -59,23 +60,50 @@ typedef struct InitializationContext {
     thread_id initThreadId;
 } InitializationContext;
 
+// Module instances are aligned pointers. Tag the otherwise stack-local
+// context so readers never need to dereference it to distinguish it from an
+// initialized module.
+#define INITIALIZATION_CONTEXT_TAG ((uintptr_t)1)
+
+static void **initializationContextRef(InitializationContext *ctx) {
+    return (void **)((uintptr_t)ctx | INITIALIZATION_CONTEXT_TAG);
+}
+
+static bool isInitializationContext(ModuleRef module) {
+    return ((uintptr_t)module & INITIALIZATION_CONTEXT_TAG) != 0;
+}
+
+static InitializationContext *initializationContext(ModuleRef module) {
+    return (InitializationContext *)((uintptr_t)module &
+                                     ~INITIALIZATION_CONTEXT_TAG);
+}
+
 extern ModuleRef scalanative_initializeModule(ModuleCtor ctor,
                                               ModuleRef instance,
                                               ModuleSlot slot, void *classInfo);
 extern ModuleRef scalanative_awaitForInitialization(ModuleSlot slot,
                                                     void *classInfo);
 
+// This is called while holding classInfo's monitor. If another thread owns the
+// initialization, it cannot return from startAndWait... (and invalidate ctx)
+// until it has published the initialized module and released that monitor.
+bool scalanative_isModuleInitializationContext(ModuleRef module) {
+    return isInitializationContext(module);
+}
+
+ModuleRef
+scalanative_moduleInitializationInstanceForCurrentThread(ModuleRef module) {
+    InitializationContext *ctx = initializationContext(module);
+    return isThreadEqual(ctx->initThreadId, getThreadId()) ? ctx->instance
+                                                           : NULL;
+}
+
 NOINLINE static ModuleRef
 __scalanative_waitForModuleInitialization(ModuleSlot slot, void *classInfo) {
-    ModuleRef module = atomic_load_explicit(slot, memory_order_acquire);
-    assert(module != NULL);
-    if (*module != classInfo) {
-        InitializationContext *ctx = (InitializationContext *)module;
-        // Usage of module in its constructor, return unitializied instance
-        if (isThreadEqual(ctx->initThreadId, getThreadId())) {
-            return ctx->instance;
-        }
-    }
+    // Do not dereference a published stack-local InitializationContext here.
+    // A competing initializer can replace the slot and return before this
+    // thread gets to inspect it. awaitForInitialization rechecks the slot
+    // under the class monitor, where only the reentrant owner may use ctx.
     return scalanative_awaitForInitialization(slot, classInfo);
 }
 
@@ -92,7 +120,8 @@ NOINLINE static ModuleRef __scalanative_startAndWaitForModuleInitialization(
     ModuleRef instance = scalanative_GC_alloc(classInfo, size);
     ctx.instance = instance;
     void **expected = NULL;
-    if (atomic_compare_exchange_strong(slot, &expected, (void **)&ctx)) {
+    if (atomic_compare_exchange_strong(slot, &expected,
+                                       initializationContextRef(&ctx))) {
         return scalanative_initializeModule(ctor, instance, slot, classInfo);
     } else {
         return __scalanative_waitForModuleInitialization(slot, classInfo);
@@ -110,7 +139,7 @@ INLINE ModuleRef __scalanative_loadModule(ModuleSlot slot, void *classInfo,
         return __scalanative_startAndWaitForModuleInitialization(
             slot, classInfo, size, ctor);
 
-    if (*module == classInfo)
+    if (!isInitializationContext(module) && *module == classInfo)
         return module;
     else
         return __scalanative_waitForModuleInitialization(slot, classInfo);

@@ -279,21 +279,31 @@ package object runtime {
         moduleSlot.rawptr,
         ffi.stdatomic.memory_order.memory_order_acquire
       )
-      // Assumes Class[?] is always 1st filed in the object header
-      val rtti = Intrinsics.loadObject(moduleRef)
-      if (rtti eq cls)
-        return Intrinsics.castRawPtrToObject(moduleRef) // happy-path
+      if (ModuleInitialization.isContext(moduleRef)) {
+        // A stack-local InitializationContext is valid only while its owner is
+        // initializing under this monitor. Competing threads wait and recheck
+        // after the owner publishes the completed module.
+        val initializingInstance =
+          ModuleInitialization.instanceForCurrentThread(moduleRef)
+        if (initializingInstance != null) return initializingInstance
+        cls.wait()
+      } else {
+        // Assumes Class[?] is always 1st filed in the object header
+        val rtti = Intrinsics.loadObject(moduleRef)
+        if (rtti eq cls)
+          return Intrinsics.castRawPtrToObject(moduleRef) // happy-path
 
-      if (rtti eq classOf[ExceptionInInitializerError]) {
-        val ex: ExceptionInInitializerError = Intrinsics
-          .castRawPtrToObject(moduleRef)
-          .asInstanceOf[ExceptionInInitializerError]
-        throw new NoClassDefFoundError(
-          s"Could not initialize class ${cls.getName()}"
-        ).initCause(ex)
+        if (rtti eq classOf[ExceptionInInitializerError]) {
+          val ex: ExceptionInInitializerError = Intrinsics
+            .castRawPtrToObject(moduleRef)
+            .asInstanceOf[ExceptionInInitializerError]
+          throw new NoClassDefFoundError(
+            s"Could not initialize class ${cls.getName()}"
+          ).initCause(ex)
+        }
+
+        cls.wait()
       }
-
-      cls.wait()
     }
     ??? // Unreachable
   }
@@ -310,6 +320,14 @@ package object runtime {
 
     @name("scalanative_StackOverflowGuards_close")
     def close(): Unit = extern
+  }
+
+  @extern private[runtime] object ModuleInitialization {
+    @name("scalanative_isModuleInitializationContext")
+    def isContext(context: RawPtr): Boolean = extern
+
+    @name("scalanative_moduleInitializationInstanceForCurrentThread")
+    def instanceForCurrentThread(context: RawPtr): AnyRef = extern
   }
 
 }
