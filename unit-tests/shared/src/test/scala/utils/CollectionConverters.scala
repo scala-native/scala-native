@@ -26,7 +26,7 @@ object CollectionConverters {
       val m = new LinkedHashMap[K, V]()
       self.iterator.foreach {
         case (key, value) =>
-          m.put(key, value)
+          m.put(key.asInstanceOf[K], value.asInstanceOf[V])
       }
       m
     }
