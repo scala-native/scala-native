@@ -6,7 +6,9 @@ import dotty.tools.dotc.ast.tpd._
 import dotty.tools.dotc.plugins.PluginPhase
 import dotty.tools.dotc.transform.SeqLiterals
 
-import scala.scalanative.nscplugin.CompilerCompat.SymUtils.setter
+import scala.scalanative.nscplugin.CompilerCompat.SymUtils.{
+  isScalaStatic, isVolatile, setter
+}
 
 import NirGenUtil.ContextCached
 
@@ -255,7 +257,7 @@ class PostInlineNativeInterop extends PluginPhase with NativeInteropUtil {
       member.is(Accessor) && matchesName(member, fieldName)
     )
     def accessible(symbol: Symbol): Boolean =
-      !symbol.isPrivate || symbol.owner == ctx.owner.enclosingClass
+      !symbol.is(Private) || symbol.owner == ctx.owner.enclosingClass
     if !accessible(fieldSym) && !accessors.exists(accessible) then
       return fail(
         s"Atomic field updater cannot access field $fieldName: it is private to ${fieldSym.owner.show} but used from ${ctx.owner.enclosingClass.show}"
