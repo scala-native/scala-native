@@ -12,6 +12,14 @@
 #include <dlfcn.h>
 #include <string.h>
 
+// Set in nativelib's scala-native.properties. Without it libunwind gives up on
+// a frame with a signed return address instead of authenticating it, which
+// results in unw_context_t and unw_cursor_t having a different size here than
+// in libunwind.
+#if !defined(_LIBUNWIND_IS_NATIVE_ONLY)
+#error "_LIBUNWIND_IS_NATIVE_ONLY must be defined, see scala-native.properties"
+#endif
+
 // The unwinding on NetBSD is unstable, they don't provide CFI
 // annotations for most of libc and other places, nor for the signal
 // trampoline. So it can't work properly, and probably leads to
