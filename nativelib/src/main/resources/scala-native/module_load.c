@@ -14,28 +14,6 @@
 
 #include <assert.h>
 
-// Thread identity helpers
-#ifdef _WIN32
-typedef DWORD thread_id;
-#else
-typedef pthread_t thread_id;
-#endif
-
-static thread_id getThreadId() {
-#ifdef _WIN32
-    return GetCurrentThreadId();
-#else
-    return pthread_self();
-#endif
-}
-static bool isThreadEqual(thread_id l, thread_id r) {
-#ifdef _WIN32
-    return l == r;
-#else
-    return pthread_equal(l, r);
-#endif
-}
-
 // cross-platform sleep function
 static void sleep_ms(int milliseconds) {
 #ifdef WIN32
@@ -94,8 +72,8 @@ bool scalanative_isModuleInitializationContext(ModuleRef module) {
 ModuleRef
 scalanative_moduleInitializationInstanceForCurrentThread(ModuleRef module) {
     InitializationContext *ctx = initializationContext(module);
-    return isThreadEqual(ctx->initThreadId, getThreadId()) ? ctx->instance
-                                                           : NULL;
+    return thread_equals(ctx->initThreadId, thread_getid()) ? ctx->instance
+                                                            : NULL;
 }
 
 NOINLINE static ModuleRef
@@ -104,6 +82,11 @@ __scalanative_waitForModuleInitialization(ModuleSlot slot, void *classInfo) {
     // A competing initializer can replace the slot and return before this
     // thread gets to inspect it. awaitForInitialization rechecks the slot
     // under the class monitor, where only the reentrant owner may use ctx.
+    ModuleRef module = atomic_load_explicit(slot, memory_order_acquire);
+    ModuleRef instance =
+        scalanative_moduleInitializationInstanceForCurrentThread(module);
+    if (instance != NULL)
+        return instance;
     return scalanative_awaitForInitialization(slot, classInfo);
 }
 
@@ -116,7 +99,7 @@ NOINLINE static ModuleRef __scalanative_startAndWaitForModuleInitialization(
     // written fields. Writing initThreadId and instance after the publish (the
     // previous ordering) left a window in which another thread could read them
     // before they were set, a data race on those fields.
-    ctx.initThreadId = getThreadId();
+    ctx.initThreadId = thread_getid();
     ModuleRef instance = scalanative_GC_alloc(classInfo, size);
     ctx.instance = instance;
     void **expected = NULL;
