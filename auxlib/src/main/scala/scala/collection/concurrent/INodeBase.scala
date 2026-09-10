@@ -4,20 +4,15 @@ package scala.collection.concurrent
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater
 
-import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
-import scala.scalanative.runtime.fromRawPtr
-
 object INodeBase {
   final val updater
-      : AtomicReferenceFieldUpdater[INodeBase[_, _], MainNode[_, _]] =
-    new IntrinsicAtomicReferenceFieldUpdater(obj =>
-      fromRawPtr(
-        classFieldRawPtr(
-          obj.asInstanceOf[INodeBase[AnyRef, AnyRef]],
-          "mainnode"
-        )
+      : AtomicReferenceFieldUpdater[INodeBase[?, ?], MainNode[?, ?]] =
+    AtomicReferenceFieldUpdater
+      .newUpdater[INodeBase[?, ?], MainNode[?, ?]](
+        classOf[INodeBase[?, ?]],
+        classOf[MainNode[?, ?]],
+        "mainnode"
       )
-    )
 
   final val RESTART = new Object {}
   final val NO_SUCH_ELEMENT_SENTINEL = new Object {}

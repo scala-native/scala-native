@@ -16,9 +16,15 @@ object Commands {
     testRuntime,
     testMima,
     testScripted,
+    disableActionCache,
     publishLocalDev,
     publishReleaseForVersion
   )
+
+  // Recommended for working with compiler plugins, the actions cache might make testing local changes harder.
+  lazy val disableActionCache = Command.command("disable-action-cache") {
+    "set Global / cacheStores := Seq.empty[sbt.util.ActionCacheStore]" :: _
+  }
 
   lazy val testAll = Command.command("test-all") {
     "test-tools" ::

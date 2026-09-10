@@ -39,6 +39,21 @@ trait NirDefinitions {
     lazy val PtrClass = getRequiredClass("scala.scalanative.unsafe.Ptr")
     lazy val RawPtrClass = getRequiredClass("scala.scalanative.runtime.RawPtr")
 
+    lazy val AtomicIntegerFieldUpdaterModule =
+      getRequiredModule("java.util.concurrent.atomic.AtomicIntegerFieldUpdater")
+    lazy val AtomicLongFieldUpdaterModule =
+      getRequiredModule("java.util.concurrent.atomic.AtomicLongFieldUpdater")
+    lazy val AtomicReferenceFieldUpdaterModule =
+      getRequiredModule(
+        "java.util.concurrent.atomic.AtomicReferenceFieldUpdater"
+      )
+    lazy val AtomicIntegerFieldUpdater_newUpdater =
+      getDecl(AtomicIntegerFieldUpdaterModule, TermName("newUpdater"))
+    lazy val AtomicLongFieldUpdater_newUpdater =
+      getDecl(AtomicLongFieldUpdaterModule, TermName("newUpdater"))
+    lazy val AtomicReferenceFieldUpdater_newUpdater =
+      getDecl(AtomicReferenceFieldUpdaterModule, TermName("newUpdater"))
+
     lazy val NameClass = getRequiredClass("scala.scalanative.unsafe.name")
     lazy val LinkClass = getRequiredClass("scala.scalanative.unsafe.link")
     lazy val LinkCppRuntimeClass = getRequiredClass(
@@ -129,6 +144,8 @@ trait NirDefinitions {
       getDecl(RuntimePackage, TermName("fromRawSize"))
     lazy val RuntimePackage_fromRawUSize =
       getDecl(RuntimePackage, TermName("fromRawUSize"))
+    lazy val RuntimePackage_fromRawPtr =
+      getDecl(RuntimePackage, TermName("fromRawPtr"))
     lazy val RuntimePackage_toRawSizeAlts =
       getDecl(RuntimePackage, TermName("toRawSize")).alternatives
         .ensuring(_.size == 2)

@@ -19,10 +19,11 @@ object PostInlineNativeInterop {
 
 class PostInlineNativeInterop extends PluginPhase with NativeInteropUtil {
 
-  import core.Constants.Constant
+  import core.Constants._
   import core.Contexts._
   import core.Definitions
   import core.Flags._
+  import core.NameOps._
   import core.Names._
   import core.StdNames._
   import core.Symbols._
@@ -53,6 +54,33 @@ class PostInlineNativeInterop extends PluginPhase with NativeInteropUtil {
     // Attach exact type information to the AST to preserve the type information
     // during the type erase phase and refer to it in the NIR generation phase.
     tree match
+      case app @ Apply(fun, args)
+          if fun.symbol == defnNir.AtomicIntegerFieldUpdater_newUpdater =>
+        rewriteAtomicFieldUpdater(
+          app = app,
+          args = args,
+          factory = defnNir.AtomicFieldUpdater_createIntegerFieldUpdater,
+          expectedPrimitiveType = Some(defn.IntType)
+        )
+
+      case app @ Apply(fun, args)
+          if fun.symbol == defnNir.AtomicLongFieldUpdater_newUpdater =>
+        rewriteAtomicFieldUpdater(
+          app = app,
+          args = args,
+          factory = defnNir.AtomicFieldUpdater_createLongFieldUpdater,
+          expectedPrimitiveType = Some(defn.LongType)
+        )
+
+      case app @ Apply(fun, args)
+          if fun.symbol == defnNir.AtomicReferenceFieldUpdater_newUpdater =>
+        rewriteAtomicFieldUpdater(
+          app = app,
+          args = args,
+          factory = defnNir.AtomicFieldUpdater_createReferenceFieldUpdater,
+          expectedPrimitiveType = None
+        )
+
       case app @ Apply(TypeApply(fun, tArgs), List(lambda))
           if defnNir.CFuncPtr_fromScalaFunction.contains(fun.symbol) =>
         val tys = tArgs.map(t => dealiasTypeMapper(t.tpe))
@@ -115,6 +143,160 @@ class PostInlineNativeInterop extends PluginPhase with NativeInteropUtil {
 
       case _ => tree
 
+  }
+
+  /* Rewrites generic java.util.concurrent.atomic.Atomic*FieldUpdater.newUpdater to call to use intrinsic implementaiton:
+   * scala.scalanative.runtime.AtomicFieldUpdater.createIntegerFieldUpdater[T]((atomicFieldTarget: T) =>
+   *   fromRawPtr[Int]:
+   *    Intrinsics.classFieldRawPtr[Test](atomicFieldTarget, "x")
+   */
+  private def rewriteAtomicFieldUpdater(
+      app: Apply,
+      args: List[Tree],
+      factory: Symbol,
+      expectedPrimitiveType: Option[Type]
+  )(using Context): Tree = {
+    def fail(message: String, tree: Tree = app): Tree = {
+      report.error(message, tree.srcPos)
+      app
+    }
+    val getClass = defn.ObjectClass.requiredMethod(nme.getClass_)
+    def classLiteral(tree: Tree): Option[Type] = tree match {
+      // classOf[T]
+      case Literal(c) if c.tag == ClazzTag => Some(c.typeValue)
+      // classOf[T]
+      case TypeApply(fun, List(tpe)) if fun.symbol == defn.Predef_classOf =>
+        Some(tpe.tpe.widenDealias)
+      // receiver.getClass
+      case Apply(TypeApply(Select(receiver, _), _), Nil)
+          if tree.symbol == getClass =>
+        Some(receiver.tpe.widenDealias)
+      // receiver.getClass (with the compiler-inserted Class[_] cast)
+      case TypeApply(Select(getClassCall @ Apply(_, Nil), _), _) =>
+        classLiteral(getClassCall)
+      // (classOf[T]: Class[_]) or (receiver.getClass: Class[_])
+      case Typed(inner, _) => classLiteral(inner)
+      // Any other expression is not statically resolvable.
+      case _ => None
+    }
+
+    def matchesName(symbol: Symbol, name: String) =
+      symbol.name.mangledString == name || symbol.name.toString == name ||
+        symbol.name.unexpandedName.toString == name
+
+    val fieldName = args.lastOption.flatMap {
+      case Literal(c) if c.tag == StringTag => Some(c.stringValue)
+      case _                                => None
+    }.match {
+      case Some(name) => name
+      case None       =>
+        return fail(
+          "Atomic field updater field name must be a literal string",
+          args.last
+        )
+    }
+    val targetType = args.headOption
+      .flatMap(classLiteral)
+      .match {
+        case Some(tpe) => tpe
+        case None      =>
+          return fail(
+            "Atomic field updater class must be a literal classOf[T] expression or getClass on a statically typed value",
+            args.head
+          )
+      }
+    val members = targetType.baseClasses.flatMap(_.asClass.info.decls.toList) ++
+      targetType.typeSymbol.companionModule.info.decls.toList
+    val field = targetType.baseClasses
+      .flatMap(base => targetType.baseType(base).fields)
+      .find(field => matchesName(field.symbol, fieldName))
+      .orElse(members.collectFirst {
+        case field if !field.is(Method) && matchesName(field, fieldName) =>
+          field.asSymDenotation
+      })
+      .orElse(members.collectFirst {
+        case accessor
+            if accessor.is(Accessor) && matchesName(accessor, fieldName) =>
+          accessor.asSymDenotation.underlyingSymbol.asSymDenotation
+      })
+      .match {
+        case Some(field) => field
+        case None        =>
+          return fail(
+            s"${targetType.typeSymbol.show} does not contain field $fieldName"
+          )
+      }
+
+    val fieldSym = field.symbol
+    if fieldSym.is(JavaStatic) || fieldSym.isScalaStatic then
+      return fail(s"Atomic field updater cannot target static field $fieldName")
+    if !fieldSym.is(Mutable) || !fieldSym.isVolatile then
+      return fail(
+        s"Atomic field updater requires a volatile mutable field $fieldName"
+      )
+    val expectedType = expectedPrimitiveType
+      .orElse(args.lift(1).flatMap(classLiteral))
+      .match {
+        case Some(tpe) => tpe
+        case None      =>
+          return fail(
+            "Atomic reference field updater value class must be a literal classOf[T] expression",
+            args(1)
+          )
+      }
+    val fieldType = field.info.resultType.widenDealias
+    if !(core.TypeErasure
+          .erasure(fieldType) =:= core.TypeErasure.erasure(expectedType)) then
+      return fail(
+        s"Atomic field updater type does not match field $fieldName, expected $expectedType but got $fieldType"
+      )
+
+    val accessors = members.filter(member =>
+      member.is(Accessor) && matchesName(member, fieldName)
+    )
+    def accessible(symbol: Symbol): Boolean =
+      !symbol.isPrivate || symbol.owner == ctx.owner.enclosingClass
+    if !accessible(fieldSym) && !accessors.exists(accessible) then
+      return fail(
+        s"Atomic field updater cannot access field $fieldName: it is private to ${fieldSym.owner.show} but used from ${ctx.owner.enclosingClass.show}"
+      )
+
+    val lambdaType = MethodType(List(termName("atomicFieldTarget")))(
+      _ => List(defn.ObjectType),
+      _ => defn.ObjectType
+    )
+    val lambda = Lambda(
+      lambdaType,
+      params =>
+        Apply(
+          TypeApply(
+            ref(defnNir.RuntimePackage_fromRawPtr),
+            List(TypeTree(expectedType))
+          ),
+          List(
+            Apply(
+              TypeApply(
+                ref(defnNir.Intrinsics_classFieldRawPtr),
+                List(TypeTree(targetType))
+              ),
+              List(
+                TypeApply(
+                  Select(params.head, nme.asInstanceOf_),
+                  List(TypeTree(targetType))
+                ),
+                Literal(Constant(fieldName))
+              )
+            )
+          )
+        )
+    )
+    val factoryTypeArgs =
+      if expectedPrimitiveType.isDefined then List(targetType)
+      else List(targetType, expectedType)
+    Apply(
+      TypeApply(ref(factory), factoryTypeArgs.map(TypeTree(_))),
+      List(lambda)
+    )
   }
 
   override def transformTypeApply(tree: TypeApply)(using Context): Tree = {

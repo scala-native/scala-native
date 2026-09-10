@@ -7,13 +7,34 @@ package java.util.concurrent.atomic
 
 import java.util.function.{IntBinaryOperator, IntUnaryOperator}
 
+import scala.scalanative.annotation.alwaysinline
+import scala.scalanative.libc.stdatomic.AtomicInt
+import scala.scalanative.libc.stdatomic.memory_order.memory_order_release
+import scala.scalanative.unsafe.Ptr
+
 object AtomicIntegerFieldUpdater {
-  // Impossible to define currently in Scala Native, requires reflection
-  // Don't define it, allow to fail at linktime instead of runtime
-  // def newUpdater[U <: AnyRef](
-  //     tclass: Class[U],
-  //     fieldName: String
-  // ): AtomicIntegerFieldUpdater[U] = ???
+  private def intrinsic = throw new AssertionError(
+    "Intrinsic call was not handled by the toolchain"
+  )
+
+  def newUpdater[U <: AnyRef](
+      tclass: Class[U],
+      fieldName: String
+  ): AtomicIntegerFieldUpdater[U] = intrinsic
+
+  final class Impl[T <: AnyRef](binding: AnyRef => Ptr[Int])
+      extends AtomicIntegerFieldUpdater[T] {
+    @alwaysinline private def atomic(obj: T) =
+      new AtomicInt(binding(obj))
+    def compareAndSet(obj: T, expect: Int, update: Int) =
+      atomic(obj).compareExchangeStrong(expect, update)
+    def weakCompareAndSet(obj: T, expect: Int, update: Int) =
+      atomic(obj).compareExchangeWeak(expect, update)
+    def set(obj: T, value: Int): Unit = atomic(obj).store(value)
+    def lazySet(obj: T, value: Int): Unit =
+      atomic(obj).store(value, memory_order_release)
+    def get(obj: T): Int = atomic(obj).load()
+  }
 }
 
 abstract class AtomicIntegerFieldUpdater[T <: AnyRef] protected () {
