@@ -19,6 +19,7 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
   import global.definitions._
 
   import PrepNativeInterop._
+  import nirAddons._
   import nirAddons.nirDefinitions._
 
   val phaseName: String = "scalanative-prepareInterop"
@@ -43,7 +44,20 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
     val Val = newTermName("Val")
     val scalaProps = newTermName("scalaProps")
     val propFilename = newTermName("propFilename")
+    val createIntegerFieldUpdater = newTermName("createIntegerFieldUpdater")
+    val createLongFieldUpdater = newTermName("createLongFieldUpdater")
+    val createReferenceFieldUpdater = newTermName("createReferenceFieldUpdater")
   }
+
+  private lazy val AtomicFieldUpdaterFactory = rootMirror.getRequiredModule(
+    "scala.scalanative.runtime.AtomicFieldUpdater"
+  )
+  private lazy val AtomicIntegerFieldUpdaterFactory =
+    getDecl(AtomicFieldUpdaterFactory, nativenme.createIntegerFieldUpdater)
+  private lazy val AtomicLongFieldUpdaterFactory =
+    getDecl(AtomicFieldUpdaterFactory, nativenme.createLongFieldUpdater)
+  private lazy val AtomicReferenceFieldUpdaterFactory =
+    getDecl(AtomicFieldUpdaterFactory, nativenme.createReferenceFieldUpdater)
 
   class NativeInteropTransformer(unit: CompilationUnit) extends Transformer {
 
@@ -87,6 +101,31 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
         else widened
       }
       tree match {
+        case app @ Apply(fun, args)
+            if fun.symbol == AtomicIntegerFieldUpdater_newUpdater =>
+          rewriteAtomicFieldUpdater(
+            app,
+            args,
+            AtomicIntegerFieldUpdaterFactory,
+            Some(IntTpe)
+          )
+        case app @ Apply(fun, args)
+            if fun.symbol == AtomicLongFieldUpdater_newUpdater =>
+          rewriteAtomicFieldUpdater(
+            app,
+            args,
+            AtomicLongFieldUpdaterFactory,
+            Some(LongTpe)
+          )
+        case app @ Apply(fun, args)
+            if fun.symbol == AtomicReferenceFieldUpdater_newUpdater =>
+          rewriteAtomicFieldUpdater(
+            app,
+            args,
+            AtomicReferenceFieldUpdaterFactory,
+            None
+          )
+
         // Catch calls to Predef.classOf[T]. These should NEVER reach this phase
         // but unfortunately do. In normal cases, the typer phase replaces these
         // calls by a literal constant of the given type. However, when we compile
@@ -270,6 +309,117 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
           super.transform(tree)
       }
     }
+
+    private def rewriteAtomicFieldUpdater(
+        app: Apply,
+        args: List[Tree],
+        factory: Symbol,
+        expectedPrimitiveType: Option[Type]
+    ): Tree = {
+      // Rewrites to call to Atomic*FieldUpdater.newUpdater with intrinsic implementation that passes a lambda with extractor of given field from instance of object T.
+      def fail(message: String, tree: Tree = app): Tree = {
+        reporter.error(tree.pos, message)
+        app
+      }
+      val fieldName = args.lastOption match {
+        case Some(Literal(Constant(name: String))) => name
+        case Some(tree)                            =>
+          return fail(
+            "Atomic field updater field name must be a literal string",
+            tree
+          )
+        case _ => return app
+      }
+      val targetType = args.headOption match {
+        case Some(Literal(Constant(tpe: Type))) => tpe.dealiasWiden
+        case Some(Apply(Select(receiver, name), Nil))
+            if name.toString == "getClass" =>
+          receiver.tpe.dealiasWiden
+        case Some(tree) =>
+          return fail(
+            "Atomic field updater class must be a literal classOf[T] expression",
+            tree
+          )
+        case _ => return app
+      }
+      val field = targetType.members
+        .find(sym => sym.isField && sym.nameString == fieldName)
+        .getOrElse(
+          return fail(
+            s"${targetType.typeSymbol} does not contain field $fieldName"
+          )
+        )
+      if (field.isStaticMember && !field.owner.isModuleClass)
+        return fail(
+          s"Atomic field updater cannot target static field $fieldName"
+        )
+      if (!field.isVariable || !field.hasAnnotation(VolatileAttr))
+        return fail(
+          s"Atomic field updater requires a volatile mutable field $fieldName"
+        )
+      val expectedType = expectedPrimitiveType.getOrElse {
+        args.lift(1) match {
+          case Some(Literal(Constant(tpe: Type))) => tpe.dealiasWiden
+          case Some(tree)                         =>
+            return fail(
+              "Atomic reference field updater value class must be a literal classOf[T] expression",
+              tree
+            )
+          case _ => return app
+        }
+      }
+      val fieldType =
+        field.tpe.asSeenFrom(targetType, field.owner).finalResultType
+      if (!(fieldType.erasure =:= expectedType.erasure))
+        return fail(
+          s"Atomic field updater type does not match field $fieldName, expected ${expectedType.erasure} but got ${fieldType.erasure}"
+        )
+      val accessors = targetType.members.filter(member =>
+        member.isMethod && member.nameString == fieldName
+      )
+      def accessible(symbol: Symbol): Boolean =
+        !symbol.isPrivate || symbol.owner == currentOwner.enclClass
+      if (!accessible(field) && !accessors.exists(accessible))
+        return fail(
+          s"Atomic field updater cannot access field $fieldName: it is private to ${field.owner.fullName} but used from ${currentOwner.enclClass.fullName}"
+        )
+
+      {
+        val paramName = unit.freshTermName("atomicFieldTarget")
+        val param = ValDef(
+          Modifiers(Flag.PARAM),
+          paramName,
+          TypeTree(ObjectTpe),
+          EmptyTree
+        )
+        val fieldPtr = Apply(
+          gen.mkAttributedRef(ClassFieldRawPtrMethod),
+          List(
+            TypeApply(
+              Select(Ident(paramName), nme.asInstanceOf_),
+              List(TypeTree(targetType.dealiasWiden))
+            ),
+            Literal(Constant(fieldName))
+          )
+        )
+        val binding = Apply(
+          TypeApply(
+            gen.mkAttributedRef(RuntimePackage_fromRawPtr),
+            List(TypeTree(expectedType))
+          ),
+          List(fieldPtr)
+        )
+        typer
+          .atOwner(currentOwner)
+          .typed(
+            Apply(
+              gen.mkAttributedRef(factory),
+              List(Function(param :: Nil, binding))
+            )
+          )
+      }
+    }
+
   }
 
   private def isExternType(sym: Symbol): Boolean = {

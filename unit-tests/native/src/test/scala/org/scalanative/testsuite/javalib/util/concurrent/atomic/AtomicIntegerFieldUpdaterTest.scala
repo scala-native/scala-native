@@ -6,8 +6,6 @@
  * Pat Fisher, Mike Judd.
  */
 
-// Uses custom Scala Native intrinsic based field updaters instead of reflection based used in JVM
-
 package org.scalanative.testsuite.javalib.util.concurrent
 package atomic
 
@@ -16,50 +14,29 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
 import org.junit.Assert._
 import org.junit._
 
-import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.libc.stdatomic.{AtomicInt, memory_order}
-import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
-import scala.scalanative.runtime.{RawPtr, fromRawPtr}
-
-object AtomicIntegerFieldUpdaterTest {
-  class IntrinsicBasedImpl[T <: AnyRef](atomicRef: T => AtomicInt)
-      extends AtomicIntegerFieldUpdater[T]() {
-    def compareAndSet(obj: T, expect: Int, update: Int): Boolean =
-      atomicRef(obj).compareExchangeStrong(expect, update)
-
-    def weakCompareAndSet(obj: T, expect: Int, update: Int): Boolean =
-      atomicRef(obj).compareExchangeWeak(expect, update)
-
-    def set(obj: T, newIntalue: Int): Unit = atomicRef(obj).store(newIntalue)
-
-    def lazySet(obj: T, newIntalue: Int): Unit =
-      atomicRef(obj).store(newIntalue, memory_order.memory_order_release)
-    def get(obj: T): Int = atomicRef(obj).load()
-  }
-}
-
 class AtomicIntegerFieldUpdaterTest extends JSR166Test {
-  import AtomicIntegerFieldUpdaterTest._
   import JSR166Test._
 
   @volatile var x = 0
   @volatile protected var protectedField = 0
 
-  def updaterForX = new IntrinsicBasedImpl[AtomicIntegerFieldUpdaterTest](obj =>
-    new AtomicInt(
-      fromRawPtr(
-        classFieldRawPtr(obj, "x")
-      )
-    )
+  def updaterForX = AtomicIntegerFieldUpdater.newUpdater(
+    classOf[AtomicIntegerFieldUpdaterTest],
+    "x"
   )
   def updaterForProtectedField =
-    new IntrinsicBasedImpl[AtomicIntegerFieldUpdaterTest](obj =>
-      new AtomicInt(
-        fromRawPtr(
-          classFieldRawPtr(obj, "protectedField")
-        )
-      )
+    AtomicIntegerFieldUpdater.newUpdater(
+      classOf[AtomicIntegerFieldUpdaterTest],
+      "protectedField"
     )
+
+  @Test def testGetClassFactory(): Unit = {
+    val updater = AtomicIntegerFieldUpdater
+      .newUpdater(this.getClass, "x")
+      .asInstanceOf[AtomicIntegerFieldUpdater[AtomicIntegerFieldUpdaterTest]]
+    updater.set(this, 42)
+    assertEquals(42, x)
+  }
 
   // Platform limitatios: following cases would not compile / would not be checked
   /** Construction with non-existent field throws RuntimeException */

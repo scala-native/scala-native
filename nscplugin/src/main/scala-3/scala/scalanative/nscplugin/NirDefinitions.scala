@@ -93,6 +93,7 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val RuntimePackage_exitMonitor = RuntimePackageClass.requiredMethod("exitMonitor")
   @tu lazy val RuntimePackage_fromRawSize = RuntimePackageClass.requiredMethod("fromRawSize")
   @tu lazy val RuntimePackage_fromRawUSize = RuntimePackageClass.requiredMethod("fromRawUSize")
+  @tu lazy val RuntimePackage_fromRawPtr = RuntimePackageClass.requiredMethod("fromRawPtr")
 
   @tu lazy val RuntimePackage_toRawSizeAlts = RuntimePackageClass
     .alternatives("toRawSize")
@@ -167,6 +168,21 @@ final class NirDefinitions()(using ctx: Context) {
     .ensuring(_.size == 2)
   @tu lazy val IntrinsicsInternal_stackalloc = IntrinsicsInternalModule.requiredMethod("stackalloc")
   @tu lazy val Intrinsics_classFieldRawPtr = IntrinsicsModule.requiredMethod("classFieldRawPtr")
+  @tu lazy val AtomicFieldUpdaterFactoryModule = requiredModule("scala.scalanative.runtime.AtomicFieldUpdater")
+  @tu lazy val AtomicFieldUpdater_createIntegerFieldUpdater =
+    AtomicFieldUpdaterFactoryModule.requiredMethod("createIntegerFieldUpdater")
+  @tu lazy val AtomicFieldUpdater_createLongFieldUpdater =
+    AtomicFieldUpdaterFactoryModule.requiredMethod("createLongFieldUpdater")
+  @tu lazy val AtomicFieldUpdater_createReferenceFieldUpdater =
+    AtomicFieldUpdaterFactoryModule.requiredMethod("createReferenceFieldUpdater")
+  @tu lazy val AtomicIntegerFieldUpdaterModule = requiredModule("java.util.concurrent.atomic.AtomicIntegerFieldUpdater")
+  @tu lazy val AtomicIntegerFieldUpdater_newUpdater = AtomicIntegerFieldUpdaterModule.requiredMethod("newUpdater")
+  @tu lazy val AtomicLongFieldUpdaterModule = requiredModule("java.util.concurrent.atomic.AtomicLongFieldUpdater")
+  @tu lazy val AtomicLongFieldUpdater_newUpdater = AtomicLongFieldUpdaterModule.requiredMethod("newUpdater")
+  @tu lazy val AtomicReferenceFieldUpdaterModule = requiredModule(
+    "java.util.concurrent.atomic.AtomicReferenceFieldUpdater"
+  )
+  @tu lazy val AtomicReferenceFieldUpdater_newUpdater = AtomicReferenceFieldUpdaterModule.requiredMethod("newUpdater")
   @tu lazy val Intrinsics_sizeOf = IntrinsicsModule.requiredMethod("sizeOf")
   @tu lazy val IntrinsicsInternal_sizeOf = IntrinsicsInternalModule.requiredMethod("sizeOf")
   @tu lazy val Intrinsics_alignmentOf = IntrinsicsModule.requiredMethod("alignmentOf")

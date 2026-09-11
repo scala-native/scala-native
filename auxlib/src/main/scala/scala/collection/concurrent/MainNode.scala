@@ -3,17 +3,15 @@ package scala.collection.concurrent
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater
 
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
-import scala.scalanative.runtime.fromRawPtr
-
 object MainNode {
   final val updater
-      : AtomicReferenceFieldUpdater[MainNode[_, _], MainNode[_, _]] =
-    new IntrinsicAtomicReferenceFieldUpdater(obj =>
-      fromRawPtr(
-        classFieldRawPtr(obj.asInstanceOf[MainNode[AnyRef, AnyRef]], "prev")
+      : AtomicReferenceFieldUpdater[MainNode[?, ?], MainNode[?, ?]] =
+    AtomicReferenceFieldUpdater
+      .newUpdater[MainNode[?, ?], MainNode[?, ?]](
+        classOf[MainNode[?, ?]],
+        classOf[MainNode[?, ?]],
+        "prev"
       )
-    )
 }
 
 private[concurrent] abstract class MainNode[K <: AnyRef, V <: AnyRef]
