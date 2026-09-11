@@ -48,6 +48,8 @@ private[java] class WindowsThread(
       )
     }
 
+  @volatile private var terminated = false
+
   private val handle: Handle = {
     if (isMainThread) 0.toPtr // main thread
     else if (!isMultithreadingEnabled) {
@@ -68,18 +70,24 @@ private[java] class WindowsThread(
   }
 
   override protected def onTermination() = {
-    super.onTermination()
     if (isMultithreadingEnabled) {
-      CloseHandle(parkEvent)
-      CloseHandle(sleepEvent)
-      if (!isMainThread) CloseHandle(handle)
+      this.synchronized {
+        terminated = true
+        CloseHandle(parkEvent)
+        CloseHandle(sleepEvent)
+        if (!isMainThread) CloseHandle(handle)
+      }
     }
+    super.onTermination()
   }
 
   override def setPriority(
       priority: CInt
   ): Unit = if (isMultithreadingEnabled) {
-    SetThreadPriority(handle, priorityMapping(priority))
+    this.synchronized {
+      if (terminated) return
+      SetThreadPriority(handle, priorityMapping(priority))
+    }
   }
 
   // java.lang.Thread priority to OS priority mapping
@@ -97,10 +105,13 @@ private[java] class WindowsThread(
     }
 
   override def interrupt(): Unit = if (isMultithreadingEnabled) {
-    // For JSR-166 / LockSupport
-    SetEvent(parkEvent)
-    // For Sleep
-    SetEvent(sleepEvent)
+    this.synchronized {
+      if (terminated) return
+      // For JSR-166 / LockSupport
+      SetEvent(parkEvent)
+      // For Sleep
+      SetEvent(sleepEvent)
+    }
   }
 
   override protected def park(
@@ -133,7 +144,11 @@ private[java] class WindowsThread(
   }
 
   @inline override def unpark(): Unit = if (isMultithreadingEnabled) {
-    SetEvent(parkEvent)
+    if (terminated) return
+    this.synchronized {
+      if (terminated) return
+      SetEvent(parkEvent)
+    }
   }
 
   override def sleep(millis: scala.Long): Unit = {
