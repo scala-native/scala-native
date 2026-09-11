@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
 #include "string_constants.h"
 #include "unwind.h"
 
@@ -120,10 +121,42 @@ typedef struct LSDA_call_site {
     uint64_t action;
 } LSDA_call_site;
 
-void LSDA_call_site_init(LSDA_call_site *callSite, LSDA_ptr *lsda) {
-    callSite->start = read_uleb_128(lsda);
-    callSite->len = read_uleb_128(lsda);
-    callSite->landing_pad = read_uleb_128(lsda);
+uint64_t read_call_site_value(LSDA_ptr *data, uint8_t encoding) {
+    switch (encoding) {
+    case 0x01: // DW_EH_PE_uleb128: LLVM's default call-site encoding.
+        return read_uleb_128(data);
+    case 0x02: { // DW_EH_PE_udata2: compact fixed-width call-site offsets.
+        uint16_t result;
+        memcpy(&result, *data, sizeof(result));
+        *data += sizeof(result);
+        return result;
+    }
+    case 0x03: { // DW_EH_PE_udata4: used by LLVM's RISC-V backend.
+        uint32_t result;
+        memcpy(&result, *data, sizeof(result));
+        *data += sizeof(result);
+        return result;
+    }
+    case 0x04: { // DW_EH_PE_udata8: large fixed-width call-site offsets.
+        uint64_t result;
+        memcpy(&result, *data, sizeof(result));
+        *data += sizeof(result);
+        return result;
+    }
+    default:
+        fprintf(stderr,
+                "ScalaNative Fatal Error: Unsupported LSDA call-site encoding "
+                "during exception handling: 0x%02x\n",
+                encoding);
+        abort();
+    }
+}
+
+void LSDA_call_site_init(LSDA_call_site *callSite, LSDA_ptr *lsda,
+                         uint8_t encoding) {
+    callSite->start = read_call_site_value(lsda, encoding);
+    callSite->len = read_call_site_value(lsda, encoding);
+    callSite->landing_pad = read_call_site_value(lsda, encoding);
     callSite->action = read_uleb_128(lsda);
 }
 
@@ -133,7 +166,7 @@ bool LSDA_call_site_valid_for_throw_ip(const LSDA_call_site *callSite,
     uintptr_t try_start = func_start + callSite->start;
     uintptr_t try_end = try_start + callSite->len;
     uintptr_t throw_ip = _Unwind_GetIP(context) - 1;
-    if (throw_ip > try_end || throw_ip < try_start) {
+    if (throw_ip >= try_end || throw_ip < try_start) {
         return false;
     }
     return true;
@@ -171,10 +204,11 @@ void LSDA_init(LSDA *lsda, _Unwind_Context *context) {
 }
 
 LSDA_call_site *LSDA_get_next_call_site(LSDA *lsda) {
-    if (lsda->next_call_site_ptr > lsda->call_site_table_end) {
+    if (lsda->next_call_site_ptr >= lsda->call_site_table_end) {
         return NULL;
     }
-    LSDA_call_site_init(&lsda->next_call_site, &lsda->next_call_site_ptr);
+    LSDA_call_site_init(&lsda->next_call_site, &lsda->next_call_site_ptr,
+                        lsda->call_site_header.encoding);
     return &lsda->next_call_site;
 }
 

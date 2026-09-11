@@ -254,18 +254,18 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     }
   }
 
-  private lazy val connectFunc =
-    if (useIPv4Only) connect4(_: InetAddress, _: Int, _: Int)
-    else connect6(_: InetAddress, _: Int, _: Int)
+  private def connectTo(addr: InetAddress, port: Int, timeout: Int): Unit =
+    if (useIPv4Only) connect4(addr, port, timeout)
+    else connect6(addr, port, timeout)
 
   override def connect(host: String, port: Int): Unit = {
     throwIfClosed("connect")
     val addr = InetAddress.getByName(host)
-    connectFunc(addr, port, 0)
+    connectTo(addr, port, 0)
   }
   override def connect(address: InetAddress, port: Int): Unit = {
     throwIfClosed("connect")
-    connectFunc(address, port, 0)
+    connectTo(address, port, 0)
   }
 
   override def connect(address: SocketAddress, timeout: Int): Unit = {
@@ -276,7 +276,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     }
     val addr = insAddr.getAddress
     val port = insAddr.getPort
-    connectFunc(addr, port, timeout)
+    connectTo(addr, port, timeout)
   }
 
   override def close(): Unit = {
