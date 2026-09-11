@@ -38,16 +38,19 @@ runs:
       if: ${{ startsWith(inputs.gc, 'boehm') }}
       run: brew install bdw-gc
 
-    - name: Install explicit LLVM toolchain
+    - name: Install and cache LLVM toolchain
+      if: ${{ inputs.llvm-version != '' }}
+      uses: gerlero/brew-install@b7bdd6875207fdf3b7ebd0ecc5cf8da6e657eca2 # v1.1.3
+      with:
+        packages: lld ${{ inputs.llvm-version == 'latest' && 'llvm' || format('llvm@{0}', inputs.llvm-version) }}
+
+    - name: Expose LLVM toolchain
       shell: bash
       if: ${{ inputs.llvm-version != '' }}
       run: |
-        brew install lld
         if [[ "${{ inputs.llvm-version }}" == "latest" ]]; then
-          brew install llvm
           LLVM_TOOLCHAIN="$(brew --prefix llvm)/bin"
         else
-          brew install llvm@${{ inputs.llvm-version }}
           LLVM_TOOLCHAIN="$(brew --prefix llvm@${{ inputs.llvm-version }})/bin"
         fi
         # Prefer Homebrew LLVM over Xcode clang (Discover uses LLVM_BIN / PATH).
