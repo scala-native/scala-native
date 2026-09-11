@@ -37,6 +37,14 @@ RUN git clone https://github.com/ivmai/bdwgc /tmp/bdwgc \
     && make install prefix=$QEMU_LD_PREFIX \
     && rm -rf /tmp/bdwgc
 
+# Some targets (riscv64) place their runtime libraries in an ABI specific
+# directory (lib64/lp64d) which is the only one searched by their dynamic
+# loader, while the toolchain and the libraries built above live in lib.
+RUN set -eux; \
+    runtimeLibDir=$(dirname "$(find "$QEMU_LD_PREFIX" -name libc.so.6 -print -quit)"); \
+    if [ "$runtimeLibDir" != "$QEMU_LD_PREFIX/lib" ]; then \
+      ln -sf "$QEMU_LD_PREFIX"/lib/*.so* "$runtimeLibDir/"; \
+    fi
 
 # Switch shell and user to allow for usage of sdk and installed by it binaries 
 SHELL ["/bin/bash", "-c"]

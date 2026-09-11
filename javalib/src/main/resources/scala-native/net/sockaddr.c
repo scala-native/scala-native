@@ -2,7 +2,9 @@
     defined(__SCALANATIVE_JAVALIB_SOCKET_HELPERS)
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
+#pragma comment(lib, "ws2_32.lib")
 #include <winsock2.h>
+#include <ws2tcpip.h> // struct sockaddr_in6
 #else
 #include <arpa/inet.h>
 #include <netinet/in.h>
