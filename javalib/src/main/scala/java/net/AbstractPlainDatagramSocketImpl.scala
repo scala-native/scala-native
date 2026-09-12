@@ -245,13 +245,13 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     }
   }
 
-  private lazy val connectFunc =
-    if (useIPv4Only) connect4(_: InetAddress, _: Int)
-    else connect6(_: InetAddress, _: Int)
+  private def connectTo(address: InetAddress, port: Int): Unit =
+    if (useIPv4Only) connect4(address, port)
+    else connect6(address, port)
 
   override def connect(address: InetAddress, port: Int): Unit = {
     throwIfClosed("connect")
-    connectFunc(address, port)
+    connectTo(address, port)
     connectedAddress = address
     connectedPort = port
     connected = true
@@ -259,7 +259,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
 
   override def disconnect(): Unit = {
     throwIfClosed("disconnect")
-    connectFunc(SocketHelpers.getWildcardAddress(), 0)
+    connectTo(SocketHelpers.getWildcardAddress(), 0)
     connectedAddress = null
     connectedPort = -1
     connected = false

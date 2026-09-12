@@ -1,0 +1,2 @@
+BASE_IMAGE=dockcross/linux-riscv64:20240812-60fa1b0
+LLVM_VERSION=23

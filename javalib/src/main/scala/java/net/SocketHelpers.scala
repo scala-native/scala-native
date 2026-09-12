@@ -152,7 +152,7 @@ object SocketHelpers {
     require(inetAddress.isInstanceOf[Inet4Address])
 
     sa4.sin_family = AF_INET.toUShort
-    sa4.sin_port = inet.htons(port.toUShort)
+    SocketHelpersNative.setSockaddrInPort(sa4, port)
     val src = inetAddress.getAddress()
     val from = src.asInstanceOf[scala.scalanative.runtime.Array[Byte]].at(0)
     val dst = sa4.sin_addr.at1.asInstanceOf[Ptr[Byte]]
@@ -182,7 +182,7 @@ object SocketHelpers {
      */
 
     sa6.sin6_family = AF_INET6.toUShort
-    sa6.sin6_port = inet.htons(port.toUShort)
+    SocketHelpersNative.setSockaddrIn6Port(sa6, port)
 
     val src = inetAddress.getAddress()
 
@@ -429,6 +429,22 @@ object SocketHelpers {
     SocketHelpers.sockaddrToInetAddress(sin, "")
   }
 
+}
+
+@extern
+@define("__SCALANATIVE_JAVALIB_SOCKET_HELPERS")
+private[net] object SocketHelpersNative {
+  /*
+   * RISC-V requires narrow C integer parameters to carry sign/zero-extension
+   * ABI attributes. NIR currently erases UShort to signed i16 and does not
+   * emit zeroext, so calling htons(uint16_t) directly can use the wrong port.
+   * Passing the Java port as a 32-bit CInt avoids that broken narrow ABI.
+   */
+  @name("scalanative_sockaddr_in_set_port")
+  def setSockaddrInPort(addr: Ptr[sockaddr_in], port: CInt): Unit = extern
+
+  @name("scalanative_sockaddr_in6_set_port")
+  def setSockaddrIn6Port(addr: Ptr[sockaddr_in6], port: CInt): Unit = extern
 }
 
 /* Normally objects 'ip' and 'ip6' would be in a separate file.
