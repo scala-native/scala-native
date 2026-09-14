@@ -48,7 +48,7 @@ jobs:
     needs: [check-compiles]
     if: needs.load_tag.outputs.skip == 'false' # repository check is done in load_tag
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: "2.13" #Unused, any version can be placed here
