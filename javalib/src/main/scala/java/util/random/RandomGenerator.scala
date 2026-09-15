@@ -827,67 +827,50 @@ trait RandomGenerator {
     StreamSupport.longStream(downstreamSpliter, parallel = false)
   }
 
-  /** This implementation uses inverse transform sampling.
+  /* Java 17 through 26 and counting state "As a rule, objects that
+   * implement the RandomGenerator interface need not be thread-safe"
+   * The initialization and use of the next{Exponential, Gaussian}Rng
+   * variables is not directly thread-safe.
    *
-   *  Java 17 through 23 state the "implementation uses McFarland's fast
-   *  modified ziggurat algorithm".
+   * nextExponential() and nextGaussian() are expected to be used at
+   * scale and to be fast. Use a mono-thread next{Exponential, Gaussian}Rng
+   * to avoid complicated and time consuming initialization and checking
+   * for initialization.
+   *
+   * If a library user ever uses either of these two methods is called
+   * when the same RandomGenerator instance is used by separate threads
+   * the worst that can happen is expensive multiple initialization.
+   * Since each redundant instantiated next{Exponential, Gaussian}Rng will
+   * use 'this' as the uniform rng, there is no hit to correctness.
    */
 
-  def nextExponential(): scala.Double =
-    -Math.log(nextDouble())
+  var nextExponentialRng: ExponentialZiggurat = null
 
-  /** This implementation uses the polar Box-Muller algorithm from Random.scala
-   *  and concurrent.ThreadLocalRandom.scala
+  /* Java 17 through 26 and counting state the "implementation uses
+   * McFarland's fast modified ziggurat algorithm".
    *
-   *  The Java 17 through 23 docs say the "implementation uses McFarland's fast
-   *  modified ziggurat algorithm".
-   *
-   *  Eventually both nextExponential() and this method should use the ziggurat
-   *  algorithm. Random.scala is documented as continuing to use its historical
-   *  Box-Muller.
-   *
-   *  Providing the ziggurate algorithm here is left as an exercise for the
-   *  reader.
+   * McFarland's algorithm is used in preference to the obvious
+   * "-Math.log(nextDouble()) with 1-u correction for nextDouble() possibly
+   * returning 0.0" because it uses less expensive operations.
    */
+  def nextExponential(): scala.Double = {
+    if (nextExponentialRng == null)
+      nextExponentialRng = ExponentialZiggurat.of(this, 1.0)
 
+    nextExponentialRng.sample()
+  }
+
+  // See thread-safety note above declaration of nextExponentialRng.
+  var nextGaussianRng: GaussianZiggurat = null
+
+  /* Java 17 through 26 and counting state the "implementation uses
+   * McFarland's fast modified ziggurat algorithm".
+   */
   def nextGaussian(): scala.Double = {
-    var nextNextGaussian: Double = 0.0
-    var haveNextNextGaussian: Boolean = false
+    if (nextGaussianRng == null)
+      nextGaussianRng = GaussianZiggurat.of(this)
 
-    /* The Box-Muller algorithm produces two random numbers at once. We save
-     * the second one in `nextNextGaussian` to be used by the next call to
-     * nextGaussian().
-     *
-     * See http://www.protonfish.com/jslib/boxmuller.shtml
-     */
-
-    if (haveNextNextGaussian) {
-      haveNextNextGaussian = false
-      return nextNextGaussian
-    }
-
-    var x, y, rds: Double = 0.0
-
-    /* Get two random numbers from -1.0 to 1.0.
-     * If the radius is zero or greater than 1, throw them out and pick two new
-     * ones.
-     * Rejection sampling throws away about 20% of the pairs.
-     */
-    while ({
-      x = nextDouble() * 2.0 - 1
-      y = nextDouble() * 2.0 - 1
-      rds = x * x + y * y
-      rds == 0.0 || rds > 1
-    }) ()
-
-    val c = Math.sqrt(-2.0 * Math.log(rds) / rds)
-
-    // Save y*c for next time
-    nextNextGaussian = y * c
-    haveNextNextGaussian = true
-
-    // And return x*c
-    x * c
+    nextGaussianRng.sample()
   }
 
   def nextGaussian(mean: scala.Double, stddev: scala.Double): scala.Double =
