@@ -16,8 +16,16 @@
 #if __has_feature(thread_sanitizer)
 #define NO_SANITIZE_THREAD __attribute__((no_sanitize("thread"))) NOINLINE
 #endif
-#if defined(NO_SANITIZE_ADDRESS) || defined(NO_SANITIZE_THREAD)
-#define NO_SANITIZE __attribute__((disable_sanitizer_instrumentation)) NOINLINE
+#if __has_feature(undefined_behavior_sanitizer)
+// UBSan checks are not covered by disable_sanitizer_instrumentation -
+// suppressing them needs an explicit no_sanitize attribute.
+#define NO_SANITIZE_UNDEFINED __attribute__((no_sanitize("undefined"))) NOINLINE
+#endif
+#if defined(NO_SANITIZE_ADDRESS) || defined(NO_SANITIZE_THREAD) ||             \
+    defined(NO_SANITIZE_UNDEFINED)
+#define NO_SANITIZE                                                            \
+    __attribute__((disable_sanitizer_instrumentation,                          \
+                   no_sanitize("undefined"))) NOINLINE
 #endif
 #endif // has_feature
 
@@ -25,6 +33,9 @@
 #define NO_SANITIZE
 #define NO_SANITIZE_ADDRESS
 #define NO_SANITIZE_THREAD
+#endif
+#ifndef NO_SANITIZE_UNDEFINED
+#define NO_SANITIZE_UNDEFINED
 #endif
 
 #define UNLIKELY(b) __builtin_expect((b), 0)
