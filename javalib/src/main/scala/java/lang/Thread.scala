@@ -378,6 +378,7 @@ class Thread private[lang] (
   )
   @throws[IllegalThreadStateException]("if this thread has not been started")
   final def join(duration: Duration): scala.Boolean = {
+    if (duration == null) throw new NullPointerException()
     threadState() match {
       case Thread.State.NEW =>
         throw new IllegalThreadStateException("Cannot join unstarted thread")
@@ -685,8 +686,13 @@ object Thread {
   @throws[InterruptedException](
     "if the current thread is interrupted while sleeping"
   )
-  def sleep(duration: Duration): Unit =
-    sleep(millis = duration.getSeconds() * 1000, nanos = duration.getNano())
+  def sleep(duration: Duration): Unit = {
+    if (duration == null) throw new NullPointerException()
+    if (!duration.isNegative())
+      duration.toMillisAndNanos match {
+        case (millis, nanos) => sleep(millis, nanos)
+      }
+  }
 
   def ofPlatform(): Builder.OfPlatform =
     new ThreadBuilders.PlatformThreadBuilder
