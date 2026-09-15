@@ -12,6 +12,7 @@ trait Iterator[E] {
     throw new UnsupportedOperationException("remove")
 
   def forEachRemaining(action: Consumer[_ >: E]): Unit = {
+    Objects.requireNonNull(action)
     while (hasNext())
       action.accept(next())
   }

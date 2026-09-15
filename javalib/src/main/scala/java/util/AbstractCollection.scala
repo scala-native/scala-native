@@ -57,19 +57,26 @@ abstract class AbstractCollection[E] protected () extends Collection[E] {
   }
 
   def containsAll(c: Collection[_]): Boolean = {
+    Objects.requireNonNull(c)
     var it = c.iterator()
     while (it.hasNext()) if (!contains(it.next())) return false
     true
   }
 
-  def addAll(c: Collection[_ <: E]): Boolean =
+  def addAll(c: Collection[_ <: E]): Boolean = {
+    Objects.requireNonNull(c)
     c.scalaOps.foldLeft(false)((prev, elem) => add(elem) || prev)
+  }
 
-  def removeAll(c: Collection[_]): Boolean =
+  def removeAll(c: Collection[_]): Boolean = {
+    Objects.requireNonNull(c)
     removeWhere(c.contains(_))
+  }
 
-  def retainAll(c: Collection[_]): Boolean =
+  def retainAll(c: Collection[_]): Boolean = {
+    Objects.requireNonNull(c)
     removeWhere(!c.contains(_))
+  }
 
   def clear(): Unit =
     removeWhere(_ => true)

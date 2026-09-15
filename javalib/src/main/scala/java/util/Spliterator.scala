@@ -93,8 +93,10 @@ trait Spliterator[T] {
 
   def estimateSize(): Long
 
-  def forEachRemaining(action: Consumer[_ >: T]): Unit =
+  def forEachRemaining(action: Consumer[_ >: T]): Unit = {
+    Objects.requireNonNull(action)
     while (tryAdvance(action)) {}
+  }
 
   def getComparator(): Comparator[_ >: T] = throw new IllegalStateException()
 

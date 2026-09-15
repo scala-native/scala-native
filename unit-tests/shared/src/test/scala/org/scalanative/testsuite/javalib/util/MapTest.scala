@@ -2,6 +2,8 @@
 
 package org.scalanative.testsuite.javalib.util
 
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong}
+import java.util.concurrent.{CompletableFuture, ThreadLocalRandom, TimeUnit}
 import java.util.function.{BiConsumer, BiFunction, Function}
 import java.{util => ju}
 
@@ -76,6 +78,263 @@ trait MapTest {
       actual: Double
   ) =
     assertEqualOrOneOfIfIdentityBased(expected, actual, 0.0)
+
+  private def makeJSR166Key(i: Int): MapTest.JSR166Key =
+    new MapTest.JSR166Key(i)
+
+  private def makeJSR166Value(i: Int): AnyRef =
+    Integer.valueOf(i)
+
+  private def jsr166ValueToInt(value: AnyRef): Int =
+    value.asInstanceOf[Integer].intValue()
+
+  private def assumeJSR166MapTests(): Unit =
+    assumeTrue(factory.supportsJSR166MapTests)
+
+  private def cloneableClone[K, V](map: ju.Map[K, V]): ju.Map[K, V] =
+    map match {
+      case m: ju.HashMap[K, V]         => m.clone().asInstanceOf[ju.Map[K, V]]
+      case m: ju.IdentityHashMap[K, V] =>
+        m.clone().asInstanceOf[ju.Map[K, V]]
+      case m: ju.TreeMap[K, V] => m.clone().asInstanceOf[ju.Map[K, V]]
+      case _                   => null
+    }
+
+  @Test def testImplSanity(): Unit = {
+    assumeJSR166MapTests()
+    val rnd: ThreadLocalRandom = ThreadLocalRandom.current()
+    locally {
+      val m = factory.empty[AnyRef, AnyRef]
+      assertTrue(m.isEmpty())
+      assertEquals(0, m.size())
+      val k = makeJSR166Key(rnd.nextInt())
+      val v = makeJSR166Value(rnd.nextInt())
+      m.put(k, v)
+      assertFalse(m.isEmpty())
+      assertEquals(1, m.size())
+      assertTrue(m.containsKey(k))
+      assertTrue(m.containsValue(v))
+    }
+    locally {
+      val m = factory.empty[AnyRef, AnyRef]
+      val v = makeJSR166Value(rnd.nextInt())
+      if (factory.allowsNullKeys) {
+        m.put(null, v)
+        assertTrue(m.containsKey(null))
+        assertTrue(m.containsValue(v))
+      } else assertThrows(classOf[NullPointerException], m.put(null, v))
+    }
+    locally {
+      val m = factory.empty[AnyRef, AnyRef]
+      val k = makeJSR166Key(rnd.nextInt())
+      if (factory.allowsNullValues) {
+        m.put(k, null)
+        assertTrue(m.containsKey(k))
+        assertTrue(m.containsValue(null))
+      } else assertThrows(classOf[NullPointerException], m.put(k, null))
+    }
+    locally {
+      val m = factory.empty[AnyRef, AnyRef]
+      val k = makeJSR166Key(rnd.nextInt())
+      val v1 = makeJSR166Value(rnd.nextInt())
+      val v2 = makeJSR166Value(rnd.nextInt())
+      m.put(k, v1)
+      val entry = m.entrySet().iterator().next()
+      if (factory.supportsSetValue) {
+        entry.setValue(v2)
+        assertSame(v2, m.get(k))
+        assertTrue(m.containsKey(k))
+        assertTrue(m.containsValue(v2))
+        assertFalse(m.containsValue(v1))
+      } else {
+        assertThrows(
+          classOf[UnsupportedOperationException],
+          entry.setValue(v2)
+        )
+      }
+    }
+  }
+
+  @Test def testBug8186171(): Unit = {
+    assumeJSR166MapTests()
+    if (!factory.supportsSetValue) return
+    val rnd = ThreadLocalRandom.current()
+    val v1 =
+      if (factory.allowsNullValues && rnd.nextBoolean()) null
+      else makeJSR166Value(1)
+    val v2 =
+      if (factory.allowsNullValues && rnd.nextBoolean() && v1 != null) null
+      else makeJSR166Value(2)
+
+    val poorHash = rnd.nextBoolean()
+    final class Key(val i: Int) extends Comparable[Key] {
+      override def hashCode(): Int =
+        if (poorHash) 0 else System.identityHashCode(this)
+      override def compareTo(that: Key): Int =
+        Integer.compare(i, that.i)
+    }
+
+    val size = rnd.nextInt(1, 25)
+    val keys = new ju.ArrayList[Key]()
+    var i = size
+    while (i > 0) {
+      i -= 1
+      keys.add(new Key(i))
+    }
+    val keyToFrob = keys.get(rnd.nextInt(keys.size()))
+
+    val m = factory.empty[Key, AnyRef]
+    val kit = keys.iterator()
+    while (kit.hasNext())
+      m.put(kit.next(), v1)
+
+    val it = m.entrySet().iterator()
+    while (it.hasNext()) {
+      val entry = it.next()
+      if (entry.getKey() eq keyToFrob) entry.setValue(v2)
+      else it.remove()
+    }
+
+    assertFalse(m.containsValue(v1))
+    assertTrue(m.containsValue(v2))
+    assertTrue(m.containsKey(keyToFrob))
+    assertEquals(1, m.size())
+  }
+
+  @Test def testBug8210280(): Unit = {
+    assumeJSR166MapTests()
+    val rnd = ThreadLocalRandom.current()
+    val size1 = rnd.nextInt(32)
+    val size2 = rnd.nextInt(128)
+
+    val m1 = factory.empty[AnyRef, AnyRef]
+    for (i <- 0 until size1) {
+      val elt = rnd.nextInt(1024 * i, 1024 * (i + 1))
+      assertNull(m1.put(makeJSR166Key(elt), makeJSR166Value(elt)))
+    }
+
+    val m2 = factory.empty[AnyRef, AnyRef]
+    for (i <- 0 until size2) {
+      val elt =
+        rnd.nextInt(Int.MinValue + 1024 * i, Int.MinValue + 1024 * (i + 1))
+      assertNull(m2.put(makeJSR166Key(elt), makeJSR166Value(-elt)))
+    }
+
+    val m1Copy = factory.empty[AnyRef, AnyRef]
+    m1Copy.putAll(m1)
+    m1.putAll(m2)
+
+    val m2Keys = m2.keySet().iterator()
+    while (m2Keys.hasNext()) {
+      val elt = m2Keys.next()
+      assertEquals(m2.get(elt), m1.get(elt))
+    }
+    val m1CopyKeys = m1Copy.keySet().iterator()
+    while (m1CopyKeys.hasNext()) {
+      val elt = m1CopyKeys.next()
+      assertSame(m1Copy.get(elt), m1.get(elt))
+    }
+    assertEquals(size1 + size2, m1.size())
+  }
+
+  @Test def testClone(): Unit = {
+    assumeJSR166MapTests()
+    val rnd = ThreadLocalRandom.current()
+    val size = rnd.nextInt(4)
+    val map = factory.empty[AnyRef, AnyRef]
+    for (i <- 0 until size)
+      map.put(makeJSR166Key(i), makeJSR166Value(i))
+    val clone = cloneableClone(map)
+    if (clone == null) return
+
+    assertEquals(size, map.size())
+    assertEquals(size, clone.size())
+    assertEquals(map.isEmpty(), clone.isEmpty())
+
+    clone.put(makeJSR166Key(-1), makeJSR166Value(-1))
+    assertEquals(size, map.size())
+    assertEquals(size + 1, clone.size())
+
+    clone.clear()
+    assertEquals(size, map.size())
+    assertEquals(0, clone.size())
+    assertTrue(clone.isEmpty())
+  }
+
+  @Test def testConcurrentAccess(): Unit = {
+    assumeJSR166MapTests()
+    val map = factory.empty[AnyRef, AnyRef]
+    val testDurationMillis = if (executingInJVM) 1000L else 2L
+    val nTasks =
+      if (factory.isConcurrent) ThreadLocalRandom.current().nextInt(1, 10)
+      else 1
+    val done = new AtomicBoolean(false)
+    val futures = new ju.ArrayList[CompletableFuture[Void]]()
+    val expectedSum = new AtomicLong(0L)
+    val remappingAtMostOnce = factory.remappingFunctionCalledAtMostOnce
+
+    val tasks = Array[Runnable](
+      new Runnable {
+        override def run(): Unit = {
+          val invocations = new Array[Long](2)
+          val rnd = ThreadLocalRandom.current()
+          val incValue = new BiFunction[AnyRef, AnyRef, AnyRef] {
+            override def apply(k: AnyRef, v: AnyRef): AnyRef = {
+              invocations(1) += 1
+              val vi = if (v == null) 1 else jsr166ValueToInt(v) + 1
+              makeJSR166Value(vi)
+            }
+          }
+          while (!done.get()) {
+            invocations(0) += 1
+            val key = makeJSR166Key(3 * rnd.nextInt(10))
+            map.compute(key, incValue)
+          }
+          if (remappingAtMostOnce)
+            assertEquals(invocations(0), invocations(1))
+          expectedSum.getAndAdd(invocations(0))
+        }
+      },
+      new Runnable {
+        override def run(): Unit = {
+          val invocations = new Array[Long](2)
+          val rnd = ThreadLocalRandom.current()
+          val incValue = new BiFunction[AnyRef, AnyRef, AnyRef] {
+            override def apply(k: AnyRef, v: AnyRef): AnyRef = {
+              invocations(1) += 1
+              makeJSR166Value(jsr166ValueToInt(v) + 1)
+            }
+          }
+          while (!done.get()) {
+            val key = makeJSR166Key(3 * rnd.nextInt(10))
+            if (map.computeIfPresent(key, incValue) != null)
+              invocations(0) += 1
+          }
+          if (remappingAtMostOnce)
+            assertEquals(invocations(0), invocations(1))
+          expectedSum.getAndAdd(invocations(0))
+        }
+      }
+    )
+
+    var i = nTasks
+    while (i > 0) {
+      i -= 1
+      val task = tasks(ThreadLocalRandom.current().nextInt(tasks.length))
+      futures.add(CompletableFuture.runAsync(task))
+    }
+    Thread.sleep(testDurationMillis)
+    done.set(true)
+    val fit = futures.iterator()
+    while (fit.hasNext())
+      assertNull(fit.next().get(10L, TimeUnit.SECONDS))
+
+    var sum = 0L
+    val values = map.values().iterator()
+    while (values.hasNext())
+      sum += jsr166ValueToInt(values.next())
+    assertEquals(expectedSum.get(), sum)
+  }
 
   // tests
 
@@ -1357,7 +1616,10 @@ trait MapTest {
 
     assertFalse(mp.remove("TWO", "one"))
     assertEquals("two", mp.get("TWO"))
-    assertFalse(mp.remove("TWO", null))
+    if (factory.removeWithNullValueThrows)
+      assertThrowsNPEIfCompliant(mp.remove("TWO", null))
+    else
+      assertFalse(mp.remove("TWO", null))
     assertEquals("two", mp.get("TWO"))
 
     assertTrue(mp.remove("ONE", "one"))
@@ -1381,7 +1643,10 @@ trait MapTest {
       assertFalse(mp.containsKey("nullable"))
     } else {
       // mp#(key, null) should not remove. https://bugs.java.com/bugdatabase/view_bug.do?bug_id=6272521
-      assertFalse(mp.remove("THREE", null))
+      if (factory.removeWithNullValueThrows)
+        assertThrowsNPEIfCompliant(mp.remove("THREE", null))
+      else
+        assertFalse(mp.remove("THREE", null))
     }
   }
 
@@ -1640,8 +1905,15 @@ trait MapTest {
     assertEquals("def", mp.merge("SEVEN", "def", notCalled))
     assertEquals("def", mp.get("SEVEN"))
 
-    assertThrowsNPEIfCompliant(mp.merge("non existing", null, notCalled))
-    assertThrowsNPEIfCompliant(mp.merge("ONE", null, notCalled))
+    if (factory.mergeWithNullValueThrows) {
+      assertThrowsNPEIfCompliant(mp.merge("non existing", null, notCalled))
+      assertThrowsNPEIfCompliant(mp.merge("ONE", null, notCalled))
+    } else {
+      assertNull(mp.merge("non existing", null, notCalled))
+      assertFalse(mp.containsKey("non existing"))
+      assertEquals("one - null", mp.merge("ONE", null, remappingFun))
+      assertEquals("one - null", mp.get("ONE"))
+    }
 
     assertNull(mp.merge("ONE", "def", returnsNull))
     assertFalse(mp.containsKey("ONE"))
@@ -1695,6 +1967,16 @@ object MapTest {
   final case class TestObj(num: Int) extends Comparable[TestObj] {
     def compareTo(that: TestObj): Int = this.num - that.num
   }
+
+  final class JSR166Key(val value: Int) extends Comparable[JSR166Key] {
+    override def compareTo(that: JSR166Key): Int =
+      Integer.compare(value, that.value)
+    override def equals(that: Any): Boolean = that match {
+      case that: JSR166Key => value == that.value
+      case _               => false
+    }
+    override def hashCode(): Int = value
+  }
 }
 
 trait MapFactory {
@@ -1724,6 +2006,18 @@ trait MapFactory {
   def withSizeLimit: Option[Int] = None
 
   def isIdentityBased: Boolean = false
+
+  def isConcurrent: Boolean = false
+
+  def supportsSetValue: Boolean = true
+
+  def remappingFunctionCalledAtMostOnce: Boolean = true
+
+  def removeWithNullValueThrows: Boolean = false
+
+  def mergeWithNullValueThrows: Boolean = true
+
+  def supportsJSR166MapTests: Boolean = true
 
   def guaranteesInsertionOrder: Boolean = false
 }

@@ -738,7 +738,9 @@ class RecursiveActionTest extends JSR166Test {
 
   /** getPool of non-FJ task returns null
    */
-  @Ignore("All Scala Native tests are exuected in the pool")
+  @Ignore(
+    "scala-native#4855: test runner executes this non-FJ case inside a ForkJoinPool"
+  )
   @Test def testGetPool2(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = { assertNull(getPool) }
@@ -757,7 +759,9 @@ class RecursiveActionTest extends JSR166Test {
 
   /** inForkJoinPool of non-FJ task returns false
    */
-  @Ignore("All Scala Native etests are exuected in the pool")
+  @Ignore(
+    "scala-native#4855: test runner executes this non-FJ case inside a ForkJoinPool"
+  )
   @Test def testInForkJoinPool2(): Unit = {
     val a = new CheckedRecursiveAction() {
       protected def realCompute(): Unit = { assertFalse(inForkJoinPool) }

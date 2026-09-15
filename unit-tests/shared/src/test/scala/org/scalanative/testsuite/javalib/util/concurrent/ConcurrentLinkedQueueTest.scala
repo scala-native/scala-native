@@ -593,6 +593,11 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
   //   assertTrue(y.isEmpty)
   // }
 
+  @Ignore(
+    "scala-native#4852: ObjectInputStream/ObjectOutputStream are unsupported"
+  )
+  @Test def testSerialization(): Unit = ()
+
   /** remove(null), contains(null) always return false
    */
   @Test def testNeverContainsNull(): Unit = {

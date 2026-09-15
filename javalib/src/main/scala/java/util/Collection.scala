@@ -27,6 +27,7 @@ trait Collection[E] extends java.lang.Iterable[E] {
   def removeAll(c: Collection[_]): Boolean
 
   def removeIf(filter: Predicate[_ >: E]): Boolean = {
+    Objects.requireNonNull(filter)
     var result = false
     val iter = iterator()
     while (iter.hasNext()) {

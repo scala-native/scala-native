@@ -55,7 +55,9 @@ class ThreadLocalRandomTest extends JSR166Test {
    *  two distinct results, and repeated calls produce all possible values.
    */
   @throws[ReflectiveOperationException]
-  @Ignore("Test needs reflective access to 'next' method")
+  @Ignore(
+    "scala-native#4849: requires reflective access to ThreadLocalRandom.next"
+  )
   @Test def testNext(): Unit = {}
 
   /** Repeated calls to nextInt produce at least two distinct results
