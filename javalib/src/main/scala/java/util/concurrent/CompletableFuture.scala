@@ -817,7 +817,7 @@ object CompletableFuture {
     override def isReleasable(): Boolean = {
       if (Thread.interrupted()) interrupted = true
       (interrupted && interruptible) ||
-        (deadline != 0L && nanos <= 0L || { nanos = deadline - System.nanoTime(); nanos <= 0L }) ||
+        (deadline != 0L && (nanos <= 0L || { nanos = deadline - System.nanoTime(); nanos <= 0L })) ||
         thread == null
     }
 
