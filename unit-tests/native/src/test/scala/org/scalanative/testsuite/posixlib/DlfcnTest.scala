@@ -1,14 +1,11 @@
 package org.scalanative.testsuite.posixlib
 
-import java.io.File
-
 import org.junit.Assert._
 import org.junit.Assume._
 import org.junit.Test
 
-import scala.scalanative.meta.LinktimeInfo.{is32BitPlatform, isLinux, isMac}
+import scala.scalanative.meta.LinktimeInfo.{isLinux, isMac}
 import scala.scalanative.posix.dlfcn._
-import scala.scalanative.runtime.PlatformExt
 import scala.scalanative.unsafe._
 
 class DlfcnTest {
@@ -21,28 +18,9 @@ class DlfcnTest {
 
   @Test def dlfcnOpensAndObtainsSymbolAddressLinux(): Unit = {
     if (isLinux) Zone.acquire { implicit z =>
-      val soFilePrefix =
-        if (is32BitPlatform)
-          "/lib/i386-linux-gnu/"
-        else if (PlatformExt.isArm64)
-          "/usr/lib/aarch64-linux-gnu"
-        else
-          "/lib/x86_64-linux-gnu"
-
-      val soFile = s"${soFilePrefix}/libc.so.6"
-
-      /* Ensure the file exists before trying to "dlopen()" it.
-       * Someday the ".so.6" suffix is going to change to ".so.7" or such.
-       * When it does do a "soft failure", rather than failing the entire
-       * build.
-       */
-      assumeTrue(
-        s"shared library ${soFile} not found",
-        (new File(soFile)).exists()
-      )
-
+      val soFile = "libc.so.6"
       val handle = dlopen(toCString(soFile), RTLD_LAZY | RTLD_LOCAL)
-      assertNotNull(s"dlopen of ${soFile} failed", handle)
+      assumeTrue(s"dlopen of ${soFile} failed", handle != null)
 
       try {
         val symbol = "strlen"

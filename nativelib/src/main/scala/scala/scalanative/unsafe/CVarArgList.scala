@@ -52,6 +52,8 @@ object CVarArgList {
   def isWindowsOrMac = isWindows || isMac
   @resolvedAtLinktime
   def isArm64 = target.arch == "aarch64"
+  @resolvedAtLinktime
+  def isRiscV64 = target.arch == "riscv64"
 
   private final val countGPRegisters =
     if (isArm64 && !isWindowsOrMac) 8
@@ -71,6 +73,8 @@ object CVarArgList {
     if (isWindows) toCVarArgList_X86_64_Windows(varargs)
     else if (isArm64 && isMac)
       toCVarArgList_Arm64_MacOS(varargs)
+    else if (isRiscV64)
+      toCVarArgList_RiscV64(varargs)
     else if (is32BitPlatform) toCVarArgList_X86_Unix(varargs)
     else toCVarArgList_Unix(varargs)
   }
@@ -232,6 +236,48 @@ object CVarArgList {
     }
 
     new CVarArgList(toRawPtr(argListStorage))
+  }
+
+  private def toCVarArgList_RiscV64(
+      varargs: Seq[CVarArg]
+  )(implicit z: Zone): CVarArgList = {
+    var storage = new Array[Long](varargs.size.max(1))
+    var wordsUsed = 0
+
+    def append(word: Long): Unit = {
+      if (wordsUsed == storage.size) {
+        val newStorage = new Array[Long](storage.size * 2)
+        System.arraycopy(storage, 0, newStorage, 0, storage.size)
+        storage = newStorage
+      }
+      storage(wordsUsed) = word
+      wordsUsed += 1
+    }
+
+    varargs.foreach { vararg =>
+      // Linux RISC-V va_list is a pointer to arguments laid out as stack
+      // arguments. Scalars consume XLEN-sized slots; 16-byte-aligned values
+      // begin at an even slot and values larger than 2 * XLEN are indirect.
+      val alignment = vararg.tag.alignment.max(8).min(16)
+      val alignmentWords = alignment / 8
+      while (wordsUsed % alignmentWords != 0) append(0L)
+
+      if (vararg.tag.size > 16) {
+        val value = z.alloc(vararg.tag.size.toUSize)
+        vararg.tag.store(toRawPtr(value), vararg.value)
+        append(castRawPtrToLong(toRawPtr(value)))
+      } else {
+        encode(vararg.value)(vararg.tag).foreach(append)
+      }
+    }
+
+    val result = z.alloc((wordsUsed.max(1) * 8).toUSize)
+    ffi.memcpy(
+      toRawPtr(result),
+      toRawPtr(storage.at(0)),
+      castIntToRawSizeUnsigned(wordsUsed * 8)
+    )
+    new CVarArgList(toRawPtr(result))
   }
 
   private def toCVarArgList_X86_64_Windows(
