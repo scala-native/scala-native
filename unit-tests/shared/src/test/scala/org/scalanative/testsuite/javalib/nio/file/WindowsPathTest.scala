@@ -712,4 +712,9 @@ class WindowsPathTest {
     assertTrue(Paths.get("/.") != Paths.get("\\"))
     assertTrue(Paths.get("x:/.") != Paths.get("x:\\"))
   }
+
+  @Test def pathToUri(): Unit = {
+    // "file:///..." (three slashes: empty authority), not "file:/..."
+    assertTrue(Paths.get("x:/foo/bar").toUri().toString.startsWith("file:///"))
+  }
 }

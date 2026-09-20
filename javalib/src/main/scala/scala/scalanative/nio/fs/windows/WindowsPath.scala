@@ -216,7 +216,7 @@ class WindowsPath private[windows] (
     new URI(
       scheme = "file",
       userInfo = null,
-      host = null,
+      host = "",
       port = -1,
       path = absPath.path,
       query = null,

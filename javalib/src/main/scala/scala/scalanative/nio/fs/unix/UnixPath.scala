@@ -64,7 +64,7 @@ class UnixPath(private val fs: UnixFileSystem, rawPath: String) extends Path {
     new URI(
       scheme = "file",
       userInfo = null,
-      host = null,
+      host = "",
       port = -1,
       path = toFile().getAbsolutePath(),
       query = null,
