@@ -212,16 +212,21 @@ class WindowsPath private[windows] (
 
   override def toFile(): File = new File(path)
 
-  private lazy val uri =
+  private lazy val uri = {
+    val forwardSlashed = absPath.path.replace('\\', '/')
+    val uriPath =
+      if (forwardSlashed.startsWith("/")) forwardSlashed
+      else "/" + forwardSlashed
     new URI(
       scheme = "file",
       userInfo = null,
       host = "",
       port = -1,
-      path = absPath.path,
+      path = uriPath,
       query = null,
       fragment = null
     )
+  }
 
   override def toUri(): URI = uri
 
