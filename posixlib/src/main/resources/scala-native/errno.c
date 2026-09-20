@@ -206,7 +206,7 @@ int scalanative_estale() {
 }
 
 int scalanative_etime() {
-#ifdef ENOTIME
+#ifdef ETIME
     return ETIME;
 #else
     return 0;
