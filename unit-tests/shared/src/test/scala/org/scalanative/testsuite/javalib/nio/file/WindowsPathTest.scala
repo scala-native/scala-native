@@ -715,6 +715,14 @@ class WindowsPathTest {
 
   @Test def pathToUri(): Unit = {
     // "file:///..." (three slashes: empty authority), not "file:/..."
-    assertTrue(Paths.get("x:/foo/bar").toUri().toString.startsWith("file:///"))
+    val expected = "file:///X:/foo/bar"
+    val forwardSlashed = Paths.get("X:/foo/bar").toUri()
+    val backSlashed = Paths.get("X:\\foo\\bar").toUri()
+
+    assertEquals(expected, forwardSlashed.toString)
+    assertEquals(expected, backSlashed.toString)
+    assertEquals("file", forwardSlashed.getScheme)
+    assertEquals("", forwardSlashed.getAuthority)
+    assertEquals("/X:/foo/bar", forwardSlashed.getPath)
   }
 }
