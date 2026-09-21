@@ -20,6 +20,8 @@ trait NavigableMap[K, V] extends SortedMap[K, V] {
   def pollFirstEntry(): Map.Entry[K, V]
   def pollLastEntry(): Map.Entry[K, V]
   def descendingMap(): NavigableMap[K, V]
+  def reversed(): NavigableMap[K, V] =
+    descendingMap()
   def navigableKeySet(): NavigableSet[K]
   def descendingKeySet(): NavigableSet[K]
   def subMap(
