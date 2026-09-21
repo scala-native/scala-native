@@ -722,7 +722,7 @@ class WindowsPathTest {
     assertEquals(expected, forwardSlashed.toString)
     assertEquals(expected, backSlashed.toString)
     assertEquals("file", forwardSlashed.getScheme)
-    assertEquals("", forwardSlashed.getAuthority)
+    assertEquals(null, forwardSlashed.getAuthority)
     assertEquals("/X:/foo/bar", forwardSlashed.getPath)
   }
 }
