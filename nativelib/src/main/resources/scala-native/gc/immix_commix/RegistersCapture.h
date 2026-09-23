@@ -8,15 +8,15 @@
 
 #if defined(__i386__) || defined(__x86__)
 #define CAPTURE_X86
-typedef struct RegistersBuffer {
+typedef struct {
     void *ebx;
     void *edi;
     void *esi;
-} RegistersBuffer;
+} RegistersBuffer[1];
 
 #elif defined(__x86_64__)
 #define CAPTURE_X86_64
-typedef struct RegistersBuffer {
+typedef struct {
     void *rbx;
     void *rbp;
     void *rdi;
@@ -25,7 +25,7 @@ typedef struct RegistersBuffer {
     void *r14;
     void *r15;
     void *xmm[16 * 2];
-} RegistersBuffer;
+} RegistersBuffer[1];
 
 #else
 #define CAPTURE_SETJMP
@@ -52,9 +52,9 @@ INLINE static void RegistersCapture(RegistersBuffer out) {
       mov regEbx, ebx
     }
 #endif
-    out.esi = regEsi;
-    out.edi = regEdi;
-    out.ebx = regEbx;
+    out->esi = regEsi;
+    out->edi = regEdi;
+    out->ebx = regEbx;
 
 #elif defined(CAPTURE_X86_64)
 #ifdef _WIN32
@@ -63,14 +63,14 @@ INLINE static void RegistersCapture(RegistersBuffer out) {
     context.ContextFlags = CONTEXT_INTEGER;
     RtlCaptureContext(&context);
 
-    out.rbx = (void *)context.Rbx;
-    out.rbp = (void *)context.Rbp;
-    out.rdi = (void *)context.Rdi;
-    out.r12 = (void *)context.R12;
-    out.r13 = (void *)context.R13;
-    out.r14 = (void *)context.R14;
-    out.r15 = (void *)context.R15;
-    memcpy(out.xmm, &context.Xmm0, sizeof(out.xmm));
+    out->rbx = (void *)context.Rbx;
+    out->rbp = (void *)context.Rbp;
+    out->rdi = (void *)context.Rdi;
+    out->r12 = (void *)context.R12;
+    out->r13 = (void *)context.R13;
+    out->r14 = (void *)context.R14;
+    out->r15 = (void *)context.R15;
+    memcpy(out->xmm, &context.Xmm0, sizeof(out->xmm));
 #else
     void *regBx;
     void *regBp;
@@ -86,12 +86,12 @@ INLINE static void RegistersCapture(RegistersBuffer out) {
     asm("movq %%r13, %0\n\t" : "=r"(reg13));
     asm("movq %%r14, %0\n\t" : "=r"(reg14));
     asm("movq %%r15, %0\n\t" : "=r"(reg15));
-    out.rbx = regBx;
-    out.rbp = regBp;
-    out.r12 = reg12;
-    out.r13 = reg13;
-    out.r14 = reg14;
-    out.r15 = reg15;
+    out->rbx = regBx;
+    out->rbp = regBp;
+    out->r12 = reg12;
+    out->r13 = reg13;
+    out->r14 = reg14;
+    out->r15 = reg15;
 #endif // GNU_C
 
 #else
