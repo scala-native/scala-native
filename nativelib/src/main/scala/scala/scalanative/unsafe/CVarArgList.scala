@@ -14,9 +14,7 @@ final class CVarArgList private[scalanative] (
 )
 
 object CVarArgList {
-  // Implementation below is based on VarArgs.swift from apple/swift repo.
-  // Currently we only support X86_64, we'll need to revisit the code below
-  // if and when we add any more officially supported architectures.
+  // The individual encoders follow their platform's va_list ABI.
 
   private type Header =
     CStruct4[CUnsignedInt, CUnsignedInt, Ptr[Long], Ptr[Long]]
