@@ -3667,7 +3667,7 @@ class CompletableFutureTest extends JSR166Test {
   /** Test submissions to an executor that rejects all tasks, but should never be invoked() because the dependent future
    *  is explicitly completed.
    */
-  @Test def testRejectingExecutorNeverinvoked(): Unit = {
+  @Test def testRejectingExecutorNeverInvoked(): Unit = {
     for (v <- Array[Item](one, null)) {
       val e = new CountingRejectingExecutor
       val complete = CompletableFuture.completedFuture(v)
@@ -3697,6 +3697,32 @@ class CompletableFutureTest extends JSR166Test {
 
       fs.asInstanceOf[ArrayList[CompletableFuture[AnyRef]]].forEach(checkCompletedNormally(_, null))
       assertEquals(0, e.count.get())
+    }
+  }
+
+  /** Exception propagation reuses internal result objects.
+   */
+  @Ignore("scala-native#4849: requires reflective access to CompletableFuture.result")
+  @Test def testExceptionPropagationReusesResultObject(): Unit = ()
+
+  @Ignore("scala-native#4849: requires Class.getMethods reflection")
+  @Test def testMinimalCompletionStage_minimality(): Unit = ()
+
+  /** minimalStage.toCompletableFuture().join() awaits completion
+   */
+  @Test def testMinimalCompletionStage_toCompletableFuture_join(): Unit = {
+    CompletableFutureTestPlatform.assumeMinimalCompletionStage()
+
+    for (createIncomplete <- Array(true, false)) {
+      for (v1 <- Array[Item](one, null)) {
+        val f = new CompletableFuture[Item]
+        if (!createIncomplete) assertTrue(f.complete(v1))
+        val minimal = CompletableFutureTestPlatform.minimalCompletionStage(f)
+        if (createIncomplete) assertTrue(f.complete(v1))
+        mustEqual(v1, minimal.toCompletableFuture().join())
+        mustEqual(v1, minimal.toCompletableFuture().get())
+        checkCompletedNormally(minimal.toCompletableFuture(), v1)
+      }
     }
   }
 

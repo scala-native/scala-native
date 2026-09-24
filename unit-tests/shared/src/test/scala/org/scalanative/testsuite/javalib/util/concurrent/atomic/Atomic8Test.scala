@@ -11,7 +11,7 @@ import java.lang.{Long => jlLong}
 import java.util.concurrent.atomic._
 
 import org.junit.Assert._
-import org.junit.Test
+import org.junit.{Ignore, Test}
 
 object Atomic8Test {
   def addLong17(x: Long): Long = x + 17
@@ -321,18 +321,30 @@ class Atomic8Test extends JSR166Test {
   }
 
   // Tests not ported, FieldUpdated is reflection based
-  // @Test def testLongFieldUpdaterGetAndUpdate(): Unit = {}
-  // @Test def testLongFieldUpdaterUpdateAndGet(): Unit = {}
-  // @Test def testLongFieldUpdaterGetAndAccumulate(): Unit = {}
-  // @Test def testLongFieldUpdaterAccumulateAndGet(): Unit = {}
-  // @Test def testIntegerFieldUpdaterGetAndUpdate(): Unit = {}
-  // @Test def testIntegerFieldUpdaterUpdateAndGet(): Unit = {}
-  // @Test def testIntegerFieldUpdaterGetAndAccumulate(): Unit = {}
-  // @Test def testIntegerFieldUpdaterAccumulateAndGet(): Unit = {}
-  // @Test def testReferenceFieldUpdaterGetAndUpdate(): Unit = {}
-  // @Test def testReferenceFieldUpdaterUpdateAndGet(): Unit = {}
-  // @Test def testReferenceFieldUpdaterGetAndAccumulate(): Unit = {}
-  // @Test def testReferenceFieldUpdaterAccumulateAndGet(): Unit = {}
+  @Ignore("scala-native#4846: AtomicFieldUpdater factory methods are missing")
+  @Test def testLongFieldUpdaterGetAndUpdate(): Unit = ()
+  @Ignore("scala-native#4846: AtomicFieldUpdater factory methods are missing")
+  @Test def testLongFieldUpdaterUpdateAndGet(): Unit = ()
+  @Ignore("scala-native#4846: AtomicFieldUpdater factory methods are missing")
+  @Test def testLongFieldUpdaterGetAndAccumulate(): Unit = ()
+  @Ignore("scala-native#4846: AtomicFieldUpdater factory methods are missing")
+  @Test def testLongFieldUpdaterAccumulateAndGet(): Unit = ()
+  @Ignore("scala-native#4846: AtomicFieldUpdater factory methods are missing")
+  @Test def testIntegerFieldUpdaterGetAndUpdate(): Unit = ()
+  @Ignore("scala-native#4846: AtomicFieldUpdater factory methods are missing")
+  @Test def testIntegerFieldUpdaterUpdateAndGet(): Unit = ()
+  @Ignore("scala-native#4846: AtomicFieldUpdater factory methods are missing")
+  @Test def testIntegerFieldUpdaterGetAndAccumulate(): Unit = ()
+  @Ignore("scala-native#4846: AtomicFieldUpdater factory methods are missing")
+  @Test def testIntegerFieldUpdaterAccumulateAndGet(): Unit = ()
+  @Ignore("scala-native#4846: AtomicFieldUpdater factory methods are missing")
+  @Test def testReferenceFieldUpdaterGetAndUpdate(): Unit = ()
+  @Ignore("scala-native#4846: AtomicFieldUpdater factory methods are missing")
+  @Test def testReferenceFieldUpdaterUpdateAndGet(): Unit = ()
+  @Ignore("scala-native#4846: AtomicFieldUpdater factory methods are missing")
+  @Test def testReferenceFieldUpdaterGetAndAccumulate(): Unit = ()
+  @Ignore("scala-native#4846: AtomicFieldUpdater factory methods are missing")
+  @Test def testReferenceFieldUpdaterAccumulateAndGet(): Unit = ()
 
   /** All Atomic getAndUpdate methods throw NullPointerException on null
    *  function argument
@@ -406,5 +418,6 @@ class Atomic8Test extends JSR166Test {
    *  class passed to the newUpdater call will result in a ClassCastException
    *  being thrown.
    */
-  // @Test def testFieldUpdaters_ClassCastException(): Unit = {}
+  @Ignore("scala-native#4846: AtomicFieldUpdater factory methods are missing")
+  @Test def testFieldUpdaters_ClassCastException(): Unit = {}
 }

@@ -11,6 +11,8 @@ import org.scalanative.testsuite.javalib.util.MapFactory
 trait ConcurrentMapFactory extends MapFactory {
   def empty[K: ClassTag, V: ClassTag]: ju.concurrent.ConcurrentMap[K, V]
 
+  override def isConcurrent: Boolean = true
+
   override def allowsNullValuesQueries: Boolean = false
 
   override def allowsNullKeysQueries: Boolean = false

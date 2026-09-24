@@ -311,7 +311,7 @@ class RecursiveTaskTest extends JSR166Test {
   /** helpQuiesce returns when tasks are complete. getQueuedTaskCount returns 0
    *  when quiescent
    */
-  @Test def testhelpQuiesce(): Unit = {
+  @Test def testForkHelpQuiesce(): Unit = {
     val a = new CheckedRecursiveTask[Integer] {
       protected def realCompute(): Integer = {
         val f = new FibTask(8)

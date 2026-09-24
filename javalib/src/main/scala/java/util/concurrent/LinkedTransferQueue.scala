@@ -1211,7 +1211,7 @@ import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
                 restartFromHead = true
               }
             }
-            q = p.next
+            if (p != null) q = p.next
           }
         }
       }

@@ -12,7 +12,8 @@
 package org.scalanative.testsuite.javalib.util.concurrent
 
 import java.util
-import java.util.concurrent.ConcurrentLinkedDeque
+import java.util.concurrent.atomic.LongAdder
+import java.util.concurrent.{ConcurrentLinkedDeque, ThreadLocalRandom}
 import java.util.{Arrays, Collection, NoSuchElementException, Random}
 
 import org.junit.Assert._
@@ -43,6 +44,17 @@ class ConcurrentLinkedDequeTest extends JSR166Test {
     assertFalse(q.isEmpty)
     assertEquals(n, q.size)
     q
+  }
+
+  private def runAsync(first: Runnable, second: Runnable): Unit = {
+    val t1 = newStartedThread(new CheckedRunnable() {
+      override def realRun(): Unit = first.run()
+    })
+    val t2 = newStartedThread(new CheckedRunnable() {
+      override def realRun(): Unit = second.run()
+    })
+    awaitTermination(t1)
+    awaitTermination(t2)
   }
 
   /** new deque is empty
@@ -744,9 +756,8 @@ class ConcurrentLinkedDequeTest extends JSR166Test {
 
   /** toArray(incompatible array type) throws ArrayStoreException
    */
-  // Lack of ArrayStoreExeption in Scala Native is a known defect/insufficiency
-  @Ignore("No distinguishment in Array component types in Scala Native")
-  @Test def testToArray1_BadArg(): Unit = {
+  @Ignore("scala-native#4845: arrays lose runtime component type")
+  @Test def testToArray_incompatibleArrayType(): Unit = {
     val q = populatedDeque(SIZE)
     try {
       q.toArray(new Array[String](10))
@@ -949,6 +960,11 @@ class ConcurrentLinkedDequeTest extends JSR166Test {
   //   assertTrue(y.isEmpty)
   // }
 
+  @Ignore(
+    "scala-native#4852: ObjectInputStream/ObjectOutputStream are unsupported"
+  )
+  @Test def testSerialization(): Unit = ()
+
   /** contains(null) always return false. remove(null) always throws
    *  NullPointerException.
    */
@@ -974,6 +990,134 @@ class ConcurrentLinkedDequeTest extends JSR166Test {
       } catch {
         case success: NullPointerException =>
       }
+    }
+  }
+
+  @Test def testBug8188900(): Unit = {
+    val rnd = ThreadLocalRandom.current()
+    val nulls = new LongAdder()
+    val zeros = new LongAdder()
+    var n = 10
+    while (n > 0) {
+      val d = new ConcurrentLinkedDeque[Item]()
+      val peek = rnd.nextBoolean()
+      val getter = new Runnable {
+        override def run(): Unit = {
+          val x = if (peek) d.peekFirst() else d.pollFirst()
+          if (x == null) nulls.increment()
+          else if (x.value == 0) zeros.increment()
+          else
+            throw new AssertionError(
+              s"unexpected value $x after ${nulls.sum()} nulls and ${zeros.sum()} zeros"
+            )
+        }
+      }
+      val adder = new Runnable {
+        override def run(): Unit = {
+          d.addFirst(zero)
+          d.addLast(fortytwo)
+        }
+      }
+      runAsync(getter, adder)
+      n -= 1
+    }
+  }
+
+  @Test def testBug8188900_reverse(): Unit = {
+    val rnd = ThreadLocalRandom.current()
+    val nulls = new LongAdder()
+    val zeros = new LongAdder()
+    var n = 10
+    while (n > 0) {
+      val d = new ConcurrentLinkedDeque[Item]()
+      val peek = rnd.nextBoolean()
+      val getter = new Runnable {
+        override def run(): Unit = {
+          val x = if (peek) d.peekLast() else d.pollLast()
+          if (x == null) nulls.increment()
+          else if (x.value == 0) zeros.increment()
+          else
+            throw new AssertionError(
+              s"unexpected value $x after ${nulls.sum()} nulls and ${zeros.sum()} zeros"
+            )
+        }
+      }
+      val adder = new Runnable {
+        override def run(): Unit = {
+          d.addLast(zero)
+          d.addFirst(fortytwo)
+        }
+      }
+      runAsync(getter, adder)
+      n -= 1
+    }
+  }
+
+  @Test def testBug8189387(): Unit = {
+    val x = new Object()
+    var n = 10
+    while (n > 0) {
+      val d = new ConcurrentLinkedDeque[Object]()
+
+      val add = chooseRandomly(
+        Array[Runnable](
+          new Runnable { override def run(): Unit = d.addFirst(x) },
+          new Runnable { override def run(): Unit = d.offerFirst(x) },
+          new Runnable { override def run(): Unit = d.addLast(x) },
+          new Runnable { override def run(): Unit = d.offerLast(x) }
+        )
+      )
+
+      val get = chooseRandomly(
+        Array[Runnable](
+          new Runnable { override def run(): Unit = assertFalse(d.isEmpty()) },
+          new Runnable {
+            override def run(): Unit = assertSame(x, d.peekFirst())
+          },
+          new Runnable {
+            override def run(): Unit = assertSame(x, d.peekLast())
+          },
+          new Runnable {
+            override def run(): Unit = assertSame(x, d.pollFirst())
+          },
+          new Runnable {
+            override def run(): Unit = assertSame(x, d.pollLast())
+          }
+        )
+      )
+
+      val addRemove = chooseRandomly(
+        Array[Runnable](
+          new Runnable {
+            override def run(): Unit = {
+              d.addFirst(x)
+              d.pollLast()
+            }
+          },
+          new Runnable {
+            override def run(): Unit = {
+              d.offerFirst(x)
+              d.removeFirst()
+            }
+          },
+          new Runnable {
+            override def run(): Unit = {
+              d.offerLast(x)
+              d.removeLast()
+            }
+          },
+          new Runnable {
+            override def run(): Unit = {
+              d.addLast(x)
+              d.pollFirst()
+            }
+          }
+        )
+      )
+
+      add.run()
+      runAsync(get, addRemove)
+      n -= 1
     }
   }
 

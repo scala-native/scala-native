@@ -246,7 +246,7 @@ class ConcurrentHashMapTest_JSR166 extends JSR166Test {
   /** Mixtures of instances of comparable and non-comparable classes can be
    *  inserted and found.
    */
-  @Test def testMixedComparable2(): Unit = {
+  @Test def testMixedComparable(): Unit = {
     val size = 1200 // makes measured test run time -> 35ms
 
     val map = new ConcurrentHashMap[Object, Object]()

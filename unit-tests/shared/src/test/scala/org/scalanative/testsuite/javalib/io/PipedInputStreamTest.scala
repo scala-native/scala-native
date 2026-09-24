@@ -61,6 +61,21 @@ class PipedInputStreamTest {
   private var pis: PipedInputStream = _
   private var pos: PipedOutputStream = _
 
+  @throws[Exception]
+  private def assertAvailableEventually(
+      message: String,
+      in: PipedInputStream,
+      expected: Int
+  ): Unit = {
+    val deadline = System.currentTimeMillis() + 10000L
+    var available = in.available()
+    while (available != expected && System.currentTimeMillis() < deadline) {
+      Thread.sleep(1L)
+      available = in.available()
+    }
+    assertEquals(message, expected, available)
+  }
+
   /** @tests
    *    java.io.PipedInputStream#PipedInputStream()
    */
@@ -122,12 +137,10 @@ class PipedInputStreamTest {
     t = new Thread(pw)
     t.start()
 
-    pw.synchronized {
-      pw.wait(10000)
-    }
-    assertTrue(
-      "Available returned incorrect number of bytes: " + pis.available(),
-      pis.available == 1000
+    assertAvailableEventually(
+      "Available returned incorrect number of bytes",
+      pis,
+      1000
     )
 
     val pin = new PipedInputStream
@@ -180,13 +193,10 @@ class PipedInputStreamTest {
     t = new Thread(pw)
     t.start()
 
-    pw.synchronized {
-      pw.wait(10000)
-    }
-    assertEquals(
+    assertAvailableEventually(
       "Available returned incorrect number of bytes",
-      1000,
-      pis.available
+      pis,
+      1000
     )
   }
 
@@ -203,13 +213,10 @@ class PipedInputStreamTest {
     t = new Thread(pw)
     t.start()
 
-    pw.synchronized {
-      pw.wait(10000)
-    }
-    assertEquals(
+    assertAvailableEventually(
       "Available returned incorrect number of bytes",
-      1000,
-      pis.available
+      pis,
+      1000
     )
     assertEquals(
       "read returned incorrect byte",
@@ -232,12 +239,10 @@ class PipedInputStreamTest {
     t.start()
 
     val buf = new Array[Byte](400)
-    pw.synchronized {
-      pw.wait(10000)
-    }
-    assertTrue(
-      "Available returned incorrect number of bytes: " + pis.available,
-      pis.available == 1000
+    assertAvailableEventually(
+      "Available returned incorrect number of bytes",
+      pis,
+      1000
     )
     pis.read(buf, 0, 400)
     for (i <- 0 until 400) {

@@ -112,7 +112,9 @@ class AtomicBooleanTest extends JSR166Test {
   /** a deserialized/reserialized atomic holds same value
    */
   @throws[Exception]
-  @Ignore("No ObjectInputStreams in Scala Native")
+  @Ignore(
+    "scala-native#4852: ObjectInputStream/ObjectOutputStream are unsupported"
+  )
   @Test def testSerialization(): Unit = {
     //   val x = new AtomicBoolean
     //   val y = serialClone(x)
