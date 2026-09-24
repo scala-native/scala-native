@@ -4,7 +4,6 @@ import java.io.{FileDescriptor, IOException}
 
 import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.meta.LinktimeInfo.isWindows
-import scala.scalanative.posix.arpa.inet
 import scala.scalanative.posix.netinet.{in, inOps}
 import scala.scalanative.posix.string.memcpy
 import scala.scalanative.posix.sys.socket
@@ -240,14 +239,17 @@ object SocketHelpers {
 
   private def sockddrToPort(sockAddr: Ptr[sockaddr]): Int = {
     val af = sockAddr.sa_family.toInt
-    val inPort = if (af == AF_INET6) {
-      sockAddr.asInstanceOf[Ptr[in.sockaddr_in6]].sin6_port
+    if (af == AF_INET6) {
+      SocketHelpersNative.getSockaddrIn6Port(
+        sockAddr.asInstanceOf[Ptr[in.sockaddr_in6]]
+      )
     } else if (af == AF_INET) {
-      sockAddr.asInstanceOf[Ptr[in.sockaddr_in]].sin_port
+      SocketHelpersNative.getSockaddrInPort(
+        sockAddr.asInstanceOf[Ptr[in.sockaddr_in]]
+      )
     } else {
       throw new SocketException(s"Unsupported address family: ${af}")
     }
-    inet.ntohs(inPort).toInt
   }
 
   private def extractIP4Bytes(pb: Ptr[Byte]): Array[Byte] = {
@@ -437,14 +439,20 @@ private[net] object SocketHelpersNative {
   /*
    * RISC-V requires narrow C integer parameters to carry sign/zero-extension
    * ABI attributes. NIR currently erases UShort to signed i16 and does not
-   * emit zeroext, so calling htons(uint16_t) directly can use the wrong port.
-   * Passing the Java port as a 32-bit CInt avoids that broken narrow ABI.
+   * emit zeroext, so calling htons/ntohs(uint16_t) directly can use the wrong
+   * port. Passing ports through a 32-bit CInt avoids that broken narrow ABI.
    */
   @name("scalanative_sockaddr_in_set_port")
   def setSockaddrInPort(addr: Ptr[sockaddr_in], port: CInt): Unit = extern
 
   @name("scalanative_sockaddr_in6_set_port")
   def setSockaddrIn6Port(addr: Ptr[sockaddr_in6], port: CInt): Unit = extern
+
+  @name("scalanative_sockaddr_in_get_port")
+  def getSockaddrInPort(addr: Ptr[sockaddr_in]): CInt = extern
+
+  @name("scalanative_sockaddr_in6_get_port")
+  def getSockaddrIn6Port(addr: Ptr[sockaddr_in6]): CInt = extern
 }
 
 /* Normally objects 'ip' and 'ip6' would be in a separate file.

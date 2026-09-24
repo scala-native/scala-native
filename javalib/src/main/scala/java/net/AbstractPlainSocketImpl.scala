@@ -4,7 +4,6 @@ import java.io.{FileDescriptor, IOException, InputStream, OutputStream}
 
 import scala.scalanative.libc.LibcExt
 import scala.scalanative.meta.LinktimeInfo.isWindows
-import scala.scalanative.posix.arpa.inet
 import scala.scalanative.posix.netinet.inOps._
 import scala.scalanative.posix.netinet.{in, tcp}
 import scala.scalanative.posix.sys.ioctl._
@@ -60,7 +59,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
 
   private def fetchLocalPort(family: Int): Option[Int] = {
     val len = stackalloc[socket.socklen_t]()
-    val portOpt = if (family == socket.AF_INET) {
+    if (family == socket.AF_INET) {
       val sin = stackalloc[in.sockaddr_in]()
       !len = sizeof[in.sockaddr_in].toUInt
 
@@ -71,7 +70,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
           ) == -1) {
         None
       } else {
-        Some(sin.sin_port)
+        Some(SocketHelpersNative.getSockaddrInPort(sin))
       }
     } else {
       val sin = stackalloc[in.sockaddr_in6]()
@@ -84,11 +83,9 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
           ) == -1) {
         None
       } else {
-        Some(sin.sin6_port)
+        Some(SocketHelpersNative.getSockaddrIn6Port(sin))
       }
     }
-
-    portOpt.map(inet.ntohs(_).toInt)
   }
 
   private def bind4(addr: InetAddress, port: Int): Unit = {

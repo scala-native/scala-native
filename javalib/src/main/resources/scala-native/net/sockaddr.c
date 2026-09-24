@@ -18,4 +18,12 @@ void scalanative_sockaddr_in_set_port(void *addr, uint32_t port) {
 void scalanative_sockaddr_in6_set_port(void *addr, uint32_t port) {
     ((struct sockaddr_in6 *)addr)->sin6_port = htons((uint16_t)port);
 }
+
+uint32_t scalanative_sockaddr_in_get_port(const void *addr) {
+    return ntohs(((const struct sockaddr_in *)addr)->sin_port);
+}
+
+uint32_t scalanative_sockaddr_in6_get_port(const void *addr) {
+    return ntohs(((const struct sockaddr_in6 *)addr)->sin6_port);
+}
 #endif

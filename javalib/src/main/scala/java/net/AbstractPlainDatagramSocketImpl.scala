@@ -68,7 +68,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
 
   private def fetchLocalPort(family: Int): Option[Int] = {
     val len = stackalloc[posix.sys.socket.socklen_t]()
-    val portOpt = if (family == posix.sys.socket.AF_INET) {
+    if (family == posix.sys.socket.AF_INET) {
       val sin = stackalloc[in.sockaddr_in]()
       !len = sizeof[in.sockaddr_in].toUInt
 
@@ -79,7 +79,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
           ) == -1) {
         None
       } else {
-        Some(sin.sin_port)
+        Some(SocketHelpersNative.getSockaddrInPort(sin))
       }
     } else {
       val sin = stackalloc[in.sockaddr_in6]()
@@ -92,11 +92,9 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
           ) == -1) {
         None
       } else {
-        Some(sin.sin6_port)
+        Some(SocketHelpersNative.getSockaddrIn6Port(sin))
       }
     }
-
-    portOpt.map(inet.ntohs(_).toInt)
   }
 
   private def bind4(addr: InetAddress, port: Int): Unit = {
