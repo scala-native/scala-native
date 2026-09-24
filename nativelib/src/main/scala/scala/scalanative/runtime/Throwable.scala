@@ -2,6 +2,8 @@ package scala.scalanative.runtime
 
 import java.nio.charset.{Charset, StandardCharsets}
 
+import scala.annotation.nowarn
+
 import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.unsafe._
 
@@ -144,6 +146,30 @@ private object Throwable {
   @extern private object ffi {
     @name("scalanative_Throwable_sizeOfExceptionWrapper")
     def sizeOfExceptionWrapper: Int = extern
+  }
+
+  @exported("scalanative_dumpThreadDiagnostics")
+  def dumpThreadDiagnostics(): Unit = {
+    try {
+      val t = Thread.currentThread()
+      if (t == null) {
+        java.lang.System.err.println("Scala thread: <null>")
+      } else {
+        @nowarn("cat=deprecation")
+        val id = t.getId()
+        java.lang.System.err.println(
+          s"Scala thread: name=${t.getName()} id=$id state=${t.getState()} daemon=${t.isDaemon()}"
+        )
+      }
+      val native = NativeThread.currentNativeThread
+      if (native == null)
+        java.lang.System.err.println("NativeThread: <null>")
+      else
+        java.lang.System.err.println(s"NativeThread: state=${native.state}")
+    } catch {
+      case _: scala.Throwable =>
+        java.lang.System.err.println("Scala thread: <diagnostics failed>")
+    }
   }
 
   @exported("scalanative_Throwable_showStackTrace")
