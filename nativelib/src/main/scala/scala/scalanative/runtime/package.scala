@@ -260,7 +260,8 @@ package object runtime {
         saveResult(ex)
         throw error
     } finally {
-      ModuleInitialization.completeForCurrentThread()
+      if (isMultithreadingEnabled)
+        ModuleInitialization.completeForCurrentThread()
       cls.notifyAll()
     }
   }
