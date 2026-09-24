@@ -95,7 +95,6 @@ void Phase_Init(Heap *heap, uint32_t initialBlockCount) {
 }
 
 void Phase_StartMark(Heap *heap) {
-    heap->mark.lastEnd_ns = heap->mark.currentEnd_ns;
     heap->mark.currentStart_ns = Time_current_nanos();
     Phase_Set(heap, gc_mark);
     // make sure the gc phase is propagated
@@ -170,7 +169,13 @@ void Phase_StartSweep(Heap *heap) {
 
 void Phase_SweepDone(Heap *heap, Stats *stats) {
     if (!heap->sweep.postSweepDone) {
-        Heap_GrowIfNeeded(heap);
+        if (atomic_load_explicit(&heap->growAfterCollection,
+                                 memory_order_acquire)) {
+            Heap_GrowIfNeeded(heap);
+            // Keep the mark time ratio relative to mutator time, not to the gap
+            // between explicit collections.
+            heap->mark.lastEnd_ns = heap->mark.currentEnd_ns;
+        }
         BlockAllocator_ReserveBlocks(&blockAllocator);
         Heap_RefillEmergencyBlock(heap);
         BlockAllocator_FinishCoalescing(&blockAllocator);

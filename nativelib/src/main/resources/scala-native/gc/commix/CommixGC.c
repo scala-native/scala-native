@@ -92,7 +92,7 @@ INLINE void *scalanative_GC_alloc_array(Rtti *info, size_t length,
     return (void *)alloc;
 }
 
-INLINE void scalanative_GC_collect() { Heap_Collect(&heap); }
+INLINE void scalanative_GC_collect() { Heap_Collect(&heap, false); }
 
 INLINE void scalanative_GC_set_weak_references_collected_callback(
     WeakReferencesCollectedCallback callback) {

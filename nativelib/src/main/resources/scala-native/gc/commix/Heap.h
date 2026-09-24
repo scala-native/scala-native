@@ -30,6 +30,9 @@ typedef struct {
     atomic_bool emergencyBlockClaimed;
     double maxMarkTimeRatio;
     double minFreeRatio;
+    // Set only for collections caused by a failed allocation.
+    // System.gc() must not drive heap growth.
+    atomic_bool growAfterCollection;
     // The timestamp when the GC collection has started
     size_t gcCollectionStart_ns;
     struct {
@@ -90,7 +93,7 @@ static inline LineMeta *Heap_LineMetaForWord(Heap *heap, word_t *word) {
 void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize);
 
 bool Heap_isGrowingPossible(Heap *heap, uint32_t incrementInBlocks);
-void Heap_Collect(Heap *heap);
+bool Heap_Collect(Heap *heap, bool allowHeapGrowth);
 void Heap_GrowIfNeeded(Heap *heap);
 bool Heap_TryGrow(Heap *heap, uint32_t increment);
 void Heap_Grow(Heap *heap, uint32_t increment);

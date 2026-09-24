@@ -249,7 +249,9 @@ NOINLINE word_t *Allocator_allocSlow(Allocator *allocator, Heap *heap,
                 goto done;
         }
 
-        Heap_Collect(heap);
+        // Another thread collects instead. Retry before growing the heap.
+        if (!Heap_Collect(heap, true))
+            continue;
         object = Allocator_tryAlloc(allocator, size);
 
         if (object != NULL)
