@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [linux-arm64, linux-x86]
+        arch: [linux-arm64, linux-riscv64, linux-x86]
         # Scala 2.13 only for increased tests coverage (Scala2 partests) while keeping total number of jobs low
         scala: [2.13]
     steps:
