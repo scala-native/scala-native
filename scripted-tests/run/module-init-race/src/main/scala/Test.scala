@@ -1,22 +1,21 @@
 import java.util.concurrent.atomic.AtomicIntegerArray
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 
-// Regression guard for the module-init publish-ordering data race in
+// Regression guard for stack-backed module initialization contexts in
 // nativelib/src/main/resources/scala-native/module_load.c.
 //
-// __scalanative_startAndWaitForModuleInitialization must write the
-// InitializationContext fields (initThreadId, instance) BEFORE publishing &ctx
-// into the shared module slot with the release compare-and-swap. If they are
-// written after the publish, a thread that concurrently first-touches the same
-// module can acquire-load the published &ctx and read those fields before they
-// are set: a C11 data race, visible to ThreadSanitizer.
+// A thread may load a tagged context pointer immediately before its owner
+// publishes the initialized module and returns. The reader must not dereference
+// that pointer: the owner's stack can be reused before the reader inspects it.
+// Owners recognize recursive initialization by matching the pointer against
+// their thread-local chain of live contexts; competing threads wait through the
+// class monitor without inspecting another thread's stack.
 //
 // The plain runs pin the observable contract (every thread that first-touches a
 // module gets the one shared instance with correct field values, and each
 // constructor runs exactly once) and act as a crash canary under heavy
 // concurrent first-touch. The ThreadSanitizer phase (see build.sbt) is the
-// actual race detector: with the fields written before the publish it reports
-// no module-init race; with the previous ordering it does.
+// actual race detector.
 
 object Config {
   final val K = 32 // distinct modules, each first-touched under contention
@@ -75,6 +74,20 @@ object M29 extends Mod(29)
 object M30 extends Mod(30)
 object M31 extends Mod(31)
 
+// The initializer must be able to see its own partially constructed module.
+// Hold its initialization open so competing threads exercise the waiting path
+// while the owner takes the reentrant path through InitializationContext.
+object ReentrantControl {
+  val entered = new CountDownLatch(1)
+  val proceed = new CountDownLatch(1)
+}
+
+object Reentrant {
+  ReentrantControl.entered.countDown()
+  ReentrantControl.proceed.await()
+  val self: Reentrant.type = Reentrant
+}
+
 object Test {
   // Deferred first-touch thunks: referencing Mxx here rather than eagerly is
   // what makes each module's initialization happen on a worker thread once the
@@ -117,6 +130,21 @@ object Test {
   private def check(cond: Boolean, message: => String): Unit =
     if (!cond) throw new AssertionError(message)
 
+  private final class ReentrantWorker(
+      slot: Int,
+      start: CountDownLatch,
+      instances: Array[AnyRef]
+  ) extends Thread {
+    @volatile var failure: Throwable = null
+    override def run(): Unit =
+      try {
+        start.await()
+        instances(slot) = Reentrant
+      } catch {
+        case t: Throwable => failure = t
+      }
+  }
+
   private final class Worker(
       moduleIndex: Int,
       slot: Int,
@@ -142,6 +170,39 @@ object Test {
 
     // Force the support holders to initialize before any worker starts.
     Counters.runs(0)
+    check(
+      ReentrantControl.entered.getCount() == 1L,
+      "recursive module control initialized unexpectedly"
+    )
+
+    val reentrantStart = new CountDownLatch(1)
+    val reentrantInstances = new Array[AnyRef](t)
+    val reentrantWorkers = Array.tabulate(t) { slot =>
+      val worker =
+        new ReentrantWorker(slot, reentrantStart, reentrantInstances)
+      worker.start()
+      worker
+    }
+    reentrantStart.countDown()
+    check(
+      ReentrantControl.entered.await(60, TimeUnit.SECONDS),
+      "recursive module initializer did not start"
+    )
+    // Give competitors time to observe the published context while its owner
+    // remains inside the constructor.
+    Thread.sleep(50)
+    ReentrantControl.proceed.countDown()
+    reentrantWorkers.zipWithIndex.foreach {
+      case (worker, slot) =>
+        worker.join(TimeUnit.SECONDS.toMillis(60))
+        check(!worker.isAlive(), s"recursive module worker $slot timed out")
+        if (worker.failure != null) throw worker.failure
+        check(
+          reentrantInstances(slot) eq Reentrant,
+          s"recursive module worker $slot observed a different instance"
+        )
+    }
+    check(Reentrant.self eq Reentrant, "recursive module initialization failed")
 
     val latch = new CountDownLatch(1)
     val instances = new Array[AnyRef](k * t)

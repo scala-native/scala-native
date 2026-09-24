@@ -15,10 +15,6 @@ import java.util.concurrent.atomic._
 
 import org.junit.Assert._
 
-import scala.scalanative.libc.stdatomic.{AtomicInt, AtomicLongLong, AtomicRef}
-import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
-import scala.scalanative.runtime.fromRawPtr
-
 import JSR166Test._
 
 /** This source file contains test code deliberately not contained in the same
@@ -34,18 +30,9 @@ object NonNestmates {
     // def checkPrivateAccess(): Unit = ???
 
     def checkCompareAndSetProtectedSub(): Unit = {
-      // AtomicIntegerFieldUpdater.newUpdater(
-      //   classOf[AtomicIntegerFieldUpdaterTest],
-      //   "protectedField"
-      // )
-      val a = new AtomicIntegerFieldUpdaterTest.IntrinsicBasedImpl[
-        AtomicIntegerFieldUpdaterTest
-      ](obj =>
-        new AtomicInt(
-          fromRawPtr(
-            classFieldRawPtr(obj, "protectedField")
-          )
-        )
+      val a = AtomicIntegerFieldUpdater.newUpdater(
+        classOf[AtomicIntegerFieldUpdaterTest],
+        "protectedField"
       )
       this.protectedField = 1
       assertTrue(a.compareAndSet(this, 1, 2))
@@ -62,14 +49,9 @@ object NonNestmates {
     // Impossible, see AtomicIntFieldUpdaterTestSubclass
     // def checkPrivateAccess(): Unit = ???
     def checkCompareAndSetProtectedSub(): Unit = {
-      val a = new AtomicIntegerFieldUpdaterTest.IntrinsicBasedImpl[
-        AtomicLongFieldUpdaterTest
-      ](obj =>
-        new AtomicInt(
-          fromRawPtr(
-            classFieldRawPtr(obj, "protectedField")
-          )
-        )
+      val a = AtomicLongFieldUpdater.newUpdater(
+        classOf[AtomicLongFieldUpdaterTest],
+        "protectedField"
       )
       this.protectedField = 1
       assertTrue(a.compareAndSet(this, 1, 2))
@@ -86,16 +68,10 @@ object NonNestmates {
     // Impossible, see AtomicIntFieldUpdaterTestSubclass
     // def checkPrivateAccess(): Unit = ???
     def checkCompareAndSetProtectedSub(): Unit = {
-      // val a = AtomicReferenceFieldUpdater.newUpdater(
-      //   classOf[AtomicReferenceFieldUpdaterTest],
-      //   classOf[Integer],
-      //   "protectedField"
-      // )
-      val a = new AtomicReferenceFieldUpdaterTest.IntrinsicBasedImpl[
-        AtomicReferenceFieldUpdaterTest,
-        Integer
-      ](obj =>
-        new AtomicRef(fromRawPtr(classFieldRawPtr(obj, "protectedField")))
+      val a = AtomicReferenceFieldUpdater.newUpdater(
+        classOf[AtomicReferenceFieldUpdaterTest],
+        classOf[Integer],
+        "protectedField"
       )
       this.protectedField = one
       assertTrue(a.compareAndSet(this, one, two))
@@ -112,28 +88,14 @@ object NonNestmates {
 class NonNestmates {
   def checkPackageAccess(obj: AtomicIntegerFieldUpdaterTest): Unit = {
     obj.x = 72
-    val a = new AtomicIntegerFieldUpdaterTest.IntrinsicBasedImpl[
-      AtomicIntegerFieldUpdaterTest
-    ](obj =>
-      new AtomicInt(
-        fromRawPtr(
-          classFieldRawPtr(obj, "x")
-        )
-      )
-    )
+    val a = obj.updaterForX
     assertEquals(72, a.get(obj))
     assertTrue(a.compareAndSet(obj, 72, 73))
     assertEquals(73, a.get(obj))
   }
   def checkPackageAccess(obj: AtomicLongFieldUpdaterTest): Unit = {
     obj.x = 72L
-    val a = new AtomicLongFieldUpdaterTest.IntrinsicBasedImpl[
-      AtomicLongFieldUpdaterTest
-    ](obj =>
-      new AtomicLongLong(
-        fromRawPtr(classFieldRawPtr(obj, "x"))
-      )
-    )
+    val a = obj.updaterForX
     assertEquals(72L, a.get(obj))
     assertTrue(a.compareAndSet(obj, 72L, 73L))
     assertEquals(73L, a.get(obj))
@@ -142,16 +104,7 @@ class NonNestmates {
     val one = Integer.valueOf(1)
     val two = Integer.valueOf(2)
     obj.x = one
-    val a = new AtomicReferenceFieldUpdaterTest.IntrinsicBasedImpl[
-      AtomicReferenceFieldUpdaterTest,
-      Integer
-    ](obj =>
-      new AtomicRef(
-        fromRawPtr(
-          classFieldRawPtr(obj, "x")
-        )
-      )
-    )
+    val a = obj.updaterForX
     assertSame(one, a.get(obj))
     assertTrue(a.compareAndSet(obj, one, two))
     assertSame(two, a.get(obj))
