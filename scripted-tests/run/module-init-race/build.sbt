@@ -97,27 +97,27 @@ stressSanitized := {
       implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
       val binary = nativeExecutable((Compile / nativeLink).value)
       val env = Map("TSAN_OPTIONS" -> "halt_on_error=0 exitcode=0")
-      val (code, output) = runBinary(binary, env, timeoutSeconds = 300)
-      print(output)
-      val moduleFrames = Seq(
-        "module_load",
-        "loadModule",
-        "startAndWaitForModuleInitialization",
-        "waitForModuleInitialization",
-        "awaitForInitialization"
-      )
-      val reportedModuleRace =
-        output.contains("ThreadSanitizer: data race") &&
-          moduleFrames.exists(output.contains)
-      if (reportedModuleRace)
-        throw new RuntimeException(
-          "ThreadSanitizer reported a data race in module initialization; " +
-            "the publish-ordering fix in module_load.c has regressed"
-        )
-      if (code != 0)
-        throw new RuntimeException(
-          s"sanitized run exited abnormally with code $code"
-        )
-      println("module-init-race: ThreadSanitizer phase clean")
+      val runs = sys.env
+        .get("SCALANATIVE_MODULE_INIT_SANITIZED_RUNS")
+        .fold(1)(_.toInt)
+      (1 to runs).foreach { n =>
+        val (code, output) = runBinary(binary, env, timeoutSeconds = 300)
+        print(output)
+        val reportedModuleRace =
+          output.contains("ThreadSanitizer: data race") &&
+            output.contains(
+              "scalanative_moduleInitializationInstanceForCurrentThread"
+            )
+        if (reportedModuleRace)
+          throw new RuntimeException(
+            "ThreadSanitizer reported an unsafe access to the stack-backed " +
+              s"module initialization context in run $n of $runs"
+          )
+        if (code != 0)
+          throw new RuntimeException(
+            s"sanitized run $n of $runs exited abnormally with code $code"
+          )
+      }
+      println(s"module-init-race: $runs ThreadSanitizer runs clean")
   }
 }

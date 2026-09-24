@@ -260,6 +260,8 @@ package object runtime {
         saveResult(ex)
         throw error
     } finally {
+      if (isMultithreadingEnabled)
+        ModuleInitialization.completeForCurrentThread()
       cls.notifyAll()
     }
   }
@@ -362,6 +364,9 @@ package object runtime {
 
     @name("scalanative_moduleInitializationInstanceForCurrentThread")
     def instanceForCurrentThread(context: RawPtr): AnyRef = extern
+
+    @name("scalanative_completeModuleInitializationForCurrentThread")
+    def completeForCurrentThread(): Unit = extern
   }
 
 }

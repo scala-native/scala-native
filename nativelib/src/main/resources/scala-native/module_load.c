@@ -35,8 +35,10 @@ typedef ModuleRef *ModuleSlot;
 typedef void (*ModuleCtor)(ModuleRef);
 typedef struct InitializationContext {
     ModuleRef instance;
-    thread_id initThreadId;
+    struct InitializationContext *previous;
 } InitializationContext;
+static SN_ThreadLocal InitializationContext *currentInitializationContext =
+    NULL;
 
 // Module instances are aligned pointers. Tag the otherwise stack-local
 // context so readers never need to dereference it to distinguish it from an
@@ -51,37 +53,37 @@ static bool isInitializationContext(ModuleRef module) {
     return ((uintptr_t)module & INITIALIZATION_CONTEXT_TAG) != 0;
 }
 
-static InitializationContext *initializationContext(ModuleRef module) {
-    return (InitializationContext *)((uintptr_t)module &
-                                     ~INITIALIZATION_CONTEXT_TAG);
-}
-
 extern ModuleRef scalanative_initializeModule(ModuleCtor ctor,
                                               ModuleRef instance,
                                               ModuleSlot slot, void *classInfo);
 extern ModuleRef scalanative_awaitForInitialization(ModuleSlot slot,
                                                     void *classInfo);
 
-// This is called while holding classInfo's monitor. If another thread owns the
-// initialization, it cannot return from startAndWait... (and invalidate ctx)
-// until it has published the initialized module and released that monitor.
+// The tag can be inspected without dereferencing the stack-local context.
 bool scalanative_isModuleInitializationContext(ModuleRef module) {
     return isInitializationContext(module);
 }
 
 ModuleRef
 scalanative_moduleInitializationInstanceForCurrentThread(ModuleRef module) {
-    InitializationContext *ctx = initializationContext(module);
-    return thread_equals(ctx->initThreadId, thread_getid()) ? ctx->instance
-                                                            : NULL;
+    InitializationContext *ctx = currentInitializationContext;
+    while (ctx != NULL) {
+        if (initializationContextRef(ctx) == module)
+            return ctx->instance;
+        ctx = ctx->previous;
+    }
+    return NULL;
+}
+
+void scalanative_completeModuleInitializationForCurrentThread(void) {
+    assert(currentInitializationContext != NULL);
+    currentInitializationContext = currentInitializationContext->previous;
 }
 
 NOINLINE static ModuleRef
 __scalanative_waitForModuleInitialization(ModuleSlot slot, void *classInfo) {
-    // Do not dereference a published stack-local InitializationContext here.
-    // A competing initializer can replace the slot and return before this
-    // thread gets to inspect it. awaitForInitialization rechecks the slot
-    // under the class monitor, where only the reentrant owner may use ctx.
+    // Match the shared pointer against this thread's live context chain without
+    // dereferencing stack storage owned by another thread.
     ModuleRef module = atomic_load_explicit(slot, memory_order_acquire);
     ModuleRef instance =
         scalanative_moduleInitializationInstanceForCurrentThread(module);
@@ -93,18 +95,17 @@ __scalanative_waitForModuleInitialization(ModuleSlot slot, void *classInfo) {
 NOINLINE static ModuleRef __scalanative_startAndWaitForModuleInitialization(
     ModuleSlot slot, void *classInfo, size_t size, ModuleCtor ctor) {
     InitializationContext ctx = {};
-    // Populate the context before publishing &ctx into the slot. The winning
-    // atomic_compare_exchange_strong is a release operation, so any thread that
-    // later acquire-loads the slot and observes &ctx also observes the fully
-    // written fields. Writing initThreadId and instance after the publish (the
-    // previous ordering) left a window in which another thread could read them
-    // before they were set, a data race on those fields.
-    ctx.initThreadId = thread_getid();
+    // Populate the owner-only context before publishing its tagged address.
+    // Other threads use the tag only and wait on the class monitor; the owner
+    // recognizes its live contexts by pointer equality through thread-local
+    // storage, so it never dereferences another thread's stack.
     ModuleRef instance = scalanative_GC_alloc(classInfo, size);
     ctx.instance = instance;
+    ctx.previous = currentInitializationContext;
     void **expected = NULL;
     if (atomic_compare_exchange_strong(slot, &expected,
                                        initializationContextRef(&ctx))) {
+        currentInitializationContext = &ctx;
         return scalanative_initializeModule(ctor, instance, slot, classInfo);
     } else {
         return __scalanative_waitForModuleInitialization(slot, classInfo);
