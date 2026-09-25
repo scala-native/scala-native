@@ -142,6 +142,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     atomic_init(&heap->emergencyBlockClaimed, false);
     heap->maxMarkTimeRatio = Settings_MaxMarkTimeRatio();
     heap->minFreeRatio = Settings_MinFreeRatio();
+    atomic_init(&heap->growAfterCollection, false);
 
     // reserve space for block headers
     size_t blockMetaSpaceSize = maxNumberOfBlocks * sizeof(BlockMeta);
@@ -293,11 +294,11 @@ void Heap_ThrowOutOfMemory(Heap *heap) {
     scalanative_throw(error);
 }
 
-void Heap_Collect(Heap *heap) {
+bool Heap_Collect(Heap *heap, bool allowHeapGrowth) {
     MutatorThread *mutatorThread = currentMutatorThread;
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     if (!Synchronizer_acquire())
-        return;
+        return false;
     while (!Sweeper_IsSweepDone(heap)) {
         // Unlock mutator threads list to allow registration of new threads
         // WriteLock has higher priority then ReadLock - it does NOT wait until
@@ -315,6 +316,9 @@ void Heap_Collect(Heap *heap) {
                               GC_MutatorThreadState_Unmanaged);
     assert(Sweeper_IsSweepDone(heap));
 #endif
+    // Stored before the phase change, so the sweeping thread sees it.
+    atomic_store_explicit(&heap->growAfterCollection, allowHeapGrowth,
+                          memory_order_release);
     heap->gcCollectionStart_ns = Time_current_nanos();
     Stats *stats = Stats_OrNull(heap->stats);
     Stats_CollectionStarted(stats);
@@ -337,6 +341,7 @@ void Heap_Collect(Heap *heap) {
                               GC_MutatorThreadState_Managed);
 #endif
     WeakReferences_InvokeGCFinishedCallback();
+    return true;
 }
 
 bool Heap_shouldGrow(Heap *heap) {

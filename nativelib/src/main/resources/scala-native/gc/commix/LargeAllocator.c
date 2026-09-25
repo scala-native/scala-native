@@ -239,7 +239,9 @@ word_t *LargeAllocator_Alloc(Heap *heap, uint32_t size) {
                 goto done;
         }
 
-        Heap_Collect(heap);
+        // Another thread collects instead. Retry before growing the heap.
+        if (!Heap_Collect(heap, true))
+            continue;
 
         object = LargeAllocator_tryAlloc(largeAllocator, size);
         if (object != NULL)
