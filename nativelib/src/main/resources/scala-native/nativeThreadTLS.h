@@ -24,6 +24,8 @@ typedef struct ThreadInfo {
     void *stackBottom; // lowest stack address
     void *stackGuardPage;
     bool isMainThread;
+    /* Is thread fully initialized and can start executing tasks */
+    bool isInitialized;
 #ifndef _WIN32
     bool pendingStackOverflowException;
     void *signalHandlerStack;

@@ -5,6 +5,7 @@
 #include "metadata/ObjectMeta.h"
 #include "immix_commix/headers/ObjectHeader.h"
 #include "State.h"
+#include "nativeThreadTLS.h"
 #include <stdbool.h>
 
 static bool collectedWeakReferences = false;
@@ -39,7 +40,8 @@ void WeakReferences_SetGCFinishedCallback(void *handler) {
 }
 
 void WeakReferences_InvokeGCFinishedCallback(void) {
-    if (collectedWeakReferences && gcFinishedCallback != NULL) {
+    if (collectedWeakReferences && gcFinishedCallback != NULL &&
+        currentThreadInfo.isInitialized) {
         gcFinishedCallback();
     }
 }
