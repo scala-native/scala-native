@@ -59,6 +59,10 @@ object BinaryIncompatibilities {
     exclude[Problem]("scala.scalanative.runtime._Class.*"),
     exclude[Problem]("scala.scalanative.runtime.unwind.*"),
     exclude[DirectMissingMethodProblem]("scala.scalanative.unsafe.package.toCWideStringImpl"),
+    // Thread start now passes NativeThread instead of a raw Ptr.
+    exclude[IncompatibleMethTypeProblem]("scala.scalanative.runtime.GC.pthread_create(scala.scalanative.unsafe.Ptr,scala.scalanative.unsafe.Ptr,scala.scalanative.unsafe.CFuncPtr1,scala.scalanative.unsafe.Ptr)Int"),
+    exclude[IncompatibleMethTypeProblem]("scala.scalanative.runtime.GC.CreateThread(scala.scalanative.unsafe.Ptr,scala.scalanative.unsigned.USize,scala.scalanative.unsafe.CFuncPtr1,scala.scalanative.unsafe.Ptr,scala.scalanative.unsigned.UInt,scala.scalanative.unsafe.Ptr)scala.scalanative.unsafe.Ptr"),
+    exclude[IncompatibleResultTypeProblem]("scala.scalanative.runtime.NativeThread.threadRoutineArgs(scala.scalanative.runtime.NativeThread)scala.scalanative.unsafe.Ptr"),
   )
   final val CLib: Filters = Nil
 
