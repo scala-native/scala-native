@@ -164,8 +164,7 @@ object NativeThread {
     getMonitor(obj.asInstanceOf[_Object]).isLockedBy(currentThread)
   } else false
 
-  def threadRoutineArgs(thread: NativeThread): ThreadRoutineArg =
-    fromRawPtr[scala.Byte](castObjectToRawPtr(thread))
+  def threadRoutineArgs(thread: NativeThread): ThreadRoutineArg = thread
 
   object Registry {
     // Replace with ConcurrentHashMap when thread-safe
@@ -203,15 +202,17 @@ object NativeThread {
     }
   }
 
-  def threadRoutine: ThreadStartRoutine = CFuncPtr1.fromScalaFunction {
-    (arg: ThreadRoutineArg) =>
-      val thread = castRawPtrToObject(toRawPtr(arg))
-        .asInstanceOf[NativeThread]
-      NativeThread.threadEntryPoint(thread)
-      0.toPtr
+  def threadRoutine: ThreadStartRoutine = NativeThreadStart.fn()
+
+  @extern
+  private[scalanative] object NativeThreadStart {
+    @name("scalanative_NativeThread_start_fn")
+    def fn(): ThreadStartRoutine = extern
   }
 
-  private def threadEntryPoint(nativeThread: NativeThread): Unit = {
+  @noinline
+  @exported("scalanative_NativeThread_start")
+  private[runtime] def threadEntryPoint(nativeThread: NativeThread): RawPtr = {
     import nativeThread.thread
     val stackBottom = Intrinsics.stackalloc[Int]()
     TLS.assignCurrentThread(thread, nativeThread)
@@ -245,6 +246,7 @@ object NativeThread {
       }
       StackOverflowGuards.close()
     }
+    null
   }
   @extern
   private[scalanative] object TLS {
