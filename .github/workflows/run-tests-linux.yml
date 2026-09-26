@@ -213,7 +213,8 @@ jobs:
       fail-fast: false
       matrix:
         scala: [3]
-        llvm: [17, 18, 19, 20, 21, latest] # Last 3 stable versions + available future versions
+        # apt.llvm.org/llvm.sh accepts LLVM release numbers, not the "latest" alias.
+        llvm: [17, 18, 19, 20, 21, 22] # Last 3 stable versions + available future versions
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/linux-setup-env
