@@ -187,4 +187,4 @@ jobs:
           set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
           set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
           set SCALANATIVE &
-          sbt "show tests3/nativeConfig" "test-runtime ${{matrix.scala}}"
+          sbt ";show tests3/nativeConfig;test-runtime ${{matrix.scala}}"
