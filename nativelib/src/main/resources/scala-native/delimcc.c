@@ -225,32 +225,25 @@ __noinline static void handler_split_at(ContinuationBoundaryLabel l,
         DELIMCC_ERROR("%s\n", it == NULL ? "nil" : "...");
         abort();
     }
-    /*
-     * A resume handler belongs to the native stack frame of
-     * scalanative_continuation_resume().  Suspending past the continuation
-     * boundary abandons that frame by longjmp, so keeping such a handler in
-     * TLS leaves a pointer to a dead stack frame.  It can later become the
-     * head of another continuation's handler chain (and appear as a random
-     * label in handler_split_at).
-     *
-     * Keep ordinary boundary handlers below the split point: they are still
-     * live when suspending from a nested boundary.  Only discard the adjacent
-     * resume-handler prefix, identified by stack_btm == NULL.
-     */
-    Handler *rest = tl->next;
-    while (rest != NULL && rest->stack_btm == NULL)
-        rest = rest->next;
-    handlers_store(rest);
+    // The resume handler below the boundary remains live until resume
+    // returns and restores its saved handler chain.
+    handlers_store(tl->next);
     tl->next = NULL;
     *head = hd;
     *tail = tl;
 }
 
 // longjmp to the head handler. Useful for `cont_resume`.
-__noinline static void *handler_head_longjmp(int arg) {
+__noinline static void *
+handler_head_longjmp(int arg, ContinuationBoundaryLabel expected) {
     Handler *cur = handlers_load();
-    if (cur == NULL) {
-        DELIMCC_ERROR_ABORT("handler_head_longjmp: empty chain\n");
+    if (cur == NULL || cur->id != expected || cur->stack_btm != NULL) {
+        DELIMCC_ERROR_ABORT(
+            "handler_head_longjmp: expected resume handler id=%lu, "
+            "got head=%p head_id=%lu stack_btm=%p\n",
+            (unsigned long)expected, (void *)cur,
+            cur == NULL ? 0UL : (unsigned long)cur->id,
+            cur == NULL ? NULL : cur->stack_btm);
     }
     return _lh_longjmp(cur->buf, arg);
 }
@@ -811,8 +804,7 @@ void *scalanative_continuation_resume(Continuation *continuation, void *out) {
     if (_lh_setjmp(h.buf) == 0) {
         result = _lh_resume_entry(continuation->size, continuation,
                                   (void *)resume_out);
-        handler_head_longjmp(1); // top handler is always ours, avoid
-                                 // refering to non-volatile `h`
+        handler_head_longjmp(1, label);
     }
     handlers_store((Handler *)saved_handlers);
     resume_handler_pushed = 0;
