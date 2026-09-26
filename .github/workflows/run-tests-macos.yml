@@ -154,7 +154,7 @@ jobs:
       fail-fast: false
       matrix:
         scala: [3]
-        llvm: [17, 18, 19, 20, 21 latest] # Latest version == 22
+        llvm: [17, 18, 19, 20, 21, latest] # Latest version == 22
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/macos-setup-env
