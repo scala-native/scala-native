@@ -42,7 +42,10 @@ runs:
       if: ${{ inputs.llvm-version != '' }}
       uses: gerlero/brew-install@b7bdd6875207fdf3b7ebd0ecc5cf8da6e657eca2 # v1.1.3
       with:
-        packages: lld ${{ inputs.llvm-version == 'latest' && 'llvm' || format('llvm@{0}', inputs.llvm-version) }}
+        # ThinLTO requires a linker compatible with the LLVM version that
+        # produced the bitcode. In particular, using current `lld` with an
+        # older `llvm@N` can make ld64.lld emit out-of-range arm64 branches.
+        packages: ${{ inputs.llvm-version == 'latest' && 'lld llvm' || format('lld@{0} llvm@{0}', inputs.llvm-version) }}
 
     - name: Expose LLVM toolchain
       shell: bash
@@ -50,14 +53,18 @@ runs:
       run: |
         if [[ "${{ inputs.llvm-version }}" == "latest" ]]; then
           LLVM_TOOLCHAIN="$(brew --prefix llvm)/bin"
+          LLD_TOOLCHAIN="$(brew --prefix lld)/bin"
         else
           LLVM_TOOLCHAIN="$(brew --prefix llvm@${{ inputs.llvm-version }})/bin"
+          LLD_TOOLCHAIN="$(brew --prefix lld@${{ inputs.llvm-version }})/bin"
         fi
         # Prefer Homebrew LLVM over Xcode clang (Discover uses LLVM_BIN / PATH).
         if [[ -d "$LLVM_TOOLCHAIN" ]]; then
           echo "LLVM_BIN=$LLVM_TOOLCHAIN" >> "$GITHUB_ENV"
           echo "$LLVM_TOOLCHAIN" >> "$GITHUB_PATH"
+          echo "$LLD_TOOLCHAIN" >> "$GITHUB_PATH"
           echo "Using toolchain: $("$LLVM_TOOLCHAIN/clang" --version | head -1)"
+          echo "Using linker: $("$LLD_TOOLCHAIN/ld64.lld" --version | head -1)"
         else
           echo "::warning::No directory $LLVM_TOOLCHAIN; set LLVM_BIN on the step if needed."
         fi
