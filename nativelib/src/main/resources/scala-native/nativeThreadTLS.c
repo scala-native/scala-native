@@ -195,6 +195,7 @@ void scalanative_setupCurrentThreadInfo(void *stackBottom, int32_t stackSize,
     int dummy;
     assert((uintptr_t)&dummy < (uintptr_t)stackBottom);
 
+    currentThreadInfo.isInitialized = false;
     currentThreadInfo.isMainThread = isMainThread;
     currentThreadInfo.maxStackSize =
         (isMainThread ? scalanative_mainThreadMaxStackSize() : stackSize) -

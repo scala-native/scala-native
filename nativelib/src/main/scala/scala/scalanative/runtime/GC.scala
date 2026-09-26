@@ -62,9 +62,8 @@ object GC {
   private type Handle = CVoidPtr
   private type DWord = CUnsignedInt
   private type SecurityAttributes = CStruct3[DWord, CVoidPtr, Boolean]
-  private type PtrAny = CVoidPtr
-  type ThreadRoutineArg = PtrAny
-  type ThreadStartRoutine = CFuncPtr1[ThreadRoutineArg, PtrAny]
+  type ThreadRoutineArg = NativeThread
+  type ThreadStartRoutine = CFuncPtr1[NativeThread, CVoidPtr]
 
   /** Proxy to pthread_create which registers created thread in the GC */
   @name("scalanative_GC_pthread_create")

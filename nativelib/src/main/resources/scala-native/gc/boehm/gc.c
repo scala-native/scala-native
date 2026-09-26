@@ -11,6 +11,7 @@
 #include "shared/Parsing.h"
 #include "shared/Time.h"
 #include "shared/jmx.h"
+#include "nativeThreadTLS.h"
 
 // At the moment we rely on the conservative
 // mode of Boehm GC as our garbage collector.
@@ -148,7 +149,8 @@ static void GC_CALLBACK handleOnCollectionEvent(GC_EventType event) {
 static void GC_CALLBACK weakRefFinalizer(void *obj, void *client_data) {
     (void)obj;
     (void)client_data;
-    if (weakReferencesCollectedCallback != NULL) {
+    if (weakReferencesCollectedCallback != NULL &&
+        currentThreadInfo.isInitialized) {
         weakReferencesCollectedCallback();
     }
 }

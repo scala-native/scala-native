@@ -4,6 +4,7 @@
 #include "immix_commix/headers/ObjectHeader.h"
 #include "GCThread.h"
 #include "SyncGreyLists.h"
+#include "nativeThreadTLS.h"
 #include <stdio.h>
 #include <stdbool.h>
 
@@ -94,7 +95,8 @@ void WeakReferences_SetGCFinishedCallback(void *handler) {
 }
 
 void WeakReferences_InvokeGCFinishedCallback() {
-    if (collectedWeakReferences && gcFinishedCallback != NULL) {
+    if (collectedWeakReferences && gcFinishedCallback != NULL &&
+        currentThreadInfo.isInitialized) {
         gcFinishedCallback();
     }
 }
