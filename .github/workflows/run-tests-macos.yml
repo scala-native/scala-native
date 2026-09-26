@@ -91,16 +91,18 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/macos-setup-env
+        id: toolchain
         with:
           scala-version: ${{matrix.scala}}
           gc: ${{ matrix.gc }}
           llvm-version: 19
+          lld-version: 19
 
       - name: Prepare setConfig command
         # Linking on MacOS in GithubActions fails when using default linker (ld), use lld instead
         run: |
           SetConfigTemplate=$(cat << EOM
-            nativeConfig ~= { _.withLinkingOptions(_ :+ "-fuse-ld=lld") }
+            nativeConfig ~= { _.withLinkingOptions(_ :+ "-fuse-ld=${{ steps.toolchain.outputs.lld-path }}") }
           EOM
           )
           echo set-native-config=${SetConfigTemplate} >> $GITHUB_ENV
