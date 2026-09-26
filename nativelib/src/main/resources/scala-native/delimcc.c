@@ -225,7 +225,22 @@ __noinline static void handler_split_at(ContinuationBoundaryLabel l,
         DELIMCC_ERROR("%s\n", it == NULL ? "nil" : "...");
         abort();
     }
-    handlers_store(tl->next);
+    /*
+     * A resume handler belongs to the native stack frame of
+     * scalanative_continuation_resume().  Suspending past the continuation
+     * boundary abandons that frame by longjmp, so keeping such a handler in
+     * TLS leaves a pointer to a dead stack frame.  It can later become the
+     * head of another continuation's handler chain (and appear as a random
+     * label in handler_split_at).
+     *
+     * Keep ordinary boundary handlers below the split point: they are still
+     * live when suspending from a nested boundary.  Only discard the adjacent
+     * resume-handler prefix, identified by stack_btm == NULL.
+     */
+    Handler *rest = tl->next;
+    while (rest != NULL && rest->stack_btm == NULL)
+        rest = rest->next;
+    handlers_store(rest);
     tl->next = NULL;
     *head = hd;
     *tail = tl;
