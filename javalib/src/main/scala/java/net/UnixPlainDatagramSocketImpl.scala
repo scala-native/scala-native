@@ -8,7 +8,6 @@ import scala.scalanative.posix
 import scala.scalanative.posix.errno._
 import scala.scalanative.posix.fcntl._
 import scala.scalanative.posix.poll._
-import scala.scalanative.posix.pollEvents._
 import scala.scalanative.posix.pollOps._
 import scala.scalanative.posix.unistd
 import scala.scalanative.unsafe._
@@ -49,7 +48,7 @@ private[net] class UnixPlainDatagramSocketImpl
 
     pollFd.fd = fd.fd
     pollFd.revents = 0
-    pollFd.events = POLLIN
+    pollFd.events = POLLIN.toShort
 
     val pollRes = poll(pollFd, nAlloc, timeout)
     val revents = pollFd.revents

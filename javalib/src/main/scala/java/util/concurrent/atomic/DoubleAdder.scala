@@ -42,7 +42,7 @@ import java.{lang => jl}
  *    Doug Lea
  */
 
-class DoubleAdder() extends Striped64 {
+class DoubleAdder() extends Striped64 with Serializable {
   import Striped64.{Cell, getProbe}
 
   /*
@@ -168,7 +168,7 @@ class DoubleAdder() extends Striped64 {
    *  conversion.
    */
 
-  def longValue(): Long = sum.toLong
+  override def longValue(): Long = sum.toLong
 
   /** Returns the {@code sum} as an {@code int} after a narrowing primitive
    *  conversion.
@@ -180,5 +180,5 @@ class DoubleAdder() extends Striped64 {
    *  conversion.
    */
 
-  def floatValue(): Float = sum.toFloat
+  override def floatValue(): Float = sum.toFloat
 }

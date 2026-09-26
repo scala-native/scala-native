@@ -4,12 +4,12 @@ package sys
 import org.junit.Assert._
 import org.junit.Assume._
 
+import scala.scalanative.libc.LibcExt
 import scala.scalanative.windows.ErrorHandlingApi._
 import scala.scalanative.windows.WinSocketApi._
 import scala.scalanative.windows.WinSocketApiExt._
 import scala.scalanative.windows.WinSocketApiOps._
 import scala.scalanative.windows._
-import scalanative.libc.string.strerror
 import scalanative.meta.LinktimeInfo.isWindows
 import scalanative.posix.arpa.inet.{inet_addr, inet_pton}
 import scalanative.posix.errno.errno
@@ -18,20 +18,21 @@ import scalanative.posix.netdb._
 import scalanative.posix.netdbOps._
 import scalanative.posix.netinet.in._
 import scalanative.posix.netinet.inOps._
-import scalanative.posix.poll._
 import scalanative.posix.pollOps._
 import scalanative.posix.sys.socket._
-import scalanative.posix.{fcntl, pollEvents, unistd}
+import scalanative.posix.{fcntl, poll, unistd}
 import scalanative.unsafe._
 import scalanative.unsigned._
+
+import poll._ // posix.poll to disambiguate POLLIN
 
 object SocketTestHelpers {
 
   def checkIoResult(v: CSSize, label: String): Unit = {
     if (v.toInt < 0) {
       val reason =
-        if (isWindows) ErrorHandlingApiOps.errorMessage(GetLastError())
-        else fromCString(strerror(errno))
+        if (isWindows) ErrorHandlingApiOps.lastErrorMessage()
+        else LibcExt.strError()
       fail(s"$label failed - $reason")
     }
   }
@@ -300,13 +301,13 @@ object SocketTestHelpers {
       if (ret == 0) {
         fail(s"poll timed out after ${timeout} milliseconds")
       } else if (ret < 0) {
-        val reason = ErrorHandlingApiOps.errorMessage(GetLastError())
+        val reason = ErrorHandlingApiOps.lastErrorMessage()
         fail(s"poll for input failed - $reason")
       }
     } else {
       val fds = stackalloc[struct_pollfd](1)
       (fds + 0).fd = fd
-      (fds + 0).events = pollEvents.POLLIN | pollEvents.POLLRDNORM
+      (fds + 0).events = (poll.POLLIN | poll.POLLRDNORM).toShort
 
       errno = 0
 
@@ -314,12 +315,12 @@ object SocketTestHelpers {
        * in the kernel.
        */
 
-      val ret = poll(fds, 1.toUInt, timeout)
+      val ret = poll.poll(fds, 1.toUInt, timeout)
 
       if (ret == 0) {
         fail(s"poll timed out after ${timeout} milliseconds")
       } else if (ret < 0) {
-        val reason = fromCString(strerror(errno))
+        val reason = LibcExt.strError()
         fail(s"poll for input failed - $reason")
       }
       // else good to go

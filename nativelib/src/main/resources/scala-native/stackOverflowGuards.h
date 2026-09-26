@@ -58,6 +58,34 @@ static inline void *threadStackScanableLimit(ThreadInfo *threadInfo) {
     return (ofStackGuard > ofStackTop) ? ofStackGuard : ofStackTop;
 }
 
+typedef struct StackScanRange {
+    void *from;
+    void *to;
+} StackScanRange;
+
+// [stackTop, stackBottom) split to exclude the PROT_NONE guard page so the
+// conservative GC scan cannot fault on it; writes the 1-2 sub-ranges to `out`
+// and returns their count.
+static inline int threadStackScanableRanges(void *stackTop, void *stackBottom,
+                                            ThreadInfo *threadInfo,
+                                            StackScanRange out[2]) {
+    void *guard = threadInfo != NULL ? threadInfo->stackGuardPage : NULL;
+    if (guard != NULL && guard >= stackTop && guard < stackBottom) {
+        void *afterGuard = (char *)guard + resolvePageSize();
+        out[0].from = stackTop;
+        out[0].to = guard;
+        if (afterGuard < stackBottom) {
+            out[1].from = afterGuard;
+            out[1].to = stackBottom;
+            return 2;
+        }
+        return 1;
+    }
+    out[0].from = stackTop;
+    out[0].to = stackBottom;
+    return 1;
+}
+
 static inline bool isInRange(void *addr, void *start, void *end) {
     if (start > end) {
         void *temp = start;

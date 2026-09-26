@@ -31,7 +31,7 @@ class ScalaNativeRunner(
     Option(url).map(url => new File(url.toURI))
   }
 
-  override def newCompiler = {
+  override def newCompiler: DirectCompiler = {
     new DirectCompiler(this) with ScalaNativeDirectCompiler
   }
 

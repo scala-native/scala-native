@@ -172,6 +172,13 @@ object timeOps {
     def tv_nsec_=(v: CLong): Unit = ptr._2 = v
   }
 
+  implicit class timespecValueOps(val ts: timespec) extends AnyVal {
+    def tv_sec: time_t = ts._1
+    def tv_nsec: CLong = ts._2
+    def tv_sec_=(v: time_t): Unit = ts._1 = v
+    def tv_nsec_=(v: CLong): Unit = ts._2 = v
+  }
+
   implicit class tmOps(val ptr: Ptr[tm]) extends AnyVal {
     def tm_sec: CInt = ptr._1
     def tm_min: CInt = ptr._2

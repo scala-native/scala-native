@@ -345,6 +345,7 @@ import scala.scalanative.unsafe._
   def sigaction(sig: CInt, act: Ptr[sigaction], oact: Ptr[sigaction]): CInt =
     extern
   def sigaddset(set: Ptr[sigset_t], signo: CInt): CInt = extern
+  @name("scalanative_sigaltstack")
   def sigaltstack(ss: Ptr[stack_t], oss: Ptr[stack_t]): CInt = extern
   def sigdelset(set: Ptr[sigset_t], signo: CInt): CInt = extern
   def sigemptyset(set: Ptr[sigset_t]): CInt = extern

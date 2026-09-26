@@ -1,7 +1,7 @@
 object LastModifiedTest {
   import Files._
 
-  def main(args: Array[String]): Unit = {
+  def run(): Unit = {
     assert(!nonexistentFile.exists())
     assert(nonexistentFile.lastModified() == 0L)
 

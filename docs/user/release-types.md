@@ -8,6 +8,8 @@
   Stable releases may be updated without a change of version number to
   support versions of Scala released after date of that Scala Native version.
 
+  > The most recent stable version is **{{ last_stable_release }}**
+  
 ## Latest
 
    A 'Latest' release is intended for developers who want to 
@@ -28,4 +30,71 @@
    currently, but not guaranteed to stay, 3 months. For complex reasons,
    there is no easy way to list prior SNAPSHOT releases.
 
+   > The latest nightly version is **{{ release }}**
+
+### Using Latest releases   
+
+   This information is provided as a working example. It  is correct as
+   of publication but highly subject
+   to unannounced change, particularly sbt and mill details.
+
+   Latest releases are published to:
+     "https://central.sonatype.com/repository/maven-snapshots/"
+
+   A project needs to have specified a resolver for that repository.
+   See the original sbt and mill documentation for the latest details
+
+   These snippets are intended to be merged into complete example or existing 
+   project files and are not stand-alone and sufficient.
+
+   * sbt project/plugins.sbt:
+
+     * projects using sbt version 1.11.0 or later can use
+
+     ```
+     resolvers += Resolver.sonatypeCentralSnapshots
+     ```
+
+     * earlier sbt versions use (also works for current sbt versions)
+
+     ```
+       resolvers +=
+         "YourNameHere" at
+           "https://central.sonatype.com/repository/maven-snapshots/"
+
+     ```
+   * In either case, add the plugin
+
+     ```
+       addSbtPlugin("org.scala-native" %% "sbt-scala-native" %
+               "{{ release }}")
+     ```
+
+   * mill (1.0.6) build.mill:
+     ```
+     import coursier.maven.MavenRepository
+
+     object `<yourPackageHere>` extends ScalaNativeModule {
+
+       // Earlier Mill versions used T.task
+
+       def repositoriesTask = Task.Anon { super.repositoriesTask() ++ Seq(
+            MavenRepository(
+              "https://central.sonatype.com/repository/maven-snapshots/"
+            )
+           )
+       }
+	   
+	   def scalaNativeVersion = "{{ release }}"
+	   
+     } 
+     ```
+
+   * To determine that the desired SNAPSHOT is being used:
+     ```
+     $ # Or Mill equivalent
+     sbt> show libraryDependencies 
+     ...
+     [info] * org.scala-native:javalib:{{ release }}
+     ```
 Continue to [lib](../lib/communitylib.md)

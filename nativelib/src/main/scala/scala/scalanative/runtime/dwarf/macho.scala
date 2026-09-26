@@ -7,11 +7,11 @@ import scalanative.unsigned._
 import Endianness.{BIG, LITTLE}
 import MachO._
 
-private[runtime] case class MachO private (
+private[runtime] case class MachO(
     header: Header,
     segments: List[Segment],
     uuid: List[UInt]
-) {}
+)
 
 private[runtime] object MachO {
   import CommonParsers._
@@ -79,16 +79,16 @@ private[runtime] object MachO {
       flags: UInt
   ) {
     override def toString() =
-      s"""
-      |Header
-      |  | magic: ${magic.toHexString}
-      |  | cputype: ${cputype.toHexString}
-      |  | cpusubtype: ${cpusubtype.toHexString}
-      |  | filetype: ${filetype.toHexString}
-      |  | ncmds: ${ncmds.toHexString}
-      |  | sizeofcmds: ${sizeofcmds.toHexString}
-      |  | flags: ${flags.toHexString}
-      """.stripMargin.trim
+      s"""|
+          |Header
+          |  | magic: ${magic.toHexString}
+          |  | cputype: ${cputype.toHexString}
+          |  | cpusubtype: ${cpusubtype.toHexString}
+          |  | filetype: ${filetype.toHexString}
+          |  | ncmds: ${ncmds.toHexString}
+          |  | sizeofcmds: ${sizeofcmds.toHexString}
+          |  | flags: ${flags.toHexString}
+          |""".stripMargin.trim
   }
 
   case class Segment(

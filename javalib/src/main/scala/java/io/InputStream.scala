@@ -1,7 +1,5 @@
 package java.io
 
-import java.util.Arrays
-import java.util.concurrent.ConcurrentLinkedDeque
 import java.{util => ju}
 
 import scala.annotation.tailrec
@@ -13,28 +11,28 @@ abstract class InputStream extends Closeable {
 
   def read(b: Array[Byte], off: Int, len: Int): Int = {
     if (off < 0 || len < 0 || len > b.length - off)
-      throw new IndexOutOfBoundsException
+      throwReadBounds(b, off, len)
 
     if (len == 0) 0
     else {
-      var bytesWritten = 0
-      var next = 0
-
-      while (bytesWritten < len && next != -1) {
-        next =
-          if (bytesWritten == 0) read()
-          else {
-            try read()
-            catch { case _: IOException => -1 }
-          }
-        if (next != -1) {
+      var next = read()
+      if (next == -1) -1
+      else {
+        var bytesWritten = 0
+        while ({
           b(off + bytesWritten) = next.toByte
           bytesWritten += 1
-        }
+          bytesWritten < len && {
+            try {
+              next = read()
+              next != -1
+            } catch {
+              case _: IOException => false
+            }
+          }
+        }) {}
+        bytesWritten
       }
-
-      if (bytesWritten <= 0) -1
-      else bytesWritten
     }
   }
 
@@ -58,37 +56,34 @@ abstract class InputStream extends Closeable {
     readNBytes(Integer.MAX_VALUE)
   }
 
+  private def readNBytesImpl(buffer: Array[Byte], off: Int, len: Int): Int = {
+    var totalBytesRead = 0
+
+    while (totalBytesRead < len && {
+          val nRead = read(buffer, off + totalBytesRead, len - totalBytesRead)
+          val ok = nRead != -1
+          if (ok)
+            totalBytesRead += nRead
+          ok
+        }) {}
+
+    totalBytesRead
+  }
+
+  private def throwReadBounds(b: Array[Byte], off: Int, len: Int): Unit = {
+    throw new IndexOutOfBoundsException(
+      s"Range [$off, ${off + len}) out of bounds for length ${b.length}"
+    )
+  }
+
   /** Java 9
    */
   def readNBytes(buffer: Array[Byte], off: Int, len: Int): Int = {
     ju.Objects.requireNonNull(buffer)
+    if (len < 0)
+      throwReadBounds(buffer, off, len) // others are checked by read()
 
-    if ((off < 0) || (len < 0) || (len > buffer.length - off)) {
-      val range = s"Range [${off}, ${off} + ${len})"
-      throw new IndexOutOfBoundsException(
-        s"${range} out of bounds for length ${buffer.length}"
-      )
-    }
-
-    if (len == 0) 0
-    else {
-      var totalBytesRead = 0
-      var remaining = len
-      var offset = off
-
-      while (remaining > 0) {
-        val nRead = read(buffer, offset, remaining)
-
-        if (nRead == -1) remaining = 0 // EOF
-        else {
-          totalBytesRead += nRead
-          remaining -= nRead
-          offset += nRead
-        }
-      }
-
-      totalBytesRead
-    }
+    readNBytesImpl(buffer, off, len)
   }
 
   /* Design Note:
@@ -122,32 +117,16 @@ abstract class InputStream extends Closeable {
        * When the caller has guessed correctly and len bytes are available,
        * only one copy is needed.  When less than len bytes
        * are available, a second is necessary.
-       *
-       * readLargeN() is likely to call readSmallN() with an exact match
-       * len argument one or more times for each call which triggers
-       * the second copy.
        */
 
       // caller has dispatched on argument, so OK to allocate size blindly.
       val buffer = new Array[Byte](len)
-
-      var totalBytesRead = 0
-      var remaining = len
-
-      while (remaining > 0) {
-        val nRead = read(buffer, totalBytesRead, remaining)
-
-        if (nRead == -1) remaining = 0 // EOF
-        else {
-          remaining -= nRead
-          totalBytesRead += nRead
-        }
-      }
+      val totalBytesRead = readNBytesImpl(buffer, 0, len)
 
       if (totalBytesRead == len)
         buffer
       else if (totalBytesRead < len)
-        Arrays.copyOfRange(buffer, 0, totalBytesRead)
+        ju.Arrays.copyOfRange(buffer, 0, totalBytesRead)
       else { // should never happen
         throw new IOException(
           s"total bytes read ${totalBytesRead} > len argument ${len}"
@@ -156,43 +135,37 @@ abstract class InputStream extends Closeable {
     }
 
     def readLargeN(len: Int): Array[Byte] = {
-      /* The byteStore is not expected to be accessed concurrently.
-       * ConcurrentedLinkedDeque is used here because the Scala Native JSR-166
-       * code is newer, more studied, and likely to execute faster
-       * than the SN LinkedListDequeue implementation. FUD, not measurement.
-       *
-       * Using a Deque rather than, say, a ByteArrayOutputStream may briefly
-       * exceed the JDK documented upper bound of (2 * len) for memory
-       * usage. Given that we are in large N territory here, it is highly
-       * likely to reduce the number of data copies.
-       */
-      val byteStore = new ConcurrentLinkedDeque[Array[Byte]]
+      val byteStore = new ju.ArrayList[Array[Byte]](64) // not tiny nor wasteful
 
       var totalBytesRead = 0
-      var remaining = len
+      var lastChunkSize = 0
+      var lastChunk: Array[Byte] = null
 
-      while (remaining > 0) {
-        val bufferSize = Math.min(remaining, streamChunkSize)
-        val buffer = readSmallN(bufferSize)
-
-        val nRead = buffer.size
-
-        if (nRead == 0) remaining = 0 /* EOF */
-        else {
-          remaining -= nRead
-          totalBytesRead += nRead
-          byteStore.addLast(buffer)
+      while ({
+        val bufferSize = Math.min(len - totalBytesRead, streamChunkSize)
+        bufferSize > 0 && {
+          val buffer = new Array[Byte](bufferSize)
+          val nRead = readNBytesImpl(buffer, 0, bufferSize)
+          val ok = nRead != 0
+          if (ok) {
+            lastChunk = buffer
+            lastChunkSize = nRead
+          }
+          ok
         }
+      }) {
+        totalBytesRead += lastChunkSize
+        byteStore.addLast(lastChunk)
       }
 
       val result = new Array[Byte](totalBytesRead)
 
       var resultPos = 0
-      byteStore.forEach(b => {
-        val n = b.size
+      byteStore.forEach { b =>
+        val n = if (b eq lastChunk) lastChunkSize else b.length
         System.arraycopy(b, 0, result, resultPos, n)
         resultPos += n
-      })
+      }
 
       result
     }

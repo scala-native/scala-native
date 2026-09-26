@@ -1,6 +1,8 @@
 package java.util
 package regex
 
+import java.{lang => jl}
+
 import scalanative.regex.{Matcher => rMatcher}
 
 // Inspired & informed by:
@@ -33,7 +35,17 @@ final class Matcher private[regex] (
     this
   }
 
+  // Since: Java 9
+  def appendReplacement(sb: jl.StringBuilder, replacement: String): Matcher = {
+    underlying.appendReplacement(sb, replacement)
+    this
+  }
+
   def appendTail(sb: StringBuffer): StringBuffer = underlying.appendTail(sb)
+
+  // Since: Java 9
+  def appendTail(sb: jl.StringBuilder): jl.StringBuilder =
+    underlying.appendTail(sb)
 
   def end(): Int = end(0)
 

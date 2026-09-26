@@ -206,10 +206,10 @@ class PropertiesTest {
     val prop1 = new Properties()
     prop1.put("name", "alice")
     val result1 =
-      """
-        |-- listing properties --
-        |name=alice
-      """.stripMargin
+      """|
+         |-- listing properties --
+         |name=alice
+         |""".stripMargin
     assertResult(prop1, result1)
 
     // Undocumented feature
@@ -218,25 +218,25 @@ class PropertiesTest {
     val prop2 = new Properties()
     prop2.put("k40", "v0000000001111111111222222222233333333334")
     val result2 =
-      """-- listing properties --
-        |k40=v000000000111111111122222222223333333...
-      """.stripMargin
+      """|-- listing properties --
+         |k40=v000000000111111111122222222223333333...
+         |""".stripMargin
     assertResult(prop2, result2)
 
     val prop3 = new Properties()
     prop3.put("k0000000001111111111222222222233333333334", "v40")
     val result3 =
-      """-- listing properties --
-        |k0000000001111111111222222222233333333334=v40
-      """.stripMargin
+      """|-- listing properties --
+         |k0000000001111111111222222222233333333334=v40
+         |""".stripMargin
     assertResult(prop3, result3)
   }
 
   private val dummyProps =
-    """#commented.key=dummy_value
-      |key1=value1
-      |key2=value1
-      |""".stripMargin
+    """|#commented.key=dummy_value
+       |key1=value1
+       |key2=value1
+       |""".stripMargin
 
   @Test def loadInputStreamWithNullInput(): Unit = {
     val prop = new java.util.Properties()
@@ -364,13 +364,15 @@ class PropertiesTest {
     assertAll(expected = prop1, actual = prop2)
     // Avoid variable Date output which is last line in comment
     // Matches JVM output
-    val commentsWithoutDate = withUnixLineSeparators("""|#A Header
+    val commentsWithoutDate = withUnixLineSeparators(
+      """|#A Header
          |#Line2
          |#Line3
          |#Line4
          |!AfterExclaim
          |#AfterPound
-         |#Wow!""".stripMargin)
+         |#Wow!""".stripMargin
+    )
     val out = withUnixLineSeparators(out1.toString())
     assertTrue(s"starts with, got: '$out'", out.startsWith(commentsWithoutDate))
   }
@@ -474,38 +476,38 @@ class PropertiesTest {
 
   // scalastyle doesn't like embedded tabs or trailing spaces in the string
   lazy val filestr = {
-    raw"""
-      |
-      |   \ \r \n \t \f
-      |
-      |! dshfjklahfjkldashgjl;as
-      |     #jdfagdfjagkdjfghksdajfd
-      |
-      |!!properties
-      |
-      |a=a
-      |b bb as,dn${"   "}
-      |c\r\ \t\nu =:: cu
-      |bu= b\
-      |${"\t\t"}u
-      |d=d\r\ne=e
-      |f   :f\
-      |f\
-      |${"\t\t\t"}f
-      |g${"\t\t"}g
-      |h\ h
-      |\   i=i
-      |j=\   j
-      |space=\   c
-      |
-      |dblbackslash=\\
-      |
-      |# jvm does not trim trailing space so no line continuation
-      |trailing = foo, \${"  "}
-      |bar
-      |notrailing = baz \\${"  "}
-      |
-    """.stripMargin
+    raw"""|
+          |
+          |   \ \r \n \t \f
+          |
+          |! dshfjklahfjkldashgjl;as
+          |     #jdfagdfjagkdjfghksdajfd
+          |
+          |!!properties
+          |
+          |a=a
+          |b bb as,dn${"   "}
+          |c\r\ \t\nu =:: cu
+          |bu= b\
+          |${"\t\t"}u
+          |d=d\r\ne=e
+          |f   :f\
+          |f\
+          |${"\t\t\t"}f
+          |g${"\t\t"}g
+          |h\ h
+          |\   i=i
+          |j=\   j
+          |space=\   c
+          |
+          |dblbackslash=\\
+          |
+          |# jvm does not trim trailing space so no line continuation
+          |trailing = foo, \${"  "}
+          |bar
+          |notrailing = baz \\${"  "}
+          |
+          |""".stripMargin
   }
 
   def withUnixLineSeparators(str: String): String = {

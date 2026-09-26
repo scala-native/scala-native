@@ -8,7 +8,7 @@ import sbt._
 object ScalaNativeCrossVersion {
   val currentBinaryVersion = nir.Versions.currentBinaryVersion
 
-  private[this] def crossVersionAddPlatformPart(
+  private def crossVersionAddPlatformPart(
       cross: CrossVersion,
       part: String
   ): CrossVersion = {

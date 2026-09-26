@@ -118,56 +118,55 @@ class ExecutorService19Test extends JSR166Test {
     } finally latch.countDown()
   }
 
-  // TODO: requires CompletableFuture
-  // /** Test CompletableFuture with the task has not completed.
-  //  */
-  // @Test def testCompletableFuture1(): Unit = {
-  //   val future = new CompletableFuture[String]()
-  //   assertEquals(RUNNING, future.state())
-  //   assertThrows(classOf[IllegalStateException], () => future.resultNow())
-  //   assertThrows(classOf[IllegalStateException], () => future.exceptionNow())
-  // }
+  /** Test CompletableFuture with the task has not completed.
+   */
+  @Test def testCompletableFuture1(): Unit = {
+    val future = new CompletableFuture[String]()
+    assertEquals(RUNNING, future.state())
+    assertThrows(classOf[IllegalStateException], () => future.resultNow())
+    assertThrows(classOf[IllegalStateException], () => future.exceptionNow())
+  }
 
-  // /** Test CompletableFuture with the task has completed with result
-  //  */
-  // @Test def testCompletableFuture2(): Unit = {
-  //   val future = new CompletableFuture[String]()
-  //   future.complete("foo")
-  //   assertEquals(SUCCESS, future.state())
-  //   assertEquals("foo", future.resultNow())
-  //   assertThrows(classOf[IllegalStateException], () => future.exceptionNow())
-  // }
+  /** Test CompletableFuture with the task has completed with result
+   */
+  @Test def testCompletableFuture2(): Unit = {
+    val future = new CompletableFuture[String]()
+    future.complete("foo")
+    assertEquals(SUCCESS, future.state())
+    assertEquals("foo", future.resultNow())
+    assertThrows(classOf[IllegalStateException], () => future.exceptionNow())
+  }
 
-  // /** Test CompletableFuture with the task has completed with null
-  //  */
-  // @Test def testCompletableFuture3(): Unit = {
-  //   val future = new CompletableFuture[String]()
-  //   future.complete(null)
-  //   assertEquals(SUCCESS, future.state())
-  //   assertEquals(null, future.resultNow())
-  //   assertThrows(classOf[IllegalStateException], () => future.exceptionNow())
-  // }
+  /** Test CompletableFuture with the task has completed with null
+   */
+  @Test def testCompletableFuture3(): Unit = {
+    val future = new CompletableFuture[String]()
+    future.complete(null)
+    assertEquals(SUCCESS, future.state())
+    assertEquals(null, future.resultNow())
+    assertThrows(classOf[IllegalStateException], () => future.exceptionNow())
+  }
 
-  // /** Test CompletableFuture with the task has completed with exception
-  //  */
-  // @Test def testCompletableFuture4(): Unit = {
-  //   val future = new CompletableFuture[String]()
-  //   future.completeExceptionally(new ArithmeticException())
-  //   assertEquals(FAILED, future.state())
-  //   assertThrows(classOf[IllegalStateException], () => future.resultNow())
-  //   val ex = future.exceptionNow();
-  //   assertTrue(ex.isInstanceOf[ArithmeticException])
-  // }
+  /** Test CompletableFuture with the task has completed with exception
+   */
+  @Test def testCompletableFuture4(): Unit = {
+    val future = new CompletableFuture[String]()
+    future.completeExceptionally(new ArithmeticException())
+    assertEquals(FAILED, future.state())
+    assertThrows(classOf[IllegalStateException], () => future.resultNow())
+    val ex = future.exceptionNow();
+    assertTrue(ex.isInstanceOf[ArithmeticException])
+  }
 
-  // /** Test CompletableFuture with the task that was cancelled
-  //  */
-  // @Test def testCompletableFuture5(): Unit = {
-  //   val future = new CompletableFuture[String]()
-  //   future.cancel(false)
-  //   assertEquals(CANCELLED, future.state())
-  //   assertThrows(classOf[IllegalStateException], () => future.resultNow())
-  //   assertThrows(classOf[IllegalStateException], () => future.exceptionNow())
-  // }
+  /** Test CompletableFuture with the task that was cancelled
+   */
+  @Test def testCompletableFuture5(): Unit = {
+    val future = new CompletableFuture[String]()
+    future.cancel(false)
+    assertEquals(CANCELLED, future.state())
+    assertThrows(classOf[IllegalStateException], () => future.resultNow())
+    assertThrows(classOf[IllegalStateException], () => future.exceptionNow())
+  }
 
   // Close
   /** Test close with no tasks running.
@@ -185,7 +184,6 @@ class ExecutorService19Test extends JSR166Test {
     val future: Future[_] = executor.submit(() => {
       Thread.sleep(1000)
       "foo"
-
     })
     executor.close() // waits for task to complete
 
@@ -195,53 +193,50 @@ class ExecutorService19Test extends JSR166Test {
     assertEquals("foo", future.get())
   }
 
-  // TODO: requires Phaser
-  // /** Test close when executor is shutdown but not terminated.
-  //  */
-  // @Test def testShutdownBeforeClose(): Unit = testExecutors { executor =>
-  //   val phaser: Phaser = new Phaser(2)
-  //   val future: Future[_] = executor.submit(() => {
-  //     phaser.arriveAndAwaitAdvance
-  //     Thread.sleep(1000)
-  //     "foo"
+  /** Test close when executor is shutdown but not terminated.
+   */
+  @Test def testShutdownBeforeClose(): Unit = testExecutors { executor =>
+    val phaser: Phaser = new Phaser(2)
+    val future: Future[_] = executor.submit(() => {
+      phaser.arriveAndAwaitAdvance()
+      Thread.sleep(1000)
+      "foo"
+    })
+    phaser.arriveAndAwaitAdvance() // wait for task to start
 
-  //   })
-  //   phaser.arriveAndAwaitAdvance() // wait for task to start
+    executor.shutdown() // shutdown, will not immediately terminate
+    executor.close()
 
-  //   executor.shutdown() // shutdown, will not immediately terminate
+    assertTrue(executor.isShutdown)
+    assertTrue(executor.isTerminated)
+    assertTrue(executor.awaitTermination(10, TimeUnit.MILLISECONDS))
+    assertEquals(future.get, "foo")
+  }
 
-  //   executor.close()
-  //   assertTrue(executor.isShutdown)
-  //   assertTrue(executor.isTerminated)
-  //   assertTrue(executor.awaitTermination(10, TimeUnit.MILLISECONDS))
-  //   assertEquals(future.get, "foo")
-  // }
+  /** Test invoking close with interrupt status set.
+   */
+  @Test def testInterruptBeforeClose(): Unit = testExecutors { executor =>
+    val phaser: Phaser = new Phaser(2)
+    val future: Future[_] = executor.submit(() => {
+      phaser.arriveAndAwaitAdvance()
+      Thread.sleep(Int.MaxValue)
+      null
+    })
+    phaser.arriveAndAwaitAdvance() // wait for task to start
 
-  // /** Test invoking close with interrupt status set.
-  //  */
-  // @Test def testInterruptBeforeClose(): Unit = testExecutors { executor =>
-  //   val phaser: Phaser = new Phaser(2)
-  //   val future: Future[_] = executor.submit(() => {
-  //     phaser.arriveAndAwaitAdvance
-  //     Thread.sleep(Int.MaxValue)
-  //     null
+    Thread.currentThread.interrupt
+    try {
+      executor.close()
+      assertTrue(Thread.currentThread.isInterrupted())
+    } finally {
+      Thread.interrupted // clear interrupt status
+    }
 
-  //   })
-  //   phaser.arriveAndAwaitAdvance // wait for task to start
-
-  //   Thread.currentThread.interrupt
-  //   try {
-  //     executor.close()
-  //     assertTrue(Thread.currentThread.isInterrupted)
-  //   } finally {
-  //     Thread.interrupted // clear interrupt status
-
-  //   }
-  //   assertTrue(executor.isShutdown)
-  //   assertTrue(executor.isTerminated)
-  //   assertTrue(executor.awaitTermination(10, TimeUnit.MILLISECONDS))
-  //   assertThrows(classOf[ExecutionException], () => future.get)
-  // }
+    assertTrue(executor.isShutdown)
+    assertTrue(executor.isTerminated)
+    assertTrue(executor.awaitTermination(10, TimeUnit.MILLISECONDS))
+    assertThrows(classOf[ExecutionException], () => future.get)
+  }
 
   /** Test close when terminated.
    */
@@ -260,7 +255,6 @@ class ExecutorService19Test extends JSR166Test {
     val future: Future[_] = executor.submit(() => {
       Thread.sleep(Int.MaxValue)
       null
-
     })
     val thread: Thread = Thread.currentThread
     new Thread(() => {
@@ -269,15 +263,14 @@ class ExecutorService19Test extends JSR166Test {
         case ignore: Exception =>
       }
       thread.interrupt()
-
     }).start()
     try {
       executor.close()
       assertTrue(Thread.currentThread.isInterrupted)
     } finally {
       Thread.interrupted // clear interrupt status
-
     }
+
     assertTrue(executor.isShutdown)
     assertTrue(executor.isTerminated)
     assertTrue(executor.awaitTermination(10, TimeUnit.MILLISECONDS))

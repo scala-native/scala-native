@@ -3,7 +3,6 @@
 #include <stddef.h>
 #include <stdio.h>
 #include "BlockList.h"
-#include "immix_commix/Log.h"
 #include "immix/metadata/BlockMeta.h"
 
 BlockMeta *BlockList_getNextBlock(word_t *blockMetaStart,

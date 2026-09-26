@@ -1,17 +1,20 @@
 # Scala Native
 
+<!-- Disable unhelpful red badges until after Issue #4489 is resolved
 ![Posix Status](https://github.com/scala-native/scala-native/actions/workflows/run-tests-linux.yml/badge.svg)
 ![MacOS Status](https://github.com/scala-native/scala-native/actions/workflows/run-tests-macos.yml/badge.svg)
 ![Windows Status](https://github.com/scala-native/scala-native/actions/workflows/run-tests-windows.yml/badge.svg)
 [![Maven Central](https://img.shields.io/maven-central/v/org.scala-native/tools_2.12.svg)](https://maven-badges.herokuapp.com/maven-central/org.scala-native/tools_2.12)
+-->
 
 Scala Native is an optimizing ahead-of-time compiler and lightweight managed runtime designed specifically for Scala.
 
-## Chat and Documentation
+## Documentation and Chat
 
+Getting Started and full documentation can be found at [https://www.scala-native.org/](https://www.scala-native.org/).
+
+Chat on the Scala Discord channel.
 [![Discord](https://img.shields.io/discord/632150470000902164.svg?label=&logo=discord&logoColor=ffffff&color=404244&labelColor=6A7EC2)](https://discord.gg/scala)
-
-Getting Started and full documentation can be found at [https://www.scala-native.org/](https://www.scala-native.org/)
 
 ## Online Scaladoc
 
@@ -30,7 +33,7 @@ Scala Native is distributed under the Apache License.
 
 [<img src="https://www.epfl.ch/wp/5.5/wp-content/themes/wp-theme-2018/assets/svg/epfl-logo.svg?refresh=now" width=200>][EPFL-Link]
 
-[The École polytechnique fédérale de Lausanne (EPFL)][EPFL-Link] and [LAMP][EPFL_LAMP-Link] are funding the development of Scala Native as part of Martin Odersky's research program for [Capatibilies for Resources and Effects (Caprese)][Caprese-Link] in Scala.
+[The École polytechnique fédérale de Lausanne (EPFL)][EPFL-Link] and [LAMP][EPFL_LAMP-Link] are funding the development of Scala Native as part of Martin Odersky's research program for [Capabilities for Resources and Effects (Caprese)][Caprese-Link] in Scala.
 
 
 [<img src="https://raw.githubusercontent.com/VirtusLab/scala-cli/main/website/static/img/vl_logo_small.png" width=200>][VirtusLab-Link]
@@ -43,7 +46,7 @@ Scala Native is distributed under the Apache License.
 
 
 [Caprese-Link]: https://www.slideshare.net/Odersky/capabilities-for-resources-and-effects-252161040
-[EPFL-Link]: https://www.epfl.ch/en/ 
+[EPFL-Link]: https://www.epfl.ch/en/
 [EPFL_LAMP-Link]: https://www.epfl.ch/labs/lamp/
 [VirtusLab-Link]: https://virtuslab.com/
 [ScalaNative-Link]: https://scala-native.org/

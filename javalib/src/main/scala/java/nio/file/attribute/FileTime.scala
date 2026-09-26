@@ -3,6 +3,11 @@ package java.nio.file.attribute
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 
+import scalanative.posix.{time, timeOps}
+import scalanative.unsafe._
+
+import timeOps.timespecOps
+
 final class FileTime private (
     private val epochDays: Long,
     private val dayNanos: Long
@@ -28,26 +33,33 @@ final class FileTime private (
 
   /* From JDK 8 API
    *
-   * Conversion from a coarser granularity that would numerically overflow saturate to Long.MIN_VALUE if negative
-   * or Long.MAX_VALUE if positive.
+   * Conversion from a coarser granularity that would numerically overflow
+   * saturate to Long.MIN_VALUE if negative or Long.MAX_VALUE if positive.
    */
   def to(unit: TimeUnit): Long = {
-    val fromDays = unit.convert(epochDays, TimeUnit.DAYS)
-    val fromNanos = unit.convert(dayNanos, TimeUnit.NANOSECONDS)
+    val unitNanos = unit.toNanos(1L)
+    val unitsPerDay = NanosInDay / unitNanos
+    val dayNanosUnits = dayNanos / unitNanos
+    val hasFraction = dayNanos % unitNanos != 0L
 
-    // TimeUnit conversion returns -Long.MaxValue in case of negative overflow instead of Long.MinValue
-    val fromDaysOverflow =
-      fromDays == Long.MaxValue || fromDays <= -Long.MaxValue
+    val maxDays = Long.MaxValue / unitsPerDay
+    val maxDayUnits = Long.MaxValue % unitsPerDay
+    val minDays = Math.floorDiv(Long.MinValue, unitsPerDay)
+    val minDayUnits = Math.floorMod(Long.MinValue, unitsPerDay)
 
-    if (fromDaysOverflow) fromDays
+    if (epochDays > maxDays ||
+        (epochDays == maxDays && dayNanosUnits > maxDayUnits)) Long.MaxValue
+    else if (epochDays < minDays ||
+        (epochDays == minDays && dayNanosUnits < minDayUnits))
+      Long.MinValue
     else {
-      try {
-        Math.addExact(fromDays, fromNanos)
-      } catch {
-        case _: ArithmeticException =>
-          if (fromDays > 0) Long.MaxValue
-          else Long.MinValue
-      }
+      val floorValue =
+        if (epochDays == minDays)
+          Long.MinValue + (dayNanosUnits - minDayUnits)
+        else Math.addExact(epochDays * unitsPerDay, dayNanosUnits)
+
+      if (epochDays < 0L && hasFraction) floorValue + 1L
+      else floorValue
     }
   }
 
@@ -69,6 +81,16 @@ final class FileTime private (
   }
 
   override def toString(): String = s"FileTime($epochDays, $dayNanos)"
+
+  // Fill and return the provided timespec
+  private[attribute] def toTimespec(
+      tsPtr: Ptr[time.timespec]
+  ): Ptr[time.timespec] = {
+    tsPtr.tv_sec = to(TimeUnit.SECONDS).toSize
+    tsPtr.tv_nsec = Math.floorMod(dayNanos, NanosToSecond).toSize
+
+    tsPtr
+  }
 }
 
 object FileTime {
@@ -90,6 +112,22 @@ object FileTime {
     val days = Math.floorDiv(s, SecondsInDay)
     val daySeconds = Math.floorMod(s, SecondsInDay)
     val dayNanos = (daySeconds * NanosToSecond) + instant.getNano
+    new FileTime(days, dayNanos)
+  }
+
+  // Pre-condition: POSIX timespec st_mtim.tv_nsec guarantees nanos < 1 second
+  private[attribute] def from(
+      seconds: scala.Long,
+      nanos: scala.Long
+  ): FileTime = {
+    /* Math is similar to that in method 'from(instant)' above.
+     * Open code to preserve full range of File time and
+     * avoid SN java.time support complexity.
+     */
+    val days = Math.floorDiv(seconds, SecondsInDay)
+    val daySeconds = Math.floorMod(seconds, SecondsInDay)
+    val dayNanos = (daySeconds * NanosToSecond) + nanos
+
     new FileTime(days, dayNanos)
   }
 }

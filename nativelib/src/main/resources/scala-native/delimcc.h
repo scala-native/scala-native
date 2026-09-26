@@ -1,11 +1,17 @@
 #ifndef DELIMCC_H
 #define DELIMCC_H
+#include <stdlib.h>
+#include <setjmp.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef unsigned long ContinuationBoundaryLabel;
 
 typedef struct Continuation Continuation;
 
-// ContinationBody = ContBoundaryLabel -> any -> any
+// ContinuationBody = ContBoundaryLabel -> any -> any
 typedef void *ContinuationBody(ContinuationBoundaryLabel, void *);
 
 // SuspendFn = Continuation -> any -> any
@@ -42,6 +48,53 @@ void *scalanative_continuation_suspend(ContinuationBoundaryLabel b,
 // argument into the suspended computation and returns its result.
 void *scalanative_continuation_resume(Continuation *continuation, void *arg);
 
+// Reset the thread-local handler chain to NULL. Call before entering a new
+// boundary (e.g. before dispatching a virtual thread) so the carrier does not
+// inherit stale handlers from a previous VT that ran on the same carrier.
+void scalanative_continuation_handlers_reset(void);
+
+/* Exception type compatible with eh.c (void* = Scala object). */
+typedef void *Exception;
+
+/*
+ * Exception escape from resumed continuations: when a resumed body throws and
+ * no handler in the continuation catches it, we longjmp back to the resumer
+ * instead of aborting (eh.c) or terminating (eh.cpp). The resumer can then
+ * return Failure(exception) to the Scala side. Local try/catch inside the
+ * continuation body is unaffected (unwinding finds those first).
+ *
+ * Use scalanative_continuation_exception_handler_set() immediately before
+ * calling scalanative_continuation_resume(); resume clears the handler on both
+ * normal return and exception escape.
+ */
+
+/* Thread-local state for exception escape; shared by eh.c and eh.cpp to handle
+ * throwing exceptions from resumed continuations */
+typedef struct ContinuationExceptionHandler {
+    jmp_buf *env;
+    Exception *exception_slot;
+} ContinuationExceptionHandler;
+
+/* Set the exception escape handler for the next resume. env is the address of
+ * a jmp_buf (from setjmp); exception_slot is where eh.c / eh.cpp will store the
+ * exception object when it longjmps. Pass NULL for both to clear the handler.
+ */
+void scalanative_continuation_exception_handler_set(
+    ContinuationExceptionHandler handler);
+ContinuationExceptionHandler scalanative_continuation_exception_handler(void);
+
+/* Fallback escape route used by eh.c when _Unwind reaches end-of-stack and no
+ * continuation exception handler is installed. Returns non-zero if escape was
+ * handled (function does not return in that case), zero otherwise.
+ */
+int scalanative_continuation_exception_escape(Exception exception);
+
+/* Clear the exception escape handler. Called by resume on both return paths. */
+inline static void scalanative_continuation_exception_handler_clear(void) {
+    ContinuationExceptionHandler handler = {NULL, NULL};
+    scalanative_continuation_exception_handler_set(handler);
+}
+
 #ifdef SCALANATIVE_DELIMCC_DEBUG // Debug flag for delimcc
 
 // Frees a continuation. Used only if malloc is used as the implementation of
@@ -49,4 +102,8 @@ void *scalanative_continuation_resume(Continuation *continuation, void *arg);
 void scalanative_continuation_free(Continuation *continuation);
 
 #endif // SCALANATIVE_DELIMCC_DEBUG
+
+#ifdef __cplusplus
+}
+#endif
 #endif // DELIMCC_H

@@ -413,4 +413,9 @@ class UnixPathTest {
     assertTrue(Paths.get("////") == Paths.get("/"))
     assertTrue(Paths.get("/.") != Paths.get("/"))
   }
+
+  @Test def pathToUri(): Unit = {
+    assertEquals("file:///foo/bar", Paths.get("/foo/bar").toUri().toString)
+    assertEquals("/foo/bar", Paths.get("/foo/bar").toUri().getPath)
+  }
 }

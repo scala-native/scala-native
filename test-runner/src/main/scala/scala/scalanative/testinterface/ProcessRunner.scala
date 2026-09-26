@@ -1,6 +1,6 @@
 package scala.scalanative.testinterface
 
-import java.io.File
+import java.io.{File, InputStream, OutputStream}
 
 import scala.concurrent.{Future, Promise}
 
@@ -33,7 +33,7 @@ private[testinterface] class ProcessRunner(
           port.toString +:
           args: _*
       )
-        .inheritIO()
+        .redirectInput(ProcessBuilder.Redirect.INHERIT)
 
     envVars.foreach {
       case (k, v) =>
@@ -43,12 +43,17 @@ private[testinterface] class ProcessRunner(
     logger.info(s"Starting process '$executableFile' on port '$port'.")
     builder.start()
   }
+  private val outputThreads = List(
+    PipeOutputThread.start(process.getErrorStream(), System.err),
+    PipeOutputThread.start(process.getInputStream(), System.out)
+  )
 
   private val runnerPromise: Promise[Unit] = Promise[Unit]()
   private val runner = new Thread {
     setName("TestRunner")
     override def run(): Unit = {
       val exitCode = process.waitFor()
+      outputThreads.foreach(_.join())
       if (exitCode == 0) runnerPromise.trySuccess(())
       else {
         runnerPromise.tryFailure(
@@ -70,5 +75,27 @@ private[testinterface] class ProcessRunner(
 
   override def close(): Unit = {
     process.destroyForcibly()
+  }
+}
+
+private object PipeOutputThread {
+  def start(from: InputStream, to: OutputStream): Thread = {
+    val thread = new Thread {
+      override def run(): Unit = {
+        try {
+          val buffer = new Array[Byte](8192)
+          var byteCount = from.read(buffer)
+          while (byteCount > 0) {
+            to.write(buffer, 0, byteCount)
+            to.flush()
+            byteCount = from.read(buffer)
+          }
+        } finally {
+          from.close()
+        }
+      }
+    }
+    thread.start()
+    thread
   }
 }

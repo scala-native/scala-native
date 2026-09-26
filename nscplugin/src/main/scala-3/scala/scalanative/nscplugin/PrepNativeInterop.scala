@@ -6,7 +6,7 @@ import dotty.tools.dotc.ast.tpd._
 import dotty.tools.dotc.config.*
 import dotty.tools.dotc.plugins.PluginPhase
 
-import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.*
+import scala.scalanative.nscplugin.CompilerCompat.SymUtils.*
 
 /** This phase does:
  *    - Rewrite calls to scala.Enumeration.Value (include name string) (Ported
@@ -149,9 +149,8 @@ class PrepNativeInterop extends PluginPhase with NativeInteropUtil {
   }
   private class EnumerationsContext(using Context) {
     private val compilerUsesExplicitNulls = ScalaVersion.current match {
-      // bug in 3.8.0-RC1 nightlies, no version property set
-      case AnyScalaVersion => true
-      case version => version >= SpecificScalaVersion(3, 8, 0, ScalaBuild.Final)
+      case SpecificScalaVersion(3, minor, _, _) => minor >= 8
+      case _                                    => false
     }
     abstract class ScalaEnumFctExtractors(
         owner: ClassSymbol,

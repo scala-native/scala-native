@@ -12,7 +12,7 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 class AnyValWithAnyRefPrimitiveMethods(val x: Int) extends AnyVal {
   def eq(that: AnyRef): Boolean = (x + 1) == that
   def ne(that: AnyRef): Boolean = (x + 1) != that
-  def synchronized[T](f: T): Any = f + "there"
+  def synchronized[T](f: T): Any = f.toString() + "there"
 }
 
 class ReflectiveProxyTest {
@@ -251,7 +251,13 @@ class ReflectiveProxyTest {
 
     class A
 
-    assertTrue(objNotifyTest(new A()) == 1)
+    assertThrows(classOf[IllegalMonitorStateException], objNotifyTest(new A()))
+    synchronized {
+      assertThrows(
+        classOf[IllegalMonitorStateException],
+        objNotifyTest(new A())
+      )
+    }
   }
 
   @Test def shouldWorkOnJavaLangObjectClone(): Unit = {

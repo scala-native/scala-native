@@ -71,13 +71,42 @@ sealed trait NativeConfig {
   /** Shall we use the incremental compilation? */
   def useIncrementalCompilation: Boolean
 
-  /** Shall be compiled with multithreading support. If equal to `None` the
-   *  toolchain would detect if program uses system threads - when not thrads
-   *  are not used, the program would be linked without multihreading support.
+   // format: off
+  /** Shall be compiled with multithreading support.
+   *
+   *  'show ThisBuild/nativeConfig' will display one of three values.
+   *  The default 'detect' setting is appropriate for almost all cases.
+   *
+   *  * 'detect' - The toolchain will start linking using 'true'.
+   *               If by the end no use of system threads is found, the
+   *               toolchain will re-link using 'false' to reduce
+   *               synchronization overhead.
+   *
+   *               `nativeConfig` is initialized to this value and
+   *               there is no easy way to set it once changed.
+   *
+   *  * 'false'  - Never link with multithreading enabled.
+   *
+   *              Note Well:
+   *
+   *                + This setting is not tested in Scala Native Continuous
+   *                  integration.
+   *
+   *                + Some Scala Native library classes may require
+   *                  multithreading and fail to link with this setting.
+   *
+   *                + Code using `Future`s may link but encounter runtime
+   *                  problems.
+   *
+   *  * 'true'   - Always link with multithreading enabled.
+   * 
    */
+  // format: on
   def multithreading: Option[Boolean]
 
-  /*  Was multhithreadinng explicitly select, if not default to true */
+  /*  Was multithreading explicitly selected? If not default to 'true' and
+   *  rely upon toolchain to detect and reset if system threads are not used.
+   */
   private[scalanative] def multithreadingSupport: Boolean =
     multithreading.getOrElse(true)
 
@@ -501,39 +530,39 @@ object NativeConfig {
             .mkString("\n")
         }
 
-      s"""NativeConfig(
-        | - baseName:                $baseName
-        | - clang:                   $clang
-        | - clangPP:                 $clangPP
-        | - linkingOptions:          ${showSeq(linkingOptions)}
-        | - compileOptions:          ${showSeq(compileOptions)}
-        | - cOptions:                ${showSeq(cOptions)}
-        | - cppOptions:              ${showSeq(cppOptions)}
-        | - targetTriple:            $targetTriple
-        | - GC:                      $gc
-        | - LTO:                     $lto
-        | - mode:                    $mode
-        | - buildTarget              $buildTarget
-        | - check:                   $check
-        | - checkFatalWarnings:      $checkFatalWarnings
-        | - checkFeatures            $checkFeatures
-        | - dump:                    $dump
-        | - sanitizer:               ${sanitizer.map(_.name).getOrElse("none")}
-        | - linkStubs:               $linkStubs
-        | - optimize                 $optimize
-        | - incrementalCompilation:  $useIncrementalCompilation
-        | - multithreading           $multithreading
-        | - linktimeProperties:      ${showMap(linktimeProperties)}
-        | - embedResources:          $embedResources
-        | - resourceIncludePatterns: ${showSeq(resourceIncludePatterns)}
-        | - resourceExcludePatterns: ${showSeq(resourceExcludePatterns)}
-        | - serviceProviders:        ${showMap(serviceProviders)}
-        | - optimizerConfig:         ${optimizerConfig.show(" " * 4)}
-        | - semanticsConfig:         ${semanticsConfig.show(" " * 4)}
-        | - sourceLevelDebuggingConfig: ${sourceLevelDebuggingConfig.show(
-          " " * 4
-        )}
-        |)""".stripMargin
+      s"""|NativeConfig(
+          | - baseName:                $baseName
+          | - clang:                   $clang
+          | - clangPP:                 $clangPP
+          | - linkingOptions:          ${showSeq(linkingOptions)}
+          | - compileOptions:          ${showSeq(compileOptions)}
+          | - cOptions:                ${showSeq(cOptions)}
+          | - cppOptions:              ${showSeq(cppOptions)}
+          | - targetTriple:            $targetTriple
+          | - GC:                      $gc
+          | - LTO:                     $lto
+          | - mode:                    $mode
+          | - buildTarget              $buildTarget
+          | - check:                   $check
+          | - checkFatalWarnings:      $checkFatalWarnings
+          | - checkFeatures            $checkFeatures
+          | - dump:                    $dump
+          | - sanitizer:               ${sanitizer.map(_.name).getOrElse("none")}
+          | - linkStubs:               $linkStubs
+          | - optimize                 $optimize
+          | - incrementalCompilation:  $useIncrementalCompilation
+          | - multithreading           ${multithreading.getOrElse("detect")}
+          | - linktimeProperties:      ${showMap(linktimeProperties)}
+          | - embedResources:          $embedResources
+          | - resourceIncludePatterns: ${showSeq(resourceIncludePatterns)}
+          | - resourceExcludePatterns: ${showSeq(resourceExcludePatterns)}
+          | - serviceProviders:        ${showMap(serviceProviders)}
+          | - optimizerConfig:         ${optimizerConfig.show(" " * 4)}
+          | - semanticsConfig:         ${semanticsConfig.show(" " * 4)}
+          | - sourceLevelDebuggingConfig: ${sourceLevelDebuggingConfig.show(
+           " " * 4
+         )}
+          |)""".stripMargin
     }
   }
 
@@ -554,10 +583,10 @@ object NativeConfig {
     }
     if (invalid.nonEmpty) {
       throw new BuildException(
-        s"""Link-time properties needs to be non-null primitives or non-empty string
-           |Invalid link-time properties:
-           |${invalid.mkString(" - ", "\n", "")}
-        """.stripMargin
+        s"""|Link-time properties needs to be non-null primitives or non-empty string
+            |Invalid link-time properties:
+            |${invalid.mkString(" - ", "\n", "")}
+            |""".stripMargin
       )
     }
   }

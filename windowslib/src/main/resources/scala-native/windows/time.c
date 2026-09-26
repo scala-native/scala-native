@@ -1,6 +1,7 @@
 // Windows specific copy of posixlib/time.h
 // Uses *_s variants of methods instead of *_r
-#if defined(_WIN32)
+#if defined(SCALANATIVE_COMPILE_ALWAYS) ||                                     \
+    defined(__SCALANATIVE_POSIX_TIME) && defined(_WIN32)
 #define _CRT_SECURE_NO_WARNINGS
 #include <string.h>
 #include <time.h>

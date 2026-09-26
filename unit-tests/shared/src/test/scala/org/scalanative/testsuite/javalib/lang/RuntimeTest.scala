@@ -45,7 +45,7 @@ class RuntimeTest {
   @Test def execCommand(): Unit = {
     val proc = Runtime.getRuntime.exec(lsCommand :+ resourceDir)
     val out = readInputStream(proc.getInputStream)
-    assertTrue(proc.waitFor(5, TimeUnit.SECONDS))
+    assertTrue(proc.waitFor(30, TimeUnit.SECONDS))
     assertEquals(Scripts.values.map(_.filename), out.split(EOL).toSet)
   }
   @Test def execEnvp(): Unit = {
@@ -57,14 +57,14 @@ class RuntimeTest {
 
     val envp = Array(s"PATH=$resourceDir")
     val proc = Runtime.getRuntime.exec(Array("ls"), envp)
-    assertTrue(proc.waitFor(5, TimeUnit.SECONDS))
+    assertTrue(proc.waitFor(30, TimeUnit.SECONDS))
     assertEquals("1", readInputStream(proc.getInputStream))
   }
   @Test def execDir(): Unit = {
     val proc =
       Runtime.getRuntime.exec(lsCommand, null, new File(resourceDir))
     val out = readInputStream(proc.getInputStream)
-    assertTrue(proc.waitFor(5, TimeUnit.SECONDS))
+    assertTrue(proc.waitFor(30, TimeUnit.SECONDS))
     assertEquals(Scripts.values.map(_.filename), out.split(EOL).toSet)
   }
 

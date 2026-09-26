@@ -1,7 +1,7 @@
 // This file is used only inside sbt (JVM)
 import java.util.Locale
 
-object Platform {
+object PlatformInfo {
   val osName = System
     .getProperty("os.name", "unknown")
     .toLowerCase(Locale.ROOT)

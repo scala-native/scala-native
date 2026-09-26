@@ -1,7 +1,7 @@
 object LengthTest {
   import Files._
 
-  def main(args: Array[String]): Unit = {
+  def run(): Unit = {
     assert(fileWith3Bytes.exists())
     assert(fileWith3Bytes.length() == 3L)
 

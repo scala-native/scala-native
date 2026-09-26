@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <memory.h>
 #include "shared/ThreadUtil.h"
+#include "shared/Log.h"
 #include <assert.h>
 
 bool Allocator_getNextLine(Allocator *allocator);
@@ -23,34 +24,6 @@ void Allocator_Init(Allocator *allocator, BlockAllocator *blockAllocator,
 
     BlockList_Init(&allocator->recycledBlocks);
     allocator->recycledBlockCount = 0;
-}
-
-/**
- * The Allocator needs one free block for overflow allocation and a free or
- * recyclable block for normal allocation.
- *
- * @param allocator
- * @return `true` if there are enough block to initialise the cursors, `false`
- * otherwise.
- */
-bool Allocator_CanInitCursors(Allocator *allocator) {
-    uint32_t freeBlockCount =
-        (uint32_t)allocator->blockAllocator->freeBlockCount;
-    return freeBlockCount >= 2 ||
-           (freeBlockCount == 1 && allocator->recycledBlockCount > 0);
-}
-
-void Allocator_InitCursors(Allocator *allocator, bool canCollect) {
-    while (!(Allocator_newBlock(allocator) &&
-             Allocator_newOverflowBlock(allocator))) {
-        if (Heap_isGrowingPossible(&heap, 2))
-            Heap_Grow(&heap, 2);
-        else if (canCollect)
-            Heap_Collect(&heap);
-        else
-            Heap_exitWithOutOfMemory(
-                "Not enough memory to allocate GC mutator thread allocator");
-    }
 }
 
 void Allocator_Clear(Allocator *allocator) {
@@ -86,19 +59,16 @@ bool Allocator_newOverflowBlock(Allocator *allocator) {
  */
 word_t *Allocator_overflowAllocation(Allocator *allocator, size_t size) {
     word_t *start = allocator->largeCursor;
-    assert(start != NULL);
-    word_t *end = (word_t *)((uint8_t *)start + size);
 
-    // allocator->largeLimit == NULL implies end > allocator->largeLimit
-    assert(allocator->largeLimit != NULL || end > allocator->largeLimit);
-    if (end > allocator->largeLimit) {
+    if (start == NULL ||
+        (word_t *)((uint8_t *)start + size) > allocator->largeLimit) {
         if (!Allocator_newOverflowBlock(allocator)) {
             return NULL;
         }
         return Allocator_overflowAllocation(allocator, size);
     }
 
-    allocator->largeCursor = end;
+    allocator->largeCursor = (word_t *)((uint8_t *)start + size);
 
     return start;
 }
@@ -108,11 +78,10 @@ word_t *Allocator_overflowAllocation(Allocator *allocator, size_t size) {
  */
 INLINE word_t *Allocator_tryAlloc(Allocator *allocator, size_t size) {
     word_t *start = allocator->cursor;
-    if (start == NULL) {
-        Allocator_InitCursors(allocator, true);
-        start = allocator->cursor;
-    }
-    assert(start != NULL);
+    if (start == NULL && !Allocator_newBlock(allocator))
+        return NULL;
+
+    start = allocator->cursor;
     word_t *end = (word_t *)((uint8_t *)start + size);
 
     // allocator->limit == NULL implies end > allocator->limit
@@ -186,11 +155,8 @@ bool Allocator_newBlock(Allocator *allocator) {
     if (block != NULL) {
         // get all the changes done by sweeping
         atomic_thread_fence(memory_order_acquire);
-#ifdef DEBUG_PRINT
-        printf("Allocator_newBlock RECYCLED %p %" PRIu32 " for %p\n", block,
-               BlockMeta_GetBlockIndex(blockMetaStart, block), allocator);
-        fflush(stdout);
-#endif
+        GC_LOG_DEBUG("Allocator_newBlock RECYCLED %p %" PRIu32 " for %p", block,
+                     BlockMeta_GetBlockIndex(blockMetaStart, block), allocator);
         assert(block->debugFlag == dbg_partial_free);
 #ifdef GC_ASSERTIONS
         block->debugFlag = dbg_in_use;
@@ -213,11 +179,8 @@ bool Allocator_newBlock(Allocator *allocator) {
         assert(allocator->limit <= Block_GetBlockEnd(blockStart));
     } else {
         block = BlockAllocator_GetFreeBlock(allocator->blockAllocator);
-#ifdef DEBUG_PRINT
-        printf("Allocator_newBlock %p %" PRIu32 " for %p\n", block,
-               BlockMeta_GetBlockIndex(blockMetaStart, block), allocator);
-        fflush(stdout);
-#endif
+        GC_LOG_DEBUG("Allocator_newBlock %p %" PRIu32 " for %p", block,
+                     BlockMeta_GetBlockIndex(blockMetaStart, block), allocator);
         if (block == NULL) {
             return false;
         }
@@ -286,7 +249,9 @@ NOINLINE word_t *Allocator_allocSlow(Allocator *allocator, Heap *heap,
                 goto done;
         }
 
-        Heap_Collect(heap);
+        // Another thread collects instead. Retry before growing the heap.
+        if (!Heap_Collect(heap, true))
+            continue;
         object = Allocator_tryAlloc(allocator, size);
 
         if (object != NULL)
@@ -301,10 +266,8 @@ NOINLINE word_t *Allocator_allocSlow(Allocator *allocator, Heap *heap,
 
         // A small object can always fit in a single free block
         // because it is no larger than 8K while the block is 32K.
-        if (Heap_isGrowingPossible(heap, 1))
-            Heap_Grow(heap, 1);
-        else
-            Heap_exitWithOutOfMemory("");
+        if (!Heap_TryGrow(heap, 1))
+            Heap_ThrowOutOfMemory(heap);
     } while (true);
     return NULL; // unreachable
 }

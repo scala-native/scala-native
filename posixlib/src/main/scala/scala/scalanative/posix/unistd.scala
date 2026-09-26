@@ -50,9 +50,12 @@ object unistd {
   def access(pathname: CString, mode: CInt): CInt = extern
   def alarm(seconds: CUnsignedInt): CUnsignedInt = extern
 
+  @blocking
   def chdir(path: CString): CInt = extern
+
   @deprecated("Deprecated in POSIX standard", since = "POSIX.1-2001")
   def chroot(path: CString): CInt = extern
+
   def chown(path: CString, owner: uid_t, group: gid_t): CInt = extern
   def close(fildes: CInt): CInt = extern
   def confstr(name: CInt, buf: Ptr[CChar], len: size_t): size_t = extern
@@ -78,7 +81,10 @@ object unistd {
   def execvp(file: CString, argv: Ptr[CString]): CInt = extern
 
   def faccessat(fd: CInt, path: CString, amode: CInt, flag: CInt): CInt = extern
+
+  @blocking
   def fchdir(fildes: CInt): CInt = extern
+
   def fchown(filedes: CInt, owner: uid_t, group: gid_t): CInt = extern
   def fchownat(
       fd: CInt,

@@ -7,14 +7,38 @@ package java.util.concurrent.atomic
 
 import java.util.function.{BinaryOperator, UnaryOperator}
 
+import scala.scalanative.annotation.alwaysinline
+import scala.scalanative.libc.stdatomic.AtomicRef
+import scala.scalanative.libc.stdatomic.memory_order.memory_order_release
+import scala.scalanative.unsafe.Ptr
+
 object AtomicReferenceFieldUpdater {
-  // Impossible to define currently in Scala Native, requires reflection
-  // Don't define it, allow to fail at linktime instead of runtime
-  // def newUpdater[U <: AnyRef, W <: AnyRef](
-  //     tclass: Class[U],
-  //     vclass: Class[W],
-  //     fieldName: String
-  // ): AtomicReferenceFieldUpdater[U, W] = ???
+  private def intrinsic = throw new AssertionError(
+    "Intrinsic call was not handled by the toolchain"
+  )
+
+  def newUpdater[U <: AnyRef, W <: AnyRef](
+      tclass: Class[U],
+      vclass: Class[W],
+      fieldName: String
+  ): AtomicReferenceFieldUpdater[U, W] = intrinsic
+
+  final class Impl[
+      T <: AnyRef,
+      V <: AnyRef
+  ](binding: AnyRef => Ptr[V])
+      extends AtomicReferenceFieldUpdater[T, V] {
+    @alwaysinline private def atomic(obj: T) =
+      new AtomicRef[V](binding(obj))
+    def compareAndSet(obj: T, expect: V, update: V) =
+      atomic(obj).compareExchangeStrong(expect, update)
+    def weakCompareAndSet(obj: T, expect: V, update: V) =
+      atomic(obj).compareExchangeWeak(expect, update)
+    def set(obj: T, value: V): Unit = atomic(obj).store(value)
+    def lazySet(obj: T, value: V): Unit =
+      atomic(obj).store(value, memory_order_release)
+    def get(obj: T): V = atomic(obj).load()
+  }
 }
 
 abstract class AtomicReferenceFieldUpdater[

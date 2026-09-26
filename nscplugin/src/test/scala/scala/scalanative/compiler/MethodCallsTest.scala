@@ -14,27 +14,27 @@ class MethodCallTest {
   @Test def emitsMethodDispatchForAbstractMethods(): Unit = {
     compileAndLoad(
       "Test.scala" ->
-        """
-        |trait Foo{
-        |  def bar(v1: String, v2: Option[String] = None): String
-        |}
-        |object Foo extends Foo{
-        |  override def bar(v1: String, v2: Option[String] = None): String = ???
-        |}
-        |class FooCls extends Foo{
-        |  override def bar(v1: String, v2: Option[String] = None): String = ???
-        |}
-        |object Test{  
-        |  def testModule(): Unit = {
-        |     Foo.bar("object")
-        |     Foo.bar("object", Some("opt"))
-        |  }
-        |  def testClass(): Unit = {
-        |    val foo = new FooCls()
-        |    foo.bar("cls")
-        |    foo.bar("cls", Some("opt"))
-        |  }
-        |}""".stripMargin
+        """|
+           |trait Foo{
+           |  def bar(v1: String, v2: Option[String] = None): String
+           |}
+           |object Foo extends Foo{
+           |  override def bar(v1: String, v2: Option[String] = None): String = ???
+           |}
+           |class FooCls extends Foo{
+           |  override def bar(v1: String, v2: Option[String] = None): String = ???
+           |}
+           |object Test{  
+           |  def testModule(): Unit = {
+           |     Foo.bar("object")
+           |     Foo.bar("object", Some("opt"))
+           |  }
+           |  def testClass(): Unit = {
+           |    val foo = new FooCls()
+           |    foo.bar("cls")
+           |    foo.bar("cls", Some("opt"))
+           |  }
+           |}""".stripMargin
     ) { defns =>
       val TestModule = Global.Top("Test$")
       val TestModuleMethod =
@@ -79,14 +79,14 @@ class MethodCallTest {
   @Test def emitsStaticObjectMonitorCalls(): Unit = {
     compileAndLoad(
       "Test.scala" ->
-        """
-        |object Test{  
-        |  def main(): Unit = synchronized {
-        |   Test.synchronized{
-        |     println("")
-        |    }
-        |  }
-        |}""".stripMargin
+        """|
+           |object Test{  
+           |  def main(): Unit = synchronized {
+           |   Test.synchronized{
+           |     println("")
+           |    }
+           |  }
+           |}""".stripMargin
     ) { defns =>
       val TestModule = Global.Top("Test$")
       val MainMethod =

@@ -1904,7 +1904,7 @@ trait JEP431_ReverseOrderNavigableSetTestTraitOnJDK21
 
   @Test def subSet_NavigableSet_NonSet_Methods(): Unit = {
     /* Do methods in a subSet respect the subSet bounds?
-     * 
+     *
      * poll*() & remove*() methods modify the forward set, so
      * exercise headSet(), subSet(), and tailSet() of subSets in
      * a separate, know clean Test environment. Easier than trying to
@@ -2305,11 +2305,11 @@ class JEP431_ReverseOrderSequencedSetTestOnJDK21
   /* Punt a load of local complexity in favor of more extensive test coverage
    * of concrete implementations. ju.LinkedHashSet works well enough for
    * a Mock most places but not for addFirst() & addLast().
-   * 
+   *
    * Java LinkedHashSet and LinkedHashSet#reversed override those two
    * methods to not throw the Exception expected by the inherited
    * SequencedCollection.
-   * 
+   *
    * Scala Native should someday follow the JVM practice but is not
    * currently JVM compliant. No sense testing & defining some, hopefully,
    * transient misbehavior.
@@ -2672,7 +2672,7 @@ class JEP431_ReverseOrderTreeSetTestOnJDK21
 
   /* Most of the TreeSet reversed methods are tested by the inherited
    * trait hierarchy with the given factory methods using TreeSet.
-   * 
+   *
    * There is no "@Test def clone_TreeSet()" because treeSet.reversed() returns
    * a NavigableSet, which does not declare clone().
    */

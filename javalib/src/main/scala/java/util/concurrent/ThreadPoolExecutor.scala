@@ -843,4 +843,6 @@ class ThreadPoolExecutor(
   protected def afterExecute(r: Runnable, t: Throwable): Unit = {}
 
   protected def terminated(): Unit = {}
+
+  override protected def finalize(): Unit = {}
 }

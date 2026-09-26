@@ -51,16 +51,14 @@ private[scalanative] object ControlFlow {
       assert(insts.nonEmpty)
 
       val locations = {
-        val entries = mutable.Map.empty[Local, Int]
+        val entries = mutable.Map.empty[Local, (Int, Inst.Label)]
         var i = 0
-
         insts.foreach { inst =>
           inst match {
-            case inst: Inst.Label =>
-              entries(inst.id) = i
-            case _ =>
-              ()
+            case inst: Inst.Label => entries(inst.id) = (i, inst)
+            case _                => ()
           }
+
           i += 1
         }
 
@@ -79,8 +77,7 @@ private[scalanative] object ControlFlow {
       def block(local: Local)(implicit pos: SourcePosition): Block =
         blocks.getOrElseUpdate(
           local, {
-            val k = locations(local)
-            val Inst.Label(n, params) = insts(k): @unchecked
+            val (k, Inst.Label(n, params)) = locations(local)
 
             // copy all instruction up until and including
             // first control-flow instruction after the label

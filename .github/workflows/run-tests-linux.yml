@@ -25,7 +25,7 @@ jobs:
       matrix:
         scala: [2.12, 2.13, 3]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
@@ -38,14 +38,15 @@ jobs:
     if: github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: 3
+          java-version: 17
 
       - name: Compile everything
-        # Publish 2.13.latest artifacts locally first, these are required by scalalib3
-        run: sbt "scalalib2_13/publishLocal;clean; ++2.13.8; all Test/compile Compile/doc; ++3.1.3; all Test/compile Compile/doc"
+        # Only Scala 3, other versions are builds with published version during normal CI runs.
+        run: sbt "++3.1.3 all Test/compile Compile/doc"
 
     
   test-scala-cross-build:
@@ -57,10 +58,11 @@ jobs:
       matrix:
         scala: [2.12, 2.13, 3, 3-next]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
+          java-version: 17
 
       # scalalib/Test/compile would force building both compiler plugins as well
       - name: Test cross compilation of compiler plugins and stdlib
@@ -77,8 +79,12 @@ jobs:
       fail-fast: false
       matrix:
         scala: [3, 2.13, 2.12, 3-next]
+        build-mode: [debug]
+        include:
+          - scala: 3
+            build-mode: release-fast
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
@@ -89,6 +95,7 @@ jobs:
         timeout-minutes: 45
         env:
           SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
+          SCALANATIVE_MODE: ${{ matrix.build-mode }}
         run: sbt "test-runtime ${{ matrix.scala }}"      
 
   test-runtime-ext:
@@ -130,7 +137,7 @@ jobs:
           #   lto: full
           #   gc: commix
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
@@ -161,7 +168,7 @@ jobs:
         scala: [3]
         build-mode: [debug]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
@@ -185,9 +192,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3]
+        scala: [2.12, 3]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
@@ -197,9 +204,7 @@ jobs:
           SCALANATIVE_MODE: release-fast
           SCALANATIVE_GC: immix
           SCALANATIVE_OPTIMIZE: true
-        run: |
-          export LLVM_BIN=$(dirname $(readlink -f /usr/bin/clang))
-          sbt "test-scripted ${{matrix.scala}}"
+        run: sbt "test-scripted ${{matrix.scala}}"
 
   test-llvm-versions:
     if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
@@ -208,9 +213,9 @@ jobs:
       fail-fast: false
       matrix:
         scala: [3]
-        llvm: [14, 15, 16, 17, 18, 19] # Last 3 stable versions + available future versions
+        llvm: [17, 18, 19, 20, 21, latest] # Last 3 stable versions + available future versions
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
@@ -221,7 +226,6 @@ jobs:
         env:
           SCALANATIVE_MODE: release-fast
           SCALANATIVE_LTO: thin
-          LLVM_BIN: "/usr/lib/llvm-${{ matrix.llvm }}/bin"
           SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
         run: sbt "test-runtime ${{ matrix.scala }}"
 
@@ -233,14 +237,14 @@ jobs:
       matrix:
         scala: [2.13]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/linux-setup-env
         with:
           scala-version: ${{matrix.scala}}
 
         # Make sure that Scala partest denylisted tests contain only valid test names
       - name: Setup Scala-cli
-        uses: VirtusLab/scala-cli-setup@v1.9
+        uses: VirtusLab/scala-cli-setup@v1.17
 
       - name: Check partest disabled tests list
         # No partests support for Scala 3
@@ -270,4 +274,3 @@ jobs:
           sbt \
           "-J-Xmx3G" \
           "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff"
-

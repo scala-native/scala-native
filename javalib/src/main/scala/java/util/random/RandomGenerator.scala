@@ -133,6 +133,31 @@ trait RandomGenerator {
   import java.util.ScalaOps._
 
 // Begin Ported from Scala.js commit: 9cb865f dated: 2025-03-16
+
+  // scalafmt keeps deleting this block comment, fi!
+  // format: off
+  /* 2026-08-16
+   *   There have been three commits to Scala.js RandomGenerator since
+   *   the Scala.js commit 9cb865f. A total re-report was attempted
+   *   but committed here.
+   *
+   *   The first 2025-12-15 commit was a large refactoring.
+   *   One import imported another and so on. The changes here rippled to the
+   *   point of infeasiblity within the available constraints.
+   *
+   *   The other two changes seemed at first examination to be performance
+   *   changes. Given correctness, one seldom wants to leave performance on
+   *   the table. Those changes, particularly the 'Smarter use of long
+   *   divisions and remainders" or close relatives could be considered
+   *   for a later evolution. The other is removing one branch and
+   *   may not be cost effective for Scala Native (forcing lots of types
+   *   to change to 'unsigned').
+   *
+   *   Here correctness is the greater concern for the current and few
+   *   following evolutions.
+   */
+  // format: on
+
   import scala.annotation.tailrec
 
   // Comments starting with `// >` are cited from the JavaDoc.
@@ -530,14 +555,99 @@ trait RandomGenerator {
     StreamSupport.doubleStream(downstreamSpliter, parallel = false)
   }
 
-  /*
   // Since: Java 22
-   def equiDoubles(
-       left: scala.Double,
-       right: scala.Double,
-       isLeftIncluded: Boolean,
-      isRightIncluded: Boolean): DoubleStream
-   */
+  def equiDoubles(
+      left: scala.Double,
+      right: scala.Double,
+      isLeftIncluded: Boolean,
+      isRightIncluded: Boolean
+  ): DoubleStream = {
+    /* The current evolution is focused on a believable and useful
+     * equidistribution across a number of scales.
+     *
+     * A future evolution to Industrial Strength could look at reducing the
+     * length of execution paths and number of allocations. In particular,
+     * there are two divisions where the denominator 'delta' is known to be
+     * an exact power of two. Modern compilers often have fast paths for
+     * such exact powers of two. Is there any runtime speedup from
+     * open coding a powers-of-two division bit twiddle here? Is it worth
+     * the development complexity?  To be determined as demand warrants.
+     * That will be a good problem to have. Even better, it is not
+     * today's problem.
+     */
+
+    val illegalArgumentMsg =
+      "the boundaries must be finite and the interval must not be empty"
+
+    /* Filter out Infinities & NaNs before getting down to work.
+     * JVM tests 'left' & 'right' as given and does consider is*Included yet.
+     */
+    if (!(jl.Double.isFinite(left) && jl.Double.isFinite(right)))
+      throw new IllegalArgumentException(illegalArgumentMsg)
+
+    // both 'low' and 'high' will be inclusive; makes math easier.
+    val low =
+      if (isLeftIncluded) left
+      else Math.nextUp(left)
+
+    val high =
+      if (isRightIncluded) right
+      else Math.nextDown(right)
+
+    var delta = 0.0
+    var kl = 0L
+    var n = 0L
+
+    def setup(): Unit = {
+      /* Returning a 3-tuple here would be more readable and would avoid
+       * using 'var's. Unfortunately reviewers strongly discourage that idiom.
+       */
+      val magnitudeOfLow = Math.abs(low)
+      val magnitudeOfHigh = Math.abs(high)
+
+      val maxMagnitude = Math.max(magnitudeOfLow, magnitudeOfHigh)
+      val ulpOfMaxMagnitude = Math.ulp(maxMagnitude)
+
+      delta = ulpOfMaxMagnitude
+
+      // If low == 0.0, kl is already 0L
+      if (low != 0.0) // exact integer test, so ==, no epsilon is OK.
+        kl = jl.Math.ceil(low / delta).longValue()
+
+      /* Overflowing a Long is not a concern here. The number of ulps
+       * Math.ulp(Double.MAX_VALUE) between and
+       * -Double.MAX_VALUE and Double.MAX_VALUE is known to be well less than
+       * Long.MAX_VALUE.
+       */
+
+      // Careful; counter intuitive but useful, kh can be negative
+      val kh = (high / delta).longValue() // kHigh
+
+      /* Snapping low up to exact delta kl may have emptied emptied range
+       * if it was not already empty.
+       */
+      if (kl >= kh)
+        throw new IllegalArgumentException(illegalArgumentMsg)
+
+      // +1 to be just above range high for nextDouble(n), n exclusive
+      n = (kh - kl) + 1
+    }
+
+    val spliter = new AbstractDoubleSpliterator(
+      jl.Long.MAX_VALUE,
+      Spliterator.IMMUTABLE //  0x400, decimal 1024, same as doubles()
+    ) {
+
+      def tryAdvance(action: DoubleConsumer): Boolean = {
+        val equiDouble = (kl + nextLong(n)) * delta
+        action.accept(equiDouble)
+        true
+      }
+    }
+
+    setup()
+    StreamSupport.doubleStream(spliter, parallel = false)
+  }
 
   def ints(): IntStream =
     ints(jl.Long.MAX_VALUE)
@@ -717,67 +827,50 @@ trait RandomGenerator {
     StreamSupport.longStream(downstreamSpliter, parallel = false)
   }
 
-  /** This implementation uses inverse transform sampling.
+  /* Java 17 through 26 and counting state "As a rule, objects that
+   * implement the RandomGenerator interface need not be thread-safe"
+   * The initialization and use of the next{Exponential, Gaussian}Rng
+   * variables is not directly thread-safe.
    *
-   *  Java 17 through 23 state the "implementation uses McFarland's fast
-   *  modified ziggurat algorithm".
+   * nextExponential() and nextGaussian() are expected to be used at
+   * scale and to be fast. Use a mono-thread next{Exponential, Gaussian}Rng
+   * to avoid complicated and time consuming initialization and checking
+   * for initialization.
+   *
+   * If a library user ever uses either of these two methods is called
+   * when the same RandomGenerator instance is used by separate threads
+   * the worst that can happen is expensive multiple initialization.
+   * Since each redundant instantiated next{Exponential, Gaussian}Rng will
+   * use 'this' as the uniform rng, there is no hit to correctness.
    */
 
-  def nextExponential(): scala.Double =
-    -Math.log(nextDouble())
+  var nextExponentialRng: ExponentialZiggurat = null
 
-  /** This implementation uses the polar Box-Muller algorithm from Random.scala
-   *  and concurrent.ThreadLocalRandom.scala
+  /* Java 17 through 26 and counting state the "implementation uses
+   * McFarland's fast modified ziggurat algorithm".
    *
-   *  The Java 17 through 23 docs say the "implementation uses McFarland's fast
-   *  modified ziggurat algorithm".
-   *
-   *  Eventually both nextExponential() and this method should use the ziggurat
-   *  algorithm. Random.scala is documented as continuing to use its historical
-   *  Box-Muller.
-   *
-   *  Providing the ziggurate algorithm here is left as an exercise for the
-   *  reader.
+   * McFarland's algorithm is used in preference to the obvious
+   * "-Math.log(nextDouble()) with 1-u correction for nextDouble() possibly
+   * returning 0.0" because it uses less expensive operations.
    */
+  def nextExponential(): scala.Double = {
+    if (nextExponentialRng == null)
+      nextExponentialRng = ExponentialZiggurat.of(this, 1.0)
 
+    nextExponentialRng.sample()
+  }
+
+  // See thread-safety note above declaration of nextExponentialRng.
+  var nextGaussianRng: GaussianZiggurat = null
+
+  /* Java 17 through 26 and counting state the "implementation uses
+   * McFarland's fast modified ziggurat algorithm".
+   */
   def nextGaussian(): scala.Double = {
-    var nextNextGaussian: Double = 0.0
-    var haveNextNextGaussian: Boolean = false
+    if (nextGaussianRng == null)
+      nextGaussianRng = GaussianZiggurat.of(this)
 
-    /* The Box-Muller algorithm produces two random numbers at once. We save
-     * the second one in `nextNextGaussian` to be used by the next call to
-     * nextGaussian().
-     *
-     * See http://www.protonfish.com/jslib/boxmuller.shtml
-     */
-
-    if (haveNextNextGaussian) {
-      haveNextNextGaussian = false
-      return nextNextGaussian
-    }
-
-    var x, y, rds: Double = 0.0
-
-    /* Get two random numbers from -1.0 to 1.0.
-     * If the radius is zero or greater than 1, throw them out and pick two new
-     * ones.
-     * Rejection sampling throws away about 20% of the pairs.
-     */
-    while ({
-      x = nextDouble() * 2.0 - 1
-      y = nextDouble() * 2.0 - 1
-      rds = x * x + y * y
-      rds == 0.0 || rds > 1
-    }) ()
-
-    val c = Math.sqrt(-2.0 * Math.log(rds) / rds)
-
-    // Save y*c for next time
-    nextNextGaussian = y * c
-    haveNextNextGaussian = true
-
-    // And return x*c
-    x * c
+    nextGaussianRng.sample()
   }
 
   def nextGaussian(mean: scala.Double, stddev: scala.Double): scala.Double =

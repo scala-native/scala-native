@@ -1,6 +1,7 @@
 package org.scalanative.testsuite.javalib.lang
 
 import java.lang._
+import java.{lang => jl}
 
 import org.junit.Assert._
 import org.junit.Test
@@ -287,6 +288,242 @@ class MathTestOnJDK25 {
         case e: ArithmeticException =>
           fail(s"ArithmeticException unsignedPowExact(${tc.x}, ${tc.y})")
       }
+    }
+  }
+
+  // ceilDivExact
+
+  case class ExactMathTestPoint(
+      dividend: scala.Long,
+      divisor: scala.Long,
+      expected: scala.Long
+  )
+
+  /* Much of the ceilDivExact testing is same or close to
+   * corresponding ceilDiv tests in MthTestOnJDK18.
+   * That is the point, the results should be the same except for
+   * the (MIN_VALUE, -1) case. The test code almost-duplication is unfortunate.
+   */
+
+  val ceilDivExactTestPoints = Array(
+    // from JVM 26 ceilDiv(i, i) example, ordered as in example
+    ExactMathTestPoint(-4L, 3L, -1L),
+    ExactMathTestPoint(4L, 3L, 2L),
+
+    // Scala Native
+    ExactMathTestPoint(4L, 4L, 1L),
+    ExactMathTestPoint(4L, -4L, -1L),
+    ExactMathTestPoint(-4L, 4L, -1L),
+    ExactMathTestPoint(-4L, -4L, 1L),
+    // Zero
+    ExactMathTestPoint(0L, 4L, 0L),
+    ExactMathTestPoint(0L, -4L, 0L),
+    // check floating point quotient in (-1.0, 1.0) is rounded correctly.
+    ExactMathTestPoint(1L, 4L, 1L),
+    ExactMathTestPoint(1L, -4L, 0L),
+    ExactMathTestPoint(-1L, 4L, 0L),
+    ExactMathTestPoint(-1L, -4L, 1L)
+  )
+
+  @Test def ceilDivExact_Exceptions(): Unit = {
+    locally {
+      assertThrows(
+        "ceilDivExact(Int, Int)",
+        classOf[ArithmeticException],
+        Math.ceilDivExact(4, 0)
+      )
+
+      assertThrows(
+        "ceilDivExact(Int, Int)",
+        classOf[ArithmeticException],
+        Math.ceilDivExact(jl.Integer.MIN_VALUE, -1)
+      )
+    }
+
+    locally {
+      assertThrows(
+        "ceilDivExact(Long, Long)",
+        classOf[ArithmeticException],
+        Math.ceilDivExact(4L, 0L)
+      )
+
+      assertThrows(
+        "ceilDivExact(Long, Long)",
+        classOf[ArithmeticException],
+        Math.ceilDivExact(jl.Long.MIN_VALUE, -1L)
+      )
+    }
+  }
+
+  @Test def ceilDivExact_IntInt(): Unit = {
+    for (j <- 0 until ceilDivExactTestPoints.length) {
+      val tc = ceilDivExactTestPoints(j)
+      assertEquals(
+        s"ceilDiExactII(${tc.dividend}, ${tc.divisor})",
+        tc.expected,
+        Math.ceilDivExact(tc.dividend.toInt, tc.divisor.toInt)
+      )
+    }
+  }
+
+  @Test def ceilDivExact_LongLong(): Unit = {
+    for (j <- 0 until ceilDivExactTestPoints.length) {
+      val tc = ceilDivExactTestPoints(j)
+      assertEquals(
+        s" ceilDivExactLL(${tc.dividend}, ${tc.divisor})",
+        tc.expected,
+        Math.ceilDivExact(tc.dividend, tc.divisor)
+      )
+    }
+  }
+
+  // divideExact
+
+  @Test def divideExact_Exceptions(): Unit = {
+    locally {
+      assertThrows(
+        "divideExact(Int, Int)",
+        classOf[ArithmeticException],
+        Math.divideExact(4, 0)
+      )
+
+      assertThrows(
+        "divideExact(Int, Int)",
+        classOf[ArithmeticException],
+        Math.divideExact(jl.Integer.MIN_VALUE, -1)
+      )
+    }
+
+    locally {
+      assertThrows(
+        "divideExact(Long, Long)",
+        classOf[ArithmeticException],
+        Math.divideExact(4L, 0L)
+      )
+
+      assertThrows(
+        "divideExact(Long, Long)",
+        classOf[ArithmeticException],
+        Math.divideExact(jl.Long.MIN_VALUE, -1L)
+      )
+    }
+  }
+
+  val divideExactTestPoints = Array(
+    // standard Java/Scala integer division.
+    // rounds towards zero, a.k.a truncation.
+    ExactMathTestPoint(-4L, 3L, -1L),
+    ExactMathTestPoint(4L, 3L, 1L),
+
+    // Scala Native
+    ExactMathTestPoint(4L, 4L, 1L),
+    ExactMathTestPoint(4L, -4L, -1L),
+    ExactMathTestPoint(-4L, 4L, -1L),
+    ExactMathTestPoint(-4L, -4L, 1L),
+    // Zero
+    ExactMathTestPoint(0L, 4L, 0L),
+    ExactMathTestPoint(0L, -4L, 0L),
+    // check floating point quotient in (-1.0, 1.0) is rounded correctly.
+    ExactMathTestPoint(1L, 4L, 0L),
+    ExactMathTestPoint(1L, -4L, 0L),
+    ExactMathTestPoint(-1L, 4L, 0L),
+    ExactMathTestPoint(-1L, -4L, 0L)
+  )
+
+  @Test def divideExact_IntInt(): Unit = {
+    for (j <- 0 until floorDivExactTestPoints.length) {
+      val tc = divideExactTestPoints(j)
+      assertEquals(
+        s" divideExactII(${tc.dividend}, ${tc.divisor})",
+        tc.expected,
+        Math.divideExact(tc.dividend.toInt, tc.divisor.toInt)
+      )
+    }
+  }
+
+  @Test def divideExact_LongLong(): Unit = {
+    for (j <- 0 until floorDivExactTestPoints.length) {
+      val tc = divideExactTestPoints(j)
+      assertEquals(
+        s" divideExactLL(${tc.dividend}, ${tc.divisor})",
+        tc.expected,
+        Math.divideExact(tc.dividend, tc.divisor)
+      )
+    }
+  }
+
+  // floorDivExact
+
+  val floorDivExactTestPoints = Array(
+    // from JVM 26 floorDiv(i, i) example, ordered as in example.
+    // rounds towards NEGATIVE_INFINITY.
+    ExactMathTestPoint(-4L, 3L, -2L),
+    ExactMathTestPoint(4L, 3L, 1L),
+
+    // Scala Native
+    ExactMathTestPoint(4L, 4L, 1L),
+    ExactMathTestPoint(4L, -4L, -1L),
+    ExactMathTestPoint(-4L, 4L, -1L),
+    ExactMathTestPoint(-4L, -4L, 1L),
+    // Zero
+    ExactMathTestPoint(0L, 4L, 0L),
+    ExactMathTestPoint(0L, -4L, 0L),
+    // check floating point quotient in (-1.0, 1.0) is rounded correctly.
+    ExactMathTestPoint(1L, 4L, 0L),
+    ExactMathTestPoint(1L, -4L, -1L),
+    ExactMathTestPoint(-1L, 4L, -1L),
+    ExactMathTestPoint(-1L, -4L, 0L)
+  )
+
+  @Test def floorDivExact_Exceptions(): Unit = {
+    locally {
+      assertThrows(
+        "floorDivExact(Int, Int)",
+        classOf[ArithmeticException],
+        Math.floorDivExact(4, 0)
+      )
+
+      assertThrows(
+        "floorDivExact(Int, Int)",
+        classOf[ArithmeticException],
+        Math.floorDivExact(jl.Integer.MIN_VALUE, -1)
+      )
+    }
+
+    locally {
+      assertThrows(
+        "floorDivExact(Long, Long)",
+        classOf[ArithmeticException],
+        Math.floorDivExact(4L, 0L)
+      )
+
+      assertThrows(
+        "floorDivExact(Long, Long)",
+        classOf[ArithmeticException],
+        Math.floorDivExact(jl.Long.MIN_VALUE, -1L)
+      )
+    }
+  }
+
+  @Test def floorDivExact_IntInt(): Unit = {
+    for (j <- 0 until floorDivExactTestPoints.length) {
+      val tc = floorDivExactTestPoints(j)
+      assertEquals(
+        s" floorDivExactII(${tc.dividend}, ${tc.divisor})",
+        tc.expected,
+        Math.floorDivExact(tc.dividend.toInt, tc.divisor.toInt)
+      )
+    }
+  }
+
+  @Test def floorDivExact_LongLong(): Unit = {
+    for (j <- 0 until floorDivExactTestPoints.length) {
+      val tc = floorDivExactTestPoints(j)
+      assertEquals(
+        s" floorDivExactLL(${tc.dividend}, ${tc.divisor})",
+        tc.expected,
+        Math.floorDivExact(tc.dividend, tc.divisor)
+      )
     }
   }
 }

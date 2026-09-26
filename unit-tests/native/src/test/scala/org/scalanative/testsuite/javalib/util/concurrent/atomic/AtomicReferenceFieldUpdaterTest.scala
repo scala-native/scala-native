@@ -6,8 +6,6 @@
  * Pat Fisher, Mike Judd.
  */
 
-// Uses custom Scala Native intrinsic based field updaters instead of reflection based used in JVM
-
 package org.scalanative.testsuite.javalib.util.concurrent
 package atomic
 
@@ -16,51 +14,23 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater
 import org.junit.Assert._
 import org.junit._
 
-import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.libc.stdatomic.{AtomicRef, memory_order}
-import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
-import scala.scalanative.runtime.{RawPtr, fromRawPtr}
-
-object AtomicReferenceFieldUpdaterTest {
-  class IntrinsicBasedImpl[T <: AnyRef, V <: AnyRef](
-      atomicRef: T => AtomicRef[V]
-  ) extends AtomicReferenceFieldUpdater[T, V]() {
-    def compareAndSet(obj: T, expect: V, update: V): Boolean =
-      atomicRef(obj).compareExchangeStrong(expect, update)
-
-    def weakCompareAndSet(obj: T, expect: V, update: V): Boolean =
-      atomicRef(obj).compareExchangeWeak(expect, update)
-
-    def set(obj: T, newIntalue: V): Unit = atomicRef(obj).store(newIntalue)
-
-    def lazySet(obj: T, newIntalue: V): Unit =
-      atomicRef(obj).store(newIntalue, memory_order.memory_order_release)
-    def get(obj: T): V = atomicRef(obj).load()
-  }
-}
-
 class AtomicReferenceFieldUpdaterTest extends JSR166Test {
-  import AtomicReferenceFieldUpdaterTest._
   import JSR166Test._
 
   @volatile var x: Integer = null
   @volatile protected var protectedField: Integer = null
 
   def updaterForX =
-    new IntrinsicBasedImpl[AtomicReferenceFieldUpdaterTest, Integer](obj =>
-      new AtomicRef(
-        fromRawPtr(
-          classFieldRawPtr(obj, "x")
-        )
-      )
+    AtomicReferenceFieldUpdater.newUpdater(
+      classOf[AtomicReferenceFieldUpdaterTest],
+      classOf[Integer],
+      "x"
     )
   def updaterForProtectedField =
-    new IntrinsicBasedImpl[AtomicReferenceFieldUpdaterTest, Integer](obj =>
-      new AtomicRef(
-        fromRawPtr(
-          classFieldRawPtr(obj, "protectedField")
-        )
-      )
+    AtomicReferenceFieldUpdater.newUpdater(
+      classOf[AtomicReferenceFieldUpdaterTest],
+      classOf[Integer],
+      "protectedField"
     )
 
   // Platform limitatios: following cases would not compile / would not be checked

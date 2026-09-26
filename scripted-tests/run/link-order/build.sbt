@@ -26,7 +26,7 @@ Compile / compile := {
   val cwd = target.value
   val nc = nativeConfig.value
   val compileOptions = nc.compileOptions
-  val cpaths = (baseDirectory.value.getAbsoluteFile * "*.c").get
+  val cpaths = (baseDirectory.value.getAbsoluteFile * "*.c").get()
   val clangPath = nc.clang.toAbsolutePath.toString
 
   cwd.mkdirs()

@@ -71,7 +71,7 @@ private[codegen] object ITable {
     ITable(
       useFastITables,
       itables.size,
-      nir.Val.ArrayValue(ITableEntry, itables)
+      nir.Val.ArrayValue(ITableEntry, itables.toIndexedSeq)
     )
   }
 }

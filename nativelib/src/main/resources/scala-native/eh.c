@@ -3,8 +3,19 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
 #include "string_constants.h"
 #include "unwind.h"
+
+#if defined(__SCALANATIVE_DELIMCC)
+#include "delimcc.h"
+#include <setjmp.h>
+#endif
+
+#if defined(__SCALANATIVE_DELIMCC)
+#include "delimcc.h"
+#include <setjmp.h>
+#endif
 
 // gets the ExceptionWrapper from the _Unwind_Exception which is at the end of
 // it. +1 goes to the end of the struct since it adds with the size of
@@ -15,10 +26,21 @@
 
 typedef void *Exception;
 typedef void (*OnCatchHandler)(Exception);
+
+/*
+ * Continuation exception escape: when _Unwind_RaiseException returns
+ * _URC_END_OF_STACK (no handler found in the resumed stack), we longjmp to
+ * the resumer (in delimcc.c) instead of aborting. delimcc.c sets
+ * scalanative_continuation_exception_handler before resume and clears it after
+ * longjmp or normal return. Local try/catch inside the continuation body still
+ * runs (unwinding finds them first); we only escape when no handler was found.
+ */
 typedef struct ExceptionWrapper {
     Exception obj;
     _Unwind_Exception unwindException;
 } ExceptionWrapper;
+
+static _Thread_local ExceptionWrapper fallbackExceptionWrapper;
 
 extern OnCatchHandler scalanative_Throwable_onCatchHandler(Exception exception);
 extern void scalanative_Throwable_showStackTrace(Exception exception);
@@ -99,10 +121,42 @@ typedef struct LSDA_call_site {
     uint64_t action;
 } LSDA_call_site;
 
-void LSDA_call_site_init(LSDA_call_site *callSite, LSDA_ptr *lsda) {
-    callSite->start = read_uleb_128(lsda);
-    callSite->len = read_uleb_128(lsda);
-    callSite->landing_pad = read_uleb_128(lsda);
+uint64_t read_call_site_value(LSDA_ptr *data, uint8_t encoding) {
+    switch (encoding) {
+    case 0x01: // DW_EH_PE_uleb128: LLVM's default call-site encoding.
+        return read_uleb_128(data);
+    case 0x02: { // DW_EH_PE_udata2: compact fixed-width call-site offsets.
+        uint16_t result;
+        memcpy(&result, *data, sizeof(result));
+        *data += sizeof(result);
+        return result;
+    }
+    case 0x03: { // DW_EH_PE_udata4: used by LLVM's RISC-V backend.
+        uint32_t result;
+        memcpy(&result, *data, sizeof(result));
+        *data += sizeof(result);
+        return result;
+    }
+    case 0x04: { // DW_EH_PE_udata8: large fixed-width call-site offsets.
+        uint64_t result;
+        memcpy(&result, *data, sizeof(result));
+        *data += sizeof(result);
+        return result;
+    }
+    default:
+        fprintf(stderr,
+                "ScalaNative Fatal Error: Unsupported LSDA call-site encoding "
+                "during exception handling: 0x%02x\n",
+                encoding);
+        abort();
+    }
+}
+
+void LSDA_call_site_init(LSDA_call_site *callSite, LSDA_ptr *lsda,
+                         uint8_t encoding) {
+    callSite->start = read_call_site_value(lsda, encoding);
+    callSite->len = read_call_site_value(lsda, encoding);
+    callSite->landing_pad = read_call_site_value(lsda, encoding);
     callSite->action = read_uleb_128(lsda);
 }
 
@@ -112,7 +166,7 @@ bool LSDA_call_site_valid_for_throw_ip(const LSDA_call_site *callSite,
     uintptr_t try_start = func_start + callSite->start;
     uintptr_t try_end = try_start + callSite->len;
     uintptr_t throw_ip = _Unwind_GetIP(context) - 1;
-    if (throw_ip > try_end || throw_ip < try_start) {
+    if (throw_ip >= try_end || throw_ip < try_start) {
         return false;
     }
     return true;
@@ -150,10 +204,11 @@ void LSDA_init(LSDA *lsda, _Unwind_Context *context) {
 }
 
 LSDA_call_site *LSDA_get_next_call_site(LSDA *lsda) {
-    if (lsda->next_call_site_ptr > lsda->call_site_table_end) {
+    if (lsda->next_call_site_ptr >= lsda->call_site_table_end) {
         return NULL;
     }
-    LSDA_call_site_init(&lsda->next_call_site, &lsda->next_call_site_ptr);
+    LSDA_call_site_init(&lsda->next_call_site, &lsda->next_call_site_ptr,
+                        lsda->call_site_header.encoding);
     return &lsda->next_call_site;
 }
 
@@ -259,6 +314,8 @@ Exception scalanative_catch(_Unwind_Exception *unwindException) {
 __attribute__((noreturn)) void scalanative_throw(Exception obj) {
     ExceptionWrapper *exceptionWrapper =
         scalanative_Throwable_exceptionWrapper(obj);
+    if (exceptionWrapper == NULL)
+        exceptionWrapper = &fallbackExceptionWrapper;
     exceptionWrapper->unwindException.exception_cleanup =
         generic_exception_cleanup;
     exceptionWrapper->obj = obj;
@@ -266,6 +323,25 @@ __attribute__((noreturn)) void scalanative_throw(Exception obj) {
     _Unwind_Reason_Code code = _Unwind_RaiseException(unwindException);
 
     if (code == _URC_END_OF_STACK) {
+#if defined(__SCALANATIVE_DELIMCC)
+        /* If we're inside a resumed continuation, escape to the resumer instead
+         * of aborting. Unwinding already ran and found no handler (or could not
+         * traverse the copied stack); local try/catch in the continuation body
+         * would have been found first if present. */
+        ContinuationExceptionHandler ceh =
+            scalanative_continuation_exception_handler();
+        if (ceh.env != NULL && ceh.exception_slot != NULL) {
+            jmp_buf *env = ceh.env;
+            *ceh.exception_slot = obj;
+            scalanative_continuation_exception_handler_clear();
+            // Do not run exception cleanup; we're transferring to the resumer.
+            longjmp(*env, 1);
+            __builtin_unreachable();
+        }
+        if (scalanative_continuation_exception_escape(obj)) {
+            __builtin_unreachable();
+        }
+#endif
         generic_exception_cleanup(code, &exceptionWrapper->unwindException);
         fprintf(stderr,
                 "%s Failed to throw exception, not found "
@@ -273,6 +349,8 @@ __attribute__((noreturn)) void scalanative_throw(Exception obj) {
                 "stack.\n",
                 snFatalErrorPrefix);
         scalanative_Throwable_showStackTrace(obj);
+        fflush(stderr);
+        fflush(stdout);
         abort();
     }
     scalanative_Throwable_showStackTrace(obj);

@@ -11,7 +11,7 @@ Scala Native has the following build dependencies:
 
 -   Java 8 or newer
 -   sbt 1.5.8 or newer
--   LLVM/Clang 6.0 or newer
+-   LLVM/Clang 6.0 or newer (LLVM/Clang 16 or newer is recommended; older versions are deprecated)
 
 And following completely optional runtime library dependencies:
 
@@ -49,10 +49,10 @@ pkg_add scala-sbt
 ## Installing clang and runtime dependencies
 
 Scala Native requires Clang, which is part of the
-[LLVM](https://llvm.org) toolchain. The recommended LLVM version is the
-most recent available for your system provided that it works with Scala
-Native. The Scala Native sbt plugin checks to ensure that
-`clang` is at least the minimum version shown above.
+[LLVM](https://llvm.org) toolchain. LLVM/Clang 16 is the default version
+used in CI and the recommended baseline for local development. Older
+versions remain supported down to the minimum version shown above, but
+they are deprecated and may cause issues with continuations.
 
 Scala Native uses the
 [Immix](https://www.cs.utexas.edu/users/speedway/DaCapo/papers/immix-pldi-2008.pdf)
@@ -181,9 +181,9 @@ Visual Studio install dialog showing options.
 
 2.  Download and install LLVM
 
-<https://github.com/llvm/llvm-project/releases/tag/llvmorg-12.0.1>
+<https://github.com/llvm/llvm-project/releases>
 
-Select *LLVM-12.0.1-win64.exe* or newer. Digital signatures are
+Select an *LLVM-16.x-win64.exe* installer or newer. Digital signatures are
 provided.
 
 You may also install LLVM via the command line, and if needed, install
@@ -191,7 +191,7 @@ it into your `C:\Users\<login>\AppData\Local` directory. The
 installer will add *LLVM* and the associated directories and files.
 
 ``` powershell
-> .\LLVM-12.0.1-win64.exe
+> .\LLVM-<version>-win64.exe
 ```
 
 3.  Add the binary location to your PATH

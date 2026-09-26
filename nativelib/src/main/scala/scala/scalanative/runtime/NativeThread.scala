@@ -153,6 +153,9 @@ object NativeThread {
   }
 
   @alwaysinline def currentThread: Thread = TLS.currentThread
+  @alwaysinline def setCurrentThread(thread: Thread): Unit = {
+    TLS.assignCurrentThread(thread, currentNativeThread)
+  }
   @alwaysinline def currentNativeThread: NativeThread = TLS.currentNativeThread
 
   def onSpinWait(): Unit = LLVMIntrinsics.`llvm.donothing`
@@ -161,8 +164,7 @@ object NativeThread {
     getMonitor(obj.asInstanceOf[_Object]).isLockedBy(currentThread)
   } else false
 
-  def threadRoutineArgs(thread: NativeThread): ThreadRoutineArg =
-    fromRawPtr[scala.Byte](castObjectToRawPtr(thread))
+  def threadRoutineArgs(thread: NativeThread): ThreadRoutineArg = thread
 
   object Registry {
     // Replace with ConcurrentHashMap when thread-safe
@@ -200,15 +202,17 @@ object NativeThread {
     }
   }
 
-  def threadRoutine: ThreadStartRoutine = CFuncPtr1.fromScalaFunction {
-    (arg: ThreadRoutineArg) =>
-      val thread = castRawPtrToObject(toRawPtr(arg))
-        .asInstanceOf[NativeThread]
-      NativeThread.threadEntryPoint(thread)
-      0.toPtr
+  def threadRoutine: ThreadStartRoutine = NativeThreadStart.fn()
+
+  @extern
+  private[scalanative] object NativeThreadStart {
+    @name("scalanative_NativeThread_start_fn")
+    def fn(): ThreadStartRoutine = extern
   }
 
-  private def threadEntryPoint(nativeThread: NativeThread): Unit = {
+  @noinline
+  @exported("scalanative_NativeThread_start")
+  private[runtime] def threadEntryPoint(nativeThread: NativeThread): RawPtr = {
     import nativeThread.thread
     val stackBottom = Intrinsics.stackalloc[Int]()
     TLS.assignCurrentThread(thread, nativeThread)
@@ -221,11 +225,13 @@ object NativeThread {
 
     nativeThread.state = State.Running
     atomic_thread_fence(memory_order_seq_cst)
-    // Ensure Java Thread already assigned the Native Thread instance
-    // Otherwise park/unpark events might be lost
-    while (thread.getState() == Thread.State.NEW) onSpinWait()
-    try thread.run()
-    catch {
+    TLS.currentThreadInfo().isInitialized = true
+    try {
+      // Ensure Java Thread already assigned the Native Thread instance
+      // Otherwise park/unpark events might be lost
+      while (thread.getState() == Thread.State.NEW) onSpinWait()
+      thread.run()
+    } catch {
       case ex: jl.Throwable =>
         val handler = thread.getUncaughtExceptionHandler() match {
           case null    => Thread.getDefaultUncaughtExceptionHandler()
@@ -234,6 +240,7 @@ object NativeThread {
         if (handler != null)
           executeUncaughtExceptionHandler(handler, thread, ex)
     } finally {
+      TLS.currentThreadInfo().isInitialized = false
       thread.synchronized {
         try nativeThread.onTermination()
         catch { case ex: jl.Throwable => () }
@@ -242,6 +249,7 @@ object NativeThread {
       }
       StackOverflowGuards.close()
     }
+    null
   }
   @extern
   private[scalanative] object TLS {
@@ -263,6 +271,34 @@ object NativeThread {
         stackSize: Int, // ignored if main thread
         isMainThread: Boolean
     ): Unit = extern
+
+    @name("scalanative_currentThreadInfo")
+    private[runtime] def currentThreadInfo(): Ptr[ThreadInfo] = extern
+  }
+
+  /** Common prefix of the C `ThreadInfo` in `nativeThreadTLS.h`. Field order
+   *  must match that struct. The platform-specific tail is omitted.
+   */
+  private[runtime] type ThreadInfo = CStruct7[
+    CSize, // stackSize
+    CSize, // maxStackSize
+    Ptr[Byte], // stackTop
+    Ptr[Byte], // stackBottom
+    Ptr[Byte], // stackGuardPage
+    CBool, // isMainThread
+    CBool // isInitialized
+  ]
+
+  private[runtime] implicit class ThreadInfoOps(val ptr: Ptr[ThreadInfo])
+      extends AnyVal {
+    def stackSize: CSize = ptr._1
+    def maxStackSize: CSize = ptr._2
+    def stackTop: Ptr[Byte] = ptr._3
+    def stackBottom: Ptr[Byte] = ptr._4
+    def stackGuardPage: Ptr[Byte] = ptr._5
+    def isMainThread: Boolean = ptr._6
+    def isInitialized: Boolean = ptr._7
+    def isInitialized_=(value: Boolean): Unit = ptr._7 = value
   }
 
 }

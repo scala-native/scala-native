@@ -470,10 +470,10 @@ object Tag {
       res = res.max(_1.alignment)
       res
     }
+    @alwaysinline final def offset0: Int =
+      align(0, _1.alignment)
     @alwaysinline override def offset(idx: Int): Int = idx.toInt match {
-      case 0 =>
-        var res = 0
-        align(res, _1.alignment)
+      case 0 => offset0
       case _ =>
         throwUndefined()
     }
@@ -505,14 +505,13 @@ object Tag {
       res = res.max(_2.alignment)
       res
     }
+    @alwaysinline final def offset0: Int =
+      align(0, _1.alignment)
+    @alwaysinline final def offset1: Int =
+      align(offset0 + _1.size, _2.alignment)
     @alwaysinline override def offset(idx: Int): Int = idx.toInt match {
-      case 0 =>
-        var res = 0
-        align(res, _1.alignment)
-      case 1 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        align(res, _2.alignment)
+      case 0 => offset0
+      case 1 => offset1
       case _ =>
         throwUndefined()
     }
@@ -546,19 +545,16 @@ object Tag {
       res = res.max(_3.alignment)
       res
     }
+    @alwaysinline final def offset0: Int =
+      align(0, _1.alignment)
+    @alwaysinline final def offset1: Int =
+      align(offset0 + _1.size, _2.alignment)
+    @alwaysinline final def offset2: Int =
+      align(offset1 + _2.size, _3.alignment)
     @alwaysinline override def offset(idx: Int): Int = idx.toInt match {
-      case 0 =>
-        var res = 0
-        align(res, _1.alignment)
-      case 1 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        align(res, _2.alignment)
-      case 2 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        align(res, _3.alignment)
+      case 0 => offset0
+      case 1 => offset1
+      case 2 => offset2
       case _ =>
         throwUndefined()
     }
@@ -594,25 +590,19 @@ object Tag {
       res = res.max(_4.alignment)
       res
     }
+    @alwaysinline final def offset0: Int =
+      align(0, _1.alignment)
+    @alwaysinline final def offset1: Int =
+      align(offset0 + _1.size, _2.alignment)
+    @alwaysinline final def offset2: Int =
+      align(offset1 + _2.size, _3.alignment)
+    @alwaysinline final def offset3: Int =
+      align(offset2 + _3.size, _4.alignment)
     @alwaysinline override def offset(idx: Int): Int = idx.toInt match {
-      case 0 =>
-        var res = 0
-        align(res, _1.alignment)
-      case 1 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        align(res, _2.alignment)
-      case 2 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        align(res, _3.alignment)
-      case 3 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        align(res, _4.alignment)
+      case 0 => offset0
+      case 1 => offset1
+      case 2 => offset2
+      case 3 => offset3
       case _ =>
         throwUndefined()
     }
@@ -650,32 +640,22 @@ object Tag {
       res = res.max(_5.alignment)
       res
     }
+    @alwaysinline final def offset0: Int =
+      align(0, _1.alignment)
+    @alwaysinline final def offset1: Int =
+      align(offset0 + _1.size, _2.alignment)
+    @alwaysinline final def offset2: Int =
+      align(offset1 + _2.size, _3.alignment)
+    @alwaysinline final def offset3: Int =
+      align(offset2 + _3.size, _4.alignment)
+    @alwaysinline final def offset4: Int =
+      align(offset3 + _4.size, _5.alignment)
     @alwaysinline override def offset(idx: Int): Int = idx.toInt match {
-      case 0 =>
-        var res = 0
-        align(res, _1.alignment)
-      case 1 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        align(res, _2.alignment)
-      case 2 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        align(res, _3.alignment)
-      case 3 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        align(res, _4.alignment)
-      case 4 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        align(res, _5.alignment)
+      case 0 => offset0
+      case 1 => offset1
+      case 2 => offset2
+      case 3 => offset3
+      case 4 => offset4
       case _ =>
         throwUndefined()
     }
@@ -715,40 +695,25 @@ object Tag {
       res = res.max(_6.alignment)
       res
     }
+    @alwaysinline final def offset0: Int =
+      align(0, _1.alignment)
+    @alwaysinline final def offset1: Int =
+      align(offset0 + _1.size, _2.alignment)
+    @alwaysinline final def offset2: Int =
+      align(offset1 + _2.size, _3.alignment)
+    @alwaysinline final def offset3: Int =
+      align(offset2 + _3.size, _4.alignment)
+    @alwaysinline final def offset4: Int =
+      align(offset3 + _4.size, _5.alignment)
+    @alwaysinline final def offset5: Int =
+      align(offset4 + _5.size, _6.alignment)
     @alwaysinline override def offset(idx: Int): Int = idx.toInt match {
-      case 0 =>
-        var res = 0
-        align(res, _1.alignment)
-      case 1 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        align(res, _2.alignment)
-      case 2 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        align(res, _3.alignment)
-      case 3 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        align(res, _4.alignment)
-      case 4 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        align(res, _5.alignment)
-      case 5 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        align(res, _6.alignment)
+      case 0 => offset0
+      case 1 => offset1
+      case 2 => offset2
+      case 3 => offset3
+      case 4 => offset4
+      case 5 => offset5
       case _ =>
         throwUndefined()
     }
@@ -790,49 +755,28 @@ object Tag {
       res = res.max(_7.alignment)
       res
     }
+    @alwaysinline final def offset0: Int =
+      align(0, _1.alignment)
+    @alwaysinline final def offset1: Int =
+      align(offset0 + _1.size, _2.alignment)
+    @alwaysinline final def offset2: Int =
+      align(offset1 + _2.size, _3.alignment)
+    @alwaysinline final def offset3: Int =
+      align(offset2 + _3.size, _4.alignment)
+    @alwaysinline final def offset4: Int =
+      align(offset3 + _4.size, _5.alignment)
+    @alwaysinline final def offset5: Int =
+      align(offset4 + _5.size, _6.alignment)
+    @alwaysinline final def offset6: Int =
+      align(offset5 + _6.size, _7.alignment)
     @alwaysinline override def offset(idx: Int): Int = idx.toInt match {
-      case 0 =>
-        var res = 0
-        align(res, _1.alignment)
-      case 1 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        align(res, _2.alignment)
-      case 2 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        align(res, _3.alignment)
-      case 3 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        align(res, _4.alignment)
-      case 4 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        align(res, _5.alignment)
-      case 5 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        align(res, _6.alignment)
-      case 6 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        align(res, _7.alignment)
+      case 0 => offset0
+      case 1 => offset1
+      case 2 => offset2
+      case 3 => offset3
+      case 4 => offset4
+      case 5 => offset5
+      case 6 => offset6
       case _ =>
         throwUndefined()
     }
@@ -876,59 +820,31 @@ object Tag {
       res = res.max(_8.alignment)
       res
     }
+    @alwaysinline final def offset0: Int =
+      align(0, _1.alignment)
+    @alwaysinline final def offset1: Int =
+      align(offset0 + _1.size, _2.alignment)
+    @alwaysinline final def offset2: Int =
+      align(offset1 + _2.size, _3.alignment)
+    @alwaysinline final def offset3: Int =
+      align(offset2 + _3.size, _4.alignment)
+    @alwaysinline final def offset4: Int =
+      align(offset3 + _4.size, _5.alignment)
+    @alwaysinline final def offset5: Int =
+      align(offset4 + _5.size, _6.alignment)
+    @alwaysinline final def offset6: Int =
+      align(offset5 + _6.size, _7.alignment)
+    @alwaysinline final def offset7: Int =
+      align(offset6 + _7.size, _8.alignment)
     @alwaysinline override def offset(idx: Int): Int = idx.toInt match {
-      case 0 =>
-        var res = 0
-        align(res, _1.alignment)
-      case 1 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        align(res, _2.alignment)
-      case 2 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        align(res, _3.alignment)
-      case 3 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        align(res, _4.alignment)
-      case 4 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        align(res, _5.alignment)
-      case 5 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        align(res, _6.alignment)
-      case 6 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        align(res, _7.alignment)
-      case 7 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        align(res, _8.alignment)
+      case 0 => offset0
+      case 1 => offset1
+      case 2 => offset2
+      case 3 => offset3
+      case 4 => offset4
+      case 5 => offset5
+      case 6 => offset6
+      case 7 => offset7
       case _ =>
         throwUndefined()
     }
@@ -974,70 +890,34 @@ object Tag {
       res = res.max(_9.alignment)
       res
     }
+    @alwaysinline final def offset0: Int =
+      align(0, _1.alignment)
+    @alwaysinline final def offset1: Int =
+      align(offset0 + _1.size, _2.alignment)
+    @alwaysinline final def offset2: Int =
+      align(offset1 + _2.size, _3.alignment)
+    @alwaysinline final def offset3: Int =
+      align(offset2 + _3.size, _4.alignment)
+    @alwaysinline final def offset4: Int =
+      align(offset3 + _4.size, _5.alignment)
+    @alwaysinline final def offset5: Int =
+      align(offset4 + _5.size, _6.alignment)
+    @alwaysinline final def offset6: Int =
+      align(offset5 + _6.size, _7.alignment)
+    @alwaysinline final def offset7: Int =
+      align(offset6 + _7.size, _8.alignment)
+    @alwaysinline final def offset8: Int =
+      align(offset7 + _8.size, _9.alignment)
     @alwaysinline override def offset(idx: Int): Int = idx.toInt match {
-      case 0 =>
-        var res = 0
-        align(res, _1.alignment)
-      case 1 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        align(res, _2.alignment)
-      case 2 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        align(res, _3.alignment)
-      case 3 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        align(res, _4.alignment)
-      case 4 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        align(res, _5.alignment)
-      case 5 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        align(res, _6.alignment)
-      case 6 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        align(res, _7.alignment)
-      case 7 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        align(res, _8.alignment)
-      case 8 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        align(res, _9.alignment)
+      case 0 => offset0
+      case 1 => offset1
+      case 2 => offset2
+      case 3 => offset3
+      case 4 => offset4
+      case 5 => offset5
+      case 6 => offset6
+      case 7 => offset7
+      case 8 => offset8
       case _ =>
         throwUndefined()
     }
@@ -1085,82 +965,37 @@ object Tag {
       res = res.max(_10.alignment)
       res
     }
+    @alwaysinline final def offset0: Int =
+      align(0, _1.alignment)
+    @alwaysinline final def offset1: Int =
+      align(offset0 + _1.size, _2.alignment)
+    @alwaysinline final def offset2: Int =
+      align(offset1 + _2.size, _3.alignment)
+    @alwaysinline final def offset3: Int =
+      align(offset2 + _3.size, _4.alignment)
+    @alwaysinline final def offset4: Int =
+      align(offset3 + _4.size, _5.alignment)
+    @alwaysinline final def offset5: Int =
+      align(offset4 + _5.size, _6.alignment)
+    @alwaysinline final def offset6: Int =
+      align(offset5 + _6.size, _7.alignment)
+    @alwaysinline final def offset7: Int =
+      align(offset6 + _7.size, _8.alignment)
+    @alwaysinline final def offset8: Int =
+      align(offset7 + _8.size, _9.alignment)
+    @alwaysinline final def offset9: Int =
+      align(offset8 + _9.size, _10.alignment)
     @alwaysinline override def offset(idx: Int): Int = idx.toInt match {
-      case 0 =>
-        var res = 0
-        align(res, _1.alignment)
-      case 1 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        align(res, _2.alignment)
-      case 2 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        align(res, _3.alignment)
-      case 3 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        align(res, _4.alignment)
-      case 4 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        align(res, _5.alignment)
-      case 5 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        align(res, _6.alignment)
-      case 6 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        align(res, _7.alignment)
-      case 7 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        align(res, _8.alignment)
-      case 8 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        align(res, _9.alignment)
-      case 9 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        align(res, _10.alignment)
+      case 0 => offset0
+      case 1 => offset1
+      case 2 => offset2
+      case 3 => offset3
+      case 4 => offset4
+      case 5 => offset5
+      case 6 => offset6
+      case 7 => offset7
+      case 8 => offset8
+      case 9 => offset9
       case _ =>
         throwUndefined()
     }
@@ -1210,95 +1045,40 @@ object Tag {
       res = res.max(_11.alignment)
       res
     }
+    @alwaysinline final def offset0: Int =
+      align(0, _1.alignment)
+    @alwaysinline final def offset1: Int =
+      align(offset0 + _1.size, _2.alignment)
+    @alwaysinline final def offset2: Int =
+      align(offset1 + _2.size, _3.alignment)
+    @alwaysinline final def offset3: Int =
+      align(offset2 + _3.size, _4.alignment)
+    @alwaysinline final def offset4: Int =
+      align(offset3 + _4.size, _5.alignment)
+    @alwaysinline final def offset5: Int =
+      align(offset4 + _5.size, _6.alignment)
+    @alwaysinline final def offset6: Int =
+      align(offset5 + _6.size, _7.alignment)
+    @alwaysinline final def offset7: Int =
+      align(offset6 + _7.size, _8.alignment)
+    @alwaysinline final def offset8: Int =
+      align(offset7 + _8.size, _9.alignment)
+    @alwaysinline final def offset9: Int =
+      align(offset8 + _9.size, _10.alignment)
+    @alwaysinline final def offset10: Int =
+      align(offset9 + _10.size, _11.alignment)
     @alwaysinline override def offset(idx: Int): Int = idx.toInt match {
-      case 0 =>
-        var res = 0
-        align(res, _1.alignment)
-      case 1 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        align(res, _2.alignment)
-      case 2 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        align(res, _3.alignment)
-      case 3 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        align(res, _4.alignment)
-      case 4 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        align(res, _5.alignment)
-      case 5 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        align(res, _6.alignment)
-      case 6 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        align(res, _7.alignment)
-      case 7 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        align(res, _8.alignment)
-      case 8 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        align(res, _9.alignment)
-      case 9 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        align(res, _10.alignment)
-      case 10 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        align(res, _11.alignment)
+      case 0 => offset0
+      case 1 => offset1
+      case 2 => offset2
+      case 3 => offset3
+      case 4 => offset4
+      case 5 => offset5
+      case 6 => offset6
+      case 7 => offset7
+      case 8 => offset8
+      case 9 => offset9
+      case 10 => offset10
       case _ =>
         throwUndefined()
     }
@@ -1350,109 +1130,43 @@ object Tag {
       res = res.max(_12.alignment)
       res
     }
+    @alwaysinline final def offset0: Int =
+      align(0, _1.alignment)
+    @alwaysinline final def offset1: Int =
+      align(offset0 + _1.size, _2.alignment)
+    @alwaysinline final def offset2: Int =
+      align(offset1 + _2.size, _3.alignment)
+    @alwaysinline final def offset3: Int =
+      align(offset2 + _3.size, _4.alignment)
+    @alwaysinline final def offset4: Int =
+      align(offset3 + _4.size, _5.alignment)
+    @alwaysinline final def offset5: Int =
+      align(offset4 + _5.size, _6.alignment)
+    @alwaysinline final def offset6: Int =
+      align(offset5 + _6.size, _7.alignment)
+    @alwaysinline final def offset7: Int =
+      align(offset6 + _7.size, _8.alignment)
+    @alwaysinline final def offset8: Int =
+      align(offset7 + _8.size, _9.alignment)
+    @alwaysinline final def offset9: Int =
+      align(offset8 + _9.size, _10.alignment)
+    @alwaysinline final def offset10: Int =
+      align(offset9 + _10.size, _11.alignment)
+    @alwaysinline final def offset11: Int =
+      align(offset10 + _11.size, _12.alignment)
     @alwaysinline override def offset(idx: Int): Int = idx.toInt match {
-      case 0 =>
-        var res = 0
-        align(res, _1.alignment)
-      case 1 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        align(res, _2.alignment)
-      case 2 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        align(res, _3.alignment)
-      case 3 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        align(res, _4.alignment)
-      case 4 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        align(res, _5.alignment)
-      case 5 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        align(res, _6.alignment)
-      case 6 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        align(res, _7.alignment)
-      case 7 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        align(res, _8.alignment)
-      case 8 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        align(res, _9.alignment)
-      case 9 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        align(res, _10.alignment)
-      case 10 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        align(res, _11.alignment)
-      case 11 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        align(res, _12.alignment)
+      case 0 => offset0
+      case 1 => offset1
+      case 2 => offset2
+      case 3 => offset3
+      case 4 => offset4
+      case 5 => offset5
+      case 6 => offset6
+      case 7 => offset7
+      case 8 => offset8
+      case 9 => offset9
+      case 10 => offset10
+      case 11 => offset11
       case _ =>
         throwUndefined()
     }
@@ -1506,124 +1220,46 @@ object Tag {
       res = res.max(_13.alignment)
       res
     }
+    @alwaysinline final def offset0: Int =
+      align(0, _1.alignment)
+    @alwaysinline final def offset1: Int =
+      align(offset0 + _1.size, _2.alignment)
+    @alwaysinline final def offset2: Int =
+      align(offset1 + _2.size, _3.alignment)
+    @alwaysinline final def offset3: Int =
+      align(offset2 + _3.size, _4.alignment)
+    @alwaysinline final def offset4: Int =
+      align(offset3 + _4.size, _5.alignment)
+    @alwaysinline final def offset5: Int =
+      align(offset4 + _5.size, _6.alignment)
+    @alwaysinline final def offset6: Int =
+      align(offset5 + _6.size, _7.alignment)
+    @alwaysinline final def offset7: Int =
+      align(offset6 + _7.size, _8.alignment)
+    @alwaysinline final def offset8: Int =
+      align(offset7 + _8.size, _9.alignment)
+    @alwaysinline final def offset9: Int =
+      align(offset8 + _9.size, _10.alignment)
+    @alwaysinline final def offset10: Int =
+      align(offset9 + _10.size, _11.alignment)
+    @alwaysinline final def offset11: Int =
+      align(offset10 + _11.size, _12.alignment)
+    @alwaysinline final def offset12: Int =
+      align(offset11 + _12.size, _13.alignment)
     @alwaysinline override def offset(idx: Int): Int = idx.toInt match {
-      case 0 =>
-        var res = 0
-        align(res, _1.alignment)
-      case 1 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        align(res, _2.alignment)
-      case 2 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        align(res, _3.alignment)
-      case 3 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        align(res, _4.alignment)
-      case 4 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        align(res, _5.alignment)
-      case 5 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        align(res, _6.alignment)
-      case 6 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        align(res, _7.alignment)
-      case 7 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        align(res, _8.alignment)
-      case 8 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        align(res, _9.alignment)
-      case 9 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        align(res, _10.alignment)
-      case 10 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        align(res, _11.alignment)
-      case 11 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        align(res, _12.alignment)
-      case 12 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        align(res, _13.alignment)
+      case 0 => offset0
+      case 1 => offset1
+      case 2 => offset2
+      case 3 => offset3
+      case 4 => offset4
+      case 5 => offset5
+      case 6 => offset6
+      case 7 => offset7
+      case 8 => offset8
+      case 9 => offset9
+      case 10 => offset10
+      case 11 => offset11
+      case 12 => offset12
       case _ =>
         throwUndefined()
     }
@@ -1679,140 +1315,49 @@ object Tag {
       res = res.max(_14.alignment)
       res
     }
+    @alwaysinline final def offset0: Int =
+      align(0, _1.alignment)
+    @alwaysinline final def offset1: Int =
+      align(offset0 + _1.size, _2.alignment)
+    @alwaysinline final def offset2: Int =
+      align(offset1 + _2.size, _3.alignment)
+    @alwaysinline final def offset3: Int =
+      align(offset2 + _3.size, _4.alignment)
+    @alwaysinline final def offset4: Int =
+      align(offset3 + _4.size, _5.alignment)
+    @alwaysinline final def offset5: Int =
+      align(offset4 + _5.size, _6.alignment)
+    @alwaysinline final def offset6: Int =
+      align(offset5 + _6.size, _7.alignment)
+    @alwaysinline final def offset7: Int =
+      align(offset6 + _7.size, _8.alignment)
+    @alwaysinline final def offset8: Int =
+      align(offset7 + _8.size, _9.alignment)
+    @alwaysinline final def offset9: Int =
+      align(offset8 + _9.size, _10.alignment)
+    @alwaysinline final def offset10: Int =
+      align(offset9 + _10.size, _11.alignment)
+    @alwaysinline final def offset11: Int =
+      align(offset10 + _11.size, _12.alignment)
+    @alwaysinline final def offset12: Int =
+      align(offset11 + _12.size, _13.alignment)
+    @alwaysinline final def offset13: Int =
+      align(offset12 + _13.size, _14.alignment)
     @alwaysinline override def offset(idx: Int): Int = idx.toInt match {
-      case 0 =>
-        var res = 0
-        align(res, _1.alignment)
-      case 1 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        align(res, _2.alignment)
-      case 2 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        align(res, _3.alignment)
-      case 3 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        align(res, _4.alignment)
-      case 4 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        align(res, _5.alignment)
-      case 5 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        align(res, _6.alignment)
-      case 6 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        align(res, _7.alignment)
-      case 7 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        align(res, _8.alignment)
-      case 8 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        align(res, _9.alignment)
-      case 9 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        align(res, _10.alignment)
-      case 10 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        align(res, _11.alignment)
-      case 11 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        align(res, _12.alignment)
-      case 12 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        align(res, _13.alignment)
-      case 13 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        align(res, _14.alignment)
+      case 0 => offset0
+      case 1 => offset1
+      case 2 => offset2
+      case 3 => offset3
+      case 4 => offset4
+      case 5 => offset5
+      case 6 => offset6
+      case 7 => offset7
+      case 8 => offset8
+      case 9 => offset9
+      case 10 => offset10
+      case 11 => offset11
+      case 12 => offset12
+      case 13 => offset13
       case _ =>
         throwUndefined()
     }
@@ -1870,157 +1415,52 @@ object Tag {
       res = res.max(_15.alignment)
       res
     }
+    @alwaysinline final def offset0: Int =
+      align(0, _1.alignment)
+    @alwaysinline final def offset1: Int =
+      align(offset0 + _1.size, _2.alignment)
+    @alwaysinline final def offset2: Int =
+      align(offset1 + _2.size, _3.alignment)
+    @alwaysinline final def offset3: Int =
+      align(offset2 + _3.size, _4.alignment)
+    @alwaysinline final def offset4: Int =
+      align(offset3 + _4.size, _5.alignment)
+    @alwaysinline final def offset5: Int =
+      align(offset4 + _5.size, _6.alignment)
+    @alwaysinline final def offset6: Int =
+      align(offset5 + _6.size, _7.alignment)
+    @alwaysinline final def offset7: Int =
+      align(offset6 + _7.size, _8.alignment)
+    @alwaysinline final def offset8: Int =
+      align(offset7 + _8.size, _9.alignment)
+    @alwaysinline final def offset9: Int =
+      align(offset8 + _9.size, _10.alignment)
+    @alwaysinline final def offset10: Int =
+      align(offset9 + _10.size, _11.alignment)
+    @alwaysinline final def offset11: Int =
+      align(offset10 + _11.size, _12.alignment)
+    @alwaysinline final def offset12: Int =
+      align(offset11 + _12.size, _13.alignment)
+    @alwaysinline final def offset13: Int =
+      align(offset12 + _13.size, _14.alignment)
+    @alwaysinline final def offset14: Int =
+      align(offset13 + _14.size, _15.alignment)
     @alwaysinline override def offset(idx: Int): Int = idx.toInt match {
-      case 0 =>
-        var res = 0
-        align(res, _1.alignment)
-      case 1 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        align(res, _2.alignment)
-      case 2 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        align(res, _3.alignment)
-      case 3 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        align(res, _4.alignment)
-      case 4 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        align(res, _5.alignment)
-      case 5 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        align(res, _6.alignment)
-      case 6 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        align(res, _7.alignment)
-      case 7 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        align(res, _8.alignment)
-      case 8 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        align(res, _9.alignment)
-      case 9 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        align(res, _10.alignment)
-      case 10 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        align(res, _11.alignment)
-      case 11 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        align(res, _12.alignment)
-      case 12 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        align(res, _13.alignment)
-      case 13 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        align(res, _14.alignment)
-      case 14 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        align(res, _15.alignment)
+      case 0 => offset0
+      case 1 => offset1
+      case 2 => offset2
+      case 3 => offset3
+      case 4 => offset4
+      case 5 => offset5
+      case 6 => offset6
+      case 7 => offset7
+      case 8 => offset8
+      case 9 => offset9
+      case 10 => offset10
+      case 11 => offset11
+      case 12 => offset12
+      case 13 => offset13
+      case 14 => offset14
       case _ =>
         throwUndefined()
     }
@@ -2080,175 +1520,55 @@ object Tag {
       res = res.max(_16.alignment)
       res
     }
+    @alwaysinline final def offset0: Int =
+      align(0, _1.alignment)
+    @alwaysinline final def offset1: Int =
+      align(offset0 + _1.size, _2.alignment)
+    @alwaysinline final def offset2: Int =
+      align(offset1 + _2.size, _3.alignment)
+    @alwaysinline final def offset3: Int =
+      align(offset2 + _3.size, _4.alignment)
+    @alwaysinline final def offset4: Int =
+      align(offset3 + _4.size, _5.alignment)
+    @alwaysinline final def offset5: Int =
+      align(offset4 + _5.size, _6.alignment)
+    @alwaysinline final def offset6: Int =
+      align(offset5 + _6.size, _7.alignment)
+    @alwaysinline final def offset7: Int =
+      align(offset6 + _7.size, _8.alignment)
+    @alwaysinline final def offset8: Int =
+      align(offset7 + _8.size, _9.alignment)
+    @alwaysinline final def offset9: Int =
+      align(offset8 + _9.size, _10.alignment)
+    @alwaysinline final def offset10: Int =
+      align(offset9 + _10.size, _11.alignment)
+    @alwaysinline final def offset11: Int =
+      align(offset10 + _11.size, _12.alignment)
+    @alwaysinline final def offset12: Int =
+      align(offset11 + _12.size, _13.alignment)
+    @alwaysinline final def offset13: Int =
+      align(offset12 + _13.size, _14.alignment)
+    @alwaysinline final def offset14: Int =
+      align(offset13 + _14.size, _15.alignment)
+    @alwaysinline final def offset15: Int =
+      align(offset14 + _15.size, _16.alignment)
     @alwaysinline override def offset(idx: Int): Int = idx.toInt match {
-      case 0 =>
-        var res = 0
-        align(res, _1.alignment)
-      case 1 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        align(res, _2.alignment)
-      case 2 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        align(res, _3.alignment)
-      case 3 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        align(res, _4.alignment)
-      case 4 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        align(res, _5.alignment)
-      case 5 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        align(res, _6.alignment)
-      case 6 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        align(res, _7.alignment)
-      case 7 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        align(res, _8.alignment)
-      case 8 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        align(res, _9.alignment)
-      case 9 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        align(res, _10.alignment)
-      case 10 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        align(res, _11.alignment)
-      case 11 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        align(res, _12.alignment)
-      case 12 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        align(res, _13.alignment)
-      case 13 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        align(res, _14.alignment)
-      case 14 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        align(res, _15.alignment)
-      case 15 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        res = align(res, _15.alignment) + _15.size
-        align(res, _16.alignment)
+      case 0 => offset0
+      case 1 => offset1
+      case 2 => offset2
+      case 3 => offset3
+      case 4 => offset4
+      case 5 => offset5
+      case 6 => offset6
+      case 7 => offset7
+      case 8 => offset8
+      case 9 => offset9
+      case 10 => offset10
+      case 11 => offset11
+      case 12 => offset12
+      case 13 => offset13
+      case 14 => offset14
+      case 15 => offset15
       case _ =>
         throwUndefined()
     }
@@ -2310,194 +1630,58 @@ object Tag {
       res = res.max(_17.alignment)
       res
     }
+    @alwaysinline final def offset0: Int =
+      align(0, _1.alignment)
+    @alwaysinline final def offset1: Int =
+      align(offset0 + _1.size, _2.alignment)
+    @alwaysinline final def offset2: Int =
+      align(offset1 + _2.size, _3.alignment)
+    @alwaysinline final def offset3: Int =
+      align(offset2 + _3.size, _4.alignment)
+    @alwaysinline final def offset4: Int =
+      align(offset3 + _4.size, _5.alignment)
+    @alwaysinline final def offset5: Int =
+      align(offset4 + _5.size, _6.alignment)
+    @alwaysinline final def offset6: Int =
+      align(offset5 + _6.size, _7.alignment)
+    @alwaysinline final def offset7: Int =
+      align(offset6 + _7.size, _8.alignment)
+    @alwaysinline final def offset8: Int =
+      align(offset7 + _8.size, _9.alignment)
+    @alwaysinline final def offset9: Int =
+      align(offset8 + _9.size, _10.alignment)
+    @alwaysinline final def offset10: Int =
+      align(offset9 + _10.size, _11.alignment)
+    @alwaysinline final def offset11: Int =
+      align(offset10 + _11.size, _12.alignment)
+    @alwaysinline final def offset12: Int =
+      align(offset11 + _12.size, _13.alignment)
+    @alwaysinline final def offset13: Int =
+      align(offset12 + _13.size, _14.alignment)
+    @alwaysinline final def offset14: Int =
+      align(offset13 + _14.size, _15.alignment)
+    @alwaysinline final def offset15: Int =
+      align(offset14 + _15.size, _16.alignment)
+    @alwaysinline final def offset16: Int =
+      align(offset15 + _16.size, _17.alignment)
     @alwaysinline override def offset(idx: Int): Int = idx.toInt match {
-      case 0 =>
-        var res = 0
-        align(res, _1.alignment)
-      case 1 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        align(res, _2.alignment)
-      case 2 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        align(res, _3.alignment)
-      case 3 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        align(res, _4.alignment)
-      case 4 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        align(res, _5.alignment)
-      case 5 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        align(res, _6.alignment)
-      case 6 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        align(res, _7.alignment)
-      case 7 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        align(res, _8.alignment)
-      case 8 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        align(res, _9.alignment)
-      case 9 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        align(res, _10.alignment)
-      case 10 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        align(res, _11.alignment)
-      case 11 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        align(res, _12.alignment)
-      case 12 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        align(res, _13.alignment)
-      case 13 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        align(res, _14.alignment)
-      case 14 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        align(res, _15.alignment)
-      case 15 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        res = align(res, _15.alignment) + _15.size
-        align(res, _16.alignment)
-      case 16 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        res = align(res, _15.alignment) + _15.size
-        res = align(res, _16.alignment) + _16.size
-        align(res, _17.alignment)
+      case 0 => offset0
+      case 1 => offset1
+      case 2 => offset2
+      case 3 => offset3
+      case 4 => offset4
+      case 5 => offset5
+      case 6 => offset6
+      case 7 => offset7
+      case 8 => offset8
+      case 9 => offset9
+      case 10 => offset10
+      case 11 => offset11
+      case 12 => offset12
+      case 13 => offset13
+      case 14 => offset14
+      case 15 => offset15
+      case 16 => offset16
       case _ =>
         throwUndefined()
     }
@@ -2561,214 +1745,61 @@ object Tag {
       res = res.max(_18.alignment)
       res
     }
+    @alwaysinline final def offset0: Int =
+      align(0, _1.alignment)
+    @alwaysinline final def offset1: Int =
+      align(offset0 + _1.size, _2.alignment)
+    @alwaysinline final def offset2: Int =
+      align(offset1 + _2.size, _3.alignment)
+    @alwaysinline final def offset3: Int =
+      align(offset2 + _3.size, _4.alignment)
+    @alwaysinline final def offset4: Int =
+      align(offset3 + _4.size, _5.alignment)
+    @alwaysinline final def offset5: Int =
+      align(offset4 + _5.size, _6.alignment)
+    @alwaysinline final def offset6: Int =
+      align(offset5 + _6.size, _7.alignment)
+    @alwaysinline final def offset7: Int =
+      align(offset6 + _7.size, _8.alignment)
+    @alwaysinline final def offset8: Int =
+      align(offset7 + _8.size, _9.alignment)
+    @alwaysinline final def offset9: Int =
+      align(offset8 + _9.size, _10.alignment)
+    @alwaysinline final def offset10: Int =
+      align(offset9 + _10.size, _11.alignment)
+    @alwaysinline final def offset11: Int =
+      align(offset10 + _11.size, _12.alignment)
+    @alwaysinline final def offset12: Int =
+      align(offset11 + _12.size, _13.alignment)
+    @alwaysinline final def offset13: Int =
+      align(offset12 + _13.size, _14.alignment)
+    @alwaysinline final def offset14: Int =
+      align(offset13 + _14.size, _15.alignment)
+    @alwaysinline final def offset15: Int =
+      align(offset14 + _15.size, _16.alignment)
+    @alwaysinline final def offset16: Int =
+      align(offset15 + _16.size, _17.alignment)
+    @alwaysinline final def offset17: Int =
+      align(offset16 + _17.size, _18.alignment)
     @alwaysinline override def offset(idx: Int): Int = idx.toInt match {
-      case 0 =>
-        var res = 0
-        align(res, _1.alignment)
-      case 1 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        align(res, _2.alignment)
-      case 2 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        align(res, _3.alignment)
-      case 3 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        align(res, _4.alignment)
-      case 4 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        align(res, _5.alignment)
-      case 5 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        align(res, _6.alignment)
-      case 6 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        align(res, _7.alignment)
-      case 7 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        align(res, _8.alignment)
-      case 8 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        align(res, _9.alignment)
-      case 9 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        align(res, _10.alignment)
-      case 10 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        align(res, _11.alignment)
-      case 11 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        align(res, _12.alignment)
-      case 12 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        align(res, _13.alignment)
-      case 13 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        align(res, _14.alignment)
-      case 14 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        align(res, _15.alignment)
-      case 15 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        res = align(res, _15.alignment) + _15.size
-        align(res, _16.alignment)
-      case 16 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        res = align(res, _15.alignment) + _15.size
-        res = align(res, _16.alignment) + _16.size
-        align(res, _17.alignment)
-      case 17 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        res = align(res, _15.alignment) + _15.size
-        res = align(res, _16.alignment) + _16.size
-        res = align(res, _17.alignment) + _17.size
-        align(res, _18.alignment)
+      case 0 => offset0
+      case 1 => offset1
+      case 2 => offset2
+      case 3 => offset3
+      case 4 => offset4
+      case 5 => offset5
+      case 6 => offset6
+      case 7 => offset7
+      case 8 => offset8
+      case 9 => offset9
+      case 10 => offset10
+      case 11 => offset11
+      case 12 => offset12
+      case 13 => offset13
+      case 14 => offset14
+      case 15 => offset15
+      case 16 => offset16
+      case 17 => offset17
       case _ =>
         throwUndefined()
     }
@@ -2834,235 +1865,64 @@ object Tag {
       res = res.max(_19.alignment)
       res
     }
+    @alwaysinline final def offset0: Int =
+      align(0, _1.alignment)
+    @alwaysinline final def offset1: Int =
+      align(offset0 + _1.size, _2.alignment)
+    @alwaysinline final def offset2: Int =
+      align(offset1 + _2.size, _3.alignment)
+    @alwaysinline final def offset3: Int =
+      align(offset2 + _3.size, _4.alignment)
+    @alwaysinline final def offset4: Int =
+      align(offset3 + _4.size, _5.alignment)
+    @alwaysinline final def offset5: Int =
+      align(offset4 + _5.size, _6.alignment)
+    @alwaysinline final def offset6: Int =
+      align(offset5 + _6.size, _7.alignment)
+    @alwaysinline final def offset7: Int =
+      align(offset6 + _7.size, _8.alignment)
+    @alwaysinline final def offset8: Int =
+      align(offset7 + _8.size, _9.alignment)
+    @alwaysinline final def offset9: Int =
+      align(offset8 + _9.size, _10.alignment)
+    @alwaysinline final def offset10: Int =
+      align(offset9 + _10.size, _11.alignment)
+    @alwaysinline final def offset11: Int =
+      align(offset10 + _11.size, _12.alignment)
+    @alwaysinline final def offset12: Int =
+      align(offset11 + _12.size, _13.alignment)
+    @alwaysinline final def offset13: Int =
+      align(offset12 + _13.size, _14.alignment)
+    @alwaysinline final def offset14: Int =
+      align(offset13 + _14.size, _15.alignment)
+    @alwaysinline final def offset15: Int =
+      align(offset14 + _15.size, _16.alignment)
+    @alwaysinline final def offset16: Int =
+      align(offset15 + _16.size, _17.alignment)
+    @alwaysinline final def offset17: Int =
+      align(offset16 + _17.size, _18.alignment)
+    @alwaysinline final def offset18: Int =
+      align(offset17 + _18.size, _19.alignment)
     @alwaysinline override def offset(idx: Int): Int = idx.toInt match {
-      case 0 =>
-        var res = 0
-        align(res, _1.alignment)
-      case 1 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        align(res, _2.alignment)
-      case 2 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        align(res, _3.alignment)
-      case 3 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        align(res, _4.alignment)
-      case 4 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        align(res, _5.alignment)
-      case 5 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        align(res, _6.alignment)
-      case 6 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        align(res, _7.alignment)
-      case 7 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        align(res, _8.alignment)
-      case 8 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        align(res, _9.alignment)
-      case 9 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        align(res, _10.alignment)
-      case 10 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        align(res, _11.alignment)
-      case 11 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        align(res, _12.alignment)
-      case 12 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        align(res, _13.alignment)
-      case 13 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        align(res, _14.alignment)
-      case 14 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        align(res, _15.alignment)
-      case 15 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        res = align(res, _15.alignment) + _15.size
-        align(res, _16.alignment)
-      case 16 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        res = align(res, _15.alignment) + _15.size
-        res = align(res, _16.alignment) + _16.size
-        align(res, _17.alignment)
-      case 17 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        res = align(res, _15.alignment) + _15.size
-        res = align(res, _16.alignment) + _16.size
-        res = align(res, _17.alignment) + _17.size
-        align(res, _18.alignment)
-      case 18 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        res = align(res, _15.alignment) + _15.size
-        res = align(res, _16.alignment) + _16.size
-        res = align(res, _17.alignment) + _17.size
-        res = align(res, _18.alignment) + _18.size
-        align(res, _19.alignment)
+      case 0 => offset0
+      case 1 => offset1
+      case 2 => offset2
+      case 3 => offset3
+      case 4 => offset4
+      case 5 => offset5
+      case 6 => offset6
+      case 7 => offset7
+      case 8 => offset8
+      case 9 => offset9
+      case 10 => offset10
+      case 11 => offset11
+      case 12 => offset12
+      case 13 => offset13
+      case 14 => offset14
+      case 15 => offset15
+      case 16 => offset16
+      case 17 => offset17
+      case 18 => offset18
       case _ =>
         throwUndefined()
     }
@@ -3130,257 +1990,67 @@ object Tag {
       res = res.max(_20.alignment)
       res
     }
+    @alwaysinline final def offset0: Int =
+      align(0, _1.alignment)
+    @alwaysinline final def offset1: Int =
+      align(offset0 + _1.size, _2.alignment)
+    @alwaysinline final def offset2: Int =
+      align(offset1 + _2.size, _3.alignment)
+    @alwaysinline final def offset3: Int =
+      align(offset2 + _3.size, _4.alignment)
+    @alwaysinline final def offset4: Int =
+      align(offset3 + _4.size, _5.alignment)
+    @alwaysinline final def offset5: Int =
+      align(offset4 + _5.size, _6.alignment)
+    @alwaysinline final def offset6: Int =
+      align(offset5 + _6.size, _7.alignment)
+    @alwaysinline final def offset7: Int =
+      align(offset6 + _7.size, _8.alignment)
+    @alwaysinline final def offset8: Int =
+      align(offset7 + _8.size, _9.alignment)
+    @alwaysinline final def offset9: Int =
+      align(offset8 + _9.size, _10.alignment)
+    @alwaysinline final def offset10: Int =
+      align(offset9 + _10.size, _11.alignment)
+    @alwaysinline final def offset11: Int =
+      align(offset10 + _11.size, _12.alignment)
+    @alwaysinline final def offset12: Int =
+      align(offset11 + _12.size, _13.alignment)
+    @alwaysinline final def offset13: Int =
+      align(offset12 + _13.size, _14.alignment)
+    @alwaysinline final def offset14: Int =
+      align(offset13 + _14.size, _15.alignment)
+    @alwaysinline final def offset15: Int =
+      align(offset14 + _15.size, _16.alignment)
+    @alwaysinline final def offset16: Int =
+      align(offset15 + _16.size, _17.alignment)
+    @alwaysinline final def offset17: Int =
+      align(offset16 + _17.size, _18.alignment)
+    @alwaysinline final def offset18: Int =
+      align(offset17 + _18.size, _19.alignment)
+    @alwaysinline final def offset19: Int =
+      align(offset18 + _19.size, _20.alignment)
     @alwaysinline override def offset(idx: Int): Int = idx.toInt match {
-      case 0 =>
-        var res = 0
-        align(res, _1.alignment)
-      case 1 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        align(res, _2.alignment)
-      case 2 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        align(res, _3.alignment)
-      case 3 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        align(res, _4.alignment)
-      case 4 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        align(res, _5.alignment)
-      case 5 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        align(res, _6.alignment)
-      case 6 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        align(res, _7.alignment)
-      case 7 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        align(res, _8.alignment)
-      case 8 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        align(res, _9.alignment)
-      case 9 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        align(res, _10.alignment)
-      case 10 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        align(res, _11.alignment)
-      case 11 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        align(res, _12.alignment)
-      case 12 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        align(res, _13.alignment)
-      case 13 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        align(res, _14.alignment)
-      case 14 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        align(res, _15.alignment)
-      case 15 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        res = align(res, _15.alignment) + _15.size
-        align(res, _16.alignment)
-      case 16 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        res = align(res, _15.alignment) + _15.size
-        res = align(res, _16.alignment) + _16.size
-        align(res, _17.alignment)
-      case 17 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        res = align(res, _15.alignment) + _15.size
-        res = align(res, _16.alignment) + _16.size
-        res = align(res, _17.alignment) + _17.size
-        align(res, _18.alignment)
-      case 18 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        res = align(res, _15.alignment) + _15.size
-        res = align(res, _16.alignment) + _16.size
-        res = align(res, _17.alignment) + _17.size
-        res = align(res, _18.alignment) + _18.size
-        align(res, _19.alignment)
-      case 19 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        res = align(res, _15.alignment) + _15.size
-        res = align(res, _16.alignment) + _16.size
-        res = align(res, _17.alignment) + _17.size
-        res = align(res, _18.alignment) + _18.size
-        res = align(res, _19.alignment) + _19.size
-        align(res, _20.alignment)
+      case 0 => offset0
+      case 1 => offset1
+      case 2 => offset2
+      case 3 => offset3
+      case 4 => offset4
+      case 5 => offset5
+      case 6 => offset6
+      case 7 => offset7
+      case 8 => offset8
+      case 9 => offset9
+      case 10 => offset10
+      case 11 => offset11
+      case 12 => offset12
+      case 13 => offset13
+      case 14 => offset14
+      case 15 => offset15
+      case 16 => offset16
+      case 17 => offset17
+      case 18 => offset18
+      case 19 => offset19
       case _ =>
         throwUndefined()
     }
@@ -3450,280 +2120,70 @@ object Tag {
       res = res.max(_21.alignment)
       res
     }
+    @alwaysinline final def offset0: Int =
+      align(0, _1.alignment)
+    @alwaysinline final def offset1: Int =
+      align(offset0 + _1.size, _2.alignment)
+    @alwaysinline final def offset2: Int =
+      align(offset1 + _2.size, _3.alignment)
+    @alwaysinline final def offset3: Int =
+      align(offset2 + _3.size, _4.alignment)
+    @alwaysinline final def offset4: Int =
+      align(offset3 + _4.size, _5.alignment)
+    @alwaysinline final def offset5: Int =
+      align(offset4 + _5.size, _6.alignment)
+    @alwaysinline final def offset6: Int =
+      align(offset5 + _6.size, _7.alignment)
+    @alwaysinline final def offset7: Int =
+      align(offset6 + _7.size, _8.alignment)
+    @alwaysinline final def offset8: Int =
+      align(offset7 + _8.size, _9.alignment)
+    @alwaysinline final def offset9: Int =
+      align(offset8 + _9.size, _10.alignment)
+    @alwaysinline final def offset10: Int =
+      align(offset9 + _10.size, _11.alignment)
+    @alwaysinline final def offset11: Int =
+      align(offset10 + _11.size, _12.alignment)
+    @alwaysinline final def offset12: Int =
+      align(offset11 + _12.size, _13.alignment)
+    @alwaysinline final def offset13: Int =
+      align(offset12 + _13.size, _14.alignment)
+    @alwaysinline final def offset14: Int =
+      align(offset13 + _14.size, _15.alignment)
+    @alwaysinline final def offset15: Int =
+      align(offset14 + _15.size, _16.alignment)
+    @alwaysinline final def offset16: Int =
+      align(offset15 + _16.size, _17.alignment)
+    @alwaysinline final def offset17: Int =
+      align(offset16 + _17.size, _18.alignment)
+    @alwaysinline final def offset18: Int =
+      align(offset17 + _18.size, _19.alignment)
+    @alwaysinline final def offset19: Int =
+      align(offset18 + _19.size, _20.alignment)
+    @alwaysinline final def offset20: Int =
+      align(offset19 + _20.size, _21.alignment)
     @alwaysinline override def offset(idx: Int): Int = idx.toInt match {
-      case 0 =>
-        var res = 0
-        align(res, _1.alignment)
-      case 1 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        align(res, _2.alignment)
-      case 2 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        align(res, _3.alignment)
-      case 3 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        align(res, _4.alignment)
-      case 4 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        align(res, _5.alignment)
-      case 5 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        align(res, _6.alignment)
-      case 6 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        align(res, _7.alignment)
-      case 7 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        align(res, _8.alignment)
-      case 8 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        align(res, _9.alignment)
-      case 9 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        align(res, _10.alignment)
-      case 10 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        align(res, _11.alignment)
-      case 11 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        align(res, _12.alignment)
-      case 12 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        align(res, _13.alignment)
-      case 13 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        align(res, _14.alignment)
-      case 14 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        align(res, _15.alignment)
-      case 15 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        res = align(res, _15.alignment) + _15.size
-        align(res, _16.alignment)
-      case 16 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        res = align(res, _15.alignment) + _15.size
-        res = align(res, _16.alignment) + _16.size
-        align(res, _17.alignment)
-      case 17 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        res = align(res, _15.alignment) + _15.size
-        res = align(res, _16.alignment) + _16.size
-        res = align(res, _17.alignment) + _17.size
-        align(res, _18.alignment)
-      case 18 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        res = align(res, _15.alignment) + _15.size
-        res = align(res, _16.alignment) + _16.size
-        res = align(res, _17.alignment) + _17.size
-        res = align(res, _18.alignment) + _18.size
-        align(res, _19.alignment)
-      case 19 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        res = align(res, _15.alignment) + _15.size
-        res = align(res, _16.alignment) + _16.size
-        res = align(res, _17.alignment) + _17.size
-        res = align(res, _18.alignment) + _18.size
-        res = align(res, _19.alignment) + _19.size
-        align(res, _20.alignment)
-      case 20 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        res = align(res, _15.alignment) + _15.size
-        res = align(res, _16.alignment) + _16.size
-        res = align(res, _17.alignment) + _17.size
-        res = align(res, _18.alignment) + _18.size
-        res = align(res, _19.alignment) + _19.size
-        res = align(res, _20.alignment) + _20.size
-        align(res, _21.alignment)
+      case 0 => offset0
+      case 1 => offset1
+      case 2 => offset2
+      case 3 => offset3
+      case 4 => offset4
+      case 5 => offset5
+      case 6 => offset6
+      case 7 => offset7
+      case 8 => offset8
+      case 9 => offset9
+      case 10 => offset10
+      case 11 => offset11
+      case 12 => offset12
+      case 13 => offset13
+      case 14 => offset14
+      case 15 => offset15
+      case 16 => offset16
+      case 17 => offset17
+      case 18 => offset18
+      case 19 => offset19
+      case 20 => offset20
       case _ =>
         throwUndefined()
     }
@@ -3795,304 +2255,73 @@ object Tag {
       res = res.max(_22.alignment)
       res
     }
+    @alwaysinline final def offset0: Int =
+      align(0, _1.alignment)
+    @alwaysinline final def offset1: Int =
+      align(offset0 + _1.size, _2.alignment)
+    @alwaysinline final def offset2: Int =
+      align(offset1 + _2.size, _3.alignment)
+    @alwaysinline final def offset3: Int =
+      align(offset2 + _3.size, _4.alignment)
+    @alwaysinline final def offset4: Int =
+      align(offset3 + _4.size, _5.alignment)
+    @alwaysinline final def offset5: Int =
+      align(offset4 + _5.size, _6.alignment)
+    @alwaysinline final def offset6: Int =
+      align(offset5 + _6.size, _7.alignment)
+    @alwaysinline final def offset7: Int =
+      align(offset6 + _7.size, _8.alignment)
+    @alwaysinline final def offset8: Int =
+      align(offset7 + _8.size, _9.alignment)
+    @alwaysinline final def offset9: Int =
+      align(offset8 + _9.size, _10.alignment)
+    @alwaysinline final def offset10: Int =
+      align(offset9 + _10.size, _11.alignment)
+    @alwaysinline final def offset11: Int =
+      align(offset10 + _11.size, _12.alignment)
+    @alwaysinline final def offset12: Int =
+      align(offset11 + _12.size, _13.alignment)
+    @alwaysinline final def offset13: Int =
+      align(offset12 + _13.size, _14.alignment)
+    @alwaysinline final def offset14: Int =
+      align(offset13 + _14.size, _15.alignment)
+    @alwaysinline final def offset15: Int =
+      align(offset14 + _15.size, _16.alignment)
+    @alwaysinline final def offset16: Int =
+      align(offset15 + _16.size, _17.alignment)
+    @alwaysinline final def offset17: Int =
+      align(offset16 + _17.size, _18.alignment)
+    @alwaysinline final def offset18: Int =
+      align(offset17 + _18.size, _19.alignment)
+    @alwaysinline final def offset19: Int =
+      align(offset18 + _19.size, _20.alignment)
+    @alwaysinline final def offset20: Int =
+      align(offset19 + _20.size, _21.alignment)
+    @alwaysinline final def offset21: Int =
+      align(offset20 + _21.size, _22.alignment)
     @alwaysinline override def offset(idx: Int): Int = idx.toInt match {
-      case 0 =>
-        var res = 0
-        align(res, _1.alignment)
-      case 1 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        align(res, _2.alignment)
-      case 2 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        align(res, _3.alignment)
-      case 3 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        align(res, _4.alignment)
-      case 4 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        align(res, _5.alignment)
-      case 5 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        align(res, _6.alignment)
-      case 6 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        align(res, _7.alignment)
-      case 7 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        align(res, _8.alignment)
-      case 8 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        align(res, _9.alignment)
-      case 9 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        align(res, _10.alignment)
-      case 10 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        align(res, _11.alignment)
-      case 11 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        align(res, _12.alignment)
-      case 12 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        align(res, _13.alignment)
-      case 13 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        align(res, _14.alignment)
-      case 14 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        align(res, _15.alignment)
-      case 15 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        res = align(res, _15.alignment) + _15.size
-        align(res, _16.alignment)
-      case 16 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        res = align(res, _15.alignment) + _15.size
-        res = align(res, _16.alignment) + _16.size
-        align(res, _17.alignment)
-      case 17 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        res = align(res, _15.alignment) + _15.size
-        res = align(res, _16.alignment) + _16.size
-        res = align(res, _17.alignment) + _17.size
-        align(res, _18.alignment)
-      case 18 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        res = align(res, _15.alignment) + _15.size
-        res = align(res, _16.alignment) + _16.size
-        res = align(res, _17.alignment) + _17.size
-        res = align(res, _18.alignment) + _18.size
-        align(res, _19.alignment)
-      case 19 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        res = align(res, _15.alignment) + _15.size
-        res = align(res, _16.alignment) + _16.size
-        res = align(res, _17.alignment) + _17.size
-        res = align(res, _18.alignment) + _18.size
-        res = align(res, _19.alignment) + _19.size
-        align(res, _20.alignment)
-      case 20 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        res = align(res, _15.alignment) + _15.size
-        res = align(res, _16.alignment) + _16.size
-        res = align(res, _17.alignment) + _17.size
-        res = align(res, _18.alignment) + _18.size
-        res = align(res, _19.alignment) + _19.size
-        res = align(res, _20.alignment) + _20.size
-        align(res, _21.alignment)
-      case 21 =>
-        var res = 0
-        res = align(res, _1.alignment) + _1.size
-        res = align(res, _2.alignment) + _2.size
-        res = align(res, _3.alignment) + _3.size
-        res = align(res, _4.alignment) + _4.size
-        res = align(res, _5.alignment) + _5.size
-        res = align(res, _6.alignment) + _6.size
-        res = align(res, _7.alignment) + _7.size
-        res = align(res, _8.alignment) + _8.size
-        res = align(res, _9.alignment) + _9.size
-        res = align(res, _10.alignment) + _10.size
-        res = align(res, _11.alignment) + _11.size
-        res = align(res, _12.alignment) + _12.size
-        res = align(res, _13.alignment) + _13.size
-        res = align(res, _14.alignment) + _14.size
-        res = align(res, _15.alignment) + _15.size
-        res = align(res, _16.alignment) + _16.size
-        res = align(res, _17.alignment) + _17.size
-        res = align(res, _18.alignment) + _18.size
-        res = align(res, _19.alignment) + _19.size
-        res = align(res, _20.alignment) + _20.size
-        res = align(res, _21.alignment) + _21.size
-        align(res, _22.alignment)
+      case 0 => offset0
+      case 1 => offset1
+      case 2 => offset2
+      case 3 => offset3
+      case 4 => offset4
+      case 5 => offset5
+      case 6 => offset6
+      case 7 => offset7
+      case 8 => offset8
+      case 9 => offset9
+      case 10 => offset10
+      case 11 => offset11
+      case 12 => offset12
+      case 13 => offset13
+      case 14 => offset14
+      case 15 => offset15
+      case 16 => offset16
+      case 17 => offset17
+      case 18 => offset18
+      case 19 => offset19
+      case 20 => offset20
+      case 21 => offset21
       case _ =>
         throwUndefined()
     }

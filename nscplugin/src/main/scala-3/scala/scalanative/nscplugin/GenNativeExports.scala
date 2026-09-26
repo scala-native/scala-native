@@ -5,7 +5,7 @@ import dotty.tools.dotc.ast.tpd._
 import dotty.tools.dotc.{core, report}
 import scala.language.implicitConversions
 
-import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.*
+import scala.scalanative.nscplugin.CompilerCompat.SymUtils.*
 import scala.scalanative.util.ScopedVar.scoped
 
 import core.Annotations.*

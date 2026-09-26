@@ -171,11 +171,11 @@ class AtomicReferenceArray[E <: AnyRef] extends Serializable {
       i: Int,
       expectedValue: E,
       newValue: E
-  ): Boolean =
-    if (array(i) eq expectedValue) {
-      array(i) = newValue
-      true
-    } else false
+  ): Boolean = {
+    nativeArray
+      .at(i)
+      .compareExchangeWeak(expectedValue, newValue, memory_order_relaxed)
+  }
 
   /** Atomically updates (with memory effects as specified by
    *  `VarHandle#compareAndSet`) the element at index {@code i} with the results

@@ -1,6 +1,6 @@
 object GetParentTest {
   import Files._
-  def main(args: Array[String]): Unit = {
+  def run(): Unit = {
     assert(children0.getParent == expectedParent0)
     assert(children1.getParent == expectedParent1)
     assert(children2.getParent == expectedParent2)

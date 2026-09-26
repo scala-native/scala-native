@@ -1,0 +1,18 @@
+# =============================================================================
+# GC Early Tests
+# =============================================================================
+# Runs a test that triggers GC during static initialization (Main extends
+# Base({ System.gc() })) with both Immix and Commix to ensure early GC and
+# stack bounds work correctly on both backends.
+
+# -----------------------------------------------------------------------------
+# Phase 1: Run with Immix GC
+# -----------------------------------------------------------------------------
+> set nativeConfig ~= { _.withGC(scala.scalanative.build.GC.immix) }
+> run -- 1 2 3 4 5 6 7 8 9 10
+
+# -----------------------------------------------------------------------------
+# Phase 2: Run with Commix GC
+# -----------------------------------------------------------------------------
+> set nativeConfig ~= { _.withGC(scala.scalanative.build.GC.commix) }
+> run - 1 2 3 4 5 6 7 8 9 10

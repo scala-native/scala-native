@@ -3,9 +3,6 @@
 #include <windows.h>
 #else // Unix
 #include <pthread.h>
-#if defined(__linux__)
-#include <dlfcn.h>
-#endif // linux
 #include <sys/resource.h>
 #endif // Unix
 
@@ -59,47 +56,26 @@ size_t scalanative_mainThreadMaxStackSize() {
 
 static bool approximateStackBounds(void *stackBottom, size_t stackSize,
                                    ThreadInfo *threadInfo) {
-    size_t pageSize = resolvePageSize();
-    abort();
-
     // Align stack bottom to page size
-    currentThreadInfo.stackBottom = alignToNextPage(stackBottom);
-    assert((uintptr_t)currentThreadInfo.stackBottom >= (uintptr_t)stackBottom);
+    threadInfo->stackBottom = alignToNextPage(stackBottom);
+    assert((uintptr_t)threadInfo->stackBottom >= (uintptr_t)stackBottom);
 
-    currentThreadInfo.stackSize = currentThreadInfo.maxStackSize;
-    assert(currentThreadInfo.stackSize > 0);
+    threadInfo->stackSize = threadInfo->maxStackSize;
+    if (stackSize > 0 && threadInfo->stackSize > stackSize) {
+        threadInfo->stackSize = stackSize;
+    }
+    assert(threadInfo->stackSize > 0);
 
-    currentThreadInfo.stackTop =
-        (void *)((uintptr_t)currentThreadInfo.stackBottom -
-                 currentThreadInfo.stackSize);
+    threadInfo->stackTop =
+        (void *)((uintptr_t)threadInfo->stackBottom - threadInfo->stackSize);
     return true;
 }
 
 #if defined(__linux__)
-typedef int (*pthread_getattr_np_func)(pthread_t thread, pthread_attr_t *attr);
-static pthread_getattr_np_func get_pthread_getattr_np() {
-    static pthread_getattr_np_func fnHandle = NULL;
-    static bool computed = false;
-    if (!computed) {
-// fast-path
-#ifdef _GNU_SOURCE
-        fnHandle =
-            (pthread_getattr_np_func)dlsym(RTLD_DEFAULT, "pthread_getattr_np");
-#endif
-        // fallback
-        if (!fnHandle) {
-            void *libHandle = dlopen("libpthread.so.0", RTLD_NOW);
-            if (libHandle) {
-                // Get the address of pthread_getattr_np
-                fnHandle = (pthread_getattr_np_func)dlsym(libHandle,
-                                                          "pthread_getattr_np");
-                dlclose(libHandle);
-            }
-        }
-        computed = true;
-    }
-    return fnHandle;
-}
+// GNU extension, hidden by <pthread.h> without _GNU_SOURCE. Declared and called
+// directly (not via dlopen/dlsym) so it resolves at link time in fully-static
+// binaries, where musl's dlopen is a no-op stub.
+extern int pthread_getattr_np(pthread_t thread, pthread_attr_t *attr);
 #endif
 
 static bool detectStackBounds(void *onStackPointer) {
@@ -113,11 +89,9 @@ static bool detectStackBounds(void *onStackPointer) {
     return true;
 #endif
 #elif defined(__linux__)
-    // GNU extension, might not be available
-    pthread_getattr_np_func pthread_getattr_np_ptr = get_pthread_getattr_np();
-    if (pthread_getattr_np_ptr) {
+    {
         pthread_attr_t attr;
-        if (pthread_getattr_np_ptr(pthread_self(), &attr) != 0) {
+        if (pthread_getattr_np(pthread_self(), &attr) != 0) {
             goto fallback;
         }
         void *stackTop;
@@ -137,7 +111,13 @@ static bool detectStackBounds(void *onStackPointer) {
         currentThreadInfo.stackTop = alignToPageStart(onStackPointer);
         size_t usedStackSize = stackBottom - currentThreadInfo.stackTop;
         currentThreadInfo.stackSize = usedStackSize;
-        currentThreadInfo.maxStackSize = size - guardSize;
+        // For the main thread, Linux's pthread_attr_getstack reports the
+        // currently-mapped stack region rather than RLIMIT_STACK; overwriting
+        // would clobber the RLIMIT_STACK-derived value already set via
+        // scalanative_mainThreadMaxStackSize.
+        if (!currentThreadInfo.isMainThread) {
+            currentThreadInfo.maxStackSize = size - guardSize;
+        }
         if (currentThreadInfo.stackSize > currentThreadInfo.maxStackSize) {
             currentThreadInfo.stackSize = currentThreadInfo.maxStackSize;
         }
@@ -177,9 +157,7 @@ fallback:;
         }
     }
     fclose(maps);
-#elif (defined(__APPLE__) && defined(__MACH__)) &&                             \
-    defined(__MAC_OS_X_VERSION_MIN_REQUIRED) &&                                \
-    __MAC_OS_X_VERSION_MIN_REQUIRED >= 1040
+#elif defined(__APPLE__) && defined(__MACH__)
     // No way to get thread-specific guard size
     // Use the default one
     size_t guardSize = 0;
@@ -217,6 +195,7 @@ void scalanative_setupCurrentThreadInfo(void *stackBottom, int32_t stackSize,
     int dummy;
     assert((uintptr_t)&dummy < (uintptr_t)stackBottom);
 
+    currentThreadInfo.isInitialized = false;
     currentThreadInfo.isMainThread = isMainThread;
     currentThreadInfo.maxStackSize =
         (isMainThread ? scalanative_mainThreadMaxStackSize() : stackSize) -

@@ -3,7 +3,7 @@ import java.io.File
 object ExistsTest {
   import Files._
 
-  def main(args: Array[String]): Unit = {
+  def run(): Unit = {
     assert(executableFile.exists())
     assert(unexecutableFile.exists())
     assert(readableFile.exists())

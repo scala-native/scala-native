@@ -2,7 +2,7 @@ object CanReadTest {
   import Files._
   import Utils._
 
-  def main(args: Array[String]): Unit = {
+  def run(): Unit = {
     assert(!emptyNameFile.canRead())
 
     assert(readableFile.canRead())

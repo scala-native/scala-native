@@ -7,8 +7,8 @@ package regex
 
 // Various constants and helper utilities.
 object Utils {
-
-  final val EMPTY_INTS = new Array[Int](0)
+  @deprecated("Use Array.emptyIntArray instead", "0.5.11")
+  final def EMPTY_INTS: Array[Int] = Array.emptyIntArray
 
   // Returns true iff |c| is an ASCII letter or decimal digit.
   def isalnum(c: Int): Boolean =

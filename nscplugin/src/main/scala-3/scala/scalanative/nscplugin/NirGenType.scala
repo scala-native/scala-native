@@ -7,7 +7,7 @@ import dotty.tools.dotc.typer.TyperPhase
 import dotty.tools.dotc.{core, report}
 import scala.language.implicitConversions
 
-import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.*
+import scala.scalanative.nscplugin.CompilerCompat.SymUtils.*
 import scala.scalanative.util.unsupported
 
 import core.Contexts._
@@ -49,7 +49,7 @@ trait NirGenType(using Context) {
       sym.is(JavaStatic) || sym.isScalaStatic || sym.isExtern
 
     def isExtern: Boolean = sym.exists && {
-      sym.owner.isExternType ||
+      sym.originalOwner.isExternType ||
       sym.hasAnnotation(defnNir.ExternClass) ||
       (sym.is(Accessor) && sym.field.isExtern)
       // NonExtern is added PrepNativeInterop

@@ -59,10 +59,12 @@ class CStringTest {
     {
       "greeting": "Hello world!"
     }""",
-      fromCString(c"""
+      fromCString(
+        c"""
     {
       "greeting": "Hello world!"
-    }""")
+    }"""
+      )
     )
 
     assertEquals("\u0020\\X20\u006a\u006b", fromCString(c"\x20\X20\x6a\x6B"))
@@ -109,7 +111,7 @@ class CStringTest {
   }
 
   @Test def toCStringNullReturnsNullIssue1796(): Unit = {
-    Zone.acquire { implicit z => assertNull(toCString(null)) }
+    Zone.acquire { implicit z => assertNull(toCString(null: String)) }
   }
 
   @Test def testToCString(): Unit = {

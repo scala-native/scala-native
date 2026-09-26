@@ -508,9 +508,10 @@ trait ListTest extends CollectionTest with CollectionsTestBase {
     testSortWithComparator[jl.Double](_.toDouble, (x, y) => x.compareTo(y))
   }
 
-  private def testSortWithNaturalOrdering[T <: AnyRef with Comparable[
-    T
-  ]: ClassTag](toElem: Int => T, absoluteOrder: Boolean = true): Unit = {
+  private def testSortWithNaturalOrdering[T <: Comparable[T]: ClassTag](
+      toElem: Int => T,
+      absoluteOrder: Boolean = true
+  ): Unit = {
 
     val list = factory.empty[T]
 

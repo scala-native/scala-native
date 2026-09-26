@@ -1509,7 +1509,7 @@ object FormatterImpl extends FormatterCompanionImpl {
   }
 
   private object ParserStateMachine {
-    final val EOS = -1.toChar
+    final val EOS = (-1).toChar
     final val Exit = 0
     final val Entry = 1
     final val StartConversion = 2

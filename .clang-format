@@ -2,8 +2,8 @@
 # Documentation: https://clang.llvm.org/docs/ClangFormatStyleOptions.html
 BasedOnStyle: LLVM
 IndentWidth: 4
+# Sorting includes breaks the build.
+SortIncludes: Never
 ---
 Language: Cpp
-# Sorting includes breaks the build.
-SortIncludes: false
 ...

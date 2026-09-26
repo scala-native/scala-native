@@ -2,7 +2,7 @@ object SetReadableTest {
   import Files._
   import Utils._
 
-  def main(args: Array[String]): Unit = {
+  def run(): Unit = {
     assert(willBeSetReadableFile.exists())
     // Winodws (JVM) complience
     assertOsSpecific(

@@ -52,37 +52,37 @@ class MsgIoSocketTest {
    */
 
   private final val poemHeader =
-    """	  |
-	  |Percy Bysshe Shelley, 1818 -- Public Domain
-	  |
-	  |OZYMANDIAS of EGYPT
-	  |
-	  |""".stripMargin
+    """|	  |
+       |Percy Bysshe Shelley, 1818 -- Public Domain
+       |
+       |OZYMANDIAS of EGYPT
+       |
+       |""".stripMargin
 
   private final val chunk1 =
-    """	  |I met a traveller from an antique land
-	  |Who said:—Two vast and trunkless legs of stone
-	  |Stand in the desert. Near them on the sand,
-	  |Half sunk, a shatter'd visage lies, whose frown
-	  |And wrinkled lip and sneer of cold command
-	  |""".stripMargin
+    """|	  |I met a traveller from an antique land
+       |Who said:—Two vast and trunkless legs of stone
+       |Stand in the desert. Near them on the sand,
+       |Half sunk, a shatter'd visage lies, whose frown
+       |And wrinkled lip and sneer of cold command
+       |""".stripMargin
 
   private final val chunk2 =
-    """	  |Tell that its sculptor well those passions read
-	  |Which yet survive, stamp'd on these lifeless things,
-	  |The hand that mock'd them and the heart that fed.
-	  |And on the pedestal these words appear:
-	  |"My name is Ozymandias, king of kings:
-	  |
-	  |""".stripMargin
+    """|	  |Tell that its sculptor well those passions read
+       |Which yet survive, stamp'd on these lifeless things,
+       |The hand that mock'd them and the heart that fed.
+       |And on the pedestal these words appear:
+       |"My name is Ozymandias, king of kings:
+       |
+       |""".stripMargin
 
   private final val chunk3 =
-    """	  |Look on my works, ye mighty, and despair!"
-	  |Nothing beside remains: round the decay
-	  |Of that colossal wreck, boundless and bare,
-	  |The lone and level sands stretch far away.
-	  |
-	  |""".stripMargin
+    """|	  |Look on my works, ye mighty, and despair!"
+       |Nothing beside remains: round the decay
+       |Of that colossal wreck, boundless and bare,
+       |The lone and level sands stretch far away.
+       |
+       |""".stripMargin
 
   @Test def msgIoShouldScatterGather(): Unit = if (!isWindows) {
     // sendmsg() should gather, recvmsg() should scatter, the twain shall meet

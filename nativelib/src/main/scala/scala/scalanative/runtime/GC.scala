@@ -62,9 +62,8 @@ object GC {
   private type Handle = CVoidPtr
   private type DWord = CUnsignedInt
   private type SecurityAttributes = CStruct3[DWord, CVoidPtr, Boolean]
-  private type PtrAny = CVoidPtr
-  type ThreadRoutineArg = PtrAny
-  type ThreadStartRoutine = CFuncPtr1[ThreadRoutineArg, PtrAny]
+  type ThreadRoutineArg = NativeThread
+  type ThreadStartRoutine = CFuncPtr1[NativeThread, CVoidPtr]
 
   /** Proxy to pthread_create which registers created thread in the GC */
   @name("scalanative_GC_pthread_create")
@@ -119,16 +118,13 @@ object GC {
   @name("scalanative_GC_yield")
   private[runtime] def `yield`(): Unit = extern
 
-  /** Address of yield point trap - conditionally protected memory address used
-   *  for polling StopTheWorld event. Lowering phase would introduce write/read
-   *  instruction to this address to check if it should stop execution of the
-   *  thread. Upon write/read to protected memory special signal handler (UNIX)
-   *  or exceptions filter (Windows) would be triggered leading to stopping
-   *  execution of the thread. Used only in release mode for low-overhead
-   *  yieldpoints
+  /** Thread-local pointer to this mutator's trap page (distinct per pthread).
+   *  The GC mprotects each mutator's page during STW. Used only with trap-based
+   *  yieldpoints when multithreading is enabled (same condition as the
+   *  `SCALANATIVE_GC_USE_YIELDPOINT_TRAPS` nativelib define).
    */
   @name("scalanative_GC_yieldpoint_trap")
-  private[runtime] var yieldPointTrap: RawPtr = extern
+  private[runtime] var yieldPointTrap: /* thread local */ RawPtr = extern
 
   /** Notify the Garbage Collector about the range of memory which should be
    *  scanned when marking the objects. The range should contain only memory NOT
@@ -161,4 +157,15 @@ object GC {
    */
   @name("scalanative_GC_remove_roots")
   def removeRoots(addressLow: CVoidPtr, addressHigh: CVoidPtr): Unit = extern
+
+  @extern object Boehm {
+    @name("scalanative_GC_weak_ref_slot_create")
+    private[runtime] def weakRefSlotCreate(referent: RawPtr): RawPtr = extern
+
+    @name("scalanative_GC_weak_ref_slot_get")
+    private[runtime] def weakRefSlotGet(slot: RawPtr): RawPtr = extern
+
+    @name("scalanative_GC_weak_ref_slot_clear")
+    private[runtime] def weakRefSlotClear(slot: RawPtr): Unit = extern
+  }
 }

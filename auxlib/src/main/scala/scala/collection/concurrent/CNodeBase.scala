@@ -3,19 +3,17 @@ package scala.collection.concurrent
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater
 
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
-import scala.scalanative.runtime.fromRawPtr
 
 private[concurrent] abstract class CNodeBase[K <: AnyRef, V <: AnyRef]
     extends MainNode[K, V] {
   @volatile var csize: Int = -1
 
-  final val updater: AtomicIntegerFieldUpdater[CNodeBase[_, _]] =
-    new IntrinsicAtomicIntegerFieldUpdater(obj =>
-      fromRawPtr(
-        classFieldRawPtr(obj.asInstanceOf[CNodeBase[AnyRef, AnyRef]], "csize")
+  final val updater: AtomicIntegerFieldUpdater[CNodeBase[?, ?]] =
+    AtomicIntegerFieldUpdater
+      .newUpdater[CNodeBase[?, ?]](
+        classOf[CNodeBase[?, ?]],
+        "csize"
       )
-    )
 
   @alwaysinline
   def CAS_SIZE(oldval: Int, nval: Int) =

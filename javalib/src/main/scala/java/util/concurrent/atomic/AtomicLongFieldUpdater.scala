@@ -5,15 +5,36 @@
  */
 package java.util.concurrent.atomic
 
-import java.util.function.{BinaryOperator, UnaryOperator}
+import java.util.function.{LongBinaryOperator, LongUnaryOperator}
+
+import scala.scalanative.annotation.alwaysinline
+import scala.scalanative.libc.stdatomic.AtomicLongLong
+import scala.scalanative.libc.stdatomic.memory_order.memory_order_release
+import scala.scalanative.unsafe.Ptr
 
 object AtomicLongFieldUpdater {
-  // Impossible to define currently in Scala Native, requires reflection
-  // Don't define it, allow to fail at linktime instead of runtime
-  // def newUpdater[U <: AnyRef](
-  //     tclass: Class[U],
-  //     fieldName: String
-  // ): AtomicLongFieldUpdater[U] = ???
+  private def intrinsic = throw new AssertionError(
+    "Intrinsic call was not handled by the toolchain"
+  )
+
+  def newUpdater[U <: AnyRef](
+      tclass: Class[U],
+      fieldName: String
+  ): AtomicLongFieldUpdater[U] = intrinsic
+
+  final class Impl[T <: AnyRef](binding: AnyRef => Ptr[Long])
+      extends AtomicLongFieldUpdater[T] {
+    @alwaysinline private def atomic(obj: T) =
+      new AtomicLongLong(binding(obj))
+    def compareAndSet(obj: T, expect: Long, update: Long) =
+      atomic(obj).compareExchangeStrong(expect, update)
+    def weakCompareAndSet(obj: T, expect: Long, update: Long) =
+      atomic(obj).compareExchangeWeak(expect, update)
+    def set(obj: T, value: Long): Unit = atomic(obj).store(value)
+    def lazySet(obj: T, value: Long): Unit =
+      atomic(obj).store(value, memory_order_release)
+    def get(obj: T): Long = atomic(obj).load()
+  }
 }
 
 abstract class AtomicLongFieldUpdater[T <: AnyRef] protected () {
@@ -32,21 +53,21 @@ abstract class AtomicLongFieldUpdater[T <: AnyRef] protected () {
     prev
   }
 
-  final def getAndUpdate(obj: T, updateFunction: UnaryOperator[Long]): Long = {
+  final def getAndUpdate(obj: T, updateFunction: LongUnaryOperator): Long = {
     var prev: Long = null.asInstanceOf[Long]
     while ({
       prev = get(obj)
-      val next = updateFunction(prev)
+      val next = updateFunction.applyAsLong(prev)
       !compareAndSet(obj, prev, next)
     }) ()
     prev
   }
 
-  final def updateAndGet(obj: T, updateFunction: UnaryOperator[Long]): Long = {
+  final def updateAndGet(obj: T, updateFunction: LongUnaryOperator): Long = {
     var next: Long = null.asInstanceOf[Long]
     while ({
       val prev = get(obj)
-      next = updateFunction(prev)
+      next = updateFunction.applyAsLong(prev)
       !compareAndSet(obj, prev, next)
     }) ()
     next
@@ -55,12 +76,12 @@ abstract class AtomicLongFieldUpdater[T <: AnyRef] protected () {
   final def getAndAccumulate(
       obj: T,
       x: Long,
-      accumulatorFunction: BinaryOperator[Long]
+      accumulatorFunction: LongBinaryOperator
   ): Long = {
     var prev: Long = null.asInstanceOf[Long]
     while ({
       prev = get(obj)
-      val next = accumulatorFunction(prev, x)
+      val next = accumulatorFunction.applyAsLong(prev, x)
       !compareAndSet(obj, prev, next)
     }) ()
     prev
@@ -69,12 +90,12 @@ abstract class AtomicLongFieldUpdater[T <: AnyRef] protected () {
   final def accumulateAndGet(
       obj: T,
       x: Long,
-      accumulatorFunction: BinaryOperator[Long]
+      accumulatorFunction: LongBinaryOperator
   ): Long = {
     var next: Long = null.asInstanceOf[Long]
     while ({
       val prev = get(obj)
-      next = accumulatorFunction(prev, x)
+      next = accumulatorFunction.applyAsLong(prev, x)
       !compareAndSet(obj, prev, next)
     }) ()
     next

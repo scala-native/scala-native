@@ -6,28 +6,37 @@ import org.junit.Test
 
 class ExternVarArgsTest {
 
+  // Since 3.8.0 when having 'extern trait FFI; extern object FFI extends FFI' both references to extern member would use trait member
+  def refersOnlyToExternMember = buildinfo.ScalaNativeBuildInfo.scalaVersion
+    .split("\\D")
+    .take(3)
+    .map(_.toInt) match {
+    case Array(3, minor, _) => minor >= 8
+    case _                  => false
+  }
+
   @Test def unboxesVarArgs(): Unit = {
     compileAndLoad(
       "Test.scala" ->
-        """import scala.scalanative.unsafe._
-          | 
-          |@extern trait FFI {
-          |  def printf(format: CString, args: Any*): Unit = extern
-          |}
-          |@extern object FFI extends FFI
-          |
-          |object Test{
-          |  def main(): Unit = {
-          |    def string: Ptr[Byte] = ???
-          |    def size: Ptr[Size] = ???
-          |    def long: Ptr[Long] = ???
-          |    def float: Ptr[Float] = ???
-          |    FFI.printf(c"", !(string + 1), string, !size, !long, long, !float)
-          |    val ffi: FFI = null
-          |    ffi.printf(c"", !(string + 1), string, !size, !long, long, !float)
-          |  }
-          |}
-          |""".stripMargin
+        """|import scala.scalanative.unsafe._
+           | 
+           |@extern trait FFI {
+           |  def printf(format: CString, args: Any*): Unit = extern
+           |}
+           |@extern object FFI extends FFI
+           |
+           |object Test{
+           |  def main(): Unit = {
+           |    def string: Ptr[Byte] = ???
+           |    def size: Ptr[Size] = ???
+           |    def long: Ptr[Long] = ???
+           |    def float: Ptr[Float] = ???
+           |    FFI.printf(c"", !(string + 1), string, !size, !long, long, !float)
+           |    val ffi: FFI = null
+           |    ffi.printf(c"", !(string + 1), string, !size, !long, long, !float)
+           |  }
+           |}
+           |""".stripMargin
     ) { defns =>
       val TestModule = nir.Global.Top("Test$")
       val MainMethod =
@@ -41,10 +50,10 @@ class ExternVarArgsTest {
       // Enusre has correct signature
       defns
         .collect {
-          case nir.Defn.Declare(_, name @ PrintfMethod, ty)      => ty
-          case nir.Defn.Declare(_, name @ PrintfTraitMethod, ty) => ty
+          case d @ nir.Defn.Declare(_, name @ PrintfMethod, ty)      => ty
+          case d @ nir.Defn.Declare(_, name @ PrintfTraitMethod, ty) => ty
         }
-        .ensuring(_.size == 2)
+        .ensuring(_.size == (if (refersOnlyToExternMember) 1 else 2))
         .foreach { ty =>
           assertEquals(ty.args.last, nir.Type.Vararg)
         }

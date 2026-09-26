@@ -13,9 +13,26 @@ import scalanative.unsafe._
 
 /** Definitions shared with POSIX */
 @extern private[scalanative] trait math {
+  /* The "// category" grouping and names come from the en.cppreference
+   * URL given above.
+   *
+   * It would ease development if the order of names within each category
+   * also matched that URL. That would ease checking if this file is
+   * current and/or missing declarations. Someday a LLM will do all that
+   * scut work. For now, make section match as they are touched.
+   *
+   * Sections matched to URL
+   *   - Hyperbolic functions
+   *   - Floating-point manipulation functions
+   */
+
+  /* Scala Native does not have a "long double" type, so various *l
+   * functions, such as sinhl() are not declared here.
+   */
 
   // Basic operations
 
+  // 2026-07-09 labs() and llabs() should be in clib/libc stdlib.h not here.
   def labs(x: CLong): CLong = extern
   def llabs(x: CLongLong): CLongLong = extern
   def fabsf(arg: CFloat): CFloat = extern
@@ -84,16 +101,23 @@ import scalanative.unsafe._
 
   // Hyperbolic functions
 
-  def sinhf(x: CFloat): CFloat = extern
   def sinh(x: CDouble): CDouble = extern
-  def coshf(x: CFloat): CFloat = extern
+  def sinhf(x: CFloat): CFloat = extern
+
   def cosh(x: CDouble): CDouble = extern
-  def tanhf(x: CFloat): CFloat = extern
+  def coshf(x: CFloat): CFloat = extern
+
   def tanh(x: CDouble): CDouble = extern
-  def asinhf(x: CFloat): CFloat = extern
+  def tanhf(x: CFloat): CFloat = extern
+
   def asinh(x: CDouble): CDouble = extern
-  def atanhf(x: CFloat): CFloat = extern
+  def asinhf(x: CFloat): CFloat = extern
+
+  def acosh(x: CDouble): CDouble = extern
+  def acoshf(x: CFloat): CFloat = extern
+
   def atanh(x: CDouble): CDouble = extern
+  def atanhf(x: CFloat): CFloat = extern
 
   // Error and gamma functions
 
@@ -131,22 +155,45 @@ import scalanative.unsafe._
 
   // Floating-point manipulation functions
 
-  def frexpf(arg: CFloat, exp: Ptr[CInt]): CFloat = extern
   def frexp(arg: CDouble, exp: Ptr[CInt]): CDouble = extern
-  def ldexpf(arg: CFloat, exp: CInt): CFloat = extern
+  def frexpf(arg: CFloat, exp: Ptr[CInt]): CFloat = extern
+
   def ldexp(arg: CDouble, exp: CInt): CDouble = extern
-  def modff(arg: CFloat, iptr: Ptr[CFloat]): CFloat = extern
+  def ldexpf(arg: CFloat, exp: CInt): CFloat = extern
+
   def modf(arg: CDouble, iptr: Ptr[CDouble]): CDouble = extern
-  def scalbnf(arg: CFloat, exp: CInt): CFloat = extern
+  def modff(arg: CFloat, iptr: Ptr[CFloat]): CFloat = extern
+
   def scalbn(arg: CDouble, exp: CInt): CDouble = extern
-  def scalblnf(arg: CFloat, exp: CLong): CFloat = extern
+  def scalbnf(arg: CFloat, exp: CInt): CFloat = extern
+
   def scalbln(arg: CDouble, exp: CLong): CDouble = extern
-  def ilogbf(x: CFloat): CInt = extern
+  def scalblnf(arg: CFloat, exp: CLong): CFloat = extern
+
   def ilogb(x: CDouble): CInt = extern
-  def logbf(x: CFloat): CFloat = extern
+  def ilogbf(x: CFloat): CInt = extern
+
   def logb(x: CDouble): CDouble = extern
-  def nextafterf(from: CFloat, to: CFloat): CFloat = extern
+  def logbf(x: CFloat): CFloat = extern
+
   def nextafter(from: CDouble, to: CDouble): CDouble = extern
+  def nextafterf(from: CFloat, to: CFloat): CFloat = extern
+
+  /* Scala Native has no "long double" so nexttoward() and
+   * nexttowardf() are not declared.
+   * C declarations:
+   *   double nexttoward( double from, long double to );
+   *   float nexttowardf( float from, long double to );
+   */
+
+  // C23 methods - Start - when used must be linked using a compatible C RTL
+  def nextup(x: CDouble): CDouble = extern
+  def nextupf(x: CFloat): CFloat = extern
+
+  def nextdown(x: CDouble): CDouble = extern
+  def nextdownf(x: CFloat): CFloat = extern
+  // C23 methods - End
+
   def copysignf(x: CFloat, y: CFloat): CFloat = extern
   def copysign(x: CDouble, y: CDouble): CDouble = extern
 

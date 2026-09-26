@@ -94,9 +94,10 @@ bool memoryCommit(void *ref, size_t memorySize) {
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "shared/Log.h"
 
 static void exitWithOutOfMemory() {
-    fprintf(stderr, "Out of heap space\n");
+    GC_LOG_ERROR("Out of heap space");
     exit(1);
 }
 
@@ -114,7 +115,7 @@ word_t *memoryMapOrExitOnError(size_t memorySize) {
 }
 
 static void exitWithFailToUnmapMemory() {
-    fprintf(stderr, "Fail to unmap memory.\n");
+    GC_LOG_ERROR("Failed to unmap memory");
     exit(1);
 }
 

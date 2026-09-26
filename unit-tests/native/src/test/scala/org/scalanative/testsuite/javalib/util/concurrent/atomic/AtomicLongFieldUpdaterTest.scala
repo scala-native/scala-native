@@ -6,8 +6,6 @@
  * Pat Fisher, Mike Judd.
  */
 
-// Uses custom Scala Native intrinsic based field updaters instead of reflection based used in JVM
-
 package org.scalanative.testsuite.javalib.util.concurrent
 package atomic
 
@@ -16,50 +14,20 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater
 import org.junit.Assert._
 import org.junit._
 
-import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.libc.stdatomic.{AtomicLongLong, memory_order}
-import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
-import scala.scalanative.runtime.{RawPtr, fromRawPtr}
-
-object AtomicLongFieldUpdaterTest {
-  class IntrinsicBasedImpl[T <: AnyRef](atomicRef: T => AtomicLongLong)
-      extends AtomicLongFieldUpdater[T]() {
-
-    def compareAndSet(obj: T, expect: Long, update: Long): Boolean =
-      atomicRef(obj).compareExchangeStrong(expect, update)
-
-    def weakCompareAndSet(obj: T, expect: Long, update: Long): Boolean =
-      atomicRef(obj).compareExchangeWeak(expect, update)
-
-    def set(obj: T, newIntalue: Long): Unit = atomicRef(obj).store(newIntalue)
-
-    def lazySet(obj: T, newIntalue: Long): Unit =
-      atomicRef(obj).store(newIntalue, memory_order.memory_order_release)
-    def get(obj: T): Long = atomicRef(obj).load()
-  }
-}
-
 class AtomicLongFieldUpdaterTest extends JSR166Test {
-  import AtomicLongFieldUpdaterTest._
   import JSR166Test._
 
   @volatile var x = 0L
   @volatile protected var protectedField = 0L
 
-  def updaterForX = new IntrinsicBasedImpl[AtomicLongFieldUpdaterTest](obj =>
-    new AtomicLongLong(
-      fromRawPtr(
-        classFieldRawPtr(obj, "x")
-      )
-    )
+  def updaterForX = AtomicLongFieldUpdater.newUpdater(
+    classOf[AtomicLongFieldUpdaterTest],
+    "x"
   )
   def updaterForProtectedField =
-    new IntrinsicBasedImpl[AtomicLongFieldUpdaterTest](obj =>
-      new AtomicLongLong(
-        fromRawPtr(
-          classFieldRawPtr(obj, "protectedField")
-        )
-      )
+    AtomicLongFieldUpdater.newUpdater(
+      classOf[AtomicLongFieldUpdaterTest],
+      "protectedField"
     )
 
   // Platform limitatios: following cases would not compile / would not be checked

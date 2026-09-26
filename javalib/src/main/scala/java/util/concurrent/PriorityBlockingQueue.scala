@@ -499,7 +499,7 @@ class PriorityBlockingQueue[E <: AnyRef] private (
     } finally lock.unlock()
   }
 
-  override def iterator() = new Itr(toArray())
+  override def iterator(): util.Iterator[E] = new Itr(toArray())
 
   private[concurrent] final class Itr private[concurrent] (
       val array: Array[AnyRef] // Array of all elements

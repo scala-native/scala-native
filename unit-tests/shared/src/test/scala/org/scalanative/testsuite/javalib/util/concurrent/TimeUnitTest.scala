@@ -1,5 +1,11 @@
 // Ported from Scala.js
 
+/* See also the Scala Native original tests for TimeUnit methods introduced
+ * in Java 9 and 11. They are located in:
+ * unit-tests-ext/shared/src/test/scala/org/scalanative/testsuite/javalib/time.
+ * The TimeUnitTestExt.scala file gives additional details.
+ */
+
 package org.scalanative.testsuite.javalib.util.concurrent
 
 import java.util._

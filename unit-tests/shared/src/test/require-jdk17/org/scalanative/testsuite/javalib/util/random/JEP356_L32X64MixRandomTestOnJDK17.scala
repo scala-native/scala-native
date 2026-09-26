@@ -758,6 +758,100 @@ class JEP356_L32X64MixRandomTestOnJDK17 {
     }
   }
 
+  /* Since nextLong() is so fundamental, provide a few manual tests
+   * for maintainers & developers.
+   */
+
+  @Ignore // Manual developer test
+  @Test def nextLong_Binomial_AboveBelowZero(): Unit = {
+    val rng = RandomGenerator.of("L32X64MixRandom")
+
+    val lowBound = -jl.Double.MAX_VALUE
+    val highBound = jl.Double.MAX_VALUE // Inclusive
+
+    val limit = 1000 * 1000
+
+    var countLt0 = 0
+    var countZero = 0
+    var countGt0 = 0
+
+    val delta = Math.ulp(highBound)
+    val nMax = ((highBound / delta).longValue * 2) + 1
+
+    val boundary = 0.0
+
+    for (j <- 0 until limit) {
+      val next = rng.nextLong()
+      if (next < boundary) countLt0 += 1
+      else if (next == boundary) countZero += 1
+      else countGt0 += 1
+    }
+
+    /* // Hard failure for maintainer debugging.
+       // You know times are rough if you are here.
+        assertEquals(
+          s"nNeg: ${countLt0}, nPos: $countGt0",
+          countLt0,
+          countGt0
+        )
+     */
+
+    /* Anything outside this range is almost surely an egregious deviation from
+     * the expected binomial distribution.
+     *
+     * The tolerance is set pretty high for possible devo-time automated
+     * smoke tests. Passing this test is a necessary but not sufficient
+     * condition to believe the observed data was sampled from a
+     * binomial distribution.
+     */
+
+    /* JVM almost always passes as +/0 0.01 (1%) with a sufficiently large
+     * limit.
+     *
+     * A more relaxed 0.05 (5%) is sometimes useful for development.
+     */
+    val tolerance = Math.round(limit * 0.01)
+
+    assertTrue(
+      s"nNeg ${countLt0}, nPos: $countGt0 tolerance +/-: ${tolerance}",
+      Math.abs(countLt0 - countGt0) / 2 <= tolerance
+    )
+  }
+
+  @Ignore // Manual developer test
+  @Test def nextLong_Binomial_EvenOdd(): Unit = {
+    val rng = RandomGenerator.of("L32X64MixRandom")
+
+    val lowBound = -jl.Double.MAX_VALUE
+    val highBound = jl.Double.MAX_VALUE // Inclusive
+
+    val limit = 1000 * 1000
+
+    var countEven = 0
+    var countOdd = 0
+
+    val delta = Math.ulp(highBound)
+    val nMax = ((highBound / delta).longValue * 2) + 1
+
+    for (j <- 0 until limit) {
+      val next = rng.nextLong(nMax)
+      if ((next & 1L) == 1) countOdd += 1
+      else countEven += 1
+    }
+
+    /* JVM almost always passes as +/0 0.01 (1%) with a sufficiently large
+     * limit.
+     *
+     * A more relaxed 0.05 (5%) is sometimes useful for development.
+     */
+    val tolerance = Math.round(limit * 0.01)
+
+    assertTrue(
+      s"nOdd ${countOdd}, nEven: $countEven tolerance +/-: ${tolerance}",
+      Math.abs(countOdd - countEven) / 2 <= tolerance
+    )
+  }
+
   @Test def nextLong_Bound(): Unit = {
     val rng = factory.create(481582459L)
 

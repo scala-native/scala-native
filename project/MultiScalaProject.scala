@@ -1,6 +1,6 @@
 package build
 
-import sbt._
+import sbt.{given, *}
 
 import scala.language.implicitConversions
 
@@ -9,9 +9,11 @@ import Keys._
 import MyScalaNativePlugin.{enableExperimentalCompiler, ideScalaVersion}
 
 final case class MultiScalaProject private (
-    val name: String,
+    name: String,
     private val projects: Map[String, Project],
-    val dependsOnSourceInIDE: Boolean
+    dependsOnSourceInIDE: Boolean,
+    // Explicit list of enabled binary cross versions. If not provided, all cross versions are enabled.
+    binCrossVersions: Option[Seq[String]]
 ) extends CompositeProject {
   import MultiScalaProject._
 
@@ -32,8 +34,12 @@ final case class MultiScalaProject private (
       publishLocal / skip := false
     )
 
-  override def componentProjects: Seq[Project] = Seq(v2_12, v2_13, v3) ++ {
-    if (enableExperimentalCompiler) Some(v3Next) else None
+  override def componentProjects: Seq[Project] = binCrossVersions match {
+    case Some(versions) => versions.map(project(_))
+    case None           =>
+      Seq(v2_12, v2_13, v3) ++ {
+        if (enableExperimentalCompiler) Some(v3Next) else None
+      }
   }
 
   def mapBinaryVersions(
@@ -43,6 +49,9 @@ final case class MultiScalaProject private (
       case (binVersion, project) => (binVersion, mapping(binVersion)(project))
     })
   }
+
+  def forBinaryVersionIfDefined(version: String): Option[Project] =
+    projects.get(version)
 
   def forBinaryVersion(version: String): Project = project(version)
 
@@ -69,14 +78,18 @@ final case class MultiScalaProject private (
       }
     } else {
       def classpathDependency(d: ScopedMultiScalaProject) =
-        strictMapValues(d.project.projects)(
-          ClasspathDependency(_, d.configuration)
-        )
+        strictMapValues(d.project.projects) { p =>
+          ClasspathDependency(p, d.configuration)
+        }
 
       val depsByVersion: Map[String, Seq[ClasspathDependency]] =
-        strictMapValues(deps.flatMap(classpathDependency).groupBy(_._1))(
-          _.map(_._2)
-        )
+        strictMapValues(
+          deps
+            .flatMap(classpathDependency)
+            .groupBy((conf, _) => conf)
+        ) { values =>
+          values.collect { case (_, dep: ClasspathDependency) => dep }
+        }
       zipped(depsByVersion)(_.dependsOn(_: _*))
     }
   }
@@ -149,6 +162,27 @@ object ScopedMultiScalaProject {
 }
 
 object MultiScalaProject {
+
+  sealed trait Platform {
+    def subdir: String
+    def nameSuffix: String
+  }
+
+  object Native extends Platform {
+    override def subdir: String = "native"
+    override def nameSuffix: String = "Native"
+  }
+
+  object JVM extends Platform {
+    override def subdir: String = "jvm"
+    override def nameSuffix: String = "JVM"
+  }
+
+  object NoPlatform extends Platform {
+    override def subdir: String = ""
+    override def nameSuffix: String = ""
+  }
+
   private def strictMapValues[K, U, V](v: Map[K, U])(f: U => V): Map[K, V] =
     v.map(v => (v._1, f(v._2)))
 
@@ -172,60 +206,87 @@ object MultiScalaProject {
       case _        => id + major.replace('.', '_')
     }
 
-  def apply(id: String): MultiScalaProject =
-    apply(id, id, file(id), Nil)
-
-  def apply(id: String, base: File): MultiScalaProject =
-    apply(id, id, base, Nil)
-
-  def apply(
-      id: String,
-      name: String,
-      base: File
-  ): MultiScalaProject = apply(id, name, base, Nil)
-
-  def apply(
-      id: String,
-      base: File,
-      additionalIDEScalaVersions: List[String]
-  ): MultiScalaProject =
-    apply(id, id, base, additionalIDEScalaVersions)
-
   /** @param additionalIDEScalaVersions
    *    Allowed values: 3, 3-next, 2.13, 2.12.
    */
   def apply(
-      id: String,
       name: String,
-      base: File,
-      additionalIDEScalaVersions: List[String]
+      base: Option[File] = None,
+      additionalIDEScalaVersions: List[String] = Nil,
+      crossVersions: Option[Map[String, Seq[String]]] = None,
+      platform: Platform = NoPlatform,
+      idNoSuffix: Boolean = false,
+      nameSuffix: Boolean = false
   ): MultiScalaProject = {
+    val sharedBase = base.getOrElse(file(name))
+    val idWithSuffix = if (idNoSuffix) name else name + platform.nameSuffix
+    val nameWithSuffix = if (nameSuffix) idWithSuffix else name
+    val (platformBase, bases) =
+      if (platform == NoPlatform) (sharedBase, Seq(sharedBase))
+      else {
+        val platformBase = sharedBase / platform.subdir
+        (platformBase, Seq(sharedBase, platformBase))
+      }
+
     val projects = for {
-      (major, minors) <- scalaCrossVersions
+      (major, minors) <- crossVersions.getOrElse(scalaCrossVersions)
     } yield {
       val ideScalaVersions = additionalIDEScalaVersions :+ ideScalaVersion
       val noIDEExportSettings =
         if (ideScalaVersions.contains(major)) Nil
-        else NoIDEExport.noIDEExportSettings
+        else Seq(bspEnabled := false)
 
       major -> Project(
-        id = projectID(id, major),
-        base = new File(base, "." + major)
+        id = projectID(idWithSuffix, major),
+        base = platformBase / ("." + major)
       ).settings(
         Settings.commonSettings,
-        Keys.name := Settings.projectName(name),
-        scalaVersion := scalaVersions(major),
+        Keys.name := Settings.projectName(nameWithSuffix),
+        // Use the last version of the explicit cross versions list if defined, otherwise fallaback to default crossVersions list
+        scalaVersion := {
+          if (crossVersions.isDefined) minors.last
+          else scalaVersions(major)
+        },
         crossScalaVersions := minors,
+        sourceDirectory :=
+          srcDir((ThisBuild / baseDirectory).value, platformBase),
+        sharedSourceDirs(bases),
         noIDEExportSettings
       )
     }
 
     new MultiScalaProject(
-      name,
+      nameWithSuffix,
       projects,
-      dependsOnSourceInIDE = additionalIDEScalaVersions.nonEmpty
-    ).settings(
-      sourceDirectory := baseDirectory.value.getParentFile / "src"
+      dependsOnSourceInIDE = additionalIDEScalaVersions.nonEmpty,
+      binCrossVersions = crossVersions.map(_.keys.toSeq)
     )
   }
+
+  private def srcDir(root: File, base: File) = root / base.getPath / "src"
+
+  private def sharedSourceDirsForConfig(
+      bases: Seq[File],
+      subdir: String,
+      conf: Configuration
+  ) = {
+    conf / unmanagedSourceDirectories ++= {
+      val dirs =
+        bases.map(x => srcDir((ThisBuild / baseDirectory).value, x) / subdir)
+      val vers = CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, 12)) => Seq("2", "2.12")
+        case Some((2, 13)) => Seq("2", "2.13", "2.13+")
+        case Some((3, _))  => Seq("3", "2.13+")
+        case _ => sys.error(s"Unsupported Scala version: ${scalaVersion.value}")
+      }
+      ("scala" +: vers.map("scala-" + _)).flatMap(v => dirs.map(_ / v))
+    }
+  }
+
+  private def sharedSourceDirs(bases: Seq[File]) =
+    Def.settings(
+      sharedSourceDirsForConfig(bases, "main", Compile),
+      sharedSourceDirsForConfig(bases, "test", Test)
+    )
+
 }

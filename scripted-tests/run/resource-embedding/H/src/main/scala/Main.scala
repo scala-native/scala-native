@@ -20,7 +20,7 @@ object Main {
     ).foreach(file =>
       assert(
         getClass().getResourceAsStream(file) != null,
-        s"$file should not be embedded because they are not explicitly listed in the resource list"
+        s"$file should be embedded because they are explicitly listed in the resource list"
       )
     )
   }

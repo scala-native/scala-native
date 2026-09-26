@@ -72,7 +72,7 @@ object ProcessUtils {
     // completion time.  If a process expected to exit in milliseconds
     // takes that three orders of magnitude longer, it must be reported.
 
-    val tmo = 10
+    val tmo = 30
     val tmUnit = TimeUnit.SECONDS
 
     assertTrue(

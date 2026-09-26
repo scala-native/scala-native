@@ -129,8 +129,7 @@ object FutureTaskTest {
 }
 
 class FutureTaskTest extends JSR166Test {
-  type PublicFutureTask = FutureTask[AnyRef]
-    with FutureTaskTest.PublicFutureTask
+  type PublicFutureTask = FutureTask[AnyRef] & FutureTaskTest.PublicFutureTask
 
   def checkIsDone[T <: AnyRef](f: Future[T]): Unit = {
     assertTrue(f.isDone())
@@ -738,7 +737,7 @@ class FutureTaskTest extends JSR166Test {
   @Test def testGet_ExecutionException(): Unit = {
     val e = new ArithmeticException
     val task = FutureTaskTest.PublicFutureTask(new Callable[Any]() {
-      override def call = throw e
+      override def call: Any = throw e
     })
     task.run()
     assertEquals(1, task.runCount())
@@ -761,7 +760,7 @@ class FutureTaskTest extends JSR166Test {
   @Test def testTimedGet_ExecutionException2(): Unit = {
     val e = new ArithmeticException
     val task = FutureTaskTest.PublicFutureTask(new Callable[Any]() {
-      override def call = throw e
+      override def call: Any = throw e
     })
     task.run()
     try {

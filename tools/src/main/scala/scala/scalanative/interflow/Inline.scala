@@ -24,7 +24,7 @@ private[interflow] trait Inline { self: Interflow =>
       .fold[Boolean] {
         false
       } { defn =>
-        def isCtor = name.sig.isCtor
+        def isCtor = name.sig.isCtor || name.sig.isTraitInit
         def isSmall = defn.insts.size <= smallFunctionSize
         def isExtern = defn.attrs.isExtern
         def hasVirtualArgs = args.exists(_.isInstanceOf[nir.Val.Virtual])

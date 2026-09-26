@@ -29,8 +29,10 @@ class RandomAccessFile private (
     )
   def this(name: String, mode: String) = this(new File(name), mode)
 
-  private lazy val in = new DataInputStream(new FileInputStream(fd))
-  private lazy val out = new DataOutputStream(new FileOutputStream(fd))
+  private lazy val in =
+    new DataInputStream(new FileInputStream(fd, Some(file)))
+  private lazy val out =
+    new DataOutputStream(new FileOutputStream(fd, Some(file)))
   private lazy val channel =
     new FileChannelImpl(
       fd,
@@ -261,7 +263,7 @@ private object RandomAccessFile {
       if (fd == -1)
         throw new FileNotFoundException(file.getName())
 
-      new FileDescriptor(FileDescriptor.FileHandle(fd), readOnly = false)
+      new FileDescriptor(fd, readOnly = false)
     }
 
     def windowsFileDescriptor() = Zone.acquire { implicit z =>
@@ -286,10 +288,7 @@ private object RandomAccessFile {
       if (handle == HandleApiExt.INVALID_HANDLE_VALUE)
         throw new FileNotFoundException(file.getName())
 
-      new FileDescriptor(
-        FileDescriptor.FileHandle(handle),
-        readOnly = _flags == "r"
-      )
+      new FileDescriptor(handle, readOnly = _flags == "r")
     }
 
     if (isWindows) windowsFileDescriptor()

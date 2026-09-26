@@ -1,0 +1,17 @@
+# =============================================================================
+# GC Deadlock Detection Tests
+# =============================================================================
+# Tests GC synchronization timeout and liveness checking with both GC backends.
+# Each scenario tests a different stuck thread case.
+
+# -----------------------------------------------------------------------------
+# Phase 1: Test with Immix GC
+# -----------------------------------------------------------------------------
+> set nativeConfig ~= {_.withGC(scala.scalanative.build.GC.immix) }
+> testAll
+
+# -----------------------------------------------------------------------------
+# Phase 2: Test with Commix GC
+# -----------------------------------------------------------------------------
+> set nativeConfig ~= {_.withGC(scala.scalanative.build.GC.commix) }
+> testAll

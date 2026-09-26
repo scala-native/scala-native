@@ -67,15 +67,15 @@ trait CompletionStage[T <: AnyRef] {
   ): CompletionStage[Void]
   def applyToEither[U <: AnyRef](
       other: CompletionStage[_ <: T],
-      fn: Function[_ >: T, U]
+      fn: Function[_ >: T, _ <: U]
   ): CompletionStage[U]
   def applyToEitherAsync[U <: AnyRef](
       other: CompletionStage[_ <: T],
-      fn: Function[_ >: T, U]
+      fn: Function[_ >: T, _ <: U]
   ): CompletionStage[U]
   def applyToEitherAsync[U <: AnyRef](
       other: CompletionStage[_ <: T],
-      fn: Function[_ >: T, U],
+      fn: Function[_ >: T, _ <: U],
       executor: Executor
   ): CompletionStage[U]
   def acceptEither(

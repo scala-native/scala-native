@@ -63,4 +63,7 @@ docker run --rm \
   -e SCALANATIVE_TEST_DEBUG_SIGNALS=1 \
   -e SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1 \
   -e GC_MAXIMUM_HEAP_SIZE=1G \
+  -e TERM=xterm-256color \
+  -e JANSI_FORCE=true \
+  -e SBT_OPTS="-Dsbt.log.noformat=false" \
   -i "${FULL_IMAGE_NAME}"

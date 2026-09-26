@@ -1,5 +1,5 @@
 /* Ported from Scala.js commit: ba618ed dated: 2020-10-05
- * 
+ *
  *  Additional Tests added for Scala Native.
  */
 

@@ -125,10 +125,7 @@ class AtomicInteger(private var value: Int) extends Number with Serializable {
       expectedValue: Int,
       newValue: Int
   ): Boolean = {
-    if (value == expectedValue) {
-      value = newValue
-      true
-    } else false
+    valueRef.compareExchangeWeak(expectedValue, newValue, memory_order_relaxed)
   }
 
   /** Atomically increments the current value, with memory effects as specified

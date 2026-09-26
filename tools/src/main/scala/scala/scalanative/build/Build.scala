@@ -215,11 +215,15 @@ object Build {
         // format: off
         val jlRunnable = nir.Global.Top("java.lang.Runnable")
         val jlThread = nir.Global.Top("java.lang.Thread")
+        val jlThreadBuilder = nir.Global.Top("java.lang.Thread$Builder")
         val jlThreadBuildersOfPlatform = nir.Global.Top("java.lang.ThreadBuilders$PlatformThreadBuilder")
-        val jlThreadBuildersOfPlatformStart = jlThreadBuildersOfPlatform.member(nir.Sig.Method("start", Seq(jlRunnable, jlThread).map(nir.Type.Ref(_))))
+
         val jlThreadStart = jlThread.member(nir.Sig.Method("start", Seq(nir.Type.Unit)))
+        val jlThreadBuilderStart = jlThreadBuilder.member(nir.Sig.Method("start", Seq(jlRunnable, jlThread).map(nir.Type.Ref(_))))
+        val jlThreadBuildersOfPlatformStart = jlThreadBuildersOfPlatform.member(nir.Sig.Method("start", Seq(jlRunnable, jlThread).map(nir.Type.Ref(_))))
         val usesSystemThreads =
           analysis.infos.get(jlThreadBuildersOfPlatformStart).isDefined ||
+          analysis.infos.get(jlThreadBuilderStart).isDefined ||
           analysis.infos.get(jlThreadStart).isDefined
         // format: on
         if (!usesSystemThreads) {

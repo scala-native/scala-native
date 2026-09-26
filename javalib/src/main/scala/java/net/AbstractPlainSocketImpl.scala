@@ -2,13 +2,10 @@ package java.net
 
 import java.io.{FileDescriptor, IOException, InputStream, OutputStream}
 
+import scala.scalanative.libc.LibcExt
 import scala.scalanative.meta.LinktimeInfo.isWindows
-import scala.scalanative.posix.arpa.inet
-import scala.scalanative.posix.netdb._
-import scala.scalanative.posix.netdbOps._
 import scala.scalanative.posix.netinet.inOps._
 import scala.scalanative.posix.netinet.{in, tcp}
-import scala.scalanative.posix.string.strerror
 import scala.scalanative.posix.sys.ioctl._
 import scala.scalanative.posix.sys.socket
 import scala.scalanative.posix.sys.socket.{SHUT_RD, SHUT_RDWR, SHUT_WR}
@@ -22,7 +19,6 @@ import scala.scalanative.unsigned._
 import scala.scalanative.windows.WinSocketApi._
 import scala.scalanative.windows.WinSocketApiExt._
 import scala.scalanative.windows._
-import scalanative.libc.string.memcpy
 
 import posixErrno._
 
@@ -63,7 +59,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
 
   private def fetchLocalPort(family: Int): Option[Int] = {
     val len = stackalloc[socket.socklen_t]()
-    val portOpt = if (family == socket.AF_INET) {
+    if (family == socket.AF_INET) {
       val sin = stackalloc[in.sockaddr_in]()
       !len = sizeof[in.sockaddr_in].toUInt
 
@@ -74,7 +70,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
           ) == -1) {
         None
       } else {
-        Some(sin.sin_port)
+        Some(SocketHelpersNative.getSockaddrInPort(sin))
       }
     } else {
       val sin = stackalloc[in.sockaddr_in6]()
@@ -87,11 +83,9 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
           ) == -1) {
         None
       } else {
-        Some(sin.sin6_port)
+        Some(SocketHelpersNative.getSockaddrIn6Port(sin))
       }
     }
-
-    portOpt.map(inet.ntohs(_).toInt)
   }
 
   private def bind4(addr: InetAddress, port: Int): Unit = {
@@ -257,18 +251,18 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     }
   }
 
-  private lazy val connectFunc =
-    if (useIPv4Only) connect4(_: InetAddress, _: Int, _: Int)
-    else connect6(_: InetAddress, _: Int, _: Int)
+  private def connectTo(addr: InetAddress, port: Int, timeout: Int): Unit =
+    if (useIPv4Only) connect4(addr, port, timeout)
+    else connect6(addr, port, timeout)
 
   override def connect(host: String, port: Int): Unit = {
     throwIfClosed("connect")
     val addr = InetAddress.getByName(host)
-    connectFunc(addr, port, 0)
+    connectTo(addr, port, 0)
   }
   override def connect(address: InetAddress, port: Int): Unit = {
     throwIfClosed("connect")
-    connectFunc(address, port, 0)
+    connectTo(address, port, 0)
   }
 
   override def connect(address: SocketAddress, timeout: Int): Unit = {
@@ -279,7 +273,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
     }
     val addr = insAddr.getAddress
     val port = insAddr.getPort
-    connectFunc(addr, port, timeout)
+    connectTo(addr, port, timeout)
   }
 
   override def close(): Unit = {
@@ -350,7 +344,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
           else if (how == SHUT_WR) "output"
           else "input and output"
         throw new SocketException(
-          s"Error while shutting down socket's $side: ${fromCString(strerror(errno))}"
+          s"Error while shutting down socket's $side: ${LibcExt.strError()}"
         )
     }
   }

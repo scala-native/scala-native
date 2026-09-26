@@ -141,12 +141,18 @@ class Vector[E <: AnyRef](
 
     override def hasMoreElements(): Boolean = pos < elementCount
 
-    override def nextElement(): E = Vector.this.synchronized {
-      if (pos < elementCount) {
-        val elem = elementData(pos)
-        pos += 1
-        elem.asInstanceOf[E]
-      } else throw new NoSuchElementException
+    override def nextElement(): E = {
+      // Scala 3.10+ SimplifySynchronized treats `Outer.this.synchronized { ... }`
+      // as a synchronized method and would lock this Enumeration instead of
+      // the Vector (same bug as JVM ACC_SYNCHRONIZED on the inner class).
+      val vector = Vector.this
+      vector.synchronized {
+        if (pos < elementCount) {
+          val elem = elementData(pos)
+          pos += 1
+          elem.asInstanceOf[E]
+        } else throw new NoSuchElementException
+      }
     }
   }
 

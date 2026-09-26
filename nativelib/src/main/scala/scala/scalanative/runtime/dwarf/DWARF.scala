@@ -53,7 +53,8 @@ private[runtime] object DWARF {
       def read_ulong(): Long =
         if (dwarf64) uint64() else uint32().toLong
 
-      val (unit_type, address_size, debug_abbrev_offset): (UByte, UByte, Long) =
+      type HeaderFields = (UByte, UByte, Long)
+      val headerFields: HeaderFields =
         if (version >= 5.toUInt) {
           (
             uint8(),
@@ -68,6 +69,7 @@ private[runtime] object DWARF {
             dao
           )
         }
+      val (unit_type, address_size, debug_abbrev_offset) = headerFields
       Header(
         version = version.toInt,
         is64 = dwarf64,

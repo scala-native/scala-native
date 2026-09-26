@@ -6,8 +6,8 @@
 
 extern atomic_bool Synchronizer_stopThreads;
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
-// Should be defined in implementing source
-extern void **scalanative_GC_yieldpoint_trap;
+#include "shared/ThreadUtil.h"
+extern SN_ThreadLocal void **scalanative_GC_yieldpoint_trap;
 #endif
 
 void Synchronizer_init();

@@ -48,7 +48,7 @@ object Global {
     override def top: Global.Top =
       throw new Exception("None doesn't have a top.")
 
-    override def member(sig: Sig) =
+    override def member(sig: Sig): nir.Global.Member =
       throw new Exception("Global.None can't have any members.")
 
   }

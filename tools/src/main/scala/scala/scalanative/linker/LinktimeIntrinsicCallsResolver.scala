@@ -114,7 +114,14 @@ private[scala] object LinktimeIntrinsicCallsResolver {
       val builder = Seq.newBuilder[String]
       val header: Entry = ("Service", "Service Provider", "Status")
       val entryPadding = 3
-      val (serviceNameWidth, provideNameWidth, stateWidth) = serviceProviders
+
+      val normalizedServiceProviders = serviceProviders.toSeq.sortBy(_._1).map {
+        case (serviceName, providers) =>
+          serviceName -> (if (providers.nonEmpty) providers.sortBy(_.name)
+                          else Seq(FoundServiceProvider("---", NoProviders)))
+      }
+
+      val (serviceNameWidth, provideNameWidth, stateWidth) = normalizedServiceProviders
         .foldLeft(header._1.length(), header._2.length(), header._3.length()) {
           case ((maxServiceName, maxProviderName, maxStateName), (serviceName, providers)) =>
             val longestProviderName = providers.foldLeft(0) { _ max _.name.length }
@@ -129,14 +136,21 @@ private[scala] object LinktimeIntrinsicCallsResolver {
         val dashlineLength = serviceNameWidth + provideNameWidth + stateWidth + 8 // extra padding columns
         builder += s"|${"-" * dashlineLength}|"
       }
+      def centerPad(value: String, width: Int) = {
+        val totalPadding = width - value.length
+        val leftPadding = totalPadding / 2
+        // Keep remaining padding on the right when split is uneven.
+        val rightPadding = totalPadding - leftPadding
+        s"${" " * leftPadding}$value${" " * rightPadding}"
+      }
       def addEntry(entry: Entry, statusColor: String, skipServiceName: Boolean) = {
         val (serviceName, providerName, status) = entry
         import ServiceProviderStatus._
         val serviceNameOrBlank = if (skipServiceName) "" else serviceName
-        val servicePadded = serviceNameOrBlank.padTo(serviceNameWidth, ' ')
-        val providerPadded = providerName.padTo(provideNameWidth, ' ')
+        val servicePadded = centerPad(serviceNameOrBlank, serviceNameWidth)
+        val providerPadded = centerPad(providerName, provideNameWidth)
         val statusPadded =
-          s"$statusColor${status.toString.padTo(stateWidth, ' ')}${if (statusColor.nonEmpty) RESET else ""}"
+          s"$statusColor${centerPad(status, stateWidth)}${if (statusColor.nonEmpty) RESET else ""}"
         builder += s"| $servicePadded | $providerPadded | $statusPadded |"
       }
 
@@ -146,11 +160,9 @@ private[scala] object LinktimeIntrinsicCallsResolver {
       addEntry(header, statusColor = "", skipServiceName = false)
       addLine()
       for {
-        ((serviceName, providers), serviceIdx) <- serviceProviders.toSeq.sortBy(_._1).zipWithIndex
+        ((serviceName, providers), serviceIdx) <- normalizedServiceProviders.zipWithIndex
 
-        (provider, providerIdx) <-
-          if (providers.nonEmpty) providers.sortBy(_.name).zipWithIndex
-          else Seq(FoundServiceProvider("---", NoProviders) -> 0)
+        (provider, providerIdx) <- providers.zipWithIndex
         statusColor = provider.status match {
           case _ if noColor                             => ""
           case Loaded                                   => GREEN

@@ -1,4 +1,4 @@
---- 3.8.0-RC1-bin-20251017-96aff06-NIGHTLY/scala/package.scala
+--- 3.8.0-RC2/scala/package.scala
 +++ overrides-3/scala/package.scala
 @@ -39,7 +39,7 @@
    type InterruptedException            = java.lang.InterruptedException
@@ -6,7 +6,7 @@
    // A dummy used by the specialization annotation.
 -  val AnyRef = new Specializable {
 +  lazy val AnyRef = new Specializable {
-     override def toString = "object AnyRef"
+     override def toString() = "object AnyRef"
    }
  
 @@ -51,43 +51,43 @@

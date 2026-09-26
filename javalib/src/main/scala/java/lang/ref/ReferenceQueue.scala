@@ -1,43 +1,47 @@
 package java.lang.ref
 
-import scala.collection.mutable
-
 class ReferenceQueue[T] {
-  private val underlying = mutable.Queue[Reference[T]]()
-  private[ref] def enqueue(reference: Reference[T]): Unit =
+  private type Ref = Reference[_ <: T]
+  private val underlying = new java.util.ArrayDeque[Ref](64)
+
+  private[ref] def enqueue(reference: Ref): Unit =
     synchronized {
-      underlying += reference
+      underlying.addLast(reference)
       notifyAll()
     }
 
-  def poll(): Reference[T] = {
-    synchronized[Reference[T]] {
-      underlying
-        .dequeueFirst(_ => true)
-        .map(_.dequeue())
-        .orNull
-        .asInstanceOf[Reference[T]]
+  private def dequeue(): Ref = {
+    val entry = underlying.removeFirst()
+    entry.markDequeued()
+    entry
+  }
+
+  def poll(): Ref =
+    synchronized {
+      if (underlying.isEmpty()) null else dequeue()
     }
-  }
 
-  def remove(): Reference[_ <: T] = remove(None)
-  def remove(timeout: Long): Reference[_ <: T] = {
+  def remove(): Ref = remove(None)
+  def remove(timeout: Long): Ref = {
     if (timeout < 0) throw new IllegalArgumentException()
-    remove(Some(timeout))
+    remove(if (timeout == 0) None else Some(timeout))
   }
 
-  private def remove(timeout: Option[Long]): Reference[_ <: T] =
-    synchronized[Reference[_ <: T]] {
+  private def remove(timeout: Option[Long]): Ref =
+    synchronized {
       def now() = System.currentTimeMillis()
-      val hasTimeout = timeout.isDefined
-      val deadline = now() + timeout.getOrElse(0L)
-      def timeoutExceeded(current: Long): Boolean =
-        hasTimeout && current > deadline
+      val deadlineOpt = timeout.map(now() + _)
 
-      while (underlying.isEmpty && !timeoutExceeded(now())) {
-        if (hasTimeout) wait((deadline - now()).min(0L))
-        else wait()
+      while (underlying.isEmpty()) {
+        deadlineOpt match {
+          case Some(deadline) =>
+            val remaining = deadline - now()
+            if (remaining < 0) return null // timed out
+            wait(remaining)
+          case None =>
+            wait()
+        }
       }
-      poll()
+      dequeue()
     }
 }

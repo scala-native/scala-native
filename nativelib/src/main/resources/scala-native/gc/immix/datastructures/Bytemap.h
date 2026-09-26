@@ -6,7 +6,6 @@
 #include <string.h>
 #include "shared/GCTypes.h"
 #include "immix/Constants.h"
-#include "immix_commix/Log.h"
 #include "immix/metadata/ObjectMeta.h"
 
 typedef struct {

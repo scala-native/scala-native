@@ -7,10 +7,12 @@ import $ivy.`com.lihaoyi::ammonite-ops:2.3.8`
 
 val kinds = List("neg", "run", "pos")
 
-@main(doc = """"
+@main(doc =
+  """"
   "Tool used to gather results of failed partests.
   It copies log of failed tests and as well as expected output.
-  Allows to create diff files based on expected result""")
+  Allows to create diff files based on expected result"""
+)
 def main(
     @arg(doc = "Scala version used for fetching sources")
     scalaVersion: String,
@@ -32,13 +34,15 @@ def main(
   def showRelPath(p: os.Path): String =
     s"${p.relativeTo(wd)} ${if (exists(p)) "" else "missing!!!"}"
 
-  println(s"""
-             |Scala version:       $scalaVersion
-             |Results dir:         ${showRelPath(resultsDir)}
-             |Test defintions dir: ${showRelPath(partestTestsDir)}
-             |Partest sources dir: ${showRelPath(partestSourcesDir)}
-             |Create diffs:        ${createDiff}
-             |""".stripMargin)
+  println(
+    s"""
+       |Scala version:       $scalaVersion
+       |Results dir:         ${showRelPath(resultsDir)}
+       |Test defintions dir: ${showRelPath(partestTestsDir)}
+       |Partest sources dir: ${showRelPath(partestSourcesDir)}
+       |Create diffs:        ${createDiff}
+       |""".stripMargin
+  )
 
   val failedNotDenylisted = collection.mutable.Set.empty[String]
   val failed = collection.mutable.Set.empty[String]

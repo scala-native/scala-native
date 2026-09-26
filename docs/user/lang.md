@@ -58,11 +58,16 @@ similarly to JVM:
     throws `NullPointerException`.
 4.  Integer division by zero throws `ArithmeticException`.
 
-There are a few exceptions:
+There is one exception:
 
 1.  Stack overflows are undefined behavior and would typically segfault
     on supported architectures instead of throwing `StackOverflowError`.
-2.  Exhausting a heap space results in crash with a stack trace instead
-    of throwing `OutOfMemoryError`.
+
+The Immix and Commix garbage collectors throw `OutOfMemoryError` when the
+managed heap is exhausted. None GC does the same when it cannot map another
+heap chunk. They reserve one 32 KiB block to construct the first error and
+capture its stack trace. Until a later GC replenishes the reserve with an
+empty block, concurrent failures throw a shared, preallocated
+`OutOfMemoryError` without a stack trace.
 
 Continue to [interop](./interop.md).

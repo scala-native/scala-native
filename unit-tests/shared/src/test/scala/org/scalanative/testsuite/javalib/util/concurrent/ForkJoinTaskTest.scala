@@ -38,13 +38,6 @@ object ForkJoinTaskTest {
    * differently than supplied Recursive forms.
    */
   final class FJException() extends RuntimeException {}
-  object BinaryAsyncAction {
-    val controlStateUpdater: AtomicIntegerFieldUpdater[BinaryAsyncAction] =
-      AtomicIntegerFieldUpdater.newUpdater(
-        classOf[BinaryAsyncAction],
-        "controlState"
-      )
-  }
   abstract class BinaryAsyncAction protected () extends ForkJoinTask[Void] {
     private var atomicControlState = new AtomicInteger(0)
     def controlState = atomicControlState.get()
@@ -133,10 +126,10 @@ object ForkJoinTaskTest {
     protected final def setControlState(value: Int): Unit =
       atomicControlState.set(value)
     protected final def incrementControlState(): Unit = {
-      BinaryAsyncAction.controlStateUpdater.incrementAndGet(this)
+      atomicControlState.incrementAndGet()
     }
     protected final def decrementControlState(): Unit = {
-      BinaryAsyncAction.controlStateUpdater.decrementAndGet(this)
+      atomicControlState.decrementAndGet()
     }
   }
   final case class AsyncFib(var number: Int) extends BinaryAsyncAction {

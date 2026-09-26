@@ -44,7 +44,8 @@ class ClassReachabilitySuite extends ReachabilitySuite {
     Seq(Test, TestModule, TestInit, TestMain, TestModuleMain)
 
   @Test def unusedClasses(): Unit = testReachable() {
-    val source = """
+    val source =
+      """
       class Parent
       class Child extends Parent
 
@@ -61,7 +62,8 @@ class ClassReachabilitySuite extends ReachabilitySuite {
   }
 
   @Test def unusedMethods(): Unit = testReachable() {
-    val source = """
+    val source =
+      """
       class Parent {
         def foo: Unit = ()
       }
@@ -82,7 +84,8 @@ class ClassReachabilitySuite extends ReachabilitySuite {
 
   @Test def unusedVars(): Unit =
     testReachable() {
-      val source = """
+      val source =
+        """
       class Parent {
         var bar: Int = _
       }
@@ -103,7 +106,8 @@ class ClassReachabilitySuite extends ReachabilitySuite {
 
   @Test def classWithoutParentAllocation(): Unit =
     testReachable() {
-      val source = """
+      val source =
+        """
       class Parent
       class Child extends Parent
 
@@ -124,7 +128,8 @@ class ClassReachabilitySuite extends ReachabilitySuite {
     }
 
   @Test def allocatingClass(): Unit = testReachable() {
-    val source = """
+    val source =
+      """
       class Parent
       class Child extends Parent
 
@@ -145,7 +150,8 @@ class ClassReachabilitySuite extends ReachabilitySuite {
   }
 
   @Test def callParentMethodUnallocated(): Unit = testReachable() {
-    val source = """
+    val source =
+      """
       class Parent {
         def foo: Unit = ()
       }
@@ -171,7 +177,8 @@ class ClassReachabilitySuite extends ReachabilitySuite {
   }
 
   @Test def callParentMethodChildAllocated(): Unit = testReachable() {
-    val source = """
+    val source =
+      """
       class Parent {
         def foo: Unit = ()
       }
@@ -201,7 +208,8 @@ class ClassReachabilitySuite extends ReachabilitySuite {
   }
 
   @Test def callParentMethodParentAllocated(): Unit = testReachable() {
-    val source = """
+    val source =
+      """
       class Parent {
         def foo: Unit = ()
       }
@@ -229,7 +237,8 @@ class ClassReachabilitySuite extends ReachabilitySuite {
   }
 
   @Test def callParentMethodBothAllocated(): Unit = testReachable() {
-    val source = """
+    val source =
+      """
       class Parent {
         def foo: Unit = ()
       }
@@ -262,7 +271,8 @@ class ClassReachabilitySuite extends ReachabilitySuite {
   }
 
   @Test def classVarWritten(): Unit = testReachable() {
-    val source = """
+    val source =
+      """
       class Parent {
         var bar: Int = _
       }
@@ -287,7 +297,8 @@ class ClassReachabilitySuite extends ReachabilitySuite {
   }
 
   @Test def classVarsRead(): Unit = testReachable() {
-    val source = """
+    val source =
+      """
       class Parent {
         var bar: Int = _
       }
@@ -313,7 +324,8 @@ class ClassReachabilitySuite extends ReachabilitySuite {
 
   // Issue #805
   @Test def inheritedMainMethod(): Unit = testReachable() {
-    val source = """
+    val source =
+      """
       abstract class Parent {
         def main(args: Array[String]): Unit = ()
       }

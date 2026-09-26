@@ -3,13 +3,10 @@ package java.lang.ref
 import java.util.concurrent.locks.LockSupport
 
 import scala.annotation.tailrec
-import scala.util.control.NonFatal
 
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.libc.stdatomic._
-import scala.scalanative.meta.LinktimeInfo.{
-  isMultithreadingEnabled, isWeakReferenceSupported
-}
+import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
 import scala.scalanative.runtime.fromRawPtr
 import scala.scalanative.runtime.javalib.Proxy
@@ -30,120 +27,90 @@ private[java] object WeakReferenceRegistry {
       head: WeakReference[_],
       current: WeakReference[_],
       prev: WeakReference[_]
-  ): (WeakReference[Any], WeakReference[Any]) =
+  ): (WeakReference[AnyRef], WeakReference[AnyRef]) =
     if (current == null) {
-      val tail = if (prev != null) prev else head
+      val last = if (prev != null) prev else head
       (
-        head.asInstanceOf[WeakReference[Any]],
-        tail.asInstanceOf[WeakReference[Any]]
+        head.asInstanceOf[WeakReference[AnyRef]],
+        last.asInstanceOf[WeakReference[AnyRef]]
       )
-    } else
-      current.get() match {
-        case collected @ null =>
+    } else {
+      val next = current.nextReference
+      val headNew =
+        if (null != current.get()) head
+        else {
           current.enqueue()
-          val handler = current.postGCHandler
-          if (handler != null) {
-            current.postGCHandler = null
-            try handler()
-            catch {
-              case NonFatal(err) =>
-                val thread = Thread.currentThread()
-                thread
-                  .getUncaughtExceptionHandler()
-                  .uncaughtException(thread, err)
-            }
-          }
-          if (prev == null)
-            enqueueCollectedReferences(
-              current.nextReference,
-              current.nextReference,
-              current
-            )
+          if (prev == null) next
           else {
-            prev.nextReference = current.nextReference
-            enqueueCollectedReferences(head, current.nextReference, current)
+            prev.nextReference = next
+            head
           }
-        case _ =>
-          enqueueCollectedReferences(head, current.nextReference, current)
-      }
+        }
+      enqueueCollectedReferences(headNew, next, current)
+    }
+
   private def handleCollectedReferences(): Unit = {
     // This method is designed for calls from C and therefore should not include
     // non statically reachable fields or methods.
-    if (!isMultithreadingEnabled) {
-      enqueueCollectedReferences(weakRefsHead, weakRefsHead, null)
-    } else {
-      // Detach current weak refs linked-list to allow for unsynchronized updated
-      val expected = stackalloc[WeakReference[_]]()
-      var detached = null.asInstanceOf[WeakReference[_]]
+    // Detach current weak refs linked-list to allow for unsynchronized updated
+    val detachedHeadPtr = stackalloc[WeakReference[_]]()
+    def replaceHead(head: WeakReference[_])(reset: => Unit): Unit = {
+      !detachedHeadPtr = weakRefsHead
       while ({
-        detached = weakRefsHead
-        !expected = detached
-        !atomic_compare_exchange_strong(weakRefsHeadPtr, expected, null)
-      }) ()
+        reset
+        !atomic_compare_exchange_strong(weakRefsHeadPtr, detachedHeadPtr, head)
+      }) {}
+    }
 
-      val (newDetachedHead, detachedTail) =
-        enqueueCollectedReferences(detached, detached, null)
+    replaceHead(null) {}
 
-      // Reattach the weak refs list to the possibly updated head
-      if (newDetachedHead != null) while ({
-        assert(detachedTail != null)
-        val currentHead = weakRefsHead
-        !expected = currentHead
-        detachedTail.nextReference = currentHead
-        !atomic_compare_exchange_strong(
-          weakRefsHeadPtr,
-          expected,
-          newDetachedHead
-        )
-      }) ()
+    val detachedHead = !detachedHeadPtr
+    val (newHead, newLast) =
+      enqueueCollectedReferences(detachedHead, detachedHead, null)
+
+    // Reattach the weak refs list to the possibly updated head
+    if (newHead ne null) {
+      assert(newLast ne null)
+      replaceHead(newHead) { newLast.nextReference = !detachedHeadPtr }
     }
   }
 
-  private lazy val referenceHandlerThread = Thread
-    .ofPlatform()
-    .daemon()
-    .group(ThreadGroup.System)
-    .name("GC-WeakReferenceHandler")
-    .startInternal(() =>
-      while (true) {
-        handleCollectedReferences()
-        LockSupport.park()
-      }
-    )
+  private object Multithreaded {
+    private val referenceHandlerThread = Thread
+      .ofPlatform()
+      .daemon()
+      .group(ThreadGroup.System)
+      .name("GC-WeakReferenceHandler")
+      .startInternal(() =>
+        while (true) {
+          handleCollectedReferences()
+          LockSupport.park()
+        }
+      )
 
-  if (isWeakReferenceSupported) {
+    def unpark(): Unit =
+      LockSupport.unpark(referenceHandlerThread)
+  }
+
+  if (LinktimeInfo.isWeakReferenceSupported) {
     Proxy.GC_setWeakReferencesCollectedCallback { () =>
-      if (isMultithreadingEnabled) LockSupport.unpark(referenceHandlerThread)
+      if (LinktimeInfo.isMultithreadingEnabled) Multithreaded.unpark()
       else handleCollectedReferences()
     }
   }
 
   private[ref] def add(weakRef: WeakReference[_]): Unit =
-    if (isWeakReferenceSupported) {
+    if (LinktimeInfo.isWeakReferenceSupported) {
       assert(weakRef.nextReference == null)
-      var head = weakRefsHead
-      if (!isMultithreadingEnabled) {
-        weakRef.nextReference = head
-        weakRefsHead = weakRef
-      } else {
-        val expected = stackalloc[WeakReference[_]]()
-        !expected = null
-        if (atomic_compare_exchange_weak(weakRefsHeadPtr, expected, weakRef)) ()
-        else
-          while ({
-            var currentHead = !expected
-            weakRef.nextReference = currentHead
-            !expected = currentHead
-            !atomic_compare_exchange_weak(weakRefsHeadPtr, expected, weakRef)
-          }) ()
+      val prevHeadPtr = stackalloc[WeakReference[_]]()
+      !prevHeadPtr = null
+      while (!atomic_compare_exchange_weak(
+            weakRefsHeadPtr,
+            prevHeadPtr,
+            weakRef
+          )) {
+        weakRef.nextReference = !prevHeadPtr
       }
     }
 
-  // Scala Native javalib exclusive functionality.
-  // Can be used to emulate finalize for javalib classes where necessary.
-  private[java] def addHandler(
-      weakRef: WeakReference[_],
-      handler: Function0[Unit]
-  ): Unit =
-    if (isWeakReferenceSupported) { weakRef.postGCHandler = handler }
 }

@@ -22,6 +22,8 @@ object BinaryIncompatibilities {
     exclude[DirectMissingMethodProblem]("scala.scalanative.nir.Attrs.fromProduct"),
     exclude[IncompatibleResultTypeProblem]("scala.scalanative.nir.Attrs.unapply"),
     exclude[MissingTypesProblem]("scala.scalanative.nir.Attrs$"),
+    // since 0.4.10 - incorrectlly defined 
+    exclude[DirectMissingMethodProblem]("scala.scalanative.nir.Global#None.member"),
   )
 
   final val Tools: Filters = Seq(
@@ -41,6 +43,9 @@ object BinaryIncompatibilities {
     exclude[Problem]("scala.scalanative.build.Config*Impl*"),
     // Should have never been public in the first place - contains local classpaths
     exclude[MissingClassProblem]("scala.scalanative.buildinfo.ScalaNativeBuildInfo*"),
+    // Package private
+    exclude[DirectMissingMethodProblem]("scala.scalanative.build.Discover.checkClangVersion"),
+    exclude[DirectMissingMethodProblem]("scala.scalanative.build.Discover.clangMinVersion"),
   )
 
   final val NativeLib = Seq(
@@ -53,6 +58,11 @@ object BinaryIncompatibilities {
     exclude[ReversedMissingMethodProblem]("scala.scalanative.runtime.NativeThread#Companion.defaultOSStackSize"),
     exclude[Problem]("scala.scalanative.runtime._Class.*"),
     exclude[Problem]("scala.scalanative.runtime.unwind.*"),
+    exclude[DirectMissingMethodProblem]("scala.scalanative.unsafe.package.toCWideStringImpl"),
+    // Thread start now passes NativeThread instead of a raw Ptr.
+    exclude[IncompatibleMethTypeProblem]("scala.scalanative.runtime.GC.pthread_create(scala.scalanative.unsafe.Ptr,scala.scalanative.unsafe.Ptr,scala.scalanative.unsafe.CFuncPtr1,scala.scalanative.unsafe.Ptr)Int"),
+    exclude[IncompatibleMethTypeProblem]("scala.scalanative.runtime.GC.CreateThread(scala.scalanative.unsafe.Ptr,scala.scalanative.unsigned.USize,scala.scalanative.unsafe.CFuncPtr1,scala.scalanative.unsafe.Ptr,scala.scalanative.unsigned.UInt,scala.scalanative.unsafe.Ptr)scala.scalanative.unsafe.Ptr"),
+    exclude[IncompatibleResultTypeProblem]("scala.scalanative.runtime.NativeThread.threadRoutineArgs(scala.scalanative.runtime.NativeThread)scala.scalanative.unsafe.Ptr"),
   )
   final val CLib: Filters = Nil
 
@@ -60,7 +70,10 @@ object BinaryIncompatibilities {
     exclude[DirectMissingMethodProblem]("scala.scalanative.posix.spawn.posix_spawn_file_actions_open"), // wrong name
     exclude[Problem]("scala.scalanative.posix.string.stroll"), // remove typo 
     exclude[Problem]("scala.scalanative.posix.string.stroll_l"), // remove typo
-    exclude[Problem]("scala.scalanative.posix.string.strcpy") // libc not CX
+    exclude[Problem]("scala.scalanative.posix.string.strcpy"), // libc not CX
+    exclude[Problem]("scala.scalanative.posix.termios*"), // maybe can be more specific
+    exclude[Problem]("scala.scalanative.posix.pollEvents"), // not Open Group
+    exclude[Problem]("scala.scalanative.posix.pollEvents$") // not Open Group
   )
 
   final val WindowsLib: Filters = Nil

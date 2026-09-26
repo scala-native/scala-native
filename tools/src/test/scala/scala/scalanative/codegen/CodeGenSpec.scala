@@ -1,7 +1,7 @@
 package scala.scalanative
 package codegen
 
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.Path
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
@@ -12,7 +12,6 @@ import org.junit.Assert._
 import scala.scalanative.build.NativeConfig
 import scala.scalanative.linker.ReachabilityAnalysis
 import scalanative.build.{Config, ScalaNative}
-import scalanative.io.VirtualDirectory
 import scalanative.util.Scope
 
 /** Base class to test code generation */
@@ -39,15 +38,14 @@ abstract class CodeGenSpec extends OptimizerSpec {
     optimize(entry, sources, setupConfig.compose(_.withBaseName(entry))) {
       case (config, optimized) =>
         Scope { implicit in =>
-          val codeGen = ScalaNative.codegen(config, optimized)
-          val _ = Await.result(codeGen, 1.minute)
-          Thread.sleep(1000)
-
-          val outfiles = Files
-            .list(config.workDir.resolve("generated"))
-            .toArray
-            .toSeq
-            .asInstanceOf[Seq[Path]]
+          // Await each IR Future: the outer Future only starts them. Listing the
+          // workdir early can see *-body.ll files that merge then deletes.
+          val generators = Await.result(
+            ScalaNative.codegen(config, optimized),
+            1.minute
+          )
+          val outfiles =
+            Await.result(Future.sequence(generators), 1.minute)
 
           assertTrue("Empty code generator output", outfiles.nonEmpty)
 

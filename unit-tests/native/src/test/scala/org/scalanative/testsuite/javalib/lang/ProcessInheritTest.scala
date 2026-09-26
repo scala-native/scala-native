@@ -20,32 +20,31 @@ class ProcessInheritTest {
   @Test def inherit(): Unit = {
     def unixImpl() = {
       val f = Files.createTempFile("/tmp", "out")
-      val savedFD = unistd.dup(unistd.STDOUT_FILENO)
       val flags = fcntl.O_RDWR | fcntl.O_TRUNC | fcntl.O_CREAT
       val fd = Zone.acquire { implicit z =>
         fcntl.open(toCString(f.toAbsolutePath.toString), flags, 0.toUInt)
       }
 
-      try {
-        unistd.dup2(fd, unistd.STDOUT_FILENO)
-        unistd.close(fd)
-        val proc = new ProcessBuilder("ls", resourceDir).inheritIO().start()
-        proc.waitFor(5, TimeUnit.SECONDS)
-        readInputStream(new FileInputStream(f.toFile))
-      } finally {
-        unistd.dup2(savedFD, unistd.STDOUT_FILENO)
-        unistd.close(savedFD)
-      }
+      val savedFD = unistd.dup(unistd.STDOUT_FILENO)
+      fcntl.fcntl(savedFD, fcntl.F_SETFD, fcntl.FD_CLOEXEC)
+      val proc =
+        try {
+          unistd.dup2(fd, unistd.STDOUT_FILENO)
+          unistd.close(fd)
+          new ProcessBuilder("ls", resourceDir).inheritIO().start()
+        } finally {
+          unistd.dup2(savedFD, unistd.STDOUT_FILENO)
+          unistd.close(savedFD)
+        }
+
+      (proc, f)
     }
 
     def windowsImpl() = {
       import scala.scalanative.windows._
-      import NamedPipeApi._
       import HandleApi._
       import HandleApiExt._
       import ConsoleApi._
-      import ConsoleApiExt._
-      import FileApi._
       import FileApiExt._
       import winnt.AccessRights._
       val f = Files.createTempFile("tmp", "out")
@@ -54,7 +53,7 @@ class ProcessInheritTest {
       assertEquals(
         "createPipe",
         true,
-        CreatePipe(
+        NamedPipeApi.CreatePipe(
           readPipePtr = readEnd,
           writePipePtr = writeEnd,
           securityAttributes = null,
@@ -62,8 +61,8 @@ class ProcessInheritTest {
         )
       )
 
-      Zone.acquire { implicit z =>
-        val handle = CreateFileW(
+      val handle = Zone.acquire { implicit z =>
+        FileApi.CreateFileW(
           toCWideStringUTF16LE(f.toAbsolutePath.toString),
           desiredAccess = FILE_GENERIC_WRITE | FILE_GENERIC_READ,
           shareMode = FILE_SHARE_ALL,
@@ -72,27 +71,25 @@ class ProcessInheritTest {
           flagsAndAttributes = FILE_ATTRIBUTE_NORMAL,
           templateFile = null
         )
-        assertNotEquals("Cannot create file", INVALID_HANDLE_VALUE, handle)
+      }
+      assertNotEquals("Cannot create file", INVALID_HANDLE_VALUE, handle)
 
-        val savedStdout = GetStdHandle(STD_OUTPUT_HANDLE)
-        SetStdHandle(STD_OUTPUT_HANDLE, handle)
-
+      val savedStdout = GetStdHandle(STD_OUTPUT_HANDLE)
+      val proc =
         try {
-          val proc = processForCommand(Scripts.ls, "/b", resourceDir)
-            .inheritIO()
-            .start()
-          proc.waitFor(5, TimeUnit.SECONDS)
-          readInputStream(new FileInputStream(f.toFile))
+          SetStdHandle(STD_OUTPUT_HANDLE, handle)
+          processForCommand(Scripts.ls, "/b", resourceDir).inheritIO().start()
         } finally {
           SetStdHandle(STD_OUTPUT_HANDLE, savedStdout)
           CloseHandle(handle)
         }
-      }
+
+      (proc, f)
     }
 
-    val out =
-      if (isWindows) windowsImpl()
-      else unixImpl()
+    val (proc, tmpFile) = if (isWindows) windowsImpl() else unixImpl()
+    assertTrue(proc.waitFor(30, TimeUnit.SECONDS))
+    val out = readInputStream(new FileInputStream(tmpFile.toFile))
 
     assertEquals(scripts, out.split(System.lineSeparator()).toSet)
   }

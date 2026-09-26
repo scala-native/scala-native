@@ -1,6 +1,7 @@
 package java.io
 
 import java.nio.charset.Charset
+import java.util.Objects
 
 class ByteArrayOutputStream(initBufSize: Int) extends OutputStream {
 
@@ -26,6 +27,15 @@ class ByteArrayOutputStream(initBufSize: Int) extends OutputStream {
 
     System.arraycopy(b, off, buf, count, len)
     count += len
+  }
+
+  def writeBytes(b: Array[Byte]): Unit = {
+    Objects.requireNonNull(
+      b,
+      """Cannot read the array length because "b" is null"""
+    )
+
+    write(b, 0, b.length)
   }
 
   def writeTo(out: OutputStream): Unit =

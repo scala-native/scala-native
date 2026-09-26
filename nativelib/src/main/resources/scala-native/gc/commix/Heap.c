@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "Heap.h"
-#include "immix_commix/Log.h"
+#include "shared/Log.h"
 #include "Allocator.h"
 #include "LargeAllocator.h"
 #include "Marker.h"
@@ -23,10 +23,19 @@
 #include "WeakReferences.h"
 #include "immix_commix/Synchronizer.h"
 
+extern void *scalanative_createOutOfMemoryError(void);
+__attribute__((noreturn)) extern void scalanative_throw(void *obj);
+__attribute__((noreturn)) extern void
+scalanative_throwOutOfMemoryErrorFallback(void);
+
 void Heap_exitWithOutOfMemory(const char *details) {
-    fprintf(stderr, "Out of heap space %s\n", details);
+    GC_LOG_ERROR("Out of heap space %s", details);
     StackTrace_PrintStackTrace();
-    exit(1);
+    fflush(stdout);
+    // _Exit rather than exit: Heap_Grow holds the blockAllocator lock here, and
+    // exit() would run shutdown hooks on a spawned thread whose
+    // MutatorThread_init blocks on that same lock, hanging the process.
+    _Exit(1);
 }
 
 bool Heap_isGrowingPossible(Heap *heap, uint32_t incrementInBlocks) {
@@ -95,25 +104,22 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     size_t memoryLimit = Heap_getMemoryLimit();
 
     if (maxHeapSize < MIN_HEAP_SIZE) {
-        fprintf(stderr, "GC_MAXIMUM_HEAP_SIZE too small to initialize heap.\n");
-        fprintf(stderr, "Minimum required: %zum \n",
-                (size_t)(MIN_HEAP_SIZE / 1024 / 1024));
-        fflush(stderr);
+        GC_LOG_ERROR("GC_MAXIMUM_HEAP_SIZE too small to initialize heap. "
+                     "Minimum required: %zum",
+                     (size_t)(MIN_HEAP_SIZE / 1024 / 1024));
         exit(1);
     }
 
     if (minHeapSize > memoryLimit) {
-        fprintf(stderr, "GC_INITIAL_HEAP_SIZE is too large.\n");
-        fprintf(stderr, "Maximum possible: %zug \n",
-                memoryLimit / 1024 / 1024 / 1024);
-        fflush(stderr);
+        GC_LOG_ERROR("GC_INITIAL_HEAP_SIZE is too large. "
+                     "Maximum possible: %zug",
+                     memoryLimit / 1024 / 1024 / 1024);
         exit(1);
     }
 
     if (maxHeapSize < minHeapSize) {
-        fprintf(stderr, "GC_MAXIMUM_HEAP_SIZE should be at least "
-                        "GC_INITIAL_HEAP_SIZE\n");
-        fflush(stderr);
+        GC_LOG_ERROR("GC_MAXIMUM_HEAP_SIZE should be at least "
+                     "GC_INITIAL_HEAP_SIZE");
         exit(1);
     }
 
@@ -126,12 +132,17 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     }
 
     uint32_t maxNumberOfBlocks = maxHeapSize / SPACE_USED_PER_BLOCK;
+    assert(maxNumberOfBlocks > 1);
     uint32_t initialBlockCount = minHeapSize / SPACE_USED_PER_BLOCK;
     heap->maxHeapSize = maxHeapSize;
     heap->blockCount = initialBlockCount;
     heap->maxBlockCount = maxNumberOfBlocks;
+    heap->emergencyBlockStart = NULL;
+    heap->emergencyBlockMeta = NULL;
+    atomic_init(&heap->emergencyBlockClaimed, false);
     heap->maxMarkTimeRatio = Settings_MaxMarkTimeRatio();
     heap->minFreeRatio = Settings_MinFreeRatio();
+    atomic_init(&heap->growAfterCollection, false);
 
     // reserve space for block headers
     size_t blockMetaSpaceSize = maxNumberOfBlocks * sizeof(BlockMeta);
@@ -168,18 +179,17 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     // Init heap for small objects
     word_t *heapStart = Heap_mapAndAlign(maxHeapSize, BLOCK_TOTAL_SIZE);
     if (!heapStart) {
-        fprintf(
-            stderr,
-            "[Scala Native Commix GC] Failed to allocate heap space, "
-            "requested size=%.2fMB, available memory=%.2fMB. Consider setting "
-            "GC_MAXIMUM_HEAP_SIZE env variable to limit maximal heap size",
-            maxHeapSize / (1024.0 * 1024.0),
-            getFreeMemorySize() / (1024.0 * 1024.0));
+        GC_LOG_ERROR("Failed to allocate heap space, "
+                     "requested size=%.2fMB, available memory=%.2fMB. "
+                     "Consider setting GC_MAXIMUM_HEAP_SIZE env variable "
+                     "to limit maximal heap size",
+                     maxHeapSize / (1024.0 * 1024.0),
+                     getFreeMemorySize() / (1024.0 * 1024.0));
         exit(1);
     }
-    heap->heapSize = minHeapSize;
+    heap->heapSize = initialBlockCount * SPACE_USED_PER_BLOCK;
     heap->heapStart = heapStart;
-    heap->heapEnd = heapStart + minHeapSize / WORD_SIZE;
+    heap->heapEnd = heapStart + initialBlockCount * WORDS_IN_BLOCK;
 
 #ifdef _WIN32
     // Commit memory chunks reserved using mapMemory
@@ -209,6 +219,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     Phase_Init(heap, initialBlockCount);
 
     Bytemap_Init(bytemap, heapStart, maxHeapSize);
+    Heap_RefillEmergencyBlock(heap);
 
     // Init all GCThreads
     // Init stats if enabled.
@@ -231,11 +242,63 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     mutex_init(&heap->lock);
 }
 
-void Heap_Collect(Heap *heap) {
+bool Heap_BeginEmergencyAllocation(Heap *heap) {
+    bool expected = false;
+    if (heap->emergencyBlockStart == NULL ||
+        !atomic_compare_exchange_strong(&heap->emergencyBlockClaimed, &expected,
+                                        true)) {
+        return false;
+    }
+
+    BlockMeta *blockMeta = (BlockMeta *)heap->emergencyBlockMeta;
+    word_t *blockStart = heap->emergencyBlockStart;
+    heap->emergencyBlockStart = NULL;
+    heap->emergencyBlockMeta = NULL;
+    BlockMeta_SetFlag(blockMeta, block_simple);
+    BlockMeta_SetFirstFreeLine(blockMeta, LAST_HOLE);
+    ObjectMeta_ClearBlockAt(Bytemap_Get(heap->bytemap, blockStart));
+#ifdef GC_ASSERTIONS
+    blockMeta->debugFlag = dbg_in_use;
+#endif
+
+    Allocator *allocator = &currentMutatorThread->allocator;
+    allocator->block = blockMeta;
+    allocator->blockStart = blockStart;
+    allocator->cursor = blockStart;
+    allocator->limit = Block_GetBlockEnd(blockStart);
+    atomic_thread_fence(memory_order_release);
+    return true;
+}
+
+void Heap_RefillEmergencyBlock(Heap *heap) {
+    if (heap->emergencyBlockStart != NULL)
+        return;
+
+    BlockMeta *block = BlockAllocator_GetFreeBlock(&blockAllocator);
+    if (block == NULL)
+        return;
+
+    heap->emergencyBlockMeta = block;
+    heap->emergencyBlockStart =
+        BlockMeta_GetBlockStart(heap->blockMetaStart, heap->heapStart, block);
+    BlockMeta_SetFlag(block, block_reserved);
+    atomic_store_explicit(&heap->emergencyBlockClaimed, false,
+                          memory_order_release);
+}
+
+void Heap_ThrowOutOfMemory(Heap *heap) {
+    if (!Heap_BeginEmergencyAllocation(heap)) {
+        scalanative_throwOutOfMemoryErrorFallback();
+    }
+    void *error = scalanative_createOutOfMemoryError();
+    scalanative_throw(error);
+}
+
+bool Heap_Collect(Heap *heap, bool allowHeapGrowth) {
     MutatorThread *mutatorThread = currentMutatorThread;
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     if (!Synchronizer_acquire())
-        return;
+        return false;
     while (!Sweeper_IsSweepDone(heap)) {
         // Unlock mutator threads list to allow registration of new threads
         // WriteLock has higher priority then ReadLock - it does NOT wait until
@@ -253,6 +316,9 @@ void Heap_Collect(Heap *heap) {
                               GC_MutatorThreadState_Unmanaged);
     assert(Sweeper_IsSweepDone(heap));
 #endif
+    // Stored before the phase change, so the sweeping thread sees it.
+    atomic_store_explicit(&heap->growAfterCollection, allowHeapGrowth,
+                          memory_order_release);
     heap->gcCollectionStart_ns = Time_current_nanos();
     Stats *stats = Stats_OrNull(heap->stats);
     Stats_CollectionStarted(stats);
@@ -275,6 +341,7 @@ void Heap_Collect(Heap *heap) {
                               GC_MutatorThreadState_Managed);
 #endif
     WeakReferences_InvokeGCFinishedCallback();
+    return true;
 }
 
 bool Heap_shouldGrow(Heap *heap) {
@@ -287,15 +354,11 @@ bool Heap_shouldGrow(Heap *heap) {
     uint32_t unavailableBlockCount =
         blockCount - (freeBlockCount + recycledBlockCount);
 
-#ifdef DEBUG_PRINT
-    printf("\n\n Max mark time ratio: %lf \n", heap->maxMarkTimeRatio);
-    printf("Min free ratio: %lf \n", heap->minFreeRatio);
-    printf("Block count: %" PRIu32 "\n", blockCount);
-    printf("Unavailable: %" PRIu32 "\n", unavailableBlockCount);
-    printf("Free: %" PRIu32 "\n", freeBlockCount);
-    printf("Recycled: %" PRIu32 "\n", recycledBlockCount);
-    fflush(stdout);
-#endif
+    GC_LOG_DEBUG("Max mark time ratio: %lf, Min free ratio: %lf, "
+                 "Block count: %" PRIu32 ", Unavailable: %" PRIu32
+                 ", Free: %" PRIu32 ", Recycled: %" PRIu32,
+                 heap->maxMarkTimeRatio, heap->minFreeRatio, blockCount,
+                 unavailableBlockCount, freeBlockCount, recycledBlockCount);
 
     uint64_t timeInMark = heap->mark.currentEnd_ns - heap->mark.currentStart_ns;
     uint64_t timeTotal = heap->mark.currentEnd_ns - heap->mark.lastEnd_ns;
@@ -325,27 +388,20 @@ void Heap_GrowIfNeeded(Heap *heap) {
             }
         }
     }
-    MutatorThreads_foreach(mutatorThreads, node) {
-        MutatorThread *thread = node->value;
-        if (!Allocator_CanInitCursors(&thread->allocator)) {
-            Heap_exitWithOutOfMemory("growIfNeeded:re-init cursors");
-        }
-    }
 }
 
-void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
+bool Heap_TryGrow(Heap *heap, uint32_t incrementInBlocks) {
     BlockAllocator_Acquire(&blockAllocator);
     mutex_lock(&heap->sweep.growMutex);
     if (!Heap_isGrowingPossible(heap, incrementInBlocks)) {
-        Heap_exitWithOutOfMemory("grow heap");
+        BlockAllocator_Release(&blockAllocator);
+        mutex_unlock(&heap->sweep.growMutex);
+        return false;
     }
     size_t incrementInBytes = incrementInBlocks * SPACE_USED_PER_BLOCK;
 
-#ifdef DEBUG_PRINT
-    printf("Growing heap by %zu bytes, to %zu bytes\n", incrementInBytes,
-           heap->heapSize + incrementInBytes);
-    fflush(stdout);
-#endif
+    GC_LOG_INFO("Growing heap by %zu bytes, to %zu bytes", incrementInBytes,
+                heap->heapSize + incrementInBytes);
 
     word_t *heapEnd = heap->heapEnd;
     heap->heapEnd = heapEnd + incrementInBlocks * WORDS_IN_BLOCK;
@@ -380,6 +436,13 @@ void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
     heap->blockCount += incrementInBlocks;
     BlockAllocator_Release(&blockAllocator);
     mutex_unlock(&heap->sweep.growMutex);
+    return true;
+}
+
+void Heap_Grow(Heap *heap, uint32_t incrementInBlocks) {
+    if (!Heap_TryGrow(heap, incrementInBlocks)) {
+        Heap_exitWithOutOfMemory("grow heap");
+    }
 }
 
 #endif

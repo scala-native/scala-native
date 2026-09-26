@@ -6,7 +6,8 @@ import org.junit.Test
 
 class SubSuite extends ReachabilitySuite {
 
-  val source = """
+  val source =
+    """
     class A extends T1
     class B extends A with T3
     class C extends T2

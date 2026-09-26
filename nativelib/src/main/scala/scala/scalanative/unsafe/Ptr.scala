@@ -13,7 +13,7 @@ final class Ptr[T] private[scalanative] (
     private[scalanative] val rawptr: RawPtr
 ) {
   @alwaysinline override def hashCode: Int =
-    java.lang.Long.hashCode(castRawPtrToLong(rawptr))
+    java.lang.Long.hashCode(toLong)
 
   @alwaysinline override def equals(other: Any): Boolean =
     (this eq other.asInstanceOf[AnyRef]) || (other match {
@@ -22,7 +22,7 @@ final class Ptr[T] private[scalanative] (
     })
 
   @alwaysinline override def toString: String =
-    "Ptr@" + java.lang.Long.toHexString(castRawPtrToLong(rawptr))
+    "Ptr@" + java.lang.Long.toHexString(toLong)
 
   @alwaysinline def toInt: scala.Int =
     Intrinsics.castRawPtrToInt(rawptr)
@@ -31,82 +31,86 @@ final class Ptr[T] private[scalanative] (
     Intrinsics.castRawPtrToLong(rawptr)
 
   @alwaysinline def unary_!(implicit tag: Tag[T]): T =
-    tag.load(this)
+    tag.load(rawptr)
 
   @alwaysinline def `unary_!_=`(value: T)(implicit tag: Tag[T]): Unit =
-    tag.store(this, value)
+    tag.store(rawptr, value)
+
+  // move forward
+
+  @alwaysinline def +(offset: RawSize): Ptr[T] =
+    new Ptr[T](elemRawPtr(rawptr, offset))
 
   @alwaysinline def +(offset: Int)(implicit tag: Tag[T]): Ptr[T] =
-    new Ptr[T](elemRawPtr(rawptr, castIntToRawSize(offset * tag.size.toInt)))
+    this + (offset * tag.size).toRawSize
 
   @alwaysinline def +(offset: Long)(implicit tag: Tag[T]): Ptr[T] =
-    new Ptr[T](elemRawPtr(rawptr, castLongToRawSize(offset * tag.size.toLong)))
+    this + (offset * tag.size.toLong).toRawSize
 
   @alwaysinline def +(offset: Size)(implicit tag: Tag[T]): Ptr[T] =
-    new Ptr[T](elemRawPtr(rawptr, toRawSize(offset * tag.size.toSize)))
+    this + (offset * tag.size.toSize).rawSize
 
   @alwaysinline def +(offset: USize)(implicit tag: Tag[T]): Ptr[T] =
-    new Ptr[T](elemRawPtr(rawptr, toRawSize(offset * tag.size.toUSize)))
+    this + (offset * tag.size.toUSize).rawSize
+
+  // move backward
 
   @alwaysinline def -(offset: Int)(implicit tag: Tag[T]): Ptr[T] =
-    new Ptr[T](elemRawPtr(rawptr, castIntToRawSize(-offset * tag.size.toInt)))
+    this + (-offset)
 
   @alwaysinline def -(offset: Long)(implicit tag: Tag[T]): Ptr[T] =
-    new Ptr[T](elemRawPtr(rawptr, castLongToRawSize(-offset * tag.size.toLong)))
+    this + (-offset)
 
   @alwaysinline def -(offset: Size)(implicit tag: Tag[T]): Ptr[T] =
-    new Ptr[T](elemRawPtr(rawptr, toRawSize(-offset * tag.size.toSize)))
+    this + (-offset)
 
   @alwaysinline def -(offset: USize)(implicit tag: Tag[T]): Ptr[T] =
-    new Ptr[T](elemRawPtr(rawptr, toRawSize(-offset.toSize * tag.size.toSize)))
+    this + (-offset.toSize)
 
+  // difference
   @alwaysinline def -(other: Ptr[T])(implicit tag: Tag[T]): CPtrDiff = {
     if (is32BitPlatform) (this.toInt - other.toInt).toSize / tag.size.toSize
     else (this.toLong - other.toLong).toSize / tag.size.toSize
   }
 
+  // load
+
+  @alwaysinline private def load(offset: RawSize)(implicit tag: Tag[T]): T =
+    tag.load(elemRawPtr(rawptr, offset))
+
   @alwaysinline def apply(offset: Int)(implicit tag: Tag[T]): T =
-    tag.load(elemRawPtr(rawptr, castIntToRawSize(offset * tag.size.toInt)))
+    load((offset * tag.size).toRawSize)
 
   @alwaysinline def apply(offset: Long)(implicit tag: Tag[T]): T =
-    tag.load(elemRawPtr(rawptr, castLongToRawSize(offset * tag.size.toLong)))
+    load((offset * tag.size.toLong).toRawSize)
 
   @alwaysinline def apply(offset: USize)(implicit tag: Tag[T]): T =
-    tag.load(elemRawPtr(rawptr, toRawSize(offset * tag.size.toUSize)))
+    load((offset * tag.size.toUSize).rawSize)
 
   @alwaysinline def apply(offset: Size)(implicit tag: Tag[T]): T =
-    tag.load(elemRawPtr(rawptr, toRawSize(offset * tag.size.toSize)))
+    load((offset * tag.size.toSize).rawSize)
 
-  @alwaysinline def update(offset: Int, value: T)(implicit
-      tag: Tag[T]
-  ): Unit =
-    tag.store(
-      elemRawPtr(rawptr, castIntToRawSize(offset * tag.size.toInt)),
-      value
-    )
-  @alwaysinline def update(offset: Long, value: T)(implicit
-      tag: Tag[T]
-  ): Unit =
-    tag.store(
-      elemRawPtr(rawptr, castLongToRawSize(offset * tag.size.toLong)),
-      value
-    )
+  // store
 
-  @alwaysinline def update(offset: USize, value: T)(implicit
-      tag: Tag[T]
-  ): Unit =
-    tag.store(
-      elemRawPtr(rawptr, toRawSize(offset * tag.size.toUSize)),
-      value
-    )
+  @alwaysinline
+  private def store(offset: RawSize, value: T)(implicit tag: Tag[T]): Unit =
+    tag.store(elemRawPtr(rawptr, offset), value)
 
-  @alwaysinline def update(offset: Size, value: T)(implicit
-      tag: Tag[T]
-  ): Unit =
-    tag.store(
-      elemRawPtr(rawptr, toRawSize(offset * tag.size.toSize)),
-      value
-    )
+  @alwaysinline
+  def update(offset: Int, value: T)(implicit tag: Tag[T]): Unit =
+    store((offset * tag.size).toRawSize, value)
+
+  @alwaysinline
+  def update(offset: Long, value: T)(implicit tag: Tag[T]): Unit =
+    store((offset * tag.size.toLong).toRawSize, value)
+
+  @alwaysinline
+  def update(offset: USize, value: T)(implicit tag: Tag[T]): Unit =
+    store((offset * tag.size.toUSize).rawSize, value)
+
+  @alwaysinline
+  def update(offset: Size, value: T)(implicit tag: Tag[T]): Unit =
+    store((offset * tag.size.toSize).rawSize, value)
 }
 
 object Ptr {

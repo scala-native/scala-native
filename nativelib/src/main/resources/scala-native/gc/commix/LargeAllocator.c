@@ -8,7 +8,7 @@
 #include "Object.h"
 #include "State.h"
 #include "Sweeper.h"
-#include "immix_commix/Log.h"
+#include "shared/Log.h"
 #include "immix_commix/headers/ObjectHeader.h"
 #include "shared/ThreadUtil.h"
 
@@ -188,13 +188,8 @@ INLINE
 word_t *LargeAllocator_lazySweep(LargeAllocator *largeAllocator, Heap *heap,
                                  uint32_t size) {
     word_t *object = NULL;
-#ifdef DEBUG_PRINT
-    uint32_t increment =
-        (uint32_t)MathUtils_DivAndRoundUp(size, BLOCK_TOTAL_SIZE);
-    printf("Sweeper_LazySweepLarge (%" PRIu32 ") => %" PRIu32 "\n", size,
-           increment);
-    fflush(stdout);
-#endif
+    GC_LOG_DEBUG("Sweeper_LazySweepLarge (%" PRIu32 ") => %" PRIu32, size,
+                 (uint32_t)MathUtils_DivAndRoundUp(size, BLOCK_TOTAL_SIZE));
     // lazy sweep will happen
     Stats_DefineOrNothing(stats, heap->stats);
     Stats_RecordTime(stats, start_ns);
@@ -224,39 +219,48 @@ word_t *LargeAllocator_Alloc(Heap *heap, uint32_t size) {
     assert(size % ALLOCATION_ALIGNMENT == 0);
     assert(size >= MIN_BLOCK_SIZE);
     LargeAllocator *largeAllocator = &currentMutatorThread->largeAllocator;
-    word_t *object = LargeAllocator_tryAlloc(largeAllocator, size);
-    if (object != NULL) {
-    done:
-        assert(object != NULL);
-        assert(Heap_IsWordInHeap(heap, (word_t *)object));
-        return object;
-    }
+    // Retry the full recovery sequence (lazy sweep, collect, lazy sweep, grow)
+    // until an allocation succeeds or Heap_Grow exits with OOM. A single
+    // tryAlloc after Heap_Grow can race with another mutator stealing the
+    // freshly grown superblock; returning NULL would crash the inlined callers
+    // at the header store.
+    do {
+        word_t *object = LargeAllocator_tryAlloc(largeAllocator, size);
+        if (object != NULL) {
+        done:
+            assert(object != NULL);
+            assert(Heap_IsWordInHeap(heap, (word_t *)object));
+            return object;
+        }
 
-    if (!Sweeper_IsSweepDone(heap)) {
-        object = LargeAllocator_lazySweep(largeAllocator, heap, size);
+        if (!Sweeper_IsSweepDone(heap)) {
+            object = LargeAllocator_lazySweep(largeAllocator, heap, size);
+            if (object != NULL)
+                goto done;
+        }
+
+        // Another thread collects instead. Retry before growing the heap.
+        if (!Heap_Collect(heap, true))
+            continue;
+
+        object = LargeAllocator_tryAlloc(largeAllocator, size);
         if (object != NULL)
             goto done;
-    }
 
-    Heap_Collect(heap);
+        if (!Sweeper_IsSweepDone(heap)) {
+            object = LargeAllocator_lazySweep(largeAllocator, heap, size);
+            if (object != NULL)
+                goto done;
+        }
 
-    object = LargeAllocator_tryAlloc(largeAllocator, size);
-    if (object != NULL)
-        goto done;
-
-    if (!Sweeper_IsSweepDone(heap)) {
-        object = LargeAllocator_lazySweep(largeAllocator, heap, size);
-        if (object != NULL)
-            goto done;
-    }
-
-    size_t increment = MathUtils_DivAndRoundUp(size, BLOCK_TOTAL_SIZE);
-    uint32_t pow2increment = 1U << MathUtils_Log2Ceil(increment);
-    Heap_Grow(heap, pow2increment);
-
-    object = LargeAllocator_tryAlloc(largeAllocator, size);
-
-    goto done;
+        size_t increment = MathUtils_DivAndRoundUp(size, BLOCK_TOTAL_SIZE);
+        uint32_t pow2increment = 1U << MathUtils_Log2Ceil(increment);
+        if (!Heap_TryGrow(heap, pow2increment) &&
+            !Heap_TryGrow(heap, (uint32_t)increment)) {
+            Heap_ThrowOutOfMemory(heap);
+        }
+    } while (true);
+    return NULL; // unreachable
 }
 
 #endif

@@ -10,7 +10,8 @@ import org.scalanative.testsuite.utils.Platform
 
 class PrintStreamTest {
 
-  final val secondComing = """
+  final val secondComing =
+    """
                |""The darkness drops again; but now I know
                """
 

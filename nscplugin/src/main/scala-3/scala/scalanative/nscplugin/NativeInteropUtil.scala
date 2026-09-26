@@ -8,7 +8,7 @@ import dotty.tools.dotc.core.Types._
 import dotty.tools.dotc.core.{Definitions, Symbols}
 import dotty.tools.dotc.plugins.PluginPhase
 
-import scala.scalanative.nscplugin.CompilerCompat.SymUtilsCompat.*
+import scala.scalanative.nscplugin.CompilerCompat.SymUtils.*
 
 import NirGenUtil.ContextCached
 

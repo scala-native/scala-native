@@ -55,7 +55,6 @@ GreyPacket *SyncGreyLists_takeEmptyPacket(Heap *heap, Stats *stats) {
         packet->size = 0;
         packet->type = grey_packet_reflist;
     }
-    assert(packet != NULL);
     return packet;
 }
 

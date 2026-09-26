@@ -7,7 +7,7 @@
 #include "Allocator.h"
 #include "LargeAllocator.h"
 #include "Marker.h"
-#include "immix_commix/Log.h"
+#include "shared/Log.h"
 #include "Object.h"
 #include "State.h"
 #include "immix_commix/utils/MathUtils.h"
@@ -39,6 +39,8 @@ void scalanative_afterexit() {
 NOINLINE void scalanative_GC_init() {
     volatile word_t dummy = 0;
     dummy = (word_t)&dummy;
+    GC_Log_Init();
+    Settings_Init();
     Heap_Init(&heap, Settings_MinHeapSize(), Settings_MaxHeapSize());
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     Synchronizer_init();
@@ -90,7 +92,7 @@ INLINE void *scalanative_GC_alloc_array(Rtti *info, size_t length,
     return (void *)alloc;
 }
 
-INLINE void scalanative_GC_collect() { Heap_Collect(&heap); }
+INLINE void scalanative_GC_collect() { Heap_Collect(&heap, false); }
 
 INLINE void scalanative_GC_set_weak_references_collected_callback(
     WeakReferencesCollectedCallback callback) {

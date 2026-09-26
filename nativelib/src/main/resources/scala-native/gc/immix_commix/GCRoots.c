@@ -5,12 +5,11 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
-#include <stdatomic.h>
 #include "shared/ThreadUtil.h"
 
 GC_Roots *GC_Roots_Init() {
     GC_Roots *roots = (GC_Roots *)malloc(sizeof(GC_Roots));
-    roots->head = ATOMIC_VAR_INIT(NULL);
+    roots->head = NULL;
     mutex_init(&roots->modificationLock);
     return roots;
 }

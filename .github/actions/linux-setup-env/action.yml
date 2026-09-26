@@ -6,14 +6,15 @@ inputs:
     required: true
   java-version:
     description: "Java version to use in tests"
-    default: "17"
+    default: "25"
   llvm-version:
     description: "LLVM toolchain version"
+    default: "16"
 runs:
   using: "composite"
   steps:
-    - uses: coursier/cache-action@v6
-    - uses: coursier/setup-action@v1
+    - uses: coursier/cache-action@v8
+    - uses: coursier/setup-action@v3
       with:
         jvm: ${{inputs.java-version}}
         apps: sbt
@@ -31,7 +32,7 @@ runs:
         fi
 
     - name: Install dependencies
-      uses: nick-fields/retry@v3
+      uses: nick-fields/retry@v4
       with:
         timeout_minutes: 10
         max_attempts: 10
@@ -48,12 +49,12 @@ runs:
         wget https://apt.llvm.org/llvm.sh
         chmod +x llvm.sh
         (yes "" || true) | sudo ./llvm.sh ${{ inputs.llvm-version }}
-        
-    # Loads cache with dependencies created in test-tools job
-    - name: Cache dependencies
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.cache/coursier
-          ~/.sbt/boot
-        key: ${{ runner.os }}-deps-${{ inputs.scala-version }}-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('**/build.properties') }}
+        # Prefer apt.llvm.org install over /usr/bin/clang (Discover uses LLVM_BIN / PATH).
+        LLVM_TOOLCHAIN="/usr/lib/llvm-${{ inputs.llvm-version }}/bin"
+        if [[ -d "$LLVM_TOOLCHAIN" ]]; then
+          echo "LLVM_BIN=$LLVM_TOOLCHAIN" >> "$GITHUB_ENV"
+          echo "$LLVM_TOOLCHAIN" >> "$GITHUB_PATH"
+          echo "Using toolchain: $("$LLVM_TOOLCHAIN/clang" --version | head -1)"
+        else
+          echo "::warning::No directory $LLVM_TOOLCHAIN (e.g. llvm-version=latest); set LLVM_BIN on the step if needed."
+        fi

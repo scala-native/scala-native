@@ -234,7 +234,7 @@ object BooleanArray {
       val dst  = arr.atRawUnsafe(0)
       val src  = data
       val size = castIntToRawSizeUnsigned(1 * length)
-      ffi.memcpy(dst, src, size)
+      ffi.memcpy(dst, src, size): Unit
     }
     arr
   }
@@ -305,7 +305,7 @@ object CharArray {
       val dst  = arr.atRawUnsafe(0)
       val src  = data
       val size = castIntToRawSizeUnsigned(2 * length)
-      ffi.memcpy(dst, src, size)
+      ffi.memcpy(dst, src, size): Unit
     }
     arr
   }
@@ -376,7 +376,7 @@ object ByteArray {
       val dst  = arr.atRawUnsafe(0)
       val src  = data
       val size = castIntToRawSizeUnsigned(1 * length)
-      ffi.memcpy(dst, src, size)
+      ffi.memcpy(dst, src, size): Unit
     }
     arr
   }
@@ -447,7 +447,7 @@ object ShortArray {
       val dst  = arr.atRawUnsafe(0)
       val src  = data
       val size = castIntToRawSizeUnsigned(2 * length)
-      ffi.memcpy(dst, src, size)
+      ffi.memcpy(dst, src, size): Unit
     }
     arr
   }
@@ -518,7 +518,7 @@ object IntArray {
       val dst  = arr.atRawUnsafe(0)
       val src  = data
       val size = castIntToRawSizeUnsigned(4 * length)
-      ffi.memcpy(dst, src, size)
+      ffi.memcpy(dst, src, size): Unit
     }
     arr
   }
@@ -589,7 +589,7 @@ object LongArray {
       val dst  = arr.atRawUnsafe(0)
       val src  = data
       val size = castIntToRawSizeUnsigned(8 * length)
-      ffi.memcpy(dst, src, size)
+      ffi.memcpy(dst, src, size): Unit
     }
     arr
   }
@@ -660,7 +660,7 @@ object FloatArray {
       val dst  = arr.atRawUnsafe(0)
       val src  = data
       val size = castIntToRawSizeUnsigned(4 * length)
-      ffi.memcpy(dst, src, size)
+      ffi.memcpy(dst, src, size): Unit
     }
     arr
   }
@@ -731,7 +731,7 @@ object DoubleArray {
       val dst  = arr.atRawUnsafe(0)
       val src  = data
       val size = castIntToRawSizeUnsigned(8 * length)
-      ffi.memcpy(dst, src, size)
+      ffi.memcpy(dst, src, size): Unit
     }
     arr
   }
@@ -802,7 +802,7 @@ object ObjectArray {
       val dst  = arr.atRawUnsafe(0)
       val src  = data
       val size = castIntToRawSizeUnsigned(castRawSizeToInt(Intrinsics.sizeOf[RawPtr]) * length)
-      ffi.memcpy(dst, src, size)
+      ffi.memcpy(dst, src, size): Unit
     }
     arr
   }
@@ -895,7 +895,7 @@ object BlobArray {
       val dst  = arr.atRawUnsafe(0)
       val src  = data
       val size = castIntToRawSizeUnsigned(1 * length)
-      ffi.memcpy(dst, src, size)
+      ffi.memcpy(dst, src, size): Unit
     }
     arr
   }

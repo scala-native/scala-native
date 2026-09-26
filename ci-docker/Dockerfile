@@ -10,9 +10,12 @@ ENV DEFAULT_DOCKCROSS_IMAGE=${IMAGE_NAME}
 RUN echo "BASE_IMAGE: $BASE_IMAGE, LLVM toolchain: $LLVM_VERSION"
 RUN apt-get update && apt-get install -y zip unzip lsb-release curl wget software-properties-common iputils-ping libgc-dev libz-dev git
 
-RUN wget -O - https://apt.llvm.org/llvm.sh | bash /dev/stdin $LLVM_VERSION
-RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-$LLVM_VERSION 100
-RUN update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-$LLVM_VERSION 100
+# Force IPv4: GitHub runners often have no IPv6, and apt.llvm.org prefers AAAA.
+RUN set -eux; \
+    wget -4 -O /tmp/llvm.sh https://apt.llvm.org/llvm.sh; \
+    bash /tmp/llvm.sh "$LLVM_VERSION"; \
+    update-alternatives --install /usr/bin/clang clang /usr/bin/clang-"$LLVM_VERSION" 100; \
+    update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-"$LLVM_VERSION" 100
 
 # We cannot easily install dependencies, clone and build zlib and Boehm locally
 RUN git clone https://github.com/madler/zlib /tmp/zlib \
@@ -34,6 +37,14 @@ RUN git clone https://github.com/ivmai/bdwgc /tmp/bdwgc \
     && make install prefix=$QEMU_LD_PREFIX \
     && rm -rf /tmp/bdwgc
 
+# Some targets (riscv64) place their runtime libraries in an ABI specific
+# directory (lib64/lp64d) which is the only one searched by their dynamic
+# loader, while the toolchain and the libraries built above live in lib.
+RUN set -eux; \
+    runtimeLibDir=$(dirname "$(find "$QEMU_LD_PREFIX" -name libc.so.6 -print -quit)"); \
+    if [ "$runtimeLibDir" != "$QEMU_LD_PREFIX/lib" ]; then \
+      ln -sf "$QEMU_LD_PREFIX"/lib/*.so* "$runtimeLibDir/"; \
+    fi
 
 # Switch shell and user to allow for usage of sdk and installed by it binaries 
 SHELL ["/bin/bash", "-c"]
@@ -44,8 +55,8 @@ RUN git config --global --add safe.directory /home/scala-native/scala-native
 
 RUN curl -s "https://get.sdkman.io" | bash  \
   && . "$HOME/.sdkman/bin/sdkman-init.sh" \
-  && sdk install sbt 1.10.1 \ 
-  && sdk install java 8.0.332-tem
+  && sdk install sbt 1.12.9 \
+  && sdk install java 25.0.3-tem
 
 ENV LC_ALL="C.UTF-8"
 ENV LANG="C.UTF-8"
@@ -59,5 +70,5 @@ RUN dpkg --add-architecture i386 && \
 
 CMD sbt \
   "-J-Xmx7G" \
-  "set sbtScalaNative/scriptedBufferLog := false" \
+  "set every scriptedBufferLog := false" \
   "$TEST_COMMAND"

@@ -1,8 +1,8 @@
 package org.scalanative.testsuite.javalib.util.stream
 
-import java.util.Arrays
 import java.util.function.Consumer
 import java.util.stream._
+import java.util.{Arrays, List}
 import java.{lang => jl}
 
 import org.junit.Assert._
@@ -247,4 +247,35 @@ class StreamTestOnJDK16 {
     assertThrows(classOf[UnsupportedOperationException], list.remove(6))
   }
 
+  // SN Issue 4742
+  @Test def streamFilter_ShrinkingDownstream(): Unit = {
+    /* Issue 4742 provided reproduction code which used Stream.toList().
+     * That method was introduced in JDK 16. The fundamental defect
+     * was in Stream.filter(), which goes back to JDK 8.  Exercise
+     * the fix here, as well as in StreamTest. The Test here stays
+     * closer to the original reproducer.
+     */
+
+    val list = List.of("A", "B", "CCC", "DD", "EEE")
+    val expectedList = List.of("A", "B", "DD")
+
+    val afterFilter = list.stream().filter(i => i.length < 3).toList()
+
+    assertEquals("filtered size", expectedList.size, afterFilter.size)
+    assertEquals("contents", expectedList, afterFilter)
+  }
+
+  // SN Issue 4743
+  @Test def streamDistinct_ShrinkingDownstream(): Unit = {
+    // See notes in streamFilter_ToList test. Same song, next verse.
+
+    val list = List.of("A", "D", "B", "C", "C", "B", "D", "E", "E")
+
+    val expectedList = List.of("A", "D", "B", "C", "E")
+
+    val distinctElements = list.stream().distinct().toList()
+
+    assertEquals("distinct size", expectedList.size, distinctElements.size)
+    assertEquals("contents", expectedList, distinctElements)
+  }
 }

@@ -12,6 +12,7 @@ import scalanative.unsafe._
 import scalanative.unsigned.USize
 
 package object runtime {
+  import NativeThread.ThreadInfoOps
   def filename = ExecInfo.filename
   def startTime: Long = ExecInfo.startTime
   def uptime: Long = System.currentTimeMillis() - startTime
@@ -65,6 +66,8 @@ package object runtime {
     )
     StackOverflowGuards.setup(isMainThread = true)
 
+    OutOfMemory.preallocateFallback()
+
     val mainThread = Thread.currentThread()
     if (mainThread == null) {
       ffi.printf(
@@ -73,6 +76,7 @@ package object runtime {
       )
       System.exit(1)
     }
+    NativeThread.TLS.currentThreadInfo().isInitialized = true
 
     val argv = fromRawPtr[CString](rawargv)
     val args = new scala.Array[String](argc - 1)
@@ -126,6 +130,7 @@ package object runtime {
       }
       shouldWaitForThreads || shouldRunQueuedTasks
     }) ()
+    NativeThread.TLS.currentThreadInfo().isInitialized = false
     StackOverflowGuards.close()
   }
 
@@ -257,6 +262,10 @@ package object runtime {
         ex.setStackTrace(error.getStackTrace())
         saveResult(ex)
         throw error
+    } finally {
+      if (isMultithreadingEnabled)
+        ModuleInitialization.completeForCurrentThread()
+      cls.notifyAll()
     }
   }
 
@@ -265,9 +274,17 @@ package object runtime {
   private[runtime] def waitForModuleInitialization(
       moduleSlot: unsafe.Ptr[AnyRef],
       cls: Class[_]
+  ): AnyRef =
+    if (isMultithreadingEnabled)
+      waitForModuleInitializationMultithreaded(moduleSlot, cls)
+    else
+      waitForModuleInitializationSingleThreaded(moduleSlot, cls)
+
+  private def waitForModuleInitializationMultithreaded(
+      moduleSlot: unsafe.Ptr[AnyRef],
+      cls: Class[_]
   ): AnyRef = cls.synchronized {
-    var spins = 32
-    while (spins > 0) {
+    while (true) {
       // The slot can contain one of the 3 values:
       // - Fully initialized object of type `cls`
       // - ExceptionInInitializerError object set by exception cought when executing constructor
@@ -276,30 +293,58 @@ package object runtime {
         moduleSlot.rawptr,
         ffi.stdatomic.memory_order.memory_order_acquire
       )
-      // Assumes Class[?] is always 1st filed in the object header
-      val rtti = Intrinsics.loadObject(moduleRef)
-      if (rtti eq cls)
-        return Intrinsics.castRawPtrToObject(moduleRef) // happy-path
+      if (ModuleInitialization.isContext(moduleRef)) {
+        // A stack-local InitializationContext is valid only while its owner is
+        // initializing under this monitor. Competing threads wait and recheck
+        // after the owner publishes the completed module.
+        val initializingInstance =
+          ModuleInitialization.instanceForCurrentThread(moduleRef)
+        if (initializingInstance != null) return initializingInstance
+        cls.wait()
+      } else {
+        // Assumes Class[?] is always 1st filed in the object header
+        val rtti = Intrinsics.loadObject(moduleRef)
+        if (rtti eq cls)
+          return Intrinsics.castRawPtrToObject(moduleRef) // happy-path
 
+        if (rtti eq classOf[ExceptionInInitializerError]) {
+          val ex: ExceptionInInitializerError = Intrinsics
+            .castRawPtrToObject(moduleRef)
+            .asInstanceOf[ExceptionInInitializerError]
+          throw new NoClassDefFoundError(
+            s"Could not initialize class ${cls.getName()}"
+          ).initCause(ex)
+        }
+
+        cls.wait()
+      }
+    }
+    ??? // Unreachable
+  }
+
+  private def waitForModuleInitializationSingleThreaded(
+      moduleSlot: unsafe.Ptr[AnyRef],
+      cls: Class[_]
+  ): AnyRef = cls.synchronized {
+    while (true) {
+      val moduleRef = ffi.stdatomic.atomic_load_intptr(
+        moduleSlot.rawptr,
+        ffi.stdatomic.memory_order.memory_order_acquire
+      )
+      val rtti = Intrinsics.loadObject(moduleRef)
+      if (rtti eq cls) return Intrinsics.castRawPtrToObject(moduleRef)
       if (rtti eq classOf[ExceptionInInitializerError]) {
-        val ex: ExceptionInInitializerError = Intrinsics
+        val ex = Intrinsics
           .castRawPtrToObject(moduleRef)
           .asInstanceOf[ExceptionInInitializerError]
         throw new NoClassDefFoundError(
           s"Could not initialize class ${cls.getName()}"
-        ).initCause(ex)
-      }
-
-      // Not yet initialized
-      cls.wait(1)
-      spins -= 1
-    }
-    throw new NoClassDefFoundError(cls.getName())
-      .initCause(
-        new IllegalStateException(
-          "Failed to load module initialized by other thread"
         )
-      )
+          .initCause(ex)
+      }
+      cls.wait()
+    }
+    ???
   }
 
   @extern private[runtime] object StackOverflowGuards {
@@ -314,6 +359,17 @@ package object runtime {
 
     @name("scalanative_StackOverflowGuards_close")
     def close(): Unit = extern
+  }
+
+  @extern private[runtime] object ModuleInitialization {
+    @name("scalanative_isModuleInitializationContext")
+    def isContext(context: RawPtr): Boolean = extern
+
+    @name("scalanative_moduleInitializationInstanceForCurrentThread")
+    def instanceForCurrentThread(context: RawPtr): AnyRef = extern
+
+    @name("scalanative_completeModuleInitializationForCurrentThread")
+    def completeForCurrentThread(): Unit = extern
   }
 
 }

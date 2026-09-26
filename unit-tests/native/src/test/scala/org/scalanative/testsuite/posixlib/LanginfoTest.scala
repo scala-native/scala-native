@@ -7,7 +7,7 @@ import org.junit.Assume._
 import org.junit.{AfterClass, BeforeClass, Test}
 
 import scala.scalanative.meta.LinktimeInfo.{
-  isLinux, isMac, isNetBSD, isOpenBSD, isWindows
+  isLinux, isMac, isMusl, isNetBSD, isOpenBSD, isWindows
 }
 import scala.scalanative.posix.langinfo._
 import scala.scalanative.posix.locale.{LC_ALL, setlocale}
@@ -101,6 +101,13 @@ class LanginfoTest {
     assumeTrue(
       "langinfo.scala is not implemented on Windows",
       !isWindows
+    )
+
+    // musl reports `setlocale(LC_ALL, "en_US.UTF-8")` as successful but
+    // populates only C-equivalent locale data
+    assumeFalse(
+      "musl ships only C-equivalent locale data for en_US",
+      isMusl
     )
 
     /* Warn here instead of doing a hard fail.

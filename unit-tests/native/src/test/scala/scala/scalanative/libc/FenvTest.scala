@@ -28,14 +28,14 @@ class FEnvTest {
 
       def assertContainsFlags(expected: CInt, actual: CInt): Unit = {
         assertTrue(
-          s"""expected: $expected
-        |actual: $actual
-        |FE_DIVBYZERO: ${fenv.FE_DIVBYZERO}
-        |FE_INEXACT: ${fenv.FE_INEXACT}
-        |FE_INVALID: ${fenv.FE_INVALID}
-        |FE_OVERFLOW: ${fenv.FE_OVERFLOW}
-        |FE_UNDERFLOW: ${fenv.FE_UNDERFLOW}
-        |""".stripMargin,
+          s"""|expected: $expected
+              |actual: $actual
+              |FE_DIVBYZERO: ${fenv.FE_DIVBYZERO}
+              |FE_INEXACT: ${fenv.FE_INEXACT}
+              |FE_INVALID: ${fenv.FE_INVALID}
+              |FE_OVERFLOW: ${fenv.FE_OVERFLOW}
+              |FE_UNDERFLOW: ${fenv.FE_UNDERFLOW}
+              |""".stripMargin,
           (actual & expected) == expected
         )
       }

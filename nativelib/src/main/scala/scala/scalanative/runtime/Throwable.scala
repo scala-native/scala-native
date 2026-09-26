@@ -31,15 +31,15 @@ abstract class Throwable @noinline protected (
     // currentStackTrace should be handling exclusion in its own
     // critical section, but does not. So do
     if (writableStackTrace) this.synchronized {
-      if (LinktimeInfo.isWindows || LinktimeInfo.is32BitPlatform) {
-        // Getting stack traces does not work well for collecting traces lazilly
-        this.stackTrace = StackTrace.currentStackTrace()
-      } else {
-        // Collect stack trace lazilly (only IP addresses), materialize StackTraceElements on demand
-        this.rawStackTrace = StackTrace.currentRawStackTrace()
-      }
+      // Collect stack trace lazilly (only IP addresses), materialize StackTraceElements on demand
+      this.rawStackTrace = StackTrace.currentRawStackTrace()
     }
     this
+  }
+
+  private[runtime] def clearStackTrace(): Unit = {
+    stackTrace = null
+    rawStackTrace = null
   }
 
   def setStackTrace(stackTrace: scala.Array[StackTraceElement]): Unit = {
@@ -151,7 +151,8 @@ private object Throwable {
 
   @exported("scalanative_Throwable_exceptionWrapper")
   def exceptionWrapper(self: Throwable): RawPtr =
-    self.exceptionWrapper.atRawUnsafe(0)
+    if (OutOfMemory.isFallback(self)) null
+    else self.exceptionWrapper.atRawUnsafe(0)
 
   @exported("scalanative_Throwable_onCatchHandler")
   def onCatchHandler(self: Throwable): CFuncPtr1[Throwable, Unit] /* | Null*/ =

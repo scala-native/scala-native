@@ -381,10 +381,9 @@ private[util] class ReverseOrderLinkedListView[E](forward: LinkedList[E])
     with ReverseOrderDequeViewTrait[E]
     with ReverseOrderListViewTrait[E] {
 
-  val underlying = forward
+  override val underlying: LinkedList[E] = forward
 
-  override def reversed(): LinkedList[E] =
-    forward
+  override def reversed(): LinkedList[E] = forward
 
   override def size(): Int =
     underlying.size()
@@ -559,16 +558,16 @@ private[util] class ReverseOrderSortedSetView[E](underlying: SortedSet[E])
 
   /* This algorithm is sometimes called a "road painter" algorithm
    * (https://www.joelonsoftware.com/2001/12/11/back-to-basics/).
-   * 
+   *
    * It is not especially efficient; worst case, n-squared. It also does
    * a lot of object creations.
-   * 
+   *
    * Given the methods available to SortedSet, its virtue is that it does not
    * retain, say double, the memory of the original set for long periods of
    * time, potentially even after use.
-   * 
+   *
    * Improvements to this code are welcome.
-   * 
+   *
    * Classes extending SortedSet(), such as NavigableSet, may be able to
    * provide a more pleasing implementation.
    */

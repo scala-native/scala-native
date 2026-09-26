@@ -352,7 +352,7 @@ class JEP431_CollectionsTestOnJDK21 {
 
     /* SequencedSet overrides the strict reference equality of
      * Collections.equals() to provide content equality.
-     * 
+     *
      * Reference equality is allowed but not required and not JVM 24 practice.
      */
 

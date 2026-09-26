@@ -81,7 +81,6 @@ class FileInputStreamTest {
       try {
         // current position less than file size.
         assertEquals("available pos < size", str.length(), fis.available())
-        // 2023-06-15 11:21 -0400 FIXME
 
         // move current position to > than file size.
         val channel = fis.getChannel()

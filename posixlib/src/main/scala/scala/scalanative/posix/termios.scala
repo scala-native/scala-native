@@ -1,8 +1,9 @@
 package scala.scalanative
 package posix
 
-import scalanative.unsafe.Nat._
-import scalanative.unsafe._
+import scala.scalanative.unsafe.Nat._
+import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 
 import posix.sys.types.pid_t
 
@@ -12,34 +13,45 @@ object termios {
 
   // types
 
-  type tcflag_t = CLong
-  type cc_t = CChar
-  type speed_t = CLong
-  type NCCS = Digit2[_2, _0]
-  type c_cc = CArray[cc_t, NCCS]
+  /** POSIX specifies that the types are unsigned. Linux defines the `tcflag_t`
+   *  and `speed_t` as `unsigned int` but macOS defines unsigned long. An option
+   *  would be a uint32_t since unsigned int is 32bit and 64bit on those
+   *  systems. Using the Linux size is sufficient for the flags but some magic
+   *  would be needed to align the `termios` struct.
+   */
+  type tcflag_t = CUnsignedInt
+  type cc_t = CUnsignedChar
+  type speed_t = CUnsignedInt
+  type NCCS = Digit2[_2, _0] // 20 on macOS
+  type cc_t_arr = CArray[cc_t, NCCS]
 
   type termios = CStruct7[
     tcflag_t, /* c_iflag - input flags   */
     tcflag_t, /* c_oflag - output flags  */
     tcflag_t, /* c_cflag - control flags */
     tcflag_t, /* c_lflag - local flags   */
-    c_cc, /* cc_t c_cc[NCCS] - control chars */
+    cc_t_arr, /* cc_t c_cc[NCCS] - control chars */
     speed_t, /* c_ispeed - input speed   */
     speed_t /* c_ospeed - output speed  */
   ]
 
   // functions
-
+  @name("scalanative_termios_cfgetispeed")
   def cfgetispeed(termios_p: Ptr[termios]): speed_t = extern
+  @name("scalanative_termios_cfgetospeed")
   def cfgetospeed(termios_p: Ptr[termios]): speed_t = extern
+  @name("scalanative_termios_cfsetispeed")
   def cfsetispeed(termios_p: Ptr[termios], speed: speed_t): CInt = extern
+  @name("scalanative_termios_cfsetospeed")
   def cfsetospeed(termios_p: Ptr[termios], speed: speed_t): CInt = extern
   def tcdrain(fd: CInt): CInt = extern
   def tcflow(fd: CInt, action: CInt): CInt = extern
   def tcflush(fd: CInt, queueSelector: CInt): CInt = extern
+  @name("scalanative_termios_tcgetattr")
   def tcgetattr(fd: CInt, termios_p: Ptr[termios]): CInt = extern
   def tcgetsid(i: CInt): pid_t = extern
   def tcsendbreak(fd: CInt, duration: CInt): CInt = extern
+  @name("scalanative_termios_tcsetattr")
   def tcsetattr(
       fd: CInt,
       optionalActions: CInt,
@@ -271,4 +283,29 @@ object termios {
   @name("scalanative_termios_tcoon")
   def TCOON: CInt = extern
 
+}
+
+/** Allow using C names to access 'termios' structure fields.
+ */
+object termiosOps {
+  import termios._
+
+  implicit class termiosStructOps(private val ptr: Ptr[termios])
+      extends AnyVal {
+    def c_iflag: tcflag_t = ptr._1
+    def c_oflag: tcflag_t = ptr._2
+    def c_cflag: tcflag_t = ptr._3
+    def c_lflag: tcflag_t = ptr._4
+    def c_cc: cc_t_arr = ptr._5
+    def c_ispeed: speed_t = ptr._6
+    def c_ospeed: speed_t = ptr._7
+
+    def c_iflag_=(v: tcflag_t): Unit = ptr._1 = v
+    def c_oflag_=(v: tcflag_t): Unit = ptr._2 = v
+    def c_cflag_=(v: tcflag_t): Unit = ptr._3 = v
+    def c_lflag_=(v: tcflag_t): Unit = ptr._4 = v
+    def c_cc_=(v: cc_t_arr): Unit = ptr._5 = v
+    def c_ispeed_=(v: speed_t): Unit = ptr._6 = v
+    def c_ospeed_=(v: speed_t): Unit = ptr._7 = v
+  }
 }

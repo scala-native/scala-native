@@ -17,11 +17,11 @@ class LinktimeIntrinsicsUsageTest {
       () =>
         NIRCompiler(
           _.compile(
-            """import scala.scalanative.unsafe._
-          |object Test {
-          |  val x: Class[_] = this.getClass
-          |  def fail() = java.util.ServiceLoader.load(x)
-          |}""".stripMargin
+            """|import scala.scalanative.unsafe._
+               |object Test {
+               |  val x: Class[_] = this.getClass
+               |  def fail() = java.util.ServiceLoader.load(x)
+               |}""".stripMargin
           )
         )
     )
@@ -38,14 +38,14 @@ class LinktimeIntrinsicsUsageTest {
   @Test def setsCorrectDefnAttrs(): Unit = {
     compileAndLoad(
       "Test.scala" ->
-        """
-        |trait Service
-        |object Test{  
-        |  def bias = println() 
-        |  def usesServiceLoader1 = {java.util.ServiceLoader.loadInstalled(classOf[Service]); ()}
-        |  def usesServiceLoader2 = {java.util.ServiceLoader.load(classOf[Service]); ()}
-        |  def usesServiceLoader3 = {java.util.ServiceLoader.load(classOf[Service], null.asInstanceOf[java.lang.ClassLoader]); ()}
-        |}""".stripMargin
+        """|
+           |trait Service
+           |object Test{  
+           |  def bias = println() 
+           |  def usesServiceLoader1 = {java.util.ServiceLoader.loadInstalled(classOf[Service]); ()}
+           |  def usesServiceLoader2 = {java.util.ServiceLoader.load(classOf[Service]); ()}
+           |  def usesServiceLoader3 = {java.util.ServiceLoader.load(classOf[Service], null.asInstanceOf[java.lang.ClassLoader]); ()}
+           |}""".stripMargin
     ) { defns =>
       val TestModule = Global.Top("Test$")
       val expected: Seq[Global] = Seq(

@@ -2,9 +2,11 @@ package java.nio.file
 
 import java.io._
 import java.lang.Iterable
-import java.nio.channels.{FileChannel, SeekableByteChannel}
+import java.nio.channels.SeekableByteChannel
 import java.nio.charset.{Charset, StandardCharsets}
-import java.nio.file.StandardCopyOption.{COPY_ATTRIBUTES, REPLACE_EXISTING}
+import java.nio.file.StandardCopyOption.{
+  ATOMIC_MOVE, COPY_ATTRIBUTES, REPLACE_EXISTING
+}
 import java.nio.file.attribute.PosixFilePermission._
 import java.nio.file.attribute._
 import java.util.WindowsHelperMethods._
@@ -112,7 +114,7 @@ object Files {
       Zone.acquire { implicit z =>
 
         /* Requirement:
-         * 
+         *
          *   Files.copy(Path, Path, Options) on the JVM ensures that, on
          *   success, the PosixPermissions of the source, limited by the
          *   process umask, have been copied to the target.
@@ -124,18 +126,18 @@ object Files {
          */
 
         /* Design Notes:
-         * 
+         *
          *   - Use POSIX I/O to handle the corner case where a file exists but
          *     the user does not have write access: r--x------ & kin.
-         * 
+         *
          *     JVM handles this case, Scala Native must also.
-         * 
+         *
          *     Most of Scala Native javalib Files.scala, File_Helpers.scala,
          *     java.nio.*, and java.io.* use a non-atomic sequence of steps:
          *     create the file, then set indicated attributes. Any subsequent
          *     write to the file fails because the file permissions have been
          *     set user no-write.
-         * 
+         *
          *     POSIX fcntl.open() is defined so that it can open and create
          *     a new file for write if the indicated directory permissions
          *     allow. Code can use the fd returned to write to the file as long
@@ -146,14 +148,14 @@ object Files {
          *     condition checking is delegated to the operating system
          *     under the expectation that in most cases the operation will
          *     succeed.
-         * 
+         *
          *   - Some, but probably not all, rare and somewhat astonishing corner
          *     conditions exist when the REPLACE_EXISTING option is present:
-         * 
+         *
          *     - Any kind of IOException, including but not limited to:
          *           - source file can not be read
          *       Action: target file is deleted.
-         * 
+         *
          *     - target file exists but does not have write permission,
          *       e.g. r-xr-xr-x.
          *       Action: copy proceeds but inode number changes.
@@ -162,7 +164,7 @@ object Files {
          *     development days of modifying files in-place.  This
          *     leaves a pretty wide window for misadventure, particularly
          *     if more than one thread or process is accessing the file.
-         * 
+         *
          *     Many contemporary applications create a temporary intermediate
          *     file, copy the source contents to the temporary,
          *     set permissions on the temporary, and then, finally, if the
@@ -174,7 +176,7 @@ object Files {
          *     a file with a temporary name. The obvious library calls
          *     each have their own drawbacks. A "create-until-success" loop
          *     also has its own pain points: more than an afternoon's work.
-         * 
+         *
          *     Oh, give me a good ship, a fair wind, and a few clever
          *     secondary school students!
          */
@@ -235,10 +237,10 @@ object Files {
             /* Handle what should be a vanishingly rare but possible
              * corner case where cTarget exists but is not user writable;
              * r-xr-xr-x, --xr-xr-x, and kin. O_TRUNC will fail in those cases.
-             * 
+             *
              * unlink() is a directory operation. If the permissions on that
              * directory permit, the operation should succeed.
-             * 
+             *
              * Of course, if two or more threads/processes are accessing the
              * same file without explicit synchronization, there are always
              * timing issues, since the file unlink & subsequent creation
@@ -247,7 +249,7 @@ object Files {
             unistd.unlink(cTarget) // Handle error later.
             openTarget(cTarget, replaceExisting = false, cPerms)
           } else {
-            val msg = fromCString(string.strerror(errno))
+            val msg = LibcExt.strError()
             throw new IOException(
               s"error opening target path '${cTarget}': ${msg}"
             )
@@ -273,7 +275,7 @@ object Files {
             val nRead = unistd.read(inFd, buffer, limit.toCSize)
 
             if (nRead < 0) {
-              val msg = fromCString(string.strerror(errno))
+              val msg = LibcExt.strError()
               throw new IOException(
                 s"error reading copy source file: ${msg}"
               )
@@ -285,7 +287,7 @@ object Files {
               while ((nRemaining > 0) && errno == 0) {
                 val nWritten = unistd.write(outFd, buffer, nRemaining.toCSize)
                 if (nWritten < 0) {
-                  val msg = fromCString(string.strerror(errno))
+                  val msg = LibcExt.strError()
                   throw new IOException(
                     s"error writing copy target file: ${msg}"
                   )
@@ -319,7 +321,7 @@ object Files {
           val inFd = fcntl.open(cSource, fcntl.O_RDONLY, 0.toUInt)
 
           if (inFd == -1) {
-            val msg = fromCString(string.strerror(errno))
+            val msg = LibcExt.strError()
             throw new IOException(
               s"error opening source path '${absSource}': ${msg}"
             )
@@ -475,7 +477,7 @@ object Files {
               null
             )
           else
-            throw new IOException(fromCString(string.strerror(e)))
+            throw new IOException(LibcExt.strError(e))
         }
 
       }
@@ -976,14 +978,20 @@ object Files {
 
   def move(source: Path, target: Path, options: Array[CopyOption]): Path = {
     lazy val replaceExisting = options.contains(REPLACE_EXISTING)
+    val atomicMove = options.contains(ATOMIC_MOVE)
 
     if (!exists(source.toAbsolutePath(), Array(LinkOption.NOFOLLOW_LINKS))) {
       throw new NoSuchFileException(source.toString)
+    } else if (atomicMove) {
+      /* An atomic move is a single rename(2) / MoveFileEx call, which replaces
+       * an existing target. Every other option is ignored, as on the JVM.
+       */
+      moveImpl(source, target, replaceExisting = true, atomicMove = true)
     } else if (!exists(
           target.toAbsolutePath(),
           Array.empty
         ) || replaceExisting) {
-      moveImpl(source, target, replaceExisting)
+      moveImpl(source, target, replaceExisting, atomicMove = false)
     } else {
       throw new FileAlreadyExistsException(target.toString)
     }
@@ -993,13 +1001,18 @@ object Files {
   private def moveImpl(
       source: Path,
       target: Path,
-      replaceExisting: => Boolean
+      replaceExisting: => Boolean,
+      atomicMove: Boolean
   ) =
     Zone.acquire { implicit z =>
       val sourceAbs = source.toAbsolutePath().toString
       val targetAbs = target.toAbsolutePath().toString
 
-      if (replaceExisting && target.toFile().isDirectory()) {
+      /* Deleting the target first would break atomicity, and is not needed:
+       * rename(2) replaces an empty directory, and MoveFileEx is given
+       * MOVEFILE_REPLACE_EXISTING below.
+       */
+      if (!atomicMove && replaceExisting && target.toFile().isDirectory()) {
         val mustDeleteTarget =
           if (isWindows) {
             // We can not replace directory at all, it must be removed first.
@@ -1018,19 +1031,31 @@ object Files {
         val targetCString = toCWideStringUTF16LE(targetAbs)
 
         // stdio.rename on Windows does not replace existing file
-        if (replaceExisting && target.toFile().isDirectory())
+        if (!atomicMove && replaceExisting && target.toFile().isDirectory())
           Files.delete(target)
 
-        val flags = {
-          val replace =
-            if (replaceExisting) MOVEFILE_REPLACE_EXISTING else 0.toUInt
-          MOVEFILE_COPY_ALLOWED | // Allow coping betwen volumes
-            MOVEFILE_WRITE_THROUGH | // Block until actually moved
-            replace
-        }
+        val flags =
+          if (atomicMove)
+            /* No MOVEFILE_COPY_ALLOWED: a copy between volumes is not atomic,
+             * it must be reported as unsupported instead.
+             */
+            MOVEFILE_REPLACE_EXISTING
+          else {
+            val replace =
+              if (replaceExisting) MOVEFILE_REPLACE_EXISTING else 0.toUInt
+            MOVEFILE_COPY_ALLOWED | // Allow coping betwen volumes
+              MOVEFILE_WRITE_THROUGH | // Block until actually moved
+              replace
+          }
         if (!MoveFileExW(sourceCString, targetCString, flags)) {
           GetLastError() match {
-            case ErrorCodes.ERROR_SUCCESS => ()
+            case ErrorCodes.ERROR_SUCCESS                       => ()
+            case ErrorCodes.ERROR_NOT_SAME_DEVICE if atomicMove =>
+              throw new AtomicMoveNotSupportedException(
+                sourceAbs,
+                targetAbs,
+                "Unable to move file to a different volume"
+              )
             case _ => throw WindowsException.onPath(target.toString())
           }
         }
@@ -1038,7 +1063,21 @@ object Files {
         val sourceCString = toCString(sourceAbs)
         val targetCString = toCString(targetAbs)
         if (stdio.rename(sourceCString, targetCString) != 0) {
-          throw UnixException(target.toString, errno)
+          if (atomicMove && errno == EXDEV)
+            throw new AtomicMoveNotSupportedException(
+              sourceAbs,
+              targetAbs,
+              "Unable to move file to a different file system"
+            )
+          // POSIX rename permits either ENOTEMPTY or EEXIST when the
+          // target is a non-empty directory. glibc returns ENOTEMPTY;
+          // musl returns EEXIST. Normalise EEXIST to ENOTEMPTY so the
+          // JDK-compatible DirectoryNotEmptyException is raised
+          // instead of FileAlreadyExistsException.
+          throw UnixException(
+            target.toString,
+            if (errno == EEXIST) ENOTEMPTY else errno
+          )
         }
       }
     }
@@ -1072,7 +1111,7 @@ object Files {
       _options: Array[OpenOption]
   ): SeekableByteChannel = {
     val options = new HashSet[OpenOption]()
-    _options.foreach(options.add _)
+    _options.foreach(options.add)
     newByteChannel(path, options, Array.empty)
   }
 
@@ -1159,7 +1198,7 @@ object Files {
         val fd = fcntl.open(pathCString, fcntl.O_RDONLY, 0.toUInt)
 
         if (fd == -1) {
-          val msg = fromCString(string.strerror(errno))
+          val msg = LibcExt.strError()
           throw new IOException(s"error opening path '${path}': ${msg}")
         }
 

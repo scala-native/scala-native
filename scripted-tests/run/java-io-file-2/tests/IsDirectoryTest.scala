@@ -1,7 +1,7 @@
 object IsDirectoryTest {
   import Files._
 
-  def main(args: Array[String]): Unit = {
+  def run(): Unit = {
     assert(!executableFile.isDirectory())
     assert(!unexecutableFile.isDirectory())
     assert(!readableFile.isDirectory())

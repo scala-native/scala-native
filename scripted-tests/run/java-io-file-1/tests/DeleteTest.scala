@@ -1,7 +1,7 @@
 object DeleteTest {
   import Files._
 
-  def main(args: Array[String]): Unit = {
+  def run(): Unit = {
     assert(willBeDeletedFile.exists())
     assert(willBeDeletedFile.delete())
     assert(!willBeDeletedFile.exists())

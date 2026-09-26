@@ -6,11 +6,13 @@ import org.junit.Test
 
 class ModuleReachabilitySuite extends ReachabilitySuite {
 
-  val sources = Seq("""
+  val sources = Seq(
+    """
     object Module {
       def meth: Unit = ()
     }
-  """)
+  """
+  )
 
   val TestClsName = "Test"
   val TestModuleName = "Test$"
@@ -46,7 +48,8 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
     Seq(Test, TestModule, TestInit, TestMain, TestModuleMain)
 
   @Test def unusedModules(): Unit = testReachable() {
-    val source = """
+    val source =
+      """
       object Module
 
       object Test {
@@ -62,7 +65,8 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
   }
 
   @Test def unusedModuleVars(): Unit = testReachable() {
-    val source = """
+    val source =
+      """
       object Module {
         var bar: Int = _
       }
@@ -82,7 +86,8 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
   }
 
   @Test def unusedModuleDefs(): Unit = testReachable() {
-    val source = """
+    val source =
+      """
       object Module {
         def foo: Unit = ()
       }
@@ -104,7 +109,8 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
   }
 
   @Test def usedModules(): Unit = testReachable() {
-    val source = """
+    val source =
+      """
       object Module
 
       object Test {
@@ -124,7 +130,8 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
   }
 
   @Test def usedModuleParents(): Unit = testReachable() {
-    val source = """
+    val source =
+      """
       class Parent
 
       object Module extends Parent {
@@ -150,7 +157,8 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
   }
 
   @Test def usedModuleTraits(): Unit = testReachable() {
-    val source = """
+    val source =
+      """
       trait Trait
 
       object Module extends Trait {
@@ -175,7 +183,8 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
   }
 
   @Test def moduleVarsWrite(): Unit = testReachable() {
-    val source = """
+    val source =
+      """
       object Module {
         var bar: Int = _
       }
@@ -197,7 +206,8 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
   }
 
   @Test def moduleVarsRead(): Unit = testReachable() {
-    val source = """
+    val source =
+      """
       object Module {
         var bar: Int = _
       }
@@ -219,7 +229,8 @@ class ModuleReachabilitySuite extends ReachabilitySuite {
   }
 
   @Test def moduleMethodsCall(): Unit = testReachable() {
-    val source = """
+    val source =
+      """
       object Module {
         def foo: Unit = ()
       }

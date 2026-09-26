@@ -2,10 +2,9 @@ package java.nio
 
 import java.io.{FileDescriptor, IOException}
 import java.nio.channels.FileChannel
-import java.nio.channels.FileChannel.MapMode
 
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.libc.{errno, string}
+import scala.scalanative.libc.LibcExt
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.posix.sys.mman._
 import scala.scalanative.posix.unistd.{_SC_PAGESIZE, sysconf}
@@ -127,6 +126,9 @@ private class MappedByteBufferImpl(
 }
 
 private[nio] object MappedByteBufferImpl {
+
+  import FileChannel.MapMode
+
   private[nio] implicit object NewMappedByteBuffer
       extends GenMappedBuffer.NewMappedBuffer[ByteBuffer, Byte] {
     def apply(
@@ -149,8 +151,8 @@ private[nio] object MappedByteBufferImpl {
 
   @alwaysinline private def failMapping(): Unit = {
     val reason =
-      if (isWindows) ErrorHandlingApiOps.errorMessage(GetLastError())
-      else fromCString(string.strerror(errno.errno))
+      if (isWindows) ErrorHandlingApiOps.lastErrorMessage()
+      else LibcExt.strError()
     throw new IOException(s"Could not map file to memory: $reason")
   }
 
@@ -198,12 +200,12 @@ private[nio] object MappedByteBufferImpl {
     )
     if (ptr == null) failMapping()
 
-    new MappedByteBufferData(
+    MappedByteBufferData(
       mode = mode,
       mapAddress = ptr,
       length = size,
       pagePosition = pagePosition,
-      windowsMappingHandle = Some(mappingHandle)
+      windowsMappingHandle = mappingHandle
     )
   }
 
@@ -240,9 +242,9 @@ private[nio] object MappedByteBufferImpl {
       fd = fd.fd,
       offset = offset.toSize
     )
-    if (ptr.toInt == -1) failMapping()
+    if (ptr == MAP_FAILED) failMapping()
 
-    new MappedByteBufferData(mode, ptr, size, pagePosition, None)
+    MappedByteBufferData(mode, ptr, size, pagePosition)
   }
 
   private def mapData(
@@ -293,7 +295,7 @@ private[nio] object MappedByteBufferImpl {
       0,
       0,
       size,
-      mode == FileChannel.MapMode.READ_ONLY
+      mode == MapMode.READ_ONLY
     )
   }
 }

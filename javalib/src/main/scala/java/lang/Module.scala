@@ -5,6 +5,9 @@ import java.lang.annotation.Annotation
 import java.lang.reflect.AnnotatedElement
 import java.util.{Set => JSet}
 
+import scala.annotation.nowarn
+
+@nowarn
 final case class Module private[lang] (
     name: String,
     loader: ClassLoader

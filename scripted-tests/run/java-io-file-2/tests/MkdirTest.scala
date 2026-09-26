@@ -1,7 +1,7 @@
 object MkdirTest {
   import Files._
 
-  def main(args: Array[String]): Unit = {
+  def run(): Unit = {
     assert(!willBeCreatedDirectory.exists())
     assert(willBeCreatedDirectory.mkdir())
     assert(!willBeCreatedDirectory.mkdir())

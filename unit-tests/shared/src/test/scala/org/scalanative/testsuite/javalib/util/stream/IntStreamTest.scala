@@ -397,7 +397,7 @@ class IntStreamTest {
     assertFalse("stream should be empty", it.hasNext())
   }
 
-  @Test def doubleStreamGenerate(): Unit = {
+  @Test def intStreamGenerate(): Unit = {
     val nElements = 5
     val data = new Array[Int](nElements)
     data(0) = 0
@@ -870,6 +870,23 @@ class IntStreamTest {
     assertTrue("expectedSet has remaining elements", expectedSet.isEmpty())
   }
 
+  // Issue #4743
+  @Test def intStreamDistinct_Characteristics(): Unit = {
+
+    val is = IntStream.of(
+      55, 0, 44, -11, -11, 44, -22, -22, 33, 44
+    )
+
+    val spliter = is.distinct().spliterator()
+
+    // No DISTINCT, inconsistent with Stream#distinct
+    StreamTestHelpers.verifyCharacteristics(
+      spliter,
+      Seq(Spliterator.ORDERED), // must be present
+      Seq(Spliterator.SIZED, Spliterator.SUBSIZED) // must be absent
+    )
+  }
+
   @Test def intStreamFindAny_Null(): Unit = {
     val s = IntStream.of(null.asInstanceOf[Int])
     // Int nulls get seen as 0
@@ -932,6 +949,21 @@ class IntStreamTest {
 
     val s1 = s0.filter(e => e < 1000)
     assertEquals(s"unexpected element count", expectedCount, s1.count())
+  }
+
+  // Issue #4742 - see also primary reproduction in IntStreamTestOnJDK16
+  @Test def intStreamFilter_Characteristics(): Unit = {
+    val expectedCount = 2
+
+    val is = IntStream.of(55, 44, -11, 0, -22, 33)
+
+    val spliter = is.filter((d: scala.Int) => d < 0).spliterator()
+
+    StreamTestHelpers.verifyCharacteristics(
+      spliter,
+      Seq(Spliterator.ORDERED), // must be present
+      Seq(Spliterator.SIZED, Spliterator.SUBSIZED) // must be absent
+    )
   }
 
   @Test def intStreamForeachOrdered(): Unit = {
