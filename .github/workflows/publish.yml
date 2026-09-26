@@ -45,7 +45,7 @@ jobs:
   check-compiles:
     name: Test compilation of all modules
     runs-on: ubuntu-22.04
-    needs: [check-compiles]
+    needs: [load_tag]
     if: needs.load_tag.outputs.skip == 'false' # repository check is done in load_tag
     steps:
       - uses: actions/checkout@v7
@@ -60,7 +60,7 @@ jobs:
   publish:
     name: Publish for each Scala binary version
     runs-on: ubuntu-22.04
-    needs: [load_tag]
+    needs: [load_tag, check-compiles]
     if: needs.load_tag.outputs.skip == 'false' # repository check is done in load_tag
     strategy:
       fail-fast: false
