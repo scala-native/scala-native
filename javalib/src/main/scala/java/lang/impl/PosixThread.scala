@@ -17,7 +17,7 @@ import scala.scalanative.posix.sys.types._
 import scala.scalanative.posix.time._
 import scala.scalanative.posix.timeOps._
 import scala.scalanative.posix.unistd._
-import scala.scalanative.runtime.Intrinsics.{classFieldRawPtr, elemRawPtr}
+import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
 import scala.scalanative.runtime._
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
@@ -36,7 +36,18 @@ private[java] class PosixThread(
     osDefaultStackSize = PosixThread.defaultOSStackSize
   )
 
-  private lazy val _state = new scala.Array[scala.Byte](StateSize)
+  private val _state = new scala.Array[scala.Byte](StateSize)
+
+  private def state[T](offset: Int): Ptr[T] =
+    if (isMultithreadingEnabled) _state.at(offset).asInstanceOf[Ptr[T]]
+    else null
+
+  private val lock: Ptr[pthread_mutex_t] = state(LockOffset)
+  private val relativeCondition: Ptr[pthread_cond_t] = state(ConditionsOffset)
+  private val absoluteCondition: Ptr[pthread_cond_t] = state(
+    ConditionsOffset + pthread_cond_t_size.toInt
+  )
+
   @volatile private[impl] var sleepInterruptEvent: CInt = UnsetEvent
   @volatile private var counter: Int = 0
   // index of currently used condition
@@ -272,22 +283,10 @@ private[java] class PosixThread(
     }
   }
 
-  @alwaysinline private def lock: Ptr[pthread_mutex_t] = _state
-    .at(LockOffset)
-    .asInstanceOf[Ptr[pthread_mutex_t]]
-
-  @alwaysinline private def conditions =
-    _state
-      .at(ConditionsOffset)
-      .asInstanceOf[Ptr[pthread_cond_t]]
-
   @alwaysinline private def condition(idx: Int): Ptr[pthread_cond_t] =
     (idx: @switch) match {
-      case 0 => conditions
-      case 1 =>
-        val base = toRawPtr(conditions)
-        val offset = toRawSize(pthread_cond_t_size)
-        fromRawPtr(elemRawPtr(base, offset))
+      case 0 => relativeCondition
+      case 1 => absoluteCondition
     }
 
   @alwaysinline private def counterAtomic = new AtomicInt(
@@ -394,7 +393,15 @@ private[java] class PosixThread(
 private[lang] object PosixThread extends NativeThread.Companion {
   override type Impl = PosixThread
 
-  private lazy val _state = new scala.Array[scala.Byte](CompanionStateSize)
+  private val _state = new scala.Array[scala.Byte](CompanionStateSize)
+  private val conditionRelativeCondAttr =
+    _state
+      .at(ConditionRelativeAttrOffset)
+      .asInstanceOf[Ptr[pthread_condattr_t]]
+  private val mutexAttr =
+    _state
+      .at(MutexAttrOffset)
+      .asInstanceOf[Ptr[pthread_mutexattr_t]]
 
   if (isMultithreadingEnabled) {
     checkStatus("relative-time conditions attrs init") {
@@ -419,15 +426,6 @@ private[lang] object PosixThread extends NativeThread.Companion {
       }
       true
     }
-
-  @alwaysinline def conditionRelativeCondAttr = _state
-    .at(ConditionRelativeAttrOffset)
-    .asInstanceOf[Ptr[pthread_condattr_t]]
-
-  @alwaysinline def mutexAttr =
-    _state
-      .at(MutexAttrOffset)
-      .asInstanceOf[Ptr[pthread_mutexattr_t]]
 
   @alwaysinline private def UnsetEvent = -1
 
