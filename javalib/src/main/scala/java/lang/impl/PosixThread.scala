@@ -38,13 +38,13 @@ private[java] class PosixThread(
 
   private val _state = new scala.Array[scala.Byte](StateSize)
 
-  private def state[T](offset: Int): Ptr[T] =
+  private def stateAt[T](offset: Int): Ptr[T] =
     if (isMultithreadingEnabled) _state.at(offset).asInstanceOf[Ptr[T]]
     else null
 
-  private val lock: Ptr[pthread_mutex_t] = state(LockOffset)
-  private val relativeCondition: Ptr[pthread_cond_t] = state(ConditionsOffset)
-  private val absoluteCondition: Ptr[pthread_cond_t] = state(
+  private val lock: Ptr[pthread_mutex_t] = stateAt(LockOffset)
+  private val relativeCondition: Ptr[pthread_cond_t] = stateAt(ConditionsOffset)
+  private val absoluteCondition: Ptr[pthread_cond_t] = stateAt(
     ConditionsOffset + pthread_cond_t_size.toInt
   )
 
