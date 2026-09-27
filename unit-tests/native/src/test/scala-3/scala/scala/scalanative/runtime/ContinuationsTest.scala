@@ -1,6 +1,8 @@
 package scala.scalanative.runtime
 
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
+import java.util.concurrent.atomic.{
+  AtomicBoolean, AtomicInteger, AtomicReference
+}
 import java.util.concurrent.{CountDownLatch, LinkedBlockingQueue, TimeUnit}
 
 import scala.util.control.ControlThrowable
@@ -15,6 +17,75 @@ import scala.scalanative.meta.LinktimeInfo.{
 import Continuations._
 
 class ContinuationsTest:
+  @Test def nestedBoundaryResuspendsAcrossCarriers(): Unit =
+    if isContinuationsSupported then {
+      val queues = scala.Array.fill(2)(new LinkedBlockingQueue[() => Unit]())
+      val started = new CountDownLatch(2)
+      val stopped = new CountDownLatch(2)
+      val resumed = new CountDownLatch(1)
+      val failure = new AtomicReference[java.lang.Throwable]()
+      val steps = new AtomicInteger()
+
+      val carriers = scala.Array.tabulate(2) { carrier =>
+        val queue = queues(carrier)
+        val thread = new Thread(
+          () => {
+            try {
+              started.countDown()
+              while !Thread.currentThread().isInterrupted do
+                val task = queue.poll(100, TimeUnit.MILLISECONDS)
+                if task != null then task()
+            } catch {
+              case _: InterruptedException => ()
+              case ex: java.lang.Throwable => failure.compareAndSet(null, ex)
+            } finally {
+              stopped.countDown()
+            }
+            ()
+          },
+          s"nested-continuation-carrier-$carrier"
+        )
+        thread.setDaemon(true)
+        thread.start()
+        thread
+      }
+
+      try {
+        assertTrue("carriers did not start", started.await(5, TimeUnit.SECONDS))
+        boundary[Unit] {
+          val nested = boundary[Int] {
+            suspend[Unit, Int] { resume =>
+              queues(0).put(() => { assertEquals(42, resume(())); () })
+              42
+            }
+            steps.incrementAndGet()
+            assertEquals(carriers(0), Thread.currentThread())
+            suspend[Unit, Int] { resume =>
+              queues(1).put(() => {
+                try assertEquals(42, resume(()))
+                finally resumed.countDown()
+              })
+              42
+            }
+            steps.incrementAndGet()
+            assertEquals(carriers(1), Thread.currentThread())
+            42
+          }
+          assertEquals(42, nested)
+        }
+
+        val didResume = resumed.await(10, TimeUnit.SECONDS)
+        assertTrue(
+          s"nested resume timed out; steps=${steps.get()}, failure=${failure.get()}, queues=${queues(0).size()}/${queues(1).size()}, stopped=${stopped.getCount()}, states=${carriers(0).getState()}/${carriers(1).getState()}",
+          didResume
+        )
+        assertNull("carrier failed", failure.get())
+        assertEquals(2, steps.get())
+      } finally
+        carriers.foreach(_.interrupt())
+        assertTrue("carriers did not stop", stopped.await(5, TimeUnit.SECONDS))
+    }
+
   @Test def canBoundaryNoSuspend() =
     if isContinuationsSupported then
       val res = boundary[Int] {
