@@ -52,7 +52,6 @@ object ScalaVersions {
 
   // The latest version of minimal Scala 3 minor version used to publish artifacts
   val scala3PublishVersion = "3.1.3"
-  val scala213PublishVersion = crossScala213.head
 
   val sbt10Version: String = "1.12.14"
   val sbt10ScalaVersion: String = scala212
