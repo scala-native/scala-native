@@ -64,7 +64,7 @@ private[runtime] object StackTrace {
     try {
       thread.isFillingStackTrace = true
 
-      val buffer = scala.Array.newBuilder[Long]
+      val buffer = new mutable.ArrayBuilder.ofLong()
       buffer.sizeHint(32) // at least
 
       // JVM limit stack trace to 1024 entries
