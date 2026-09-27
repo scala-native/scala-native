@@ -127,9 +127,11 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
-      - uses: ./.github/actions/linux-setup-env
+      - uses: coursier/cache-action@v8
+      - uses: coursier/setup-action@v3
         with:
-          scala-version: "3" # unused
+          jvm: 25
+          apps: sbt
       - name: Dispatch to workflows of dependant projects
         run: |
           publishedVersion=$(sbt -no-colors "print version" | tail -n 1)
