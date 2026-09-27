@@ -89,11 +89,11 @@ class ConcurrentSkipListSet[E] private[concurrent] (
     // Use eq: Scala == would recurse into equals (same as ConcurrentSkipListMap)
     if (o.asInstanceOf[AnyRef] eq this)
       return true
-    if (!(o.isInstanceOf[Set[_]]))
+    if (!o.isInstanceOf[Set[_]])
       return false
     val c: Collection[_] = o.asInstanceOf[Collection[_]]
     try {
-      return containsAll(c) && c.containsAll(this)
+      containsAll(c) && c.containsAll(this)
     } catch {
       case _: ClassCastException | _: NullPointerException =>
         false

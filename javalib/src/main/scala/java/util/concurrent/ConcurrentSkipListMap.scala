@@ -124,7 +124,7 @@ object ConcurrentSkipListMap {
         }
       }
     }
-    return false
+    false
   }
 
   private[concurrent] final val EQ: Int = 1
@@ -141,26 +141,26 @@ object ConcurrentSkipListMap {
       var e: E = _it_e.next()
       list.add(e)
     }
-    return list
+    list
   }
 
   private[concurrent] final class KeySet[K, V](private[concurrent] final val m: ConcurrentNavigableMap[K, V])
       extends AbstractSet[K]
       with NavigableSet[K] {
     override def size(): Int = {
-      return m.size()
+      m.size()
     }
 
     override def isEmpty(): Boolean = {
-      return m.isEmpty()
+      m.isEmpty()
     }
 
     override def contains(o: Any): Boolean = {
-      return m.containsKey(o)
+      m.containsKey(o)
     }
 
     override def remove(o: Any): Boolean = {
-      return m.remove(o) != null
+      m.remove(o) != null
     }
 
     override def clear(): Unit = {
@@ -168,57 +168,57 @@ object ConcurrentSkipListMap {
     }
 
     def lower(e: K): K = {
-      return m.lowerKey(e)
+      m.lowerKey(e)
     }
 
     def floor(e: K): K = {
-      return m.floorKey(e)
+      m.floorKey(e)
     }
 
     def ceiling(e: K): K = {
-      return m.ceilingKey(e)
+      m.ceilingKey(e)
     }
 
     def higher(e: K): K = {
-      return m.higherKey(e)
+      m.higherKey(e)
     }
 
     override def comparator(): Comparator[_ >: K] = {
-      return m.comparator()
+      m.comparator()
     }
 
     def first(): K = {
-      return m.firstKey()
+      m.firstKey()
     }
 
     def last(): K = {
-      return m.lastKey()
+      m.lastKey()
     }
 
     def pollFirst(): K = {
       var e: Map.Entry[K, V] = m.pollFirstEntry()
-      return (if (e == null) null.asInstanceOf[K] else e.getKey())
+      if (e == null) null.asInstanceOf[K] else e.getKey()
     }
 
     def pollLast(): K = {
       var e: Map.Entry[K, V] = m.pollLastEntry()
-      return (if (e == null) null.asInstanceOf[K] else e.getKey())
+      if (e == null) null.asInstanceOf[K] else e.getKey()
     }
 
     override def iterator(): Iterator[K] = {
-      return (if (m.isInstanceOf[ConcurrentSkipListMap[_, _]]) {
-                val _o = m.asInstanceOf[ConcurrentSkipListMap[K, V]]; new _o.KeyIterator()
-              } else { val _o = m.asInstanceOf[SubMap[K, V]]; new _o.SubMapKeyIterator() })
+      if (m.isInstanceOf[ConcurrentSkipListMap[_, _]]) {
+        val _o = m.asInstanceOf[ConcurrentSkipListMap[K, V]]; new _o.KeyIterator()
+      } else { val _o = m.asInstanceOf[SubMap[K, V]]; new _o.SubMapKeyIterator() }
     }
 
     override def equals(o: Any): Boolean = {
       if (o.asInstanceOf[AnyRef] eq this)
         return true
-      if (!(o.isInstanceOf[Set[_]]))
+      if (!o.isInstanceOf[Set[_]])
         return false
       var c: Collection[_] = o.asInstanceOf[Collection[_]]
       try {
-        return containsAll(c) && c.containsAll(this)
+        containsAll(c) && c.containsAll(this)
       } catch {
         case _: ClassCastException | _: NullPointerException => false
       }
@@ -229,62 +229,62 @@ object ConcurrentSkipListMap {
     override def toArray[T <: AnyRef](a: Array[T]): Array[T] = toList(this).toArray(a)
 
     def descendingIterator(): Iterator[K] = {
-      return descendingSet().iterator()
+      descendingSet().iterator()
     }
 
     def subSet(fromElement: K, fromInclusive: Boolean, toElement: K, toInclusive: Boolean): NavigableSet[K] = {
-      return new KeySet(m.subMap(fromElement, fromInclusive, toElement, toInclusive));
+      new KeySet(m.subMap(fromElement, fromInclusive, toElement, toInclusive))
     }
 
     def headSet(toElement: K, inclusive: Boolean): NavigableSet[K] = {
-      return new KeySet(m.headMap(toElement, inclusive))
+      new KeySet(m.headMap(toElement, inclusive))
     }
 
     def tailSet(fromElement: K, inclusive: Boolean): NavigableSet[K] = {
-      return new KeySet(m.tailMap(fromElement, inclusive))
+      new KeySet(m.tailMap(fromElement, inclusive))
     }
 
     def subSet(fromElement: K, toElement: K): NavigableSet[K] = {
-      return subSet(fromElement, true, toElement, false)
+      subSet(fromElement, true, toElement, false)
     }
 
     def headSet(toElement: K): NavigableSet[K] = {
-      return headSet(toElement, false)
+      headSet(toElement, false)
     }
 
     def tailSet(fromElement: K): NavigableSet[K] = {
-      return tailSet(fromElement, true)
+      tailSet(fromElement, true)
     }
 
     def descendingSet(): NavigableSet[K] = {
-      return new KeySet(m.descendingMap())
+      new KeySet(m.descendingMap())
     }
 
     override def spliterator(): Spliterator[K] = {
-      return (if (m.isInstanceOf[ConcurrentSkipListMap[_, _]])
-                (m.asInstanceOf[ConcurrentSkipListMap[K, V]]).keySpliterator()
-              else { val _o = m.asInstanceOf[SubMap[K, V]]; new _o.SubMapKeyIterator() })
+      if (m.isInstanceOf[ConcurrentSkipListMap[_, _]])
+        (m.asInstanceOf[ConcurrentSkipListMap[K, V]]).keySpliterator()
+      else { val _o = m.asInstanceOf[SubMap[K, V]]; new _o.SubMapKeyIterator() }
     }
   }
 
   private[concurrent] final class Values[K, V](private[concurrent] final val m: ConcurrentNavigableMap[K, V])
       extends AbstractCollection[V] {
     override def iterator(): Iterator[V] = {
-      return (if (m.isInstanceOf[ConcurrentSkipListMap[_, _]]) {
-                val _o = m.asInstanceOf[ConcurrentSkipListMap[K, V]]; new _o.ValueIterator()
-              } else { val _o = m.asInstanceOf[SubMap[K, V]]; new _o.SubMapValueIterator() })
+      if (m.isInstanceOf[ConcurrentSkipListMap[_, _]]) {
+        val _o = m.asInstanceOf[ConcurrentSkipListMap[K, V]]; new _o.ValueIterator()
+      } else { val _o = m.asInstanceOf[SubMap[K, V]]; new _o.SubMapValueIterator() }
     }
 
     override def size(): Int = {
-      return m.size()
+      m.size()
     }
 
     override def isEmpty(): Boolean = {
-      return m.isEmpty()
+      m.isEmpty()
     }
 
     override def contains(o: Any): Boolean = {
-      return m.containsValue(o)
+      m.containsValue(o)
     }
 
     override def clear(): Unit = {
@@ -296,9 +296,9 @@ object ConcurrentSkipListMap {
     override def toArray[T <: AnyRef](a: Array[T]): Array[T] = toList(this).toArray(a)
 
     override def spliterator(): Spliterator[V] = {
-      return (if (m.isInstanceOf[ConcurrentSkipListMap[_, _]])
-                (m.asInstanceOf[ConcurrentSkipListMap[K, V]]).valueSpliterator()
-              else { val _o = m.asInstanceOf[SubMap[K, V]]; new _o.SubMapValueIterator() })
+      if (m.isInstanceOf[ConcurrentSkipListMap[_, _]])
+        (m.asInstanceOf[ConcurrentSkipListMap[K, V]]).valueSpliterator()
+      else { val _o = m.asInstanceOf[SubMap[K, V]]; new _o.SubMapValueIterator() }
     }
 
     override def removeIf(filter: Predicate[_ >: V]): Boolean = {
@@ -314,39 +314,39 @@ object ConcurrentSkipListMap {
         if (filter.test(v) && m.remove(e.getKey(), v))
           removed = true
       }
-      return removed
+      removed
     }
   }
 
   private[concurrent] final class EntrySet[K, V](private[concurrent] final val m: ConcurrentNavigableMap[K, V])
       extends AbstractSet[Map.Entry[K, V]] {
     override def iterator(): Iterator[Map.Entry[K, V]] = {
-      return (if (m.isInstanceOf[ConcurrentSkipListMap[_, _]]) {
-                val _o = m.asInstanceOf[ConcurrentSkipListMap[K, V]]; new _o.EntryIterator()
-              } else { val _o = m.asInstanceOf[SubMap[K, V]]; new _o.SubMapEntryIterator() })
+      if (m.isInstanceOf[ConcurrentSkipListMap[_, _]]) {
+        val _o = m.asInstanceOf[ConcurrentSkipListMap[K, V]]; new _o.EntryIterator()
+      } else { val _o = m.asInstanceOf[SubMap[K, V]]; new _o.SubMapEntryIterator() }
     }
 
     override def contains(o: Any): Boolean = {
-      if (!(o.isInstanceOf[Map.Entry[_, _]]))
+      if (!o.isInstanceOf[Map.Entry[_, _]])
         return false
       var e: Map.Entry[_, _] = o.asInstanceOf[Map.Entry[_, _]]
       var v: V = m.get(e.getKey())
-      return v != null && v.asInstanceOf[AnyRef].equals(e.getValue())
+      v != null && v.asInstanceOf[AnyRef].equals(e.getValue())
     }
 
     override def remove(o: Any): Boolean = {
-      if (!(o.isInstanceOf[Map.Entry[_, _]]))
+      if (!o.isInstanceOf[Map.Entry[_, _]])
         return false
       var e: Map.Entry[_, _] = o.asInstanceOf[Map.Entry[_, _]]
-      return m.remove(e.getKey(), e.getValue());
+      m.remove(e.getKey(), e.getValue())
     }
 
     override def isEmpty(): Boolean = {
-      return m.isEmpty()
+      m.isEmpty()
     }
 
     override def size(): Int = {
-      return m.size()
+      m.size()
     }
 
     override def clear(): Unit = {
@@ -356,11 +356,11 @@ object ConcurrentSkipListMap {
     override def equals(o: Any): Boolean = {
       if (o.asInstanceOf[AnyRef] eq this)
         return true
-      if (!(o.isInstanceOf[Set[_]]))
+      if (!o.isInstanceOf[Set[_]])
         return false
       var c: Collection[_] = o.asInstanceOf[Collection[_]]
       try {
-        return containsAll(c) && c.containsAll(this)
+        containsAll(c) && c.containsAll(this)
       } catch {
         case _: ClassCastException | _: NullPointerException => false
       }
@@ -371,9 +371,9 @@ object ConcurrentSkipListMap {
     override def toArray[T <: AnyRef](a: Array[T]): Array[T] = toList(this).toArray(a)
 
     override def spliterator(): Spliterator[Map.Entry[K, V]] = {
-      return (if (m.isInstanceOf[ConcurrentSkipListMap[_, _]])
-                (m.asInstanceOf[ConcurrentSkipListMap[K, V]]).entrySpliterator()
-              else { val _o = m.asInstanceOf[SubMap[K, V]]; new _o.SubMapEntryIterator() })
+      if (m.isInstanceOf[ConcurrentSkipListMap[_, _]])
+        (m.asInstanceOf[ConcurrentSkipListMap[K, V]]).entrySpliterator()
+      else { val _o = m.asInstanceOf[SubMap[K, V]]; new _o.SubMapEntryIterator() }
     }
 
     override def removeIf(filter: Predicate[_ >: Map.Entry[K, V]]): Boolean = {
@@ -388,7 +388,7 @@ object ConcurrentSkipListMap {
         if (filter.test(e) && m.remove(e.getKey(), e.getValue()))
           removed = true
       }
-      return removed
+      removed
     }
   }
 
@@ -419,18 +419,18 @@ object ConcurrentSkipListMap {
 
     private[concurrent] def tooLow(key: Any, cmp: Comparator[_ >: K]): Boolean = {
       var c: Int = 0
-      return (lo != null && ({ c = cpr(cmp, key, lo); c } < 0 ||
-      (c == 0 && !loInclusive)));
+      lo != null && ({ c = cpr(cmp, key, lo); c } < 0 ||
+      (c == 0 && !loInclusive))
     }
 
     private[concurrent] def tooHigh(key: Any, cmp: Comparator[_ >: K]): Boolean = {
       var c: Int = 0
-      return (hi != null && ({ c = cpr(cmp, key, hi); c } > 0 ||
-      (c == 0 && !hiInclusive)));
+      hi != null && ({ c = cpr(cmp, key, hi); c } > 0 ||
+      (c == 0 && !hiInclusive))
     }
 
     private[concurrent] def inBounds(key: Any, cmp: Comparator[_ >: K]): Boolean = {
-      return !tooLow(key, cmp) && !tooHigh(key, cmp)
+      !tooLow(key, cmp) && !tooHigh(key, cmp)
     }
 
     private[concurrent] def checkKeyBounds(key: K, cmp: Comparator[_ >: K]): Unit = {
@@ -449,32 +449,32 @@ object ConcurrentSkipListMap {
       if (k == null) // pass by markers and headers
         return true
       var c: Int = cpr(cmp, k, hi)
-      return c < 0 || (c == 0 && hiInclusive);
+      c < 0 || (c == 0 && hiInclusive)
     }
 
     private[concurrent] def loNode(cmp: Comparator[_ >: K]): Node[K, V] = {
       if (lo == null)
-        return m.findFirst()
+        m.findFirst()
       else if (loInclusive)
-        return m.findNear(lo, GT | EQ, cmp)
+        m.findNear(lo, GT | EQ, cmp)
       else
-        return m.findNear(lo, GT, cmp)
+        m.findNear(lo, GT, cmp)
     }
 
     private[concurrent] def hiNode(cmp: Comparator[_ >: K]): Node[K, V] = {
       if (hi == null)
-        return m.findLast()
+        m.findLast()
       else if (hiInclusive)
-        return m.findNear(hi, LT | EQ, cmp)
+        m.findNear(hi, LT | EQ, cmp)
       else
-        return m.findNear(hi, LT, cmp)
+        m.findNear(hi, LT, cmp)
     }
 
     private[concurrent] def lowestKey(): K = {
       var cmp: Comparator[_ >: K] = m._comparator
       var n: Node[K, V] = loNode(cmp)
       if (isBeforeEnd(n, cmp))
-        return n.key
+        n.key
       else
         throw new NoSuchElementException()
     }
@@ -558,9 +558,9 @@ object ConcurrentSkipListMap {
           rel = rel & ~LT
       }
       if (tooLow(key, cmp))
-        return (if (((rel & LT) != 0)) null.asInstanceOf[Map.Entry[K, V]] else lowestEntry())
+        return if ((rel & LT) != 0) null.asInstanceOf[Map.Entry[K, V]] else lowestEntry()
       if (tooHigh(key, cmp))
-        return (if (((rel & LT) != 0)) highestEntry() else null.asInstanceOf[Map.Entry[K, V]])
+        return if ((rel & LT) != 0) highestEntry() else null.asInstanceOf[Map.Entry[K, V]]
       var e: AbstractMap.SimpleImmutableEntry[K, V] =
         m.findNearEntry(key, rel, cmp)
       if (e == null || !inBounds(e.getKey(), cmp))
@@ -613,21 +613,21 @@ object ConcurrentSkipListMap {
 
     override def containsKey(key: Any): Boolean = {
       if (key == null) throw new NullPointerException();
-      return inBounds(key, m._comparator) && m.containsKey(key)
+      inBounds(key, m._comparator) && m.containsKey(key)
     }
 
     override def get(key: Any): V = {
       if (key == null) throw new NullPointerException();
-      return (if (!inBounds(key, m._comparator)) null.asInstanceOf[V] else m.get(key))
+      if (!inBounds(key, m._comparator)) null.asInstanceOf[V] else m.get(key)
     }
 
     override def put(key: K, value: V): V = {
       checkKeyBounds(key, m._comparator)
-      return m.put(key, value)
+      m.put(key, value)
     }
 
     override def remove(key: Any): V = {
-      return (if (!inBounds(key, m._comparator)) null.asInstanceOf[V] else m.remove(key))
+      if (!inBounds(key, m._comparator)) null.asInstanceOf[V] else m.remove(key)
     }
 
     override def size(): Int = {
@@ -642,12 +642,12 @@ object ConcurrentSkipListMap {
 
         n = n.next
       }
-      return if (count >= java.lang.Integer.MAX_VALUE) java.lang.Integer.MAX_VALUE else count.toInt
+      if (count >= java.lang.Integer.MAX_VALUE) java.lang.Integer.MAX_VALUE else count.toInt
     }
 
     override def isEmpty(): Boolean = {
       var cmp: Comparator[_ >: K] = m._comparator
-      return !isBeforeEnd(loNode(cmp), cmp)
+      !isBeforeEnd(loNode(cmp), cmp)
     }
 
     override def containsValue(value: Any): Boolean = {
@@ -662,7 +662,7 @@ object ConcurrentSkipListMap {
 
         n = n.next
       }
-      return false
+      false
     }
 
     override def clear(): Unit = {
@@ -679,11 +679,11 @@ object ConcurrentSkipListMap {
 
     override def putIfAbsent(key: K, value: V): V = {
       checkKeyBounds(key, m._comparator)
-      return m.putIfAbsent(key, value)
+      m.putIfAbsent(key, value)
     }
 
     override def remove(key: Any, value: Any): Boolean = {
-      return inBounds(key, m._comparator) && m.remove(key, value)
+      inBounds(key, m._comparator) && m.remove(key, value)
     }
 
     override def replace(key: K, oldValue: V, newValue: V): Boolean = {
@@ -701,9 +701,9 @@ object ConcurrentSkipListMap {
     override def comparator(): Comparator[_ >: K] = {
       var cmp: Comparator[_ >: K] = m.comparator()
       if (isDescending)
-        return Collections.reverseOrder(cmp)
+        Collections.reverseOrder(cmp)
       else
-        return cmp
+        cmp
     }
 
     private[concurrent] def newSubMap(
@@ -745,99 +745,99 @@ object ConcurrentSkipListMap {
             throw new IllegalArgumentException("key out of range")
         }
       }
-      return new SubMap[K, V](m, fromKey, fromInclusive, toKey, toInclusive, isDescending);
+      new SubMap[K, V](m, fromKey, fromInclusive, toKey, toInclusive, isDescending)
     }
 
     override def subMap(fromKey: K, fromInclusive: Boolean, toKey: K, toInclusive: Boolean): SubMap[K, V] = {
       if (fromKey == null || toKey == null)
         throw new NullPointerException()
-      return newSubMap(fromKey, fromInclusive, toKey, toInclusive)
+      newSubMap(fromKey, fromInclusive, toKey, toInclusive)
     }
 
     override def headMap(toKey: K, inclusive: Boolean): SubMap[K, V] = {
       if (toKey == null)
         throw new NullPointerException()
-      return newSubMap(null.asInstanceOf[K], false, toKey, inclusive)
+      newSubMap(null.asInstanceOf[K], false, toKey, inclusive)
     }
 
     override def tailMap(fromKey: K, inclusive: Boolean): SubMap[K, V] = {
       if (fromKey == null)
         throw new NullPointerException()
-      return newSubMap(fromKey, inclusive, null.asInstanceOf[K], false)
+      newSubMap(fromKey, inclusive, null.asInstanceOf[K], false)
     }
 
     override def subMap(fromKey: K, toKey: K): SubMap[K, V] = {
-      return subMap(fromKey, true, toKey, false)
+      subMap(fromKey, true, toKey, false)
     }
 
     override def headMap(toKey: K): SubMap[K, V] = {
-      return headMap(toKey, false)
+      headMap(toKey, false)
     }
 
     override def tailMap(fromKey: K): SubMap[K, V] = {
-      return tailMap(fromKey, true)
+      tailMap(fromKey, true)
     }
 
     override def descendingMap(): SubMap[K, V] = {
-      return new SubMap[K, V](m, lo, loInclusive, hi, hiInclusive, !isDescending);
+      new SubMap[K, V](m, lo, loInclusive, hi, hiInclusive, !isDescending)
     }
 
     /* ----------------  Relational methods -------------- */
 
     override def ceilingEntry(key: K): Map.Entry[K, V] = {
-      return getNearEntry(key, GT | EQ)
+      getNearEntry(key, GT | EQ)
     }
 
     override def ceilingKey(key: K): K = {
-      return getNearKey(key, GT | EQ)
+      getNearKey(key, GT | EQ)
     }
 
     override def lowerEntry(key: K): Map.Entry[K, V] = {
-      return getNearEntry(key, LT)
+      getNearEntry(key, LT)
     }
 
     override def lowerKey(key: K): K = {
-      return getNearKey(key, LT)
+      getNearKey(key, LT)
     }
 
     override def floorEntry(key: K): Map.Entry[K, V] = {
-      return getNearEntry(key, LT | EQ)
+      getNearEntry(key, LT | EQ)
     }
 
     override def floorKey(key: K): K = {
-      return getNearKey(key, LT | EQ)
+      getNearKey(key, LT | EQ)
     }
 
     override def higherEntry(key: K): Map.Entry[K, V] = {
-      return getNearEntry(key, GT)
+      getNearEntry(key, GT)
     }
 
     override def higherKey(key: K): K = {
-      return getNearKey(key, GT)
+      getNearKey(key, GT)
     }
 
     override def firstKey(): K = {
-      return (if (isDescending) highestKey() else lowestKey())
+      if (isDescending) highestKey() else lowestKey()
     }
 
     override def lastKey(): K = {
-      return (if (isDescending) lowestKey() else highestKey())
+      if (isDescending) lowestKey() else highestKey()
     }
 
     override def firstEntry(): Map.Entry[K, V] = {
-      return (if (isDescending) highestEntry() else lowestEntry())
+      if (isDescending) highestEntry() else lowestEntry()
     }
 
     override def lastEntry(): Map.Entry[K, V] = {
-      return (if (isDescending) lowestEntry() else highestEntry())
+      if (isDescending) lowestEntry() else highestEntry()
     }
 
     override def pollFirstEntry(): Map.Entry[K, V] = {
-      return (if (isDescending) removeHighest() else removeLowest())
+      if (isDescending) removeHighest() else removeLowest()
     }
 
     override def pollLastEntry(): Map.Entry[K, V] = {
-      return (if (isDescending) removeLowest() else removeHighest())
+      if (isDescending) removeLowest() else removeHighest()
     }
 
     /* ---------------- Submap Views -------------- */
@@ -867,7 +867,7 @@ object ConcurrentSkipListMap {
     }
 
     override def descendingKeySet(): NavigableSet[K] = {
-      return descendingMap().navigableKeySet()
+      descendingMap().navigableKeySet()
     }
 
     private[concurrent] abstract class SubMapIter[T] extends Iterator[T] with Spliterator[T] {
@@ -1038,7 +1038,7 @@ object ConcurrentSkipListMap {
               (f == null || cpr(cmp, sk, f) < 0)) {
             current = n
             var r: Index[K, V] = q.down
-            row = (if (s.right != null) s else s.down)
+            row = if (s.right != null) s else s.down
             est -= est >>> 2;
             return new KeySpliterator[K, V](cmp, r, e, sk, est)
           }
@@ -1046,7 +1046,7 @@ object ConcurrentSkipListMap {
           row = q.down; q = row
         }
       }
-      return null.asInstanceOf[KeySpliterator[K, V]]
+      null.asInstanceOf[KeySpliterator[K, V]]
     }
 
     override def forEachRemaining(action: Consumer[_ >: K]): Unit = {
@@ -1087,17 +1087,17 @@ object ConcurrentSkipListMap {
           e = e.next
       }
       current = e
-      return false
+      false
     }
 
     def characteristics(): Int = {
-      return Spliterator.DISTINCT | Spliterator.SORTED |
+      Spliterator.DISTINCT | Spliterator.SORTED |
         Spliterator.ORDERED | Spliterator.CONCURRENT |
         Spliterator.NONNULL
     }
 
     override def getComparator(): Comparator[_ >: K] = {
-      return comparator
+      comparator
     }
   }
 
@@ -1133,7 +1133,7 @@ object ConcurrentSkipListMap {
               (f == null || cpr(cmp, sk, f) < 0)) {
             current = n
             var r: Index[K, V] = q.down
-            row = (if (s.right != null) s else s.down)
+            row = if (s.right != null) s else s.down
             est -= est >>> 2;
             return new ValueSpliterator[K, V](cmp, r, e, sk, est)
           }
@@ -1141,7 +1141,7 @@ object ConcurrentSkipListMap {
           row = q.down; q = row
         }
       }
-      return null.asInstanceOf[ValueSpliterator[K, V]]
+      null.asInstanceOf[ValueSpliterator[K, V]]
     }
 
     override def forEachRemaining(action: Consumer[_ >: V]): Unit = {
@@ -1184,11 +1184,11 @@ object ConcurrentSkipListMap {
           e = e.next
       }
       current = e
-      return false
+      false
     }
 
     def characteristics(): Int = {
-      return Spliterator.CONCURRENT | Spliterator.ORDERED |
+      Spliterator.CONCURRENT | Spliterator.ORDERED |
         Spliterator.NONNULL
     }
   }
@@ -1225,7 +1225,7 @@ object ConcurrentSkipListMap {
               (f == null || cpr(cmp, sk, f) < 0)) {
             current = n
             var r: Index[K, V] = q.down
-            row = (if (s.right != null) s else s.down)
+            row = if (s.right != null) s else s.down
             est -= est >>> 2;
             return new EntrySpliterator[K, V](cmp, r, e, sk, est)
           }
@@ -1233,7 +1233,7 @@ object ConcurrentSkipListMap {
           row = q.down; q = row
         }
       }
-      return null.asInstanceOf[EntrySpliterator[K, V]]
+      null.asInstanceOf[EntrySpliterator[K, V]]
     }
 
     override def forEachRemaining(action: Consumer[_ >: Map.Entry[K, V]]): Unit = {
@@ -1277,11 +1277,11 @@ object ConcurrentSkipListMap {
           e = e.next
       }
       current = e
-      return false
+      false
     }
 
     def characteristics(): Int = {
-      return Spliterator.DISTINCT | Spliterator.SORTED |
+      Spliterator.DISTINCT | Spliterator.SORTED |
         Spliterator.ORDERED | Spliterator.CONCURRENT |
         Spliterator.NONNULL
     }
@@ -1329,7 +1329,7 @@ class ConcurrentSkipListMap[K, V](
   private[concurrent] def baseHead(): Node[K, V] = {
     var h: Index[K, V] = null.asInstanceOf[Index[K, V]]
     VarHandle.acquireFence()
-    return (if (({ h = head; h } == null)) null.asInstanceOf[Node[K, V]] else h.node)
+    if ({ h = head; h } == null) null.asInstanceOf[Node[K, V]] else h.node
   }
 
   private def addCount(c: Long): Unit = {
@@ -1360,7 +1360,7 @@ class ConcurrentSkipListMap[K, V](
       }
       a == null
     }) {}
-    c = a.sum; return if (c <= 0L) 0L else c // ignore transient negatives
+    c = a.sum; if (c <= 0L) 0L else c // ignore transient negatives
   }
 
   /* ---------------- Traversal -------------- */
@@ -1424,7 +1424,7 @@ class ConcurrentSkipListMap[K, V](
           breakOuter = true
       }
     }
-    return null.asInstanceOf[Node[K, V]]
+    null.asInstanceOf[Node[K, V]]
   }
 
   private def doGet(key: Any): V = {
@@ -1489,7 +1489,7 @@ class ConcurrentSkipListMap[K, V](
         }
       }
     }
-    return result
+    result
   }
 
   /* ---------------- Insertion -------------- */
@@ -1507,7 +1507,7 @@ class ConcurrentSkipListMap[K, V](
       if ({ h = head; h } == null) { // try to initialize
         var base: Node[K, V] = new Node[K, V](null.asInstanceOf[K], null.asInstanceOf[V], null)
         h = new Index[K, V](base, null, null)
-        b = (if (HEAD.compareExchangeStrong(null.asInstanceOf[Index[K, V]], h)) base else null)
+        b = if (HEAD.compareExchangeStrong(null.asInstanceOf[Index[K, V]], h)) base else null
       } else {
         var q: Index[K, V] = h
         var r: Index[K, V] = null.asInstanceOf[Index[K, V]]
@@ -1559,7 +1559,7 @@ class ConcurrentSkipListMap[K, V](
           } else if ({ c = cpr(cmp, key, k); c } > 0)
             b = n
           else if (c == 0 &&
-              (onlyIfAbsent || n.VAL.compareExchangeStrong((v).asInstanceOf[AnyRef], (value).asInstanceOf[AnyRef])))
+              (onlyIfAbsent || n.VAL.compareExchangeStrong(v.asInstanceOf[AnyRef], value.asInstanceOf[AnyRef])))
             return v
 
           if (c < 0 &&
@@ -1633,7 +1633,7 @@ class ConcurrentSkipListMap[K, V](
           breakOuter = true
         else if (value != null && !value.asInstanceOf[AnyRef].equals(v.asInstanceOf[AnyRef]))
           breakOuter = true
-        else if (n.VAL.compareExchangeStrong((v).asInstanceOf[AnyRef], null.asInstanceOf[AnyRef])) {
+        else if (n.VAL.compareExchangeStrong(v.asInstanceOf[AnyRef], null.asInstanceOf[AnyRef])) {
           result = v
           unlinkNode(b, n)
           breakInner = true // loop to clean up
@@ -1644,7 +1644,7 @@ class ConcurrentSkipListMap[K, V](
       tryReduceLevel();
       addCount(-1L)
     }
-    return result
+    result
   }
 
   private def tryReduceLevel(): Unit = {
@@ -1679,7 +1679,7 @@ class ConcurrentSkipListMap[K, V](
           return n
       }
     }
-    return null.asInstanceOf[Node[K, V]]
+    null.asInstanceOf[Node[K, V]]
   }
 
   private[concurrent] def findFirstEntry(): AbstractMap.SimpleImmutableEntry[K, V] = {
@@ -1694,7 +1694,7 @@ class ConcurrentSkipListMap[K, V](
           return new AbstractMap.SimpleImmutableEntry[K, V](n.key, v)
       }
     }
-    return null.asInstanceOf[AbstractMap.SimpleImmutableEntry[K, V]]
+    null.asInstanceOf[AbstractMap.SimpleImmutableEntry[K, V]]
   }
 
   private def doRemoveFirstEntry(): AbstractMap.SimpleImmutableEntry[K, V] = {
@@ -1704,7 +1704,7 @@ class ConcurrentSkipListMap[K, V](
     if ({ b = baseHead(); b } != null) {
       while ({ n = b.next; n } != null) {
         if ({ v = n.`val`; v } == null || n.VAL.compareExchangeStrong(
-              (v).asInstanceOf[AnyRef],
+              v.asInstanceOf[AnyRef],
               null.asInstanceOf[AnyRef]
             )) {
           var k: K = n.key
@@ -1719,7 +1719,7 @@ class ConcurrentSkipListMap[K, V](
         }
       }
     }
-    return null.asInstanceOf[AbstractMap.SimpleImmutableEntry[K, V]]
+    null.asInstanceOf[AbstractMap.SimpleImmutableEntry[K, V]]
   }
 
   /* ---------------- Finding and removing last element -------------- */
@@ -1832,7 +1832,7 @@ class ConcurrentSkipListMap[K, V](
               unlinkNode(b, n)
             else if (n.next != null)
               b = n
-            else if (n.VAL.compareExchangeStrong((v).asInstanceOf[AnyRef], null.asInstanceOf[AnyRef])) {
+            else if (n.VAL.compareExchangeStrong(v.asInstanceOf[AnyRef], null.asInstanceOf[AnyRef])) {
               unlinkNode(b, n)
               tryReduceLevel()
               findPredecessor(k, _comparator) // clean index
@@ -1869,7 +1869,7 @@ class ConcurrentSkipListMap[K, V](
           var k: K = null.asInstanceOf[K]
           var c: Int = 0
           if ({ n = b.next; n } == null) {
-            result = (if ((rel & LT) != 0 && b.key != null) b else null.asInstanceOf[Node[K, V]])
+            result = if ((rel & LT) != 0 && b.key != null) b else null.asInstanceOf[Node[K, V]]
             breakOuter = true
           } else if ({ k = n.key; k } == null)
             breakInner = true
@@ -1880,7 +1880,7 @@ class ConcurrentSkipListMap[K, V](
             result = n
             breakOuter = true
           } else if (c <= 0 && (rel & LT) != 0) {
-            result = (if (b.key != null) b else null.asInstanceOf[Node[K, V]])
+            result = if (b.key != null) b else null.asInstanceOf[Node[K, V]]
             breakOuter = true
           } else
             b = n
@@ -2064,26 +2064,26 @@ class ConcurrentSkipListMap[K, V](
   /* ------ Map API methods ------ */
 
   override def containsKey(key: Any): Boolean = {
-    return doGet(key) != null
+    doGet(key) != null
   }
 
   override def get(key: Any): V = {
-    return doGet(key)
+    doGet(key)
   }
 
   override def getOrDefault(key: Any, defaultValue: V): V = {
     var v: V = null.asInstanceOf[V]
-    return (if ({ v = doGet(key); v } == null) defaultValue else v)
+    if ({ v = doGet(key); v } == null) defaultValue else v
   }
 
   override def put(key: K, value: V): V = {
     if (value == null)
       throw new NullPointerException()
-    return doPut(key, value, false)
+    doPut(key, value, false)
   }
 
   override def remove(key: Any): V = {
-    return doRemove(key, null.asInstanceOf[V])
+    doRemove(key, null.asInstanceOf[V])
   }
 
   override def containsValue(value: Any): Boolean = {
@@ -2100,7 +2100,7 @@ class ConcurrentSkipListMap[K, V](
           b = n
       }
     }
-    return false
+    false
   }
 
   override def size(): Int = {
@@ -2113,7 +2113,7 @@ class ConcurrentSkipListMap[K, V](
   }
 
   override def isEmpty(): Boolean = {
-    return findFirst() == null
+    findFirst() == null
   }
 
   override def clear(): Unit = {
@@ -2159,7 +2159,7 @@ class ConcurrentSkipListMap[K, V](
     var r: V = null.asInstanceOf[V]
     if ({ v = doGet(key); v } == null &&
         { r = mappingFunction.apply(key); r } != null)
-      v = (if ({ p = doPut(key, r, true); p } == null) r else p)
+      v = if ({ p = doPut(key, r, true); p } == null) r else p
     v
   }
 
@@ -2259,7 +2259,7 @@ class ConcurrentSkipListMap[K, V](
   }
 
   override def descendingKeySet(): NavigableSet[K] = {
-    return descendingMap().navigableKeySet()
+    descendingMap().navigableKeySet()
   }
 
   /* ---------------- AbstractMap Overrides -------------- */
@@ -2267,7 +2267,7 @@ class ConcurrentSkipListMap[K, V](
   override def equals(o: Any): Boolean = {
     if (o.asInstanceOf[AnyRef] eq this)
       return true
-    if (!(o.isInstanceOf[Map[_, _]]))
+    if (!o.isInstanceOf[Map[_, _]])
       return false
     var m: Map[_, _] = o.asInstanceOf[Map[_, _]]
     try {
@@ -2275,8 +2275,8 @@ class ConcurrentSkipListMap[K, V](
       // See JDK-8223553 for Iterator type wildcard rationale
       var it: Iterator[_ <: Map.Entry[_, _]] = m.entrySet().iterator()
       if (m.isInstanceOf[SortedMap[_, _]] &&
-          ((m
-            .asInstanceOf[SortedMap[_, _]])
+          (m
+            .asInstanceOf[SortedMap[_, _]]
             .comparator()
             .asInstanceOf[AnyRef] eq cmp.asInstanceOf[AnyRef])) {
         var b: Node[K, V] = null.asInstanceOf[Node[K, V]]
@@ -2306,7 +2306,7 @@ class ConcurrentSkipListMap[K, V](
             b = n
           }
         }
-        return !it.hasNext()
+        !it.hasNext()
       } else {
         while (it.hasNext()) {
           var v: V = null.asInstanceOf[V]
@@ -2333,7 +2333,7 @@ class ConcurrentSkipListMap[K, V](
             b = n
           }
         }
-        return true
+        true
       }
     } catch {
       case _: ClassCastException | _: NullPointerException => false
@@ -2345,13 +2345,13 @@ class ConcurrentSkipListMap[K, V](
   override def putIfAbsent(key: K, value: V): V = {
     if (value == null)
       throw new NullPointerException()
-    return doPut(key, value, true)
+    doPut(key, value, true)
   }
 
   override def remove(key: Any, value: Any): Boolean = {
     if (key == null)
       throw new NullPointerException()
-    return value != null && doRemove(key, value) != null
+    value != null && doRemove(key, value) != null
   }
 
   override def replace(key: K, oldValue: V, newValue: V): Boolean = {
@@ -2397,14 +2397,14 @@ class ConcurrentSkipListMap[K, V](
     var n: Node[K, V] = findFirst()
     if (n == null)
       throw new NoSuchElementException()
-    return n.key
+    n.key
   }
 
   override def lastKey(): K = {
     var n: Node[K, V] = findLast()
     if (n == null)
       throw new NoSuchElementException()
-    return n.key
+    n.key
   }
 
   override def subMap(
@@ -2415,85 +2415,85 @@ class ConcurrentSkipListMap[K, V](
   ): ConcurrentNavigableMap[K, V] = {
     if (fromKey == null || toKey == null)
       throw new NullPointerException()
-    return new SubMap[K, V](this, fromKey, fromInclusive, toKey, toInclusive, false)
+    new SubMap[K, V](this, fromKey, fromInclusive, toKey, toInclusive, false)
   }
 
   override def headMap(toKey: K, inclusive: Boolean): ConcurrentNavigableMap[K, V] = {
     if (toKey == null)
       throw new NullPointerException()
-    return new SubMap[K, V](this, null.asInstanceOf[K], false, toKey, inclusive, false)
+    new SubMap[K, V](this, null.asInstanceOf[K], false, toKey, inclusive, false)
   }
 
   override def tailMap(fromKey: K, inclusive: Boolean): ConcurrentNavigableMap[K, V] = {
     if (fromKey == null)
       throw new NullPointerException()
-    return new SubMap[K, V](this, fromKey, inclusive, null.asInstanceOf[K], false, false)
+    new SubMap[K, V](this, fromKey, inclusive, null.asInstanceOf[K], false, false)
   }
 
   override def subMap(fromKey: K, toKey: K): ConcurrentNavigableMap[K, V] = {
-    return subMap(fromKey, true, toKey, false)
+    subMap(fromKey, true, toKey, false)
   }
 
   override def headMap(toKey: K): ConcurrentNavigableMap[K, V] = {
-    return headMap(toKey, false)
+    headMap(toKey, false)
   }
 
   override def tailMap(fromKey: K): ConcurrentNavigableMap[K, V] = {
-    return tailMap(fromKey, true)
+    tailMap(fromKey, true)
   }
 
   /* ---------------- Relational operations -------------- */
 
   override def lowerEntry(key: K): Map.Entry[K, V] = {
-    return findNearEntry(key, LT, _comparator)
+    findNearEntry(key, LT, _comparator)
   }
 
   override def lowerKey(key: K): K = {
     var n: Node[K, V] = findNear(key, LT, _comparator)
-    return (if (n == null) null.asInstanceOf[K] else n.key)
+    if (n == null) null.asInstanceOf[K] else n.key
   }
 
   override def floorEntry(key: K): Map.Entry[K, V] = {
-    return findNearEntry(key, LT | EQ, _comparator)
+    findNearEntry(key, LT | EQ, _comparator)
   }
 
   override def floorKey(key: K): K = {
     var n: Node[K, V] = findNear(key, LT | EQ, _comparator)
-    return (if (n == null) null.asInstanceOf[K] else n.key)
+    if (n == null) null.asInstanceOf[K] else n.key
   }
 
   override def ceilingEntry(key: K): Map.Entry[K, V] = {
-    return findNearEntry(key, GT | EQ, _comparator)
+    findNearEntry(key, GT | EQ, _comparator)
   }
 
   override def ceilingKey(key: K): K = {
     var n: Node[K, V] = findNear(key, GT | EQ, _comparator)
-    return (if (n == null) null.asInstanceOf[K] else n.key)
+    if (n == null) null.asInstanceOf[K] else n.key
   }
 
   override def higherEntry(key: K): Map.Entry[K, V] = {
-    return findNearEntry(key, GT, _comparator)
+    findNearEntry(key, GT, _comparator)
   }
 
   override def higherKey(key: K): K = {
     var n: Node[K, V] = findNear(key, GT, _comparator)
-    return (if (n == null) null.asInstanceOf[K] else n.key)
+    if (n == null) null.asInstanceOf[K] else n.key
   }
 
   override def firstEntry(): Map.Entry[K, V] = {
-    return findFirstEntry()
+    findFirstEntry()
   }
 
   override def lastEntry(): Map.Entry[K, V] = {
-    return findLastEntry()
+    findLastEntry()
   }
 
   override def pollFirstEntry(): Map.Entry[K, V] = {
-    return doRemoveFirstEntry()
+    doRemoveFirstEntry()
   }
 
   override def pollLastEntry(): Map.Entry[K, V] = {
-    return doRemoveLastEntry()
+    doRemoveLastEntry()
   }
 
   /* ---------------- Iterators -------------- */
@@ -2599,7 +2599,7 @@ class ConcurrentSkipListMap[K, V](
         while (!breakInner && ({ v = n.`val`; v } != null)) {
           var r: V = function.apply(n.key, v)
           if (r == null) throw new NullPointerException();
-          if (n.VAL.compareExchangeStrong((v).asInstanceOf[AnyRef], (r).asInstanceOf[AnyRef]))
+          if (n.VAL.compareExchangeStrong(v.asInstanceOf[AnyRef], r.asInstanceOf[AnyRef]))
             breakInner = true // break
         }
         b = n
@@ -2624,7 +2624,7 @@ class ConcurrentSkipListMap[K, V](
         b = n
       }
     }
-    return removed
+    removed
   }
 
   private[concurrent] def removeValueIf(function: Predicate[_ >: V]): Boolean = {
@@ -2640,7 +2640,7 @@ class ConcurrentSkipListMap[K, V](
         b = n
       }
     }
-    return removed
+    removed
   }
 
   // factory method for KeySpliterator
@@ -2657,7 +2657,7 @@ class ConcurrentSkipListMap[K, V](
       n = h.node
       est = getAdderCount()
     }
-    return new KeySpliterator[K, V](_comparator, h, n, null.asInstanceOf[K], est)
+    new KeySpliterator[K, V](_comparator, h, n, null.asInstanceOf[K], est)
   }
 
   // Almost the same as keySpliterator()
@@ -2674,7 +2674,7 @@ class ConcurrentSkipListMap[K, V](
       n = h.node
       est = getAdderCount()
     }
-    return new ValueSpliterator[K, V](_comparator, h, n, null.asInstanceOf[K], est)
+    new ValueSpliterator[K, V](_comparator, h, n, null.asInstanceOf[K], est)
   }
 
   // Almost the same as keySpliterator()
