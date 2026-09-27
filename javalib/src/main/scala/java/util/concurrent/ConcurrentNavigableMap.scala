@@ -8,7 +8,9 @@
 
 package java.util.concurrent
 
-import java.util.{NavigableMap, NavigableSet}
+import java.util.{
+  Map, NavigableMap, NavigableSet, SequencedCollection, SequencedSet
+}
 
 trait ConcurrentNavigableMap[K, V]
     extends ConcurrentMap[K, V]
@@ -38,6 +40,21 @@ trait ConcurrentNavigableMap[K, V]
   override def tailMap(fromKey: K): ConcurrentNavigableMap[K, V]
 
   override def descendingMap(): ConcurrentNavigableMap[K, V]
+
+  override def reversed(): ConcurrentNavigableMap[K, V] =
+    descendingMap()
+
+  def putFirst(key: K, value: V): V =
+    throw new UnsupportedOperationException
+
+  def putLast(key: K, value: V): V =
+    throw new UnsupportedOperationException
+
+  def sequencedKeySet(): SequencedSet[K]
+
+  def sequencedValues(): SequencedCollection[V]
+
+  def sequencedEntrySet(): SequencedSet[Map.Entry[K, V]]
 
   override def navigableKeySet(): NavigableSet[K]
 
