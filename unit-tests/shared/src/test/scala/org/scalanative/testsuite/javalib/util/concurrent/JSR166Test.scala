@@ -1187,6 +1187,13 @@ object JSR166Test {
   final val fortytwo = itemFor(42)
   final val ninetynine = itemFor(99)
 
+  /** Fails with message "should throw exception". Companion copy so tests can
+   *  selectively import helpers without `import JSR166Test._` (which would
+   *  shadow Item zero/one/... with Integer constants).
+   */
+  def shouldThrow(exceptionName: String = "exception"): Unit =
+    fail(s"Should throw $exceptionName")
+
   def mustEqual(x: Item, y: Item): Unit = {
     if (x ne y) assertEquals(x.value, y.value)
   }

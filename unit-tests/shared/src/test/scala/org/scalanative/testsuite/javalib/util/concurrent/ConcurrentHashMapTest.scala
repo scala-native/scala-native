@@ -11,10 +11,10 @@ import scala.reflect.ClassTag
 import org.junit.Assert._
 import org.junit.Test
 
-import org.scalanative.testsuite.javalib.util.MapTest
+import org.scalanative.testsuite.javalib.util.{MapTest => UtilMapTest}
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
-class ConcurrentHashMapTest extends MapTest {
+class ConcurrentHashMapTest extends UtilMapTest {
 
   def factory: ConcurrentHashMapFactory = new ConcurrentHashMapFactory
 
