@@ -15,7 +15,7 @@ object StringUtils {
    */
   def processEscapes(str: String): Array[Byte] = {
     val len = str.length
-    val b = Array.newBuilder[Byte]
+    val b = new ArrayBuilder.ofByte()
 
     def append(str: String): ArrayBuilder[Byte] = b ++= str.getBytes
 

@@ -40,7 +40,8 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
     val forkedCp = scala.util.Properties.javaClassPath
       .split(java.io.File.pathSeparator)
     val contextClassLoader = Thread.currentThread().getContextClassLoader()
-    val testClasspath = (forkedCp ++ classpathEntries(contextClassLoader)).distinct
+    val testClasspath =
+      (forkedCp ++ classpathEntries(contextClassLoader)).distinct
     val classLoader = new URLClassLoader(
       testClasspath.map(new File(_).toURI.toURL),
       contextClassLoader

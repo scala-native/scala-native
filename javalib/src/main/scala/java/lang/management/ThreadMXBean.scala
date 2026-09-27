@@ -2,6 +2,8 @@ package java.lang.management
 
 import java.util.ScalaOps._
 
+import scala.collection.mutable
+
 import scala.scalanative.runtime.NativeThread
 
 trait ThreadMXBean {
@@ -117,7 +119,7 @@ object ThreadMXBean {
 
     @annotation.nowarn // Thread.getId is deprecated since JDK 19
     def getAllThreadIds(): Array[Long] = {
-      val builder = Array.newBuilder[Long]
+      val builder = new mutable.ArrayBuilder.ofLong()
       builder.sizeHint(NativeThread.Registry.aliveThreadsCount)
       NativeThread.Registry.aliveThreadsIterator.scalaOps.foreach(
         nativeThread => builder += nativeThread.thread.getId()
