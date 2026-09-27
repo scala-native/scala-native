@@ -411,24 +411,62 @@ object Files {
     else if (exists(dir, Array.empty)) dir
     else {
       val parent = dir.getParent()
-      if (parent != null) createDirectories(parent, attrs)
-      createDirectory(dir, attrs)
+      if (parent != null) {
+        try
+          createDirectories(parent, attrs): Unit
+        catch {
+          case _: FileAlreadyExistsException
+              if isDirectory(parent, Array.empty) =>
+            ()
+        }
+      }
+      try
+        createDirectory(dir, attrs): Unit
+      catch {
+        case _: FileAlreadyExistsException if isDirectory(dir, Array.empty) =>
+          ()
+      }
       dir
     }
 
   def createDirectory(dir: Path, attrs: Array[FileAttribute[_]]): Path =
-    if (exists(dir, Array.empty)) {
-      if (!isDirectory(dir, Array.empty)) {
-        throw new FileAlreadyExistsException(dir.toString)
-      } else if (list(dir).iterator().hasNext()) {
-        throw new DirectoryNotEmptyException(dir.toString)
+    if (exists(dir, Array.empty))
+      throw new FileAlreadyExistsException(dir.toString)
+    else
+      tryMkdir(dir) match {
+        case None =>
+          setAttributes(dir, attrs)
+          dir
+        case Some(_) if exists(dir, Array.empty) =>
+          throw new FileAlreadyExistsException(dir.toString)
+        case Some(failure) =>
+          throw failure
       }
-      dir
-    } else if (dir.toFile().mkdir()) {
-      setAttributes(dir, attrs)
-      dir
-    } else {
-      throw new IOException()
+
+  // File.mkdir does not keep errno: Zone cleanup can clear it. Make the
+  // directory here and turn the syscall's own error into an IOException
+  // that names the path. 0777 matches java.io.File.mkdir.
+  private def tryMkdir(dir: Path): Option[IOException] =
+    Zone.acquire { implicit z =>
+      val file = dir.toFile()
+      if (isWindows) {
+        val created = FileApi.CreateDirectoryW(
+          toCWideStringUTF16LE(file.getAbsolutePath()),
+          securityAttributes = null
+        )
+        if (created) None
+        else
+          Some(
+            WindowsException.onPathWithLastEror(
+              dir.toString,
+              GetLastError()
+            )
+          )
+      } else {
+        val mode = Integer.parseInt("777", 8).toUInt
+        if (stat.mkdir(toCString(file.getPath()), mode) == 0) None
+        else Some(UnixException(dir.toString, errno))
+      }
     }
 
   def createFile(path: Path, attrs: Array[FileAttribute[_]]): Path = {
