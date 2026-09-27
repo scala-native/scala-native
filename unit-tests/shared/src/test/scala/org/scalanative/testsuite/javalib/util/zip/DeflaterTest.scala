@@ -8,6 +8,62 @@ import org.junit.Test
 
 class DeflaterTest {
 
+  @Test def syncFlushMakesInputAvailableBeforeFinish(): Unit =
+    checkFlush(Deflater.SYNC_FLUSH)
+
+  @Test def fullFlushMakesInputAvailableBeforeFinish(): Unit =
+    checkFlush(Deflater.FULL_FLUSH)
+
+  private def checkFlush(flush: Int): Unit = {
+    val deflater = new Deflater()
+    val inflater = new Inflater()
+    val compressed = new Array[Byte](512)
+    val decoded = new Array[Byte](512)
+    try {
+      for (text <- Seq("first message", "second message")) {
+        val input = text.getBytes("UTF-8")
+        deflater.setInput(input)
+        val size = deflater.deflate(compressed, 0, compressed.length, flush)
+        inflater.setInput(compressed, 0, size)
+        assertEquals(input.length, inflater.inflate(decoded))
+        assertArrayEquals(input, decoded.take(input.length))
+        assertTrue(deflater.needsInput())
+        assertFalse(deflater.finished())
+        assertFalse(inflater.finished())
+      }
+    } finally {
+      deflater.end()
+      inflater.end()
+    }
+  }
+
+  @Test def finishTakesPrecedenceOverExplicitFlushMode(): Unit = {
+    for (flush <- Seq(
+          Deflater.NO_FLUSH,
+          Deflater.SYNC_FLUSH,
+          Deflater.FULL_FLUSH
+        )) {
+      val deflater = new Deflater()
+      val inflater = new Inflater()
+      try {
+        val input = "finished message".getBytes("UTF-8")
+        val compressed = new Array[Byte](512)
+        val decoded = new Array[Byte](512)
+        deflater.setInput(input)
+        deflater.finish()
+        val size = deflater.deflate(compressed, 0, compressed.length, flush)
+        assertTrue(deflater.finished())
+        inflater.setInput(compressed, 0, size)
+        assertEquals(input.length, inflater.inflate(decoded))
+        assertArrayEquals(input, decoded.take(input.length))
+        assertTrue(inflater.finished())
+      } finally {
+        deflater.end()
+        inflater.end()
+      }
+    }
+  }
+
   @Test def deflaterSetInputDoesNotThrowAnException(): Unit = {
     val deflater = new Deflater()
     val bytes = Array[Byte](1, 2, 3)

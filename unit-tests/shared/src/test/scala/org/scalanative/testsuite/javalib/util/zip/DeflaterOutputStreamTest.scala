@@ -8,8 +8,6 @@ import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
-import scala.scalanative.junit.utils.AssumesHelper._
-
 class DeflaterOutputStreamTest {
 
   @Test def deflaterOutputStreamCanDeflateSomeBytes(): Unit = {
@@ -45,22 +43,25 @@ class DeflaterOutputStreamTest {
   }
 
   @Test def deflaterOutputStreamCanBeFlushedWithSyncFlush(): Unit = {
-    assumeNotJVMCompliant()
     val bos = new ByteArrayOutputStream
     val out =
       new DeflaterOutputStream(bos, new Deflater, 16, /* syncFlush = */ true)
-    val expected = Array(120, -100, 99, 100, 28, 5, -93, 96, 20, -116, 84, 0, 0,
-      6, 120, 4, 1)
-    val bytes = Array.fill[Byte](1024)(1)
-    out.write(bytes)
-    out.flush()
-    out.close()
-
-    val result = bos.toByteArray()
-
-    assertTrue(result.length == expected.length)
-    result.zip(expected).foreach {
-      case (a, b) => assertTrue(a == b)
+    val inflater = new Inflater()
+    try {
+      for (value <- Seq[Byte](1, 2)) {
+        bos.reset()
+        val bytes = Array.fill[Byte](1024)(value)
+        out.write(bytes)
+        out.flush()
+        inflater.setInput(bos.toByteArray())
+        val decoded = new Array[Byte](bytes.length)
+        assertEquals(bytes.length, inflater.inflate(decoded))
+        assertArrayEquals(bytes, decoded)
+        assertFalse(inflater.finished())
+      }
+    } finally {
+      out.close()
+      inflater.end()
     }
   }
 
