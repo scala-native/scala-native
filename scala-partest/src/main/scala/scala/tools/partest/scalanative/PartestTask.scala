@@ -11,11 +11,13 @@ package scalanative
 
 import java.io.File
 import java.net.URLClassLoader
+import java.nio.file.Paths
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
 import scala.concurrent.duration._
 import scala.language.reflectiveCalls
+import scala.util.Try
 
 import scala.scalanative.build.Build
 import scala.scalanative.linker.LinktimeIntrinsicCallsResolver.FoundServiceProviders
@@ -37,7 +39,12 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
   ): Array[Task] = {
     val forkedCp = scala.util.Properties.javaClassPath
       .split(java.io.File.pathSeparator)
-    val classLoader = new URLClassLoader(forkedCp.map(new File(_).toURI.toURL))
+    val contextClassLoader = Thread.currentThread().getContextClassLoader()
+    val testClasspath = (forkedCp ++ classpathEntries(contextClassLoader)).distinct
+    val classLoader = new URLClassLoader(
+      testClasspath.map(new File(_).toURI.toURL),
+      contextClassLoader
+    )
 
     if (Runtime.getRuntime().maxMemory() / (1024 * 1024) < 800)
       loggers foreach (_.warn(
@@ -50,13 +57,20 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
       ScalaNativePartestOptions(args, str => loggers.foreach(_.error(str)))
         .map { opts =>
           if (opts.shouldPrecompileLibraries) {
-            val forkedClasspath = forkedCp.map(java.nio.file.Paths.get(_)).toSeq
-            val paths = precompileLibs(opts, forkedClasspath)
+            val paths = precompileLibs(
+              opts,
+              testClasspath.map(java.nio.file.Paths.get(_))
+            )
             opts.copy(precompiledLibrariesPaths = paths)
           } else opts
         }
 
     maybeOptions foreach { options =>
+      val compilerClasspath = (
+        testClasspath ++
+          options.nativeClasspath.map(_.toString) ++
+          classpathEntries(contextClassLoader)
+      ).distinct
       val runner = SBTRunner(
         partestFingerprint = scala.tools.partest.sbt.Framework.fingerprint,
         eventHandler = eventHandler,
@@ -66,7 +80,10 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
         testClassLoader = classLoader,
         javaCmd = null,
         javacCmd = null,
-        scalacArgs = Array.empty[String],
+        scalacArgs = Array(
+          "-classpath",
+          compilerClasspath.mkString(java.io.File.pathSeparator)
+        ),
         args = Array("neg", "pos", "run"),
         options = options,
         scalaVersion = scalaVersion
@@ -88,6 +105,16 @@ case class PartestTask(taskDef: TaskDef, args: Array[String]) extends Task {
   }
 
   type SBTRunner = { def run(): Unit }
+
+  private def classpathEntries(classLoader: ClassLoader): Seq[String] = {
+    Iterator
+      .iterate(classLoader)(_.getParent)
+      .takeWhile(_ != null)
+      .collect { case loader: URLClassLoader => loader.getURLs.toSeq }
+      .flatten
+      .flatMap(url => Try(Paths.get(url.toURI).toString).toOption)
+      .toSeq
+  }
 
   // use reflection to instantiate scala.tools.partest.scalanative.ScalaNativeSBTRunner,
   // casting to the structural type SBTRunner above so that method calls on the result will be invoked reflectively as well
