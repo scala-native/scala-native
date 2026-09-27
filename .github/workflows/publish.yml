@@ -67,8 +67,7 @@ jobs:
       matrix:
         # Older Scala compiler version don't support -release flag, leading to java.lang.NoSuchMethodError: java.nio.ByteBuffer.position(I)Ljava/nio/ByteBuffer in nir.serialization.Prelude$
         # Make sure to use JDK 8 to keep binary compatibility
-        include:
-        - scala: ["2.12", "2.13", "3"]
+        scala: ["2.12", "2.13", "3"]
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/linux-setup-env
