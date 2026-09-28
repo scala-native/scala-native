@@ -44,7 +44,8 @@ class Deflater(private var compressLevel: Int, noHeader: Boolean)
     if (inputBuffer == null) {
       setInput(Deflater.STUB_INPUT_BUFFER)
     }
-    deflateImpl(buf, off, nbytes, flushParam)
+    val flush = if (flushParm == zlib.Z_FINISH) flushParm else flushParam
+    deflateImpl(buf, off, nbytes, flush)
   }
 
   private def deflateImpl(
@@ -62,7 +63,7 @@ class Deflater(private var compressLevel: Int, noHeader: Boolean)
     } else {
       stream.nextOut = buf.at(off)
     }
-    val err = zlib.deflate(stream, flushParm)
+    val err = zlib.deflate(stream, flushParam)
 
     if (err == zlib.Z_MEM_ERROR) {
       throw new OutOfMemoryError()
@@ -71,7 +72,7 @@ class Deflater(private var compressLevel: Int, noHeader: Boolean)
       val totalOut = stream.totalOut.toInt
       totalOut - sout
     } else {
-      if (flushParm != zlib.Z_FINISH) {
+      if (flushParam != zlib.Z_FINISH) {
         val totalIn = stream.totalIn.toInt
         inRead = totalIn - sin + inBytes
       }

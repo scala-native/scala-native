@@ -12,6 +12,30 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class GZIPOutputStreamTest {
 
+  @Test def syncFlushMakesInputAvailableBeforeClose(): Unit = {
+    val out = new ByteArrayOutputStream()
+    val gzip = new GZIPOutputStream(out, 512, true)
+    val inflater = new Inflater(true)
+    try {
+      // Decode the raw deflate payload after the ten-byte gzip header.
+      out.reset()
+      for (text <- Seq("data: hello\n\n", "data: again\n\n")) {
+        val input = text.getBytes("UTF-8")
+        gzip.write(input)
+        gzip.flush()
+        inflater.setInput(out.toByteArray())
+        val decoded = new Array[Byte](512)
+        assertEquals(input.length, inflater.inflate(decoded))
+        assertArrayEquals(input, decoded.take(input.length))
+        assertFalse(inflater.finished())
+        out.reset()
+      }
+    } finally {
+      gzip.close()
+      inflater.end()
+    }
+  }
+
   @Test def constructorOutputStream(): Unit = {
     val out = new ByteArrayOutputStream()
     val outGZIP = new TestGZIPOutputStream(out)
