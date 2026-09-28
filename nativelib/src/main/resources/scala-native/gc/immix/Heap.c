@@ -277,7 +277,8 @@ bool Heap_shouldGrow(Heap *heap) {
                  recycledBlockCount);
 
     return freeBlockCount * 2 < blockCount ||
-           4 * unavailableBlockCount > blockCount;
+           (4 * unavailableBlockCount > blockCount &&
+            20 * freeBlockCount < 13 * blockCount);
 }
 
 void Heap_Recycle(Heap *heap) {
