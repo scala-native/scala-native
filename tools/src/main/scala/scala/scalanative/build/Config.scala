@@ -198,6 +198,7 @@ sealed trait Config {
           sys.env
             .get("SCALANATIVE_GC_TRAP_BASED_YIELDPOINTS")
             .map(_ == "1")
+            .orElse(compilerConfig.trapBasedGCYieldPoints)
             .getOrElse(compilerConfig.mode.isInstanceOf[Mode.Release])
         }
       case _ => false

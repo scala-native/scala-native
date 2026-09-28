@@ -13,6 +13,7 @@
 #include "stackOverflowGuards.h"
 #include "nativeThreadTLS.h"
 #include "StackTrace.h"
+#include "SignalDiagnostics.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -153,7 +154,7 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
     ThreadInfo threadInfo = currentThreadInfo;
     bool threadInfoInitialized = threadInfo.stackSize != 0 &&
                                  threadInfo.stackBottom && threadInfo.stackTop;
-    if (!threadInfoInitialized) {
+    if (!threadInfoInitialized || info->si_code <= 0) {
         goto dispatchDefaultSignal;
     }
     switch (sig) {
@@ -247,13 +248,7 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
                 }
             }
         }
-        fprintf(stderr, "%s Unhandled signal %d, si_addr=%p\n", snErrorPrefix,
-                sig, faultAddr);
-        StackTrace_PrintStackTrace();
-        // _exit rather than exit: exit() is not async-signal-safe, and would
-        // run shutdown hooks on a spawned thread that can deadlock on a GC lock
-        // the faulting thread holds.
-        _exit(sig);
+        scalanative_signal_fatal(sig, info, context, NULL, NULL, false);
     }
 }
 

@@ -17,6 +17,7 @@
 #include "shared/Time.h"
 #include "MutatorThread.h"
 #include <signal.h>
+#include "../../SignalDiagnostics.h"
 #include <errno.h>
 
 atomic_bool Synchronizer_stopThreads = false;
@@ -172,12 +173,9 @@ static struct sigaction *previousSignalHandlerFor(int signal) {
  * across arbitrary call boundaries; the runtime cannot announce that a
  * scalanative_continuation_resume call may have moved execution onto a
  * different OS thread). The faulting load can therefore land on another
- * armed mutator's trap page rather than the current carrier's. Because
- * arming is global (Synchronizer_SuspendThreads sets stopThreads BEFORE
- * arming every mutator's trap page), any access-permission fault from a
- * registered mutator while stopThreads is set is a legitimate safepoint
- * trap on the current carrier - yielding here makes the current carrier
- * observe stopThreads and synchronise correctly on the next resume.
+ * armed mutator's trap page rather than the current carrier's. Accept only
+ * access-permission faults on registered trap cells while stopThreads is
+ * set. GC activity alone does not make an arbitrary fault a safepoint.
  */
 static bool isAccessPermissionFault(int signal, int si_code) {
     if (signal == SIGSEGV)
@@ -197,6 +195,8 @@ static bool isContinuationStaleTrapFault(int signal, siginfo_t *siginfo,
         return false;
     if (!isAccessPermissionFault(signal, siginfo->si_code))
         return false;
+    if (!YieldPointTrap_contains(siginfo->si_addr))
+        return false;
     if (!atomic_load_explicit(&Synchronizer_stopThreads, memory_order_acquire))
         return false;
     return true;
@@ -212,7 +212,8 @@ static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
     if (trapCell == NULL) {
         trapCell = (void *)scalanative_GC_yieldpoint_trap;
     }
-    bool isOwnTrap = isSafepointTrapSignal(signal) && trapCell != NULL &&
+    bool isOwnTrap = isAccessPermissionFault(signal, siginfo->si_code) &&
+                     trapCell != NULL &&
                      isTrapFaultAddress(siginfo->si_addr, trapCell);
     bool isStaleCarrierTrap =
         !isOwnTrap && isContinuationStaleTrapFault(signal, siginfo, self);
@@ -243,14 +244,13 @@ static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
                 return previousSignalHandler->sa_handler(signal);
             }
         }
-        return;
+        if (handler == SIG_IGN)
+            return;
     }
 
-    GC_LOG_WARN("%s Unhandled signal %d triggered when accessing "
-                "memory address %p, code=%d\n\n",
-                snErrorPrefix, signal, siginfo->si_addr, siginfo->si_code);
-    StackTrace_PrintStackTrace();
-    abort();
+    scalanative_signal_fatal(
+        signal, siginfo, uap, self, trapCell,
+        atomic_load_explicit(&Synchronizer_stopThreads, memory_order_relaxed));
 }
 #endif
 
