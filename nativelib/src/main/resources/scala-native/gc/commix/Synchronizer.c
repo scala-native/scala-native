@@ -19,6 +19,7 @@
 #include "MutatorThread.h"
 #include "shared/Log.h"
 #include <signal.h>
+#include "../../SignalDiagnostics.h"
 #include <errno.h>
 
 atomic_bool Synchronizer_stopThreads = false;
@@ -170,9 +171,8 @@ static struct sigaction *previousSignalHandlerFor(int signal) {
 /* See immix Synchronizer.c for the rationale: continuation migration can
  * leave a previous carrier's TLS-derived trap-cell pointer cached in the
  * resumed function, so the fault may land on another armed mutator's trap
- * page rather than the current carrier's. Arming is global, so any
- * SEGV_ACCERR from a registered mutator while stopThreads is set is a
- * legitimate safepoint trap on the current carrier. */
+ * page rather than the current carrier's. Only access-permission faults
+ * on registered trap cells while stopThreads is set are safepoints. */
 static bool isAccessPermissionFault(int signal, int si_code) {
     if (signal == SIGSEGV)
         return si_code == SEGV_ACCERR;
@@ -191,6 +191,8 @@ static bool isContinuationStaleTrapFault(int signal, siginfo_t *siginfo,
         return false;
     if (!isAccessPermissionFault(signal, siginfo->si_code))
         return false;
+    if (!YieldPointTrap_contains(siginfo->si_addr))
+        return false;
     if (!atomic_load_explicit(&Synchronizer_stopThreads, memory_order_acquire))
         return false;
     return true;
@@ -206,7 +208,8 @@ static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
     if (trapCell == NULL) {
         trapCell = (void *)scalanative_GC_yieldpoint_trap;
     }
-    bool isOwnTrap = isSafepointTrapSignal(signal) && trapCell != NULL &&
+    bool isOwnTrap = isAccessPermissionFault(signal, siginfo->si_code) &&
+                     trapCell != NULL &&
                      isTrapFaultAddress(siginfo->si_addr, trapCell);
     bool isStaleCarrierTrap =
         !isOwnTrap && isContinuationStaleTrapFault(signal, siginfo, self);
@@ -237,14 +240,13 @@ static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
                 return previousSignalHandler->sa_handler(signal);
             }
         }
-        return;
+        if (handler == SIG_IGN)
+            return;
     }
 
-    GC_LOG_ERROR("%s Unhandled signal %d triggered when accessing "
-                 "memory address %p, code=%d",
-                 snErrorPrefix, signal, siginfo->si_addr, siginfo->si_code);
-    StackTrace_PrintStackTrace();
-    abort();
+    scalanative_signal_fatal(
+        signal, siginfo, uap, self, trapCell,
+        atomic_load_explicit(&Synchronizer_stopThreads, memory_order_relaxed));
 }
 #endif
 

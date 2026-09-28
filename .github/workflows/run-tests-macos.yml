@@ -11,6 +11,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  gc-signals:
+    name: Test GC signal handling
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v7
+      - run: bash scripts/tests/gc-signals.sh
+
   test-runtime:
     name: Test runtime
     if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
