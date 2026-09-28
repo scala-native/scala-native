@@ -356,7 +356,18 @@ object Files {
       if (targetExists) Files.delete(target)
       createSymbolicLink(target, readSymbolicLink(source), Array.empty)
     } else if (isDirectory(source, Array.empty)) {
-      createDirectory(target, Array.empty)
+      /* createDirectory rejects every existing path. Copying a directory
+       * over an empty one succeeds, and over a non-empty one throws
+       * DirectoryNotEmptyException.
+       */
+      if (targetExists && isDirectory(target, linkOpts)) {
+        val children = list(target)
+        val nonEmpty =
+          try children.iterator().hasNext()
+          finally children.close()
+        if (nonEmpty)
+          throw new DirectoryNotEmptyException(target.toString)
+      } else createDirectory(target, Array.empty)
     } else if (!isWindows) {
       // Scala Native Issue #4382
       // Devos, ensure preconditions described at top of method endure.
