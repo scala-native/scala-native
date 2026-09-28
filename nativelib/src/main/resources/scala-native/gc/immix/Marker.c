@@ -72,14 +72,12 @@ static inline void Marker_markLockWords(Heap *heap, Stack *stack,
 
 void Marker_markConservative(Heap *heap, Stack *stack, word_t *address) {
     assert(Heap_IsWordInHeap(heap, address));
-    if (Bytemap_isPtrAligned(address)) {
-        Object *object = Object_GetUnmarkedObject(heap, address);
-        Bytemap *bytemap = heap->bytemap;
-        if (object != NULL) {
-            ObjectMeta *objectMeta = Bytemap_Get(bytemap, (word_t *)object);
-            if (ObjectMeta_IsAllocated(objectMeta)) {
-                Marker_markObject(heap, stack, bytemap, object, objectMeta);
-            }
+    Object *object = Object_GetUnmarkedObject(heap, address);
+    Bytemap *bytemap = heap->bytemap;
+    if (object != NULL) {
+        ObjectMeta *objectMeta = Bytemap_Get(bytemap, (word_t *)object);
+        if (ObjectMeta_IsAllocated(objectMeta)) {
+            Marker_markObject(heap, stack, bytemap, object, objectMeta);
         }
     }
 }

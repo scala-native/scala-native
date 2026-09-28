@@ -183,15 +183,13 @@ static inline void Marker_markLockWords(Heap *heap, Stats *stats,
 void Marker_markConservative(Heap *heap, Stats *stats, GreyPacket **outHolder,
                              GreyPacket **outWeakRefHolder, word_t *address) {
     assert(Heap_IsWordInHeap(heap, address));
-    if (Bytemap_isPtrAligned(address)) {
-        Object *object = Object_GetUnmarkedObject(heap, address);
-        Bytemap *bytemap = heap->bytemap;
-        if (object != NULL) {
-            ObjectMeta *objectMeta = Bytemap_Get(bytemap, (word_t *)object);
-            if (ObjectMeta_IsAllocated(objectMeta)) {
-                Marker_markObject(heap, stats, outHolder, outWeakRefHolder,
-                                  bytemap, object, objectMeta);
-            }
+    Object *object = Object_GetUnmarkedObject(heap, address);
+    Bytemap *bytemap = heap->bytemap;
+    if (object != NULL) {
+        ObjectMeta *objectMeta = Bytemap_Get(bytemap, (word_t *)object);
+        if (ObjectMeta_IsAllocated(objectMeta)) {
+            Marker_markObject(heap, stats, outHolder, outWeakRefHolder, bytemap,
+                              object, objectMeta);
         }
     }
 }
