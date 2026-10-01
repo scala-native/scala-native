@@ -764,4 +764,13 @@ class PatternTest {
     }
   }
 
+  // Issue 5057
+  @Test def patternClassIsSerializable(): Unit = {
+    val p = Pattern.compile("fwbrasil")
+    val isInstanceOf = p.isInstanceOf[java.io.Serializable]
+    assertTrue(
+      s"Expect p.isInstanceOf[io.Serializable] == 'true': ${isInstanceOf}",
+      isInstanceOf
+    )
+  }
 }
