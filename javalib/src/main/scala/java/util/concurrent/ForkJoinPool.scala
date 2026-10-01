@@ -1678,7 +1678,10 @@ object ForkJoinPool {
           }
           VarHandle.releaseFence()
           array = newArray
-        } else a(m & s) = task
+        } else {
+          VarHandle.releaseFence()
+          a(m & s) = task
+        }
         getAndSetAccess(0)
         if ((resize || (a(m & (s - 1)) == null && signalIfEmpty)) &&
             pool != null)
