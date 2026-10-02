@@ -43,7 +43,7 @@ private[testinterface] final class RunMuxRPC(rpc: RPCCore) {
   def attach[Req](ep: MuxRPCEndpoint[Req], runId: RunID)(
       ex: Req => ep.Resp
   ): Unit =
-    attachAsync(ep, runId)(x => Future.fromTry(Try(ex(x))))
+    attachMux(ep.opCode, runId, ex)(rpc.attach(ep))
 
   def attachAsync[Req](ep: MuxRPCEndpoint[Req], runId: RunID)(
       ex: Req => Future[ep.Resp]
