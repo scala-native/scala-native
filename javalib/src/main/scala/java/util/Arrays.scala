@@ -577,42 +577,42 @@ object Arrays extends ArraysJDK9Methods {
   }
 
   @noinline def fill(a: Array[Long], value: Long): Unit =
-    fillImpl(a, 0, a.length, value, checkIndices = false)
+    fillLongImpl(a, 0, a.length, value, checkIndices = false)
 
   @noinline
   def fill(a: Array[Long], fromIndex: Int, toIndex: Int, value: Long): Unit =
-    fillImpl(a, fromIndex, toIndex, value)
+    fillLongImpl(a, fromIndex, toIndex, value)
 
   @noinline def fill(a: Array[Int], value: Int): Unit =
-    fillImpl(a, 0, a.length, value, checkIndices = false)
+    fillIntImpl(a, 0, a.length, value, checkIndices = false)
 
   @noinline
   def fill(a: Array[Int], fromIndex: Int, toIndex: Int, value: Int): Unit =
-    fillImpl(a, fromIndex, toIndex, value)
+    fillIntImpl(a, fromIndex, toIndex, value)
 
   @noinline def fill(a: Array[Short], value: Short): Unit =
-    fillImpl(a, 0, a.length, value, checkIndices = false)
+    fillShortImpl(a, 0, a.length, value, checkIndices = false)
 
   @noinline
   def fill(a: Array[Short], fromIndex: Int, toIndex: Int, value: Short): Unit =
-    fillImpl(a, fromIndex, toIndex, value)
+    fillShortImpl(a, fromIndex, toIndex, value)
 
   @noinline def fill(a: Array[Char], value: Char): Unit =
-    fillImpl(a, 0, a.length, value, checkIndices = false)
+    fillCharImpl(a, 0, a.length, value, checkIndices = false)
 
   @noinline
   def fill(a: Array[Char], fromIndex: Int, toIndex: Int, value: Char): Unit =
-    fillImpl(a, fromIndex, toIndex, value)
+    fillCharImpl(a, fromIndex, toIndex, value)
 
   @noinline def fill(a: Array[Byte], value: Byte): Unit =
-    fillImpl(a, 0, a.length, value, checkIndices = false)
+    fillByteImpl(a, 0, a.length, value, checkIndices = false)
 
   @noinline
   def fill(a: Array[Byte], fromIndex: Int, toIndex: Int, value: Byte): Unit =
-    fillImpl(a, fromIndex, toIndex, value)
+    fillByteImpl(a, fromIndex, toIndex, value)
 
   @noinline def fill(a: Array[Boolean], value: Boolean): Unit =
-    fillImpl(a, 0, a.length, value, checkIndices = false)
+    fillBooleanImpl(a, 0, a.length, value, checkIndices = false)
 
   @noinline
   def fill(
@@ -621,10 +621,10 @@ object Arrays extends ArraysJDK9Methods {
       toIndex: Int,
       value: Boolean
   ): Unit =
-    fillImpl(a, fromIndex, toIndex, value)
+    fillBooleanImpl(a, fromIndex, toIndex, value)
 
   @noinline def fill(a: Array[Double], value: Double): Unit =
-    fillImpl(a, 0, a.length, value, checkIndices = false)
+    fillDoubleImpl(a, 0, a.length, value, checkIndices = false)
 
   @noinline
   def fill(
@@ -633,14 +633,14 @@ object Arrays extends ArraysJDK9Methods {
       toIndex: Int,
       value: Double
   ): Unit =
-    fillImpl(a, fromIndex, toIndex, value)
+    fillDoubleImpl(a, fromIndex, toIndex, value)
 
   @noinline def fill(a: Array[Float], value: Float): Unit =
-    fillImpl(a, 0, a.length, value, checkIndices = false)
+    fillFloatImpl(a, 0, a.length, value, checkIndices = false)
 
   @noinline
   def fill(a: Array[Float], fromIndex: Int, toIndex: Int, value: Float): Unit =
-    fillImpl(a, fromIndex, toIndex, value)
+    fillFloatImpl(a, fromIndex, toIndex, value)
 
   @noinline def fill(a: Array[AnyRef], value: AnyRef): Unit =
     fillImpl(a, 0, a.length, value, checkIndices = false)
@@ -653,6 +653,142 @@ object Arrays extends ArraysJDK9Methods {
       value: AnyRef
   ): Unit =
     fillImpl(a, fromIndex, toIndex, value)
+
+  @inline
+  private def fillLongImpl(
+      a: Array[Long],
+      fromIndex: Int,
+      toIndex: Int,
+      value: Long,
+      checkIndices: Boolean = true
+  ): Unit = {
+    if (checkIndices)
+      checkRangeIndices(a, fromIndex, toIndex)
+    var i = fromIndex
+    while (i != toIndex) {
+      a(i) = value
+      i += 1
+    }
+  }
+
+  @inline
+  private def fillIntImpl(
+      a: Array[Int],
+      fromIndex: Int,
+      toIndex: Int,
+      value: Int,
+      checkIndices: Boolean = true
+  ): Unit = {
+    if (checkIndices)
+      checkRangeIndices(a, fromIndex, toIndex)
+    var i = fromIndex
+    while (i != toIndex) {
+      a(i) = value
+      i += 1
+    }
+  }
+
+  @inline
+  private def fillShortImpl(
+      a: Array[Short],
+      fromIndex: Int,
+      toIndex: Int,
+      value: Short,
+      checkIndices: Boolean = true
+  ): Unit = {
+    if (checkIndices)
+      checkRangeIndices(a, fromIndex, toIndex)
+    var i = fromIndex
+    while (i != toIndex) {
+      a(i) = value
+      i += 1
+    }
+  }
+
+  @inline
+  private def fillCharImpl(
+      a: Array[Char],
+      fromIndex: Int,
+      toIndex: Int,
+      value: Char,
+      checkIndices: Boolean = true
+  ): Unit = {
+    if (checkIndices)
+      checkRangeIndices(a, fromIndex, toIndex)
+    var i = fromIndex
+    while (i != toIndex) {
+      a(i) = value
+      i += 1
+    }
+  }
+
+  @inline
+  private def fillByteImpl(
+      a: Array[Byte],
+      fromIndex: Int,
+      toIndex: Int,
+      value: Byte,
+      checkIndices: Boolean = true
+  ): Unit = {
+    if (checkIndices)
+      checkRangeIndices(a, fromIndex, toIndex)
+    var i = fromIndex
+    while (i != toIndex) {
+      a(i) = value
+      i += 1
+    }
+  }
+
+  @inline
+  private def fillBooleanImpl(
+      a: Array[Boolean],
+      fromIndex: Int,
+      toIndex: Int,
+      value: Boolean,
+      checkIndices: Boolean = true
+  ): Unit = {
+    if (checkIndices)
+      checkRangeIndices(a, fromIndex, toIndex)
+    var i = fromIndex
+    while (i != toIndex) {
+      a(i) = value
+      i += 1
+    }
+  }
+
+  @inline
+  private def fillDoubleImpl(
+      a: Array[Double],
+      fromIndex: Int,
+      toIndex: Int,
+      value: Double,
+      checkIndices: Boolean = true
+  ): Unit = {
+    if (checkIndices)
+      checkRangeIndices(a, fromIndex, toIndex)
+    var i = fromIndex
+    while (i != toIndex) {
+      a(i) = value
+      i += 1
+    }
+  }
+
+  @inline
+  private def fillFloatImpl(
+      a: Array[Float],
+      fromIndex: Int,
+      toIndex: Int,
+      value: Float,
+      checkIndices: Boolean = true
+  ): Unit = {
+    if (checkIndices)
+      checkRangeIndices(a, fromIndex, toIndex)
+    var i = fromIndex
+    while (i != toIndex) {
+      a(i) = value
+      i += 1
+    }
+  }
 
   @inline
   private def fillImpl[T](
