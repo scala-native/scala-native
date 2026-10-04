@@ -179,6 +179,47 @@ object Map {
     def hashCode(): Int
   }
 
+  object Entry {
+    private type ComparableTo[-T] = Comparable[_ >: T]
+
+    def comparingByKey[K <: ComparableTo[K], V](): Comparator[Entry[K, V]] =
+      new Comparator[Entry[K, V]] with Serializable {
+        def compare(a: Entry[K, V], b: Entry[K, V]): Int =
+          a.getKey().compareTo(b.getKey())
+      }
+
+    def comparingByValue[K, V <: ComparableTo[V]](): Comparator[Entry[K, V]] =
+      new Comparator[Entry[K, V]] with Serializable {
+        def compare(a: Entry[K, V], b: Entry[K, V]): Int =
+          a.getValue().compareTo(b.getValue())
+      }
+
+    def comparingByKey[K, V](
+        cmp: Comparator[_ >: K]
+    ): Comparator[Entry[K, V]] = {
+      Objects.requireNonNull(cmp)
+      new Comparator[Entry[K, V]] with Serializable {
+        def compare(a: Entry[K, V], b: Entry[K, V]): Int =
+          cmp.compare(a.getKey(), b.getKey())
+      }
+    }
+
+    def comparingByValue[K, V](
+        cmp: Comparator[_ >: V]
+    ): Comparator[Entry[K, V]] = {
+      Objects.requireNonNull(cmp)
+      new Comparator[Entry[K, V]] with Serializable {
+        def compare(a: Entry[K, V], b: Entry[K, V]): Int =
+          cmp.compare(a.getValue(), b.getValue())
+      }
+    }
+
+    def copyOf[K, V](e: Entry[_ <: K, _ <: V]): Entry[K, V] = {
+      Objects.requireNonNull(e)
+      Map.entry(e.getKey(), e.getValue())
+    }
+  }
+
   // Since: Java 10
   def copyOf[K, V](map: Map[_ <: K, _ <: V]): Map[K, V] = {
     Objects.requireNonNull(map)
@@ -216,11 +257,8 @@ object Map {
           false
       }
 
-      override def hashCode(): Int = {
-        // vals k and v are known to be not null at this point.
-        val res = 31 * 1 + k.hashCode()
-        31 * res + v.hashCode()
-      }
+      override def hashCode(): Int =
+        k.hashCode() ^ v.hashCode()
     }
   }
 
