@@ -1,8 +1,9 @@
 package java.util
 
+import java.util.function.DoubleConsumer
 import java.{lang => jl}
 
-class DoubleSummaryStatistics() {
+class DoubleSummaryStatistics() extends DoubleConsumer {
   private var count: Long = 0L
   private var min: Double = jl.Double.POSITIVE_INFINITY
   private var max: Double = jl.Double.NEGATIVE_INFINITY
