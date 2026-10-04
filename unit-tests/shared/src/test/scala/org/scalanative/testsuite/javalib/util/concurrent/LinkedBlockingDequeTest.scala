@@ -46,6 +46,126 @@ class LinkedBlockingDequeTest extends JSR166Test {
   private def it(i: Int): Item = itemFor(i)
   private val eightySix = itemFor(86)
 
+  @Test def testBlockingDequeInterface(): Unit = {
+    val concrete = new LinkedBlockingDeque[Item](3)
+    val q: BlockingDeque[Item] = concrete
+    assertSame(q, (concrete: AnyRef).asInstanceOf[BlockingDeque[Item]])
+    val deque: Deque[Item] = q
+    val queue: BlockingQueue[Item] = q
+    deque.addFirst(it(1))
+    deque.addLast(it(2))
+    queue.put(it(3))
+    mustEqual(0, q.remainingCapacity())
+
+    mustEqual(1, q.takeFirst())
+    deque.addFirst(it(0))
+    mustEqual(3, q.takeLast())
+    mustEqual(2, q.takeLast())
+    mustEqual(0, queue.take())
+    assertTrue(q.isEmpty())
+  }
+
+  @Test def testBlockingDequeInterfaceOccurrenceRemoval(): Unit = {
+    val q: BlockingDeque[Integer] = new LinkedBlockingDeque[Integer]()
+    for (n <- Seq(1, 2, 1, 3, 1)) q.add(Integer.valueOf(n))
+    assertFalse(q.removeFirstOccurrence(null))
+    assertFalse(q.removeLastOccurrence(null))
+    assertTrue(q.removeFirstOccurrence(1))
+    assertTrue(q.removeLastOccurrence(1))
+    assertFalse(q.removeFirstOccurrence(4))
+    assertFalse(q.removeLastOccurrence(4))
+    assertEquals(Integer.valueOf(2), q.removeFirst())
+    assertEquals(Integer.valueOf(3), q.removeLast())
+    assertEquals(Integer.valueOf(1), q.removeFirst())
+    assertTrue(q.isEmpty())
+  }
+
+  @Test def testBlockingDequeInterfaceBlockingOperations(): Unit = {
+    for (first <- Seq(true, false)) {
+      val q: BlockingDeque[Item] = new LinkedBlockingDeque[Item](1)
+      q.add(it(1))
+      val producer = newStartedThread(new CheckedRunnable {
+        override def realRun(): Unit = {
+          if (first) q.putFirst(it(2)) else q.putLast(it(2))
+        }
+      })
+      try {
+        assertThreadBlocks(producer, Thread.State.WAITING)
+        mustEqual(1, q.take())
+        awaitTermination(producer)
+        mustEqual(2, q.take())
+      } finally producer.interrupt()
+
+      val consumer = newStartedThread(new CheckedRunnable {
+        override def realRun(): Unit = {
+          mustEqual(3, if (first) q.takeFirst() else q.takeLast())
+        }
+      })
+      try {
+        assertThreadBlocks(consumer, Thread.State.WAITING)
+        q.put(it(3))
+        awaitTermination(consumer)
+        assertTrue(q.isEmpty())
+      } finally consumer.interrupt()
+    }
+  }
+
+  @Test def testBlockingDequeInterfaceTimeouts(): Unit = {
+    val q: BlockingDeque[Item] = new LinkedBlockingDeque[Item](1)
+    val timeout = timeoutMillis()
+    for (first <- Seq(true, false)) {
+      assertTrue(
+        if (first) q.offerFirst(it(1), 0, MILLISECONDS)
+        else q.offerLast(it(1), 0, MILLISECONDS)
+      )
+      val offerStart = System.nanoTime()
+      assertFalse(
+        if (first) q.offerFirst(it(2), timeout, MILLISECONDS)
+        else q.offerLast(it(2), timeout, MILLISECONDS)
+      )
+      assertTrue(millisElapsedSince(offerStart) >= timeout)
+      mustEqual(
+        1,
+        if (first) q.pollFirst(0, MILLISECONDS)
+        else q.pollLast(0, MILLISECONDS)
+      )
+      val pollStart = System.nanoTime()
+      assertNull(
+        if (first) q.pollFirst(timeout, MILLISECONDS)
+        else q.pollLast(timeout, MILLISECONDS)
+      )
+      assertTrue(millisElapsedSince(pollStart) >= timeout)
+    }
+  }
+
+  @Test def testBlockingDequeInterfaceInterruption(): Unit = {
+    for (first <- Seq(true, false); inserting <- Seq(true, false)) {
+      val q: BlockingDeque[Item] = new LinkedBlockingDeque[Item](1)
+      if (inserting) q.add(it(1))
+      val t = newStartedThread(new CheckedRunnable {
+        override def realRun(): Unit = {
+          try {
+            if (inserting) {
+              if (first) q.putFirst(it(2)) else q.putLast(it(2))
+            } else {
+              if (first) q.takeFirst() else q.takeLast()
+            }
+            shouldThrow()
+          } catch {
+            case _: InterruptedException =>
+          }
+          assertFalse(Thread.interrupted())
+        }
+      })
+      try {
+        assertThreadBlocks(t, Thread.State.WAITING)
+        t.interrupt()
+        awaitTermination(t)
+        mustEqual(if (inserting) 1 else 0, q.size())
+      } finally t.interrupt()
+    }
+  }
+
   /* isEmpty is true before add, false after */
   @Test def testEmpty(): Unit = {
     val q = new LinkedBlockingDeque[Item]()
