@@ -1,8 +1,9 @@
 package java.util
 
+import java.util.function.{IntConsumer, LongConsumer}
 import java.{lang => jl}
 
-class LongSummaryStatistics() {
+class LongSummaryStatistics() extends LongConsumer with IntConsumer {
   private var count: Long = 0L
   private var min: Long = jl.Long.MAX_VALUE
   private var max: Long = jl.Long.MIN_VALUE
