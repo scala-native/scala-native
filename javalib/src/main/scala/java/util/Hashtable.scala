@@ -131,6 +131,6 @@ object Hashtable {
   ): mutable.HashMap[Box[Any], V] = {
     if (initialCapacity < 0)
       throw new IllegalArgumentException("Illegal Capacity: " + initialCapacity)
-    new mutable.HashMap[Box[Any], V](initialCapacity, 0.75)
+    ScalaHashMap[Box[Any], V](initialCapacity)
   }
 }

@@ -447,7 +447,7 @@ object Arrays extends ArraysJDK9Methods {
       key: T,
       c: Comparator[_ >: T]
   ): Int =
-    binarySearch(a, 0, a.length, key, c)
+    binarySearch[T](a, 0, a.length, key, c)
 
   @noinline
   def binarySearch[T <: AnyRef](
@@ -466,7 +466,7 @@ object Arrays extends ArraysJDK9Methods {
         key
       )
     else
-      binarySearchComparatorImpl(a, startIndex, endIndex, key, c)
+      binarySearchComparatorImpl[T](a, startIndex, endIndex, key, c)
   }
 
   @inline
@@ -484,9 +484,9 @@ object Arrays extends ArraysJDK9Methods {
       val mid = (startIndex + endIndex) >>> 1
       val comparison = c.compare(a(mid), key)
       if (comparison < 0)
-        binarySearchComparatorImpl(a, mid + 1, endIndex, key, c)
+        binarySearchComparatorImpl[T](a, mid + 1, endIndex, key, c)
       else if (comparison > 0)
-        binarySearchComparatorImpl(a, startIndex, mid, key, c)
+        binarySearchComparatorImpl[T](a, startIndex, mid, key, c)
       else
         mid
     }
