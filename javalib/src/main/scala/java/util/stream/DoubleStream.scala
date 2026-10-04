@@ -20,6 +20,14 @@ import java.{lang => jl}
 
 trait DoubleStream extends BaseStream[jl.Double, DoubleStream] {
 
+  override def iterator(): PrimitiveIterator.OfDouble
+
+  override def spliterator(): Spliterator.OfDouble
+
+  override def parallel(): DoubleStream
+
+  override def sequential(): DoubleStream
+
   def allMatch(pred: DoublePredicate): Boolean
 
   def anyMatch(pred: DoublePredicate): Boolean
@@ -61,12 +69,12 @@ trait DoubleStream extends BaseStream[jl.Double, DoubleStream] {
 
       def tryAdvance(action: DoubleConsumer): Boolean = {
         if (doneDropping) {
-          spliter.tryAdvance(e => action.accept(e))
+          spliter.tryAdvance((e: scala.Double) => action.accept(e))
         } else {
           var doneLooping = false
           while (!doneLooping) {
             val advanced =
-              spliter.tryAdvance(e => {
+              spliter.tryAdvance((e: scala.Double) => {
                 if (!pred.test(e)) {
                   action.accept(e)
                   doneDropping = true
@@ -140,7 +148,9 @@ trait DoubleStream extends BaseStream[jl.Double, DoubleStream] {
           while (!done) {
             if (buffer.size() == 0) {
               val stepped =
-                spliter.tryAdvance(e => mapper.accept(e, r => buffer.add(r)))
+                spliter.tryAdvance((e: scala.Double) =>
+                  mapper.accept(e, r => buffer.add(r))
+                )
               done = !stepped
             } else {
               action.accept(buffer.removeFirst())
@@ -209,7 +219,7 @@ trait DoubleStream extends BaseStream[jl.Double, DoubleStream] {
       def tryAdvance(action: DoubleConsumer): Boolean = {
         if (done) false
         else
-          spliter.tryAdvance(e =>
+          spliter.tryAdvance((e: scala.Double) =>
             if (!pred.test(e)) done = true
             else action.accept(e)
           )
