@@ -16,6 +16,9 @@ abstract class Charset protected (
 
   final def name(): String = canonicalName
 
+  final def isRegistered(): Boolean =
+    !canonicalName.startsWith("X-") && !canonicalName.startsWith("x-")
+
   final def aliases(): java.util.Set[String] = aliasesSet
 
   override final def equals(that: Any): Boolean = that match {
@@ -74,6 +77,16 @@ object Charset {
       charsetName.toLowerCase,
       throw new UnsupportedCharsetException(charsetName)
     )
+  }
+
+  def forName(charsetName: String, fallback: Charset): Charset = {
+    if (charsetName == null)
+      throw new IllegalArgumentException("Null charset name")
+    try forName(charsetName)
+    catch {
+      case _: IllegalCharsetNameException | _: UnsupportedCharsetException =>
+        fallback
+    }
   }
 
   def isSupported(charsetName: String): Boolean =
