@@ -151,4 +151,18 @@ class WeakHashMap[K, V] protected (inner: mutable.Map[Box[K], V])
 object WeakHashMap {
   private[WeakHashMap] final val DEFAULT_INITIAL_CAPACITY = 16
   private[WeakHashMap] final val DEFAULT_LOAD_FACTOR = 0.75f
+
+  def newWeakHashMap[K, V](numMappings: Int): WeakHashMap[K, V] = {
+    if (numMappings < 0)
+      throw new IllegalArgumentException(
+        s"Negative number of mappings: $numMappings"
+      )
+
+    val desiredCapacity =
+      Math.ceil((numMappings.toDouble + 1.0) / DEFAULT_LOAD_FACTOR).toInt
+    val initialCapacity = Math.min(desiredCapacity, 1 << 30)
+    new WeakHashMap[K, V](
+      new mutable.HashMap[Box[K], V](initialCapacity, DEFAULT_LOAD_FACTOR)
+    )
+  }
 }
