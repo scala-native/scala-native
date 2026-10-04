@@ -344,6 +344,57 @@ object Character {
     result
   }
 
+  def codePointCount(
+      seq: CharSequence,
+      beginIndex: scala.Int,
+      endIndex: scala.Int
+  ): scala.Int = {
+    val length = seq.length()
+    if (beginIndex < 0 || endIndex > length || beginIndex > endIndex)
+      throw new IndexOutOfBoundsException()
+
+    var result = 0
+    var i = beginIndex
+    while (i < endIndex) {
+      val ch = seq.charAt(i)
+      i += 1
+      if (isHighSurrogate(ch) && i < endIndex && isLowSurrogate(seq.charAt(i)))
+        i += 1
+      result += 1
+    }
+    result
+  }
+
+  def offsetByCodePoints(
+      seq: CharSequence,
+      index: scala.Int,
+      codePointOffset: scala.Int
+  ): scala.Int = {
+    val length = seq.length()
+    if (index < 0 || index > length)
+      throw new IndexOutOfBoundsException()
+
+    var i = index
+    var remaining = codePointOffset
+    while (remaining > 0) {
+      if (i >= length) throw new IndexOutOfBoundsException()
+      val ch = seq.charAt(i)
+      i += 1
+      if (isHighSurrogate(ch) && i < length && isLowSurrogate(seq.charAt(i)))
+        i += 1
+      remaining -= 1
+    }
+    while (remaining < 0) {
+      if (i <= 0) throw new IndexOutOfBoundsException()
+      i -= 1
+      val ch = seq.charAt(i)
+      if (isLowSurrogate(ch) && i > 0 && isHighSurrogate(seq.charAt(i - 1)))
+        i -= 1
+      remaining += 1
+    }
+    i
+  }
+
   def offsetByCodePoints(
       seq: Array[scala.Char],
       start: scala.Int,

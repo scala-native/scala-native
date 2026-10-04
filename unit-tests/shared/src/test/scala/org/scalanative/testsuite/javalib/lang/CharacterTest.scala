@@ -354,6 +354,164 @@ class CharacterTest {
     assertTrue(s"result: $result != expected: $expected", result == expected)
   }
 
+  private def codePointSequences(value: String): Seq[CharSequence] =
+    Seq(
+      value,
+      new StringBuilder(value),
+      new StringBuffer(value),
+      new CharSequence {
+        def length(): Int = value.length
+        def charAt(index: Int): Char = value.charAt(index)
+        def subSequence(start: Int, end: Int): CharSequence =
+          throw new AssertionError("subSequence should not be called")
+        override def toString(): String =
+          throw new AssertionError("toString should not be called")
+      }
+    )
+
+  @Test def codePointCountCharSequence(): Unit = {
+    val cases = Seq(
+      ("", 0),
+      ("abc", 3),
+      ("\uD800\uDC00", 1),
+      ("\uDBFF\uDFFF", 1),
+      ("\uD800", 1),
+      ("\uDC00", 1),
+      ("\uD800\uD800\uDC00", 2),
+      ("\uDC00\uD800\uDC00", 2),
+      ("\uD800\uDC00\uDC00", 2),
+      ("\uD800\uDC00\uD800", 2),
+      ("\uDC00\uD800", 2),
+      ("a\uD800\uDC00b\uDBFF\uDFFFc", 5)
+    )
+    for ((value, expected) <- cases; seq <- codePointSequences(value))
+      assertEquals(expected, Character.codePointCount(seq, 0, seq.length()))
+  }
+
+  @Test def codePointCountCharSequenceRangeBoundaries(): Unit = {
+    for (seq <- codePointSequences("a\uD800\uDC00b")) {
+      assertEquals(1, Character.codePointCount(seq, 1, 3))
+      assertEquals(1, Character.codePointCount(seq, 1, 2))
+      assertEquals(1, Character.codePointCount(seq, 2, 3))
+      assertEquals(2, Character.codePointCount(seq, 0, 2))
+      assertEquals(2, Character.codePointCount(seq, 2, 4))
+      for (index <- 0 to seq.length())
+        assertEquals(0, Character.codePointCount(seq, index, index))
+    }
+  }
+
+  @Test def codePointCountCharSequenceInvalidRanges(): Unit = {
+    for (seq <- codePointSequences("abc")) {
+      for ((begin, end) <- Seq(
+            (-1, 1),
+            (0, -1),
+            (2, 1),
+            (0, 4),
+            (4, 4),
+            (Int.MinValue, 0),
+            (0, Int.MaxValue),
+            (Int.MaxValue, Int.MaxValue)
+          ))
+        assertThrows(
+          classOf[IndexOutOfBoundsException],
+          Character.codePointCount(seq, begin, end)
+        )
+    }
+    assertThrows(
+      classOf[NullPointerException],
+      Character.codePointCount(null.asInstanceOf[CharSequence], 0, 0)
+    )
+    assertThrows(
+      classOf[NullPointerException],
+      Character.codePointCount(null.asInstanceOf[CharSequence], -1, -1)
+    )
+  }
+
+  @Test def offsetByCodePointsCharSequenceForwardAndBackward(): Unit = {
+    for (seq <- codePointSequences("a\uD800\uDC00b\uDBFF\uDFFFc")) {
+      val boundaries = Seq(0, 1, 3, 4, 6, 7)
+      for (from <- boundaries.indices; to <- boundaries.indices)
+        assertEquals(
+          boundaries(to),
+          Character.offsetByCodePoints(seq, boundaries(from), to - from)
+        )
+    }
+    for (seq <- codePointSequences("\uD800\uDC00")) {
+      assertEquals(0, Character.offsetByCodePoints(seq, 2, -1))
+      assertEquals(2, Character.offsetByCodePoints(seq, 0, 1))
+    }
+  }
+
+  @Test def offsetByCodePointsCharSequenceInsideSurrogatePair(): Unit = {
+    for (seq <- codePointSequences("a\uD800\uDC00b")) {
+      assertEquals(3, Character.offsetByCodePoints(seq, 2, 1))
+      assertEquals(1, Character.offsetByCodePoints(seq, 2, -1))
+      assertEquals(4, Character.offsetByCodePoints(seq, 2, 2))
+      assertEquals(0, Character.offsetByCodePoints(seq, 2, -2))
+    }
+  }
+
+  @Test def offsetByCodePointsCharSequenceUnpairedSurrogates(): Unit = {
+    val value = "\uDC00a\uD800b\uD800\uD800\uDC00\uDC00"
+    val boundaries = Seq(0, 1, 2, 3, 4, 5, 7, 8)
+    for (seq <- codePointSequences(value)) {
+      for (from <- boundaries.indices; to <- boundaries.indices)
+        assertEquals(
+          boundaries(to),
+          Character.offsetByCodePoints(seq, boundaries(from), to - from)
+        )
+    }
+  }
+
+  @Test def offsetByCodePointsCharSequenceZeroOffset(): Unit = {
+    for (value <- Seq("", "abc", "\uD800\uDC00");
+        seq <- codePointSequences(value))
+      for (index <- 0 to seq.length())
+        assertEquals(index, Character.offsetByCodePoints(seq, index, 0))
+  }
+
+  @Test def offsetByCodePointsCharSequenceInvalidValues(): Unit = {
+    for (seq <- codePointSequences("abc")) {
+      for (index <- Seq(-1, 4, Int.MinValue, Int.MaxValue))
+        assertThrows(
+          classOf[IndexOutOfBoundsException],
+          Character.offsetByCodePoints(seq, index, 0)
+        )
+      for (index <- 0 to seq.length();
+          offset <- Seq(Int.MinValue, Int.MaxValue))
+        assertThrows(
+          classOf[IndexOutOfBoundsException],
+          Character.offsetByCodePoints(seq, index, offset)
+        )
+      assertThrows(
+        classOf[IndexOutOfBoundsException],
+        Character.offsetByCodePoints(seq, 1, 3)
+      )
+      assertThrows(
+        classOf[IndexOutOfBoundsException],
+        Character.offsetByCodePoints(seq, 2, -3)
+      )
+    }
+    for (seq <- codePointSequences("")) {
+      assertThrows(
+        classOf[IndexOutOfBoundsException],
+        Character.offsetByCodePoints(seq, 0, 1)
+      )
+      assertThrows(
+        classOf[IndexOutOfBoundsException],
+        Character.offsetByCodePoints(seq, 0, -1)
+      )
+    }
+    assertThrows(
+      classOf[NullPointerException],
+      Character.offsetByCodePoints(null.asInstanceOf[CharSequence], 0, 0)
+    )
+    assertThrows(
+      classOf[NullPointerException],
+      Character.offsetByCodePoints(null.asInstanceOf[CharSequence], -1, 0)
+    )
+  }
+
   // Ported, with gratitude & possibly modifications
   // from ScalaJs CharacterTest.scala
   // https://github.com/scala-js/scala-js/blob/master/
