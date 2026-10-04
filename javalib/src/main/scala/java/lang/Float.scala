@@ -13,6 +13,9 @@ final class Float(val _value: scala.Float)
     with Comparable[Float]
     with Constable
     with ConstantDesc {
+  @inline def this(value: scala.Double) =
+    this(value.toFloat)
+
   @inline def this(s: String) =
     this(Float.parseFloat(s))
 

@@ -16,6 +16,59 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform.is32BitPlatform
 
 class FloatTest {
+  private def assertDoubleConstructorBits(
+      expected: Int,
+      value: scala.Double
+  ): Unit =
+    assertEquals(
+      expected,
+      JFloat.floatToRawIntBits(new JFloat(value).floatValue())
+    )
+
+  @Test def doubleConstructorExactlyRepresentableValues(): Unit = {
+    assertDoubleConstructorBits(0x3fc00000, 1.5)
+    assertDoubleConstructorBits(0xc0200000, -2.5)
+    assertDoubleConstructorBits(0x7f7fffff, JFloat.MAX_VALUE.toDouble)
+    assertDoubleConstructorBits(0x00800000, JFloat.MIN_NORMAL.toDouble)
+  }
+
+  @Test def doubleConstructorHalfwayValuesRoundToEven(): Unit = {
+    val halfUlp = Math.pow(2.0, -24)
+    assertDoubleConstructorBits(0x3f800000, 1.0 + halfUlp)
+    assertDoubleConstructorBits(0x3f800001, 1.0 + halfUlp + Math.pow(2.0, -52))
+    assertDoubleConstructorBits(0x3f800002, 1.0 + 3.0 * halfUlp)
+    assertDoubleConstructorBits(0xbf800000, -1.0 - halfUlp)
+  }
+
+  @Test def doubleConstructorSignedZerosArePreserved(): Unit = {
+    assertDoubleConstructorBits(0x00000000, 0.0)
+    assertDoubleConstructorBits(0x80000000, -0.0)
+  }
+
+  @Test def doubleConstructorSubnormalValuesAndUnderflow(): Unit = {
+    assertDoubleConstructorBits(0x00000001, JFloat.MIN_VALUE.toDouble)
+    assertDoubleConstructorBits(0x80000001, -JFloat.MIN_VALUE.toDouble)
+    assertDoubleConstructorBits(0x00000000, Math.pow(2.0, -150))
+    assertDoubleConstructorBits(
+      0x00000001,
+      Math.pow(2.0, -150) + Math.pow(2.0, -173)
+    )
+    assertDoubleConstructorBits(0x00000002, 3.0 * Math.pow(2.0, -150))
+    assertDoubleConstructorBits(0x00000000, scala.Double.MinPositiveValue)
+    assertDoubleConstructorBits(0x80000000, -scala.Double.MinPositiveValue)
+  }
+
+  @Test def doubleConstructorFiniteOverflowProducesInfinity(): Unit = {
+    assertDoubleConstructorBits(0x7f800000, scala.Double.MaxValue)
+    assertDoubleConstructorBits(0xff800000, -scala.Double.MaxValue)
+  }
+
+  @Test def doubleConstructorNonFiniteValues(): Unit = {
+    assertDoubleConstructorBits(0x7f800000, scala.Double.PositiveInfinity)
+    assertDoubleConstructorBits(0xff800000, scala.Double.NegativeInfinity)
+    assertTrue(new JFloat(scala.Double.NaN).isNaN())
+  }
+
   @Test def testEquals(): Unit = {
     val pzero = +0.0f
     val nzero = -0.0f
