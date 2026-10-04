@@ -443,7 +443,7 @@ class ArrayDeque[E](
    *  @return
    *    {@code true} if the deque contained the specified element
    */
-  def removeFirstOccurrence(o: Any): Boolean = {
+  def removeFirstOccurrence(o: AnyRef): Boolean = {
     if (o != null) {
       val es = elements
       var i = head
@@ -479,7 +479,7 @@ class ArrayDeque[E](
    *  @return
    *    {@code true} if the deque contained the specified element
    */
-  def removeLastOccurrence(o: Any): Boolean = {
+  def removeLastOccurrence(o: AnyRef): Boolean = {
     if (o != null) {
       val es = elements
       var i = tail
@@ -1143,7 +1143,7 @@ class ArrayDeque[E](
    *    {@code true} if this deque contained the specified element
    */
   override def remove(o: Any): Boolean = {
-    return removeFirstOccurrence(o)
+    return removeFirstOccurrence(o.asInstanceOf[AnyRef])
   }
 
   /** Removes all of the elements from this deque. The deque will be empty after

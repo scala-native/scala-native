@@ -104,7 +104,7 @@ object LinkedBlockingDeque {
 class LinkedBlockingDeque[E <: AnyRef](
     val capacity: Int // Maximum number of items in the deque
 ) extends AbstractQueue[E]
-    with BlockingQueue[E]
+    with BlockingDeque[E]
     with Serializable {
 
   import LinkedBlockingDeque._
@@ -298,7 +298,7 @@ class LinkedBlockingDeque[E <: AnyRef](
    * @throws IllegalStateException if this deque is full
    * @throws NullPointerException {@inheritDoc}
    */
-  def addFirst(e: E): Unit = {
+  override def addFirst(e: E): Unit = {
     if (!offerFirst(e))
       throw new IllegalStateException("Deque full")
   }
@@ -307,7 +307,7 @@ class LinkedBlockingDeque[E <: AnyRef](
    * @throws IllegalStateException if this deque is full
    * @throws NullPointerException  {@inheritDoc}
    */
-  def addLast(e: E): Unit = {
+  override def addLast(e: E): Unit = {
     if (!offerLast(e))
       throw new IllegalStateException("Deque full")
   }
@@ -435,7 +435,7 @@ class LinkedBlockingDeque[E <: AnyRef](
   /*
    * @throws NoSuchElementException {@inheritDoc}
    */
-  def removeFirst(): E = {
+  override def removeFirst(): E = {
     val x = pollFirst()
     if (x == null)
       throw new NoSuchElementException()
@@ -445,7 +445,7 @@ class LinkedBlockingDeque[E <: AnyRef](
   /*
    * @throws NoSuchElementException {@inheritDoc}
    */
-  def removeLast(): E = {
+  override def removeLast(): E = {
     val x = pollLast()
     if (x == null)
       throw new NoSuchElementException()
@@ -541,7 +541,7 @@ class LinkedBlockingDeque[E <: AnyRef](
   /*
    * @throws NoSuchElementException {@inheritDoc}
    */
-  def getFirst(): E = {
+  override def getFirst(): E = {
     val x = peekFirst()
     if (x == null)
       throw new NoSuchElementException()
@@ -551,7 +551,7 @@ class LinkedBlockingDeque[E <: AnyRef](
   /*
    * @throws NoSuchElementException {@inheritDoc}
    */
-  def getLast(): E = {
+  override def getLast(): E = {
     val x = peekLast()
     if (x == null)
       throw new NoSuchElementException()

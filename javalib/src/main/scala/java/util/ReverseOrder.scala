@@ -75,13 +75,13 @@ private[util] trait ReverseOrderDequeViewTrait[E] extends Deque[E] {
   override def removeFirst(): E =
     underlying.removeLast()
 
-  override def removeFirstOccurrence(o: Any): Boolean =
+  override def removeFirstOccurrence(o: AnyRef): Boolean =
     underlying.removeLastOccurrence(o)
 
   override def removeLast(): E =
     underlying.removeFirst()
 
-  override def removeLastOccurrence(o: Any): Boolean =
+  override def removeLastOccurrence(o: AnyRef): Boolean =
     underlying.removeFirstOccurrence(o)
 
   def size(): Int =
