@@ -540,13 +540,14 @@ private[java] final class VirtualThread(
     }
   }
 
-  /** Set parking permit first, then schedule only if this VT is already in Parked/TimedParked. If unpark races with the
-   *  Parking transition, the post-yield path consumes the permit and performs the submit. For Pinned, unpark the
-   *  carrier.
+  /** Set parking permit first, then schedule if this VT is already parked or already runnable with a published
+   *  continuation. If unpark races with the Parking transition, the post-yield path consumes the permit and submits. A
+   *  later unpark, including the `parkNanos` timer, must schedule again when that submit was dropped and the
+   *  continuation is still published (`Unparked` / `Yielded` / `Unblocked`). For Pinned, unpark the carrier.
    *
    *  @param lazily
-   *    when true, use ForkJoinPool.lazySubmit when the current thread is a pool carrier with an empty local queue
-   *    (timeout and similar paths).
+   *    when true, use ForkJoinPool.lazySubmit when the current thread is a pool carrier with an empty local queue.
+   *    Retries of an already-runnable continuation always submit eagerly.
    */
   private def unpark(lazily: scala.Boolean): Unit = {
     // Publish the permit before inspecting state. If the thread is already
@@ -571,6 +572,11 @@ private[java] final class VirtualThread(
           val carrier = carrierThread
           if (carrier != null) LockSupport.unpark(carrier)
           done = true
+        case State.Unparked | State.Yielded | State.Unblocked =>
+          if (resumeExecution != null) requestRun(lazily = false)
+          val current = state
+          if (current == s) done = true
+          else s = current
         case _ =>
           done = true
       }
@@ -745,6 +751,11 @@ private[java] final class VirtualThread(
           continue = false
           done = true
       }
+    }
+    if (!continue && resumeExecution != null) {
+      val s = state
+      if (s == State.Unparked || s == State.Yielded || s == State.Unblocked)
+        requestRun(lazily = false)
     }
     continue
   }
@@ -1019,7 +1030,7 @@ object VirtualThread {
                   vt.getAndSetParkPermit(false)) {
                 if (!vt.compareAndSetState(s, State.Unparked)) vt.setParkPermit(true)
                 else {
-                  vt.requestRun(lazily = true)
+                  vt.requestRun(lazily = false)
                   didAfterYieldSubmit = true
                 }
               }
