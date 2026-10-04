@@ -162,7 +162,7 @@ object WeakHashMap {
       Math.ceil((numMappings.toDouble + 1.0) / DEFAULT_LOAD_FACTOR).toInt
     val initialCapacity = Math.min(desiredCapacity, 1 << 30)
     new WeakHashMap[K, V](
-      new mutable.HashMap[Box[K], V](initialCapacity, DEFAULT_LOAD_FACTOR)
+      ScalaHashMap[Box[K], V](initialCapacity)
     )
   }
 }

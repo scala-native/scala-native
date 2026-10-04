@@ -11,7 +11,7 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 class MapEntryCopyTest {
   @Test def copyIsImmutableSnapshotOfMutableEntry(): Unit = {
     val original = new AbstractMap.SimpleEntry("key", "before")
-    val copy = Map.Entry.copyOf(original)
+    val copy = Map.Entry.copyOf[String, String](original)
     original.setValue("after")
     assertEquals("key", copy.getKey())
     assertEquals("before", copy.getValue())
@@ -31,7 +31,7 @@ class MapEntryCopyTest {
     val map = new HashMap[String, String]()
     map.put("key", "before")
     val original = map.entrySet().iterator().next()
-    val copy = Map.Entry.copyOf(original)
+    val copy = Map.Entry.copyOf[String, String](original)
     original.setValue("after")
     assertEquals("after", map.get("key"))
     map.clear()
@@ -46,27 +46,29 @@ class MapEntryCopyTest {
     )
     assertThrows(
       classOf[NullPointerException],
-      Map.Entry.copyOf(
+      Map.Entry.copyOf[String, String](
         new AbstractMap.SimpleEntry[String, String](null, "value")
       )
     )
     assertThrows(
       classOf[NullPointerException],
-      Map.Entry.copyOf(new AbstractMap.SimpleEntry[String, String]("key", null))
+      Map.Entry.copyOf[String, String](
+        new AbstractMap.SimpleEntry[String, String]("key", null)
+      )
     )
   }
 
   @Test def copyAndMapEntryHaveConsistentEqualityAndHashCodes(): Unit = {
     val original = new AbstractMap.SimpleEntry("key", "value")
-    val copy = Map.Entry.copyOf(original)
+    val copy = Map.Entry.copyOf[String, String](original)
     val entry = Map.entry("key", "value")
     assertEquals(original, copy)
     assertEquals(copy, original)
     assertEquals(entry, copy)
     assertEquals(original.hashCode(), copy.hashCode())
     assertEquals(original.hashCode(), entry.hashCode())
-    assertEquals(copy, Map.Entry.copyOf(copy))
-    assertEquals(copy, Map.Entry.copyOf(entry))
+    assertEquals(copy, Map.Entry.copyOf[String, String](copy))
+    assertEquals(copy, Map.Entry.copyOf[String, String](entry))
   }
 
   @Test def copyAllowsWidenedTypesAndRetainsReferences(): Unit = {

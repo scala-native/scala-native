@@ -32,10 +32,13 @@ class ArraysBinarySearchComparatorTest {
         comparator.compare(a.toString(), b.toString())
     }
     val values = Array("alpha", "bravo", "charlie")
-    assertEquals(1, Arrays.binarySearch(values, "BRAVO", supertypeComparator))
     assertEquals(
       1,
-      Arrays.binarySearch(values, 0, 3, "BRAVO", supertypeComparator)
+      Arrays.binarySearch[String](values, "BRAVO", supertypeComparator)
+    )
+    assertEquals(
+      1,
+      Arrays.binarySearch[String](values, 0, 3, "BRAVO", supertypeComparator)
     )
 
     val reverse = comparator.reversed()
