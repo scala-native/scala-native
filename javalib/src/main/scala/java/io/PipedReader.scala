@@ -19,8 +19,11 @@ package java.io
 object PipedReader {
   private val PIPE_SIZE = 1024
 }
-class PipedReader() extends Reader {
-  private var data = new Array[Char](PipedReader.PIPE_SIZE)
+class PipedReader(pipeSize: Int) extends Reader {
+  if (pipeSize <= 0)
+    throw new IllegalArgumentException("Pipe Size <= 0")
+
+  private var data = new Array[Char](pipeSize)
   private var lastReader: Thread = _
   private var lastWriter: Thread = _
   private var isClosed = false
@@ -28,8 +31,16 @@ class PipedReader() extends Reader {
   private var in = -1
   private var out = 0
 
+  def this() = this(PipedReader.PIPE_SIZE)
+
   def this(out: PipedWriter) = {
     this()
+    connect(out)
+  }
+
+  @throws[IOException]
+  def this(out: PipedWriter, pipeSize: Int) = {
+    this(pipeSize)
     connect(out)
   }
 
@@ -44,6 +55,7 @@ class PipedReader() extends Reader {
     }
 
   def connect(src: PipedWriter) = lock.synchronized {
+    if (src == null) throw new NullPointerException
     src.connect(this)
   }
 
