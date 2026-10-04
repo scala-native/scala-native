@@ -8,10 +8,17 @@ import scala.annotation.{switch, tailrec}
 
 import ScalaOps._
 
-class Properties(protected val defaults: Properties)
-    extends ju.Hashtable[AnyRef, AnyRef] {
+class Properties private (
+    protected val defaults: Properties,
+    initialCapacity: Int
+) extends ju.Hashtable[AnyRef, AnyRef](initialCapacity) {
+
+  def this(defaults: Properties) = this(defaults, 11)
 
   def this() = this(null)
+
+  def this(initialCapacity: Int) =
+    this(null, Properties.tableCapacity(initialCapacity))
 
   def setProperty(key: String, value: String): AnyRef =
     put(key, value)
@@ -385,4 +392,12 @@ class Properties(protected val defaults: Properties)
   // def loadFromXML(in: InputStream): Unit
   // def storeToXML(os: OutputStream, comment: String): Unit
   // def storeToXML(os: OutputStream, comment: String, encoding: String): Unit
+}
+
+object Properties {
+  private def tableCapacity(initialCapacity: Int): Int = {
+    if (initialCapacity < 0)
+      throw new IllegalArgumentException("Illegal Capacity: " + initialCapacity)
+    math.min(math.ceil((initialCapacity.toDouble + 1) / 0.75), 1 << 30).toInt
+  }
 }

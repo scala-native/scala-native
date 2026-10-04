@@ -15,7 +15,8 @@ class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
   def this() =
     this(mutable.HashMap.empty[Box[Any], V])
 
-  def this(initialCapacity: Int) = this()
+  def this(initialCapacity: Int) =
+    this(Hashtable.newMap[V](initialCapacity))
 
   def this(initialCapacity: Int, loadFactor: Float) = this()
 
@@ -121,5 +122,15 @@ class Hashtable[K, V] private (inner: mutable.HashMap[Box[Any], V])
     val b = new LinkedList[V]()
     inner.values.foreach(b.add)
     b
+  }
+}
+
+object Hashtable {
+  private def newMap[V](
+      initialCapacity: Int
+  ): mutable.HashMap[Box[Any], V] = {
+    if (initialCapacity < 0)
+      throw new IllegalArgumentException("Illegal Capacity: " + initialCapacity)
+    new mutable.HashMap[Box[Any], V](initialCapacity, 0.75)
   }
 }

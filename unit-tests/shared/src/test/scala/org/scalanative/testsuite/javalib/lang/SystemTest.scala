@@ -1,6 +1,7 @@
 package org.scalanative.testsuite.javalib.lang
 
 import java.nio.file.Paths
+import java.util.Properties
 
 import org.junit.Assert._
 import org.junit.Test
@@ -106,5 +107,86 @@ class SystemTest {
     if (executingInJVM) assertTrue(userDir.startsWith(expected))
     else assertEquals(expected, userDir)
   }
+
+  private def withRestoredProperties(body: => Unit): Unit = {
+    val original = System.getProperties()
+    try body
+    finally System.setProperties(original)
+  }
+
+  @Test def setPropertiesRetainsIdentityAndReflectsMutations(): Unit =
+    withRestoredProperties {
+      val replacement = new Properties()
+      replacement.setProperty("test.property", "initial")
+      System.setProperties(replacement)
+      assertSame(replacement, System.getProperties())
+      assertEquals("initial", System.getProperty("test.property"))
+      assertEquals("initial", System.setProperty("test.property", "updated"))
+      assertEquals("updated", replacement.getProperty("test.property"))
+      replacement.setProperty("test.property", "direct")
+      assertEquals("direct", System.getProperty("test.property"))
+      assertEquals("direct", System.clearProperty("test.property"))
+      assertFalse(replacement.containsKey("test.property"))
+      assertEquals("fallback", System.getProperty("test.property", "fallback"))
+    }
+
+  @Test def setPropertiesUsesSuppliedDefaultsWithoutAddingSystemDefaults()
+      : Unit =
+    withRestoredProperties {
+      val defaults = new Properties()
+      defaults.setProperty("user.home", "supplied-home")
+      val replacement = new Properties(defaults)
+      System.setProperties(replacement)
+      assertEquals("supplied-home", System.getProperty("user.home"))
+      for (key <- Seq(
+            "user.dir",
+            "user.name",
+            "user.country",
+            "user.language",
+            "os.name"
+          ))
+        assertNull(System.getProperty(key))
+      assertSame(replacement, System.getProperties())
+      assertTrue(replacement.isEmpty())
+      System.setProperty("user.home", "updated-home")
+      assertEquals("updated-home", System.clearProperty("user.home"))
+      assertEquals("supplied-home", System.getProperty("user.home"))
+    }
+
+  @Test def setPropertiesNullRecreatesDefaults(): Unit =
+    withRestoredProperties {
+      val original = System.getProperties()
+      val replacement = new Properties()
+      replacement.setProperty("test.property", "replacement")
+      System.setProperties(replacement)
+      System.setProperties(null)
+      val reset = System.getProperties()
+      assertNotSame(original, reset)
+      assertNotSame(replacement, reset)
+      assertNull(System.getProperty("test.property"))
+      for (key <- Seq(
+            "java.version",
+            "os.name",
+            "user.home",
+            "user.dir",
+            "line.separator"
+          ))
+        assertNotNull(key, System.getProperty(key))
+      reset.setProperty("test.property", "modified-reset")
+      System.setProperties(null)
+      assertNotSame(reset, System.getProperties())
+      assertNull(System.getProperty("test.property"))
+      assertEquals("replacement", replacement.getProperty("test.property"))
+    }
+
+  @Test def setPropertiesDoesNotChangeLineSeparator(): Unit =
+    withRestoredProperties {
+      val separator = System.lineSeparator()
+      val replacement = new Properties()
+      replacement.setProperty("line.separator", "replacement")
+      System.setProperties(replacement)
+      assertEquals("replacement", System.getProperty("line.separator"))
+      assertEquals(separator, System.lineSeparator())
+    }
 
 }
