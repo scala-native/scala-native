@@ -442,11 +442,15 @@ object Arrays extends ArraysJDK9Methods {
   }
 
   @noinline
-  def binarySearch[T](a: Array[T], key: T, c: Comparator[_ >: T]): Int =
-    binarySearchImpl[T](a, 0, a.length, key, (a, b) => c.compare(a, b) < 0)
+  def binarySearch[T <: AnyRef](
+      a: Array[T],
+      key: T,
+      c: Comparator[_ >: T]
+  ): Int =
+    binarySearch(a, 0, a.length, key, c)
 
   @noinline
-  def binarySearch[T](
+  def binarySearch[T <: AnyRef](
       a: Array[T],
       startIndex: Int,
       endIndex: Int,
@@ -454,13 +458,38 @@ object Arrays extends ArraysJDK9Methods {
       c: Comparator[_ >: T]
   ): Int = {
     checkRangeIndices(a, startIndex, endIndex)
-    binarySearchImpl[T](
-      a,
-      startIndex,
-      endIndex,
-      key,
-      (a, b) => c.compare(a, b) < 0
-    )
+    if (c == null)
+      binarySearchImplRef(
+        a.asInstanceOf[Array[AnyRef]],
+        startIndex,
+        endIndex,
+        key
+      )
+    else
+      binarySearchComparatorImpl(a, startIndex, endIndex, key, c)
+  }
+
+  @inline
+  @tailrec
+  private def binarySearchComparatorImpl[T <: AnyRef](
+      a: Array[T],
+      startIndex: Int,
+      endIndex: Int,
+      key: T,
+      c: Comparator[_ >: T]
+  ): Int = {
+    if (startIndex == endIndex) {
+      -startIndex - 1
+    } else {
+      val mid = (startIndex + endIndex) >>> 1
+      val comparison = c.compare(a(mid), key)
+      if (comparison < 0)
+        binarySearchComparatorImpl(a, mid + 1, endIndex, key, c)
+      else if (comparison > 0)
+        binarySearchComparatorImpl(a, startIndex, mid, key, c)
+      else
+        mid
+    }
   }
 
   @inline
