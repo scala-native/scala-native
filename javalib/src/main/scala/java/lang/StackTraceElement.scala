@@ -11,7 +11,7 @@ final class StackTraceElement(
     val getMethodName: String,
     val getFileName: String,
     val getLineNumber: Int
-) {
+) extends java.io.Serializable {
 
   if (getClassName == null) {
     throw new NullPointerException("Declaring class is null")
