@@ -15,6 +15,31 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform._
 
 class CharsetTest {
+  @Test def standardCharsetsAreRegistered(): Unit = {
+    for (charset <- Array(
+          US_ASCII,
+          ISO_8859_1,
+          UTF_8,
+          UTF_16,
+          UTF_16BE,
+          UTF_16LE
+        ))
+      assertTrue(charset.name(), charset.isRegistered())
+  }
+
+  @Test def registrationDependsOnCanonicalNamePrefix(): Unit = {
+    def charset(name: String): Charset =
+      new Charset(name, Array("X-alias")) {
+        def contains(cs: Charset): Boolean = UTF_8.contains(cs)
+        def newDecoder(): CharsetDecoder = UTF_8.newDecoder()
+        def newEncoder(): CharsetEncoder = UTF_8.newEncoder()
+      }
+    assertFalse(charset("X-custom").isRegistered())
+    assertFalse(charset("x-custom").isRegistered())
+    assertTrue(charset("X").isRegistered())
+    assertTrue(charset("example").isRegistered())
+  }
+
   def javaSet[A](elems: A*): java.util.Set[A] =
     new java.util.HashSet(TrivialImmutableCollection(elems: _*))
 
