@@ -79,7 +79,8 @@ object MathContext {
   }
 }
 
-class MathContext(setPrecision: Int, setRoundingMode: RoundingMode) {
+class MathContext(setPrecision: Int, setRoundingMode: RoundingMode)
+    extends java.io.Serializable {
 
   private[math] val precision = setPrecision
 

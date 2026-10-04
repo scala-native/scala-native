@@ -4,7 +4,8 @@ import java.lang.constant.Constable
 
 final class Boolean(val _value: scala.Boolean)
     extends Comparable[Boolean]
-    with Constable {
+    with Constable
+    with java.io.Serializable {
   def booleanValue(): scala.Boolean =
     _value
 
