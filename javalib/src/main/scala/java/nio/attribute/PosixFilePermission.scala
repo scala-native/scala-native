@@ -1,5 +1,7 @@
 package java.nio.file.attribute
 
+import java.util.Objects
+
 class PosixFilePermission private (name: String, ordinal: Int)
     extends _Enum[PosixFilePermission](name, ordinal)
 object PosixFilePermission {
@@ -14,6 +16,15 @@ object PosixFilePermission {
   final val OTHERS_EXECUTE = new PosixFilePermission("OTHERS_EXECUTE", 8)
 
   def values: Array[PosixFilePermission] = _values.clone()
+
+  def valueOf(name: String): PosixFilePermission = {
+    Objects.requireNonNull(name, "Name is null")
+    _values.find(_.name() == name).getOrElse {
+      throw new IllegalArgumentException(
+        "No enum constant java.nio.file.attribute.PosixFilePermission." + name
+      )
+    }
+  }
 
   private val _values = Array(
     OWNER_READ,
