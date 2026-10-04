@@ -13,6 +13,14 @@ import java.{lang => jl}
 
 trait LongStream extends BaseStream[jl.Long, LongStream] {
 
+  override def iterator(): PrimitiveIterator.OfLong
+
+  override def spliterator(): Spliterator.OfLong
+
+  override def parallel(): LongStream
+
+  override def sequential(): LongStream
+
   def allMatch(pred: LongPredicate): Boolean
 
   def anyMatch(pred: LongPredicate): Boolean
@@ -56,12 +64,12 @@ trait LongStream extends BaseStream[jl.Long, LongStream] {
 
       def tryAdvance(action: LongConsumer): Boolean = {
         if (doneDropping) {
-          spliter.tryAdvance(e => action.accept(e))
+          spliter.tryAdvance((e: scala.Long) => action.accept(e))
         } else {
           var doneLooping = false
           while (!doneLooping) {
             val advanced =
-              spliter.tryAdvance(e => {
+              spliter.tryAdvance((e: scala.Long) => {
                 if (!pred.test(e)) {
                   action.accept(e)
                   doneDropping = true
@@ -135,7 +143,9 @@ trait LongStream extends BaseStream[jl.Long, LongStream] {
           while (!done) {
             if (buffer.size() == 0) {
               val stepped =
-                spliter.tryAdvance(e => mapper.accept(e, r => buffer.add(r)))
+                spliter.tryAdvance((e: scala.Long) =>
+                  mapper.accept(e, r => buffer.add(r))
+                )
               done = !stepped
             } else {
               action.accept(buffer.removeFirst())
@@ -204,7 +214,7 @@ trait LongStream extends BaseStream[jl.Long, LongStream] {
       def tryAdvance(action: LongConsumer): Boolean = {
         if (done) false
         else
-          spliter.tryAdvance(e =>
+          spliter.tryAdvance((e: scala.Long) =>
             if (!pred.test(e)) done = true
             else action.accept(e)
           )

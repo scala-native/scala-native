@@ -34,7 +34,7 @@ private trait AbstractJumpableRandomGenerator
     ) {
 
       def tryAdvance(action: DoubleConsumer): Boolean =
-        upstreamSpliter.tryAdvance(e => action.accept(e))
+        upstreamSpliter.tryAdvance(action)
     }
 
     StreamSupport.doubleStream(downstreamSpliter, parallel = false)
@@ -61,7 +61,7 @@ private trait AbstractJumpableRandomGenerator
     ) {
 
       def tryAdvance(action: DoubleConsumer): Boolean =
-        upstreamSpliter.tryAdvance(e => action.accept(e))
+        upstreamSpliter.tryAdvance(action)
     }
 
     StreamSupport.doubleStream(downstreamSpliter, parallel = false)
@@ -102,7 +102,7 @@ private trait AbstractJumpableRandomGenerator
     ) {
 
       def tryAdvance(action: IntConsumer): Boolean =
-        upstreamSpliter.tryAdvance(e => action.accept(e))
+        upstreamSpliter.tryAdvance(action)
     }
 
     StreamSupport.intStream(downstreamSpliter, parallel = false)
@@ -129,7 +129,7 @@ private trait AbstractJumpableRandomGenerator
     ) {
 
       def tryAdvance(action: IntConsumer): Boolean =
-        upstreamSpliter.tryAdvance(e => action.accept(e))
+        upstreamSpliter.tryAdvance(action)
     }
 
     StreamSupport.intStream(downstreamSpliter, parallel = false)
@@ -171,7 +171,7 @@ private trait AbstractJumpableRandomGenerator
     ) {
 
       def tryAdvance(action: LongConsumer): Boolean =
-        upstreamSpliter.tryAdvance(e => action.accept(e))
+        upstreamSpliter.tryAdvance(action)
     }
 
     StreamSupport.longStream(downstreamSpliter, parallel = false)
@@ -198,7 +198,7 @@ private trait AbstractJumpableRandomGenerator
     ) {
 
       def tryAdvance(action: LongConsumer): Boolean =
-        upstreamSpliter.tryAdvance(e => action.accept(e))
+        upstreamSpliter.tryAdvance(action)
     }
 
     StreamSupport
