@@ -18,15 +18,171 @@
 package org.scalanative.testsuite.javalib.io
 
 import java.io.{IOException, PipedReader, PipedWriter}
+import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 import org.junit.Assert._
 import org.junit._
+
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 object PipedReaderTest {
   @BeforeClass def checkRuntime(): Unit =
     scala.scalanative.junit.utils.AssumesHelper.assumeMultithreadingIsEnabled()
 }
 class PipedReaderTest {
+
+  private def assertOperationBlocksThenCompletes(
+      operation: () => Unit,
+      release: () => Unit
+  ): Unit = {
+    val started = new CountDownLatch(1)
+    val completed = new CountDownLatch(1)
+    val failure = new AtomicReference[Throwable]()
+    val worker = new Thread(new Runnable {
+      def run(): Unit = {
+        started.countDown()
+        try operation()
+        catch { case problem: Throwable => failure.set(problem) }
+        finally completed.countDown()
+      }
+    })
+    worker.setDaemon(true)
+    worker.start()
+    try {
+      assertTrue("Worker did not start", started.await(5, TimeUnit.SECONDS))
+      assertFalse(
+        "Operation should block",
+        completed.await(100, TimeUnit.MILLISECONDS)
+      )
+      release()
+      assertTrue(
+        "Operation did not resume",
+        completed.await(5, TimeUnit.SECONDS)
+      )
+      val problem = failure.get()
+      if (problem != null) throw problem
+    } finally {
+      worker.interrupt()
+      worker.join(5000)
+      assertFalse("Worker did not terminate", worker.isAlive())
+    }
+  }
+
+  @Test def pipeSizeMustBePositive(): Unit = {
+    for (size <- Array(0, -1, Int.MinValue)) {
+      assertThrows(classOf[IllegalArgumentException], new PipedReader(size))
+      assertThrows(
+        classOf[IllegalArgumentException],
+        new PipedReader(null, size)
+      )
+    }
+  }
+
+  @Test def sizedConstructorStartsDisconnected(): Unit = {
+    val reader = new PipedReader(3)
+    try {
+      assertThrows(classOf[IOException], reader.ready())
+      assertThrows(classOf[IOException], reader.read())
+    } finally reader.close()
+  }
+
+  @Test def connectedSizedConstructorRejectsNullAndConnectedSource(): Unit = {
+    assertThrows(classOf[NullPointerException], new PipedReader(null, 3))
+    val writer = new PipedWriter()
+    val reader = new PipedReader(writer, 3)
+    try {
+      assertThrows(classOf[IOException], new PipedReader(writer, 3))
+      writer.write('a')
+      assertEquals('a'.toInt, reader.read())
+    } finally {
+      writer.close()
+      reader.close()
+    }
+  }
+
+  @Test def sizedPipesWrapWithEitherConnectionDirection(): Unit = {
+    for (mode <- 0 until 3) {
+      val writer = new PipedWriter()
+      val reader =
+        if (mode == 2) new PipedReader(writer, 3)
+        else {
+          val result = new PipedReader(3)
+          if (mode == 0) result.connect(writer)
+          else writer.connect(result)
+          result
+        }
+      try {
+        writer.write(Array('a', 'b', 'c'))
+        assertTrue(reader.ready())
+        assertEquals('a'.toInt, reader.read())
+        assertEquals('b'.toInt, reader.read())
+        writer.write(Array('d', 'e'))
+        val chars = new Array[Char](3)
+        assertEquals(3, reader.read(chars, 0, chars.length))
+        assertArrayEquals(Array('c', 'd', 'e'), chars)
+        assertFalse(reader.ready())
+        writer.close()
+        assertEquals(-1, reader.read())
+      } finally {
+        writer.close()
+        reader.close()
+      }
+    }
+  }
+
+  @Test def oneElementSizedPipe(): Unit = {
+    val writer = new PipedWriter()
+    val reader = new PipedReader(writer, 1)
+    try {
+      for (value <- Array('a', 'é', Char.MaxValue)) {
+        writer.write(value)
+        assertTrue(reader.ready())
+        assertEquals(value.toInt, reader.read())
+        assertFalse(reader.ready())
+      }
+    } finally {
+      writer.close()
+      reader.close()
+    }
+  }
+
+  @Test def sizedFullPipeBlocksUntilRead(): Unit = {
+    val writer = new PipedWriter()
+    val reader = new PipedReader(writer, 2)
+    try {
+      writer.write(Array('a', 'b'))
+      assertOperationBlocksThenCompletes(
+        () => writer.write(Array('c', 'd')),
+        () => {
+          assertEquals('a'.toInt, reader.read())
+          assertEquals('b'.toInt, reader.read())
+        }
+      )
+      assertEquals('c'.toInt, reader.read())
+      assertEquals('d'.toInt, reader.read())
+    } finally {
+      writer.close()
+      reader.close()
+    }
+  }
+
+  @Test def sizedEmptyPipeBlocksUntilWrite(): Unit = {
+    val writer = new PipedWriter()
+    val reader = new PipedReader(writer, 2)
+    try {
+      assertOperationBlocksThenCompletes(
+        () => assertEquals('z'.toInt, reader.read()),
+        () => {
+          writer.write('z')
+          writer.flush()
+        }
+      )
+    } finally {
+      writer.close()
+      reader.close()
+    }
+  }
 
   private class PWriter(reader: PipedReader) extends Runnable {
     var pw: PipedWriter =
