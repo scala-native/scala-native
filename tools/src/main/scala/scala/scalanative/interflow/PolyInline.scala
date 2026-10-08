@@ -161,8 +161,36 @@ private[interflow] trait PolyInline { self: Interflow =>
           if (Sub.is(value.ty, argty)) value
           else emit.conv(nir.Conv.Bitcast, argty, value, nir.Next.None)
       }
-      val res =
-        emit.call(ty, nir.Val.Global(m, nir.Type.Ptr), cargs, nir.Next.None)
+      // Keep each target's virtual heap and cached expressions branch-local.
+      // Arguments are materialized above; materializing the result before the
+      // join means no branch-local allocation needs to escape into State.
+      // Follow the direct-call path so an unvisited target is optimized before
+      // shallInline examines it, including argument-type specialization.
+      val (target, targetType) = visitDuplicate(m, cargs.map(_.ty))
+        .map(defn => (defn.name, defn.ty))
+        .getOrElse {
+          visitRoot(m)
+          (m, ty)
+        }
+      val callState = state.fullClone(callLabel)
+      callState.fresh = fresh
+      callState.emit = new nir.InstructionBuilder()(fresh)
+      val value =
+        if (shallInline(target, cargs)(callState, analysis))
+          `inline`(target, cargs)(callState, analysis, scopeIdId)
+        else
+          callState.emit.call(
+            targetType,
+            nir.Val.Global(target, nir.Type.Ptr),
+            cargs,
+            nir.Next.None
+          )
+      val res = callState.materialize(value)
+      emit ++= callState.emit
+      if (preserveDebugInfo) {
+        state.localNames.addMissing(callState.localNames)
+        state.virtualNames.addMissing(callState.virtualNames)
+      }
       emit.jump(nir.Next.Label(mergeLabel, Seq(res)))
     }
 
