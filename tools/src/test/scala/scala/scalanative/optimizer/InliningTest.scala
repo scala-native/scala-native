@@ -10,6 +10,83 @@ import _root_.scala.scalanative.nir.Attr
 
 class InliningTest extends OptimizerSpec {
 
+  @Test def negativeZeroSurvivesObjectAndArrayMaterialization(): Unit = {
+    optimize(
+      entry = "Test",
+      setupConfig = _.withMode(scalanative.build.Mode.releaseFast),
+      sources = Map(
+        "Test.scala" ->
+          """|import scala.noinline
+             |final class FloatBox(val value: Float)
+             |final class DoubleBox(val value: Double)
+             |object Test {
+             |  @noinline def consume(value: AnyRef): Unit = println(value)
+             |  def main(args: Array[String]): Unit = {
+             |    consume(new FloatBox(-0.0f))
+             |    consume(new DoubleBox(-0.0d))
+             |    consume(java.lang.Float.valueOf(-0.0f))
+             |    consume(java.lang.Double.valueOf(-0.0d))
+             |    val floats = new Array[Float](1)
+             |    floats(0) = -0.0f
+             |    consume(floats)
+             |    val doubles = new Array[Double](1)
+             |    doubles(0) = -0.0d
+             |    consume(doubles)
+             |  }
+             |}
+             |""".stripMargin
+      )
+    ) {
+      case (_, result) =>
+        val entry = findEntry(result.defns).get
+        val stores = entry.insts.collect {
+          case nir.Inst.Let(_, nir.Op.Fieldstore(_, _, _, value), _) => value
+        }
+        assertEquals(
+          "custom and boxed Float must retain negative zero",
+          2,
+          stores.count {
+            case nir.Val.Float(v) =>
+              java.lang.Float.floatToRawIntBits(v) == Int.MinValue
+            case _ => false
+          }
+        )
+        assertEquals(
+          "custom and boxed Double must retain negative zero",
+          2,
+          stores.count {
+            case nir.Val.Double(v) =>
+              java.lang.Double.doubleToRawLongBits(v) == Long.MinValue
+            case _ => false
+          }
+        )
+        val arrays = entry.insts.collect {
+          case nir.Inst.Let(
+                _,
+                nir.Op.Arrayalloc(_, nir.Val.ArrayValue(_, values), _),
+                _
+              ) =>
+            values
+        }.flatten
+        assertTrue(
+          "Float array must retain negative zero\n" + entry.show,
+          arrays.exists {
+            case nir.Val.Float(v) =>
+              java.lang.Float.floatToRawIntBits(v) == Int.MinValue
+            case _ => false
+          }
+        )
+        assertTrue(
+          "Double array must retain negative zero\n" + entry.show,
+          arrays.exists {
+            case nir.Val.Double(v) =>
+              java.lang.Double.doubleToRawLongBits(v) == Long.MinValue
+            case _ => false
+          }
+        )
+    }
+  }
+
   @Test def issue4152(): Unit = {
     optimize(
       setupConfig = _.withMode(scalanative.build.Mode.releaseFast),
