@@ -1,0 +1,105 @@
+%{
+is_static = static == 'true'
+shape = 'Static' if is_static else 'Instance'
+types = ['Boolean', 'Byte', 'Short', 'Char', 'Int', 'Long', 'Float', 'Double']
+widening = {
+    'Byte': ['Short', 'Int', 'Long', 'Float', 'Double'],
+    'Short': ['Int', 'Long', 'Float', 'Double'],
+    'Char': ['Int', 'Long', 'Float', 'Double'],
+    'Int': ['Long', 'Float', 'Double'],
+    'Long': ['Float', 'Double'], 'Float': ['Double']
+}
+initials = {'Boolean': 'true', 'Byte': '(-12).toByte', 'Short': '(-1200).toShort',
+            'Char': '65530.toChar', 'Int': '16777217', 'Long': '9007199254740993L',
+            'Float': 'java.lang.Float.intBitsToFloat(Int.MinValue)',
+            'Double': 'java.lang.Double.longBitsToDouble(Long.MinValue)'}
+reads = ['get', 'getOpaque', 'getAcquire', 'getVolatile']
+exchange = [p + s for p in ['getAndSet', 'compareAndExchange'] for s in ['', 'Acquire', 'Release']]
+numeric = [p + s for p in ['getAndAdd', 'getAndBitwiseOr', 'getAndBitwiseAnd', 'getAndBitwiseXor']
+           for s in ['', 'Acquire', 'Release']]
+}%
+package org.scalanative.testsuite.javalib.invoke
+
+// Generated from VarHandleWideningMatrixTest.scala.gyb; edit the template.
+// format: off
+import java.lang.invoke.{VarHandle, WrongMethodTypeException}
+import org.junit.Assert._
+import org.junit.Test
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+
+% for source in types:
+class VarHandle${source}${shape}WideningMatrixTest {
+% for target in types:
+% if target != source:
+%{
+allowed = target in widening.get(source, [])
+methods = reads + exchange + (numeric if allowed else [])
+fixture = 'VarHandle' + source + shape + 'Fixture'
+coordinate = '' if is_static else 'box, '
+field = fixture + '.value' if is_static else 'box.value'
+}%
+% for method in methods:
+%{
+unsupported = method.startswith('getAndBitwise') and source in ['Float', 'Double']
+desired = 'false' if source == 'Boolean' else '3.to' + source
+operands = 'initial, desired' if method.startswith('compareAndExchange') else '' if method in reads else 'desired'
+invocation = 'handle.' + method + '(' + (coordinate + operands).rstrip(', ') + ')'
+if method in reads:
+    expected = 'initial'
+elif method.startswith('getAndAdd'):
+    expected = '(initial + desired).to' + source
+elif method.startswith('getAndBitwise'):
+    op = '|' if method.startswith('getAndBitwiseOr') else '&' if method.startswith('getAndBitwiseAnd') else '^'
+    expected = '(initial ' + op + ' desired).to' + source
+else:
+    expected = 'desired'
+}%
+  @Test def ${method}As${target}(): Unit = {
+% if not is_static:
+    val box = new ${fixture}
+% end
+    val handle: VarHandle = ${fixture + '.handle' if is_static else 'box.handle'}
+    val initial: ${source} = ${initials[source]}
+    val desired: ${source} = ${desired}
+    handle.set(${coordinate}initial)
+% if source == 'Float':
+    assertEquals(Int.MinValue, java.lang.Float.floatToRawIntBits(${field}))
+% elif source == 'Double':
+    assertEquals(Long.MinValue, java.lang.Double.doubleToRawLongBits(${field}))
+% end
+% if not allowed or unsupported:
+    assertThrows(classOf[${'UnsupportedOperationException' if unsupported else 'WrongMethodTypeException'}], {
+      val result: ${target} = ${invocation}
+    })
+% else:
+% if method.startswith('compareAndExchange'):
+    val failed: ${target} = handle.${method}(${coordinate}desired, desired)
+% if target in ['Float', 'Double']:
+    assertEquals(initial.to${target}, failed, ${'0.0f' if target == 'Float' else '0.0d'})
+% else:
+    assertEquals(initial.to${target}, failed)
+% end
+    assertEquals(initial, ${field}${', 0.0f' if source == 'Float' else ', 0.0d' if source == 'Double' else ''})
+% end
+    val result: ${target} = ${invocation}
+% if target == 'Float':
+    assertEquals(java.lang.Float.floatToRawIntBits(initial.toFloat), java.lang.Float.floatToRawIntBits(result))
+% elif target == 'Double':
+    assertEquals(java.lang.Double.doubleToRawLongBits(initial.toDouble), java.lang.Double.doubleToRawLongBits(result))
+% else:
+    assertEquals(initial.to${target}, result)
+% end
+% end
+% if source == 'Float':
+    assertEquals(java.lang.Float.floatToRawIntBits(${expected if allowed and not unsupported else 'initial'}), java.lang.Float.floatToRawIntBits(${field}))
+% elif source == 'Double':
+    assertEquals(java.lang.Double.doubleToRawLongBits(${expected if allowed and not unsupported else 'initial'}), java.lang.Double.doubleToRawLongBits(${field}))
+% else:
+    assertEquals(${expected if allowed and not unsupported else 'initial'}, ${field})
+% end
+  }
+% end
+% end
+% end
+}
+% end

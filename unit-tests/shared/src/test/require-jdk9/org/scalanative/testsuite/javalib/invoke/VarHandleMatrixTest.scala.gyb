@@ -1,0 +1,147 @@
+%{
+# Generate instance and Scala 3 static tests from the same matrix:
+# scripts/gyb.py <this file> --line-directive '' -D static=false -o VarHandleMatrixTest.scala
+# scripts/gyb.py <this file> --line-directive '' -D static=true -o <require-scala3-jdk9>/VarHandleStaticMatrixTest.scala
+is_static = static == 'true'
+shape = 'Static' if is_static else 'Instance'
+types = [
+    ('Boolean', 'java.lang.Boolean.TYPE', 'false', 'true'),
+    ('Byte', 'java.lang.Byte.TYPE', '12.toByte', '3.toByte'),
+    ('Short', 'java.lang.Short.TYPE', '12.toShort', '3.toShort'),
+    ('Char', 'java.lang.Character.TYPE', '12.toChar', '3.toChar'),
+    ('Int', 'java.lang.Integer.TYPE', '12', '3'),
+    ('Long', 'java.lang.Long.TYPE', '12L', '3L'),
+    ('Float', 'java.lang.Float.TYPE', '12.0f', '3.0f'),
+    ('Double', 'java.lang.Double.TYPE', '12.0d', '3.0d'),
+    ('AnyRef', 'classOf[AnyRef]', 'new String("same")', 'new String("different")')
+]
+reads = ['get', 'getOpaque', 'getAcquire', 'getVolatile']
+writes = ['set', 'setOpaque', 'setRelease', 'setVolatile']
+cas = ['compareAndSet', 'weakCompareAndSetPlain', 'weakCompareAndSet',
+       'weakCompareAndSetAcquire', 'weakCompareAndSetRelease']
+compare_exchange = ['compareAndExchange', 'compareAndExchangeAcquire', 'compareAndExchangeRelease']
+exchange = ['getAndSet', 'getAndSetAcquire', 'getAndSetRelease']
+add = ['getAndAdd', 'getAndAddAcquire', 'getAndAddRelease']
+bitwise = ['getAndBitwise' + op + suffix for op in ['Or', 'And', 'Xor']
+           for suffix in ['', 'Acquire', 'Release']]
+methods = reads + writes + cas + compare_exchange + exchange + add + bitwise
+assert len(methods) == 31
+}%
+package org.scalanative.testsuite.javalib.invoke
+
+// Generated from VarHandleMatrixTest.scala.gyb; edit the template.
+// format: off
+import java.lang.invoke.{MethodHandles, VarHandle}
+import org.junit.Assert._
+import org.junit.Test
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+% if is_static:
+import scala.annotation.static
+% end
+
+% for T, clazz, initial, desired in types:
+%{
+kind = 'Reference' if T == 'AnyRef' else T
+fixture = 'VarHandle' + kind + shape + 'Fixture'
+coordinate = '' if is_static else 'box, '
+value = fixture + '.value' if is_static else 'box.value'
+lookup = 'findStaticVarHandle' if is_static else 'findVarHandle'
+}%
+class ${fixture}
+% if is_static:
+object ${fixture} {
+  @static var value: ${T} = ${'null' if T == 'AnyRef' else 'false' if T == 'Boolean' else '0.to' + T}
+% else:
+{
+  var value: ${T} = ${'null' if T == 'AnyRef' else 'false' if T == 'Boolean' else '0.to' + T}
+% end
+  val handle: VarHandle = MethodHandles.lookup()
+    .${lookup}(classOf[${fixture}], "value", ${clazz})
+}
+
+class VarHandle${kind}${shape}MatrixTest {
+  private def assertValue(expected: ${T}, actual: ${T}): Unit =
+% if T == 'AnyRef':
+    assertSame(expected, actual)
+% elif T == 'Float':
+    assertEquals(java.lang.Float.floatToRawIntBits(expected), java.lang.Float.floatToRawIntBits(actual))
+% elif T == 'Double':
+    assertEquals(java.lang.Double.doubleToRawLongBits(expected), java.lang.Double.doubleToRawLongBits(actual))
+% else:
+    assertEquals(expected, actual)
+% end
+
+% for method in methods:
+%{
+supported = not ((method in add and T in ['Boolean', 'AnyRef']) or
+                 (method in bitwise and T in ['Float', 'Double', 'AnyRef']))
+}%
+  @Test def ${method}_${'supported' if supported else 'unsupported'}(): Unit = {
+% if not is_static:
+    val box = new ${fixture}
+% end
+    val handle = ${fixture if is_static else 'box'}.handle
+    val initial: ${T} = ${initial}
+    val desired: ${T} = ${desired}
+    ${value} = initial
+% if not supported:
+    assertThrows(classOf[UnsupportedOperationException], {
+      val witness: ${T} = handle.${method}(${coordinate}desired)
+    })
+    assertValue(initial, ${value})
+% elif method in reads:
+    val read: ${T} = handle.${method}(${coordinate.rstrip(', ')})
+    assertValue(initial, read)
+    assertValue(initial, ${value})
+% elif method in writes:
+    handle.${method}(${coordinate}desired)
+    assertValue(desired, ${value})
+% elif method in cas:
+    assertFalse(handle.${method}(${coordinate}desired, initial))
+    assertValue(initial, ${value})
+% if method.startswith('weak'):
+    var attempts = 0
+    var success = false
+    while (!success && attempts < 10000) {
+      success = handle.${method}(${coordinate}initial, desired)
+      attempts += 1
+    }
+    assertTrue("weak CAS never succeeded", success)
+% else:
+    assertTrue(handle.${method}(${coordinate}initial, desired))
+% end
+    assertValue(desired, ${value})
+    assertFalse(handle.${method}(${coordinate}initial, initial))
+    assertValue(desired, ${value})
+% elif method in compare_exchange:
+    val failed: ${T} = handle.${method}(${coordinate}desired, desired)
+    assertValue(initial, failed)
+    assertValue(initial, ${value})
+    val succeeded: ${T} = handle.${method}(${coordinate}initial, desired)
+    assertValue(initial, succeeded)
+    assertValue(desired, ${value})
+% elif method in exchange:
+    val witness: ${T} = handle.${method}(${coordinate}desired)
+    assertValue(initial, witness)
+    assertValue(desired, ${value})
+% elif method in add:
+    val witness: ${T} = handle.${method}(${coordinate}desired)
+    assertValue(initial, witness)
+    assertValue(${'15.to' + T}, ${value})
+% elif T == 'Boolean':
+    for (before <- List(false, true); mask <- List(false, true)) {
+      ${value} = before
+      val witness: Boolean = handle.${method}(${coordinate}mask)
+      assertValue(before, witness)
+      assertValue(before ${'|' if 'BitwiseOr' in method else '&' if 'BitwiseAnd' in method else '^'} mask, ${value})
+    }
+% else:
+    val witness: ${T} = handle.${method}(${coordinate}desired)
+    assertValue(initial, witness)
+    assertValue(${('0' if 'BitwiseAnd' in method else '15') + '.to' + T}, ${value})
+% end
+  }
+
+% end
+}
+% end

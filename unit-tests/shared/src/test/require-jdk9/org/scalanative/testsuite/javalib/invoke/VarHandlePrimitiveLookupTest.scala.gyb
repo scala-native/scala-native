@@ -1,0 +1,92 @@
+%{
+# scripts/gyb.py <this file> --line-directive '' -o VarHandlePrimitiveLookupTest.scala
+types = [
+    ('Boolean', 'Boolean', 'true', 'false'),
+    ('Byte', 'Byte', '37.toByte', '38.toByte'),
+    ('Short', 'Short', '37.toShort', '38.toShort'),
+    ('Char', 'Character', '37.toChar', '38.toChar'),
+    ('Int', 'Integer', '37', '38'), ('Long', 'Long', '37L', '38L'),
+    ('Float', 'Float', '37.0f', '38.0f'),
+    ('Double', 'Double', '37.0d', '38.0d')
+]
+}%
+package org.scalanative.testsuite.javalib.invoke
+
+// Generated from VarHandlePrimitiveLookupTest.scala.gyb; edit the template.
+// format: off
+import java.lang.invoke.{MethodHandles, VarHandle}
+import org.junit.Assert._
+import org.junit.Test
+
+% for T, wrapper, initial, desired in types:
+class VarHandle${T}PrimitiveLookupTest {
+  @Test def classTokensAreDistinct(): Unit = {
+    assertSame(classOf[${T}], java.lang.${wrapper}.TYPE)
+    assertNotSame(classOf[${T}], classOf[java.lang.${wrapper}])
+  }
+
+  private class Owner {
+    var value: ${T} = ${initial}
+    val classOfHandle: VarHandle = MethodHandles.lookup()
+      .findVarHandle(classOf[Owner], "value", classOf[${T}])
+    val typeHandle: VarHandle = MethodHandles.lookup()
+      .findVarHandle(classOf[Owner], "value", java.lang.${wrapper}.TYPE)
+  }
+
+  private def verify(owner: Owner, handle: VarHandle): Unit = {
+    val before: ${T} = handle.get(owner)
+% if T in ['Float', 'Double']:
+    assertEquals(${initial}, before, ${'0.0f' if T == 'Float' else '0.0d'})
+% else:
+    assertEquals(${initial}, before)
+% end
+    assertTrue(handle.compareAndSet(owner, ${initial}, ${desired}))
+% if T in ['Float', 'Double']:
+    assertEquals(${desired}, owner.value, ${'0.0f' if T == 'Float' else '0.0d'})
+% else:
+    assertEquals(${desired}, owner.value)
+% end
+    handle.set(owner, ${initial})
+% if T in ['Float', 'Double']:
+    assertEquals(${initial}, owner.value, ${'0.0f' if T == 'Float' else '0.0d'})
+% else:
+    assertEquals(${initial}, owner.value)
+% end
+  }
+
+  @Test def classOfPrimitiveSupportsReadWriteAndCAS(): Unit = {
+    val owner = new Owner
+    verify(owner, owner.classOfHandle)
+  }
+
+  @Test def wrapperTYPESupportsReadWriteAndCAS(): Unit = {
+    val owner = new Owner
+    verify(owner, owner.typeHandle)
+  }
+
+  private class BoxedOwner {
+    var value: java.lang.${wrapper} = java.lang.${wrapper}.valueOf(${initial})
+    val handle: VarHandle = MethodHandles.lookup()
+      .findVarHandle(classOf[BoxedOwner], "value", classOf[java.lang.${wrapper}])
+  }
+
+  @Test def boxedFieldUsesReferenceOperations(): Unit = {
+    val owner = new BoxedOwner
+    val initial = owner.value
+    val desired = java.lang.${wrapper}.valueOf(${desired})
+    val before: java.lang.${wrapper} = owner.handle.get(owner)
+    assertSame(initial, before)
+    val equalButNotSame = new java.lang.${wrapper}(${initial})
+    assertNotSame(initial, equalButNotSame)
+    assertFalse(owner.handle.compareAndSet(owner, equalButNotSame, desired))
+    assertSame(initial, owner.value)
+    assertTrue(owner.handle.compareAndSet(owner, initial, desired))
+    assertSame(desired, owner.value)
+    val witness: java.lang.${wrapper} = owner.handle.getAndSet(owner, initial)
+    assertSame(desired, witness)
+    assertSame(initial, owner.value)
+    owner.handle.set(owner, desired)
+    assertSame(desired, owner.value)
+  }
+}
+% end

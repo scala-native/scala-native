@@ -1,0 +1,70 @@
+%{
+is_static = static == 'true'
+shape = 'Static' if is_static else 'Instance'
+types = ['Boolean', 'Byte', 'Short', 'Char', 'Int', 'Long', 'Float', 'Double']
+wrappers = dict(zip(types, ['Boolean', 'Byte', 'Short', 'Character', 'Integer', 'Long', 'Float', 'Double']))
+reads = ['get', 'getOpaque', 'getAcquire', 'getVolatile']
+exchange = [p + s for p in ['getAndSet', 'compareAndExchange'] for s in ['', 'Acquire', 'Release']]
+numeric = [p + s for p in ['getAndAdd', 'getAndBitwiseOr', 'getAndBitwiseAnd', 'getAndBitwiseXor'] for s in ['', 'Acquire', 'Release']]
+}%
+package org.scalanative.testsuite.javalib.invoke
+
+// Generated from VarHandleBoxingMatrixTest.scala.gyb; edit the template.
+// format: off
+import java.lang.invoke.{VarHandle, WrongMethodTypeException}
+import org.junit.Assert._
+import org.junit.Test
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+
+% for source in types:
+class VarHandle${source}${shape}BoxingMatrixTest {
+% for label, target, allowed in [('Object', 'AnyRef', True), ('Wrapper', 'java.lang.' + wrappers[source], True), ('Serializable', 'java.io.Serializable', True), ('Number', 'java.lang.Number', source not in ['Boolean', 'Char']), ('String', 'String', False), ('WrongWrapper', 'java.lang.Long' if source == 'Int' else 'java.lang.Integer', False)]:
+% for method in reads + exchange + (numeric if allowed else []):
+%{
+fixture = 'VarHandle' + source + shape + 'Fixture'
+coordinate = '' if is_static else 'box, '
+field = fixture + '.value' if is_static else 'box.value'
+initial = 'true' if source == 'Boolean' else 'java.lang.Float.intBitsToFloat(Int.MinValue)' if source == 'Float' else 'java.lang.Double.longBitsToDouble(Long.MinValue)' if source == 'Double' else '7.to' + source
+desired = 'false' if source == 'Boolean' else '3.to' + source
+operands = 'initial, desired' if method.startswith('compareAndExchange') else '' if method in reads else 'desired'
+invocation = 'handle.' + method + '(' + (coordinate + operands).rstrip(', ') + ')'
+unsupported = (method.startswith('getAndAdd') and source == 'Boolean') or (method.startswith('getAndBitwise') and source in ['Float', 'Double'])
+if method in reads:
+    expected = 'initial'
+elif method.startswith('getAndAdd'):
+    expected = '(initial + desired).to' + source
+elif method.startswith('getAndBitwise') and source not in ['Float', 'Double']:
+    op = '|' if method.startswith('getAndBitwiseOr') else '&' if method.startswith('getAndBitwiseAnd') else '^'
+    expected = '(initial ' + op + ' desired)' + ('' if source == 'Boolean' else '.to' + source)
+else:
+    expected = 'desired'
+box = 'java.lang.' + wrappers[source] + '.valueOf'
+}%
+  @Test def ${method}As${label}(): Unit = {
+% if not is_static:
+    val box = new ${fixture}
+% end
+    val handle: VarHandle = ${fixture + '.handle' if is_static else 'box.handle'}
+    val initial: ${source} = ${initial}
+    val desired: ${source} = ${desired}
+    handle.set(${coordinate}initial)
+% if not allowed or unsupported:
+    assertThrows(classOf[${'WrongMethodTypeException' if not allowed else 'UnsupportedOperationException'}], {
+      val result: ${target} = ${invocation}
+    })
+% else:
+% if method.startswith('compareAndExchange'):
+    val failed: ${target} = handle.${method}(${coordinate}desired, desired)
+    assertEquals(${box}(initial), failed)
+    assertEquals(${box}(initial), ${box}(${field}))
+% end
+    val result: ${target} = ${invocation}
+    assertEquals(classOf[java.lang.${wrappers[source]}], result.getClass)
+    assertEquals(${box}(initial), result)
+% end
+    assertEquals(${box}(${expected if allowed and not unsupported else 'initial'}), ${box}(${field}))
+  }
+% end
+% end
+}
+% end

@@ -1,0 +1,106 @@
+%{
+is_static = static == 'true'
+shape = 'Static' if is_static else 'Instance'
+types = ['Boolean', 'Byte', 'Short', 'Char', 'Int', 'Long', 'Float', 'Double']
+wrappers = dict(zip(types, ['Boolean', 'Byte', 'Short', 'Character', 'Integer', 'Long', 'Float', 'Double']))
+widening = {'Byte': ['Short', 'Int', 'Long', 'Float', 'Double'], 'Short': ['Int', 'Long', 'Float', 'Double'], 'Char': ['Int', 'Long', 'Float', 'Double'], 'Int': ['Long', 'Float', 'Double'], 'Long': ['Float', 'Double'], 'Float': ['Double']}
+methods = ['set', 'setOpaque', 'setRelease', 'setVolatile', 'compareAndSet', 'weakCompareAndSet', 'weakCompareAndSetPlain', 'weakCompareAndSetAcquire', 'weakCompareAndSetRelease'] + [p + s for p in ['compareAndExchange', 'getAndSet', 'getAndAdd', 'getAndBitwiseOr', 'getAndBitwiseAnd', 'getAndBitwiseXor'] for s in ['', 'Acquire', 'Release']]
+}%
+package org.scalanative.testsuite.javalib.invoke
+
+// Generated from VarHandleOperandMatrixTest.scala.gyb; edit the template.
+// format: off
+import java.lang.invoke.VarHandle
+import org.junit.Assert._
+import org.junit.Test
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+
+% for target in types:
+class VarHandle${target}${shape}OperandMatrixTest {
+% for source in types:
+% if target == source or target in widening.get(source, []):
+% for flavor in ['Primitive', 'Boxed', 'Erased'] + (['MixedExpected', 'MixedDesired'] if source == target else []):
+% for method in (methods if flavor not in ['MixedExpected', 'MixedDesired'] else [m for m in methods if m.startswith('compare') or m.startswith('weakCompare')]):
+%{
+fixture = 'VarHandle' + target + shape + 'Fixture'
+coordinate = '' if is_static else 'box, '
+field = fixture + '.value' if is_static else 'box.value'
+initial = 'true' if source == 'Boolean' else '7.to' + source
+desired = 'false' if source == 'Boolean' else '2.to' + source
+initial_type = source if flavor in ['Primitive', 'MixedExpected'] else 'AnyRef' if flavor == 'Erased' else 'java.lang.' + wrappers[source]
+desired_type = source if flavor in ['Primitive', 'MixedDesired'] else 'AnyRef' if flavor == 'Erased' else 'java.lang.' + wrappers[source]
+operand_initial = initial if flavor in ['Primitive', 'MixedExpected'] else 'java.lang.' + wrappers[source] + '.valueOf(' + initial + ')'
+operand_desired = desired if flavor in ['Primitive', 'MixedDesired'] else 'java.lang.' + wrappers[source] + '.valueOf(' + desired + ')'
+compare = method.startswith('compare') or method.startswith('weakCompare')
+boolean_result = method == 'compareAndSet' or method.startswith('weakCompare')
+store = method.startswith('set')
+unsupported = method.startswith('getAndAdd') and target == 'Boolean' or method.startswith('getAndBitwise') and target in ['Float', 'Double']
+operands = 'initial, desired' if compare else 'desired'
+invocation = 'handle.' + method + '(' + coordinate + operands + ')'
+target_initial = 'true' if target == 'Boolean' else '7.to' + target
+if method.startswith('getAndAdd'): final = '9.to' + target
+elif method.startswith('getAndBitwiseOr'): final = 'true' if target == 'Boolean' else '7.to' + target
+elif method.startswith('getAndBitwiseAnd'): final = 'false' if target == 'Boolean' else '2.to' + target
+elif method.startswith('getAndBitwiseXor'): final = 'true' if target == 'Boolean' else '5.to' + target
+else: final = 'false' if target == 'Boolean' else '2.to' + target
+delta = ', 0.0f' if target == 'Float' else ', 0.0d' if target == 'Double' else ''
+}%
+  @Test def ${method}With${source}${flavor}(): Unit = {
+% if not is_static:
+    val box = new ${fixture}
+% end
+    val handle: VarHandle = ${fixture + '.handle' if is_static else 'box.handle'}
+    ${field} = ${target_initial}
+    val initial: ${initial_type} = ${operand_initial}
+    val desired: ${desired_type} = ${operand_desired}
+% if unsupported:
+    assertThrows(classOf[UnsupportedOperationException], { val witness: ${target} = ${invocation} })
+    assertEquals(${target_initial}, ${field}${delta})
+% else:
+% if store:
+    ${invocation}
+% elif method.startswith('weakCompare'):
+    var success = false
+    var attempts = 0
+    while (!success && attempts < 1000) { success = ${invocation}; attempts += 1 }
+    assertTrue(success)
+% elif boolean_result:
+    assertTrue(${invocation})
+% else:
+    val witness: ${target} = ${invocation}
+    assertEquals(${target_initial}, witness${delta})
+% end
+    assertEquals(${final}, ${field}${delta})
+% end
+  }
+% end
+% end
+% end
+% end
+% for method in [m for m in methods if m.startswith('compare') or m.startswith('weakCompare')]:
+% for position in ['Expected', 'Desired']:
+%{
+fixture = 'VarHandle' + target + shape + 'Fixture'
+coordinate = '' if is_static else 'box, '
+field = fixture + '.value' if is_static else 'box.value'
+initial = 'true' if target == 'Boolean' else '7.to' + target
+wrong = 'false' if target == 'Boolean' else '0.to' + target
+operands = 'absent, wrong' if position == 'Expected' else 'wrong, absent'
+boolean_result = method == 'compareAndSet' or method.startswith('weakCompare')
+delta = ', 0.0f' if target == 'Float' else ', 0.0d' if target == 'Double' else ''
+}%
+  @Test def ${method}WithNull${position}(): Unit = {
+% if not is_static:
+    val box = new ${fixture}
+% end
+    val handle: VarHandle = ${fixture + '.handle' if is_static else 'box.handle'}
+    ${field} = ${initial}
+    val wrong: ${target} = ${wrong}
+    val absent: java.lang.${wrappers[target]} = null
+    assertThrows(classOf[NullPointerException], { val result: ${'Boolean' if boolean_result else target} = handle.${method}(${coordinate}${operands}) })
+    assertEquals(${initial}, ${field}${delta})
+  }
+% end
+% end
+}
+% end
