@@ -18,8 +18,8 @@ object VarHandle {
   import MemoryOrder._
 
   // Shared dispatch and memory ordering
-  private abstract class Handle(instanceBinding: AnyRef => Ptr[Byte], staticBinding: () => Ptr[Byte], protected val variableType: Class[_])
-      extends java.lang.invoke.VarHandle
+  private abstract class Handle[T](instanceBinding: AnyRef => Ptr[T], staticBinding: () => Ptr[T], protected val variableType: Class[_])
+      extends java.lang.invoke._VarHandle
       with VarHandleAdaptation {
     protected def boxedVariableType: Class[_] = variableType
 
@@ -39,9 +39,9 @@ object VarHandle {
         else name
       throw new java.lang.invoke.WrongMethodTypeException(s"cannot perform $operation on a field of type $fieldType; unsupported type conversion")
     }
-    protected def pointer(receiver: AnyRef): RawPtr =
-      if (staticBinding == null) toRawPtr(instanceBinding(receiver))
-      else toRawPtr(staticBinding())
+    protected def pointer(receiver: AnyRef): Ptr[T] =
+      if (staticBinding == null) instanceBinding(receiver)
+      else staticBinding()
   }
   private def order(mode: MemoryOrder): memory_order = (mode: @switch) match {
     case Plain    => memory_order_relaxed
@@ -60,7 +60,7 @@ object VarHandle {
   }
 
   // Boolean fields
-  private final class BooleanHandle(instance: AnyRef => Ptr[Byte], static: () => Ptr[Byte]) extends Handle(instance, static, classOf[Boolean]) {
+  private final class BooleanHandle(instance: AnyRef => Ptr[Boolean], static: () => Ptr[Boolean]) extends Handle[Boolean](instance, static, classOf[Boolean]) {
     @scala.scalanative.annotation.alwaysinline
     override protected def invokeAdaptedOperation(
         operation: AccessOperation,
@@ -77,7 +77,7 @@ object VarHandle {
       "getAndAdd is unsupported for boolean VarHandles"
     )
 
-    private def atomic(receiver: AnyRef) = fromRawPtr[Boolean](pointer(receiver)).atomic
+    private def atomic(receiver: AnyRef) = pointer(receiver).atomic
     override def getBoolean(receiver: AnyRef, mode: MemoryOrder): Boolean = atomic(receiver).load(order(mode))
     override def setBoolean(receiver: AnyRef, value: Boolean, mode: MemoryOrder): Unit = atomic(receiver).store(value, order(mode))
     override def compareBoolean(receiver: AnyRef, expected: Boolean, desired: Boolean, mode: MemoryOrder): Boolean =
@@ -106,7 +106,7 @@ object VarHandle {
   }
 
   // Byte fields
-  private final class ByteHandle(instance: AnyRef => Ptr[Byte], static: () => Ptr[Byte]) extends Handle(instance, static, classOf[Byte]) {
+  private final class ByteHandle(instance: AnyRef => Ptr[Byte], static: () => Ptr[Byte]) extends Handle[Byte](instance, static, classOf[Byte]) {
     @scala.scalanative.annotation.alwaysinline
     override protected def invokeAdaptedOperation(
         operation: AccessOperation,
@@ -124,7 +124,7 @@ object VarHandle {
     override def getLong(receiver: AnyRef, mode: MemoryOrder): Long = getByte(receiver, mode).toLong
     override def getFloat(receiver: AnyRef, mode: MemoryOrder): Float = getByte(receiver, mode).toFloat
     override def getDouble(receiver: AnyRef, mode: MemoryOrder): Double = getByte(receiver, mode).toDouble
-    private def atomic(receiver: AnyRef) = fromRawPtr[Byte](pointer(receiver)).atomic
+    private def atomic(receiver: AnyRef) = pointer(receiver).atomic
     override def getByte(receiver: AnyRef, mode: MemoryOrder): Byte = atomic(receiver).load(order(mode))
     override def setByte(receiver: AnyRef, value: Byte, mode: MemoryOrder): Unit = atomic(receiver).store(value, order(mode))
     override def compareByte(receiver: AnyRef, expected: Byte, desired: Byte, mode: MemoryOrder): Boolean =
@@ -154,7 +154,7 @@ object VarHandle {
   }
 
   // Short fields
-  private final class ShortHandle(instance: AnyRef => Ptr[Byte], static: () => Ptr[Byte]) extends Handle(instance, static, classOf[Short]) {
+  private final class ShortHandle(instance: AnyRef => Ptr[Short], static: () => Ptr[Short]) extends Handle[Short](instance, static, classOf[Short]) {
     @scala.scalanative.annotation.alwaysinline
     override protected def invokeAdaptedOperation(
         operation: AccessOperation,
@@ -171,7 +171,7 @@ object VarHandle {
     override def getLong(receiver: AnyRef, mode: MemoryOrder): Long = getShort(receiver, mode).toLong
     override def getFloat(receiver: AnyRef, mode: MemoryOrder): Float = getShort(receiver, mode).toFloat
     override def getDouble(receiver: AnyRef, mode: MemoryOrder): Double = getShort(receiver, mode).toDouble
-    private def atomic(receiver: AnyRef) = fromRawPtr[Short](pointer(receiver)).atomic
+    private def atomic(receiver: AnyRef) = pointer(receiver).atomic
     override def getShort(receiver: AnyRef, mode: MemoryOrder): Short = atomic(receiver).load(order(mode))
     override def setShort(receiver: AnyRef, value: Short, mode: MemoryOrder): Unit = atomic(receiver).store(value, order(mode))
     override def compareShort(receiver: AnyRef, expected: Short, desired: Short, mode: MemoryOrder): Boolean =
@@ -201,7 +201,7 @@ object VarHandle {
   }
 
   // Char fields
-  private final class CharHandle(instance: AnyRef => Ptr[Byte], static: () => Ptr[Byte]) extends Handle(instance, static, classOf[Char]) {
+  private final class CharHandle(instance: AnyRef => Ptr[Char], static: () => Ptr[Char]) extends Handle[Char](instance, static, classOf[Char]) {
     @scala.scalanative.annotation.alwaysinline
     override protected def invokeAdaptedOperation(
         operation: AccessOperation,
@@ -218,7 +218,8 @@ object VarHandle {
     override def getLong(receiver: AnyRef, mode: MemoryOrder): Long = getChar(receiver, mode).toLong
     override def getFloat(receiver: AnyRef, mode: MemoryOrder): Float = getChar(receiver, mode).toFloat
     override def getDouble(receiver: AnyRef, mode: MemoryOrder): Double = getChar(receiver, mode).toDouble
-    private def atomic(receiver: AnyRef) = fromRawPtr[UShort](pointer(receiver)).atomic
+    // Reinterpret the field address using its unsigned atomic storage type.
+    private def atomic(receiver: AnyRef) = pointer(receiver).asInstanceOf[Ptr[UShort]].atomic
     override def getChar(receiver: AnyRef, mode: MemoryOrder): Char = (atomic(receiver).load(order(mode))).toInt.toChar
     override def setChar(receiver: AnyRef, value: Char, mode: MemoryOrder): Unit = atomic(receiver).store((value).toInt.toUShort, order(mode))
     override def compareChar(receiver: AnyRef, expected: Char, desired: Char, mode: MemoryOrder): Boolean =
@@ -249,7 +250,7 @@ object VarHandle {
   }
 
   // Int fields
-  private final class IntHandle(instance: AnyRef => Ptr[Byte], static: () => Ptr[Byte]) extends Handle(instance, static, classOf[Int]) {
+  private final class IntHandle(instance: AnyRef => Ptr[Int], static: () => Ptr[Int]) extends Handle[Int](instance, static, classOf[Int]) {
     @scala.scalanative.annotation.alwaysinline
     override protected def invokeAdaptedOperation(
         operation: AccessOperation,
@@ -265,7 +266,7 @@ object VarHandle {
     override def getLong(receiver: AnyRef, mode: MemoryOrder): Long = getInt(receiver, mode).toLong
     override def getFloat(receiver: AnyRef, mode: MemoryOrder): Float = getInt(receiver, mode).toFloat
     override def getDouble(receiver: AnyRef, mode: MemoryOrder): Double = getInt(receiver, mode).toDouble
-    private def atomic(receiver: AnyRef) = fromRawPtr[Int](pointer(receiver)).atomic
+    private def atomic(receiver: AnyRef) = pointer(receiver).atomic
     override def getInt(receiver: AnyRef, mode: MemoryOrder): Int = atomic(receiver).load(order(mode))
     override def setInt(receiver: AnyRef, value: Int, mode: MemoryOrder): Unit = atomic(receiver).store(value, order(mode))
     override def compareInt(receiver: AnyRef, expected: Int, desired: Int, mode: MemoryOrder): Boolean =
@@ -295,7 +296,7 @@ object VarHandle {
   }
 
   // Long fields
-  private final class LongHandle(instance: AnyRef => Ptr[Byte], static: () => Ptr[Byte]) extends Handle(instance, static, classOf[Long]) {
+  private final class LongHandle(instance: AnyRef => Ptr[Long], static: () => Ptr[Long]) extends Handle[Long](instance, static, classOf[Long]) {
     @scala.scalanative.annotation.alwaysinline
     override protected def invokeAdaptedOperation(
         operation: AccessOperation,
@@ -310,7 +311,7 @@ object VarHandle {
     override def getReference(receiver: AnyRef, mode: MemoryOrder): AnyRef = scala.runtime.BoxesRunTime.boxToLong(getLong(receiver, mode))
     override def getFloat(receiver: AnyRef, mode: MemoryOrder): Float = getLong(receiver, mode).toFloat
     override def getDouble(receiver: AnyRef, mode: MemoryOrder): Double = getLong(receiver, mode).toDouble
-    private def atomic(receiver: AnyRef) = fromRawPtr[Long](pointer(receiver)).atomic
+    private def atomic(receiver: AnyRef) = pointer(receiver).atomic
     override def getLong(receiver: AnyRef, mode: MemoryOrder): Long = atomic(receiver).load(order(mode))
     override def setLong(receiver: AnyRef, value: Long, mode: MemoryOrder): Unit = atomic(receiver).store(value, order(mode))
     override def compareLong(receiver: AnyRef, expected: Long, desired: Long, mode: MemoryOrder): Boolean =
@@ -340,7 +341,7 @@ object VarHandle {
   }
 
   // Float fields
-  private final class FloatHandle(instance: AnyRef => Ptr[Byte], static: () => Ptr[Byte]) extends Handle(instance, static, classOf[Float]) {
+  private final class FloatHandle(instance: AnyRef => Ptr[Float], static: () => Ptr[Float]) extends Handle[Float](instance, static, classOf[Float]) {
     @scala.scalanative.annotation.alwaysinline
     override protected def invokeAdaptedOperation(
         operation: AccessOperation,
@@ -358,7 +359,8 @@ object VarHandle {
       "bitwise operations are unsupported for float VarHandles"
     )
 
-    private def atomic(receiver: AnyRef) = fromRawPtr[Int](pointer(receiver)).atomic
+    // Atomic operations work on the raw floating-point bits, not numeric conversions.
+    private def atomic(receiver: AnyRef) = pointer(receiver).asInstanceOf[Ptr[Int]].atomic
     override def getFloat(receiver: AnyRef, mode: MemoryOrder): Float = java.lang.Float.intBitsToFloat(atomic(receiver).load(order(mode)))
     override def setFloat(receiver: AnyRef, value: Float, mode: MemoryOrder): Unit =
       atomic(receiver).store(java.lang.Float.floatToRawIntBits(value), order(mode))
@@ -398,7 +400,7 @@ object VarHandle {
   }
 
   // Double fields
-  private final class DoubleHandle(instance: AnyRef => Ptr[Byte], static: () => Ptr[Byte]) extends Handle(instance, static, classOf[Double]) {
+  private final class DoubleHandle(instance: AnyRef => Ptr[Double], static: () => Ptr[Double]) extends Handle[Double](instance, static, classOf[Double]) {
     @scala.scalanative.annotation.alwaysinline
     override protected def invokeAdaptedOperation(
         operation: AccessOperation,
@@ -414,7 +416,8 @@ object VarHandle {
     override def bitwiseDouble(receiver: AnyRef, value: Double, operation: BitwiseOperation, mode: MemoryOrder): Double =
       throw new UnsupportedOperationException("bitwise operations are unsupported for double VarHandles")
 
-    private def atomic(receiver: AnyRef) = fromRawPtr[Long](pointer(receiver)).atomic
+    // Atomic operations work on the raw floating-point bits, not numeric conversions.
+    private def atomic(receiver: AnyRef) = pointer(receiver).asInstanceOf[Ptr[Long]].atomic
     override def getDouble(receiver: AnyRef, mode: MemoryOrder): Double = java.lang.Double.longBitsToDouble(atomic(receiver).load(order(mode)))
     override def setDouble(receiver: AnyRef, value: Double, mode: MemoryOrder): Unit =
       atomic(receiver).store(java.lang.Double.doubleToRawLongBits(value), order(mode))
@@ -458,8 +461,8 @@ object VarHandle {
   }
 
   // Reference fields
-  private final class ReferenceHandle(instance: AnyRef => Ptr[Byte], static: () => Ptr[Byte], variableType: Class[_])
-      extends Handle(instance, static, variableType) {
+  private final class ReferenceHandle(instance: AnyRef => Ptr[AnyRef], static: () => Ptr[AnyRef], variableType: Class[_])
+      extends Handle[AnyRef](instance, static, variableType) {
     @scala.scalanative.annotation.alwaysinline
     override protected def invokeAdaptedOperation(
         operation: AccessOperation,
@@ -476,7 +479,7 @@ object VarHandle {
     override def bitwiseReference(receiver: AnyRef, value: AnyRef, operation: BitwiseOperation, mode: MemoryOrder): AnyRef =
       throw new UnsupportedOperationException("bitwise operations are unsupported for reference VarHandles")
 
-    private def atomic(receiver: AnyRef) = fromRawPtr[AnyRef](pointer(receiver)).atomic
+    private def atomic(receiver: AnyRef) = pointer(receiver).atomic
     override def getReference(receiver: AnyRef, mode: MemoryOrder): AnyRef = atomic(receiver).load(order(mode))
     override def setReference(receiver: AnyRef, value: AnyRef, mode: MemoryOrder): Unit = atomic(receiver).store(value, order(mode))
     override def compareReference(receiver: AnyRef, expected: AnyRef, desired: AnyRef, mode: MemoryOrder): Boolean =
@@ -493,22 +496,22 @@ object VarHandle {
   }
 
   // Handle construction
-  def createBooleanHandle(instanceBinding: AnyRef => Ptr[Byte], staticBinding: () => Ptr[Byte]): java.lang.invoke.VarHandle =
+  def createBooleanHandle(instanceBinding: AnyRef => Ptr[Boolean], staticBinding: () => Ptr[Boolean]): java.lang.invoke._VarHandle =
     new BooleanHandle(instanceBinding, staticBinding)
-  def createByteHandle(instanceBinding: AnyRef => Ptr[Byte], staticBinding: () => Ptr[Byte]): java.lang.invoke.VarHandle =
+  def createByteHandle(instanceBinding: AnyRef => Ptr[Byte], staticBinding: () => Ptr[Byte]): java.lang.invoke._VarHandle =
     new ByteHandle(instanceBinding, staticBinding)
-  def createShortHandle(instanceBinding: AnyRef => Ptr[Byte], staticBinding: () => Ptr[Byte]): java.lang.invoke.VarHandle =
+  def createShortHandle(instanceBinding: AnyRef => Ptr[Short], staticBinding: () => Ptr[Short]): java.lang.invoke._VarHandle =
     new ShortHandle(instanceBinding, staticBinding)
-  def createCharHandle(instanceBinding: AnyRef => Ptr[Byte], staticBinding: () => Ptr[Byte]): java.lang.invoke.VarHandle =
+  def createCharHandle(instanceBinding: AnyRef => Ptr[Char], staticBinding: () => Ptr[Char]): java.lang.invoke._VarHandle =
     new CharHandle(instanceBinding, staticBinding)
-  def createIntHandle(instanceBinding: AnyRef => Ptr[Byte], staticBinding: () => Ptr[Byte]): java.lang.invoke.VarHandle =
+  def createIntHandle(instanceBinding: AnyRef => Ptr[Int], staticBinding: () => Ptr[Int]): java.lang.invoke._VarHandle =
     new IntHandle(instanceBinding, staticBinding)
-  def createLongHandle(instanceBinding: AnyRef => Ptr[Byte], staticBinding: () => Ptr[Byte]): java.lang.invoke.VarHandle =
+  def createLongHandle(instanceBinding: AnyRef => Ptr[Long], staticBinding: () => Ptr[Long]): java.lang.invoke._VarHandle =
     new LongHandle(instanceBinding, staticBinding)
-  def createFloatHandle(instanceBinding: AnyRef => Ptr[Byte], staticBinding: () => Ptr[Byte]): java.lang.invoke.VarHandle =
+  def createFloatHandle(instanceBinding: AnyRef => Ptr[Float], staticBinding: () => Ptr[Float]): java.lang.invoke._VarHandle =
     new FloatHandle(instanceBinding, staticBinding)
-  def createDoubleHandle(instanceBinding: AnyRef => Ptr[Byte], staticBinding: () => Ptr[Byte]): java.lang.invoke.VarHandle =
+  def createDoubleHandle(instanceBinding: AnyRef => Ptr[Double], staticBinding: () => Ptr[Double]): java.lang.invoke._VarHandle =
     new DoubleHandle(instanceBinding, staticBinding)
-  def createReferenceHandle(instanceBinding: AnyRef => Ptr[Byte], staticBinding: () => Ptr[Byte], variableType: Class[_]): java.lang.invoke.VarHandle =
+  def createReferenceHandle(instanceBinding: AnyRef => Ptr[AnyRef], staticBinding: () => Ptr[AnyRef], variableType: Class[_]): java.lang.invoke._VarHandle =
     new ReferenceHandle(instanceBinding, staticBinding, variableType)
 }

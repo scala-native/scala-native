@@ -23,6 +23,30 @@ abstract class VarHandleLookupCompilerTestSupport {
  */
 class VarHandleLookupValidationTests
     extends VarHandleLookupCompilerTestSupport {
+  @Test def privateLookupCreatesSharedCompanionHandle(): Unit = compiles(
+    """import java.lang.invoke.MethodHandles
+      |class Owner {
+      |  private var value: Int = 1
+      |  def current: Int = value
+      |}
+      |object Owner {
+      |  val handle = MethodHandles.privateLookupIn(classOf[Owner], MethodHandles.lookup())
+      |    .findVarHandle(classOf[Owner], "value", Integer.TYPE)
+      |  def increment(owner: Owner): Int = handle.getAndAdd(owner, 1)
+      |}
+      |"""
+  )
+
+  @Test def privateLookupRejectsNonliteralOwner(): Unit = rejected(
+    """import java.lang.invoke.MethodHandles
+      |class Owner {
+      |  private var value: Int = 1
+      |  def handle(owner: Class[_]) = MethodHandles.privateLookupIn(owner, MethodHandles.lookup())
+      |    .findVarHandle(classOf[Owner], "value", Integer.TYPE)
+      |}
+      |"""
+  )
+
   private def javaFieldLookup(
       field: String,
       samePackage: Boolean,

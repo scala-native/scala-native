@@ -184,6 +184,7 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val AtomicReferenceFieldUpdater_newUpdater = AtomicReferenceFieldUpdaterModule.requiredMethod("newUpdater")
   @tu lazy val MethodHandlesModule = requiredModule("java.lang.invoke.MethodHandles")
   @tu lazy val MethodHandles_lookup = MethodHandlesModule.requiredMethod("lookup")
+  @tu lazy val MethodHandles_privateLookupIn = MethodHandlesModule.requiredMethod("privateLookupIn")
   @tu lazy val MethodHandlesLookupClass = MethodHandlesModule.requiredClass("Lookup")
   @tu lazy val MethodHandlesLookup_findVarHandle = MethodHandlesLookupClass.requiredMethod("findVarHandle")
   @tu lazy val MethodHandlesLookup_findStaticVarHandle = MethodHandlesLookupClass.requiredMethod("findStaticVarHandle")

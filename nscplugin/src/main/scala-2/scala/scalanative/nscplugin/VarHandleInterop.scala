@@ -18,6 +18,9 @@ private[nscplugin] trait VarHandleInterop[G <: Global with Singleton] {
   protected lazy val VarHandleLookupClass = rootMirror.getRequiredClass("java.lang.invoke.MethodHandles.Lookup")
   protected lazy val FindVarHandle = VarHandleLookupClass.info.member(newTermName("findVarHandle"))
   protected lazy val FindStaticVarHandle = VarHandleLookupClass.info.member(newTermName("findStaticVarHandle"))
+  private lazy val MethodHandlesModule = rootMirror.getRequiredModule("java.lang.invoke.MethodHandles")
+  private lazy val LookupMethod = MethodHandlesModule.info.member(newTermName("lookup"))
+  private lazy val PrivateLookupMethod = MethodHandlesModule.info.member(newTermName("privateLookupIn"))
   private lazy val NativeVarHandleClass = rootMirror.getRequiredClass("scala.scalanative.runtime.NativeVarHandle")
   private lazy val VarHandleFactoryModule = rootMirror.getRequiredModule("scala.scalanative.runtime.VarHandle")
 
@@ -246,23 +249,22 @@ private[nscplugin] trait VarHandleInterop[G <: Global with Singleton] {
         reporter.error(app.pos, message); app
       }
 
-      val lookupMethod = rootMirror
-        .getRequiredModule("java.lang.invoke.MethodHandles")
-        .info
-        .member(newTermName("lookup"))
-
-      def provenLookup(tree: Tree): Boolean = tree match {
-        case Apply(fun, Nil) => fun.symbol == lookupMethod
+      def provenLookup(tree: Tree): Option[Symbol] = tree match {
+        case Apply(fun, Nil) if fun.symbol == LookupMethod => Some(currentOwner.enclClass)
+        case Apply(fun, List(Literal(Constant(tpe: Type)), caller))
+            if fun.symbol == PrivateLookupMethod && tpe.typeSymbol.isClass &&
+              !primitiveKinds.contains(tpe.typeSymbol) =>
+          provenLookup(caller).map(_ => tpe.typeSymbol)
         case Typed(inner, _) => provenLookup(inner)
-        case _               => false
+        case _               => None
       }
 
-      app.fun match {
-        case Select(lookup, _) if provenLookup(lookup) => ()
-        case _                                         =>
-          return fail(
-            "VarHandle requires a direct MethodHandles.lookup() with proven lookup privileges"
-          )
+      val lookupClass = (app.fun match {
+        case Select(lookup, _) => provenLookup(lookup)
+        case _                 => None
+      }) match {
+        case Some(owner) => owner
+        case None        => return fail("VarHandle requires a direct MethodHandles.lookup() with proven lookup privileges")
       }
 
       val target = args.headOption match {
@@ -302,7 +304,7 @@ private[nscplugin] trait VarHandleInterop[G <: Global with Singleton] {
       if (!(fieldType.erasure =:= expected.erasure))
         return fail(s"VarHandle type does not match field $name")
 
-      val caller = currentOwner.enclClass
+      val caller = lookupClass
       val coordinateType =
         if (field.isJavaDefined && field.isProtected &&
             caller.enclosingPackageClass != field.owner.enclosingPackageClass &&
@@ -310,10 +312,10 @@ private[nscplugin] trait VarHandleInterop[G <: Global with Singleton] {
         else target
 
       def accessible(s: Symbol): Boolean =
-        (!s.isJavaDefined ||
+        (s.owner == lookupClass || !s.isJavaDefined ||
           (s.isProtected && (caller.tpe <:< s.owner.tpe)) ||
-          typer.atOwner(currentOwner).context.isAccessible(s, coordinateType)) &&
-          (!s.isPrivate || s.owner == currentOwner.enclClass)
+          typer.atOwner(lookupClass).context.isAccessible(s, coordinateType)) &&
+          (!s.isPrivate || s.owner == lookupClass)
       if (!accessible(field))
         return fail(s"VarHandle cannot access field $name")
 
@@ -333,16 +335,19 @@ private[nscplugin] trait VarHandleInterop[G <: Global with Singleton] {
         List(receiver, Literal(Constant(name)))
       )
 
+      val kind = variableKind(fieldType)
+      val pointerType =
+        if (kind == VarHandleProtocol.VariableKind.Reference) ObjectTpe
+        else fieldType.erasure
       val ptr = Apply(
         TypeApply(
           gen.mkAttributedRef(RuntimePackage_fromRawPtr),
-          List(TypeTree(ByteTpe))
+          List(TypeTree(pointerType))
         ),
         List(raw)
       )
 
       val binding = Function(if (isStatic) Nil else List(param), ptr)
-      val kind = variableKind(fieldType)
       val factory = getMember(
         VarHandleFactoryModule,
         newTermName("create" + kind.memberName + "Handle")
@@ -357,6 +362,9 @@ private[nscplugin] trait VarHandleInterop[G <: Global with Singleton] {
       typer
         .atOwner(currentOwner)
         .typed(Apply(gen.mkAttributedRef(factory), factoryArgs))
+        // _VarHandle is renamed to the JDK API class in NIR generation.
+        // This is a compile-time view, not a runtime checked cast.
+        .setType(app.tpe)
     }
 
     protected def rewriteVarHandleAccess(

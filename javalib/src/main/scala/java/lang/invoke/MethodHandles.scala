@@ -12,6 +12,7 @@ import scala.scalanative.annotation.stub
  */
 object MethodHandles {
   @stub() def lookup(): Lookup = ???
+  @stub() def privateLookupIn(targetClass: Class[_], caller: Lookup): Lookup = ???
 
   final class Lookup private[invoke] () {
     @stub() def findVarHandle(refc: Class[_], name: String, `type`: Class[_]): VarHandle = ???

@@ -252,7 +252,9 @@ private[nscplugin] trait VarHandleInterop extends NativeInteropUtil {
       staticBinding: Tree,
       d: NirDefinitions
   )(using Context): Tree = {
-    val factory = tpe.typeSymbol match {
+    // Opaque aliases can hide a primitive field type outside its companion.
+    // Select the implementation using the field's physical representation.
+    val factory = TypeErasure.erasure(tpe).typeSymbol match {
       case sym if sym == defn.BooleanClass =>
         d.RuntimeVarHandle_createBooleanHandle
       case sym if sym == defn.ByteClass   => d.RuntimeVarHandle_createByteHandle
@@ -269,7 +271,9 @@ private[nscplugin] trait VarHandleInterop extends NativeInteropUtil {
     val args = List(instanceBinding, staticBinding) ++
       (if factory == d.RuntimeVarHandle_createReferenceHandle then List(Literal(Constant(tpe)))
        else Nil)
-    Apply(ref(factory), args)
+    // The Native _VarHandle definition and the JDK VarHandle API have the same
+    // NIR name. Expose the API type here without a runtime checked cast.
+    Apply(ref(factory), args).withType(d.VarHandleClass.typeRef)
   }
 
   private def classLiteral(tree: Tree)(using Context)(using metadata: VarHandleMetadata): Option[Type] = tree match {
@@ -284,11 +288,17 @@ private[nscplugin] trait VarHandleInterop extends NativeInteropUtil {
     case _ => None
   }
 
-  private def provenLookup(tree: Tree)(using Context): Boolean = tree match {
-    case Apply(fun, Nil)        => fun.symbol == defnNir.MethodHandles_lookup
+  private def provenLookup(tree: Tree)(using Context)(using metadata: VarHandleMetadata): Option[Symbol] = tree match {
+    case Apply(fun, Nil) if fun.symbol == defnNir.MethodHandles_lookup                           => Some(ctx.owner.enclosingClass)
+    case Apply(fun, List(target, caller)) if fun.symbol == defnNir.MethodHandles_privateLookupIn =>
+      for {
+        _ <- provenLookup(caller)
+        tpe <- classLiteral(target)
+        if tpe.typeSymbol.isClass && !tpe.typeSymbol.isPrimitiveValueClass
+      } yield tpe.typeSymbol
     case Typed(inner, _)        => provenLookup(inner)
     case Inlined(_, Nil, inner) => provenLookup(inner)
-    case _                      => false
+    case _                      => None
   }
 
   /* A VarHandle lookup is intentionally not reflective on Native: both the
@@ -308,12 +318,12 @@ private[nscplugin] trait VarHandleInterop extends NativeInteropUtil {
       app
     }
 
-    app.fun match {
-      case Select(lookup, _) if provenLookup(lookup) => ()
-      case _                                         =>
-        return fail(
-          "VarHandle requires a direct MethodHandles.lookup() with proven lookup privileges"
-        )
+    val lookupClass = (app.fun match {
+      case Select(lookup, _) => provenLookup(lookup)
+      case _                 => None
+    }) match {
+      case Some(owner) => owner
+      case None        => return fail("VarHandle requires a direct MethodHandles.lookup() with proven lookup privileges")
     }
 
     def matchesName(symbol: Symbol, name: String): Boolean =
@@ -383,7 +393,7 @@ private[nscplugin] trait VarHandleInterop extends NativeInteropUtil {
         s"VarHandle type does not match field $fieldName, expected $expectedType but got $fieldType"
       )
 
-    val caller = ctx.owner.enclosingClass
+    val caller = lookupClass
     // A cross-package protected lookup has the lookup class as its receiver
     // constraint, even when the requested declaring class is a superclass.
     val coordinateType =
@@ -395,9 +405,9 @@ private[nscplugin] trait VarHandleInterop extends NativeInteropUtil {
     def accessible(symbol: Symbol): Boolean =
       // Scala instance vars acquire private JVM backing fields even when their
       // getters/setters are public. That separation has not happened yet here.
-      symbol.isAccessibleFrom(coordinateType) &&
+      symbol.isAccessibleFrom(coordinateType)(using ctx.withOwner(lookupClass)) &&
         ((!symbol.is(Private) && (symbol.is(JavaDefined) || staticField)) ||
-        symbol.owner == ctx.owner.enclosingClass)
+        symbol.owner == lookupClass)
     if !accessible(fieldSym) then
       return fail(
         s"VarHandle cannot access field $fieldName: it is private to ${fieldSym.owner.show} " +
@@ -412,11 +422,15 @@ private[nscplugin] trait VarHandleInterop extends NativeInteropUtil {
         ),
         List(target, Literal(Constant(fieldName)))
       )
+    val erasedFieldType = TypeErasure.erasure(fieldType)
+    val pointerType =
+      if varHandleMetadata.primitiveKinds.contains(erasedFieldType.typeSymbol) then erasedFieldType
+      else defn.ObjectType
     val pointer = (raw: Tree) =>
       Apply(
         TypeApply(
           ref(defnNir.RuntimePackage_fromRawPtr),
-          List(TypeTree(defn.ByteType))
+          List(TypeTree(pointerType))
         ),
         List(raw)
       )
