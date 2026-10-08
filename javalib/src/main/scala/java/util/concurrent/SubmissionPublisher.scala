@@ -5,16 +5,19 @@
  */
 package java.util.concurrent
 
-import java.lang.invoke.{MethodHandles, VarHandle}
+import java.lang.invoke.VarHandle
 import java.util.Objects.requireNonNull
 import java.util.concurrent.locks.{LockSupport, ReentrantLock}
 import java.util.function.{BiConsumer, BiPredicate, Consumer}
 import java.util.{ArrayList, Arrays, List as JList}
 
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.libc.stdatomic.AtomicRef
-import scala.scalanative.libc.stdatomic.memory_order.{memory_order_acquire, memory_order_release}
-import scala.scalanative.runtime.ObjectArray
+import scala.scalanative.libc.stdatomic.memory_order.{
+  memory_order_acquire, memory_order_release
+}
+import scala.scalanative.libc.stdatomic.{AtomicInt, AtomicLongLong, AtomicRef}
+import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
+import scala.scalanative.runtime.{ObjectArray, fromRawPtr}
 import scala.scalanative.unsafe.Ptr
 
 // @since JDK 9
@@ -558,17 +561,6 @@ class SubmissionPublisher[T](
 }
 
 object SubmissionPublisher {
-  private val BufferedSubscription_TAIL: VarHandle = MethodHandles
-    .privateLookupIn(classOf[SubmissionPublisher.BufferedSubscription[_]], MethodHandles.lookup())
-    .findVarHandle(classOf[SubmissionPublisher.BufferedSubscription[_]], "tail", classOf[Int])
-
-  private val BufferedSubscription_CTL: VarHandle = MethodHandles
-    .privateLookupIn(classOf[SubmissionPublisher.BufferedSubscription[_]], MethodHandles.lookup())
-    .findVarHandle(classOf[SubmissionPublisher.BufferedSubscription[_]], "ctl", classOf[Int])
-
-  private val BufferedSubscription_DEMAND: VarHandle = MethodHandles
-    .privateLookupIn(classOf[SubmissionPublisher.BufferedSubscription[_]], MethodHandles.lookup())
-    .findVarHandle(classOf[SubmissionPublisher.BufferedSubscription[_]], "demand", classOf[Long])
 
   /** The largest possible power of two array size. */
   final val BUFFER_CAPACITY_LIMIT: Int = 1 << 30
@@ -738,24 +730,34 @@ object SubmissionPublisher {
     // Utilities for atomic access to fields
 
     @alwaysinline
+    private def tailAtm: AtomicInt =
+      new AtomicInt(fromRawPtr[Int](classFieldRawPtr(this, "tail")))
+    @alwaysinline
     private def tailIncrementAndGet(): Int =
-      (SubmissionPublisher.BufferedSubscription_TAIL.getAndAdd(this, 1): Int) + 1
+      tailAtm.fetchAdd(1) + 1
     @alwaysinline
     private def tailGetAndIncrement(): Int =
-      SubmissionPublisher.BufferedSubscription_TAIL.getAndAdd(this, 1)
-    @alwaysinline
-    private def ctlGetAndBitwiseOr(bits: Int): Int =
-      SubmissionPublisher.BufferedSubscription_CTL.getAndBitwiseOr(this, bits)
-    @alwaysinline
-    private def ctlWeakCompareAndSet(expectValue: Int, value: Int): Boolean =
-      SubmissionPublisher.BufferedSubscription_CTL.weakCompareAndSet(this, expectValue, value)
+      tailAtm.fetchAdd(1)
 
     @alwaysinline
+    private def ctlAtm =
+      new AtomicInt(fromRawPtr[Int](classFieldRawPtr(this, "ctl")))
+    @alwaysinline
+    private def ctlGetAndBitwiseOr(bits: Int): Int =
+      ctlAtm.fetchOr(bits)
+    @alwaysinline
+    private def ctlWeakCompareAndSet(expectValue: Int, value: Int): Boolean =
+      ctlAtm.compareExchangeWeak(expectValue, value)
+
+    @alwaysinline
+    private def demandAtm =
+      new AtomicLongLong(fromRawPtr[Long](classFieldRawPtr(this, "demand")))
+    @alwaysinline
     private def demandCompareAndSet(expectValue: Long, value: Long): Boolean =
-      SubmissionPublisher.BufferedSubscription_DEMAND.compareAndSet(this, expectValue, value)
+      demandAtm.compareExchangeStrong(expectValue, value)
     @alwaysinline
     private def demandSubtractAndGet(k: Long): Long =
-      (SubmissionPublisher.BufferedSubscription_DEMAND.getAndAdd(this, -k): Long) - k
+      demandAtm.fetchSub(k) - k
 
     @alwaysinline
     private def arrayGetAtomicRef[E <: AnyRef](

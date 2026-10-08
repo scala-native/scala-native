@@ -6,11 +6,11 @@
 // revision 1.72
 package java.util.concurrent
 
-import java.lang.invoke.{MethodHandles, VarHandle}
-
 import scala.annotation.tailrec
 
 import scala.scalanative.annotation.safePublish
+import scala.scalanative.libc.stdatomic.AtomicInt
+import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
 
 abstract class CountedCompleter[T] protected (
     @safePublish private[concurrent] final val completer: CountedCompleter[_],
@@ -18,6 +18,9 @@ abstract class CountedCompleter[T] protected (
 ) extends ForkJoinTask[T] {
 
   @volatile private var pending = initialPendingCount
+  private def atomicPending = new AtomicInt(
+    fromRawPtr(Intrinsics.classFieldRawPtr(this, "pending"))
+  )
 
   protected def this(completer: CountedCompleter[_]) = this(completer, 0)
 
@@ -38,16 +41,16 @@ abstract class CountedCompleter[T] protected (
 
   final def setPendingCount(count: Int): Unit = pending = count
 
-  final def addToPendingCount(delta: Int): Unit = CountedCompleter.PENDING.getAndAdd(this, delta)
+  final def addToPendingCount(delta: Int): Unit = atomicPending.fetchAdd(delta)
 
   final def compareAndSetPendingCount(expected: Int, count: Int): Boolean =
-    CountedCompleter.PENDING.compareAndSet(this, expected, count)
+    atomicPending.compareExchangeStrong(expected, count)
 
   // internal-only weak version
   private[concurrent] final def weakCompareAndSetPendingCount(
       expected: Int,
       count: Int
-  ) = CountedCompleter.PENDING.weakCompareAndSet(this, expected, count)
+  ) = atomicPending.compareExchangeWeak(expected, count)
 
   final def decrementPendingCountUnlessZero: Int = {
     var c = 0
@@ -167,11 +170,4 @@ abstract class CountedCompleter[T] protected (
   override def getRawResult(): T = null.asInstanceOf[T]
 
   override protected def setRawResult(t: T): Unit = {}
-}
-
-object CountedCompleter {
-  private val PENDING: VarHandle = MethodHandles
-    .privateLookupIn(classOf[CountedCompleter[_]], MethodHandles.lookup())
-    .findVarHandle(classOf[CountedCompleter[_]], "pending", classOf[Int])
-
 }

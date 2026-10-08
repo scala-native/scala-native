@@ -6,10 +6,15 @@
 
 package java.util.concurrent.atomic
 
-import java.lang.invoke.{MethodHandles, VarHandle}
 import java.util.function.{BinaryOperator, UnaryOperator}
 
 import scala.annotation.tailrec
+
+import scala.scalanative.annotation.alwaysinline
+import scala.scalanative.libc.stdatomic.AtomicRef
+import scala.scalanative.libc.stdatomic.memory_order._
+import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
+import scala.scalanative.unsafe._
 
 @SerialVersionUID(-1848883965231344442L)
 class AtomicReference[V <: AnyRef](@volatile private var value: V)
@@ -18,7 +23,14 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
     this(null.asInstanceOf[V])
   }
 
-  assert(AtomicReference.VALUE.getVolatile(this) == value, "Value reference does not match field")
+  assert(valueRef.load() == value, "Value reference does not match field")
+
+  // Pointer to field containing underlying V.
+  @alwaysinline
+  private[concurrent] def valueRef: AtomicRef[V] =
+    new AtomicRef[V](
+      fromRawPtr(Intrinsics.classFieldRawPtr(this, "value"))
+    )
 
   /** Returns the current value, with memory effects as specified by
    *  `VarHandle#getVolatile`.
@@ -44,7 +56,7 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
    *  @since 1.6
    */
   final def lazySet(newValue: V): Unit = {
-    AtomicReference.VALUE.setRelease(this, newValue)
+    valueRef.store(newValue, memory_order_release)
   }
 
   /** Atomically sets the value to {@code newValue} if the current value {@code
@@ -60,7 +72,7 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
    *    was not equal to the expected value.
    */
   final def compareAndSet(expectedValue: V, newValue: V): Boolean =
-    AtomicReference.VALUE.compareAndSet(this, expectedValue, newValue)
+    valueRef.compareExchangeStrong(expectedValue, newValue)
 
   /** Possibly atomically sets the value to {@code newValue} if the current
    *  value {@code == expectedValue}, with memory effects as specified by
@@ -100,7 +112,7 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
    *  @since 9
    */
   final def weakCompareAndSetPlain(expectedValue: V, newValue: V): Boolean = {
-    AtomicReference.VALUE.weakCompareAndSetPlain(this, expectedValue, newValue)
+    valueRef.compareExchangeWeak(expectedValue, newValue, memory_order_relaxed)
   }
 
   /** Atomically sets the value to {@code newValue} and returns the old value,
@@ -112,7 +124,7 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
    *    the previous value
    */
   final def getAndSet(newValue: V): V = {
-    AtomicReference.VALUE.getAndSet(this, newValue)
+    valueRef.exchange(newValue)
   }
 
   /** Atomically updates (with memory effects as specified by
@@ -266,7 +278,7 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
    *    the value
    *  @since 9
    */
-  final def getOpaque(): V = AtomicReference.VALUE.getOpaque(this)
+  final def getOpaque(): V = valueRef.load(memory_order_relaxed)
 
   /** Sets the value to {@code newValue}, with memory effects as specified by
    *  `VarHandle#setOpaque`.
@@ -276,7 +288,7 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
    *  @since 9
    */
   final def setOpaque(newValue: V): Unit =
-    AtomicReference.VALUE.setOpaque(this, newValue)
+    valueRef.store(newValue, memory_order_relaxed)
 
   /** Returns the current value, with memory effects as specified by
    *  `VarHandle#getAcquire`.
@@ -286,7 +298,7 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
    *  @since 9
    */
   final def getAcquire: V = {
-    AtomicReference.VALUE.getAcquire(this)
+    valueRef.load(memory_order_acquire)
   }
 
   /** Sets the value to {@code newValue}, with memory effects as specified by
@@ -297,7 +309,7 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
    *  @since 9
    */
   final def setRelease(newValue: V): Unit = {
-    AtomicReference.VALUE.setRelease(this, newValue)
+    valueRef.store(newValue, memory_order_release)
   }
 
   /** Atomically sets the value to {@code newValue} if the current value,
@@ -313,9 +325,16 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
    *    successful
    *  @since 9
    */
-  final def compareAndExchange(expectedValue: V, newValue: V): V =
-    AtomicReference.VALUE.compareAndExchange(this, expectedValue, newValue
+  final def compareAndExchange(expectedValue: V, newValue: V): V = {
+    val expected = stackalloc[AnyRef]()
+    !expected = expectedValue
+    valueRef
+      .compareExchangeStrong(
+        expected.asInstanceOf[Ptr[V]],
+        newValue
       )
+    (!expected).asInstanceOf[V]
+  }
 
   /** Atomically sets the value to {@code newValue} if the current value,
    *  referred to as the <em>witness value</em>, {@code == expectedValue}, with
@@ -330,8 +349,17 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
    *    successful
    *  @since 9
    */
-  final def compareAndExchangeAcquire(expectedValue: V, newValue: V): V =
-    AtomicReference.VALUE.compareAndExchangeAcquire(this, expectedValue, newValue)
+  final def compareAndExchangeAcquire(expectedValue: V, newValue: V): V = {
+    val expected = stackalloc[AnyRef]()
+    !expected = expectedValue
+    valueRef
+      .compareExchangeStrong(
+        expected.asInstanceOf[Ptr[V]],
+        newValue,
+        memory_order_acquire
+      )
+    (!expected).asInstanceOf[V]
+  }
 
   /** Atomically sets the value to {@code newValue} if the current value,
    *  referred to as the <em>witness value</em>, {@code == expectedValue}, with
@@ -346,8 +374,17 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
    *    successful
    *  @since 9
    */
-  final def compareAndExchangeRelease(expectedValue: V, newValue: V): V =
-    AtomicReference.VALUE.compareAndExchangeRelease(this, expectedValue, newValue)
+  final def compareAndExchangeRelease(expectedValue: V, newValue: V): V = {
+    val expected = stackalloc[AnyRef]()
+    !expected = expectedValue
+    valueRef
+      .compareExchangeStrong(
+        expected.asInstanceOf[Ptr[V]],
+        newValue,
+        memory_order_release
+      )
+    (!expected).asInstanceOf[V]
+  }
 
   /** Possibly atomically sets the value to {@code newValue} if the current
    *  value {@code == expectedValue}, with memory effects as specified by
@@ -365,7 +402,7 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
       expectedValue: V,
       newValue: V
   ): Boolean = {
-    AtomicReference.VALUE.weakCompareAndSet(this, expectedValue, newValue)
+    valueRef.compareExchangeWeak(expectedValue, newValue)
   }
 
   /** Possibly atomically sets the value to {@code newValue} if the current
@@ -380,8 +417,16 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
    *    {@code true} if successful
    *  @since 9
    */
-  final def weakCompareAndSetAcquire(expectedValue: V, newValue: V): Boolean =
-    AtomicReference.VALUE.weakCompareAndSetAcquire(this, expectedValue, newValue)
+  final def weakCompareAndSetAcquire(expectedValue: V, newValue: V): Boolean = {
+    val expected = stackalloc[AnyRef]()
+    !expected = expectedValue
+    valueRef
+      .compareExchangeWeak(
+        expected.asInstanceOf[Ptr[V]],
+        newValue,
+        memory_order_acquire
+      )
+  }
 
   /** Possibly atomically sets the value to {@code newValue} if the current
    *  value {@code == expectedValue}, with memory effects as specified by
@@ -395,12 +440,14 @@ class AtomicReference[V <: AnyRef](@volatile private var value: V)
    *    {@code true} if successful
    *  @since 9
    */
-  final def weakCompareAndSetRelease(expectedValue: V, newValue: V): Boolean =
-    AtomicReference.VALUE.weakCompareAndSetRelease(this, expectedValue, newValue)
-}
-
-object AtomicReference {
-  private val VALUE: VarHandle = MethodHandles
-    .privateLookupIn(classOf[AtomicReference[_]], MethodHandles.lookup())
-    .findVarHandle(classOf[AtomicReference[_]], "value", classOf[AnyRef])
+  final def weakCompareAndSetRelease(expectedValue: V, newValue: V): Boolean = {
+    val expected = stackalloc[AnyRef]()
+    !expected = expectedValue
+    valueRef
+      .compareExchangeWeak(
+        expected.asInstanceOf[Ptr[V]],
+        newValue,
+        memory_order_release
+      )
   }
+}

@@ -30,13 +30,15 @@
 
 package java.util.concurrent.locks
 
-import java.lang.invoke.{MethodHandles, VarHandle}
 import java.util.concurrent.TimeUnit
 
+import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.libc.stdatomic
 import scala.scalanative.libc.stdatomic.memory_order.{
   memory_order_acquire, memory_order_relaxed, memory_order_release
 }
+import scala.scalanative.libc.stdatomic.{AtomicInt, AtomicLongLong, AtomicRef}
+import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
 
 /*
  * A capability-based lock with three modes for controlling read/write
@@ -310,9 +312,15 @@ class StampedLock extends Serializable {
    */
 
   /* Head of CLH queue */
+  @alwaysinline private def headAtomic = new AtomicRef[Node](
+    fromRawPtr(Intrinsics.classFieldRawPtr(this, "head"))
+  )
   @transient @volatile private var head: Node = _
 
   /* Tail (last) of CLH queue */
+  @alwaysinline private def tailAtomic = new AtomicRef[Node](
+    fromRawPtr(Intrinsics.classFieldRawPtr(this, "tail"))
+  )
   @transient @volatile private var tail: Node = _
 
   // views
@@ -324,7 +332,7 @@ class StampedLock extends Serializable {
 
   // A new lock is initially in unlocked state.
 
-  // Internal state, accessed through a shared VarHandle.
+  // private[locks] makes var visibile to classFieldRawPtr but not to world.
   @transient @volatile private[locks] var state: Long = ORIGIN
 
   /* extra reader count when state read count saturated */
@@ -332,8 +340,12 @@ class StampedLock extends Serializable {
 
   // internal lock methods
 
+  @alwaysinline private def stateAtomic = new AtomicLongLong(
+    fromRawPtr(Intrinsics.classFieldRawPtr(this, "state"))
+  )
+
   private def casState(expect: Long, update: Long): Boolean =
-    StampedLock.STATE.compareAndSet(this, expect, update)
+    stateAtomic.compareExchangeStrong(expect, update)
 
   // @ReservedStackAccess
   private def tryAcquireWrite(): Long = {
@@ -395,11 +407,11 @@ class StampedLock extends Serializable {
   // @ReservedStackAccess
   def writeLock(): Long = {
     // try unconditional CAS confirming weak read
-    val s = (StampedLock.STATE.getOpaque(this): Long) & ~ABITS
+    val s = stateAtomic.load(memory_order_relaxed) & ~ABITS
     val nextState = s | WBIT
 
     if (casState(s, nextState)) {
-      StampedLock.STATE.setOpaque(this, nextState)
+      stateAtomic.store(nextState, memory_order_relaxed)
       nextState
     } else {
       acquireWrite(false, false, 0L)
@@ -479,7 +491,7 @@ class StampedLock extends Serializable {
   // @ReservedStackAccess
   def readLock(): Long = {
     // unconditionally optimistically try non-overflow case once
-    val s = (StampedLock.STATE.getOpaque(this): Long) & RSAFE
+    val s = stateAtomic.load(memory_order_relaxed) & RSAFE
     val nextState = s + RUNIT
 
     if (casState(s, nextState))
@@ -1066,13 +1078,13 @@ class StampedLock extends Serializable {
 
   // queue link methods
   private def casTail(c: Node, v: Node): Boolean =
-    StampedLock.TAIL.compareAndSet(this, c, v)
+    tailAtomic.compareExchangeStrong(c, v)
 
   /* tries once to CAS a new dummy node for head */
   private def tryInitializeHead(): Unit = {
     val h = new WriterNode()
 
-    if (StampedLock.HEAD.compareAndSet(this, null.asInstanceOf[WriterNode], h))
+    if (headAtomic.compareExchangeStrong(null.asInstanceOf[WriterNode], h))
       tail = h
   }
 
@@ -1478,33 +1490,6 @@ class StampedLock extends Serializable {
 
 @SerialVersionUID(-6001602636862214147L)
 object StampedLock {
-  private val HEAD: VarHandle = MethodHandles
-    .privateLookupIn(classOf[StampedLock], MethodHandles.lookup())
-    .findVarHandle(classOf[StampedLock], "head", classOf[StampedLock.Node])
-
-  private val TAIL: VarHandle = MethodHandles
-    .privateLookupIn(classOf[StampedLock], MethodHandles.lookup())
-    .findVarHandle(classOf[StampedLock], "tail", classOf[StampedLock.Node])
-
-  private val STATE: VarHandle = MethodHandles
-    .privateLookupIn(classOf[StampedLock], MethodHandles.lookup())
-    .findVarHandle(classOf[StampedLock], "state", classOf[Long])
-
-  private val Node_PREV: VarHandle = MethodHandles
-    .privateLookupIn(classOf[StampedLock.Node], MethodHandles.lookup())
-    .findVarHandle(classOf[StampedLock.Node], "prev", classOf[StampedLock.Node])
-
-  private val Node_NEXT: VarHandle = MethodHandles
-    .privateLookupIn(classOf[StampedLock.Node], MethodHandles.lookup())
-    .findVarHandle(classOf[StampedLock.Node], "next", classOf[StampedLock.Node])
-
-  private val Node_STATUS: VarHandle = MethodHandles
-    .privateLookupIn(classOf[StampedLock.Node], MethodHandles.lookup())
-    .findVarHandle(classOf[StampedLock.Node], "status", classOf[Int])
-
-  private val ReaderNode_COWAITERS: VarHandle = MethodHandles
-    .privateLookupIn(classOf[StampedLock.ReaderNode], MethodHandles.lookup())
-    .findVarHandle(classOf[StampedLock.ReaderNode], "cowaiters", classOf[StampedLock.ReaderNode])
 
   /* SN: Note well the notes at top of companion class, especially the
    * 'memory layout' section.
@@ -1553,23 +1538,35 @@ object StampedLock {
     var waiter: Thread = _ // visibly nonnull when enqueued
     @volatile var status: Int = 0 // written by owner, atomic bit ops by others
 
+    @alwaysinline private def prevAtomic = new AtomicRef[Node](
+      fromRawPtr(Intrinsics.classFieldRawPtr(this, "prev"))
+    )
+
+    @alwaysinline private def nextAtomic = new AtomicRef[Node](
+      fromRawPtr(Intrinsics.classFieldRawPtr(this, "next"))
+    )
+
+    @alwaysinline private def statusAtomic = new AtomicInt(
+      fromRawPtr(Intrinsics.classFieldRawPtr(this, "status"))
+    )
+
     final def casPrev(c: Node, v: Node): Boolean = // for cleanQueue
-      StampedLock.Node_PREV.weakCompareAndSet(this, c, v)
+      prevAtomic.compareExchangeWeak(c, v)
 
     final def casNext(c: Node, v: Node): Boolean = // for cleanQueue
-      StampedLock.Node_NEXT.weakCompareAndSet(this, c, v)
+      nextAtomic.compareExchangeWeak(c, v)
 
     final def getAndUnsetStatus(v: Int): Int = // for signalling
-      StampedLock.Node_STATUS.getAndBitwiseAnd(this, ~v)
+      statusAtomic.fetchAnd(~v)
 
     final def setPrevRelaxed(p: Node): Unit = // for off-queue assignment
-      StampedLock.Node_PREV.setVolatile(this, p)
+      prevAtomic.store(p)
 
     final def setStatusRelaxed(s: Int) = // for off-queue assignment
-      StampedLock.Node_STATUS.setVolatile(this, s)
+      statusAtomic.store(s)
 
     final def clearStatus(): Unit = // for reducing unneeded signals
-      StampedLock.Node_STATUS.setOpaque(this, 0) // U.putIntOpaque
+      statusAtomic.store(0, memory_order_relaxed) // U.putIntOpaque
   }
 
   final class WriterNode extends Node {} // node for writers
@@ -1577,11 +1574,15 @@ object StampedLock {
   final class ReaderNode extends Node { // node for readers
     @volatile var cowaiters: ReaderNode = _ // list of linked readers
 
+    @alwaysinline private def cowaitersAtomic = new AtomicRef[ReaderNode](
+      fromRawPtr(Intrinsics.classFieldRawPtr(this, "cowaiters"))
+    )
+
     final def casCowaiters(c: ReaderNode, v: ReaderNode): Boolean =
-      StampedLock.ReaderNode_COWAITERS.weakCompareAndSet(this, c, v)
+      cowaitersAtomic.compareExchangeWeak(c, v)
 
     final def setCowaitersRelaxed(p: ReaderNode): Unit =
-      StampedLock.ReaderNode_COWAITERS.setOpaque(this, p)
+      cowaitersAtomic.store(p, memory_order_relaxed)
   }
 
   // status monitoring methods

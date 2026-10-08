@@ -7,10 +7,15 @@
 package java.util.concurrent.atomic
 
 import java.io.Serializable
-import java.lang.invoke.{MethodHandles, VarHandle}
 import java.util.function.{IntBinaryOperator, IntUnaryOperator}
 
 import scala.annotation.tailrec
+
+import scala.scalanative.annotation.alwaysinline
+import scala.scalanative.libc.stdatomic.AtomicInt
+import scala.scalanative.libc.stdatomic.memory_order._
+import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
+import scala.scalanative.unsafe._
 
 @SerialVersionUID(6214790243416807050L)
 class AtomicInteger(private var value: Int) extends Number with Serializable {
@@ -19,13 +24,19 @@ class AtomicInteger(private var value: Int) extends Number with Serializable {
     this(0)
   }
 
+  // Pointer to field containing underlying Integer.
+  @alwaysinline
+  private[concurrent] def valueRef: AtomicInt = new AtomicInt(
+    fromRawPtr(Intrinsics.classFieldRawPtr(this, "value"))
+  )
+
   /** Returns the current value, with memory effects as specified by
    *  `VarHandle#getVolatile`.
    *
    *  @return
    *    the current value
    */
-  final def get(): Int = AtomicInteger.VALUE.getVolatile(this)
+  final def get(): Int = valueRef.load()
 
   /** Sets the value to {@code newValue}, with memory effects as specified by
    *  `VarHandle#setVolatile`.
@@ -33,7 +44,7 @@ class AtomicInteger(private var value: Int) extends Number with Serializable {
    *  @param newValue
    *    the new value
    */
-  final def set(newValue: Int): Unit = AtomicInteger.VALUE.setVolatile(this, newValue)
+  final def set(newValue: Int): Unit = valueRef.store(newValue)
 
   /** Sets the value to {@code newValue}, with memory effects as specified by
    *  `VarHandle#setRelease`.
@@ -43,7 +54,7 @@ class AtomicInteger(private var value: Int) extends Number with Serializable {
    *  @since 1.6
    */
   final def lazySet(newValue: Int): Unit = {
-    AtomicInteger.VALUE.setRelease(this, newValue)
+    valueRef.store(newValue, memory_order_release)
   }
 
   /** Atomically sets the value to {@code newValue} and returns the old value,
@@ -55,7 +66,7 @@ class AtomicInteger(private var value: Int) extends Number with Serializable {
    *    the previous value
    */
   final def getAndSet(newValue: Int): Int = {
-    AtomicInteger.VALUE.getAndSet(this, newValue)
+    valueRef.exchange(newValue)
   }
 
   /** Atomically sets the value to {@code newValue} if the current value {@code
@@ -71,7 +82,7 @@ class AtomicInteger(private var value: Int) extends Number with Serializable {
    *    was not equal to the expected value.
    */
   final def compareAndSet(expectedValue: Int, newValue: Int): Boolean = {
-    AtomicInteger.VALUE.compareAndSet(this, expectedValue, newValue)
+    valueRef.compareExchangeStrong(expectedValue, newValue)
   }
 
   /** Possibly atomically sets the value to {@code newValue} if the current
@@ -95,7 +106,7 @@ class AtomicInteger(private var value: Int) extends Number with Serializable {
    */
   @deprecated("", "9")
   final def weakCompareAndSet(expectedValue: Int, newValue: Int): Boolean = {
-    AtomicInteger.VALUE.weakCompareAndSet(this, expectedValue, newValue)
+    valueRef.compareExchangeWeak(expectedValue, newValue)
   }
 
   /** Possibly atomically sets the value to {@code newValue} if the current
@@ -114,7 +125,7 @@ class AtomicInteger(private var value: Int) extends Number with Serializable {
       expectedValue: Int,
       newValue: Int
   ): Boolean = {
-    AtomicInteger.VALUE.weakCompareAndSetPlain(this, expectedValue, newValue)
+    valueRef.compareExchangeWeak(expectedValue, newValue, memory_order_relaxed)
   }
 
   /** Atomically increments the current value, with memory effects as specified
@@ -146,7 +157,7 @@ class AtomicInteger(private var value: Int) extends Number with Serializable {
    *    the previous value
    */
   final def getAndAdd(delta: Int): Int = {
-    AtomicInteger.VALUE.getAndAdd(this, delta)
+    valueRef.fetchAdd(delta)
   }
 
   /** Atomically increments the current value, with memory effects as specified
@@ -177,7 +188,7 @@ class AtomicInteger(private var value: Int) extends Number with Serializable {
    *  @return
    *    the updated value
    */
-  final def addAndGet(delta: Int): Int = (AtomicInteger.VALUE.getAndAdd(this, delta): Int) + delta
+  final def addAndGet(delta: Int): Int = valueRef.fetchAdd(delta) + delta
 
   /** Atomically updates (with memory effects as specified by
    *  `VarHandle#compareAndSet`) the current value with the results of applying
@@ -364,7 +375,7 @@ class AtomicInteger(private var value: Int) extends Number with Serializable {
    *    the value
    *  @since 9
    */
-  final def getOpaque(): Int = AtomicInteger.VALUE.getOpaque(this)
+  final def getOpaque(): Int = valueRef.load(memory_order_relaxed)
 
   /** Sets the value to {@code newValue}, with memory effects as specified by
    *  `VarHandle#setOpaque`.
@@ -374,7 +385,7 @@ class AtomicInteger(private var value: Int) extends Number with Serializable {
    *  @since 9
    */
   final def setOpaque(newValue: Int): Unit =
-    AtomicInteger.VALUE.setOpaque(this, newValue)
+    valueRef.store(newValue, memory_order_relaxed)
 
   /** Returns the current value, with memory effects as specified by
    *  `VarHandle#getAcquire`.
@@ -383,7 +394,7 @@ class AtomicInteger(private var value: Int) extends Number with Serializable {
    *    the value
    *  @since 9
    */
-  final def getAcquire(): Int = AtomicInteger.VALUE.getAcquire(this)
+  final def getAcquire(): Int = valueRef.load(memory_order_acquire)
 
   /** Sets the value to {@code newValue}, with memory effects as specified by
    *  `VarHandle#setRelease`.
@@ -393,7 +404,7 @@ class AtomicInteger(private var value: Int) extends Number with Serializable {
    *  @since 9
    */
   final def setRelease(newValue: Int): Unit =
-    AtomicInteger.VALUE.setRelease(this, newValue)
+    valueRef.store(newValue, memory_order_release)
 
   /** Atomically sets the value to {@code newValue} if the current value,
    *  referred to as the <em>witness value</em>, {@code == expectedValue}, with
@@ -408,8 +419,13 @@ class AtomicInteger(private var value: Int) extends Number with Serializable {
    *    successful
    *  @since 9
    */
-  final def compareAndExchange(expectedValue: Int, newValue: Int): Int =
-    AtomicInteger.VALUE.compareAndExchange(this, expectedValue, newValue)
+  final def compareAndExchange(expectedValue: Int, newValue: Int): Int = {
+    val expected = stackalloc[Int]()
+    !expected = expectedValue
+    valueRef
+      .compareExchangeStrong(expected, newValue)
+    !expected
+  }
 
   /** Atomically sets the value to {@code newValue} if the current value,
    *  referred to as the <em>witness value</em>, {@code == expectedValue}, with
@@ -427,8 +443,13 @@ class AtomicInteger(private var value: Int) extends Number with Serializable {
   final def compareAndExchangeAcquire(
       expectedValue: Int,
       newValue: Int
-  ): Int =
-    AtomicInteger.VALUE.compareAndExchangeAcquire(this, expectedValue, newValue)
+  ): Int = {
+    val expected = stackalloc[Int]()
+    !expected = expectedValue
+    valueRef
+      .compareExchangeStrong(expected, newValue, memory_order_acquire)
+    !expected
+  }
 
   /** Atomically sets the value to {@code newValue} if the current value,
    *  referred to as the <em>witness value</em>, {@code == expectedValue}, with
@@ -446,8 +467,13 @@ class AtomicInteger(private var value: Int) extends Number with Serializable {
   final def compareAndExchangeRelease(
       expectedValue: Int,
       newValue: Int
-  ): Int =
-    AtomicInteger.VALUE.compareAndExchangeRelease(this, expectedValue, newValue)
+  ): Int = {
+    val expected = stackalloc[Int]()
+    !expected = expectedValue
+    valueRef
+      .compareExchangeStrong(expected, newValue, memory_order_release)
+    !expected
+  }
 
   /** Possibly atomically sets the value to {@code newValue} if the current
    *  value {@code == expectedValue}, with memory effects as specified by
@@ -465,7 +491,7 @@ class AtomicInteger(private var value: Int) extends Number with Serializable {
       expectedValue: Int,
       newValue: Int
   ): Boolean = {
-    AtomicInteger.VALUE.weakCompareAndSet(this, expectedValue, newValue)
+    valueRef.compareExchangeWeak(expectedValue, newValue)
   }
 
   /** Possibly atomically sets the value to {@code newValue} if the current
@@ -484,7 +510,8 @@ class AtomicInteger(private var value: Int) extends Number with Serializable {
       expectedValue: Int,
       newValue: Int
   ): Boolean = {
-    AtomicInteger.VALUE.weakCompareAndSetAcquire(this, expectedValue, newValue)
+    valueRef
+      .compareExchangeWeak(expectedValue, newValue, memory_order_acquire)
   }
 
   /** Possibly atomically sets the value to {@code newValue} if the current
@@ -503,13 +530,7 @@ class AtomicInteger(private var value: Int) extends Number with Serializable {
       expectedValue: Int,
       newValue: Int
   ): Boolean = {
-    AtomicInteger.VALUE.weakCompareAndSetRelease(this, expectedValue, newValue)
+    valueRef
+      .compareExchangeWeak(expectedValue, newValue, memory_order_release)
   }
-}
-
-object AtomicInteger {
-  private val VALUE: VarHandle = MethodHandles
-    .privateLookupIn(classOf[AtomicInteger], MethodHandles.lookup())
-    .findVarHandle(classOf[AtomicInteger], "value", classOf[Int])
-
 }

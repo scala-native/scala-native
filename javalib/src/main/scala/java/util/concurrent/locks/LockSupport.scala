@@ -6,15 +6,14 @@
 
 package java.util.concurrent.locks
 
-import java.lang.invoke.{MethodHandles, VarHandle}
 import java.util.concurrent.TimeUnit
 
 import scala.scalanative.annotation.alwaysinline
+import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
+import scala.scalanative.runtime.{NativeThread, fromRawPtr}
+import scala.scalanative.unsafe.Ptr
 
 object LockSupport {
-  private val PARK_BLOCKER: VarHandle = MethodHandles
-    .privateLookupIn(classOf[Thread], MethodHandles.lookup())
-    .findVarHandle(classOf[Thread], "parkBlocker", classOf[Object])
 
   def getBlocker(t: Thread): Object = t.parkBlocker
 
@@ -67,10 +66,13 @@ object LockSupport {
       }
   }
 
+  @alwaysinline private def parkBlockerRef(thread: Thread): Ptr[Object] =
+    fromRawPtr(classFieldRawPtr(thread, "parkBlocker"))
+
   @alwaysinline private def setBlocker(
       thread: Thread,
       blocker: Object
-  ): Unit = PARK_BLOCKER.set(thread, blocker)
+  ): Unit = !parkBlockerRef(thread) = blocker
 
   @alwaysinline def setCurrentBlocker(blocker: Object): Unit =
     setBlocker(Thread.currentThread(), blocker)

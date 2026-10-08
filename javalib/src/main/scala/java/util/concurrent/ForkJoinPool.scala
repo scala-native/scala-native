@@ -8,7 +8,7 @@
 package java.util.concurrent
 
 import java.lang.Thread.UncaughtExceptionHandler
-import java.lang.invoke.{MethodHandles, VarHandle}
+import java.lang.invoke.VarHandle
 import java.util.concurrent.ForkJoinPool.WorkQueue.getAndClearSlot
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.{Condition, LockSupport, ReentrantLock}
@@ -16,8 +16,9 @@ import java.util.function.Predicate
 import java.util.{ArrayList, Collection, Collections, List, concurrent}
 
 import scala.scalanative.annotation._
-import scala.scalanative.libc.stdatomic.AtomicRef
-import scala.scalanative.runtime.ObjectArray
+import scala.scalanative.libc.stdatomic.memory_order._
+import scala.scalanative.libc.stdatomic.{AtomicInt, AtomicLongLong, AtomicRef}
+import scala.scalanative.runtime.{Intrinsics, ObjectArray, fromRawPtr}
 import scala.scalanative.unsafe._
 
 import ForkJoinPool._
@@ -49,22 +50,40 @@ class ForkJoinPool private (
 
   // Support for atomic operations
 
-  @alwaysinline private def compareAndSetCtl(c: Long, v: Long): Boolean =
-    ForkJoinPool.CTL.compareAndSet(this, c, v)
+  @alwaysinline private def ctlAtomic = new AtomicLongLong(
+    fromRawPtr(Intrinsics.classFieldRawPtr(this, "ctl"))
+  )
+  @alwaysinline private def runStateAtomic = new AtomicInt(
+    fromRawPtr(Intrinsics.classFieldRawPtr(this, "runState"))
+  )
+  @alwaysinline private def threadIdsAtomic = new AtomicLongLong(
+    fromRawPtr(Intrinsics.classFieldRawPtr(this, "threadIds"))
+  )
+  @alwaysinline private def parallelismAtomic = new AtomicInt(
+    fromRawPtr(Intrinsics.classFieldRawPtr(this, "parallelism"))
+  )
+
   @alwaysinline
-  private def compareAndExchangeCtl(c: Long, v: Long): Long =
-    ForkJoinPool.CTL.compareAndExchange(this, c, v)
+  private def compareAndSetCtl(c: Long, v: Long): Boolean =
+    ctlAtomic.compareExchangeStrong(c, v)
   @alwaysinline
-  private def getAndAddCtl(v: Long): Long = ForkJoinPool.CTL.getAndAdd(this, v)
+  private def compareAndExchangeCtl(c: Long, v: Long): Long = {
+    val expected = stackalloc[Long]()
+    !expected = c
+    ctlAtomic.compareExchangeStrong(expected, v)
+    !expected
+  }
   @alwaysinline
-  private def getAndBitwiseOrRunState(v: Int): Int = ForkJoinPool.RUNSTATE.getAndBitwiseOr(this, v)
+  private def getAndAddCtl(v: Long): Long = ctlAtomic.fetchAdd(v)
   @alwaysinline
-  private def incrementThreadIds(): Long = ForkJoinPool.THREADIDS.getAndAdd(this, 1L)
+  private def getAndBitwiseOrRunState(v: Int): Int = runStateAtomic.fetchOr(v)
   @alwaysinline
-  private def getAndSetParallelism(v: Int): Int = ForkJoinPool.PARALLELISM.getAndSet(this, v)
+  private def incrementThreadIds(): Long = threadIdsAtomic.fetchAdd(1L)
+  @alwaysinline
+  private def getAndSetParallelism(v: Int): Int = parallelismAtomic.exchange(v)
   @alwaysinline
   private def getParallelismOpaque(): Int =
-    ForkJoinPool.PARALLELISM.getOpaque(this)
+    parallelismAtomic.load(memory_order_relaxed)
 
   // Creating, registering, and deregistering workers
 
@@ -1477,34 +1496,6 @@ class ForkJoinPool private (
 }
 
 object ForkJoinPool {
-  private val CTL: VarHandle = MethodHandles
-    .privateLookupIn(classOf[ForkJoinPool], MethodHandles.lookup())
-    .findVarHandle(classOf[ForkJoinPool], "ctl", classOf[Long])
-
-  private val RUNSTATE: VarHandle = MethodHandles
-    .privateLookupIn(classOf[ForkJoinPool], MethodHandles.lookup())
-    .findVarHandle(classOf[ForkJoinPool], "runState", classOf[Int])
-
-  private val THREADIDS: VarHandle = MethodHandles
-    .privateLookupIn(classOf[ForkJoinPool], MethodHandles.lookup())
-    .findVarHandle(classOf[ForkJoinPool], "threadIds", classOf[Long])
-
-  private val PARALLELISM: VarHandle = MethodHandles
-    .privateLookupIn(classOf[ForkJoinPool], MethodHandles.lookup())
-    .findVarHandle(classOf[ForkJoinPool], "parallelism", classOf[Int])
-
-  private val WorkQueue_BASE: VarHandle = MethodHandles
-    .privateLookupIn(classOf[ForkJoinPool.WorkQueue], MethodHandles.lookup())
-    .findVarHandle(classOf[ForkJoinPool.WorkQueue], "base", classOf[Int])
-
-  private val WorkQueue_PHASE: VarHandle = MethodHandles
-    .privateLookupIn(classOf[ForkJoinPool.WorkQueue], MethodHandles.lookup())
-    .findVarHandle(classOf[ForkJoinPool.WorkQueue], "phase", classOf[Int])
-
-  private val WorkQueue_ACCESS: VarHandle = MethodHandles
-    .privateLookupIn(classOf[ForkJoinPool.WorkQueue], MethodHandles.lookup())
-    .findVarHandle(classOf[ForkJoinPool.WorkQueue], "access", classOf[Int])
-
   // align has the same characteristics as JVM Contended
   private type Contended = scala.scalanative.annotation.align
 
@@ -1625,13 +1616,22 @@ object ForkJoinPool {
       this.top = 1
     }
 
-    @alwaysinline final def forcePhaseActive(): Unit =
-      ForkJoinPool.WorkQueue_PHASE.getAndBitwiseAnd(this, 0x7fffffff
+    @alwaysinline def baseAtomic = new AtomicInt(
+      fromRawPtr[Int](Intrinsics.classFieldRawPtr(this, "base"))
     )
+    @alwaysinline def phaseAtomic = new AtomicInt(
+      fromRawPtr[Int](Intrinsics.classFieldRawPtr(this, "phase"))
+    )
+    @alwaysinline def accessAtomic = new AtomicInt(
+      fromRawPtr[Int](Intrinsics.classFieldRawPtr(this, "access"))
+    )
+
+    @alwaysinline final def forcePhaseActive(): Unit =
+      phaseAtomic.fetchAnd(0x7fffffff)
     @alwaysinline final def getAndSetAccess(v: Int): Int =
-      ForkJoinPool.WorkQueue_ACCESS.getAndSet(this, v)
+      accessAtomic.exchange(v)
     @alwaysinline final def releaseAccess(): Unit =
-      ForkJoinPool.WorkQueue_ACCESS.setVolatile(this, 0)
+      accessAtomic.store(0)
 
     final def getPoolIndex(): Int =
       (config & 0xffff) >>> 1 // ignore odd/even tag bit

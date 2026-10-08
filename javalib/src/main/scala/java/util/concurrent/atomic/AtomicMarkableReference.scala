@@ -6,13 +6,12 @@
 
 package java.util.concurrent.atomic
 
-import java.lang.invoke.{MethodHandles, VarHandle}
+import scala.scalanative.annotation.alwaysinline
+import scala.scalanative.libc.stdatomic.AtomicRef
+import scala.scalanative.libc.stdatomic.memory_order._
+import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
 
 object AtomicMarkableReference {
-  private val VALUE: VarHandle = MethodHandles
-    .privateLookupIn(classOf[AtomicMarkableReference[_]], MethodHandles.lookup())
-    .findVarHandle(classOf[AtomicMarkableReference[_]], "value", classOf[MarkableReference[_]])
-
   private[concurrent] case class MarkableReference[T <: AnyRef](
       reference: T,
       mark: Boolean
@@ -28,19 +27,27 @@ class AtomicMarkableReference[V <: AnyRef](
     this(MarkableReference(initialRef, initialMark))
   }
 
+  // Pointer to field containing underlying MarkableReference.
+  @alwaysinline
+  private[concurrent] def valueRef: AtomicRef[MarkableReference[V]] = {
+    new AtomicRef(
+      fromRawPtr(Intrinsics.classFieldRawPtr(this, "value"))
+    )
+  }
+
   /** Returns the current value of the reference.
    *
    *  @return
    *    the current value of the reference
    */
-  def getReference(): V = (AtomicMarkableReference.VALUE.getVolatile(this): MarkableReference[V]).reference
+  def getReference(): V = valueRef.load().reference
 
   /** Returns the current value of the mark.
    *
    *  @return
    *    the current value of the mark
    */
-  def isMarked(): Boolean = (AtomicMarkableReference.VALUE.getVolatile(this): MarkableReference[V]).mark
+  def isMarked(): Boolean = valueRef.load().mark
 
   /** Returns the current values of both the reference and the mark. Typical
    *  usage is {@code boolean[1] holder; ref = v.get(holder);}.
@@ -52,7 +59,7 @@ class AtomicMarkableReference[V <: AnyRef](
    *    the current value of the reference
    */
   def get(markHolder: Array[Boolean]): V = {
-    val current = (AtomicMarkableReference.VALUE.getVolatile(this): MarkableReference[V])
+    val current = valueRef.load()
     markHolder(0) = current.mark
     current.reference
   }
@@ -103,16 +110,16 @@ class AtomicMarkableReference[V <: AnyRef](
       expectedMark: Boolean,
       newMark: Boolean
   ): Boolean = {
-    val current = (AtomicMarkableReference.VALUE.getVolatile(this): MarkableReference[V])
+    val current = valueRef.load()
 
     (expectedReference eq current.reference) &&
       expectedMark == current.mark && {
         ((newReference eq current.reference) && newMark == current.mark) ||
-        AtomicMarkableReference.VALUE.compareAndSet(
-          this,
-          current,
-          MarkableReference(newReference, newMark)
-        )
+        valueRef
+          .compareExchangeStrong(
+            current,
+            MarkableReference(newReference, newMark)
+          )
       }
   }
 
@@ -124,12 +131,9 @@ class AtomicMarkableReference[V <: AnyRef](
    *    the new value for the mark
    */
   def set(newReference: V, newMark: Boolean): Unit = {
-    val current = (AtomicMarkableReference.VALUE.getVolatile(this): MarkableReference[V])
+    val current = valueRef.load()
     if ((newReference ne current.reference) || newMark != current.mark) {
-      AtomicMarkableReference.VALUE.setVolatile(
-        this,
-        MarkableReference(newReference, newMark)
-      )
+      valueRef.store(MarkableReference(newReference, newMark))
     }
   }
 
@@ -148,14 +152,14 @@ class AtomicMarkableReference[V <: AnyRef](
    *    {@code true} if successful
    */
   def attemptMark(expectedReference: V, newMark: Boolean): Boolean = {
-    val current = (AtomicMarkableReference.VALUE.getVolatile(this): MarkableReference[V])
+    val current = valueRef.load()
     (expectedReference eq current.reference) && {
       newMark == current.mark ||
-      AtomicMarkableReference.VALUE.compareAndSet(
-        this,
-        current,
-        MarkableReference(expectedReference, newMark)
-      )
+      valueRef
+        .compareExchangeStrong(
+          current,
+          MarkableReference(expectedReference, newMark)
+        )
     }
   }
 

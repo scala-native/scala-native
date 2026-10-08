@@ -15,13 +15,14 @@
 
 package java.util.concurrent
 
-import java.lang.invoke.{MethodHandles, VarHandle}
 import java.util.concurrent.locks.LockSupport
 
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.libc.stdatomic.AtomicRef
-import scala.scalanative.libc.stdatomic.memory_order.{memory_order_acquire, memory_order_release}
-import scala.scalanative.runtime.ObjectArray
+import scala.scalanative.libc.stdatomic.memory_order.{
+  memory_order_acquire, memory_order_release
+}
+import scala.scalanative.libc.stdatomic.{AtomicInt, AtomicRef}
+import scala.scalanative.runtime.{Intrinsics, ObjectArray, fromRawPtr}
 import scala.scalanative.unsafe.Ptr
 /*
  * A synchronization point at which threads can pair and swap elements
@@ -88,17 +89,6 @@ import scala.scalanative.unsafe.Ptr
  */
 
 object Exchanger {
-  private val Node_MATCH: VarHandle = MethodHandles
-    .privateLookupIn(classOf[Exchanger.Node], MethodHandles.lookup())
-    .findVarHandle(classOf[Exchanger.Node], "match", classOf[Object])
-
-  private val SLOT: VarHandle = MethodHandles
-    .privateLookupIn(classOf[Exchanger[_]], MethodHandles.lookup())
-    .findVarHandle(classOf[Exchanger[_]], "slot", classOf[Exchanger.Node])
-
-  private val BOUND: VarHandle = MethodHandles
-    .privateLookupIn(classOf[Exchanger[_]], MethodHandles.lookup())
-    .findVarHandle(classOf[Exchanger[_]], "bound", classOf[Int])
 
   // SN: see near essential original "Overview" note preserved at top of
   //     companion class below.
@@ -174,8 +164,12 @@ object Exchanger {
     // Item provided by releasing thread
     @volatile var `match`: Object = _
 
+    @alwaysinline private[Exchanger] def atomicMatch = new AtomicRef[Object](
+      fromRawPtr(Intrinsics.classFieldRawPtr(this, "match"))
+    )
+
     def setMatchRelease(v: Object): Unit = {
-      Exchanger.Node_MATCH.setRelease(this, v)
+      atomicMatch.store(v, memory_order_release)
     }
 
     // Set to this thread when parked, else null
@@ -371,6 +365,10 @@ class Exchanger[V <: AnyRef] {
    */
   @volatile private[Exchanger] var slot: Node = _
 
+  @alwaysinline private def atomicSlot = new AtomicRef[Node](
+    fromRawPtr(Intrinsics.classFieldRawPtr(this, "slot"))
+  )
+
   /*
    * The index of the largest valid arena position, OR'ed with SEQ
    * number in high bits, incremented on each update.  The initial
@@ -378,6 +376,10 @@ class Exchanger[V <: AnyRef] {
    * constructed only once.
    */
   @volatile private[Exchanger] var bound: Int = _
+
+  @alwaysinline private def atomicBound = new AtomicInt(
+    fromRawPtr(Intrinsics.classFieldRawPtr(this, "bound"))
+  )
 
   /*
    * Exchange function when arenas enabled. See above for explanation.
@@ -462,7 +464,7 @@ class Exchanger[V <: AnyRef] {
             } else if (arrayGetAcquire(a, j) == p &&
                 arrayCompareAndSet(a, j, p, null)) {
               if (m != 0) // try to shrink
-                Exchanger.BOUND.compareAndSet(this, b, b + SEQ - 1)
+                atomicBound.compareExchangeStrong(b, b + SEQ - 1)
               p.item = null
               p.hash = h
               i = { p.index >>>= 1; p.index } // descend
@@ -485,7 +487,7 @@ class Exchanger[V <: AnyRef] {
             if (i != m || m == 0) m
             else m - 1
         } else if ({ c = p.collides; c } < m || m == FULL ||
-            Exchanger.BOUND.compareAndSet(this, b, b + SEQ + 1)) {
+            atomicBound.compareExchangeStrong(b, b + SEQ + 1)) {
 
           p.collides = c + 1
           i =
@@ -528,7 +530,7 @@ class Exchanger[V <: AnyRef] {
 
     while (!breakSeen) {
       if ({ q = slot; q } != null) {
-        if (Exchanger.SLOT.compareAndSet(this, q, (null: Node))) {
+        if (atomicSlot.compareExchangeStrong(q, null)) {
           val v = q.item
           q.`match` = item
           val w = q.parked
@@ -539,14 +541,14 @@ class Exchanger[V <: AnyRef] {
 
         // create arena on contention, but continue until slot null
         if (NCPU > 1 && bound == 0 &&
-            Exchanger.BOUND.compareAndSet(this, 0, SEQ)) {
+            atomicBound.compareExchangeStrong(0, SEQ)) {
           arena = new Array[Node]({ (FULL + 2) << ASHIFT })
         }
       } else if (arena != null) {
         return null // caller must reroute to arenaExchange
       } else {
         p.item = item
-        if (Exchanger.SLOT.compareAndSet(this, null.asInstanceOf[Node], p))
+        if (atomicSlot.compareExchangeStrong(null.asInstanceOf[Node], p))
           breakSeen = true
         else
           p.item = null
@@ -588,7 +590,7 @@ class Exchanger[V <: AnyRef] {
             LockSupport.parkNanos(this, nanos)
         }
         p.parked = null
-      } else if (Exchanger.SLOT.compareAndSet(this, p, (null: Node))) {
+      } else if (atomicSlot.compareExchangeStrong(p, null)) {
         v =
           if (timed && nanos <= 0L && !t.isInterrupted()) TIMED_OUT
           else null

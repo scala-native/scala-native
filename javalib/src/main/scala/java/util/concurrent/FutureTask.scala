@@ -5,24 +5,13 @@
  */
 
 package java.util.concurrent
-import java.lang.invoke.{MethodHandles, VarHandle}
 import java.util.concurrent.locks.LockSupport
 
 import scalanative.libc.stdatomic.memory_order._
+import scalanative.libc.stdatomic.{AtomicInt, AtomicRef}
+import scalanative.runtime.{Intrinsics, fromRawPtr}
 
 object FutureTask {
-  private val _STATE: VarHandle = MethodHandles
-    .privateLookupIn(classOf[FutureTask[_]], MethodHandles.lookup())
-    .findVarHandle(classOf[FutureTask[_]], "_state", classOf[Int])
-
-  private val RUNNER: VarHandle = MethodHandles
-    .privateLookupIn(classOf[FutureTask[_]], MethodHandles.lookup())
-    .findVarHandle(classOf[FutureTask[_]], "runner", classOf[Thread])
-
-  private val WAITERS: VarHandle = MethodHandles
-    .privateLookupIn(classOf[FutureTask[_]], MethodHandles.lookup())
-    .findVarHandle(classOf[FutureTask[_]], "waiters", classOf[FutureTask.WaitNode])
-
   private final val NEW = 0
   private final val COMPLETING = 1
   private final val NORMAL = 2
@@ -50,6 +39,16 @@ class FutureTask[V <: AnyRef](private var callable: Callable[V])
 
   private var outcome: AnyRef = _
 
+  private val atomicState = new AtomicInt(
+    fromRawPtr(Intrinsics.classFieldRawPtr(this, "_state"))
+  )
+  private val atomicRunner = new AtomicRef[Thread](
+    fromRawPtr(Intrinsics.classFieldRawPtr(this, "runner"))
+  )
+  private val atomicWaiters = new AtomicRef[WaitNode](
+    fromRawPtr(Intrinsics.classFieldRawPtr(this, "waiters"))
+  )
+
   @throws[ExecutionException]
   private def report(s: Int): V = {
     val x = outcome
@@ -66,12 +65,12 @@ class FutureTask[V <: AnyRef](private var callable: Callable[V])
   override def cancel(mayInterruptIfRunning: Boolean): Boolean = {
     def newState = if (mayInterruptIfRunning) INTERRUPTING else CANCELLED
     if (!(_state == NEW &&
-          FutureTask._STATE.compareAndSet(this, NEW, newState))) return false
+          atomicState.compareExchangeStrong(NEW, newState))) return false
     try { // in case call to interrupt throws exception
       if (mayInterruptIfRunning) try {
         val t = runner
         if (t != null) t.interrupt()
-      } finally FutureTask._STATE.setRelease(this, INTERRUPTED)
+      } finally atomicState.store(INTERRUPTED, memory_order_release)
     } finally finishCompletion()
     true
   }
@@ -132,23 +131,25 @@ class FutureTask[V <: AnyRef](private var callable: Callable[V])
   protected def done(): Unit = {}
 
   protected def set(v: V): Unit = {
-    if (FutureTask._STATE.compareAndSet(this, NEW, COMPLETING)) {
+    if (atomicState.compareExchangeStrong(NEW, COMPLETING)) {
       outcome = v
-      FutureTask._STATE.setRelease(this, NORMAL)
+      atomicState.store(NORMAL, memory_order_release)
       finishCompletion()
     }
   }
 
   protected def setException(t: Throwable): Unit = {
-    if (FutureTask._STATE.compareAndSet(this, NEW, COMPLETING)) {
+    if (atomicState.compareExchangeStrong(NEW, COMPLETING)) {
       outcome = t
-      FutureTask._STATE.setRelease(this, EXCEPTIONAL)
+      atomicState.store(EXCEPTIONAL, memory_order_release)
       finishCompletion()
     }
   }
   override def run(): Unit = {
-    if (_state != NEW || !FutureTask.RUNNER.compareAndSet(this, (null: Thread), Thread.currentThread()))
-      return ()
+    if (_state != NEW || !atomicRunner.compareExchangeStrong(
+          null: Thread,
+          Thread.currentThread()
+        )) return ()
     try {
       val c = callable
       if (c != null && _state == NEW) {
@@ -176,8 +177,10 @@ class FutureTask[V <: AnyRef](private var callable: Callable[V])
   }
 
   protected def runAndReset(): Boolean = {
-    if (_state != NEW || !FutureTask.RUNNER.compareAndSet(this, (null: Thread), Thread.currentThread()))
-      return false
+    if (_state != NEW || !atomicRunner.compareExchangeStrong(
+          null: Thread,
+          Thread.currentThread()
+        )) return false
     var ran = false
     var s = _state
     try {
@@ -216,7 +219,7 @@ class FutureTask[V <: AnyRef](private var callable: Callable[V])
     var q = waiters
     var break = false
     while (!break && { q = waiters; q != null })
-      if (FutureTask.WAITERS.weakCompareAndSet(this, q, (null: WaitNode))) {
+      if (atomicWaiters.compareExchangeWeak(q, null: WaitNode)) {
         while (!break) {
           val t = q.thread
           if (t != null) {
@@ -264,7 +267,7 @@ class FutureTask[V <: AnyRef](private var callable: Callable[V])
         q = new WaitNode
       } else if (!queued) {
         q.next = waiters
-        queued = FutureTask.WAITERS.weakCompareAndSet(this, waiters, q)
+        queued = atomicWaiters.compareExchangeWeak(waiters, q)
       } else if (timed) {
         var parkNanos = 0L
         if (startTime == 0L) { // first time
@@ -303,7 +306,7 @@ class FutureTask[V <: AnyRef](private var callable: Callable[V])
             if (pred.thread == null) { // check for race
               continue = true
             }
-          } else if (!FutureTask.WAITERS.compareAndSet(this, q, s)) {
+          } else if (!atomicWaiters.compareExchangeStrong(q, s)) {
             continue = true
           }
           if (!continue) {

@@ -7,7 +7,7 @@
 package java.util.concurrent
 
 import java.io.Serializable
-import java.lang.invoke.{MethodHandles, VarHandle}
+import java.lang.invoke.VarHandle
 import java.util._
 import java.util.concurrent.locks.LockSupport
 
@@ -15,6 +15,7 @@ import scala.annotation.tailrec
 
 import scala.scalanative.annotation.{alwaysinline, safePublish}
 import scala.scalanative.libc.stdatomic._
+import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
 
 abstract class ForkJoinTask[V]() extends Future[V] with Serializable {
   import ForkJoinTask._
@@ -25,12 +26,18 @@ abstract class ForkJoinTask[V]() extends Future[V] with Serializable {
   @volatile private var aux: Aux = _ // either waiters or thrown Exception
 
   // Support for atomic operations
+  private def statusAtomic = new AtomicInt(
+    fromRawPtr(Intrinsics.classFieldRawPtr(this, "status"))
+  )
+  private def auxAtomic = new AtomicRef[Aux](
+    fromRawPtr(Intrinsics.classFieldRawPtr(this, "aux"))
+  )
   @alwaysinline private def getAndBitwiseOrStatus(v: Int): Int =
-    ForkJoinTask.STATUS.getAndBitwiseOr(this, v)
+    statusAtomic.fetchOr(v)
   @alwaysinline private def casStatus(expected: Int, value: Int): Boolean =
-    ForkJoinTask.STATUS.compareAndSet(this, expected, value)
+    statusAtomic.compareExchangeStrong(expected, value)
   @alwaysinline private def casAux(c: Aux, v: Aux): Boolean =
-    ForkJoinTask.AUX.compareAndSet(this, c, v)
+    auxAtomic.compareExchangeStrong(c, v)
 
   private[concurrent] final def markPoolSubmission(): Unit =
     getAndBitwiseOrStatus(POOLSUBMIT)
@@ -444,17 +451,6 @@ abstract class ForkJoinTask[V]() extends Future[V] with Serializable {
 }
 
 object ForkJoinTask {
-  private val STATUS: VarHandle = MethodHandles
-    .privateLookupIn(classOf[ForkJoinTask[_]], MethodHandles.lookup())
-    .findVarHandle(classOf[ForkJoinTask[_]], "status", classOf[Int])
-
-  private val AUX: VarHandle = MethodHandles
-    .privateLookupIn(classOf[ForkJoinTask[_]], MethodHandles.lookup())
-    .findVarHandle(classOf[ForkJoinTask[_]], "aux", classOf[ForkJoinTask.Aux])
-
-  private val Aux_NEXT: VarHandle = MethodHandles
-    .privateLookupIn(classOf[ForkJoinTask.Aux], MethodHandles.lookup())
-    .findVarHandle(classOf[ForkJoinTask.Aux], "next", classOf[ForkJoinTask.Aux])
 
   @safePublish
   private[concurrent] final class Aux(
@@ -462,7 +458,9 @@ object ForkJoinTask {
       val ex: Throwable // null if a waiter
   ) {
     var next: Aux = _ // accessed only via memory-acquire chains
-    final def casNext(c: Aux, v: Aux) = ForkJoinTask.Aux_NEXT.compareAndSet(this, c, v)
+    private final def nextAtomic =
+      new AtomicRef[Aux](fromRawPtr(Intrinsics.classFieldRawPtr(this, "next")))
+    final def casNext(c: Aux, v: Aux) = nextAtomic.compareExchangeStrong(c, v)
   }
 
   private final val DONE = 1 << 31 // must be negative

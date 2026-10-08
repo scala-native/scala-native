@@ -6,12 +6,14 @@
  */
 package java.util.concurrent
 
-import java.lang.invoke.{MethodHandles, VarHandle}
 import java.util
 import java.util._
 import java.util.concurrent.locks._
 
 import scala.scalanative.annotation.safePublish
+import scala.scalanative.libc.stdatomic.AtomicRef
+import scala.scalanative.libc.stdatomic.memory_order._
+import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
 
 /** A {@linkplain BlockingQueue blocking queue} in which each insert operation
  *  must wait for a corresponding remove operation by another thread, and vice
@@ -52,61 +54,6 @@ import scala.scalanative.annotation.safePublish
  */
 @SerialVersionUID(-3223113410248163686L)
 object SynchronousQueue {
-  private val TransferStack_SNode_MATCH: VarHandle = MethodHandles
-    .privateLookupIn(classOf[SynchronousQueue.TransferStack.SNode], MethodHandles.lookup())
-    .findVarHandle(
-      classOf[SynchronousQueue.TransferStack.SNode],
-      "match",
-      classOf[SynchronousQueue.TransferStack.SNode]
-    )
-
-  private val TransferStack_SNode_NEXT: VarHandle = MethodHandles
-    .privateLookupIn(classOf[SynchronousQueue.TransferStack.SNode], MethodHandles.lookup())
-    .findVarHandle(
-      classOf[SynchronousQueue.TransferStack.SNode],
-      "next",
-      classOf[SynchronousQueue.TransferStack.SNode]
-    )
-
-  private val TransferStack_SNode_WAITER: VarHandle = MethodHandles
-    .privateLookupIn(classOf[SynchronousQueue.TransferStack.SNode], MethodHandles.lookup())
-    .findVarHandle(classOf[SynchronousQueue.TransferStack.SNode], "waiter", classOf[Thread])
-
-  private val TransferStack_HEAD: VarHandle = MethodHandles
-    .privateLookupIn(classOf[SynchronousQueue.TransferStack[_]], MethodHandles.lookup())
-    .findVarHandle(classOf[SynchronousQueue.TransferStack[_]], "head", classOf[SynchronousQueue.TransferStack.SNode])
-
-  private val TransferQueue_QNode_ITEM: VarHandle = MethodHandles
-    .privateLookupIn(classOf[SynchronousQueue.TransferQueue.QNode], MethodHandles.lookup())
-    .findVarHandle(classOf[SynchronousQueue.TransferQueue.QNode], "item", classOf[Object])
-
-  private val TransferQueue_QNode_NEXT: VarHandle = MethodHandles
-    .privateLookupIn(classOf[SynchronousQueue.TransferQueue.QNode], MethodHandles.lookup())
-    .findVarHandle(
-      classOf[SynchronousQueue.TransferQueue.QNode],
-      "next",
-      classOf[SynchronousQueue.TransferQueue.QNode]
-    )
-
-  private val TransferQueue_QNode_WAITER: VarHandle = MethodHandles
-    .privateLookupIn(classOf[SynchronousQueue.TransferQueue.QNode], MethodHandles.lookup())
-    .findVarHandle(classOf[SynchronousQueue.TransferQueue.QNode], "waiter", classOf[Thread])
-
-  private val TransferQueue_HEAD: VarHandle = MethodHandles
-    .privateLookupIn(classOf[SynchronousQueue.TransferQueue[_]], MethodHandles.lookup())
-    .findVarHandle(classOf[SynchronousQueue.TransferQueue[_]], "head", classOf[SynchronousQueue.TransferQueue.QNode])
-
-  private val TransferQueue_TAIL: VarHandle = MethodHandles
-    .privateLookupIn(classOf[SynchronousQueue.TransferQueue[_]], MethodHandles.lookup())
-    .findVarHandle(classOf[SynchronousQueue.TransferQueue[_]], "tail", classOf[SynchronousQueue.TransferQueue.QNode])
-
-  private val TransferQueue_CLEANME: VarHandle = MethodHandles
-    .privateLookupIn(classOf[SynchronousQueue.TransferQueue[_]], MethodHandles.lookup())
-    .findVarHandle(
-      classOf[SynchronousQueue.TransferQueue[_]],
-      "cleanMe",
-      classOf[SynchronousQueue.TransferQueue.QNode]
-    )
 
   private[concurrent] abstract class Transferer[E] {
 
@@ -134,16 +81,26 @@ object SynchronousQueue {
       @volatile var `match`: SNode = _ // the node matched to this
       @volatile var waiter: Thread = _ // to control park/unpark
 
+      val atomicMatch = new AtomicRef[SNode](
+        fromRawPtr(Intrinsics.classFieldRawPtr(this, "match"))
+      )
+      val atomicNext = new AtomicRef[SNode](
+        fromRawPtr(Intrinsics.classFieldRawPtr(this, "next"))
+      )
+      val atomicWaiter = new AtomicRef[Thread](
+        fromRawPtr(Intrinsics.classFieldRawPtr(this, "waiter"))
+      )
+
       private[concurrent] var mode = 0
       private[concurrent] def casNext(
           cmp: TransferStack.SNode,
           `val`: TransferStack.SNode
-      ): Boolean = (cmp eq next) && SynchronousQueue.TransferStack_SNode_NEXT.compareAndSet(this, cmp, `val`)
+      ): Boolean = (cmp eq next) && atomicNext.compareExchangeStrong(cmp, `val`)
 
       private[concurrent] def tryMatch(s: TransferStack.SNode): Boolean = {
         val m = `match`
         if (m == null)
-          if (SynchronousQueue.TransferStack_SNode_MATCH.compareAndSet(this, (null: SNode), s)) {
+          if (atomicMatch.compareExchangeStrong(null: SNode, s)) {
             val w = waiter
             if (w != null) LockSupport.unpark(w)
             true
@@ -152,7 +109,7 @@ object SynchronousQueue {
       }
 
       private[concurrent] def tryCancel() =
-        SynchronousQueue.TransferStack_SNode_MATCH.compareAndSet(this, (null: SNode), this)
+        atomicMatch.compareExchangeStrong(null: SNode, this)
 
       private[concurrent] def isCancelled() = `match` eq this
 
@@ -165,7 +122,7 @@ object SynchronousQueue {
       }
 
       private[concurrent] def forgetWaiter(): Unit =
-        SynchronousQueue.TransferStack_SNode_WAITER.setOpaque(this, (null: Thread))
+        atomicWaiter.store(null: Thread, memory_order_relaxed)
     }
 
     private[concurrent] def snode(
@@ -188,10 +145,14 @@ object SynchronousQueue {
     import TransferStack._
 
     @volatile private[concurrent] var head: SNode = _
+    private val atomicHead = new AtomicRef[SNode](
+      fromRawPtr(Intrinsics.classFieldRawPtr(this, "head"))
+    )
+
     private[concurrent] def casHead(
         h: TransferStack.SNode,
         nh: TransferStack.SNode
-    ): Boolean = (h eq head) && SynchronousQueue.TransferStack_HEAD.compareAndSet(this, h, nh)
+    ): Boolean = (h eq head) && atomicHead.compareExchangeStrong(h, nh)
 
     override private[concurrent] def transfer(
         e: E,
@@ -354,19 +315,29 @@ object SynchronousQueue {
       @volatile private[concurrent] var next: QNode = _ // next node in queue
       @volatile private[concurrent] var waiter: Thread = _
 
+      private val atomicItem = new AtomicRef[Object](
+        fromRawPtr(Intrinsics.classFieldRawPtr(this, "item"))
+      )
+      private val atomicNext = new AtomicRef[QNode](
+        fromRawPtr(Intrinsics.classFieldRawPtr(this, "next"))
+      )
+      private val atomicWaiter = new AtomicRef[Thread](
+        fromRawPtr(Intrinsics.classFieldRawPtr(this, "waiter"))
+      )
+
       private[concurrent] def casNext(cmp: QNode, `val`: QNode): Boolean =
-        (next eq cmp) && SynchronousQueue.TransferQueue_QNode_NEXT.compareAndSet(this, cmp, `val`)
+        (next eq cmp) && atomicNext.compareExchangeStrong(cmp, `val`)
 
       private[concurrent] def casItem(cmp: Object, `val`: Object): Boolean =
-        (item eq cmp) && SynchronousQueue.TransferQueue_QNode_ITEM.compareAndSet(this, cmp, `val`)
+        (item eq cmp) && atomicItem.compareExchangeStrong(cmp, `val`)
 
       private[concurrent] def tryCancel(cmp: Object): Boolean =
-        SynchronousQueue.TransferQueue_QNode_ITEM.compareAndSet(this, cmp, this)
+        atomicItem.compareExchangeStrong(cmp, this)
       private[concurrent] def isCancelled() = item eq this
 
       private[concurrent] def isOffList = next eq this
       private[concurrent] def forgetWaiter(): Unit =
-        SynchronousQueue.TransferQueue_QNode_WAITER.setOpaque(this, (null: Thread))
+        atomicWaiter.store(null: Thread, memory_order_relaxed)
       private[concurrent] def isFulfilled() = {
         val x = item
         isData == (x == null) || (x eq this)
@@ -396,16 +367,26 @@ object SynchronousQueue {
 
     @volatile private[concurrent] var cleanMe: QNode = _
 
+    private val atomicHead = new AtomicRef[QNode](
+      fromRawPtr(Intrinsics.classFieldRawPtr(this, "head"))
+    )
+    private val atomicTail = new AtomicRef[QNode](
+      fromRawPtr(Intrinsics.classFieldRawPtr(this, "tail"))
+    )
+    private val atomicCleanMe = new AtomicRef[QNode](
+      fromRawPtr(Intrinsics.classFieldRawPtr(this, "cleanMe"))
+    )
+
     private[concurrent] def advanceHead(h: QNode, nh: QNode): Unit =
-      if ((h eq head) && SynchronousQueue.TransferQueue_HEAD.compareAndSet(this, h, nh)) {
+      if ((h eq head) && atomicHead.compareExchangeStrong(h, nh)) {
         h.next = h // forget old next
       }
 
     private[concurrent] def advanceTail(t: QNode, nt: QNode): Unit =
-      if (tail eq t) SynchronousQueue.TransferQueue_TAIL.compareAndSet(this, t, nt)
+      if (tail eq t) atomicTail.compareExchangeStrong(t, nt)
 
     private[concurrent] def casCleanMe(cmp: QNode, `val`: QNode) =
-      (cleanMe eq cmp) && SynchronousQueue.TransferQueue_CLEANME.compareAndSet(this, cmp, `val`)
+      (cleanMe eq cmp) && atomicCleanMe.compareExchangeStrong(cmp, `val`)
 
     override private[concurrent] def transfer(
         e: E,

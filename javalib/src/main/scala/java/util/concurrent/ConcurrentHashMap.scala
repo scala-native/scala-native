@@ -21,7 +21,6 @@ package java.util.concurrent
  */
 
 import java.io.{ObjectInputStream, ObjectOutputStream, Serializable}
-import java.lang.invoke.{MethodHandles, VarHandle}
 import java.util._
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.{LockSupport, ReentrantLock}
@@ -32,36 +31,14 @@ import java.{lang => jl, util}
 import scala.scalanative.annotation.{align => Contended, safePublish}
 import scala.scalanative.libc.stdatomic._
 import scala.scalanative.libc.stdatomic.memory_order._
+import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
+import scala.scalanative.runtime.fromRawPtr
 import scala.scalanative.unsafe._
 
 // scalafmt: { maxColumn = 120}
 
 @SerialVersionUID(7249069246763182397L)
 object ConcurrentHashMap {
-  private val CounterCell_VALUE: VarHandle = MethodHandles
-    .privateLookupIn(classOf[ConcurrentHashMap.CounterCell], MethodHandles.lookup())
-    .findVarHandle(classOf[ConcurrentHashMap.CounterCell], "value", classOf[Long])
-
-  private val TreeBin_LOCKSTATE: VarHandle = MethodHandles
-    .privateLookupIn(classOf[ConcurrentHashMap.TreeBin[_, _]], MethodHandles.lookup())
-    .findVarHandle(classOf[ConcurrentHashMap.TreeBin[_, _]], "lockState", classOf[Int])
-
-  private val SIZECTL: VarHandle = MethodHandles
-    .privateLookupIn(classOf[ConcurrentHashMap[_, _]], MethodHandles.lookup())
-    .findVarHandle(classOf[ConcurrentHashMap[_, _]], "sizeCtl", classOf[Int])
-
-  private val TRANSFERINDEX: VarHandle = MethodHandles
-    .privateLookupIn(classOf[ConcurrentHashMap[_, _]], MethodHandles.lookup())
-    .findVarHandle(classOf[ConcurrentHashMap[_, _]], "transferIndex", classOf[Int])
-
-  private val BASECOUNT: VarHandle = MethodHandles
-    .privateLookupIn(classOf[ConcurrentHashMap[_, _]], MethodHandles.lookup())
-    .findVarHandle(classOf[ConcurrentHashMap[_, _]], "baseCount", classOf[Long])
-
-  private val CELLSBUSY: VarHandle = MethodHandles
-    .privateLookupIn(classOf[ConcurrentHashMap[_, _]], MethodHandles.lookup())
-    .findVarHandle(classOf[ConcurrentHashMap[_, _]], "cellsBusy", classOf[Int])
-
   /*
    * Overview:
    *
@@ -498,7 +475,9 @@ object ConcurrentHashMap {
   @Contended
   private[concurrent] final class CounterCell private[concurrent] (
       @volatile private[concurrent] var value: Long
-  ) {}
+  ) {
+    @inline def CELLVALUE = fromRawPtr[scala.Long](classFieldRawPtr(this, "value")).atomic
+  }
 
   private[concurrent] def untreeify[K <: AnyRef, V <: AnyRef](b: Node[K, V]) = {
     var hd: Node[K, V] = null
@@ -811,6 +790,8 @@ object ConcurrentHashMap {
     @volatile private[concurrent] var waiter: Thread = _
     @volatile private[concurrent] var lockState = 0
 
+    @inline def LOCKSTATE = fromRawPtr[scala.Int](classFieldRawPtr(this, "lockState")).atomic
+
     private[concurrent] var root: TreeNode[K, V] = {
       var r: TreeNode[K, V] = null
       var value: TreeNode[K, V] = first
@@ -858,7 +839,7 @@ object ConcurrentHashMap {
     }
 
     private final def lockRoot(): Unit = {
-      if (!ConcurrentHashMap.TreeBin_LOCKSTATE.compareAndSet(this, 0, TreeBin.WRITER))
+      if (!this.LOCKSTATE.compareExchangeStrong(0, TreeBin.WRITER))
         contendedLock() // offload to separate method
     }
 
@@ -871,15 +852,11 @@ object ConcurrentHashMap {
       var s = 0
       while (true)
         if (({ s = lockState; s } & ~TreeBin.WAITER) == 0)
-          if (ConcurrentHashMap.TreeBin_LOCKSTATE.compareAndSet(this, s, TreeBin.WRITER)) {
+          if (this.LOCKSTATE.compareExchangeStrong(s, TreeBin.WRITER)) {
             if (waiting) waiter = null
             return
           } else if ((s & TreeBin.WAITER) == 0)
-            if (ConcurrentHashMap.TreeBin_LOCKSTATE.compareAndSet(
-                  this,
-                  s,
-                  s | TreeBin.WAITER
-                )) {
+            if (this.LOCKSTATE.compareExchangeStrong(s, s | TreeBin.WAITER)) {
               waiting = true
               waiter = Thread.currentThread()
             } else if (waiting) LockSupport.park(this)
@@ -898,11 +875,7 @@ object ConcurrentHashMap {
             if (e.hash == h && (({ ek = e.key; ek } eq k) || (ek != null && k.equals(ek))))
               return e
             e = e.next
-          } else if (ConcurrentHashMap.TreeBin_LOCKSTATE.compareAndSet(
-                this,
-                s,
-                s + TreeBin.READER
-              )) {
+          } else if (this.LOCKSTATE.compareExchangeStrong(s, s + TreeBin.READER)) {
             var r: TreeNode[K, V] = null
             var p: TreeNode[K, V] = null
             try
@@ -911,10 +884,7 @@ object ConcurrentHashMap {
                 else r.findTreeNode(h, k, null)
             finally {
               var w: Thread = null
-              if ((ConcurrentHashMap.TreeBin_LOCKSTATE.getAndAdd(
-                    this,
-                    -TreeBin.READER
-                  ): scala.Int) == (TreeBin.READER | TreeBin.WAITER) &&
+              if (this.LOCKSTATE.fetchAdd(-TreeBin.READER) == (TreeBin.READER | TreeBin.WAITER) &&
                   { w = waiter; w } != null) LockSupport.unpark(w)
             }
             return p
@@ -3809,6 +3779,10 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
   @transient private var _entrySet: EntrySetView[K, V] = _
 
   // Unsafe mechanics
+  @inline def SIZECTL = fromRawPtr[scala.Int](classFieldRawPtr(this, "sizeCtl")).atomic
+  @inline def TRANSFERINDEX = fromRawPtr[scala.Int](classFieldRawPtr(this, "transferIndex")).atomic
+  @inline def BASECOUNT = fromRawPtr[scala.Long](classFieldRawPtr(this, "baseCount")).atomic
+  @inline def CELLSBUSY = fromRawPtr[scala.Int](classFieldRawPtr(this, "cellsBusy")).atomic
 
   def this(initialCapacity: Int, loadFactor: Float, concurrencyLevel: Int) = {
     this()
@@ -4823,7 +4797,7 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
     while (!break && ({ tab = table; tab } == null || tab.length == 0))
       if ({ sc = sizeCtl; sc } < 0)
         Thread.`yield`() // lost initialization race; just spin
-      else if (ConcurrentHashMap.SIZECTL.compareAndSet(this, sc, -1)) {
+      else if (this.SIZECTL.compareExchangeStrong(sc, -1)) {
         try
           if ({ tab = table; tab } == null || tab.length == 0) {
             val n =
@@ -4846,28 +4820,14 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
     var cs: Array[CounterCell] = null
     var b = 0L
     var s = 0L
-    if ({ cs = counterCells; cs } != null || !ConcurrentHashMap.BASECOUNT
-          .compareAndSet(
-            this, {
-              b = baseCount; b
-            }, {
-              s = b + x; s
-            }
-          )) {
+    if ({ cs = counterCells; cs } != null || !this.BASECOUNT
+          .compareExchangeStrong({ b = baseCount; b }, { s = b + x; s })) {
       var c: CounterCell = null
       var v = 0L
       var m = 0
       var uncontended = true
       if (cs == null || { m = cs.length - 1; m < 0 } || { c = cs(ThreadLocalRandom.getProbe() & m); c == null } ||
-          {
-            uncontended = ConcurrentHashMap.CounterCell_VALUE.compareAndSet(
-              c, {
-                v = c.value; v
-              },
-              v + x
-            );
-            !uncontended
-          }) {
+          { uncontended = c.CELLVALUE.compareExchangeStrong({ v = c.value; v }, v + x); !uncontended }) {
         fullAddCount(x, uncontended)
         return
       }
@@ -4890,10 +4850,8 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
         if (sc < 0) {
           if (sc == rs + MAX_RESIZERS || sc == rs + 1 || { nt = nextTable; nt } == null || transferIndex <= 0)
             break = true
-          else if (ConcurrentHashMap.SIZECTL.compareAndSet(this, sc, sc + 1))
-            transfer(tab, nt)
-        } else if (ConcurrentHashMap.SIZECTL.compareAndSet(this, sc, rs + 2))
-          transfer(tab, null)
+          else if (this.SIZECTL.compareExchangeStrong(sc, sc + 1)) transfer(tab, nt)
+        } else if (this.SIZECTL.compareExchangeStrong(sc, rs + 2)) transfer(tab, null)
         if (!break) s = sumCount
       }
     }
@@ -4914,7 +4872,7 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
       while (!break && ((nextTab eq nextTable) && (table eq tab) && { sc = sizeCtl; sc < 0 })) {
         if (sc == rs + MAX_RESIZERS || sc == rs + 1 || transferIndex <= 0)
           break = true
-        else if (ConcurrentHashMap.SIZECTL.compareAndSet(this, sc, sc + 1)) {
+        else if (this.SIZECTL.compareExchangeStrong(sc, sc + 1)) {
           transfer(tab, nextTab)
           break = true
         }
@@ -4936,7 +4894,7 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
       var n = 0
       if (tab == null || { n = tab.length; n } == 0) {
         n = if (sc > c) sc else c
-        if (ConcurrentHashMap.SIZECTL.compareAndSet(this, sc, -1))
+        if (this.SIZECTL.compareExchangeStrong(sc, -1))
           try
             if (table eq tab) {
               val nt =
@@ -4950,12 +4908,7 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
         break = true
       else if (tab eq table) {
         val rs = resizeStamp(n)
-        if (ConcurrentHashMap.SIZECTL.compareAndSet(
-              this,
-              sc,
-              (rs << RESIZE_STAMP_SHIFT) + 2
-            ))
-          transfer(tab, null)
+        if (this.SIZECTL.compareExchangeStrong(sc, (rs << RESIZE_STAMP_SHIFT) + 2)) transfer(tab, null)
       }
     }
   }
@@ -5006,8 +4959,7 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
         else if ({ nextIndex = transferIndex; nextIndex } <= 0) {
           i = -1
           advance = false
-        } else if (ConcurrentHashMap.TRANSFERINDEX.compareAndSet(
-              this,
+        } else if (this.TRANSFERINDEX.compareExchangeStrong(
               nextIndex, {
                 nextBound =
                   if (nextIndex > stride) nextIndex - stride
@@ -5028,7 +4980,10 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
           sizeCtl = (n << 1) - (n >>> 1)
           return
         }
-        if (ConcurrentHashMap.SIZECTL.compareAndSet(this, { sc = sizeCtl; sc }, sc - 1)) {
+        if (this.SIZECTL.compareExchangeStrong(
+              { sc = sizeCtl; sc },
+              sc - 1
+            )) {
 
           if ((sc - 2) != resizeStamp(n) << RESIZE_STAMP_SHIFT)
             return
@@ -5165,7 +5120,7 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
         if ({ c = cs((n - 1) & h); c } == null) {
           if (cellsBusy == 0) { // Try to attach new Cell
             val r = new CounterCell(x) // Optimistic create
-            if (cellsBusy == 0 && ConcurrentHashMap.CELLSBUSY.compareAndSet(this, 0, 1)) {
+            if (cellsBusy == 0 && this.CELLSBUSY.compareExchangeStrong(0, 1)) {
               var created = false
               try { // Recheck under lock
                 var rs: Array[CounterCell] = null
@@ -5183,20 +5138,14 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
           } else collide = false
         } else if (!wasUncontended) // CAS already known to fail
           wasUncontended = true // Continue after rehash
-        else if (ConcurrentHashMap.CounterCell_VALUE.compareAndSet(
-              c, {
-                v = c.value; v
-              },
+        else if (c.CELLVALUE.compareExchangeStrong(
+              { v = c.value; v },
               v + x
             )) break = true
         else if ((counterCells ne cs) || n >= NCPU)
           collide = false // At max size or stale
         else if (!collide) collide = true
-        else if (cellsBusy == 0 && ConcurrentHashMap.CELLSBUSY.compareAndSet(
-              this,
-              0,
-              1
-            )) {
+        else if (cellsBusy == 0 && this.CELLSBUSY.compareExchangeStrong(0, 1)) {
           try
             if (counterCells eq cs)
               counterCells = Arrays.copyOf(cs, n << 1) // Expand table unless stale
@@ -5206,7 +5155,7 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
           // continue // Retry with expanded table
         } else h = ThreadLocalRandom.advanceProbe(h)
       } else if (cellsBusy == 0 && (counterCells eq cs) &&
-          ConcurrentHashMap.CELLSBUSY.compareAndSet(this, 0, 1)) {
+          this.CELLSBUSY.compareExchangeStrong(0, 1)) {
         var init = false
         try // Initialize table
           if (counterCells eq cs) {
@@ -5217,10 +5166,8 @@ class ConcurrentHashMap[K <: AnyRef, V <: AnyRef]()
           }
         finally cellsBusy = 0
         if (init) break = true
-      } else if (ConcurrentHashMap.BASECOUNT.compareAndSet(
-            this, {
-              v = baseCount; v
-            },
+      } else if (this.BASECOUNT.compareExchangeStrong(
+            { v = baseCount; v },
             v + x
           )) {
         break = true // Fall back on using base
