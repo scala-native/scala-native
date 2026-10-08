@@ -21,7 +21,7 @@ private[runtime] trait VarHandleAdaptation extends NativeVarHandle {
   protected def variableType: Class[_]
   protected def boxedVariableType: Class[_]
 
-  override final def isExactVariableType(tpe: Class[_]): Boolean = variableType == tpe
+  @alwaysinline override final def isExactVariableType(tpe: Class[_]): Boolean = variableType eq tpe
 
   // Validate the complete signature before converting arguments or mutating a field.
   @alwaysinline private def exactOperand(source: Class[_]): Boolean = source == variableType || (variableType.isPrimitive && source == boxedVariableType)

@@ -336,29 +336,16 @@ private[nscplugin] trait VarHandleInterop[G <: Global with Singleton] {
       )
 
       val kind = variableKind(fieldType)
-      val pointerType =
-        if (kind == VarHandleProtocol.VariableKind.Reference) ObjectTpe
-        else fieldType.erasure
-      val ptr = Apply(
-        TypeApply(
-          gen.mkAttributedRef(RuntimePackage_fromRawPtr),
-          List(TypeTree(pointerType))
-        ),
-        List(raw)
-      )
-
-      val binding = Function(if (isStatic) Nil else List(param), ptr)
+      // The SAM's concrete RawPtr result avoids erased Function1 boxing.
+      val binding = Function(List(param), raw)
       val factory = getMember(
         VarHandleFactoryModule,
         newTermName("create" + kind.memberName + "Handle")
       )
 
-      val factoryArgs = List(
-        if (isStatic) Literal(Constant(null)) else binding,
-        if (isStatic) binding else Literal(Constant(null))
-      ) ++ (if (kind == VarHandleProtocol.VariableKind.Reference)
-              List(Literal(Constant(fieldType)))
-            else Nil)
+      val factoryArgs = List(binding) ++ (if (kind == VarHandleProtocol.VariableKind.Reference)
+                                            List(Literal(Constant(fieldType)))
+                                          else Nil)
       typer
         .atOwner(currentOwner)
         .typed(Apply(gen.mkAttributedRef(factory), factoryArgs))

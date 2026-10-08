@@ -2,8 +2,7 @@
 
 package scala.scalanative.runtime;
 
-import scala.Function0;
-import scala.Function1;
+import scala.scalanative.runtime.NativeVarHandle.FieldBinding;
 
 /** JVM-only symbols for calls emitted by the compiler plugin.
  *
@@ -15,13 +14,13 @@ import scala.Function1;
 public final class VarHandle {
   private VarHandle() {}
 
-  public static java.lang.invoke.VarHandle createBooleanHandle(Function1<Object, Object> instanceBinding, Function0<Object> staticBinding) { throw new AssertionError("stub"); }
-  public static java.lang.invoke.VarHandle createByteHandle(Function1<Object, Object> instanceBinding, Function0<Object> staticBinding) { throw new AssertionError("stub"); }
-  public static java.lang.invoke.VarHandle createShortHandle(Function1<Object, Object> instanceBinding, Function0<Object> staticBinding) { throw new AssertionError("stub"); }
-  public static java.lang.invoke.VarHandle createCharHandle(Function1<Object, Object> instanceBinding, Function0<Object> staticBinding) { throw new AssertionError("stub"); }
-  public static java.lang.invoke.VarHandle createIntHandle(Function1<Object, Object> instanceBinding, Function0<Object> staticBinding) { throw new AssertionError("stub"); }
-  public static java.lang.invoke.VarHandle createLongHandle(Function1<Object, Object> instanceBinding, Function0<Object> staticBinding) { throw new AssertionError("stub"); }
-  public static java.lang.invoke.VarHandle createFloatHandle(Function1<Object, Object> instanceBinding, Function0<Object> staticBinding) { throw new AssertionError("stub"); }
-  public static java.lang.invoke.VarHandle createDoubleHandle(Function1<Object, Object> instanceBinding, Function0<Object> staticBinding) { throw new AssertionError("stub"); }
-  public static java.lang.invoke.VarHandle createReferenceHandle(Function1<Object, Object> instanceBinding, Function0<Object> staticBinding, Class<?> variableType) { throw new AssertionError("stub"); }
+  public static java.lang.invoke.VarHandle createBooleanHandle(FieldBinding binding) { throw new AssertionError("stub"); }
+  public static java.lang.invoke.VarHandle createByteHandle(FieldBinding binding) { throw new AssertionError("stub"); }
+  public static java.lang.invoke.VarHandle createShortHandle(FieldBinding binding) { throw new AssertionError("stub"); }
+  public static java.lang.invoke.VarHandle createCharHandle(FieldBinding binding) { throw new AssertionError("stub"); }
+  public static java.lang.invoke.VarHandle createIntHandle(FieldBinding binding) { throw new AssertionError("stub"); }
+  public static java.lang.invoke.VarHandle createLongHandle(FieldBinding binding) { throw new AssertionError("stub"); }
+  public static java.lang.invoke.VarHandle createFloatHandle(FieldBinding binding) { throw new AssertionError("stub"); }
+  public static java.lang.invoke.VarHandle createDoubleHandle(FieldBinding binding) { throw new AssertionError("stub"); }
+  public static java.lang.invoke.VarHandle createReferenceHandle(FieldBinding binding, Class<?> variableType) { throw new AssertionError("stub"); }
 }

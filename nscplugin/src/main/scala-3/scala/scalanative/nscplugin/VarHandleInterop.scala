@@ -43,6 +43,8 @@ private[nscplugin] object VarHandleInterop {
   class VarHandleMetadata(using Context) {
     private val d = NirDefinitions.get
 
+    lazy val fieldBindingClass: ClassSymbol = requiredClass("scala.scalanative.runtime.NativeVarHandle.FieldBinding")
+
     lazy val primitiveKinds: Map[Symbol, VariableKind] = Map(
       defn.BooleanClass -> VariableKind.Boolean,
       defn.ByteClass -> VariableKind.Byte,
@@ -248,8 +250,7 @@ private[nscplugin] trait VarHandleInterop extends NativeInteropUtil {
 
   private def createVarHandle(
       tpe: Type,
-      instanceBinding: Tree,
-      staticBinding: Tree,
+      binding: Tree,
       d: NirDefinitions
   )(using Context): Tree = {
     // Opaque aliases can hide a primitive field type outside its companion.
@@ -268,7 +269,7 @@ private[nscplugin] trait VarHandleInterop extends NativeInteropUtil {
       case _ => d.RuntimeVarHandle_createReferenceHandle
     }
 
-    val args = List(instanceBinding, staticBinding) ++
+    val args = List(binding) ++
       (if factory == d.RuntimeVarHandle_createReferenceHandle then List(Literal(Constant(tpe)))
        else Nil)
     // The Native _VarHandle definition and the JDK VarHandle API have the same
@@ -422,25 +423,21 @@ private[nscplugin] trait VarHandleInterop extends NativeInteropUtil {
         ),
         List(target, Literal(Constant(fieldName)))
       )
-    val erasedFieldType = TypeErasure.erasure(fieldType)
-    val pointerType =
-      if varHandleMetadata.primitiveKinds.contains(erasedFieldType.typeSymbol) then erasedFieldType
-      else defn.ObjectType
-    val pointer = (raw: Tree) =>
-      Apply(
-        TypeApply(
-          ref(defnNir.RuntimePackage_fromRawPtr),
-          List(TypeTree(pointerType))
-        ),
-        List(raw)
-      )
+    val bindingType = varHandleMetadata.fieldBindingClass.typeRef
+    val lambdaType = MethodType(List(termName("varHandleTarget")))(
+      _ => List(defn.ObjectType),
+      _ => defnNir.RawPtrClass.typeRef
+    )
+    def binding(body: List[Tree] => Tree): Tree = {
+      val method = newAnonFun(ctx.owner, lambdaType)
+      Closure(method, params => body(params.head).changeOwner(ctx.owner, method), targetType = bindingType)
+    }
     if isStatic then {
       val module = targetType.typeSymbol.companionModule
       if module == NoSymbol then
         return fail(
           s"VarHandle cannot resolve static field owner for $fieldName"
         )
-      val lambdaType = MethodType(Nil)(_ => Nil, _ => defn.ObjectType)
       val staticRawPtr = Apply(
         TypeApply(
           ref(defnNir.Intrinsics_classFieldRawPtr),
@@ -454,35 +451,24 @@ private[nscplugin] trait VarHandleInterop extends NativeInteropUtil {
           Literal(Constant(fieldName))
         )
       ).withAttachment(NirDefinitions.NonErasedType, targetType)
-      val binding = Lambda(lambdaType, _ => pointer(staticRawPtr))
+      val fieldBinding = binding(_ => staticRawPtr)
       createVarHandle(
         fieldType,
-        Literal(Constant(null)),
-        binding,
+        fieldBinding,
         defnNir
       )
     } else {
-      val lambdaType = MethodType(List(termName("varHandleTarget")))(
-        _ => List(defn.ObjectType),
-        _ => defn.ObjectType
-      )
-
-      val lambda = Lambda(
-        lambdaType,
-        params =>
-          pointer(
-            rawPtr(
-              TypeApply(
-                Select(params.head, nme.asInstanceOf_),
-                List(TypeTree(coordinateType))
-              )
-            )
+      val fieldBinding = binding(params =>
+        rawPtr(
+          TypeApply(
+            Select(params.head, nme.asInstanceOf_),
+            List(TypeTree(coordinateType))
           )
+        )
       )
       createVarHandle(
         fieldType,
-        lambda,
-        Literal(Constant(null)),
+        fieldBinding,
         defnNir
       )
     }

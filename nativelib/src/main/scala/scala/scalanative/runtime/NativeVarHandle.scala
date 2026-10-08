@@ -107,6 +107,11 @@ private[runtime] trait NativeVarHandle {
 /** Values shared by the compiler lowering and the Native implementation. */
 private[runtime] object NativeVarHandle {
 
+  /** A field address without the erased Function1 result boxing. */
+  trait FieldBinding {
+    def pointer(receiver: AnyRef): RawPtr
+  }
+
   type AccessOperation = Int
   object AccessOperation {
     final val Get = 0

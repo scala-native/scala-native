@@ -108,7 +108,7 @@ class VarHandleTests {
         assertEquals(owner + " must call exactly one factory", 1, calls.size)
         val (name, parameters, args) = calls.head
         assertEquals(owner, "create" + kind + "Handle", name)
-        assertEquals(owner, if (kind == "Reference") 4 else 3, parameters.size)
+        assertEquals(owner, if (kind == "Reference") 3 else 2, parameters.size)
         assertFalse(
           owner + " must not pass a field-kind tag",
           args.exists(_.isInstanceOf[nir.Val.Int])
@@ -870,6 +870,50 @@ class VarHandleTests {
       }
     }
   }
+
+  @Test def fieldBindingsReturnRawPointersWithoutBoxing(): Unit =
+    compileAndLoad(
+      "FieldBindings.scala" ->
+        """import java.lang.invoke.MethodHandles
+          |class FieldBindings {
+          |  private var intValue = 0
+          |  private var longValue = 0L
+          |  private var reference: Object = null
+          |  val intHandle = MethodHandles.lookup().findVarHandle(classOf[FieldBindings], "intValue", classOf[Int])
+          |  val longHandle = MethodHandles.lookup().findVarHandle(classOf[FieldBindings], "longValue", classOf[Long])
+          |  val referenceHandle = MethodHandles.lookup().findVarHandle(classOf[FieldBindings], "reference", classOf[Object])
+          |}
+          |""".stripMargin
+    ) { defns =>
+      val bindings = defns.collect {
+        case d: nir.Defn.Class
+            if d.traits.exists(
+              _.id == "scala.scalanative.runtime.NativeVarHandle$FieldBinding"
+            ) =>
+          d.name
+      }.toSet
+      assertEquals(
+        "one allocation-free binding for each field",
+        3,
+        bindings.size
+      )
+      val methods = defns.collect {
+        case d: nir.Defn.Define
+            if bindings.contains(d.name.top) && !d.name.sig.isCtor =>
+          d
+      }
+      assertEquals(3, methods.size)
+      methods.foreach { method =>
+        assertEquals(nir.Type.Ptr, method.ty.ret)
+        assertFalse(
+          "field bindings must not box the pointer",
+          method.insts.exists {
+            case nir.Inst.Let(_, _: nir.Op.Box, _) => true
+            case _                                 => false
+          }
+        )
+      }
+    }
 
   @Test def primitiveAccessorsRemainUnboxed(): Unit =
     compileAndLoad(
