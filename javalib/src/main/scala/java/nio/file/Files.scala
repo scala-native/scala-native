@@ -775,15 +775,14 @@ object Files {
     getAttribute(path, "posix:permissions", options)
       .asInstanceOf[Set[PosixFilePermission]]
 
-  /* Tests the file type of `path` with a plain stat/lstat. The attribute view
-   * reports a missing path by throwing, which captures a stack trace; probes
-   * such as the ones in Files.copy hit missing paths constantly. Paths that
-   * are not on the default file system use `fallback`.
-   */
+  private final val ProbeDirectory = 0
+  private final val ProbeRegular = 1
+  private final val ProbeSymlink = 2
+
   private def probeFileType(
       path: Path,
       options: Array[LinkOption],
-      test: stat.mode_t => Boolean
+      fileType: Int
   )(fallback: => Boolean): Boolean = {
     if (isWindows) fallback
     else if (path.getFileSystem().provider().getScheme() != "file") fallback
@@ -796,12 +795,19 @@ object Files {
           if (options.contains(LinkOption.NOFOLLOW_LINKS))
             stat.lstat(cpath, buf)
           else stat.stat(cpath, buf)
-        err == 0 && test(buf.st_mode)
+        err == 0 && {
+          val mode = buf.st_mode
+          fileType match {
+            case ProbeDirectory => stat.S_ISDIR(mode) == 1
+            case ProbeRegular   => stat.S_ISREG(mode) == 1
+            case _              => stat.S_ISLNK(mode) == 1
+          }
+        }
       }
   }
 
   def isDirectory(path: Path, options: Array[LinkOption]): Boolean =
-    probeFileType(path, options, stat.S_ISDIR(_) == 1) {
+    probeFileType(path, options, ProbeDirectory) {
       try {
         val attrs = readAttributes(path, classOf[BasicFileAttributes], options)
         attrs != null && attrs.isDirectory()
@@ -818,7 +824,7 @@ object Files {
     path.toFile().canRead()
 
   def isRegularFile(path: Path, options: Array[LinkOption]): Boolean =
-    probeFileType(path, options, stat.S_ISREG(_) == 1) {
+    probeFileType(path, options, ProbeRegular) {
       try {
         val attrs = readAttributes(path, classOf[BasicFileAttributes], options)
         attrs != null && attrs.isRegularFile()
@@ -830,7 +836,7 @@ object Files {
 
   def isSymbolicLink(path: Path): Boolean = {
     val noFollow = Array(LinkOption.NOFOLLOW_LINKS)
-    probeFileType(path, noFollow, stat.S_ISLNK(_) == 1) {
+    probeFileType(path, noFollow, ProbeSymlink) {
       try {
         val attrs =
           readAttributes(path, classOf[BasicFileAttributes], noFollow)
