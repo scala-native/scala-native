@@ -22,6 +22,16 @@ Scala Native follows the same *idea* on POSIX (with its own `ucontext` + assembl
 2. **`scalanative_gc_safepoint_prepare_redirect(uap, mutator)`** (`gc/shared/SafepointPollTrampoline.c`) stores the faulting **instruction pointer** in `MutatorThread.safepointResumePc` and sets the **`ucontext` PC** to **`scalanative_gc_safepoint_poll_trampoline`**.
 3. When the kernel returns from the signal, the thread runs the **assembly trampoline**, which saves registers, calls **`Synchronizer_yield()`** via `scalanative_gc_safepoint_poll_run_yield`, restores registers, and **branches to `safepointResumePc`**. By then the trap is disarmed, so the retried volatile load succeeds.
 
+### x86_64: red zone, scratch registers and stack alignment
+
+The interrupted code can be a leaf function that keeps live spills in the 128-byte SysV **red zone** below `%rsp`, with any register (`%r10`/`%r11` included) holding a live value. So on x86_64 the redirect does not simply replace the PC:
+
+- `prepare_redirect` emulates a `call` that **skips the red zone**: it lowers `%rsp` by `128 + 8`, stores the interrupted `%rip` in the new top slot, and then points `%rip` at the trampoline.
+- The trampoline returns with **`ret $128`**: it pops the interrupted `%rip` and drops the red-zone skip in one instruction, so resuming needs **no scratch register**. `rflags` are saved and restored with `pushfq`/`popfq`.
+- Before calling C, the trampoline aligns `%rsp` to 16 bytes; `%rbp` carries the unaligned value across the call.
+
+`safepointResumePc` is still recorded, but only the aarch64 trampoline reads it.
+
 Windows uses the **vectored exception** path and still runs `Synchronizer_yield()` from the filter (no `ucontext`); the trampoline header stubs `prepare_redirect` to a no-op there.
 
 ## Source layout
@@ -30,7 +40,7 @@ Windows uses the **vectored exception** path and still runs `Synchronizer_yield(
 | --- | --- |
 | `gc/shared/SafepointPollTrampoline.h` | Public C API between synchronizer and trampoline |
 | `gc/shared/SafepointPollTrampoline.c` | `ucontext` PC get/set, `prepare_redirect`, small C helpers for the asm |
-| `gc/shared/SafepointPollTrampoline-x86_64.S` | Trampoline: XMM0–15 + GPRs, then yield, resume |
+| `gc/shared/SafepointPollTrampoline-x86_64.S` | Trampoline: XMM0–15 + GPRs + rflags, then yield, `ret $128` |
 | `gc/shared/SafepointPollTrampoline-aarch64.S` | Trampoline: Q0–Q7 + X0–X30, then yield, resume |
 | `gc/immix/Synchronizer.c`, `gc/commix/Synchronizer.c` | Install trap handler; call `prepare_redirect` or fall back to in-handler yield |
 

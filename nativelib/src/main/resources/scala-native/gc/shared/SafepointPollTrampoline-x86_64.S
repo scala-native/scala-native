@@ -1,15 +1,14 @@
 /* clang-format off */
 /*
  * POSIX x86_64: normal-context stub after a yield-point page fault.
- * Saves XMM0-15 and GPRs, calls scalanative_gc_safepoint_poll_run_yield (C),
- * loads resume PC from scalanative_gc_safepoint_load_resume_pc, jmp to it.
+ * Saves XMM0-15, GPRs and rflags, calls scalanative_gc_safepoint_poll_run_yield
+ * (C), then returns to the interrupted PC with `ret $128`.
  * See SafepointPollTrampoline.c and docs/contrib/gc-safepoint-trampoline.md.
  */
 #if defined(SCALANATIVE_MULTITHREADING_ENABLED) &&                              \
     defined(SCALANATIVE_GC_USE_YIELDPOINT_TRAPS) && !defined(_WIN32) &&         \
     defined(__x86_64__) && (defined(__linux__) || defined(__APPLE__))
 
-/* Frame: 16 XMM (256 B) + 8 resume + 15 GPR (120 B) + pad = 400 B */
 #define SFPT_FRAME 400
 
 .text
@@ -17,21 +16,20 @@
 
 #if defined(__APPLE__)
 #    define RUN_YIELD _scalanative_gc_safepoint_poll_run_yield
-#    define LOAD_RESUME _scalanative_gc_safepoint_load_resume_pc
 .globl scalanative_gc_safepoint_poll_trampoline
 .globl _scalanative_gc_safepoint_poll_trampoline
 scalanative_gc_safepoint_poll_trampoline:
 _scalanative_gc_safepoint_poll_trampoline:
 #else
 #    define RUN_YIELD scalanative_gc_safepoint_poll_run_yield
-#    define LOAD_RESUME scalanative_gc_safepoint_load_resume_pc
 .globl scalanative_gc_safepoint_poll_trampoline
 .type scalanative_gc_safepoint_poll_trampoline, @function
 scalanative_gc_safepoint_poll_trampoline:
 #endif
-    subq $SFPT_FRAME, %rsp
+    leaq -SFPT_FRAME(%rsp), %rsp
+    pushfq
+    popq 392(%rsp)
 
-    /* Safepoints can interrupt code at points where %rsp is not 16-byte aligned. */
     movdqu %xmm0, 0(%rsp)
     movdqu %xmm1, 16(%rsp)
     movdqu %xmm2, 32(%rsp)
@@ -65,9 +63,10 @@ scalanative_gc_safepoint_poll_trampoline:
     movq %r14, 376(%rsp)
     movq %r15, 384(%rsp)
 
+    movq %rsp, %rbp
+    andq $-16, %rsp
     call RUN_YIELD
-    call LOAD_RESUME
-    movq %rax, 256(%rsp)
+    movq %rbp, %rsp
 
     movq 384(%rsp), %r15
     movq 376(%rsp), %r14
@@ -102,9 +101,10 @@ scalanative_gc_safepoint_poll_trampoline:
     movdqu 16(%rsp), %xmm1
     movdqu 0(%rsp), %xmm0
 
-    movq 256(%rsp), %r10
-    addq $SFPT_FRAME, %rsp
-    jmp *%r10
+    pushq 392(%rsp)
+    popfq
+    leaq SFPT_FRAME(%rsp), %rsp
+    ret $128
 
 #else
 .text
