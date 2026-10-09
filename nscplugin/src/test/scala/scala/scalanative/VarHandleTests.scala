@@ -9,7 +9,8 @@ import scala.scalanative.linker.compileAndLoad
 /** Java 8 API compatibility for the compiler used to publish artifacts. */
 class VarHandleJava8CompatibilityTests {
   @Test def compilesOrdinaryCallsAgainstJava8Api(): Unit = {
-    val version = scala.util.Properties.versionNumberString.split('.').take(2).map(_.toInt)
+    val version =
+      scala.util.Properties.versionNumberString.split('.').take(2).map(_.toInt)
     org.junit.Assume.assumeFalse(
       "Scala 3.8 and later no longer support targeting Java 8",
       version(0) == 3 && version(1) >= 8
