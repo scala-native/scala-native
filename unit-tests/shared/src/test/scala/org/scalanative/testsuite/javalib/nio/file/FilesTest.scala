@@ -383,6 +383,68 @@ class FilesTest {
     }
   }
 
+  @Test def filesTypeProbesReportFalseForMissingPath(): Unit = {
+    withTemporaryDirectory { dirFile =>
+      val missing = dirFile.toPath.resolve("missing")
+      assertFalse(Files.isDirectory(missing))
+      assertFalse(Files.isRegularFile(missing))
+      assertFalse(Files.isSymbolicLink(missing))
+      assertFalse(Files.isDirectory(missing, LinkOption.NOFOLLOW_LINKS))
+      assertFalse(Files.isRegularFile(missing, LinkOption.NOFOLLOW_LINKS))
+    }
+  }
+
+  @Test def filesTypeProbesDistinguishFilesAndDirectories(): Unit = {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath
+      val file = Files.createFile(dir.resolve("file"))
+      assertTrue(Files.isRegularFile(file))
+      assertFalse(Files.isDirectory(file))
+      assertFalse(Files.isSymbolicLink(file))
+      assertTrue(Files.isDirectory(dir))
+      assertFalse(Files.isRegularFile(dir))
+      assertFalse(Files.isSymbolicLink(dir))
+    }
+  }
+
+  @Test def filesTypeProbesHandleSymbolicLinks(): Unit = {
+    assumeShouldTestSymlinks()
+
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath
+      val file = Files.createFile(dir.resolve("file"))
+      val subDir = Files.createDirectory(dir.resolve("subdir"))
+      val fileLink = Files.createSymbolicLink(dir.resolve("fileLink"), file)
+      val dirLink = Files.createSymbolicLink(dir.resolve("dirLink"), subDir)
+
+      assertTrue(Files.isSymbolicLink(fileLink))
+      assertTrue(Files.isRegularFile(fileLink))
+      assertFalse(Files.isRegularFile(fileLink, LinkOption.NOFOLLOW_LINKS))
+      assertFalse(Files.isDirectory(fileLink))
+
+      assertTrue(Files.isSymbolicLink(dirLink))
+      assertTrue(Files.isDirectory(dirLink))
+      assertFalse(Files.isDirectory(dirLink, LinkOption.NOFOLLOW_LINKS))
+      assertFalse(Files.isRegularFile(dirLink))
+    }
+  }
+
+  @Test def filesTypeProbesHandleDanglingSymbolicLinks(): Unit = {
+    assumeShouldTestSymlinks()
+
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath
+      val link =
+        Files.createSymbolicLink(dir.resolve("dangling"), dir.resolve("gone"))
+
+      assertTrue(Files.isSymbolicLink(link))
+      assertFalse(Files.isRegularFile(link))
+      assertFalse(Files.isDirectory(link))
+      assertFalse(Files.isRegularFile(link, LinkOption.NOFOLLOW_LINKS))
+      assertFalse(Files.isDirectory(link, LinkOption.NOFOLLOW_LINKS))
+    }
+  }
+
   @Test def filesExistsReportsExistingFilesAsExisting(): Unit = {
     val targetFile = File.createTempFile("test", ".tmp")
     val target = targetFile.toPath()

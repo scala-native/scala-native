@@ -775,11 +775,44 @@ object Files {
     getAttribute(path, "posix:permissions", options)
       .asInstanceOf[Set[PosixFilePermission]]
 
+  private final val ProbeDirectory = 0
+  private final val ProbeRegular = 1
+  private final val ProbeSymlink = 2
+
+  private def probeFileType(
+      path: Path,
+      options: Array[LinkOption],
+      fileType: Int
+  )(fallback: => Boolean): Boolean = {
+    if (isWindows) fallback
+    else if (path.getFileSystem().provider().getScheme() != "file") fallback
+    else
+      Zone.acquire { implicit z =>
+        import scala.scalanative.posix.sys.statOps.statOps
+        val buf = alloc[stat.stat]()
+        val cpath = toCString(path.toString)
+        val err =
+          if (options.contains(LinkOption.NOFOLLOW_LINKS))
+            stat.lstat(cpath, buf)
+          else stat.stat(cpath, buf)
+        err == 0 && {
+          val mode = buf.st_mode
+          fileType match {
+            case ProbeDirectory => stat.S_ISDIR(mode) == 1
+            case ProbeRegular   => stat.S_ISREG(mode) == 1
+            case _              => stat.S_ISLNK(mode) == 1
+          }
+        }
+      }
+  }
+
   def isDirectory(path: Path, options: Array[LinkOption]): Boolean =
-    try {
-      val attrs = readAttributes(path, classOf[BasicFileAttributes], options)
-      attrs != null && attrs.isDirectory()
-    } catch { case _: IOException => false }
+    probeFileType(path, options, ProbeDirectory) {
+      try {
+        val attrs = readAttributes(path, classOf[BasicFileAttributes], options)
+        attrs != null && attrs.isDirectory()
+      } catch { case _: IOException => false }
+    }
 
   def isExecutable(path: Path): Boolean =
     path.toFile().canExecute()
@@ -790,25 +823,27 @@ object Files {
   def isReadable(path: Path): Boolean =
     path.toFile().canRead()
 
-  def isRegularFile(path: Path, options: Array[LinkOption]): Boolean = {
-    try {
-      val attrs = readAttributes(path, classOf[BasicFileAttributes], options)
-      attrs != null && attrs.isRegularFile()
-    } catch { case _: IOException => false }
-  }
+  def isRegularFile(path: Path, options: Array[LinkOption]): Boolean =
+    probeFileType(path, options, ProbeRegular) {
+      try {
+        val attrs = readAttributes(path, classOf[BasicFileAttributes], options)
+        attrs != null && attrs.isRegularFile()
+      } catch { case _: IOException => false }
+    }
 
   def isSameFile(path: Path, path2: Path): Boolean =
     path.toFile().getCanonicalPath() == path2.toFile().getCanonicalPath()
 
-  def isSymbolicLink(path: Path): Boolean =
-    try {
-      val attrs = readAttributes(
-        path,
-        classOf[BasicFileAttributes],
-        Array(LinkOption.NOFOLLOW_LINKS)
-      )
-      attrs != null && attrs.isSymbolicLink()
-    } catch { case _: IOException => false }
+  def isSymbolicLink(path: Path): Boolean = {
+    val noFollow = Array(LinkOption.NOFOLLOW_LINKS)
+    probeFileType(path, noFollow, ProbeSymlink) {
+      try {
+        val attrs =
+          readAttributes(path, classOf[BasicFileAttributes], noFollow)
+        attrs != null && attrs.isSymbolicLink()
+      } catch { case _: IOException => false }
+    }
+  }
 
   def isWritable(path: Path): Boolean =
     path.toFile().canWrite()
