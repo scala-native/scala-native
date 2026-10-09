@@ -1,0 +1,7 @@
+> run
+> set nativeConfig ~= (_.withGC(scala.scalanative.build.GC.commix))
+> run
+> set nativeConfig ~= (_.withTrapBasedGCYieldPoints(true))
+> run plain
+> set nativeConfig ~= (_.withGC(scala.scalanative.build.GC.immix))
+> run plain

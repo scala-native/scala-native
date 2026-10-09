@@ -492,6 +492,7 @@ object NativeConfigJsonFormats {
       final val CppOptions = "cppOptions"
       final val TargetTriple = "targetTriple"
       final val Gc = "gc"
+      final val TrapBasedGCYieldPoints = "trapBasedGCYieldPoints"
       final val Lto = "lto"
       final val Mode = "mode"
       final val BuildTarget = "buildTarget"
@@ -525,6 +526,7 @@ object NativeConfigJsonFormats {
       builder.addField(Field.CppOptions, obj.cppOptions)
       builder.addField(Field.TargetTriple, obj.targetTriple)
       builder.addField(Field.Gc, obj.gc)
+      builder.addField(Field.TrapBasedGCYieldPoints, obj.trapBasedGCYieldPoints)
       builder.addField(Field.Lto, obj.lto)
       builder.addField(Field.Mode, obj.mode)
       builder.addField(Field.BuildTarget, obj.buildTarget)
@@ -562,6 +564,9 @@ object NativeConfigJsonFormats {
           .withCppOptions(_ => unbuilder.readField[Seq[String]](Field.CppOptions))
           .withTargetTriple(unbuilder.readField[Option[String]](Field.TargetTriple))
           .withGC(unbuilder.readField[GC](Field.Gc))
+          .withTrapBasedGCYieldPoints(
+            optionFormat[Boolean].read(unbuilder.lookupField(Field.TrapBasedGCYieldPoints), unbuilder)
+          )
           .withLTO(unbuilder.readField[LTO](Field.Lto))
           .withMode(unbuilder.readField[Mode](Field.Mode))
           .withBuildTarget(unbuilder.readField[BuildTarget](Field.BuildTarget))

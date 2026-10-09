@@ -68,6 +68,39 @@ To achive (almost) no-overhead for stopping threads during garbage collection, S
 To mittigate this issue you can replace default yield points mechanism with a conservative, but slower mechanism checking for a global flag to be set using `SCALANATIVE_GC_TRAP_BASED_YIELDPOINTS=0` env variable when building.
 Trap based yieldpoint mechanism is used by default in release modes, while the debug mode uses conventional approach.
 
+Libraries that install their own SIGSEGV handler (for example libclang's crash
+recovery) can intercept GC safepoints. If they re-raise the signal, its original
+fault address is lost and Scala Native cannot recognize the safepoint. Select
+conventional polling when building applications embedding such libraries:
+
+```scala
+nativeConfig ~= (_.withTrapBasedGCYieldPoints(false))
+```
+
+This retains multithreading support. `None` selects the mode default; the
+build-time `SCALANATIVE_GC_TRAP_BASED_YIELDPOINTS` environment variable overrides
+the configuration. Rebuild the binary after changing this setting.
+
+Fatal runtime signal diagnostics are written directly to stderr, including the
+signal code, original PC/SP, process identity, and (for GC handlers) mutator,
+trap cell and GC stopping state. Software-generated signals report the sender
+instead of interpreting the signal-info union as a fault address. The runtime
+then restores the default action and re-raises the original signal, allowing a
+core dump if enabled by the OS. Symbolize the recorded PC using the matching
+binary and debug information; the core's terminating PC may be in `raise`.
+
+For intermittent `SEGV_MAPERR` failures, retain the binary, debug information,
+stderr record and core dump, and compare the same optimized workload with traps
+enabled and disabled. Resolve the faulting instruction before attributing a
+failure to GC or the test that most recently finished. An unmapped-address fault
+is fatal, including while GC is stopping threads.
+
+The standalone regression suite `bash scripts/tests/gc-signals.sh` exercises
+signal classification, fatal reporting and concurrent trap initialization for
+Immix and Commix. On Linux, set `GC_SIGNAL_TEST_LIBCLANG` to the path of
+`libclang.so` to additionally reproduce interception of a protected trap cell
+by libclang's crash recovery.
+
 ## Debugging signals
 
 In case of problems with unexpected signals crashing the test (SIGSEGV, SIGBUS) you can set the environment variable `SCALANATIVE_TEST_DEBUG_SIGNALS=1` to enable debug signal handlers in the test runner.
