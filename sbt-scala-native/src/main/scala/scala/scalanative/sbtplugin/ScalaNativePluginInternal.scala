@@ -221,6 +221,9 @@ object ScalaNativePluginInternal {
    *  times per project.
    */
   def scalaNativeConfigSettings(testConfig: Boolean): Seq[Setting[_]] = Seq(
+    auxiliaryClassFiles := Def.uncached {
+      auxiliaryClassFiles.value :+ NirAuxiliaryClassFiles
+    },
     compile / scalacOptions ++= {
       if (isGeneratingForIDE) None
       else
