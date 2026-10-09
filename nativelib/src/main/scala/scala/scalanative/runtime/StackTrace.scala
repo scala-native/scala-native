@@ -187,7 +187,7 @@ private[runtime] object StackTrace {
 
   @resolvedAtLinktime
   private def hasDebugInfo: Boolean =
-    (LinktimeInfo.isMac || LinktimeInfo.isLinux) &&
+    (LinktimeInfo.isMac || LinktimeInfo.isLinux || LinktimeInfo.isWindows) &&
       !LinktimeInfo.is32BitPlatform &&
       LinktimeInfo.sourceLevelDebuging.generateFunctionSourcePositions
 
@@ -209,7 +209,15 @@ private[runtime] object StackTrace {
         ) == 0
       val symbol =
         if (isScalaNativeMangledName)
-          // skip first `_`
+          // skip `__` from MSVC `__SM...` linkage names
+          position.linkageName + 2
+        else if (
+          ffi.strncmp(
+            position.linkageName,
+            c"_SM",
+            Intrinsics.castIntToRawSize(3)
+          ) == 0
+        )
           position.linkageName + 1
         else position.linkageName
 

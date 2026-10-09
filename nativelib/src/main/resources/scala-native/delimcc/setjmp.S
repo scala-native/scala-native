@@ -305,12 +305,12 @@ jump_buf layout:
 .global _lh_boundary_entry
 .global _lh_resume_entry
 .global _lh_get_sp
-#if !defined(__APPLE__)
-.type _lh_setjmp,%function
-.type _lh_longjmp,%function
-.type _lh_boundary_entry,%function
-.type _lh_resume_entry,%function
-.type _lh_get_sp,%function
+#if defined(__ELF__)
+.type _lh_setjmp,@function
+.type _lh_longjmp,@function
+.type _lh_boundary_entry,@function
+.type _lh_resume_entry,@function
+.type _lh_get_sp,@function
 #endif
 
 .balign 4
