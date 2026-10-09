@@ -3,7 +3,7 @@ package nir
 
 import scala.language.implicitConversions
 
-final class Sig(val mangle: String) {
+final class Sig(val mangle: String) extends AnyVal {
   final def toProxy: Sig =
     if (isMethod) {
       val Sig.Method(id, types, _) = this.unmangled: @unchecked
@@ -15,15 +15,6 @@ final class Sig(val mangle: String) {
     }
   final def show: String =
     Show(this)
-  override final def equals(other: Any): Boolean =
-    (this eq other.asInstanceOf[AnyRef]) || (other match {
-      case other: Sig => other.mangle == mangle
-      case _          => false
-    })
-  override final lazy val hashCode: Int =
-    mangle.##
-  override final def toString: String =
-    mangle
   final def unmangled: Sig.Unmangled = Unmangle.unmangleSig(mangle)
 
   final def isField: Boolean = mangle(0) == 'F'
@@ -37,10 +28,7 @@ final class Sig(val mangle: String) {
   private[scalanative] final def isTraitInit = mangle == "D6$init$uEO"
 
   final def isVirtual = !(isCtor || isClinit || isExtern)
-  final def isPrivate: Boolean = privateIn.isDefined
   final def isStatic: Boolean = unmangled.sigScope.isStatic
-  final lazy val privateIn: Option[Global.Top] =
-    unmangled.sigScope.privateIn.map(_.top)
 }
 object Sig {
   sealed abstract class Scope(
