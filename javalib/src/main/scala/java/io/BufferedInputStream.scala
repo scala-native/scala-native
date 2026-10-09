@@ -236,7 +236,7 @@ class BufferedInputStream(_in: InputStream, initialSize: Int)
     var bytesRead: Int = 0
 
     while (remaining > 0) {
-      if (pos + remaining <= count) {
+      if (remaining <= count - pos) {
         // all remaining can be read from the source buffer
         System.arraycopy(
           sourceBuffer,
@@ -260,24 +260,24 @@ class BufferedInputStream(_in: InputStream, initialSize: Int)
           )
         }
 
+        // Consume the buffered bytes before refilling
+        pos += available
+        targetOffset += available
+        bytesRead += available
+        remaining -= available
+
         // fill source buffer from source stream
         fillBuffer(sourceBuffer, source) match {
           // end of source stream
           case None =>
-            if (available == 0)
+            if (bytesRead == 0)
               bytesRead = -1
-            else
-              bytesRead += available
 
             remaining = 0
 
           // source read into nextBuffer
           case Some(nextBuffer) =>
             sourceBuffer = nextBuffer
-            targetOffset += available
-            bytesRead += available
-
-            remaining -= available
         }
       }
     }
@@ -291,34 +291,29 @@ class BufferedInputStream(_in: InputStream, initialSize: Int)
       source: InputStream
   ) = {
     var sourceBuffer: Array[Byte] = initialBuffer
-    var remaining: Int = requested.toInt
+    var remaining: Long = requested
     var bytesSkipped: Long = 0L
 
     while (remaining > 0) {
-      if (pos + remaining <= count) {
-        pos += remaining
+      if (remaining <= count - pos) {
+        pos += remaining.toInt
         bytesSkipped += remaining
         remaining = 0
       } else {
         val available = count - pos
+        pos += available
+        bytesSkipped += available
+        remaining -= available
 
         // fill source buffer from in stream
         fillBuffer(sourceBuffer, source) match {
           // end of source stream
           case None =>
-            if (available == 0)
-              bytesSkipped = -1
-            else
-              bytesSkipped += available
-
             remaining = 0
 
           // source read into nextBuffer
           case Some(nextBuffer) =>
             sourceBuffer = nextBuffer
-            bytesSkipped += available
-
-            remaining -= available
         }
       }
     }

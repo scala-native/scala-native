@@ -11,6 +11,85 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import scalanative.junit.utils.AssumesHelper._
 
 class BufferedInputStreamTest {
+  @Test def markedSkipAcrossRefills(): Unit = {
+    val bytes = Array.tabulate[Byte](200)(i => (i % 127).toByte)
+    val in = new BufferedInputStream(new ByteArrayInputStream(bytes), 8)
+    try {
+      in.mark(Int.MaxValue)
+      for (offset <- List(3, 70, 1, 150, 5, 199, 2)) {
+        in.reset()
+        var remaining = offset.toLong
+        while (remaining > 0) {
+          val skipped = in.skip(remaining)
+          assertTrue("skip must make progress", skipped > 0)
+          remaining -= skipped
+        }
+        assertEquals(s"offset $offset", bytes(offset).toInt & 0xff, in.read())
+      }
+    } finally in.close()
+  }
+
+  @Test def markedShortReadsAcrossRefills(): Unit = {
+    val bytes = Array.tabulate[Byte](53)(i => (i % 127).toByte)
+    val source = new ByteArrayInputStream(bytes) {
+      override def read(b: Array[Byte], off: Int, len: Int): Int =
+        super.read(b, off, math.min(len, 3))
+    }
+    val in = new DataInputStream(new BufferedInputStream(source, 8))
+    try {
+      in.mark(Int.MaxValue)
+      for ((offset, length) <- List((2, 3), (19, 5), (1, 40), (0, 53))) {
+        in.reset()
+        in.readFully(new Array[Byte](offset))
+        val actual = new Array[Byte](length)
+        in.readFully(actual)
+        assertArrayEquals(
+          s"offset $offset",
+          bytes.slice(offset, offset + length),
+          actual
+        )
+      }
+    } finally in.close()
+  }
+
+  @Test def partialReadAtEndOfStream(): Unit = {
+    val bytes = Array.tabulate[Byte](10)(_.toByte)
+    for (marked <- List(false, true)) {
+      val in = new BufferedInputStream(new ByteArrayInputStream(bytes), 4)
+      try {
+        if (marked) in.mark(Int.MaxValue)
+        val actual = new Array[Byte](20)
+        var total = 0
+        var read = in.read(actual, total, actual.length - total)
+        while (read != -1) {
+          assertTrue(read > 0)
+          total += read
+          read = in.read(actual, total, actual.length - total)
+        }
+        assertEquals(bytes.length, total)
+        assertArrayEquals(bytes, actual.take(total))
+        assertEquals(0L, in.skip(1))
+      } finally in.close()
+    }
+  }
+
+  @Test def skipBeyondIntegerRange(): Unit = {
+    val bytes = Array.tabulate[Byte](10)(_.toByte)
+    val in = new BufferedInputStream(new ByteArrayInputStream(bytes), 4)
+    try {
+      in.mark(Int.MaxValue)
+      var total = 0L
+      var skipped = in.skip(Long.MaxValue)
+      while (skipped > 0) {
+        total += skipped
+        skipped = in.skip(Long.MaxValue)
+      }
+      assertEquals(bytes.length.toLong, total)
+      assertEquals(0L, skipped)
+      assertEquals(-1, in.read())
+    } finally in.close()
+  }
+
   private val exampleBytes0 =
     List(0, 1, 2, 3, 4, 5, 6, 7, 8, 9).map(_.toByte).toArray[Byte]
 
