@@ -4,7 +4,7 @@ import java.io.{FileDescriptor, IOException}
 import java.nio.channels.FileChannel
 
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.libc.LibcExt
+import scala.scalanative.libc.{LibcExt, string}
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.posix.sys.mman._
 import scala.scalanative.posix.unistd.{_SC_PAGESIZE, sysconf}
@@ -57,16 +57,16 @@ private class MappedByteBufferImpl(
   def isDirect(): Boolean = true
 
   @noinline
-  def slice(): ByteBuffer =
-    genMappedBuffer.generic_slice()
+  def slice(): MappedByteBuffer =
+    genMappedBuffer.generic_slice().asInstanceOf[MappedByteBuffer]
 
   @noinline
-  def slice(index: Int, length: Int): ByteBuffer =
-    genMappedBuffer.generic_slice(index, length)
+  def slice(index: Int, length: Int): MappedByteBuffer =
+    genMappedBuffer.generic_slice(index, length).asInstanceOf[MappedByteBuffer]
 
   @noinline
-  def duplicate(): ByteBuffer =
-    genMappedBuffer.generic_duplicate()
+  def duplicate(): MappedByteBuffer =
+    genMappedBuffer.generic_duplicate().asInstanceOf[MappedByteBuffer]
 
   @noinline
   def asReadOnlyBuffer(): ByteBuffer =
@@ -81,8 +81,18 @@ private class MappedByteBufferImpl(
     genBuffer.generic_put(src, offset, length)
 
   @noinline
-  def compact(): ByteBuffer =
-    genMappedBuffer.generic_compact()
+  def compact(): MappedByteBuffer = {
+    ensureNotReadOnly()
+    val length = remaining()
+    if (length > 0) {
+      val destination = _mappedData.data + _offset
+      string.memmove(destination, destination + position(), length.toUSize)
+    }
+    _mark = -1
+    limit(capacity())
+    position(length)
+    this
+  }
 
   // Here begins the stuff specific to ByteArrays
 

@@ -13,8 +13,8 @@ trait Deque[E] extends Queue[E] with SequencedCollection[E] {
   def getLast(): E
   def peekFirst(): E
   def peekLast(): E
-  def removeFirstOccurrence(o: Any): Boolean
-  def removeLastOccurrence(o: Any): Boolean
+  def removeFirstOccurrence(o: AnyRef): Boolean
+  def removeLastOccurrence(o: AnyRef): Boolean
   def add(e: E): Boolean
   def offer(e: E): Boolean
   def remove(): E

@@ -365,7 +365,9 @@ bool Heap_shouldGrow(Heap *heap) {
 
     return timeInMark >= heap->maxMarkTimeRatio * timeTotal ||
            freeBlockCount < heap->minFreeRatio * blockCount ||
-           unavailableBlockCount > blockCount * MAX_UNAVAILABLE_RATIO;
+           (unavailableBlockCount > blockCount * MAX_UNAVAILABLE_RATIO &&
+            freeBlockCount <
+                blockCount * MIN_FREE_RATIO_TO_DEFER_UNAVAILABLE_GROWTH);
 }
 
 void Heap_GrowIfNeeded(Heap *heap) {

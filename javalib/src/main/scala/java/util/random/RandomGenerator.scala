@@ -508,7 +508,7 @@ trait RandomGenerator {
         if (nSeen >= streamSize) false
         else {
           nSeen += 1
-          upstreamSpliter.tryAdvance(e => action.accept(e))
+          upstreamSpliter.tryAdvance(action)
         }
       }
     }
@@ -547,7 +547,7 @@ trait RandomGenerator {
         if (nSeen >= streamSize) false
         else {
           nSeen += 1
-          upstreamSpliter.tryAdvance(e => action.accept(e))
+          upstreamSpliter.tryAdvance(action)
         }
       }
     }
@@ -683,7 +683,7 @@ trait RandomGenerator {
         if (nSeen >= streamSize) false
         else {
           nSeen += 1
-          upstreamSpliter.tryAdvance(e => action.accept(e))
+          upstreamSpliter.tryAdvance(action)
         }
       }
     }
@@ -719,7 +719,7 @@ trait RandomGenerator {
         if (nSeen >= streamSize) false
         else {
           nSeen += 1
-          upstreamSpliter.tryAdvance(e => action.accept(e))
+          upstreamSpliter.tryAdvance(action)
         }
       }
     }
@@ -783,7 +783,7 @@ trait RandomGenerator {
         if (nSeen >= streamSize) false
         else {
           nSeen += 1
-          upstreamSpliter.tryAdvance(e => action.accept(e))
+          upstreamSpliter.tryAdvance(action)
         }
       }
     }
@@ -819,7 +819,7 @@ trait RandomGenerator {
         if (nSeen >= streamSize) false
         else {
           nSeen += 1
-          upstreamSpliter.tryAdvance(e => action.accept(e))
+          upstreamSpliter.tryAdvance(action)
         }
       }
     }

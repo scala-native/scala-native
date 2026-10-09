@@ -648,7 +648,7 @@ abstract class CharBuffer private[nio] (
 
   final def charAt(index: Int): Char = get(position() + index)
 
-  def subSequence(start: Int, end: Int): CharSequence
+  def subSequence(start: Int, end: Int): CharBuffer
 
   def append(csq: CharSequence): CharBuffer =
     put(csq.toString())

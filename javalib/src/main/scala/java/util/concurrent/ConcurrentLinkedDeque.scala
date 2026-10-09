@@ -1081,7 +1081,7 @@ class ConcurrentLinkedDeque[E <: AnyRef]
    *    {@code true} if the deque contained the specified element throws
    *    NullPointerException if the specified element is null
    */
-  override def removeFirstOccurrence(o: Any): Boolean = {
+  override def removeFirstOccurrence(o: AnyRef): Boolean = {
     Objects.requireNonNull(o)
     var p = first
     while (p != null) {
@@ -1108,7 +1108,7 @@ class ConcurrentLinkedDeque[E <: AnyRef]
    *    {@code true} if the deque contained the specified element throws
    *    NullPointerException if the specified element is null
    */
-  override def removeLastOccurrence(o: Any): Boolean = {
+  override def removeLastOccurrence(o: AnyRef): Boolean = {
     Objects.requireNonNull(o)
     var p = last
     while (p != null) {
@@ -1200,7 +1200,8 @@ class ConcurrentLinkedDeque[E <: AnyRef]
    *    {@code true} if the deque contained the specified element throws
    *    NullPointerException if the specified element is null
    */
-  override def remove(o: Any): Boolean = removeFirstOccurrence(o)
+  override def remove(o: Any): Boolean =
+    removeFirstOccurrence(o.asInstanceOf[AnyRef])
 
   /** Appends all of the elements in the specified collection to the end of this
    *  deque, in the order that they are returned by the specified collection's

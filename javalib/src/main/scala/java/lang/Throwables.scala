@@ -183,7 +183,7 @@ class AbstractMethodError(s: String) extends IncompatibleClassChangeError(s) {
   def this() = this(null)
 }
 
-class AssertionError private (s: String, e: Throwable) extends Error(s, e) {
+class AssertionError(s: String, e: Throwable) extends Error(s, e) {
   def this() = this(null, null)
   def this(o: Object) = this(o.toString, null)
   def this(b: scala.Boolean) = this(b.toString, null)

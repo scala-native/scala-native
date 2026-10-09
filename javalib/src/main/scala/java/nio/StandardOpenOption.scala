@@ -1,5 +1,7 @@
 package java.nio.file
 
+import java.util.Objects
+
 class StandardOpenOption private (name: String, ordinal: Int)
     extends _Enum[StandardOpenOption](name, ordinal)
     with OpenOption
@@ -16,6 +18,15 @@ object StandardOpenOption {
   final val DSYNC = new StandardOpenOption("DSYNC", 9)
 
   def values(): Array[StandardOpenOption] = _values.clone()
+
+  def valueOf(name: String): StandardOpenOption = {
+    Objects.requireNonNull(name, "Name is null")
+    _values.find(_.name() == name).getOrElse {
+      throw new IllegalArgumentException(
+        "No enum constant java.nio.file.StandardOpenOption." + name
+      )
+    }
+  }
 
   private val _values = Array(
     READ,

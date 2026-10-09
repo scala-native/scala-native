@@ -38,7 +38,6 @@ class PipedOutputStream() extends OutputStream {
     stream.synchronized {
       if (stream.isConnected)
         throw new IOException("Target stream is already connected")
-      stream.buffer = new Array[Byte](PipedInputStream.PIPE_SIZE)
       stream.isConnected = true
       this.dest = stream
     }

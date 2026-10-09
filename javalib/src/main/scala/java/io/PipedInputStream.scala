@@ -21,18 +21,29 @@ object PipedInputStream {
   final val PIPE_SIZE = 1024
 }
 
-class PipedInputStream() extends InputStream {
+class PipedInputStream(pipeSize: Int) extends InputStream {
+
+  if (pipeSize <= 0)
+    throw new IllegalArgumentException("Pipe Size <= 0")
 
   protected var in: Int = -1
   protected var out: Int = 0
-  private[io] var buffer: Array[Byte] = _
+  private[io] var buffer: Array[Byte] = new Array[Byte](pipeSize)
   private[io] var isConnected = false // Modified by PipedOutputStream
   private var lastReader: Thread = _
   private var isClosed = false
   private var lastWriter: Thread = _
 
+  def this() = this(PipedInputStream.PIPE_SIZE)
+
   def this(out: PipedOutputStream) = {
     this()
+    connect(out)
+  }
+
+  @throws[IOException]
+  def this(out: PipedOutputStream, pipeSize: Int) = {
+    this(pipeSize)
     connect(out)
   }
 
@@ -48,7 +59,10 @@ class PipedInputStream() extends InputStream {
     if (buffer != null) buffer = null
   }
 
-  def connect(src: PipedOutputStream) = src.connect(this)
+  def connect(src: PipedOutputStream) = {
+    if (src == null) throw new NullPointerException
+    src.connect(this)
+  }
 
   override def read(): Int = synchronized {
     if (!isConnected) throw new IOException("Not connected")

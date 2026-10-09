@@ -15,6 +15,14 @@ abstract class MappedByteBuffer private[nio] (
       else _mappedData.data
     ) {
 
+  override def slice(): MappedByteBuffer
+
+  override def slice(index: Int, length: Int): MappedByteBuffer
+
+  override def duplicate(): MappedByteBuffer
+
+  override def compact(): MappedByteBuffer
+
   def force(): MappedByteBuffer
 
   def isLoaded(): Boolean

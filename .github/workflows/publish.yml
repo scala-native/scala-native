@@ -134,7 +134,8 @@ jobs:
           apps: sbt
       - name: Dispatch to workflows of dependant projects
         run: |
-          publishedVersion=$(sbt -no-colors "print version" | tail -n 1)
+          set -euo pipefail
+          publishedVersion=$(sbt --server --batch --color=never --supershell=never -error "print ThisBuild / version" | tail -n 1)
           echo "This build version: ${publishedVersion}"
 
           curl https://api.github.com/repos/${{ matrix.repo }}/dispatches \

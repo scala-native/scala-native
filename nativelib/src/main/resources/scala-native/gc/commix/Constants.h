@@ -7,6 +7,7 @@
 #define DEFAULT_MARK_TIME_RATIO 0.05
 #define DEFAULT_FREE_RATIO 0.5
 #define MAX_UNAVAILABLE_RATIO 0.25
+#define MIN_FREE_RATIO_TO_DEFER_UNAVAILABLE_GROWTH 0.65
 #define METADATA_PER_BLOCK                                                     \
     (sizeof(BlockMeta) + LINE_COUNT * LINE_METADATA_SIZE +                     \
      WORDS_IN_BLOCK / ALLOCATION_ALIGNMENT_WORDS)

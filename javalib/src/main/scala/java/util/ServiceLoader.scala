@@ -1,6 +1,7 @@
 package java.util
 
 import java.lang.Iterable
+import java.util.function.Supplier
 import java.{util => ju}
 
 import scala.scalanative.reflect.Reflect
@@ -43,7 +44,7 @@ final class ServiceLoader[S <: AnyRef] private[util] (
 }
 
 object ServiceLoader {
-  trait Provider[S <: AnyRef] {
+  trait Provider[S <: AnyRef] extends Supplier[S] {
     def get(): S
     def `type`(): Class[_ <: S]
   }

@@ -249,10 +249,10 @@ class LinkedList[E]()
     changed
   }
 
-  def removeFirstOccurrence(o: Any): Boolean =
+  def removeFirstOccurrence(o: AnyRef): Boolean =
     _removeOccurrence(iterator(), o)
 
-  def removeLastOccurrence(o: Any): Boolean =
+  def removeLastOccurrence(o: AnyRef): Boolean =
     _removeOccurrence(descendingIterator(), o)
 
   override def listIterator(index: Int): ListIterator[E] = {

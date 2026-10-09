@@ -3,7 +3,7 @@ package java.net
 // Ported from Scala.js, commit: 617fc8e, dated 2022-03-07
 
 import java.io.UnsupportedEncodingException
-import java.nio.charset.{Charset, CharsetDecoder}
+import java.nio.charset.{Charset, CharsetDecoder, CodingErrorAction}
 import java.nio.{ByteBuffer, CharBuffer}
 
 object URLDecoder {
@@ -24,6 +24,12 @@ object URLDecoder {
           Charset.forName(enc)
       }
     )
+  }
+
+  def decode(s: String, charset: Charset): String = {
+    if (charset == null)
+      throw new NullPointerException
+    decodeImpl(s, () => charset)
   }
 
   private def decodeImpl(s: String, getCharset: () => Charset): String = {
@@ -52,7 +58,10 @@ object URLDecoder {
 
         case '%' =>
           if (decoder == null) { // equivalent to `byteBuffer == null`
-            decoder = getCharset().newDecoder()
+            decoder = getCharset()
+              .newDecoder()
+              .onMalformedInput(CodingErrorAction.REPLACE)
+              .onUnmappableCharacter(CodingErrorAction.REPLACE)
             byteBuffer = ByteBuffer.allocate(len / 3)
           } else {
             byteBuffer.clear()

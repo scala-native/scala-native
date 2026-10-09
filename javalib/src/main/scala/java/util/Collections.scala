@@ -67,6 +67,8 @@ object Collections {
 
       def nextElement(): Any =
         throw new NoSuchElementException
+
+      override def asIterator(): Iterator[Any] = emptyIterator[Any]()
     }
   }
 

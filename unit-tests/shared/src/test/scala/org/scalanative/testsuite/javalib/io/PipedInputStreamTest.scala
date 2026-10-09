@@ -17,15 +17,175 @@
 package org.scalanative.testsuite.javalib.io
 
 import java.io.{IOException, PipedInputStream, PipedOutputStream}
+import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 import org.junit.Assert._
 import org.junit._
+
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 object PipedInputStreamTest {
   @BeforeClass def checkRuntime(): Unit =
     scala.scalanative.junit.utils.AssumesHelper.assumeMultithreadingIsEnabled()
 }
 class PipedInputStreamTest {
+
+  private def assertOperationBlocksThenCompletes(
+      operation: () => Unit,
+      release: () => Unit
+  ): Unit = {
+    val started = new CountDownLatch(1)
+    val completed = new CountDownLatch(1)
+    val failure = new AtomicReference[Throwable]()
+    val worker = new Thread(new Runnable {
+      def run(): Unit = {
+        started.countDown()
+        try operation()
+        catch { case problem: Throwable => failure.set(problem) }
+        finally completed.countDown()
+      }
+    })
+    worker.setDaemon(true)
+    worker.start()
+    try {
+      assertTrue("Worker did not start", started.await(5, TimeUnit.SECONDS))
+      assertFalse(
+        "Operation should block",
+        completed.await(100, TimeUnit.MILLISECONDS)
+      )
+      release()
+      assertTrue(
+        "Operation did not resume",
+        completed.await(5, TimeUnit.SECONDS)
+      )
+      val problem = failure.get()
+      if (problem != null) throw problem
+    } finally {
+      worker.interrupt()
+      worker.join(5000)
+      assertFalse("Worker did not terminate", worker.isAlive())
+    }
+  }
+
+  @Test def pipeSizeMustBePositive(): Unit = {
+    for (size <- Array(0, -1, Int.MinValue)) {
+      assertThrows(
+        classOf[IllegalArgumentException],
+        new PipedInputStream(size)
+      )
+      assertThrows(
+        classOf[IllegalArgumentException],
+        new PipedInputStream(null, size)
+      )
+    }
+  }
+
+  @Test def sizedConstructorStartsDisconnected(): Unit = {
+    val input = new PipedInputStream(3)
+    try {
+      assertEquals(0, input.available())
+      assertThrows(classOf[IOException], input.read())
+    } finally input.close()
+  }
+
+  @Test def connectedSizedConstructorRejectsNullAndConnectedSource(): Unit = {
+    assertThrows(classOf[NullPointerException], new PipedInputStream(null, 3))
+    val output = new PipedOutputStream()
+    val input = new PipedInputStream(output, 3)
+    try {
+      assertThrows(classOf[IOException], new PipedInputStream(output, 3))
+      output.write(42)
+      assertEquals(42, input.read())
+    } finally {
+      output.close()
+      input.close()
+    }
+  }
+
+  @Test def sizedPipesWrapWithEitherConnectionDirection(): Unit = {
+    for (mode <- 0 until 3) {
+      val output = new PipedOutputStream()
+      val input =
+        if (mode == 2) new PipedInputStream(output, 3)
+        else {
+          val result = new PipedInputStream(3)
+          if (mode == 0) result.connect(output)
+          else output.connect(result)
+          result
+        }
+      try {
+        output.write(Array[Byte](0, 1, 2))
+        assertEquals(3, input.available())
+        assertEquals(0, input.read())
+        assertEquals(1, input.read())
+        output.write(Array[Byte](3, 4))
+        assertEquals(3, input.available())
+        val bytes = new Array[Byte](3)
+        assertEquals(3, input.read(bytes, 0, bytes.length))
+        assertArrayEquals(Array[Byte](2, 3, 4), bytes)
+        assertEquals(0, input.available())
+        output.close()
+        assertEquals(-1, input.read())
+      } finally {
+        output.close()
+        input.close()
+      }
+    }
+  }
+
+  @Test def oneElementSizedPipe(): Unit = {
+    val output = new PipedOutputStream()
+    val input = new PipedInputStream(output, 1)
+    try {
+      for (value <- Array(0, 127, 255)) {
+        output.write(value)
+        assertEquals(1, input.available())
+        assertEquals(value, input.read())
+        assertEquals(0, input.available())
+      }
+    } finally {
+      output.close()
+      input.close()
+    }
+  }
+
+  @Test def sizedFullPipeBlocksUntilRead(): Unit = {
+    val output = new PipedOutputStream()
+    val input = new PipedInputStream(output, 2)
+    try {
+      output.write(Array[Byte](1, 2))
+      assertOperationBlocksThenCompletes(
+        () => output.write(3),
+        () => {
+          assertEquals(1, input.read())
+          output.flush()
+        }
+      )
+      assertEquals(2, input.read())
+      assertEquals(3, input.read())
+    } finally {
+      output.close()
+      input.close()
+    }
+  }
+
+  @Test def sizedEmptyPipeBlocksUntilWrite(): Unit = {
+    val output = new PipedOutputStream()
+    val input = new PipedInputStream(output, 2)
+    try {
+      assertOperationBlocksThenCompletes(
+        () => assertEquals(7, input.read()),
+        () => {
+          output.write(7)
+          output.flush()
+        }
+      )
+    } finally {
+      output.close()
+      input.close()
+    }
+  }
 
   /** Tears down the fixture, for example, close a network connection. This
    *  method is called after a test is executed.

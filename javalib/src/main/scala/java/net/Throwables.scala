@@ -35,8 +35,12 @@ class UnknownServiceException(msg: String) extends IOException(msg) {
   def this() = this(null)
 }
 
-class SocketException(msg: String) extends IOException(msg) {
-  def this() = this(null)
+class SocketException(msg: String, cause: Throwable)
+    extends IOException(msg, cause) {
+  def this(msg: String) = this(msg, null)
+  def this(cause: Throwable) =
+    this(if (cause == null) null else cause.toString, cause)
+  def this() = this(null, null)
 }
 
 class BindException(msg: String) extends SocketException(msg) {

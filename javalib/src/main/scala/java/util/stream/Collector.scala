@@ -1,7 +1,9 @@
 package java.util.stream
 
 import java.util.function._
-import java.util.{Collections, HashSet, Set}
+import java.util.{Collections, HashSet, Objects, Set}
+
+import scala.annotation.varargs
 
 trait Collector[T, A, R] {
 
@@ -45,17 +47,19 @@ object Collector {
       addIdentity: Boolean,
       ccs: Collector.Characteristics*
   ): Set[Collector.Characteristics] = {
+    Objects.requireNonNull(ccs)
     val hs = new HashSet[Collector.Characteristics]()
 
     if (addIdentity)
       hs.add(Characteristics.IDENTITY_FINISH)
 
     for (c <- ccs)
-      hs.add(c)
+      hs.add(Objects.requireNonNull(c))
 
     Collections.unmodifiableSet(hs)
   }
 
+  @varargs
   def of[T, A, R](
       _supplier: Supplier[A],
       _accumulator: BiConsumer[A, T],
@@ -63,11 +67,15 @@ object Collector {
       _finisher: Function[A, R], // Note trailing comma
       _characteristics: Collector.Characteristics*
   ): Collector[T, A, R] = {
+    Objects.requireNonNull(_supplier)
+    Objects.requireNonNull(_accumulator)
+    Objects.requireNonNull(_combiner)
+    Objects.requireNonNull(_finisher)
+    val ccs = createCharacteristicsSet(false, _characteristics: _*)
     new Collector[T, A, R] {
       def accumulator(): BiConsumer[A, T] = _accumulator
 
-      def characteristics(): Set[Collector.Characteristics] =
-        createCharacteristicsSet(false, _characteristics: _*)
+      def characteristics(): Set[Collector.Characteristics] = ccs
 
       def combiner(): BinaryOperator[A] = _combiner
 
@@ -77,17 +85,21 @@ object Collector {
     }
   }
 
+  @varargs
   def of[T, R](
       _supplier: Supplier[R],
       _accumulator: BiConsumer[R, T],
       _combiner: BinaryOperator[R],
       _characteristics: Collector.Characteristics*
   ): Collector[T, R, R] = {
+    Objects.requireNonNull(_supplier)
+    Objects.requireNonNull(_accumulator)
+    Objects.requireNonNull(_combiner)
+    val ccs = createCharacteristicsSet(true, _characteristics: _*)
     new Collector[T, R, R] {
       def accumulator(): BiConsumer[R, T] = _accumulator
 
-      def characteristics(): Set[Collector.Characteristics] =
-        createCharacteristicsSet(true, _characteristics: _*)
+      def characteristics(): Set[Collector.Characteristics] = ccs
 
       def combiner(): BinaryOperator[R] = _combiner
 

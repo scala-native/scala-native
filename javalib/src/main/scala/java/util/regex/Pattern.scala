@@ -1,6 +1,7 @@
 package java.util
 package regex
 
+import java.io.Serializable
 import java.util.Arrays
 import java.util.function.Predicate
 import java.util.stream.Stream
@@ -106,7 +107,9 @@ object Pattern {
   def quote(s: String): String = s"\\Q${s}\\E"
 }
 
-final class Pattern private[regex] (_regex: String, _flags: Int) {
+final class Pattern private[regex] (_regex: String, _flags: Int)
+    extends AnyRef
+    with Serializable {
 
   private[regex] val compiled = {
     val re2Flags = Pattern.toRe2Flags(_flags)

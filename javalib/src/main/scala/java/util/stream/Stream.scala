@@ -385,7 +385,7 @@ trait Stream[T] extends BaseStream[T, Stream[T]] {
 }
 
 object Stream {
-  trait Builder[T] {
+  trait Builder[T] extends Consumer[T] {
     def accept(t: T): Unit
     def add(t: T): Builder[T] = {
       accept(t)
