@@ -278,9 +278,8 @@ private[nscplugin] trait VarHandleInterop extends NativeInteropUtil {
     val args = List(binding, coordinateClass) ++
       (if factory == d.RuntimeVarHandle_createReferenceHandle then List(Literal(Constant(tpe)))
        else Nil)
-    // The Native _VarHandle definition and the JDK VarHandle API have the same
-    // NIR name. Expose the API type here without a runtime checked cast.
-    Apply(ref(factory), args).withType(d.VarHandleClass.typeRef)
+    // Factories expose the JDK-independent protocol so nativelib can target Java 8.
+    TypeApply(Select(Apply(ref(factory), args), nme.asInstanceOf_), List(TypeTree(d.VarHandleClass.typeRef)))
   }
 
   private def classLiteral(tree: Tree)(using Context)(using metadata: VarHandleMetadata): Option[Type] = tree match {

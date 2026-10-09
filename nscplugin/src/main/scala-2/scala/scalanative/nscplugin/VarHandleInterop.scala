@@ -354,10 +354,12 @@ private[nscplugin] trait VarHandleInterop[G <: Global with Singleton] {
       val factoryArgs = List(binding, coordinateClass) ::: variableClass
       typer
         .atOwner(currentOwner)
-        .typed(Apply(gen.mkAttributedRef(factory), factoryArgs))
-        // _VarHandle is renamed to the JDK API class in NIR generation.
-        // This is a compile-time view, not a runtime checked cast.
-        .setType(app.tpe)
+        .typed(
+          TypeApply(
+            Select(Apply(gen.mkAttributedRef(factory), factoryArgs), nme.asInstanceOf_),
+            List(TypeTree(app.tpe))
+          )
+        )
     }
 
     protected def rewriteVarHandleAccess(

@@ -681,22 +681,22 @@ object VarHandle {
   }
 
   // Handle construction
-  def createBooleanHandle(binding: FieldBinding, coordinateType: Class[_]): java.lang.invoke._VarHandle =
+  def createBooleanHandle(binding: FieldBinding, coordinateType: Class[_]): NativeVarHandle =
     new BooleanHandle(binding, coordinateType)
-  def createByteHandle(binding: FieldBinding, coordinateType: Class[_]): java.lang.invoke._VarHandle =
+  def createByteHandle(binding: FieldBinding, coordinateType: Class[_]): NativeVarHandle =
     new ByteHandle(binding, coordinateType)
-  def createShortHandle(binding: FieldBinding, coordinateType: Class[_]): java.lang.invoke._VarHandle =
+  def createShortHandle(binding: FieldBinding, coordinateType: Class[_]): NativeVarHandle =
     new ShortHandle(binding, coordinateType)
-  def createCharHandle(binding: FieldBinding, coordinateType: Class[_]): java.lang.invoke._VarHandle =
+  def createCharHandle(binding: FieldBinding, coordinateType: Class[_]): NativeVarHandle =
     new CharHandle(binding, coordinateType)
-  def createIntHandle(binding: FieldBinding, coordinateType: Class[_]): java.lang.invoke._VarHandle =
+  def createIntHandle(binding: FieldBinding, coordinateType: Class[_]): NativeVarHandle =
     new IntHandle(binding, coordinateType)
-  def createLongHandle(binding: FieldBinding, coordinateType: Class[_]): java.lang.invoke._VarHandle =
+  def createLongHandle(binding: FieldBinding, coordinateType: Class[_]): NativeVarHandle =
     new LongHandle(binding, coordinateType)
-  def createFloatHandle(binding: FieldBinding, coordinateType: Class[_]): java.lang.invoke._VarHandle =
+  def createFloatHandle(binding: FieldBinding, coordinateType: Class[_]): NativeVarHandle =
     new FloatHandle(binding, coordinateType)
-  def createDoubleHandle(binding: FieldBinding, coordinateType: Class[_]): java.lang.invoke._VarHandle =
+  def createDoubleHandle(binding: FieldBinding, coordinateType: Class[_]): NativeVarHandle =
     new DoubleHandle(binding, coordinateType)
-  def createReferenceHandle(binding: FieldBinding, coordinateType: Class[_], variableType: Class[_]): java.lang.invoke._VarHandle =
+  def createReferenceHandle(binding: FieldBinding, coordinateType: Class[_], variableType: Class[_]): NativeVarHandle =
     new ReferenceHandle(binding, variableType, coordinateType)
 }
