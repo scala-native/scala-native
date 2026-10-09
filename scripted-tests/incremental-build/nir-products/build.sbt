@@ -7,19 +7,19 @@ lazy val app = project
   .settings(
     checkGenerated := {
       val classes = (Compile / classDirectory).value
-      val files = (classes / "shared" ** "Greeting*.nir").get
+      val files = (classes / "shared" ** "Greeting*.nir").get()
       assert(files.exists(_.getName.contains("$$Lambda$")))
       assert(files.exists(_.getName.contains("ReflectivelyInstantiate")))
     },
     checkRecompiled := {
       val classes = (Compile / classDirectory).value
       val names =
-        (classes / "shared" ** "Greeting*.nir").get.map(_.getName).toSet
+        (classes / "shared" ** "Greeting*.nir").get().map(_.getName).toSet
       assert(names == Set("Greeting.nir", "Greeting$.nir"), names)
     },
     checkRemoved := {
       val classes = (Compile / classDirectory).value
-      assert((classes / "shared" ** "Greeting*.nir").get.isEmpty)
+      assert((classes / "shared" ** "Greeting*.nir").get().isEmpty)
     }
   )
 
