@@ -26,12 +26,40 @@
  * prevent an application developer from getting the parts of an application
  * which do not actually use the constants from running.
  */
+
+#ifdef _XOPEN_VERSION
+#undef _XOPEN_VERSION
+#endif
 #define _XOPEN_VERSION 0
+
+#ifdef _PC_2_SYMLINKS
+#undef _PC_2_SYMLINKS
+#endif
 #define _PC_2_SYMLINKS 0
+
+#ifdef _SC_SS_REPL_MAX
+#undef _SC_SS_REPL_MAX
+#endif
 #define _SC_SS_REPL_MAX 0
+
+#ifdef _SC_TRACE_EVENT_NAME_MAX
+#undef _SC_TRACE_EVENT_NAME_MAX
+#endif
 #define _SC_TRACE_EVENT_NAME_MAX 0
+
+#ifdef _SC_TRACE_NAME_MAX
+#undef _SC_TRACE_NAME_MAX
+#endif
 #define _SC_TRACE_NAME_MAX 0
+
+#ifdef _SC_TRACE_SYS_MAX
+#undef _SC_TRACE_SYS_MAX
+#endif
 #define _SC_TRACE_SYS_MAX 0
+
+#ifdef _SC_TRACE_USER_EVENT_MAX
+#undef _SC_TRACE_USER_EVENT_MAX
+#endif
 #define _SC_TRACE_USER_EVENT_MAX 0
 #endif // __FreeBSD__ || __OpenBSD__ || __NetBSD__
 
