@@ -31,6 +31,54 @@ class VarHandleJava8CompatibilityTests {
   }
 }
 
+/** Covers both legacy Java varargs packs and signature-polymorphic call trees.
+ */
+class VarHandleVarargsCompatibilityTests {
+  @Test def lowersLiteralArgumentsWithoutFlatteningArrayOperands(): Unit =
+    compileAndLoad(
+      "VarargsAccess.scala" ->
+        """import java.lang.invoke.VarHandle
+          |class VarargsAccess {
+          |  def instance(handle: VarHandle, receiver: Object): Object =
+          |    handle.compareAndExchange(receiver, 1, 2)
+          |  def static(handle: VarHandle): Object = handle.compareAndExchange(1, 2)
+          |  def array(handle: VarHandle, receiver: Object, value: Array[String]): Object =
+          |    handle.getAndSet(receiver, value)
+          |}""".stripMargin
+    ) { defns =>
+      val definitions = defns.collect {
+        case d: nir.Defn.Define if d.name.top.id == "VarargsAccess" => d
+      }
+      val expectedAccessors = Map(
+        "instance" -> "compareExchangeInt",
+        "static" -> "compareExchangeInt",
+        "array" -> "exchangeReference"
+      )
+      expectedAccessors.foreach {
+        case (name, accessor) =>
+          val definition = definitions
+            .find(_.name.sig.unmangled match {
+              case nir.Sig.Method(method, _, _) => method == name
+              case _                            => false
+            })
+            .get
+          val ops = definition.insts.collect {
+            case nir.Inst.Let(_, op, _) => op
+          }
+          val methods = ops
+            .collect { case nir.Op.Method(_, sig) => sig.unmangled }
+            .collect {
+              case nir.Sig.Method(method, _, _) => method
+            }
+          assertTrue(name + ": " + methods, methods.contains(accessor))
+          assertFalse(
+            name + " must not allocate a varargs array",
+            ops.exists(_.isInstanceOf[nir.Op.Arrayalloc])
+          )
+      }
+    }
+}
+
 /** Compiler-plugin contract for compile-time-only VarHandle lookup. */
 class VarHandleTests {
   @Test def resolvesBackingFieldFromPrecompiledScalaClass(): Unit = {

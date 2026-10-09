@@ -485,13 +485,24 @@ private[nscplugin] trait VarHandleInterop extends NativeInteropUtil {
   protected def rewriteVarHandleAccess(
       app: Apply,
       accessMethod: Symbol,
-      args: List[Tree]
+      callArgs: List[Tree]
   )(using Context): Tree = {
     val d = defnNir
     given metadata: VarHandleMetadata = varHandleMetadata
     val name = accessMethod.name.toString
     import Constants.*
     import Names.*
+
+    // Older Scala 3 compilers type these as ordinary Java varargs calls.
+    // Unpack only a literal varargs pack, not an array-valued coordinate or operand.
+    val args =
+      if accessMethod.info.paramInfoss.flatten.lastOption.exists(_.isRepeatedParam) then
+        callArgs match {
+          case List(SeqLiteral(elements, _))           => elements
+          case List(Typed(SeqLiteral(elements, _), _)) => elements
+          case _                                       => callArgs
+        }
+      else callArgs
 
     def boxed(tree: Tree): Tree = TypeApply(
       Select(tree, nme.asInstanceOf_),
