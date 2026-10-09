@@ -84,16 +84,16 @@ object Settings {
         // git worktrees expose `.git` as a file pointing at the real git dir
         if (Files.isDirectory(gitPath)) {
           val hooksDir = gitPath.resolve("hooks")
-          val prePush = hooksDir.resolve("pre-push")
+          val preCommit = hooksDir.resolve("pre-commit")
           Files.createDirectories(hooksDir)
           Files.write(
-            prePush,
+            preCommit,
             """|#!/bin/sh
                |set -eux
                |CHECK_MODIFIED_ONLY=1 ./scripts/check-lint.sh
                |""".stripMargin.getBytes()
           )
-          prePush.toFile.setExecutable(true)
+          preCommit.toFile.setExecutable(true)
         }
       } catch {
         case e: Exception =>
