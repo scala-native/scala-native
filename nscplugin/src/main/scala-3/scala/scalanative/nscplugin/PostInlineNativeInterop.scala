@@ -19,7 +19,7 @@ object PostInlineNativeInterop {
   val name = "scalanative-prepareInterop-postinline"
 }
 
-class PostInlineNativeInterop extends PluginPhase with NativeInteropUtil {
+class PostInlineNativeInterop extends PluginPhase with VarHandleInterop {
 
   import core.Constants._
   import core.Contexts._
@@ -49,6 +49,11 @@ class PostInlineNativeInterop extends PluginPhase with NativeInteropUtil {
         case ty             => ty
   }
 
+  override def prepareForBlock(tree: Block)(using Context): Context = {
+    tree.stats.foreach(discardVarHandleResult)
+    summon[Context]
+  }
+
   override def transformApply(tree: Apply)(using Context): Tree = {
     val defnNir = this.defnNir
     def dealiasTypeMapper = DealiasTypeMapper()
@@ -56,6 +61,22 @@ class PostInlineNativeInterop extends PluginPhase with NativeInteropUtil {
     // Attach exact type information to the AST to preserve the type information
     // during the type erase phase and refer to it in the NIR generation phase.
     tree match
+      case app @ Apply(fun, args)
+          if fun.symbol == defnNir.MethodHandlesLookup_findVarHandle =>
+        rewriteVarHandleLookup(app, args, isStatic = false)
+
+      case app @ Apply(fun, args)
+          if fun.symbol == defnNir.MethodHandlesLookup_findStaticVarHandle =>
+        rewriteVarHandleLookup(app, args, isStatic = true)
+
+      case app @ Apply(fun, args)
+          if fun.symbol.exists && fun.symbol.owner == defnNir.VarHandleClass =>
+        rewriteVarHandleAccess(
+          app,
+          fun.symbol,
+          args
+        )
+
       case app @ Apply(fun, args)
           if fun.symbol == defnNir.AtomicIntegerFieldUpdater_newUpdater =>
         rewriteAtomicFieldUpdater(

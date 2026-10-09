@@ -14,7 +14,8 @@ import scala.tools.nsc._
 abstract class PrepNativeInterop[G <: Global with Singleton](
     override val global: G
 ) extends NirPhase[G](global)
-    with transform.Transform {
+    with transform.Transform
+    with VarHandleInterop[G] {
   import global._
   import global.definitions._
 
@@ -59,7 +60,9 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
   private lazy val AtomicReferenceFieldUpdaterFactory =
     getDecl(AtomicFieldUpdaterFactory, nativenme.createReferenceFieldUpdater)
 
-  class NativeInteropTransformer(unit: CompilationUnit) extends Transformer {
+  class NativeInteropTransformer(protected val unit: CompilationUnit)
+      extends Transformer
+      with VarHandleTransformer {
 
     /** Kind of the directly enclosing (most nested) owner. */
     private var enclosingOwner: OwnerKind = OwnerKind.None
@@ -101,6 +104,21 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
         else widened
       }
       tree match {
+        case block @ Block(stats, _) =>
+          stats.foreach(discardVarHandleResult)
+          super.transform(block)
+        case app @ Apply(fun, args)
+            if fun.symbol.owner == VarHandleLookupClass &&
+              (fun.symbol == FindVarHandle || fun.symbol == FindStaticVarHandle) =>
+          rewriteVarHandleLookup(app, args, fun.symbol == FindStaticVarHandle)
+        case app @ Apply(fun @ Select(receiver, _), args)
+            if fun.symbol.owner == VarHandleClass =>
+          rewriteVarHandleAccess(
+            app,
+            transform(receiver),
+            fun.symbol,
+            args.map(transform)
+          )
         case app @ Apply(fun, args)
             if fun.symbol == AtomicIntegerFieldUpdater_newUpdater =>
           rewriteAtomicFieldUpdater(

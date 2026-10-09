@@ -6,9 +6,44 @@ import scala.scalanative.libc.stdatomic.memory_order._
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 
 class VarHandle {
-  // Added needed to allow for compilation of javalib under Scala 3.8+ which uses VarHandle.compareAndSet in lazy vals. Not used at runtime
-  @stub()
-  final def compareAndSet(args: scala.Array[AnyRef]): Boolean = ???
+  /*
+   * VarHandle methods are signature-polymorphic on the JVM.  Keeping their
+   * descriptor as Object[] is important: Scala compilers recognise the JDK
+   * name and descriptor and use the type expected at the call site.  Native
+   * compilation rewrites supported field handles before code generation.
+   */
+  @stub() final def get(args: Array[AnyRef]): AnyRef = ???
+  @stub() final def set(args: Array[AnyRef]): Unit = ???
+  @stub() final def getVolatile(args: Array[AnyRef]): AnyRef = ???
+  @stub() final def setVolatile(args: Array[AnyRef]): Unit = ???
+  @stub() final def getOpaque(args: Array[AnyRef]): AnyRef = ???
+  @stub() final def setOpaque(args: Array[AnyRef]): Unit = ???
+  @stub() final def getAcquire(args: Array[AnyRef]): AnyRef = ???
+  @stub() final def setRelease(args: Array[AnyRef]): Unit = ???
+
+  @stub() final def compareAndSet(args: Array[AnyRef]): Boolean = ???
+  @stub() final def compareAndExchange(args: Array[AnyRef]): AnyRef = ???
+  @stub() final def compareAndExchangeAcquire(args: Array[AnyRef]): AnyRef = ???
+  @stub() final def compareAndExchangeRelease(args: Array[AnyRef]): AnyRef = ???
+  @stub() final def weakCompareAndSetPlain(args: Array[AnyRef]): Boolean = ???
+  @stub() final def weakCompareAndSet(args: Array[AnyRef]): Boolean = ???
+  @stub() final def weakCompareAndSetAcquire(args: Array[AnyRef]): Boolean = ???
+  @stub() final def weakCompareAndSetRelease(args: Array[AnyRef]): Boolean = ???
+  @stub() final def getAndSet(args: Array[AnyRef]): AnyRef = ???
+  @stub() final def getAndSetAcquire(args: Array[AnyRef]): AnyRef = ???
+  @stub() final def getAndSetRelease(args: Array[AnyRef]): AnyRef = ???
+  @stub() final def getAndAdd(args: Array[AnyRef]): AnyRef = ???
+  @stub() final def getAndAddAcquire(args: Array[AnyRef]): AnyRef = ???
+  @stub() final def getAndAddRelease(args: Array[AnyRef]): AnyRef = ???
+  @stub() final def getAndBitwiseOr(args: Array[AnyRef]): AnyRef = ???
+  @stub() final def getAndBitwiseOrAcquire(args: Array[AnyRef]): AnyRef = ???
+  @stub() final def getAndBitwiseOrRelease(args: Array[AnyRef]): AnyRef = ???
+  @stub() final def getAndBitwiseAnd(args: Array[AnyRef]): AnyRef = ???
+  @stub() final def getAndBitwiseAndAcquire(args: Array[AnyRef]): AnyRef = ???
+  @stub() final def getAndBitwiseAndRelease(args: Array[AnyRef]): AnyRef = ???
+  @stub() final def getAndBitwiseXor(args: Array[AnyRef]): AnyRef = ???
+  @stub() final def getAndBitwiseXorAcquire(args: Array[AnyRef]): AnyRef = ???
+  @stub() final def getAndBitwiseXorRelease(args: Array[AnyRef]): AnyRef = ???
 }
 
 object VarHandle {
