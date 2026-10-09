@@ -227,7 +227,7 @@ private[nscplugin] trait VarHandleInterop extends NativeInteropUtil {
    */
   protected def discardVarHandleResult(tree: Tree)(using Context): Unit =
     tree match {
-      case app: Apply if app.fun.symbol.exists && app.fun.symbol.owner == defnNir.VarHandleClass =>
+      case app: Apply if defnNir.VarHandleAvailable && app.fun.symbol.exists && app.fun.symbol.owner == defnNir.VarHandleClass =>
         app.putAttachment(DiscardedResult, ())
       case Block(_, expr)      => discardVarHandleResult(expr)
       case If(_, thenp, elsep) =>

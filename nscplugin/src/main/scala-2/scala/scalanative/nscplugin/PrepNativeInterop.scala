@@ -108,11 +108,11 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
           stats.foreach(discardVarHandleResult)
           super.transform(block)
         case app @ Apply(fun, args)
-            if fun.symbol.owner == VarHandleLookupClass &&
+            if VarHandleClass != NoSymbol && fun.symbol != NoSymbol && fun.symbol.owner == VarHandleLookupClass &&
               (fun.symbol == FindVarHandle || fun.symbol == FindStaticVarHandle) =>
           rewriteVarHandleLookup(app, args, fun.symbol == FindStaticVarHandle)
         case app @ Apply(fun @ Select(receiver, _), args)
-            if fun.symbol.owner == VarHandleClass =>
+            if VarHandleClass != NoSymbol && fun.symbol != NoSymbol && fun.symbol.owner == VarHandleClass =>
           rewriteVarHandleAccess(
             app,
             transform(receiver),

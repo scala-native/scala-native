@@ -6,6 +6,30 @@ import org.junit.Test
 import scala.scalanative.api.CompilationFailedException
 import scala.scalanative.linker.compileAndLoad
 
+/** Java 8 API compatibility for the compiler used to publish artifacts. */
+class VarHandleJava8CompatibilityTests {
+  @Test def compilesOrdinaryCallsAgainstJava8Api(): Unit = {
+    val version = scala.util.Properties.versionNumberString.split('.').take(2).map(_.toInt)
+    org.junit.Assume.assumeFalse(
+      "Scala 3.8 and later no longer support targeting Java 8",
+      version(0) == 3 && version(1) >= 8
+    )
+    val source =
+      """class Java8ApiSurface {
+        |  def increment(value: Int): Int = java.lang.Integer.sum(value, 1)
+        |  def discarded(): Unit = {
+        |    increment(1)
+        |    if (increment(2) == 3) increment(3) else increment(4)
+        |  }
+        |  def lookup() = java.lang.invoke.MethodHandles.lookup()
+        |}""".stripMargin
+    NIRCompiler { compiler =>
+      val products = compiler.compile(source, Array("-release:8"))
+      assertTrue(products.exists(_.getFileName.toString.endsWith(".nir")))
+    }
+  }
+}
+
 /** Compiler-plugin contract for compile-time-only VarHandle lookup. */
 class VarHandleTests {
   @Test def resolvesBackingFieldFromPrecompiledScalaClass(): Unit = {

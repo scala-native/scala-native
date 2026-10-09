@@ -188,6 +188,11 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val MethodHandlesLookupClass = MethodHandlesModule.requiredClass("Lookup")
   @tu lazy val MethodHandlesLookup_findVarHandle = MethodHandlesLookupClass.requiredMethod("findVarHandle")
   @tu lazy val MethodHandlesLookup_findStaticVarHandle = MethodHandlesLookupClass.requiredMethod("findStaticVarHandle")
+  // Publishing can compile against the Java 8 API even when the compiler runs on a newer JDK.
+  @tu lazy val VarHandleAvailable =
+    getClassIfDefined("java.lang.invoke.VarHandle").exists &&
+      MethodHandlesLookupClass.info.member(termName("findVarHandle")).exists &&
+      MethodHandlesLookupClass.info.member(termName("findStaticVarHandle")).exists
   @tu lazy val VarHandleClass = requiredClass("java.lang.invoke.VarHandle")
   @tu lazy val VarHandleMemoryOrderModule = requiredModule("scala.scalanative.runtime.NativeVarHandle.MemoryOrder")
   @tu lazy val VarHandleMemoryOrderPlain = VarHandleMemoryOrderModule.requiredMethod("Plain")

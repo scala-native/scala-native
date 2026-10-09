@@ -62,15 +62,15 @@ class PostInlineNativeInterop extends PluginPhase with VarHandleInterop {
     // during the type erase phase and refer to it in the NIR generation phase.
     tree match
       case app @ Apply(fun, args)
-          if fun.symbol == defnNir.MethodHandlesLookup_findVarHandle =>
+          if defnNir.VarHandleAvailable && fun.symbol == defnNir.MethodHandlesLookup_findVarHandle =>
         rewriteVarHandleLookup(app, args, isStatic = false)
 
       case app @ Apply(fun, args)
-          if fun.symbol == defnNir.MethodHandlesLookup_findStaticVarHandle =>
+          if defnNir.VarHandleAvailable && fun.symbol == defnNir.MethodHandlesLookup_findStaticVarHandle =>
         rewriteVarHandleLookup(app, args, isStatic = true)
 
       case app @ Apply(fun, args)
-          if fun.symbol.exists && fun.symbol.owner == defnNir.VarHandleClass =>
+          if defnNir.VarHandleAvailable && fun.symbol.exists && fun.symbol.owner == defnNir.VarHandleClass =>
         rewriteVarHandleAccess(
           app,
           fun.symbol,

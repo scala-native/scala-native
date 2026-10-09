@@ -212,7 +212,7 @@ private[nscplugin] trait VarHandleInterop[G <: Global with Singleton] {
 
     /** Follow discarded result paths without marking arguments or bindings. */
     protected def discardVarHandleResult(tree: Tree): Unit = tree match {
-      case app @ Apply(fun, _) if fun.symbol.owner == VarHandleClass =>
+      case app @ Apply(fun, _) if VarHandleClass != NoSymbol && fun.symbol != NoSymbol && fun.symbol.owner == VarHandleClass =>
         app.updateAttachment(DiscardedVarHandleResult)
       // Scala 2.12 has already lowered matches into synthetic case labels.
       // Only arguments to this exact join label are discarded result paths.
