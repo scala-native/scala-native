@@ -288,7 +288,8 @@ private[nscplugin] trait VarHandleInterop[G <: Global with Singleton] {
         case _ => return fail("VarHandle variable type must be a literal class")
       }
 
-      val field = target.members
+      val field = target.baseClasses.iterator
+        .flatMap(_.info.decls.iterator)
         .find(s => s.isField && s.nameString == name)
         .getOrElse(
           return fail(s"${target.typeSymbol} does not contain field $name")
@@ -322,12 +323,16 @@ private[nscplugin] trait VarHandleInterop[G <: Global with Singleton] {
       val paramName = unit.freshTermName("varHandleTarget")
       val param =
         ValDef(Modifiers(Flag.PARAM), paramName, TypeTree(ObjectTpe), EmptyTree)
-      val receiver = TypeApply(
+      val coordinateReceiver = TypeApply(
         Select(
           if (isStatic) Literal(Constant(null)) else Ident(paramName),
           nme.asInstanceOf_
         ),
         List(TypeTree(coordinateType))
+      )
+      val receiver = TypeApply(
+        Select(coordinateReceiver, nme.asInstanceOf_),
+        List(TypeTree(field.owner.tpe))
       )
 
       val raw = Apply(
@@ -343,9 +348,10 @@ private[nscplugin] trait VarHandleInterop[G <: Global with Singleton] {
         newTermName("create" + kind.memberName + "Handle")
       )
 
-      val factoryArgs = List(binding) ++ (if (kind == VarHandleProtocol.VariableKind.Reference)
-                                            List(Literal(Constant(fieldType)))
-                                          else Nil)
+      val coordinateClass = if (isStatic) Literal(Constant(null)) else Literal(Constant(coordinateType))
+      val variableClass =
+        if (kind == VarHandleProtocol.VariableKind.Reference) List(Literal(Constant(fieldType))) else Nil
+      val factoryArgs = List(binding, coordinateClass) ::: variableClass
       typer
         .atOwner(currentOwner)
         .typed(Apply(gen.mkAttributedRef(factory), factoryArgs))
@@ -397,10 +403,12 @@ private[nscplugin] trait VarHandleInterop[G <: Global with Singleton] {
       }
 
       val savedReceiver =
-        if (operands.nonEmpty) save(receiver, "varHandleReceiver") else receiver
+        save(receiver, "varHandleReceiver")
       val savedCoordinate =
-        if (operands.nonEmpty) save(coordinate, "varHandleCoordinate")
-        else coordinate
+        TypeApply(
+          Select(save(coordinate, "varHandleCoordinate"), nme.asInstanceOf_),
+          List(TypeTree(ObjectTpe))
+        )
       val savedOperands = operands.map(t => save(t, "varHandleOperand"))
       val access = TypeApply(
         Select(savedReceiver, nme.asInstanceOf_),
@@ -492,7 +500,7 @@ private[nscplugin] trait VarHandleInterop[G <: Global with Singleton] {
         }
       }
 
-      val exact =
+      val typedAccess =
         if (invalid) adapted
         else {
           val boxedRead = operation == Operation.Get && variableKind(
@@ -507,7 +515,11 @@ private[nscplugin] trait VarHandleInterop[G <: Global with Singleton] {
                   .name
               else operation.method(kind).name
             ),
-            savedCoordinate :: savedOperands
+            savedCoordinate :: savedOperands.map { operand =>
+              if (kind == VariableKind.Reference)
+                TypeApply(Select(operand, nme.asInstanceOf_), List(TypeTree(ObjectTpe)))
+              else operand
+            }
               ::: (if (boxedRead) List(Literal(Constant(app.tpe.dealiasWiden))) else Nil)
               ::: extras
           )
@@ -536,22 +548,35 @@ private[nscplugin] trait VarHandleInterop[G <: Global with Singleton] {
               Select(call, conversion.name)
             }
         }
+      def declaredType(tree: Option[Tree]): Tree =
+        Literal(Constant(tree.fold[Type](UnitTpe)(_.tpe.dealiasWiden)))
+
+      // The handle chooses invocation behavior at runtime. Validate before either access path.
+      val validation = Apply(
+        Select(access, getMember(NativeVarHandleClass, newTermName("validateInvocation")).name),
+        List(
+          protocolConstant("AccessOperation", operation.toString),
+          if (args.size == operandCount) Literal(Constant(null)) else declaredType(args.headOption),
+          declaredType(if (operands.size == 2) operands.headOption else None),
+          declaredType(operands.lastOption),
+          Literal(Constant(if (valueResult && discardedResult) UnitTpe else app.tpe.dealiasWiden))
+        )
+      )
       val rewritten =
-        if (operands.isEmpty) exact
-        else
-          Block(
-            bindings.toList,
-            if (invalid) exact
-            else
-              If(
-                Apply(
-                  Select(access, newTermName("isExactVariableType")),
-                  List(Literal(Constant(variableType)))
-                ),
-                exact,
-                adapted
-              )
-          )
+        Block(
+          bindings.toList :+ validation,
+          if (operands.isEmpty) typedAccess
+          else if (invalid) typedAccess
+          else
+            If(
+              Apply(
+                Select(access, newTermName("isExactVariableType")),
+                List(Literal(Constant(variableType)))
+              ),
+              typedAccess,
+              adapted
+            )
+        )
       // The fast and adapted branches reuse references to the saved arguments.
       // Scala 2's typer mutates trees; give each occurrence its own tree.
       typer.atOwner(currentOwner).typed(rewritten.duplicate)

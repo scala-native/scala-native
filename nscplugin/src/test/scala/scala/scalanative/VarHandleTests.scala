@@ -8,6 +8,111 @@ import scala.scalanative.linker.compileAndLoad
 
 /** Compiler-plugin contract for compile-time-only VarHandle lookup. */
 class VarHandleTests {
+  @Test def resolvesBackingFieldFromPrecompiledScalaClass(): Unit = {
+    org.junit.Assume.assumeTrue(
+      "Scala 3 TASTy field fixture",
+      scala.util.Properties.versionNumberString.startsWith("3.")
+    )
+    val source =
+      """
+        |import java.lang.invoke.MethodHandles
+        |import scala.scalanative.varhandlefixtures.ScalaFields
+        |class PrecompiledFieldLookup {
+        |  val handle = MethodHandles.privateLookupIn(classOf[ScalaFields], MethodHandles.lookup())
+        |    .findVarHandle(classOf[ScalaFields], "value", classOf[Int])
+        |  val privateHandle = MethodHandles.privateLookupIn(classOf[ScalaFields], MethodHandles.lookup())
+        |    .findVarHandle(classOf[ScalaFields], "privateValue", classOf[Long])
+        |}
+        |""".stripMargin
+    val fixtures = new java.io.File(
+      classOf[
+        varhandlefixtures.ScalaFields
+      ].getProtectionDomain.getCodeSource.getLocation.toURI
+    )
+    val classpath = sys.props("scalanative.nativeruntime.cp") +
+      java.io.File.pathSeparator + fixtures.getAbsolutePath
+    NIRCompiler { compiler =>
+      val files = compiler.compile(source, Array("-classpath", classpath))
+      scala.scalanative.util.Scope { implicit scope =>
+        val fields = files.toSeq
+          .filter(_.toString.endsWith(".nir"))
+          .flatMap { file =>
+            val directory =
+              scala.scalanative.io.VirtualDirectory.real(file.getParent)
+            nir.serialization.deserializeBinary(directory, file.getFileName)
+          }
+          .collect { case method: nir.Defn.Define => method }
+          .flatMap(_.insts.collect {
+            case nir.Inst.Let(_, nir.Op.Field(_, field), _) => field
+          })
+        val owner =
+          nir.Global.Top("scala.scalanative.varhandlefixtures.ScalaFields")
+        for (name <- List("value", "privateValue"))
+          assertTrue(
+            fields.mkString("\n"),
+            fields.contains(
+              owner.member(nir.Sig.Field(name, nir.Sig.Scope.Public))
+            )
+          )
+      }
+    }
+  }
+
+  @Test def runtimeViewsRemainVirtualCallsAndAccessesValidateDeclaredTypes()
+      : Unit = {
+    val source =
+      """
+        |import java.lang.invoke.VarHandle
+        |class Coordinates
+        |class RuntimeViews {
+        |  def exact(h: VarHandle): VarHandle = h.withInvokeExactBehavior()
+        |  def adapting(h: VarHandle): VarHandle = h.withInvokeBehavior()
+        |  def get(h: VarHandle, box: Coordinates): Long = h.get(box)
+        |  def add(h: VarHandle, box: Coordinates, value: Int): Int = h.getAndAdd(box, value)
+        |}
+        |""".stripMargin
+    compileAndLoad("RuntimeViews.scala" -> source) { defns =>
+      val methods = defns.collect {
+        case d: nir.Defn.Define if d.name.top.id == "RuntimeViews" => d
+      }
+      def body(name: String): nir.Defn.Define = methods
+        .find(_.name.sig.unmangled match {
+          case nir.Sig.Method(n, _, _) => n == name
+          case _                       => false
+        })
+        .get
+      def calls(method: nir.Defn.Define): Seq[String] = method.insts
+        .collect {
+          case nir.Inst.Let(_, nir.Op.Method(_, sig), _) => sig.unmangled
+        }
+        .collect { case nir.Sig.Method(name, _, _) => name }
+      assertTrue(calls(body("exact")).contains("withInvokeExactBehavior"))
+      assertTrue(calls(body("adapting")).contains("withInvokeBehavior"))
+      for (name <- List("get", "add")) {
+        assertTrue(name, calls(body(name)).contains("validateInvocation"))
+        assertFalse(
+          name,
+          body(name).insts.exists {
+            case nir.Inst.Let(_, _: nir.Op.Arrayalloc, _) => true
+            case _                                        => false
+          }
+        )
+      }
+      val getTokens = body("get").insts
+        .collect {
+          case nir.Inst.Let(_, nir.Op.Call(_, _, args), _) => args
+        }
+        .flatten
+        .collect { case nir.Val.ClassOf(name) => name }
+      assertTrue(getTokens.contains(nir.Global.Top("Coordinates")))
+      assertTrue(
+        getTokens.contains(
+          nir.Global.Top("scala.scalanative.runtime.PrimitiveLong")
+        )
+      )
+    }
+  }
+
   @Test def preservesAccessNamesOnUnrelatedTypes(): Unit = {
     val source =
       """
@@ -108,7 +213,7 @@ class VarHandleTests {
         assertEquals(owner + " must call exactly one factory", 1, calls.size)
         val (name, parameters, args) = calls.head
         assertEquals(owner, "create" + kind + "Handle", name)
-        assertEquals(owner, if (kind == "Reference") 3 else 2, parameters.size)
+        assertEquals(owner, if (kind == "Reference") 4 else 3, parameters.size)
         assertFalse(
           owner + " must not pass a field-kind tag",
           args.exists(_.isInstanceOf[nir.Val.Int])
@@ -120,9 +225,10 @@ class VarHandleTests {
             args.last
           )
         else
-          assertFalse(
-            owner + " must not pass a redundant class token",
-            args.exists(_.isInstanceOf[nir.Val.ClassOf])
+          assertEquals(
+            owner + " must pass only the coordinate class token",
+            if (owner.startsWith("StaticFactory")) 0 else 1,
+            args.count(_.isInstanceOf[nir.Val.ClassOf])
           )
       }
     }

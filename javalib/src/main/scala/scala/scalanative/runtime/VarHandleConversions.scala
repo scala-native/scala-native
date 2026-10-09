@@ -79,13 +79,16 @@ private[runtime] object VarHandleConversions {
 
     if (primitives(actual) == target) return value
     val number: java.lang.Number = value match {
-      case character: java.lang.Character =>        java.lang.Integer.valueOf(character.charValue().toInt)
+      case character: java.lang.Character =>
+        java.lang.Integer.valueOf(character.charValue().toInt)
       case number: java.lang.Number => number
     }
     if (target == classOf[Short]) java.lang.Short.valueOf(number.shortValue())
-    else if (target == classOf[Int])      java.lang.Integer.valueOf(number.intValue())
+    else if (target == classOf[Int])
+      java.lang.Integer.valueOf(number.intValue())
     else if (target == classOf[Long]) java.lang.Long.valueOf(number.longValue())
-    else if (target == classOf[Float]) java.lang.Float.valueOf(number.floatValue())
+    else if (target == classOf[Float])
+      java.lang.Float.valueOf(number.floatValue())
     else java.lang.Double.valueOf(number.doubleValue())
   }
 }

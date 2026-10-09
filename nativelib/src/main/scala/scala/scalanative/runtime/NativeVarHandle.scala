@@ -6,6 +6,7 @@ private[runtime] trait NativeVarHandle {
   import NativeVarHandle.{AccessOperation, BitwiseOperation, MemoryOrder}
   
   def isExactVariableType(variableType: Class[_]): Boolean
+  def validateInvocation(operation: AccessOperation, coordinate: Class[_], expected: Class[_], value: Class[_], result: Class[_]): Unit
   def invokeAdapted(operation: AccessOperation, receiver: AnyRef, expected: AnyRef, value: AnyRef, expectedType: Class[_], valueType: Class[_], resultType: Class[_], mode: MemoryOrder, bitwiseOperation: BitwiseOperation): AnyRef
   
   // Signature validation

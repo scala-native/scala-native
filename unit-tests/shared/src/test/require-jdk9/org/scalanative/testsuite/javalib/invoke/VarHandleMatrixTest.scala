@@ -15,12 +15,14 @@ class VarHandleBooleanInstanceFixture
 }
 
 class VarHandleBooleanInstanceMatrixTest {
+  protected def invocationHandle(handle: VarHandle): VarHandle = handle
+
   private def assertValue(expected: Boolean, actual: Boolean): Unit =
     assertEquals(expected, actual)
 
   @Test def get_supported(): Unit = {
     val box = new VarHandleBooleanInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Boolean = false
     val desired: Boolean = true
     box.value = initial
@@ -31,7 +33,7 @@ class VarHandleBooleanInstanceMatrixTest {
 
   @Test def getOpaque_supported(): Unit = {
     val box = new VarHandleBooleanInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Boolean = false
     val desired: Boolean = true
     box.value = initial
@@ -42,7 +44,7 @@ class VarHandleBooleanInstanceMatrixTest {
 
   @Test def getAcquire_supported(): Unit = {
     val box = new VarHandleBooleanInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Boolean = false
     val desired: Boolean = true
     box.value = initial
@@ -53,7 +55,7 @@ class VarHandleBooleanInstanceMatrixTest {
 
   @Test def getVolatile_supported(): Unit = {
     val box = new VarHandleBooleanInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Boolean = false
     val desired: Boolean = true
     box.value = initial
@@ -64,7 +66,7 @@ class VarHandleBooleanInstanceMatrixTest {
 
   @Test def set_supported(): Unit = {
     val box = new VarHandleBooleanInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Boolean = false
     val desired: Boolean = true
     box.value = initial
@@ -74,7 +76,7 @@ class VarHandleBooleanInstanceMatrixTest {
 
   @Test def setOpaque_supported(): Unit = {
     val box = new VarHandleBooleanInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Boolean = false
     val desired: Boolean = true
     box.value = initial
@@ -84,7 +86,7 @@ class VarHandleBooleanInstanceMatrixTest {
 
   @Test def setRelease_supported(): Unit = {
     val box = new VarHandleBooleanInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Boolean = false
     val desired: Boolean = true
     box.value = initial
@@ -94,7 +96,7 @@ class VarHandleBooleanInstanceMatrixTest {
 
   @Test def setVolatile_supported(): Unit = {
     val box = new VarHandleBooleanInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Boolean = false
     val desired: Boolean = true
     box.value = initial
@@ -104,7 +106,7 @@ class VarHandleBooleanInstanceMatrixTest {
 
   @Test def compareAndSet_supported(): Unit = {
     val box = new VarHandleBooleanInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Boolean = false
     val desired: Boolean = true
     box.value = initial
@@ -118,7 +120,7 @@ class VarHandleBooleanInstanceMatrixTest {
 
   @Test def weakCompareAndSetPlain_supported(): Unit = {
     val box = new VarHandleBooleanInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Boolean = false
     val desired: Boolean = true
     box.value = initial
@@ -138,7 +140,7 @@ class VarHandleBooleanInstanceMatrixTest {
 
   @Test def weakCompareAndSet_supported(): Unit = {
     val box = new VarHandleBooleanInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Boolean = false
     val desired: Boolean = true
     box.value = initial
@@ -158,7 +160,7 @@ class VarHandleBooleanInstanceMatrixTest {
 
   @Test def weakCompareAndSetAcquire_supported(): Unit = {
     val box = new VarHandleBooleanInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Boolean = false
     val desired: Boolean = true
     box.value = initial
@@ -178,7 +180,7 @@ class VarHandleBooleanInstanceMatrixTest {
 
   @Test def weakCompareAndSetRelease_supported(): Unit = {
     val box = new VarHandleBooleanInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Boolean = false
     val desired: Boolean = true
     box.value = initial
@@ -198,7 +200,7 @@ class VarHandleBooleanInstanceMatrixTest {
 
   @Test def compareAndExchange_supported(): Unit = {
     val box = new VarHandleBooleanInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Boolean = false
     val desired: Boolean = true
     box.value = initial
@@ -212,7 +214,7 @@ class VarHandleBooleanInstanceMatrixTest {
 
   @Test def compareAndExchangeAcquire_supported(): Unit = {
     val box = new VarHandleBooleanInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Boolean = false
     val desired: Boolean = true
     box.value = initial
@@ -226,7 +228,7 @@ class VarHandleBooleanInstanceMatrixTest {
 
   @Test def compareAndExchangeRelease_supported(): Unit = {
     val box = new VarHandleBooleanInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Boolean = false
     val desired: Boolean = true
     box.value = initial
@@ -240,7 +242,7 @@ class VarHandleBooleanInstanceMatrixTest {
 
   @Test def getAndSet_supported(): Unit = {
     val box = new VarHandleBooleanInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Boolean = false
     val desired: Boolean = true
     box.value = initial
@@ -251,7 +253,7 @@ class VarHandleBooleanInstanceMatrixTest {
 
   @Test def getAndSetAcquire_supported(): Unit = {
     val box = new VarHandleBooleanInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Boolean = false
     val desired: Boolean = true
     box.value = initial
@@ -262,7 +264,7 @@ class VarHandleBooleanInstanceMatrixTest {
 
   @Test def getAndSetRelease_supported(): Unit = {
     val box = new VarHandleBooleanInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Boolean = false
     val desired: Boolean = true
     box.value = initial
@@ -273,7 +275,7 @@ class VarHandleBooleanInstanceMatrixTest {
 
   @Test def getAndAdd_unsupported(): Unit = {
     val box = new VarHandleBooleanInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Boolean = false
     val desired: Boolean = true
     box.value = initial
@@ -285,7 +287,7 @@ class VarHandleBooleanInstanceMatrixTest {
 
   @Test def getAndAddAcquire_unsupported(): Unit = {
     val box = new VarHandleBooleanInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Boolean = false
     val desired: Boolean = true
     box.value = initial
@@ -297,7 +299,7 @@ class VarHandleBooleanInstanceMatrixTest {
 
   @Test def getAndAddRelease_unsupported(): Unit = {
     val box = new VarHandleBooleanInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Boolean = false
     val desired: Boolean = true
     box.value = initial
@@ -309,7 +311,7 @@ class VarHandleBooleanInstanceMatrixTest {
 
   @Test def getAndBitwiseOr_supported(): Unit = {
     val box = new VarHandleBooleanInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Boolean = false
     val desired: Boolean = true
     box.value = initial
@@ -323,7 +325,7 @@ class VarHandleBooleanInstanceMatrixTest {
 
   @Test def getAndBitwiseOrAcquire_supported(): Unit = {
     val box = new VarHandleBooleanInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Boolean = false
     val desired: Boolean = true
     box.value = initial
@@ -337,7 +339,7 @@ class VarHandleBooleanInstanceMatrixTest {
 
   @Test def getAndBitwiseOrRelease_supported(): Unit = {
     val box = new VarHandleBooleanInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Boolean = false
     val desired: Boolean = true
     box.value = initial
@@ -351,7 +353,7 @@ class VarHandleBooleanInstanceMatrixTest {
 
   @Test def getAndBitwiseAnd_supported(): Unit = {
     val box = new VarHandleBooleanInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Boolean = false
     val desired: Boolean = true
     box.value = initial
@@ -365,7 +367,7 @@ class VarHandleBooleanInstanceMatrixTest {
 
   @Test def getAndBitwiseAndAcquire_supported(): Unit = {
     val box = new VarHandleBooleanInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Boolean = false
     val desired: Boolean = true
     box.value = initial
@@ -379,7 +381,7 @@ class VarHandleBooleanInstanceMatrixTest {
 
   @Test def getAndBitwiseAndRelease_supported(): Unit = {
     val box = new VarHandleBooleanInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Boolean = false
     val desired: Boolean = true
     box.value = initial
@@ -393,7 +395,7 @@ class VarHandleBooleanInstanceMatrixTest {
 
   @Test def getAndBitwiseXor_supported(): Unit = {
     val box = new VarHandleBooleanInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Boolean = false
     val desired: Boolean = true
     box.value = initial
@@ -407,7 +409,7 @@ class VarHandleBooleanInstanceMatrixTest {
 
   @Test def getAndBitwiseXorAcquire_supported(): Unit = {
     val box = new VarHandleBooleanInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Boolean = false
     val desired: Boolean = true
     box.value = initial
@@ -421,7 +423,7 @@ class VarHandleBooleanInstanceMatrixTest {
 
   @Test def getAndBitwiseXorRelease_supported(): Unit = {
     val box = new VarHandleBooleanInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Boolean = false
     val desired: Boolean = true
     box.value = initial
@@ -442,12 +444,14 @@ class VarHandleByteInstanceFixture
 }
 
 class VarHandleByteInstanceMatrixTest {
+  protected def invocationHandle(handle: VarHandle): VarHandle = handle
+
   private def assertValue(expected: Byte, actual: Byte): Unit =
     assertEquals(expected, actual)
 
   @Test def get_supported(): Unit = {
     val box = new VarHandleByteInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Byte = 12.toByte
     val desired: Byte = 3.toByte
     box.value = initial
@@ -458,7 +462,7 @@ class VarHandleByteInstanceMatrixTest {
 
   @Test def getOpaque_supported(): Unit = {
     val box = new VarHandleByteInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Byte = 12.toByte
     val desired: Byte = 3.toByte
     box.value = initial
@@ -469,7 +473,7 @@ class VarHandleByteInstanceMatrixTest {
 
   @Test def getAcquire_supported(): Unit = {
     val box = new VarHandleByteInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Byte = 12.toByte
     val desired: Byte = 3.toByte
     box.value = initial
@@ -480,7 +484,7 @@ class VarHandleByteInstanceMatrixTest {
 
   @Test def getVolatile_supported(): Unit = {
     val box = new VarHandleByteInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Byte = 12.toByte
     val desired: Byte = 3.toByte
     box.value = initial
@@ -491,7 +495,7 @@ class VarHandleByteInstanceMatrixTest {
 
   @Test def set_supported(): Unit = {
     val box = new VarHandleByteInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Byte = 12.toByte
     val desired: Byte = 3.toByte
     box.value = initial
@@ -501,7 +505,7 @@ class VarHandleByteInstanceMatrixTest {
 
   @Test def setOpaque_supported(): Unit = {
     val box = new VarHandleByteInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Byte = 12.toByte
     val desired: Byte = 3.toByte
     box.value = initial
@@ -511,7 +515,7 @@ class VarHandleByteInstanceMatrixTest {
 
   @Test def setRelease_supported(): Unit = {
     val box = new VarHandleByteInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Byte = 12.toByte
     val desired: Byte = 3.toByte
     box.value = initial
@@ -521,7 +525,7 @@ class VarHandleByteInstanceMatrixTest {
 
   @Test def setVolatile_supported(): Unit = {
     val box = new VarHandleByteInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Byte = 12.toByte
     val desired: Byte = 3.toByte
     box.value = initial
@@ -531,7 +535,7 @@ class VarHandleByteInstanceMatrixTest {
 
   @Test def compareAndSet_supported(): Unit = {
     val box = new VarHandleByteInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Byte = 12.toByte
     val desired: Byte = 3.toByte
     box.value = initial
@@ -545,7 +549,7 @@ class VarHandleByteInstanceMatrixTest {
 
   @Test def weakCompareAndSetPlain_supported(): Unit = {
     val box = new VarHandleByteInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Byte = 12.toByte
     val desired: Byte = 3.toByte
     box.value = initial
@@ -565,7 +569,7 @@ class VarHandleByteInstanceMatrixTest {
 
   @Test def weakCompareAndSet_supported(): Unit = {
     val box = new VarHandleByteInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Byte = 12.toByte
     val desired: Byte = 3.toByte
     box.value = initial
@@ -585,7 +589,7 @@ class VarHandleByteInstanceMatrixTest {
 
   @Test def weakCompareAndSetAcquire_supported(): Unit = {
     val box = new VarHandleByteInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Byte = 12.toByte
     val desired: Byte = 3.toByte
     box.value = initial
@@ -605,7 +609,7 @@ class VarHandleByteInstanceMatrixTest {
 
   @Test def weakCompareAndSetRelease_supported(): Unit = {
     val box = new VarHandleByteInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Byte = 12.toByte
     val desired: Byte = 3.toByte
     box.value = initial
@@ -625,7 +629,7 @@ class VarHandleByteInstanceMatrixTest {
 
   @Test def compareAndExchange_supported(): Unit = {
     val box = new VarHandleByteInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Byte = 12.toByte
     val desired: Byte = 3.toByte
     box.value = initial
@@ -639,7 +643,7 @@ class VarHandleByteInstanceMatrixTest {
 
   @Test def compareAndExchangeAcquire_supported(): Unit = {
     val box = new VarHandleByteInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Byte = 12.toByte
     val desired: Byte = 3.toByte
     box.value = initial
@@ -653,7 +657,7 @@ class VarHandleByteInstanceMatrixTest {
 
   @Test def compareAndExchangeRelease_supported(): Unit = {
     val box = new VarHandleByteInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Byte = 12.toByte
     val desired: Byte = 3.toByte
     box.value = initial
@@ -667,7 +671,7 @@ class VarHandleByteInstanceMatrixTest {
 
   @Test def getAndSet_supported(): Unit = {
     val box = new VarHandleByteInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Byte = 12.toByte
     val desired: Byte = 3.toByte
     box.value = initial
@@ -678,7 +682,7 @@ class VarHandleByteInstanceMatrixTest {
 
   @Test def getAndSetAcquire_supported(): Unit = {
     val box = new VarHandleByteInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Byte = 12.toByte
     val desired: Byte = 3.toByte
     box.value = initial
@@ -689,7 +693,7 @@ class VarHandleByteInstanceMatrixTest {
 
   @Test def getAndSetRelease_supported(): Unit = {
     val box = new VarHandleByteInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Byte = 12.toByte
     val desired: Byte = 3.toByte
     box.value = initial
@@ -700,7 +704,7 @@ class VarHandleByteInstanceMatrixTest {
 
   @Test def getAndAdd_supported(): Unit = {
     val box = new VarHandleByteInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Byte = 12.toByte
     val desired: Byte = 3.toByte
     box.value = initial
@@ -711,7 +715,7 @@ class VarHandleByteInstanceMatrixTest {
 
   @Test def getAndAddAcquire_supported(): Unit = {
     val box = new VarHandleByteInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Byte = 12.toByte
     val desired: Byte = 3.toByte
     box.value = initial
@@ -722,7 +726,7 @@ class VarHandleByteInstanceMatrixTest {
 
   @Test def getAndAddRelease_supported(): Unit = {
     val box = new VarHandleByteInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Byte = 12.toByte
     val desired: Byte = 3.toByte
     box.value = initial
@@ -733,7 +737,7 @@ class VarHandleByteInstanceMatrixTest {
 
   @Test def getAndBitwiseOr_supported(): Unit = {
     val box = new VarHandleByteInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Byte = 12.toByte
     val desired: Byte = 3.toByte
     box.value = initial
@@ -744,7 +748,7 @@ class VarHandleByteInstanceMatrixTest {
 
   @Test def getAndBitwiseOrAcquire_supported(): Unit = {
     val box = new VarHandleByteInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Byte = 12.toByte
     val desired: Byte = 3.toByte
     box.value = initial
@@ -755,7 +759,7 @@ class VarHandleByteInstanceMatrixTest {
 
   @Test def getAndBitwiseOrRelease_supported(): Unit = {
     val box = new VarHandleByteInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Byte = 12.toByte
     val desired: Byte = 3.toByte
     box.value = initial
@@ -766,7 +770,7 @@ class VarHandleByteInstanceMatrixTest {
 
   @Test def getAndBitwiseAnd_supported(): Unit = {
     val box = new VarHandleByteInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Byte = 12.toByte
     val desired: Byte = 3.toByte
     box.value = initial
@@ -777,7 +781,7 @@ class VarHandleByteInstanceMatrixTest {
 
   @Test def getAndBitwiseAndAcquire_supported(): Unit = {
     val box = new VarHandleByteInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Byte = 12.toByte
     val desired: Byte = 3.toByte
     box.value = initial
@@ -788,7 +792,7 @@ class VarHandleByteInstanceMatrixTest {
 
   @Test def getAndBitwiseAndRelease_supported(): Unit = {
     val box = new VarHandleByteInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Byte = 12.toByte
     val desired: Byte = 3.toByte
     box.value = initial
@@ -799,7 +803,7 @@ class VarHandleByteInstanceMatrixTest {
 
   @Test def getAndBitwiseXor_supported(): Unit = {
     val box = new VarHandleByteInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Byte = 12.toByte
     val desired: Byte = 3.toByte
     box.value = initial
@@ -810,7 +814,7 @@ class VarHandleByteInstanceMatrixTest {
 
   @Test def getAndBitwiseXorAcquire_supported(): Unit = {
     val box = new VarHandleByteInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Byte = 12.toByte
     val desired: Byte = 3.toByte
     box.value = initial
@@ -821,7 +825,7 @@ class VarHandleByteInstanceMatrixTest {
 
   @Test def getAndBitwiseXorRelease_supported(): Unit = {
     val box = new VarHandleByteInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Byte = 12.toByte
     val desired: Byte = 3.toByte
     box.value = initial
@@ -839,12 +843,14 @@ class VarHandleShortInstanceFixture
 }
 
 class VarHandleShortInstanceMatrixTest {
+  protected def invocationHandle(handle: VarHandle): VarHandle = handle
+
   private def assertValue(expected: Short, actual: Short): Unit =
     assertEquals(expected, actual)
 
   @Test def get_supported(): Unit = {
     val box = new VarHandleShortInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Short = 12.toShort
     val desired: Short = 3.toShort
     box.value = initial
@@ -855,7 +861,7 @@ class VarHandleShortInstanceMatrixTest {
 
   @Test def getOpaque_supported(): Unit = {
     val box = new VarHandleShortInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Short = 12.toShort
     val desired: Short = 3.toShort
     box.value = initial
@@ -866,7 +872,7 @@ class VarHandleShortInstanceMatrixTest {
 
   @Test def getAcquire_supported(): Unit = {
     val box = new VarHandleShortInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Short = 12.toShort
     val desired: Short = 3.toShort
     box.value = initial
@@ -877,7 +883,7 @@ class VarHandleShortInstanceMatrixTest {
 
   @Test def getVolatile_supported(): Unit = {
     val box = new VarHandleShortInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Short = 12.toShort
     val desired: Short = 3.toShort
     box.value = initial
@@ -888,7 +894,7 @@ class VarHandleShortInstanceMatrixTest {
 
   @Test def set_supported(): Unit = {
     val box = new VarHandleShortInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Short = 12.toShort
     val desired: Short = 3.toShort
     box.value = initial
@@ -898,7 +904,7 @@ class VarHandleShortInstanceMatrixTest {
 
   @Test def setOpaque_supported(): Unit = {
     val box = new VarHandleShortInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Short = 12.toShort
     val desired: Short = 3.toShort
     box.value = initial
@@ -908,7 +914,7 @@ class VarHandleShortInstanceMatrixTest {
 
   @Test def setRelease_supported(): Unit = {
     val box = new VarHandleShortInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Short = 12.toShort
     val desired: Short = 3.toShort
     box.value = initial
@@ -918,7 +924,7 @@ class VarHandleShortInstanceMatrixTest {
 
   @Test def setVolatile_supported(): Unit = {
     val box = new VarHandleShortInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Short = 12.toShort
     val desired: Short = 3.toShort
     box.value = initial
@@ -928,7 +934,7 @@ class VarHandleShortInstanceMatrixTest {
 
   @Test def compareAndSet_supported(): Unit = {
     val box = new VarHandleShortInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Short = 12.toShort
     val desired: Short = 3.toShort
     box.value = initial
@@ -942,7 +948,7 @@ class VarHandleShortInstanceMatrixTest {
 
   @Test def weakCompareAndSetPlain_supported(): Unit = {
     val box = new VarHandleShortInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Short = 12.toShort
     val desired: Short = 3.toShort
     box.value = initial
@@ -962,7 +968,7 @@ class VarHandleShortInstanceMatrixTest {
 
   @Test def weakCompareAndSet_supported(): Unit = {
     val box = new VarHandleShortInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Short = 12.toShort
     val desired: Short = 3.toShort
     box.value = initial
@@ -982,7 +988,7 @@ class VarHandleShortInstanceMatrixTest {
 
   @Test def weakCompareAndSetAcquire_supported(): Unit = {
     val box = new VarHandleShortInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Short = 12.toShort
     val desired: Short = 3.toShort
     box.value = initial
@@ -1002,7 +1008,7 @@ class VarHandleShortInstanceMatrixTest {
 
   @Test def weakCompareAndSetRelease_supported(): Unit = {
     val box = new VarHandleShortInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Short = 12.toShort
     val desired: Short = 3.toShort
     box.value = initial
@@ -1022,7 +1028,7 @@ class VarHandleShortInstanceMatrixTest {
 
   @Test def compareAndExchange_supported(): Unit = {
     val box = new VarHandleShortInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Short = 12.toShort
     val desired: Short = 3.toShort
     box.value = initial
@@ -1036,7 +1042,7 @@ class VarHandleShortInstanceMatrixTest {
 
   @Test def compareAndExchangeAcquire_supported(): Unit = {
     val box = new VarHandleShortInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Short = 12.toShort
     val desired: Short = 3.toShort
     box.value = initial
@@ -1050,7 +1056,7 @@ class VarHandleShortInstanceMatrixTest {
 
   @Test def compareAndExchangeRelease_supported(): Unit = {
     val box = new VarHandleShortInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Short = 12.toShort
     val desired: Short = 3.toShort
     box.value = initial
@@ -1064,7 +1070,7 @@ class VarHandleShortInstanceMatrixTest {
 
   @Test def getAndSet_supported(): Unit = {
     val box = new VarHandleShortInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Short = 12.toShort
     val desired: Short = 3.toShort
     box.value = initial
@@ -1075,7 +1081,7 @@ class VarHandleShortInstanceMatrixTest {
 
   @Test def getAndSetAcquire_supported(): Unit = {
     val box = new VarHandleShortInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Short = 12.toShort
     val desired: Short = 3.toShort
     box.value = initial
@@ -1086,7 +1092,7 @@ class VarHandleShortInstanceMatrixTest {
 
   @Test def getAndSetRelease_supported(): Unit = {
     val box = new VarHandleShortInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Short = 12.toShort
     val desired: Short = 3.toShort
     box.value = initial
@@ -1097,7 +1103,7 @@ class VarHandleShortInstanceMatrixTest {
 
   @Test def getAndAdd_supported(): Unit = {
     val box = new VarHandleShortInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Short = 12.toShort
     val desired: Short = 3.toShort
     box.value = initial
@@ -1108,7 +1114,7 @@ class VarHandleShortInstanceMatrixTest {
 
   @Test def getAndAddAcquire_supported(): Unit = {
     val box = new VarHandleShortInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Short = 12.toShort
     val desired: Short = 3.toShort
     box.value = initial
@@ -1119,7 +1125,7 @@ class VarHandleShortInstanceMatrixTest {
 
   @Test def getAndAddRelease_supported(): Unit = {
     val box = new VarHandleShortInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Short = 12.toShort
     val desired: Short = 3.toShort
     box.value = initial
@@ -1130,7 +1136,7 @@ class VarHandleShortInstanceMatrixTest {
 
   @Test def getAndBitwiseOr_supported(): Unit = {
     val box = new VarHandleShortInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Short = 12.toShort
     val desired: Short = 3.toShort
     box.value = initial
@@ -1141,7 +1147,7 @@ class VarHandleShortInstanceMatrixTest {
 
   @Test def getAndBitwiseOrAcquire_supported(): Unit = {
     val box = new VarHandleShortInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Short = 12.toShort
     val desired: Short = 3.toShort
     box.value = initial
@@ -1152,7 +1158,7 @@ class VarHandleShortInstanceMatrixTest {
 
   @Test def getAndBitwiseOrRelease_supported(): Unit = {
     val box = new VarHandleShortInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Short = 12.toShort
     val desired: Short = 3.toShort
     box.value = initial
@@ -1163,7 +1169,7 @@ class VarHandleShortInstanceMatrixTest {
 
   @Test def getAndBitwiseAnd_supported(): Unit = {
     val box = new VarHandleShortInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Short = 12.toShort
     val desired: Short = 3.toShort
     box.value = initial
@@ -1174,7 +1180,7 @@ class VarHandleShortInstanceMatrixTest {
 
   @Test def getAndBitwiseAndAcquire_supported(): Unit = {
     val box = new VarHandleShortInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Short = 12.toShort
     val desired: Short = 3.toShort
     box.value = initial
@@ -1185,7 +1191,7 @@ class VarHandleShortInstanceMatrixTest {
 
   @Test def getAndBitwiseAndRelease_supported(): Unit = {
     val box = new VarHandleShortInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Short = 12.toShort
     val desired: Short = 3.toShort
     box.value = initial
@@ -1196,7 +1202,7 @@ class VarHandleShortInstanceMatrixTest {
 
   @Test def getAndBitwiseXor_supported(): Unit = {
     val box = new VarHandleShortInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Short = 12.toShort
     val desired: Short = 3.toShort
     box.value = initial
@@ -1207,7 +1213,7 @@ class VarHandleShortInstanceMatrixTest {
 
   @Test def getAndBitwiseXorAcquire_supported(): Unit = {
     val box = new VarHandleShortInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Short = 12.toShort
     val desired: Short = 3.toShort
     box.value = initial
@@ -1218,7 +1224,7 @@ class VarHandleShortInstanceMatrixTest {
 
   @Test def getAndBitwiseXorRelease_supported(): Unit = {
     val box = new VarHandleShortInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Short = 12.toShort
     val desired: Short = 3.toShort
     box.value = initial
@@ -1236,12 +1242,14 @@ class VarHandleCharInstanceFixture
 }
 
 class VarHandleCharInstanceMatrixTest {
+  protected def invocationHandle(handle: VarHandle): VarHandle = handle
+
   private def assertValue(expected: Char, actual: Char): Unit =
     assertEquals(expected, actual)
 
   @Test def get_supported(): Unit = {
     val box = new VarHandleCharInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Char = 12.toChar
     val desired: Char = 3.toChar
     box.value = initial
@@ -1252,7 +1260,7 @@ class VarHandleCharInstanceMatrixTest {
 
   @Test def getOpaque_supported(): Unit = {
     val box = new VarHandleCharInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Char = 12.toChar
     val desired: Char = 3.toChar
     box.value = initial
@@ -1263,7 +1271,7 @@ class VarHandleCharInstanceMatrixTest {
 
   @Test def getAcquire_supported(): Unit = {
     val box = new VarHandleCharInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Char = 12.toChar
     val desired: Char = 3.toChar
     box.value = initial
@@ -1274,7 +1282,7 @@ class VarHandleCharInstanceMatrixTest {
 
   @Test def getVolatile_supported(): Unit = {
     val box = new VarHandleCharInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Char = 12.toChar
     val desired: Char = 3.toChar
     box.value = initial
@@ -1285,7 +1293,7 @@ class VarHandleCharInstanceMatrixTest {
 
   @Test def set_supported(): Unit = {
     val box = new VarHandleCharInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Char = 12.toChar
     val desired: Char = 3.toChar
     box.value = initial
@@ -1295,7 +1303,7 @@ class VarHandleCharInstanceMatrixTest {
 
   @Test def setOpaque_supported(): Unit = {
     val box = new VarHandleCharInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Char = 12.toChar
     val desired: Char = 3.toChar
     box.value = initial
@@ -1305,7 +1313,7 @@ class VarHandleCharInstanceMatrixTest {
 
   @Test def setRelease_supported(): Unit = {
     val box = new VarHandleCharInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Char = 12.toChar
     val desired: Char = 3.toChar
     box.value = initial
@@ -1315,7 +1323,7 @@ class VarHandleCharInstanceMatrixTest {
 
   @Test def setVolatile_supported(): Unit = {
     val box = new VarHandleCharInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Char = 12.toChar
     val desired: Char = 3.toChar
     box.value = initial
@@ -1325,7 +1333,7 @@ class VarHandleCharInstanceMatrixTest {
 
   @Test def compareAndSet_supported(): Unit = {
     val box = new VarHandleCharInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Char = 12.toChar
     val desired: Char = 3.toChar
     box.value = initial
@@ -1339,7 +1347,7 @@ class VarHandleCharInstanceMatrixTest {
 
   @Test def weakCompareAndSetPlain_supported(): Unit = {
     val box = new VarHandleCharInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Char = 12.toChar
     val desired: Char = 3.toChar
     box.value = initial
@@ -1359,7 +1367,7 @@ class VarHandleCharInstanceMatrixTest {
 
   @Test def weakCompareAndSet_supported(): Unit = {
     val box = new VarHandleCharInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Char = 12.toChar
     val desired: Char = 3.toChar
     box.value = initial
@@ -1379,7 +1387,7 @@ class VarHandleCharInstanceMatrixTest {
 
   @Test def weakCompareAndSetAcquire_supported(): Unit = {
     val box = new VarHandleCharInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Char = 12.toChar
     val desired: Char = 3.toChar
     box.value = initial
@@ -1399,7 +1407,7 @@ class VarHandleCharInstanceMatrixTest {
 
   @Test def weakCompareAndSetRelease_supported(): Unit = {
     val box = new VarHandleCharInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Char = 12.toChar
     val desired: Char = 3.toChar
     box.value = initial
@@ -1419,7 +1427,7 @@ class VarHandleCharInstanceMatrixTest {
 
   @Test def compareAndExchange_supported(): Unit = {
     val box = new VarHandleCharInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Char = 12.toChar
     val desired: Char = 3.toChar
     box.value = initial
@@ -1433,7 +1441,7 @@ class VarHandleCharInstanceMatrixTest {
 
   @Test def compareAndExchangeAcquire_supported(): Unit = {
     val box = new VarHandleCharInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Char = 12.toChar
     val desired: Char = 3.toChar
     box.value = initial
@@ -1447,7 +1455,7 @@ class VarHandleCharInstanceMatrixTest {
 
   @Test def compareAndExchangeRelease_supported(): Unit = {
     val box = new VarHandleCharInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Char = 12.toChar
     val desired: Char = 3.toChar
     box.value = initial
@@ -1461,7 +1469,7 @@ class VarHandleCharInstanceMatrixTest {
 
   @Test def getAndSet_supported(): Unit = {
     val box = new VarHandleCharInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Char = 12.toChar
     val desired: Char = 3.toChar
     box.value = initial
@@ -1472,7 +1480,7 @@ class VarHandleCharInstanceMatrixTest {
 
   @Test def getAndSetAcquire_supported(): Unit = {
     val box = new VarHandleCharInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Char = 12.toChar
     val desired: Char = 3.toChar
     box.value = initial
@@ -1483,7 +1491,7 @@ class VarHandleCharInstanceMatrixTest {
 
   @Test def getAndSetRelease_supported(): Unit = {
     val box = new VarHandleCharInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Char = 12.toChar
     val desired: Char = 3.toChar
     box.value = initial
@@ -1494,7 +1502,7 @@ class VarHandleCharInstanceMatrixTest {
 
   @Test def getAndAdd_supported(): Unit = {
     val box = new VarHandleCharInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Char = 12.toChar
     val desired: Char = 3.toChar
     box.value = initial
@@ -1505,7 +1513,7 @@ class VarHandleCharInstanceMatrixTest {
 
   @Test def getAndAddAcquire_supported(): Unit = {
     val box = new VarHandleCharInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Char = 12.toChar
     val desired: Char = 3.toChar
     box.value = initial
@@ -1516,7 +1524,7 @@ class VarHandleCharInstanceMatrixTest {
 
   @Test def getAndAddRelease_supported(): Unit = {
     val box = new VarHandleCharInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Char = 12.toChar
     val desired: Char = 3.toChar
     box.value = initial
@@ -1527,7 +1535,7 @@ class VarHandleCharInstanceMatrixTest {
 
   @Test def getAndBitwiseOr_supported(): Unit = {
     val box = new VarHandleCharInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Char = 12.toChar
     val desired: Char = 3.toChar
     box.value = initial
@@ -1538,7 +1546,7 @@ class VarHandleCharInstanceMatrixTest {
 
   @Test def getAndBitwiseOrAcquire_supported(): Unit = {
     val box = new VarHandleCharInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Char = 12.toChar
     val desired: Char = 3.toChar
     box.value = initial
@@ -1549,7 +1557,7 @@ class VarHandleCharInstanceMatrixTest {
 
   @Test def getAndBitwiseOrRelease_supported(): Unit = {
     val box = new VarHandleCharInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Char = 12.toChar
     val desired: Char = 3.toChar
     box.value = initial
@@ -1560,7 +1568,7 @@ class VarHandleCharInstanceMatrixTest {
 
   @Test def getAndBitwiseAnd_supported(): Unit = {
     val box = new VarHandleCharInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Char = 12.toChar
     val desired: Char = 3.toChar
     box.value = initial
@@ -1571,7 +1579,7 @@ class VarHandleCharInstanceMatrixTest {
 
   @Test def getAndBitwiseAndAcquire_supported(): Unit = {
     val box = new VarHandleCharInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Char = 12.toChar
     val desired: Char = 3.toChar
     box.value = initial
@@ -1582,7 +1590,7 @@ class VarHandleCharInstanceMatrixTest {
 
   @Test def getAndBitwiseAndRelease_supported(): Unit = {
     val box = new VarHandleCharInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Char = 12.toChar
     val desired: Char = 3.toChar
     box.value = initial
@@ -1593,7 +1601,7 @@ class VarHandleCharInstanceMatrixTest {
 
   @Test def getAndBitwiseXor_supported(): Unit = {
     val box = new VarHandleCharInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Char = 12.toChar
     val desired: Char = 3.toChar
     box.value = initial
@@ -1604,7 +1612,7 @@ class VarHandleCharInstanceMatrixTest {
 
   @Test def getAndBitwiseXorAcquire_supported(): Unit = {
     val box = new VarHandleCharInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Char = 12.toChar
     val desired: Char = 3.toChar
     box.value = initial
@@ -1615,7 +1623,7 @@ class VarHandleCharInstanceMatrixTest {
 
   @Test def getAndBitwiseXorRelease_supported(): Unit = {
     val box = new VarHandleCharInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Char = 12.toChar
     val desired: Char = 3.toChar
     box.value = initial
@@ -1633,12 +1641,14 @@ class VarHandleIntInstanceFixture
 }
 
 class VarHandleIntInstanceMatrixTest {
+  protected def invocationHandle(handle: VarHandle): VarHandle = handle
+
   private def assertValue(expected: Int, actual: Int): Unit =
     assertEquals(expected, actual)
 
   @Test def get_supported(): Unit = {
     val box = new VarHandleIntInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Int = 12
     val desired: Int = 3
     box.value = initial
@@ -1649,7 +1659,7 @@ class VarHandleIntInstanceMatrixTest {
 
   @Test def getOpaque_supported(): Unit = {
     val box = new VarHandleIntInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Int = 12
     val desired: Int = 3
     box.value = initial
@@ -1660,7 +1670,7 @@ class VarHandleIntInstanceMatrixTest {
 
   @Test def getAcquire_supported(): Unit = {
     val box = new VarHandleIntInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Int = 12
     val desired: Int = 3
     box.value = initial
@@ -1671,7 +1681,7 @@ class VarHandleIntInstanceMatrixTest {
 
   @Test def getVolatile_supported(): Unit = {
     val box = new VarHandleIntInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Int = 12
     val desired: Int = 3
     box.value = initial
@@ -1682,7 +1692,7 @@ class VarHandleIntInstanceMatrixTest {
 
   @Test def set_supported(): Unit = {
     val box = new VarHandleIntInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Int = 12
     val desired: Int = 3
     box.value = initial
@@ -1692,7 +1702,7 @@ class VarHandleIntInstanceMatrixTest {
 
   @Test def setOpaque_supported(): Unit = {
     val box = new VarHandleIntInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Int = 12
     val desired: Int = 3
     box.value = initial
@@ -1702,7 +1712,7 @@ class VarHandleIntInstanceMatrixTest {
 
   @Test def setRelease_supported(): Unit = {
     val box = new VarHandleIntInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Int = 12
     val desired: Int = 3
     box.value = initial
@@ -1712,7 +1722,7 @@ class VarHandleIntInstanceMatrixTest {
 
   @Test def setVolatile_supported(): Unit = {
     val box = new VarHandleIntInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Int = 12
     val desired: Int = 3
     box.value = initial
@@ -1722,7 +1732,7 @@ class VarHandleIntInstanceMatrixTest {
 
   @Test def compareAndSet_supported(): Unit = {
     val box = new VarHandleIntInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Int = 12
     val desired: Int = 3
     box.value = initial
@@ -1736,7 +1746,7 @@ class VarHandleIntInstanceMatrixTest {
 
   @Test def weakCompareAndSetPlain_supported(): Unit = {
     val box = new VarHandleIntInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Int = 12
     val desired: Int = 3
     box.value = initial
@@ -1756,7 +1766,7 @@ class VarHandleIntInstanceMatrixTest {
 
   @Test def weakCompareAndSet_supported(): Unit = {
     val box = new VarHandleIntInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Int = 12
     val desired: Int = 3
     box.value = initial
@@ -1776,7 +1786,7 @@ class VarHandleIntInstanceMatrixTest {
 
   @Test def weakCompareAndSetAcquire_supported(): Unit = {
     val box = new VarHandleIntInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Int = 12
     val desired: Int = 3
     box.value = initial
@@ -1796,7 +1806,7 @@ class VarHandleIntInstanceMatrixTest {
 
   @Test def weakCompareAndSetRelease_supported(): Unit = {
     val box = new VarHandleIntInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Int = 12
     val desired: Int = 3
     box.value = initial
@@ -1816,7 +1826,7 @@ class VarHandleIntInstanceMatrixTest {
 
   @Test def compareAndExchange_supported(): Unit = {
     val box = new VarHandleIntInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Int = 12
     val desired: Int = 3
     box.value = initial
@@ -1830,7 +1840,7 @@ class VarHandleIntInstanceMatrixTest {
 
   @Test def compareAndExchangeAcquire_supported(): Unit = {
     val box = new VarHandleIntInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Int = 12
     val desired: Int = 3
     box.value = initial
@@ -1844,7 +1854,7 @@ class VarHandleIntInstanceMatrixTest {
 
   @Test def compareAndExchangeRelease_supported(): Unit = {
     val box = new VarHandleIntInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Int = 12
     val desired: Int = 3
     box.value = initial
@@ -1858,7 +1868,7 @@ class VarHandleIntInstanceMatrixTest {
 
   @Test def getAndSet_supported(): Unit = {
     val box = new VarHandleIntInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Int = 12
     val desired: Int = 3
     box.value = initial
@@ -1869,7 +1879,7 @@ class VarHandleIntInstanceMatrixTest {
 
   @Test def getAndSetAcquire_supported(): Unit = {
     val box = new VarHandleIntInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Int = 12
     val desired: Int = 3
     box.value = initial
@@ -1880,7 +1890,7 @@ class VarHandleIntInstanceMatrixTest {
 
   @Test def getAndSetRelease_supported(): Unit = {
     val box = new VarHandleIntInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Int = 12
     val desired: Int = 3
     box.value = initial
@@ -1891,7 +1901,7 @@ class VarHandleIntInstanceMatrixTest {
 
   @Test def getAndAdd_supported(): Unit = {
     val box = new VarHandleIntInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Int = 12
     val desired: Int = 3
     box.value = initial
@@ -1902,7 +1912,7 @@ class VarHandleIntInstanceMatrixTest {
 
   @Test def getAndAddAcquire_supported(): Unit = {
     val box = new VarHandleIntInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Int = 12
     val desired: Int = 3
     box.value = initial
@@ -1913,7 +1923,7 @@ class VarHandleIntInstanceMatrixTest {
 
   @Test def getAndAddRelease_supported(): Unit = {
     val box = new VarHandleIntInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Int = 12
     val desired: Int = 3
     box.value = initial
@@ -1924,7 +1934,7 @@ class VarHandleIntInstanceMatrixTest {
 
   @Test def getAndBitwiseOr_supported(): Unit = {
     val box = new VarHandleIntInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Int = 12
     val desired: Int = 3
     box.value = initial
@@ -1935,7 +1945,7 @@ class VarHandleIntInstanceMatrixTest {
 
   @Test def getAndBitwiseOrAcquire_supported(): Unit = {
     val box = new VarHandleIntInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Int = 12
     val desired: Int = 3
     box.value = initial
@@ -1946,7 +1956,7 @@ class VarHandleIntInstanceMatrixTest {
 
   @Test def getAndBitwiseOrRelease_supported(): Unit = {
     val box = new VarHandleIntInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Int = 12
     val desired: Int = 3
     box.value = initial
@@ -1957,7 +1967,7 @@ class VarHandleIntInstanceMatrixTest {
 
   @Test def getAndBitwiseAnd_supported(): Unit = {
     val box = new VarHandleIntInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Int = 12
     val desired: Int = 3
     box.value = initial
@@ -1968,7 +1978,7 @@ class VarHandleIntInstanceMatrixTest {
 
   @Test def getAndBitwiseAndAcquire_supported(): Unit = {
     val box = new VarHandleIntInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Int = 12
     val desired: Int = 3
     box.value = initial
@@ -1979,7 +1989,7 @@ class VarHandleIntInstanceMatrixTest {
 
   @Test def getAndBitwiseAndRelease_supported(): Unit = {
     val box = new VarHandleIntInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Int = 12
     val desired: Int = 3
     box.value = initial
@@ -1990,7 +2000,7 @@ class VarHandleIntInstanceMatrixTest {
 
   @Test def getAndBitwiseXor_supported(): Unit = {
     val box = new VarHandleIntInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Int = 12
     val desired: Int = 3
     box.value = initial
@@ -2001,7 +2011,7 @@ class VarHandleIntInstanceMatrixTest {
 
   @Test def getAndBitwiseXorAcquire_supported(): Unit = {
     val box = new VarHandleIntInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Int = 12
     val desired: Int = 3
     box.value = initial
@@ -2012,7 +2022,7 @@ class VarHandleIntInstanceMatrixTest {
 
   @Test def getAndBitwiseXorRelease_supported(): Unit = {
     val box = new VarHandleIntInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Int = 12
     val desired: Int = 3
     box.value = initial
@@ -2030,12 +2040,14 @@ class VarHandleLongInstanceFixture
 }
 
 class VarHandleLongInstanceMatrixTest {
+  protected def invocationHandle(handle: VarHandle): VarHandle = handle
+
   private def assertValue(expected: Long, actual: Long): Unit =
     assertEquals(expected, actual)
 
   @Test def get_supported(): Unit = {
     val box = new VarHandleLongInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Long = 12L
     val desired: Long = 3L
     box.value = initial
@@ -2046,7 +2058,7 @@ class VarHandleLongInstanceMatrixTest {
 
   @Test def getOpaque_supported(): Unit = {
     val box = new VarHandleLongInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Long = 12L
     val desired: Long = 3L
     box.value = initial
@@ -2057,7 +2069,7 @@ class VarHandleLongInstanceMatrixTest {
 
   @Test def getAcquire_supported(): Unit = {
     val box = new VarHandleLongInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Long = 12L
     val desired: Long = 3L
     box.value = initial
@@ -2068,7 +2080,7 @@ class VarHandleLongInstanceMatrixTest {
 
   @Test def getVolatile_supported(): Unit = {
     val box = new VarHandleLongInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Long = 12L
     val desired: Long = 3L
     box.value = initial
@@ -2079,7 +2091,7 @@ class VarHandleLongInstanceMatrixTest {
 
   @Test def set_supported(): Unit = {
     val box = new VarHandleLongInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Long = 12L
     val desired: Long = 3L
     box.value = initial
@@ -2089,7 +2101,7 @@ class VarHandleLongInstanceMatrixTest {
 
   @Test def setOpaque_supported(): Unit = {
     val box = new VarHandleLongInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Long = 12L
     val desired: Long = 3L
     box.value = initial
@@ -2099,7 +2111,7 @@ class VarHandleLongInstanceMatrixTest {
 
   @Test def setRelease_supported(): Unit = {
     val box = new VarHandleLongInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Long = 12L
     val desired: Long = 3L
     box.value = initial
@@ -2109,7 +2121,7 @@ class VarHandleLongInstanceMatrixTest {
 
   @Test def setVolatile_supported(): Unit = {
     val box = new VarHandleLongInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Long = 12L
     val desired: Long = 3L
     box.value = initial
@@ -2119,7 +2131,7 @@ class VarHandleLongInstanceMatrixTest {
 
   @Test def compareAndSet_supported(): Unit = {
     val box = new VarHandleLongInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Long = 12L
     val desired: Long = 3L
     box.value = initial
@@ -2133,7 +2145,7 @@ class VarHandleLongInstanceMatrixTest {
 
   @Test def weakCompareAndSetPlain_supported(): Unit = {
     val box = new VarHandleLongInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Long = 12L
     val desired: Long = 3L
     box.value = initial
@@ -2153,7 +2165,7 @@ class VarHandleLongInstanceMatrixTest {
 
   @Test def weakCompareAndSet_supported(): Unit = {
     val box = new VarHandleLongInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Long = 12L
     val desired: Long = 3L
     box.value = initial
@@ -2173,7 +2185,7 @@ class VarHandleLongInstanceMatrixTest {
 
   @Test def weakCompareAndSetAcquire_supported(): Unit = {
     val box = new VarHandleLongInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Long = 12L
     val desired: Long = 3L
     box.value = initial
@@ -2193,7 +2205,7 @@ class VarHandleLongInstanceMatrixTest {
 
   @Test def weakCompareAndSetRelease_supported(): Unit = {
     val box = new VarHandleLongInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Long = 12L
     val desired: Long = 3L
     box.value = initial
@@ -2213,7 +2225,7 @@ class VarHandleLongInstanceMatrixTest {
 
   @Test def compareAndExchange_supported(): Unit = {
     val box = new VarHandleLongInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Long = 12L
     val desired: Long = 3L
     box.value = initial
@@ -2227,7 +2239,7 @@ class VarHandleLongInstanceMatrixTest {
 
   @Test def compareAndExchangeAcquire_supported(): Unit = {
     val box = new VarHandleLongInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Long = 12L
     val desired: Long = 3L
     box.value = initial
@@ -2241,7 +2253,7 @@ class VarHandleLongInstanceMatrixTest {
 
   @Test def compareAndExchangeRelease_supported(): Unit = {
     val box = new VarHandleLongInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Long = 12L
     val desired: Long = 3L
     box.value = initial
@@ -2255,7 +2267,7 @@ class VarHandleLongInstanceMatrixTest {
 
   @Test def getAndSet_supported(): Unit = {
     val box = new VarHandleLongInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Long = 12L
     val desired: Long = 3L
     box.value = initial
@@ -2266,7 +2278,7 @@ class VarHandleLongInstanceMatrixTest {
 
   @Test def getAndSetAcquire_supported(): Unit = {
     val box = new VarHandleLongInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Long = 12L
     val desired: Long = 3L
     box.value = initial
@@ -2277,7 +2289,7 @@ class VarHandleLongInstanceMatrixTest {
 
   @Test def getAndSetRelease_supported(): Unit = {
     val box = new VarHandleLongInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Long = 12L
     val desired: Long = 3L
     box.value = initial
@@ -2288,7 +2300,7 @@ class VarHandleLongInstanceMatrixTest {
 
   @Test def getAndAdd_supported(): Unit = {
     val box = new VarHandleLongInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Long = 12L
     val desired: Long = 3L
     box.value = initial
@@ -2299,7 +2311,7 @@ class VarHandleLongInstanceMatrixTest {
 
   @Test def getAndAddAcquire_supported(): Unit = {
     val box = new VarHandleLongInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Long = 12L
     val desired: Long = 3L
     box.value = initial
@@ -2310,7 +2322,7 @@ class VarHandleLongInstanceMatrixTest {
 
   @Test def getAndAddRelease_supported(): Unit = {
     val box = new VarHandleLongInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Long = 12L
     val desired: Long = 3L
     box.value = initial
@@ -2321,7 +2333,7 @@ class VarHandleLongInstanceMatrixTest {
 
   @Test def getAndBitwiseOr_supported(): Unit = {
     val box = new VarHandleLongInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Long = 12L
     val desired: Long = 3L
     box.value = initial
@@ -2332,7 +2344,7 @@ class VarHandleLongInstanceMatrixTest {
 
   @Test def getAndBitwiseOrAcquire_supported(): Unit = {
     val box = new VarHandleLongInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Long = 12L
     val desired: Long = 3L
     box.value = initial
@@ -2343,7 +2355,7 @@ class VarHandleLongInstanceMatrixTest {
 
   @Test def getAndBitwiseOrRelease_supported(): Unit = {
     val box = new VarHandleLongInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Long = 12L
     val desired: Long = 3L
     box.value = initial
@@ -2354,7 +2366,7 @@ class VarHandleLongInstanceMatrixTest {
 
   @Test def getAndBitwiseAnd_supported(): Unit = {
     val box = new VarHandleLongInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Long = 12L
     val desired: Long = 3L
     box.value = initial
@@ -2365,7 +2377,7 @@ class VarHandleLongInstanceMatrixTest {
 
   @Test def getAndBitwiseAndAcquire_supported(): Unit = {
     val box = new VarHandleLongInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Long = 12L
     val desired: Long = 3L
     box.value = initial
@@ -2376,7 +2388,7 @@ class VarHandleLongInstanceMatrixTest {
 
   @Test def getAndBitwiseAndRelease_supported(): Unit = {
     val box = new VarHandleLongInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Long = 12L
     val desired: Long = 3L
     box.value = initial
@@ -2387,7 +2399,7 @@ class VarHandleLongInstanceMatrixTest {
 
   @Test def getAndBitwiseXor_supported(): Unit = {
     val box = new VarHandleLongInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Long = 12L
     val desired: Long = 3L
     box.value = initial
@@ -2398,7 +2410,7 @@ class VarHandleLongInstanceMatrixTest {
 
   @Test def getAndBitwiseXorAcquire_supported(): Unit = {
     val box = new VarHandleLongInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Long = 12L
     val desired: Long = 3L
     box.value = initial
@@ -2409,7 +2421,7 @@ class VarHandleLongInstanceMatrixTest {
 
   @Test def getAndBitwiseXorRelease_supported(): Unit = {
     val box = new VarHandleLongInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Long = 12L
     val desired: Long = 3L
     box.value = initial
@@ -2427,12 +2439,14 @@ class VarHandleFloatInstanceFixture
 }
 
 class VarHandleFloatInstanceMatrixTest {
+  protected def invocationHandle(handle: VarHandle): VarHandle = handle
+
   private def assertValue(expected: Float, actual: Float): Unit =
     assertEquals(java.lang.Float.floatToRawIntBits(expected), java.lang.Float.floatToRawIntBits(actual))
 
   @Test def get_supported(): Unit = {
     val box = new VarHandleFloatInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Float = 12.0f
     val desired: Float = 3.0f
     box.value = initial
@@ -2443,7 +2457,7 @@ class VarHandleFloatInstanceMatrixTest {
 
   @Test def getOpaque_supported(): Unit = {
     val box = new VarHandleFloatInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Float = 12.0f
     val desired: Float = 3.0f
     box.value = initial
@@ -2454,7 +2468,7 @@ class VarHandleFloatInstanceMatrixTest {
 
   @Test def getAcquire_supported(): Unit = {
     val box = new VarHandleFloatInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Float = 12.0f
     val desired: Float = 3.0f
     box.value = initial
@@ -2465,7 +2479,7 @@ class VarHandleFloatInstanceMatrixTest {
 
   @Test def getVolatile_supported(): Unit = {
     val box = new VarHandleFloatInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Float = 12.0f
     val desired: Float = 3.0f
     box.value = initial
@@ -2476,7 +2490,7 @@ class VarHandleFloatInstanceMatrixTest {
 
   @Test def set_supported(): Unit = {
     val box = new VarHandleFloatInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Float = 12.0f
     val desired: Float = 3.0f
     box.value = initial
@@ -2486,7 +2500,7 @@ class VarHandleFloatInstanceMatrixTest {
 
   @Test def setOpaque_supported(): Unit = {
     val box = new VarHandleFloatInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Float = 12.0f
     val desired: Float = 3.0f
     box.value = initial
@@ -2496,7 +2510,7 @@ class VarHandleFloatInstanceMatrixTest {
 
   @Test def setRelease_supported(): Unit = {
     val box = new VarHandleFloatInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Float = 12.0f
     val desired: Float = 3.0f
     box.value = initial
@@ -2506,7 +2520,7 @@ class VarHandleFloatInstanceMatrixTest {
 
   @Test def setVolatile_supported(): Unit = {
     val box = new VarHandleFloatInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Float = 12.0f
     val desired: Float = 3.0f
     box.value = initial
@@ -2516,7 +2530,7 @@ class VarHandleFloatInstanceMatrixTest {
 
   @Test def compareAndSet_supported(): Unit = {
     val box = new VarHandleFloatInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Float = 12.0f
     val desired: Float = 3.0f
     box.value = initial
@@ -2530,7 +2544,7 @@ class VarHandleFloatInstanceMatrixTest {
 
   @Test def weakCompareAndSetPlain_supported(): Unit = {
     val box = new VarHandleFloatInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Float = 12.0f
     val desired: Float = 3.0f
     box.value = initial
@@ -2550,7 +2564,7 @@ class VarHandleFloatInstanceMatrixTest {
 
   @Test def weakCompareAndSet_supported(): Unit = {
     val box = new VarHandleFloatInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Float = 12.0f
     val desired: Float = 3.0f
     box.value = initial
@@ -2570,7 +2584,7 @@ class VarHandleFloatInstanceMatrixTest {
 
   @Test def weakCompareAndSetAcquire_supported(): Unit = {
     val box = new VarHandleFloatInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Float = 12.0f
     val desired: Float = 3.0f
     box.value = initial
@@ -2590,7 +2604,7 @@ class VarHandleFloatInstanceMatrixTest {
 
   @Test def weakCompareAndSetRelease_supported(): Unit = {
     val box = new VarHandleFloatInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Float = 12.0f
     val desired: Float = 3.0f
     box.value = initial
@@ -2610,7 +2624,7 @@ class VarHandleFloatInstanceMatrixTest {
 
   @Test def compareAndExchange_supported(): Unit = {
     val box = new VarHandleFloatInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Float = 12.0f
     val desired: Float = 3.0f
     box.value = initial
@@ -2624,7 +2638,7 @@ class VarHandleFloatInstanceMatrixTest {
 
   @Test def compareAndExchangeAcquire_supported(): Unit = {
     val box = new VarHandleFloatInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Float = 12.0f
     val desired: Float = 3.0f
     box.value = initial
@@ -2638,7 +2652,7 @@ class VarHandleFloatInstanceMatrixTest {
 
   @Test def compareAndExchangeRelease_supported(): Unit = {
     val box = new VarHandleFloatInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Float = 12.0f
     val desired: Float = 3.0f
     box.value = initial
@@ -2652,7 +2666,7 @@ class VarHandleFloatInstanceMatrixTest {
 
   @Test def getAndSet_supported(): Unit = {
     val box = new VarHandleFloatInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Float = 12.0f
     val desired: Float = 3.0f
     box.value = initial
@@ -2663,7 +2677,7 @@ class VarHandleFloatInstanceMatrixTest {
 
   @Test def getAndSetAcquire_supported(): Unit = {
     val box = new VarHandleFloatInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Float = 12.0f
     val desired: Float = 3.0f
     box.value = initial
@@ -2674,7 +2688,7 @@ class VarHandleFloatInstanceMatrixTest {
 
   @Test def getAndSetRelease_supported(): Unit = {
     val box = new VarHandleFloatInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Float = 12.0f
     val desired: Float = 3.0f
     box.value = initial
@@ -2685,7 +2699,7 @@ class VarHandleFloatInstanceMatrixTest {
 
   @Test def getAndAdd_supported(): Unit = {
     val box = new VarHandleFloatInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Float = 12.0f
     val desired: Float = 3.0f
     box.value = initial
@@ -2696,7 +2710,7 @@ class VarHandleFloatInstanceMatrixTest {
 
   @Test def getAndAddAcquire_supported(): Unit = {
     val box = new VarHandleFloatInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Float = 12.0f
     val desired: Float = 3.0f
     box.value = initial
@@ -2707,7 +2721,7 @@ class VarHandleFloatInstanceMatrixTest {
 
   @Test def getAndAddRelease_supported(): Unit = {
     val box = new VarHandleFloatInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Float = 12.0f
     val desired: Float = 3.0f
     box.value = initial
@@ -2718,7 +2732,7 @@ class VarHandleFloatInstanceMatrixTest {
 
   @Test def getAndBitwiseOr_unsupported(): Unit = {
     val box = new VarHandleFloatInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Float = 12.0f
     val desired: Float = 3.0f
     box.value = initial
@@ -2730,7 +2744,7 @@ class VarHandleFloatInstanceMatrixTest {
 
   @Test def getAndBitwiseOrAcquire_unsupported(): Unit = {
     val box = new VarHandleFloatInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Float = 12.0f
     val desired: Float = 3.0f
     box.value = initial
@@ -2742,7 +2756,7 @@ class VarHandleFloatInstanceMatrixTest {
 
   @Test def getAndBitwiseOrRelease_unsupported(): Unit = {
     val box = new VarHandleFloatInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Float = 12.0f
     val desired: Float = 3.0f
     box.value = initial
@@ -2754,7 +2768,7 @@ class VarHandleFloatInstanceMatrixTest {
 
   @Test def getAndBitwiseAnd_unsupported(): Unit = {
     val box = new VarHandleFloatInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Float = 12.0f
     val desired: Float = 3.0f
     box.value = initial
@@ -2766,7 +2780,7 @@ class VarHandleFloatInstanceMatrixTest {
 
   @Test def getAndBitwiseAndAcquire_unsupported(): Unit = {
     val box = new VarHandleFloatInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Float = 12.0f
     val desired: Float = 3.0f
     box.value = initial
@@ -2778,7 +2792,7 @@ class VarHandleFloatInstanceMatrixTest {
 
   @Test def getAndBitwiseAndRelease_unsupported(): Unit = {
     val box = new VarHandleFloatInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Float = 12.0f
     val desired: Float = 3.0f
     box.value = initial
@@ -2790,7 +2804,7 @@ class VarHandleFloatInstanceMatrixTest {
 
   @Test def getAndBitwiseXor_unsupported(): Unit = {
     val box = new VarHandleFloatInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Float = 12.0f
     val desired: Float = 3.0f
     box.value = initial
@@ -2802,7 +2816,7 @@ class VarHandleFloatInstanceMatrixTest {
 
   @Test def getAndBitwiseXorAcquire_unsupported(): Unit = {
     val box = new VarHandleFloatInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Float = 12.0f
     val desired: Float = 3.0f
     box.value = initial
@@ -2814,7 +2828,7 @@ class VarHandleFloatInstanceMatrixTest {
 
   @Test def getAndBitwiseXorRelease_unsupported(): Unit = {
     val box = new VarHandleFloatInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Float = 12.0f
     val desired: Float = 3.0f
     box.value = initial
@@ -2833,12 +2847,14 @@ class VarHandleDoubleInstanceFixture
 }
 
 class VarHandleDoubleInstanceMatrixTest {
+  protected def invocationHandle(handle: VarHandle): VarHandle = handle
+
   private def assertValue(expected: Double, actual: Double): Unit =
     assertEquals(java.lang.Double.doubleToRawLongBits(expected), java.lang.Double.doubleToRawLongBits(actual))
 
   @Test def get_supported(): Unit = {
     val box = new VarHandleDoubleInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Double = 12.0d
     val desired: Double = 3.0d
     box.value = initial
@@ -2849,7 +2865,7 @@ class VarHandleDoubleInstanceMatrixTest {
 
   @Test def getOpaque_supported(): Unit = {
     val box = new VarHandleDoubleInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Double = 12.0d
     val desired: Double = 3.0d
     box.value = initial
@@ -2860,7 +2876,7 @@ class VarHandleDoubleInstanceMatrixTest {
 
   @Test def getAcquire_supported(): Unit = {
     val box = new VarHandleDoubleInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Double = 12.0d
     val desired: Double = 3.0d
     box.value = initial
@@ -2871,7 +2887,7 @@ class VarHandleDoubleInstanceMatrixTest {
 
   @Test def getVolatile_supported(): Unit = {
     val box = new VarHandleDoubleInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Double = 12.0d
     val desired: Double = 3.0d
     box.value = initial
@@ -2882,7 +2898,7 @@ class VarHandleDoubleInstanceMatrixTest {
 
   @Test def set_supported(): Unit = {
     val box = new VarHandleDoubleInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Double = 12.0d
     val desired: Double = 3.0d
     box.value = initial
@@ -2892,7 +2908,7 @@ class VarHandleDoubleInstanceMatrixTest {
 
   @Test def setOpaque_supported(): Unit = {
     val box = new VarHandleDoubleInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Double = 12.0d
     val desired: Double = 3.0d
     box.value = initial
@@ -2902,7 +2918,7 @@ class VarHandleDoubleInstanceMatrixTest {
 
   @Test def setRelease_supported(): Unit = {
     val box = new VarHandleDoubleInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Double = 12.0d
     val desired: Double = 3.0d
     box.value = initial
@@ -2912,7 +2928,7 @@ class VarHandleDoubleInstanceMatrixTest {
 
   @Test def setVolatile_supported(): Unit = {
     val box = new VarHandleDoubleInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Double = 12.0d
     val desired: Double = 3.0d
     box.value = initial
@@ -2922,7 +2938,7 @@ class VarHandleDoubleInstanceMatrixTest {
 
   @Test def compareAndSet_supported(): Unit = {
     val box = new VarHandleDoubleInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Double = 12.0d
     val desired: Double = 3.0d
     box.value = initial
@@ -2936,7 +2952,7 @@ class VarHandleDoubleInstanceMatrixTest {
 
   @Test def weakCompareAndSetPlain_supported(): Unit = {
     val box = new VarHandleDoubleInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Double = 12.0d
     val desired: Double = 3.0d
     box.value = initial
@@ -2956,7 +2972,7 @@ class VarHandleDoubleInstanceMatrixTest {
 
   @Test def weakCompareAndSet_supported(): Unit = {
     val box = new VarHandleDoubleInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Double = 12.0d
     val desired: Double = 3.0d
     box.value = initial
@@ -2976,7 +2992,7 @@ class VarHandleDoubleInstanceMatrixTest {
 
   @Test def weakCompareAndSetAcquire_supported(): Unit = {
     val box = new VarHandleDoubleInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Double = 12.0d
     val desired: Double = 3.0d
     box.value = initial
@@ -2996,7 +3012,7 @@ class VarHandleDoubleInstanceMatrixTest {
 
   @Test def weakCompareAndSetRelease_supported(): Unit = {
     val box = new VarHandleDoubleInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Double = 12.0d
     val desired: Double = 3.0d
     box.value = initial
@@ -3016,7 +3032,7 @@ class VarHandleDoubleInstanceMatrixTest {
 
   @Test def compareAndExchange_supported(): Unit = {
     val box = new VarHandleDoubleInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Double = 12.0d
     val desired: Double = 3.0d
     box.value = initial
@@ -3030,7 +3046,7 @@ class VarHandleDoubleInstanceMatrixTest {
 
   @Test def compareAndExchangeAcquire_supported(): Unit = {
     val box = new VarHandleDoubleInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Double = 12.0d
     val desired: Double = 3.0d
     box.value = initial
@@ -3044,7 +3060,7 @@ class VarHandleDoubleInstanceMatrixTest {
 
   @Test def compareAndExchangeRelease_supported(): Unit = {
     val box = new VarHandleDoubleInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Double = 12.0d
     val desired: Double = 3.0d
     box.value = initial
@@ -3058,7 +3074,7 @@ class VarHandleDoubleInstanceMatrixTest {
 
   @Test def getAndSet_supported(): Unit = {
     val box = new VarHandleDoubleInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Double = 12.0d
     val desired: Double = 3.0d
     box.value = initial
@@ -3069,7 +3085,7 @@ class VarHandleDoubleInstanceMatrixTest {
 
   @Test def getAndSetAcquire_supported(): Unit = {
     val box = new VarHandleDoubleInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Double = 12.0d
     val desired: Double = 3.0d
     box.value = initial
@@ -3080,7 +3096,7 @@ class VarHandleDoubleInstanceMatrixTest {
 
   @Test def getAndSetRelease_supported(): Unit = {
     val box = new VarHandleDoubleInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Double = 12.0d
     val desired: Double = 3.0d
     box.value = initial
@@ -3091,7 +3107,7 @@ class VarHandleDoubleInstanceMatrixTest {
 
   @Test def getAndAdd_supported(): Unit = {
     val box = new VarHandleDoubleInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Double = 12.0d
     val desired: Double = 3.0d
     box.value = initial
@@ -3102,7 +3118,7 @@ class VarHandleDoubleInstanceMatrixTest {
 
   @Test def getAndAddAcquire_supported(): Unit = {
     val box = new VarHandleDoubleInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Double = 12.0d
     val desired: Double = 3.0d
     box.value = initial
@@ -3113,7 +3129,7 @@ class VarHandleDoubleInstanceMatrixTest {
 
   @Test def getAndAddRelease_supported(): Unit = {
     val box = new VarHandleDoubleInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Double = 12.0d
     val desired: Double = 3.0d
     box.value = initial
@@ -3124,7 +3140,7 @@ class VarHandleDoubleInstanceMatrixTest {
 
   @Test def getAndBitwiseOr_unsupported(): Unit = {
     val box = new VarHandleDoubleInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Double = 12.0d
     val desired: Double = 3.0d
     box.value = initial
@@ -3136,7 +3152,7 @@ class VarHandleDoubleInstanceMatrixTest {
 
   @Test def getAndBitwiseOrAcquire_unsupported(): Unit = {
     val box = new VarHandleDoubleInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Double = 12.0d
     val desired: Double = 3.0d
     box.value = initial
@@ -3148,7 +3164,7 @@ class VarHandleDoubleInstanceMatrixTest {
 
   @Test def getAndBitwiseOrRelease_unsupported(): Unit = {
     val box = new VarHandleDoubleInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Double = 12.0d
     val desired: Double = 3.0d
     box.value = initial
@@ -3160,7 +3176,7 @@ class VarHandleDoubleInstanceMatrixTest {
 
   @Test def getAndBitwiseAnd_unsupported(): Unit = {
     val box = new VarHandleDoubleInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Double = 12.0d
     val desired: Double = 3.0d
     box.value = initial
@@ -3172,7 +3188,7 @@ class VarHandleDoubleInstanceMatrixTest {
 
   @Test def getAndBitwiseAndAcquire_unsupported(): Unit = {
     val box = new VarHandleDoubleInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Double = 12.0d
     val desired: Double = 3.0d
     box.value = initial
@@ -3184,7 +3200,7 @@ class VarHandleDoubleInstanceMatrixTest {
 
   @Test def getAndBitwiseAndRelease_unsupported(): Unit = {
     val box = new VarHandleDoubleInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Double = 12.0d
     val desired: Double = 3.0d
     box.value = initial
@@ -3196,7 +3212,7 @@ class VarHandleDoubleInstanceMatrixTest {
 
   @Test def getAndBitwiseXor_unsupported(): Unit = {
     val box = new VarHandleDoubleInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Double = 12.0d
     val desired: Double = 3.0d
     box.value = initial
@@ -3208,7 +3224,7 @@ class VarHandleDoubleInstanceMatrixTest {
 
   @Test def getAndBitwiseXorAcquire_unsupported(): Unit = {
     val box = new VarHandleDoubleInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Double = 12.0d
     val desired: Double = 3.0d
     box.value = initial
@@ -3220,7 +3236,7 @@ class VarHandleDoubleInstanceMatrixTest {
 
   @Test def getAndBitwiseXorRelease_unsupported(): Unit = {
     val box = new VarHandleDoubleInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: Double = 12.0d
     val desired: Double = 3.0d
     box.value = initial
@@ -3239,12 +3255,14 @@ class VarHandleReferenceInstanceFixture
 }
 
 class VarHandleReferenceInstanceMatrixTest {
+  protected def invocationHandle(handle: VarHandle): VarHandle = handle
+
   private def assertValue(expected: AnyRef, actual: AnyRef): Unit =
     assertSame(expected, actual)
 
   @Test def get_supported(): Unit = {
     val box = new VarHandleReferenceInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: AnyRef = new String("same")
     val desired: AnyRef = new String("different")
     box.value = initial
@@ -3255,7 +3273,7 @@ class VarHandleReferenceInstanceMatrixTest {
 
   @Test def getOpaque_supported(): Unit = {
     val box = new VarHandleReferenceInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: AnyRef = new String("same")
     val desired: AnyRef = new String("different")
     box.value = initial
@@ -3266,7 +3284,7 @@ class VarHandleReferenceInstanceMatrixTest {
 
   @Test def getAcquire_supported(): Unit = {
     val box = new VarHandleReferenceInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: AnyRef = new String("same")
     val desired: AnyRef = new String("different")
     box.value = initial
@@ -3277,7 +3295,7 @@ class VarHandleReferenceInstanceMatrixTest {
 
   @Test def getVolatile_supported(): Unit = {
     val box = new VarHandleReferenceInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: AnyRef = new String("same")
     val desired: AnyRef = new String("different")
     box.value = initial
@@ -3288,7 +3306,7 @@ class VarHandleReferenceInstanceMatrixTest {
 
   @Test def set_supported(): Unit = {
     val box = new VarHandleReferenceInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: AnyRef = new String("same")
     val desired: AnyRef = new String("different")
     box.value = initial
@@ -3298,7 +3316,7 @@ class VarHandleReferenceInstanceMatrixTest {
 
   @Test def setOpaque_supported(): Unit = {
     val box = new VarHandleReferenceInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: AnyRef = new String("same")
     val desired: AnyRef = new String("different")
     box.value = initial
@@ -3308,7 +3326,7 @@ class VarHandleReferenceInstanceMatrixTest {
 
   @Test def setRelease_supported(): Unit = {
     val box = new VarHandleReferenceInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: AnyRef = new String("same")
     val desired: AnyRef = new String("different")
     box.value = initial
@@ -3318,7 +3336,7 @@ class VarHandleReferenceInstanceMatrixTest {
 
   @Test def setVolatile_supported(): Unit = {
     val box = new VarHandleReferenceInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: AnyRef = new String("same")
     val desired: AnyRef = new String("different")
     box.value = initial
@@ -3328,7 +3346,7 @@ class VarHandleReferenceInstanceMatrixTest {
 
   @Test def compareAndSet_supported(): Unit = {
     val box = new VarHandleReferenceInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: AnyRef = new String("same")
     val desired: AnyRef = new String("different")
     box.value = initial
@@ -3342,7 +3360,7 @@ class VarHandleReferenceInstanceMatrixTest {
 
   @Test def weakCompareAndSetPlain_supported(): Unit = {
     val box = new VarHandleReferenceInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: AnyRef = new String("same")
     val desired: AnyRef = new String("different")
     box.value = initial
@@ -3362,7 +3380,7 @@ class VarHandleReferenceInstanceMatrixTest {
 
   @Test def weakCompareAndSet_supported(): Unit = {
     val box = new VarHandleReferenceInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: AnyRef = new String("same")
     val desired: AnyRef = new String("different")
     box.value = initial
@@ -3382,7 +3400,7 @@ class VarHandleReferenceInstanceMatrixTest {
 
   @Test def weakCompareAndSetAcquire_supported(): Unit = {
     val box = new VarHandleReferenceInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: AnyRef = new String("same")
     val desired: AnyRef = new String("different")
     box.value = initial
@@ -3402,7 +3420,7 @@ class VarHandleReferenceInstanceMatrixTest {
 
   @Test def weakCompareAndSetRelease_supported(): Unit = {
     val box = new VarHandleReferenceInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: AnyRef = new String("same")
     val desired: AnyRef = new String("different")
     box.value = initial
@@ -3422,7 +3440,7 @@ class VarHandleReferenceInstanceMatrixTest {
 
   @Test def compareAndExchange_supported(): Unit = {
     val box = new VarHandleReferenceInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: AnyRef = new String("same")
     val desired: AnyRef = new String("different")
     box.value = initial
@@ -3436,7 +3454,7 @@ class VarHandleReferenceInstanceMatrixTest {
 
   @Test def compareAndExchangeAcquire_supported(): Unit = {
     val box = new VarHandleReferenceInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: AnyRef = new String("same")
     val desired: AnyRef = new String("different")
     box.value = initial
@@ -3450,7 +3468,7 @@ class VarHandleReferenceInstanceMatrixTest {
 
   @Test def compareAndExchangeRelease_supported(): Unit = {
     val box = new VarHandleReferenceInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: AnyRef = new String("same")
     val desired: AnyRef = new String("different")
     box.value = initial
@@ -3464,7 +3482,7 @@ class VarHandleReferenceInstanceMatrixTest {
 
   @Test def getAndSet_supported(): Unit = {
     val box = new VarHandleReferenceInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: AnyRef = new String("same")
     val desired: AnyRef = new String("different")
     box.value = initial
@@ -3475,7 +3493,7 @@ class VarHandleReferenceInstanceMatrixTest {
 
   @Test def getAndSetAcquire_supported(): Unit = {
     val box = new VarHandleReferenceInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: AnyRef = new String("same")
     val desired: AnyRef = new String("different")
     box.value = initial
@@ -3486,7 +3504,7 @@ class VarHandleReferenceInstanceMatrixTest {
 
   @Test def getAndSetRelease_supported(): Unit = {
     val box = new VarHandleReferenceInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: AnyRef = new String("same")
     val desired: AnyRef = new String("different")
     box.value = initial
@@ -3497,7 +3515,7 @@ class VarHandleReferenceInstanceMatrixTest {
 
   @Test def getAndAdd_unsupported(): Unit = {
     val box = new VarHandleReferenceInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: AnyRef = new String("same")
     val desired: AnyRef = new String("different")
     box.value = initial
@@ -3509,7 +3527,7 @@ class VarHandleReferenceInstanceMatrixTest {
 
   @Test def getAndAddAcquire_unsupported(): Unit = {
     val box = new VarHandleReferenceInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: AnyRef = new String("same")
     val desired: AnyRef = new String("different")
     box.value = initial
@@ -3521,7 +3539,7 @@ class VarHandleReferenceInstanceMatrixTest {
 
   @Test def getAndAddRelease_unsupported(): Unit = {
     val box = new VarHandleReferenceInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: AnyRef = new String("same")
     val desired: AnyRef = new String("different")
     box.value = initial
@@ -3533,7 +3551,7 @@ class VarHandleReferenceInstanceMatrixTest {
 
   @Test def getAndBitwiseOr_unsupported(): Unit = {
     val box = new VarHandleReferenceInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: AnyRef = new String("same")
     val desired: AnyRef = new String("different")
     box.value = initial
@@ -3545,7 +3563,7 @@ class VarHandleReferenceInstanceMatrixTest {
 
   @Test def getAndBitwiseOrAcquire_unsupported(): Unit = {
     val box = new VarHandleReferenceInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: AnyRef = new String("same")
     val desired: AnyRef = new String("different")
     box.value = initial
@@ -3557,7 +3575,7 @@ class VarHandleReferenceInstanceMatrixTest {
 
   @Test def getAndBitwiseOrRelease_unsupported(): Unit = {
     val box = new VarHandleReferenceInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: AnyRef = new String("same")
     val desired: AnyRef = new String("different")
     box.value = initial
@@ -3569,7 +3587,7 @@ class VarHandleReferenceInstanceMatrixTest {
 
   @Test def getAndBitwiseAnd_unsupported(): Unit = {
     val box = new VarHandleReferenceInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: AnyRef = new String("same")
     val desired: AnyRef = new String("different")
     box.value = initial
@@ -3581,7 +3599,7 @@ class VarHandleReferenceInstanceMatrixTest {
 
   @Test def getAndBitwiseAndAcquire_unsupported(): Unit = {
     val box = new VarHandleReferenceInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: AnyRef = new String("same")
     val desired: AnyRef = new String("different")
     box.value = initial
@@ -3593,7 +3611,7 @@ class VarHandleReferenceInstanceMatrixTest {
 
   @Test def getAndBitwiseAndRelease_unsupported(): Unit = {
     val box = new VarHandleReferenceInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: AnyRef = new String("same")
     val desired: AnyRef = new String("different")
     box.value = initial
@@ -3605,7 +3623,7 @@ class VarHandleReferenceInstanceMatrixTest {
 
   @Test def getAndBitwiseXor_unsupported(): Unit = {
     val box = new VarHandleReferenceInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: AnyRef = new String("same")
     val desired: AnyRef = new String("different")
     box.value = initial
@@ -3617,7 +3635,7 @@ class VarHandleReferenceInstanceMatrixTest {
 
   @Test def getAndBitwiseXorAcquire_unsupported(): Unit = {
     val box = new VarHandleReferenceInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: AnyRef = new String("same")
     val desired: AnyRef = new String("different")
     box.value = initial
@@ -3629,7 +3647,7 @@ class VarHandleReferenceInstanceMatrixTest {
 
   @Test def getAndBitwiseXorRelease_unsupported(): Unit = {
     val box = new VarHandleReferenceInstanceFixture
-    val handle = box.handle
+    val handle = invocationHandle(box.handle)
     val initial: AnyRef = new String("same")
     val desired: AnyRef = new String("different")
     box.value = initial

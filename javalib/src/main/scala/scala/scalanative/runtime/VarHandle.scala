@@ -19,7 +19,63 @@ object VarHandle {
   import MemoryOrder._
 
   // Shared dispatch and memory ordering
-  private abstract class Handle[T](binding: FieldBinding, protected val variableType: Class[_]) extends java.lang.invoke._VarHandle with VarHandleAdaptation {
+  private abstract class Handle[T](binding: FieldBinding, protected val variableType: Class[_], coordinateType: Class[_], exactBehavior: Boolean)
+      extends java.lang.invoke._VarHandle
+      with VarHandleAdaptation {
+    protected def copyWithBehavior(exact: Boolean): java.lang.invoke._VarHandle
+
+    override def varType(): Class[_] = variableType
+    override def coordinateTypes(): java.util.List[Class[_]] =
+      if (coordinateType == null) java.util.Collections.emptyList[Class[_]]()
+      else java.util.Collections.singletonList[Class[_]](coordinateType)
+
+    override def hasInvokeExactBehavior(): Boolean = exactBehavior
+    override def withInvokeBehavior(): java.lang.invoke._VarHandle =
+      if (!exactBehavior) this else copyWithBehavior(false)
+    override def withInvokeExactBehavior(): java.lang.invoke._VarHandle =
+      if (exactBehavior) this else copyWithBehavior(true)
+
+    override def toString(): String = s"VarHandle[varType=${variableType.getName}, coord=${coordinateTypes()}]"
+
+    override def isAccessModeSupported(mode: java.lang.invoke._VarHandle.AccessMode): Boolean = {
+      import java.lang.invoke._VarHandle.AccessMode._
+      if (mode == null) throw new NullPointerException
+      mode match {
+        case GET_AND_ADD | GET_AND_ADD_ACQUIRE | GET_AND_ADD_RELEASE =>
+          variableType.isPrimitive && variableType != classOf[Boolean]
+        case GET_AND_BITWISE_OR | GET_AND_BITWISE_OR_ACQUIRE | GET_AND_BITWISE_OR_RELEASE | GET_AND_BITWISE_AND | GET_AND_BITWISE_AND_ACQUIRE |
+            GET_AND_BITWISE_AND_RELEASE | GET_AND_BITWISE_XOR | GET_AND_BITWISE_XOR_ACQUIRE | GET_AND_BITWISE_XOR_RELEASE =>
+          variableType.isPrimitive && variableType != classOf[Float] && variableType != classOf[Double]
+        case _ => true
+      }
+    }
+
+    @alwaysinline override def validateInvocation(
+        operation: AccessOperation,
+        coordinate: Class[_],
+        expected: Class[_],
+        value: Class[_],
+        result: Class[_]
+    ): Unit = {
+      import AccessOperation._
+      val noType = classOf[Unit]
+      // Coordinate arity is part of the signature in both invocation modes.
+      if ((coordinateType == null) != (coordinate == null))
+        signatureMismatch("access with incompatible coordinates")
+      if (exactBehavior) {
+        val expectedResult = (operation: @switch) match {
+          case Set                   => noType
+          case Compare | WeakCompare => classOf[Boolean]
+          case _                     => variableType
+        }
+        val compares = operation == Compare || operation == WeakCompare || operation == CompareExchange
+        if ((coordinateType != null && coordinate != coordinateType) ||
+            (compares && expected != variableType) ||
+            (operation != Get && value != variableType) || result != expectedResult)
+          signatureMismatch("exact access with incompatible method type")
+      }
+    }
+
     protected def boxedVariableType: Class[_] = variableType
 
     override def getBoxedReference(receiver: AnyRef, resultType: Class[_], mode: MemoryOrder): AnyRef = {
@@ -57,7 +113,10 @@ object VarHandle {
   }
 
   // Boolean fields
-  private final class BooleanHandle(binding: FieldBinding) extends Handle[Boolean](binding, classOf[Boolean]) {
+  private final class BooleanHandle(binding: FieldBinding, coordinateType: Class[_], exactBehavior: Boolean = false)
+      extends Handle[Boolean](binding, classOf[Boolean], coordinateType, exactBehavior) {
+    override protected def copyWithBehavior(exact: Boolean): java.lang.invoke._VarHandle = new BooleanHandle(binding, coordinateType, exact)
+
     @scala.scalanative.annotation.alwaysinline
     override protected def invokeAdaptedOperation(
         operation: AccessOperation,
@@ -109,7 +168,10 @@ object VarHandle {
   }
 
   // Byte fields
-  private final class ByteHandle(binding: FieldBinding) extends Handle[Byte](binding, classOf[Byte]) {
+  private final class ByteHandle(binding: FieldBinding, coordinateType: Class[_], exactBehavior: Boolean = false)
+      extends Handle[Byte](binding, classOf[Byte], coordinateType, exactBehavior) {
+    override protected def copyWithBehavior(exact: Boolean): java.lang.invoke._VarHandle = new ByteHandle(binding, coordinateType, exact)
+
     @scala.scalanative.annotation.alwaysinline
     override protected def invokeAdaptedOperation(
         operation: AccessOperation,
@@ -164,7 +226,10 @@ object VarHandle {
   }
 
   // Short fields
-  private final class ShortHandle(binding: FieldBinding) extends Handle[Short](binding, classOf[Short]) {
+  private final class ShortHandle(binding: FieldBinding, coordinateType: Class[_], exactBehavior: Boolean = false)
+      extends Handle[Short](binding, classOf[Short], coordinateType, exactBehavior) {
+    override protected def copyWithBehavior(exact: Boolean): java.lang.invoke._VarHandle = new ShortHandle(binding, coordinateType, exact)
+
     @scala.scalanative.annotation.alwaysinline
     override protected def invokeAdaptedOperation(
         operation: AccessOperation,
@@ -218,7 +283,10 @@ object VarHandle {
   }
 
   // Char fields
-  private final class CharHandle(binding: FieldBinding) extends Handle[Char](binding, classOf[Char]) {
+  private final class CharHandle(binding: FieldBinding, coordinateType: Class[_], exactBehavior: Boolean = false)
+      extends Handle[Char](binding, classOf[Char], coordinateType, exactBehavior) {
+    override protected def copyWithBehavior(exact: Boolean): java.lang.invoke._VarHandle = new CharHandle(binding, coordinateType, exact)
+
     @scala.scalanative.annotation.alwaysinline
     override protected def invokeAdaptedOperation(
         operation: AccessOperation,
@@ -275,7 +343,10 @@ object VarHandle {
   }
 
   // Int fields
-  private final class IntHandle(binding: FieldBinding) extends Handle[Int](binding, classOf[Int]) {
+  private final class IntHandle(binding: FieldBinding, coordinateType: Class[_], exactBehavior: Boolean = false)
+      extends Handle[Int](binding, classOf[Int], coordinateType, exactBehavior) {
+    override protected def copyWithBehavior(exact: Boolean): java.lang.invoke._VarHandle = new IntHandle(binding, coordinateType, exact)
+
     @scala.scalanative.annotation.alwaysinline
     override protected def invokeAdaptedOperation(
         operation: AccessOperation,
@@ -328,7 +399,10 @@ object VarHandle {
   }
 
   // Long fields
-  private final class LongHandle(binding: FieldBinding) extends Handle[Long](binding, classOf[Long]) {
+  private final class LongHandle(binding: FieldBinding, coordinateType: Class[_], exactBehavior: Boolean = false)
+      extends Handle[Long](binding, classOf[Long], coordinateType, exactBehavior) {
+    override protected def copyWithBehavior(exact: Boolean): java.lang.invoke._VarHandle = new LongHandle(binding, coordinateType, exact)
+
     @scala.scalanative.annotation.alwaysinline
     override protected def invokeAdaptedOperation(
         operation: AccessOperation,
@@ -380,7 +454,10 @@ object VarHandle {
   }
 
   // Float fields
-  private final class FloatHandle(binding: FieldBinding) extends Handle[Float](binding, classOf[Float]) {
+  private final class FloatHandle(binding: FieldBinding, coordinateType: Class[_], exactBehavior: Boolean = false)
+      extends Handle[Float](binding, classOf[Float], coordinateType, exactBehavior) {
+    override protected def copyWithBehavior(exact: Boolean): java.lang.invoke._VarHandle = new FloatHandle(binding, coordinateType, exact)
+
     @scala.scalanative.annotation.alwaysinline
     override protected def invokeAdaptedOperation(
         operation: AccessOperation,
@@ -459,7 +536,10 @@ object VarHandle {
   }
 
   // Double fields
-  private final class DoubleHandle(binding: FieldBinding) extends Handle[Double](binding, classOf[Double]) {
+  private final class DoubleHandle(binding: FieldBinding, coordinateType: Class[_], exactBehavior: Boolean = false)
+      extends Handle[Double](binding, classOf[Double], coordinateType, exactBehavior) {
+    override protected def copyWithBehavior(exact: Boolean): java.lang.invoke._VarHandle = new DoubleHandle(binding, coordinateType, exact)
+
     @scala.scalanative.annotation.alwaysinline
     override protected def invokeAdaptedOperation(
         operation: AccessOperation,
@@ -536,7 +616,32 @@ object VarHandle {
   }
 
   // Reference fields
-  private final class ReferenceHandle(binding: FieldBinding, variableType: Class[_]) extends Handle[AnyRef](binding, variableType) {
+  private final class ReferenceHandle(binding: FieldBinding, variableType: Class[_], coordinateType: Class[_], exactBehavior: Boolean = false)
+      extends Handle[AnyRef](binding, variableType, coordinateType, exactBehavior) {
+    override protected def copyWithBehavior(exact: Boolean): java.lang.invoke._VarHandle = new ReferenceHandle(binding, variableType, coordinateType, exact)
+
+    @alwaysinline private def unboxedRead(receiver: AnyRef, resultType: Class[_], mode: MemoryOrder): AnyRef = {
+      if (!VarHandleConversions.canConvert(variableType, resultType)) signatureMismatch(s"get returning ${resultType.getName}")
+      VarHandleConversions.convert(getReference(receiver, mode), variableType, resultType)
+    }
+
+    @alwaysinline override def getBoolean(receiver: AnyRef, mode: MemoryOrder): Boolean =
+      unboxedRead(receiver, classOf[Boolean], mode).asInstanceOf[java.lang.Boolean].booleanValue()
+    @alwaysinline override def getByte(receiver: AnyRef, mode: MemoryOrder): Byte =
+      unboxedRead(receiver, classOf[Byte], mode).asInstanceOf[java.lang.Byte].byteValue()
+    @alwaysinline override def getShort(receiver: AnyRef, mode: MemoryOrder): Short =
+      unboxedRead(receiver, classOf[Short], mode).asInstanceOf[java.lang.Short].shortValue()
+    @alwaysinline override def getChar(receiver: AnyRef, mode: MemoryOrder): Char =
+      unboxedRead(receiver, classOf[Char], mode).asInstanceOf[java.lang.Character].charValue()
+    @alwaysinline override def getInt(receiver: AnyRef, mode: MemoryOrder): Int =
+      unboxedRead(receiver, classOf[Int], mode).asInstanceOf[java.lang.Integer].intValue()
+    @alwaysinline override def getLong(receiver: AnyRef, mode: MemoryOrder): Long =
+      unboxedRead(receiver, classOf[Long], mode).asInstanceOf[java.lang.Long].longValue()
+    @alwaysinline override def getFloat(receiver: AnyRef, mode: MemoryOrder): Float =
+      unboxedRead(receiver, classOf[Float], mode).asInstanceOf[java.lang.Float].floatValue()
+    @alwaysinline override def getDouble(receiver: AnyRef, mode: MemoryOrder): Double =
+      unboxedRead(receiver, classOf[Double], mode).asInstanceOf[java.lang.Double].doubleValue()
+
     @scala.scalanative.annotation.alwaysinline
     override protected def invokeAdaptedOperation(
         operation: AccessOperation,
@@ -576,22 +681,22 @@ object VarHandle {
   }
 
   // Handle construction
-  def createBooleanHandle(binding: FieldBinding): java.lang.invoke._VarHandle =
-    new BooleanHandle(binding)
-  def createByteHandle(binding: FieldBinding): java.lang.invoke._VarHandle =
-    new ByteHandle(binding)
-  def createShortHandle(binding: FieldBinding): java.lang.invoke._VarHandle =
-    new ShortHandle(binding)
-  def createCharHandle(binding: FieldBinding): java.lang.invoke._VarHandle =
-    new CharHandle(binding)
-  def createIntHandle(binding: FieldBinding): java.lang.invoke._VarHandle =
-    new IntHandle(binding)
-  def createLongHandle(binding: FieldBinding): java.lang.invoke._VarHandle =
-    new LongHandle(binding)
-  def createFloatHandle(binding: FieldBinding): java.lang.invoke._VarHandle =
-    new FloatHandle(binding)
-  def createDoubleHandle(binding: FieldBinding): java.lang.invoke._VarHandle =
-    new DoubleHandle(binding)
-  def createReferenceHandle(binding: FieldBinding, variableType: Class[_]): java.lang.invoke._VarHandle =
-    new ReferenceHandle(binding, variableType)
+  def createBooleanHandle(binding: FieldBinding, coordinateType: Class[_]): java.lang.invoke._VarHandle =
+    new BooleanHandle(binding, coordinateType)
+  def createByteHandle(binding: FieldBinding, coordinateType: Class[_]): java.lang.invoke._VarHandle =
+    new ByteHandle(binding, coordinateType)
+  def createShortHandle(binding: FieldBinding, coordinateType: Class[_]): java.lang.invoke._VarHandle =
+    new ShortHandle(binding, coordinateType)
+  def createCharHandle(binding: FieldBinding, coordinateType: Class[_]): java.lang.invoke._VarHandle =
+    new CharHandle(binding, coordinateType)
+  def createIntHandle(binding: FieldBinding, coordinateType: Class[_]): java.lang.invoke._VarHandle =
+    new IntHandle(binding, coordinateType)
+  def createLongHandle(binding: FieldBinding, coordinateType: Class[_]): java.lang.invoke._VarHandle =
+    new LongHandle(binding, coordinateType)
+  def createFloatHandle(binding: FieldBinding, coordinateType: Class[_]): java.lang.invoke._VarHandle =
+    new FloatHandle(binding, coordinateType)
+  def createDoubleHandle(binding: FieldBinding, coordinateType: Class[_]): java.lang.invoke._VarHandle =
+    new DoubleHandle(binding, coordinateType)
+  def createReferenceHandle(binding: FieldBinding, coordinateType: Class[_], variableType: Class[_]): java.lang.invoke._VarHandle =
+    new ReferenceHandle(binding, variableType, coordinateType)
 }

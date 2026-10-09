@@ -14,13 +14,13 @@ import scala.scalanative.runtime.NativeVarHandle.FieldBinding;
 public final class VarHandle {
   private VarHandle() {}
 
-  public static java.lang.invoke.VarHandle createBooleanHandle(FieldBinding binding) { throw new AssertionError("stub"); }
-  public static java.lang.invoke.VarHandle createByteHandle(FieldBinding binding) { throw new AssertionError("stub"); }
-  public static java.lang.invoke.VarHandle createShortHandle(FieldBinding binding) { throw new AssertionError("stub"); }
-  public static java.lang.invoke.VarHandle createCharHandle(FieldBinding binding) { throw new AssertionError("stub"); }
-  public static java.lang.invoke.VarHandle createIntHandle(FieldBinding binding) { throw new AssertionError("stub"); }
-  public static java.lang.invoke.VarHandle createLongHandle(FieldBinding binding) { throw new AssertionError("stub"); }
-  public static java.lang.invoke.VarHandle createFloatHandle(FieldBinding binding) { throw new AssertionError("stub"); }
-  public static java.lang.invoke.VarHandle createDoubleHandle(FieldBinding binding) { throw new AssertionError("stub"); }
-  public static java.lang.invoke.VarHandle createReferenceHandle(FieldBinding binding, Class<?> variableType) { throw new AssertionError("stub"); }
+  public static java.lang.invoke.VarHandle createBooleanHandle(FieldBinding binding, Class<?> coordinateType) { throw new AssertionError("stub"); }
+  public static java.lang.invoke.VarHandle createByteHandle(FieldBinding binding, Class<?> coordinateType) { throw new AssertionError("stub"); }
+  public static java.lang.invoke.VarHandle createShortHandle(FieldBinding binding, Class<?> coordinateType) { throw new AssertionError("stub"); }
+  public static java.lang.invoke.VarHandle createCharHandle(FieldBinding binding, Class<?> coordinateType) { throw new AssertionError("stub"); }
+  public static java.lang.invoke.VarHandle createIntHandle(FieldBinding binding, Class<?> coordinateType) { throw new AssertionError("stub"); }
+  public static java.lang.invoke.VarHandle createLongHandle(FieldBinding binding, Class<?> coordinateType) { throw new AssertionError("stub"); }
+  public static java.lang.invoke.VarHandle createFloatHandle(FieldBinding binding, Class<?> coordinateType) { throw new AssertionError("stub"); }
+  public static java.lang.invoke.VarHandle createDoubleHandle(FieldBinding binding, Class<?> coordinateType) { throw new AssertionError("stub"); }
+  public static java.lang.invoke.VarHandle createReferenceHandle(FieldBinding binding, Class<?> coordinateType, Class<?> variableType) { throw new AssertionError("stub"); }
 }

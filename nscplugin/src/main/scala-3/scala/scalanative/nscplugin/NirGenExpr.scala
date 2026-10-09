@@ -2705,6 +2705,13 @@ trait NirGenExpr(using Context) {
               else genExpr(target)
             buf.field(receiver, genFieldName(f.symbol), unwind)
         }
+        .orElse {
+          // VarHandle lookup has already checked mutability, type and access.
+          // A separately compiled Scala var can expose only its accessor here.
+          app.getAttachment(VarHandleInterop.ResolvedField).map { field =>
+            buf.field(genExpr(target), genFieldName(field), unwind)
+          }
+        }
         .getOrElse {
           report.error(
             s"${classInfoSym.show} does not contain field ${fieldNameId}",

@@ -8,8 +8,15 @@ import java.util.concurrent.ThreadFactory
 // ScalaNative specific
 object ThreadBuilders {
   private val BaseThreadFactory_COUNTER: VarHandle = MethodHandles
-    .privateLookupIn(classOf[ThreadBuilders.BaseThreadFactory], MethodHandles.lookup())
-    .findVarHandle(classOf[ThreadBuilders.BaseThreadFactory], "counter", classOf[scala.Long])
+    .privateLookupIn(
+      classOf[ThreadBuilders.BaseThreadFactory],
+      MethodHandles.lookup()
+    )
+    .findVarHandle(
+      classOf[ThreadBuilders.BaseThreadFactory],
+      "counter",
+      classOf[scala.Long]
+    )
 
   sealed abstract class BaseThreadBuilder[Self <: Builder] extends Builder {
     var name: String = _
@@ -152,7 +159,11 @@ object ThreadBuilders {
     private val hasCounter = name != null && start >= 0
 
     def nextThreadName(): String = {
-      if (hasCounter) name + (ThreadBuilders.BaseThreadFactory_COUNTER.getAndAdd(this, 1L): scala.Long)
+      if (hasCounter)
+        name + (ThreadBuilders.BaseThreadFactory_COUNTER.getAndAdd(
+          this,
+          1L
+        ): scala.Long)
       else name
     }
   }

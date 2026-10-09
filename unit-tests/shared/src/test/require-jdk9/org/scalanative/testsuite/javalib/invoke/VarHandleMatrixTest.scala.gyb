@@ -60,6 +60,8 @@ object ${fixture} {
 }
 
 class VarHandle${kind}${shape}MatrixTest {
+  protected def invocationHandle(handle: VarHandle): VarHandle = handle
+
   private def assertValue(expected: ${T}, actual: ${T}): Unit =
 % if T == 'AnyRef':
     assertSame(expected, actual)
@@ -80,7 +82,7 @@ supported = not ((method in add and T in ['Boolean', 'AnyRef']) or
 % if not is_static:
     val box = new ${fixture}
 % end
-    val handle = ${fixture if is_static else 'box'}.handle
+    val handle = invocationHandle(${fixture if is_static else 'box'}.handle)
     val initial: ${T} = ${initial}
     val desired: ${T} = ${desired}
     ${value} = initial

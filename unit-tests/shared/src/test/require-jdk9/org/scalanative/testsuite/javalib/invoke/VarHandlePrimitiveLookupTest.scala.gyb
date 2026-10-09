@@ -70,6 +70,18 @@ class VarHandle${T}PrimitiveLookupTest {
       .findVarHandle(classOf[BoxedOwner], "value", classOf[java.lang.${wrapper}])
   }
 
+  @Test def boxedFieldSupportsPrimitiveReads(): Unit = {
+    val owner = new BoxedOwner
+% for method in ['get', 'getOpaque', 'getAcquire', 'getVolatile']:
+    val ${method}Value: ${T} = owner.handle.${method}(owner)
+% if T in ['Float', 'Double']:
+    assertEquals(${initial}, ${method}Value, ${'0.0f' if T == 'Float' else '0.0d'})
+% else:
+    assertEquals(${initial}, ${method}Value)
+% end
+% end
+  }
+
   @Test def boxedFieldUsesReferenceOperations(): Unit = {
     val owner = new BoxedOwner
     val initial = owner.value

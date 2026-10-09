@@ -45,6 +45,18 @@ class VarHandleBooleanPrimitiveLookupTest {
       .findVarHandle(classOf[BoxedOwner], "value", classOf[java.lang.Boolean])
   }
 
+  @Test def boxedFieldSupportsPrimitiveReads(): Unit = {
+    val owner = new BoxedOwner
+    val getValue: Boolean = owner.handle.get(owner)
+    assertEquals(true, getValue)
+    val getOpaqueValue: Boolean = owner.handle.getOpaque(owner)
+    assertEquals(true, getOpaqueValue)
+    val getAcquireValue: Boolean = owner.handle.getAcquire(owner)
+    assertEquals(true, getAcquireValue)
+    val getVolatileValue: Boolean = owner.handle.getVolatile(owner)
+    assertEquals(true, getVolatileValue)
+  }
+
   @Test def boxedFieldUsesReferenceOperations(): Unit = {
     val owner = new BoxedOwner
     val initial = owner.value
@@ -101,6 +113,18 @@ class VarHandleBytePrimitiveLookupTest {
     var value: java.lang.Byte = java.lang.Byte.valueOf(37.toByte)
     val handle: VarHandle = MethodHandles.lookup()
       .findVarHandle(classOf[BoxedOwner], "value", classOf[java.lang.Byte])
+  }
+
+  @Test def boxedFieldSupportsPrimitiveReads(): Unit = {
+    val owner = new BoxedOwner
+    val getValue: Byte = owner.handle.get(owner)
+    assertEquals(37.toByte, getValue)
+    val getOpaqueValue: Byte = owner.handle.getOpaque(owner)
+    assertEquals(37.toByte, getOpaqueValue)
+    val getAcquireValue: Byte = owner.handle.getAcquire(owner)
+    assertEquals(37.toByte, getAcquireValue)
+    val getVolatileValue: Byte = owner.handle.getVolatile(owner)
+    assertEquals(37.toByte, getVolatileValue)
   }
 
   @Test def boxedFieldUsesReferenceOperations(): Unit = {
@@ -161,6 +185,18 @@ class VarHandleShortPrimitiveLookupTest {
       .findVarHandle(classOf[BoxedOwner], "value", classOf[java.lang.Short])
   }
 
+  @Test def boxedFieldSupportsPrimitiveReads(): Unit = {
+    val owner = new BoxedOwner
+    val getValue: Short = owner.handle.get(owner)
+    assertEquals(37.toShort, getValue)
+    val getOpaqueValue: Short = owner.handle.getOpaque(owner)
+    assertEquals(37.toShort, getOpaqueValue)
+    val getAcquireValue: Short = owner.handle.getAcquire(owner)
+    assertEquals(37.toShort, getAcquireValue)
+    val getVolatileValue: Short = owner.handle.getVolatile(owner)
+    assertEquals(37.toShort, getVolatileValue)
+  }
+
   @Test def boxedFieldUsesReferenceOperations(): Unit = {
     val owner = new BoxedOwner
     val initial = owner.value
@@ -217,6 +253,18 @@ class VarHandleCharPrimitiveLookupTest {
     var value: java.lang.Character = java.lang.Character.valueOf(37.toChar)
     val handle: VarHandle = MethodHandles.lookup()
       .findVarHandle(classOf[BoxedOwner], "value", classOf[java.lang.Character])
+  }
+
+  @Test def boxedFieldSupportsPrimitiveReads(): Unit = {
+    val owner = new BoxedOwner
+    val getValue: Char = owner.handle.get(owner)
+    assertEquals(37.toChar, getValue)
+    val getOpaqueValue: Char = owner.handle.getOpaque(owner)
+    assertEquals(37.toChar, getOpaqueValue)
+    val getAcquireValue: Char = owner.handle.getAcquire(owner)
+    assertEquals(37.toChar, getAcquireValue)
+    val getVolatileValue: Char = owner.handle.getVolatile(owner)
+    assertEquals(37.toChar, getVolatileValue)
   }
 
   @Test def boxedFieldUsesReferenceOperations(): Unit = {
@@ -277,6 +325,18 @@ class VarHandleIntPrimitiveLookupTest {
       .findVarHandle(classOf[BoxedOwner], "value", classOf[java.lang.Integer])
   }
 
+  @Test def boxedFieldSupportsPrimitiveReads(): Unit = {
+    val owner = new BoxedOwner
+    val getValue: Int = owner.handle.get(owner)
+    assertEquals(37, getValue)
+    val getOpaqueValue: Int = owner.handle.getOpaque(owner)
+    assertEquals(37, getOpaqueValue)
+    val getAcquireValue: Int = owner.handle.getAcquire(owner)
+    assertEquals(37, getAcquireValue)
+    val getVolatileValue: Int = owner.handle.getVolatile(owner)
+    assertEquals(37, getVolatileValue)
+  }
+
   @Test def boxedFieldUsesReferenceOperations(): Unit = {
     val owner = new BoxedOwner
     val initial = owner.value
@@ -333,6 +393,18 @@ class VarHandleLongPrimitiveLookupTest {
     var value: java.lang.Long = java.lang.Long.valueOf(37L)
     val handle: VarHandle = MethodHandles.lookup()
       .findVarHandle(classOf[BoxedOwner], "value", classOf[java.lang.Long])
+  }
+
+  @Test def boxedFieldSupportsPrimitiveReads(): Unit = {
+    val owner = new BoxedOwner
+    val getValue: Long = owner.handle.get(owner)
+    assertEquals(37L, getValue)
+    val getOpaqueValue: Long = owner.handle.getOpaque(owner)
+    assertEquals(37L, getOpaqueValue)
+    val getAcquireValue: Long = owner.handle.getAcquire(owner)
+    assertEquals(37L, getAcquireValue)
+    val getVolatileValue: Long = owner.handle.getVolatile(owner)
+    assertEquals(37L, getVolatileValue)
   }
 
   @Test def boxedFieldUsesReferenceOperations(): Unit = {
@@ -393,6 +465,18 @@ class VarHandleFloatPrimitiveLookupTest {
       .findVarHandle(classOf[BoxedOwner], "value", classOf[java.lang.Float])
   }
 
+  @Test def boxedFieldSupportsPrimitiveReads(): Unit = {
+    val owner = new BoxedOwner
+    val getValue: Float = owner.handle.get(owner)
+    assertEquals(37.0f, getValue, 0.0f)
+    val getOpaqueValue: Float = owner.handle.getOpaque(owner)
+    assertEquals(37.0f, getOpaqueValue, 0.0f)
+    val getAcquireValue: Float = owner.handle.getAcquire(owner)
+    assertEquals(37.0f, getAcquireValue, 0.0f)
+    val getVolatileValue: Float = owner.handle.getVolatile(owner)
+    assertEquals(37.0f, getVolatileValue, 0.0f)
+  }
+
   @Test def boxedFieldUsesReferenceOperations(): Unit = {
     val owner = new BoxedOwner
     val initial = owner.value
@@ -449,6 +533,18 @@ class VarHandleDoublePrimitiveLookupTest {
     var value: java.lang.Double = java.lang.Double.valueOf(37.0d)
     val handle: VarHandle = MethodHandles.lookup()
       .findVarHandle(classOf[BoxedOwner], "value", classOf[java.lang.Double])
+  }
+
+  @Test def boxedFieldSupportsPrimitiveReads(): Unit = {
+    val owner = new BoxedOwner
+    val getValue: Double = owner.handle.get(owner)
+    assertEquals(37.0d, getValue, 0.0d)
+    val getOpaqueValue: Double = owner.handle.getOpaque(owner)
+    assertEquals(37.0d, getOpaqueValue, 0.0d)
+    val getAcquireValue: Double = owner.handle.getAcquire(owner)
+    assertEquals(37.0d, getAcquireValue, 0.0d)
+    val getVolatileValue: Double = owner.handle.getVolatile(owner)
+    assertEquals(37.0d, getVolatileValue, 0.0d)
   }
 
   @Test def boxedFieldUsesReferenceOperations(): Unit = {

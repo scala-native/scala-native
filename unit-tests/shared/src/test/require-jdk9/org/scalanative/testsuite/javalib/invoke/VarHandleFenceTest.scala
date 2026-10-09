@@ -1,6 +1,7 @@
 package org.scalanative.testsuite.javalib.invoke
 
 import java.lang.invoke.VarHandle
+
 import org.junit.Test
 
 /** Availability smoke tests, not a proof of inter-thread ordering. */

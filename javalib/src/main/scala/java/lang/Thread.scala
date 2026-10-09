@@ -11,8 +11,8 @@ import scala.concurrent.duration._
 
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.concurrent.NativeExecutionContext
-import scala.scalanative.libc.stdatomic.memory_order._
 import scala.scalanative.libc.stdatomic.atomic_thread_fence
+import scala.scalanative.libc.stdatomic.memory_order._
 import scala.scalanative.meta.LinktimeInfo.{isMultithreadingEnabled, isWindows}
 import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.runtime.NativeThread.State._

@@ -11,6 +11,7 @@ import dotty.tools.dotc.core.Names.*
 import dotty.tools.dotc.core.StdNames.nme
 import dotty.tools.dotc.plugins.PluginPhase
 import dotty.tools.dotc.report
+import dotty.tools.dotc.util.Property.StickyKey
 
 import scala.scalanative.nscplugin.CompilerCompat.SymUtils.isScalaStatic
 
@@ -18,6 +19,10 @@ import scala.scalanative.nscplugin.CompilerCompat.SymUtils.isScalaStatic
 private[nscplugin] object VarHandleInterop {
   import Symbols.*
   import Types.*
+
+  // TASTy retains the proven Scala var symbol, but not necessarily its backing
+  // field in Type.fields after erasure. Keep lookup's symbol for code generation.
+  object ResolvedField extends StickyKey[Symbol]
 
   final case class AccessMode(
       operation: Symbol,
@@ -251,6 +256,7 @@ private[nscplugin] trait VarHandleInterop extends NativeInteropUtil {
   private def createVarHandle(
       tpe: Type,
       binding: Tree,
+      coordinateClass: Tree,
       d: NirDefinitions
   )(using Context): Tree = {
     // Opaque aliases can hide a primitive field type outside its companion.
@@ -269,7 +275,7 @@ private[nscplugin] trait VarHandleInterop extends NativeInteropUtil {
       case _ => d.RuntimeVarHandle_createReferenceHandle
     }
 
-    val args = List(binding) ++
+    val args = List(binding, coordinateClass) ++
       (if factory == d.RuntimeVarHandle_createReferenceHandle then List(Literal(Constant(tpe)))
        else Nil)
     // The Native _VarHandle definition and the JDK VarHandle API have the same
@@ -422,7 +428,7 @@ private[nscplugin] trait VarHandleInterop extends NativeInteropUtil {
           List(TypeTree(targetType))
         ),
         List(target, Literal(Constant(fieldName)))
-      )
+      ).withAttachment(VarHandleInterop.ResolvedField, fieldSym)
     val bindingType = varHandleMetadata.fieldBindingClass.typeRef
     val lambdaType = MethodType(List(termName("varHandleTarget")))(
       _ => List(defn.ObjectType),
@@ -455,6 +461,7 @@ private[nscplugin] trait VarHandleInterop extends NativeInteropUtil {
       createVarHandle(
         fieldType,
         fieldBinding,
+        Literal(Constant(null)),
         defnNir
       )
     } else {
@@ -469,6 +476,7 @@ private[nscplugin] trait VarHandleInterop extends NativeInteropUtil {
       createVarHandle(
         fieldType,
         fieldBinding,
+        Literal(Constant(coordinateType)),
         defnNir
       )
     }
@@ -527,10 +535,8 @@ private[nscplugin] trait VarHandleInterop extends NativeInteropUtil {
         ref(symbol)
       }
 
-      val savedReceiver = if operands.nonEmpty then save(receiver, "varHandleReceiver")
-      else receiver
-      val savedCoordinate = if operands.nonEmpty then save(coordinate, "varHandleCoordinate")
-      else coordinate
+      val savedReceiver = save(receiver, "varHandleReceiver")
+      val savedCoordinate = save(coordinate, "varHandleCoordinate")
       val savedOperands = operands.zipWithIndex.map { (operand, index) =>
         save(operand, s"varHandleOperand$index")
       }
@@ -626,7 +632,7 @@ private[nscplugin] trait VarHandleInterop extends NativeInteropUtil {
         }
       }
 
-      val exact = if incompatibleOperands || incompatibleResult then adapted
+      val typedAccess = if incompatibleOperands || incompatibleResult then adapted
       else {
         val values = if variableKind(variableType) == VariableKind.Reference then savedOperands.map(boxed)
         else savedOperands
@@ -664,26 +670,42 @@ private[nscplugin] trait VarHandleInterop extends NativeInteropUtil {
           }
       }
 
-      if operands.isEmpty then exact
-      else
-        Block(
-          bindings.toList,
-          if incompatibleOperands || incompatibleResult then exact
-          else
-            If(
-              Apply(
-                Select(
-                  access,
-                  d.NativeVarHandleClass
-                    .requiredMethod("isExactVariableType")
-                    .name
-                ),
-                List(Literal(Constant(variableType)))
-              ),
-              exact,
-              adapted
-            )
+      def declaredType(tree: Option[Tree]): Tree =
+        Literal(Constant(tree.fold(defn.UnitType)(_.tpe.widenDealias)))
+
+      val operationSymbol = d.NativeVarHandleAccessOperationModule.requiredMethod(
+        operation.head.toUpper.toString + operation.tail
+      )
+      // The handle chooses invocation behavior at runtime. Validate before either access path.
+      val validation = Apply(
+        Select(access, d.NativeVarHandleClass.requiredMethod("validateInvocation").name),
+        List(
+          protocolValue(operationSymbol),
+          if args.size == operandCount then Literal(Constant(null)) else declaredType(args.headOption),
+          declaredType(if operands.size == 2 then operands.headOption else None),
+          declaredType(operands.lastOption),
+          Literal(Constant(if returnsValue && discardedResult then defn.UnitType else app.tpe.widenDealias))
         )
+      )
+      Block(
+        bindings.toList :+ validation,
+        if operands.isEmpty then typedAccess
+        else if incompatibleOperands || incompatibleResult then typedAccess
+        else
+          If(
+            Apply(
+              Select(
+                access,
+                d.NativeVarHandleClass
+                  .requiredMethod("isExactVariableType")
+                  .name
+              ),
+              List(Literal(Constant(variableType)))
+            ),
+            typedAccess,
+            adapted
+          )
+      )
     }
 
     metadata.accessModes.get(accessMethod.name) match {
