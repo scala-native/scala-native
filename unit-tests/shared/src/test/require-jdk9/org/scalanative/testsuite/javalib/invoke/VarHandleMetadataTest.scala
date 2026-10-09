@@ -23,6 +23,16 @@ class VarHandleMetadataBox {
 }
 class VarHandleMetadataChild extends VarHandleMetadataBox
 
+class VarHandleProtectedChild extends java.io.FilterInputStream(null) {
+  def handle: VarHandle = MethodHandles
+    .lookup()
+    .findVarHandle(
+      classOf[java.io.FilterInputStream],
+      "in",
+      classOf[java.io.InputStream]
+    )
+}
+
 class VarHandleMetadataTest {
   private val handles = List(
     MethodHandles

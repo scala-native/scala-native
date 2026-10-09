@@ -713,7 +713,8 @@ object Thread {
   sealed abstract class Numbering {
     protected final var cursor = 1L
     def next(): scala.Long =
-      if (isMultithreadingEnabled) Numbering.CURSOR.getAndAdd(this, 1L)
+      if (isMultithreadingEnabled)
+        Numbering.CURSOR.getAndAdd(this, 1L).asInstanceOf[scala.Long]
       else
         try cursor
         finally cursor += 1L

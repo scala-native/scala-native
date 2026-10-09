@@ -350,16 +350,6 @@ class VarHandleCompanionCollision {
     )
 }
 
-class VarHandleProtectedChild extends java.io.FilterInputStream(null) {
-  def handle: VarHandle = MethodHandles
-    .lookup()
-    .findVarHandle(
-      classOf[java.io.FilterInputStream],
-      "in",
-      classOf[java.io.InputStream]
-    )
-}
-
 object VarHandleCompanionCollision {
   var value: Long = 99L
 }

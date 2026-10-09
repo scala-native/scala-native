@@ -1,9 +1,10 @@
 <#include "VarHandleCommon.ftl">
 <#assign operandMethods = writes + cas + rmw>
 <#list primitives as T>
-class VarHandle${T}${shape}OperandMatrixTest {
 <#list primitives as input>
 <#if input == T || (widening[input]![])?seq_contains(T)>
+<#-- Bound JUnit dispatcher depth by separating the input-type dimensions. -->
+class VarHandle${T}${shape}${input}OperandMatrixTest {
 <#assign flavors = ["Primitive", "Boxed", "Erased"] + (input == T)?then(["MixedExpected", "MixedDesired"], [])>
 <#list flavors as flavor>
 <#list operandMethods as method>
@@ -54,8 +55,11 @@ class VarHandle${T}${shape}OperandMatrixTest {
 </#if>
 </#list>
 </#list>
+}
+
 </#if>
 </#list>
+class VarHandle${T}${shape}OperandMatrixTest {
 <#list operandMethods as method>
 <#if compare(method)>
 <#list ["Expected", "Desired"] as position>

@@ -15,6 +15,12 @@ import freemarker.template.{Configuration, TemplateExceptionHandler}
 import xsbti.HashedVirtualFileRef
 
 object VarHandleTestSources {
+  private def supportsSignaturePolymorphism(version: String): Boolean =
+    CrossVersion.partialVersion(version) match {
+      case Some((3, minor)) => minor >= 3
+      case _                => true
+    }
+
   private val templateDirectory = settingKey[File]("VarHandle unit-test template directory")
   val generateVarHandleTests =
     taskKey[Seq[HashedVirtualFileRef]]("Generate the shared, statically typed VarHandle test matrices")
@@ -27,6 +33,23 @@ object VarHandleTestSources {
   }
 
   val settings: Seq[Setting[_]] = Def.settings(
+    // Scala 3.0-3.2 emit ordinary JVM varargs calls, not signature-polymorphic invocations.
+    // Keep API/Native-legacy coverage there; the shared matrices require Scala 3.3's typer support.
+    Test / unmanagedSources := {
+      val sources = (Test / unmanagedSources).value
+      val compatibleTests =
+        Set("VarHandleMetadataTest.scala", "VarHandleFenceTest.scala", "VarHandleLegacyInvocationTest.scala")
+      val java9Available = (Global / Settings.javaVersion).value >= 9
+      val javaVersionSources =
+        sources.filter(source => java9Available || source.getName != "VarHandleLegacyInvocationTest.scala")
+      if (supportsSignaturePolymorphism(scalaVersion.value)) javaVersionSources
+      else
+        javaVersionSources.filter { source =>
+          val name = source.getName
+          !name.startsWith("VarHandle") && !name.startsWith("StaticVarHandle") ||
+            compatibleTests(name)
+        }
+    },
     Test / templateDirectory := (ThisBuild / baseDirectory).value /
       "unit-tests/shared/src/test/require-jdk9/org/scalanative/testsuite/javalib/invoke",
     Test / generateVarHandleTests / fileInputs := {
@@ -42,7 +65,7 @@ object VarHandleTestSources {
       val converter = fileConverter.value
       val includeStatic = CrossVersion.partialVersion(scalaVersion.value).exists(_._1 == 3)
       val sources =
-        if ((Global / Settings.javaVersion).value >= 9)
+        if ((Global / Settings.javaVersion).value >= 9 && supportsSignaturePolymorphism(scalaVersion.value))
           generate((Test / templateDirectory).value, includeStatic)
         else Nil
       streams.value.log.info(s"Generating ${sources.size} VarHandle test sources")

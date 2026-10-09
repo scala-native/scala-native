@@ -160,10 +160,10 @@ object ThreadBuilders {
 
     def nextThreadName(): String = {
       if (hasCounter)
-        name + (ThreadBuilders.BaseThreadFactory_COUNTER.getAndAdd(
+        name + ThreadBuilders.BaseThreadFactory_COUNTER.getAndAdd(
           this,
           1L
-        ): scala.Long)
+        ).asInstanceOf[scala.Long]
       else name
     }
   }
