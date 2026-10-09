@@ -30,15 +30,11 @@ package java.util.concurrent
  *   code style more pleasant to eyes accustomed  to idiomatic Scala.
  */
 
+import java.lang.invoke.{MethodHandles, VarHandle}
 import java.util
 import java.util.function.Consumer
 import java.util.{Iterator, Objects, Spliterator, Spliterators}
 
-import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.libc.stdatomic.memory_order.memory_order_relaxed
-import scala.scalanative.libc.stdatomic.{AtomicRef, PtrToAtomicRef}
-import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
-import scala.scalanative.runtime.fromRawPtr
 import scala.scalanative.unsafe._
 
 /** An unbounded concurrent {@linkplain Deque deque} based on linked nodes.
@@ -84,6 +80,26 @@ import scala.scalanative.unsafe._
  */
 @SerialVersionUID(876323262645176354L)
 object ConcurrentLinkedDeque {
+  private val Node_PREV: VarHandle = MethodHandles
+    .privateLookupIn(classOf[ConcurrentLinkedDeque.Node[_]], MethodHandles.lookup())
+    .findVarHandle(classOf[ConcurrentLinkedDeque.Node[_]], "prev", classOf[ConcurrentLinkedDeque.Node[_]])
+
+  private val Node_ITEM: VarHandle = MethodHandles
+    .privateLookupIn(classOf[ConcurrentLinkedDeque.Node[_]], MethodHandles.lookup())
+    .findVarHandle(classOf[ConcurrentLinkedDeque.Node[_]], "item", classOf[AnyRef])
+
+  private val Node_NEXT: VarHandle = MethodHandles
+    .privateLookupIn(classOf[ConcurrentLinkedDeque.Node[_]], MethodHandles.lookup())
+    .findVarHandle(classOf[ConcurrentLinkedDeque.Node[_]], "next", classOf[ConcurrentLinkedDeque.Node[_]])
+
+  private val HEAD: VarHandle = MethodHandles
+    .privateLookupIn(classOf[ConcurrentLinkedDeque[_]], MethodHandles.lookup())
+    .findVarHandle(classOf[ConcurrentLinkedDeque[_]], "head", classOf[ConcurrentLinkedDeque.Node[_]])
+
+  private val TAIL: VarHandle = MethodHandles
+    .privateLookupIn(classOf[ConcurrentLinkedDeque[_]], MethodHandles.lookup())
+    .findVarHandle(classOf[ConcurrentLinkedDeque[_]], "tail", classOf[ConcurrentLinkedDeque.Node[_]])
+
   private val PREV_TERMINATOR: Node[AnyRef] = new Node[AnyRef](null)
   PREV_TERMINATOR.next = PREV_TERMINATOR
 
@@ -96,32 +112,25 @@ object ConcurrentLinkedDeque {
     @volatile private[concurrent] var item: E = null.asInstanceOf[E]
     @volatile private[concurrent] var next: Node[E] = null
 
-    @alwaysinline private[ConcurrentLinkedDeque] def PREV: AtomicRef[Node[E]] =
-      fromRawPtr[Node[E]](classFieldRawPtr(this, "prev")).atomic
-    @alwaysinline private[ConcurrentLinkedDeque] def ITEM: AtomicRef[E] =
-      fromRawPtr[E](classFieldRawPtr(this, "item")).atomic
-    @alwaysinline private[ConcurrentLinkedDeque] def NEXT: AtomicRef[Node[E]] =
-      fromRawPtr[Node[E]](classFieldRawPtr(this, "next")).atomic
-
     /** Constructs a new node. Uses relaxed write because item can only be seen
      *  after publication via casNext or casPrev.
      */
     def this(item: E) = {
       this()
-      ITEM.store(item, memory_order_relaxed)
+      ConcurrentLinkedDeque.Node_ITEM.setOpaque(this, item)
     }
 
     private[concurrent] def appendRelaxed(next: Node[E]): Unit = {
       // assert next != null;
       // assert this.next == null;
-      NEXT.store(next, memory_order_relaxed)
+      ConcurrentLinkedDeque.Node_NEXT.setOpaque(this, next)
     }
 
     private[concurrent] def casItem(cmp: E, `val`: E): Boolean = {
       // assert item == cmp || item == null;
       // assert cmp != null;
       // assert val == null;
-      ITEM.compareExchangeStrong(cmp, `val`)
+      ConcurrentLinkedDeque.Node_ITEM.compareAndSet(this, cmp, `val`)
     }
 
     private[concurrent] def lazySetNext(`val`: Node[E]): Unit = {
@@ -132,7 +141,7 @@ object ConcurrentLinkedDeque {
       // assert next == cmp || next == null;
       // assert cmp != null;
       // assert val == null;
-      NEXT.compareExchangeStrong(cmp, `val`)
+      ConcurrentLinkedDeque.Node_NEXT.compareAndSet(this, cmp, `val`)
     }
 
     private[concurrent] def lazySetPrev(`val`: Node[E]): Unit = {
@@ -143,7 +152,7 @@ object ConcurrentLinkedDeque {
       // assert prev == cmp || prev == null;
       // assert cmp != null;
       // assert val == null;
-      PREV.compareExchangeStrong(cmp, `val`)
+      ConcurrentLinkedDeque.Node_PREV.compareAndSet(this, cmp, `val`)
     }
   }
 
@@ -283,11 +292,6 @@ class ConcurrentLinkedDeque[E <: AnyRef]
    */
   @volatile
   @transient private var tail: Node[E] = head
-
-  @alwaysinline private def HEAD: AtomicRef[Node[E]] =
-    fromRawPtr[Node[E]](classFieldRawPtr(this, "head")).atomic
-  @alwaysinline private def TAIL: AtomicRef[Node[E]] =
-    fromRawPtr[Node[E]](classFieldRawPtr(this, "tail")).atomic
 
   private[concurrent] def prevTerminator = PREV_TERMINATOR.asInstanceOf[Node[E]]
 
@@ -1520,10 +1524,10 @@ class ConcurrentLinkedDeque[E <: AnyRef]
   override def spliterator(): Spliterator[E] = new CLDSpliterator[E](this)
 
   private def casHead(cmp: Node[E], `val`: Node[E]): Boolean =
-    HEAD.compareExchangeStrong(cmp, `val`)
+    ConcurrentLinkedDeque.HEAD.compareAndSet(this, cmp, `val`)
 
   private def casTail(cmp: Node[E], `val`: Node[E]): Boolean =
-    TAIL.compareExchangeStrong(cmp, `val`)
+    ConcurrentLinkedDeque.TAIL.compareAndSet(this, cmp, `val`)
 
 // No support for ObjectInputStream in Scala Native
 //  private def writeObject(s: ObjectOutputStream): Unit

@@ -9,20 +9,26 @@
 
 package java.util.concurrent
 
+import java.lang.invoke.{MethodHandles, VarHandle}
 import java.util.Objects
 import java.util.concurrent.locks.LockSupport
 import java.util.function.{BiConsumer, BiFunction, Consumer, Function, Supplier}
 
-import scala.scalanative.annotation.alwaysinline
-// import java.lang.invoke.MethodHandles
-// import java.lang.invoke.VarHandle
-import scala.scalanative.libc.stdatomic.AtomicRef
-import scala.scalanative.libc.stdatomic.memory_order.memory_order_release
 import scala.scalanative.meta.LinktimeInfo
-import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
-import scala.scalanative.runtime.fromRawPtr
 
 object CompletableFuture {
+  private val Completion_NEXT: VarHandle = MethodHandles
+    .privateLookupIn(classOf[CompletableFuture.Completion], MethodHandles.lookup())
+    .findVarHandle(classOf[CompletableFuture.Completion], "next", classOf[CompletableFuture.Completion])
+
+  private val RESULT: VarHandle = MethodHandles
+    .privateLookupIn(classOf[CompletableFuture[_]], MethodHandles.lookup())
+    .findVarHandle(classOf[CompletableFuture[_]], "result", classOf[AnyRef])
+
+  private val STACK: VarHandle = MethodHandles
+    .privateLookupIn(classOf[CompletableFuture[_]], MethodHandles.lookup())
+    .findVarHandle(classOf[CompletableFuture[_]], "stack", classOf[CompletableFuture.Completion])
+
   /* ------------- Encoding and decoding outcomes -------------- */
   private[concurrent] class AltResult(val ex: Throwable) // null only for NIL
   private[concurrent] val NIL: AltResult = new AltResult(null)
@@ -109,10 +115,6 @@ object CompletableFuture {
       with Runnable
       with AsynchronousCompletionTask {
     @volatile private[concurrent] var next: Completion = _ // Treiber stack link
-    @alwaysinline
-    private[concurrent] def nextAtomic = new AtomicRef[Completion](
-      fromRawPtr(classFieldRawPtr(this, "next"))
-    )
 
     private[concurrent] def tryFire(mode: Int): CompletableFuture[_ <: AnyRef]
     private[concurrent] def isLive(): Boolean
@@ -1047,24 +1049,17 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
   @volatile private[concurrent] var result: AnyRef = null // Either the result or boxed AltResult
   @volatile private[concurrent] var stack: Completion = null // Top of Treiber stack of dependent actions
 
-  @alwaysinline private def resultAtomic = new AtomicRef[AnyRef](
-    fromRawPtr(classFieldRawPtr(this, "result"))
-  )
-  @alwaysinline private def stackAtomic = new AtomicRef[Completion](
-    fromRawPtr(classFieldRawPtr(this, "stack"))
-  )
-
   private[concurrent] final def internalComplete(r: AnyRef): Boolean = { // CAS from null to r
     // RESULT.compareAndSet(this, null, r)
-    resultAtomic.compareExchangeStrong(null: AnyRef, r)
+    CompletableFuture.RESULT.compareAndSet(this, (null: AnyRef), r)
   }
 
   private[concurrent] final def tryPushStack(c: Completion): Boolean = {
     val h: Completion = stack
     // NEXT.set(c, h) // CAS piggyback
     // STACK.compareAndSet(this, h, c)
-    c.nextAtomic.store(h)
-    this.stackAtomic.compareExchangeStrong(h, c)
+    CompletableFuture.Completion_NEXT.setVolatile(c, h)
+    CompletableFuture.STACK.compareAndSet(this, h, c)
   }
 
   private[concurrent] final def pushStack(c: Completion): Unit = {
@@ -1073,7 +1068,7 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
 
   private[concurrent] final def completeNull(): Boolean =
     // RESULT.compareAndSet(this, null, NIL)
-    this.resultAtomic.compareExchangeStrong(null: AnyRef, NIL)
+    CompletableFuture.RESULT.compareAndSet(this, (null: AnyRef), NIL)
 
   private[concurrent] final def encodeValue(t: T): AnyRef =
     if (t == null) NIL
@@ -1081,15 +1076,15 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
 
   private[concurrent] final def completeValue(t: T): Boolean =
     // RESULT.compareAndSet(this, null, if (t == null) NIL else t)
-    this.resultAtomic.compareExchangeStrong(null: AnyRef, if (t == null) NIL else t)
+    CompletableFuture.RESULT.compareAndSet(this, (null: AnyRef), if (t == null) NIL else t)
 
   private[concurrent] final def completeThrowable(x: Throwable): Boolean =
     // RESULT.compareAndSet(this, null, encodeThrowable(x))
-    this.resultAtomic.compareExchangeStrong(null: AnyRef, encodeThrowable(x))
+    CompletableFuture.RESULT.compareAndSet(this, (null: AnyRef), encodeThrowable(x))
 
   private[concurrent] final def completeThrowable(x: Throwable, r: AnyRef): Boolean =
     // RESULT.compareAndSet(this, null, encodeThrowable(x, r))
-    this.resultAtomic.compareExchangeStrong(null: AnyRef, encodeThrowable(x, r))
+    CompletableFuture.RESULT.compareAndSet(this, (null: AnyRef), encodeThrowable(x, r))
 
   private[concurrent] def encodeOutcome(t: T, x: Throwable): AnyRef =
     if (x == null)
@@ -1099,7 +1094,7 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
 
   private[concurrent] final def completeRelay(r: AnyRef): Boolean =
     // RESULT.compareAndSet(this, null, encodeRelay(r))
-    this.resultAtomic.compareExchangeStrong(null: AnyRef, encodeRelay(r))
+    CompletableFuture.RESULT.compareAndSet(this, (null: AnyRef), encodeRelay(r))
 
   private[concurrent] final def postComplete(): Unit = {
     var f: CompletableFuture[_ <: AnyRef] = this
@@ -1109,14 +1104,14 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
       var t: Completion = null
       var restart = false
       // if (STACK.compareAndSet(f, h, t = h.next)) {
-      if (f.stackAtomic.compareExchangeStrong(h, { t = h.next; t })) {
+      if (CompletableFuture.STACK.compareAndSet(f, h, { t = h.next; t })) {
         if (t != null) {
           if (f ne this) {
             pushStack(h)
             restart = true
           } else {
             // NEXT.compareAndSet(h, t, null) // try to detach
-            h.nextAtomic.compareExchangeStrong(t, null)
+            CompletableFuture.Completion_NEXT.compareAndSet(h, t, (null: Completion))
           }
         }
         if (!restart) {
@@ -1139,7 +1134,7 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
         if (unlinked) return
         else break = true
       // else if (STACK.weakCompareAndSet(this, p, {p = p.next; p}))
-      else if (this.stackAtomic.compareExchangeWeak(p, { p = p.next; p }))
+      else if (CompletableFuture.STACK.weakCompareAndSet(this, p, { p = p.next; p }))
         unlinked = true
       else p = stack
     }
@@ -1151,7 +1146,7 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
         p = q
         q = s
         // } else if (NEXT.weakCompareAndSet(p, q, s)) break
-      } else if (p.nextAtomic.compareExchangeWeak(q, s)) return
+      } else if (CompletableFuture.Completion_NEXT.weakCompareAndSet(p, q, s)) return
       else q = p.next
     }
   }
@@ -1161,7 +1156,7 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
       var break = false
       while (!break && !tryPushStack(c)) if (result != null) {
         // NEXT.set(c, null)
-        c.nextAtomic.store(null)
+        CompletableFuture.Completion_NEXT.setVolatile(c, (null: Completion))
         break = true
       }
       if (result != null) c.tryFire(SYNC)
@@ -1642,7 +1637,7 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
       var break = false
       while (!break && !tryPushStack(c)) if (result != null) {
         // NEXT.set(c, null)
-        c.nextAtomic.store(null)
+        CompletableFuture.Completion_NEXT.setVolatile(c, (null: Completion))
         break = true
       }
       if (result != null) c.tryFire(SYNC)
@@ -1772,7 +1767,7 @@ class CompletableFuture[T <: AnyRef] extends Future[T] with CompletionStage[T] {
   def this(r: AnyRef) = {
     this()
     // RESULT.setRelease(this, r)
-    this.resultAtomic.store(r, memory_order_release)
+    CompletableFuture.RESULT.setRelease(this, r)
   }
 
   override def isDone(): Boolean = return result != null

@@ -2,6 +2,7 @@
 
 package java.lang
 
+import java.lang.invoke.{MethodHandles, VarHandle}
 import java.util.Objects
 import java.util.concurrent.locks.LockSupport
 import java.util.concurrent.{CountDownLatch, TimeUnit}
@@ -9,10 +10,9 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
 import scala.noinline
 
 import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.libc.stdatomic.{AtomicBool, AtomicInt, AtomicRef}
 import scala.scalanative.runtime
 import scala.scalanative.runtime.javalib.Proxy
-import scala.scalanative.runtime.{Continuations, Intrinsics, NativeThread, VirtualThreadScheduler, fromRawPtr}
+import scala.scalanative.runtime.{Continuations, NativeThread, VirtualThreadScheduler}
 
 /** Loom-style virtual thread: a `Runnable` fiber that mounts on a platform carrier, suspends via
  *  `Continuations.suspend`, and resumes through `VirtualThreadScheduler`.
@@ -21,8 +21,8 @@ import scala.scalanative.runtime.{Continuations, Intrinsics, NativeThread, Virtu
  *    - `parkPermit` / `Unparked` — async unpark and timed `park` (`LockSupport` semantics).
  *    - `blockPermit` / `Unblocked` — `Object.wait` / notify and contended monitor enter (`ObjectMonitor`).
  *
- *  Field updates that participate in races use libc atomics (`AtomicInt` / `AtomicBool`) on the corresponding
- *  `volatile` fields. See companion `State` for the `state` bit assignments.
+ *  Field updates that participate in races use VarHandle atomic operations on the corresponding `volatile` fields. See
+ *  companion `State` for the `state` bit assignments.
  */
 private[java] final class VirtualThread(
     name: String,
@@ -84,10 +84,10 @@ private[java] final class VirtualThread(
       continue
     }
 
-  private def isActiveResumeGeneration(generation: Long): Boolean =
+  private def isActiveResumeGeneration(generation: scala.Long): Boolean =
     generation != 0L && activeResumeGeneration == generation && resumeExecution != null
 
-  private def isActiveResume(resume: () => Unit, generation: Long): Boolean = {
+  private def isActiveResume(resume: () => Unit, generation: scala.Long): Boolean = {
     val current = resumeExecution
     generation != 0L &&
       activeResumeGeneration == generation &&
@@ -109,26 +109,14 @@ private[java] final class VirtualThread(
   // Atomic field access & state predicates
   // ---------------------------------------------------------------------------
 
-  @alwaysinline
-  private def stateAtomic =
-    new AtomicInt(fromRawPtr(Intrinsics.classFieldRawPtr(this, "state")))
-
-  @alwaysinline
-  private def runDispatchStateAtomic =
-    new AtomicInt(fromRawPtr(Intrinsics.classFieldRawPtr(this, "runDispatchState")))
-
-  @alwaysinline
-  private def terminationAtomic =
-    new AtomicRef[CountDownLatch](fromRawPtr(Intrinsics.classFieldRawPtr(this, "termination")))
-
   @inline private[java] def compareAndSetState(expected: VirtualThread.State, value: VirtualThread.State): Boolean =
-    stateAtomic.compareExchangeStrong(expected, value)
+    VirtualThread.STATE.compareAndSet(this, (expected: Int), (value: Int))
 
   @inline private[java] def compareAndSetDispatchState(
       expected: VirtualThread.DispatchState,
       value: VirtualThread.DispatchState
   ): Boolean =
-    runDispatchStateAtomic.compareExchangeStrong(expected, value)
+    VirtualThread.RUNDISPATCHSTATE.compareAndSet(this, (expected: Int), (value: Int))
 
   @inline private def isRecursiveSuspendState(s: VirtualThread.State): Boolean =
     s == State.Parking || s == State.Parked
@@ -147,12 +135,8 @@ private[java] final class VirtualThread(
   /** When true, the next park() does not block. Set by unpark(), cleared in park(). */
   @volatile private[lang] var parkPermit: scala.Boolean = false
 
-  @alwaysinline
-  private def parkPermitAtomic =
-    new AtomicBool(fromRawPtr(Intrinsics.classFieldRawPtr(this, "parkPermit")))
-
   @alwaysinline private def getAndSetParkPermit(value: scala.Boolean): scala.Boolean =
-    parkPermitAtomic.exchange(value)
+    VirtualThread.PARKPERMIT.getAndSet(this, value)
 
   @alwaysinline private def setParkPermit(value: scala.Boolean): Unit =
     parkPermit = value
@@ -175,7 +159,7 @@ private[java] final class VirtualThread(
       val action: () => Unit
   )
 
-  private def cancelTimeoutTask(expectedResumeGeneration: Long): Unit =
+  private def cancelTimeoutTask(expectedResumeGeneration: scala.Long): Unit =
     val task = timeoutLock.synchronized {
       pendingTimeout match {
         case pending: PendingTimeout if pending.resumeGeneration == expectedResumeGeneration =>
@@ -195,7 +179,7 @@ private[java] final class VirtualThread(
       case task =>
         if (!task.isDone()) task.cancel()
 
-  private def deferTimeout(delay: scala.Long, unit: TimeUnit, resumeGeneration: Long)(onTimeout: => Unit): Unit =
+  private def deferTimeout(delay: scala.Long, unit: TimeUnit, resumeGeneration: scala.Long)(onTimeout: => Unit): Unit =
     timeoutLock.synchronized {
       pendingTimeout = new PendingTimeout(delay, unit, resumeGeneration, () => onTimeout)
     }
@@ -216,7 +200,7 @@ private[java] final class VirtualThread(
       }
   }
 
-  private def scheduleTimeout(delay: scala.Long, unit: TimeUnit, resumeGeneration: Long)(onTimeout: => Unit): Unit = {
+  private def scheduleTimeout(delay: scala.Long, unit: TimeUnit, resumeGeneration: scala.Long)(onTimeout: => Unit): Unit = {
     val timeoutToken = timeoutLock.synchronized {
       timeoutGeneration += 1L
       timeoutTaskResumeGeneration = resumeGeneration
@@ -255,15 +239,11 @@ private[java] final class VirtualThread(
 
   @volatile private[lang] var blockPermit: scala.Boolean = false
 
-  @alwaysinline
-  private def blockPermitAtomic =
-    new AtomicBool(fromRawPtr(Intrinsics.classFieldRawPtr(this, "blockPermit")))
-
   @alwaysinline private def getAndSetBlockPermit(value: scala.Boolean): scala.Boolean =
-    blockPermitAtomic.exchange(value)
+    VirtualThread.BLOCKPERMIT.getAndSet(this, value)
 
   @alwaysinline private def setBlockPermit(value: scala.Boolean): Unit =
-    blockPermitAtomic.store(value)
+    VirtualThread.BLOCKPERMIT.setVolatile(this, value)
 
   /** Set while in Object.wait() (blockForMonitorWait) so interrupt() can wake this VT. */
   @volatile private var currentWaitResume: () => Unit = compiletime.uninitialized
@@ -340,7 +320,7 @@ private[java] final class VirtualThread(
    *  @param generation
    *    generation paired with `resume` (stale wakeups are ignored)
    */
-  private[java] def unblock(resume: () => Unit, generation: Long): Unit = {
+  private[java] def unblock(resume: () => Unit, generation: scala.Long): Unit = {
     if (!isActiveResume(resume, generation)) {
       return
     }
@@ -825,7 +805,7 @@ private[java] final class VirtualThread(
     this.termination match {
       case null =>
         val term = new CountDownLatch(1)
-        if (terminationAtomic.compareExchangeStrong(null: CountDownLatch, term)) term
+        if (VirtualThread.TERMINATION.compareAndSet(this, (null: CountDownLatch), term)) term
         else this.termination
       case termination => termination
     }
@@ -918,6 +898,26 @@ private[java] final class VirtualThread(
 
 /** Internal constants and opaque state tags for `java.lang.VirtualThread` (javalib implementation). */
 object VirtualThread {
+  private val STATE: VarHandle = MethodHandles
+    .privateLookupIn(classOf[VirtualThread], MethodHandles.lookup())
+    .findVarHandle(classOf[VirtualThread], "state", classOf[Int])
+
+  private val RUNDISPATCHSTATE: VarHandle = MethodHandles
+    .privateLookupIn(classOf[VirtualThread], MethodHandles.lookup())
+    .findVarHandle(classOf[VirtualThread], "runDispatchState", classOf[Int])
+
+  private val TERMINATION: VarHandle = MethodHandles
+    .privateLookupIn(classOf[VirtualThread], MethodHandles.lookup())
+    .findVarHandle(classOf[VirtualThread], "termination", classOf[CountDownLatch])
+
+  private val PARKPERMIT: VarHandle = MethodHandles
+    .privateLookupIn(classOf[VirtualThread], MethodHandles.lookup())
+    .findVarHandle(classOf[VirtualThread], "parkPermit", classOf[scala.Boolean])
+
+  private val BLOCKPERMIT: VarHandle = MethodHandles
+    .privateLookupIn(classOf[VirtualThread], MethodHandles.lookup())
+    .findVarHandle(classOf[VirtualThread], "blockPermit", classOf[scala.Boolean])
+
   private[java] type Boundary = Continuations.BoundaryLabel[Unit]
   private[java] type Continuation = () => Unit
 

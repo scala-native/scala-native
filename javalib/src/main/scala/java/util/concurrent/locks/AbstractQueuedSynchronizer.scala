@@ -6,17 +6,39 @@
 
 package java.util.concurrent.locks
 
+import java.lang.invoke.{MethodHandles, VarHandle}
 import java.util.concurrent.{ForkJoinPool, RejectedExecutionException, TimeUnit}
 import java.util.{ArrayList, Collection, Date}
 
 import scala.annotation.tailrec
 
-import scala.scalanative.libc.stdatomic.memory_order._
-import scala.scalanative.libc.stdatomic.{AtomicInt, AtomicRef}
-import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
-
 @SerialVersionUID(7373984972572414691L)
-object AbstractQueuedSynchronizer { // Node status bits, also used as argument and return values
+object AbstractQueuedSynchronizer {
+  private val Node_PREV: VarHandle = MethodHandles
+    .privateLookupIn(classOf[AbstractQueuedSynchronizer.Node], MethodHandles.lookup())
+    .findVarHandle(classOf[AbstractQueuedSynchronizer.Node], "prev", classOf[AbstractQueuedSynchronizer.Node])
+
+  private val Node_NEXT: VarHandle = MethodHandles
+    .privateLookupIn(classOf[AbstractQueuedSynchronizer.Node], MethodHandles.lookup())
+    .findVarHandle(classOf[AbstractQueuedSynchronizer.Node], "next", classOf[AbstractQueuedSynchronizer.Node])
+
+  private val Node_STATUS: VarHandle = MethodHandles
+    .privateLookupIn(classOf[AbstractQueuedSynchronizer.Node], MethodHandles.lookup())
+    .findVarHandle(classOf[AbstractQueuedSynchronizer.Node], "status", classOf[Int])
+
+  private val HEAD: VarHandle = MethodHandles
+    .privateLookupIn(classOf[AbstractQueuedSynchronizer], MethodHandles.lookup())
+    .findVarHandle(classOf[AbstractQueuedSynchronizer], "head", classOf[AbstractQueuedSynchronizer.Node])
+
+  private val TAIL: VarHandle = MethodHandles
+    .privateLookupIn(classOf[AbstractQueuedSynchronizer], MethodHandles.lookup())
+    .findVarHandle(classOf[AbstractQueuedSynchronizer], "tail", classOf[AbstractQueuedSynchronizer.Node])
+
+  private val STATE: VarHandle = MethodHandles
+    .privateLookupIn(classOf[AbstractQueuedSynchronizer], MethodHandles.lookup())
+    .findVarHandle(classOf[AbstractQueuedSynchronizer], "state", classOf[Int])
+
+  // Node status bits, also used as argument and return values
   private[locks] val WAITING = 1 // must be 1
   private[locks] val CANCELLED = 0x80000000 // must be negative
   private[locks] val COND = 2 // in a condition wait
@@ -27,34 +49,24 @@ object AbstractQueuedSynchronizer { // Node status bits, also used as argument a
     @volatile var next: Node = _ // visibly nonnull when signallable
     @volatile var status: Int = 0 // written by owner, atomic bit ops by others
 
-    private def prevAtomic = new AtomicRef[Node](
-      fromRawPtr(Intrinsics.classFieldRawPtr(this, "prev"))
-    )
-    private def nextAtomic = new AtomicRef[Node](
-      fromRawPtr(Intrinsics.classFieldRawPtr(this, "next"))
-    )
-    private def statusAtomic = new AtomicInt(
-      fromRawPtr(Intrinsics.classFieldRawPtr(this, "status"))
-    )
-
     // methods for atomic operations
     def casPrev(c: Node, v: Node): Boolean = // for cleanQueue
-      prevAtomic.compareExchangeWeak(c, v)
+      AbstractQueuedSynchronizer.Node_PREV.weakCompareAndSet(this, c, v)
 
     def casNext(c: Node, v: Node): Boolean = // for cleanQueue
-      nextAtomic.compareExchangeWeak(c, v)
+      AbstractQueuedSynchronizer.Node_NEXT.weakCompareAndSet(this, c, v)
 
     def getAndUnsetStatus(v: Int): Int = // for signalling
-      statusAtomic.fetchAnd(~v)
+      AbstractQueuedSynchronizer.Node_STATUS.getAndBitwiseAnd(this, ~v)
 
     def setPrevRelaxed(p: Node): Unit = // for off-queue assignment
-      prevAtomic.store(p) // U.putObject
+      AbstractQueuedSynchronizer.Node_PREV.setVolatile(this, p) // U.putObject
 
     def setStatusRelaxed(s: Int) = // for off-queue assignment
-      statusAtomic.store(s) // U.putInt
+      AbstractQueuedSynchronizer.Node_STATUS.setVolatile(this, s) // U.putInt
 
     def clearStatus(): Unit = // for reducing unneeded signals
-      statusAtomic.store(0, memory_order_relaxed) // U.putIntOpaque
+      AbstractQueuedSynchronizer.Node_STATUS.setOpaque(this, 0) // U.putIntOpaque
   }
 
   // Concrete classes tagged by type
@@ -107,29 +119,20 @@ abstract class AbstractQueuedSynchronizer protected ()
   @volatile private var state: Int = 0
 
   // Support for atomic ops
-  private val headAtomic = new AtomicRef[Node](
-    fromRawPtr(Intrinsics.classFieldRawPtr(this, "head"))
-  )
-  private val tailAtomic = new AtomicRef[Node](
-    fromRawPtr(Intrinsics.classFieldRawPtr(this, "tail"))
-  )
-  private val stateAtomic = new AtomicInt(
-    fromRawPtr(Intrinsics.classFieldRawPtr(this, "state"))
-  )
 
   protected final def getState(): Int = state
 
   protected final def setState(newState: Int): Unit = state = newState
 
   protected final def compareAndSetState(c: Int, v: Int): Boolean =
-    stateAtomic.compareExchangeStrong(c, v)
+    AbstractQueuedSynchronizer.STATE.compareAndSet(this, c, v)
 
   private def casTail(c: Node, v: Node) =
-    tailAtomic.compareExchangeStrong(c, v)
+    AbstractQueuedSynchronizer.TAIL.compareAndSet(this, c, v)
 
   private def tryInitializeHead(): Unit = {
     val h = new ExclusiveNode()
-    val isInitialized = headAtomic.compareExchangeStrong(null: Node, h)
+    val isInitialized = AbstractQueuedSynchronizer.HEAD.compareAndSet(this, (null: Node), h)
     if (isInitialized)
       tail = h
   }

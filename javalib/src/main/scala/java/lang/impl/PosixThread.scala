@@ -1,5 +1,6 @@
 package java.lang.impl
 
+import java.lang.invoke.{MethodHandles, VarHandle}
 import java.{lang => jl}
 
 import scala.annotation._
@@ -17,7 +18,6 @@ import scala.scalanative.posix.sys.types._
 import scala.scalanative.posix.time._
 import scala.scalanative.posix.timeOps._
 import scala.scalanative.posix.unistd._
-import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
 import scala.scalanative.runtime._
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
@@ -144,7 +144,7 @@ private[java] class PosixThread(
       isAbsolute: Boolean
   ): Unit = if (isMultithreadingEnabled) {
     // fast-path check, return if can skip parking
-    if (counterAtomic.exchange(0) > 0) return
+    if ((PosixThread.COUNTER.getAndSet(this, 0): Int) > 0) return
     // Avoid parking if there's an interrupt pending
     if (thread.isInterrupted()) return
     // Don't wait at all
@@ -289,10 +289,6 @@ private[java] class PosixThread(
       case 1 => absoluteCondition
     }
 
-  @alwaysinline private def counterAtomic = new AtomicInt(
-    fromRawPtr(classFieldRawPtr(this, "counter"))
-  )
-
   @inline private def priorityMapping(
       threadPriority: Int,
       schedulerPolicy: CInt
@@ -391,6 +387,10 @@ private[java] class PosixThread(
 }
 
 private[lang] object PosixThread extends NativeThread.Companion {
+  private val COUNTER: VarHandle = MethodHandles
+    .privateLookupIn(classOf[PosixThread], MethodHandles.lookup())
+    .findVarHandle(classOf[PosixThread], "counter", classOf[Int])
+
   override type Impl = PosixThread
 
   private val _state = new scala.Array[scala.Byte](CompanionStateSize)

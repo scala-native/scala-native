@@ -6,18 +6,16 @@
 
 package java.util.concurrent
 
-import java.util.concurrent.atomic.AtomicReference
+import java.lang.invoke.{MethodHandles, VarHandle}
 import java.util.concurrent.locks.LockSupport
 import java.util.{
   AbstractQueue, Arrays, Collection, Iterator, NoSuchElementException, Objects,
   Spliterator, Spliterators, function
 }
 
-import scala.scalanative.libc.stdatomic.AtomicRef
 import scala.scalanative.libc.stdatomic.memory_order.{
   memory_order_relaxed, memory_order_release
 }
-import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
 
 @SerialVersionUID(-3223113410248163686L) class LinkedTransferQueue[E <: AnyRef]
     extends AbstractQueue[E]
@@ -323,17 +321,10 @@ import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
   /** The number of apparent failures to unsplice cancelled nodes */
   @volatile private[concurrent] var needSweep: Boolean = _
 
-  private val tailAtomic = new AtomicRef[Node](
-    fromRawPtr(Intrinsics.classFieldRawPtr(this, "tail"))
-  )
-  private val headAtomic = new AtomicRef[Node](
-    fromRawPtr(Intrinsics.classFieldRawPtr(this, "head"))
-  )
-
   private def casTail(cmp: Node, `val`: Node) =
-    tailAtomic.compareExchangeStrong(cmp, `val`)
+    LinkedTransferQueue.TAIL.compareAndSet(this, cmp, `val`)
   private def casHead(cmp: Node, `val`: Node) =
-    headAtomic.compareExchangeStrong(cmp, `val`)
+    LinkedTransferQueue.HEAD.compareAndSet(this, cmp, `val`)
 
   /** Tries to CAS pred.next (or head, if pred is null) from c to p. Caller must
    *  ensure that we're not unlinking the trailing node.
@@ -477,9 +468,9 @@ import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
       item = s.item
     }
     if (stat == 1)
-      s.waiterAtomic.store(null, memory_order_relaxed)
+      LinkedTransferQueue.Node_WAITER.setOpaque(s, (null: Object))
     if (!isData)
-      s.itemAtomic.store(s, memory_order_relaxed) // self-link to avoid garbage
+      LinkedTransferQueue.Node_ITEM.setOpaque(s, s) // self-link to avoid garbage
     item.asInstanceOf[E]
   }
 
@@ -1391,6 +1382,25 @@ import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
 }
 
 @SerialVersionUID(-3223113410248163686L) object LinkedTransferQueue {
+  private val TAIL: VarHandle = MethodHandles
+    .privateLookupIn(classOf[LinkedTransferQueue[_]], MethodHandles.lookup())
+    .findVarHandle(classOf[LinkedTransferQueue[_]], "tail", classOf[LinkedTransferQueue.Node])
+
+  private val HEAD: VarHandle = MethodHandles
+    .privateLookupIn(classOf[LinkedTransferQueue[_]], MethodHandles.lookup())
+    .findVarHandle(classOf[LinkedTransferQueue[_]], "head", classOf[LinkedTransferQueue.Node])
+
+  private val Node_NEXT: VarHandle = MethodHandles
+    .privateLookupIn(classOf[LinkedTransferQueue.Node], MethodHandles.lookup())
+    .findVarHandle(classOf[LinkedTransferQueue.Node], "next", classOf[LinkedTransferQueue.Node])
+
+  private val Node_ITEM: VarHandle = MethodHandles
+    .privateLookupIn(classOf[LinkedTransferQueue.Node], MethodHandles.lookup())
+    .findVarHandle(classOf[LinkedTransferQueue.Node], "item", classOf[Object])
+
+  private val Node_WAITER: VarHandle = MethodHandles
+    .privateLookupIn(classOf[LinkedTransferQueue.Node], MethodHandles.lookup())
+    .findVarHandle(classOf[LinkedTransferQueue.Node], "waiter", classOf[Thread])
 
   /** The number of nanoseconds for which it is faster to spin rather than to
    *  use timed park. A rough estimate suffices. Using a power of two minus one
@@ -1422,23 +1432,13 @@ import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
     @volatile var next: Node = null
     @volatile var waiter: Thread = _ // null when not waiting for a match
 
-    val nextAtomic = new AtomicRef[Node](
-      fromRawPtr(Intrinsics.classFieldRawPtr(this, "next"))
-    )
-    val itemAtomic = new AtomicRef[Object](
-      fromRawPtr(Intrinsics.classFieldRawPtr(this, "item"))
-    )
-    val waiterAtomic = new AtomicRef[Object](
-      fromRawPtr(Intrinsics.classFieldRawPtr(this, "waiter"))
-    )
-
     /** Constructs a data node holding item if item is non-null, else a request
      *  node. Uses relaxed write because item can only be seen after
      *  piggy-backing publication via CAS.
      */
     def this(item: Object) = {
       this(item != null)
-      itemAtomic.store(item, memory_order_relaxed)
+      LinkedTransferQueue.Node_ITEM.setOpaque(this, item)
     }
 
     /** Constructs a (matched data) dummy node. */
@@ -1447,18 +1447,18 @@ import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
     }
 
     def casNext(cmp: Node, `val`: Node) =
-      nextAtomic.compareExchangeStrong(cmp, `val`)
+      LinkedTransferQueue.Node_NEXT.compareAndSet(this, cmp, `val`)
     def casItem(cmp: Object, `val`: Object) =
-      itemAtomic.compareExchangeStrong(cmp, `val`)
+      LinkedTransferQueue.Node_ITEM.compareAndSet(this, cmp, `val`)
 
     /** Links node to itself to avoid garbage retention. Called only after
      *  CASing head field, so uses relaxed write.
      */
     def selfLink(): Unit =
-      nextAtomic.store(this, memory_order_release)
+      LinkedTransferQueue.Node_NEXT.setRelease(this, this)
 
     def appendRelaxed(next: Node): Unit =
-      nextAtomic.store(next, memory_order_relaxed)
+      LinkedTransferQueue.Node_NEXT.setOpaque(this, next)
 
     /** Returns true if this node has been matched, including the case of
      *  artificial matches due to cancellation.

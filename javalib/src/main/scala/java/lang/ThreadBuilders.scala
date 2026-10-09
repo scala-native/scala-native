@@ -1,14 +1,15 @@
 package java.lang
 
 import java.lang.Thread.{Builder, Characteristics}
+import java.lang.invoke.{MethodHandles, VarHandle}
 import java.util.Objects
 import java.util.concurrent.ThreadFactory
 
-import scala.scalanative.libc.stdatomic.AtomicLongLong
-import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
-
 // ScalaNative specific
 object ThreadBuilders {
+  private val BaseThreadFactory_COUNTER: VarHandle = MethodHandles
+    .privateLookupIn(classOf[ThreadBuilders.BaseThreadFactory], MethodHandles.lookup())
+    .findVarHandle(classOf[ThreadBuilders.BaseThreadFactory], "counter", classOf[scala.Long])
 
   sealed abstract class BaseThreadBuilder[Self <: Builder] extends Builder {
     var name: String = _
@@ -148,13 +149,10 @@ object ThreadBuilders {
   ) extends ThreadFactory {
     @volatile var counter: scala.Long = start
 
-    private val counterRef = new AtomicLongLong(
-      fromRawPtr(Intrinsics.classFieldRawPtr(this, "counter"))
-    )
     private val hasCounter = name != null && start >= 0
 
     def nextThreadName(): String = {
-      if (hasCounter) name + counterRef.fetchAdd(1L)
+      if (hasCounter) name + (ThreadBuilders.BaseThreadFactory_COUNTER.getAndAdd(this, 1L): scala.Long)
       else name
     }
   }

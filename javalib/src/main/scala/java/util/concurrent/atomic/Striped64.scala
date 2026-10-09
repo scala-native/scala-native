@@ -8,6 +8,7 @@
 package java.util.concurrent.atomic
 
 import java.lang.Double._
+import java.lang.invoke.{MethodHandles, VarHandle}
 import java.util.Arrays
 import java.util.concurrent.ThreadLocalRandom
 import java.util.function.{DoubleBinaryOperator, LongBinaryOperator}
@@ -16,50 +17,49 @@ import scala.scalanative.annotation._
 import scala.scalanative.libc.stdatomic.{
   AtomicInt, AtomicLongLong, memory_order
 }
-import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
 import scala.scalanative.unsafe._
 
 @SuppressWarnings(Array("serial"))
 private[atomic] object Striped64 {
+  private val THREAD_PROBE: VarHandle = MethodHandles
+    .privateLookupIn(classOf[Thread], MethodHandles.lookup())
+    .findVarHandle(classOf[Thread], "threadLocalRandomProbe", classOf[Int])
+
+  private val Cell_VALUE: VarHandle = MethodHandles
+    .privateLookupIn(classOf[Striped64.Cell], MethodHandles.lookup())
+    .findVarHandle(classOf[Striped64.Cell], "value", classOf[Long])
+
+  private val BASE: VarHandle = MethodHandles
+    .privateLookupIn(classOf[Striped64], MethodHandles.lookup())
+    .findVarHandle(classOf[Striped64], "base", classOf[Long])
+
+  private val CELLSBUSY: VarHandle = MethodHandles
+    .privateLookupIn(classOf[Striped64], MethodHandles.lookup())
+    .findVarHandle(classOf[Striped64], "cellsBusy", classOf[Int])
+
   type Contended = scala.scalanative.annotation.align
   @Contended private[atomic] final class Cell private[atomic] (
       @volatile private[atomic] var value: Long
   ) {
 
-    @alwaysinline def valueAtomic() = new AtomicLongLong(
-      fromRawPtr(Intrinsics.classFieldRawPtr(this, "value"))
-    )
-
     private[atomic] final def cas(cmp: Long, `val`: Long) =
-      valueAtomic().compareExchangeWeak(
-        cmp,
-        `val`,
-        memory_order.memory_order_release
-      )
+      Striped64.Cell_VALUE.weakCompareAndSetRelease(this, cmp, `val`)
 
     private[atomic] final def reset(): Unit =
-      valueAtomic().store(0L, memory_order.memory_order_seq_cst)
+      Striped64.Cell_VALUE.setVolatile(this, 0L)
 
     private[atomic] final def reset(identity: Long): Unit =
-      valueAtomic().store(identity, memory_order.memory_order_seq_cst)
+      Striped64.Cell_VALUE.setVolatile(this, identity)
 
-    private[atomic] final def getAndSet(`val`: Long) =
-      valueAtomic().exchange(`val`).asInstanceOf[Long]
+    private[atomic] final def getAndSet(`val`: Long): Long =
+      Striped64.Cell_VALUE.getAndSet(this, `val`)
   }
 
   private[atomic] val NCPU: Int = Runtime.getRuntime().availableProcessors()
 
-  @alwaysinline private[atomic] def threadProbeAtomic() = new AtomicInt(
-    fromRawPtr(
-      Intrinsics.classFieldRawPtr(
-        Thread.currentThread(),
-        "threadLocalRandomProbe"
-      )
-    )
-  )
-
   private[atomic] def getProbe(): Int =
-    threadProbeAtomic().load()
+    THREAD_PROBE.getVolatile(
+        Thread.currentThread())
 
   private[atomic] def advanceProbe(probe: Int) = {
     var _probe = probe
@@ -67,7 +67,7 @@ private[atomic] object Striped64 {
 
     _probe = _probe ^ (_probe >>> 17)
     _probe = _probe ^ (_probe << 5)
-    threadProbeAtomic().store(_probe)
+    THREAD_PROBE.setVolatile(Thread.currentThread(), _probe)
     _probe
   }
 
@@ -90,26 +90,14 @@ private[atomic] abstract class Striped64 private[atomic] () extends Number {
 
   @transient @volatile private[atomic] var cellsBusy: Int = 0
 
-  @alwaysinline private def baseAtomic() = new AtomicLongLong(
-    fromRawPtr(Intrinsics.classFieldRawPtr(this, "base"))
-  )
-
-  @alwaysinline private def cellsBusyAtomic() = new AtomicInt(
-    fromRawPtr(Intrinsics.classFieldRawPtr(this, "cellsBusy"))
-  )
-
   private[atomic] final def casBase(cmp: Long, `val`: Long) =
-    baseAtomic().compareExchangeWeak(
-      cmp,
-      `val`,
-      memory_order.memory_order_release
-    )
+    Striped64.BASE.weakCompareAndSetRelease(this, cmp, `val`)
 
-  private[atomic] final def getAndSetBase(`val`: Long) =
-    baseAtomic().exchange(`val`)
+  private[atomic] final def getAndSetBase(`val`: Long): Long =
+    Striped64.BASE.getAndSet(this, `val`)
 
   private[atomic] final def casCellsBusy() =
-    cellsBusyAtomic().compareExchangeWeak(0, 1)
+    Striped64.CELLSBUSY.weakCompareAndSet(this, 0, 1)
 
   private[atomic] final def longAccumulate(
       x: Long,

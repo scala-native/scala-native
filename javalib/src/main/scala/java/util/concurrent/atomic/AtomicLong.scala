@@ -7,24 +7,13 @@
 package java.util.concurrent.atomic
 
 import java.io.Serializable
+import java.lang.invoke.{MethodHandles, VarHandle}
 import java.util.function.{LongBinaryOperator, LongUnaryOperator}
 
 import scala.annotation.tailrec
 
-import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.libc.stdatomic.AtomicLongLong
-import scala.scalanative.libc.stdatomic.memory_order._
-import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
-import scala.scalanative.unsafe._
-
 @SerialVersionUID(1927816293512124184L)
 class AtomicLong(private var value: Long) extends Number with Serializable {
-
-  // Pointer to field containing underlying Long.
-  @alwaysinline
-  private[concurrent] def valueRef = new AtomicLongLong(
-    fromRawPtr(Intrinsics.classFieldRawPtr(this, "value"))
-  )
 
   def this() = {
     this(0)
@@ -36,7 +25,7 @@ class AtomicLong(private var value: Long) extends Number with Serializable {
    *  @return
    *    the current value
    */
-  final def get(): Long = valueRef.load()
+  final def get(): Long = AtomicLong.VALUE.getVolatile(this)
 
   /** Sets the value to {@code newValue}, with memory effects as specified by
    *  `VarHandle#setVolatile`.
@@ -44,7 +33,7 @@ class AtomicLong(private var value: Long) extends Number with Serializable {
    *  @param newValue
    *    the new value
    */
-  final def set(newValue: Long): Unit = valueRef.store(newValue)
+  final def set(newValue: Long): Unit = AtomicLong.VALUE.setVolatile(this, newValue)
 
   /** Sets the value to {@code newValue}, with memory effects as specified by
    *  `VarHandle#setRelease`.
@@ -54,7 +43,7 @@ class AtomicLong(private var value: Long) extends Number with Serializable {
    *  @since 1.6
    */
   final def lazySet(newValue: Long): Unit = {
-    valueRef.store(newValue, memory_order_release)
+    AtomicLong.VALUE.setRelease(this, newValue)
   }
 
   /** Atomically sets the value to {@code newValue} and returns the old value,
@@ -66,7 +55,7 @@ class AtomicLong(private var value: Long) extends Number with Serializable {
    *    the previous value
    */
   final def getAndSet(newValue: Long): Long = {
-    valueRef.exchange(newValue)
+    AtomicLong.VALUE.getAndSet(this, newValue)
   }
 
   /** Atomically sets the value to {@code newValue} if the current value {@code
@@ -82,7 +71,7 @@ class AtomicLong(private var value: Long) extends Number with Serializable {
    *    was not equal to the expected value.
    */
   final def compareAndSet(expectedValue: Long, newValue: Long): Boolean = {
-    valueRef.compareExchangeStrong(expectedValue, newValue)
+    AtomicLong.VALUE.compareAndSet(this, expectedValue, newValue)
   }
 
   /** Possibly atomically sets the value to {@code newValue} if the current
@@ -106,7 +95,7 @@ class AtomicLong(private var value: Long) extends Number with Serializable {
    */
   @deprecated("", "9")
   final def weakCompareAndSet(expectedValue: Long, newValue: Long): Boolean = {
-    valueRef.compareExchangeWeak(expectedValue, newValue)
+    AtomicLong.VALUE.weakCompareAndSet(this, expectedValue, newValue)
   }
 
   /** Possibly atomically sets the value to {@code newValue} if the current
@@ -125,7 +114,7 @@ class AtomicLong(private var value: Long) extends Number with Serializable {
       expectedValue: Long,
       newValue: Long
   ): Boolean = {
-    valueRef.compareExchangeWeak(expectedValue, newValue, memory_order_relaxed)
+    AtomicLong.VALUE.weakCompareAndSetPlain(this, expectedValue, newValue)
   }
 
   /** Atomically increments the current value, with memory effects as specified
@@ -157,7 +146,7 @@ class AtomicLong(private var value: Long) extends Number with Serializable {
    *    the previous value
    */
   final def getAndAdd(delta: Long): Long = {
-    valueRef.fetchAdd(delta)
+    AtomicLong.VALUE.getAndAdd(this, delta)
   }
 
   /** Atomically increments the current value, with memory effects as specified
@@ -188,7 +177,7 @@ class AtomicLong(private var value: Long) extends Number with Serializable {
    *  @return
    *    the updated value
    */
-  final def addAndGet(delta: Long): Long = valueRef.fetchAdd(delta) + delta
+  final def addAndGet(delta: Long): Long = (AtomicLong.VALUE.getAndAdd(this, delta): Long) + delta
 
   /** Atomically updates (with memory effects as specified by
    *  `VarHandle#compareAndSet`) the current value with the results of applying
@@ -375,7 +364,7 @@ class AtomicLong(private var value: Long) extends Number with Serializable {
    *    the value
    *  @since 9
    */
-  final def getOpaque(): Long = valueRef.load(memory_order_relaxed)
+  final def getOpaque(): Long = AtomicLong.VALUE.getOpaque(this)
 
   /** Sets the value to {@code newValue}, with memory effects as specified by
    *  `VarHandle#setOpaque`.
@@ -385,7 +374,7 @@ class AtomicLong(private var value: Long) extends Number with Serializable {
    *  @since 9
    */
   final def setOpaque(newValue: Long): Unit =
-    valueRef.store(newValue, memory_order_relaxed)
+    AtomicLong.VALUE.setOpaque(this, newValue)
 
   /** Returns the current value, with memory effects as specified by
    *  `VarHandle#getAcquire`.
@@ -394,7 +383,7 @@ class AtomicLong(private var value: Long) extends Number with Serializable {
    *    the value
    *  @since 9
    */
-  final def getAcquire: Long = valueRef.load(memory_order_acquire)
+  final def getAcquire: Long = AtomicLong.VALUE.getAcquire(this)
 
   /** Sets the value to {@code newValue}, with memory effects as specified by
    *  `VarHandle#setRelease`.
@@ -404,7 +393,7 @@ class AtomicLong(private var value: Long) extends Number with Serializable {
    *  @since 9
    */
   final def setRelease(newValue: Long): Unit =
-    valueRef.store(newValue, memory_order_release)
+    AtomicLong.VALUE.setRelease(this, newValue)
 
   /** Atomically sets the value to {@code newValue} if the current value,
    *  referred to as the <em>witness value</em>, {@code == expectedValue}, with
@@ -419,12 +408,8 @@ class AtomicLong(private var value: Long) extends Number with Serializable {
    *    successful
    *  @since 9
    */
-  final def compareAndExchange(expectedValue: Long, newValue: Long): Long = {
-    val expected = stackalloc[Long]()
-    !expected = expectedValue
-    valueRef.compareExchangeStrong(expected, newValue)
-    !expected
-  }
+  final def compareAndExchange(expectedValue: Long, newValue: Long): Long =
+    AtomicLong.VALUE.compareAndExchange(this, expectedValue, newValue)
 
   /** Atomically sets the value to {@code newValue} if the current value,
    *  referred to as the <em>witness value</em>, {@code == expectedValue}, with
@@ -442,12 +427,8 @@ class AtomicLong(private var value: Long) extends Number with Serializable {
   final def compareAndExchangeAcquire(
       expectedValue: Long,
       newValue: Long
-  ): Long = {
-    val expected = stackalloc[Long]()
-    !expected = expectedValue
-    valueRef.compareExchangeStrong(expected, newValue, memory_order_acquire)
-    !expected
-  }
+  ): Long =
+    AtomicLong.VALUE.compareAndExchangeAcquire(this, expectedValue, newValue)
 
   /** Atomically sets the value to {@code newValue} if the current value,
    *  referred to as the <em>witness value</em>, {@code == expectedValue}, with
@@ -465,12 +446,8 @@ class AtomicLong(private var value: Long) extends Number with Serializable {
   final def compareAndExchangeRelease(
       expectedValue: Long,
       newValue: Long
-  ): Long = {
-    val expected = stackalloc[Long]()
-    !expected = expectedValue
-    valueRef.compareExchangeStrong(expected, newValue, memory_order_release)
-    !expected
-  }
+  ): Long =
+    AtomicLong.VALUE.compareAndExchangeRelease(this, expectedValue, newValue)
 
   /** Possibly atomically sets the value to {@code newValue} if the current
    *  value {@code == expectedValue}, with memory effects as specified by
@@ -488,7 +465,7 @@ class AtomicLong(private var value: Long) extends Number with Serializable {
       expectedValue: Long,
       newValue: Long
   ): Boolean = {
-    valueRef.compareExchangeWeak(expectedValue, newValue)
+    AtomicLong.VALUE.weakCompareAndSet(this, expectedValue, newValue)
   }
 
   /** Possibly atomically sets the value to {@code newValue} if the current
@@ -507,8 +484,7 @@ class AtomicLong(private var value: Long) extends Number with Serializable {
       expectedValue: Long,
       newValue: Long
   ): Boolean = {
-    valueRef
-      .compareExchangeWeak(expectedValue, newValue, memory_order_acquire)
+    AtomicLong.VALUE.weakCompareAndSetAcquire(this, expectedValue, newValue)
   }
 
   /** Possibly atomically sets the value to {@code newValue} if the current
@@ -527,7 +503,13 @@ class AtomicLong(private var value: Long) extends Number with Serializable {
       expectedValue: Long,
       newValue: Long
   ): Boolean = {
-    valueRef
-      .compareExchangeWeak(expectedValue, newValue, memory_order_release)
+    AtomicLong.VALUE.weakCompareAndSetRelease(this, expectedValue, newValue)
   }
+}
+
+object AtomicLong {
+  private val VALUE: VarHandle = MethodHandles
+    .privateLookupIn(classOf[AtomicLong], MethodHandles.lookup())
+    .findVarHandle(classOf[AtomicLong], "value", classOf[Long])
+
 }

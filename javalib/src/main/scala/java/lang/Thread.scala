@@ -2,6 +2,7 @@ package java.lang
 
 import java.lang.Thread._
 import java.lang.impl._
+import java.lang.invoke.{MethodHandles, VarHandle}
 import java.time.Duration
 import java.util.concurrent.locks.LockSupport
 import java.util.concurrent.{ThreadFactory, TimeUnit}
@@ -11,13 +12,13 @@ import scala.concurrent.duration._
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.concurrent.NativeExecutionContext
 import scala.scalanative.libc.stdatomic.memory_order._
-import scala.scalanative.libc.stdatomic.{AtomicLongLong, atomic_thread_fence}
+import scala.scalanative.libc.stdatomic.atomic_thread_fence
 import scala.scalanative.meta.LinktimeInfo.{isMultithreadingEnabled, isWindows}
 import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.runtime.NativeThread.State._
 import scala.scalanative.runtime.NativeThread.{State => _, _}
 import scala.scalanative.runtime.javalib.Proxy
-import scala.scalanative.runtime.{NativeThread, UnsupportedFeature, fromRawPtr}
+import scala.scalanative.runtime.{NativeThread, UnsupportedFeature}
 
 class Thread private[lang] (
     @volatile private var name: String,
@@ -711,14 +712,17 @@ object Thread {
   // Counter used to generate thread's ID, 0 resevered for main
   sealed abstract class Numbering {
     protected final var cursor = 1L
-    @inline def cursorRef = new AtomicLongLong(
-      fromRawPtr(classFieldRawPtr(this, "cursor"))
-    )
     def next(): scala.Long =
-      if (isMultithreadingEnabled) cursorRef.fetchAdd(1L)
+      if (isMultithreadingEnabled) Numbering.CURSOR.getAndAdd(this, 1L)
       else
         try cursor
         finally cursor += 1L
+  }
+  object Numbering {
+    // Thread must remain a constant module: monitor initialization calls currentThread().
+    private val CURSOR: VarHandle = MethodHandles
+      .privateLookupIn(classOf[Numbering], MethodHandles.lookup())
+      .findVarHandle(classOf[Numbering], "cursor", classOf[scala.Long])
   }
   object ThreadNamesNumbering extends Numbering
   object ThreadIdentifiers extends Numbering

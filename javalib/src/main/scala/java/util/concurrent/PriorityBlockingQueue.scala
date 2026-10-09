@@ -5,19 +5,23 @@
  */
 
 package java.util.concurrent
+import java.lang.invoke.{MethodHandles, VarHandle}
 import java.util
 import java.util._
+import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks._
 import java.util.function._
 
 import scala.annotation.tailrec
 
 import scala.scalanative.annotation.safePublish
-import scala.scalanative.libc.stdatomic.AtomicInt
-import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
 
 @SerialVersionUID(5595510919245408276L)
 object PriorityBlockingQueue {
+
+  private val ALLOCATIONSPINLOCK: VarHandle = MethodHandles
+    .privateLookupIn(classOf[PriorityBlockingQueue[_]], MethodHandles.lookup())
+    .findVarHandle(classOf[PriorityBlockingQueue[_]], "allocationSpinLock", classOf[Int])
 
   private final val DEFAULT_INITIAL_CAPACITY = 11
 
@@ -167,10 +171,6 @@ class PriorityBlockingQueue[E <: AnyRef] private (
 
   @volatile private var allocationSpinLock = 0
 
-  private def atomicAllocationSpinLock = new AtomicInt(
-    fromRawPtr(Intrinsics.classFieldRawPtr(this, "allocationSpinLock"))
-  )
-
   def this(initialCapacity: Int, comparator: Comparator[_ >: E]) = {
     this(
       queue = {
@@ -226,8 +226,11 @@ class PriorityBlockingQueue[E <: AnyRef] private (
     lock.unlock() // must release and then re-acquire main lock
 
     var newArray: Array[E] = null
-    if (allocationSpinLock == 0 && atomicAllocationSpinLock
-          .compareExchangeStrong(0, 1)) {
+    if (allocationSpinLock == 0 && PriorityBlockingQueue.ALLOCATIONSPINLOCK.compareAndSet(
+          this,
+          0,
+          1
+        )) {
       try {
         val growth =
           if (oldCap < 64) oldCap + 2 // grow faster if small}

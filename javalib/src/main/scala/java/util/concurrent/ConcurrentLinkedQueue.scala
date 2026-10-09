@@ -11,17 +11,30 @@ import java.lang.invoke.{MethodHandles, VarHandle}
 import java.util._
 import java.util.function.{Consumer, Predicate}
 
-import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.libc.stdatomic._
 import scala.scalanative.libc.stdatomic.memory_order.{
   memory_order_relaxed, memory_order_release
 }
-import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
-import scala.scalanative.runtime.fromRawPtr
 import scala.scalanative.unsafe._
 
 @SerialVersionUID(196745693267521676L)
 object ConcurrentLinkedQueue {
+
+  private val Node_ITEM: VarHandle = MethodHandles
+    .privateLookupIn(classOf[ConcurrentLinkedQueue.Node[_]], MethodHandles.lookup())
+    .findVarHandle(classOf[ConcurrentLinkedQueue.Node[_]], "item", classOf[AnyRef])
+
+  private val Node_NEXT: VarHandle = MethodHandles
+    .privateLookupIn(classOf[ConcurrentLinkedQueue.Node[_]], MethodHandles.lookup())
+    .findVarHandle(classOf[ConcurrentLinkedQueue.Node[_]], "next", classOf[ConcurrentLinkedQueue.Node[_]])
+
+  private val HEAD: VarHandle = MethodHandles
+    .privateLookupIn(classOf[ConcurrentLinkedQueue[_]], MethodHandles.lookup())
+    .findVarHandle(classOf[ConcurrentLinkedQueue[_]], "head", classOf[ConcurrentLinkedQueue.Node[_]])
+
+  private val TAIL: VarHandle = MethodHandles
+    .privateLookupIn(classOf[ConcurrentLinkedQueue[_]], MethodHandles.lookup())
+    .findVarHandle(classOf[ConcurrentLinkedQueue[_]], "tail", classOf[ConcurrentLinkedQueue.Node[_]])
 
   private[concurrent] final class Node[E <: AnyRef] private[concurrent]
   /** Constructs a dead dummy node. */
@@ -29,27 +42,22 @@ object ConcurrentLinkedQueue {
     @volatile private[concurrent] var item: E = _
     @volatile private[concurrent] var next: Node[E] = _
 
-    @alwaysinline private[ConcurrentLinkedQueue] def ITEM: AtomicRef[E] =
-      fromRawPtr[E](classFieldRawPtr(this, "item")).atomic
-    @alwaysinline private[ConcurrentLinkedQueue] def NEXT: AtomicRef[Node[E]] =
-      fromRawPtr[Node[E]](classFieldRawPtr(this, "next")).atomic
-
     def this(item: E) = {
       this()
-      ITEM.store(item, memory_order_relaxed)
+      ConcurrentLinkedQueue.Node_ITEM.setOpaque(this, item)
     }
 
     private[concurrent] def appendRelaxed(next: Node[E]): Unit = {
       // assert next != null;
       // assert this.next == null;
-      NEXT.store(next, memory_order_relaxed)
+      ConcurrentLinkedQueue.Node_NEXT.setOpaque(this, next)
     }
 
     private[concurrent] def casItem(cmp: E, `val`: E) = {
       // assert item == cmp || item == null;
       // assert cmp != null;
       // assert val == null;
-      ITEM.compareExchangeStrong(cmp, `val`)
+      ConcurrentLinkedQueue.Node_ITEM.compareAndSet(this, cmp, `val`)
     }
   }
 
@@ -72,11 +80,6 @@ class ConcurrentLinkedQueue[E <: AnyRef]
   @volatile
   @transient private var tail: Node[E] = head
 
-  @alwaysinline private def HEAD: AtomicRef[Node[E]] =
-    fromRawPtr[Node[E]](classFieldRawPtr(this, "head")).atomic
-  @alwaysinline private def TAIL: AtomicRef[Node[E]] =
-    fromRawPtr[Node[E]](classFieldRawPtr(this, "tail")).atomic
-
   def this(c: Collection[_ <: E]) = {
     this()
     var h, t: Node[E] = head
@@ -97,8 +100,8 @@ class ConcurrentLinkedQueue[E <: AnyRef]
 
   private[concurrent] final def updateHead(h: Node[E], p: Node[E]): Unit = {
     // assert h != null && p != null && (h == p || h.item == null);
-    if ((h ne p) && this.HEAD.compareExchangeStrong(h, p))
-      h.NEXT.store(h, memory_order_release)
+    if ((h ne p) && ConcurrentLinkedQueue.HEAD.compareAndSet(this, h, p))
+      ConcurrentLinkedQueue.Node_NEXT.setRelease(h, h)
   }
 
   private[concurrent] final def succ(p: Node[E]) = {
@@ -116,9 +119,9 @@ class ConcurrentLinkedQueue[E <: AnyRef]
     // assert p != null;
     // assert c.item == null;
     // assert c != p;
-    if (pred != null) pred.NEXT.compareExchangeStrong(c, p)
-    else if (this.HEAD.compareExchangeStrong(c, p)) {
-      c.NEXT.store(c, memory_order_release)
+    if (pred != null) ConcurrentLinkedQueue.Node_NEXT.compareAndSet(pred, c, p)
+    else if (ConcurrentLinkedQueue.HEAD.compareAndSet(this, c, p)) {
+      ConcurrentLinkedQueue.Node_NEXT.setRelease(c, c)
       true
     } else false
   }
@@ -139,9 +142,7 @@ class ConcurrentLinkedQueue[E <: AnyRef]
       if (c eq p) return pred
       q = p
     }
-    if (tryCasSuccessor(pred, c, q) && (pred == null || pred.ITEM.load(
-          memory_order_relaxed
-        ) != null)) pred
+    if (tryCasSuccessor(pred, c, q) && (pred == null || ConcurrentLinkedQueue.Node_ITEM.getOpaque(pred) != null)) pred
     else p
   }
 
@@ -153,13 +154,13 @@ class ConcurrentLinkedQueue[E <: AnyRef]
       val q = p.next
       if (q == null) {
         // p is last node
-        if (p.NEXT.compareExchangeStrong(null: Node[E], newNode)) {
+        if (ConcurrentLinkedQueue.Node_NEXT.compareAndSet(p, (null: Node[E]), newNode)) {
           // Successful CAS is the linearization point
           // for e to become an element of this queue,
           // and for newNode to become "live".
           if (p ne t)
             // hop two nodes at a time; failure is OK
-            this.TAIL.compareExchangeWeak(t, newNode)
+            ConcurrentLinkedQueue.TAIL.weakCompareAndSet(this, t, newNode)
           return true
         }
       } else if (p eq q) // We have fallen off list.  If tail is unchanged, it
@@ -357,14 +358,14 @@ class ConcurrentLinkedQueue[E <: AnyRef]
       val q = p.next
       if (q == null) {
         // p is last node
-        if (p.NEXT.compareExchangeStrong(null: Node[E], beginningOfTheEnd)) {
+        if (ConcurrentLinkedQueue.Node_NEXT.compareAndSet(p, (null: Node[E]), beginningOfTheEnd)) {
           // Successful CAS is the linearization point
           // for all elements to be added to this queue.
-          if (!this.TAIL.compareExchangeWeak(t, last)) {
+          if (!ConcurrentLinkedQueue.TAIL.weakCompareAndSet(this, t, last)) {
             // Try a little harder to update tail,
             // since we may be adding many elements.
             t = tail
-            if (last.next == null) this.TAIL.compareExchangeWeak(t, last)
+            if (last.next == null) ConcurrentLinkedQueue.TAIL.weakCompareAndSet(this, t, last)
           }
           return true
         }
@@ -506,7 +507,7 @@ class ConcurrentLinkedQueue[E <: AnyRef]
         }
         // unlink deleted nodes
         if ({ q = succ(p); q != null })
-          pred.NEXT.compareExchangeStrong(p, q)
+          ConcurrentLinkedQueue.Node_NEXT.compareAndSet(pred, p, q)
         p = q
       }
       // unreachable

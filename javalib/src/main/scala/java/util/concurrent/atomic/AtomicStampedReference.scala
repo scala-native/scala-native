@@ -6,12 +6,13 @@
 
 package java.util.concurrent.atomic
 
-import scala.scalanative.annotation.alwaysinline
-import scala.scalanative.libc.stdatomic.AtomicRef
-import scala.scalanative.libc.stdatomic.memory_order._
-import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
+import java.lang.invoke.{MethodHandles, VarHandle}
 
 object AtomicStampedReference {
+  private val VALUE: VarHandle = MethodHandles
+    .privateLookupIn(classOf[AtomicStampedReference[_]], MethodHandles.lookup())
+    .findVarHandle(classOf[AtomicStampedReference[_]], "value", classOf[StampedReference[_]])
+
   private[concurrent] case class StampedReference[V <: AnyRef](
       ref: V,
       stamp: Int
@@ -28,26 +29,19 @@ class AtomicStampedReference[V <: AnyRef] private (
     this(StampedReference(initialRef, initialStamp))
   }
 
-  // Pointer to field containing underlying StampedReference.
-  @alwaysinline
-  private[concurrent] def valueRef: AtomicRef[StampedReference[V]] =
-    new AtomicRef(
-      fromRawPtr(Intrinsics.classFieldRawPtr(this, "value"))
-    )
-
   /** Returns the current value of the reference.
    *
    *  @return
    *    the current value of the reference
    */
-  def getReference(): V = valueRef.load().ref
+  def getReference(): V = (AtomicStampedReference.VALUE.getVolatile(this): StampedReference[V]).ref
 
   /** Returns the current value of the stamp.
    *
    *  @return
    *    the current value of the stamp
    */
-  def getStamp(): Int = valueRef.load().stamp
+  def getStamp(): Int = (AtomicStampedReference.VALUE.getVolatile(this): StampedReference[V]).stamp
 
   /** Returns the current values of both the reference and the stamp. Typical
    *  usage is {@code int[1] holder; ref = v.get(holder);}.
@@ -59,7 +53,7 @@ class AtomicStampedReference[V <: AnyRef] private (
    *    the current value of the reference
    */
   def get(stampHolder: Array[Int]): V = {
-    val current = valueRef.load()
+    val current = (AtomicStampedReference.VALUE.getVolatile(this): StampedReference[V])
     stampHolder(0) = current.stamp
     current.ref
   }
@@ -110,7 +104,7 @@ class AtomicStampedReference[V <: AnyRef] private (
       expectedStamp: Int,
       newStamp: Int
   ): Boolean = {
-    val current = valueRef.load()
+    val current = (AtomicStampedReference.VALUE.getVolatile(this): StampedReference[V])
 
     def matchesExpected: Boolean =
       (expectedReference eq current.ref) &&
@@ -120,11 +114,11 @@ class AtomicStampedReference[V <: AnyRef] private (
       (newReference eq current.ref) && newStamp == current.stamp
 
     def compareAndSetNew(): Boolean =
-      valueRef
-        .compareExchangeStrong(
-          current,
-          StampedReference(newReference, newStamp)
-        )
+      AtomicStampedReference.VALUE.compareAndSet(
+        this,
+        current,
+        StampedReference(newReference, newStamp)
+      )
 
     matchesExpected && (matchesNew || compareAndSetNew())
   }
@@ -137,9 +131,9 @@ class AtomicStampedReference[V <: AnyRef] private (
    *    the new value for the stamp
    */
   def set(newReference: V, newStamp: Int): Unit = {
-    val current = valueRef.load()
+    val current = (AtomicStampedReference.VALUE.getVolatile(this): StampedReference[V])
     if ((newReference ne current.ref) || newStamp != current.stamp) {
-      valueRef.store(StampedReference(newReference, newStamp))
+      AtomicStampedReference.VALUE.setVolatile(this, StampedReference(newReference, newStamp))
     }
   }
 
@@ -158,15 +152,15 @@ class AtomicStampedReference[V <: AnyRef] private (
    *    {@code true} if successful
    */
   def attemptStamp(expectedReference: V, newStamp: Int): Boolean = {
-    val current = valueRef.load()
+    val current = (AtomicStampedReference.VALUE.getVolatile(this): StampedReference[V])
 
     (expectedReference eq current.ref) && {
       newStamp == current.stamp ||
-      valueRef
-        .compareExchangeStrong(
-          current,
-          StampedReference(expectedReference, newStamp)
-        )
+      AtomicStampedReference.VALUE.compareAndSet(
+        this,
+        current,
+        StampedReference(expectedReference, newStamp)
+      )
     }
   }
 }
