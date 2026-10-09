@@ -14,7 +14,8 @@ import scala.scalanative.build.IO.RichPath
 /** Utilities for discovery of command-line tools and settings required to build
  *  Scala Native applications.
  */
-object Discover {
+class Discover(env: Discover.Env) {
+  import Discover._
 
   /** Compilation mode name from SCALANATIVE_MODE env var or default. */
   def mode(): Mode =
@@ -121,6 +122,36 @@ object Discover {
     val extraLibDirs = if (targetsMac) Nil else llvmLibDirs
     (libDirs ++ extraLibDirs).map(s => s"-L$s")
   }
+}
+
+object Discover {
+  object Env {
+    def fromSysEnv: Env = {
+      def getenv(name: String): Option[String] = Option(System.getenv.get(name))
+
+      Env(
+        `SCALANATIVE_GC` = getenv("SCALANATIVE_GC"),
+        `SCALANATIVE_INCLUDE_DIRS` = getenv("SCALANATIVE_INCLUDE_DIRS"),
+        `SCALANATIVE_LIB_DIRS` = getenv("SCALANATIVE_LIB_DIRS"),
+        `SCALANATIVE_LTO` = getenv("SCALANATIVE_LTO"),
+        `SCALANATIVE_MODE` = getenv("SCALANATIVE_MODE"),
+        `SCALANATIVE_OPTIMIZE` = getenv("SCALANATIVE_OPTIMIZE"),
+        `LLVM_BIN` = getenv("LLVM_BIN"),
+        `PATH` = getenv("PATH")
+      )
+    }
+  }
+
+  case class Env(
+      `SCALANATIVE_GC`: Option[String],
+      `SCALANATIVE_INCLUDE_DIRS`: Option[String],
+      `SCALANATIVE_LIB_DIRS`: Option[String],
+      `SCALANATIVE_LTO`: Option[String],
+      `SCALANATIVE_MODE`: Option[String],
+      `SCALANATIVE_OPTIMIZE`: Option[String],
+      `LLVM_BIN`: Option[String],
+      `PATH`: Option[String]
+  )
 
   private case class ClangInfo(
       majorVersion: Int,

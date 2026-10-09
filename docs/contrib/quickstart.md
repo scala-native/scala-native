@@ -53,12 +53,12 @@ as expected.
 -   `toolsJVM3/test` - run the unit tests of the tools: ScalaNative
     backend
 
--   `test-scritped <scala-binary-version>`, eg `test-scripted 2.12` - run all [scripted
+-   `test-scripted <scala-binary-version>`, eg `test-scripted 2.12` - run all [scripted
     tests](https://www.scala-sbt.org/1.x/docs/Testing-sbt-plugins.html)
     of the sbt plugin (this takes a while and requires local publish of artifacts).
     Build against Scala 2.12 uses sbt 1.x, while Scala 3 uses sbt 2.x. Other versions are not supported.
 
--  `test-scritped <scala-binary-version> <optional-test-filters>` - run specific scripted tests of the sbt plugin. e.g. `test-scripted 3 run/backtrace`:   
+-  `test-scripted <scala-binary-version> <optional-test-filters>` - run specific scripted tests of the sbt plugin. e.g. `test-scripted 3 run/backtrace`:
         -   Scripted tests are used when you need to interact with the
             file system, networking, or the build system that cannot be
             done with a unit test.
