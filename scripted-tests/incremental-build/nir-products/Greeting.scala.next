@@ -1,0 +1,2 @@
+package shared
+object Greeting { def text: String = "from recompiled app source" }

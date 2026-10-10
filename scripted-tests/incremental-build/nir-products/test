@@ -1,0 +1,9 @@
+> app/run "from deleted app source"
+> app/checkGenerated
+$ copy-file Greeting.scala.next app/src/main/scala/shared/Greeting.scala
+> app/run "from recompiled app source"
+> app/checkRecompiled
+$ delete app/src/main/scala/shared/Greeting.scala
+> app/compile
+> app/checkRemoved
+> app/run "from lib"
