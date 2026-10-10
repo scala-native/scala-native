@@ -10,28 +10,6 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
 class ComparatorTestOnJDK26 {
 
-  /* Note:
-   *   Declarations such as the two below are used to test that
-   *   the JDK documented ClassCastException is thrown at time.
-   *     val s = "xyz"
-   *     val blivet = java.lang.Long.valueOf(3)
-   *
-   *   Context: using a 'Comparator[AnyVal]'
-   *
-   *   Scala 2.12 and 2.13 fail to compile on JVM and Scala Native with idiom
-   *     'cmp.max(blivet, s)'.
-   *   Both require
-   *     'cmp.max(blivet.asInstanceOf[AnyVal], s.asInstanceOf[AnyVal])'
-   *
-   *   Scala 3 compiles both forms.
-   *
-   *   Once compiled, the Tests for ClassCastException detect the expected
-   *   Exception at runtime.
-   *
-   *   This file uses the Scala 2.n form so that it can run on all
-   *   currently supported Scala versions.
-   */
-
   @Test def max_Exceptions_NPE(): Unit = {
     val cmp = ju.Comparator.naturalOrder[String]()
     val s = "xyz"
@@ -50,8 +28,8 @@ class ComparatorTestOnJDK26 {
   }
 
   @Test def max_Exceptions_ClassCast(): Unit = {
-    class TestComparator extends ju.Comparator[AnyVal] {
-      def compare(v1: AnyVal, v2: AnyVal): Int =
+    class TestComparator extends ju.Comparator[AnyRef] {
+      def compare(v1: AnyRef, v2: AnyRef): Int =
         throw new ClassCastException("max")
     }
 
@@ -62,13 +40,13 @@ class ComparatorTestOnJDK26 {
     assertThrows(
       "cmp.max(s, blivet)",
       classOf[ClassCastException],
-      cmp.max(s.asInstanceOf[AnyVal], blivet.asInstanceOf[AnyVal])
+      cmp.max(s, blivet)
     )
 
     assertThrows(
       "cmp.max(blivet, s)",
       classOf[ClassCastException],
-      cmp.max(blivet.asInstanceOf[AnyVal], s.asInstanceOf[AnyVal])
+      cmp.max(blivet, s)
     )
   }
 
@@ -108,8 +86,8 @@ class ComparatorTestOnJDK26 {
   }
 
   @Test def min_Exceptions_ClassCast(): Unit = {
-    class TestComparator extends ju.Comparator[AnyVal] {
-      def compare(v1: AnyVal, v2: AnyVal): Int =
+    class TestComparator extends ju.Comparator[AnyRef] {
+      def compare(v1: AnyRef, v2: AnyRef): Int =
         throw new ClassCastException("min")
     }
 
@@ -120,13 +98,13 @@ class ComparatorTestOnJDK26 {
     assertThrows(
       "cmp.min(s, blivet)",
       classOf[ClassCastException],
-      cmp.min(s.asInstanceOf[AnyVal], blivet.asInstanceOf[AnyVal])
+      cmp.min(s, blivet)
     )
 
     assertThrows(
       "cmp.min(blivet, s)",
       classOf[ClassCastException],
-      cmp.min(blivet.asInstanceOf[AnyVal], s.asInstanceOf[AnyVal])
+      cmp.min(blivet, s)
     )
   }
 
