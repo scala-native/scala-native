@@ -1,6 +1,8 @@
 package scala.scalanative
 package annotation
 
+import scala.annotation.meta.field
+
 import scala.scalanative.meta.LinktimeInfo.contendedPaddingWidth
 
 /** Allows to align field or class layout to expected size reflected in number
@@ -11,6 +13,7 @@ import scala.scalanative.meta.LinktimeInfo.contendedPaddingWidth
  *    Optional tag allowing to put multiple fields in the same aligned memory
  *    area
  */
+@field
 final class align(size: Int, group: String)
     extends scala.annotation.StaticAnnotation {
   def this(size: Int) = this(size, "")
