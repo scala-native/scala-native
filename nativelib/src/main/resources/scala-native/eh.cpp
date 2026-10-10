@@ -1,13 +1,15 @@
 #if defined(SCALANATIVE_USING_CPP_EXCEPTIONS)
 
 #include <cstdlib>
+#include <cstdio>
 #include <exception>
 #include <mutex>
 
+#include "eh_diagnostics.h"
+#include "string_constants.h"
+
 #if defined(__SCALANATIVE_DELIMCC)
 #include "delimcc.h"
-#include "string_constants.h"
-#include <cstdio>
 #endif
 
 // Scala Native compiles Scala's exception in C++-compatible
@@ -21,6 +23,7 @@ typedef void *Exception;
 typedef void (*OnCatchHandler)(Exception);
 extern "C" OnCatchHandler
 scalanative_Throwable_onCatchHandler(Exception exception);
+extern "C" void scalanative_Throwable_showStackTrace(Exception exception);
 
 namespace scalanative {
 class ExceptionWrapper : public std::exception {
@@ -31,22 +34,12 @@ class ExceptionWrapper : public std::exception {
 } // namespace scalanative
 
 extern "C" {
-#if defined(__SCALANATIVE_DELIMCC)
-/*
- * Continuation exception escape (C++): when a resumed body throws
- * scalanative::ExceptionWrapper and no handler in the continuation catches it,
- * the C++ unwinder cannot cross the longjmp boundary (resumed code runs on a
- * copied stack), so it runs out of frames and calls std::terminate(). We
- * install a custom terminate handler once at load time (process-wide). When
- * we're in a continuation-resume context
- * (scalanative_continuation_exception_handler set by delimcc.c), it extracts
- * the current exception (via std::current_exception) and longjmps to the
- * resumer instead of terminating.
- */
-static std::terminate_handler default_terminate_handler = NULL;
-static std::once_flag continuation_terminate_handler_once;
 
-static void continuation_terminate_handler() {
+static std::terminate_handler previous_terminate_handler = NULL;
+static std::once_flag terminate_handler_once;
+
+static void scalanative_terminate_handler() {
+#if defined(__SCALANATIVE_DELIMCC)
     ContinuationExceptionHandler ceh =
         scalanative_continuation_exception_handler();
     if (ceh.env != NULL && ceh.exception_slot != NULL) {
@@ -64,25 +57,66 @@ static void continuation_terminate_handler() {
             }
         }
     }
-    if (default_terminate_handler)
-        default_terminate_handler();
-    fprintf(stderr,
-            SN_FATAL_ERROR_MSG(
-                "Failed to throw exception, not found a valid catch handler "
-                "for exception when unwinding execution stack.\n"));
+#endif
+    scalanative_eh_enter_abort_dump();
+    Exception obj = NULL;
+    std::exception_ptr eptr = std::current_exception();
+    if (eptr != nullptr) {
+        try {
+            std::rethrow_exception(eptr);
+        } catch (scalanative::ExceptionWrapper &e) {
+            obj = e.obj;
+        } catch (std::exception &e) {
+            fprintf(stderr, "%s C++ std::exception: %s\n", snFatalErrorPrefix,
+                    e.what());
+        } catch (...) {
+            fprintf(stderr, "%s unknown C++ exception in std::terminate\n",
+                    snFatalErrorPrefix);
+        }
+    } else {
+        fprintf(stderr, "%s std::terminate with no current exception\n",
+                snFatalErrorPrefix);
+    }
+
+    fprintf(stderr, "exception object=%p\n", (void *)obj);
+    scalanative_eh_dump_abort_context(
+        "std::terminate (uncaught exception / unwind failed)", -1);
+    if (obj && scalanative_eh_java_thread_available())
+        scalanative_Throwable_showStackTrace(obj);
     fflush(stderr);
+    fflush(stdout);
+    if (previous_terminate_handler != NULL &&
+        previous_terminate_handler != scalanative_terminate_handler) {
+        previous_terminate_handler();
+    }
     std::abort();
 }
 
-void scalanative_continuation_exception_terminate_handler_install(void) {
-    std::call_once(continuation_terminate_handler_once, []() {
-        default_terminate_handler =
-            std::set_terminate(continuation_terminate_handler);
+static void scalanative_install_terminate_handler() {
+    std::call_once(terminate_handler_once, []() {
+        previous_terminate_handler =
+            std::set_terminate(scalanative_terminate_handler);
     });
+}
+
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((constructor))
+#endif
+static void
+scalanative_eh_cpp_init() {
+    scalanative_install_terminate_handler();
+}
+
+#if defined(__SCALANATIVE_DELIMCC)
+void scalanative_continuation_exception_terminate_handler_install(void) {
+    scalanative_install_terminate_handler();
 }
 #endif
 
-void scalanative_throw(void *obj) { throw scalanative::ExceptionWrapper(obj); }
+void scalanative_throw(void *obj) {
+    scalanative_install_terminate_handler();
+    throw scalanative::ExceptionWrapper(obj);
+}
 size_t scalanative_Throwable_sizeOfExceptionWrapper() { return 0; }
 void scalanative_Exception_onCatch(Exception self) {
     if (self) {
