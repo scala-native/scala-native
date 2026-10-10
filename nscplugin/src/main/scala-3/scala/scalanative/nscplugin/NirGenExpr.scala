@@ -2658,7 +2658,16 @@ trait NirGenExpr(using Context) {
       given nir.SourcePosition = app.span
       val Apply(_, List(target, fieldName: Literal)) = app: @unchecked
       val fieldNameId = fieldName.const.stringValue
-      val classInfo = target.tpe.finalResultType
+      // The receiver can be an erased/cast null for a static-field lookup.
+      // The intrinsic's type argument is the declaring class and remains the
+      // only reliable source of the field owner after erasure.
+      val classInfo = app
+        .getAttachment(NonErasedType)
+        .orElse(app.fun match {
+          case TypeApply(_, List(typeArg)) => Some(typeArg.tpe.finalResultType)
+          case _                           => None
+        })
+        .getOrElse(target.tpe.finalResultType)
       val classInfoSym = classInfo.typeSymbol.asClass
       def matchesName(f: SingleDenotation) =
         f.name.mangledString == fieldNameId
@@ -2685,7 +2694,23 @@ trait NirGenExpr(using Context) {
                 s"Resolving pointer of immutable field ${fieldNameId} in ${owner.show} is not allowed"
               )
             }
-            buf.field(genExpr(target), genFieldName(f.symbol), unwind)
+            // Scala 3 moves an `@static` field from a companion onto its
+            // companion class after the interop preparation phase.  Its NIR
+            // storage nevertheless remains in the module, so a typed null
+            // receiver (used by VarHandle's static binding) must be replaced
+            // with that module before taking the field address.
+            val receiver =
+              if f.symbol.isScalaStatic then
+                buf.module(genModuleName(classInfoSym), unwind)
+              else genExpr(target)
+            buf.field(receiver, genFieldName(f.symbol), unwind)
+        }
+        .orElse {
+          // VarHandle lookup has already checked mutability, type and access.
+          // A separately compiled Scala var can expose only its accessor here.
+          app.getAttachment(VarHandleInterop.ResolvedField).map { field =>
+            buf.field(genExpr(target), genFieldName(field), unwind)
+          }
         }
         .getOrElse {
           report.error(

@@ -1,0 +1,52 @@
+%{
+# scripts/gyb.py <this file> --line-directive '' -o VarHandleLookupTypeTests.scala
+types = [
+    ('Boolean', 'Boolean', 'true'), ('Byte', 'Byte', '37.toByte'),
+    ('Short', 'Short', '37.toShort'), ('Char', 'Character', '37.toChar'),
+    ('Int', 'Integer', '37'), ('Long', 'Long', '37L'),
+    ('Float', 'Float', '37.0f'), ('Double', 'Double', '37.0d')
+]
+}%
+package scala.scalanative
+
+// Generated from VarHandleLookupTypeTests.scala.gyb; edit the template.
+// format: off
+import org.junit.Test
+
+% for T, wrapper, value in types:
+class VarHandle${T}LookupTypeTests extends VarHandleLookupCompilerTestSupport {
+  private def primitive(token: String): String =
+    s"""import java.lang.invoke.MethodHandles
+       |class Owner {
+       |  private var value: ${T} = ${value}
+       |  def current: ${T} = value
+       |  def handle = MethodHandles.lookup().findVarHandle(classOf[Owner], "value", $token)
+       |}""".stripMargin
+
+  private def boxed(token: String): String =
+    s"""import java.lang.invoke.MethodHandles
+       |class Owner {
+       |  private var value: java.lang.${wrapper} = java.lang.${wrapper}.valueOf(${value})
+       |  def current: java.lang.${wrapper} = value
+       |  def handle = MethodHandles.lookup().findVarHandle(classOf[Owner], "value", $token)
+       |}""".stripMargin
+
+  @Test def primitiveAcceptsClassOfPrimitive(): Unit =
+    compiles(primitive("classOf[${T}]"))
+
+  @Test def primitiveAcceptsWrapperTYPE(): Unit =
+    compiles(primitive("java.lang.${wrapper}.TYPE"))
+
+  @Test def primitiveRejectsBoxedClass(): Unit =
+    rejected(primitive("classOf[java.lang.${wrapper}]"), "type does not match")
+
+  @Test def boxedAcceptsBoxedClass(): Unit =
+    compiles(boxed("classOf[java.lang.${wrapper}]"))
+
+  @Test def boxedRejectsClassOfPrimitive(): Unit =
+    rejected(boxed("classOf[${T}]"), "type does not match")
+
+  @Test def boxedRejectsWrapperTYPE(): Unit =
+    rejected(boxed("java.lang.${wrapper}.TYPE"), "type does not match")
+}
+% end

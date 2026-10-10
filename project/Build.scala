@@ -804,6 +804,7 @@ object Build {
       testsCommonSettings,
       sharedTestSource(withDenylist = false),
       javaVersionSharedTestSources,
+      VarHandleTestSources.settings,
       nativeConfig ~= { c =>
         c.withLinkStubs(true)
           .withEmbedResources(true)
@@ -835,6 +836,7 @@ object Build {
         testsCommonSettings,
         sharedTestSource(withDenylist = true),
         javaVersionSharedTestSources,
+        VarHandleTestSources.settings,
         Test / fork := true,
         Test / parallelExecution := false,
         libraryDependencies ++= Deps.JUnitJvm

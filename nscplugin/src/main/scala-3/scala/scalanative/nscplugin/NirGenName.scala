@@ -173,6 +173,8 @@ object NirGenName {
     "java.lang._Enum" -> "java.lang.Enum",
     "java.lang._NullPointerException" -> "java.lang.NullPointerException",
     "java.lang._String" -> "java.lang.String",
+    "java.lang.invoke._VarHandle" -> "java.lang.invoke.VarHandle",
+    "java.lang.invoke._VarHandle$AccessMode" -> "java.lang.invoke.VarHandle$AccessMode",
     "java.lang.annotation._Retention" -> "java.lang.annotation.Retention",
     "java.io._Serializable" -> "java.io.Serializable",
     "scala.Nothing" -> "scala.runtime.Nothing$",
