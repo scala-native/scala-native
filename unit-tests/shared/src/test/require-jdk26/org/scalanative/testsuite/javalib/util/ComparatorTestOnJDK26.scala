@@ -28,8 +28,8 @@ class ComparatorTestOnJDK26 {
   }
 
   @Test def max_Exceptions_ClassCast(): Unit = {
-    class TestComparator extends ju.Comparator[AnyVal] {
-      def compare(v1: AnyVal, v2: AnyVal): Int =
+    class TestComparator extends ju.Comparator[AnyRef] {
+      def compare(v1: AnyRef, v2: AnyRef): Int =
         throw new ClassCastException("max")
     }
 
@@ -86,8 +86,8 @@ class ComparatorTestOnJDK26 {
   }
 
   @Test def min_Exceptions_ClassCast(): Unit = {
-    class TestComparator extends ju.Comparator[AnyVal] {
-      def compare(v1: AnyVal, v2: AnyVal): Int =
+    class TestComparator extends ju.Comparator[AnyRef] {
+      def compare(v1: AnyRef, v2: AnyRef): Int =
         throw new ClassCastException("min")
     }
 
