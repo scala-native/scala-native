@@ -79,7 +79,7 @@ private[scalanative] object LLVM {
     val langOptions = {
       if (isLl) llvmIrFeatures
       else if (isCpp) cppOptions(analysis)
-      else cOptions(analysis)
+      else cOptions
     }
     val platformFlags = {
       if (config.targetsMsys) msysExtras
@@ -473,9 +473,7 @@ private[scalanative] object LLVM {
     languageStandard ++ options ++ exceptionsHandling
   }
 
-  private def cOptions(
-      analysis: ReachabilityAnalysis.Result
-  )(implicit config: Config): Seq[String] = {
+  private def cOptions(implicit config: Config): Seq[String] = {
 
     val options = config.compilerConfig.cOptions
 
@@ -484,10 +482,8 @@ private[scalanative] object LLVM {
       if (!hasStdFlag) List(defaultCStd)
       else Nil
     }
-    val exceptionHandling =
-      if (isCppRuntimeRequired(config, analysis))
-        List("-fexceptions", "-funwind-tables")
-      else Nil
+    // Prevent LTO from inferring nounwind for C exception handlers (#4190).
+    val exceptionHandling = List("-fexceptions", "-funwind-tables")
 
     languageStandard ++ options ++ exceptionHandling
   }
