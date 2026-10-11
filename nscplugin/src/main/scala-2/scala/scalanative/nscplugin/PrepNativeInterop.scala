@@ -62,6 +62,8 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
 
   private lazy val TagClass =
     rootMirror.getRequiredClass("scala.scalanative.unsafe.Tag")
+  private lazy val UnsafePackageCompatClass =
+    rootMirror.getRequiredClass("scala.scalanative.unsafe.UnsafePackageCompat")
 
   // Layout evidence must be resolved before widening abstract types to their bounds.
   private def hasLayout(tpe0: Type): Boolean = {
@@ -91,9 +93,37 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
 
   private case class LayoutEvidence(tree: Tree, originalType: Type)
 
-  private[nscplugin] lazy val layoutAnalyzerPlugin: analyzer.AnalyzerPlugin =
-    new analyzer.AnalyzerPlugin {
-      override def isActive(): Boolean = global.phase.name == "typer"
+  private[nscplugin] lazy val layoutAnalyzerPlugin
+      : analyzer.AnalyzerPlugin with analyzer.MacroPlugin =
+    new analyzer.AnalyzerPlugin with analyzer.MacroPlugin {
+      // Inferred RHS types can be checked while namer is still the current phase.
+      // Scala 2.12 calls pluginsTyped then, but gates annotation adaptation on isActive.
+      override def isActive(): Boolean =
+        global.phase.name == "namer" || global.phase.name == "typer"
+
+      override def pluginsMacroExpand(
+          typer: analyzer.Typer,
+          expandee: Tree,
+          mode: Mode,
+          pt: Type
+      ): Option[Tree] = {
+        if (expandee.symbol.owner != UnsafePackageCompatClass) return None
+        val expanded = analyzer.standardMacroExpand(typer, expandee, mode, pt)
+        val evidence = expanded.collect {
+          case t if t.hasAttachment[LayoutEvidence] =>
+            t.attachments.get[LayoutEvidence].get.tree
+        }
+        if (evidence.nonEmpty) {
+          // Scala 2.12 checks unused parameters in the original macro call.
+          // Include the layout evidence consumed by its generated implementation.
+          val original = expandee.duplicate
+          original.removeAttachment[analyzer.MacroExpansionAttachment]
+          val usedEvidence =
+            Block(evidence, original).setPos(original.pos).setType(expanded.tpe)
+          analyzer.linkExpandeeAndExpanded(usedEvidence, expanded)
+        }
+        Some(expanded)
+      }
 
       override def pluginsTyped(
           tpe: Type,
@@ -124,9 +154,11 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
               tree.updateAttachment(LayoutEvidence(result.tree, tpe))
               // Analyzer plugins can replace trees through the annotation-adaptation
               // hook. This temporary type is removed immediately by adaptAnnotations.
+              // Annotate the value type: Scala 2.12 moves annotations on nullary
+              // method types to their result, bypassing the adaptation hook.
               AnnotatedType(
                 List(AnnotationInfo(AnnotationClass.tpe, Nil, Nil)),
-                tpe
+                tpe.finalResultType
               )
             }
           case _ => tpe
@@ -153,7 +185,9 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
             Some(typer.context),
             layoutOnly = true
           )
-          typer.typed(transformer.transform(tree), mode, pt)
+          typer
+            .typed(transformer.transform(tree), mode, pt)
+            .updateAttachment(evidence)
         case _ => tree
       }
     }

@@ -98,8 +98,8 @@ class PostInlineNativeInterop extends PluginPhase with VarHandleInterop {
       val inliner = new TreeMap {
         override def transform(tree: Tree)(using Context): Tree = {
           val transformed = super.transform(tree)
-          if (inlines.Inlines.needsInlining(transformed))
-            inlines.Inlines.inlineCall(transformed)
+          if (CompilerCompat.Inlines.needsInlining(transformed))
+            CompilerCompat.Inlines.inlineCall(transformed)
           else transformed
         }
       }
@@ -115,7 +115,7 @@ class PostInlineNativeInterop extends PluginPhase with VarHandleInterop {
   override def transformApply(tree: Apply)(using Context): Tree = {
     // Inline definitions are also visited when compiling their defining library.
     // Resolve their layout only after expansion at a call site.
-    if (inlines.Inlines.inInlineMethod) return tree
+    if (CompilerCompat.Inlines.inInlineMethod) return tree
     val defnNir = this.defnNir
     if (tree.fun.symbol == defnNir.IntrinsicsInternal_withLayoutTag)
       return tree.args(1)
@@ -418,7 +418,7 @@ class PostInlineNativeInterop extends PluginPhase with VarHandleInterop {
   }
 
   override def transformTypeApply(tree: TypeApply)(using Context): Tree = {
-    if (inlines.Inlines.inInlineMethod) return tree
+    if (CompilerCompat.Inlines.inInlineMethod) return tree
     val TypeApply(fun, tArgs) = tree
     val defnNir = this.defnNir
     def dealiasTypeMapper = DealiasTypeMapper()

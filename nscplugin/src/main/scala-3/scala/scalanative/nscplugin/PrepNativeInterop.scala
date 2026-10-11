@@ -141,7 +141,7 @@ class PrepNativeInterop extends PluginPhase with NativeInteropUtil {
         }
       }
     }
-    val body = dotc.inlines.Inlines.bodyToInline(dd.symbol.denot)
+    val body = CompilerCompat.Inlines.bodyToInline(dd.symbol.denot)
     if (!body.isEmpty)
       dd.symbol.updateAnnotation(
         new core.Annotations.ConcreteBodyAnnotation(mapper.transform(body))
