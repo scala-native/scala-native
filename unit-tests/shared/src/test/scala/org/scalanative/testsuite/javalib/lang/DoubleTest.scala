@@ -424,4 +424,53 @@ class DoubleTest {
       delta
     )
   }
+
+  // Issue 3982
+  @Test def IEEE_NegativeZeroInDeprecatedConstructor(): Unit = {
+    /* Direct constructor Double(d) was deprecated in Java 9 but
+     * should be correct until it is eventually deleted by Java.
+     *
+     * Tangentially tests: divideByNegativeZeroIsNegativeInfinity()
+     */
+
+    val negZeroByValueOf = Double.valueOf(-0.0)
+    assertTrue(
+      "Expected negZero by valueOf to be jl.Double.NEGATIVE_INFINITY",
+      1.0 / negZeroByValueOf == Double.NEGATIVE_INFINITY
+    )
+
+    val negZeroByConstructor_1 = new Double(Double.valueOf(-0.0))
+    assertTrue(
+      "Expected negZero by constructor_1 to be jl.Double.NEGATIVE_INFINITY",
+      1.0 / negZeroByConstructor_1 == Double.NEGATIVE_INFINITY
+    )
+
+    val negZeroByConstructor_2 = new Double(-0.0)
+    assertTrue(
+      "Expected negZero by constructor_2 to be jl.Double.NEGATIVE_INFINITY",
+      1.0 / negZeroByConstructor_2 == Double.NEGATIVE_INFINITY
+    )
+  }
+
+  // Check that proper negative zeros are created, even in Release-fast mode.
+
+  val negZeroD = Double.valueOf(-0.0d)
+  val posZeroD = Double.valueOf(+0.0d)
+
+  // Issue 3986, part 1 of 2
+  @Test def validateIEEE754ClassLevelNegativeZeros(): Unit = {
+    assertTrue(
+      s"Expected a jl.Double with value negative zero",
+      (1.0d / negZeroD) == Double.NEGATIVE_INFINITY
+    )
+  }
+
+  // Issue 3986, part 2 of 2
+  @Test def validateIEEE754LocalNegativeZero(): Unit = {
+    val localNegZeroD = Double.valueOf(-0.0d)
+    assertTrue(
+      s"Expected a local jl.Double with value negative zero",
+      (1.0d / localNegZeroD) == Double.NEGATIVE_INFINITY
+    )
+  }
 }

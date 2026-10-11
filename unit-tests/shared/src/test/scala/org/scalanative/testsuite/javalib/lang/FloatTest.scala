@@ -450,4 +450,53 @@ class FloatTest {
       delta
     )
   }
+
+  // Issue 3982
+  @Test def IEEE_NegativeZeroInDeprecatedConstructor(): Unit = {
+    /* Direct constructor Float(d) was deprecated in Java 9 but
+     * should be correct until it is eventually deleted by Java.
+     *
+     * Tangentially tests: divideByNegativeZeroIsNegativeInfinity()
+     */
+
+    val negZeroByValueOf = Float.valueOf(-0.0f)
+    assertTrue(
+      "Expected negZero by valueOf to be jl.Float.NEGATIVE_INFINITY",
+      1.0 / negZeroByValueOf == Float.NEGATIVE_INFINITY
+    )
+
+    val negZeroByConstructor_1 = new Float(Float.valueOf(-0.0f))
+    assertTrue(
+      "Expected negZero by constructor_1 to be jl.Float.NEGATIVE_INFINITY",
+      1.0 / negZeroByConstructor_1 == Float.NEGATIVE_INFINITY
+    )
+
+    val negZeroByConstructor_2 = new Float(-0.0f)
+    assertTrue(
+      "Expected negZero by constructor_2 to be jl.Double.NEGATIVE_INFINITY",
+      1.0 / negZeroByConstructor_2 == Float.NEGATIVE_INFINITY
+    )
+  }
+
+  // Check that proper negative zeros are created, even in Release-fast mode.
+
+  val negZeroF = Float.valueOf(-0.0f)
+  val posZeroF = Float.valueOf(+0.0f)
+
+  // Issue 3986, part 1 of 2
+  @Test def validateIEEE754ClassLevelNegativeZeros(): Unit = {
+    assertTrue(
+      s"Expected a jl.Float with value negative zero",
+      (1.0f / negZeroF) == Float.NEGATIVE_INFINITY
+    )
+  }
+
+  // Issue 3986, part 2 of 2
+  @Test def validateIEEE754LocalNegativeZero(): Unit = {
+    val localNegZeroF = Float.valueOf(-0.0f)
+    assertTrue(
+      s"Expected a local jl.Float with value negative zero",
+      (1.0f / localNegZeroF) == Float.NEGATIVE_INFINITY
+    )
+  }
 }
