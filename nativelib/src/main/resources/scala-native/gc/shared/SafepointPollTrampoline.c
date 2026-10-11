@@ -59,12 +59,18 @@ void scalanative_gc_safepoint_poll_trampoline(void);
 #define SN_UC_GET_PC(uc) ((uintptr_t)(uc)->uc_mcontext->__ss.__rip)
 #define SN_UC_SET_PC(uc, addr)                                                 \
     ((uc)->uc_mcontext->__ss.__rip = (__uint64_t)(uintptr_t)(addr))
+#define SN_UC_GET_SP(uc) ((uintptr_t)(uc)->uc_mcontext->__ss.__rsp)
+#define SN_UC_SET_SP(uc, sp)                                                   \
+    ((uc)->uc_mcontext->__ss.__rsp = (__uint64_t)(uintptr_t)(sp))
 #elif defined(__linux__)
 #include <signal.h>
 #include <sys/reg.h>
 #define SN_UC_GET_PC(uc) ((uintptr_t)(uc)->uc_mcontext.gregs[REG_RIP])
 #define SN_UC_SET_PC(uc, addr)                                                 \
     ((uc)->uc_mcontext.gregs[REG_RIP] = (greg_t)(uintptr_t)(addr))
+#define SN_UC_GET_SP(uc) ((uintptr_t)(uc)->uc_mcontext.gregs[REG_RSP])
+#define SN_UC_SET_SP(uc, sp)                                                   \
+    ((uc)->uc_mcontext.gregs[REG_RSP] = (greg_t)(uintptr_t)(sp))
 #else
 #define SN_UC_UNSUPPORTED 1
 #endif
@@ -93,7 +99,13 @@ bool scalanative_gc_safepoint_prepare_redirect(void *uap, void *mutatorThread) {
     if (uap == NULL || self == NULL)
         return false;
     ucontext_t *uc = (ucontext_t *)uap;
-    self->safepointResumePc = SN_UC_GET_PC(uc);
+    uintptr_t pc = SN_UC_GET_PC(uc);
+    self->safepointResumePc = pc;
+#if defined(__x86_64__)
+    uintptr_t sp = SN_UC_GET_SP(uc) - 128 - sizeof(uintptr_t);
+    *(uintptr_t *)sp = pc;
+    SN_UC_SET_SP(uc, sp);
+#endif
     SN_UC_SET_PC(uc, (void *)scalanative_gc_safepoint_poll_trampoline);
     return true;
 #else
