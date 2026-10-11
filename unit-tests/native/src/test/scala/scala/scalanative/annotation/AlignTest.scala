@@ -60,6 +60,17 @@ package AlignTestCases {
 
     assert((a, b, c, d) != null, "ensure linked")
   }
+
+  // Reproducer for https://github.com/scala-native/scala-native/issues/4778
+  class AlignConstructorFieldGrouped(@align("foo") var foo1: Long) {
+    @align("foo") var foo2: Long = 42L
+
+    assert((foo1, foo2) != null, "ensure linked")
+  }
+
+  class AlignConstructorVal(@align(64) val value: Long) {
+    assert(value == 42L, "ensure linked")
+  }
 }
 
 object AlignTest {
@@ -178,5 +189,25 @@ class AlignTest {
         fromRawPtr(classFieldRawPtr(obj, "d"))
       )
     )
+  }
+
+  @Test def alignConstructorFieldGrouped(): Unit = {
+    val obj = new AlignConstructorFieldGrouped(0L)
+    val paddingWidth = LinktimeInfo.contendedPaddingWidth
+    checkOffsets(
+      expected = Seq(paddingWidth, paddingWidth + 8),
+      basePointer = fromRawPtr(castObjectToRawPtr(obj)),
+      fieldPointers = Seq(
+        fromRawPtr(classFieldRawPtr(obj, "foo1")),
+        fromRawPtr(classFieldRawPtr(obj, "foo2"))
+      )
+    )
+  }
+
+  @Test def alignConstructorVal(): Unit = {
+    val obj = new AlignConstructorVal(42L)
+    assertNotEquals(0L, fromRawPtr[Byte](castObjectToRawPtr(obj)).toLong)
+    assertEquals(42L, obj.value)
+    checkClassSize(128, sizeOf[AlignConstructorVal])
   }
 }
