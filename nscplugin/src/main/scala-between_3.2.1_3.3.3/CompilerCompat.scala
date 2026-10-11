@@ -7,6 +7,7 @@ import dotty.tools.dotc.util.SourceFile
 import dotty.tools.io.AbstractFile
 
 object CompilerCompat {
+  val Inlines = dotty.tools.dotc.inlines.Inlines
   val SymUtils = dotty.tools.dotc.transform.SymUtils
   val SymbolExtensions =
     dotty.tools.backend.jvm.DottyBackendInterface.symExtensions

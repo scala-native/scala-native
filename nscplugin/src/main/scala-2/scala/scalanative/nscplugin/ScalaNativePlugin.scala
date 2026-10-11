@@ -39,6 +39,9 @@ class ScalaNativePlugin(val global: Global) extends Plugin {
     override val runsBefore = List("pickler")
   }
 
+  global.analyzer.addAnalyzerPlugin(prepNativeInterop.layoutAnalyzerPlugin)
+  global.analyzer.addMacroPlugin(prepNativeInterop.layoutAnalyzerPlugin)
+
   object nirGen extends NirGenPhase[global.type](global) {
     val nirAddons: ScalaNativePlugin.this.nirAddons.type =
       ScalaNativePlugin.this.nirAddons

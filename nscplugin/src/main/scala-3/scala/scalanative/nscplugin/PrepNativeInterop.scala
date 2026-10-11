@@ -31,6 +31,7 @@ class PrepNativeInterop extends PluginPhase with NativeInteropUtil {
 
   override val runsAfter = Set(transform.PostTyper.name)
   override val runsBefore = Set(transform.Pickler.name)
+  override def allowsImplicitSearch: Boolean = true
   val phaseName = PrepNativeInterop.name
   override def description: String = "prepare ASTs for Native interop"
 
@@ -98,7 +99,54 @@ class PrepNativeInterop extends PluginPhase with NativeInteropUtil {
       // into: <exported> def foo(args: Any*): Unit = extern
       sym.addAnnotation(defnNir.ExternClass)
       cpy.DefDef(dd)(rhs = ref(defnNir.UnsafePackage_extern))
+    else if (sym.is(Inline)) preserveLayoutEvidence(dd)
     else dd
+  }
+
+  private def preserveLayoutEvidence(dd: DefDef)(using Context): DefDef = {
+    val tagClass = requiredClass("scala.scalanative.unsafe.Tag")
+    val parameters = dd.paramss.flatten.collect {
+      case p: ValDef if p.symbol.is(Given) || p.symbol.is(Implicit) => p
+    }
+    if (!parameters.exists(_.tpt.tpe.typeSymbol == tagClass)) return dd
+    val scope = core.Scopes.newScope
+    dd.paramss.flatten.foreach(p => scope.enter(p.symbol))
+    val searchCtx = ctx.withPhase(this).fresh.setScope(scope)
+    val mapper = new TreeMap {
+      override def transform(tree: Tree)(using Context): Tree = {
+        val transformed = super.transform(tree)
+        val application = tree match {
+          case Apply(fun: TypeApply, _) => Some(fun)
+          case fun: TypeApply
+              if !defnNir.LayoutStackallocMethods.contains(fun.symbol) =>
+            Some(fun)
+          case _ => None
+        }
+        application match {
+          case Some(TypeApply(fun, List(arg)))
+              if defnNir.LayoutMethods.contains(fun.symbol) &&
+                !hasLayout(new DealiasTypeMapper()(arg.tpe)) =>
+            val expected = tagClass.typeRef.appliedTo(arg.tpe)
+            val evidence =
+              searchCtx.typer.inferImplicitArg(expected, tree.span)(using
+                searchCtx
+              )
+            if (evidence.tpe.isError) transformed
+            else
+              ref(defnNir.IntrinsicsInternal_withLayoutTag)
+                .appliedToTypes(List(arg.tpe, transformed.tpe))
+                .appliedToArgs(List(evidence, transformed))
+                .withSpan(tree.span)
+          case _ => transformed
+        }
+      }
+    }
+    val body = CompilerCompat.Inlines.bodyToInline(dd.symbol.denot)
+    if (!body.isEmpty)
+      dd.symbol.updateAnnotation(
+        new core.Annotations.ConcreteBodyAnnotation(mapper.transform(body))
+      )
+    cpy.DefDef(dd)(rhs = mapper.transform(dd.rhs))
   }
 
   private def finalExportTarget(sym: Symbol): Symbol = {
