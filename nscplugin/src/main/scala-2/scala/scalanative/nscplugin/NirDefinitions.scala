@@ -113,10 +113,10 @@ trait NirDefinitions {
       getRequiredClass("scala.scalanative.unsafe.CFuncPtr")
 
     lazy val NatBaseClass = (0 to 9).map { n =>
-      getRequiredClass("scala.scalanative.unsafe.Nat$_" + n)
+      getRequiredClass("scala.scalanative.unsafe.Nat._" + n)
     }
     lazy val NatDigitClass = (2 to 9).map { n =>
-      getRequiredClass("scala.scalanative.unsafe.Nat$Digit" + n)
+      getRequiredClass("scala.scalanative.unsafe.Nat.Digit" + n)
     }
 
     lazy val CStructClass = (0 to 22).map { n =>

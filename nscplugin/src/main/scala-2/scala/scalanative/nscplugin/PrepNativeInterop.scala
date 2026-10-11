@@ -60,9 +60,187 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
   private lazy val AtomicReferenceFieldUpdaterFactory =
     getDecl(AtomicFieldUpdaterFactory, nativenme.createReferenceFieldUpdater)
 
-  class NativeInteropTransformer(protected val unit: CompilationUnit)
-      extends Transformer
+  private lazy val TagClass =
+    rootMirror.getRequiredClass("scala.scalanative.unsafe.Tag")
+
+  // Layout evidence must be resolved before widening abstract types to their bounds.
+  private def hasLayout(tpe0: Type): Boolean = {
+    val tpe = tpe0.dealiasWiden
+    val sym = tpe.typeSymbol
+    if (sym == PtrClass || sym == RawPtrClass || sym == CFuncPtrClass ||
+        sym.info.parents.exists(_.typeSymbol == CFuncPtrClass)) true
+    else if (sym.isAbstractType || tpe.isAny || tpe.isNothing) false
+    else if (sym == CArrayClass) tpe.typeArgs match {
+      case List(element, length) =>
+        hasLayout(element) && hasArrayLength(length)
+      case _ => false
+    }
+    else if (CStructClass.contains(sym))
+      tpe.typeArgs.forall(hasLayout)
+    else sym.isClass && !sym.isTrait && !sym.isRefinementClass
+  }
+
+  private def hasArrayLength(tpe0: Type): Boolean = {
+    val tpe = tpe0.dealiasWiden
+    NatBaseClass.contains(tpe.typeSymbol) ||
+      (NatDigitClass.contains(tpe.typeSymbol) &&
+      tpe.typeArgs.forall(t =>
+        NatBaseClass.contains(t.dealiasWiden.typeSymbol)
+      ))
+  }
+
+  private case class LayoutEvidence(tree: Tree, originalType: Type)
+
+  private[nscplugin] lazy val layoutAnalyzerPlugin: analyzer.AnalyzerPlugin =
+    new analyzer.AnalyzerPlugin {
+      override def isActive(): Boolean = global.phase.name == "typer"
+
+      override def pluginsTyped(
+          tpe: Type,
+          typer: analyzer.Typer,
+          tree: Tree,
+          mode: Mode,
+          pt: Type
+      ): Type = {
+        val argument = tree match {
+          case TypeApply(fun, List(arg))
+              if fun.symbol == SizeOfMethod || fun.symbol == AlignmentOfMethod =>
+            Some(arg)
+          case Apply(TypeApply(fun, List(arg)), _)
+              if StackallocMethods.contains(fun.symbol) =>
+            Some(arg)
+          case _ => None
+        }
+        argument.filter(arg =>
+          !hasLayout(arg.tpe) && !arg.tpe.isAny && !arg.tpe.isNothing
+        ) match {
+          case Some(arg) if !tree.hasAttachment[LayoutEvidence] =>
+            val expected =
+              appliedType(TagClass.toTypeConstructor, List(arg.tpe))
+            val result =
+              analyzer.inferImplicitByType(expected, typer.context, tree.pos)
+            if (result.isFailure) tpe
+            else {
+              tree.updateAttachment(LayoutEvidence(result.tree, tpe))
+              // Analyzer plugins can replace trees through the annotation-adaptation
+              // hook. This temporary type is removed immediately by adaptAnnotations.
+              AnnotatedType(
+                List(AnnotationInfo(AnnotationClass.tpe, Nil, Nil)),
+                tpe
+              )
+            }
+          case _ => tpe
+        }
+      }
+
+      override def canAdaptAnnotations(
+          tree: Tree,
+          typer: analyzer.Typer,
+          mode: Mode,
+          pt: Type
+      ): Boolean = tree.hasAttachment[LayoutEvidence]
+
+      override def adaptAnnotations(
+          tree: Tree,
+          typer: analyzer.Typer,
+          mode: Mode,
+          pt: Type
+      ): Tree = tree.attachments.get[LayoutEvidence] match {
+        case Some(evidence) =>
+          tree.setType(evidence.originalType)
+          val transformer = new NativeInteropTransformer(
+            typer.context.unit,
+            Some(typer.context),
+            layoutOnly = true
+          )
+          typer.typed(transformer.transform(tree), mode, pt)
+        case _ => tree
+      }
+    }
+
+  class NativeInteropTransformer(
+      protected val unit: CompilationUnit,
+      initialContext: Option[analyzer.Context] = None,
+      layoutOnly: Boolean = false
+  ) extends Transformer
       with VarHandleTransformer {
+
+    // Reconstruct lexical scopes: an ordinary Transformer does not retain the
+    // typer's contexts for local implicits, imports, and method parameters.
+    private var interopContext =
+      initialContext.getOrElse(analyzer.rootContext(unit))
+    private def tagLayout(tpe: Type, member: String, tree: Tree): Tree = {
+      val pos = tree.pos
+      val expected = appliedType(TagClass.toTypeConstructor, List(tpe))
+      val evidence =
+        tree.attachments.get[LayoutEvidence].map(_.tree).getOrElse {
+          val result =
+            analyzer.inferImplicitByType(expected, interopContext, pos)
+          if (result.isFailure) EmptyTree else result.tree
+        }
+      if (evidence == EmptyTree) {
+        reporter.error(
+          pos,
+          s"Cannot determine native layout of $tpe: an implicit $expected is required"
+        )
+        EmptyTree
+      } else {
+        analyzer
+          .newTyper(interopContext)
+          .typed {
+            Apply(
+              CastIntToRawSizeUnsigned,
+              Select(evidence, TermName(member))
+            )
+          }
+          .setPos(pos)
+      }
+    }
+
+    override def transformStats(
+        stats: List[Tree],
+        exprOwner: Symbol
+    ): List[Tree] =
+      stats.flatMap { stat =>
+        val result = super.transformStats(List(stat), exprOwner)
+        stat match {
+          case imp: Import =>
+            interopContext = interopContext.make(imp)
+          case _ => ()
+        }
+        result
+      }
+
+    override def transform(tree: Tree): Tree = {
+      val saved = interopContext
+      tree match {
+        case dd: DefDef =>
+          interopContext = interopContext.makeNewScope(dd, dd.symbol)
+          (dd.tparams ++ dd.vparamss.flatten).foreach(p =>
+            interopContext.scope.enter(p.symbol)
+          )
+        case fn: Function =>
+          interopContext =
+            interopContext.makeNewScope(fn, fn.symbol.orElse(currentOwner))
+          fn.vparams.foreach(p => interopContext.scope.enter(p.symbol))
+        case block: Block =>
+          interopContext = interopContext.makeNewScope(block, currentOwner)
+          block.stats.foreach {
+            case d: DefTree if d.symbol != NoSymbol =>
+              interopContext.scope.enter(d.symbol)
+            case _ => ()
+          }
+        case template: Template =>
+          interopContext =
+            interopContext.make(template, currentOwner, currentOwner.info.decls)
+        case pkg: PackageDef =>
+          interopContext =
+            interopContext.make(pkg, pkg.symbol, pkg.symbol.info.decls)
+        case _ => ()
+      }
+      try transformInterop(tree)
+      finally interopContext = saved
+    }
 
     /** Kind of the directly enclosing (most nested) owner. */
     private var enclosingOwner: OwnerKind = OwnerKind.None
@@ -93,7 +271,13 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
       }
     }
 
-    override def transform(tree: Tree): Tree = {
+    private def transformInterop(tree: Tree): Tree = {
+      if (layoutOnly && !(tree match {
+            case TypeApply(fun, _) =>
+              fun.symbol == SizeOfMethod || fun.symbol == AlignmentOfMethod
+            case Apply(fun, _) => StackallocMethods.contains(fun.symbol)
+            case _             => false
+          })) return super.transform(tree)
       // Recursivly widen and dealias all nested types (compler dealiases only top-level)
       def widenDealiasType(tpe0: Type): Type = {
         val tpe =
@@ -172,6 +356,8 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
 
         // sizeOf[T] -> sizeOf(classOf[T]) + attachment
         case TypeApply(fun, List(tpeArg)) if fun.symbol == SizeOfMethod =>
+          if (!hasLayout(tpeArg.tpe))
+            return tagLayout(tpeArg.tpe, "size", tree)
           val tpe = widenDealiasType(tpeArg.tpe)
           typer
             .typed {
@@ -182,6 +368,8 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
 
         // alignmentOf[T] -> alignmentOf(classOf[T]) + attachment
         case TypeApply(fun, List(tpeArg)) if fun.symbol == AlignmentOfMethod =>
+          if (!hasLayout(tpeArg.tpe))
+            return tagLayout(tpeArg.tpe, "alignment", tree)
           val tpe = widenDealiasType(tpeArg.tpe)
           typer
             .typed {
@@ -191,14 +379,43 @@ abstract class PrepNativeInterop[G <: Global with Singleton](
             .setPos(tree.pos)
 
         case Apply(fun, args) if StackallocMethods.contains(fun.symbol) =>
+          val originalType = fun.asInstanceOf[TypeApply].args.head.tpe
+          if (originalType.dealiasWiden.isAny || originalType.dealiasWiden.isNothing) {
+            reporter.error(
+              tree.pos,
+              s"Stackalloc requires concrete type, but $originalType found"
+            )
+            return EmptyTree
+          }
+          if (!hasLayout(originalType)) {
+            val elemSize = tagLayout(originalType, "size", tree)
+            if (elemSize == EmptyTree) return EmptyTree
+            val localTyper = analyzer.newTyper(interopContext)
+            val count = args.headOption
+              .map(transform)
+              .getOrElse(
+                localTyper.typed(
+                  Apply(CastIntToRawSizeUnsigned, Literal(Constant(1)))
+                )
+              )
+            val runtime = q"_root_.scala.scalanative.runtime"
+            val elements = TermName(unit.fresh.newName("nativeElements"))
+            val byteCount = TermName(unit.fresh.newName("nativeByteCount"))
+            // Bind the byte count to keep getUnboxedSize from stripping conversions inside the product.
+            val byteAlloc = localTyper.typed(
+              q"""{
+              val $elements = $count
+              val $byteCount = $runtime.Intrinsics.castLongToRawSize(
+                $runtime.Intrinsics.castRawSizeToLongUnsigned($elemSize) *
+                $runtime.Intrinsics.castRawSizeToLongUnsigned($elements))
+              $runtime.Intrinsics.stackalloc[Byte]($byteCount)
+            }"""
+            )
+            return transform(byteAlloc).setPos(tree.pos)
+          }
           val tpe = fun match {
             case TypeApply(_, Seq(argTpe)) => widenDealiasType(argTpe.tpe)
           }
-          if (tpe.isAny || tpe.isNothing)
-            reporter.error(
-              tree.pos,
-              s"Stackalloc requires concrete type, but ${show(tpe)} found"
-            )
           tree.updateAttachment(NonErasedType(tpe))
 
         case Apply(fun, args)

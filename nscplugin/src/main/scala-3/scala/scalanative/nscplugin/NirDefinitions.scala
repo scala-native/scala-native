@@ -79,6 +79,15 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val UnsafePackage = UnsafePackageVal.moduleClass.asClass
   @tu lazy val UnsafePackage_extern = UnsafePackageVal.requiredMethod("extern")
   @tu lazy val UnsafePackage_resolved = UnsafePackageVal.requiredMethod("resolved")
+  @tu lazy val UnsafePackageCompatClass = requiredClass("scala.scalanative.unsafe.UnsafePackageCompat")
+  @tu lazy val LayoutStackallocMethods =
+    (UnsafePackageCompatClass.alternatives("stackalloc") ++ Intrinsics_stackallocAlts).toSet
+  @tu lazy val LayoutMethods = LayoutStackallocMethods ++ Set(
+    UnsafePackageCompatClass.requiredMethod("sizeOf"),
+    UnsafePackageCompatClass.requiredMethod("alignmentOf"),
+    Intrinsics_sizeOf,
+    Intrinsics_alignmentOf
+  )
 
   @tu lazy val CQuoteClass = UnsafePackage.requiredClass("CQuote")
   @tu lazy val CQuote_c = CQuoteClass.requiredMethod("c")
@@ -229,6 +238,7 @@ final class NirDefinitions()(using ctx: Context) {
 
   @tu lazy val Intrinsics_sizeOf = IntrinsicsModule.requiredMethod("sizeOf")
   @tu lazy val IntrinsicsInternal_sizeOf = IntrinsicsInternalModule.requiredMethod("sizeOf")
+  @tu lazy val IntrinsicsInternal_withLayoutTag = IntrinsicsInternalModule.requiredMethod("withLayoutTag")
   @tu lazy val Intrinsics_alignmentOf = IntrinsicsModule.requiredMethod("alignmentOf")
   @tu lazy val IntrinsicsInternal_alignmentOf = IntrinsicsInternalModule.requiredMethod("alignmentOf")
   @tu lazy val Intrinsics_unsignedOfAlts =

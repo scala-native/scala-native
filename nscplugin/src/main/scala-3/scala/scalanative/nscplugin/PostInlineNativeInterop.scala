@@ -17,6 +17,8 @@ import NirGenUtil.ContextCached
  */
 object PostInlineNativeInterop {
   val name = "scalanative-prepareInterop-postinline"
+  private val LayoutEvidence =
+    new dotc.util.Property.Key[Map[dotc.core.Types.Type, dotc.ast.tpd.Tree]]
 }
 
 class PostInlineNativeInterop extends PluginPhase with VarHandleInterop {
@@ -33,29 +35,90 @@ class PostInlineNativeInterop extends PluginPhase with VarHandleInterop {
 
   override val runsAfter = Set(transform.Inlining.name, PrepNativeInterop.name)
   override val runsBefore = Set(transform.FirstTransform.name)
+  override def allowsImplicitSearch: Boolean = true
   val phaseName = PostInlineNativeInterop.name
   override def description: String = "prepare ASTs for Native interop"
 
-  private class DealiasTypeMapper(using Context) extends TypeMap {
-    override def apply(tp: Type): Type =
-      val sym = tp.typeSymbol
-      val dealiased =
-        if sym.isOpaqueAlias then sym.opaqueAlias
-        else tp
-      dealiased.widenDealias match
-        case AppliedType(tycon, args) =>
-          AppliedType(this(tycon), args.map(this))
-        case ty if ty != tp => this(ty)
-        case ty             => ty
-  }
+  override def prepareForApply(tree: Apply)(using Context): Context =
+    tree match {
+      case Apply(TypeApply(fun, List(layoutType, _)), List(tag, _))
+          if fun.symbol == defnNir.IntrinsicsInternal_withLayoutTag =>
+        val evidence = ctx
+          .property(PostInlineNativeInterop.LayoutEvidence)
+          .getOrElse(Map.empty)
+        ctx.fresh.setProperty(
+          PostInlineNativeInterop.LayoutEvidence,
+          evidence.updated(layoutType.tpe, tag)
+        )
+      case _ => ctx
+    }
 
   override def prepareForBlock(tree: Block)(using Context): Context = {
     tree.stats.foreach(discardVarHandleResult)
-    summon[Context]
+    layoutScope(tree.stats)
+  }
+
+  override def prepareForDefDef(tree: DefDef)(using Context): Context =
+    layoutScope(tree.paramss.flatten)
+
+  override def prepareForInlined(tree: Inlined)(using Context): Context =
+    layoutScope(tree.bindings)
+
+  private def layoutScope(trees: List[Tree])(using Context): Context = {
+    // Post-typer traversal retains owners and imports, but not local implicit scopes.
+    val scope = core.Scopes.newScope
+    trees.foreach {
+      case tree: DefTree if tree.symbol.exists => scope.enter(tree.symbol)
+      case _                                   => ()
+    }
+    ctx.fresh.setScope(scope)
+  }
+
+  private def tagLayout(tpe: Type, member: String, tree: Tree)(using
+      Context
+  ): Tree = {
+    val tagClass = requiredClass("scala.scalanative.unsafe.Tag")
+    val expected = tagClass.typeRef.appliedTo(tpe)
+    // Mini-phase transform hooks execute in the next phase's context.
+    val searchCtx = ctx.withPhase(this)
+    val evidence = ctx
+      .property(PostInlineNativeInterop.LayoutEvidence)
+      .flatMap(_.get(tpe))
+      .getOrElse(
+        searchCtx.typer.inferImplicitArg(expected, tree.span)(using searchCtx)
+      )
+    if (evidence.tpe.isError) {
+      report.error(
+        s"Cannot determine native layout of ${tpe.show}: an implicit ${expected.show} is required",
+        tree.srcPos
+      )
+      tree
+    } else {
+      // This phase runs after inlining; newly resolved inline givens still need expansion.
+      val inliner = new TreeMap {
+        override def transform(tree: Tree)(using Context): Tree = {
+          val transformed = super.transform(tree)
+          if (inlines.Inlines.needsInlining(transformed))
+            inlines.Inlines.inlineCall(transformed)
+          else transformed
+        }
+      }
+      val expandedEvidence = transformAllDeep(
+        inliner.transform(evidence)(using ctx.withPhase(ctx.base.inliningPhase))
+      )
+      ref(defnNir.Intrinsics_castIntToRawSizeUnsigned)
+        .appliedTo(expandedEvidence.select(termName(member)))
+        .withSpan(tree.span)
+    }
   }
 
   override def transformApply(tree: Apply)(using Context): Tree = {
+    // Inline definitions are also visited when compiling their defining library.
+    // Resolve their layout only after expansion at a call site.
+    if (inlines.Inlines.inInlineMethod) return tree
     val defnNir = this.defnNir
+    if (tree.fun.symbol == defnNir.IntrinsicsInternal_withLayoutTag)
+      return tree.args(1)
     def dealiasTypeMapper = DealiasTypeMapper()
 
     // Attach exact type information to the AST to preserve the type information
@@ -135,16 +198,48 @@ class PostInlineNativeInterop extends PluginPhase with VarHandleInterop {
 
       case Apply(fun, args)
           if defnNir.Intrinsics_stackallocAlts.contains(fun.symbol) =>
+        val originalType = fun.asInstanceOf[TypeApply].args.head.tpe
+        val layoutType = dealiasTypeMapper(originalType)
+        if (layoutType.isAny || layoutType.isNothingType || layoutType.isNullType) {
+          report.error(
+            s"Stackalloc requires concrete type but ${layoutType.show} found",
+            tree.srcPos
+          )
+          return tree
+        }
+        if (!hasLayout(layoutType)) {
+          val elemSize = tagLayout(originalType, "size", tree)
+          if (elemSize eq tree) return tree
+          val count = args.headOption.getOrElse(
+            ref(defnNir.Intrinsics_castIntToRawSizeUnsigned).appliedTo(
+              Literal(Constant(1))
+            )
+          )
+          // Equivalent to the:
+          // q"""{
+          //   val nativeElements = $count
+          //   val nativeByteCount = Intrinsics.castLongToRawSize(
+          //     Intrinsics.castRawSizeToLongUnsigned($elemSize) *
+          //       Intrinsics.castRawSizeToLongUnsigned(nativeElements)
+          //   )
+          //   Intrinsics.stackalloc[Byte](nativeByteCount)
+          // }"""
+          // format: off
+          val toLong = defnNir.IntrinsicsModule.requiredMethod("castRawSizeToLongUnsigned")
+          val elements = newSymbol(ctx.owner, termName("nativeElements"), Synthetic, count.tpe.widen).asTerm
+          val bytes = ref(toLong).appliedTo(elemSize).select(defn.Long_*).appliedTo(ref(toLong).appliedTo(ref(elements)))
+          val rawBytes = ref(defnNir.IntrinsicsModule.requiredMethod("castLongToRawSize")).appliedTo(bytes)
+          val byteCount = newSymbol(ctx.owner, termName("nativeByteCount"), Synthetic, rawBytes.tpe).asTerm
+          val allocation = ref(defnNir.Intrinsics_stackallocAlts.find(_.info.paramInfoss.flatten.nonEmpty).get)
+            .appliedToType(defn.ByteType).appliedTo(ref(byteCount))
+            .withAttachment(NirDefinitions.NonErasedType, defn.ByteType).withSpan(tree.span)
+          // Bind the byte count to keep getUnboxedSize from stripping conversions inside the product.
+          return Block(List(ValDef(elements, count), ValDef(byteCount, rawBytes)), allocation).withSpan(tree.span)
+          // format: on
+        }
         val tpe = fun match {
           case TypeApply(_, Seq(argTpe)) => dealiasTypeMapper(argTpe.tpe)
         }
-        val tpeSym = tpe.typeSymbol
-        if (tpe.isAny || tpe.isNothingType || tpe.isNullType ||
-            tpeSym.is(DeferredType, butNot = TypeParam))
-          report.error(
-            s"Stackalloc requires concrete type but ${tpe.show} found",
-            tree.srcPos
-          )
         tree.withAttachment(NirDefinitions.NonErasedType, tpe)
 
       case Apply(fun, args)
@@ -323,6 +418,7 @@ class PostInlineNativeInterop extends PluginPhase with VarHandleInterop {
   }
 
   override def transformTypeApply(tree: TypeApply)(using Context): Tree = {
+    if (inlines.Inlines.inInlineMethod) return tree
     val TypeApply(fun, tArgs) = tree
     val defnNir = this.defnNir
     def dealiasTypeMapper = DealiasTypeMapper()
@@ -331,6 +427,7 @@ class PostInlineNativeInterop extends PluginPhase with VarHandleInterop {
     fun.symbol match
       case defnNir.Intrinsics_sizeOf =>
         val tpe = dealiasTypeMapper(tArgs.head.tpe)
+        if (!hasLayout(tpe)) return tagLayout(tArgs.head.tpe, "size", tree)
         cpy
           .Apply(tree)(
             ref(defnNir.IntrinsicsInternal_sizeOf),
@@ -341,6 +438,7 @@ class PostInlineNativeInterop extends PluginPhase with VarHandleInterop {
       // alignmentOf[T] -> alignmentOf(classOf[T])
       case defnNir.Intrinsics_alignmentOf =>
         val tpe = dealiasTypeMapper(tArgs.head.tpe)
+        if (!hasLayout(tpe)) return tagLayout(tArgs.head.tpe, "alignment", tree)
         cpy
           .Apply(tree)(
             ref(defnNir.IntrinsicsInternal_alignmentOf),

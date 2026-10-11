@@ -44,7 +44,6 @@ class StackallocTest {
     )
   )
 
-  @Ignore("Unable to distinguish inlined generic param from non-inlined")
   @Test def genericParamType(): Unit = {
     val err = assertThrows(
       classOf[CompilationFailedException],
@@ -60,7 +59,8 @@ class StackallocTest {
           )
         )
     )
-    assertTrue(err.getMessage().contains(StackallocConcreteType))
+    assertTrue(err.getMessage().contains("Cannot determine native layout"))
+    assertTrue(err.getMessage().contains("Tag"))
   }
 
   @Test def inlineGenericParamType(): Unit = {
@@ -142,7 +142,8 @@ class StackallocTest {
           )
         )
     )
-    assertTrue(err.getMessage().contains(StackallocConcreteType))
+    assertTrue(err.getMessage().contains("Cannot determine native layout"))
+    assertTrue(err.getMessage().contains("Tag"))
   }
 
 }

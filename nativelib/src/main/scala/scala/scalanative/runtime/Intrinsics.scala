@@ -9,6 +9,8 @@ object Intrinsics {
     def stackalloc(cls: Class[_], size: Any): RawPtr = intrinsic
     def alignmentOf(cls: Class[_]): RawSize = intrinsic
     def sizeOf(cls: Class[_]): RawSize = intrinsic
+    // Carries inline wrappers' evidence until layout intrinsics are resolved.
+    def withLayoutTag[T, R](tag: Tag[T], value: R): R = intrinsic
   }
 
   /** Intrinsified stack allocation of sizeOf[T] bytes. */
