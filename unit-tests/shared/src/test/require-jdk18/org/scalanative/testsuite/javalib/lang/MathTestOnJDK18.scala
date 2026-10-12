@@ -98,7 +98,7 @@ class MathTestOnJDK18 {
     CeilTestCase(8L, 3L, 3L),
     CeilTestCase(15L, 2L, 8L),
 
-    // negative/mixed-sign, result negative so same as division ("/")
+    // negative/mixed-sign, result negative so same as division ("/").
     CeilTestCase(-5L, 3L, -1L),
     CeilTestCase(-7L, 2L, -3L),
     CeilTestCase(7L, -2L, -3L)
