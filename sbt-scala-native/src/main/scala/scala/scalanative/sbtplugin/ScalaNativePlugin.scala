@@ -3,7 +3,8 @@ package sbtplugin
 
 import sbt._
 
-import sjsonnew.JsonFormat
+import sjsonnew.BasicJsonProtocol.{mapFormat, given}
+import sjsonnew.{JsonFormat, JsonWriter}
 
 object ScalaNativePlugin extends AutoPlugin {
   override def requires: Plugins = plugins.JvmPlugin
@@ -36,6 +37,11 @@ object ScalaNativePlugin extends AutoPlugin {
       val Link = Tags.Tag("native-link")
     }
 
+    val nativeDiscoverEnv =
+      settingKey[build.Discover.Env](
+        "System environment used to discover NativeConfig"
+      )
+
     val nativeConfig =
       taskKey[build.NativeConfig](
         "User configuration for the native build, NativeConfig"
@@ -56,6 +62,9 @@ object ScalaNativePlugin extends AutoPlugin {
 
     implicit def nativeConfigJsonFormat: JsonFormat[build.NativeConfig] =
       NativeConfigJsonFormats.NativeConfigCodec
+
+    implicit def discoverEnvJsonFormat: JsonFormat[build.Discover.Env] =
+      DiscoverEnvJsonFormats.DiscoverEnvCodec
   }
 
   override def globalSettings: Seq[Setting[_]] =
