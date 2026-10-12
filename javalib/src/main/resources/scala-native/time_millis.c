@@ -2,7 +2,6 @@
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include "win_freq.h"
 #else
 #include <stdio.h>
 #include <sys/time.h>
@@ -24,24 +23,23 @@ long long scalanative_current_time_millis() {
     // Windows epoch is January 1, 1601 (start of Gregorian calendar cycle)
     // Unix epoch is January 1, 1970 (adjustment in "ticks" 100 nanosecond)
 #define UNIX_TIME_START 0x019DB1DED53E8000LL
-#define NANOS_PER_SEC 1000000000LL
+    // FILETIME ticks are always 100 ns; do not use QueryPerformanceFrequency
+    // (its value is platform-dependent and breaks the conversion on WoA).
+#define FILETIME_TICKS_PER_MILLI 10000LL
 
     FILETIME filetime;
-    int quad;
     // returns ticks in UTC - no return value
     GetSystemTimeAsFileTime(&filetime);
-    if (winFreqQuadPart(&quad) != 0) {
-        int ticksPerMilli = NANOS_PER_MILLI / (NANOS_PER_SEC / quad);
 
-        // Copy the low and high parts of FILETIME into a LARGE_INTEGER
-        // This is so we can access the full 64-bits as an Int64 without
-        // causing an alignment fault
-        LARGE_INTEGER li;
-        li.LowPart = filetime.dwLowDateTime;
-        li.HighPart = filetime.dwHighDateTime;
+    // Copy the low and high parts of FILETIME into a LARGE_INTEGER
+    // This is so we can access the full 64-bits as an Int64 without
+    // causing an alignment fault
+    LARGE_INTEGER li;
+    li.LowPart = filetime.dwLowDateTime;
+    li.HighPart = filetime.dwHighDateTime;
 
-        current_time_millis = (li.QuadPart - UNIX_TIME_START) / ticksPerMilli;
-    }
+    current_time_millis =
+        (li.QuadPart - UNIX_TIME_START) / FILETIME_TICKS_PER_MILLI;
 #else
 #define MILLIS_PER_SEC 1000LL
 

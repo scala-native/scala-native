@@ -2,6 +2,8 @@ package scala.scalanative.testinterface.common
 
 // Ported from Scala.js
 
+import java.util.concurrent.ConcurrentHashMap
+
 import scala.collection.mutable
 import scala.concurrent.Future
 import scala.language.higherKinds
@@ -21,11 +23,11 @@ private[testinterface] final class RunMuxRPC(rpc: RPCCore) {
 
   /** Multiplexer map.
    *
-   *  Access to the outer map needs to be synchronized. Access to the inner map
-   *  only needs to be synchronized for writing.
+   *  Access to the outer map needs to be synchronized. Inner maps are
+   *  thread-safe for concurrent handler invocations.
    */
   private val mux =
-    mutable.Map.empty[RPCCore.OpCode, java.util.HashMap[RunID, _]]
+    mutable.Map.empty[RPCCore.OpCode, ConcurrentHashMap[RunID, _]]
 
   def call[Req](ep: MuxRPCEndpoint[Req], runId: RunID)(
       req: Req
@@ -57,10 +59,10 @@ private[testinterface] final class RunMuxRPC(rpc: RPCCore) {
       ex: Req => Resp
   )(attach: (RunMux[Req] => Resp) => Unit): Unit =
     synchronized {
-      type DispatchMap = java.util.HashMap[RunID, Req => Resp]
+      type DispatchMap = ConcurrentHashMap[RunID, Req => Resp]
 
-      def newDispatchMap() = {
-        val dispatch = new DispatchMap
+      def newDispatchMap(): DispatchMap = {
+        val dispatch = new DispatchMap()
 
         attach { r =>
           Option(dispatch.get(r.runId)).fold {
@@ -80,12 +82,12 @@ private[testinterface] final class RunMuxRPC(rpc: RPCCore) {
     val opCode = ep.opCode
 
     val dispatch = mux.getOrElse(
-      opCode,
-      throw new IllegalArgumentException(
-        s"No endpoint attached for opCode $opCode"
+        opCode,
+        throw new IllegalArgumentException(
+          s"No endpoint attached for opCode $opCode"
+        )
       )
-    )
-
+      
     val old = dispatch.remove(runId)
     require(old != null, s"No endpoint attached for opCode $opCode run $runId")
 
