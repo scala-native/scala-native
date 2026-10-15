@@ -82,7 +82,26 @@ class MathTestOnJDK18 {
     CeilTestCase(1L, 4L, 1L),
     CeilTestCase(1L, -4L, 0L),
     CeilTestCase(-1L, 4L, 0L),
-    CeilTestCase(-1L, -4L, 1L)
+    CeilTestCase(-1L, -4L, 1L),
+
+    /* cases inspired by missing PR 5095 where dividend != divisor.
+     * Some existing test points not duplicated.
+     */
+
+    CeilTestCase(10L, 2L, 5L),
+    CeilTestCase(12L, 3L, 4L),
+    CeilTestCase(16L, 2L, 8L),
+    CeilTestCase(20L, 5L, 4L),
+    CeilTestCase(24L, 4L, 6L),
+
+    // plus inexact
+    CeilTestCase(8L, 3L, 3L),
+    CeilTestCase(15L, 2L, 8L),
+
+    // negative/mixed-sign, result negative so same as division ("/").
+    CeilTestCase(-5L, 3L, -1L),
+    CeilTestCase(-7L, 2L, -3L),
+    CeilTestCase(7L, -2L, -3L)
   )
 
   @Test def ceilDiv_Exceptions(): Unit = {

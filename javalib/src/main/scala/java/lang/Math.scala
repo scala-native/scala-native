@@ -109,7 +109,7 @@ object Math {
       var result = quotient
 
       if (quotient > 0) {
-        if (Math.abs(dividend) != Math.abs(divisor))
+        if (quotient * divisor != dividend) // remainder not zero
           result += 1
       } else if (quotient == 0) {
         val shiftCount = jl.Long.SIZE - 1
