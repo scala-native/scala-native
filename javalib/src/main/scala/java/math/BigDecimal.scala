@@ -34,6 +34,9 @@
  * 2026-07-01 10:13 -0400
  *    - Ported Scala.js commit 0d6509a, dated 2026-06-28.
  *      That fixes Scala.js Issue #5381, also identical SN Issue #4967
+ *
+ * 2026-07-26
+ *    - Added Java 9 BigDecimal.sqrt(mc)
  */
 
 /* 2025-01-27
@@ -72,7 +75,8 @@
 package java.math
 
 import java.lang.{Double => JDouble, Long => JLong}
-import java.util.Arrays
+import java.math._
+import java.util.{Arrays, Objects}
 import java.{lang => jl}
 
 import scala.annotation.tailrec
@@ -1862,5 +1866,341 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
     _bitLength = unscaledVal.bitLength()
     if (_bitLength < 64)
       _smallValue = unscaledVal.longValue()
+  }
+
+  // Scala Native additions -----------------------------------------------
+
+  /* Math facts to aid understanding this sqrt() implementation:
+   *
+   *   * By definition, all irrational numbers have an infinitely
+   *     repeating fraction. JDK sqrt() will throw.
+   *
+   *   * all rational numbers which are not perfect squares have
+   *     an infinitely repeating fraction. JDK sqrt() will throw.
+   *
+   *   * all rational numbers which are perfect squares have a
+   *     fractional part which eventually terminates.
+   */
+
+  /* See additional developer notes below in the
+   * 'def sqrt(mc: MathContext): BigDecimal' implementation.
+   */
+
+  final val sqrt_NotExactMessage = "Computed square root not exact."
+
+  // Always use JDK 26+ practice. See 'JDK-8370057' note below.
+  @inline private def sqrt_preferredScale(bd: BigDecimal): Int =
+    Math.ceil(bd.scale() / 2.0).toInt
+
+  private def sqrt_PrecisionZero(
+      radicand: BigDecimal
+  ): BigDecimal = {
+    /* Preconditions:
+     *   -- mc.precision == 0
+     *
+     *   -- known ZERO and negative radicands have been filtered out,
+     *      leaving only strictly positive candidates, possibly with
+     *      trailing zeros.
+     */
+
+    val radicandNTZ = radicand.stripTrailingZeros()
+    val unsv = radicandNTZ.unscaledValue()
+
+    val rootnResults = unsv.rootnAndRemainder(2) // 2 yields Integer sqrt
+    val root = rootnResults(0)
+    val remainder = rootnResults(1)
+
+    if (remainder.compareTo(BigInteger.ZERO) != 0)
+      throw new ArithmeticException(sqrt_NotExactMessage)
+
+    // Careful, scale manipulation is sensitive to small changes.
+    (new BigDecimal(root, sqrt_preferredScale(radicandNTZ)))
+      .setScale(sqrt_preferredScale(radicand))
+  }
+
+  private def sqrt_PrecisionPositive_NO_Rounding(
+      radicand: BigDecimal,
+      mc: MathContext
+  ): BigDecimal = {
+    /* Preconditions:
+     *   * mc.getRoundingMode() is RoundingMode.UNNECESSARY.
+     *
+     *   * radicand is a prefect square.
+     */
+
+    // root returned will be perfect square with proper preferredScale.
+    val root = sqrt_PrecisionZero(radicand)
+
+    if (root.scale() <= 0) { // no decimal point, no worries
+      root
+    } else if (root.precision() <= mc.getPrecision()) {
+      root // can fit as-is into required precision.
+    } else {
+      /* There are probably more elegant and less runtime costly
+       * ways of checking if a version of the root where trailing
+       * zeros after the minimal scale 1 can fit into the mc precision.
+       *
+       * For now, let BigDecimal do the heavy lifting and avoid
+       * implementing messy, one time, near-but-not-exactly duplicating'
+       * code. Chicken or wise?
+       */
+
+      try {
+        /* Yes, the method name says NO_Rounding.
+         * The mc argument MathContext is known at this point to
+         * have RoundingMode.UNNECESSARY.
+         *
+         * Rounding using that MathContext will succeed and return the
+         * desired result if the root without trailing zeros will fit the
+         * indicated position. Otherwise, it will throw an Exception.
+         *
+         * A "Big Hammer", but gets the job done.
+         */
+
+        root.round(mc)
+      } catch {
+        /* Examining the text of the message for "Rounding necessary"
+         * is fragile, to say the least. That text is defined in
+         * this file. That makes it under the control of Scala Native
+         * developers and not subject to external change or localization.
+         *
+         * Unfortunately, prior art defines that text in several places
+         * in the file.
+         *
+         * Worst that can happen if the message text ever does change
+         * and this usage does not is that the original exception will
+         * get propagated. Someone up the call chain will eventually
+         * discover the change, usually just before shipping product.
+         *
+         * Examining the message text is a lesser risk than assuming that
+         * assuming _any_ Arithmetic exception is because the root is not
+         * exact.
+         */
+        case exc: ArithmeticException =>
+          val rethrowExc =
+            if (exc.getMessage().equals("Rounding necessary"))
+              new ArithmeticException(sqrt_NotExactMessage)
+            else exc
+
+          throw rethrowExc
+      }
+    }
+  }
+
+  private def sqrt_firstGuess(radicand: BigDecimal): BigDecimal = {
+    // Precondition - radicand is strictly positive, but perhaps < 1.0
+
+    /* Implement the Hyperbolic_estimate algorithm for gaining an
+     * initial estimation for iterative square root methods.
+     *
+     * Wikipedia:
+     *  https://en.wikipedia.org/wiki/Square_root_algorithms#Initial_estimate
+     *  https://en.wikipedia.org/wiki/Square_root_algorithms#Hyperbolic_estimate
+     */
+
+    /* Hyperbolic_estimate description uses modified scientific notation for
+     * the radicand: a * 10^2n.
+     */
+
+    val rawExponent = radicand.precision() - radicand.scale() - 1
+
+    val evenExponent =
+      if ((rawExponent & 1) == 0) rawExponent // is even now
+      else if (rawExponent > 0) rawExponent - 1
+      else rawExponent + 1
+
+    val rootSignificand = radicand.movePointLeft(evenExponent) // extract 'a'
+    val rootExponent = evenExponent / 2 // extract 'n'
+
+    // Avoid an allocation, use an existing static MathContext.
+    val mc = MathContext.DECIMAL32
+
+    val divisor = rootSignificand.add(new BigDecimal("20"))
+
+    val adjustment = new BigDecimal("190").divide(divisor, mc)
+
+    /* (10 - 190/(a + 20)) * 10^n
+     *  No need to round, low digits are below accuracy of estimate anyway.
+     */
+    BigDecimal.TEN
+      .subtract(adjustment)
+      .scaleByPowerOfTen(rootExponent)
+  }
+
+  private def sqrt_adjustFractionalScale(
+      bd: BigDecimal,
+      minimalScale: scala.Int,
+      mc: MathContext
+  ): BigDecimal = {
+    /* Preconditions:
+     *   * bd.scale() > 0. That is, bd has fractional part.
+     *   * mc.getRoundingMode() != RoundingMode.UNNECESSARY
+     *   * bd has been rounded to mc.scale().
+     *   * minimalScale is at least 1.
+     */
+
+    val bdNTZ = bd.stripTrailingZeros()
+    val bdNTZscale = bdNTZ.scale()
+
+    if (bdNTZscale >= minimalScale) bdNTZ
+    else bdNTZ.setScale(minimalScale, mc.getRoundingMode())
+  }
+
+  private def sqrt_PrecisionPositive_Yes_Rounding(
+      radicand: BigDecimal,
+      mc: MathContext
+  ): BigDecimal = {
+    /* Preconditions:
+     *   * mc.precision > 0; recall that precision can never be < 0.
+     *
+     *   * RoundingMode is _never_ RoundingMode.UNNECESSARY. Guard digit
+     *     handling depends upon this precondition.
+     */
+
+    /* Implement the Heron or Babylonian method. That is a simplification for
+     * square roots of the more general Newton-Raphson method and
+     * avoids explicit calculus.
+     *
+     * This is the Wikipedia example modified on two ways. See
+     * the just-in-time comments at the usage sites.
+     *
+     *   - fewer guard digits are used to save BigMath cycles.
+     *
+     *   - The loop stopping condition has been changed from using an
+     *     epsilon to direct equality.
+     */
+
+    /* Choosing the number of extra digits to use as guard digits
+     * is a playground for people who enjoy and are skilled in
+     * numerical analysis.
+     *
+     * Conventionally, one is absolute minimum, more are usually recommended.
+     * Here the an arbitrary number is chosen which appears to be large
+     * enough to suffice but which is small enough to avoid doing
+     * expensive BigMath on digits which will be discarded and
+     * add successively less useful discrimination.
+     *
+     * A subject expert may perhaps someday make the choice sliding depending
+     * on number of digits in mc.precison.
+     */
+
+    val nGuardDigits = 4
+
+    val guardMC =
+      new MathContext(mc.getPrecision() + nGuardDigits, mc.getRoundingMode())
+
+    var guess = sqrt_firstGuess(radicand)
+
+    var done = false
+
+    while (!done) {
+      val adjustment = radicand.divide(guess, guardMC)
+
+      val nextGuess = guess.add(adjustment).divide(BigDecimal.TWO, guardMC)
+
+      /* Given the precondition that radicand is known to be a perfect square,
+       * math says that the algorithm will eventually converge.
+       * Rounding to the guard digits should keep the number of iterations
+       * bounded to a number derived from the precision in the MathContext
+       * by the caller of sqrt(mc).
+       *
+       * The Wikipedia article used IEEE 754 floating point math and
+       * compared the difference to a very small value, calculated
+       * from the radicand.
+       *
+       * This code does the nextGuess math out to the guardMC precision
+       * and rounds the difference math to the mc argument precision.
+       * This allows a test for exact match; equality to exactly zero.
+       */
+
+      if ((guess.subtract(nextGuess, mc).compareTo(BigDecimal.ZERO) == 0)) {
+        // break loop but use nextGuess for its possible extra digits
+        done = true
+      }
+
+      guess = nextGuess
+    }
+
+    val candidate = guess.round(mc) // utilize & discard guard digits
+
+    if (candidate.scale() <= 0) candidate
+    else {
+      /* Preferred or minimal scale, but subject to increase as number of
+       * non-zero trailing digits demands.
+       */
+      sqrt_adjustFractionalScale(candidate, sqrt_preferredScale(radicand), mc)
+    }
+  }
+
+  /** @since 9 */
+  def sqrt(mc: MathContext): BigDecimal = {
+    /* Principal (positive) square root is returned or an Exception thrown.
+     *
+     * Note well:
+     *   This implementation follows Java JDK26 practices in all cases.
+     *
+     *     - Java 25 introduced a check for a null MathContext argument.
+     *
+     *     - Java 26 changed the description and implementation of
+     *       "preferred scale" to "ceil(radicand.scale()/2.0)". URL:
+     * https://www.oracle.com/java/technologies/javase/26-relnote-issues.html
+     *         Section: Correct Scale Handling of BigDecimal.sqrt (JDK-8370057)     *
+     *       Previously it had been "radicandScale / 2", using integer
+     *       truncating division, equivalent to "floor()". They differ
+     *       by one when the scale is positive and odd.
+     */
+
+    /* This is a first implementation, with plenty of room for improvement
+     * as demand and resources allow.
+     *
+     *   - An obvious improvement is to handle radicands in the range of
+     *     [Double.MIN_NORMAL, Double.MAX_VALUE] by calling the operating
+     *     system library sqrt() function. See the _smallValue code above.
+     *     Have to leave something for our betters who come after us.
+     *
+     *     For this first implementation, doing the math directly exercises
+     *     the paths that are also used for values where only BigDecimal will
+     *     suffice.  This increases confidence that such values will be handled
+     *     correctly.
+     *
+     *   - One could count and micro-optimize the number of BigDecimal math
+     *     operations utilized. Each one probably leads to an object creation.
+     *
+     *   - One can apply some properties of perfect squares, such as
+     *     only having certain digits, and some manipulations by
+     *     powers of 5 to determine if a value is a prefect square or
+     *     not.  That might save some BigInteger math, with its attendant
+     *     allocation costs.
+     *
+     *  - As always, proper benchmarking is always in order.
+     */
+
+    // JDK 26+ throws, but earlier version do not.
+    val nullMcMsg =
+      """Cannot read field "roundingMode" because "mc" is null"""
+    Objects.requireNonNull(mc, nullMcMsg)
+
+    val radicand = this
+
+    val cmp = radicand.compareTo(BigDecimal.ZERO)
+
+    if (cmp == 0) {
+      BigDecimal.ZERO
+    } else if (cmp < 0) {
+      throw new ArithmeticException(
+        "Attempted square root of negative BigDecimal"
+      )
+    } else {
+      /* Each decision in the tree either handles the case or has established
+       * that a precondition for subsequent steps holds.
+       */
+
+      if (mc.getPrecision() == 0)
+        sqrt_PrecisionZero(radicand)
+      else if (mc.getRoundingMode() == RoundingMode.UNNECESSARY)
+        sqrt_PrecisionPositive_NO_Rounding(radicand, mc)
+      else
+        sqrt_PrecisionPositive_Yes_Rounding(radicand, mc)
+    }
   }
 }
