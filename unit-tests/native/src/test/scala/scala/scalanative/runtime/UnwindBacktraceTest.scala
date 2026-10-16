@@ -6,8 +6,6 @@ import org.junit.Assert._
 import org.junit.Assume._
 import org.junit.Test
 
-import org.scalanative.testsuite.utils.Platform
-
 import scala.scalanative.junit.utils.AssumesHelper
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.unsafe._
@@ -71,7 +69,7 @@ class UnwindBacktraceTest {
       s"worker backtrace returned ${frames.get()} frames",
       frames.get() >= 2
     )
-    if (Platform.isMacOs)
+    if (scala.scalanative.runtime.Platform.isMac())
       assertTrue(
         "worker backtrace did not reach pthread thread_start",
         sawThreadStart.get() == 1
@@ -91,7 +89,7 @@ object UnwindBacktrace {
     state._1 = 0
     state._2 = 0
     val status = UnwindBacktraceTestFFI._Unwind_Backtrace(
-      onFrame,
+      onFrame _,
       state.asInstanceOf[Ptr[Byte]]
     )
     (status.toInt, state._1.toInt, state._2 != 0)
