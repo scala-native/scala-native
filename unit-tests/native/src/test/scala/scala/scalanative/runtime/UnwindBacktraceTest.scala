@@ -9,6 +9,7 @@ import org.junit.Test
 import org.scalanative.testsuite.utils.Platform
 
 import scala.scalanative.junit.utils.AssumesHelper
+import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.unsafe._
 
 @extern
@@ -30,14 +31,26 @@ object UnwindBacktraceTestFFI {
 class UnwindBacktraceTest {
 
   @Test def backtraceOnMainThreadFinishes(): Unit = {
-    assumeNotWindows()
+    // assumeFalse still links the calls. Windows has no dladdr or Itanium
+    // _Unwind_*, so the calls themselves have to be link-time dead.
+    assumeFalse("unwind backtrace is not available", isWindows)
+    if (isWindows) ()
+    else checkMainThread()
+  }
+
+  @Test def backtraceOnWorkerReachesThreadStart(): Unit = {
+    assumeFalse("unwind backtrace is not available", isWindows)
+    if (isWindows) ()
+    else checkWorker()
+  }
+
+  private def checkMainThread(): Unit = {
     val (status, frames, _) = UnwindBacktrace.walk()
     assertEquals(UnwindBacktrace.EndOfStack, status)
     assertTrue(s"expected at least one frame, got $frames", frames >= 1)
   }
 
-  @Test def backtraceOnWorkerReachesThreadStart(): Unit = {
-    assumeNotWindows()
+  private def checkWorker(): Unit = {
     AssumesHelper.assumeMultithreadingIsEnabled()
 
     val status = new AtomicInteger(-1)
@@ -64,9 +77,6 @@ class UnwindBacktraceTest {
         sawThreadStart.get() == 1
       )
   }
-
-  private def assumeNotWindows(): Unit =
-    assumeFalse("dladdr is not available", Platform.isWindows)
 }
 
 object UnwindBacktrace {
