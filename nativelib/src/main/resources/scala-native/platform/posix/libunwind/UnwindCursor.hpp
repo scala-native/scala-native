@@ -1770,6 +1770,7 @@ bool UnwindCursor<A, R>::getInfoFromCompactEncodingSection(pint_t pc,
   // do a binary search of second level page index
   uint32_t encoding = 0;
   pint_t funcStart = 0;
+  pint_t rangeStart = 0;
   pint_t funcEnd = 0;
   pint_t lsda = 0;
   pint_t personality = 0;
@@ -1809,7 +1810,19 @@ bool UnwindCursor<A, R>::getInfoFromCompactEncodingSection(pint_t pc,
       }
     }
     encoding = pageIndex.encoding(low);
-    funcStart = pageIndex.functionOffset(low) + sects.dso_base;
+    rangeStart = pageIndex.functionOffset(low) + sects.dso_base;
+    // A range marked UNWIND_IS_NOT_FUNCTION_START is not the function entry.
+    // Walk back to the entry so the LSDA lookup uses the real function start.
+    // PAuthLR still authenticates against this range, not that entry.
+    funcStart = rangeStart;
+    if ((encoding & UNWIND_IS_NOT_FUNCTION_START) && low > 0) {
+      uint32_t backIndex = low;
+      do {
+        --backIndex;
+      } while (backIndex > 0 &&
+               (pageIndex.encoding(backIndex) & UNWIND_IS_NOT_FUNCTION_START));
+      funcStart = pageIndex.functionOffset(backIndex) + sects.dso_base;
+    }
     if (pc < funcStart) {
       if (log)
         fprintf(
@@ -1857,14 +1870,43 @@ bool UnwindCursor<A, R>::getInfoFromCompactEncodingSection(pint_t pc,
         high = mid;
       }
     }
-    funcStart = pageIndex.functionOffset(low) + firstLevelFunctionOffset
-                                                              + sects.dso_base;
+    rangeStart = pageIndex.functionOffset(low) + firstLevelFunctionOffset +
+                 sects.dso_base;
     if (low < last)
       funcEnd =
           pageIndex.functionOffset(low + 1) + firstLevelFunctionOffset
                                                               + sects.dso_base;
     else
       funcEnd = firstLevelNextPageFunctionOffset + sects.dso_base;
+
+    auto encodingAtIndex = [&](uint32_t idx) -> uint32_t {
+      uint16_t encIdx = pageIndex.encodingIndex(idx);
+      if (encIdx < sectionHeader.commonEncodingsArrayCount()) {
+        return _addressSpace.get32(
+            sects.compact_unwind_section +
+            sectionHeader.commonEncodingsArraySectionOffset() +
+            encIdx * sizeof(uint32_t));
+      } else {
+        uint16_t pageEncIdx =
+            encIdx - (uint16_t)sectionHeader.commonEncodingsArrayCount();
+        return _addressSpace.get32(secondLevelAddr +
+                                   pageHeader.encodingsPageOffset() +
+                                   pageEncIdx * sizeof(uint32_t));
+      }
+    };
+
+    encoding = encodingAtIndex(low);
+    funcStart = rangeStart;
+    if ((encoding & UNWIND_IS_NOT_FUNCTION_START) && low > 0) {
+      uint32_t backIndex = low;
+      do {
+        --backIndex;
+      } while (backIndex > 0 &&
+               (encodingAtIndex(backIndex) & UNWIND_IS_NOT_FUNCTION_START));
+      funcStart = pageIndex.functionOffset(backIndex) +
+                  firstLevelFunctionOffset + sects.dso_base;
+    }
+
     if (pc < funcStart) {
       _LIBUNWIND_DEBUG_LOG("malformed __unwind_info, pc=0x%llX "
                            "not in second level compressed unwind table. "
@@ -1878,21 +1920,6 @@ bool UnwindCursor<A, R>::getInfoFromCompactEncodingSection(pint_t pc,
                            "funcEnd=0x%llX",
                            (uint64_t) pc, (uint64_t) funcEnd);
       return false;
-    }
-    uint16_t encodingIndex = pageIndex.encodingIndex(low);
-    if (encodingIndex < sectionHeader.commonEncodingsArrayCount()) {
-      // encoding is in common table in section header
-      encoding = _addressSpace.get32(
-          sects.compact_unwind_section +
-          sectionHeader.commonEncodingsArraySectionOffset() +
-          encodingIndex * sizeof(uint32_t));
-    } else {
-      // encoding is in page specific table
-      uint16_t pageEncodingIndex =
-          encodingIndex - (uint16_t)sectionHeader.commonEncodingsArrayCount();
-      encoding = _addressSpace.get32(secondLevelAddr +
-                                     pageHeader.encodingsPageOffset() +
-                                     pageEncodingIndex * sizeof(uint32_t));
     }
   } else {
     _LIBUNWIND_DEBUG_LOG(
@@ -1960,7 +1987,16 @@ bool UnwindCursor<A, R>::getInfoFromCompactEncodingSection(pint_t pc,
     fprintf(stderr, "getInfoFromCompactEncodingSection(pc=0x%llX), "
                     "encoding=0x%08X, lsda=0x%08llX for funcStart=0x%llX\n",
             (uint64_t) pc, encoding, (uint64_t) lsda, (uint64_t) funcStart);
+#if defined(_LIBUNWIND_TARGET_AARCH64)
+  // pacibsppc offset is relative to the compact-unwind range, which can
+  // start after the function entry when UNWIND_IS_NOT_FUNCTION_START is set.
+  if ((encoding & UNWIND_ARM64_MODE_MASK) == UNWIND_ARM64_MODE_FRAME_PAUTH_LR)
+    _info.start_ip = rangeStart;
+  else
+    _info.start_ip = funcStart;
+#else
   _info.start_ip = funcStart;
+#endif
   _info.end_ip = funcEnd;
   _info.lsda = lsda;
   _info.handler = personality;
