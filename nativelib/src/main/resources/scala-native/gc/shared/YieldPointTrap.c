@@ -12,6 +12,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stdatomic.h>
+#include <stdint.h>
 #include "shared/MemoryMap.h"
 #include "shared/Log.h"
 #include "shared/ThreadUtil.h"
@@ -58,24 +59,53 @@
  */
 static safepoint_t YieldPointTrap_freeList = NULL;
 static mutex_t YieldPointTrap_freeListLock;
-static atomic_bool YieldPointTrap_freeListReady = false;
+/* 0: uninitialized, 1: initializing, 2: ready. Publish only after mutex_init.
+ */
+static atomic_int YieldPointTrap_freeListState = 0;
+
+/* Immutable nodes are published before a trap can be armed. Unlike the
+ * freelist, this registry is never changed or reclaimed beneath a handler. */
+typedef struct TrapMapping {
+    uintptr_t start;
+    struct TrapMapping *next;
+} TrapMapping;
+static _Atomic(TrapMapping *) trapMappings = NULL;
+
+bool YieldPointTrap_contains(const void *address) {
+#if ATOMIC_POINTER_LOCK_FREE == 2
+    uintptr_t addr = (uintptr_t)address;
+    for (TrapMapping *node =
+             atomic_load_explicit(&trapMappings, memory_order_acquire);
+         node != NULL; node = node->next) {
+        /* Generated polls access exactly the first cell of the mapping. */
+        if (addr >= node->start && addr - node->start < sizeof(safepoint_t))
+            return true;
+    }
+#endif
+    return false;
+}
 
 static void YieldPointTrap_initFreeList(void) {
-    bool expected = false;
-    if (atomic_compare_exchange_strong(&YieldPointTrap_freeListReady, &expected,
-                                       true)) {
-        mutex_init(&YieldPointTrap_freeListLock);
+    int expected = 0;
+    if (atomic_compare_exchange_strong(&YieldPointTrap_freeListState, &expected,
+                                       1)) {
+        if (!mutex_init(&YieldPointTrap_freeListLock)) {
+            GC_LOG_ERROR("Failed to initialize GC trap freelist mutex");
+            abort();
+        }
+        atomic_store_explicit(&YieldPointTrap_freeListState, 2,
+                              memory_order_release);
     } else {
         /* Wait for the initializer to publish the mutex. */
-        while (!atomic_load(&YieldPointTrap_freeListReady)) {
+        while (atomic_load_explicit(&YieldPointTrap_freeListState,
+                                    memory_order_acquire) != 2) {
             thread_yield();
         }
     }
 }
 
 static safepoint_t YieldPointTrap_popFreeList(void) {
-    if (!atomic_load(&YieldPointTrap_freeListReady))
-        return NULL;
+    YieldPointTrap_initFreeList();
     mutex_lock(&YieldPointTrap_freeListLock);
     safepoint_t reused = YieldPointTrap_freeList;
     if (reused != NULL) {
@@ -126,6 +156,18 @@ safepoint_t YieldPointTrap_init() {
     if (!allocated) {
         GC_LOG_ERROR("Failed to create GC safepoint trap: %s", strerror(errno));
         exit(errno);
+    }
+
+    TrapMapping *node = malloc(sizeof(TrapMapping));
+    if (node == NULL) {
+        GC_LOG_ERROR("Failed to register GC safepoint trap");
+        abort();
+    }
+    node->start = (uintptr_t)addr;
+    node->next = atomic_load_explicit(&trapMappings, memory_order_relaxed);
+    while (!atomic_compare_exchange_weak_explicit(&trapMappings, &node->next,
+                                                  node, memory_order_release,
+                                                  memory_order_relaxed)) {
     }
 
 #if defined(__APPLE__)

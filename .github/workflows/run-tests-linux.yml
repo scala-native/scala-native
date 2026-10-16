@@ -11,6 +11,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  gc-signals:
+    name: Test GC signal handling
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+      - run: bash scripts/tests/gc-signals.sh
+
   # Compile all sources for given Scala version
   # Cache external dependencies
   # Test tools, if any of them fails, further tests will not start.
