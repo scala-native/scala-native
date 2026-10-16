@@ -522,6 +522,7 @@ int CompactUnwinder_arm64<A>::stepWithCompactEncoding(
     A &addressSpace, Registers_arm64 &registers) {
   switch (compactEncoding & UNWIND_ARM64_MODE_MASK) {
   case UNWIND_ARM64_MODE_FRAME:
+  case UNWIND_ARM64_MODE_FRAME_PAUTH_LR:
     return stepWithCompactEncodingFrame(compactEncoding, functionStart,
                                         addressSpace, registers);
   case UNWIND_ARM64_MODE_FRAMELESS:
@@ -615,7 +616,7 @@ int CompactUnwinder_arm64<A>::stepWithCompactEncodingFrameless(
 
 template <typename A>
 int CompactUnwinder_arm64<A>::stepWithCompactEncodingFrame(
-    compact_unwind_encoding_t encoding, uint64_t, A &addressSpace,
+    compact_unwind_encoding_t encoding, uint64_t functionStart, A &addressSpace,
     Registers_arm64 &registers) {
   uint64_t savedRegisterLoc = registers.getFP() - 8;
 
@@ -689,7 +690,16 @@ int CompactUnwinder_arm64<A>::stepWithCompactEncodingFrame(
   // old sp is fp less saved fp and lr
   registers.setSP(fp + 16);
   // pop return address into pc
-  registers.setIP(addressSpace.get64(fp + 8));
+  uint64_t linkRegister = addressSpace.get64(fp + 8);
+  if ((encoding & UNWIND_ARM64_MODE_MASK) == UNWIND_ARM64_MODE_FRAME_PAUTH_LR) {
+    // Offset from the range start to pacibsppc, in words.
+    uint32_t offset = (encoding & UNWIND_ARM64_PAUTH_LR_OFFSET_MASK) >>
+                      UNWIND_ARM64_PAUTH_LR_OFFSET_SHIFT;
+    uint64_t pacibsppcAddr = functionStart + offset * 4;
+    registers.setIPPAuthLR(linkRegister, pacibsppcAddr);
+  } else {
+    registers.setIP(linkRegister);
+  }
 
   return UNW_STEP_SUCCESS;
 }
