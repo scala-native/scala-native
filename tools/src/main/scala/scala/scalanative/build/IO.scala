@@ -25,11 +25,11 @@ private[scalanative] object IO {
     def norm: String = s.replace('\\', '/')
   }
 
-  /** Write bytes to given file. */
+  /** Write bytes to given file, replacing any existing content. */
   def write(file: Path, bytes: Array[Byte]): Unit = {
     import java.nio.file.StandardOpenOption._
     Files.createDirectories(file.getParent)
-    Files.write(file, bytes, CREATE, WRITE)
+    Files.write(file, bytes, CREATE, TRUNCATE_EXISTING, WRITE)
   }
 
   /** Write string to given file. */
