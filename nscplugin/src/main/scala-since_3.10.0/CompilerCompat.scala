@@ -3,6 +3,7 @@ package scala.scalanative.nscplugin
 import java.nio.file.{Path, Paths}
 
 import dotty.tools.dotc.core.Contexts._
+import dotty.tools.dotc.core.Symbols.Symbol
 import dotty.tools.dotc.util.SourceFile
 import dotty.tools.io.AbstractFile
 
@@ -41,5 +42,15 @@ object CompilerCompat {
         .toString
         .replace(java.io.File.separatorChar, '/')
     else source.file.path
+  }
+
+  abstract class NirPrimitivesBase(using ctx: Context) extends ScalaPrimitives(using ctx) {
+    protected def nirPrimitiveCode(sym: Symbol): Option[Int]
+
+    override def getPrimitive(sym: Symbol): Int =
+      nirPrimitiveCode(sym).getOrElse(super.getPrimitive(sym))
+
+    override def isPrimitive(sym: Symbol): Boolean =
+      nirPrimitiveCode(sym).isDefined || super.isPrimitive(sym)
   }
 }
