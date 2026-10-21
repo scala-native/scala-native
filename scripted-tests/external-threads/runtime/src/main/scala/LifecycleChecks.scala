@@ -28,7 +28,9 @@ object ExternalLifecycleChecks {
       throw new AssertionError("released identity retained ThreadLocal payload")
     }
     if (checkIdentity != 0 && identity.get() != null) {
-      println("reclamation failure: released external identity remains reachable")
+      println(
+        "reclamation failure: released external identity remains reachable"
+      )
       throw new AssertionError("released external identity remains reachable")
     }
   }
