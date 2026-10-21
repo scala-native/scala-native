@@ -123,7 +123,8 @@ object NirPrimitives {
     code >= DIV_UINT && code <= ULONG_TO_DOUBLE
 }
 
-class NirPrimitives(using ctx: Context) extends CompilerCompat.NirPrimitivesBase(using ctx) {
+class NirPrimitives(using ctx: Context)
+    extends CompilerCompat.NirPrimitivesBase(using ctx) {
   import NirPrimitives._
   protected lazy val nirPrimitives: ReadOnlyMap[Symbol, Int] = initNirPrimitives
 

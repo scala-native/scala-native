@@ -2,8 +2,6 @@ package scala.scalanative.nscplugin
 
 import java.nio.file.{Path, Paths}
 
-import scala.annotation.unused
-
 import dotty.tools.dotc.ast.tpd._
 import dotty.tools.dotc.core.Contexts._
 import dotty.tools.dotc.core.StdNames._
@@ -11,6 +9,7 @@ import dotty.tools.dotc.core.Symbols._
 import dotty.tools.dotc.core.Types._
 import dotty.tools.dotc.util.SourceFile
 import dotty.tools.io.AbstractFile
+import scala.annotation.unused
 
 object CompilerCompat {
   val Inlines = dotty.tools.dotc.inlines.Inlines
@@ -51,7 +50,8 @@ object CompilerCompat {
 
   // Scala 3.10.1 replaced `getPrimitive(Apply, Type): Int` and `isPrimitive(Tree)`
   // with `getPrimitive(Tree): Option[Int]` and a final `isPrimitive(Symbol)`.
-  abstract class NirPrimitivesBase(using ctx: Context) extends ScalaPrimitives(using ctx) {
+  abstract class NirPrimitivesBase(using ctx: Context)
+      extends ScalaPrimitives(using ctx) {
     protected def nirPrimitiveCode(sym: Symbol): Option[Int]
 
     override def getPrimitive(sym: Symbol)(using Context): Option[Int] =

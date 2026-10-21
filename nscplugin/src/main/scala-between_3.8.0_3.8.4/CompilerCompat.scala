@@ -35,7 +35,8 @@ object CompilerCompat {
   def relativeSourcePath(source: SourceFile, relativeTo: Path): String =
     SourceFile.relativePath(source, relativeTo.toString)
 
-  abstract class NirPrimitivesBase(using ctx: Context) extends ScalaPrimitives(ctx) {
+  abstract class NirPrimitivesBase(using ctx: Context)
+      extends ScalaPrimitives(ctx) {
     protected def nirPrimitiveCode(sym: Symbol): Option[Int]
 
     override def getPrimitive(sym: Symbol): Int =

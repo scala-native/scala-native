@@ -44,7 +44,8 @@ object CompilerCompat {
     else source.file.path
   }
 
-  abstract class NirPrimitivesBase(using ctx: Context) extends ScalaPrimitives(using ctx) {
+  abstract class NirPrimitivesBase(using ctx: Context)
+      extends ScalaPrimitives(using ctx) {
     protected def nirPrimitiveCode(sym: Symbol): Option[Int]
 
     override def getPrimitive(sym: Symbol): Int =
