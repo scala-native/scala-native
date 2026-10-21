@@ -35,11 +35,12 @@ object ScalaVersions {
     crossScalaVersions("3.7", 0 to 4),
     crossScalaVersions("3.8", 0 to 4),
     crossScalaVersions("3.9", 0 to 0) // LTS
+    crossScalaVersions("3.10", 0 to 0) // RC
   ).flatten.distinct
 
   // Tested in scheduled nightly CI to check compiler plugins
   // List maintains only upcoming releases, removed from the list after reaching stable status
-  lazy val scala3RCVersions = List("3.10.0-RC2")
+  lazy val scala3RCVersions = List("3.10.1-RC1")
 
   // List of nightly versions can be found here: https://repo.scala-lang.org/ui/native/maven-nightlies/org/scala-lang/scala3-compiler_3
   // or check outputs of `scala -O --version -S 3.nightly`
