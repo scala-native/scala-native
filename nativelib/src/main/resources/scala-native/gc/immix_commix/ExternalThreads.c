@@ -49,8 +49,7 @@ bool scalanative_externalGC_addRoots(void *low, void *high) {
 }
 
 void *scalanative_externalGC_saveContext(ThreadInfo *info) {
-    assert(scalanative_externalGC_state() ==
-           GC_MutatorThreadState_Unmanaged);
+    assert(scalanative_externalGC_state() == GC_MutatorThreadState_Unmanaged);
 #ifdef SCALANATIVE_GC_IMMIX
     MutatorThreads_lock();
     currentMutatorThread->threadInfo = info;

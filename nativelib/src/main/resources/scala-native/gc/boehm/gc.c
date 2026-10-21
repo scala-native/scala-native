@@ -193,19 +193,11 @@ bool scalanative_externalGC_register(void) {
     executionState = GC_MutatorThreadState_Unmanaged;
     return status == GC_SUCCESS || status == GC_DUPLICATE;
 }
-static void *rebindStack(void *base) {
-    GC_set_stackbottom(NULL, (struct GC_stack_base *)base);
-    return NULL;
-}
 bool scalanative_externalGC_rebind(void) {
-    if (!GC_thread_is_registered() && !scalanative_externalGC_register())
-        return false;
-    struct GC_stack_base base;
-    /* This getter acquires the GC lock itself. */
-    GC_get_my_stackbottom(&base);
-    base.mem_base = currentThreadInfo.stackBottom;
-    GC_call_with_alloc_lock(rebindStack, &base);
-    return true;
+    // Boehm registration belongs to the OS thread. An existing registration
+    // already describes this thread's stack; a new owner registers its own.
+    return scalanative_externalGC_isRegistered() ||
+           scalanative_externalGC_register();
 }
 void scalanative_externalGC_unregister(void) { GC_unregister_my_thread(); }
 void *scalanative_externalGC_saveContext(ThreadInfo *info) {

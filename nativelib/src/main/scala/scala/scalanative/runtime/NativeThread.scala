@@ -134,7 +134,6 @@ object NativeThread {
   trait Companion {
     type Impl <: NativeThread
     def create(thread: Thread, stackSize: Long): Impl
-    def adoptCurrentThread(thread: Thread): Impl
     def yieldThread(): Unit
     def currentNativeThread(): Impl = NativeThread.currentNativeThread
       .asInstanceOf[Impl]

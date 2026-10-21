@@ -110,9 +110,11 @@ typedef struct event {
     int signaled;
 } event;
 #ifdef _WIN32
-#define EVENT_INIT {SRWLOCK_INIT, CONDITION_VARIABLE_INIT, 0}
+#define EVENT_INIT                                                             \
+    { SRWLOCK_INIT, CONDITION_VARIABLE_INIT, 0 }
 #else
-#define EVENT_INIT {PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER, 0}
+#define EVENT_INIT                                                             \
+    { PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER, 0 }
 #endif
 static void event_set(event *e) {
     host_mutex_lock(&e->mutex);

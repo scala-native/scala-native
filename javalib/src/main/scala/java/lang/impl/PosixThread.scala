@@ -444,7 +444,7 @@ private[lang] object PosixThread extends NativeThread.Companion {
   @alwaysinline def create(thread: Thread, stackSize: Long): PosixThread =
     new PosixThread(thread, stackSize)
 
-  override def adoptCurrentThread(thread: Thread): PosixThread =
+  def adoptCurrentThread(thread: Thread): PosixThread =
     new PosixThread(thread, 0L, isExternalThread = true)
 
   @alwaysinline def yieldThread(): Unit = sched_yield()

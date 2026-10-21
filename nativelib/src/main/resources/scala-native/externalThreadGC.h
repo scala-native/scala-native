@@ -18,7 +18,8 @@ bool scalanative_externalGC_isRegistered(void);
 /* Register the calling thread as unmanaged; return false on failure. */
 bool scalanative_externalGC_register(void);
 
-/* Rebind the collector context to the calling thread's stack; false on failure. */
+/* Rebind the collector context to the calling thread's stack; false on failure.
+ */
 bool scalanative_externalGC_rebind(void);
 
 /* Stop tracking the calling thread's stack for collection. */

@@ -212,7 +212,7 @@ object WindowsThread extends NativeThread.Companion {
   def create(thread: Thread, stackSize: Long) =
     new WindowsThread(thread, stackSize)
 
-  override def adoptCurrentThread(thread: Thread): WindowsThread =
+  def adoptCurrentThread(thread: Thread): WindowsThread =
     new WindowsThread(thread, 0L, isExternalThread = true)
 
   @alwaysinline

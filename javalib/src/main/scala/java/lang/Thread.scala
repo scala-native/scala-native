@@ -595,7 +595,9 @@ object Thread {
           daemon = true
         )
       )
-      nativeThread = nativeCompanion.adoptCurrentThread(thread)
+      nativeThread =
+        if (isWindows) WindowsThread.adoptCurrentThread(thread)
+        else PosixThread.adoptCurrentThread(thread)
       thread.platformCtx.nativeThread = nativeThread
       NativeThread.bindExternalThread(nativeThread)
       0

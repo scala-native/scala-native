@@ -22,8 +22,8 @@
 
 // Recover the containing wrapper without assumptions about struct padding.
 #define GetExceptionWrapper(exceptionPointer)                                  \
-    ((ExceptionWrapper *)((char *)(exceptionPointer) -                         \
-                          offsetof(ExceptionWrapper, unwindException)))
+    ((ExceptionWrapper *)((char *)(exceptionPointer)-offsetof(                 \
+        ExceptionWrapper, unwindException)))
 
 typedef void *Exception;
 typedef void (*OnCatchHandler)(Exception);
