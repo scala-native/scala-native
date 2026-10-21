@@ -14,6 +14,10 @@ git clone -b $REV --depth 1 https://github.com/llvm/llvm-project.git $LLVM_FOLDE
 cp -r "$LIBUNWIND_FOLDER/src/"* "$TARGET_FOLDER/"
 cp -r "$LIBUNWIND_FOLDER/include/"* "$TARGET_FOLDER/"
 
+# Not upstream. A clean copy drops it, and release-fast Linux scripted tests
+# then SIGSEGV in _Unwind_RaiseException (clang -O2, exception_object == NULL).
+git apply "$SCALANATIVE_FOLDER/scripts/patches/0001-libunwind-raise-exception-optnone.patch" || exit 1
+
 # Enable recursive globbing for zsh
 setopt extended_glob
 
