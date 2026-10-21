@@ -602,7 +602,11 @@ object Thread {
       NativeThread.bindExternalThread(nativeThread)
       0
     } catch {
-      case _: Throwable =>
+      case failure: Throwable =>
+        // Preserve the cause before translating adoption failures to a native
+        // status. Diagnostics must not prevent cleanup if resources are low.
+        try failure.printStackTrace()
+        catch { case _: Throwable => () }
         if (nativeThread != null)
           NativeThread.releaseExternalThread(nativeThread)
         1

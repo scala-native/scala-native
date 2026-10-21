@@ -451,7 +451,12 @@ object ScalaNativePluginInternal {
             PluginCompat
               .classpathEntryToModuleID(classpath)
               .toSeq
-              .map(_.classifier("sources").withConfigurations(None))
+              // The binary classpath already contains the dependency closure.
+              // Resolve only each module's sources, without revisiting its POM's
+              // transitive dependencies (including unpublished build snapshots).
+              .map(
+                _.classifier("sources").withConfigurations(None).intransitive()
+              )
               .map(dependencyResolution.wrapDependencyInModule)
               .map(
                 dependencyResolution.update(

@@ -229,6 +229,9 @@ static int bind(ExternalThread *record) {
     bool registered = scalanative_externalGC_isRegistered();
     if (registered ? !scalanative_externalGC_rebind()
                    : !scalanative_externalGC_register()) {
+        fprintf(
+            stderr,
+            "Scala Native external thread: collector registration failed\n");
         scalanative_assignCurrentThread(NULL, NULL);
         currentThreadInfo.isInitialized = false;
         return SCALANATIVE_THREAD_RESOURCE_FAILURE;
@@ -238,14 +241,20 @@ static int bind(ExternalThread *record) {
         scalanative_externalGC_saveContext(&record->info);
     if (!record->rooted) {
         if (!scalanative_externalGC_addRoots(record->identities,
-                                             record->identities + 2))
+                                             record->identities + 2)) {
+            fprintf(stderr,
+                    "Scala Native external thread: root registration failed\n");
             goto failure;
+        }
         record->rooted = true;
     }
     scalanative_externalGC_admit();
     if (record->identities[1] == NULL) {
-        if (scalanative_externalThread_adopt() != 0)
+        if (scalanative_externalThread_adopt() != 0) {
+            fprintf(stderr,
+                    "Scala Native external thread: identity adoption failed\n");
             goto failure;
+        }
         record->identities[0] = scalanative_currentThread();
         record->identities[1] = scalanative_currentNativeThread();
     }

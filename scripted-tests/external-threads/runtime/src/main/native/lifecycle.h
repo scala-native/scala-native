@@ -70,19 +70,26 @@ static int64_t join_retiring_worker(void) {
     milestone("identity-retired");
     return 0;
 }
+static void *retirement_owner(void *unused) {
+    (void)unused;
+    retiring_worker = worker_start(retired_worker, NULL);
+    event_wait(&retired_ready);
+    CHECK(external_nested(join_retiring_worker) == 0);
+    return NULL;
+}
 static void deferred_retirement(void) {
     CHECK(!multithreaded);
     for (int i = 0; i < iterations; ++i) {
         event_reset(&retired_ready);
         event_reset(&retired_exit);
-        retiring_worker = worker_start(retired_worker, NULL);
-        event_wait(&retired_ready);
-        CHECK(external_nested(join_retiring_worker) == 0);
+        // Let the cleanup owner's stack disappear before checking weak refs:
+        // native argument slots/registers can conservatively retain the
+        // identity.
+        worker_join(worker_start(retirement_owner, NULL));
         external_test_check_reclaimed(1);
     }
     event_close(&retired_ready);
     event_close(&retired_exit);
-
     milestone("deferred-resources-reclaimed");
 }
 
