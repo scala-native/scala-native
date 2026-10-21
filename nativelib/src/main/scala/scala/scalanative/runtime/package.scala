@@ -3,6 +3,8 @@ package scala.scalanative
 import java.util.concurrent.locks.LockSupport
 import java.{lang => jl}
 
+import scala.annotation.nowarn
+
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 import scalanative.annotation.alwaysinline
 import scalanative.runtime.Intrinsics._
@@ -144,6 +146,7 @@ package object runtime {
     StackOverflowGuards.close()
   }
 
+  @nowarn("msg=Catching Throwable")
   private[scalanative] final def executeUncaughtExceptionHandler(
       handler: Thread.UncaughtExceptionHandler,
       thread: Thread,
@@ -247,6 +250,7 @@ package object runtime {
 
   @noinline
   @exported("scalanative_initializeModule")
+  @nowarn("msg=Catching Throwable")
   private[runtime] def initializeModule(
       ctor: unsafe.CFuncPtr1[AnyRef, Unit],
       moduleInstance: AnyRef,

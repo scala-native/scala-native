@@ -3,6 +3,7 @@ package scala.scalanative.concurrent
 import java.util.concurrent.{ConcurrentLinkedQueue, RejectedExecutionException}
 import java.util.{AbstractQueue, ArrayDeque, Comparator, Deque, PriorityQueue}
 
+import scala.annotation.nowarn
 import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
@@ -77,6 +78,7 @@ private[concurrent] class QueueExecutionContextImpl()
   override def helpComplete(): Unit =
     while (nonEmpty) stealWork(Int.MaxValue)
 
+  @nowarn("msg=Catching Throwable")
   private def doStealWork(): Unit = computeQueue.dequeue() match {
     case null     => ()
     case runnable =>

@@ -234,6 +234,7 @@ object NativeThread {
 
   @noinline
   @exported("scalanative_NativeThread_start")
+  @nowarn("msg=Catching Throwable")
   private[runtime] def threadEntryPoint(nativeThread: NativeThread): RawPtr = {
     import nativeThread.thread
     val stackBottom = Intrinsics.stackalloc[Int]()
