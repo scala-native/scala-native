@@ -1,0 +1,2 @@
+# name	gc	mode	mt	target	strict	cpp
+shared	immix	debug	false	shared	false	false

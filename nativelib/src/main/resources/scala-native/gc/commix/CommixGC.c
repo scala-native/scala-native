@@ -46,8 +46,11 @@ NOINLINE void scalanative_GC_init() {
     Synchronizer_init();
 #endif
     MutatorThreads_init();
-    MutatorThread_init((word_t **)dummy); // approximate stack bottom
+    if (!MutatorThread_init((word_t **)dummy)) // approximate stack bottom
+        abort();
     customRoots = GC_Roots_Init();
+    if (customRoots == NULL)
+        abort();
 #ifdef ENABLE_GC_STATS
     atexit(scalanative_afterexit);
 #endif
@@ -127,7 +130,8 @@ size_t scalanative_GC_stats_collection_duration_total() {
 
 void scalanative_GC_add_roots(void *addr_low, void *addr_high) {
     AddressRange range = {addr_low, addr_high};
-    GC_Roots_Add(customRoots, range);
+    if (!GC_Roots_Add(customRoots, range))
+        abort();
 }
 
 void scalanative_GC_remove_roots(void *addr_low, void *addr_high) {
@@ -153,7 +157,8 @@ static ThreadRoutineReturnType ProxyThreadStartRoutine(void *args) {
     RoutineArgs originalArgs = wrapped->args;
 
     free(args);
-    MutatorThread_init((Field_t *)stackBottom);
+    if (!MutatorThread_init((Field_t *)stackBottom))
+        abort();
     originalFn(originalArgs);
     MutatorThread_delete(currentMutatorThread);
     return (ThreadRoutineReturnType)0;
@@ -187,7 +192,10 @@ int scalanative_GC_pthread_create(pthread_t *thread, pthread_attr_t *attr,
 #endif
 
 void scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState state) {
-    MutatorThread_switchState(currentMutatorThread, state);
+    if (state == GC_MutatorThreadState_Managed)
+        MutatorThread_admit(currentMutatorThread);
+    else
+        MutatorThread_switchState(currentMutatorThread, state);
 }
 
 void scalanative_GC_yield() {

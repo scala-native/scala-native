@@ -14,6 +14,7 @@
 #include "shared/Parsing.h"
 #include "shared/ThreadUtil.h"
 #include "shared/ScalaNativeGC.h"
+#include "externalThreadGC.h"
 #include "shared/Log.h"
 #include <assert.h>
 #include <stdatomic.h>
@@ -29,6 +30,9 @@
 
 SN_ThreadLocal void *current = 0;
 SN_ThreadLocal void *end = 0;
+static SN_ThreadLocal bool externalRegistered;
+static SN_ThreadLocal GC_MutatorThreadState executionState =
+    GC_MutatorThreadState_Managed;
 
 #define EMERGENCY_BLOCK_SIZE (32 * 1024)
 
@@ -157,6 +161,7 @@ void scalanative_GC_init() {
     GC_Log_Init();
     if (!initEmergencyBlock() || !allocateChunk())
         exitWithOutOfMemory();
+    externalRegistered = true;
 }
 
 void *scalanative_GC_alloc(Rtti *info, size_t size) {
@@ -223,7 +228,45 @@ int scalanative_GC_pthread_create(pthread_t *thread, pthread_attr_t *attr,
 #endif
 
 // ScalaNativeGC interface stubs. None GC does not need STW
-void scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState unused) {}
+void scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState state) {
+    executionState = state;
+}
+bool scalanative_externalGC_isRegistered(void) {
+    return externalRegistered || scalanative_currentNativeThread() != NULL;
+}
+bool scalanative_externalGC_register(void) {
+    externalRegistered = true;
+    executionState = GC_MutatorThreadState_Unmanaged;
+    return true;
+}
+bool scalanative_externalGC_rebind(void) { return true; }
+void *scalanative_externalGC_saveContext(ThreadInfo *info) {
+    (void)info;
+    return (void *)(uintptr_t)1;
+}
+bool scalanative_externalGC_restoreContext(void *context) {
+    (void)context;
+    externalRegistered = true;
+    executionState = GC_MutatorThreadState_Unmanaged;
+    return true;
+}
+void scalanative_externalGC_unregister(void) {
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+    externalRegistered = false;
+#endif
+}
+void scalanative_externalGC_admit(void) {
+    executionState = GC_MutatorThreadState_Managed;
+}
+GC_MutatorThreadState scalanative_externalGC_state(void) {
+    return executionState;
+}
+bool scalanative_externalGC_addRoots(void *low, void *high) {
+    /* Objects are never reclaimed by this collector. */
+    (void)low;
+    (void)high;
+    return true;
+}
 void scalanative_GC_yield() {}
 void scalanative_GC_add_roots(void *addr_low, void *addr_high) {}
 void scalanative_GC_remove_roots(void *addr_low, void *addr_high) {}

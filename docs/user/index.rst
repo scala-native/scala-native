@@ -10,6 +10,7 @@ User's Guide
   sbt
   lang
   interop
+  embedding
   native
   testing
   profiling

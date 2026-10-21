@@ -24,7 +24,8 @@ import scala.scalanative.unsigned._
 
 private[java] class PosixThread(
     val thread: Thread,
-    userDefinedStackSize: scala.Long
+    userDefinedStackSize: scala.Long,
+    override protected val isExternalThread: Boolean = false
 ) extends NativeThread {
   import NativeThread._
   import PosixThread._
@@ -56,22 +57,33 @@ private[java] class PosixThread(
 
   if (isMultithreadingEnabled) {
     // Init locks/conditions before starting the thread
-    checkStatus("mutex init") {
-      pthread_mutex_init(lock, mutexAttr)
-    }
-    checkStatus("relative time condition init") {
-      pthread_cond_init(
-        condition(ConditionRelativeIdx),
-        conditionRelativeCondAttr
-      )
-    }
-    checkStatus("absolute time condition init") {
-      pthread_cond_init(condition(ConditionAbsoluteIdx), null)
+    var mutexReady, relativeReady = false
+    try {
+      checkStatus("mutex init") {
+        pthread_mutex_init(lock, mutexAttr)
+      }
+      mutexReady = true
+      checkStatus("relative time condition init") {
+        pthread_cond_init(
+          condition(ConditionRelativeIdx),
+          conditionRelativeCondAttr
+        )
+      }
+      relativeReady = true
+      checkStatus("absolute time condition init") {
+        pthread_cond_init(condition(ConditionAbsoluteIdx), null)
+      }
+    } catch {
+      case ex: Throwable =>
+        if (relativeReady) pthread_cond_destroy(condition(ConditionRelativeIdx))
+        if (mutexReady) pthread_mutex_destroy(lock)
+        throw ex
     }
   }
 
   private val handle: pthread_t =
     if (isMainThread) 0.toUSize // main thread
+    else if (isExternalThread) pthread_self()
     else if (!isMultithreadingEnabled)
       throw new LinkageError(
         "Multithreading support disabled - cannot create new threads"
@@ -431,6 +443,9 @@ private[lang] object PosixThread extends NativeThread.Companion {
 
   @alwaysinline def create(thread: Thread, stackSize: Long): PosixThread =
     new PosixThread(thread, stackSize)
+
+  override def adoptCurrentThread(thread: Thread): PosixThread =
+    new PosixThread(thread, 0L, isExternalThread = true)
 
   @alwaysinline def yieldThread(): Unit = sched_yield()
 

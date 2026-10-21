@@ -1,8 +1,6 @@
 #if defined(SCALANATIVE_GC_BOEHM)
-#ifdef SCALANATIVE_MULTITHREADING_ENABLED
-// Enable support for multithreading in BoehmGC
+// Native hosts can create OS workers even in single-threaded Scala builds.
 #define GC_THREADS
-#endif
 
 #include <gc/gc.h>
 #include "shared/ScalaNativeGC.h"
@@ -12,6 +10,10 @@
 #include "shared/Time.h"
 #include "shared/jmx.h"
 #include "nativeThreadTLS.h"
+#include "externalThreadGC.h"
+
+static SN_ThreadLocal GC_MutatorThreadState executionState =
+    GC_MutatorThreadState_Managed;
 
 // At the moment we rely on the conservative
 // mode of Boehm GC as our garbage collector.
@@ -21,6 +23,7 @@ static void GC_CALLBACK weakRefFinalizer(void *obj, void *client_data);
 
 void scalanative_GC_init() {
     GC_INIT();
+    GC_allow_register_threads();
     // Keep this hook enabled at all times to collect Boehm GC statistics.
     GC_set_on_collection_event(handleOnCollectionEvent);
     // Drive Java-side weak reference processing through Boehm finalizers.
@@ -174,7 +177,57 @@ int scalanative_GC_pthread_create(pthread_t *thread, pthread_attr_t *attr,
 #endif // SCALANATIVE_MULTITHREADING_ENABLED
 
 // ScalaNativeGC interface stubs. Boehm GC relies on STW using signal handlers
-void scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState unused) {}
+void scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState state) {
+    executionState = state;
+}
+
+bool scalanative_externalGC_isRegistered(void) {
+    return GC_thread_is_registered() != 0;
+}
+bool scalanative_externalGC_register(void) {
+    struct GC_stack_base base;
+    if (GC_get_stack_base(&base) != GC_SUCCESS)
+        return false;
+    base.mem_base = currentThreadInfo.stackBottom;
+    int status = GC_register_my_thread(&base);
+    executionState = GC_MutatorThreadState_Unmanaged;
+    return status == GC_SUCCESS || status == GC_DUPLICATE;
+}
+static void *rebindStack(void *base) {
+    GC_set_stackbottom(NULL, (struct GC_stack_base *)base);
+    return NULL;
+}
+bool scalanative_externalGC_rebind(void) {
+    if (!GC_thread_is_registered() && !scalanative_externalGC_register())
+        return false;
+    struct GC_stack_base base;
+    /* This getter acquires the GC lock itself. */
+    GC_get_my_stackbottom(&base);
+    base.mem_base = currentThreadInfo.stackBottom;
+    GC_call_with_alloc_lock(rebindStack, &base);
+    return true;
+}
+void scalanative_externalGC_unregister(void) { GC_unregister_my_thread(); }
+void *scalanative_externalGC_saveContext(ThreadInfo *info) {
+    (void)info;
+    return (void *)(uintptr_t)1;
+}
+bool scalanative_externalGC_restoreContext(void *context) {
+    (void)context;
+    executionState = GC_MutatorThreadState_Unmanaged;
+    return scalanative_externalGC_isRegistered() ||
+           scalanative_externalGC_register();
+}
+void scalanative_externalGC_admit(void) {
+    executionState = GC_MutatorThreadState_Managed;
+}
+GC_MutatorThreadState scalanative_externalGC_state(void) {
+    return executionState;
+}
+bool scalanative_externalGC_addRoots(void *low, void *high) {
+    GC_add_roots(low, high);
+    return true;
+}
 
 void scalanative_GC_yield() {}
 

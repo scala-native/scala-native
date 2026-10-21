@@ -215,6 +215,7 @@ word_t *Allocator_lazySweep(Allocator *allocator, Heap *heap, uint32_t size) {
     while (object == NULL && !Sweeper_IsSweepDone(heap)) {
         object = Allocator_tryAlloc(allocator, size);
         if (object == NULL) {
+            scalanative_GC_yield();
             thread_yield();
             atomic_thread_fence(memory_order_acquire);
         }

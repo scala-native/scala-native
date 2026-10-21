@@ -52,6 +52,16 @@ package object runtime {
       )
   }
 
+  /** Initialize runtime for library usage.
+   */
+  private[runtime] def initLibrary(): Unit = {
+    // The native bootstrap has already discovered the host's actual stack.
+    // A library must not replace the host's alternate signal stack or guards.
+    OutOfMemory.preallocateFallback()
+    Thread.currentThread()
+    NativeThread.TLS.currentThreadInfo().isInitialized = true
+  }
+
   /** Initialize runtime with given arguments and return the rest as Java-style
    *  array.
    */

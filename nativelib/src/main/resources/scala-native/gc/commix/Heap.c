@@ -314,7 +314,11 @@ bool Heap_Collect(Heap *heap, bool allowHeapGrowth) {
 #else
     MutatorThread_switchState(currentMutatorThread,
                               GC_MutatorThreadState_Unmanaged);
-    assert(Sweeper_IsSweepDone(heap));
+    // GC sweep workers also run in a single-mutator build. Explicit System.gc
+    // can arrive before the preceding concurrent sweep finishes; starting a
+    // new mark/sweep cycle then would race with its allocator metadata updates.
+    while (!Sweeper_IsSweepDone(heap))
+        thread_yield();
 #endif
     // Stored before the phase change, so the sweeping thread sees it.
     atomic_store_explicit(&heap->growAfterCollection, allowHeapGrowth,

@@ -10,6 +10,7 @@ import scalanative.nir.ControlFlow.{Block, Graph}
 import scalanative.util.{ScopedVar, unsupported}
 
 private[scalanative] object Lower {
+  import ExternalThreadEntry._
 
   def apply(
       defns: Seq[nir.Defn]
@@ -173,17 +174,31 @@ private[scalanative] object Lower {
 
       buf += insts.head
 
-      // Add stack overflow guard test
-      // On Windows we use builtin mechanism for stack overflow detection
-      // On Unix, due to unreliable unwinding from signal handlers, we introduce polling at the begining of possibly recursive methods
-      if (shouldGenerateStackOverflowChecks(defn)) {
-        buf.call(CheckStackOverflowGuardsSig, CheckStackOverflowGuards, Nil, nir.Next.None)(defn.pos, nir.ScopeId.TopLevel)
-      }
+      // Native entry wrappers can box arguments or initialize their module
+      // before calling the Scala method. Admission must precede all of that,
+      // including the stack check below.
+      val entryScope = if (ExternalThreadEntry.shouldGuard(defn)) {
+        Some(buf.call(EnterManagedSig, EnterManaged, Nil, nir.Next.None)(defn.pos, nir.ScopeId.TopLevel))
+      } else None
+      def leaveEntry()(implicit pos: nir.SourcePosition): Unit =
+        entryScope.foreach { scope =>
+          buf.call(LeaveManagedSig, LeaveManaged, Seq(scope), nir.Next.None)(pos, nir.ScopeId.TopLevel)
+        }
 
       var unwindHandlerCache = mutable.Map.empty[nir.Next, Option[nir.Local]]
       def getUnwindHandler(next: nir.Next)(implicit pos: nir.SourcePosition): Option[nir.Local] = unwindHandlerCache.getOrElseUpdate(
         next,
         next match {
+          case nir.Next.None if entryScope.nonEmpty =>
+            val handler = fresh()
+            val exc = nir.Val.Local(fresh(), nir.Rt.Throwable)
+            handlers.label(handler, Seq(exc))
+            if (platform.useCxxExceptions) {
+              handlers.call(ExceptionOnCatchSig, ExceptionOnCatch, Seq(exc), nir.Next.None)(pos, nir.ScopeId.TopLevel)
+            }
+            handlers.call(LeaveManagedAndThrowSig, LeaveManagedAndThrow, entryScope.toSeq :+ exc, nir.Next.None)(pos, nir.ScopeId.TopLevel)
+            handlers.unreachable(nir.Next.None)
+            Some(handler)
           case nir.Next.None              => None
           case nir.Next.Unwind(exc, next) =>
             val handler = fresh()
@@ -197,6 +212,14 @@ private[scalanative] object Lower {
             util.unreachable
         }
       )
+
+      // Stack checks can throw too; use the entry cleanup handler when present.
+      // Windows uses its built-in overflow mechanism instead of this polling.
+      if (shouldGenerateStackOverflowChecks(defn)) {
+        ScopedVar.scoped(unwindHandler := getUnwindHandler(nir.Next.None)(defn.pos)) {
+          buf.call(CheckStackOverflowGuardsSig, CheckStackOverflowGuards, Nil, unwind)(defn.pos, nir.ScopeId.TopLevel)
+        }
+      }
 
       insts.foreach {
         case inst @ nir.Inst.Let(n, nir.Op.Var(ty), unwind) =>
@@ -259,6 +282,7 @@ private[scalanative] object Lower {
           val retVal =
             if (v.ty == nir.Type.Unit) optionallyBoxedUnit(v)
             else genVal(buf, v)
+          leaveEntry()
           buf += nir.Inst.Ret(retVal)
 
         case inst @ nir.Inst.Jump(next) =>
@@ -875,19 +899,24 @@ private[scalanative] object Lower {
       private val usesGCYieldPoints = multithreadingEnabled && supportedGC
 
       def apply(defn: nir.Defn.Define): Boolean = {
+        // Bootstrap can reject entry on an OS thread with no mutator or trap
+        // page. Its native completion hook also returns the loading thread to
+        // unmanaged execution before the generated return.
         if (!usesGCYieldPoints) false
         else if (defn eq lastDefn) lastResult
         else {
           lastDefn = defn
           val nir.Global.Member(_, sig) = defn.name
-          lastResult = {
-            // Exclude accessors and generated methods
-            def mayContainLoops =
-              defn.insts.exists {
-                case nir.Inst.Jump(_: nir.Next.Label) => true
-                case _                                => false
-              }
-            !sig.isGenerated && (defn.insts.size > 4 || mayContainLoops)
+          lastResult = defn.name match {
+            case Extern("ScalaNativeInit" | "main") => false
+            case _                                  =>
+              // Exclude accessors and generated methods
+              def mayContainLoops =
+                defn.insts.exists {
+                  case nir.Inst.Jump(_: nir.Next.Label) => true
+                  case _                                => false
+                }
+              !sig.isGenerated && (defn.insts.size > 4 || mayContainLoops)
           }
           lastResult
         }
@@ -2126,10 +2155,10 @@ private[scalanative] object Lower {
   def allocSig(clsType: nir.Type.RefKind): nir.Type.Function =
     allocSig.copy(ret = clsType)
 
-  val allocSmallName = extern("scalanative_GC_alloc_small")
+  val allocSmallName = Extern("scalanative_GC_alloc_small")
   val alloc = nir.Val.Global(allocSmallName, allocSig)
 
-  val largeAllocName = extern("scalanative_GC_alloc_large")
+  val largeAllocName = Extern("scalanative_GC_alloc_large")
   val largeAlloc = nir.Val.Global(largeAllocName, allocSig)
 
   val SafeZone =
@@ -2140,7 +2169,7 @@ private[scalanative] object Lower {
     nir.Sig.Method("allocImpl", Seq(nir.Type.Ptr, nir.Type.Size, nir.Type.Ptr))
   )
 
-  val dyndispatchName = extern("scalanative_dyndispatch")
+  val dyndispatchName = Extern("scalanative_dyndispatch")
   val dyndispatchSig =
     nir.Type.Function(Seq(nir.Type.Ptr, nir.Type.Int), nir.Type.Ptr)
   val dyndispatch = nir.Val.Global(dyndispatchName, dyndispatchSig)
@@ -2193,14 +2222,11 @@ private[scalanative] object Lower {
     boxty -> meth
   }.toMap
 
-  private def extern(id: String): nir.Global.Member =
-    nir.Global.Member(nir.Global.Top("__"), nir.Sig.Extern(id))
-
   val unitName = nir.Global.Top("scala.scalanative.runtime.BoxedUnit$")
   val unitInstance = unitName.member(nir.Sig.Generated("instance"))
   val unit = nir.Val.Global(unitInstance, nir.Type.Ptr)
 
-  val throwName = extern("scalanative_throw")
+  val throwName = Extern("scalanative_throw")
   val throwSig = nir.Type.Function(Seq(nir.Type.Ptr), nir.Type.Nothing)
   val throw_ = nir.Val.Global(throwName, nir.Type.Ptr)
 
@@ -2394,11 +2420,11 @@ private[scalanative] object Lower {
   val throwNoSuchMethodVal =
     nir.Val.Global(throwNoSuchMethod, nir.Type.Ptr)
 
-  val TraitDispatchSlowpathName = extern("__scalanative_trait_dispatch_slowpath")
+  val TraitDispatchSlowpathName = Extern("__scalanative_trait_dispatch_slowpath")
   val TraitDispatchSlowpathSig = nir.Type.Function(Seq(nir.Type.Ptr, nir.Type.Int, nir.Type.Int), nir.Type.Ptr)
   val TraitDispatchSlowpath = nir.Val.Global(TraitDispatchSlowpathName, nir.Type.Ptr)
 
-  val ClassHasTraitSlowpathName = extern("__scalanative_class_has_trait_slowpath")
+  val ClassHasTraitSlowpathName = Extern("__scalanative_class_has_trait_slowpath")
   val ClassHasTraitSlowpathSig = nir.Type.Function(Seq(nir.Type.Ptr, nir.Type.Int), nir.Type.Bool)
   val ClassHasTraitSlowpath = nir.Val.Global(ClassHasTraitSlowpathName, nir.Type.Ptr)
 
@@ -2435,17 +2461,17 @@ private[scalanative] object Lower {
       Seq(nir.Type.Ptr, nir.Type.Int, nir.Type.Size),
       nir.Type.Ptr
     )
-  val memsetName = extern("memset")
+  val memsetName = Extern("memset")
   val memset = nir.Val.Global(memsetName, nir.Type.Ptr)
 
   val RuntimeNull = nir.Type.Ref(nir.Global.Top("scala.runtime.Null$"))
   val RuntimeNothing = nir.Type.Ref(nir.Global.Top("scala.runtime.Nothing$"))
 
-  val ExceptionOnCatchName = extern("scalanative_Exception_onCatch")
+  val ExceptionOnCatchName = Extern("scalanative_Exception_onCatch")
   lazy val ExceptionOnCatch = nir.Val.Global(ExceptionOnCatchName, nir.Type.Ptr)
   lazy val ExceptionOnCatchSig = nir.Type.Function(nir.Rt.Throwable :: Nil, nir.Type.Unit)
 
-  val CheckStackOverflowGuardsName = extern("scalanative_StackOverflowGuards_check")
+  val CheckStackOverflowGuardsName = Extern("scalanative_StackOverflowGuards_check")
   val CheckStackOverflowGuards = nir.Val.Global(CheckStackOverflowGuardsName, nir.Type.Ptr)
   val CheckStackOverflowGuardsSig = nir.Type.Function(Nil, nir.Type.Unit)
 
@@ -2461,6 +2487,9 @@ private[scalanative] object Lower {
     buf += externDecl(ExceptionOnCatchName, ExceptionOnCatchSig)
     buf += externDecl(TraitDispatchSlowpathName, TraitDispatchSlowpathSig)
     buf += externDecl(CheckStackOverflowGuardsName, CheckStackOverflowGuardsSig)
+    buf += externDecl(EnterManagedName, EnterManagedSig)
+    buf += externDecl(LeaveManagedName, LeaveManagedSig)
+    buf += externDecl(LeaveManagedAndThrowName, LeaveManagedAndThrowSig)
     buf += externDecl(ClassHasTraitSlowpathName, ClassHasTraitSlowpathSig)
     buf.toSeq
   }

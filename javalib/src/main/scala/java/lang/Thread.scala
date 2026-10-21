@@ -19,6 +19,7 @@ import scala.scalanative.runtime.NativeThread.State._
 import scala.scalanative.runtime.NativeThread.{State => _, _}
 import scala.scalanative.runtime.javalib.Proxy
 import scala.scalanative.runtime.{NativeThread, UnsupportedFeature}
+import scala.scalanative.unsafe.{CInt, exported}
 
 class Thread private[lang] (
     @volatile private var name: String,
@@ -577,6 +578,47 @@ object Thread {
   @alwaysinline private[lang] def nativeCompanion: NativeThread.Companion =
     if (isWindows) WindowsThread
     else PosixThread
+
+  @exported("scalanative_externalThread_adopt")
+  private[lang] def adoptExternalThread(): CInt = {
+    var nativeThread: NativeThread = null
+    try {
+      val thread = new Thread(
+        name = "native-thread",
+        platformCtx = PlatformThreadContext(
+          // Adoption has no logical/native identity yet. Do not call the
+          // public accessor, which loads Thread.State and can wait on a
+          // module monitor. The bootstrap group also outlives its identity.
+          group = MainThread.platformCtx.group,
+          task = null,
+          stackSize = 0L,
+          daemon = true
+        )
+      )
+      nativeThread = nativeCompanion.adoptCurrentThread(thread)
+      thread.platformCtx.nativeThread = nativeThread
+      NativeThread.bindExternalThread(nativeThread)
+      0
+    } catch {
+      case _: Throwable =>
+        if (nativeThread != null)
+          NativeThread.releaseExternalThread(nativeThread)
+        1
+    }
+  }
+
+  @exported("scalanative_externalThread_release")
+  private[lang] def releaseExternalThread(nativeThread: NativeThread): CInt = {
+    val status = NativeThread.releaseExternalThread(nativeThread)
+    if (status == 0) {
+      // MainThread remains reachable through its bootstrap module after a
+      // library host exits. Terminated identities must not retain locals.
+      val thread = nativeThread.thread
+      thread.threadLocals = null
+      thread.inheritableThreadLocals = null
+    }
+    status
+  }
 
   def activeCount(): Int = currentThread()
     .getThreadGroup()

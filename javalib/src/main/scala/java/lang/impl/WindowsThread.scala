@@ -8,6 +8,7 @@ import scala.scalanative.runtime._
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.windows.HandleApi._
+import scala.scalanative.windows.HandleApiExt._
 import scala.scalanative.windows.ProcessThreadsApi._
 import scala.scalanative.windows.ProcessThreadsApiExt._
 import scala.scalanative.windows.SynchApi._
@@ -17,7 +18,8 @@ import scala.scalanative.windows.WinBaseApi._
 
 private[java] class WindowsThread(
     val thread: Thread,
-    val userDefinedStackSize: scala.Long
+    val userDefinedStackSize: scala.Long,
+    override protected val isExternalThread: Boolean = false
 ) extends NativeThread {
   import NativeThread._
   import WindowsThread._
@@ -39,20 +41,39 @@ private[java] class WindowsThread(
   }
 
   private val sleepEvent: Handle =
-    checkedHandle("create sleep interrupt event") {
-      CreateEventW(
-        eventAttributes = null,
-        manualReset = false,
-        initialState = false,
-        name = null
-      )
+    try
+      checkedHandle("create sleep interrupt event") {
+        CreateEventW(
+          eventAttributes = null,
+          manualReset = false,
+          initialState = false,
+          name = null
+        )
+      }
+    catch {
+      case ex: Throwable =>
+        CloseHandle(parkEvent)
+        throw ex
     }
 
   @volatile private var terminated = false
 
-  private val handle: Handle = {
+  private val handle: Handle = try {
     if (isMainThread) 0.toPtr // main thread
-    else if (!isMultithreadingEnabled) {
+    else if (isExternalThread) {
+      val duplicated = stackalloc[Handle]()
+      if (!DuplicateHandle(
+            GetCurrentProcess(),
+            GetCurrentThread(),
+            GetCurrentProcess(),
+            duplicated,
+            0.toUInt,
+            false,
+            DUPLICATE_SAME_ACCESS
+          ))
+        throw new RuntimeException("Cannot adopt native thread handle")
+      !duplicated
+    } else if (!isMultithreadingEnabled) {
       throw new LinkageError(
         "Multithreading support disabled - cannot create new threads"
       )
@@ -67,10 +88,15 @@ private[java] class WindowsThread(
           threadId = null
         )
       }
+  } catch {
+    case ex: Throwable =>
+      CloseHandle(parkEvent)
+      CloseHandle(sleepEvent)
+      throw ex
   }
 
   override protected def onTermination() = {
-    if (isMultithreadingEnabled) {
+    if (if (isMultithreadingEnabled) true else isExternalThread) {
       this.synchronized {
         terminated = true
         CloseHandle(parkEvent)
@@ -185,6 +211,9 @@ object WindowsThread extends NativeThread.Companion {
   @alwaysinline
   def create(thread: Thread, stackSize: Long) =
     new WindowsThread(thread, stackSize)
+
+  override def adoptCurrentThread(thread: Thread): WindowsThread =
+    new WindowsThread(thread, 0L, isExternalThread = true)
 
   @alwaysinline
   override def yieldThread(): Unit = SwitchToThread()

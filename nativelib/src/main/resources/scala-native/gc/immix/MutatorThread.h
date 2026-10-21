@@ -48,7 +48,17 @@ typedef MutatorThreadNode *MutatorThreads;
 // =============================================================================
 // MutatorThread Lifecycle API
 // =============================================================================
-void MutatorThread_init(word_t **stackBottom);
+bool MutatorThread_init(word_t **stackBottom);
+/* Register without admitting Scala execution. Used by external attachment. */
+bool MutatorThread_register(word_t **stackBottom);
+/* Admit an unmanaged mutator under the collector lifecycle lock. */
+void MutatorThread_admit(MutatorThread *self);
+#ifndef SCALANATIVE_MULTITHREADING_ENABLED
+/* Caller holds exclusive runtime ownership, with no suspended Scala frames.
+ * Keep the singleton allocator state and bind its stack to the new OS owner. */
+bool MutatorThread_rebind(word_t **stackBottom, ThreadInfo *info);
+void MutatorThread_suspendContext(MutatorThread *self);
+#endif
 void MutatorThread_delete(MutatorThread *self);
 void MutatorThread_switchState(MutatorThread *self,
                                GC_MutatorThreadState newState);
@@ -77,7 +87,7 @@ bool MutatorThread_isAlive(MutatorThread *thread);
 // MutatorThreads List Management
 // =============================================================================
 void MutatorThreads_init(void);
-void MutatorThreads_add(MutatorThread *node);
+bool MutatorThreads_add(MutatorThread *node);
 void MutatorThreads_remove(MutatorThread *node);
 void MutatorThreads_lock(void);
 void MutatorThreads_unlock(void);

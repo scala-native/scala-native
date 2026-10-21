@@ -1,0 +1,9 @@
+# name	gc	mode	mt	target	strict	cpp
+immix-st	immix	debug	false	static	false	false
+immix-mt	immix	release-fast	true	static	true	true
+commix-st	commix	debug	false	static	false	true
+commix-mt	commix	release-fast	true	static	false	false
+boehm-st	boehm	debug	false	static	false	false
+boehm-mt	boehm	debug	true	static	false	false
+none-st	none	debug	false	static	false	false
+none-mt	none	debug	true	static	false	true

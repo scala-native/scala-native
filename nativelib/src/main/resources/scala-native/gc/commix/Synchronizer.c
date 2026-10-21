@@ -432,7 +432,9 @@ void Synchronizer_yield(void) {
     }
     atomic_store_explicit(&self->isWaiting, false, memory_order_release);
 
-    MutatorThread_switchState(self, GC_MutatorThreadState_Managed);
+    /* A subsequent collection can begin after the resume notification. Admit
+     * under the lifecycle lock before executing managed code again. */
+    MutatorThread_admit(self);
     atomic_thread_fence(memory_order_seq_cst);
 }
 
@@ -508,10 +510,12 @@ bool Synchronizer_acquire(void) {
 
 void Synchronizer_release(void) {
     Synchronizer_ResumeThreads();
-    MutatorThreads_unlockRead();
-    mutex_unlock(&synchronizerLock);
+    /* Keep the synchronizer lock until our managed state is published, so
+     * the next collector cannot scan our previous unmanaged snapshot. */
     MutatorThread_switchState(currentMutatorThread,
                               GC_MutatorThreadState_Managed);
+    MutatorThreads_unlockRead();
+    mutex_unlock(&synchronizerLock);
 #ifndef _WIN32
     sigprocmask(SIG_UNBLOCK, &signalsBlockedDuringGC, NULL);
 #endif

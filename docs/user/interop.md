@@ -164,6 +164,9 @@ printf(c"2 + 3 = %d, 4 + 5 = %d", 2 + 3, 4 + 5)
 (exported_methods)=
 ## Exported methods
 
+For initialization, calls from foreign runtime threads, and host integration,
+see [Embedding Scala Native](embedding.md).
+
 When linking Scala Native as library, you can mark functions that should
 visible in created library with `@exported(name: String)` annotation. In
 case if you omit or use null as the argument for name extern function

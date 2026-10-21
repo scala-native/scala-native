@@ -196,7 +196,7 @@ private[scalanative] object ResourceEmbedder {
     def generateArrayVar(name: String, arrayValue: nir.Val.ArrayValue) = {
       nir.Defn.Var(
         nir.Attrs.None,
-        extern(name),
+        Extern(name),
         nir.Type.Ptr,
         nir.Val.Const(
           arrayValue
@@ -246,7 +246,7 @@ private[scalanative] object ResourceEmbedder {
         ),
         nir.Defn.Var(
           nir.Attrs.None,
-          extern("__scala_native_resources_amount"),
+          Extern("__scala_native_resources_amount"),
           nir.Type.Ptr,
           nir.Val.Int(contentValues.length)
         )
@@ -258,9 +258,6 @@ private[scalanative] object ResourceEmbedder {
 
     generated
   }
-
-  private def extern(id: String): nir.Global.Member =
-    nir.Global.Member(nir.Global.Top("__"), nir.Sig.Extern(id))
 
   private val sourceExtensions =
     Seq(

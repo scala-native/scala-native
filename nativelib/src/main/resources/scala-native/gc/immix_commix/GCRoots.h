@@ -28,7 +28,7 @@ INLINE static bool AddressRange_Contains(AddressRange self,
 
 GC_Roots *GC_Roots_Init();
 /* Add given memory address range to the head of linked list of GC roots*/
-void GC_Roots_Add(GC_Roots *roots, AddressRange range);
+bool GC_Roots_Add(GC_Roots *roots, AddressRange range);
 /* Remove GC roots nodes for which memory adress range is fully contained within
  * range passed as an argument to this method*/
 void GC_Roots_RemoveByRange(GC_Roots *roots, AddressRange range);
