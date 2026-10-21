@@ -2,7 +2,13 @@ package scala.scalanative.nscplugin
 
 import java.nio.file.{Path, Paths}
 
+import scala.annotation.unused
+
+import dotty.tools.dotc.ast.tpd._
 import dotty.tools.dotc.core.Contexts._
+import dotty.tools.dotc.core.StdNames._
+import dotty.tools.dotc.core.Symbols._
+import dotty.tools.dotc.core.Types._
 import dotty.tools.dotc.util.SourceFile
 import dotty.tools.io.AbstractFile
 
@@ -36,5 +42,29 @@ object CompilerCompat {
         .toString
         .replace(java.io.File.separatorChar, '/')
     else source.file.path
+  }
+
+  // Scala 3.10.1 replaced `getPrimitive(Apply, Type): Int` and `isPrimitive(Tree)`
+  // with `getPrimitive(Tree): Option[Int]` and a final `isPrimitive(Symbol)`.
+  abstract class NirPrimitivesBase(using ctx: Context) extends ScalaPrimitives(using ctx) {
+    protected def nirPrimitiveCode(sym: Symbol): Option[Int]
+
+    override def getPrimitive(sym: Symbol)(using Context): Option[Int] =
+      nirPrimitiveCode(sym).orElse(super.getPrimitive(sym))
+
+    // `tpe` stays in the signature for callers compiled against pre-3.10.1.
+    // Array ops are now generic APPLY/UPDATE/LENGTH.
+    def getPrimitive(app: Apply, @unused tpe: Type): Int =
+      super.getPrimitive(app).get
+
+    def isPrimitive(tree: Tree): Boolean = {
+      val sym = tree.symbol
+      if (sym == NoSymbol)
+        tree match {
+          case Select(_, nme.clone_) => false
+          case _                     => true
+        }
+      else super.isPrimitive(sym)
+    }
   }
 }
