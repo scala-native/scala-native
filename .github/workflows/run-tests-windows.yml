@@ -98,10 +98,14 @@ jobs:
         run: git config --global core.autocrlf false
       - uses: actions/checkout@v7
       - uses: ./.github/actions/windows-setup-env
+        id: setup
         with:
           scala-version: ${{matrix.scala}}
 
       - name: Test scripted
+        env:
+          SCALANATIVE_INCLUDE_DIRS: ${{steps.setup.outputs.vcpkg-dir}}\include
+          SCALANATIVE_LIB_DIRS: ${{steps.setup.outputs.vcpkg-dir}}\lib
         run: sbt "test-scripted ${{matrix.scala}}"
         shell: cmd
 
