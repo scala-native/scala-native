@@ -514,10 +514,6 @@ void Sweeper_Sweep(Stats *stats, atomic_uint_fast32_t *cursorDone,
         currentBlockStart += WORDS_IN_BLOCK * size;
         lineMetas += LINE_COUNT * size;
     }
-#ifdef SCALANATIVE_MULTITHREADING_ENABLED
-    if (useThreadsIterator)
-        MutatorThreads_unlockRead();
-#endif
     BlockMeta *doneUntil = current;
     if (lastFreeBlockStart != NULL) {
         // Free blocks in the end or the entire batch is free
@@ -532,6 +528,12 @@ void Sweeper_Sweep(Stats *stats, atomic_uint_fast32_t *cursorDone,
     Stats_RecordTimeSync(stats, postsync_start_ns);
 
     Sweep_applyResult(&sweepResult, &blockAllocator, recycleBlocksTo);
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+    // The selected allocator must stay alive through publication of recycled
+    // blocks, not only through scanning the batch.
+    if (useThreadsIterator)
+        MutatorThreads_unlockRead();
+#endif
     // coalescing might be done by another thread
     // block_coalesce_me marks should be visible
     atomic_thread_fence(memory_order_release);

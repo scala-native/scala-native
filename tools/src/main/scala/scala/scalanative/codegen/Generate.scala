@@ -13,6 +13,7 @@ private[codegen] object Generate {
   private implicit val pos: nir.SourcePosition = nir.SourcePosition.NoPosition
   private implicit val scopeId: nir.ScopeId = nir.ScopeId.TopLevel
   import Impl._
+  import ExternalThreadEntry._
 
   def apply(entry: Option[nir.Global.Top], defns: Seq[nir.Defn])(implicit
       meta: Metadata
@@ -48,6 +49,7 @@ private[codegen] object Generate {
 
     def genInjects(): Unit = {
       buf += InitDecl
+      buf ++= ThreadBootstrapDecls
       buf ++= Lower.injects
     }
 
@@ -105,6 +107,7 @@ private[codegen] object Generate {
           ),
           nir.Next.None
         ),
+        nir.Inst.Let(nir.Op.Call(ThreadBootstrapFailedSig, ThreadBootstrapFailed, Seq.empty), nir.Next.None),
         nir.Inst.Ret(nir.Val.Int(1))
       )
     }
@@ -135,6 +138,25 @@ private[codegen] object Generate {
       )
     }
 
+    private def genThreadBootstrap(library: Boolean, complete: Boolean)(implicit fresh: nir.Fresh): Seq[nir.Inst] = {
+      val status = nir.Val.Local(fresh(), nir.Type.Int)
+      val success = nir.Val.Local(fresh(), nir.Type.Bool)
+      val ready, rejected = fresh()
+      val call =
+        if (complete)
+          nir.Op.Call(ThreadBootstrapCompleteSig, ThreadBootstrapComplete, Seq(nir.Val.Bool(library)))
+        else
+          nir.Op.Call(ThreadBootstrapBeginSig, ThreadBootstrapBegin, Seq(nir.Val.Bool(library)))
+      Seq(
+        nir.Inst.Let(status.id, call, nir.Next.None),
+        nir.Inst.Let(success.id, nir.Op.Comp(nir.Comp.Ieq, nir.Type.Int, status, nir.Val.Int(0)), nir.Next.None),
+        nir.Inst.If(success, nir.Next.Label(ready, Nil), nir.Next.Label(rejected, Nil)),
+        nir.Inst.Label(rejected, Nil),
+        nir.Inst.Ret(nir.Val.Int(1)),
+        nir.Inst.Label(ready, Nil)
+      )
+    }
+
     /* Injects definition of library initializers that needs to be called, when using Scala Native as shared library.
      * Injects basic handling of exceptions, prints stack trace and returns non-zero value on exception or 0 otherwise */
     def genLibraryInit(): Unit = {
@@ -145,9 +167,16 @@ private[codegen] object Generate {
         LibraryInitName,
         LibraryInitSig,
         withExceptionHandler { unwindProvider =>
+          val rt = nir.Val.Local(fresh(), Runtime)
           Seq(nir.Inst.Label(fresh(), Nil)) ++
+            genThreadBootstrap(library = true, complete = false) ++
             genGcInit(unwindProvider) ++
-            genClassInitializersCalls(unwindProvider)
+            Seq(
+              nir.Inst.Let(rt.id, nir.Op.Module(Runtime.name), unwindProvider()),
+              nir.Inst.Let(nir.Op.Call(RuntimeInitLibrarySig, RuntimeInitLibrary, Seq(rt)), unwindProvider())
+            ) ++
+            genClassInitializersCalls(unwindProvider) ++
+            genThreadBootstrap(library = true, complete = true)
         }
       )
     }
@@ -172,6 +201,7 @@ private[codegen] object Generate {
 
           def unwind = unwindProvider()
           Seq(nir.Inst.Label(fresh(), Seq(argc, argv))) ++
+            genThreadBootstrap(library = false, complete = false) ++
             genGcInit(unwindProvider) ++
             genClassInitializersCalls(unwindProvider) ++
             Seq(
@@ -180,7 +210,8 @@ private[codegen] object Generate {
                 arr.id,
                 nir.Op.Call(RuntimeInitSig, RuntimeInit, Seq(rt, argc, argv)),
                 unwind
-              ),
+              )
+            ) ++ genThreadBootstrap(library = false, complete = true) ++ Seq(
               nir.Inst.Let(
                 nir.Op.Call(entryMainTy, entryMainMethod, Seq(arr)),
                 unwind
@@ -198,7 +229,7 @@ private[codegen] object Generate {
       )
       val LoadModuleDecl = nir.Defn.Declare(
         nir.Attrs.None.withIsExtern(true),
-        extern("__scalanative_loadModule"),
+        Extern("__scalanative_loadModule"),
         LoadModuleSig
       )
       val LoadModule = nir.Val.Global(LoadModuleDecl.name, nir.Type.Ptr)
@@ -490,15 +521,18 @@ private[codegen] object Generate {
       nir.Sig.Method("init", Seq(nir.Type.Int, nir.Type.Ptr, nir.Type.Array(nir.Rt.String)))
     )
     val RuntimeInit = nir.Val.Global(RuntimeInitName, nir.Type.Ptr)
+    val RuntimeInitLibrarySig = nir.Type.Function(Seq(Runtime), nir.Type.Unit)
+    val RuntimeInitLibraryName = Runtime.name.member(nir.Sig.Method("initLibrary", Seq(nir.Type.Unit)))
+    val RuntimeInitLibrary = nir.Val.Global(RuntimeInitLibraryName, nir.Type.Ptr)
     val RuntimeOnShutdownSig = nir.Type.Function(Seq(Runtime), nir.Type.Unit)
     val RuntimeOnShutdownName = Runtime.name
       .member(nir.Sig.Method("onShutdown", Seq(nir.Type.Unit)))
     val RuntimeOnShutdown = nir.Val.Global(RuntimeOnShutdownName, nir.Type.Ptr)
 
-    val LibraryInitName = extern("ScalaNativeInit")
+    val LibraryInitName = Extern("ScalaNativeInit")
     val LibraryInitSig = nir.Type.Function(Seq.empty, nir.Type.Int)
 
-    val MainName = extern("main")
+    val MainName = Extern("main")
     val MainSig = nir.Type.Function(Seq(nir.Type.Int, nir.Type.Ptr), nir.Type.Int)
 
     val JavaThread = nir.Global.Top("java.lang.Thread")
@@ -527,24 +561,21 @@ private[codegen] object Generate {
     )
 
     val InitSig = nir.Type.Function(Seq.empty, nir.Type.Unit)
-    val InitDecl = nir.Defn.Declare(nir.Attrs.None, extern("scalanative_GC_init"), InitSig)
+    val InitDecl = nir.Defn.Declare(nir.Attrs.None, Extern("scalanative_GC_init"), InitSig)
     val Init = nir.Val.Global(InitDecl.name, nir.Type.Ptr)
 
-    val moduleArrayName = extern("__modules")
-    val moduleArraySizeName = extern("__modules_size")
-    val objectArrayIdName = extern("__object_array_id")
-    val blobArrayIdName = extern("__blob_array_id")
-    val boxedPtrIdName = extern("__boxed_ptr_id")
-    val weakRefIdsMaxName = extern("__weak_ref_ids_max")
-    val weakRefIdsMinName = extern("__weak_ref_ids_min")
-    val weakRefFieldOffsetName = extern("__weak_ref_field_offset")
-    val registryOffsetName = extern("__weak_ref_registry_module_offset")
-    val registryFieldOffsetName = extern("__weak_ref_registry_field_offset")
-    val arrayIdsMinName = extern("__array_ids_min")
-    val arrayIdsMaxName = extern("__array_ids_max")
-
-    private def extern(id: String): nir.Global.Member =
-      nir.Global.Member(nir.Global.Top("__"), nir.Sig.Extern(id))
+    val moduleArrayName = Extern("__modules")
+    val moduleArraySizeName = Extern("__modules_size")
+    val objectArrayIdName = Extern("__object_array_id")
+    val blobArrayIdName = Extern("__blob_array_id")
+    val boxedPtrIdName = Extern("__boxed_ptr_id")
+    val weakRefIdsMaxName = Extern("__weak_ref_ids_max")
+    val weakRefIdsMinName = Extern("__weak_ref_ids_min")
+    val weakRefFieldOffsetName = Extern("__weak_ref_field_offset")
+    val registryOffsetName = Extern("__weak_ref_registry_module_offset")
+    val registryFieldOffsetName = Extern("__weak_ref_registry_field_offset")
+    val arrayIdsMinName = Extern("__array_ids_min")
+    val arrayIdsMaxName = Extern("__array_ids_max")
   }
 
   def depends(implicit platform: PlatformInfo): Seq[nir.Global] = {
@@ -552,12 +583,15 @@ private[codegen] object Generate {
       ObjectArray.name,
       Runtime.name,
       RuntimeInit.name,
+      RuntimeInitLibrary.name,
       RuntimeOnShutdown.name,
       RuntimeExecuteUEH,
       JavaThread,
       JavaThreadCurrentThread,
       JavaThreadGetUEH,
-      JavaThreadUEH
+      JavaThreadUEH,
+      AdoptThreadName,
+      ReleaseThreadName
     )
   }
 }

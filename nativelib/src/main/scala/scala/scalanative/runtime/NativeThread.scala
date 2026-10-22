@@ -23,6 +23,7 @@ trait NativeThread {
 
   def stackSize: Int
   def companion: NativeThread.Companion
+  protected def isExternalThread: Boolean = false
 
   private[runtime] var isFillingStackTrace: scala.Boolean = false
   @volatile private var _state: State = State.New
@@ -36,7 +37,7 @@ trait NativeThread {
     TLS.assignCurrentThread(thread, this)
     state = State.Running
   } else if (isMultithreadingEnabled) {
-    Registry.add(this)
+    if (!isExternalThread) Registry.add(this)
   }
 
   protected def park(time: Long, isAbsolute: Boolean): Unit
@@ -157,6 +158,27 @@ object NativeThread {
     TLS.assignCurrentThread(thread, currentNativeThread)
   }
   @alwaysinline def currentNativeThread: NativeThread = TLS.currentNativeThread
+
+  // Adoption is called only after the C attachment layer has admitted the
+  // current OS thread. It creates no OS worker and installs no stack guards.
+  def bindExternalThread(nativeThread: NativeThread): Unit = {
+    TLS.assignCurrentThread(nativeThread.thread, nativeThread)
+    nativeThread.state = State.Running
+    if (isMultithreadingEnabled) Registry.add(nativeThread)
+  }
+
+  def releaseExternalThread(nativeThread: NativeThread): Int =
+    try {
+      val thread = nativeThread.thread
+      thread.synchronized {
+        nativeThread.onTermination()
+        nativeThread.state = State.Terminated
+        thread.notifyAll()
+      }
+      0
+    } catch {
+      case _: jl.Throwable => 1
+    }
 
   def onSpinWait(): Unit = LLVMIntrinsics.`llvm.donothing`
 

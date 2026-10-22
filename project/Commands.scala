@@ -51,8 +51,12 @@ object Commands {
           )
         } yield {
           val projectId = project.forBinaryVersion(version).id
-          val selectGC = s"""scala.scalanative.build.GC("${gc.name}")"""
-          s"""set ${project.name}.forBinaryVersion("${version}")/nativeConfig ~= (_.withGC($selectGC)); $projectId/$command"""
+          // GC smoke checks do not need debug metadata or source-JAR downloads.
+          // The full runtime suite still exercises source-level debugging.
+          val configure =
+            s"""_.withGC(scala.scalanative.build.GC("${gc.name}"))""" +
+              ".withSourceLevelDebuggingConfig(_.disableAll)"
+          s"""set ${project.name}.forBinaryVersion("${version}")/nativeConfig ~= ($configure); $projectId/$command"""
         }
       runs :::
         state

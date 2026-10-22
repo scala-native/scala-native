@@ -3,6 +3,7 @@
 #include "MutatorThread.h"
 #include "State.h"
 #include <stdlib.h>
+#include <string.h>
 #include <stdatomic.h>
 #include <stdint.h>
 #include "shared/ThreadUtil.h"
@@ -19,9 +20,28 @@
 
 static mutex_t threadListsModificationLock;
 
-void MutatorThread_init(Field_t *stackbottom) {
-    MutatorThread *self = (MutatorThread *)malloc(sizeof(MutatorThread));
-    memset(self, 0, sizeof(MutatorThread));
+static void MutatorThread_dispose(MutatorThread *self) {
+#ifdef _WIN32
+    if (self->threadHandle != NULL)
+        CloseHandle(self->threadHandle);
+#ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
+    if (self->wakeupEvent != NULL)
+        CloseHandle(self->wakeupEvent);
+#endif
+#endif
+#ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
+    if (self->yieldpointTrap != NULL)
+        YieldPointTrap_free(self->yieldpointTrap);
+#endif
+    free(self);
+}
+
+bool MutatorThread_register(Field_t *stackbottom) {
+    if (currentMutatorThread != NULL)
+        return false;
+    MutatorThread *self = (MutatorThread *)calloc(1, sizeof(MutatorThread));
+    if (self == NULL)
+        return false;
     currentMutatorThread = self;
     self->threadInfo = &currentThreadInfo;
 
@@ -35,18 +55,16 @@ void MutatorThread_init(Field_t *stackbottom) {
     if (!DuplicateHandle(currentProcess, currentThread, currentProcess,
                          &self->threadHandle, 0, FALSE,
                          DUPLICATE_SAME_ACCESS)) {
-        GC_LOG_WARN("Failed to duplicate thread handle, liveness check will "
-                    "not work: errno=%lu",
-                    GetLastError());
-        // Continue anyway - liveness check will return true (assume alive)
-        self->threadHandle = NULL;
+        GC_LOG_ERROR("Failed to duplicate mutator thread handle: errno=%lu",
+                     GetLastError());
+        goto failure;
     }
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
     self->wakeupEvent = CreateEvent(NULL, true, false, NULL);
     if (self->wakeupEvent == NULL) {
         GC_LOG_ERROR("Failed to setup mutator thread wakeup event: errno=%lu",
                      GetLastError());
-        exit(1);
+        goto failure;
     }
 #endif // SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
 #else
@@ -56,41 +74,87 @@ void MutatorThread_init(Field_t *stackbottom) {
 
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
     self->yieldpointTrap = YieldPointTrap_init();
+    if (self->yieldpointTrap == NULL)
+        goto failure;
     YieldPointTrap_disarm(self->yieldpointTrap);
     scalanative_GC_yieldpoint_trap = self->yieldpointTrap;
 #endif
 
-    MutatorThread_switchState(self, GC_MutatorThreadState_Managed);
+    /* Publication must not make GC wait for an unadmitted thread. */
+    atomic_init(&self->state, GC_MutatorThreadState_Unmanaged);
+    MutatorThread_switchState(self, GC_MutatorThreadState_Unmanaged);
     Allocator_Init(&self->allocator, &blockAllocator, heap.bytemap,
                    heap.blockMetaStart, heap.heapStart);
 
     LargeAllocator_Init(&self->largeAllocator, &blockAllocator, heap.bytemap,
                         heap.blockMetaStart, heap.heapStart);
-    MutatorThreads_add(self);
-#ifdef SCALANATIVE_MULTITHREADING_ENABLED
-    // Stop if there is ongoing GC_collection
-    scalanative_GC_yield();
+    if (!MutatorThreads_add(self))
+        goto failure;
+    return true;
+
+failure:
+    currentMutatorThread = NULL;
+#ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
+    scalanative_GC_yieldpoint_trap = NULL;
 #endif
+    MutatorThread_dispose(self);
+    return false;
 }
+
+bool MutatorThread_init(Field_t *stackbottom) {
+    if (!MutatorThread_register(stackbottom))
+        return false;
+    MutatorThread_admit(currentMutatorThread);
+    return true;
+}
+
+#ifndef SCALANATIVE_MULTITHREADING_ENABLED
+void MutatorThread_suspendContext(MutatorThread *self) {
+    MutatorThreads_lock();
+    assert(self->state == GC_MutatorThreadState_Unmanaged);
+    self->threadInfo = NULL;
+    memset(&self->registersBuffer, 0, sizeof(self->registersBuffer));
+    self->stackBottom = (word_t **)&self->registersBuffer;
+    atomic_store(&self->stackTop, (intptr_t)self->stackBottom);
+    MutatorThreads_unlock();
+}
+#endif
+
+#ifndef SCALANATIVE_MULTITHREADING_ENABLED
+bool MutatorThread_rebind(word_t **stackBottom, ThreadInfo *info) {
+    MutatorThread *self = currentMutatorThread;
+    if (self == NULL || self->state != GC_MutatorThreadState_Unmanaged)
+        return false;
+#ifdef _WIN32
+    HANDLE handle;
+    HANDLE process = GetCurrentProcess();
+    if (!DuplicateHandle(process, GetCurrentThread(), process, &handle, 0,
+                         FALSE, DUPLICATE_SAME_ACCESS))
+        return false;
+    if (self->threadHandle != NULL)
+        CloseHandle(self->threadHandle);
+    self->threadHandle = handle;
+#else
+    self->thread = pthread_self();
+#endif
+    self->stackBottom = stackBottom;
+    self->threadInfo = info;
+    /* Capture this owner's registers and stack, replacing the old snapshot. */
+    MutatorThread_switchState(self, GC_MutatorThreadState_Unmanaged);
+    return true;
+}
+#endif
 
 void MutatorThread_delete(MutatorThread *self) {
     MutatorThread_switchState(self, GC_MutatorThreadState_Unmanaged);
     MutatorThreads_remove(self);
 
-#ifdef _WIN32
-    if (self->threadHandle != NULL) {
-        CloseHandle(self->threadHandle);
-    }
+    assert(currentMutatorThread == self);
+    currentMutatorThread = NULL;
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
-    CloseHandle(self->wakeupEvent);
+    scalanative_GC_yieldpoint_trap = NULL;
 #endif
-#endif // WIN32
-
-#ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
-    YieldPointTrap_free(self->yieldpointTrap);
-#endif
-
-    free(self);
+    MutatorThread_dispose(self);
 }
 
 typedef word_t **stackptr_t;
@@ -174,18 +238,33 @@ bool MutatorThread_isAlive(MutatorThread *thread) {
 #endif
 }
 
+void MutatorThread_admit(MutatorThread *self) {
+    assert(self != NULL);
+    if (atomic_load_explicit(&self->state, memory_order_acquire) ==
+        GC_MutatorThreadState_Managed)
+        return;
+    /* GC holds this lifecycle lock while it stops and scans mutators. Wait
+     * while still unmanaged, then publish admission before unlocking. */
+    MutatorThreads_lock();
+    MutatorThread_switchState(self, GC_MutatorThreadState_Managed);
+    MutatorThreads_unlock();
+}
+
 void MutatorThreads_init() { mutex_init(&threadListsModificationLock); }
 
-void MutatorThreads_add(MutatorThread *node) {
+bool MutatorThreads_add(MutatorThread *node) {
     if (!node)
-        return;
+        return false;
     MutatorThreadNode *newNode =
         (MutatorThreadNode *)malloc(sizeof(MutatorThreadNode));
+    if (newNode == NULL)
+        return false;
     newNode->value = node;
     MutatorThreads_lock();
     newNode->next = mutatorThreads;
     mutatorThreads = newNode;
     MutatorThreads_unlock();
+    return true;
 }
 
 void MutatorThreads_remove(MutatorThread *node) {
@@ -194,19 +273,17 @@ void MutatorThreads_remove(MutatorThread *node) {
 
     MutatorThreads_lock();
     MutatorThreads current = mutatorThreads;
-    if (current->value == node) { // expected is at head
-        mutatorThreads = current->next;
+    MutatorThreads previous = NULL;
+    while (current != NULL && current->value != node) {
+        previous = current;
+        current = current->next;
+    }
+    if (current != NULL) {
+        if (previous != NULL)
+            previous->next = current->next;
+        else
+            mutatorThreads = current->next;
         free(current);
-    } else {
-        while (current->next && current->next->value != node) {
-            current = current->next;
-        }
-        MutatorThreads next = current->next;
-        if (next) {
-            current->next = next->next;
-            free(next);
-            atomic_thread_fence(memory_order_release);
-        }
     }
     MutatorThreads_unlock();
 }

@@ -281,7 +281,7 @@ private[scalanative] object LLVM {
         if (config.targetsLinux)
           List(s"-Wl,-soname,${config.artifactName}")
         else if (config.targetsMac)
-          List(s"-Wl,-install_name,${config.artifactName}")
+          List(s"-Wl,-install_name,@rpath/${config.artifactName}")
         else Nil
       else Nil
 

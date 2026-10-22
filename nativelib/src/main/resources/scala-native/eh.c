@@ -6,6 +6,9 @@
 #include <string.h>
 #include "string_constants.h"
 #include "unwind.h"
+#include "externalThreads.h"
+#include "externalThreadGC.h"
+#include <stddef.h>
 
 #if defined(__SCALANATIVE_DELIMCC)
 #include "delimcc.h"
@@ -17,12 +20,10 @@
 #include <setjmp.h>
 #endif
 
-// gets the ExceptionWrapper from the _Unwind_Exception which is at the end of
-// it. +1 goes to the end of the struct since it adds with the size of
-// _Unwind_Exception, then we cast to ExceptionWrapper and we do - 1 to
-// go back of sizeof ExceptionWrapper
-#define GetExceptionWrapper(unwindException)                                   \
-    ((ExceptionWrapper *)(unwindException + 1) - 1)
+// Recover the containing wrapper without assumptions about struct padding.
+#define GetExceptionWrapper(exceptionPointer)                                  \
+    ((ExceptionWrapper *)((char *)(exceptionPointer)-offsetof(                 \
+        ExceptionWrapper, unwindException)))
 
 typedef void *Exception;
 typedef void (*OnCatchHandler)(Exception);
@@ -37,6 +38,7 @@ typedef void (*OnCatchHandler)(Exception);
  */
 typedef struct ExceptionWrapper {
     Exception obj;
+    bool nativeAllocated;
     _Unwind_Exception unwindException;
 } ExceptionWrapper;
 
@@ -61,7 +63,12 @@ static void Exception_cleanup(Exception *self) {
 void generic_exception_cleanup(_Unwind_Reason_Code code,
                                _Unwind_Exception *exception) {
     ExceptionWrapper *exceptionWrapper = GetExceptionWrapper(exception);
-    Exception_cleanup(exceptionWrapper->obj);
+    if (exceptionWrapper->nativeAllocated) {
+        scalanative_GC_remove_roots(&exceptionWrapper->obj,
+                                    &exceptionWrapper->obj + 1);
+        free(exceptionWrapper);
+    } else
+        Exception_cleanup(exceptionWrapper->obj);
 }
 
 typedef const uint8_t *LSDA_ptr;
@@ -305,10 +312,42 @@ _Unwind_Reason_Code scalanative_personality(int version, _Unwind_Action actions,
 }
 
 Exception scalanative_catch(_Unwind_Exception *unwindException) {
+    /* An exception can return from a blocking native call, bypassing its
+     * normal managed-state restoration. Admit before invoking Scala hooks. */
+    scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState_Managed);
     ExceptionWrapper *exceptionWrapper = GetExceptionWrapper(unwindException);
     Exception exception = exceptionWrapper->obj;
+    if (exceptionWrapper->nativeAllocated) {
+        scalanative_GC_remove_roots(&exceptionWrapper->obj,
+                                    &exceptionWrapper->obj + 1);
+        free(exceptionWrapper);
+    }
     Exception_cleanup(exception);
     return exception;
+}
+
+/* The automatic wrapper has already caught this exception while managed.
+ * Its native host may retain the foreign exception through further collections.
+ * No Scala hook may execute after ownership has been relinquished. */
+__attribute__((noreturn)) void
+scalanative_leave_managed_and_throw(scalanative_thread_scope_t scope,
+                                    Exception obj) {
+    ExceptionWrapper *wrapper = calloc(1, sizeof(ExceptionWrapper));
+    if (wrapper != NULL)
+        wrapper->obj = obj;
+    if (wrapper == NULL ||
+        !scalanative_externalGC_addRoots(&wrapper->obj, &wrapper->obj + 1)) {
+        fprintf(stderr, "Scala Native external thread: exception root "
+                        "allocation failure\n");
+        abort();
+    }
+    wrapper->nativeAllocated = true;
+    wrapper->unwindException.exception_cleanup = generic_exception_cleanup;
+    scalanative_leave_managed(scope);
+    _Unwind_RaiseException(&wrapper->unwindException);
+    fprintf(stderr, "%s Unhandled exception escaping native callback\n",
+            snFatalErrorPrefix);
+    abort();
 }
 
 __attribute__((noreturn)) void scalanative_throw(Exception obj) {
@@ -316,6 +355,7 @@ __attribute__((noreturn)) void scalanative_throw(Exception obj) {
         scalanative_Throwable_exceptionWrapper(obj);
     if (exceptionWrapper == NULL)
         exceptionWrapper = &fallbackExceptionWrapper;
+    exceptionWrapper->nativeAllocated = false;
     exceptionWrapper->unwindException.exception_cleanup =
         generic_exception_cleanup;
     exceptionWrapper->obj = obj;

@@ -205,6 +205,9 @@ word_t *LargeAllocator_lazySweep(LargeAllocator *largeAllocator, Heap *heap,
     while (object == NULL && !Sweeper_IsSweepDone(heap)) {
         object = LargeAllocator_tryAlloc(largeAllocator, size);
         if (object == NULL) {
+            // A collecting mutator can be waiting for this native allocation
+            // loop to stop. No allocator/list lock is held here.
+            scalanative_GC_yield();
             thread_yield();
             atomic_thread_fence(memory_order_acquire);
         }

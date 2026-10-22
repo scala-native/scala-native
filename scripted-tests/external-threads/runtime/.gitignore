@@ -1,0 +1,5 @@
+/project/ExternalThread*.scala
+/src/main/native/external-thread-platform.h
+/src/main/native/external-thread-host.h
+/src/main/resources/scala-native/externalThreads.h
+/src/main/resources/scala-native/external-thread-platform.h

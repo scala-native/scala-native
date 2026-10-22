@@ -1,0 +1,3 @@
+# ID	thread-mode	host	classification	milestones	diagnostic	collectors	initialize
+LIB-01	all	both	success	initialized	-	all	true
+LIB-02	all	both	success	initialized	-	all	true

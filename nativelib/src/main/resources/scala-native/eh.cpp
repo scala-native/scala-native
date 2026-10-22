@@ -3,6 +3,14 @@
 #include <cstdlib>
 #include <exception>
 #include <mutex>
+#include "externalThreads.h"
+extern "C" {
+// Keep this translation unit independent of the collector's C-only headers.
+bool scalanative_externalGC_addRoots(void *low, void *high);
+void scalanative_GC_remove_roots(void *low, void *high);
+void scalanative_externalGC_admit(void);
+}
+#include <cstdio>
 
 #if defined(__SCALANATIVE_DELIMCC)
 #include "delimcc.h"
@@ -26,7 +34,28 @@ namespace scalanative {
 class ExceptionWrapper : public std::exception {
   public:
     ExceptionWrapper(Exception _obj) : obj(_obj) {}
+    ExceptionWrapper(Exception _obj, bool root) : obj(_obj), rooted(root) {
+        addRoot();
+    }
+    ExceptionWrapper(const ExceptionWrapper &other)
+        : std::exception(other), obj(other.obj), rooted(other.rooted) {
+        addRoot();
+    }
+    ~ExceptionWrapper() override {
+        if (rooted)
+            scalanative_GC_remove_roots(&obj, &obj + 1);
+    }
     Exception obj;
+
+  private:
+    bool rooted = false;
+    void addRoot() {
+        if (rooted && !scalanative_externalGC_addRoots(&obj, &obj + 1)) {
+            fprintf(stderr, "Scala Native external thread: exception root "
+                            "allocation failure\n");
+            std::abort();
+        }
+    }
 };
 } // namespace scalanative
 
@@ -83,8 +112,16 @@ void scalanative_continuation_exception_terminate_handler_install(void) {
 #endif
 
 void scalanative_throw(void *obj) { throw scalanative::ExceptionWrapper(obj); }
+[[noreturn]] void
+scalanative_leave_managed_and_throw(scalanative_thread_scope_t scope,
+                                    void *obj) {
+    scalanative::ExceptionWrapper exception(obj, true);
+    scalanative_leave_managed(scope);
+    throw exception;
+}
 size_t scalanative_Throwable_sizeOfExceptionWrapper() { return 0; }
 void scalanative_Exception_onCatch(Exception self) {
+    scalanative_externalGC_admit();
     if (self) {
         OnCatchHandler handler = scalanative_Throwable_onCatchHandler(self);
         if (handler)

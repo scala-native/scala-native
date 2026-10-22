@@ -60,7 +60,8 @@ def compileAndTest(
       outFile.absolutePath,
       s"-L${libPath.absolutePath}",
       "-ltest"
-    )
+    ) ++ (if (PlatformInfo.isMac) Seq(s"-Wl,-rpath,${libPath.absolutePath}")
+          else Nil)
 
   val ldPath = sys.env
     .get("LD_LIBRARY_PATH")

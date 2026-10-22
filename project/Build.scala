@@ -429,23 +429,53 @@ object Build {
     }
     .settings(
       sbtTestDirectory := (ThisBuild / baseDirectory).value / "scripted-tests",
-      // publish the other projects before running scripted tests.
-      scriptedDependencies := {
+      scriptedLaunchOpts += "-Dexternal.threads.results.dir=" +
+        ((ThisBuild / baseDirectory).value / "target" / "external-thread-results").getAbsolutePath,
+      // Refresh fixture sources even when sbt's task cache is warm.
+      scriptedDependencies := Def.uncached {
         import sbt.io.{IO, CopyOptions}
         val replaceExisting = CopyOptions().withOverwrite(true)
-        // Synchronize SocketHelpers used in java-net-socket test
-        // Each scripted test creates its own environment in tmp directory
-        // which does not allow us to define external sources in script build
-        IO.copyFile(
-          ((javalib.v2_12 / Compile / scalaSource).value / "java/net/SocketHelpers.scala"),
-          (sbtTestDirectory.value / "run/java-net-socket/SocketHelpers.scala"),
-          replaceExisting
+        def copy(source: File, destination: File): Unit =
+          IO.copyFile(source, destination, replaceExisting)
+
+        val sourceTests = sbtTestDirectory.value
+        // Scripted runs each fixture in isolation, so shared sources must be copied in.
+        copy(
+          (javalib.v2_12 / Compile / scalaSource).value / "java/net/SocketHelpers.scala",
+          sourceTests / "run/java-net-socket/SocketHelpers.scala"
         )
+        val externalThreads = sourceTests / "external-threads"
+        val runtimeSources = externalThreads / "runtime/src"
+        copy(
+          (nativelib.v2_12 / Compile / resourceDirectory).value / "scala-native/externalThreads.h",
+          runtimeSources / "main/resources/scala-native/externalThreads.h"
+        )
+        Seq("main/native", "main/resources/scala-native").foreach { directory =>
+          copy(
+            externalThreads / "external-thread-platform.h",
+            runtimeSources / directory / "external-thread-platform.h"
+          )
+        }
+        copy(externalThreads / "external-thread-host.h", runtimeSources / "main/native/external-thread-host.h")
+
+        Seq("runtime", "shared-library").foreach { name =>
+          val fixture = externalThreads / name
+          (externalThreads * "ExternalThread*.scala").get().foreach { source =>
+            copy(source, fixture / "project" / source.getName)
+          }
+          if (name != "runtime") {
+            val sources = fixture / "src"
+            IO.delete(sources)
+            (runtimeSources ** "*").get().filter(_.isFile).foreach { source =>
+              copy(source, sources / IO.relativize(runtimeSources, source).get)
+            }
+          }
+        }
         locally {
-          val crossVersionCompatDir = sbtTestDirectory.value / "scala3" / "cross-version-compat"
+          val crossVersionCompatDir = sourceTests / "scala3" / "cross-version-compat"
           val buildTemplate = crossVersionCompatDir / "build.sbt.template"
           val buildSbt = crossVersionCompatDir / "build.sbt"
-          IO.copyFile(buildTemplate, buildSbt, replaceExisting)
+          copy(buildTemplate, buildSbt)
           sbtBinaryVersion.value match {
             case "2" =>
               val patchedBuild = IO

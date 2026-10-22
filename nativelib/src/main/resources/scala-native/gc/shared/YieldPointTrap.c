@@ -125,7 +125,7 @@ safepoint_t YieldPointTrap_init() {
 #endif
     if (!allocated) {
         GC_LOG_ERROR("Failed to create GC safepoint trap: %s", strerror(errno));
-        exit(errno);
+        return NULL;
     }
 
 #if defined(__APPLE__)

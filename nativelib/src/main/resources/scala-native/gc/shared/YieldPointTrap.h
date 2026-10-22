@@ -2,6 +2,7 @@
 #define YieldPointTrap_H
 
 typedef void **safepoint_t;
+/* Return NULL when the OS cannot allocate a trap page. */
 safepoint_t YieldPointTrap_init(void);
 /** macOS: clear task EXC_BAD_ACCESS Mach exception ports so faults reach
  *  SIGBUS/SIGSEGV; no-op elsewhere. Safe to call before each GC suspend. */

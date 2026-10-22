@@ -42,6 +42,10 @@ NativeThread scalanative_currentNativeThread();
 ThreadInfo *scalanative_currentThreadInfo();
 void scalanative_setupCurrentThreadInfo(void *stackBottom, int32_t stackSize,
                                         bool isMainThread);
+/* Discover actual OS-thread bounds without modifying currentThreadInfo or
+ * approximating unknown stacks. The caller may publish the result after
+ * acquiring runtime ownership. Does not install guards or signal stacks. */
+bool scalanative_detectExternalThreadStack(ThreadInfo *info);
 
 size_t scalanative_mainThreadMaxStackSize();
 

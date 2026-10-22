@@ -1,0 +1,21 @@
+# ID	thread-mode	host	classification	milestones	diagnostic	collectors	initialize
+INIT-02	all	both	fatal	entry-before-init	Scala Native external thread: not initialized	all	false
+ID-01	all	both	success	initialized	-	all	true
+ID-02	all	both	success	initialized	-	all	true
+EXIT-02	all	both	success	initialized	-	all	true
+EXIT-03	all	both	fatal	initialized,abandoning-live-scope	Scala Native external thread: abandoned managed scopes	all	true
+EXIT-05	single	both	success	initialized,identity-retired,deferred-resources-reclaimed	-	immix,commix	true
+CALL-01	all	cpp	success	initialized,entry-wrappers-complete,boxed-callback-unwound	-	all	true
+CALL-02	all	both	success	initialized	-	all	true
+CALL-03	all	cpp	success	initialized,callback-unwound,exception-retained,scala-caught-callback	-	all	true
+CALL-04	multi	both	success	initialized,virtual-callbacks-complete	-	all	true
+GC-01	all	both	success	initialized	-	all	true
+GC-02	all	both	success	initialized	-	immix,commix,boehm	true
+GC-03	all	both	success	initialized,worker-idle,collection-complete	-	immix,commix,boehm	true
+GC-04	all	both	success	initialized	-	all	true
+OWN-01	all	both	success	initialized	-	all	true
+LIB-01	all	both	success	initialized	-	all	true
+LIB-02	all	both	success	initialized	-	all	true
+BOOT-01	multi	both	success		-	immix,commix	false
+BOOT-02	all	both	success		-	immix,commix	false
+BOOT-03	all	both	success		-	immix,commix	false

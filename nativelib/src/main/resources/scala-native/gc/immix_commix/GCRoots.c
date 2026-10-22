@@ -9,54 +9,39 @@
 
 GC_Roots *GC_Roots_Init() {
     GC_Roots *roots = (GC_Roots *)malloc(sizeof(GC_Roots));
+    if (roots == NULL)
+        return NULL;
     roots->head = NULL;
-    mutex_init(&roots->modificationLock);
+    if (!mutex_init(&roots->modificationLock)) {
+        free(roots);
+        return NULL;
+    }
     return roots;
 }
 
-void GC_Roots_Add(GC_Roots *roots, AddressRange range) {
+bool GC_Roots_Add(GC_Roots *roots, AddressRange range) {
     // Prepend the node with given range to the head of linked list of GC roots
     GC_Root *node = (GC_Root *)malloc(sizeof(GC_Root));
+    if (node == NULL)
+        return false;
     node->range = range;
     mutex_lock(&roots->modificationLock);
     node->next = roots->head;
     roots->head = node;
     mutex_unlock(&roots->modificationLock);
-}
-
-void GC_Roots_Add_Range_Except(GC_Roots *roots, AddressRange range,
-                               AddressRange except) {
-    assert(AddressRange_Contains(range, except));
-    if (range.address_low < except.address_low) {
-        GC_Roots_Add(roots,
-                     (AddressRange){range.address_low, except.address_low});
-    }
-    if (range.address_high > except.address_high) {
-        GC_Roots_Add(roots,
-                     (AddressRange){except.address_high, range.address_high});
-    }
+    return true;
 }
 
 void GC_Roots_RemoveByRange(GC_Roots *roots, AddressRange range) {
     mutex_lock(&roots->modificationLock);
-    GC_Root *current = roots->head;
-    GC_Root *prev = NULL;
-    while (current != NULL) {
+    GC_Root **link = &roots->head;
+    while (*link != NULL) {
+        GC_Root *current = *link;
         if (AddressRange_Contains(range, current->range)) {
-            AddressRange current_range = current->range;
-            if (prev == NULL)
-                roots->head = current->next;
-            else
-                prev->next = current->next;
-            GC_Roots_Add_Range_Except(roots, current_range, range);
-
-            prev = current;
-            GC_Root *next = current->next;
+            *link = current->next;
             free(current);
-            current = next;
         } else {
-            prev = current;
-            current = current->next;
+            link = &current->next;
         }
     }
     mutex_unlock(&roots->modificationLock);
