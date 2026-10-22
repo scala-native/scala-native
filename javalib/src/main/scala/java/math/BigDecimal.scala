@@ -34,6 +34,10 @@
  * 2026-07-01 10:13 -0400
  *    - Ported Scala.js commit 0d6509a, dated 2026-06-28.
  *      That fixes Scala.js Issue #5381, also identical SN Issue #4967
+ *
+ * 2026-10-02 06:53 -0400
+ *    - Added Java 9 BigDecimal.sqrt(mc)
+ *    - Added Java 27 BigDecimal.rootn(n, mc)
  */
 
 /* 2025-01-27
@@ -72,7 +76,7 @@
 package java.math
 
 import java.lang.{Double => JDouble, Long => JLong}
-import java.util.Arrays
+import java.util.{Arrays, Objects}
 import java.{lang => jl}
 
 import scala.annotation.tailrec
@@ -1862,5 +1866,32 @@ class BigDecimal() extends Number with Comparable[BigDecimal] {
     _bitLength = unscaledVal.bitLength()
     if (_bitLength < 64)
       _smallValue = unscaledVal.longValue()
+  }
+
+  // Scala Native additions -----------------------------------------------
+
+  /** @since 27 */
+  def rootn(n: scala.Int, mc: MathContext): BigDecimal =
+    BigDecimalRootnImpl.rootn(this, n, mc)
+
+  /** @since 9 */
+  def sqrt(mc: MathContext): BigDecimal = {
+    /* Principal (positive) square root is returned or an Exception thrown.
+     *
+     * Note well:
+     *   This implementation follows Java JDK26+ practices in all cases.
+     *
+     *     - Java 25 introduced a check for a null MathContext argument.
+     *
+     *     - Java 26 changed the description and implementation of
+     *       "preferred scale" to "ceil(radicand.scale()/2.0)". URL:
+     * https://www.oracle.com/java/technologies/javase/26-relnote-issues.html
+     *         Section: Correct Scale Handling of BigDecimal.sqrt (JDK-8370057)     *
+     *       Previously it had been "radicandScale / 2", using integer
+     *       truncating division, equivalent to "floor()". They differ
+     *       by one when the scale is positive and odd.
+     */
+
+    BigDecimalRootnImpl.rootn(this, 2, mc)
   }
 }
