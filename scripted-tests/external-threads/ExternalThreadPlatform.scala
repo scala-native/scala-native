@@ -49,19 +49,25 @@ object ExternalThreadPlatform {
     library
   }
 
-  def linkLibrary(library: File, cfg: NativeConfig): File = {
-    if (!current.windows || cfg.buildTarget != BuildTarget.libraryDynamic)
-      library
-    else {
-      val basename = library.getName.stripSuffix(".dll")
-      Seq(
-        library.getParentFile / (basename + ".lib"),
-        library.getParentFile / (basename + ".dll.a"),
-        library.getParentFile / ("lib" + basename + ".dll.a")
-      )
-        .find(_.isFile)
-        .getOrElse(sys.error("Missing archived DLL import library"))
-    }
+  def linkLibrary(library: File, cfg: NativeConfig): Seq[String] = {
+    val input =
+      if (!current.windows || cfg.buildTarget != BuildTarget.libraryDynamic)
+        library
+      else {
+        val basename = library.getName.stripSuffix(".dll")
+        Seq(
+          library.getParentFile / (basename + ".lib"),
+          library.getParentFile / (basename + ".dll.a"),
+          library.getParentFile / ("lib" + basename + ".dll.a")
+        )
+          .find(_.isFile)
+          .getOrElse(sys.error("Missing archived DLL import library"))
+      }
+    // Keep the complete unwinder available to the host's C++ runtime. Its
+    // references alone do not pull the GCC compatibility object from an archive.
+    if (current.linux && cfg.buildTarget == BuildTarget.libraryStatic)
+      Seq("-Wl,--whole-archive", input.getPath, "-Wl,--no-whole-archive")
+    else Seq(input.getPath)
   }
 
   def configureLoading(

@@ -98,8 +98,8 @@ object ExternalThreadScenarios {
       )
       val link = Seq(
         Discover.clangpp().toString,
-        obj.getPath,
-        ExternalThreadPlatform.linkLibrary(preparedLibrary, cfg).getPath,
+        obj.getPath
+      ) ++ ExternalThreadPlatform.linkLibrary(preparedLibrary, cfg) ++ Seq(
         "-o",
         (hosts / platform.executable(language)).getPath
       ) ++

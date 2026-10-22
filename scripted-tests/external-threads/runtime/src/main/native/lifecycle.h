@@ -1,3 +1,5 @@
+#include <setjmp.h>
+
 typedef struct identity_arg {
     int64_t id;
     int64_t value;
@@ -16,14 +18,19 @@ static void *identity_worker(void *raw) {
 
     return NULL;
 }
+static jmp_buf abandoned_return;
 static int64_t abandon_callback(void) {
     milestone("abandoning-live-scope");
-    worker_exit();
+    longjmp(abandoned_return, 1);
     return 0;
 }
 static void *exit_abandoned(void *unused) {
     (void)unused;
-    external_nested(abandon_callback);
+    // Skip the managed return without asking pthread_exit to unwind Scala
+    // frames. glibc forced unwinding can terminate before TLS destructors run.
+    if (setjmp(abandoned_return) == 0)
+        external_nested(abandon_callback);
+    worker_exit();
     return NULL;
 }
 static void abandoned_scopes(void) {
@@ -41,10 +48,17 @@ static void *reclaim_worker(void *raw) {
 
     return NULL;
 }
+static void *reclaim_owner(void *unused) {
+    (void)unused;
+    worker_join(worker_start(reclaim_worker, NULL));
+    // Drain deferred identities on a stack that exits before weak-ref checks.
+    callback_collect();
+    return NULL;
+}
 static void reclaim_cycles(void) {
     int64_t previous = -1;
     for (int i = 0; i < iterations; ++i) {
-        worker_join(worker_start(reclaim_worker, NULL));
+        worker_join(worker_start(reclaim_owner, NULL));
         CHECK(reclaimed_identity != previous);
         previous = reclaimed_identity;
 #ifdef EXTERNAL_RECLAIMING_GC

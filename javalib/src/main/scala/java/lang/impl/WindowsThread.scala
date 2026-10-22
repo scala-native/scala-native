@@ -8,7 +8,6 @@ import scala.scalanative.runtime._
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.windows.HandleApi._
-import scala.scalanative.windows.HandleApiExt._
 import scala.scalanative.windows.ProcessThreadsApi._
 import scala.scalanative.windows.ProcessThreadsApiExt._
 import scala.scalanative.windows.SynchApi._
@@ -69,7 +68,7 @@ private[java] class WindowsThread(
             duplicated,
             0.toUInt,
             false,
-            DUPLICATE_SAME_ACCESS
+            DuplicateSameAccess.toUInt
           ))
         throw new RuntimeException("Cannot adopt native thread handle")
       !duplicated
@@ -227,6 +226,9 @@ object WindowsThread extends NativeThread.Companion {
       sysInfo.allocationGranularity.toLong
     }
   }
+
+  // Adoption has no identity yet and cannot wait for Scala module initialization.
+  private final val DuplicateSameAccess = 0x00000002
 
   @alwaysinline private def NanosInMillisecond = 1000000
 

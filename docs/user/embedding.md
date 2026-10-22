@@ -12,6 +12,10 @@ and [shared-library tests](https://github.com/scala-native/scala-native/tree/mai
 These build Scala libraries and call their exports from C/C++ hosts. See the
 [test instructions](https://github.com/scala-native/scala-native/blob/main/scripted-tests/external-threads/README.md) to run them.
 
+When linking a static Scala Native library into a C++ host on Linux, pass the
+archive between `-Wl,--whole-archive` and `-Wl,--no-whole-archive`. This includes
+the complete unwinder needed for exceptions crossing the library boundary.
+
 ## Initialize before calling Scala
 
 For a static library, call `int ScalaNativeInit(void)` exactly once and check
