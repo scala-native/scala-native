@@ -123,22 +123,21 @@ object NirPrimitives {
     code >= DIV_UINT && code <= ULONG_TO_DOUBLE
 }
 
-class NirPrimitives(using ctx: Context) extends NirPrimitivesBase(using ctx) {
+class NirPrimitives(using ctx: Context)
+    extends CompilerCompat.NirPrimitivesBase(using ctx) {
   import NirPrimitives._
   protected lazy val nirPrimitives: ReadOnlyMap[Symbol, Int] = initNirPrimitives
 
-  // Variant for source compatibility due to changes method signature
+  protected def nirPrimitiveCode(sym: Symbol): Option[Int] =
+    if (nirPrimitives.contains(sym)) Some(nirPrimitives(sym)) else None
+
+  // `getPrimitive(Apply, Type)` and `isPrimitive(Tree)` changed in 3.10.1.
+  // CompilerCompat.NirPrimitivesBase restores those signatures there.
   def getPrimitiveCompat(app: Apply, tpe: Type): Int =
-    nirPrimitives.getOrElse(app.fun.symbol, super.getPrimitive(app, tpe))
+    nirPrimitiveCode(app.fun.symbol).getOrElse(getPrimitive(app, tpe))
 
   def isPrimitiveTree(tree: Tree): Boolean =
-    nirPrimitives.contains(tree.symbol) || super.isPrimitive(tree)
-
-  override def getPrimitive(sym: Symbol): Int =
-    nirPrimitives.getOrElse(sym, super.getPrimitive(sym))
-  override def isPrimitive(sym: Symbol): Boolean = {
-    nirPrimitives.contains(sym) || super.isPrimitive(sym)
-  }
+    nirPrimitiveCode(tree.symbol).isDefined || isPrimitive(tree)
 
   private def initNirPrimitives(using Context): ReadOnlyMap[Symbol, Int] = {
     val defnNir = NirDefinitions.get

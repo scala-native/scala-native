@@ -132,7 +132,8 @@ object Settings {
             "-Wconf:msg=Illegal literal:s",
             // Test names ported from JVM testsuites encode JVM method signatures,
             // e.g. test_write_$CII, which requires `$` in identifiers
-            "-Wconf:msg=which is reserved for internal compiler use:s"
+            "-Wconf:msg=which is reserved for internal compiler use:s",
+            "-Wconf:msg=Catching Throwable:s"
           )
       },
     javaReleaseSettings,
