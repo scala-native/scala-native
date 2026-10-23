@@ -108,8 +108,8 @@ private[scalanative] object LLVM {
       } else Nil
 
     val flags: Seq[String] =
-      buildTargetCompileOpts ++ flto ++ sanitizer ++ target ++
-        langOptions ++ platformFlags ++ debugFlags ++
+      buildTargetCompileOpts ++ ltoCompileFlags(inpath) ++ sanitizer ++
+        target ++ langOptions ++ platformFlags ++ debugFlags ++
         configFlags ++ Seq("-fvisibility=hidden", opt) ++
         Seq("-fomit-frame-pointer") ++
         config.compileOptions
@@ -421,6 +421,20 @@ private[scalanative] object LLVM {
       case LTO.None => Seq.empty
       case lto      => Seq(s"-flto=${lto.name}")
     }
+
+  // Apple ld does not materialize unw_* symbols that exist only in bitcode.
+  private def ltoCompileFlags(
+      inpath: String
+  )(implicit config: Config): Seq[String] = {
+    val vendoredUnwind = inpath.contains(
+      s"${File.separator}libunwind${File.separator}"
+    )
+    val skipLto = config.targetsMac &&
+      config.compilerConfig.lto != LTO.None &&
+      vendoredUnwind
+    if (skipLto) Seq("-fno-lto")
+    else flto
+  }
 
   private def sanitizer(implicit config: Config): Seq[String] =
     config.compilerConfig.sanitizer match {
