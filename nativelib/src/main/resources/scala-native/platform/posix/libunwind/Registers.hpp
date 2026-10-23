@@ -1920,6 +1920,32 @@ public:
 #endif
     _registers.__pc = value;
   }
+
+  // Authenticate an LR signed by pacibsppc and store the raw PC.
+  // 0xdac1bffe is autib171615 (FEAT_PAuth_LR): x17 is the signed pointer,
+  // x16 is SP, x15 is the pacibsppc address. The mnemonic is rejected unless
+  // the translation unit is built with target("pauth-lr"), which nativelib is
+  // not, so the encoding is emitted directly. It executes only while stepping
+  // UNWIND_ARM64_MODE_FRAME_PAUTH_LR. Nativelib is not built with
+  // pointer-auth returns, so this register file stores a raw PC. The
+  // authenticated getIP/setIP path above is for a libunwind built with
+  // ptrauth returns, which resigns into the PC slot.
+  void setIPPAuthLR(uint64_t value, uint64_t signingPc) {
+#if defined(__APPLE__) && defined(__aarch64__)
+    register uint64_t x17 __asm("x17") = value;
+    register uint64_t x16 __asm("x16") = _registers.__sp;
+    register uint64_t x15 __asm("x15") = signingPc;
+    __asm__ __volatile__(".inst 0xdac1bffe"
+                         : "+r"(x17)
+                         : "r"(x16), "r"(x15)
+                         : "cc");
+    value = x17;
+#else
+    (void)signingPc;
+#endif
+    _registers.__pc = value;
+  }
+
   uint64_t getFP() const { return _registers.__fp; }
   void setFP(uint64_t value) { _registers.__fp = value; }
 
