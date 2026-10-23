@@ -524,9 +524,6 @@ class RecursiveTaskTest extends JSR166Test {
 
   /** getPool of non-FJ task returns null
    */
-  @Ignore(
-    "Test-infrastructure limitation, all tests are executed in ForkJoinPool due to usage of Future in RPCCore"
-  )
   @Test def testGetPool2(): Unit = {
     val a = new CheckedRecursiveTask[Integer] {
       protected def realCompute(): Integer = {
@@ -551,9 +548,6 @@ class RecursiveTaskTest extends JSR166Test {
 
   /** inForkJoinPool of non-FJ task returns false
    */
-  @Ignore(
-    "Test-infrastructure limitation, all tests are executed in ForkJoinPool due to usage of Future in RPCCore"
-  )
   @Test def testInForkJoinPool2(): Unit = {
     val a = new CheckedRecursiveTask[Integer] {
       protected def realCompute(): Integer = {
