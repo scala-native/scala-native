@@ -36,6 +36,18 @@ sealed trait NativeConfig {
   /** The garbage collector to use. */
   def gc: GC
 
+  /** Use signal-based GC safepoints. None selects the mode default (enabled in
+   *  release builds). Disable when embedding libraries that intercept SIGSEGV,
+   *  such as libclang. The build-time environment variable
+   *  SCALANATIVE_GC_TRAP_BASED_YIELDPOINTS overrides this setting.
+   */
+  def trapBasedGCYieldPoints: Option[Boolean]
+
+  def withTrapBasedGCYieldPoints(value: Option[Boolean]): NativeConfig
+
+  final def withTrapBasedGCYieldPoints(value: Boolean): NativeConfig =
+    withTrapBasedGCYieldPoints(Some(value))
+
   /** The LTO mode to use used during a release build. */
   def lto: LTO
 
@@ -336,6 +348,7 @@ object NativeConfig {
       cppOptions = Seq.empty,
       targetTriple = None,
       gc = GC.default,
+      trapBasedGCYieldPoints = None,
       lto = LTO.default,
       mode = Mode.default,
       buildTarget = BuildTarget.default,
@@ -368,6 +381,7 @@ object NativeConfig {
       cppOptions: Seq[String],
       targetTriple: Option[String],
       gc: GC,
+      trapBasedGCYieldPoints: Option[Boolean],
       lto: LTO,
       mode: Mode,
       buildTarget: BuildTarget,
@@ -427,6 +441,9 @@ object NativeConfig {
 
     def withGC(value: GC): NativeConfig =
       copy(gc = value)
+
+    def withTrapBasedGCYieldPoints(value: Option[Boolean]): NativeConfig =
+      copy(trapBasedGCYieldPoints = value)
 
     def withMode(value: Mode): NativeConfig =
       copy(mode = value)
@@ -540,6 +557,9 @@ object NativeConfig {
           | - cppOptions:              ${showSeq(cppOptions)}
           | - targetTriple:            $targetTriple
           | - GC:                      $gc
+          | - trapBasedGCYieldPoints:   ${trapBasedGCYieldPoints.getOrElse(
+           "default"
+         )}
           | - LTO:                     $lto
           | - mode:                    $mode
           | - buildTarget              $buildTarget
