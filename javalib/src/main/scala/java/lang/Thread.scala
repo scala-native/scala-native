@@ -573,6 +573,21 @@ object Thread {
     override protected val tid: scala.Long = 0L
     inheritableThreadLocals = new ThreadLocal.Values()
     platformCtx.nativeThread = nativeCompanion.create(this, 0L)
+    if (isMultithreadingEnabled) {
+      warmExternalAdoptionModules(platformCtx.group)
+    }
+  }
+
+  private def warmExternalAdoptionModules(group: ThreadGroup): Unit = {
+    val id = ThreadIdentifiers.next()
+    val ctx = PlatformThreadContext(
+      group = group,
+      task = null,
+      stackSize = 0L,
+      daemon = true
+    )
+    if (id <= 0L || (ctx.group ne group))
+      throw new IllegalStateException("external adoption module warm-up failed")
   }
 
   @alwaysinline private[lang] def nativeCompanion: NativeThread.Companion =
@@ -582,6 +597,7 @@ object Thread {
   @exported("scalanative_externalThread_adopt")
   private[lang] def adoptExternalThread(): CInt = {
     var nativeThread: NativeThread = null
+    var provisional = false
     try {
       val thread = new Thread(
         name = "native-thread",
@@ -595,11 +611,14 @@ object Thread {
           daemon = true
         )
       )
+      NativeThread.bindProvisionalExternalThread(thread)
+      provisional = true
       nativeThread =
         if (isWindows) WindowsThread.adoptCurrentThread(thread)
         else PosixThread.adoptCurrentThread(thread)
       thread.platformCtx.nativeThread = nativeThread
       NativeThread.bindExternalThread(nativeThread)
+      provisional = false
       0
     } catch {
       case failure: Throwable =>
@@ -611,6 +630,7 @@ object Thread {
         } catch { case _: Throwable => () }
         if (nativeThread != null)
           NativeThread.releaseExternalThread(nativeThread)
+        else if (provisional) NativeThread.clearProvisionalExternalThread()
         1
     }
   }
