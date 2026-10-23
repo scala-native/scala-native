@@ -66,11 +66,6 @@ object ClassPath {
     def contains(name: nir.Global) =
       nirFiles.contains(name.top)
 
-    private def makeBufferName(directory: VirtualDirectory, file: Path) =
-      directory.uri
-        .resolve(new java.net.URI(file.getFileName().toString))
-        .toString
-
     def load(name: nir.Global.Top): Option[Seq[nir.Defn]] =
       cache.getOrElseUpdate(
         name, {
@@ -85,11 +80,11 @@ object ClassPath {
         case (_, file) =>
           def logUnreadableFile(err: NirDeserializationException): Unit =
             log.warn(
-              s"Can't check if file contains entrypoints, ${file} would be ignored: ${err.getMessage()}."
+              s"Can't check if file contains entrypoints, ${file} would be ignored: ${err.getMessage()}"
             )
           val buffer = directory.read(file, len = NirPrelude.length)
           NirPrelude
-            .tryReadFrom(buffer, makeBufferName(directory, file))
+            .tryReadFrom(buffer, nir.NIRSource(directory.path, file).debugName)
             .left
             .map(logUnreadableFile)
             .exists(_.hasEntryPoints)
