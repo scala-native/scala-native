@@ -119,7 +119,7 @@ private[scalanative] object LLVM {
     // compile
     config.logger.running(compilec)
     val result = Process(compilec, workDir.toFile) !
-      Logger.toProcessLogger(config.logger)
+      Logger.toCompilerProcessLogger(config.logger)
     if (result != 0) {
       throw new BuildException(s"Failed to compile ${inpath}")
     }
@@ -160,7 +160,7 @@ private[scalanative] object LLVM {
         prepareArchiveCommand(objectsPaths)
     }
     // link
-    val result = command ! Logger.toProcessLogger(config.logger)
+    val result = command ! Logger.toCompilerProcessLogger(config.logger)
     if (result != 0) {
       throw new BuildException(s"Failed to link ${buildPath}")
     }
@@ -174,7 +174,7 @@ private[scalanative] object LLVM {
   def dsymutil(config: Config, path: Path): Unit =
     Discover.tryDiscover("dsymutil", "LLVM_BIN").flatMap { dsymutil =>
       val proc = Process(Seq(dsymutil.abs, path.abs), config.workDir.toFile())
-      val result = proc ! Logger.toProcessLogger(config.logger)
+      val result = proc ! Logger.toCompilerProcessLogger(config.logger)
       if (result != 0) {
         Failure(
           new BuildException(

@@ -17,6 +17,7 @@
  */
 
 #include <stddef.h>
+#include <stdint.h>
 #include <sys/event.h>
 
 int scalanative_kevent_evfilt_read() { return EVFILT_READ; }
@@ -43,7 +44,14 @@ int scalanative_kevent_ev_eof() { return EV_EOF; }
 int scalanative_kevent_ev_error() { return EV_ERROR; }
 
 int scalanative_kevent_note_exit() { return NOTE_EXIT; }
-int scalanative_kevent_note_exitstatus() { return NOTE_EXITSTATUS; }
+int scalanative_kevent_note_exitstatus() {
+#ifdef NOTE_EXITSTATUS
+    return NOTE_EXITSTATUS;
+#else
+    // FreeBSD reports process exit through NOTE_EXIT without a separate flag.
+    return 0;
+#endif
+}
 
 size_t scalanative_kevent_size() { return sizeof(struct kevent); }
 

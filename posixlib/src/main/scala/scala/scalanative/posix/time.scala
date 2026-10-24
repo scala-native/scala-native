@@ -77,6 +77,7 @@ trait time extends libc.time {
 
   def clock(): clock_t = extern
   def clock_getres(clockid: clockid_t, res: Ptr[timespec]): CInt = extern
+  @name("scalanative_clock_gettime")
   def clock_gettime(clockid: clockid_t, tp: Ptr[timespec]): CInt = extern
 
   // No clock_nanosleep on macOS. time.c provides a stub always returning -1.
@@ -103,6 +104,7 @@ trait time extends libc.time {
 
   def mktime(time: Ptr[tm]): time_t = extern
 
+  @name("scalanative_nanosleep")
   @blocking
   def nanosleep(
       requested: Ptr[timespec],

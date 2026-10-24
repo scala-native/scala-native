@@ -118,3 +118,26 @@ index applies to JVM as well as native execution on NetBSD.
 Validation for these fixes: toolsJVM3 compiles, the focused JVM network test
 passes on the host, and the same compiled JUnit test passes inside the NetBSD
 10.1 guest using OpenJDK 21 (`-Xint` for QEMU TCG execution).
+
+Run `40134496807` reaches native unit-test compilation on FreeBSD, where
+kevent.c lacked stdint.h and referenced NOTE_EXITSTATUS, absent on FreeBSD.
+Include the integer types and return zero for that optional flag; NOTE_EXIT
+still subscribes to process exit events.
+
+NetBSD reaches the JUnit output smoke checks. Its intentionally disabled
+unwinder returns empty traces, exposing a reporter bug that indexes frame zero
+when there are no printable frames. Bound the last printable index and add
+native regression tests for empty traces and filtered frames with an empty cause.
+
+Compiler stderr previously always used the error log level. Compiler process
+logging now recognizes warning and error diagnostics and keeps subsequent
+source context at the matching level; generic subprocess logging is unchanged.
+Preserve BSD-provided unistd constants before applying fallbacks, and avoid a
+compile-time warning for the expected unsupported POSIX_SPAWN_SETSID fallback.
+Use C header-selected entry points for clock_gettime, nanosleep and socket so
+NetBSD links the current ABI instead of compatibility symbols.
+
+Validation: the five changed C sources compile with -Werror in both local BSD
+guests; a NetBSD time/socket ABI probe links the header-selected shims. Three
+compiler-logging tests, two native reporter regressions, and all forty existing
+native JUnit output checks pass locally. Full BSD runtime CI remains pending.

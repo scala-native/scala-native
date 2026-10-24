@@ -429,6 +429,11 @@ int scalanative_sockatmark(int socket) {
 #endif
 }
 
+int scalanative_socket(int domain, int type, int protocol) {
+    // NetBSD's header selects __socket30 rather than compatibility socket().
+    return (int)socket(domain, type, protocol);
+}
+
 int scalanative_socketpair(int domain, int type, int protocol, int *sv) {
 #if defined(_WIN32)
     errno = ENOTSUP;

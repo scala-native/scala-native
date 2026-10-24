@@ -147,6 +147,16 @@ _Static_assert(offsetof(struct scalanative_itimerspec, it_value) ==
 #endif
 #endif // __STDC_VERSION__
 
+// Keep header-selected ABI versions, notably NetBSD's time64 entry points.
+int scalanative_clock_gettime(clockid_t clockid, struct timespec *tp) {
+    return clock_gettime(clockid, tp);
+}
+
+int scalanative_nanosleep(const struct timespec *requested,
+                          struct timespec *remaining) {
+    return nanosleep(requested, remaining);
+}
+
 int scalanative_clock_nanosleep(clockid_t clockid, int flags,
                                 struct timespec *request,
                                 struct timespec *remain) {

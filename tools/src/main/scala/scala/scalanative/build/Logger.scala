@@ -111,4 +111,32 @@ object Logger {
   /** Turns the given logger into a `ProcessLogger`. */
   def toProcessLogger(logger: Logger): ProcessLogger =
     ProcessLogger(logger.info, logger.error)
+
+  /** Preserve compiler diagnostic severity, including following source lines.
+   */
+  private[build] def toCompilerProcessLogger(logger: Logger): ProcessLogger = {
+    var diagnostic: String => Unit = logger.error
+    ProcessLogger(
+      logger.info,
+      line => {
+        val lower = line.toLowerCase(java.util.Locale.ROOT)
+        val summary = line.endsWith(" generated.")
+        def hasSeverity(level: String): Boolean =
+          lower.startsWith(s"$level:") || lower.contains(s": $level:")
+        if (hasSeverity("error") || hasSeverity("fatal error") || lower
+              .contains("undefined reference") ||
+            lower.contains("undefined symbol") ||
+            (summary && line.contains(" error")))
+          diagnostic = logger.error
+        else if (hasSeverity("warning") ||
+            (summary && line.contains(" warning")))
+          diagnostic = logger.warn
+        if (line.startsWith("In file included from ") || line.trim
+              .startsWith("from "))
+          logger.info(line)
+        else diagnostic(line)
+      }
+    )
+  }
+
 }
