@@ -1,0 +1,74 @@
+name: Run tests BSD (FreeBSD & NetBSD)
+on:
+  workflow_call:
+  pull_request:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bsd-${{ github.head_ref || github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  test-freebsd:
+    name: Test runtime (FreeBSD x86_64, Scala 3)
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || github.repository == 'scala-native/scala-native'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+      - name: Run tests on FreeBSD
+        uses: vmactions/freebsd-vm@v1
+        with:
+          release: "14.4"
+          usesh: true
+          mem: 8192
+          prepare: |
+            set -eu
+            pkg update -f
+            pkg install -y llvm18 boehm-gc-threaded git curl bash openjdk21
+          run: |
+            set -eu
+            export JAVA_HOME=/usr/local/openjdk21
+            export LLVM_BIN=/usr/local/llvm18/bin
+            export PATH="$JAVA_HOME/bin:$LLVM_BIN:/usr/local/bin:$PATH"
+            sh scripts/ci/run-bsd-tests.sh
+
+  test-netbsd:
+    name: Test runtime (NetBSD x86_64, Scala 3)
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || github.repository == 'scala-native/scala-native'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+      - name: Run tests on NetBSD
+        uses: vmactions/netbsd-vm@v1
+        env:
+          # Avoid stale or unresponsive fallback mirrors in the VM image.
+          PKG_PATH: https://cdn.NetBSD.org/pub/pkgsrc/packages/NetBSD/x86_64/10.0_2026Q3/All
+        with:
+          envs: PKG_PATH
+          # scp avoids reinstalling the image's rsync through stale mirrors
+          # before prepare has a chance to configure the package repository.
+          sync: scp
+          release: "10.1"
+          usesh: true
+          mem: 8192
+          prepare: |
+            set -eu
+            export PATH="/usr/pkg/bin:/usr/pkg/sbin:$PATH"
+            # Use base pkg_add with the repository passed through PKG_PATH.
+            # Git needs a newer pcre2 than the cached VM image contains.
+            /usr/sbin/pkg_add -u pcre2
+            /usr/sbin/pkg_add clang boehm-gc zlib git curl bash openjdk21 mozilla-rootcerts
+          run: |
+            set -eu
+            export JAVA_HOME=/usr/pkg/java/openjdk21
+            export PATH="$JAVA_HOME/bin:/usr/pkg/bin:/usr/pkg/sbin:$PATH"
+            export SCALANATIVE_INCLUDE_DIRS=/usr/pkg/include
+            export SCALANATIVE_LIB_DIRS=/usr/pkg/lib
+            sh scripts/ci/run-bsd-tests.sh

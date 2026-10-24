@@ -223,15 +223,18 @@ private[scalanative] object LLVM {
     val workDir = config.workDir
     val links = {
       val srclinks = analysis.links.map(_.name)
-      val gclinks = config.gc.links
+      // FreeBSD packages the thread-enabled Boehm collector separately.
+      val gclinks =
+        if (config.gc == GC.boehm && config.targetsFreeBSD) Seq("gc-threaded")
+        else config.gc.links
       // We need extra linking dependencies for:
       // * libdl for our vendored libunwind implementation.
       // * libpthread for process APIs and parallel garbage collection.
       // * Dbghelp for windows implementation of unwind libunwind API
       val platformsLinks =
         if (config.targetsWindows) Seq("dbghelp")
-        else if (config.targetsOpenBSD || config.targetsNetBSD)
-          Seq("pthread")
+        else if (config.targetsOpenBSD) Seq("pthread")
+        else if (config.targetsNetBSD) Seq("pthread", "m")
         else Seq("pthread", "dl", "m")
       platformsLinks ++ srclinks ++ gclinks
     }.distinct

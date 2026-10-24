@@ -1,0 +1,120 @@
+# BSD CI: FreeBSD and NetBSD
+
+Branch: `ci/freebsd-netbsd`, based on `ci/termux-runtime`.
+Rebased on `6514027f6` on 2026-10-24.
+
+The workflow is [run-tests-bsd.yml](../../.github/workflows/run-tests-bsd.yml).
+Both jobs run x86_64 VMs on Ubuntu through vmactions, with 8 GiB RAM
+and a 120 minute job timeout.
+
+| Target | Compiler | JDK |
+|--------|----------|-----|
+| FreeBSD 14.4 | `llvm18` | native `openjdk21`, `/usr/local/openjdk21` |
+| NetBSD 10.1 | pkgsrc `clang` | pkgsrc `openjdk21`, `/usr/pkg/java/openjdk21` |
+
+FreeBSD installs `boehm-gc-threaded` and links `libgc-threaded`; its plain
+`boehm-gc` package is built without threads and omits `gc_pthread_redirects.h`.
+NetBSD installs `boehm-gc`. FreeBSD uses base zlib; NetBSD installs pkgsrc
+zlib and supplies `/usr/pkg/include` and `/usr/pkg/lib` through
+`SCALANATIVE_INCLUDE_DIRS` and `SCALANATIVE_LIB_DIRS`.
+
+## Bootstrap and coverage
+
+[scripts/ci/run-bsd-tests.sh](../../scripts/ci/run-bsd-tests.sh) downloads
+the portable sbt launcher JAR for the version in `project/build.properties`.
+Linux coursier executables and Linux JDK distributions cannot be used as
+native FreeBSD tools. The build currently requires sbt 2.0.9.
+
+Each job runs `test-gc 3`, which exercises sandbox, testInterface and
+junitTestOutputsNative with none, immix, commix and Boehm collectors.
+A fresh sbt process then runs `testsJVM3/test`, `tests3/test`,
+`junitTestOutputsNative3/test` and `scalaPartestJunitTests3/test`.
+The explicit list excludes testsExt; the `test-runtime 3` alias includes it.
+
+Both BSDs appear in the x86_64 continuation guards in `delimcc.h` and
+`LinktimeInfo.isContinuationsSupported`. This is source-level support;
+virtual threads still require validation on the actual VMs.
+
+## Progress
+
+| Task | Status |
+|------|--------|
+| Initial workflow and handoff | Done, original commit `d0e90fcfd` |
+| Rebase onto latest Termux work | Done, base `6514027f6` |
+| Correct native JDK and portable sbt bootstrap | Done |
+| Workflow lint and shell syntax validation | Passed |
+| First VM run | Failed in package setup; no compilation reached |
+| Package setup fixes | FreeBSD 14.4 matches repository ABI; NetBSD uses base pkg_add |
+| FreeBSD struct tm layout | Fixed C assertions and Scala field accessors |
+| NetBSD cached pcre2 and certificate setup | Fixed dependency update; reuse existing trust store |
+| FreeBSD Boehm bootstrap | Install threaded package and select libgc-threaded |
+| Runtime failure triage | Pending |
+
+The initial run failed because FreeBSD 14.2 rejected packages targeting 14.4
+and NetBSD did not have pkgin installed. No BSD runtime results are available yet. Do not add skip guards until a
+failure has been reproduced and its cause established.
+
+## Running CI
+
+PRs run both jobs. The temporary branch push trigger was removed once
+PR #5123 opened to avoid duplicate VM jobs. Scheduled
+runs at 03:00 UTC are restricted to the canonical repository.
+
+Once the workflow exists on the default branch, manual runs are available:
+
+```sh
+gh workflow run run-tests-bsd.yml --repo scala-native/scala-native --ref ci/freebsd-netbsd
+```
+
+After the first green run, consider adding testsExt and Scala 2.13 coverage.
+Confirm supported VM images and package availability before adding architectures.
+
+## Local debugging and confirmed failures
+
+The [Docker/QEMU development rig](../../scripts/ci/bsd-dev/README.md) uses
+persistent copies of the CI images with SSH, source sync and focused C probes.
+
+The FreeBSD Boehm test-interface failure in run `40114710628` is a diagnostic
+signal-handler conflict: Boehm uses SIGUSR1/SIGUSR2 for stop-the-world, and
+SignalConfig replaced them with fatal handlers. Preserve those handlers for
+Boehm, along with SIGXCPU/SIGXFSZ used on other platforms. This also applies
+to single-threaded Scala builds that can have native worker threads.
+The container signal probe reproduces the crash when handlers are overwritten
+and succeeds when they are preserved. The existing test-interface suite also
+passes locally with Boehm and SCALANATIVE_TEST_DEBUG_SIGNALS=1 (14 tests).
+
+The NetBSD job in that run did not reach compilation: package setup stalled
+on an unresponsive fallback mirror. CI now uses the verified CDN 2026Q3
+repository and SCP, avoiding the pre-prepare rsync package lookup. A local
+NetBSD 10.1 guest passes all four loopback socket ABI probe cases; that CI run
+provides no evidence of a NetBSD socket failure.
+
+Run `40119146393` confirms that FreeBSD passes the complete four-GC smoke
+matrix after the signal fix. Its subsequent JVM suite reports seven failures:
+VM hostname resolution, Git checkout ownership, interface index/name assumptions,
+and a FreeBSD link-local IPv6 loopback expectation. CI now configures the hostname
+and Git safe directory; the network tests check name/index consistency and
+accept FreeBSD's link-local address form.
+
+NetBSD now gets through package setup and reaches native compilation. The
+`_SC_AVPHYS_PAGES` guard in MemoryInfo.c applied only to the macOS alternative
+because of operator precedence. Grouping all Unix alternatives before that guard
+fixes compilation. The corrected file compiles and runs in the local NetBSD
+guest, reporting physical memory and page size and returning zero for unavailable
+free-page information.
+
+Run `40132106769` gets NetBSD through C compilation, then fails native linking
+on `log`, `log10` and `ceil`: LLVM-generated calls require libm, which the
+NetBSD platform link list omitted. Add `m` alongside `pthread`. A local NetBSD
+math probe reproduces the undefined symbols without `-lm` and runs with it.
+
+FreeBSD's JVM suite is down to one failure: `NetworkInterfaceTestOnJDK9`
+requires `%lo0` on `::1`, but OpenJDK 21 can omit that scope. Compare the
+address separately and, when a scope is present, check that it names the
+loopback interface or its numeric index. The local NetBSD OpenJDK 21 probe
+also returns unscoped `::1` and `fe80:2::1`; the embedded link-local interface
+index applies to JVM as well as native execution on NetBSD.
+
+Validation for these fixes: toolsJVM3 compiles, the focused JVM network test
+passes on the host, and the same compiled JUnit test passes inside the NetBSD
+10.1 guest using OpenJDK 21 (`-Xint` for QEMU TCG execution).

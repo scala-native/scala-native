@@ -144,8 +144,9 @@ size_t getFreeMemorySize(void) {
     return 0L;
 
 #elif (defined(__unix__) || defined(__unix) || defined(unix) ||                \
-       (defined(__APPLE__) && defined(__MACH__)) && defined(_SC_AVPHYS_PAGES))
-    /* UNIX variants; yes NetBSD, but not FreeBSD --------------------- */
+       (defined(__APPLE__) && defined(__MACH__))) &&                           \
+    defined(_SC_AVPHYS_PAGES)
+    /* UNIX variants providing the available-page sysconf parameter. */
     long pages = sysconf(_SC_AVPHYS_PAGES);
     long page_size = sysconf(_SC_PAGESIZE);
     if (pages == -1 || page_size == -1)

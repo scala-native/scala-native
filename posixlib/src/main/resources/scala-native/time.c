@@ -87,16 +87,7 @@ _Static_assert(offsetof(struct scalanative_tm, tm_isdst) ==
                    offsetof(struct tm, tm_isdst),
                "offset mismatch: tm.tm_isdst");
 
-#if defined(__FreeBSD__)
-// timeOps in time.scala fixes up the FreeBSD reversed fields.
-_Static_assert(offsetof(struct scalanative_tm, tm_zone) ==
-                   offsetof(struct tm, tm_gmtoff),
-               "offset mismatch: tm.tm_gmtoff");
-
-_Static_assert(offsetof(struct scalanative_tm, tm_offset) ==
-                   offsetof(struct tm, tm_zone),
-               "offset mismatch: tm.tm_zone");
-#elif !defined(__linux__)
+#if !defined(__linux__)
 _Static_assert(offsetof(struct scalanative_tm, tm_gmtoff) ==
                    offsetof(struct tm, tm_gmtoff),
                "offset mismatch: tm.tm_gmtoff");
