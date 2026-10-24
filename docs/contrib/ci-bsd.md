@@ -68,3 +68,23 @@ gh workflow run run-tests-bsd.yml --repo scala-native/scala-native --ref ci/free
 
 After the first green run, consider adding testsExt and Scala 2.13 coverage.
 Confirm supported VM images and package availability before adding architectures.
+
+## Local debugging and confirmed failures
+
+The [Docker/QEMU development rig](../../scripts/ci/bsd-dev/README.md) uses
+persistent copies of the CI images with SSH, source sync and focused C probes.
+
+The FreeBSD Boehm test-interface failure in run `40114710628` is a diagnostic
+signal-handler conflict: Boehm uses SIGUSR1/SIGUSR2 for stop-the-world, and
+SignalConfig replaced them with fatal handlers. Preserve those handlers for
+Boehm, along with SIGXCPU/SIGXFSZ used on other platforms. This also applies
+to single-threaded Scala builds that can have native worker threads.
+The container signal probe reproduces the crash when handlers are overwritten
+and succeeds when they are preserved. The existing test-interface suite also
+passes locally with Boehm and SCALANATIVE_TEST_DEBUG_SIGNALS=1 (14 tests).
+
+The NetBSD job in that run did not reach compilation: package setup stalled
+on an unresponsive fallback mirror. CI now uses the verified CDN 2026Q3
+repository and SCP, avoiding the pre-prepare rsync package lookup. A local
+NetBSD 10.1 guest passes all four loopback socket ABI probe cases; that CI run
+provides no evidence of a NetBSD socket failure.

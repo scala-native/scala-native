@@ -47,14 +47,21 @@ jobs:
       - uses: actions/checkout@v7
       - name: Run tests on NetBSD
         uses: vmactions/netbsd-vm@v1
+        env:
+          # Avoid stale or unresponsive fallback mirrors in the VM image.
+          PKG_PATH: https://cdn.NetBSD.org/pub/pkgsrc/packages/NetBSD/x86_64/10.0_2026Q3/All
         with:
+          envs: PKG_PATH
+          # scp avoids reinstalling the image's rsync through stale mirrors
+          # before prepare has a chance to configure the package repository.
+          sync: scp
           release: "10.1"
           usesh: true
           mem: 8192
           prepare: |
             set -eu
             export PATH="/usr/pkg/bin:/usr/pkg/sbin:$PATH"
-            # The VM configures live package mirrors for pkg_add. pkgin is absent.
+            # Use base pkg_add with the repository passed through PKG_PATH.
             # Git needs a newer pcre2 than the cached VM image contains.
             /usr/sbin/pkg_add -u pcre2
             /usr/sbin/pkg_add clang boehm-gc zlib git curl bash openjdk21 mozilla-rootcerts
