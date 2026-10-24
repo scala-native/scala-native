@@ -5,6 +5,8 @@
 #include <sys/types.h>
 #include <string.h>
 
+// Bionic does not implement thread cancellation.
+#ifndef __ANDROID__
 int scalanative_pthread_cancel_asynchronous() {
     return PTHREAD_CANCEL_ASYNCHRONOUS;
 }
@@ -16,6 +18,7 @@ int scalanative_pthread_cancel_deferred() { return PTHREAD_CANCEL_DEFERRED; }
 int scalanative_pthread_cancel_disable() { return PTHREAD_CANCEL_DISABLE; }
 
 void *scalanative_pthread_canceled() { return PTHREAD_CANCELED; }
+#endif
 
 int scalanative_pthread_create_detached() { return PTHREAD_CREATE_DETACHED; }
 
@@ -43,7 +46,9 @@ int scalanative_pthread_prio_inherit() { return PTHREAD_PRIO_INHERIT; }
 
 int scalanative_pthread_prio_none() { return PTHREAD_PRIO_NONE; }
 
+#ifndef __ANDROID__
 int scalanative_pthread_prio_protect() { return PTHREAD_PRIO_PROTECT; }
+#endif
 
 int scalanative_pthread_process_shared() { return PTHREAD_PROCESS_SHARED; }
 

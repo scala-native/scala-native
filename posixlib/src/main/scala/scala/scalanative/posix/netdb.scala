@@ -11,7 +11,7 @@ import scalanative.unsafe._
 @extern
 @define("__SCALANATIVE_POSIX_NETDB")
 object netdb {
-  /* This is the Linux layout. FreeBSD, macOS, and Windows have the same
+  /* This is the glibc layout. Android, FreeBSD, macOS, and Windows have the same
    * size but swap ai_addr and ai_canonname. FreeBSD & Windows document this.
    * macOS tells whoppers: it documents the Linux order in man pages and
    * implements the FreeBSD layout.
@@ -151,7 +151,8 @@ object netdbOps {
   def useBsdAddrinfo = (LinktimeInfo.isMac ||
     LinktimeInfo.isFreeBSD ||
     LinktimeInfo.isNetBSD ||
-    LinktimeInfo.isWindows)
+    LinktimeInfo.isWindows ||
+    LinktimeInfo.isAndroid)
 
   implicit class addrinfoOps(private val ptr: Ptr[addrinfo]) extends AnyVal {
     def ai_flags: CInt = ptr._1

@@ -32,8 +32,8 @@ _Static_assert(offsetof(struct scalanative_glob_t, gl_offs) ==
                    offsetof(glob_t, gl_offs),
                "offset mismatch: glob_t gl_offs");
 
-#if defined(__linux__)
-// gl_pathv is second element on Linux.
+#if defined(__linux__) && !defined(__ANDROID__)
+// gl_pathv is second element on glibc and musl, but not on Bionic.
 _Static_assert(sizeof(((struct scalanative_glob_t *)0)->gl_pathc) ==
                    offsetof(glob_t, gl_pathv),
                "offset mismatch: glob_t gl_pathv");

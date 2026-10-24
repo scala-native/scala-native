@@ -63,7 +63,7 @@ class ProcessTest {
      * If that binary is a shell and and envp is null, the parent PATH
      * will be used in the shell, elsewise any PATH in the child envp.
      */
-    val pb = new ProcessBuilder("/bin/sh", "-c", "ls", resourceDir)
+    val pb = new ProcessBuilder(shellCommand, "-c", "ls", resourceDir)
     pb.environment.put("PATH", resourceDir)
     checkPathOverride(pb)
   }
@@ -75,7 +75,7 @@ class ProcessTest {
     )
 
     // JVM only follows PATH when invoking shells, not for binary executables.
-    val pb = new ProcessBuilder("/bin/sh", "-c", "ls", resourceDir)
+    val pb = new ProcessBuilder(shellCommand, "-c", "ls", resourceDir)
     pb.environment.put("PATH", s"$resourceDir:${pb.environment.get("PATH")}")
     checkPathOverride(pb)
   }

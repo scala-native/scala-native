@@ -121,6 +121,41 @@ class InetAddressTest {
     )
   }
 
+  @Test def getByNameLegacyIPv4Bounds(): Unit = {
+    if (!(Platform.isOpenBSD && Platform.executingInScalaNative)) {
+      for ((host, expected) <- Seq(
+            "4294967295" -> "255.255.255.255",
+            "1.16777215" -> "1.255.255.255",
+            "1.2.65535" -> "1.2.255.255"
+          )) {
+        assertEquals(
+          host,
+          expected,
+          InetAddress.getByName(host).getHostAddress()
+        )
+        val all = InetAddress.getAllByName(host)
+        assertEquals(1, all.length)
+        assertEquals(
+          host,
+          expected,
+          all.head.getHostAddress()
+        )
+      }
+      for (host <- Seq("4294967296", "256.1", "1.16777216", "1.2.65536")) {
+        assertThrows(
+          host,
+          classOf[UnknownHostException],
+          InetAddress.getByName(host)
+        )
+        assertThrows(
+          host,
+          classOf[UnknownHostException],
+          InetAddress.getAllByName(host)
+        )
+      }
+    }
+  }
+
   @Test def getByNameInvalidIPv4Addresses(): Unit = {
     assertThrows(
       "getByName(\"240.0.0.\" )",

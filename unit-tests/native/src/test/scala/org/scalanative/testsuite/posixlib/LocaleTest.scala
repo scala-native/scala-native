@@ -117,10 +117,22 @@ class LocaleTest {
       }
     }
 
+    // Bionic accepts en_US but provides C-equivalent numeric/monetary data.
+    // Check that representation instead of assuming glibc's locale database.
+    if (LinktimeInfo.isAndroid) {
+      val currentLconv = localeconv()
+      assertEquals(".", fromCString(currentLconv.decimal_point))
+      assertEquals("", fromCString(currentLconv.thousands_sep))
+      assertEquals("", fromCString(currentLconv.grouping))
+      assertEquals("", fromCString(currentLconv.int_curr_symbol))
+      assertEquals("", fromCString(currentLconv.currency_symbol))
+    }
+
     // OpenBSD support of locale quite incomplete, it never changes
     // LC_NUMERIC and LC_MONETARY that means that it always returns
     // the same value with C locale.
-    if (!LinktimeInfo.isWindows && !LinktimeInfo.isOpenBSD) {
+    if (!LinktimeInfo.isWindows && !LinktimeInfo.isOpenBSD &&
+        !LinktimeInfo.isAndroid) {
       val currentLconv = localeconv() // documented as always succeeds.
 
       assertEquals(

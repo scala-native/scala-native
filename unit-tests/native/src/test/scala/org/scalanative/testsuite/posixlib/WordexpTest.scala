@@ -4,6 +4,7 @@ import org.junit.Assert._
 import org.junit.Assume._
 import org.junit.Test
 
+import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.meta.LinktimeInfo._
 import scala.scalanative.posix.stdlib
 import scala.scalanative.posix.wordexp._
@@ -32,11 +33,11 @@ class WordexpTest {
       "wordexp.scala is not implemented on Windows or OpenBSD",
       !isWindows && !isOpenBSD
     )
-    // musl's wordexp accepts ";" (returns 0 with the first word
-    // expanded only) where glibc returns WRDE_BADCHAR.
+    // musl and Termux's compatibility library accept ";" (return 0 with
+    // the first word expanded only) where glibc returns WRDE_BADCHAR.
     assumeFalse(
-      "musl wordexp does not return WRDE_BADCHAR for ';'",
-      isMusl
+      "musl and Termux wordexp do not return WRDE_BADCHAR for ';'",
+      isMusl || LinktimeInfo.isAndroid
     )
     if (!isWindows && !isOpenBSD) Zone.acquire { implicit z =>
       val wrdeP = stackalloc[wordexp_t]()

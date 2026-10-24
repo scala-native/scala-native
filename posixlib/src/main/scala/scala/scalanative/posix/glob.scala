@@ -1,7 +1,7 @@
 package scala.scalanative
 package posix
 
-import scalanative.meta.LinktimeInfo.isLinux
+import scalanative.meta.LinktimeInfo
 import scalanative.posix.sys.types
 import scalanative.unsafe.Nat._
 import scalanative.unsafe._
@@ -94,12 +94,16 @@ object glob {
 object globOps {
   import glob.{glob_t, size_t, unixGlob_t}
 
+  @resolvedAtLinktime
+  private def useLinuxLayout: Boolean =
+    LinktimeInfo.isLinux && !LinktimeInfo.isAndroid
+
   implicit class glob_tOps(val ptr: Ptr[glob_t]) extends AnyVal {
     def gl_pathc: size_t = ptr._1 // Count of paths matched by pattern.
 
     // Pointer to a list of matched pathnames.
     def gl_pathv: Ptr[CString] =
-      if (isLinux) ptr.asInstanceOf[Ptr[unixGlob_t]]._2
+      if (useLinuxLayout) ptr.asInstanceOf[Ptr[unixGlob_t]]._2
       else ptr._5
 
     // Slots to reserve at the beginning of gl_pathv.
@@ -109,7 +113,7 @@ object globOps {
     def gl_pathc_=(v: size_t): Unit = ptr._1 = v
 
     def gl_pathv_=(v: Ptr[CString]): Unit =
-      if (isLinux)
+      if (useLinuxLayout)
         ptr.asInstanceOf[Ptr[unixGlob_t]]._2 = v
       else
         ptr._5 = v

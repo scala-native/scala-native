@@ -1,0 +1,63 @@
+name: Run tests Termux
+on:
+  workflow_call:
+  pull_request:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: termux-${{ github.head_ref || github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  test-runtime:
+    name: Test runtime (Termux ARM64, Scala 3)
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || github.repository == 'scala-native/scala-native'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - name: Build Termux image
+        uses: docker/build-push-action@v7
+        with:
+          context: ci-docker/termux
+          load: true
+          tags: scala-native-termux
+          cache-from: type=gha,scope=termux-arm64
+          cache-to: type=gha,scope=termux-arm64,mode=max
+    
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/scala-native-termux
+          key: termux-arm64-sbt-${{ hashFiles('ci-docker/termux/*', 'project/build.properties') }}-${{ hashFiles('project/*.scala', 'project/*.sbt') }}
+          restore-keys: |
+            termux-arm64-sbt-${{ hashFiles('ci-docker/termux/*', 'project/build.properties') }}-
+
+      - name: Run runtime suite
+        shell: bash
+        run: |
+          cache_dir="$HOME/.cache/scala-native-termux"
+          mkdir -p "$cache_dir"/{cache,sbt,ivy2}
+          sudo chown -R 1000:1000 "$GITHUB_WORKSPACE" "$cache_dir"
+          docker run --rm --hostname localhost --security-opt seccomp=unconfined \
+            --mount type=bind,source="$GITHUB_WORKSPACE",target=/workspace \
+            --mount type=bind,source="$cache_dir/cache",target=/data/data/com.termux/files/home/.cache \
+            --mount type=bind,source="$cache_dir/sbt",target=/data/data/com.termux/files/home/.sbt \
+            --mount type=bind,source="$cache_dir/ivy2",target=/data/data/com.termux/files/home/.ivy2 \
+            scala-native-termux 2>&1 | tee /tmp/termux-runtime.log
+
+      - name: Restore checkout and cache ownership
+        if: always()
+        run: sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE" "$HOME/.cache/scala-native-termux"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: termux-runtime-results
+          path: |
+            /tmp/termux-runtime.log
+            **/test-reports/**
+          if-no-files-found: ignore

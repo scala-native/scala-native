@@ -4,6 +4,7 @@ import org.junit.Assert._
 import org.junit.Assume._
 import org.junit.{BeforeClass, Test}
 
+import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.meta.LinktimeInfo._
 import scala.scalanative.posix.errno.errno
 import scala.scalanative.posix.locale._
@@ -17,8 +18,8 @@ object MonetaryTest {
   @BeforeClass
   def beforeClass(): Unit = {
     assumeTrue(
-      "monetary.scala is not implemented on Windows and OpenBSD",
-      !isWindows && !isOpenBSD
+      "monetary.scala is not implemented on Windows, OpenBSD, or Android",
+      !isWindows && !isOpenBSD && !LinktimeInfo.isAndroid
     )
   }
 }
@@ -26,7 +27,8 @@ object MonetaryTest {
 class MonetaryTest {
 
   @Test def strfmon_l_Using_en_US(): Unit =
-    if (!isWindows && !isOpenBSD) {
+    // The link-time guard also avoids referencing APIs absent from Bionic.
+    if (!isWindows && !isOpenBSD && !LinktimeInfo.isAndroid) {
       // musl reports newlocale(en_US) as successful but populates only
       // C-equivalent monetary data
       assumeFalse(

@@ -44,7 +44,7 @@ void scalanative_stat_init(struct stat *stat,
     my_stat->st_gid = stat->st_gid;
     my_stat->st_size = stat->st_size;
 // see https://linux.die.net/man/2/stat
-#if defined(_BSD_SOURCE) || defined(_SVID_SOURCE) ||                           \
+#if defined(__ANDROID__) || defined(_BSD_SOURCE) || defined(_SVID_SOURCE) ||   \
     defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200809L ||                  \
     defined(_XOPEN_SOURCE) && _XOPEN_SOURCE >= 700
     my_stat->st_atim = stat->st_atim;

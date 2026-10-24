@@ -148,6 +148,30 @@ wget https://raw.githubusercontent.com/scala-native/scala-native/main/scripts/sc
 nix-shell scala-native.nix -A clangEnv
 ```
 
+**Termux (Android)**
+
+*Note 1:* Supported on ARM64 devices running Android 9 (API 28) or later.
+
+Install the required packages in Termux:
+
+``` shell
+pkg install clang openjdk-21 which zlib libandroid-posix-semaphore libandroid-wordexp
+```
+
+Add these settings to your `build.sbt`:
+
+``` scala
+nativeConfig ~= { config =>
+  config
+    .withTargetTriple("aarch64-unknown-linux-android28")
+    .withLinkingOptions(_ ++ Seq("-landroid-posix-semaphore", "-landroid-wordexp"))
+}
+```
+
+*Note 2:* Android's Bionic C library does not provide named POSIX semaphores or word expansion. `libandroid-posix-semaphore` and `libandroid-wordexp` provide these features.
+
+*Note 3:* Bionic does not support POSIX thread cancellation or monetary formatting.
+
 **Windows**
 
 Corporate environments and Windows policies can affect the method used

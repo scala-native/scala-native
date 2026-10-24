@@ -19,7 +19,7 @@ class ProcessInheritTest {
 
   @Test def inherit(): Unit = {
     def unixImpl() = {
-      val f = Files.createTempFile("/tmp", "out")
+      val f = Files.createTempFile("tmp", "out")
       val flags = fcntl.O_RDWR | fcntl.O_TRUNC | fcntl.O_CREAT
       val fd = Zone.acquire { implicit z =>
         fcntl.open(toCString(f.toAbsolutePath.toString), flags, 0.toUInt)

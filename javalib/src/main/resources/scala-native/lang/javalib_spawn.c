@@ -28,6 +28,11 @@ bool hasFileActionsAddChdir() {
      * remove this restriction.
      */
 
+#elif defined(__ANDROID__)
+#if __ANDROID_API__ >= 34
+    result = true;
+#endif
+
 #elif defined(__linux__)
 
 #if ((__GLIBC__ == 2 && __GLIBC_MINOR__ >= 29) || (__GLIBC__ > 2))
@@ -81,7 +86,9 @@ bool hasFileActionsAddChdir() {
 }
 
 void fileActionsAddChdir(posix_spawn_file_actions_t *actions, char *newCwd) {
-#if defined(__LP64__) // Support known & tested 64 bit systems only
+// Bionic added addchdir_np in API 34. Do not reference the unavailable symbol
+// on older targets, where hasFileActionsAddChdir() selects the fork fallback.
+#if defined(__LP64__) && (!defined(__ANDROID__) || __ANDROID_API__ >= 34)
 
 #if defined(SCALANATIVE_JAVALIB_HAVE_POSIX_CHDIR)
     posix_spawn_file_actions_addchdir(actions, newCwd);
@@ -93,17 +100,17 @@ void fileActionsAddChdir(posix_spawn_file_actions_t *actions, char *newCwd) {
 
 #endif // to _np or not to _np
 
-#else // 32 bit & untested 64 bit
+#else // 32 bit or missing addchdir support
 
     /* Should never get here.
      *
      * hasFileActionsAddChdir() above reports
-     * 'false' for 32 bit & untested systems. Appears caller either
+     * 'false' for unsupported targets. Appears caller either
      * did not check or ignored that result.
      */
 
     fprintf(stderr, "\n\n\nScala Native does not support "
-                    "posix_spawn_file_actions on this architecture\n\n");
+                    "posix_spawn_file_actions_addchdir on this target\n\n");
     exit(EXIT_FAILURE);
 
 #endif // 32 bit & untested 64 bit

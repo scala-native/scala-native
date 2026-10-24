@@ -4,6 +4,7 @@ import org.junit.Assert._
 import org.junit.Assume._
 import org.junit.Test
 
+import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.meta.LinktimeInfo.{isLinux, isMac}
 import scala.scalanative.posix.dlfcn._
 import scala.scalanative.unsafe._
@@ -18,7 +19,7 @@ class DlfcnTest {
 
   @Test def dlfcnOpensAndObtainsSymbolAddressLinux(): Unit = {
     if (isLinux) Zone.acquire { implicit z =>
-      val soFile = "libc.so.6"
+      val soFile = if (LinktimeInfo.isAndroid) "libc.so" else "libc.so.6"
       val handle = dlopen(toCString(soFile), RTLD_LAZY | RTLD_LOCAL)
       assumeTrue(s"dlopen of ${soFile} failed", handle != null)
 
