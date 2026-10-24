@@ -31,12 +31,16 @@ size_t scalanative_StackOverflowGuards_size() {
 static LONG WINAPI stackOverflowHandler(PEXCEPTION_POINTERS ex) {
     switch (ex->ExceptionRecord->ExceptionCode) {
     case EXCEPTION_STACK_OVERFLOW:
-        scalanative_throwStackOverflowError();
+        /* Do not throw from VEH: C++ unwind from this context skips
+         * synchronized/finally cleanup (nested PrintStream monitors). The OS
+         * has already committed the guarantee pages, so CONTINUE_EXECUTION
+         * lets the faulting access succeed; StackOverflowGuards_check throws
+         * on the next polled method entry with a normal call stack. */
+        currentThreadInfo.pendingStackOverflowException = true;
         return EXCEPTION_CONTINUE_EXECUTION;
     default:
         return EXCEPTION_CONTINUE_SEARCH;
     }
-    return EXCEPTION_CONTINUE_SEARCH;
 }
 void scalanative_StackOverflowGuards_setup(bool isMainThread) {
     static bool isHandlerConfigured = false;
@@ -48,12 +52,13 @@ void scalanative_StackOverflowGuards_setup(bool isMainThread) {
     currentThreadInfo.stackGuardPage =
         (void *)((uintptr_t)currentThreadInfo.stackTop +
                  stackOverflowStackSize);
+    currentThreadInfo.pendingStackOverflowException = false;
 
     if (!SetThreadStackGuarantee(&stackOverflowStackSize)) {
         fprintf(stderr,
                 "%s Failed to set thread stack guarantee, "
                 "stack overflow detection might not work correctly\n",
-                snFatalErrorPrefix);
+                SN_FATAL_ERROR_PREFIX);
     }
 }
 
@@ -61,6 +66,7 @@ void scalanative_StackOverflowGuards_reset() {
     int dummy;
     void *curStackTop = &dummy;
     ThreadInfo info = currentThreadInfo;
+    currentThreadInfo.pendingStackOverflowException = false;
     if (inStackPageBound(info.stackGuardPage, curStackTop))
         return; // still unwinding
     _resetstkoflw();
@@ -78,7 +84,7 @@ static struct sigaction *resolvePreviousSignalHandler(int sig) {
         fprintf(stderr,
                 "%s StackOverflowHandler does not define handler "
                 "for %d signal\n",
-                snErrorPrefix, sig);
+                SN_ERROR_PREFIX, sig);
         _exit(sig);
     }
 }
@@ -138,7 +144,7 @@ static void setupStackOverflowGuards() {
             return setupStackOverflowGuards();
         } else {
             fprintf(stderr, "%s Cannot setup StackOverflowGuards handler\n",
-                    snErrorPrefix);
+                    SN_ERROR_PREFIX);
             // _exit rather than exit: reachable from the signal handler.
             _exit(EXIT_FAILURE);
         }
@@ -216,7 +222,7 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
             fprintf(stderr,
                     "%s Unrecoverable StackOverflow error in %s "
                     "thread, stack size = %zuKB\n",
-                    snErrorPrefix, threadInfo.isMainThread ? "main" : "user",
+                    SN_ERROR_PREFIX, threadInfo.isMainThread ? "main" : "user",
                     threadInfo.stackSize / 1024);
             StackTrace_PrintStackTrace();
             _exit(sig);
@@ -224,7 +230,7 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
             fprintf(stderr,
                     "%s Unrecoverable NullPointerException in %s "
                     "thread\n",
-                    snErrorPrefix, threadInfo.isMainThread ? "main" : "user");
+                    SN_ERROR_PREFIX, threadInfo.isMainThread ? "main" : "user");
             StackTrace_PrintStackTrace();
             _exit(sig);
         }
@@ -247,7 +253,7 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
                 }
             }
         }
-        fprintf(stderr, "%s Unhandled signal %d, si_addr=%p\n", snErrorPrefix,
+        fprintf(stderr, "%s Unhandled signal %d, si_addr=%p\n", SN_ERROR_PREFIX,
                 sig, faultAddr);
         StackTrace_PrintStackTrace();
         // _exit rather than exit: exit() is not async-signal-safe, and would
@@ -338,14 +344,10 @@ void scalanative_StackOverflowGuards_reset() {
 #endif // Unix
 
 void scalanative_StackOverflowGuards_check() {
-#ifdef _WIN32
-// unused
-#else
     if (currentThreadInfo.pendingStackOverflowException) {
         currentThreadInfo.pendingStackOverflowException = false;
         scalanative_throwStackOverflowError();
     }
-#endif
 }
 
 void scalanative_StackOverflowGuards_close() {

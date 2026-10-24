@@ -214,7 +214,8 @@ private[scalanative] object Lower {
       )
 
       // Stack checks can throw too; use the entry cleanup handler when present.
-      // Windows uses its built-in overflow mechanism instead of this polling.
+      // On Windows the VEH only sets a pending flag; this poll throws so
+      // synchronized/finally cleanup runs outside the vectored-handler context.
       if (shouldGenerateStackOverflowChecks(defn)) {
         ScopedVar.scoped(unwindHandler := getUnwindHandler(nir.Next.None)(defn.pos)) {
           buf.call(CheckStackOverflowGuardsSig, CheckStackOverflowGuards, Nil, unwind)(defn.pos, nir.ScopeId.TopLevel)
@@ -864,8 +865,7 @@ private[scalanative] object Lower {
     }
 
     private def shouldGenerateStackOverflowChecks(defn: nir.Defn.Define): Boolean = {
-      if (platform.targetsWindows) false
-      else if (!defn.name.sig.isMethod) false
+      if (!defn.name.sig.isMethod) false
       else {
         val owner = defn.name.top
         val ownerName = defn.name.top.id

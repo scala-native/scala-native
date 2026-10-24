@@ -47,7 +47,7 @@ size_t scalanative_mainThreadMaxStackSize() {
             fprintf(stderr,
                     "%s Unable to resolve main thread "
                     "max stack size",
-                    snFatalErrorPrefix);
+                    SN_FATAL_ERROR_PREFIX);
             abort();
         }
     }
@@ -208,7 +208,7 @@ void scalanative_setupCurrentThreadInfo(void *stackBottom, int32_t stackSize,
             fprintf(stderr,
                     "%s Failed to detect of "
                     "approximate stack bounds of current thread",
-                    snFatalErrorPrefix);
+                    SN_FATAL_ERROR_PREFIX);
             abort();
         }
     };

@@ -346,7 +346,7 @@ scalanative_leave_managed_and_throw(scalanative_thread_scope_t scope,
     scalanative_leave_managed(scope);
     _Unwind_RaiseException(&wrapper->unwindException);
     fprintf(stderr, "%s Unhandled exception escaping native callback\n",
-            snFatalErrorPrefix);
+            SN_FATAL_ERROR_PREFIX);
     abort();
 }
 
@@ -387,7 +387,7 @@ __attribute__((noreturn)) void scalanative_throw(Exception obj) {
                 "%s Failed to throw exception, not found "
                 "a valid catch handler for exception when unwinding execution "
                 "stack.\n",
-                snFatalErrorPrefix);
+                SN_FATAL_ERROR_PREFIX);
         scalanative_Throwable_showStackTrace(obj);
         fflush(stderr);
         fflush(stdout);
@@ -397,7 +397,7 @@ __attribute__((noreturn)) void scalanative_throw(Exception obj) {
     fprintf(stderr,
             "%s Unhandled exception: "
             "_Unwind_RaiseException returned %d\n",
-            snFatalErrorPrefix, code);
+            SN_FATAL_ERROR_PREFIX, code);
     abort();
 }
 #endif

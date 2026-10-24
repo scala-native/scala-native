@@ -242,7 +242,7 @@ static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
 
     GC_LOG_ERROR("%s Unhandled signal %d triggered when accessing "
                  "memory address %p, code=%d",
-                 snErrorPrefix, signal, siginfo->si_addr, siginfo->si_code);
+                 SN_ERROR_PREFIX, signal, siginfo->si_addr, siginfo->si_code);
     StackTrace_PrintStackTrace();
     abort();
 }
