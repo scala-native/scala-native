@@ -7,8 +7,8 @@ sbt "test-scripted 3 run/gc-concurrent-allocation"
 ```
 
 The fixture runs against both Immix and Commix, using ordinary Scala allocation
-and management beans (`MemoryMXBean` and `GarbageCollectorMXBean`). It requires no native fixture or runtime test hooks.
-It covers:
+and management beans (`MemoryMXBean` and `GarbageCollectorMXBean`). It requires
+no native fixture or runtime test hooks. It covers:
 
 - Heap stability with 16 allocating workers after warmup, while allocation
   continues. This scenario starts with 256 MiB, allows up to 2 GiB, and requires
@@ -21,9 +21,47 @@ It covers:
   collections. Retained arrays are checked for content corruption. This scenario
   also runs with multithreading disabled.
 
-Each scenario has a process timeout, and worker errors fail the test. These are
-behavioral regressions; they do not directly inspect allocator lists or force a
-particular collector handoff interleaving.
+Linking happens in a separate `prepareAllocationBinary` step. Each
+`runAllocationRegression` or `runAllocationChecks` step executes the prepared
+binary with a shared 50-second budget across all its scenarios. Forced process
+cleanup has a further five-second limit, leaving headroom below one minute.
+Each scenario and the complete task report their elapsed time.
+
+Worker errors fail the test. These are behavioral regressions; they do not
+directly inspect allocator lists or force a particular collector handoff
+interleaving.
+
+## Allocation overhead benchmark
+
+`benchmark/AllocationBenchmark.scala` is a standalone benchmark outside the
+scripted source path. To build it, use:
+
+```scala
+Compile / sources := Seq(baseDirectory.value / "benchmark/AllocationBenchmark.scala")
+Compile / mainClass := Some("AllocationBenchmark")
+```
+
+Use identical app sources, SDK versions, and compiler flags with the original
+and candidate GC. Run alternating baseline/candidate pairs sequentially, without
+overlapping builds or stress processes. A single worker can use a fixed heap:
+
+```sh
+GC_INITIAL_HEAP_SIZE=256M GC_MAXIMUM_HEAP_SIZE=256M \
+  ./AllocationBenchmark objects 1 8
+```
+
+For 16 workers, give both variants the same growth headroom, for example an
+initial 256 MiB and maximum 8 GiB. The original GC can report a spurious OOM
+under a fixed concurrent heap; those failures are not performance results.
+Report capacity alongside throughput because growth changes collection frequency.
+
+Repeat with scenarios `small` (64-byte array payload), `medium`
+(544 bytes), `large` (8,192 bytes), and `blocks` (98,304 bytes). Every scenario
+retains a bounded set of objects and reports a checksum, allocation count,
+elapsed time, collection count, accumulated GC time, and logical heap capacity.
+The management bean's GC time is collection duration, not isolated pause time.
+Measure peak RSS separately. Require successful runs; worker failures invalidate
+performance results.
 
 ## Long-running validation
 
