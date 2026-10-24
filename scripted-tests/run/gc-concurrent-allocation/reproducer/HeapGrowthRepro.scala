@@ -1,14 +1,5 @@
+import java.lang.management.ManagementFactory
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong}
-
-import scala.scalanative.unsafe._
-
-@extern
-object GCStats {
-  @name("scalanative_GC_get_used_heapsize")
-  def usedHeapSize(): CSize = extern
-  @name("scalanative_GC_stats_collection_total")
-  def collections(): CSize = extern
-}
 
 // Allocation pattern from #5120, with nonzero exit on uncaught worker failures.
 object HeapGrowthRepro {
@@ -27,6 +18,8 @@ object HeapGrowthRepro {
         }
       }
     )
+    val memory = ManagementFactory.getMemoryMXBean()
+    val gc = ManagementFactory.getGarbageCollectorMXBeans().get(0)
     val threads = args.lift(0).map(_.toInt).getOrElse(16)
     val seconds = args.lift(1).map(_.toInt).getOrElse(600)
     val stop = new AtomicBoolean(false)
@@ -47,14 +40,14 @@ object HeapGrowthRepro {
       worker.start()
       worker
     }
-    def mb(bytes: CSize): String = f"${bytes.toLong / (1024.0 * 1024)}%.1f"
+    def mb(bytes: Long): String = f"${bytes / (1024.0 * 1024)}%.1f"
     println(s"threads=$threads seconds=$seconds")
     try {
       for (second <- 1 to seconds) {
         Thread.sleep(1000L)
         if (second % 5 == 0)
           println(
-            s"t=${second}s heap_mb=${mb(GCStats.usedHeapSize())} collections=${GCStats.collections()} chunks=${chunks.get()}"
+            s"t=${second}s heap_mb=${mb(memory.getHeapMemoryUsage().getCommitted())} collections=${gc.getCollectionCount()} chunks=${chunks.get()}"
           )
       }
     } finally {

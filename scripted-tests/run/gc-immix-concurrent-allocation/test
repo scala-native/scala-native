@@ -1,3 +1,0 @@
-> runAllocationRegression
-> set nativeConfig ~= (_.withMultithreading(false))
-> runAllocationChecks

@@ -62,25 +62,4 @@ void BlockList_Clear(BlockList *blockList) {
     blockList->last = NULL;
 }
 
-#ifdef SCALANATIVE_GC_TESTING
-int scalanative_gc_test_block_lists(void) {
-    _Alignas(word_t) BlockMeta blocks[4] = {0};
-    BlockList list;
-    BlockList_Init(&list, (word_t *)blocks);
-    BlockList_AddLast(&list, blocks + 2);
-    BlockList_AddLast(&list, blocks);
-    if (BlockList_Poll(&list) != blocks + 2 ||
-        BlockList_Poll(&list) != blocks || BlockList_Poll(&list) != NULL)
-        return 0;
-    blocks[1].nextBlock = blocks[2].nextBlock = 0;
-    BlockList_AddLast(&list, blocks);
-    BlockList_AddBlocksLast(&list, blocks + 1, blocks + 3);
-    for (int i = 0; i < 4; i++) {
-        if (BlockList_Poll(&list) != blocks + i)
-            return 0;
-    }
-    return BlockList_Poll(&list) == NULL;
-}
-#endif
-
 #endif

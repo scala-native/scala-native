@@ -267,10 +267,6 @@ static bool Heap_collect(Heap *heap, Stack *stack, uint32_t allocationSize,
         sweep_start_ns = Time_current_nanos();
     }
     Heap_Recycle(heap);
-#ifdef SCALANATIVE_GC_TESTING
-    extern void scalanative_gc_test_after_sweep(void);
-    scalanative_gc_test_after_sweep();
-#endif
     bool available = true;
     if (allocationSize != 0) {
         available = Heap_reserveAllocation(allocationSize);
@@ -284,10 +280,6 @@ static bool Heap_collect(Heap *heap, Stack *stack, uint32_t allocationSize,
                         Heap_reserveAllocation(allocationSize);
         }
     }
-#ifdef SCALANATIVE_GC_TESTING
-    extern void scalanative_gc_test_after_reservation(uint32_t, bool);
-    scalanative_gc_test_after_reservation(allocationSize, available);
-#endif
     atomic_fetch_add_explicit(&heap->collectionGeneration, 1,
                               memory_order_release);
     end_ns = Time_current_nanos();
@@ -418,10 +410,6 @@ void Heap_Recycle(Heap *heap) {
 }
 
 bool Heap_TryGrow(Heap *heap, uint32_t incrementInBlocks) {
-#ifdef SCALANATIVE_GC_TESTING
-    extern void scalanative_gc_test_on_grow(void);
-    scalanative_gc_test_on_grow();
-#endif
     BlockAllocator_Acquire(&blockAllocator);
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     atomic_thread_fence(memory_order_seq_cst);

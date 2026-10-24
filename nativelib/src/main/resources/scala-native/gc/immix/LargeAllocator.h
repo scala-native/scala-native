@@ -31,9 +31,6 @@ word_t *LargeAllocator_Alloc(Heap *heap, uint32_t objectSize);
 bool LargeAllocator_Reserve(LargeAllocator *allocator, size_t size);
 // Called only by the stopped-world collection owner.
 bool LargeAllocator_ReserveRecycled(LargeAllocator *allocator, size_t size);
-#ifdef SCALANATIVE_GC_TESTING
-word_t *LargeAllocator_tryAlloc(LargeAllocator *allocator, size_t size);
-#endif
 void LargeAllocator_Clear(LargeAllocator *allocator);
 void LargeAllocator_AddChunk(LargeAllocator *allocator, Chunk *chunk,
                              size_t total_block_size);

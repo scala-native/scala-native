@@ -1,0 +1,7 @@
+> runAllocationRegression
+> set nativeConfig ~= (_.withMultithreading(false))
+> runAllocationChecks
+> set nativeConfig ~= (_.withGC(scala.scalanative.build.GC.commix).withMultithreading(true))
+> runAllocationRegression
+> set nativeConfig ~= (_.withMultithreading(false))
+> runAllocationChecks

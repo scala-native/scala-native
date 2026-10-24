@@ -446,10 +446,6 @@ void Synchronizer_yield(void) {
 static bool Synchronizer_acquireGeneration(atomic_uint_fast64_t *completed,
                                            uint64_t generation) {
     if (!mutex_tryLock(&synchronizerLock)) {
-#ifdef SCALANATIVE_GC_TESTING
-        extern void scalanative_gc_test_on_contention(void);
-        scalanative_gc_test_on_contention();
-#endif
         scalanative_GC_yield();
         return false;
     }
@@ -460,10 +456,6 @@ static bool Synchronizer_acquireGeneration(atomic_uint_fast64_t *completed,
         mutex_unlock(&synchronizerLock);
         return false;
     }
-#ifdef SCALANATIVE_GC_TESTING
-    extern void scalanative_gc_test_on_acquire(void);
-    scalanative_gc_test_on_acquire();
-#endif
 #ifndef _WIN32
     sigprocmask(SIG_BLOCK, &signalsBlockedDuringGC, NULL);
 #endif
