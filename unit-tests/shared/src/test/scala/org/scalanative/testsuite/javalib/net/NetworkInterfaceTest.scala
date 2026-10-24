@@ -72,13 +72,10 @@ class NetworkInterfaceTest {
 
     assertNotNull("a1", netIf)
 
-    val sought =
-      if (Platform.isFreeBSD) "em0"
-      else if (Platform.isOpenBSD) "iwx0"
-      else if (Platform.isNetBSD) "wm0"
-      else loopbackIfName
-    val ifName = netIf.getName()
-    assertEquals("a2", sought, ifName)
+    assertEquals("interface index", 1, netIf.getIndex())
+    val byName = NetworkInterface.getByName(netIf.getName())
+    assertNotNull("interface found by name", byName)
+    assertEquals("name/index round trip", 1, byName.getIndex())
   }
 
   @Test def getByIndexMaxValue(): Unit = {

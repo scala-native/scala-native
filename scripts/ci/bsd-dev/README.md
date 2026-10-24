@@ -4,7 +4,9 @@ This rig runs the x86_64 images used by vmactions CI inside a Linux Docker
 container. It works on Intel and ARM hosts through QEMU TCG. Emulation is
 slower than CI; use focused tests rather than the full GC/runtime matrix.
 
-Requires Docker, curl, tar and an SSH client on the host. VM disks, public
+Requires Docker, curl, tar and an SSH client on the host. Allow at least
+10 GiB of free host disk space per guest for packages and focused builds.
+VM disks, public
 image SSH keys, logs and guest build caches live under `target/bsd-dev/`.
 The source checkout is mounted read-only in the container. Guest SSH is
 published only on host loopback: NetBSD port 22250, FreeBSD port 22251.
@@ -23,7 +25,8 @@ scripts/ci/bsd-dev/bsd-dev.sh ssh netbsd \
 ```
 
 Replace `netbsd` with `freebsd` for the FreeBSD 14.4 image. Each VM defaults
-to 5 GiB RAM and two emulated CPUs. Set `BSD_DEV_MEMORY` (MiB) before the
+to 5 GiB RAM and one emulated CPU. The conservative `qemu64` model
+avoids FreeBSD boot panics seen with TCG, `max` and multiple CPUs. Set `BSD_DEV_MEMORY` (MiB) before the
 first start to choose a different allocation. Shut down unused guests:
 
 ```sh
@@ -105,3 +108,14 @@ java -Xmx3G -jar /root/sbt-launch.jar \
 
 Do not set `CI`: this source sync excludes Git metadata, which CI version
 calculation would require. Normal local builds use the snapshot version.
+
+If the host filesystem fills, QEMU can pause disk I/O while its container
+still appears running, and SSH stops responding. Check host `df -h` as well
+as the guest's virtual disk space. After freeing host space, resume the VM:
+
+```sh
+docker exec scala-native-netbsd-dev sh -c \
+  'printf "cont\n" | socat - UNIX-CONNECT:/vm/monitor.sock'
+```
+
+Use `scala-native-freebsd-dev` for the FreeBSD guest.

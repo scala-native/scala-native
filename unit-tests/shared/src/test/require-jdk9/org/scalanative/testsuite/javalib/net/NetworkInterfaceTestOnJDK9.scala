@@ -27,7 +27,7 @@ class NetworkInterfaceTestOnJDK9 {
       s":0:0:0:0:0:0:1%${localhostIf}"
 
   val osIPv6LoopbackAddress =
-    if (Platform.isMacOs) s"fe80${osIPv6LoopbackSuffix}"
+    if (Platform.isMacOs || Platform.isFreeBSD) s"fe80${osIPv6LoopbackSuffix}"
     else if (Platform.isOpenBSD && Platform.executingInScalaNative)
       s"fe80${osIPv6LoopbackSuffix}"
     else if (Platform.isNetBSD && Platform.executingInScalaNative)

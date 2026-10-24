@@ -88,3 +88,17 @@ on an unresponsive fallback mirror. CI now uses the verified CDN 2026Q3
 repository and SCP, avoiding the pre-prepare rsync package lookup. A local
 NetBSD 10.1 guest passes all four loopback socket ABI probe cases; that CI run
 provides no evidence of a NetBSD socket failure.
+
+Run `40119146393` confirms that FreeBSD passes the complete four-GC smoke
+matrix after the signal fix. Its subsequent JVM suite reports seven failures:
+VM hostname resolution, Git checkout ownership, interface index/name assumptions,
+and a FreeBSD link-local IPv6 loopback expectation. CI now configures the hostname
+and Git safe directory; the network tests check name/index consistency and
+accept FreeBSD's link-local address form.
+
+NetBSD now gets through package setup and reaches native compilation. The
+`_SC_AVPHYS_PAGES` guard in MemoryInfo.c applied only to the macOS alternative
+because of operator precedence. Grouping all Unix alternatives before that guard
+fixes compilation. The corrected file compiles and runs in the local NetBSD
+guest, reporting physical memory and page size and returning zero for unavailable
+free-page information.

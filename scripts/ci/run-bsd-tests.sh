@@ -5,6 +5,11 @@ export ENABLE_EXPERIMENTAL_COMPILER=true
 export SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1
 export SCALANATIVE_TEST_DEBUG_SIGNALS=1
 
+# The checkout retains the host runner's UID when copied into the root-run VM.
+git config --global --add safe.directory "$PWD"
+# The VM hostname is not necessarily published in DNS or its base hosts file.
+printf '127.0.0.1 %s\n' "$(hostname)" >> /etc/hosts
+
 # Use the portable JVM launcher: coursier and sbt native runners do not
 # distribute executables for these BSD targets.
 sbt_version=$(sed -n 's/^sbt.version *= *//p' project/build.properties)
