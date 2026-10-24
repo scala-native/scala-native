@@ -3,7 +3,7 @@ package scala.scalanative.runtime
 import java.io.{File, PrintStream}
 
 import org.junit.Assert._
-import org.junit.Assume.assumeTrue
+import org.junit.Assume.{assumeFalse, assumeTrue}
 import org.junit.Test
 
 import scala.scalanative.annotation.nooptimize
@@ -15,6 +15,10 @@ class StackOverflowExceptionHandlingTest {
   // (cppOptions = Seq("-fno-cxx-exceptions")) to bypass the C++ fallback.
   @Test def releasesNestedPrintStreamMonitor(): Unit = {
     assumeTrue("requires multithreading", LinktimeInfo.isMultithreadingEnabled)
+    assumeFalse(
+      "Windows + Boehm: monitor not released after StackOverflowError (#4190)",
+      LinktimeInfo.isWindows && LinktimeInfo.garbageCollector.isBoehm
+    )
     val devNull = new PrintStream(
       new File(if (LinktimeInfo.isWindows) "NUL" else "/dev/null")
     )

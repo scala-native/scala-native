@@ -53,7 +53,7 @@ void scalanative_StackOverflowGuards_setup(bool isMainThread) {
         fprintf(stderr,
                 "%s Failed to set thread stack guarantee, "
                 "stack overflow detection might not work correctly\n",
-                snFatalErrorPrefix);
+                SN_FATAL_ERROR_PREFIX);
     }
 }
 
@@ -78,7 +78,7 @@ static struct sigaction *resolvePreviousSignalHandler(int sig) {
         fprintf(stderr,
                 "%s StackOverflowHandler does not define handler "
                 "for %d signal\n",
-                snErrorPrefix, sig);
+                SN_ERROR_PREFIX, sig);
         _exit(sig);
     }
 }
@@ -138,7 +138,7 @@ static void setupStackOverflowGuards() {
             return setupStackOverflowGuards();
         } else {
             fprintf(stderr, "%s Cannot setup StackOverflowGuards handler\n",
-                    snErrorPrefix);
+                    SN_ERROR_PREFIX);
             // _exit rather than exit: reachable from the signal handler.
             _exit(EXIT_FAILURE);
         }
@@ -216,7 +216,7 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
             fprintf(stderr,
                     "%s Unrecoverable StackOverflow error in %s "
                     "thread, stack size = %zuKB\n",
-                    snErrorPrefix, threadInfo.isMainThread ? "main" : "user",
+                    SN_ERROR_PREFIX, threadInfo.isMainThread ? "main" : "user",
                     threadInfo.stackSize / 1024);
             StackTrace_PrintStackTrace();
             _exit(sig);
@@ -224,7 +224,7 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
             fprintf(stderr,
                     "%s Unrecoverable NullPointerException in %s "
                     "thread\n",
-                    snErrorPrefix, threadInfo.isMainThread ? "main" : "user");
+                    SN_ERROR_PREFIX, threadInfo.isMainThread ? "main" : "user");
             StackTrace_PrintStackTrace();
             _exit(sig);
         }
@@ -247,7 +247,7 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
                 }
             }
         }
-        fprintf(stderr, "%s Unhandled signal %d, si_addr=%p\n", snErrorPrefix,
+        fprintf(stderr, "%s Unhandled signal %d, si_addr=%p\n", SN_ERROR_PREFIX,
                 sig, faultAddr);
         StackTrace_PrintStackTrace();
         // _exit rather than exit: exit() is not async-signal-safe, and would

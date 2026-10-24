@@ -66,4 +66,7 @@ object Platform {
 
   final val isWeakReferenceSupported =
     scala.scalanative.meta.LinktimeInfo.isWeakReferenceSupported
+
+  final val isBoehmGC =
+    scala.scalanative.meta.LinktimeInfo.garbageCollector.isBoehm
 }
