@@ -21,7 +21,7 @@ class NetworkInterfaceTestOnJDK9 {
   val osIPv6LoopbackSuffix =
     if (Platform.isOpenBSD && Platform.executingInScalaNative)
       s":3:0:0:0:0:0:1%${localhostIf}"
-    else if (Platform.isNetBSD && Platform.executingInScalaNative)
+    else if (Platform.isNetBSD)
       s":2:0:0:0:0:0:1%${localhostIf}"
     else
       s":0:0:0:0:0:0:1%${localhostIf}"
@@ -30,7 +30,7 @@ class NetworkInterfaceTestOnJDK9 {
     if (Platform.isMacOs || Platform.isFreeBSD) s"fe80${osIPv6LoopbackSuffix}"
     else if (Platform.isOpenBSD && Platform.executingInScalaNative)
       s"fe80${osIPv6LoopbackSuffix}"
-    else if (Platform.isNetBSD && Platform.executingInScalaNative)
+    else if (Platform.isNetBSD)
       s"fe80${osIPv6LoopbackSuffix}"
     else s"0${osIPv6LoopbackSuffix}"
 
@@ -48,18 +48,35 @@ class NetworkInterfaceTestOnJDK9 {
       .filter(e => {
 
         val hostAddr = e.getHostAddress()
+        val scopeStart = hostAddr.indexOf('%')
+        val address =
+          if (scopeStart < 0) hostAddr else hostAddr.substring(0, scopeStart)
 
-        // macOS can have two forms of IPv6 loopback address.
+        // Loopback can be returned with or without a scope identifier.
+        // A supplied scope must still identify this loopback interface.
+        if (scopeStart >= 0) {
+          assertTrue(
+            s"IPv4 address has a scope: ${hostAddr}",
+            address.contains(":")
+          )
+          val scope = hostAddr.substring(scopeStart + 1)
+          assertTrue(
+            s"Unexpected loopback scope: ${hostAddr}",
+            scope == localhostIf || scope == lbIf.getIndex().toString
+          )
+        }
+
+        // BSD loopback interfaces can have both ::1 and a link-local address.
         val expected =
-          if (!hostAddr.contains(":")) {
+          if (!address.contains(":")) {
             "127.0.0.1"
-          } else if (hostAddr.startsWith("0")) {
-            s"0:0:0:0:0:0:0:1%${localhostIf}"
-          } else if (hostAddr.startsWith("f")) {
-            s"${osIPv6LoopbackAddress}"
+          } else if (address.startsWith("0")) {
+            "0:0:0:0:0:0:0:1"
+          } else if (address.startsWith("f")) {
+            osIPv6LoopbackAddress.takeWhile(_ != '%')
           } else "" // fail in a way that will print out ifAddrString
 
-        assertEquals("Unexpected result", expected, hostAddr)
+        assertEquals(s"Unexpected result: ${hostAddr}", expected, address)
         true
       })
       .count

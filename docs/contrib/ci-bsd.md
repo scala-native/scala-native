@@ -102,3 +102,19 @@ because of operator precedence. Grouping all Unix alternatives before that guard
 fixes compilation. The corrected file compiles and runs in the local NetBSD
 guest, reporting physical memory and page size and returning zero for unavailable
 free-page information.
+
+Run `40132106769` gets NetBSD through C compilation, then fails native linking
+on `log`, `log10` and `ceil`: LLVM-generated calls require libm, which the
+NetBSD platform link list omitted. Add `m` alongside `pthread`. A local NetBSD
+math probe reproduces the undefined symbols without `-lm` and runs with it.
+
+FreeBSD's JVM suite is down to one failure: `NetworkInterfaceTestOnJDK9`
+requires `%lo0` on `::1`, but OpenJDK 21 can omit that scope. Compare the
+address separately and, when a scope is present, check that it names the
+loopback interface or its numeric index. The local NetBSD OpenJDK 21 probe
+also returns unscoped `::1` and `fe80:2::1`; the embedded link-local interface
+index applies to JVM as well as native execution on NetBSD.
+
+Validation for these fixes: toolsJVM3 compiles, the focused JVM network test
+passes on the host, and the same compiled JUnit test passes inside the NetBSD
+10.1 guest using OpenJDK 21 (`-Xint` for QEMU TCG execution).
