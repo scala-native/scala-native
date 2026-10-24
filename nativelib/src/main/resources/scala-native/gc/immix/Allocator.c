@@ -21,9 +21,11 @@ void Allocator_Init(Allocator *allocator, BlockAllocator *blockAllocator,
 
     BlockList_Init(&allocator->recycledBlocks, blockMetaStart);
     allocator->recycledBlockCount = 0;
+    allocator->canUseReserve = false;
 }
 
 void Allocator_Clear(Allocator *allocator) {
+    allocator->canUseReserve = false;
     BlockList_Clear(&allocator->recycledBlocks);
     allocator->recycledBlockCount = 0;
     allocator->block = NULL;
@@ -35,8 +37,8 @@ void Allocator_Clear(Allocator *allocator) {
 }
 
 bool Allocator_newOverflowBlock(Allocator *allocator) {
-    BlockMeta *largeBlock =
-        BlockAllocator_GetFreeBlock(allocator->blockAllocator);
+    BlockMeta *largeBlock = BlockAllocator_GetFreeBlockForSmallAllocation(
+        allocator->blockAllocator, allocator->canUseReserve);
     if (largeBlock == NULL) {
         return false;
     }
@@ -73,10 +75,10 @@ word_t *Allocator_overflowAllocation(Allocator *allocator, size_t size) {
 /**
  * Allocation fast path, uses the cursor and limit.
  */
-INLINE word_t *Allocator_tryAlloc(Allocator *allocator, size_t size) {
+bool Allocator_Reserve(Allocator *allocator, size_t size) {
     word_t *start = allocator->cursor;
     if (start == NULL && !Allocator_newBlock(allocator))
-        return NULL;
+        return false;
 
     start = allocator->cursor;
     word_t *end = (word_t *)((uint8_t *)start + size);
@@ -85,19 +87,96 @@ INLINE word_t *Allocator_tryAlloc(Allocator *allocator, size_t size) {
         // If it overlaps but the block to allocate is a `medium` sized
         // block, use overflow allocation
         if (size > LINE_SIZE) {
-            return Allocator_overflowAllocation(allocator, size);
+            return (allocator->largeCursor != NULL &&
+                    (uint8_t *)allocator->largeCursor + size <=
+                        (uint8_t *)allocator->largeLimit) ||
+                   Allocator_newOverflowBlock(allocator);
         } else {
             // Otherwise try to get a new line.
             if (Allocator_getNextLine(allocator)) {
-                return Allocator_tryAlloc(allocator, size);
+                return Allocator_Reserve(allocator, size);
             }
-            return NULL;
+            return false;
         }
     }
 
-    allocator->cursor = end;
+    return true;
+}
 
-    return start;
+INLINE word_t *Allocator_tryAlloc(Allocator *allocator, size_t size) {
+    if (!Allocator_Reserve(allocator, size))
+        return NULL;
+    if ((uint8_t *)allocator->cursor + size > (uint8_t *)allocator->limit)
+        return Allocator_overflowAllocation(allocator, size);
+    word_t *object = allocator->cursor;
+    allocator->cursor = (word_t *)((uint8_t *)object + size);
+    return object;
+}
+
+static bool Allocator_reserveHole(Allocator *allocator, BlockMeta *block,
+                                  word_t *start, size_t size) {
+    FreeLineMeta *previous = NULL;
+    for (int line = BlockMeta_FirstFreeLine(block); line != LAST_HOLE;) {
+        FreeLineMeta *hole = (FreeLineMeta *)Block_GetLineAddress(start, line);
+        if ((size_t)hole->size * LINE_SIZE >= size) {
+            if (previous != NULL)
+                previous->next = hole->next;
+            else
+                BlockMeta_SetFirstFreeLine(block, hole->next);
+            word_t *cursor = (word_t *)hole;
+            word_t *limit = cursor + hole->size * WORDS_IN_LINE;
+            if (size > LINE_SIZE) {
+                allocator->largeCursor = cursor;
+                allocator->largeLimit = limit;
+            } else {
+                allocator->block = NULL;
+                allocator->cursor = cursor;
+                allocator->limit = limit;
+            }
+            return true;
+        }
+        previous = hole;
+        line = hole->next;
+    }
+    return false;
+}
+
+// Sweep retains per-mutator allocation lists. Before growing or reporting OOM,
+// recover a suitable run even if sweep assigned it to an idle mutator. The
+// collection owner holds the stopped-world mutator-list lock throughout.
+bool Allocator_ReserveRecycled(Allocator *allocator, size_t size) {
+    if (size > LINE_SIZE && allocator->block != NULL &&
+        Allocator_reserveHole(allocator, allocator->block,
+                              allocator->blockStart, size))
+        return true;
+    MutatorThreads_foreach(mutatorThreads, node) {
+        Allocator *source = &node->value->allocator;
+        BlockList *list = &source->recycledBlocks;
+        BlockMeta *previous = NULL;
+        for (BlockMeta *block = list->first; block != NULL;) {
+            BlockMeta *next =
+                BlockList_getNextBlock(list->blockMetaStart, block);
+            word_t *start = BlockMeta_GetBlockStart(
+                allocator->blockMetaStart, allocator->heapStart, block);
+            if (Allocator_reserveHole(allocator, block, start, size)) {
+                if (BlockMeta_FirstFreeLine(block) == LAST_HOLE) {
+                    if (previous == NULL)
+                        list->first = next;
+                    else
+                        BlockList_SetNext(list, previous, next);
+                    if (list->last == block)
+                        list->last = previous;
+                    block->nextBlock = LAST_BLOCK;
+                    atomic_fetch_sub_explicit(&source->recycledBlockCount, 1,
+                                              memory_order_relaxed);
+                }
+                return true;
+            }
+            previous = block;
+            block = next;
+        }
+    }
+    return false;
 }
 
 /**
@@ -141,6 +220,8 @@ bool Allocator_newBlock(Allocator *allocator) {
     word_t *blockStart;
 
     if (block != NULL) {
+        atomic_fetch_sub_explicit(&allocator->recycledBlockCount, 1,
+                                  memory_order_relaxed);
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
         atomic_thread_fence(memory_order_acquire);
 #endif
@@ -161,7 +242,8 @@ bool Allocator_newBlock(Allocator *allocator) {
         allocator->limit = line + (size * WORDS_IN_LINE);
         assert(allocator->limit <= Block_GetBlockEnd(blockStart));
     } else {
-        block = BlockAllocator_GetFreeBlock(allocator->blockAllocator);
+        block = BlockAllocator_GetFreeBlockForSmallAllocation(
+            allocator->blockAllocator, allocator->canUseReserve);
         if (block == NULL) {
             return false;
         }
@@ -182,10 +264,11 @@ bool Allocator_newBlock(Allocator *allocator) {
 NOINLINE word_t *Allocator_allocSlow(Allocator *allocator, Heap *heap,
                                      uint32_t size) {
     do {
+        uint64_t generation = atomic_load_explicit(&heap->collectionGeneration,
+                                                   memory_order_acquire);
         word_t *object = Allocator_tryAlloc(allocator, size);
 
         if (object != NULL) {
-        done:
             assert(Heap_IsWordInHeap(heap, object));
             assert(object != NULL);
             memset(object, 0, size);
@@ -196,15 +279,7 @@ NOINLINE word_t *Allocator_allocSlow(Allocator *allocator, Heap *heap,
             ObjectMeta_SetAllocated(objectMeta);
             return object;
         }
-        Heap_Collect(heap, &stack);
-        object = Allocator_tryAlloc(allocator, size);
-
-        if (object != NULL)
-            goto done;
-
-        // A small object can always fit in a single free block
-        // because it is no larger than 8K while the block is 32K.
-        if (!Heap_TryGrow(heap, 1))
+        if (!Heap_RecoverAllocation(heap, size, generation))
             Heap_ThrowOutOfMemory(heap);
     } while (true);
     return NULL; // unreachable

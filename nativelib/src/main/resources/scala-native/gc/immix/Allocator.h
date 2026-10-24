@@ -34,12 +34,16 @@ typedef struct {
     // This gets concurrently updated by other threads, keep if it as far away
     // as possible from fast path.
     atomic_uint_fast32_t recycledBlockCount;
+    bool canUseReserve;
 } Allocator;
 
 void Allocator_Init(Allocator *allocator, BlockAllocator *blockAllocator,
                     Bytemap *bytemap, word_t *blockMetaStart,
                     word_t *heapStart);
 void Allocator_Clear(Allocator *allocator);
+bool Allocator_Reserve(Allocator *allocator, size_t size);
+// Only after a failed reservation, while all mutators are stopped.
+bool Allocator_ReserveRecycled(Allocator *allocator, size_t size);
 word_t *Allocator_Alloc(Heap *heap, uint32_t objectSize);
 
 #endif // IMMIX_ALLOCATOR_H

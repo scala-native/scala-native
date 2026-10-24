@@ -1,6 +1,7 @@
 #if defined(SCALANATIVE_GC_IMMIX)
 
 #include "BlockAllocator.h"
+#include "State.h"
 #include "immix_commix/utils/MathUtils.h"
 #include <stdio.h>
 #include "shared/ThreadUtil.h"
@@ -40,21 +41,37 @@ inline static int BlockAllocator_sizeToLinkedListIndex(uint32_t size) {
     return result;
 }
 
+static BlockMeta *BlockAllocator_pollList(BlockList *list, uint32_t size) {
+    BlockMeta *previous = NULL;
+    for (BlockMeta *block = list->first; block != NULL;) {
+        BlockMeta *next = BlockList_getNextBlock(list->blockMetaStart, block);
+        if (BlockMeta_SuperblockSize(block) >= size) {
+            if (previous != NULL)
+                BlockList_SetNext(list, previous, next);
+            else
+                list->first = next;
+            if (list->last == block)
+                list->last = previous;
+            block->nextBlock = LAST_BLOCK;
+            return block;
+        }
+        previous = block;
+        block = next;
+    }
+    return NULL;
+}
+
 inline static BlockMeta *
-BlockAllocator_pollSuperblock(BlockAllocator *blockAllocator, int first) {
-#ifdef SCALANATIVE_MULTITHREADING_ENABLED
-    atomic_thread_fence(memory_order_acquire);
-#endif
+BlockAllocator_pollSuperblock(BlockAllocator *blockAllocator, int first,
+                              uint32_t size) {
     int maxNonEmptyIndex = blockAllocator->maxNonEmptyIndex;
     for (int i = first; i <= maxNonEmptyIndex; i++) {
-        BlockMeta *superblock =
-            BlockList_Poll(&blockAllocator->freeSuperblocks[i]);
-        if (superblock != NULL) {
-            assert(BlockMeta_SuperblockSize(superblock) > 0);
+        BlockList *list = &blockAllocator->freeSuperblocks[i];
+        BlockMeta *superblock = BlockAllocator_pollList(list, size);
+        if (superblock != NULL)
             return superblock;
-        } else {
+        if (list->first == NULL && i == blockAllocator->minNonEmptyIndex)
             blockAllocator->minNonEmptyIndex = i + 1;
-        }
     }
     return NULL;
 }
@@ -62,7 +79,7 @@ BlockAllocator_pollSuperblock(BlockAllocator *blockAllocator, int first) {
 NOINLINE BlockMeta *
 BlockAllocator_getFreeBlockSlow(BlockAllocator *blockAllocator) {
     BlockMeta *superblock = BlockAllocator_pollSuperblock(
-        blockAllocator, blockAllocator->minNonEmptyIndex);
+        blockAllocator, blockAllocator->minNonEmptyIndex, 1);
     if (superblock != NULL) {
         blockAllocator->smallestSuperblock.cursor = superblock + 1;
         blockAllocator->smallestSuperblock.limit =
@@ -74,9 +91,22 @@ BlockAllocator_getFreeBlockSlow(BlockAllocator *blockAllocator) {
     return superblock;
 }
 
-INLINE BlockMeta *BlockAllocator_GetFreeBlock(BlockAllocator *blockAllocator) {
+static BlockMeta *BlockAllocator_getFreeBlock(BlockAllocator *blockAllocator,
+                                              bool canUseReserve) {
     BlockMeta *block;
     BlockAllocator_Acquire(blockAllocator);
+    if (!canUseReserve) {
+        uint32_t reserve = heap.blockCount / 64;
+        if (reserve < 2)
+            reserve = 2;
+        if (reserve > 128)
+            reserve = 128;
+        if (atomic_load_explicit(&blockAllocator->freeBlockCount,
+                                 memory_order_relaxed) <= reserve) {
+            BlockAllocator_Release(blockAllocator);
+            return NULL;
+        }
+    }
     if (blockAllocator->smallestSuperblock.cursor >=
         blockAllocator->smallestSuperblock.limit) {
         block = BlockAllocator_getFreeBlockSlow(blockAllocator);
@@ -85,12 +115,21 @@ INLINE BlockMeta *BlockAllocator_GetFreeBlock(BlockAllocator *blockAllocator) {
         BlockMeta_SetFlag(block, block_simple);
         blockAllocator->smallestSuperblock.cursor++;
     }
-    BlockAllocator_Release(blockAllocator);
-    if (block != NULL) {
-        atomic_fetch_add_explicit(&blockAllocator->freeBlockCount, -1,
+    if (block != NULL)
+        atomic_fetch_sub_explicit(&blockAllocator->freeBlockCount, 1,
                                   memory_order_relaxed);
-    }
+    BlockAllocator_Release(blockAllocator);
     return block;
+}
+
+INLINE BlockMeta *BlockAllocator_GetFreeBlock(BlockAllocator *allocator) {
+    return BlockAllocator_getFreeBlock(allocator, true);
+}
+
+BlockMeta *
+BlockAllocator_GetFreeBlockForSmallAllocation(BlockAllocator *allocator,
+                                              bool canUseReserve) {
+    return BlockAllocator_getFreeBlock(allocator, canUseReserve);
 }
 
 BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
@@ -105,10 +144,10 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
         blockAllocator->smallestSuperblock.cursor += size;
     } else {
         // look in the freelists
-        int target = MathUtils_Log2Ceil((size_t)size);
+        int target = MathUtils_Log2Floor((size_t)size);
         int minNonEmptyIndex = blockAllocator->minNonEmptyIndex;
         int first = (minNonEmptyIndex > target) ? minNonEmptyIndex : target;
-        superblock = BlockAllocator_pollSuperblock(blockAllocator, first);
+        superblock = BlockAllocator_pollSuperblock(blockAllocator, first, size);
         if (superblock != NULL && BlockMeta_SuperblockSize(superblock) > size) {
             BlockMeta *leftover = superblock + size;
             BlockAllocator_addFreeBlocksInternal(
@@ -123,7 +162,7 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
         for (BlockMeta *current = superblock + 1; current < limit; current++) {
             BlockMeta_SetFlag(current, block_superblock_middle);
         }
-        atomic_fetch_add_explicit(&blockAllocator->freeBlockCount, -size,
+        atomic_fetch_sub_explicit(&blockAllocator->freeBlockCount, size,
                                   memory_order_relaxed);
     }
     BlockAllocator_Release(blockAllocator);
@@ -151,19 +190,8 @@ BlockAllocator_addFreeBlocksInternal0(BlockAllocator *blockAllocator,
 void BlockAllocator_addFreeBlocksInternal(BlockAllocator *blockAllocator,
                                           BlockMeta *superblock,
                                           uint32_t count) {
-    uint32_t remaining_count = count;
-    uint32_t powerOf2 = 1;
-    BlockMeta *current = superblock;
-    // splits the superblock into smaller superblocks that are a powers of 2
-    while (remaining_count > 0) {
-        if ((powerOf2 & remaining_count) > 0) {
-            BlockAllocator_addFreeBlocksInternal0(blockAllocator, current,
-                                                  powerOf2);
-            remaining_count -= powerOf2;
-            current += powerOf2;
-        }
-        powerOf2 <<= 1;
-    }
+    // Preserve contiguous extents instead of splitting them into powers of two.
+    BlockAllocator_addFreeBlocksInternal0(blockAllocator, superblock, count);
 }
 
 void BlockAllocator_AddFreeBlocks(BlockAllocator *blockAllocator,

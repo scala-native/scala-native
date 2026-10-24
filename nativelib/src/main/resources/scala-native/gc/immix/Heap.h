@@ -16,7 +16,9 @@ typedef struct {
     word_t *lineMetaEnd;
     word_t *heapStart;
     word_t *heapEnd;
-    size_t heapSize;
+    atomic_size_t heapSize;
+    // Collection completion epoch, used to reject obsolete allocation retries.
+    atomic_uint_fast64_t collectionGeneration;
     size_t maxHeapSize;
     uint32_t blockCount;
     uint32_t maxBlockCount;
@@ -48,6 +50,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize);
 
 bool Heap_isGrowingPossible(Heap *heap, uint32_t incrementInBlocks);
 void Heap_Collect(Heap *heap, Stack *stack);
+bool Heap_RecoverAllocation(Heap *heap, uint32_t size, uint64_t generation);
 void Heap_Recycle(Heap *heap);
 bool Heap_TryGrow(Heap *heap, uint32_t increment);
 void Heap_Grow(Heap *heap, uint32_t increment);

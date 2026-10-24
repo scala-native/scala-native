@@ -17,6 +17,7 @@ typedef struct {
 
 typedef struct {
     FreeList freeLists[FREE_LIST_COUNT];
+    Chunk *reservedChunk;
     word_t *heapStart;
     word_t *blockMetaStart;
     Bytemap *bytemap;
@@ -27,6 +28,9 @@ void LargeAllocator_Init(LargeAllocator *allocator,
                          BlockAllocator *blockAllocator, Bytemap *bytemap,
                          word_t *blockMetaStart, word_t *heapStart);
 word_t *LargeAllocator_Alloc(Heap *heap, uint32_t objectSize);
+bool LargeAllocator_Reserve(LargeAllocator *allocator, size_t size);
+// Called only by the stopped-world collection owner.
+bool LargeAllocator_ReserveRecycled(LargeAllocator *allocator, size_t size);
 void LargeAllocator_Clear(LargeAllocator *allocator);
 void LargeAllocator_AddChunk(LargeAllocator *allocator, Chunk *chunk,
                              size_t total_block_size);

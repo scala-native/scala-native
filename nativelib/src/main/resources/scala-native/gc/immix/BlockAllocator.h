@@ -26,6 +26,9 @@ typedef struct {
 void BlockAllocator_Init(BlockAllocator *blockAllocator, word_t *blockMetaStart,
                          uint32_t blockCount);
 BlockMeta *BlockAllocator_GetFreeBlock(BlockAllocator *blockAllocator);
+BlockMeta *
+BlockAllocator_GetFreeBlockForSmallAllocation(BlockAllocator *blockAllocator,
+                                              bool canUseReserve);
 BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
                                             uint32_t size);
 void BlockAllocator_AddFreeBlocks(BlockAllocator *blockAllocator,

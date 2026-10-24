@@ -443,11 +443,27 @@ void Synchronizer_yield(void) {
     atomic_thread_fence(memory_order_seq_cst);
 }
 
-bool Synchronizer_acquire(void) {
+static bool Synchronizer_acquireGeneration(atomic_uint_fast64_t *completed,
+                                           uint64_t generation) {
     if (!mutex_tryLock(&synchronizerLock)) {
+#ifdef SCALANATIVE_GC_TESTING
+        extern void scalanative_gc_test_on_contention(void);
+        scalanative_gc_test_on_contention();
+#endif
         scalanative_GC_yield();
         return false;
     }
+    // Requests made before a completed collection must retry allocation,
+    // without stopping every mutator for an obsolete request.
+    if (completed != NULL &&
+        atomic_load_explicit(completed, memory_order_acquire) != generation) {
+        mutex_unlock(&synchronizerLock);
+        return false;
+    }
+#ifdef SCALANATIVE_GC_TESTING
+    extern void scalanative_gc_test_on_acquire(void);
+    scalanative_gc_test_on_acquire();
+#endif
 #ifndef _WIN32
     sigprocmask(SIG_BLOCK, &signalsBlockedDuringGC, NULL);
 #endif
@@ -511,6 +527,15 @@ bool Synchronizer_acquire(void) {
         }
     } while (activeThreads > 0);
     return true;
+}
+
+bool Synchronizer_acquire(void) {
+    return Synchronizer_acquireGeneration(NULL, 0);
+}
+
+bool Synchronizer_acquireForAllocation(atomic_uint_fast64_t *completed,
+                                       uint64_t generation) {
+    return Synchronizer_acquireGeneration(completed, generation);
 }
 
 void Synchronizer_release(void) {

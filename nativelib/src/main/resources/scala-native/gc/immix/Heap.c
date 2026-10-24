@@ -101,6 +101,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     uint32_t maxNumberOfBlocks = maxHeapSize / SPACE_USED_PER_BLOCK;
     assert(maxNumberOfBlocks > 1);
     uint32_t initialBlockCount = minHeapSize / SPACE_USED_PER_BLOCK;
+    atomic_init(&heap->collectionGeneration, 0);
     heap->maxHeapSize = maxHeapSize;
     heap->blockCount = initialBlockCount;
     heap->maxBlockCount = maxNumberOfBlocks;
@@ -223,11 +224,32 @@ void Heap_ThrowOutOfMemory(Heap *heap) {
     scalanative_throw(error);
 }
 
-void Heap_Collect(Heap *heap, Stack *stack) {
-    MutatorThread *mutatorThread = currentMutatorThread;
+static bool Heap_reserveAllocation(uint32_t size) {
+    if (size >= MIN_BLOCK_SIZE) {
+        LargeAllocator *allocator = &currentMutatorThread->largeAllocator;
+        return LargeAllocator_ReserveRecycled(allocator, size) ||
+               LargeAllocator_Reserve(allocator, size);
+    }
+    Allocator *allocator = &currentMutatorThread->allocator;
+    if (Allocator_Reserve(allocator, size) ||
+        Allocator_ReserveRecycled(allocator, size))
+        return true;
+    // Consume protected whole blocks only after searching recycled runs.
+    allocator->canUseReserve = true;
+    bool available = Allocator_Reserve(allocator, size);
+    allocator->canUseReserve = false;
+    return available;
+}
+
+static bool Heap_collect(Heap *heap, Stack *stack, uint32_t allocationSize,
+                         uint64_t generation) {
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
-    if (!Synchronizer_acquire())
-        return;
+    if (!(allocationSize == 0 ? Synchronizer_acquire()
+                              : Synchronizer_acquireForAllocation(
+                                    &heap->collectionGeneration, generation)))
+        // Another collector may not have started stopping threads yet. Retry
+        // allocation; this is not evidence of exhausted post-collection space.
+        return true;
 #else
     MutatorThread_switchState(currentMutatorThread,
                               GC_MutatorThreadState_Unmanaged);
@@ -245,6 +267,29 @@ void Heap_Collect(Heap *heap, Stack *stack) {
         sweep_start_ns = Time_current_nanos();
     }
     Heap_Recycle(heap);
+#ifdef SCALANATIVE_GC_TESTING
+    extern void scalanative_gc_test_after_sweep(void);
+    scalanative_gc_test_after_sweep();
+#endif
+    bool available = true;
+    if (allocationSize != 0) {
+        available = Heap_reserveAllocation(allocationSize);
+        if (!available) {
+            uint32_t blocks =
+                (allocationSize + BLOCK_TOTAL_SIZE - 1ULL) / BLOCK_TOTAL_SIZE;
+            GC_LOG_DEBUG(
+                "Allocation recovery: size=%u, generation=%" PRIuFAST64,
+                allocationSize, atomic_load(&heap->collectionGeneration));
+            available = Heap_TryGrow(heap, blocks) &&
+                        Heap_reserveAllocation(allocationSize);
+        }
+    }
+#ifdef SCALANATIVE_GC_TESTING
+    extern void scalanative_gc_test_after_reservation(uint32_t, bool);
+    scalanative_gc_test_after_reservation(allocationSize, available);
+#endif
+    atomic_fetch_add_explicit(&heap->collectionGeneration, 1,
+                              memory_order_release);
     end_ns = Time_current_nanos();
     jmx_stats_record_collection(start_ns, end_ns);
     if (stats != NULL) {
@@ -260,6 +305,16 @@ void Heap_Collect(Heap *heap, Stack *stack) {
     WeakReferences_InvokeGCFinishedCallback();
     GC_LOG_INFO("GC collection finished in %" PRIu64 "ms",
                 (end_ns - start_ns) / 1000000);
+    return available;
+}
+
+void Heap_Collect(Heap *heap, Stack *stack) { Heap_collect(heap, stack, 0, 0); }
+
+bool Heap_RecoverAllocation(Heap *heap, uint32_t size, uint64_t generation) {
+    if (atomic_load_explicit(&heap->collectionGeneration,
+                             memory_order_acquire) != generation)
+        return true;
+    return Heap_collect(heap, &stack, size, generation);
 }
 
 bool Heap_shouldGrow(Heap *heap) {
@@ -363,6 +418,10 @@ void Heap_Recycle(Heap *heap) {
 }
 
 bool Heap_TryGrow(Heap *heap, uint32_t incrementInBlocks) {
+#ifdef SCALANATIVE_GC_TESTING
+    extern void scalanative_gc_test_on_grow(void);
+    scalanative_gc_test_on_grow();
+#endif
     BlockAllocator_Acquire(&blockAllocator);
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     atomic_thread_fence(memory_order_seq_cst);
