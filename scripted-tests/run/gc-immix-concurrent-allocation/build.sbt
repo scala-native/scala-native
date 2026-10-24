@@ -2,11 +2,12 @@ import java.util.concurrent.TimeUnit
 
 enablePlugins(ScalaNativePlugin)
 Compile / mainClass := Some("Main")
-nativeConfig ~= {
-  _.withGC(scala.scalanative.build.GC.immix)
+nativeConfig ~= { config =>
+  config
+    .withGC(scala.scalanative.build.GC.immix)
     .withMode(scala.scalanative.build.Mode.releaseFast)
     .withMultithreading(true)
-    .withCompileOptions(Seq("-DSCALANATIVE_GC_TESTING"))
+    .withCompileOptions(config.compileOptions :+ "-DSCALANATIVE_GC_TESTING")
 }
 scalaVersion := {
   val version = System.getProperty("scala.version")
