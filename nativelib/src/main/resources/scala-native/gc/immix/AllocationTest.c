@@ -118,6 +118,24 @@ static int checkRecycledCapacity(void) {
     threads[1].largeAllocator.reservedChunk = NULL;
     CHECK(!LargeAllocator_ReserveRecycled(&threads[1].largeAllocator,
                                           MIN_BLOCK_SIZE));
+    // A callback can allocate a smaller object before an outer failed request
+    // consumes its reservation. Never split a multi-block remainder into the
+    // sub-block free lists.
+    Chunk *pending = (Chunk *)(storage + 4 * WORDS_IN_BLOCK);
+    pending->nothing = NULL;
+    pending->size = 3 * BLOCK_TOTAL_SIZE;
+    threads[1].largeAllocator.reservedChunk = pending;
+    CHECK(LargeAllocator_tryAlloc(&threads[1].largeAllocator, MIN_BLOCK_SIZE) ==
+          NULL);
+    CHECK(threads[1].largeAllocator.reservedChunk == pending);
+    BlockAllocator_AddFreeBlocks(&pool, metas + 2, 1);
+    BlockAllocator_SweepDone(&pool);
+    CHECK(LargeAllocator_tryAlloc(&threads[1].largeAllocator, MIN_BLOCK_SIZE) ==
+          storage + 2 * WORDS_IN_BLOCK);
+    CHECK(threads[1].largeAllocator.reservedChunk == pending);
+    CHECK(LargeAllocator_tryAlloc(&threads[1].largeAllocator,
+                                  3 * BLOCK_TOTAL_SIZE) == (word_t *)pending);
+    CHECK(threads[1].largeAllocator.reservedChunk == NULL);
 cleanup:
     atomic_store(&mutatorThreads, saved);
 #ifdef _WIN32

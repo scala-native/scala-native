@@ -156,7 +156,11 @@ word_t *LargeAllocator_tryAlloc(LargeAllocator *allocator, size_t size) {
     size_t actualBlockSize =
         MathUtils_RoundToNextMultiple(size, MIN_BLOCK_SIZE);
     Chunk *chunk = allocator->reservedChunk;
-    if (chunk != NULL && chunk->size >= actualBlockSize)
+    // A GC callback may allocate before the failed request retries. Reusing
+    // its reservation must still leave a sub-block tail; larger remainders
+    // cannot be stored in the chunk free lists or described by this extent.
+    if (chunk != NULL && chunk->size >= actualBlockSize &&
+        chunk->size - actualBlockSize < BLOCK_TOTAL_SIZE)
         allocator->reservedChunk = NULL;
     else
         chunk = LargeAllocator_getChunk(allocator, size);
