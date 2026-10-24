@@ -16,6 +16,8 @@ The fixture checks:
 - Recovery reuses small/medium runs and large chunks assigned to idle
   allocators. Native fixtures also check list links to block zero, contiguous
   non-power-of-two extents, free-block accounting, and whole-block reserves.
+- A medium reservation can be retried without a primary block. Smaller
+  allocations made by a GC callback preserve oversized pending reservations.
 - Small, medium, and large reservations survive other allocators taking all
   remaining shared blocks. The collector-owned fixture simulates this by
   draining and then restoring the free-block pool before checking the retry.
@@ -30,10 +32,26 @@ stopped and restore the runtime's lists before returning.
 
 ## Long-running validation
 
-Use the exact allocation workload from
-[#5120](https://github.com/scala-native/scala-native/issues/5120), compiled with
+The `reproducer/HeapGrowthRepro.scala` program preserves the allocation workload
+from [#5120](https://github.com/scala-native/scala-native/issues/5120) and exits
+with an error if any worker throws. Build it with
 the same Scala version, release-fast mode, and multithreading enabled for both
-the original and candidate runtime. Run each thread count separately:
+the original and candidate runtime. From this fixture directory, use matching
+locally published plugin/runtime versions and these sbt settings to build a
+production-mode reproducer without the test hooks:
+
+```scala
+Compile / sources := Seq(baseDirectory.value / "reproducer/HeapGrowthRepro.scala")
+Compile / mainClass := Some("HeapGrowthRepro")
+Compile / unmanagedResourceDirectories := Seq.empty
+nativeConfig ~= { config =>
+  config.withCompileOptions(
+    config.compileOptions.filterNot(_.startsWith("-DSCALANATIVE_GC_TESTING"))
+  )
+}
+```
+
+Run `Compile / nativeLink` and then run each thread count separately:
 
 ```sh
 GC_INITIAL_HEAP_SIZE=4M GC_MAXIMUM_HEAP_SIZE=8G \
