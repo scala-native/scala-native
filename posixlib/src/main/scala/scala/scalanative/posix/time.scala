@@ -4,7 +4,6 @@ package posix
 import scala.scalanative.posix.signal.sigevent
 import scala.scalanative.posix.sys.types
 import scala.scalanative.unsafe._
-import scalanative.meta.LinktimeInfo.isFreeBSD
 
 import types._
 
@@ -190,15 +189,9 @@ object timeOps {
     def tm_yday: CInt = ptr._8
     def tm_isdst: CInt = ptr._9
 
-    def tm_gmtoff: CLongLong = if (!isFreeBSD)
-      ptr._10
-    else
-      ptr._11.asInstanceOf[CLongLong]
+    def tm_gmtoff: CLongLong = ptr._10
 
-    def tm_zone: CString = if (!isFreeBSD)
-      ptr._11
-    else
-      ptr._10.asInstanceOf[CString]
+    def tm_zone: CString = ptr._11
 
     def tm_sec_=(v: CInt): Unit = ptr._1 = v
     def tm_min_=(v: CInt): Unit = ptr._2 = v
@@ -210,15 +203,9 @@ object timeOps {
     def tm_yday_=(v: CInt): Unit = ptr._8 = v
     def tm_isdst_=(v: CInt): Unit = ptr._9 = v
 
-    def tm_gmtoff_=(v: CLongLong): Unit = if (!isFreeBSD)
-      ptr._10 = v
-    else
-      ptr._11 = v.asInstanceOf[CString]
+    def tm_gmtoff_=(v: CLongLong): Unit = ptr._10 = v
 
-    def tm_zone_=(v: CString): Unit = if (!isFreeBSD)
-      ptr._11 = v
-    else
-      ptr._10 = v.asInstanceOf[CLongLong]
+    def tm_zone_=(v: CString): Unit = ptr._11 = v
   }
 }
 
