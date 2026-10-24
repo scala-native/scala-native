@@ -58,7 +58,6 @@ jobs:
             # Git needs a newer pcre2 than the cached VM image contains.
             /usr/sbin/pkg_add -u pcre2
             /usr/sbin/pkg_add clang boehm-gc zlib git curl bash openjdk21 mozilla-rootcerts
-            mozilla-rootcerts install
           run: |
             set -eu
             export JAVA_HOME=/usr/pkg/java/openjdk21
