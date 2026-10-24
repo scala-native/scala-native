@@ -2,142 +2,68 @@ name: Run tests BSD (FreeBSD & NetBSD)
 on:
   workflow_call:
   pull_request:
+  # Bootstrap CI before this workflow reaches the default branch.
+  push:
+    branches: [ci/freebsd-netbsd]
   schedule:
-    # Every day at 3 AM UTC (staggered from the 2 AM Linux/macOS jobs)
     - cron: "0 3 * * *"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
-  group: bsd-${{ github.head_ref }}-${{ github.event_name }}
+  group: bsd-${{ github.head_ref || github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
   test-freebsd:
     name: Test runtime (FreeBSD x86_64, Scala 3)
-    # Same gating as run-tests-linux-multiarch: run on every PR + scheduled/called runs on the
-    # canonical repo. workflow_dispatch is also included for manual triage.
-    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
+    if: github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.repository == 'scala-native/scala-native'
     runs-on: ubuntu-latest
-    env:
-      ENABLE_EXPERIMENTAL_COMPILER: true
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v7
-
       - name: Run tests on FreeBSD
         uses: vmactions/freebsd-vm@v1
         with:
           release: "14.2"
           usesh: true
-          # 8 GB – JVM needs ~2-3 GB headroom during compilation, native linker uses another 1-2 GB.
           mem: 8192
-          # ---------------------------------------------------------------------------
-          # prepare: runs once and is cached by vmactions between runs on the same commit.
-          # Install everything the Scala Native build needs:
-          #   - LLVM/Clang 18  (FreeBSD 14 ships clang 18 in base, but we pin the
-          #     explicit versioned package to be explicit)
-          #   - Boehm GC dev headers (required by test-gc boehm mode)
-          #   - zlib dev headers
-          #   - curl + bash (needed by the coursier/sdk bootstrap below)
-          # ---------------------------------------------------------------------------
           prepare: |
+            set -eu
             pkg update -f
-            pkg install -y \
-              llvm18 \
-              boehm-gc \
-              zlib \
-              git \
-              curl \
-              bash
-
-            # Install coursier, then use it to pull in Temurin JDK 21 + SBT.
-            # FreeBSD pkg ships openjdk21 but the path varies by minor; coursier gives
-            # a reproducible layout used across all other CI jobs.
-            fetch -o /tmp/cs \
-              https://github.com/coursier/launchers/raw/master/cs-x86_64-pc-linux-static.gz \
-              && gunzip /tmp/cs \
-              && chmod +x /tmp/cs \
-              && /tmp/cs setup --yes \
-                --jvm temurin:21 \
-                --apps sbt \
-                --install-dir /usr/local/bin \
-              && rm /tmp/cs
-
-          # ---------------------------------------------------------------------------
-          # run: executed on every CI trigger (not cached).
-          # Mirrors the trimmed single-config job used in run-tests-linux-multiarch:
-          #   • test-gc 3   – compile + run sandbox under every GC to catch linker/ABI issues
-          #   • test-runtime 3 – full unit-test suite (testsJVM, tests, junitTestOutputsNative,
-          #     scalaPartestJunitTests); testsExt excluded to keep the job within 90 min.
-          # Virtual threads / continuations are expected to work on FreeBSD x86_64 as
-          # delimcc.h already lists __FreeBSD__ in the x86_64 jmpbuf guard. If they
-          # unexpectedly fail, the job will surface that; see docs/contributor/ci-bsd.md.
-          # ---------------------------------------------------------------------------
+            pkg install -y llvm18 boehm-gc git curl bash openjdk21
           run: |
-            export PATH="/usr/local/llvm18/bin:/usr/local/bin:$HOME/.local/share/coursier/bin:$PATH"
-            export ENABLE_EXPERIMENTAL_COMPILER=true
-            export SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1
-            export SCALANATIVE_TEST_DEBUG_SIGNALS=1
-
-            sbt "test-gc 3"
-            sbt -J-Xmx5G "test-runtime 3"
+            set -eu
+            export JAVA_HOME=/usr/local/openjdk21
+            export LLVM_BIN=/usr/local/llvm18/bin
+            export PATH="$JAVA_HOME/bin:$LLVM_BIN:/usr/local/bin:$PATH"
+            sh scripts/ci/run-bsd-tests.sh
 
   test-netbsd:
     name: Test runtime (NetBSD x86_64, Scala 3)
-    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
+    if: github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.repository == 'scala-native/scala-native'
     runs-on: ubuntu-latest
-    env:
-      ENABLE_EXPERIMENTAL_COMPILER: true
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v7
-
       - name: Run tests on NetBSD
         uses: vmactions/netbsd-vm@v1
         with:
           release: "10.1"
           usesh: true
           mem: 8192
-          # ---------------------------------------------------------------------------
-          # prepare: NetBSD uses pkgsrc / pkgin for binary packages.
-          # clang in pkgsrc is usually the latest stable LLVM version (≥ 18 on NetBSD 10).
-          # boehm-gc maps to the "boehm-gc" pkgsrc package.
-          # openjdk21 is available in pkgsrc; we pin it for reproducibility.
-          # sbt is not in pkgsrc, so we install the upstream tgz tarball.
-          # ---------------------------------------------------------------------------
           prepare: |
+            set -eu
+            export PATH="/usr/pkg/bin:/usr/pkg/sbin:$PATH"
             pkgin -y update
-            pkgin -y install \
-              clang \
-              boehm-gc \
-              zlib \
-              git \
-              curl \
-              bash \
-              openjdk21
-
-            # Install SBT from upstream release tarball (not in pkgsrc).
-            SBT_VERSION=1.10.11
-            ftp -o /tmp/sbt.tgz \
-              https://github.com/sbt/sbt/releases/download/v${SBT_VERSION}/sbt-${SBT_VERSION}.tgz \
-              || curl -fsSL -o /tmp/sbt.tgz \
-                   https://github.com/sbt/sbt/releases/download/v${SBT_VERSION}/sbt-${SBT_VERSION}.tgz
-            tar -xzf /tmp/sbt.tgz -C /usr/pkg
-            ln -sf /usr/pkg/sbt/bin/sbt /usr/pkg/bin/sbt
-            rm /tmp/sbt.tgz
-
-          # ---------------------------------------------------------------------------
-          # run: NetBSD places pkgsrc binaries under /usr/pkg/bin.
-          # JAVA_HOME points to the openjdk21 installed by pkgsrc.
-          # clang is the system compiler; no explicit LLVM_BIN needed.
-          # Virtual threads / continuations should work on NetBSD x86_64 – see
-          # delimcc.h which lists __NetBSD__ in the x86_64 guard. If they fail,
-          # failures will be captured and documented in docs/contributor/ci-bsd.md.
-          # ---------------------------------------------------------------------------
+            pkgin -y install clang boehm-gc zlib git curl bash openjdk21 mozilla-rootcerts
+            mozilla-rootcerts install
           run: |
-            export PATH="/usr/pkg/bin:/usr/pkg/java/openjdk21/bin:$PATH"
-            export JAVA_HOME="/usr/pkg/java/openjdk21"
-            export ENABLE_EXPERIMENTAL_COMPILER=true
-            export SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1
-            export SCALANATIVE_TEST_DEBUG_SIGNALS=1
-
-            sbt "test-gc 3"
-            sbt -J-Xmx5G "test-runtime 3"
+            set -eu
+            export JAVA_HOME=/usr/pkg/java/openjdk21
+            export PATH="$JAVA_HOME/bin:/usr/pkg/bin:/usr/pkg/sbin:$PATH"
+            export SCALANATIVE_INCLUDE_DIRS=/usr/pkg/include
+            export SCALANATIVE_LIB_DIRS=/usr/pkg/lib
+            sh scripts/ci/run-bsd-tests.sh
