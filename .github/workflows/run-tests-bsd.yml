@@ -30,7 +30,7 @@ jobs:
           prepare: |
             set -eu
             pkg update -f
-            pkg install -y llvm18 boehm-gc git curl bash openjdk21
+            pkg install -y llvm18 boehm-gc-threaded git curl bash openjdk21
           run: |
             set -eu
             export JAVA_HOME=/usr/local/openjdk21

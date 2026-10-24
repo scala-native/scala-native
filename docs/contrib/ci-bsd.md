@@ -12,7 +12,9 @@ and a 120 minute job timeout.
 | FreeBSD 14.4 | `llvm18` | native `openjdk21`, `/usr/local/openjdk21` |
 | NetBSD 10.1 | pkgsrc `clang` | pkgsrc `openjdk21`, `/usr/pkg/java/openjdk21` |
 
-Both install `boehm-gc`. FreeBSD uses base zlib; NetBSD installs pkgsrc
+FreeBSD installs `boehm-gc-threaded` and links `libgc-threaded`; its plain
+`boehm-gc` package is built without threads and omits `gc_pthread_redirects.h`.
+NetBSD installs `boehm-gc`. FreeBSD uses base zlib; NetBSD installs pkgsrc
 zlib and supplies `/usr/pkg/include` and `/usr/pkg/lib` through
 `SCALANATIVE_INCLUDE_DIRS` and `SCALANATIVE_LIB_DIRS`.
 
@@ -43,6 +45,9 @@ virtual threads still require validation on the actual VMs.
 | Workflow lint and shell syntax validation | Passed |
 | First VM run | Failed in package setup; no compilation reached |
 | Package setup fixes | FreeBSD 14.4 matches repository ABI; NetBSD uses base pkg_add |
+| FreeBSD struct tm layout | Fixed C assertions and Scala field accessors |
+| NetBSD cached pcre2 and certificate setup | Fixed dependency update; reuse existing trust store |
+| FreeBSD Boehm bootstrap | Install threaded package and select libgc-threaded |
 | Runtime failure triage | Pending |
 
 The initial run failed because FreeBSD 14.2 rejected packages targeting 14.4
