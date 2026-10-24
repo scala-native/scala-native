@@ -146,6 +146,7 @@ private[scalanative] object LLVM {
       objectsPaths: Seq[Path]
   ): Path = {
     implicit val _config: Config = config
+    implicit val _analysis: ReachabilityAnalysis.Result = analysis
     val buildPath = config.buildPath
 
     // don't link if no changes
@@ -155,7 +156,7 @@ private[scalanative] object LLVM {
 
     val command = config.compilerConfig.buildTarget match {
       case BuildTarget.Application | BuildTarget.LibraryDynamic =>
-        prepareLinkCommand(objectsPaths, analysis)
+        prepareLinkCommand(objectsPaths)
       case BuildTarget.LibraryStatic =>
         prepareArchiveCommand(objectsPaths)
     }
@@ -217,9 +218,8 @@ private[scalanative] object LLVM {
   }
 
   private def prepareLinkCommand(
-      objectsPaths: Seq[Path],
-      analysis: ReachabilityAnalysis.Result
-  )(implicit config: Config) = {
+      objectsPaths: Seq[Path]
+  )(implicit config: Config, analysis: ReachabilityAnalysis.Result) = {
     val workDir = config.workDir
     val links = {
       val srclinks = analysis.links.map(_.name)
@@ -418,17 +418,22 @@ private[scalanative] object LLVM {
 
   /** LTO flags for compiling `compiledFile`, or for linking if `None`. */
   private def flto(compiledFile: Option[String] = None)(implicit
-      config: Config
+      config: Config,
+      analysis: ReachabilityAnalysis.Result
   ): Seq[String] = {
     def isNativeSource = compiledFile.exists(!_.endsWith(llExt))
     def isVendoredUnwind = compiledFile.exists(
       _.contains(s"${File.separator}libunwind${File.separator}")
     )
+    def usesContinuations = analysis.preprocessorDefinitions.contains(
+      nir.Attr.Define("__SCALANATIVE_DELIMCC")
+    )
     config.compilerConfig.lto match {
       case LTO.None => Seq.empty
       // Inlined C/C++ could reuse a TLS address across a continuation suspend,
       // reading the old carrier's state after a virtual thread migrates.
-      case _ if isNativeSource && config.compilerConfig.multithreadingSupport =>
+      case _
+          if isNativeSource && config.compilerConfig.multithreadingSupport && usesContinuations =>
         Seq("-fno-lto")
       // Apple ld does not materialize unw_* symbols that exist only in bitcode.
       case _ if config.targetsMac && isVendoredUnwind => Seq("-fno-lto")
