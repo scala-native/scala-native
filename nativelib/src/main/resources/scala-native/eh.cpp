@@ -70,7 +70,9 @@ extern "C" {
  * we're in a continuation-resume context
  * (scalanative_continuation_exception_handler set by delimcc.c), it extracts
  * the current exception (via std::current_exception) and longjmps to the
- * resumer instead of terminating.
+ * resumer instead of terminating; otherwise it falls back to
+ * scalanative_continuation_exception_escape, which longjmps to the enclosing
+ * boundary handler if one exists.
  */
 static std::terminate_handler default_terminate_handler = NULL;
 static std::once_flag continuation_terminate_handler_once;
@@ -78,19 +80,21 @@ static std::once_flag continuation_terminate_handler_once;
 static void continuation_terminate_handler() {
     ContinuationExceptionHandler ceh =
         scalanative_continuation_exception_handler();
-    if (ceh.env != NULL && ceh.exception_slot != NULL) {
-        std::exception_ptr eptr = std::current_exception();
-        if (eptr != nullptr) {
-            try {
-                std::rethrow_exception(eptr);
-            } catch (scalanative::ExceptionWrapper &e) {
+    std::exception_ptr eptr = std::current_exception();
+    if (eptr != nullptr) {
+        try {
+            std::rethrow_exception(eptr);
+        } catch (scalanative::ExceptionWrapper &e) {
+            if (ceh.env != NULL && ceh.exception_slot != NULL) {
                 jmp_buf *env = ceh.env;
                 *ceh.exception_slot = e.obj;
                 scalanative_continuation_exception_handler_clear();
                 longjmp(*env, 1);
-            } catch (...) {
-                /* not our exception, fall through */
             }
+            if (scalanative_continuation_exception_escape(e.obj))
+                __builtin_unreachable();
+        } catch (...) {
+            /* not our exception, fall through */
         }
     }
     if (default_terminate_handler)
