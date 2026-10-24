@@ -39,7 +39,7 @@ class RuntimeTest {
     if (isWindows) {
       Array("cmd", "/c", "dir", "/b")
     } else {
-      Array("/bin/ls")
+      Array(s"$unixBinDir/ls")
     }
 
   @Test def execCommand(): Unit = {

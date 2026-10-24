@@ -29,7 +29,7 @@
 #endif
 
 // Platform-specific program name access
-#if defined(__APPLE__)
+#if defined(__APPLE__) || defined(__ANDROID__)
 // getprogname() is in stdlib.h (already included)
 #elif defined(__linux__)
 #include <errno.h>
@@ -62,7 +62,7 @@ static const char *GC_Log_GetProgName(void) {
         }
     }
     return progName;
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) || defined(__ANDROID__)
     return getprogname();
 #elif defined(__linux__)
     return program_invocation_short_name;

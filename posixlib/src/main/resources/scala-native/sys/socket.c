@@ -4,6 +4,10 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <errno.h>
+#ifdef __ANDROID__
+#include <sys/ioctl.h>
+#include <linux/sockios.h>
+#endif
 
 #if defined(__MINGW64__)
 #include <mswsock.h>
@@ -415,6 +419,11 @@ int scalanative_sockatmark(int socket) {
 #if defined(_WIN32)
     errno = ENOTSUP;
     return -1;
+#elif defined(__ANDROID__)
+    int atmark;
+    if (ioctl(socket, SIOCATMARK, &atmark) == -1)
+        return -1;
+    return atmark;
 #else
     return sockatmark(socket);
 #endif

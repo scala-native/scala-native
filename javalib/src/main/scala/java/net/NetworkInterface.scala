@@ -7,7 +7,7 @@ import scala.annotation.tailrec
 
 import scala.scalanative.libc.LibcExt
 import scala.scalanative.meta.LinktimeInfo
-import scala.scalanative.posix.errno.{ENXIO, errno}
+import scala.scalanative.posix.errno.{ENODEV, ENXIO, errno}
 import scala.scalanative.posix.net.`if`._
 import scala.scalanative.posix.net.ifOps._
 import scala.scalanative.posix.netinet.in._
@@ -365,7 +365,8 @@ object NetworkInterface {
     val ret = if_indextoname(index.toUInt, buf)
 
     if (ret != null) unixGetByName(fromCString(ret))
-    else if (errno == ENXIO) null // no interface has that index
+    // Bionic preserves ENODEV from the ioctl; glibc translates it to ENXIO.
+    else if (errno == ENXIO || errno == ENODEV) null // no such interface
     else throw new SocketException(LibcExt.strError())
   }
 

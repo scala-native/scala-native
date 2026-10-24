@@ -2,7 +2,8 @@ package org.scalanative.testsuite.javalib.lang
 
 import java.io.InputStream
 import java.lang._
-import java.nio.file.Paths
+import java.nio.charset.StandardCharsets.UTF_8
+import java.nio.file.{Files, Paths}
 import java.util.concurrent.TimeUnit
 
 import scala.io.Source
@@ -16,7 +17,16 @@ object ProcessUtils {
 
   final val EOL = System.lineSeparator()
 
-  val resourceDir = Paths
+  // Termux has no /bin. Use its installed shell for both JVM and native tests.
+  val unixBinDir = sys.env
+    .get("PREFIX")
+    .filter(_ => !Files.isExecutable(Paths.get("/bin/sh")))
+    .map(prefix => s"$prefix/bin")
+    .getOrElse("/bin")
+
+  val shellCommand = s"$unixBinDir/sh"
+
+  private val originalResourceDir = Paths
     .get(
       System.getProperty("user.dir"),
       if (executingInJVM) "../.." else "unit-tests",
@@ -28,7 +38,26 @@ object ProcessUtils {
       if (isWindows) "windows" else "unix"
     )
     .toFile()
-    .getCanonicalPath
+    .getCanonicalFile
+
+  val resourceDir = {
+    if (!isWindows && unixBinDir != "/bin") {
+      // Keep executable fixtures and PATH-override tests working without
+      // changing checked-in resources or adding a synthetic /bin to Termux.
+      val dir = Files.createTempDirectory("process-fixtures")
+      dir.toFile.deleteOnExit()
+      originalResourceDir.listFiles().foreach { source =>
+        val text = new String(Files.readAllBytes(source.toPath), UTF_8)
+          .replace("#!/bin/sh", s"#!$shellCommand")
+          .replace("/bin:/usr/bin", unixBinDir)
+        val destination = dir.resolve(source.getName).toFile
+        Files.write(destination.toPath, text.getBytes(UTF_8))
+        destination.setExecutable(true)
+        destination.deleteOnExit()
+      }
+      dir.toFile.getCanonicalPath
+    } else originalResourceDir.getCanonicalPath
+  }
 
   val scripts = Scripts.values.map(_.filename)
 

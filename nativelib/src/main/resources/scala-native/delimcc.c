@@ -81,7 +81,9 @@
 #endif
 
 #define __externc extern
+#ifndef __noreturn
 #define __noreturn __attribute__((noreturn))
+#endif
 #define __returnstwice __attribute__((returns_twice))
 #ifndef __noinline
 #define __noinline __attribute__((noinline))

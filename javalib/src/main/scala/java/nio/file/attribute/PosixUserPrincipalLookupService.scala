@@ -48,7 +48,7 @@ object PosixUserPrincipalLookupService extends UserPrincipalLookupService {
 
       if (err == 0) {
         fromCString(buf._1)
-      } else if (errno == 0) {
+      } else if (errno == 0 || errno == posixErrno.ENOENT) {
         gid.toString
       } else {
         throw UnixException("getgrgid", errno)
@@ -64,7 +64,7 @@ object PosixUserPrincipalLookupService extends UserPrincipalLookupService {
 
       if (err == 0) {
         fromCString(buf._1)
-      } else if (errno == 0) {
+      } else if (errno == 0 || errno == posixErrno.ENOENT) {
         uid.toString
       } else {
         throw UnixException("getpwuid", errno)
@@ -81,7 +81,7 @@ object PosixUserPrincipalLookupService extends UserPrincipalLookupService {
 
     if (err == 0) {
       Some(buf)
-    } else if (errno == 0) {
+    } else if (errno == 0 || errno == posixErrno.ENOENT) {
       None
     } else {
       throw UnixException("getgrnam", errno)
@@ -112,7 +112,7 @@ object PosixUserPrincipalLookupService extends UserPrincipalLookupService {
 
     if (err == 0) {
       Some(buf)
-    } else if (errno == 0) {
+    } else if (errno == 0 || errno == posixErrno.ENOENT) {
       None
     } else {
       throw UnixException("getpwnam", errno)

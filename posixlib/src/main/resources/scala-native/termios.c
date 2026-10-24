@@ -226,7 +226,7 @@ void scalanative_termios_copy_to_host(struct scalanative_termios *termios_sn,
     termios->c_oflag = termios_sn->c_oflag;
     termios->c_cflag = termios_sn->c_cflag;
     termios->c_lflag = termios_sn->c_lflag;
-    for (int i = 0; i < NCCS_L; i++) {
+    for (int i = 0; i < NCCS_L && i < NCCS; i++) {
         termios->c_cc[i] = termios_sn->c_cc[i];
     }
     cfsetispeed(termios, (speed_t)termios_sn->c_ispeed);
@@ -240,7 +240,7 @@ void scalanative_termios_copy_to_sn(struct scalanative_termios *termios_sn,
     termios_sn->c_cflag = termios->c_cflag;
     termios_sn->c_lflag = termios->c_lflag;
     for (int i = 0; i < NCCS_L; i++) {
-        termios_sn->c_cc[i] = termios->c_cc[i];
+        termios_sn->c_cc[i] = i < NCCS ? termios->c_cc[i] : 0;
     }
     termios_sn->c_ispeed = (unsigned int)cfgetispeed(termios);
     termios_sn->c_ospeed = (unsigned int)cfgetospeed(termios);
@@ -251,7 +251,7 @@ void scalanative_termios_copy_to_sn(struct scalanative_termios *termios_sn,
 // Linux speed_t is unsigned int
 unsigned int
 scalanative_termios_cfgetispeed(struct scalanative_termios *tio_sn) {
-    struct termios tio;
+    struct termios tio = {0};
     scalanative_termios_copy_to_host(tio_sn, &tio);
     unsigned long res = cfgetispeed(&tio);
     scalanative_termios_copy_to_sn(tio_sn, &tio);
@@ -260,7 +260,7 @@ scalanative_termios_cfgetispeed(struct scalanative_termios *tio_sn) {
 }
 unsigned int
 scalanative_termios_cfgetospeed(struct scalanative_termios *tio_sn) {
-    struct termios tio;
+    struct termios tio = {0};
     scalanative_termios_copy_to_host(tio_sn, &tio);
     unsigned long res = cfgetospeed(&tio);
     scalanative_termios_copy_to_sn(tio_sn, &tio);
@@ -269,7 +269,7 @@ scalanative_termios_cfgetospeed(struct scalanative_termios *tio_sn) {
 }
 int scalanative_termios_cfsetispeed(struct scalanative_termios *tio_sn,
                                     unsigned int speed) {
-    struct termios tio;
+    struct termios tio = {0};
     scalanative_termios_copy_to_host(tio_sn, &tio);
     int res = cfsetispeed(&tio, speed);
     scalanative_termios_copy_to_sn(tio_sn, &tio);
@@ -277,22 +277,23 @@ int scalanative_termios_cfsetispeed(struct scalanative_termios *tio_sn,
 }
 int scalanative_termios_cfsetospeed(struct scalanative_termios *tio_sn,
                                     unsigned int speed) {
-    struct termios tio;
+    struct termios tio = {0};
     scalanative_termios_copy_to_host(tio_sn, &tio);
     int res = cfsetospeed(&tio, speed);
     scalanative_termios_copy_to_sn(tio_sn, &tio);
     return res;
 }
 int scalanative_termios_tcgetattr(int fd, struct scalanative_termios *tio_sn) {
-    struct termios tio;
-    scalanative_termios_copy_to_host(tio_sn, &tio);
+    struct termios tio = {0};
     int res = tcgetattr(fd, &tio);
-    scalanative_termios_copy_to_sn(tio_sn, &tio);
+    if (res == 0) {
+        scalanative_termios_copy_to_sn(tio_sn, &tio);
+    }
     return res;
 }
 int scalanative_termios_tcsetattr(int fd, int optionalActions,
                                   struct scalanative_termios *tio_sn) {
-    struct termios tio;
+    struct termios tio = {0};
     scalanative_termios_copy_to_host(tio_sn, &tio);
     int res = tcsetattr(fd, optionalActions, &tio);
     scalanative_termios_copy_to_sn(tio_sn, &tio);

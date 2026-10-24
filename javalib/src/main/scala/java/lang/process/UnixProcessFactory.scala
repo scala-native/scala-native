@@ -5,6 +5,7 @@ import java.{util => ju}
 
 import scala.annotation.tailrec
 
+import scalanative.meta.LinktimeInfo
 import scalanative.posix.errno._
 import scalanative.posix.spawn._
 import scalanative.posix.{fcntl, unistd}
@@ -17,8 +18,18 @@ import ju.ScalaOps._
 private[process] object UnixProcessFactory {
   val haveSpawnAddChdir = JavalibSpawn.hasFileActionsAddChdir()
 
+  private def shell =
+    if (LinktimeInfo.isAndroid) {
+      val prefix = System.getenv("PREFIX")
+      if (prefix == null || prefix.isEmpty) "/system/bin/sh"
+      else s"$prefix/bin/sh"
+    } else "/bin/sh"
+
   def apply(pb: ProcessBuilder): GenericProcess = Zone.acquire { implicit z =>
-    if (haveSpawnAddChdir || pb.isCwd) spawnChild(pb)
+    // Bionic reports spawn success and child exit 127 for ENOEXEC, which
+    // prevents the shell fallback for scripts without a shebang.
+    if (LinktimeInfo.isAndroid) forkChild(pb)
+    else if (haveSpawnAddChdir || pb.isCwd) spawnChild(pb)
     else forkChild(pb)
   }
 
@@ -93,10 +104,10 @@ private[process] object UnixProcessFactory {
         val bin = toCString(b)
         if (unistd.execve(bin, argv, envp) == -1 && errno == ENOEXEC) {
           val al = new ArrayList[String](3)
-          al.add("/bin/sh"); al.add("-c")
+          al.add(shell); al.add("-c")
           al.add(cmd.scalaOps.mkString(sep = " "))
           val newArgv = nullTerminate(al)
-          unistd.execve(c"/bin/sh", newArgv, envp)
+          unistd.execve(toCString(shell), newArgv, envp)
         }
       }
 
@@ -230,7 +241,7 @@ private[process] object UnixProcessFactory {
         status = spawn(execIter.next(), argv)
 
       if (status == ENOEXEC) { // try falling back to shell script
-        val shCmd = "/bin/sh"
+        val shCmd = shell
         val fallbackCmd = Array(shCmd, "-c", cmd.scalaOps.mkString(sep = " "))
         status = spawn(shCmd, nullTerminate(ju.Arrays.asList(fallbackCmd)))
       }

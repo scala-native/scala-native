@@ -12,6 +12,7 @@ import java.{util => ju}
 import scala.annotation.tailrec
 
 import scala.scalanative.libc.LibcExt
+import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.meta.LinktimeInfo.{isLinux, isMac}
 import scala.scalanative.posix.arpa.inet._
 import scala.scalanative.posix.netdb._
@@ -242,6 +243,32 @@ object InetAddress {
     fromCString(dst)
   }
 
+  // Bionic's getaddrinfo accepts only four-part IPv4 literals. Java also
+  // accepts one to three decimal parts, with the last filling the remaining
+  // bytes (for example, 127.1 denotes 127.0.0.1).
+  private def getByLegacyIPv4Name(host: String): Option[InetAddress] = {
+    val parts = host.split("\\.", -1)
+    if (parts.exists(_.exists(c => c < '0' || c > '9'))) None
+    else {
+      // Invalid numeric literals must not fall through to a DNS lookup.
+      if (parts.length > 4 || parts.exists(p => p.isEmpty || p.length > 10))
+        throw new UnknownHostException(host)
+      var address = 0L
+      var i = 0
+      while (i < parts.length) {
+        val value = parts(i).toLong
+        val remainingBytes = if (i == parts.length - 1) 4 - i else 1
+        if (value >= (1L << (remainingBytes * 8)))
+          throw new UnknownHostException(host)
+        address = (address << (remainingBytes * 8)) | value
+        i += 1
+      }
+      Some(new Inet4Address(Array.tabulate(4) { i =>
+        (address >>> ((3 - i) * 8)).toByte
+      }))
+    }
+  }
+
   private def getByNumericName(host: String): Option[InetAddress] =
     Zone.acquire { implicit z =>
       val hints = stackalloc[addrinfo]() // stackalloc clears its memory
@@ -260,7 +287,8 @@ object InetAddress {
           val ifIndex = host.indexOf('%')
           val hasInterface = (ifIndex >= 0)
           if (!hasInterface) {
-            None
+            if (LinktimeInfo.isAndroid) getByLegacyIPv4Name(host)
+            else None
           } else {
             /* If execution gets here, we know that we are dealing with one
              * of a large number of corner cases where interface/scope
@@ -584,6 +612,8 @@ object InetAddress {
         if (mappedStatus != EAI_NONAME) {
           val gaiMsg = SocketHelpers.getGaiErrorMessage(mappedStatus)
           throw new UnknownHostException(host + ": " + gaiMsg)
+        } else if (LinktimeInfo.isAndroid) {
+          getByNumericName(host).foreach(retArray += _)
         }
       } else
         try {
@@ -613,7 +643,7 @@ object InetAddress {
      * EAI_NODATA can be returned by Linux & macOS in some poorly defined
      * circumstances.
      *
-     * The magic integer values for Linux & macOS are hardcoded
+     * The magic integer values for glibc, Bionic & macOS are hardcoded
      * because they are extremely unlikely to change after all this time.
      *
      * For consistency of the reported message, map EAI_NODATA to EAI_NONAME.
@@ -622,8 +652,8 @@ object InetAddress {
 
     // EAI_NODATA was removed from FreeBSD a decade or more ago.
     val EAI_NODATA =
-      if (isLinux) -5
-      else if (isMac) 7
+      if (LinktimeInfo.isAndroid || isMac) 7
+      else if (isLinux) -5
       else Integer.MAX_VALUE // placeholder, will never match
 
     if (gaiStatus == EAI_NONAME) gaiStatus
