@@ -295,12 +295,19 @@ int scalanative_continuation_exception_escape(Exception exception) {
 // Assigned allocation function. Should not be modified after `init`.
 static void *(*continuation_alloc_fn)(unsigned long, void *);
 
+#if defined(SCALANATIVE_USING_CPP_EXCEPTIONS)
+extern void scalanative_continuation_exception_terminate_handler_install(void);
+#endif
+
 void scalanative_continuation_init(void *(*alloc_f)(unsigned long, void *)) {
     if (alloc_f == NULL)
         DELIMCC_ERROR_ABORT("scalanative_continuation_init: alloc_f is NULL\n");
 
     continuation_alloc_fn = alloc_f;
     atomic_init(&label_count, 0);
+#if defined(SCALANATIVE_USING_CPP_EXCEPTIONS)
+    scalanative_continuation_exception_terminate_handler_install();
+#endif
 }
 
 void scalanative_continuation_handlers_reset(void) { handlers_store(NULL); }
@@ -750,10 +757,6 @@ void __continuation_resume_impl(void *tail, Continuation *continuation,
 #undef jmpbuf_fix_general_registers
 #undef jmpbuf_fix
 }
-
-#if defined(SCALANATIVE_USING_CPP_EXCEPTIONS)
-extern void scalanative_continuation_exception_terminate_handler_install(void);
-#endif
 
 void *scalanative_continuation_resume(Continuation *continuation, void *out) {
     /*
