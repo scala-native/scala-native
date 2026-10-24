@@ -77,6 +77,12 @@ word_t *Allocator_overflowAllocation(Allocator *allocator, size_t size) {
  */
 bool Allocator_Reserve(Allocator *allocator, size_t size) {
     word_t *start = allocator->cursor;
+    // Recovery can provide an overflow run without a primary block. Retrying
+    // that medium request must consume its reservation before seeking a block.
+    if (start == NULL && size > LINE_SIZE && allocator->largeCursor != NULL &&
+        (uint8_t *)allocator->largeCursor + size <=
+            (uint8_t *)allocator->largeLimit)
+        return true;
     if (start == NULL && !Allocator_newBlock(allocator))
         return false;
 
@@ -106,7 +112,8 @@ bool Allocator_Reserve(Allocator *allocator, size_t size) {
 INLINE word_t *Allocator_tryAlloc(Allocator *allocator, size_t size) {
     if (!Allocator_Reserve(allocator, size))
         return NULL;
-    if ((uint8_t *)allocator->cursor + size > (uint8_t *)allocator->limit)
+    if (allocator->cursor == NULL ||
+        (uint8_t *)allocator->cursor + size > (uint8_t *)allocator->limit)
         return Allocator_overflowAllocation(allocator, size);
     word_t *object = allocator->cursor;
     allocator->cursor = (word_t *)((uint8_t *)object + size);

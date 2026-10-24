@@ -82,6 +82,7 @@ static int checkRecycledCapacity(void) {
     CHECK(Allocator_ReserveRecycled(target, 544));
     CHECK(target->largeCursor == storage);
     CHECK(target->largeLimit == storage + 4 * WORDS_IN_LINE);
+    CHECK(Allocator_Reserve(target, 544));
     CHECK(source->recycledBlocks.first == metas + 2);
     CHECK(source->recycledBlocks.last == metas + 3);
     CHECK(Allocator_ReserveRecycled(target, 16));
@@ -93,6 +94,7 @@ static int checkRecycledCapacity(void) {
     CHECK(atomic_load(&source->recycledBlockCount) == 0);
 
     // A medium reservation must also search later runs of its own block.
+    target->largeCursor = target->largeLimit;
     target->block = metas + 1;
     target->blockStart = storage + WORDS_IN_BLOCK;
     BlockMeta_SetFlag(target->block, block_simple);
