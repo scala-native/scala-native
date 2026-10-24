@@ -9,7 +9,7 @@ and a 120 minute job timeout.
 
 | Target | Compiler | JDK |
 |--------|----------|-----|
-| FreeBSD 14.2 | `llvm18` | native `openjdk21`, `/usr/local/openjdk21` |
+| FreeBSD 14.4 | `llvm18` | native `openjdk21`, `/usr/local/openjdk21` |
 | NetBSD 10.1 | pkgsrc `clang` | pkgsrc `openjdk21`, `/usr/pkg/java/openjdk21` |
 
 Both install `boehm-gc`. FreeBSD uses base zlib; NetBSD installs pkgsrc
@@ -41,15 +41,18 @@ virtual threads still require validation on the actual VMs.
 | Rebase onto latest Termux work | Done, base `6514027f6` |
 | Correct native JDK and portable sbt bootstrap | Done |
 | Workflow lint and shell syntax validation | Passed |
-| First VM run and runtime failure triage | Pending |
+| First VM run | Failed in package setup; no compilation reached |
+| Package setup fixes | FreeBSD 14.4 matches repository ABI; NetBSD uses base pkg_add |
+| Runtime failure triage | Pending |
 
-No BSD runtime results are available yet. Do not add skip guards until a
+The initial run failed because FreeBSD 14.2 rejected packages targeting 14.4
+and NetBSD did not have pkgin installed. No BSD runtime results are available yet. Do not add skip guards until a
 failure has been reproduced and its cause established.
 
 ## Running CI
 
-A push to `ci/freebsd-netbsd` starts both jobs, including before this new
-workflow reaches the default branch. PRs also run both jobs. Scheduled
+PRs run both jobs. The temporary branch push trigger was removed once
+PR #5123 opened to avoid duplicate VM jobs. Scheduled
 runs at 03:00 UTC are restricted to the canonical repository.
 
 Once the workflow exists on the default branch, manual runs are available:

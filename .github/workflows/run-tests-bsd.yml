@@ -2,9 +2,6 @@ name: Run tests BSD (FreeBSD & NetBSD)
 on:
   workflow_call:
   pull_request:
-  # Bootstrap CI before this workflow reaches the default branch.
-  push:
-    branches: [ci/freebsd-netbsd]
   schedule:
     - cron: "0 3 * * *"
   workflow_dispatch:
@@ -19,7 +16,7 @@ concurrency:
 jobs:
   test-freebsd:
     name: Test runtime (FreeBSD x86_64, Scala 3)
-    if: github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.repository == 'scala-native/scala-native'
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || github.repository == 'scala-native/scala-native'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
@@ -27,7 +24,7 @@ jobs:
       - name: Run tests on FreeBSD
         uses: vmactions/freebsd-vm@v1
         with:
-          release: "14.2"
+          release: "14.4"
           usesh: true
           mem: 8192
           prepare: |
@@ -43,7 +40,7 @@ jobs:
 
   test-netbsd:
     name: Test runtime (NetBSD x86_64, Scala 3)
-    if: github.event_name == 'pull_request' || github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.repository == 'scala-native/scala-native'
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || github.repository == 'scala-native/scala-native'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
@@ -57,8 +54,8 @@ jobs:
           prepare: |
             set -eu
             export PATH="/usr/pkg/bin:/usr/pkg/sbin:$PATH"
-            pkgin -y update
-            pkgin -y install clang boehm-gc zlib git curl bash openjdk21 mozilla-rootcerts
+            # The VM configures live package mirrors for pkg_add. pkgin is absent.
+            /usr/sbin/pkg_add clang boehm-gc zlib git curl bash openjdk21 mozilla-rootcerts
             mozilla-rootcerts install
           run: |
             set -eu
