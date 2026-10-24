@@ -108,7 +108,7 @@ private[scalanative] object LLVM {
       } else Nil
 
     val flags: Seq[String] =
-      buildTargetCompileOpts ++ ltoCompileFlags(inpath) ++ sanitizer ++
+      buildTargetCompileOpts ++ flto(Some(inpath)) ++ sanitizer ++
         target ++ langOptions ++ platformFlags ++ debugFlags ++
         configFlags ++ Seq("-fvisibility=hidden", opt) ++
         Seq("-fomit-frame-pointer") ++
@@ -296,7 +296,7 @@ private[scalanative] object LLVM {
 
       try {
         buildTargetLinkOpts.foreach(add)
-        flto.foreach(add)
+        flto().foreach(add)
         debugFlags.foreach(add)
         platformFlags.foreach(add)
         linkNameFlags.foreach(add)
@@ -416,24 +416,24 @@ private[scalanative] object LLVM {
     inmax > outmax
   }
 
-  private def flto(implicit config: Config): Seq[String] =
+  /** LTO flags for compiling `compiledFile`, or for linking if `None`. */
+  private def flto(compiledFile: Option[String] = None)(implicit
+      config: Config
+  ): Seq[String] = {
+    def isNativeSource = compiledFile.exists(!_.endsWith(llExt))
+    def isVendoredUnwind = compiledFile.exists(
+      _.contains(s"${File.separator}libunwind${File.separator}")
+    )
     config.compilerConfig.lto match {
       case LTO.None => Seq.empty
-      case lto      => Seq(s"-flto=${lto.name}")
+      // Inlined C/C++ could reuse a TLS address across a continuation suspend,
+      // reading the old carrier's state after a virtual thread migrates.
+      case _ if isNativeSource && config.compilerConfig.multithreadingSupport =>
+        Seq("-fno-lto")
+      // Apple ld does not materialize unw_* symbols that exist only in bitcode.
+      case _ if config.targetsMac && isVendoredUnwind => Seq("-fno-lto")
+      case lto => Seq(s"-flto=${lto.name}")
     }
-
-  // Apple ld does not materialize unw_* symbols that exist only in bitcode.
-  private def ltoCompileFlags(
-      inpath: String
-  )(implicit config: Config): Seq[String] = {
-    val vendoredUnwind = inpath.contains(
-      s"${File.separator}libunwind${File.separator}"
-    )
-    val skipLto = config.targetsMac &&
-      config.compilerConfig.lto != LTO.None &&
-      vendoredUnwind
-    if (skipLto) Seq("-fno-lto")
-    else flto
   }
 
   private def sanitizer(implicit config: Config): Seq[String] =
