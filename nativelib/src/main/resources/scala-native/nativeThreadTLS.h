@@ -26,8 +26,10 @@ typedef struct ThreadInfo {
     bool isMainThread;
     /* Is thread fully initialized and can start executing tasks */
     bool isInitialized;
-#ifndef _WIN32
+    /* Set by the SO handler; thrown later from StackOverflowGuards_check so
+     * exception unwind runs outside the signal/VEH context. */
     bool pendingStackOverflowException;
+#ifndef _WIN32
     void *signalHandlerStack;
     size_t signalHandlerStackSize;
 #endif

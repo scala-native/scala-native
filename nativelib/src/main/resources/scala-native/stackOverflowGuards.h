@@ -33,17 +33,13 @@ static inline void *alignToPageStart(void *addr) {
 }
 
 static inline size_t stackGuardPages() {
-    // On Windows that's area guaranteed to be available under StackOverflow
-    // detection It's need to be big enough to perform handling - collecting
-    // stack trace and throwing exception.
+    // Reserved SO region must be large enough to finish the faulting frame and
+    // re-enter a recursive method so StackOverflowGuards_check can throw
+    // outside the signal/VEH context (monitor/finally cleanup requires that).
     static size_t computed = -1;
     if (computed == -1) {
         computed = (32 * 1024 + resolvePageSize() - 1) / resolvePageSize();
-#ifndef _WIN32
-        // Additionally on Unix it needs to be big enough to allow program to
-        // reenter recursive function so we can handle it.
         computed = computed * 3 / 2;
-#endif
     }
     return computed;
 }

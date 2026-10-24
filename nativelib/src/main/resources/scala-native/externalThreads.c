@@ -118,6 +118,24 @@ static ExternalThread *owner;
 #endif
 static _Atomic(ExternalThread *) retired;
 
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+#ifdef _WIN32
+static SRWLOCK adoptLock = SRWLOCK_INIT;
+static void lockAdopt(void) { AcquireSRWLockExclusive(&adoptLock); }
+static void unlockAdopt(void) { ReleaseSRWLockExclusive(&adoptLock); }
+#else
+static pthread_mutex_t adoptLock = PTHREAD_MUTEX_INITIALIZER;
+static void lockAdopt(void) {
+    if (pthread_mutex_lock(&adoptLock) != 0)
+        fatal("adopt lock failure");
+}
+static void unlockAdopt(void) {
+    if (pthread_mutex_unlock(&adoptLock) != 0)
+        fatal("adopt unlock failure");
+}
+#endif
+#endif
+
 static void retireIdentity(ExternalThread *record) {
     ExternalThread *pending =
         atomic_load_explicit(&retired, memory_order_relaxed);
@@ -248,15 +266,25 @@ static int bind(ExternalThread *record) {
         }
         record->rooted = true;
     }
-    scalanative_externalGC_admit();
     if (record->identities[1] == NULL) {
-        if (scalanative_externalThread_adopt() != 0) {
+        // Serialize first-time adoption
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+        lockAdopt();
+#endif
+        scalanative_externalGC_admit();
+        int adoptStatus = scalanative_externalThread_adopt();
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+        unlockAdopt();
+#endif
+        if (adoptStatus != 0) {
             fprintf(stderr,
                     "Scala Native external thread: identity adoption failed\n");
             goto failure;
         }
         record->identities[0] = scalanative_currentThread();
         record->identities[1] = scalanative_currentNativeThread();
+    } else {
+        scalanative_externalGC_admit();
     }
     currentThreadInfo.isInitialized = true;
     record->attached = true;

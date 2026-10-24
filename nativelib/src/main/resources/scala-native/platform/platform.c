@@ -194,7 +194,7 @@ size_t scalanative_page_size() {
             fprintf(stderr,
                     "%s Unable to determine "
                     "platform page size\n",
-                    snFatalErrorPrefix);
+                    SN_FATAL_ERROR_PREFIX);
             abort();
         }
     }

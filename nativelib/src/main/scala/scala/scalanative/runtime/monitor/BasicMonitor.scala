@@ -65,18 +65,21 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
 
   private def enterMonitor(thread: Thread, threadId: ThreadId) = {
     import NativeThread._
-    currentNativeThread.state = State.WaitingOnMonitorEnter
+    // External adoption briefly runs with null NativeThread TLS while Thread.currentThread falls back to MainThread.
+    // Never touch .state or treat thin-lock ownership as recursive in that window.
+    val native = currentNativeThread
+    if (native != null) native.state = State.WaitingOnMonitorEnter
     val current = lockWord
     if (current.isInflated) current.getObjectMonitor.enter(thread)
     else {
-      if (threadId == current.threadId) {
+      if (native != null && threadId == current.threadId) {
         if (current.recursionCount < ThinMonitorMaxRecursion) {
           // No need for atomic operation since we already obtain the lock
           storeRawPtr(lockWordRef, current.withIncreasedRecursion)
         } else inflate(thread)
       } else lockAndInflate(thread, threadId)
     }
-    currentNativeThread.state = State.Running
+    if (native != null) native.state = State.Running
   }
 
   @inline def exit(obj: Object): Unit = {
@@ -183,7 +186,9 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
               Thread.`yield`()
               waitForOwnership(yields, backoffNanos)
             case _ =>
-              NativeThread.currentNativeThread.sleepNanos(backoffNanos)
+              val native = NativeThread.currentNativeThread
+              if (native != null) native.sleepNanos(backoffNanos)
+              else Thread.`yield`()
               waitForOwnership(
                 yields,
                 backoffNanos = (backoffNanos * 3 / 2).min(MaxSleepNanos)
