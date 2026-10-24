@@ -53,9 +53,10 @@ than a guarantee for every workload.
 
 The reported `heap_mb` is logical GC capacity, not resident memory. Measure RSS
 separately with `/usr/bin/time -l` on macOS or `/usr/bin/time -v` on Linux.
-`SCALANATIVE_GC_LOG_LEVEL=debug GC_LOG_FILE=...` records collection and growth
-events. Keep debug logging and concurrent stress processes out of separately
-timed throughput comparisons.
+`SCALANATIVE_GC_LOG_LEVEL=info GC_LOG_FILE=...` records heap growth events.
+Commix debug logging also traces allocation blocks and can substantially affect
+measurements. Keep diagnostic logging and concurrent stress processes out of
+separately timed throughput comparisons.
 
 The issue fix retains the original growth heuristic. Page reclamation, occupancy
 tuning, globally shared allocation pools, and generational GC remain separate
