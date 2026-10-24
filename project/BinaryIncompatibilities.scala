@@ -49,6 +49,9 @@ object BinaryIncompatibilities {
   )
 
   final val NativeLib = Seq(
+    // Internal error-prefix constants were inlined to avoid Windows LTO symbols.
+    exclude[MissingClassProblem]("scala.scalanative.runtime.StringConstants"),
+    exclude[MissingClassProblem]("scala.scalanative.runtime.StringConstants$"),
     exclude[MissingClassProblem]("scala.scalanative.runtime.rtti*"),
     exclude[Problem]("scala.scalanative.runtime.Backtrace*"),
     exclude[Problem]("scala.scalanative.runtime.dwarf.DWARF*"),

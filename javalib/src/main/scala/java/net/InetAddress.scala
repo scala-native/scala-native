@@ -248,17 +248,18 @@ object InetAddress {
   // bytes (for example, 127.1 denotes 127.0.0.1).
   private def getByLegacyIPv4Name(host: String): Option[InetAddress] = {
     val parts = host.split("\\.", -1)
-    if (parts.length > 4 || parts.exists { part =>
-          part.isEmpty || part.length > 10 ||
-          part.exists(c => c < '0' || c > '9')
-        }) None
+    if (parts.exists(_.exists(c => c < '0' || c > '9'))) None
     else {
+      // Invalid numeric literals must not fall through to a DNS lookup.
+      if (parts.length > 4 || parts.exists(p => p.isEmpty || p.length > 10))
+        throw new UnknownHostException(host)
       var address = 0L
       var i = 0
       while (i < parts.length) {
         val value = parts(i).toLong
         val remainingBytes = if (i == parts.length - 1) 4 - i else 1
-        if (value >= (1L << (remainingBytes * 8))) return None
+        if (value >= (1L << (remainingBytes * 8)))
+          throw new UnknownHostException(host)
         address = (address << (remainingBytes * 8)) | value
         i += 1
       }
@@ -642,7 +643,7 @@ object InetAddress {
      * EAI_NODATA can be returned by Linux & macOS in some poorly defined
      * circumstances.
      *
-     * The magic integer values for Linux & macOS are hardcoded
+     * The magic integer values for glibc, Bionic & macOS are hardcoded
      * because they are extremely unlikely to change after all this time.
      *
      * For consistency of the reported message, map EAI_NODATA to EAI_NONAME.
@@ -651,8 +652,8 @@ object InetAddress {
 
     // EAI_NODATA was removed from FreeBSD a decade or more ago.
     val EAI_NODATA =
-      if (isLinux) -5
-      else if (isMac) 7
+      if (LinktimeInfo.isAndroid || isMac) 7
+      else if (isLinux) -5
       else Integer.MAX_VALUE // placeholder, will never match
 
     if (gaiStatus == EAI_NONAME) gaiStatus
