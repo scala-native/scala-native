@@ -37,10 +37,6 @@ class StackOverflowTest {
   }
 
   @Test def exitsMonitors(): Unit = {
-    assumeFalse(
-      "Windows + Boehm: monitor not released after StackOverflowError (#4190)",
-      Platform.isWindows && Platform.isBoehmGC
-    )
     val devNull = new PrintStream(
       new File(if (Platform.isWindows) "NUL" else "/dev/null")
     )
@@ -72,10 +68,6 @@ class StackOverflowTest {
   })
 
   @Test def exitsMonitorsInThread(): Unit = inThreadAwait(() => {
-    assumeFalse(
-      "Windows + Boehm: monitor not released after StackOverflowError (#4190)",
-      Platform.isWindows && Platform.isBoehmGC
-    )
     val devNull = new PrintStream(
       new File(if (Platform.isWindows) "NUL" else "/dev/null")
     )

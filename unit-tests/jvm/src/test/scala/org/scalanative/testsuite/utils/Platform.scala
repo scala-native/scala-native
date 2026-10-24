@@ -59,5 +59,4 @@ object Platform {
   final val isMultithreadingEnabled = true
   final val supportsVirtualThreads = jdkVersion >= 19
   final val isWeakReferenceSupported = true
-  final val isBoehmGC = false
 }
