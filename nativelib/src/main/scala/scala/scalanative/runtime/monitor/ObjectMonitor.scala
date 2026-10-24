@@ -66,7 +66,8 @@ private[monitor] class ObjectMonitor() {
 
   @inline def enter(currentThread: Thread): Unit = {
     if (casOwnerThread(expected = null, currentThread)) ()
-    else if (ownerThread eq currentThread) recursion += 1
+    else if ((ownerThread eq currentThread) &&
+        NativeThread.currentNativeThread != null) recursion += 1
     else if (trySpinAndLock(currentThread)) ()
     else enterMonitor(currentThread) // slowpath
   }
@@ -137,22 +138,24 @@ private[monitor] class ObjectMonitor() {
       @alwaysinline def MaxPollInterval = 1000000L // ns = 1ms
       var forcedTimedRecheck = node.consumeTimedParkHint()
 
-      NativeThread.currentNativeThread.state =
-        NativeThread.State.WaitingOnMonitorEnter
+      val native = NativeThread.currentNativeThread
+      if (native != null)
+        native.state = NativeThread.State.WaitingOnMonitorEnter
       while (!tryLockThenSpin()) {
         if (activeWaiterThread eq null)
           casActiveWaiterThread(null, currentThread)
-        NativeThread.currentNativeThread.state =
-          NativeThread.State.WaitingOnMonitorEnter
+        if (native != null)
+          native.state = NativeThread.State.WaitingOnMonitorEnter
         if (forcedTimedRecheck || hasUnmountedVThreads()) {
-          NativeThread.currentNativeThread.parkNanos(
-            recheckIntervalMs * 1000000L
-          )
+          if (native != null)
+            native.parkNanos(recheckIntervalMs * 1000000L)
+          else Thread.`yield`()
           recheckIntervalMs = (recheckIntervalMs * 8) min MaxRecheckIntervalMs
           forcedTimedRecheck = false
         } else {
           recheckIntervalMs = 1L
-          NativeThread.currentNativeThread.parkNanos(pollInterval)
+          if (native != null) native.parkNanos(pollInterval)
+          else Thread.`yield`()
           pollInterval = (pollInterval * 4) min MaxPollInterval
         }
         clearSuccessorAndFenceBeforeRetry(currentThread)
@@ -204,7 +207,8 @@ private[monitor] class ObjectMonitor() {
 
     if (successorThread eq currentThread) successorThread = null
     node.state = WaiterNode.Active
-    NativeThread.currentNativeThread.state = NativeThread.State.Running
+    val native = NativeThread.currentNativeThread
+    if (native != null) native.state = NativeThread.State.Running
     atomic_thread_fence(memory_order_seq_cst)
   }
 

@@ -115,17 +115,20 @@ static void automatic_before_init(void) {
 static void identities(void) {
     int64_t coordinator = external_identity();
     external_local_set(71);
-    identity_arg *args = (identity_arg *)calloc((size_t)workers, sizeof(*args));
+    /* Concurrent first-time adoption is the Windows/Commix flake surface:
+     * workers briefly share MainThread fallback identity. Stress that path. */
+    int count = multithreaded ? workers + 4 : workers;
+    identity_arg *args = (identity_arg *)calloc((size_t)count, sizeof(*args));
     host_thread_t *threads =
-        (host_thread_t *)calloc((size_t)workers, sizeof(*threads));
+        (host_thread_t *)calloc((size_t)count, sizeof(*threads));
     CHECK(args && threads);
-    for (int i = 0; i < workers; ++i) {
+    for (int i = 0; i < count; ++i) {
         args[i].value = i + 100;
         threads[i] = worker_start(identity_worker, &args[i]);
     }
-    for (int i = 0; i < workers; ++i)
+    for (int i = 0; i < count; ++i)
         worker_join(threads[i]);
-    for (int i = 0; i < workers; ++i) {
+    for (int i = 0; i < count; ++i) {
         CHECK(args[i].id != coordinator);
         for (int j = 0; j < i; ++j)
             CHECK(args[i].id != args[j].id);

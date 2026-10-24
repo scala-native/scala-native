@@ -167,6 +167,19 @@ object NativeThread {
     if (isMultithreadingEnabled) Registry.add(nativeThread)
   }
 
+  /** Publish a unique Java Thread in TLS before its NativeThread exists.
+   *
+   *  External adopters otherwise fall back to MainThread for
+   *  `Thread.currentThread`, so concurrent thin-monitor ownership would
+   *  collide. Pair with [[clearProvisionalExternalThread]] if adoption fails
+   *  before [[bindExternalThread]].
+   */
+  def bindProvisionalExternalThread(thread: Thread): Unit =
+    TLS.assignCurrentThread(thread, null)
+
+  def clearProvisionalExternalThread(): Unit =
+    TLS.assignCurrentThread(null, null)
+
   @nowarn("msg=Catching Throwable")
   def releaseExternalThread(nativeThread: NativeThread): Int =
     try {
