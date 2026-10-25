@@ -406,7 +406,9 @@ private[scalanative] object LLVM {
     inmax > outmax
   }
 
-  /** DWARF debug sections embedded in the binary (PE or ELF), used by stack traces. */
+  /** DWARF debug sections embedded in the binary (PE or ELF), used by stack
+   *  traces.
+   */
   private def sourceLevelDebugFlags(implicit config: Config): Seq[String] =
     if (config.compilerConfig.sourceLevelDebuggingConfig.enabled) {
       // newer LLVM defaults to DWARFv5 on some targets; runtime supports only v4 for now

@@ -63,7 +63,8 @@ private[runtime] object PE {
     val preferredImageBase = uint64()
     ds.seek(optionalHeaderOffset + 0x46)
     val dllCharacteristics = uint16()
-    val isPIE = (dllCharacteristics & IMAGE_DLL_CHARACTERISTICS_DYNAMIC_BASE) != 0
+    val isPIE =
+      (dllCharacteristics & IMAGE_DLL_CHARACTERISTICS_DYNAMIC_BASE) != 0
 
     val sectionTableOffset = optionalHeaderOffset + sizeOfOptionalHeader.toLong
     // COFF string table follows the symbol table (18 bytes per symbol).
@@ -71,7 +72,11 @@ private[runtime] object PE {
       pointerToSymbolTable.toLong + numberOfSymbols.toLong * 18L
 
     val sectionHeaders =
-      readSectionHeaders(numberOfSections, sectionTableOffset, coffStringTableOffset)
+      readSectionHeaders(
+        numberOfSections,
+        sectionTableOffset,
+        coffStringTableOffset
+      )
 
     PE(sectionHeaders.toArray, isPIE, preferredImageBase)
   }

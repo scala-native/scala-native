@@ -28,6 +28,21 @@ object UnwindBacktraceTestFFI {
  */
 class UnwindBacktraceTest {
 
+  @Test def repeatedWindowsStackCapturesReachCaller(): Unit = {
+    assumeTrue("Windows stack capture", isWindows)
+    if (isWindows) {
+      var i = 0
+      while (i < 128) {
+        val frames = new Exception().getStackTrace()
+        assertTrue(
+          "stack capture must reach the calling test frame",
+          frames.exists(_.getClassName == getClass.getName)
+        )
+        i += 1
+      }
+    }
+  }
+
   @Test def backtraceOnMainThreadFinishes(): Unit = {
     // assumeFalse still links the calls. Windows has no dladdr or Itanium
     // _Unwind_*, so the calls themselves have to be link-time dead.

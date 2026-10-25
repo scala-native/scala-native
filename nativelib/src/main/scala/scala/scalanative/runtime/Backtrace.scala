@@ -17,7 +17,9 @@ private[runtime] object Backtrace {
   private case class DwarfInfo(
       subprograms: scala.Array[DWARF.SubprogramDIE],
       strings: DWARF.Strings,
-      /** ASLR offset (minus __PAGEZERO size for macho); runtime load base on Windows */
+      /** ASLR offset (minus __PAGEZERO size for macho); runtime load base on
+       *  Windows
+       */
       offset: Long,
       isPositionIndependentBinary: Boolean,
       /** PE preferred ImageBase from the file header (Windows only) */
@@ -200,44 +202,54 @@ private[runtime] object Backtrace {
     val head = bf.position()
     val magic = bf.readInt()
     bf.seek(head)
-    val dwarfInfo
-        : Option[
-          (scala.Array[DWARF.SubprogramDIE], DWARF.Strings, Boolean, Long)
-        ] =
+    val dwarfInfo: Option[
+      (scala.Array[DWARF.SubprogramDIE], DWARF.Strings, Boolean, Long)
+    ] =
       if (LinktimeInfo.isMac) {
         if (magic == MACHO_MAGIC) {
           val macho = MachO.parse(bf)
-          processMacho(macho).map { case (dies, strings, isPIE) =>
-            (dies, strings, isPIE, 0L)
-          }.orElse {
-            val basename = new File(ExecInfo.filename).getName()
-            // dsymutil `foo` will assemble the debug information into `foo.dSYM/Contents/Resources/DWARF/foo`.
-            // Coulnt't find the official source, but at least libbacktrace locate the dSYM file from this location.
-            // https://github.com/ianlancetaylor/libbacktrace/blob/cdb64b688dda93bbbacbc2b1ccf50ce9329d4748/macho.c#L908
-            val dSymPath =
-              s"${ExecInfo.filename}.dSYM/Contents/Resources/DWARF/${basename}"
-            if (new File(dSymPath).exists()) {
-              val dSYMBin: BinaryFile = new BinaryFile(
-                new File(dSymPath)
-              )
-              val dSYMMacho = MachO.parse(dSYMBin)
-              if (dSYMMacho.uuid == macho.uuid) // Validate the macho in dSYM has the same build uuid.
-                processMacho(dSYMMacho)(dSYMBin).map { case (dies, strings, _) =>
-                  (dies, strings, false, 0L)
-                }
-              else None
-            } else None
-          }
+          processMacho(macho)
+            .map {
+              case (dies, strings, isPIE) =>
+                (dies, strings, isPIE, 0L)
+            }
+            .orElse {
+              val basename = new File(ExecInfo.filename).getName()
+              // dsymutil `foo` will assemble the debug information into `foo.dSYM/Contents/Resources/DWARF/foo`.
+              // Coulnt't find the official source, but at least libbacktrace locate the dSYM file from this location.
+              // https://github.com/ianlancetaylor/libbacktrace/blob/cdb64b688dda93bbbacbc2b1ccf50ce9329d4748/macho.c#L908
+              val dSymPath =
+                s"${ExecInfo.filename}.dSYM/Contents/Resources/DWARF/${basename}"
+              if (new File(dSymPath).exists()) {
+                val dSYMBin: BinaryFile = new BinaryFile(
+                  new File(dSymPath)
+                )
+                val dSYMMacho = MachO.parse(dSYMBin)
+                if (dSYMMacho.uuid == macho.uuid) // Validate the macho in dSYM has the same build uuid.
+                  processMacho(dSYMMacho)(dSYMBin).map {
+                    case (dies, strings, isPIE) =>
+                      (dies, strings, isPIE, 0L)
+                  }
+                else None
+              } else None
+            }
         } else None
       } else if (magic == ELF_MAGIC) {
         val elf = ELF.parse(bf)
-        processELF(elf).map { case (dies, strings) =>
-          (dies, strings, elf.isPositionIndependentBinary, 0L)
+        processELF(elf).map {
+          case (dies, strings) =>
+            (dies, strings, elf.isPositionIndependentBinary, 0L)
         }
       } else if ((magic & 0xffff) == MZ_MAGIC) {
         scala.util.Try(PE.parse(bf)).toOption.flatMap { pe =>
-          processPE(pe).map { case (dies, strings) =>
-            (dies, strings, pe.isPositionIndependentBinary, pe.preferredImageBase)
+          processPE(pe).map {
+            case (dies, strings) =>
+              (
+                dies,
+                strings,
+                pe.isPositionIndependentBinary,
+                pe.preferredImageBase
+              )
           }
         }
       } else {

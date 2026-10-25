@@ -2,6 +2,7 @@
 #if defined(_WIN32)
 
 #define WIN32_LEAN_AND_MEAN
+// clang-format off
 // windows.h must be included before dbghelp.h
 #include <windows.h>
 #include <dbghelp.h>
@@ -11,7 +12,7 @@
 // clang-format on
 
 #define MAX_LENGTH_OF_CALLSTACK 255
-#define MAX_LENGHT_OF_NAME 511
+#define MAX_LENGTH_OF_NAME 511
 
 #if defined(_M_ARM64) || defined(__aarch64__)
 #define SN_CONTEXT_PC(ctx) ((ctx)->Pc)
@@ -90,7 +91,6 @@ static int ensureSymInitialized(void) {
 }
 
 typedef struct _UnwindContext {
-    CONTEXT context;
     UNWIND_HISTORY_TABLE history;
     void *stack[MAX_LENGTH_OF_CALLSTACK];
     unsigned short frames;
@@ -98,12 +98,16 @@ typedef struct _UnwindContext {
     DWORD64 cursor;
     struct {
         SYMBOL_INFOW info;
-        wchar_t nameBuffer[MAX_LENGHT_OF_NAME + 1];
+        wchar_t nameBuffer[MAX_LENGTH_OF_NAME + 1];
     } symbol;
 } UnwindContext;
 
 static unsigned short capture_stack_rtl(UnwindContext *ucontext) {
-    CONTEXT ctx = ucontext->context;
+    // Capture and unwind while this frame is still alive. A context captured
+    // by get_context would refer to a returned frame overwritten by init_local.
+    // Keep CONTEXT on the C stack, where its required alignment is guaranteed.
+    CONTEXT ctx;
+    RtlCaptureContext(&ctx);
     memset(&ucontext->history, 0, sizeof(ucontext->history));
 
     unsigned short count = 0;
@@ -153,11 +157,7 @@ static unsigned short capture_stack_rtl(UnwindContext *ucontext) {
     return count;
 }
 
-int scalanative_unwind_get_context(void *context) {
-    UnwindContext *ucontext = (UnwindContext *)context;
-    RtlCaptureContext(&ucontext->context);
-    return 0;
-}
+int scalanative_unwind_get_context(void *context) { return 0; }
 
 int scalanative_unwind_init_local(void *cursor, void *context) {
     UnwindContext *ucontext = (UnwindContext *)context;
@@ -171,7 +171,7 @@ int scalanative_unwind_init_local(void *cursor, void *context) {
         return -1;
     }
     if (ensureSymInitialized() == 0) {
-        ucontext->symbol.info.MaxNameLen = MAX_LENGHT_OF_NAME;
+        ucontext->symbol.info.MaxNameLen = MAX_LENGTH_OF_NAME;
         ucontext->symbol.info.SizeOfStruct = sizeof(ucontext->symbol.info);
     }
     return 0;
@@ -179,7 +179,11 @@ int scalanative_unwind_init_local(void *cursor, void *context) {
 
 int scalanative_unwind_step(void *cursor) {
     UnwindContext *ucontext = *(UnwindContext **)cursor;
-    return ucontext->frames - (++ucontext->cursor);
+    if (ucontext->cursor + 1 >= ucontext->frames) {
+        return 0;
+    }
+    ++ucontext->cursor;
+    return 1;
 }
 
 int scalanative_unwind_get_proc_name(void *cursor, char *buffer, size_t length,
@@ -189,8 +193,8 @@ int scalanative_unwind_get_proc_name(void *cursor, char *buffer, size_t length,
         void *address = ucontext->stack[ucontext->cursor];
         PSYMBOL_INFOW symbol = &ucontext->symbol.info;
         size_t unused = 0;
-        return symLookupByIp(ucontext->process, (DWORD64)address, symbol, buffer,
-                             length, offset != NULL ? &unused : NULL);
+        return symLookupByIp(ucontext->process, (DWORD64)address, symbol,
+                             buffer, length, offset != NULL ? &unused : NULL);
     }
     buffer[0] = '\0';
     return -1;
@@ -216,9 +220,9 @@ int scalanative_unwind_get_proc_name_by_ip(size_t ip, char *buffer,
 
     struct {
         SYMBOL_INFOW info;
-        wchar_t nameBuffer[MAX_LENGHT_OF_NAME + 1];
+        wchar_t nameBuffer[MAX_LENGTH_OF_NAME + 1];
     } symbol;
-    symbol.info.MaxNameLen = MAX_LENGHT_OF_NAME;
+    symbol.info.MaxNameLen = MAX_LENGTH_OF_NAME;
     symbol.info.SizeOfStruct = sizeof(symbol.info);
 
     return symLookupByIp(GetCurrentProcess(), (DWORD64)ip, &symbol.info, buffer,

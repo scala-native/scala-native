@@ -223,7 +223,8 @@ private[runtime] object DWARF {
 
       val header = Header.parse()
 
-      if (header.version <= 5) {
+      // Indexed DWARF 5 forms are not supported by readUnits yet.
+      if (header.version <= 4) {
         val abbrevOffset =
           debug_abbrev.offset.toLong + header.debug_abbrev_offset
         val idx = abbrevCache.get(abbrevOffset) match {
@@ -283,10 +284,8 @@ private[runtime] object DWARF {
           var i = 0
           while (i < abbrev.attributes.length) {
             val attr = abbrev.attributes(i)
-            if (
-              attr.at == DWARF.Attribute.DW_AT_linkage_name ||
-              (attr.at == DWARF.Attribute.DW_AT_name && linkageName.isEmpty)
-            ) {
+            if (attr.at == DWARF.Attribute.DW_AT_linkage_name ||
+                (attr.at == DWARF.Attribute.DW_AT_name && linkageName.isEmpty)) {
               attr.form match {
                 case DWARF.Form.DW_FORM_strp =>
                   linkageName = Some(uint32())

@@ -28,14 +28,16 @@ int64_t scalanative_get_vmoffset() {
 #include <stdint.h>
 
 int64_t scalanative_get_vmoffset() {
-    // Runtime load base; Backtrace combines this with the PE preferred ImageBase
-    // parsed from the on-disk executable to translate runtime PCs to DWARF VAs.
+    // Runtime load base; Backtrace combines this with the PE preferred
+    // ImageBase parsed from the on-disk executable to translate runtime PCs to
+    // DWARF VAs.
     return (int64_t)(uintptr_t)GetModuleHandleW(NULL);
 }
 
 #else
 
-// Linux and other ELF targets resolve the slide from /proc/pid/maps in vmoffset.
+// Linux and other ELF targets resolve the slide from /proc/pid/maps in
+// vmoffset.
 #include <stdint.h>
 int64_t scalanative_get_vmoffset() { return 0; }
 

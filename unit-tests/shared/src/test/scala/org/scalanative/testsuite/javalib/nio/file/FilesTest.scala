@@ -1310,10 +1310,10 @@ class FilesTest {
       Files.createDirectory(d0)
       Files.createFile(f0)
       Files.createFile(f1)
-      Files.createSymbolicLink(link, d1)
-
       Files.createDirectory(d1)
       Files.createFile(f2)
+      // Windows chooses file or directory symlink semantics at creation time.
+      Files.createSymbolicLink(link, d1)
 
       assertTrue("a1", Files.exists(d0) && Files.isDirectory(d0))
       assertTrue("a2", Files.exists(f0) && Files.isRegularFile(f0))

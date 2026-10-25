@@ -82,12 +82,12 @@ private[testinterface] final class RunMuxRPC(rpc: RPCCore) {
     val opCode = ep.opCode
 
     val dispatch = mux.getOrElse(
-        opCode,
-        throw new IllegalArgumentException(
-          s"No endpoint attached for opCode $opCode"
-        )
+      opCode,
+      throw new IllegalArgumentException(
+        s"No endpoint attached for opCode $opCode"
       )
-      
+    )
+
     val old = dispatch.remove(runId)
     require(old != null, s"No endpoint attached for opCode $opCode run $runId")
 

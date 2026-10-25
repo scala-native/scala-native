@@ -138,7 +138,8 @@ static bool isWin32ContinuationStaleTrapFault(EXCEPTION_POINTERS *ex,
     if (!isWin32AccessPermissionFault(ex)) {
         return false;
     }
-    if (!atomic_load_explicit(&Synchronizer_stopThreads, memory_order_acquire)) {
+    if (!atomic_load_explicit(&Synchronizer_stopThreads,
+                              memory_order_acquire)) {
         return false;
     }
     return true;

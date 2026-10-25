@@ -211,13 +211,11 @@ private[runtime] object StackTrace {
         if (isScalaNativeMangledName)
           // skip `__` from MSVC `__SM...` linkage names
           position.linkageName + 2
-        else if (
-          ffi.strncmp(
-            position.linkageName,
-            c"_SM",
-            Intrinsics.castIntToRawSize(3)
-          ) == 0
-        )
+        else if (ffi.strncmp(
+              position.linkageName,
+              c"_SM",
+              Intrinsics.castIntToRawSize(3)
+            ) == 0)
           position.linkageName + 1
         else position.linkageName
 
