@@ -25,7 +25,7 @@ clang --version
 # Exercise normal main-return shutdown with threads enabled (#3839). The test
 # runner uses sys.exit, while Hello World would otherwise disable threading.
 java -Xmx5G -jar "$launcher_dir/sbt-launch.jar" \
-  "set sandbox3 / nativeConfig ~= (_.withMultithreading(true))" \
+  'set sandbox.forBinaryVersion("3") / nativeConfig ~= (_.withMultithreading(true))' \
   "test-gc 3"
 # Keep extended tests out of the initial BSD bring-up. test-runtime also
 # includes testsExt, so spell out the intended runtime projects here.
