@@ -11,6 +11,13 @@ import WinBaseApi.SecurityAttributes
 
 @extern
 object FileApi {
+  @name("scalanative_read_symbolic_link")
+  def readSymbolicLink(
+      handle: Handle,
+      buffer: CWString,
+      capacity: DWord
+  ): CInt = extern
+
   private[windows] type PathMax = Nat.Digit3[Nat._2, Nat._6, Nat._0]
   private[windows] type FileName[C] = CArray[C, PathMax]
   private[windows] type AlternateFileName[C] =

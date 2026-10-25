@@ -433,6 +433,34 @@ class FilesTest {
     }
   }
 
+  @Test def filesTypeProbesFollowRelativeDirectorySymbolicLinks(): Unit = {
+    assumeShouldTestSymlinks()
+
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath
+      val target = Files.createDirectory(dir.resolve("target"))
+      val child = Files.createFile(target.resolve("child"))
+      val link = Files.createSymbolicLink(
+        dir.resolve("link"),
+        Paths.get("target")
+      )
+      val chained = Files.createSymbolicLink(dir.resolve("chained"), link)
+
+      assertTrue(Files.exists(link))
+      assertTrue(Files.isDirectory(link))
+      assertFalse(Files.isDirectory(link, LinkOption.NOFOLLOW_LINKS))
+      assertTrue(Files.isSymbolicLink(chained))
+      assertTrue(Files.isDirectory(chained))
+      assertTrue(Files.exists(chained.resolve(child.getFileName)))
+      assertEquals(Paths.get("target"), Files.readSymbolicLink(link))
+      assertEquals(link, Files.readSymbolicLink(chained))
+      assertEquals(
+        Files.getAttribute(target, "fileKey"),
+        Files.getAttribute(chained, "fileKey")
+      )
+    }
+  }
+
   @Test def filesTypeProbesHandleDanglingSymbolicLinks(): Unit = {
     assumeShouldTestSymlinks()
 
@@ -1110,7 +1138,6 @@ class FilesTest {
   }
 
   @Test def filesReadSymbolicLinkCanReadBrokenSymbolicLink(): Unit = {
-    // Does fail on Windows. Cannot open broken link
     assumeShouldTestSymlinks()
 
     withTemporaryDirectory { dirFile =>

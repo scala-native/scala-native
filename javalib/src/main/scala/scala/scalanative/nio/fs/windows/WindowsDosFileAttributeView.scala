@@ -17,6 +17,11 @@ import scala.scalanative.windows.winnt.AccessRights._
 import scalanative.unsafe._
 import scalanative.unsigned._
 
+private[windows] final case class WindowsFileKey(
+    volumeId: Long,
+    fileIndex: Long
+)
+
 final class WindowsDosFileAttributeView(path: Path, options: Array[LinkOption])
     extends DosFileAttributeView {
   def name(): String = "dos"
@@ -111,22 +116,21 @@ final class WindowsDosFileAttributeView(path: Path, options: Array[LinkOption])
         pathAbs,
         access = FILE_READ_ATTRIBUTES,
         attributes = fileOpeningFlags
-      ) {
-        FileApi.GetFileInformationByHandle(_, fileInfo)
+      ) { handle =>
+        if (!FileApi.GetFileInformationByHandle(handle, fileInfo))
+          throw WindowsException.onPath(pathAbs)
       }
 
       new DosFileAttributes {
-        class DosFileKey(volumeId: DWord, fileIndex: ULargeInteger)
-
         private val attrs = fileInfo.fileAttributes
         private val createdAt = toFileTime(fileInfo.creationTime)
         private val accessedAt = toFileTime(fileInfo.lastAccessTime)
         private val modifiedAt = toFileTime(fileInfo.lastWriteTime)
         private val fileSize = fileInfo.fileSize
         private val dosFileKey =
-          new DosFileKey(
-            volumeId = fileInfo.volumeSerialNumber,
-            fileIndex = fileInfo.fileIndex
+          WindowsFileKey(
+            volumeId = fileInfo.volumeSerialNumber.toLong,
+            fileIndex = fileInfo.fileIndex.toLong
           )
 
         def creationTime(): FileTime = createdAt
@@ -137,9 +141,10 @@ final class WindowsDosFileAttributeView(path: Path, options: Array[LinkOption])
 
         // to replace with checking reparse tag
         def isSymbolicLink(): Boolean = hasAttrSet(FILE_ATTRIBUTE_REPARSE_POINT)
-        def isDirectory(): Boolean = hasAttrSet(FILE_ATTRIBUTE_DIRECTORY)
+        def isDirectory(): Boolean =
+          !isSymbolicLink() && hasAttrSet(FILE_ATTRIBUTE_DIRECTORY)
         def isOther(): Boolean =
-          hasAttrSet(FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_DEVICE)
+          !isSymbolicLink() && hasAttrSet(FILE_ATTRIBUTE_DEVICE)
         def isRegularFile(): Boolean = {
           !isSymbolicLink() &&
           !isDirectory() &&

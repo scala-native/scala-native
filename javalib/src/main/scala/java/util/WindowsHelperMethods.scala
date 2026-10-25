@@ -122,7 +122,7 @@ object WindowsHelperMethods {
       try { fn(handle) }
       finally CloseHandle(handle)
     } else {
-      throw WindowsException(s"Cannot open file ${path}")
+      throw WindowsException.onPath(path)
     }
   }
 }

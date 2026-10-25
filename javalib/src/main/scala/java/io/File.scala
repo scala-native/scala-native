@@ -226,6 +226,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
           withFileOpen(
             path,
             access = FILE_READ_ATTRIBUTES,
+            attributes = FILE_FLAG_BACKUP_SEMANTICS,
             allowInvalidHandle = true
           )(_ != INVALID_HANDLE_VALUE)
         }

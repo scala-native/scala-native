@@ -543,8 +543,11 @@ object Files {
         import WinBaseApiExt._
         val targetFilename = toCWideStringUTF16LE(target.toString())
         val linkFilename = toCWideStringUTF16LE(link.toString())
+        val resolvedTarget =
+          if (target.isAbsolute()) target
+          else link.toAbsolutePath().getParent().resolve(target)
         val flags =
-          if (isDirectory(target, Array(LinkOption.NOFOLLOW_LINKS)))
+          if (isDirectory(resolvedTarget, Array.empty))
             SYMBOLIC_LINK_FLAG_DIRECTORY
           else SYMBOLIC_LINK_FLAG_FILE
         val created =
@@ -575,7 +578,7 @@ object Files {
       }
     }
 
-    if (exists(link, Array.empty)) {
+    if (exists(link, Array(LinkOption.NOFOLLOW_LINKS))) {
       throw new FileAlreadyExistsException(target.toString)
     } else if (tryCreateLink()) {
       setAttributes(link, attrs)
@@ -1392,22 +1395,15 @@ object Files {
         val name = if (isWindows) {
           withFileOpen(
             link.toString,
-            access = FILE_GENERIC_READ
+            access = 0.toUInt,
+            attributes =
+              FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS
           ) { handle =>
-            val bufferSize = FileApiExt.MAX_PATH
+            // Reparse data is at most 16 KiB, including the UTF-16 path.
+            val bufferSize = 16384.toUInt
             val buffer: Ptr[WChar] = alloc[WChar](bufferSize)
-            val pathSize =
-              FileApi.GetFinalPathNameByHandleW(
-                handle,
-                buffer,
-                bufferSize,
-                FileApiExt.FILE_NAME_NORMALIZED
-              )
-            if (pathSize > bufferSize) {
-              throw WindowsException(
-                "Target path size of link was greater then max allowed size"
-              )
-            }
+            if (FileApi.readSymbolicLink(handle, buffer, bufferSize) < 0)
+              throw WindowsException.onPath(link.toString)
             fromCWideString(buffer, StandardCharsets.UTF_16LE)
           }
         } else {
