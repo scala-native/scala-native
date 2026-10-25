@@ -26,5 +26,7 @@ java -Xmx5G -jar "$launcher_dir/sbt-launch.jar" "test-gc 3"
 # Keep extended tests out of the initial BSD bring-up. test-runtime also
 # includes testsExt, so spell out the intended runtime projects here.
 java -Xmx5G -jar "$launcher_dir/sbt-launch.jar" \
-  "testsJVM3/test" "tests3/test" "junitTestOutputsNative3/test" \
+  "testsJVM3/test" \
+  "tests3/testOnly *StackOverflowTest *StackOverflowExceptionHandlingTest -- --verbosity=3" \
+  "tests3/test" "junitTestOutputsNative3/test" \
   "scalaPartestJunitTests3/test"

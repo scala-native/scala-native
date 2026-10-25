@@ -118,19 +118,19 @@ class StatTest {
       assertEquals("tmpfile must be empty", 0, statFromPath.st_size)
       assertEquals("tmpfile must be empty", 0, statFromFd.st_size)
 
-      val expectedBlksize =
-        if (!LinktimeInfo.isFreeBSD) 0 // Linux, macOS
-        else 1
-
+      // Allocation for an empty file depends on the filesystem, including
+      // whether it reserves a block before the first write.
+      assertTrue("st_blocks must be nonnegative", statFromPath.st_blocks >= 0)
       assertEquals(
-        "unexpected statFromPath.blksize",
-        expectedBlksize,
-        statFromPath.st_blocks
-      )
-      assertEquals(
-        "unexpected statFromFd.blksize",
-        expectedBlksize,
+        "st_blocks from path and from fd must be the same",
+        statFromPath.st_blocks,
         statFromFd.st_blocks
+      )
+      assertTrue("st_blksize must be positive", statFromPath.st_blksize > 0)
+      assertEquals(
+        "st_blksize from path and from fd must be the same",
+        statFromPath.st_blksize,
+        statFromFd.st_blksize
       )
 
       assertEquals(

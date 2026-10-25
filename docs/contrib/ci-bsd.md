@@ -141,3 +141,31 @@ Validation: the five changed C sources compile with -Werror in both local BSD
 guests; a NetBSD time/socket ABI probe links the header-selected shims. Three
 compiler-logging tests, two native reporter regressions, and all forty existing
 native JUnit output checks pass locally. Full BSD runtime CI remains pending.
+
+Run `40137835795` passes NetBSD's none/immix smoke checks, then exits with
+EINVAL when Commix creates its first named semaphore. NetBSD, like FreeBSD,
+requires a leading slash. A local NetBSD sem_open probe fails without the slash
+and passes creation, unlink, post, wait and close with it.
+
+FreeBSD completes 912 native suites, but neither stack-overflow suite finishes;
+output stops for roughly 34 minutes before a SIGKILL (status 137). A focused C
+probe using the runtime's actual stack guards reproduces an infinite SIGSEGV
+loop: the approximate stack bounds place a guard in the uncommitted stack
+range. FreeBSD then faults on the page above that guard; unprotecting the guard
+does not resolve the fault. Query BSD pthread stack bounds and start with the
+active stack page, allowing tryGrowStack to commit intervening pages before
+installing the guard. The probe now recovers from repeated main/worker overflows
+on both FreeBSD and NetBSD. CI runs both Scala overflow suites first with
+per-test progress before the full native suite.
+
+The same FreeBSD run reports two ordinary assertion failures. Monetary locale
+data varies in currency symbols and spacing across FreeBSD locale databases;
+accept the observed exact formats. Empty-file block allocation varies by
+filesystem; check nonnegative block counts, positive I/O block sizes, and
+stat/fstat consistency rather than assuming an empty file occupies one block.
+
+Validation: the unchanged FreeBSD stack discovery makes the committed C
+regression probe time out (SIGALRM, status 142); with the fix, the probe builds
+with -Werror and passes on both BSD guests. The modified Scala unit tests compile
+successfully, and shell syntax/format checks pass. Full runtime CI is still
+required to confirm completion of the Scala overflow suites and remaining tests.

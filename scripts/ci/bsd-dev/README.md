@@ -70,6 +70,25 @@ the old test-interface diagnostic setup, and exits with status 158 on FreeBSD
 10 and the failing status is 138. The probe selects these signals explicitly
 before initializing Boehm, allowing the same test on both platforms.
 
+## Stack guard regression probe
+
+This links the runtime's actual stack discovery and guard implementation. It
+checks repeated overflow recovery on the main thread and a worker, with an
+eight-MiB main stack and a thirty-second alarm to detect signal loops:
+
+```sh
+scripts/ci/bsd-dev/bsd-dev.sh sync freebsd
+scripts/ci/bsd-dev/bsd-dev.sh ssh freebsd \
+  'cd /root/scala-native && cc -std=gnu11 -O0 -Werror -DSCALANATIVE_MULTITHREADING_ENABLED -I nativelib/src/main/resources/scala-native -I nativelib/src/main/resources/scala-native/gc scripts/ci/bsd-dev/stack-guard-probe.c nativelib/src/main/resources/scala-native/nativeThreadTLS.c nativelib/src/main/resources/scala-native/stackOverflowGuards.c -pthread -o /root/stack-guard-probe && /root/stack-guard-probe'
+```
+
+Replace `freebsd` with `netbsd` to run there. Both threads should report recovery
+from two overflows. Before BSD stack discovery was added, FreeBSD repeatedly
+faulted above the protected page: installing a guard in the uncommitted stack
+range prevented normal kernel stack growth. The probe terminated on its alarm
+instead of completing. The corrected discovery starts at the active stack page
+so the runtime touches intervening pages before protecting its guard.
+
 ## Scala Native tests
 
 Inside the guest, download the portable launcher once:
