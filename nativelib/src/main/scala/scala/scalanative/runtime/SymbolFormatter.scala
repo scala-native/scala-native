@@ -48,15 +48,14 @@ object SymbolFormatter {
       def mayHaveLinkageSymbol =
         isWindows && sourceLevelDebuging.generateFunctionSourcePositions
       val hasFqcnLinkageName = isWindows && strchr(sym, '.') != null
-      if (readScalaNativeMangled()) {
-        true
-      } else if (mayHaveLinkageSymbol || hasFqcnLinkageName) {
+      if (readScalaNativeMangled()) true
+      else {
         pos = 0
-        readLinkageSymbol()
-      } else if (read() == 'S') {
-        readGlobal() // Legacy Windows with decorated names (SM... without '_')
-      } else {
-        false
+        if (read() == 'S' && readGlobal()) true
+        else if (mayHaveLinkageSymbol || hasFqcnLinkageName) {
+          pos = 0
+          readLinkageSymbol()
+        } else false
       }
     }
 

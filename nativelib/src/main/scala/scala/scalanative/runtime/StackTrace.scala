@@ -200,26 +200,8 @@ private[runtime] object StackTrace {
       else Backtrace.Position.empty
 
     def withNameFromDWARF() = {
-      // linkageName has an extra "_" that we don't want in stack traces
-      def isScalaNativeMangledName =
-        ffi.strncmp(
-          position.linkageName,
-          c"__SM",
-          Intrinsics.castIntToRawSize(4)
-        ) == 0
-      val symbol =
-        if (isScalaNativeMangledName)
-          // skip `__` from MSVC `__SM...` linkage names
-          position.linkageName + 2
-        else if (ffi.strncmp(
-              position.linkageName,
-              c"_SM",
-              Intrinsics.castIntToRawSize(3)
-            ) == 0)
-          position.linkageName + 1
-        else position.linkageName
-
-      parseStackTraceElement(symbol, position)
+      // SymbolFormatter accepts both ordinary and decorated linkage names.
+      parseStackTraceElement(position.linkageName, position)
     }
 
     def withNameFromUnwind() = {
