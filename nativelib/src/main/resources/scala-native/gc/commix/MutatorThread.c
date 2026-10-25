@@ -3,6 +3,9 @@
 #include "MutatorThread.h"
 #include "State.h"
 #include "Sweeper.h"
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+#include "immix_commix/Synchronizer.h"
+#endif
 #include <stdlib.h>
 #include <string.h>
 #include <stdatomic.h>
@@ -259,9 +262,17 @@ void MutatorThread_admit(MutatorThread *self) {
     if (atomic_load_explicit(&self->state, memory_order_acquire) ==
         GC_MutatorThreadState_Managed)
         return;
-    /* GC holds this lifecycle lock while it stops and scans mutators. Wait
-     * while still unmanaged, then publish admission before unlocking. */
+    /* GC releases this lock while waiting for sweepers.
+     * Stay unmanaged until GC resumes the threads. */
     MutatorThreads_lockWrite();
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+    while (
+        atomic_load_explicit(&Synchronizer_stopThreads, memory_order_acquire)) {
+        MutatorThreads_unlockWrite();
+        thread_yield();
+        MutatorThreads_lockWrite();
+    }
+#endif
     MutatorThread_switchState(self, GC_MutatorThreadState_Managed);
     MutatorThreads_unlockWrite();
 }
