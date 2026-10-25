@@ -178,3 +178,20 @@ at runtime. Export LD_LIBRARY_PATH with /usr/pkg/lib in the NetBSD job and
 local rig instructions, preserving any existing entries. A local NetBSD Boehm
 probe reproduces the missing-library error without this path and successfully
 allocates and collects with it. NetBSD's full runtime suite is still pending.
+
+Run `40211862870` passes FreeBSD again. NetBSD passes all four GC smoke
+configurations with multithreading explicitly enabled in the sandbox. Normal
+main-return shutdown succeeds without IllegalMonitorStateException, verifying
+the scenario reported in #3839.
+
+NetBSD then reports four JVM assertion failures: three network-interface tests
+require a scope suffix omitted by OpenJDK 21, and the ping redirection test
+expects a numeric destination while NetBSD ping reverse-resolves localhost.
+Share the existing optional-scope validation across the network tests, checking
+any supplied scope against the interface name/index. Request numeric ping output
+with -n on Unix, preserving Windows' separate echo-count meaning of -n.
+
+Validation: all thirty tests in InterfaceAddressTest, NetworkInterfaceTest,
+NetworkInterfaceTestOnJDK9 and ProcessTestOnJDK9 pass on the host JVM and in the
+local NetBSD 10.1 guest using OpenJDK 21 (-Xint under QEMU TCG). The NetBSD native
+runtime suite remains pending.

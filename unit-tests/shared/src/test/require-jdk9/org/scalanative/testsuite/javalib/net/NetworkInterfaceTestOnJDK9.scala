@@ -48,23 +48,7 @@ class NetworkInterfaceTestOnJDK9 {
       .filter(e => {
 
         val hostAddr = e.getHostAddress()
-        val scopeStart = hostAddr.indexOf('%')
-        val address =
-          if (scopeStart < 0) hostAddr else hostAddr.substring(0, scopeStart)
-
-        // Loopback can be returned with or without a scope identifier.
-        // A supplied scope must still identify this loopback interface.
-        if (scopeStart >= 0) {
-          assertTrue(
-            s"IPv4 address has a scope: ${hostAddr}",
-            address.contains(":")
-          )
-          val scope = hostAddr.substring(scopeStart + 1)
-          assertTrue(
-            s"Unexpected loopback scope: ${hostAddr}",
-            scope == localhostIf || scope == lbIf.getIndex().toString
-          )
-        }
+        val address = LoopbackAddressTestUtils.withoutScope(hostAddr, lbIf)
 
         // BSD loopback interfaces can have both ::1 and a link-local address.
         val expected =

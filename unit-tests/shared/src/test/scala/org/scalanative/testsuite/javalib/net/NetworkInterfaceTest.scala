@@ -224,7 +224,10 @@ class NetworkInterfaceTest {
 
     var count = 0
     while (iaEnumeration.hasMoreElements()) {
-      val hostAddr = iaEnumeration.nextElement().getHostAddress()
+      val hostAddr = LoopbackAddressTestUtils.withoutScope(
+        iaEnumeration.nextElement().getHostAddress(),
+        lbIf
+      )
       count += 1
 
       // macOS can have two forms of IPv6 loopback address.
@@ -232,11 +235,9 @@ class NetworkInterfaceTest {
         if (!hostAddr.contains(":")) {
           "127.0.0.1"
         } else if (hostAddr.startsWith("0")) {
-          val stem = "0:0:0:0:0:0:0:1"
-          if (Platform.isFreeBSD) stem
-          else s"${stem}%${loopbackIfName}"
+          "0:0:0:0:0:0:0:1"
         } else if (hostAddr.startsWith("f")) {
-          s"${osIPv6LoopbackAddress}"
+          osIPv6LoopbackAddress.takeWhile(_ != '%')
         } else "" // fail in a way that will print out ifAddrString
 
       assertEquals("Unexpected result", expected, hostAddr)

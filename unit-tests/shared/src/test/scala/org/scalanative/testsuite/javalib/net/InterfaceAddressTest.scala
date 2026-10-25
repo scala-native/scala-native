@@ -91,18 +91,18 @@ class InterfaceAddressTest {
     // Scala 2.11 demands this gronking forEach idiom.
     val consumer = new Consumer[InterfaceAddress] {
       def accept(addr: InterfaceAddress): Unit = {
-        val hostAddr = addr.getAddress().getHostAddress()
+        val hostAddr = LoopbackAddressTestUtils.withoutScope(
+          addr.getAddress().getHostAddress(),
+          netIf
+        )
         // macOS can have two forms of IPv6 loopback address.
         val expected =
           if (!hostAddr.contains(":")) {
             "127.0.0.1"
           } else if (hostAddr.startsWith("0")) {
-            val suffix =
-              if (Platform.isFreeBSD) ""
-              else s"%${loopbackIfName}"
-            s"0:0:0:0:0:0:0:1${suffix}"
+            "0:0:0:0:0:0:0:1"
           } else if (hostAddr.startsWith("f")) {
-            s"${osIPv6LoopbackAddress}"
+            osIPv6LoopbackAddress.takeWhile(_ != '%')
           } else "" // fail in a way that will print out ifAddrString
 
         assertEquals("Unexpected result", expected, hostAddr)
@@ -163,19 +163,18 @@ class InterfaceAddressTest {
     // Scala 2.11 demands this gronking forEach idiom.
     val consumer = new Consumer[InterfaceAddress] {
       def accept(addr: InterfaceAddress): Unit = {
-        val ifAddrString = addr.toString
+        val hostAddr = addr.getAddress().getHostAddress()
+        val address = LoopbackAddressTestUtils.withoutScope(hostAddr, netIf)
+        val ifAddrString = addr.toString.replace(hostAddr, address)
 
         // macOS can have two forms of IPv6 loopback address.
         val expected =
           if (!ifAddrString.contains(":")) {
             "/127.0.0.1/8 [null]"
           } else if (ifAddrString.startsWith("/0")) {
-            val stem =
-              if (Platform.isFreeBSD) ""
-              else s"%${loopbackIfName}"
-            s"/0:0:0:0:0:0:0:1${stem}/128 [null]"
+            "/0:0:0:0:0:0:0:1/128 [null]"
           } else if (ifAddrString.startsWith("/f")) {
-            s"/${osIPv6LoopbackAddress}/${osIPv6PrefixLength} [null]"
+            s"/${osIPv6LoopbackAddress.takeWhile(_ != '%')}/${osIPv6PrefixLength} [null]"
           } else "" // fail in a way that will print out ifAddrString
 
         assertEquals("InterfaceAddress", expected, ifAddrString)
