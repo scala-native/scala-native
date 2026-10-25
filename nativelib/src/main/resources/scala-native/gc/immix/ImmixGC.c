@@ -52,8 +52,7 @@ INLINE void *scalanative_GC_alloc(Rtti *info, size_t size) {
     if (size >= LARGE_BLOCK_SIZE) {
         alloc = (Object *)LargeAllocator_Alloc(&heap, size);
     } else {
-        alloc = (Object *)Allocator_Alloc(&currentMutatorThread->allocator,
-                                          &heap, size);
+        alloc = (Object *)Allocator_Alloc(&heap, size);
     }
     alloc->rtti = info;
     return (void *)alloc;
@@ -62,8 +61,8 @@ INLINE void *scalanative_GC_alloc(Rtti *info, size_t size) {
 INLINE void *scalanative_GC_alloc_small(Rtti *info, size_t size) {
     size = MathUtils_RoundToNextMultiple(size, ALLOCATION_ALIGNMENT);
 
-    Object *alloc = (Object *)Allocator_Alloc(&currentMutatorThread->allocator,
-                                              &heap, size);
+    Object *alloc = (Object *)Allocator_AllocInline(
+        &currentMutatorThread->allocator, &heap, size);
     alloc->rtti = info;
     return (void *)alloc;
 }

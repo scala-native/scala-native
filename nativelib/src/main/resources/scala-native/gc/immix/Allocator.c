@@ -292,4 +292,8 @@ NOINLINE word_t *Allocator_allocSlow(Allocator *allocator, Heap *heap,
     return NULL; // unreachable
 }
 
+INLINE word_t *Allocator_Alloc(Heap *heap, uint32_t size) {
+    return Allocator_AllocInline(&currentMutatorThread->allocator, heap, size);
+}
+
 #endif

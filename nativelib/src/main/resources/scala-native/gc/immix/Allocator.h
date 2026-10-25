@@ -48,9 +48,11 @@ bool Allocator_ReserveRecycled(Allocator *allocator, size_t size);
 NOINLINE word_t *Allocator_allocSlow(Allocator *allocator, Heap *heap,
                                      uint32_t size);
 
-// Keep the fast path visible to the GC entry points even without LTO.
-static INLINE word_t *Allocator_Alloc(Allocator *allocator, Heap *heap,
-                                      uint32_t size) {
+word_t *Allocator_Alloc(Heap *heap, uint32_t size);
+
+// Keep the dedicated small-object entry point inlineable without LTO.
+static INLINE word_t *Allocator_AllocInline(Allocator *allocator, Heap *heap,
+                                            uint32_t size) {
     assert(size % ALLOCATION_ALIGNMENT == 0);
     assert(size < MIN_BLOCK_SIZE);
 
