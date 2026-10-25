@@ -60,7 +60,7 @@ static INLINE word_t *Allocator_AllocInline(Allocator *allocator, Heap *heap,
     word_t *end = (word_t *)((uint8_t *)start + size);
 
     // Checks if the end of the block overlaps with the limit
-    if (start == NULL || end > allocator->limit) {
+    if (UNLIKELY(start == NULL || end > allocator->limit)) {
         return Allocator_allocSlow(allocator, heap, size);
     }
 
