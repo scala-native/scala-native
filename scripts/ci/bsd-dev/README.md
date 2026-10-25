@@ -108,6 +108,7 @@ export JAVA_HOME=/usr/pkg/java/openjdk21
 export PATH="$JAVA_HOME/bin:/usr/pkg/bin:/usr/pkg/sbin:$PATH"
 export SCALANATIVE_INCLUDE_DIRS=/usr/pkg/include
 export SCALANATIVE_LIB_DIRS=/usr/pkg/lib
+export LD_LIBRARY_PATH="/usr/pkg/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
 # FreeBSD (use this block instead)
 export JAVA_HOME=/usr/local/openjdk21

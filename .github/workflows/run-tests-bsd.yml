@@ -71,4 +71,6 @@ jobs:
             export PATH="$JAVA_HOME/bin:/usr/pkg/bin:/usr/pkg/sbin:$PATH"
             export SCALANATIVE_INCLUDE_DIRS=/usr/pkg/include
             export SCALANATIVE_LIB_DIRS=/usr/pkg/lib
+            # pkgsrc libraries also need to be visible to the runtime loader.
+            export LD_LIBRARY_PATH="/usr/pkg/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
             sh scripts/ci/run-bsd-tests.sh

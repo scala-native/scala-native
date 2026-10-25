@@ -169,3 +169,12 @@ regression probe time out (SIGALRM, status 142); with the fix, the probe builds
 with -Werror and passes on both BSD guests. The modified Scala unit tests compile
 successfully, and shell syntax/format checks pass. Full runtime CI is still
 required to confirm completion of the Scala overflow suites and remaining tests.
+
+Run `40184739712` passes the complete FreeBSD job. NetBSD passes the none,
+Immix and Commix smoke checks, then cannot start the Boehm sandbox because
+the runtime loader cannot find libgc.so.1. SCALANATIVE_LIB_DIRS supplies the
+link-time search path, but the pkgsrc library directory must also be available
+at runtime. Export LD_LIBRARY_PATH with /usr/pkg/lib in the NetBSD job and
+local rig instructions, preserving any existing entries. A local NetBSD Boehm
+probe reproduces the missing-library error without this path and successfully
+allocates and collects with it. NetBSD's full runtime suite is still pending.
