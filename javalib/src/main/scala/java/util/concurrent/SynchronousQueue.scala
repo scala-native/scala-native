@@ -518,22 +518,19 @@ object SynchronousQueue {
        * first. At least one of node s or the node previously
        * saved can always be deleted, so this always terminates.
        */
-      var break = false
-      while (!break && (pred.next eq s)) {
+      while (pred.next eq s) {
         // Return early if already unlinked
         val h = head
         val hn = h.next // Absorb cancelled first node as head
         if (hn != null && hn.isCancelled()) {
-          advanceHead(h, hn)
-          break = true
+          advanceHead(h, hn) // retry
         } else {
           val t = tail // Ensure consistent read for tail
           if (t eq h) return ()
           val tn = t.next
-          if (t ne tail) break = true
+          if (t ne tail) () // retry
           else if (tn != null) {
-            advanceTail(t, tn)
-            break = true
+            advanceTail(t, tn) // retry
           } else {
             if (s ne t) { // If not tail, try to unsplice
               val sn = s.next
