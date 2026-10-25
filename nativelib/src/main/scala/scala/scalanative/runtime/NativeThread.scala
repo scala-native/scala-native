@@ -26,6 +26,23 @@ trait NativeThread {
   protected def isExternalThread: Boolean = false
 
   private[runtime] var isFillingStackTrace: scala.Boolean = false
+  private[runtime] var carrierCompensationSuppressed: scala.Boolean = false
+
+  /** Disable compensation on the caller while unpark holds runtime locks. This
+   *  avoids lock cycles when compensation unparks another carrier.
+   */
+  @alwaysinline
+  protected final def withoutCarrierCompensation[T](body: => T): T = {
+    val caller = NativeThread.currentNativeThread
+    if (caller == null) body
+    else {
+      val previous = caller.carrierCompensationSuppressed
+      caller.carrierCompensationSuppressed = true
+      try body
+      finally caller.carrierCompensationSuppressed = previous
+    }
+  }
+
   @volatile private var _state: State = State.New
   def state: State = _state
   protected[runtime] def state_=(newState: State): Unit = _state match {

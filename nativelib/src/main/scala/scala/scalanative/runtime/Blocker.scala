@@ -29,7 +29,11 @@ private[runtime] object Blocker {
       case vt: VirtualThread =>
         val carrier = vt.carrierThread
         if (carrier eq null) false
-        else vt.scheduler.beginCarrierCompensatedBlock(carrier)
+        else {
+          val native = NativeThread.currentNativeThread
+          if (native != null && native.carrierCompensationSuppressed) false
+          else vt.scheduler.beginCarrierCompensatedBlock(carrier)
+        }
       case _ => false
     }
 
