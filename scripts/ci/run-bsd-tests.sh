@@ -22,7 +22,11 @@ curl -fL --retry 3 -o "$launcher_dir/sbt-launch.jar" \
 uname -a
 java -version
 clang --version
-java -Xmx5G -jar "$launcher_dir/sbt-launch.jar" "test-gc 3"
+# Exercise normal main-return shutdown with threads enabled (#3839). The test
+# runner uses sys.exit, while Hello World would otherwise disable threading.
+java -Xmx5G -jar "$launcher_dir/sbt-launch.jar" \
+  "set sandbox3 / nativeConfig ~= (_.withMultithreading(true))" \
+  "test-gc 3"
 # Keep extended tests out of the initial BSD bring-up. test-runtime also
 # includes testsExt, so spell out the intended runtime projects here.
 java -Xmx5G -jar "$launcher_dir/sbt-launch.jar" \
