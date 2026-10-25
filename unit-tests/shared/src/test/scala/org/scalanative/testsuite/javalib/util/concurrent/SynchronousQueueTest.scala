@@ -9,8 +9,9 @@ package org.scalanative.testsuite.javalib.util.concurrent
 
 import java.util
 import java.util._
-import java.util.concurrent.TimeUnit.MILLISECONDS
+import java.util.concurrent.TimeUnit.{MILLISECONDS, NANOSECONDS}
 import java.util.concurrent._
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
 
 import org.junit.Assert._
 import org.junit.{Ignore, Test}
@@ -281,6 +282,52 @@ class SynchronousQueueTest extends JSR166Test {
     if (randomBoolean()) assertThreadBlocks(t, Thread.State.TIMED_WAITING)
     t.interrupt()
     awaitTermination(t)
+  }
+
+  @Test def testOfferWithTimingOutPolls(): Unit = {
+    // Regression test for #5124: an offer must not throw while timed polls time out
+    val q = new SynchronousQueue[Integer](false)
+    val failure = new AtomicReference[Throwable]()
+    val stop = new AtomicBoolean(false)
+    val pollTimeoutsNanos = Array(0L, 500L, 1000L, 2000L, 5000L, 20000L)
+
+    def startWorker(body: => Unit): Thread =
+      newStartedThread(new CheckedRunnable() {
+        override def realRun(): Unit = {
+          try body
+          catch {
+            case t: Throwable =>
+              failure.compareAndSet(null, t)
+              stop.set(true)
+          }
+        }
+      })
+
+    val pollers = (0 until 4).map { _ =>
+      startWorker {
+        var i = 0
+        while (!stop.get()) {
+          q.poll(pollTimeoutsNanos(i % pollTimeoutsNanos.length), NANOSECONDS)
+          i += 1
+        }
+      }
+    }
+    val deadline = System.nanoTime + MILLISECONDS.toNanos(2000)
+    val offerers = (0 until 2).map { _ =>
+      startWorker {
+        var i = 0
+        while (!stop.get() && System.nanoTime - deadline < 0) {
+          q.offer(Integer.valueOf(i))
+          i += 1
+        }
+      }
+    }
+    offerers.foreach(awaitTermination(_))
+    stop.set(true)
+    pollers.foreach(awaitTermination(_))
+
+    val t = failure.get()
+    if (t != null) threadUnexpectedException(t)
   }
 
   @Test def testPeek(): Unit = testPeek(false)

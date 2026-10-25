@@ -249,15 +249,15 @@ object SynchronousQueue {
                 casHead(s, null) // pop fulfill node
                 s = null // use new node next time
                 break = true // restart main loop
-              }
-
-              val mn = m.next
-              if (m.tryMatch(s)) {
-                casHead(s, mn) // pop both s and m
-                return (if (mode == TransferStack.REQUEST) m.item
-                        else s.item).asInstanceOf[E]
-              } else { // lost match
-                s.casNext(m, mn) // help unlink
+              } else {
+                val mn = m.next
+                if (m.tryMatch(s)) {
+                  casHead(s, mn) // pop both s and m
+                  return (if (mode == TransferStack.REQUEST) m.item
+                          else s.item).asInstanceOf[E]
+                } else { // lost match
+                  s.casNext(m, mn) // help unlink
+                }
               }
             }
           }
