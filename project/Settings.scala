@@ -538,7 +538,10 @@ object Settings {
   lazy val javaVersionSharedTestSources = Def.settings(
     Test / unmanagedSourceDirectories ++= {
       val testsRootDir = baseDirectory.value.getParentFile.getParentFile
-      val sharedTestDir = testsRootDir / "shared/src/test"
+      val testDirs = List(
+        testsRootDir / "shared/src/test",
+        baseDirectory.value.getParentFile / "src/test"
+      )
       val scalaVersions = CrossVersion
         .partialVersion(scalaVersion.value)
         .collect {
@@ -548,14 +551,15 @@ object Settings {
         .getOrElse(sys.error("Unsupported Scala version"))
       // Java 8 is reference so start at 9
       for {
+        testDir <- testDirs
         jdkVersion <- 9 to (Global / javaVersion).value
         requireJDK = s"jdk${jdkVersion}"
         scalaVersion <- scalaVersions
         requireScala = s"scala${scalaVersion}"
         requireDir <- List(
-          sharedTestDir / s"require-$requireScala",
-          sharedTestDir / s"require-$requireJDK",
-          sharedTestDir / s"require-$requireScala-$requireJDK"
+          testDir / s"require-$requireScala",
+          testDir / s"require-$requireJDK",
+          testDir / s"require-$requireScala-$requireJDK"
         )
       } yield requireDir
     }.distinct,
