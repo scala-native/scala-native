@@ -195,3 +195,17 @@ Validation: all thirty tests in InterfaceAddressTest, NetworkInterfaceTest,
 NetworkInterfaceTestOnJDK9 and ProcessTestOnJDK9 pass on the host JVM and in the
 local NetBSD 10.1 guest using OpenJDK 21 (-Xint under QEMU TCG). The NetBSD native
 runtime suite remains pending.
+
+Run `40215073467` passes FreeBSD and the complete NetBSD JVM suite. NetBSD
+native linking fails on posix_spawn_file_actions_addchdir_np: NetBSD 10 provides
+the unsuffixed posix_spawn_file_actions_addchdir instead, even though its POSIX
+version macro predates Issue 8. Detect that API using the NetBSD version and
+select the unsuffixed call. Older NetBSD targets must not emit a reference to
+the unavailable _np symbol; retain the fork fallback for custom directories.
+
+Validation: the previous launcher reproduces the undefined symbol in the local
+NetBSD guest. The corrected shim compiles with -Werror and the spawn/chdir probe
+confirms the child's working directory and unchanged parent directory. A
+simulated pre-10 NetBSD feature guard links and reports the fork fallback.
+FreeBSD links with its existing capability result, and the host spawn/chdir
+probe passes. Full NetBSD native runtime CI remains pending.

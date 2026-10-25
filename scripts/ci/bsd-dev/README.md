@@ -89,6 +89,21 @@ range prevented normal kernel stack growth. The probe terminated on its alarm
 instead of completing. The corrected discovery starts at the active stack page
 so the runtime touches intervening pages before protecting its guard.
 
+## Process spawn/chdir probe
+
+Compile the process launcher shim into an executable so missing ABI symbols
+fail at link time. On NetBSD 10+, verify that a spawned child uses the requested
+working directory while the parent's working directory stays unchanged:
+
+```sh
+scripts/ci/bsd-dev/bsd-dev.sh sync netbsd
+scripts/ci/bsd-dev/bsd-dev.sh ssh netbsd \
+  'cd /root/scala-native && cc -std=gnu11 -Werror -DSCALANATIVE_COMPILE_ALWAYS scripts/ci/bsd-dev/spawn-chdir-probe.c javalib/src/main/resources/scala-native/lang/javalib_spawn.c -o /root/spawn-chdir-probe && /root/spawn-chdir-probe'
+```
+
+Targets where the shim reports no chdir support link successfully and report
+that the process factory must use its fork fallback for a custom directory.
+
 ## Scala Native tests
 
 Inside the guest, download the portable launcher once:
