@@ -42,8 +42,11 @@ object AllocationBenchmark {
       }
 
       allocations = count
-      retained.foreach { node =>
-        if (node != null) checksum += node.value
+      retained.indices.foreach { slot =>
+        val node = retained(slot)
+        assert(node.value == count - retained.length + slot)
+        assert(node.next == null)
+        checksum += node.value
       }
     }
 
@@ -70,8 +73,12 @@ object AllocationBenchmark {
       }
 
       allocations = count
-      retained.foreach { data =>
-        if (data != null) checksum += data(0) + data(size - 1)
+      retained.indices.foreach { slot =>
+        val data = retained(slot)
+        val last = count - 1 - (count - 1 - slot) % slots
+        assert(data(0) == last.toByte)
+        assert(data(size - 1) == (last >>> 8).toByte)
+        checksum += data(0) + data(size - 1)
       }
     }
   }
@@ -111,6 +118,10 @@ object AllocationBenchmark {
 
     if (failure.get() != null) throw failure.get()
 
+    assert(
+      workers.forall(_.allocations > 0),
+      "a benchmark worker made no progress"
+    )
     val allocations = workers.map(_.allocations).sum
     val checksum = workers.map(_.checksum).sum
     val collections = gc.getCollectionCount() - collectionsBefore

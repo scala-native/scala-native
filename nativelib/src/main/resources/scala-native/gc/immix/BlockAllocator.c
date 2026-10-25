@@ -41,6 +41,19 @@ inline static int BlockAllocator_sizeToLinkedListIndex(uint32_t size) {
     return result;
 }
 
+static void BlockAllocator_addFreeExtent(BlockAllocator *blockAllocator,
+                                         BlockMeta *superblock,
+                                         uint32_t count) {
+    assert(BlockMeta_IsFree(superblock));
+    int i = BlockAllocator_sizeToLinkedListIndex(count);
+    if (i < blockAllocator->minNonEmptyIndex)
+        blockAllocator->minNonEmptyIndex = i;
+    if (i > blockAllocator->maxNonEmptyIndex)
+        blockAllocator->maxNonEmptyIndex = i;
+    BlockMeta_SetSuperblockSize(superblock, count);
+    BlockList_AddLast(&blockAllocator->freeSuperblocks[i], superblock);
+}
+
 static BlockMeta *BlockAllocator_pollList(BlockList *list, uint32_t size) {
     BlockMeta *previous = NULL;
     for (BlockMeta *block = list->first; block != NULL;) {
@@ -150,9 +163,12 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
         superblock = BlockAllocator_pollSuperblock(blockAllocator, first, size);
         if (superblock != NULL && BlockMeta_SuperblockSize(superblock) > size) {
             BlockMeta *leftover = superblock + size;
-            BlockAllocator_addFreeBlocksInternal(
-                blockAllocator, leftover,
-                BlockMeta_SuperblockSize(superblock) - size);
+            // The remainder was already free. Only publish its new extent
+            // header; clearing every remaining block here makes repeated
+            // allocations from a large extent quadratic in its block count.
+            BlockAllocator_addFreeExtent(blockAllocator, leftover,
+                                         BlockMeta_SuperblockSize(superblock) -
+                                             size);
         }
     }
     if (superblock != NULL) {
@@ -169,29 +185,15 @@ BlockMeta *BlockAllocator_GetFreeSuperblock(BlockAllocator *blockAllocator,
     return superblock;
 }
 
-static inline void
-BlockAllocator_addFreeBlocksInternal0(BlockAllocator *blockAllocator,
-                                      BlockMeta *superblock, uint32_t count) {
-    int i = BlockAllocator_sizeToLinkedListIndex(count);
-    if (i < blockAllocator->minNonEmptyIndex) {
-        blockAllocator->minNonEmptyIndex = i;
-    }
-    if (i > blockAllocator->maxNonEmptyIndex) {
-        blockAllocator->maxNonEmptyIndex = i;
-    }
+void BlockAllocator_addFreeBlocksInternal(BlockAllocator *blockAllocator,
+                                          BlockMeta *superblock,
+                                          uint32_t count) {
     BlockMeta *limit = superblock + count;
     for (BlockMeta *current = superblock; current < limit; current++) {
         BlockMeta_SetFlag(current, block_free);
     }
-    BlockMeta_SetSuperblockSize(superblock, count);
-    BlockList_AddLast(&blockAllocator->freeSuperblocks[i], superblock);
-}
-
-void BlockAllocator_addFreeBlocksInternal(BlockAllocator *blockAllocator,
-                                          BlockMeta *superblock,
-                                          uint32_t count) {
     // Preserve contiguous extents instead of splitting them into powers of two.
-    BlockAllocator_addFreeBlocksInternal0(blockAllocator, superblock, count);
+    BlockAllocator_addFreeExtent(blockAllocator, superblock, count);
 }
 
 void BlockAllocator_AddFreeBlocks(BlockAllocator *blockAllocator,
