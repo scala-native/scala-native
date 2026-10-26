@@ -173,6 +173,7 @@ static bool Heap_reserveAllocation(size_t size) {
 
 static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
                          uint64_t generation) {
+    SpillCalleeSavedRegisters();
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     if (!(allocationSize == 0 ? Synchronizer_acquire()
                               : Synchronizer_acquireForAllocation(

@@ -470,6 +470,7 @@ void Synchronizer_init(void) {
 // Common Implementation
 // =============================================================================
 void Synchronizer_yield(void) {
+    SpillCalleeSavedRegisters();
     MutatorThread *self = currentMutatorThread;
     MutatorThread_switchState(self, GC_MutatorThreadState_Unmanaged);
     atomic_thread_fence(memory_order_seq_cst);
