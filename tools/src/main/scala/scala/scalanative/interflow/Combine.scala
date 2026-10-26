@@ -409,6 +409,9 @@ private[interflow] trait Combine { self: Interflow =>
     }
   }
 
+  /** Combines the comparison `l comp r`. As for binary operations, a
+   *  commutative comparison has its canonical operand, if any, on the right.
+   */
   def combine(comp: nir.Comp, ty: nir.Type, l: nir.Val, r: nir.Val)(implicit
       state: State,
       srcPosition: nir.SourcePosition,
@@ -585,7 +588,7 @@ private[interflow] trait Combine { self: Interflow =>
         combine(Ine, ty, x, y)
 
       case (_, l, r) =>
-        delay(nir.Op.Comp(comp, ty, r, l))
+        delay(nir.Op.Comp(comp, ty, l, r))
     }
   }
 

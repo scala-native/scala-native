@@ -238,9 +238,9 @@ private[interflow] trait Eval { self: Interflow =>
             eval(comp, ty, l, r)
           case (_, l, r) =>
             if (l.isCanonical && op.isCommutative) {
-              combine(comp, ty, l, r)
-            } else {
               combine(comp, ty, r, l)
+            } else {
+              combine(comp, ty, l, r)
             }
         }
       case nir.Op.Conv(conv, ty, value) =>
