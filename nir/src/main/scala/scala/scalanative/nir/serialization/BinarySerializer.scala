@@ -301,7 +301,7 @@ final class BinarySerializer(channel: WritableByteChannel) {
     }
   }
 
-  private object Insts extends NIRSectionWriter(1024 * 1024) with Common {
+  private object Insts extends NIRSectionWriter(4096) with Common {
     private def putBin(bin: Bin) = bin match {
       case Bin.Iadd => putTag(T.IaddBin)
       case Bin.Isub => putTag(T.IsubBin)
@@ -660,7 +660,7 @@ final class BinarySerializer(channel: WritableByteChannel) {
 
 }
 
-sealed abstract class NIRSectionWriter(initialBufferSize: Int = 64 * 1024) {
+sealed abstract class NIRSectionWriter(initialBufferSize: Int = 1024) {
   private val baos = new ByteArrayOutputStream(initialBufferSize)
   private val output = new DataOutputStream(baos)
 
