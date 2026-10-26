@@ -5,6 +5,7 @@ import java.lang.ProcessBuilder
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, StandardCopyOption}
 
+import scala.scalanative.build.IO
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo
 
 object NIRCompiler {
@@ -64,10 +65,8 @@ object NIRCompiler {
    */
   def withSources[T](
       outDir: Path
-  )(sources: Map[String, String])(fn: (Path, NIRCompiler) => T): T = {
-    val sourcesDir = writeSources(sources)
-    fn(sourcesDir, getCompiler(outDir))
-  }
+  )(sources: Map[String, String])(fn: (Path, NIRCompiler) => T): T =
+    withSourceDir(sources)(fn(_, getCompiler(outDir)))
 
   /** Writes the sources `sources` and applies `fn` to the base directory
    *  holding the sources and the NIRCompiler.
@@ -82,11 +81,29 @@ object NIRCompiler {
   def withSources[T](
       sources: Map[String, String]
   )(fn: (Path, NIRCompiler) => T): T = {
-    val sourcesDir = writeSources(sources)
-    fn(sourcesDir, getCompiler())
+    val outDir = Files.createTempDirectory("scala-native-target")
+    try withSources(outDir)(sources)(fn)
+    finally IO.deleteRecursive(outDir)
   }
 
-  /** Writes the sources `sources` to a temporary directory.
+  /** Writes the sources `sources` to a temporary directory, applies `fn` to it
+   *  and deletes it.
+   *
+   *  @param sources
+   *    Map from file name to file content representing the sources.
+   *  @param fn
+   *    The function to apply to the directory that contains the sources.
+   *  @return
+   *    The result of applying `fn` to the directory.
+   */
+  def withSourceDir[T](sources: Map[String, String])(fn: Path => T): T = {
+    val sourcesDir = writeSources(sources)
+    try fn(sourcesDir)
+    finally IO.deleteRecursive(sourcesDir)
+  }
+
+  /** Writes the sources `sources` to a temporary directory, which the caller
+   *  deletes; see `withSourceDir`.
    *
    *  @param sources
    *    Map from file name to file content representing the sources.
@@ -140,7 +157,8 @@ class NIRCompiler(outDir: Path) {
   def compile(source: String): Array[Path] = {
     val tempFile = File.createTempFile("scala-native-input", ".scala").toPath
     val p = Files.write(tempFile, source.getBytes(StandardCharsets.UTF_8))
-    compile(Seq(p.toFile()))
+    try compile(Seq(p.toFile()))
+    finally Files.deleteIfExists(p)
   }
 
   private def compile(files: Seq[File]): Array[Path] = {

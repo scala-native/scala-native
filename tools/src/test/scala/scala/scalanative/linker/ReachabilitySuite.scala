@@ -78,19 +78,24 @@ trait ReachabilitySuite {
       entries: Seq[nir.Global],
       sources: Seq[String],
       mainClass: String
-  )(f: ReachabilityAnalysis => T): T =
-    Scope { implicit in =>
-      val outDir = Files.createTempDirectory("native-test-out")
-      val compiler = NIRCompiler.getCompiler(outDir)
-      val sourceMap = sources.zipWithIndex.map {
-        case (b, i) => (s"file$i.scala", b)
-      }.toMap
-      val sourcesDir = NIRCompiler.writeSources(sourceMap)
-      val files = compiler.compile(sourcesDir)
-      val config = makeConfig(outDir, mainClass)
-      val result = Link(config, entries)
-      f(result)
-    }
+  )(f: ReachabilityAnalysis => T): T = {
+    // Deleted once the scope has closed what it opened in the directory
+    val outDir = Files.createTempDirectory("native-test-out")
+    val sourceMap = sources.zipWithIndex.map {
+      case (b, i) => (s"file$i.scala", b)
+    }.toMap
+    try
+      NIRCompiler.withSourceDir(sourceMap) { sourcesDir =>
+        Scope { implicit in =>
+          val compiler = NIRCompiler.getCompiler(outDir)
+          val files = compiler.compile(sourcesDir)
+          val config = makeConfig(outDir, mainClass)
+          val result = Link(config, entries)
+          f(result)
+        }
+      }
+    finally scalanative.build.IO.deleteRecursive(outDir)
+  }
 
   private def makeClasspath(outDir: Path)(implicit in: Scope) = {
     val parts: Array[Path] =
