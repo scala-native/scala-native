@@ -28,7 +28,7 @@ trait NativeThread {
   private[runtime] var isFillingStackTrace: scala.Boolean = false
   private[runtime] var carrierCompensationSuppressed: scala.Boolean = false
 
-  /** Disable compensation on the caller while unpark holds runtime locks. This
+  /** Disable compensation on the caller while runtime locks are held. This
    *  avoids lock cycles when compensation unparks another carrier.
    */
   @alwaysinline
@@ -42,6 +42,16 @@ trait NativeThread {
       finally caller.carrierCompensationSuppressed = previous
     }
   }
+
+  /** Start compensation before entering a blocking region whose runtime locks
+   *  must not be held when compensation runs. Suppress nested compensation and
+   *  finish only after the body has released its locks.
+   */
+  @alwaysinline
+  protected final def withCarrierCompensation[T](body: => T): T =
+    Blocker {
+      withoutCarrierCompensation(body)
+    }
 
   @volatile private var _state: State = State.New
   def state: State = _state
