@@ -93,7 +93,8 @@ runs:
         if ($process.ExitCode -notin @(0, 3010)) {
           throw "LLVM installer failed with exit code $($process.ExitCode)"
         }
-        Remove-Item -LiteralPath $installer
+        # Windows may keep the installer locked after it exits. RUNNER_TEMP is
+        # cleaned by the runner, so leave the download there.
 
     - name: Expose and verify ARM64 LLVM
       shell: pwsh

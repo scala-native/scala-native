@@ -7,6 +7,7 @@ import java.util.WindowsHelperMethods._
 import java.util.concurrent.TimeUnit
 import java.util.{HashMap => JHashMap}
 
+import scala.scalanative.windows.ErrorHandlingApi.GetLastError
 import scala.scalanative.windows.FileApi._
 import scala.scalanative.windows.FileApiExt._
 import scala.scalanative.windows.FileApiOps._
@@ -112,13 +113,27 @@ final class WindowsDosFileAttributeView(path: Path, options: Array[LinkOption])
     implicit z: Zone =>
       val fileInfo = alloc[ByHandleFileInformation]()
 
-      withFileOpen(
+      val hasFileInfo = withFileOpen(
         pathAbs,
         access = FILE_READ_ATTRIBUTES,
         attributes = fileOpeningFlags
       ) { handle =>
-        if (!FileApi.GetFileInformationByHandle(handle, fileInfo))
-          throw WindowsException.onPath(pathAbs)
+        if (FileApi.GetFileInformationByHandle(handle, fileInfo)) true
+        else {
+          val error = GetLastError()
+          if (FileApi.GetFileType(handle) != FILE_TYPE_CHAR)
+            throw WindowsException.onPathWithLastEror(pathAbs, error)
+
+          // Character devices such as NUL do not support file-information
+          // queries. Keep their size zero without accepting failures on files.
+          scala.scalanative.libc.string.memset(
+            fileInfo,
+            0,
+            sizeof[ByHandleFileInformation]
+          )
+          fileInfo.fileAttributes = FILE_ATTRIBUTE_DEVICE
+          false
+        }
       }
 
       new DosFileAttributes {
@@ -128,10 +143,12 @@ final class WindowsDosFileAttributeView(path: Path, options: Array[LinkOption])
         private val modifiedAt = toFileTime(fileInfo.lastWriteTime)
         private val fileSize = fileInfo.fileSize
         private val dosFileKey =
-          WindowsFileKey(
-            volumeId = fileInfo.volumeSerialNumber.toLong,
-            fileIndex = fileInfo.fileIndex.toLong
-          )
+          if (!hasFileInfo) null
+          else
+            WindowsFileKey(
+              volumeId = fileInfo.volumeSerialNumber.toLong,
+              fileIndex = fileInfo.fileIndex.toLong
+            )
 
         def creationTime(): FileTime = createdAt
         def lastAccessTime(): FileTime = accessedAt

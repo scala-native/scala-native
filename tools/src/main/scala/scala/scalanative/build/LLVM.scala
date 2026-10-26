@@ -413,6 +413,10 @@ private[scalanative] object LLVM {
     if (config.compilerConfig.sourceLevelDebuggingConfig.enabled) {
       // newer LLVM defaults to DWARFv5 on some targets; runtime supports only v4 for now
       Seq("-gdwarf-4")
+    } else if (config.targetsWindows) {
+      // CodeView/PDB symbols are needed for DbgHelp stack traces even when
+      // source-level debugging (and embedded DWARF) is disabled.
+      Seq("-g")
     } else Nil
 
   /** LTO flags for compiling `compiledFile`, or for linking if `None`. */
