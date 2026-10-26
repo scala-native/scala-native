@@ -665,10 +665,11 @@ private[interflow] trait Combine { self: Interflow =>
       unreachable
   }
 
+  // Zero is no power of two: a division by zero throws
   private def isPowerOfTwoOrMinValue(x: Int): Boolean =
-    (x & (x - 1)) == 0
+    x != 0 && (x & (x - 1)) == 0
 
   private def isPowerOfTwoOrMinValue(x: Long): Boolean =
-    (x & (x - 1)) == 0
+    x != 0 && (x & (x - 1)) == 0
 
 }
