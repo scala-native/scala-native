@@ -209,3 +209,26 @@ confirms the child's working directory and unchanged parent directory. A
 simulated pre-10 NetBSD feature guard links and reports the fork fallback.
 FreeBSD links with its existing capability result, and the host spawn/chdir
 probe passes. Full NetBSD native runtime CI remains pending.
+
+Run `40233847278` reaches the end of the NetBSD native suite with three failures.
+For regular files, NetBSD uses NODEV (-1) for st_rdev; assert that sentinel
+instead of zero, retaining the stat/fstat consistency check. LanginfoTest sees
+ASCII after setting a UTF-8 locale because the legacy setlocale symbol uses
+different category numbering. Forward setlocale through the C header-selected
+entry point; a local NetBSD probe reproduces CODESET=646 with the compatibility
+symbol and obtains UTF-8, the expected date format and thousands separator
+through the new shim.
+
+NetBSD's posix_spawn resolves relative executable paths before applying its
+chdir file action. The extended spawn probe reproduces ENOENT for ./pwd in a
+child-only directory and succeeds with the absolute executable path. Resolve
+relative command candidates against the requested child directory on NetBSD,
+preserving argv[0] and leaving the parent working directory unchanged. The
+existing ProcessTest.dirOverride covers this runtime path.
+
+Validation: the runtime and native test sources compile. All 28 focused native
+checks in LanginfoTest, StatTest and ProcessTest pass on the host (one existing
+ignored test). NetBSD probes confirm the modern locale ABI, the NODEV value
+through the actual C stat shim, and relative-spawn failure versus absolute-path
+success. The locale C shim compiles with -Werror on both BSD guests and the
+host; the Windows branch passes a host syntax check. Full NetBSD CI is pending.

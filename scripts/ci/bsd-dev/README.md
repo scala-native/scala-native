@@ -104,6 +104,12 @@ scripts/ci/bsd-dev/bsd-dev.sh ssh netbsd \
 Targets where the shim reports no chdir support link successfully and report
 that the process factory must use its fork fallback for a custom directory.
 
+The child executable is a symlink inside its requested working directory. The
+probe passes its absolute path while preserving `./pwd` as argv[0], matching
+the NetBSD process factory workaround. Passing `relative` to the probe instead
+uses `./pwd` as the executable path and reproduces NetBSD's ENOENT: its spawn
+implementation resolves that path before applying the chdir file action.
+
 ## Scala Native tests
 
 Inside the guest, download the portable launcher once:

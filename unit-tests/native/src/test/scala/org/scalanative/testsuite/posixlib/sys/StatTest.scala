@@ -68,7 +68,8 @@ class StatTest {
         statFromFd.st_rdev
       )
 
-      val expectedRdev = 0.toUSize
+      // NetBSD uses NODEV for regular files rather than device number zero.
+      val expectedRdev = if (LinktimeInfo.isNetBSD) (-1L).toUSize else 0.toUSize
 
       if (LinktimeInfo.isFreeBSD || LinktimeInfo.isOpenBSD) {
         /* The important test is above:
@@ -84,9 +85,6 @@ class StatTest {
          *
          * From examining the history of this test, it appears that
          * FreeBSD 13.n expected ULong.MaxValue.toUSize.
-         *
-         * This maintainer has no ready access to a NetBSD system.
-         * In an abundance of caution,  skip this test there also.
          */
 
         () // Do Nothing

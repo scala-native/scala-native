@@ -13,7 +13,7 @@ extern bool hasFileActionsAddChdir(void);
 extern void fileActionsAddChdir(posix_spawn_file_actions_t *, char *);
 extern char **environ;
 
-int main(void) {
+int main(int argc, char **argv) {
     alarm(10);
     if (!hasFileActionsAddChdir()) {
         puts("spawn chdir unavailable; fork fallback required");
@@ -26,6 +26,10 @@ int main(void) {
     assert(mkdtemp(directory) != NULL);
     char childCwd[PATH_MAX];
     assert(realpath(directory, childCwd) != NULL);
+    char executable[PATH_MAX];
+    int length = snprintf(executable, sizeof(executable), "%s/pwd", childCwd);
+    assert(length > 0 && (size_t)length < sizeof(executable));
+    assert(symlink("/bin/pwd", executable) == 0);
     int output[2];
     assert(pipe(output) == 0);
     posix_spawn_file_actions_t actions;
@@ -35,9 +39,22 @@ int main(void) {
                                             STDOUT_FILENO) == 0);
     assert(posix_spawn_file_actions_addclose(&actions, output[0]) == 0);
     assert(posix_spawn_file_actions_addclose(&actions, output[1]) == 0);
-    char *argv[] = {"pwd", NULL};
+    char *childArgv[] = {"./pwd", NULL};
     pid_t child;
-    assert(posix_spawn(&child, "/bin/pwd", &actions, NULL, argv, environ) == 0);
+    // NetBSD resolves the executable before applying chdir: passing ./pwd
+    // directly reproduces ENOENT; resolve it against the child's directory.
+    const char *path =
+        argc > 1 && strcmp(argv[1], "relative") == 0 ? "./pwd" : executable;
+    int spawned = posix_spawn(&child, path, &actions, NULL, childArgv, environ);
+    if (spawned != 0) {
+        fprintf(stderr, "posix_spawn(%s): %s\n", path, strerror(spawned));
+        posix_spawn_file_actions_destroy(&actions);
+        close(output[0]);
+        close(output[1]);
+        unlink(executable);
+        rmdir(directory);
+        return 1;
+    }
     assert(posix_spawn_file_actions_destroy(&actions) == 0);
     close(output[1]);
 
@@ -56,6 +73,7 @@ int main(void) {
     assert(strcmp(actual, childCwd) == 0);
     assert(getcwd(afterCwd, sizeof(afterCwd)) != NULL);
     assert(strcmp(parentCwd, afterCwd) == 0);
+    assert(unlink(executable) == 0);
     assert(rmdir(directory) == 0);
     puts("spawn chdir passed; parent working directory unchanged");
     return 0;

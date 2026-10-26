@@ -219,9 +219,18 @@ private[process] object UnixProcessFactory {
        */
       @tailrec
       def spawn(exec: String, argv: Ptr[CString], attempt: Int = 0): CInt = {
+        // NetBSD resolves the executable before applying the chdir action.
+        // Resolve relative candidates against the child's requested directory
+        // while preserving the command's original argv[0].
+        val executable =
+          if (LinktimeInfo.isNetBSD) {
+            if (!builder.isCwd && !new File(exec).isAbsolute())
+              new File(builder.directory(), exec).getAbsolutePath()
+            else exec
+          } else exec
         val status = posix_spawn(
           pidPtr,
-          toCString(exec),
+          toCString(executable),
           fileActions,
           null, // attrp
           argv,

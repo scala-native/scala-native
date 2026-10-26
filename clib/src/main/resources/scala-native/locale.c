@@ -1,6 +1,12 @@
 #if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_C_LOCALE)
+#include <locale.h>
+
+char *scalanative_setlocale(int category, const char *locale) {
+    return setlocale(category, locale);
+}
+
 #ifdef _WIN32
-// No Windows support
+// The remaining constants and layout checks are not implemented on Windows.
 #else
 #if !(defined __STDC_VERSION__) || (__STDC_VERSION__ < 201112L)
 #ifndef SCALANATIVE_SUPPRESS_STRUCT_CHECK_WARNING
@@ -8,7 +14,6 @@
 #endif
 #else // POSIX
 #include <stddef.h>
-#include <locale.h>
 
 /* _Static_assert statements below verify that this layout is valid
  * on Linux & mac_OS. Read the documentation but do not believe it too much.
