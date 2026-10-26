@@ -27,31 +27,11 @@ class CombineComparisonsTest extends OptimizerSpec {
          |""".stripMargin
   )
 
-  /** The optimized copy of the method `name` of `owner`. */
-  private def method(
-      defns: Seq[nir.Defn],
-      owner: String,
-      name: String
-  ): nir.Defn.Define = {
-    // The mangled name of a method starts with its length
-    val mangled = s"D${name.length}$name"
-    val found = defns.collect {
-      case d: nir.Defn.Define
-          if d.name.top.id == owner && d.name.show.contains(mangled) =>
-        d
-    }
-    assertTrue(s"$owner.$name not found", found.nonEmpty)
-    found.maxBy(_.attrs.opt == nir.Attr.DidOpt)
-  }
-
-  private def returned(defn: nir.Defn.Define): Seq[nir.Val] =
-    defn.insts.collect { case nir.Inst.Ret(v) => v }
-
   @Test def comparisonsWithMinAndMaxValues(): Unit =
     optimize("Test", sources, _.withMode(Mode.releaseFull)) {
       case (_, result) =>
         def check(name: String, folded: Option[Boolean]): Unit = {
-          val defn = method(result.defns, "Test$", name)
+          val defn = optimizedMethod(result.defns, "Test$", name)
           val constant = folded.map(nir.Val.Bool(_)).toSeq
           if (folded.isDefined)
             assertEquals(defn.show, constant, returned(defn))
@@ -71,7 +51,7 @@ class CombineComparisonsTest extends OptimizerSpec {
   @Test def combinedComparisonsKeepTheirOperands(): Unit =
     optimize("Test", sources, _.withMode(Mode.releaseFull)) {
       case (_, result) =>
-        val defn = method(result.defns, "Test$", "gtOrEq")
+        val defn = optimizedMethod(result.defns, "Test$", "gtOrEq")
         val nir.Inst.Label(_, Seq(_, x, y)) = defn.insts.head: @unchecked
         val sge = defn.insts.collect {
           case nir.Inst.Let(_, nir.Op.Comp(nir.Comp.Sge, _, l, r), _) =>

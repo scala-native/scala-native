@@ -259,7 +259,7 @@ private[interflow] trait Combine { self: Interflow =>
           case (BinRef(Lshr, x, nir.Val.Long(a)), nir.Val.Long(b)) =>
             val dist = (a & 63) + (b & 63)
             if (dist >= 64) {
-              nir.Val.Int(0)
+              nir.Val.Long(0)
             } else {
               combine(Lshr, ty, x, nir.Val.Long(dist))
             }

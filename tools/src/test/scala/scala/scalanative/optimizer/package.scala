@@ -76,6 +76,27 @@ package object optimizer {
       .ensuring(_.isDefined, "Not found linked method")
   }
 
+  /** The optimized copy of the method `name` of `owner`. */
+  def optimizedMethod(
+      defns: Seq[nir.Defn],
+      owner: String,
+      name: String
+  ): nir.Defn.Define = {
+    // The mangled name of a method starts with its length
+    val mangled = s"D${name.length}$name"
+    val found = defns.collect {
+      case d: nir.Defn.Define
+          if d.name.top.id == owner && d.name.show.contains(mangled) =>
+        d
+    }
+    assertTrue(s"$owner.$name not found", found.nonEmpty)
+    found.maxBy(_.attrs.opt == nir.Attr.DidOpt)
+  }
+
+  /** The values that `defn` returns. */
+  def returned(defn: nir.Defn.Define): Seq[nir.Val] =
+    defn.insts.collect { case nir.Inst.Ret(v) => v }
+
   def afterLowering(
       config: build.Config,
       optimized: => ReachabilityAnalysis.Result

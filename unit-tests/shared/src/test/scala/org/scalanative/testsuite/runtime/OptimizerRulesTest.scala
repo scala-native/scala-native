@@ -46,4 +46,12 @@ class OptimizerRulesTest {
       new Array[AnyRef](-128).length
     )
   }
+
+  @noinline def longShiftsOut(x: Long): Long = (x >>> 40) >>> 30
+  @noinline def intShiftsOut(x: Int): Int = (x >>> 20) >>> 20
+
+  @Test def unsignedShiftsOutOfRange(): Unit = {
+    assertEquals(0L, longShiftsOut(-1L))
+    assertEquals(0, intShiftsOut(-1))
+  }
 }
