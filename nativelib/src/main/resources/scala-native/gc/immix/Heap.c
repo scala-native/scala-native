@@ -322,6 +322,11 @@ bool Heap_shouldGrow(Heap *heap) {
     GC_LOG_DEBUG("Block count: %u, Unavailable: %u, Free: %u, Recycled: %u",
                  blockCount, unavailableBlockCount, freeBlockCount,
                  recycledBlockCount);
+    uint64_t usedLines = (uint64_t)(blockCount - freeBlockCount) * LINE_COUNT -
+                         Block_recycledFreeLines;
+    GC_LOG_DEBUG("Used lines: %" PRIu64 " of %" PRIu64 " (%" PRIu64 " MB)",
+                 usedLines, (uint64_t)blockCount * LINE_COUNT,
+                 (usedLines * LINE_SIZE) >> 20);
 
     return freeBlockCount * 2 < blockCount ||
            (4 * unavailableBlockCount > blockCount &&
@@ -329,6 +334,7 @@ bool Heap_shouldGrow(Heap *heap) {
 }
 
 void Heap_Recycle(Heap *heap) {
+    Block_recycledFreeLines = 0;
     MutatorThreads_foreach(mutatorThreads, node) {
         MutatorThread *thread = node->value;
         Allocator_Clear(&thread->allocator);
