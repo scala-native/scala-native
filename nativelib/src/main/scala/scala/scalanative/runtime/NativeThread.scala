@@ -5,7 +5,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.{lang => jl, util => ju}
 
 import scala.annotation.nowarn
-import scala.concurrent.duration._
 
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.concurrent.NativeExecutionContext
@@ -52,18 +51,25 @@ trait NativeThread {
     if (isMultithreadingEnabled) park(0, isAbsolute = false)
     else NativeExecutionContext.queueInternal.helpComplete()
 
+  // Without multithreading, parking runs queued tasks. No `Duration` here:
+  // initializing it reaches regular expressions and `BigDecimal`.
   @alwaysinline
   final def parkNanos(nanos: Long): Unit = if (nanos > 0) {
     if (isMultithreadingEnabled) park(nanos, isAbsolute = false)
-    else NativeExecutionContext.queueInternal.stealWork(nanos.nanos)
+    else NativeExecutionContext.queueInternal.stealWorkNanos(nanos)
   }
 
   @alwaysinline
   final def parkUntil(deadlineEpoch: scala.Long): Unit =
     if (isMultithreadingEnabled) park(deadlineEpoch, isAbsolute = true)
     else {
-      val timeout = (deadlineEpoch - System.currentTimeMillis()).millis
-      NativeExecutionContext.queueInternal.stealWork(timeout)
+      val timeout = deadlineEpoch - System.currentTimeMillis()
+      // The range that a FiniteDuration of milliseconds accepts
+      require(
+        timeout >= -MaxDurationMillis && timeout <= MaxDurationMillis,
+        "Duration is limited to +-(2^63-1)ns (ca. 292 years)"
+      )
+      NativeExecutionContext.queueInternal.stealWorkMillis(timeout)
     }
 
   @alwaysinline
@@ -125,6 +131,7 @@ private object ThreadStackSize {
 
 object NativeThread {
   private def MainThreadId = 0L
+  private final val MaxDurationMillis = Long.MaxValue / 1000000L
 
   def calculateStackSize(
       userDefinedStackSize: Long,
