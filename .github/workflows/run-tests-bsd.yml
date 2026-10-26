@@ -1,4 +1,4 @@
-name: Run tests BSD (FreeBSD & NetBSD)
+name: Run tests BSD
 on:
   workflow_call:
   pull_request:
