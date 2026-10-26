@@ -63,6 +63,13 @@ const char *get_defined_or_env(const char *envName) {
     if (env != NULL)
         return env; // environment overrides compile time
 
+    return get_defined(envName);
+}
+
+const char *get_defined(const char *envName) {
+    if (envName == NULL)
+        return NULL;
+
 // check for compile time defined values
 #if defined(GC_INITIAL_HEAP_SIZE)
     if (strcmp(envName, "GC_INITIAL_HEAP_SIZE") == 0) {
@@ -82,7 +89,13 @@ const char *get_defined_or_env(const char *envName) {
     }
 #endif
 
-    return NULL; // no compile time or runtime value
+#if defined(GC_NPROCS)
+    if (strcmp(envName, "GC_NPROCS") == 0) {
+        return VAL_STR(GC_NPROCS);
+    }
+#endif
+
+    return NULL; // no compile time value
 }
 
 size_t Parse_Env_Or_Default(const char *envName, size_t defaultSizeInBytes) {
