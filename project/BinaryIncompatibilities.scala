@@ -24,6 +24,8 @@ object BinaryIncompatibilities {
     exclude[MissingTypesProblem]("scala.scalanative.nir.Attrs$"),
     // since 0.4.10 - incorrectlly defined 
     exclude[DirectMissingMethodProblem]("scala.scalanative.nir.Global#None.member"),
+    // Internal state of the NIR writer, not meant for subclasses
+    exclude[DirectMissingMethodProblem]("scala.scalanative.nir.serialization.InternedBinarySectionWriter.entries"),
   )
 
   final val Tools: Filters = Seq(

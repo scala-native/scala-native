@@ -7,8 +7,6 @@ import java.nio.ByteBuffer
 import java.nio.channels.{Channels, WritableByteChannel}
 import java.nio.charset.StandardCharsets
 
-import scala.collection.mutable
-
 import serialization.{Tags => T}
 
 // scalafmt: { maxColumn = 120}
@@ -739,17 +737,20 @@ sealed abstract class NIRSectionWriter(initialBufferSize: Int = 1024) {
 }
 
 sealed abstract class InternedBinarySectionWriter[T] extends NIRSectionWriter {
-  protected val entries = mutable.Map.empty[T, Int]
+  // The offset of each value written. A lookup in a Java map returns null for a
+  // value not seen yet, so interning a known value allocates nothing.
+  private val entries = new java.util.HashMap[T, Integer]
   def put(value: T): Unit
   def internDeps(value: T): Unit
-  def intern(value: T): Int =
-    entries
-      .get(value)
-      .getOrElse {
-        internDeps(value)
-        val offset = position()
-        entries(value) = offset
-        put(value)
-        offset
-      }
+  def intern(value: T): Int = {
+    val known = entries.get(value)
+    if (known != null) known.intValue()
+    else {
+      internDeps(value)
+      val offset = position()
+      entries.put(value, Integer.valueOf(offset))
+      put(value)
+      offset
+    }
+  }
 }
