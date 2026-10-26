@@ -36,7 +36,7 @@ private[java] object DefaultVirtualThreadScheduler extends VirtualThreadSchedule
 
   private val delayedSchedulers: Array[ScheduledThreadPoolExecutor] = {
     val paralellism = Runtime.getRuntime().availableProcessors()
-    val queueCount = Integer.highestOneBit(paralellism * 4).max(1)
+    val queueCount = Integer.highestOneBit(paralellism / 4).max(1)
     Array.fill(queueCount) {
       val executor: ScheduledThreadPoolExecutor =
         new ScheduledThreadPoolExecutor(

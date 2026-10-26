@@ -562,7 +562,15 @@ private[java] final class VirtualThread(
       s match {
         case State.Parked | State.TimedParked =>
           if (compareAndSetState(s, State.Unparked)) {
-            requestRun(lazily)
+            Thread.currentThread() match {
+              case current: VirtualThread =>
+                // Submit to the carrier's local queue, ahead of external work.
+                val carrier = current.carrierThread
+                NativeThread.setCurrentThread(carrier)
+                try requestRun(lazily)
+                finally NativeThread.setCurrentThread(current)
+              case _ => requestRun(lazily)
+            }
             done = true
           } else {
             s = state // re-read after CAS failure
