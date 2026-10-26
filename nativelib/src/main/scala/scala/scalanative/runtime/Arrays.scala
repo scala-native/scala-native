@@ -191,7 +191,7 @@ final class BooleanArray private () extends Array[Boolean] {
 
   @inline override def clone(): BooleanArray = {
     val arrcls  = classOf[BooleanArray]
-    val arr     = GC.alloc_array(arrcls, length, 1)
+    val arr     = GC.alloc_array(arrcls, castIntToRawSizeUnsigned(length), castIntToRawSize(1))
     val src     = castObjectToRawPtr(this)
     ffi.memcpy(
       elemRawPtr(arr, MemoryLayout.Array.ValuesOffset),
@@ -210,7 +210,7 @@ object BooleanArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[BooleanArray]
-    val arr = GC.alloc_array(arrcls, length, 1)
+    val arr = GC.alloc_array(arrcls, castIntToRawSizeUnsigned(length), castIntToRawSize(1))
     val array = castRawPtrToObject(arr).asInstanceOf[BooleanArray]
     array
   }
@@ -262,7 +262,7 @@ final class CharArray private () extends Array[Char] {
 
   @inline override def clone(): CharArray = {
     val arrcls  = classOf[CharArray]
-    val arr     = GC.alloc_array(arrcls, length, 2)
+    val arr     = GC.alloc_array(arrcls, castIntToRawSizeUnsigned(length), castIntToRawSize(2))
     val src     = castObjectToRawPtr(this)
     ffi.memcpy(
       elemRawPtr(arr, MemoryLayout.Array.ValuesOffset),
@@ -281,7 +281,7 @@ object CharArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[CharArray]
-    val arr = GC.alloc_array(arrcls, length, 2)
+    val arr = GC.alloc_array(arrcls, castIntToRawSizeUnsigned(length), castIntToRawSize(2))
     val array = castRawPtrToObject(arr).asInstanceOf[CharArray]
     array
   }
@@ -333,7 +333,7 @@ final class ByteArray private () extends Array[Byte] {
 
   @inline override def clone(): ByteArray = {
     val arrcls  = classOf[ByteArray]
-    val arr     = GC.alloc_array(arrcls, length, 1)
+    val arr     = GC.alloc_array(arrcls, castIntToRawSizeUnsigned(length), castIntToRawSize(1))
     val src     = castObjectToRawPtr(this)
     ffi.memcpy(
       elemRawPtr(arr, MemoryLayout.Array.ValuesOffset),
@@ -352,7 +352,7 @@ object ByteArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[ByteArray]
-    val arr = GC.alloc_array(arrcls, length, 1)
+    val arr = GC.alloc_array(arrcls, castIntToRawSizeUnsigned(length), castIntToRawSize(1))
     val array = castRawPtrToObject(arr).asInstanceOf[ByteArray]
     array
   }
@@ -404,7 +404,7 @@ final class ShortArray private () extends Array[Short] {
 
   @inline override def clone(): ShortArray = {
     val arrcls  = classOf[ShortArray]
-    val arr     = GC.alloc_array(arrcls, length, 2)
+    val arr     = GC.alloc_array(arrcls, castIntToRawSizeUnsigned(length), castIntToRawSize(2))
     val src     = castObjectToRawPtr(this)
     ffi.memcpy(
       elemRawPtr(arr, MemoryLayout.Array.ValuesOffset),
@@ -423,7 +423,7 @@ object ShortArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[ShortArray]
-    val arr = GC.alloc_array(arrcls, length, 2)
+    val arr = GC.alloc_array(arrcls, castIntToRawSizeUnsigned(length), castIntToRawSize(2))
     val array = castRawPtrToObject(arr).asInstanceOf[ShortArray]
     array
   }
@@ -475,7 +475,7 @@ final class IntArray private () extends Array[Int] {
 
   @inline override def clone(): IntArray = {
     val arrcls  = classOf[IntArray]
-    val arr     = GC.alloc_array(arrcls, length, 4)
+    val arr     = GC.alloc_array(arrcls, castIntToRawSizeUnsigned(length), castIntToRawSize(4))
     val src     = castObjectToRawPtr(this)
     ffi.memcpy(
       elemRawPtr(arr, MemoryLayout.Array.ValuesOffset),
@@ -494,7 +494,7 @@ object IntArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[IntArray]
-    val arr = GC.alloc_array(arrcls, length, 4)
+    val arr = GC.alloc_array(arrcls, castIntToRawSizeUnsigned(length), castIntToRawSize(4))
     val array = castRawPtrToObject(arr).asInstanceOf[IntArray]
     array
   }
@@ -546,7 +546,7 @@ final class LongArray private () extends Array[Long] {
 
   @inline override def clone(): LongArray = {
     val arrcls  = classOf[LongArray]
-    val arr     = GC.alloc_array(arrcls, length, 8)
+    val arr     = GC.alloc_array(arrcls, castIntToRawSizeUnsigned(length), castIntToRawSize(8))
     val src     = castObjectToRawPtr(this)
     ffi.memcpy(
       elemRawPtr(arr, MemoryLayout.Array.ValuesOffset),
@@ -565,7 +565,7 @@ object LongArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[LongArray]
-    val arr = GC.alloc_array(arrcls, length, 8)
+    val arr = GC.alloc_array(arrcls, castIntToRawSizeUnsigned(length), castIntToRawSize(8))
     val array = castRawPtrToObject(arr).asInstanceOf[LongArray]
     array
   }
@@ -617,7 +617,7 @@ final class FloatArray private () extends Array[Float] {
 
   @inline override def clone(): FloatArray = {
     val arrcls  = classOf[FloatArray]
-    val arr     = GC.alloc_array(arrcls, length, 4)
+    val arr     = GC.alloc_array(arrcls, castIntToRawSizeUnsigned(length), castIntToRawSize(4))
     val src     = castObjectToRawPtr(this)
     ffi.memcpy(
       elemRawPtr(arr, MemoryLayout.Array.ValuesOffset),
@@ -636,7 +636,7 @@ object FloatArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[FloatArray]
-    val arr = GC.alloc_array(arrcls, length, 4)
+    val arr = GC.alloc_array(arrcls, castIntToRawSizeUnsigned(length), castIntToRawSize(4))
     val array = castRawPtrToObject(arr).asInstanceOf[FloatArray]
     array
   }
@@ -688,7 +688,7 @@ final class DoubleArray private () extends Array[Double] {
 
   @inline override def clone(): DoubleArray = {
     val arrcls  = classOf[DoubleArray]
-    val arr     = GC.alloc_array(arrcls, length, 8)
+    val arr     = GC.alloc_array(arrcls, castIntToRawSizeUnsigned(length), castIntToRawSize(8))
     val src     = castObjectToRawPtr(this)
     ffi.memcpy(
       elemRawPtr(arr, MemoryLayout.Array.ValuesOffset),
@@ -707,7 +707,7 @@ object DoubleArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[DoubleArray]
-    val arr = GC.alloc_array(arrcls, length, 8)
+    val arr = GC.alloc_array(arrcls, castIntToRawSizeUnsigned(length), castIntToRawSize(8))
     val array = castRawPtrToObject(arr).asInstanceOf[DoubleArray]
     array
   }
@@ -759,7 +759,7 @@ final class ObjectArray private () extends Array[Object] {
 
   @inline override def clone(): ObjectArray = {
     val arrcls  = classOf[ObjectArray]
-    val arr     = GC.alloc_array(arrcls, length, castRawSizeToInt(Intrinsics.sizeOf[RawPtr]))
+    val arr     = GC.alloc_array(arrcls, castIntToRawSizeUnsigned(length), castIntToRawSize(castRawSizeToInt(Intrinsics.sizeOf[RawPtr])))
     val src     = castObjectToRawPtr(this)
     ffi.memcpy(
       elemRawPtr(arr, MemoryLayout.Array.ValuesOffset),
@@ -778,7 +778,7 @@ object ObjectArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[ObjectArray]
-    val arr = GC.alloc_array(arrcls, length, castRawSizeToInt(Intrinsics.sizeOf[RawPtr]))
+    val arr = GC.alloc_array(arrcls, castIntToRawSizeUnsigned(length), castIntToRawSize(castRawSizeToInt(Intrinsics.sizeOf[RawPtr])))
     val array = castRawPtrToObject(arr).asInstanceOf[ObjectArray]
     array
   }
@@ -850,7 +850,7 @@ final class BlobArray private () extends Array[Byte] {
 
   @inline override def clone(): BlobArray = {
     val arrcls  = classOf[BlobArray]
-    val arr     = GC.alloc_array(arrcls, length, 1)
+    val arr     = GC.alloc_array(arrcls, castIntToRawSizeUnsigned(length), castIntToRawSize(1))
     val src     = castObjectToRawPtr(this)
     ffi.memcpy(
       elemRawPtr(arr, MemoryLayout.Array.ValuesOffset),
@@ -870,7 +870,7 @@ object BlobArray {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[BlobArray]
-    val arr = GC.alloc_array(arrcls, length, 1)
+    val arr = GC.alloc_array(arrcls, castIntToRawSizeUnsigned(length), castIntToRawSize(1))
     val array = castRawPtrToObject(arr).asInstanceOf[BlobArray]
     array.setScannableLimitUnsafe(length)
     array

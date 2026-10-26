@@ -50,7 +50,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize);
 
 bool Heap_isGrowingPossible(Heap *heap, uint32_t incrementInBlocks);
 void Heap_Collect(Heap *heap, Stack *stack);
-bool Heap_RecoverAllocation(Heap *heap, uint32_t size, uint64_t generation);
+bool Heap_RecoverAllocation(Heap *heap, size_t size, uint64_t generation);
 void Heap_Recycle(Heap *heap);
 bool Heap_TryGrow(Heap *heap, uint32_t increment);
 void Heap_Grow(Heap *heap, uint32_t increment);

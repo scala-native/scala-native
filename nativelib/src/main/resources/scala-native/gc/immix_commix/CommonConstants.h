@@ -1,11 +1,16 @@
 #ifndef IMMIX_COMMON_CONSTANTS_H
 #define IMMIX_COMMON_CONSTANTS_H
 
+#include <stdint.h>
+
 #define WORD_SIZE (sizeof(word_t))
 
 #define ALLOCATION_ALIGNMENT_WORDS 2
 #define ALLOCATION_ALIGNMENT (ALLOCATION_ALIGNMENT_WORDS * WORD_SIZE)
 #define ALLOCATION_ALIGNMENT_INVERSE_MASK (~((word_t)ALLOCATION_ALIGNMENT - 1))
+// The largest size that rounding to ALLOCATION_ALIGNMENT keeps
+#define MAX_ALLOCATION_SIZE                                                    \
+    ((size_t)(SIZE_MAX & ALLOCATION_ALIGNMENT_INVERSE_MASK))
 
 #define BLOCK_SIZE_BITS 15
 #define LINE_SIZE_BITS 8
