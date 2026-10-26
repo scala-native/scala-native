@@ -23,7 +23,7 @@ addSbtPlugin("com.github.sbt" % "sbt-pgp" % "2.3.2")
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.4.8")
 
 libraryDependencies += "org.eclipse.jgit" % "org.eclipse.jgit.pgm" % "5.13.3.202401111512-r"
-libraryDependencies += "me.bechberger" % "ap-loader-all" % "4.5-13"
+libraryDependencies += "me.bechberger" % "ap-loader-all" % "4.6-14"
 libraryDependencies += "org.freemarker" % "freemarker" % "2.3.35"
 
 // scalacOptions used to bootstrap to sbt prompt.
