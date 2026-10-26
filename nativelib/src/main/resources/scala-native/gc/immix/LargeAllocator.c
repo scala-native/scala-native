@@ -24,6 +24,8 @@ Chunk *LargeAllocator_chunkAddOffset(Chunk *chunk, size_t words) {
 void LargeAllocator_freeListAddBlockLast(FreeList *freeList, Chunk *chunk) {
     if (freeList->first == NULL) {
         freeList->first = chunk;
+    } else {
+        freeList->last->next = chunk;
     }
     freeList->last = chunk;
     chunk->next = NULL;
@@ -50,6 +52,7 @@ void LargeAllocator_freeListInit(FreeList *freeList) {
 void LargeAllocator_Init(LargeAllocator *allocator,
                          BlockAllocator *blockAllocator, Bytemap *bytemap,
                          word_t *blockMetaStart, word_t *heapStart) {
+    allocator->reservedChunk = NULL;
     allocator->heapStart = heapStart;
     allocator->blockMetaStart = blockMetaStart;
     allocator->bytemap = bytemap;
@@ -91,8 +94,8 @@ static inline Chunk *LargeAllocator_getChunkForSize(LargeAllocator *allocator,
     return NULL;
 }
 
-word_t *LargeAllocator_tryAlloc(LargeAllocator *allocator,
-                                size_t requestedBlockSize) {
+static Chunk *LargeAllocator_getChunk(LargeAllocator *allocator,
+                                      size_t requestedBlockSize) {
     size_t actualBlockSize =
         MathUtils_RoundToNextMultiple(requestedBlockSize, MIN_BLOCK_SIZE);
 
@@ -115,9 +118,54 @@ word_t *LargeAllocator_tryAlloc(LargeAllocator *allocator,
         }
     }
 
-    if (chunk == NULL) {
-        return NULL;
+    return chunk;
+}
+
+bool LargeAllocator_ReserveRecycled(LargeAllocator *allocator, size_t size) {
+    size_t actualSize = MathUtils_RoundToNextMultiple(size, MIN_BLOCK_SIZE);
+    if (actualSize >= BLOCK_TOTAL_SIZE)
+        return false;
+    MutatorThreads_foreach(mutatorThreads, node) {
+        Chunk *chunk = LargeAllocator_getChunkForSize(
+            &node->value->largeAllocator, actualSize);
+        if (chunk != NULL) {
+            ObjectMeta_SetPlaceholder(
+                Bytemap_Get(allocator->bytemap, (word_t *)chunk));
+            allocator->reservedChunk = chunk;
+            return true;
+        }
     }
+    return false;
+}
+
+bool LargeAllocator_Reserve(LargeAllocator *allocator, size_t size) {
+    if (allocator->reservedChunk != NULL)
+        return allocator->reservedChunk->size >=
+               MathUtils_RoundToNextMultiple(size, MIN_BLOCK_SIZE);
+    Chunk *chunk = LargeAllocator_getChunk(allocator, size);
+    if (chunk == NULL)
+        return false;
+    // A weak-reference callback can collect again before the caller consumes
+    // this reservation. Keep it recognizable as free storage during sweep.
+    ObjectMeta_SetPlaceholder(Bytemap_Get(allocator->bytemap, (word_t *)chunk));
+    allocator->reservedChunk = chunk;
+    return true;
+}
+
+word_t *LargeAllocator_tryAlloc(LargeAllocator *allocator, size_t size) {
+    size_t actualBlockSize =
+        MathUtils_RoundToNextMultiple(size, MIN_BLOCK_SIZE);
+    Chunk *chunk = allocator->reservedChunk;
+    // A GC callback may allocate before the failed request retries. Reusing
+    // its reservation must still leave a sub-block tail; larger remainders
+    // cannot be stored in the chunk free lists or described by this extent.
+    if (chunk != NULL && chunk->size >= actualBlockSize &&
+        chunk->size - actualBlockSize < BLOCK_TOTAL_SIZE)
+        allocator->reservedChunk = NULL;
+    else
+        chunk = LargeAllocator_getChunk(allocator, size);
+    if (chunk == NULL)
+        return NULL;
 
     size_t chunkSize = chunk->size;
     assert(chunkSize >= MIN_BLOCK_SIZE);
@@ -141,6 +189,7 @@ word_t *LargeAllocator_tryAlloc(LargeAllocator *allocator,
 }
 
 void LargeAllocator_Clear(LargeAllocator *allocator) {
+    allocator->reservedChunk = NULL;
     for (int i = 0; i < FREE_LIST_COUNT; i++) {
         LargeAllocator_freeListInit(&allocator->freeLists[i]);
     }
@@ -214,31 +263,16 @@ word_t *LargeAllocator_Alloc(Heap *heap, uint32_t size) {
     assert(size % ALLOCATION_ALIGNMENT == 0);
     assert(size >= MIN_BLOCK_SIZE);
     LargeAllocator *largeAllocator = &currentMutatorThread->largeAllocator;
-    // Retry until an allocation succeeds or Heap_Grow exits with OOM. A single
-    // tryAlloc after Heap_Grow can race with another mutator stealing the
-    // freshly grown superblock; returning NULL would crash the inlined callers
-    // at the header store.
     do {
+        uint64_t generation = atomic_load_explicit(&heap->collectionGeneration,
+                                                   memory_order_acquire);
         word_t *object = LargeAllocator_tryAlloc(largeAllocator, size);
         if (object != NULL) {
-        done:
-            assert(object != NULL);
-            assert(Heap_IsWordInHeap(heap, (word_t *)object));
+            assert(Heap_IsWordInHeap(heap, object));
             return object;
         }
-
-        Heap_Collect(heap, &stack);
-
-        object = LargeAllocator_tryAlloc(largeAllocator, size);
-        if (object != NULL)
-            goto done;
-
-        size_t increment = MathUtils_DivAndRoundUp(size, BLOCK_TOTAL_SIZE);
-        uint32_t pow2increment = 1U << MathUtils_Log2Ceil(increment);
-        if (!Heap_TryGrow(heap, pow2increment) &&
-            !Heap_TryGrow(heap, (uint32_t)increment)) {
+        if (!Heap_RecoverAllocation(heap, size, generation))
             Heap_ThrowOutOfMemory(heap);
-        }
     } while (true);
     return NULL; // unreachable
 }
