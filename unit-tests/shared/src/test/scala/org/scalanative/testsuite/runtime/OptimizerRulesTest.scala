@@ -3,6 +3,8 @@ package org.scalanative.testsuite.runtime
 import org.junit.Assert._
 import org.junit.Test
 
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+
 /** Results of code that the optimizer folds or rewrites. The methods take their
  *  operands as arguments, so that only the optimizer sees the constants.
  */
@@ -32,5 +34,16 @@ class OptimizerRulesTest {
     assertTrue(gtOrEq(2, 1))
     assertTrue(gtOrEq(1, 1))
     assertFalse(gtOrEq(0, 1))
+  }
+
+  @Test def arrayOfANegativeConstantSize(): Unit = {
+    assertThrows(
+      classOf[NegativeArraySizeException],
+      new Array[Int](-1).length
+    )
+    assertThrows(
+      classOf[NegativeArraySizeException],
+      new Array[AnyRef](-128).length
+    )
   }
 }
