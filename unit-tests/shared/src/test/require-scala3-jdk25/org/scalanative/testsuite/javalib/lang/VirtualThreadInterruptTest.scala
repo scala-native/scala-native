@@ -228,4 +228,36 @@ class VirtualThreadInterruptTest {
       interrupted.get()
     )
   }
+
+  // Interrupts the thread at random points around its first wait
+  @Test def interruptAroundAnUntimedObjectWait(): Unit = {
+    for (i <- 0 until 1000) {
+      val lock = new Object
+      val entered = new AtomicBoolean(false)
+      val outcome = new AtomicReference[String]("none")
+      val waiter = Thread.ofVirtual().start { () =>
+        lock.synchronized {
+          entered.set(true)
+          try while (true) lock.wait()
+          catch {
+            case _: InterruptedException =>
+              outcome.set(
+                if (Thread.holdsLock(lock)) "interrupted"
+                else "interrupted without the monitor"
+              )
+          }
+        }
+      }
+      val deadline = System.currentTimeMillis() + Timeout
+      while (!entered.get() && System.currentTimeMillis() < deadline) ()
+      assertTrue("the waiter did not start", entered.get())
+      val spinEnd =
+        System.nanoTime() + ThreadLocalRandom.current().nextInt(20000)
+      while (System.nanoTime() < spinEnd) ()
+      waiter.interrupt()
+      waiter.join(Timeout)
+      assertFalse(s"iteration $i: the wait did not end", waiter.isAlive())
+      assertEquals(s"iteration $i", "interrupted", outcome.get())
+    }
+  }
 }
