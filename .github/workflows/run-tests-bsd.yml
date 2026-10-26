@@ -41,7 +41,7 @@ jobs:
             export JAVA_HOME=/usr/local/openjdk21
             export LLVM_BIN=/usr/local/llvm18/bin
             export PATH="$JAVA_HOME/bin:$LLVM_BIN:/usr/local/sbt/bin:/usr/local/bin:$PATH"
-            sh scripts/ci/run-bsd-tests.sh
+            sh scripts/ci/bsd/run-bsd-tests.sh
 
   test-netbsd:
     name: Test runtime (NetBSD x86_64, Scala 3)
@@ -82,4 +82,4 @@ jobs:
             export SCALANATIVE_LIB_DIRS=/usr/pkg/lib
             # pkgsrc libraries also need to be visible to the runtime loader.
             export LD_LIBRARY_PATH="/usr/pkg/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-            sh scripts/ci/run-bsd-tests.sh
+            sh scripts/ci/bsd/run-bsd-tests.sh
