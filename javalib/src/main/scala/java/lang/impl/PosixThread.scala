@@ -215,15 +215,18 @@ private[java] class PosixThread(
 
   override def unpark(): Unit = if (isMultithreadingEnabled) {
     if (terminated) return
-    this.synchronized {
-      if (terminated) return
-      pthread_mutex_lock(lock)
-      val s = counter
-      counter = 1
-      val index = conditionIdx
-      if (s < 1 && index != ConditionUnset)
-        pthread_cond_signal(condition(index))
-      pthread_mutex_unlock(lock)
+    withoutCarrierCompensation {
+      this.synchronized {
+        if (!terminated) {
+          pthread_mutex_lock(lock)
+          val s = counter
+          counter = 1
+          val index = conditionIdx
+          if (s < 1 && index != ConditionUnset)
+            pthread_cond_signal(condition(index))
+          pthread_mutex_unlock(lock)
+        }
+      }
     }
   }
 

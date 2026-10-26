@@ -170,9 +170,10 @@ private[java] class WindowsThread(
 
   @inline override def unpark(): Unit = if (isMultithreadingEnabled) {
     if (terminated) return
-    this.synchronized {
-      if (terminated) return
-      SetEvent(parkEvent)
+    withoutCarrierCompensation {
+      this.synchronized {
+        if (!terminated) SetEvent(parkEvent)
+      }
     }
   }
 

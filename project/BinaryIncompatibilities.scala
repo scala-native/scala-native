@@ -58,6 +58,9 @@ object BinaryIncompatibilities {
     exclude[Problem]("scala.scalanative.runtime.StackTraceElement*"),
     exclude[ReversedMissingMethodProblem]("scala.scalanative.runtime.NativeThread.companion"),
     exclude[ReversedMissingMethodProblem]("scala.scalanative.runtime.NativeThread.stackSize"),
+    // Internal carrier state.
+    exclude[ReversedMissingMethodProblem]("scala.scalanative.runtime.NativeThread.carrierCompensationSuppressed()Boolean"),
+    exclude[ReversedMissingMethodProblem]("scala.scalanative.runtime.NativeThread.carrierCompensationSuppressed_=(Boolean)Unit"),
     exclude[ReversedMissingMethodProblem]("scala.scalanative.runtime.NativeThread#Companion.defaultOSStackSize"),
     exclude[Problem]("scala.scalanative.runtime._Class.*"),
     exclude[Problem]("scala.scalanative.runtime.unwind.*"),
