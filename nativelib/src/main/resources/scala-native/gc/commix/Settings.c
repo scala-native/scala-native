@@ -30,26 +30,24 @@ size_t Settings_MaxHeapSize(void) {
     return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE", UNLIMITED_HEAP_SIZE);
 }
 
-double Settings_MaxMarkTimeRatio(void) {
-    char *str = getenv("GC_TIME_RATIO");
-    if (str == NULL) {
-        return DEFAULT_MARK_TIME_RATIO;
-    } else {
-        double ratio;
-        sscanf(str, "%lf", &ratio);
-        return ratio;
+static double Settings_ratio(const char *name, double defaultRatio) {
+    char *str = getenv(name);
+    if (str == NULL)
+        return defaultRatio;
+    double ratio;
+    if (sscanf(str, "%lf", &ratio) != 1) {
+        GC_LOG_WARN("Ignoring %s=%s, which is not a number", name, str);
+        return defaultRatio;
     }
+    return ratio;
+}
+
+double Settings_MaxMarkTimeRatio(void) {
+    return Settings_ratio("GC_TIME_RATIO", DEFAULT_MARK_TIME_RATIO);
 }
 
 double Settings_MinFreeRatio(void) {
-    char *str = getenv("GC_FREE_RATIO");
-    if (str == NULL) {
-        return DEFAULT_FREE_RATIO;
-    } else {
-        double ratio;
-        sscanf(str, "%lf", &ratio);
-        return ratio;
-    }
+    return Settings_ratio("GC_FREE_RATIO", DEFAULT_FREE_RATIO);
 }
 
 #ifdef ENABLE_GC_STATS
