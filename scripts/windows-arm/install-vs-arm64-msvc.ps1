@@ -1,20 +1,13 @@
 <#
 .SYNOPSIS
-  Install MSVC ARM64 link libraries for Scala Native on Windows ARM64.
+  Install and verify MSVC ARM64 libraries.
 
 .DESCRIPTION
-  Adds the VC.Tools.ARM64 component to VS 2022 Build Tools and verifies
-  libcpmt.lib and legacy_stdio_definitions.lib exist under lib\arm64.
-
-  Must run as ARM64-native PowerShell on WoA. If started from x64-emulated
-  PowerShell (common under Parallels), the script relaunches automatically.
+  Adds the ARM64 toolset to an existing Visual Studio installation. Requests
+  elevation and relaunches in native ARM64 PowerShell when needed.
 
 .EXAMPLE
-  # From repo root (elevated; relaunches as ARM64-native and requests admin if needed):
-  powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-vs-arm64-msvc.ps1
-
-  # Verify without admin:
-  powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\check-msvc-arm64.ps1
+  .\scripts\windows-arm\install-vs-arm64-msvc.ps1
 #>
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -60,7 +53,7 @@ function Restart-InPowerShell {
     exit $proc.ExitCode
 }
 
-# Bootstrap: admin + ARM64-native (VS excludes ARM64 packages when installer runs as x64).
+# Use an elevated native shell to modify the ARM64 toolset.
 if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -eq
     [System.Runtime.InteropServices.Architecture]::Arm64) {
     $arm64Ps = Get-Arm64PowerShell
@@ -183,14 +176,14 @@ function Install-Arm64Msvc {
     }
 
     if (-not (Test-Path -LiteralPath $VsSetupExe)) {
-        throw "Visual Studio Installer not found at $VsSetupExe. Run scripts\setup-windows.ps1 first."
+        throw "Visual Studio Installer not found at $VsSetupExe. Run scripts\windows-arm\setup-windows.ps1 first."
     }
 
     Wait-VisualStudioInstallerIdle
 
     $installPath = Get-VisualStudioInstallPath
     if (-not $installPath) {
-        throw 'No Visual Studio 2022 installation found (Build Tools or Enterprise). Run scripts\setup-windows.ps1 first.'
+        throw 'No Visual Studio 2022 installation found (Build Tools or Enterprise). Run scripts\windows-arm\setup-windows.ps1 first.'
     }
     $vsAction = 'modify'
     Write-Log "Running setup.exe $vsAction (MSVC ARM64 + x64/x86 + Windows SDK)"

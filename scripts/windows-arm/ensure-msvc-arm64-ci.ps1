@@ -1,19 +1,18 @@
 <#
 .SYNOPSIS
-  Ensure MSVC ARM64 link libraries for GitHub Actions windows-11-arm runners.
+  Install missing MSVC ARM64 libraries on CI runners.
 
 .DESCRIPTION
-  Runs check-msvc-arm64.ps1; on failure invokes Visual Studio Installer to add
-  VC.Tools.ARM64, then re-checks. Intended for CI (elevated, ARM64-native host).
+  Checks the toolset, adds missing components, and verifies the result.
+  Requires an elevated native ARM64 shell.
 
 .EXAMPLE
-  powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\ensure-msvc-arm64-ci.ps1
+  .\scripts\windows-arm\ensure-msvc-arm64-ci.ps1
 #>
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$repoRoot = Split-Path -Parent $PSScriptRoot
-$check = Join-Path $repoRoot 'scripts\check-msvc-arm64.ps1'
+$check = Join-Path $PSScriptRoot 'check-msvc-arm64.ps1'
 
 & $check
 if ($LASTEXITCODE -eq 0) { exit 0 }

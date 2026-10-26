@@ -1,5 +1,5 @@
 name: "Windows on ARM test env setup"
-description: "Setup Windows ARM64 runners without Coursier (no native ARM64 Coursier build)"
+description: "Set up the native Windows ARM64 toolchain and dependencies"
 inputs:
   scala-version:
     description: "Scala version used in the tests"
@@ -17,7 +17,7 @@ outputs:
 runs:
   using: "composite"
   steps:
-    # Coursier has no native Windows ARM64 launcher; windows-11-arm ships sbt, LLVM, and Chocolatey (not winget).
+    # Use the runner's sbt installation with an ARM64 JDK.
     - name: Setup Java
       uses: actions/setup-java@v4
       with:
@@ -40,12 +40,11 @@ runs:
         }
         sbt --version
 
-    # al-cheb/configure-pagefile-action fails on windows-11-arm ("operation completed
-    # successfully" Win32Exception). Use native PowerShell instead (see scripts/configure-pagefile.ps1).
+    # The shared pagefile action fails on ARM64; configure sizes through CIM.
     - name: Configure Pagefile
       shell: pwsh
       run: |
-        & "${{ github.workspace }}/scripts/configure-pagefile.ps1" -MinimumSizeGB 4 -MaximumSizeGB 12 -DiskRoot "C:"
+        & "${{ github.workspace }}/scripts/windows-arm/configure-pagefile.ps1" -MinimumSizeGB 4 -MaximumSizeGB 12 -DiskRoot "C:"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
     - name: Resolve env variables
@@ -55,8 +54,6 @@ runs:
         VCPKG_DEFAULT_HOST_TRIPLET: arm64-windows
       run: |
         "LLVMRoot=$(Join-Path $env:RUNNER_TEMP 'llvm-arm64')" >> $env:GITHUB_OUTPUT
-        "LocalAppData=${env:LocalAppData}" >> $env:GITHUB_OUTPUT
-        "UserProfile=${env:UserProfile}" >> $env:GITHUB_OUTPUT
         $vcpkgRoot = $env:VCPKG_INSTALLATION_ROOT
         if ([string]::IsNullOrWhiteSpace($vcpkgRoot)) {
           $vcpkgRoot = 'C:\vcpkg'
@@ -116,7 +113,7 @@ runs:
     - name: Ensure MSVC ARM64 link libraries
       shell: pwsh
       run: |
-        & "${{ github.workspace }}/scripts/ensure-msvc-arm64-ci.ps1"
+        & "${{ github.workspace }}/scripts/windows-arm/ensure-msvc-arm64-ci.ps1"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
     - name: Install vcpkg libs (arm64-windows-static)

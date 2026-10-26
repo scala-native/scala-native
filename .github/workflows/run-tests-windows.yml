@@ -12,18 +12,27 @@ concurrency:
 
 jobs:
   test-runtime:
-    name: Test runtime
+    name: Test runtime${{ matrix.os == 'windows-11-arm' && ' (Windows ARM64)' || '' }} (${{ matrix.scala }}, ${{ matrix.build-mode }})
     if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
-    runs-on: windows-2022
+    runs-on: ${{ matrix.os }}
     env:
       ENABLE_EXPERIMENTAL_COMPILER: true
+      VCPKG_DEFAULT_HOST_TRIPLET: ${{ matrix.os == 'windows-11-arm' && 'arm64-windows' || 'x64-windows' }}
     strategy:
       fail-fast: false
       matrix:
+        os: [windows-2022]
         scala: [2.12, 2.13, 3]
         build-mode: [debug]
         include:
-          - scala: 3
+          - os: windows-2022
+            scala: 3
+            build-mode: release-fast
+          - os: windows-11-arm
+            scala: 3
+            build-mode: debug
+          - os: windows-11-arm
+            scala: 3
             build-mode: release-fast
     steps:
       # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
@@ -31,17 +40,24 @@ jobs:
         run: git config --global core.autocrlf false
       - uses: actions/checkout@v7
       - uses: ./.github/actions/windows-setup-env
+        if: matrix.os == 'windows-2022'
         id: setup
         with:
           scala-version: ${{matrix.scala}}
-      
+      - uses: ./.github/actions/windows-arm-setup-env
+        if: matrix.os == 'windows-11-arm'
+        id: setup-arm
+        with:
+          scala-version: ${{ matrix.scala }}
+
       - name: Test GC
         timeout-minutes: 30
         env:
-          SCALANATIVE_INCLUDE_DIRS: ${{steps.setup.outputs.vcpkg-dir}}\include
-          SCALANATIVE_LIB_DIRS: ${{steps.setup.outputs.vcpkg-dir}}\lib
+          SCALANATIVE_INCLUDE_DIRS: ${{ steps.setup.outputs.vcpkg-dir || steps.setup-arm.outputs.vcpkg-dir }}\include
+          SCALANATIVE_LIB_DIRS: ${{ steps.setup.outputs.vcpkg-dir || steps.setup-arm.outputs.vcpkg-dir }}\lib
           SCALANATIVE_MODE: ${{ matrix.build-mode }}
         run: sbt "test-gc ${{ matrix.scala }}"
+        shell: cmd
 
       # sbt 2 leaves a background server that can keep nscplugin.jar locked on Windows;
       - name: Shutdown sbt server
@@ -50,33 +66,13 @@ jobs:
         run: sbt shutdown
         shell: cmd
 
-      # None GC takes too much memory on Windows to execute partest JUnit tests
-      # leading to spurious failures in the CI. Perform subset of tests instead
-      # Execution with enabled multithreading increases memory usage, run only minimal tests
-      - name: Test runtime None GC
-        if: matrix.gc == 'none'
-        timeout-minutes: 45
-        run: >
-          set SCALANATIVE_GC=${{matrix.gc}}&
-          set SCALANATIVE_MODE=${{ matrix.build-mode }}&
-          set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
-          set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
-          set SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1&
-          set SCALANATIVE &
-          sbt 
-          sandbox${{env.project-version}}/run
-          testsExt${{env.project-version}}/test
-          "scalaPartestTests${{env.project-version}}/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
-        shell: cmd
-
       - name: Test runtime
-        if: matrix.gc != 'none'
         timeout-minutes: 45
         run: >
-          set SCALANATIVE_GC=${{matrix.gc}}&
+          set SCALANATIVE_GC=&
           set SCALANATIVE_MODE=${{ matrix.build-mode }}&
-          set SCALANATIVE_INCLUDE_DIRS=${{steps.setup.outputs.vcpkg-dir}}\include&
-          set SCALANATIVE_LIB_DIRS=${{steps.setup.outputs.vcpkg-dir}}\lib&
+          set SCALANATIVE_INCLUDE_DIRS=${{ steps.setup.outputs.vcpkg-dir || steps.setup-arm.outputs.vcpkg-dir }}\include&
+          set SCALANATIVE_LIB_DIRS=${{ steps.setup.outputs.vcpkg-dir || steps.setup-arm.outputs.vcpkg-dir }}\lib&
           set SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1&
           set SCALANATIVE &
           sbt

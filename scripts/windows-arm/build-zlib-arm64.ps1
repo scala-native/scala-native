@@ -1,19 +1,13 @@
 <#
 .SYNOPSIS
-  Build static ARM64 zlib for Scala Native on Windows on ARM64.
+  Build static ARM64 zlib with LLVM into the vcpkg installation layout.
 
 .DESCRIPTION
-  vcpkg may fail to install arm64-windows-static when VS Build Tools lacks a
-  native ARM64 compiler toolchain. This script builds zlib with clang/LLVM
-  (same toolchain as Scala Native) into the vcpkg layout:
-
-    C:\vcpkg\installed\arm64-windows-static\include\zlib.h
-    C:\vcpkg\installed\arm64-windows-static\lib\zlib.lib
+  Provides a fallback when the vcpkg zlib build fails. Writes zlib headers
+  and zlib.lib under installed/arm64-windows-static.
 
 .EXAMPLE
-  powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\build-zlib-arm64.ps1
-  Set-ExecutionPolicy -Scope Process Bypass
-  . .\scripts\env-windows.ps1
+  .\scripts\windows-arm\build-zlib-arm64.ps1
 #>
 [CmdletBinding()]
 param(
@@ -77,4 +71,4 @@ if (Test-Path -LiteralPath $zconf) {
 Write-Host "Done."
 Write-Host "  $includeDir\zlib.h"
 Write-Host "  $zlibLib"
-Write-Host "Load env and rebuild: . .\scripts\env-windows.ps1 ; sbt tests3/test"
+Write-Host "Load env and rebuild: . .\scripts\windows-arm\env-windows.ps1 ; sbt tests3/test"

@@ -1,12 +1,10 @@
 <#
 .SYNOPSIS
-  Configure the Windows pagefile for GitHub Actions runners (including windows-11-arm).
+  Configure the Windows pagefile for GitHub Actions runners.
 
 .DESCRIPTION
-  al-cheb/configure-pagefile-action calls NtCreatePagingFile, which can throw a spurious
-  Win32Exception("The operation completed successfully") on windows-11-arm. This script
-  configures the pagefile via WMI/CIM (with explicit uint32 sizes) and falls back to the
-  PagingFiles registry value when CIM creation fails.
+  Configures sizes through CIM and falls back to the PagingFiles registry
+  value when CIM cannot create the setting.
 
 .PARAMETER MinimumSizeGB
   Initial pagefile size in gigabytes.
@@ -18,7 +16,7 @@
   Drive letter for pagefile.sys (e.g. C:).
 
 .EXAMPLE
-  powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\configure-pagefile.ps1 -MinimumSizeGB 4 -MaximumSizeGB 12 -DiskRoot C:
+  powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\windows-arm\configure-pagefile.ps1 -MinimumSizeGB 4 -MaximumSizeGB 12 -DiskRoot C:
 #>
 [CmdletBinding()]
 param(

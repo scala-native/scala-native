@@ -32,7 +32,7 @@ object SymbolFormatter {
         return false
       }
       if (at(pos) == '_')
-        read() // __S... linkage names on Windows/MSVC
+        read() // Additional underscore in decorated linkage names
       if (read() != 'S') {
         pos = start
         return false
@@ -41,10 +41,8 @@ object SymbolFormatter {
     }
 
     def readSymbol(): Boolean = {
-      // Scala Native mangled symbols have format: _SM<len>className... (Unix/POSIX).
-      // MSVC decorates C symbols with a leading underscore, so Windows often has
-      // __SM<len>className... from DWARF linkage names. Legacy names may use SM without '_'.
-      // CodeView/PDB can also expose fqcn.method or fqcn.method:(file:line).
+      // Accept ordinary, decorated, and legacy Scala Native symbols.
+      // Windows debug names may also use class.method:(file:line).
       def mayHaveLinkageSymbol =
         isWindows && sourceLevelDebuging.generateFunctionSourcePositions
       val hasFqcnLinkageName = isWindows && strchr(sym, '.') != null

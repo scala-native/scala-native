@@ -1,23 +1,16 @@
 <#
 .SYNOPSIS
-  Set Scala Native Windows environment variables for the current shell.
+  Load Scala Native Windows environment variables and tool paths.
 
 .DESCRIPTION
-  Configures PATH and variables used by Scala Native on Windows (x64 and ARM64).
-  Does not install tools; run scripts/setup-windows.ps1 first if needed.
-
-  Session (dot-source so variables apply in the current shell):
-    Set-ExecutionPolicy -Scope Process Bypass
-    . .\scripts\env-windows.ps1
-
-  Persist for your user account (registry only; open a new terminal for PATH):
-    powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\env-windows.ps1 -Persist User
+  Dot-source for the current session. Use -Persist User or -Persist Machine
+  to save variables for new terminals; Machine requires elevation.
 
 .EXAMPLE
-  cd C:\scala-native
-  Set-ExecutionPolicy -Scope Process Bypass
-  . .\scripts\env-windows.ps1
-  sbt sandbox3/run
+  . .\scripts\windows-arm\env-windows.ps1
+
+.EXAMPLE
+  .\scripts\windows-arm\env-windows.ps1 -Persist User
 #>
 [CmdletBinding()]
 param(
@@ -140,7 +133,6 @@ $javaHome = Find-JavaHome
 $sbtBinResolved = Find-SbtBin -Default $SbtBin
 $script:PathEntries = @()
 
-# Order: Java and build tools first, then LLVM, Git, vcpkg CLI
 Add-PathEntry (Join-Path $javaHome 'bin')
 Add-PathEntry $LlvmBin
 Add-PathEntry $sbtBinResolved
@@ -158,7 +150,7 @@ if ($Persist -ne 'None') {
     }
 }
 
-# Apply PATH in this process (prepend toolchain dirs ahead of Machine + User PATH).
+# Prefer the selected toolchain in this session.
 Update-SessionPathFromRegistry -Prepend $script:PathEntries
 
 $envVars = @{
@@ -213,7 +205,7 @@ if (Test-WindowsArm64) {
         } else { '' }
         Write-Warning @"
 MSVC ARM64 link libraries are not installed (required for aarch64-pc-windows-msvc).
-From repo root (elevated): powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-vs-arm64-msvc.ps1$emu
+From repo root (elevated): powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\windows-arm\install-vs-arm64-msvc.ps1$emu
 "@
     }
 }
@@ -223,7 +215,7 @@ $zlibLib = Join-Path $vcpkgLib 'zlib.lib'
 if (-not (Test-Path -LiteralPath $zlibHeader)) {
     Write-Warning @"
 Missing $zlibHeader (required on Windows for java.util.zip / z.c).
-On ARM64, if vcpkg install fails, run: scripts\build-zlib-arm64.ps1
+On ARM64, if vcpkg install fails, run: scripts\windows-arm\build-zlib-arm64.ps1
 Otherwise: vcpkg install zlib --triplet=$VcpkgTriplet
 "@
 } elseif (-not (Test-Path -LiteralPath $zlibLib)) {
@@ -231,7 +223,7 @@ Otherwise: vcpkg install zlib --triplet=$VcpkgTriplet
 Missing $zlibLib (required on Windows for java.util.zip).
 Install native libraries for this machine:
   vcpkg install bdwgc zlib --triplet=$VcpkgTriplet
-Or on ARM64 when vcpkg fails: scripts\build-zlib-arm64.ps1
+Or on ARM64 when vcpkg fails: scripts\windows-arm\build-zlib-arm64.ps1
 "@
 }
 

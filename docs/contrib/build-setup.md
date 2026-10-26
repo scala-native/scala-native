@@ -8,76 +8,56 @@
 
 ## Windows
 
-When building the **scala-native** repository itself on Windows (not only
-consuming the compiler as a library), configure Git and symlinks as follows.
-
-### Git line endings
-
-Disable automatic CRLF conversion so `scalalib` patches apply (required on
-all Windows platforms, including CI):
+Configure Git before cloning so Scala library patches keep their line endings
+and symbolic links:
 
 ```powershell
 git config --global core.autocrlf false
+git config --global core.symlinks true
 ```
 
-### Symlinked patch files
-
-Several `scalalib` patch files are symlinks in git. Enable
-[Developer Mode](https://learn.microsoft.com/windows/apps/get-started/enable-your-device-for-development)
-(or clone in an elevated shell with `git config --global core.symlinks true`)
-so `git checkout` creates real symlinks instead of small text stubs.
-
-If patches still fail to apply after checkout, run `git reset --hard HEAD`
-once `core.autocrlf` is `false`.
+Enable [Developer Mode](https://learn.microsoft.com/windows/apps/get-started/enable-your-device-for-development)
+or clone from an elevated shell to allow Git to create symbolic links.
 
 ### Windows on ARM64
 
-End-user toolchain notes (JDK, LLVM, sbt, vcpkg) are in
-[Environment setup — Windows on ARM64](../user/setup.md#windows-on-arm64-woa).
+Install the tools listed in
+[Environment setup — Windows on ARM64](../user/setup.md#windows-on-arm64-woa),
+or use the repository helpers in `scripts/windows-arm/`.
 
-For a full local install on WoA, run `scripts/setup-windows.ps1` from an
-elevated **ARM64-native** PowerShell (mirrors
-[`.github/workflows/run-tests-windows-arm.yml`](https://github.com/scala-native/scala-native/blob/main/.github/workflows/run-tests-windows-arm.yml),
-which runs on pull requests and must pass on `windows-11-arm` runners, without
-Coursier).
-
-If linking fails with missing `libcpmt.lib` / `legacy_stdio_definitions.lib`:
-
-1. Run `scripts\check-msvc-arm64.ps1` (no admin; use `-Diagnostic` if NOT READY).
-2. If not READY, run `scripts\install-vs-arm64-msvc.ps1` (elevated; relaunches
-   as ARM64-native PowerShell and uses `setup.exe`, not x64-emulated install).
-   CI uses `scripts\ensure-msvc-arm64-ci.ps1` (same `setup.exe` modify path).
-3. MSVC ARM64 libs may live under `C:\Program\VC\Tools\MSVC\...\lib\arm64\`
-   after an ARM64-native install, not only under Build Tools in
-   `Program Files (x86)`.
-
-If `vcpkg install … arm64-windows-static` fails to build zlib, run
-`scripts\build-zlib-arm64.ps1` (see script `.EXAMPLE`), then reload the
-environment with `env-windows.ps1` as below.
-
-### Environment variables and PATH
-
-After tools are installed, load variables for the **current shell** (no admin
-required). If dot-sourcing fails with *running scripts is disabled*, allow
-scripts for this session only:
+From the repository root, run the setup script in an elevated, native ARM64
+PowerShell session:
 
 ```powershell
-cd <scala-native>
 Set-ExecutionPolicy -Scope Process Bypass
-. .\scripts\env-windows.ps1
+.\scripts\windows-arm\setup-windows.ps1
 ```
 
-To persist for your user account:
+Open a new terminal and load the environment for the current session:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\env-windows.ps1 -Persist User
+Set-ExecutionPolicy -Scope Process Bypass
+. .\scripts\windows-arm\env-windows.ps1
 ```
 
-Then open a **new** terminal so PATH is picked up.
+To save these environment variables for future sessions, run:
 
-This sets `JAVA_HOME`, `LLVM_BIN`, `SCALANATIVE_INCLUDE_DIRS`,
-`SCALANATIVE_LIB_DIRS`, `VCPKG_*`, and prepends PATH with JDK `bin`, LLVM,
-sbt, Git, and vcpkg.
+```powershell
+.\scripts\windows-arm\env-windows.ps1 -Persist User
+```
+
+Then open a new terminal.
+
+The helpers also provide targeted repairs:
+
+- `check-msvc-arm64.ps1` checks MSVC ARM64 libraries; add `-Diagnostic` for search paths.
+- `install-vs-arm64-msvc.ps1` installs missing MSVC ARM64 components and requires elevation.
+- `build-zlib-arm64.ps1` builds zlib into the vcpkg ARM64 layout if its package build fails.
+
+These scripts are in `scripts/windows-arm/`. After a repair, reload `env-windows.ps1`.
+The [Windows test workflow](https://github.com/scala-native/scala-native/blob/main/.github/workflows/run-tests-windows.yml)
+runs ARM64 GC and runtime tests in debug and release-fast modes using the
+[dedicated setup action](https://github.com/scala-native/scala-native/blob/main/.github/actions/windows-arm-setup-env/action.yml).
 
 ## Use nix / devenv.sh
 

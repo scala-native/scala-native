@@ -1,17 +1,12 @@
 <#
 .SYNOPSIS
-  Verify MSVC ARM64 link libraries are installed (no admin required).
-
-.DESCRIPTION
-  Checks for libcpmt.lib and legacy_stdio_definitions.lib under Visual Studio 2022
-  installs (Build Tools, Enterprise, etc.) and C:\Program\VC layouts.
-  Matches scala.scalanative.build.Discover (all MSVC versions, not only the latest).
+  Check MSVC ARM64 link libraries without administrator privileges.
 
 .PARAMETER Diagnostic
-  On failure, print search roots and any partial matches.
+  Print search roots and partial matches when libraries are missing.
 
 .EXAMPLE
-  powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\check-msvc-arm64.ps1
+  .\scripts\windows-arm\check-msvc-arm64.ps1 -Diagnostic
 #>
 [CmdletBinding()]
 param([switch]$Diagnostic)
@@ -122,5 +117,5 @@ if ($Diagnostic) {
     }
 }
 
-Write-Host 'NOT READY - run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-vs-arm64-msvc.ps1'
+Write-Host 'NOT READY - run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\windows-arm\install-vs-arm64-msvc.ps1'
 exit 1

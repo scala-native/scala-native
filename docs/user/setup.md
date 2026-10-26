@@ -172,7 +172,7 @@ nativeConfig ~= { config =>
 
 *Note 3:* Bionic does not support POSIX thread cancellation or monetary formatting.
 
-**Windows (x64)**
+### Windows (x64)
 
 Corporate environments and Windows policies can affect the method used
 to set up your environment. The following procedure involves downloading
@@ -226,38 +226,33 @@ Using the install path above, you would add the following:
 C:\Users\<login>\AppData\Local\LLVM\bin
 ```
 
-**Windows on ARM64 (WoA)**
+### Windows on ARM64 (WoA)
 
-Windows on ARM64 machines (including Copilot+ PCs and GitHub's
-`windows-11-arm` hosted runners) can build and test Scala Native, with a
-few platform-specific constraints:
+Use native ARM64 versions of the JDK, LLVM and native dependencies:
 
-* **JDK:** Use [Microsoft Build of OpenJDK](https://learn.microsoft.com/java/openjdk/)
-  (for example via `winget install Microsoft.OpenJDK.25`). Many other
-  distributions on winget ship **x64-only** installers and will not install
-  on ARM64.
-* **LLVM/Clang:** Install the **ARM64** LLVM package (winget `LLVM.LLVM`
-  installs `LLVM-*-woa64.exe`). Do **not** use the Visual Studio *C++
-  Clang tools for Windows* workload; use a standalone LLVM build as on
-  x64 Windows.
-* **sbt:** Install via `winget install sbt.sbt` or the [official
-  installer](https://www.scala-sbt.org/download.html). **Coursier** does not
-  provide a native Windows ARM64 launcher, so `cs install sbt` is not
-  supported on this platform.
-* **MSVC + Windows SDK:** Install Visual Studio 2022 Build Tools with the
-  *Desktop development with C++* workload, including **MSVC v143 for x64/x86**
-  and **ARM64** build tools, plus a recent **Windows SDK**.
+1. Install an ARM64 JDK, such as
+   [Microsoft Build of OpenJDK](https://learn.microsoft.com/java/openjdk/).
+2. Install the Windows ARM64 LLVM package (`LLVM-<version>-woa64.exe`) from the
+   [LLVM releases](https://github.com/llvm/llvm-project/releases).
+   Add its `bin` directory to `PATH`, or set `LLVM_BIN` to that directory.
+   Verify that `clang -dumpmachine` reports `aarch64-pc-windows-msvc`.
+3. Install [sbt using its Windows installer](https://www.scala-sbt.org/download.html).
+4. Install Visual Studio 2022 Build Tools with the *Desktop development with C++*
+   workload, **MSVC v143 C++ ARM64 build tools**, and a Windows 11 SDK.
+   Run the installer from a native ARM64 PowerShell session.
+5. Build native dependencies with the `arm64-windows-static` vcpkg triplet:
 
-  **Install MSVC ARM64 from an ARM64-native shell** (required). If the Visual
-  Studio Installer runs as an x64 process (`PROCESSOR_ARCHITECTURE=AMD64`), it
-  skips ARM64 packages. This is common in x64-emulated terminals (for example
-  some Parallels setups). On WoA, use ARM64-native PowerShell at
-  `%WINDIR%\System32\WindowsPowerShell\v1.0\powershell.exe`.
+   ```powershell
+   $env:VCPKG_DEFAULT_HOST_TRIPLET = "arm64-windows"
+   vcpkg install bdwgc zlib --triplet=arm64-windows-static
+   ```
 
-  Open **Visual Studio Installer** from that shell, modify Visual Studio 2022
-  Build Tools, and under *Individual components* enable:
+Set `SCALANATIVE_INCLUDE_DIRS` and `SCALANATIVE_LIB_DIRS` to the `include` and
+`lib` directories under `<vcpkg>/installed/arm64-windows-static`.
+If vcpkg produces `zs.lib`, copy it to `zlib.lib` in the same directory so
+Scala Native can find zlib.
 
-  - MSVC v143 - VS 2022 C++ **ARM64** build tools
-  - Windows 11 SDK (10.0.22621 or newer)
+For repository builds and setup helpers, see
+[Windows on ARM64 contributor setup](../contrib/build-setup.md#windows-on-arm64).
 
 Continue to [sbt](./sbt.md).
