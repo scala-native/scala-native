@@ -123,15 +123,15 @@ object Logger {
         val lower = line.toLowerCase(Locale.ROOT)
         val summary = line.endsWith(" generated.")
         def hasSeverity(level: String): Boolean =
-          lower.startsWith(s"$level:")
-            || lower.contains(s": $level:")
-        if (hasSeverity("error") || hasSeverity("fatal error")
-            || lower.contains("undefined reference")
-            || lower.contains("undefined symbol")
-            || (summary && line.contains(" error")))
+          lower.startsWith(s"$level:") ||
+            lower.contains(s": $level:")
+        if (hasSeverity("error") || hasSeverity("fatal error") ||
+            lower.contains("undefined reference") ||
+            lower.contains("undefined symbol") ||
+            (summary && line.contains(" error")))
           diagnostic = logger.error
-        else if (hasSeverity("warning")
-            || (summary && line.contains(" warning")))
+        else if (hasSeverity("warning") ||
+            (summary && line.contains(" warning")))
           diagnostic = logger.warn
         if (line.startsWith("In file included from ")
             || line.trim.startsWith("from "))
