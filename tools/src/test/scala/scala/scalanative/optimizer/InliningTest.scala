@@ -167,4 +167,27 @@ class InliningTest extends OptimizerSpec {
         }
     }
   }
+
+  @Test def alwaysInlineCalleeWithHandlersDoesNotAbandonItsCaller(): Unit = {
+    optimize(
+      entry = "Test",
+      setupConfig = _.withMode(scalanative.build.Mode.releaseFast),
+      sources = Map(
+        "Test.scala" ->
+          """|import scala.scalanative.annotation.alwaysinline
+             |object Test {
+             |  @alwaysinline def safeDiv(x: Int, y: Int): Int =
+             |    try x / y
+             |    catch { case _: ArithmeticException => 0 }
+             |  @noinline def caller(x: Int): Int = safeDiv(x, 2) + 1
+             |  def main(args: Array[String]): Unit = println(caller(args.length))
+             |}
+             |""".stripMargin
+      )
+    ) {
+      case (_, result) =>
+        val caller = optimizedMethod(result.defns, "Test$", "caller")
+        assertEquals(caller.show, Attr.DidOpt, caller.attrs.opt)
+    }
+  }
 }
