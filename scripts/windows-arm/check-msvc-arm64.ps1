@@ -117,5 +117,5 @@ if ($Diagnostic) {
     }
 }
 
-Write-Host 'NOT READY - run: powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\windows-arm\install-vs-arm64-msvc.ps1'
+Write-Host 'NOT READY - install the MSVC ARM64 build tools through Visual Studio Installer.'
 exit 1

@@ -21,40 +21,9 @@ or clone from an elevated shell to allow Git to create symbolic links.
 
 ### Windows on ARM64
 
-Install the tools listed in
-[Environment setup — Windows on ARM64](../user/setup.md#windows-on-arm64-woa),
-or use the repository helpers in `scripts/windows-arm/`.
+Install the native toolchain and dependencies described in
+[Environment setup — Windows on ARM64](../user/setup.md#windows-on-arm64-woa).
 
-From the repository root, run the setup script in an elevated, native ARM64
-PowerShell session:
-
-```powershell
-Set-ExecutionPolicy -Scope Process Bypass
-.\scripts\windows-arm\setup-windows.ps1
-```
-
-Open a new terminal and load the environment for the current session:
-
-```powershell
-Set-ExecutionPolicy -Scope Process Bypass
-. .\scripts\windows-arm\env-windows.ps1
-```
-
-To save these environment variables for future sessions, run:
-
-```powershell
-.\scripts\windows-arm\env-windows.ps1 -Persist User
-```
-
-Then open a new terminal.
-
-The helpers also provide targeted repairs:
-
-- `check-msvc-arm64.ps1` checks MSVC ARM64 libraries; add `-Diagnostic` for search paths.
-- `install-vs-arm64-msvc.ps1` installs missing MSVC ARM64 components and requires elevation.
-- `build-zlib-arm64.ps1` builds zlib into the vcpkg ARM64 layout if its package build fails.
-
-These scripts are in `scripts/windows-arm/`. After a repair, reload `env-windows.ps1`.
 The [Windows test workflow](https://github.com/scala-native/scala-native/blob/main/.github/workflows/run-tests-windows.yml)
 runs ARM64 GC and runtime tests in debug and release-fast modes using the
 [dedicated setup action](https://github.com/scala-native/scala-native/blob/main/.github/actions/windows-arm-setup-env/action.yml).
