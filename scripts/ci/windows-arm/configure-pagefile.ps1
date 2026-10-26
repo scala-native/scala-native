@@ -16,7 +16,7 @@
   Drive letter for pagefile.sys (e.g. C:).
 
 .EXAMPLE
-  powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\windows-arm\configure-pagefile.ps1 -MinimumSizeGB 4 -MaximumSizeGB 12 -DiskRoot C:
+  powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\ci\windows-arm\configure-pagefile.ps1 -MinimumSizeGB 4 -MaximumSizeGB 12 -DiskRoot C:
 #>
 [CmdletBinding()]
 param(

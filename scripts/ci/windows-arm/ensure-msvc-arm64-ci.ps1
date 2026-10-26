@@ -7,7 +7,7 @@
   Requires an elevated native ARM64 shell.
 
 .EXAMPLE
-  .\scripts\windows-arm\ensure-msvc-arm64-ci.ps1
+  .\scripts\ci\windows-arm\ensure-msvc-arm64-ci.ps1
 #>
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'

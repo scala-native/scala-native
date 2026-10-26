@@ -44,7 +44,7 @@ runs:
     - name: Configure Pagefile
       shell: pwsh
       run: |
-        & "${{ github.workspace }}/scripts/windows-arm/configure-pagefile.ps1" -MinimumSizeGB 4 -MaximumSizeGB 12 -DiskRoot "C:"
+        & "${{ github.workspace }}/scripts/ci/windows-arm/configure-pagefile.ps1" -MinimumSizeGB 4 -MaximumSizeGB 12 -DiskRoot "C:"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
     - name: Resolve env variables
@@ -113,7 +113,7 @@ runs:
     - name: Ensure MSVC ARM64 link libraries
       shell: pwsh
       run: |
-        & "${{ github.workspace }}/scripts/windows-arm/ensure-msvc-arm64-ci.ps1"
+        & "${{ github.workspace }}/scripts/ci/windows-arm/ensure-msvc-arm64-ci.ps1"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
     - name: Install vcpkg libs (arm64-windows-static)

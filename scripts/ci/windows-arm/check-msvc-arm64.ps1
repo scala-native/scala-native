@@ -6,7 +6,7 @@
   Print search roots and partial matches when libraries are missing.
 
 .EXAMPLE
-  .\scripts\windows-arm\check-msvc-arm64.ps1 -Diagnostic
+  .\scripts\ci\windows-arm\check-msvc-arm64.ps1 -Diagnostic
 #>
 [CmdletBinding()]
 param([switch]$Diagnostic)
