@@ -83,7 +83,7 @@ private[linker] class Reach(
         entries = (entries ++ exports.toSeq).distinct,
         links = links.toSeq,
         linkCppRuntime = linkCppRuntime,
-        preprocessorDefinitions = preprocessorDefinitions.toSeq,
+        preprocessorDefinitions = preprocessorDefinitions.toSeq.sortBy(_.name),
         defns = defns.toSeq,
         dynsigs = dynsigs.toSeq,
         dynimpls = dynimpls.toSeq,

@@ -990,7 +990,9 @@ private[scalanative] object Lower {
         op: nir.Op.Call
     )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = kind match {
       case IntrinsicCall.LoadAllClassess =>
-        val allClasses = nir.Val.ArrayValue(nir.Rt.Class, meta.rtti.values.map(_.const).toSeq)
+        // rtti is keyed by identity; sort by name for a deterministic order
+        val rtti = meta.rtti.toSeq.sortBy(entry => entry._1.name: nir.Global)
+        val allClasses = nir.Val.ArrayValue(nir.Rt.Class, rtti.map(_._2.const))
         genArrayallocOp(buf, n, nir.Op.Arrayalloc(nir.Rt.Class, init = allClasses, None))
 
       case IntrinsicCall.MultiplyHigh | IntrinsicCall.UnsignedMultiplyHigh =>

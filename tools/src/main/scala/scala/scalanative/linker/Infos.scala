@@ -112,7 +112,7 @@ final class Class(
 )(implicit val position: nir.SourcePosition)
     extends ScopeInfo {
   val implementors = mutable.SortedSet[Class](this)
-  val subclasses = mutable.Set.empty[Class]
+  val subclasses = mutable.SortedSet.empty[Class]
   val defaultResponds = mutable.Map.empty[nir.Sig, nir.Global.Member]
   var allocations = 0
   def allocated = allocations > 0
