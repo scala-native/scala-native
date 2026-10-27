@@ -238,9 +238,9 @@ private[interflow] trait Eval { self: Interflow =>
             eval(comp, ty, l, r)
           case (_, l, r) =>
             if (l.isCanonical && op.isCommutative) {
-              combine(comp, ty, l, r)
-            } else {
               combine(comp, ty, r, l)
+            } else {
+              combine(comp, ty, l, r)
             }
         }
       case nir.Op.Conv(conv, ty, value) =>
@@ -442,7 +442,8 @@ private[interflow] trait Eval { self: Interflow =>
         }
       case nir.Op.Arrayalloc(ty, init, zone) =>
         eval(init) match {
-          case nir.Val.Int(count) if count <= 128 =>
+          // An array of a negative size is not allocated, but throws
+          case nir.Val.Int(count) if count >= 0 && count <= 128 =>
             nir.Val.Virtual(
               state.allocArray(
                 ty,
