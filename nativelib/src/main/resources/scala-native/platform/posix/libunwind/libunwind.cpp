@@ -572,4 +572,21 @@ bool logDWARF() {
 
 #endif // NDEBUG
 
+// Test hooks. They enter the two paths that used to run CNTD and
+// autib171615, so dropping a feature check fails the test suite.
+#if defined(__aarch64__)
+#include "Registers.hpp"
+extern "C" uint64_t
+scalanative_arm64_unwind_pauth_lr_probe(uint64_t linkRegister,
+                                        uint64_t signingPc) {
+  libunwind::Registers_arm64 regs;
+  regs.setIPPAuthLR(linkRegister, signingPc);
+  return regs.getIP();
+}
+extern "C" uint64_t scalanative_arm64_unwind_vg_probe(void) {
+  libunwind::Registers_arm64 regs;
+  return regs.getRegister(UNW_AARCH64_VG);
+}
+#endif
+
 #endif
