@@ -15,6 +15,7 @@ typedef struct {
 
 void BlockList_Init(BlockList *blockList);
 void BlockList_Clear(BlockList *blockList);
+BlockMeta *BlockList_getNextBlock(word_t *blockMetaStart, BlockMeta *blockMeta);
 BlockMeta *BlockList_Pop(BlockList *blockList, word_t *blockMetaStart);
 BlockMeta *BlockList_PopOnlyThread(BlockList *blockList,
                                    word_t *blockMetaStart);

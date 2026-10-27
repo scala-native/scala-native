@@ -134,6 +134,13 @@ bool rwlock_lockRead(rwlock_t *ref) {
     return pthread_rwlock_rdlock(ref) == 0;
 #endif
 }
+bool rwlock_tryLockRead(rwlock_t *ref) {
+#ifdef _WIN32
+    return TryAcquireSRWLockShared(ref) != 0;
+#else
+    return pthread_rwlock_tryrdlock(ref) == 0;
+#endif
+}
 bool rwlock_lockWrite(rwlock_t *ref) {
 #ifdef _WIN32
     AcquireSRWLockExclusive(ref);

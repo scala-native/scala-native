@@ -5,6 +5,7 @@
 
 void MutatorThread_setThreadInfo(MutatorThread *self, ThreadInfo *info);
 void MutatorThreads_lockRead(void);
+bool MutatorThreads_tryLockRead(void);
 void MutatorThreads_unlockRead(void);
 
 #endif // MUTATOR_THREAD_COMMIX_H

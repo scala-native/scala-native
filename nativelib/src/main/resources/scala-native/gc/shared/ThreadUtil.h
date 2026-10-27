@@ -65,6 +65,7 @@ bool semaphore_unlock(semaphore_t ref);
 
 bool rwlock_init(rwlock_t *ref);
 bool rwlock_lockRead(rwlock_t *ref);
+bool rwlock_tryLockRead(rwlock_t *ref);
 bool rwlock_lockWrite(rwlock_t *ref);
 bool rwlock_unlockRead(rwlock_t *ref);
 bool rwlock_unlockWrite(rwlock_t *ref);
