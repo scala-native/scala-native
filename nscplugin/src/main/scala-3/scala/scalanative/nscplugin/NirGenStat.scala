@@ -813,12 +813,15 @@ trait NirGenStat(using Context) {
         name
     }.toSet
     val members = {
+      // Members come from a set of names: sort them for a deterministic
+      // output, as the JVM backend does
       moduleClass.info
         .membersBasedOnFlags(
           required = Method,
           excluded = ExcludedForwarder
         )
         .map(_.symbol)
+        .sortBy(sym => (sym.name.mangledString, sym.signature.toString))
     }
 
     def isExcluded(m: Symbol): Boolean = {

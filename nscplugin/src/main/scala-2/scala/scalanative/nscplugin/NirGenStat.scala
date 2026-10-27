@@ -55,8 +55,11 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
   }
 
   class CollectMethodInfo extends Traverser {
-    var mutableVars = Set.empty[Symbol]
-    var labels = Set.empty[LabelDef]
+    // In tree order: `genVars` allocates the variables in this order, and a
+    // hash set of symbols, which hash by identity, would make the output
+    // differ between runs
+    val mutableVars = mutable.LinkedHashSet.empty[Symbol]
+    val labels = mutable.LinkedHashSet.empty[LabelDef]
 
     override def traverse(tree: Tree) = {
       tree match {

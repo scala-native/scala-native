@@ -211,8 +211,10 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
   }
 
   class CollectMethodInfo extends TreeTraverser {
-    var mutableVars = Set.empty[Symbol]
-    var labels = Set.empty[Labeled]
+    // In tree order: `genVars` allocates the variables in this order, and a
+    // hash set of symbols would make the output depend on symbol ids
+    val mutableVars = mutable.LinkedHashSet.empty[Symbol]
+    val labels = mutable.LinkedHashSet.empty[Labeled]
 
     override def traverse(tree: Tree)(using Context): Unit = {
       tree match {

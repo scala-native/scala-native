@@ -56,6 +56,31 @@ class LocalNamesTest {
     }
     .ensuring(_.isDefined, "Not found linked method")
 
+  // A method's variables get their slots in the order they are declared,
+  // whatever their symbols hash to: with eight of them, a hash order would be
+  // the declaration order in one run of 8!
+  @Test def variablesInDeclarationOrder(): Unit = compileAndLoad(
+    sources = "Test.scala" ->
+      """|
+         |object Test {
+         |  def main(args: Array[String]): Unit = {
+         |    var v1 = args.size; var v2 = v1 + 1; var v3 = v2 + 1; var v4 = v3 + 1
+         |    var v5 = v4 + 1; var v6 = v5 + 1; var v7 = v6 + 1; var v8 = v7 + 1
+         |    v1 += 1; v2 += 1; v3 += 1; v4 += 1; v5 += 1; v6 += 1; v7 += 1; v8 += 1
+         |    assert(v1 + v2 + v3 + v4 + v5 + v6 + v7 + v8 != 0)
+         |  }
+         |}
+         |""".stripMargin
+  ) { loaded =>
+    findDefinition(loaded).foreach { defn =>
+      val vars = defn.insts.collect {
+        case nir.Inst.Let(id, _: nir.Op.Var, _) =>
+          defn.debugInfo.localNames.get(id).map(_.toString)
+      }
+      assertEquals((1 to 8).map(i => Some(s"v$i")), vars)
+    }
+  }
+
   // Ensure to use all the vals/vars, otherwise they might not be emmited by the compiler
   @Test def localNamesExistence(): Unit = compileAndLoad(
     sources = "Test.scala" ->
