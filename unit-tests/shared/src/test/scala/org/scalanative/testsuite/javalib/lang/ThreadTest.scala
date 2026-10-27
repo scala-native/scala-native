@@ -80,6 +80,26 @@ class ThreadTest {
     assertTrue("Slept for less then expected", elapsedNanos >= sleepForNanos)
   }
 
+  @Test def contendedMonitorEnterReportsBlocked(): Unit = {
+    assumeMultithreadingIsEnabled()
+    val lock = new Object
+    val t = new Thread(() => lock.synchronized {})
+    lock.synchronized {
+      t.start()
+      // Let the spin reach its sleep backoff.
+      Thread.sleep(100)
+      val deadline = System.currentTimeMillis() + 10000
+      var state = t.getState()
+      while (state != Thread.State.BLOCKED &&
+          System.currentTimeMillis() < deadline) {
+        Thread.sleep(10)
+        state = t.getState()
+      }
+      assertEquals(Thread.State.BLOCKED, state)
+    }
+    t.join()
+  }
+
   // Ported from JSR-166
   class MyHandler extends Thread.UncaughtExceptionHandler {
     override def uncaughtException(t: Thread, e: Throwable) = {

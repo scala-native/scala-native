@@ -69,7 +69,7 @@ private[monitor] class ObjectMonitor() {
     else if ((ownerThread eq currentThread) &&
         NativeThread.currentNativeThread != null) recursion += 1
     else if (trySpinAndLock(currentThread)) ()
-    else enterMonitor(currentThread) // slowpath
+    else waitingOnMonitorEnter(enterMonitor(currentThread)) // slowpath
   }
 
   @inline def exit(currentThread: Thread): Unit = {
@@ -139,13 +139,9 @@ private[monitor] class ObjectMonitor() {
       var forcedTimedRecheck = node.consumeTimedParkHint()
 
       val native = NativeThread.currentNativeThread
-      if (native != null)
-        native.state = NativeThread.State.WaitingOnMonitorEnter
       while (!tryLockThenSpin()) {
         if (activeWaiterThread eq null)
           casActiveWaiterThread(null, currentThread)
-        if (native != null)
-          native.state = NativeThread.State.WaitingOnMonitorEnter
         if (forcedTimedRecheck || hasUnmountedVThreads()) {
           if (native != null)
             native.parkNanos(recheckIntervalMs * 1000000L)
@@ -207,8 +203,6 @@ private[monitor] class ObjectMonitor() {
 
     if (successorThread eq currentThread) successorThread = null
     node.state = WaiterNode.Active
-    val native = NativeThread.currentNativeThread
-    if (native != null) native.state = NativeThread.State.Running
     atomic_thread_fence(memory_order_seq_cst)
   }
 
@@ -322,6 +316,9 @@ private[monitor] class ObjectMonitor() {
     checkOwnership(currentThread)
     if (Thread.interrupted()) throw new InterruptedException()
 
+    // Read while this thread owns the monitor. Later, notify may set
+    // WaitingOnMonitorEnter on this thread while it is parked.
+    val stateBeforeWait = NativeThread.currentNativeThread.state
     val node = new WaiterNode(currentThread, WaiterNode.Waiting)
     atomic_thread_fence(memory_order_seq_cst)
 
@@ -394,18 +391,20 @@ private[monitor] class ObjectMonitor() {
 
     // Thread is alive again, wait for ownership
     // assert(ownerThread != currentThread, "before re-renter")
+    // A virtual thread may resume on another carrier.
     val nativeThread = NativeThread.currentNativeThread
     // assert(nativeThread.thread eq currentThread)
     nativeThread.state = NativeThread.State.WaitingOnMonitorEnter
-    (node.state: @switch) match {
-      case WaiterNode.Active =>
-        enter(currentThread)
-      case WaiterNode.InEnterQueue =>
-        enterMonitor(currentThread, node)
-      case _ =>
-        throw new IllegalMonitorStateException("internal state of thread")
-    }
-    nativeThread.state = NativeThread.State.Running
+    try {
+      (node.state: @switch) match {
+        case WaiterNode.Active =>
+          enter(currentThread)
+        case WaiterNode.InEnterQueue =>
+          enterMonitor(currentThread, node)
+        case _ =>
+          throw new IllegalMonitorStateException("internal state of thread")
+      }
+    } finally nativeThread.state = stateBeforeWait
     this.recursion = savedRecursion
     // assert(ownerThread == currentThread, "reenter")
 
