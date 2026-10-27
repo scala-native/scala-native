@@ -1121,6 +1121,34 @@ class FilesTest {
     }
   }
 
+  @Test def filesReadSymbolicLinkReadsATargetLongerThanAFileName(): Unit = {
+    assumeShouldTestSymlinks()
+
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val target = (1 to 5).foldLeft(dir)((p, i) => p.resolve(s"${"t" * 60}$i"))
+      val link = Files.createSymbolicLink(dir.resolve("link"), target)
+
+      assertTrue("a1", target.toString.length > 300)
+      assertEquals("a2", target, Files.readSymbolicLink(link))
+    }
+  }
+
+  @Test def filesToRealPathResolvesAPathLongerThanAFileName(): Unit = {
+    assumeShouldTestSymlinks()
+
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath().toRealPath()
+      val deep = (1 to 5).foldLeft(dir)((p, i) => p.resolve(s"${"d" * 60}$i"))
+      Files.createDirectories(deep)
+      val link = Files.createSymbolicLink(dir.resolve("link"), deep)
+
+      assertTrue("a1", deep.toString.length > 300)
+      assertEquals("a2", deep, link.toRealPath())
+      assertEquals("a3", deep.toString, link.toFile().getCanonicalPath())
+    }
+  }
+
   @Test def filesReadSymbolicLinkCanReadRecursive(): Unit = {
     assumeShouldTestSymlinks()
 
