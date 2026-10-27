@@ -25,22 +25,36 @@ object SymbolFormatter {
     classNameOut(0) = 0.toByte
     methodNameOut(0) = 0.toByte
 
+    def readScalaNativeMangled(): Boolean = {
+      val start = pos
+      if (read() != '_') {
+        pos = start
+        return false
+      }
+      if (at(pos) == '_')
+        read() // Additional underscore in decorated linkage names
+      if (read() != 'S') {
+        pos = start
+        return false
+      }
+      readGlobal()
+    }
+
     def readSymbol(): Boolean = {
-      // Scala Native mangled symbols have format: _SM<len>className... (Unix/POSIX)
-      // or SM<len>className... (legacy Windows with decorated names).
-      // After disabling SYMOPT_UNDNAME on Windows, symbols now use _SM... format too.
-      // When debug metadata is generated (LTO) symbols may have linkage format:
-      // fqcn.methodName:(file:line) (from MetadataCodeGen)
+      // Accept ordinary, decorated, and legacy Scala Native symbols.
+      // Windows debug names may also use class.method:(file:line).
       def mayHaveLinkageSymbol =
         isWindows && sourceLevelDebuging.generateFunctionSourcePositions
-      val head = read()
-      // Check for Scala Native mangled format first (prioritize _S check)
-      if (head == '_' && read() == 'S')
-        readGlobal() // Unix or Windows with raw names
-      else if (head == 'S') readGlobal() // Legacy Windows with decorated names
-      // Windows linkage symbol format as fallback (unlikely to start with uppercase 'S')
-      else if (mayHaveLinkageSymbol) readLinkageSymbol()
-      else false
+      val hasFqcnLinkageName = isWindows && strchr(sym, '.') != null
+      if (readScalaNativeMangled()) true
+      else {
+        pos = 0
+        if (read() == 'S' && readGlobal()) true
+        else if (mayHaveLinkageSymbol || hasFqcnLinkageName) {
+          pos = 0
+          readLinkageSymbol()
+        } else false
+      }
     }
 
     def readGlobal(): Boolean = read() match {

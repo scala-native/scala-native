@@ -187,7 +187,7 @@ private[runtime] object StackTrace {
 
   @resolvedAtLinktime
   private def hasDebugInfo: Boolean =
-    (LinktimeInfo.isMac || LinktimeInfo.isLinux) &&
+    (LinktimeInfo.isMac || LinktimeInfo.isLinux || LinktimeInfo.isWindows) &&
       !LinktimeInfo.is32BitPlatform &&
       LinktimeInfo.sourceLevelDebuging.generateFunctionSourcePositions
 
@@ -200,20 +200,8 @@ private[runtime] object StackTrace {
       else Backtrace.Position.empty
 
     def withNameFromDWARF() = {
-      // linkageName has an extra "_" that we don't want in stack traces
-      def isScalaNativeMangledName =
-        ffi.strncmp(
-          position.linkageName,
-          c"__SM",
-          Intrinsics.castIntToRawSize(4)
-        ) == 0
-      val symbol =
-        if (isScalaNativeMangledName)
-          // skip first `_`
-          position.linkageName + 1
-        else position.linkageName
-
-      parseStackTraceElement(symbol, position)
+      // SymbolFormatter accepts both ordinary and decorated linkage names.
+      parseStackTraceElement(position.linkageName, position)
     }
 
     def withNameFromUnwind() = {

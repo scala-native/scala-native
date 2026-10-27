@@ -6,6 +6,28 @@
 -   LLVM/Clang 16 or newer
 -   sbt
 
+## Windows
+
+Configure Git before cloning so Scala library patches keep their line endings
+and symbolic links:
+
+```powershell
+git config --global core.autocrlf false
+git config --global core.symlinks true
+```
+
+Enable [Developer Mode](https://learn.microsoft.com/windows/apps/get-started/enable-your-device-for-development)
+or clone from an elevated shell to allow Git to create symbolic links.
+
+### Windows on ARM64
+
+Install the native toolchain and dependencies described in
+[Environment setup — Windows on ARM64](../user/setup.md#windows-on-arm64-woa).
+
+The [Windows test workflow](https://github.com/scala-native/scala-native/blob/main/.github/workflows/run-tests-windows.yml)
+runs ARM64 GC and runtime tests in debug and release-fast modes using the
+[dedicated setup action](https://github.com/scala-native/scala-native/blob/main/.github/actions/windows-arm-setup-env/action.yml).
+
 ## Use nix / devenv.sh
 
 The `flake.nix` and `flake.lock` files provide a build environment using nix

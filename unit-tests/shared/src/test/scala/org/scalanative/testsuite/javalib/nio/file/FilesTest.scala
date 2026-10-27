@@ -32,9 +32,9 @@ class FilesTest {
   import FilesTest._
 
   def assumeShouldTestSymlinks(): Unit = {
-    assumeFalse(
-      "Do not test symlinks on windows, admin privilege needed",
-      isWindows
+    assumeTrue(
+      "Symbolic link creation requires admin privileges or Developer Mode on Windows",
+      Platform.canCreateSymbolicLinks
     )
   }
 
@@ -359,6 +359,8 @@ class FilesTest {
   }
 
   @Test def filesCreateSymbolicLinkCanCreateSymbolicLinks(): Unit = {
+    assumeShouldTestSymlinks()
+
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath()
       val link = dir.resolve("link")
@@ -369,6 +371,8 @@ class FilesTest {
   }
 
   @Test def filesCreateSymbolicLinkThrowsIfTheLinkAlreadyExists(): Unit = {
+    assumeShouldTestSymlinks()
+
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath
       val link = dir.resolve("link")
@@ -426,6 +430,34 @@ class FilesTest {
       assertTrue(Files.isDirectory(dirLink))
       assertFalse(Files.isDirectory(dirLink, LinkOption.NOFOLLOW_LINKS))
       assertFalse(Files.isRegularFile(dirLink))
+    }
+  }
+
+  @Test def filesTypeProbesFollowRelativeDirectorySymbolicLinks(): Unit = {
+    assumeShouldTestSymlinks()
+
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath
+      val target = Files.createDirectory(dir.resolve("target"))
+      val child = Files.createFile(target.resolve("child"))
+      val link = Files.createSymbolicLink(
+        dir.resolve("link"),
+        Paths.get("target")
+      )
+      val chained = Files.createSymbolicLink(dir.resolve("chained"), link)
+
+      assertTrue(Files.exists(link))
+      assertTrue(Files.isDirectory(link))
+      assertFalse(Files.isDirectory(link, LinkOption.NOFOLLOW_LINKS))
+      assertTrue(Files.isSymbolicLink(chained))
+      assertTrue(Files.isDirectory(chained))
+      assertTrue(Files.exists(chained.resolve(child.getFileName)))
+      assertEquals(Paths.get("target"), Files.readSymbolicLink(link))
+      assertEquals(link, Files.readSymbolicLink(chained))
+      assertEquals(
+        Files.getAttribute(target, "fileKey"),
+        Files.getAttribute(chained, "fileKey")
+      )
     }
   }
 
@@ -1106,7 +1138,6 @@ class FilesTest {
   }
 
   @Test def filesReadSymbolicLinkCanReadBrokenSymbolicLink(): Unit = {
-    // Does fail on Windows. Cannot open broken link
     assumeShouldTestSymlinks()
 
     withTemporaryDirectory { dirFile =>
@@ -1306,10 +1337,10 @@ class FilesTest {
       Files.createDirectory(d0)
       Files.createFile(f0)
       Files.createFile(f1)
-      Files.createSymbolicLink(link, d1)
-
       Files.createDirectory(d1)
       Files.createFile(f2)
+      // Windows chooses file or directory symlink semantics at creation time.
+      Files.createSymbolicLink(link, d1)
 
       assertTrue("a1", Files.exists(d0) && Files.isDirectory(d0))
       assertTrue("a2", Files.exists(f0) && Files.isRegularFile(f0))
@@ -2181,6 +2212,8 @@ class FilesTest {
   }
 
   @Test def filesGetAttributeObeysGivenLinkOption(): Unit = {
+    assumeShouldTestSymlinks()
+
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath()
       val f0 = dir.resolve("f0")
