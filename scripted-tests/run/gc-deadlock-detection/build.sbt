@@ -127,14 +127,28 @@ testZombie := {
       "Skipping zombie test on Windows - uses POSIX pthread APIs"
     )
   else
-    // Zombie test may abort or complete depending on timing
     runScenario(
       binary = {
         implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
         nativeExecutable((Compile / nativeLink).value)
       },
       gc = (Compile / nativeConfig).value.gc
-    )("zombie", timeoutSeconds = 20, expectNonZeroExit = true)
+    )("zombie", timeoutSeconds = 20)
+}
+
+/** Test: a forked child can still collect - POSIX only */
+lazy val testFork = taskKey[Unit]("Test GC in a child of fork()")
+testFork := {
+  if (isWindows)
+    System.err.println("Skipping fork test on Windows")
+  else
+    runScenario(
+      binary = {
+        implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
+        nativeExecutable((Compile / nativeLink).value)
+      },
+      gc = (Compile / nativeConfig).value.gc
+    )("fork", timeoutSeconds = 20)
 }
 
 /** Test: GC handles multiple stuck threads */
@@ -155,6 +169,7 @@ testAll := Def
     testDeadlock,
     testPause,
     testZombie,
+    testFork,
     testAllocator
   )
   .value

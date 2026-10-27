@@ -10,7 +10,12 @@
 #include <assert.h>
 
 #ifndef _WIN32
+#include <errno.h>
 #include <signal.h>
+#include <unistd.h>
+#ifdef __linux__
+#include <sys/syscall.h>
+#endif
 #endif
 
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
@@ -67,6 +72,9 @@ bool MutatorThread_register(Field_t *stackbottom) {
 #else
     // Always store thread identifier for liveness checking
     self->thread = pthread_self();
+#ifdef __linux__
+    self->kernelThreadId = (pid_t)syscall(SYS_gettid);
+#endif
 #endif
 
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
@@ -121,6 +129,9 @@ bool MutatorThread_rebind(word_t **stackBottom, ThreadInfo *info) {
     self->threadHandle = handle;
 #else
     self->thread = pthread_self();
+#ifdef __linux__
+    self->kernelThreadId = (pid_t)syscall(SYS_gettid);
+#endif
 #endif
     self->stackBottom = stackBottom;
     self->threadInfo = info;
@@ -197,30 +208,43 @@ bool MutatorThread_isAtSafepoint(MutatorThread *thread) {
     return atomic_load_explicit(&thread->stackTop, memory_order_acquire) != 0;
 }
 
-// Checks if the given mutator thread is alive.
-// On Windows, uses the thread handle to query the exit code; if the handle is
-// unavailable or the query fails, assumes the thread is alive. On POSIX
-// systems, uses pthread_kill with signal 0 to check existence; returns true if
-// the thread exists. This fallback behavior ensures that threads are
-// conservatively considered alive if liveness cannot be determined.
+// Conservative liveness: a thread counts as alive unless it is known to be
+// gone. Used for diagnostics only.
 bool MutatorThread_isAlive(MutatorThread *thread) {
+    return !MutatorThread_hasTerminated(thread);
+}
+
+bool MutatorThread_hasTerminated(MutatorThread *thread) {
+    if (thread == NULL)
+        return false;
 #ifdef _WIN32
-    if (thread->threadHandle == NULL) {
-        // No handle available, assume thread is alive (maybe not yet
-        // initialized)
-        return true;
-    }
+    if (thread->threadHandle == NULL)
+        return false;
     DWORD exitCode;
-    if (GetExitCodeThread(thread->threadHandle, &exitCode)) {
-        return exitCode == STILL_ACTIVE;
-    }
-    // If we can't get exit code, assume thread is alive
-    return true;
+    if (!GetExitCodeThread(thread->threadHandle, &exitCode))
+        return false;
+    return exitCode != STILL_ACTIVE;
 #else
-    // pthread_kill with signal 0 checks if thread exists without sending signal
-    int result = pthread_kill(thread->thread, 0);
-    return result == 0;
+#ifdef __linux__
+    /* Java threads are detached, so their pthread_t dangles once they exit.
+     * tgkill takes the kernel id instead and never reads that descriptor.
+     * Only ESRCH proves the thread is gone; on any other answer liveness
+     * stays unknown and the caller keeps waiting. */
+    return syscall(SYS_tgkill, getpid(), thread->kernelThreadId, 0) == -1 &&
+           errno == ESRCH;
+#else
+    return pthread_kill(thread->thread, 0) == ESRCH;
 #endif
+#endif
+}
+
+void MutatorThread_reap(MutatorThread *thread) {
+    if (thread == NULL)
+        return;
+    /* No switchState here: it would capture the caller's stack, not the
+     * dead thread's. The caller must not hold the list read lock. */
+    MutatorThreads_remove(thread);
+    MutatorThread_dispose(thread);
 }
 
 #endif

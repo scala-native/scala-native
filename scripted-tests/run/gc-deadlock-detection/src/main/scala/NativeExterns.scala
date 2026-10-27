@@ -14,4 +14,7 @@ object ZombieThread {
 
   @name("zombie_thread_native_sleep_ms")
   def nativeSleepMs(ms: CInt): Unit = extern
+
+  @name("zombie_thread_spin_forever")
+  def spinForever(): Unit = extern
 }

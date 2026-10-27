@@ -9,12 +9,9 @@ import scala.scalanative.unsafe._
  *    2. Terminated WITHOUT calling MutatorThread_delete
  *    3. Still appears in the GC's mutator threads list
  *
- *  GC will wait forever for the zombie to reach a safepoint. With liveness
- *  checking, GC should detect:
- *    - pthread_kill(thread, 0) returns error (thread doesn't exist)
- *    - alive=NO (zombie) in diagnostics
- *
- *  Expected with fix: GC times out with "alive=NO" diagnostic, process aborts
+ *  GC must not wait for that thread to reach a safepoint. Stop-the-world reaps
+ *  a Managed mutator whose pthread has terminated (ESRCH) and then finishes the
+ *  collection.
  */
 object ZombieScenario {
   def run(): Unit = {
@@ -57,11 +54,8 @@ object ZombieScenario {
     println("[Main] Waiting for thread to become zombie...")
     Thread.sleep(500)
 
-    // Thread should now be a zombie (dead but in GC list)
-    // GC should detect:
-    //   - Thread is not alive (pthread_kill returns error)
-    //   - alive=NO in diagnostics
-    println("// Triggering GC...")
+    // The thread is gone but still Managed in the mutator list.
+    println("[Main] Triggering GC...")
     val startTime = System.currentTimeMillis()
     System.gc()
     val elapsed = System.currentTimeMillis() - startTime

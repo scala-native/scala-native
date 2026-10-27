@@ -10,5 +10,7 @@ void YieldPointTrap_resetTaskMachBadAccessPorts(void);
 void YieldPointTrap_arm(safepoint_t ref);
 void YieldPointTrap_disarm(safepoint_t ref);
 void YieldPointTrap_free(safepoint_t ref);
+/** Child side of fork: the freelist mutex may be held by a vanished thread. */
+void YieldPointTrap_afterForkChild(void);
 
 #endif
