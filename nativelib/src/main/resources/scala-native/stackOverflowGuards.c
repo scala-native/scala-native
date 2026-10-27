@@ -168,11 +168,13 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
         void *faultAddr = info->si_addr;
         /* Fault outside this thread's stack (e.g. in delimcc heap fragment or
          * allocator) must not be treated as stack overflow. Otherwise we
-         * mis-report "Unrecoverable StackOverflow" and exit. */
+         * mis-report "Unrecoverable StackOverflow" and exit.
+         * Keep a pending overflow: GC safepoint traps also land here. If one
+         * clears it before the next check, the guard stays unprotected and
+         * the thread runs past it. */
         if (threadInfo.stackBottom != NULL && threadInfo.stackTop != NULL &&
             !isInRange(faultAddr, threadInfo.stackBottom,
                        threadInfo.stackTop)) {
-            currentThreadInfo.pendingStackOverflowException = false;
             goto dispatchDefaultSignal;
         }
         /* We cannot throw exception directly from signal handler - libunwind
