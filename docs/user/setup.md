@@ -172,7 +172,7 @@ nativeConfig ~= { config =>
 
 *Note 3:* Bionic does not support POSIX thread cancellation or monetary formatting.
 
-**Windows**
+### Windows (x64)
 
 Corporate environments and Windows policies can affect the method used
 to set up your environment. The following procedure involves downloading
@@ -225,5 +225,34 @@ Using the install path above, you would add the following:
 ``` powershell
 C:\Users\<login>\AppData\Local\LLVM\bin
 ```
+
+### Windows on ARM64 (WoA)
+
+Use native ARM64 versions of the JDK, LLVM and native dependencies:
+
+1. Install an ARM64 JDK, such as
+   [Microsoft Build of OpenJDK](https://learn.microsoft.com/java/openjdk/).
+2. Install the Windows ARM64 LLVM package (`LLVM-<version>-woa64.exe`) from the
+   [LLVM releases](https://github.com/llvm/llvm-project/releases).
+   Add its `bin` directory to `PATH`, or set `LLVM_BIN` to that directory.
+   Verify that `clang -dumpmachine` reports `aarch64-pc-windows-msvc`.
+3. Install [sbt using its Windows installer](https://www.scala-sbt.org/download.html).
+4. Install Visual Studio 2022 Build Tools with the *Desktop development with C++*
+   workload, **MSVC v143 C++ ARM64 build tools**, and a Windows 11 SDK.
+   Run the installer from a native ARM64 PowerShell session.
+5. Build native dependencies with the `arm64-windows-static` vcpkg triplet:
+
+   ```powershell
+   $env:VCPKG_DEFAULT_HOST_TRIPLET = "arm64-windows"
+   vcpkg install bdwgc zlib --triplet=arm64-windows-static
+   ```
+
+Set `SCALANATIVE_INCLUDE_DIRS` and `SCALANATIVE_LIB_DIRS` to the `include` and
+`lib` directories under `<vcpkg>/installed/arm64-windows-static`.
+If vcpkg produces `zs.lib`, copy it to `zlib.lib` in the same directory so
+Scala Native can find zlib.
+
+For repository builds and setup helpers, see
+[Windows on ARM64 contributor setup](../contrib/build-setup.md#windows-on-arm64).
 
 Continue to [sbt](./sbt.md).

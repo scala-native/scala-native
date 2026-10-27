@@ -291,6 +291,9 @@ private[java] final class VirtualThread(
           unblock(resume, generation)
         }
       }
+      // interrupt() sets the flag and looks for the continuation under this
+      // lock, so either it finds this one or the flag is set here
+      if (interruptLock.synchronized(interruptedState)) unblock(resume, generation)
     }(using currentBoundaryOrThrow("blockForMonitorWait"))
     currentWaitResume = null
     currentWaitResumeGeneration = 0L

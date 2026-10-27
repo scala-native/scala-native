@@ -20,6 +20,36 @@ import winnt.AccessToken._
  *  private only because of usage inside `scala.scalanative.nio.fs`
  */
 object WindowsHelperMethods {
+  // Extended paths must be absolute and normalized before adding the prefix.
+  def toWindowsPath(path: String)(implicit z: Zone): CWString = {
+    val absolute = new java.io.File(path).getAbsolutePath()
+    // Directory creation reserves room for an 8.3 file name within MAX_PATH.
+    if (absolute.length < MAX_PATH.toInt - 12 ||
+        absolute.startsWith("\\\\?\\") ||
+        absolute.startsWith("\\\\.\\"))
+      toCWideStringUTF16LE(path)
+    else {
+      val filename = toCWideStringUTF16LE(absolute)
+      val capacity = FileApi.GetFullPathNameW(filename, 0.toUInt, null, null)
+      if (capacity == 0.toUInt) throw WindowsException.onPath(path)
+      val buffer = alloc[WChar](capacity)
+      val length = FileApi.GetFullPathNameW(filename, capacity, buffer, null)
+      if (length == 0.toUInt || length >= capacity)
+        throw WindowsException.onPath(path)
+      val normalized =
+        fromCWideString(buffer, java.nio.charset.StandardCharsets.UTF_16LE)
+      val extended =
+        if (normalized.startsWith("\\\\"))
+          "\\\\?\\UNC\\" + normalized.substring(2)
+        else "\\\\?\\" + normalized
+      toCWideStringUTF16LE(extended)
+    }
+  }
+
+  def fromWindowsPath(path: String): String =
+    if (path.startsWith("\\\\?\\UNC\\")) "\\\\" + path.substring(8)
+    else path.stripPrefix("\\\\?\\")
+
   def withUserToken[T](desiredAccess: DWord)(fn: Handle => T): T = {
     val tokenHandle = stackalloc[Handle]()
     def getProcessToken =
@@ -110,7 +140,7 @@ object WindowsHelperMethods {
       allowInvalidHandle: Boolean = false
   )(fn: Handle => T)(implicit z: Zone): T = {
     val handle = FileApi.CreateFileW(
-      toCWideStringUTF16LE(path),
+      toWindowsPath(path),
       desiredAccess = access,
       shareMode = shareMode,
       securityAttributes = null,
@@ -122,7 +152,7 @@ object WindowsHelperMethods {
       try { fn(handle) }
       finally CloseHandle(handle)
     } else {
-      throw WindowsException(s"Cannot open file ${path}")
+      throw WindowsException.onPath(path)
     }
   }
 }

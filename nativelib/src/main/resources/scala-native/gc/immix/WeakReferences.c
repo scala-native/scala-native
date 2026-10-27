@@ -40,8 +40,10 @@ void WeakReferences_SetGCFinishedCallback(void *handler) {
 }
 
 void WeakReferences_InvokeGCFinishedCallback(void) {
+    // Only after a collection that cleared referents
     if (collectedWeakReferences && gcFinishedCallback != NULL &&
         currentThreadInfo.isInitialized) {
+        collectedWeakReferences = false;
         gcFinishedCallback();
     }
 }

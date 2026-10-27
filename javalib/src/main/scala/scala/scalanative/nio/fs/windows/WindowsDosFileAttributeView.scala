@@ -7,6 +7,7 @@ import java.util.WindowsHelperMethods._
 import java.util.concurrent.TimeUnit
 import java.util.{HashMap => JHashMap}
 
+import scala.scalanative.windows.ErrorHandlingApi.GetLastError
 import scala.scalanative.windows.FileApi._
 import scala.scalanative.windows.FileApiExt._
 import scala.scalanative.windows.FileApiOps._
@@ -16,6 +17,11 @@ import scala.scalanative.windows._
 import scala.scalanative.windows.winnt.AccessRights._
 import scalanative.unsafe._
 import scalanative.unsigned._
+
+private[windows] final case class WindowsFileKey(
+    volumeId: Long,
+    fileIndex: Long
+)
 
 final class WindowsDosFileAttributeView(path: Path, options: Array[LinkOption])
     extends DosFileAttributeView {
@@ -107,27 +113,42 @@ final class WindowsDosFileAttributeView(path: Path, options: Array[LinkOption])
     implicit z: Zone =>
       val fileInfo = alloc[ByHandleFileInformation]()
 
-      withFileOpen(
+      val hasFileInfo = withFileOpen(
         pathAbs,
         access = FILE_READ_ATTRIBUTES,
         attributes = fileOpeningFlags
-      ) {
-        FileApi.GetFileInformationByHandle(_, fileInfo)
+      ) { handle =>
+        if (FileApi.GetFileInformationByHandle(handle, fileInfo)) true
+        else {
+          val error = GetLastError()
+          if (FileApi.GetFileType(handle) != FILE_TYPE_CHAR)
+            throw WindowsException.onPathWithLastEror(pathAbs, error)
+
+          // Character devices such as NUL do not support file-information
+          // queries. Keep their size zero without accepting failures on files.
+          scala.scalanative.libc.string.memset(
+            fileInfo,
+            0,
+            sizeof[ByHandleFileInformation]
+          )
+          fileInfo.fileAttributes = FILE_ATTRIBUTE_DEVICE
+          false
+        }
       }
 
       new DosFileAttributes {
-        class DosFileKey(volumeId: DWord, fileIndex: ULargeInteger)
-
         private val attrs = fileInfo.fileAttributes
         private val createdAt = toFileTime(fileInfo.creationTime)
         private val accessedAt = toFileTime(fileInfo.lastAccessTime)
         private val modifiedAt = toFileTime(fileInfo.lastWriteTime)
         private val fileSize = fileInfo.fileSize
         private val dosFileKey =
-          new DosFileKey(
-            volumeId = fileInfo.volumeSerialNumber,
-            fileIndex = fileInfo.fileIndex
-          )
+          if (!hasFileInfo) null
+          else
+            WindowsFileKey(
+              volumeId = fileInfo.volumeSerialNumber.toLong,
+              fileIndex = fileInfo.fileIndex.toLong
+            )
 
         def creationTime(): FileTime = createdAt
         def lastAccessTime(): FileTime = accessedAt
@@ -137,9 +158,10 @@ final class WindowsDosFileAttributeView(path: Path, options: Array[LinkOption])
 
         // to replace with checking reparse tag
         def isSymbolicLink(): Boolean = hasAttrSet(FILE_ATTRIBUTE_REPARSE_POINT)
-        def isDirectory(): Boolean = hasAttrSet(FILE_ATTRIBUTE_DIRECTORY)
+        def isDirectory(): Boolean =
+          !isSymbolicLink() && hasAttrSet(FILE_ATTRIBUTE_DIRECTORY)
         def isOther(): Boolean =
-          hasAttrSet(FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_DEVICE)
+          !isSymbolicLink() && hasAttrSet(FILE_ATTRIBUTE_DEVICE)
         def isRegularFile(): Boolean = {
           !isSymbolicLink() &&
           !isDirectory() &&
@@ -158,7 +180,7 @@ final class WindowsDosFileAttributeView(path: Path, options: Array[LinkOption])
 
   private def setWinAttribute(attribute: DWord, enabled: Boolean): Unit =
     Zone.acquire { implicit z =>
-      val filename = toCWideStringUTF16LE(pathAbs)
+      val filename = toWindowsPath(pathAbs)
       val previousAttrs = FileApi.GetFileAttributesW(filename)
       def setNewAttrs(): Boolean = {
         val newAttributes =

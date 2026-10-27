@@ -148,7 +148,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
       ownerOnly: Boolean
   ): Boolean =
     Zone.acquire { implicit z =>
-      val filename = toCWideStringUTF16LE(properPath)
+      val filename = toWindowsPath(properPath)
       val securityDescriptorPtr = alloc[Ptr[SecurityDescriptor]]()
       val previousDacl, newDacl = alloc[ACLPtr]()
       val usersGroupSid = alloc[SIDPtr]()
@@ -216,7 +216,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
   def exists(): Boolean =
     Zone.acquire { implicit z =>
       if (isWindows) {
-        val filename = toCWideStringUTF16LE(properPath)
+        val filename = toWindowsPath(properPath)
         val attrs = GetFileAttributesW(filename)
         val pathExists = attrs != INVALID_FILE_ATTRIBUTES
         val notSymLink = (attrs & FILE_ATTRIBUTE_REPARSE_POINT) == 0
@@ -226,6 +226,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
           withFileOpen(
             path,
             access = FILE_READ_ATTRIBUTES,
+            attributes = FILE_FLAG_BACKUP_SEMANTICS,
             allowInvalidHandle = true
           )(_ != INVALID_HANDLE_VALUE)
         }
@@ -248,7 +249,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
 
   private def deleteDirImpl(): Boolean = Zone.acquire { implicit z =>
     if (isWindows) {
-      RemoveDirectoryW(toCWideStringUTF16LE(properPath))
+      RemoveDirectoryW(toWindowsPath(properPath))
     } else
       remove(toCString(path)) == 0
   }
@@ -256,7 +257,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
   private def deleteFileImpl(): Boolean = Zone.acquire { implicit z =>
     if (isWindows) {
       setReadOnlyWindows(enabled = false)
-      DeleteFileW(toCWideStringUTF16LE(properPath))
+      DeleteFileW(toWindowsPath(properPath))
     } else {
       unlink(toCString(path)) == 0
     }
@@ -285,20 +286,27 @@ class File(_path: String) extends Serializable with Comparable[File] {
       }
     }
 
-  /** Finds the canonical path for `path`, using `realpath`. The file must
-   *  exist, because the result of `realpath` doesn't match that of Java on
-   *  non-existing file.
+  /** Resolves the canonical path of an existing file, following symbolic links.
    */
   private def simplifyExistingPath(path: String)(implicit z: Zone): String = {
     if (isWindows) {
-      val resolvedName: Ptr[WChar] = alloc[WChar](FileApiExt.MAX_PATH)
-      GetFullPathNameW(
-        toCWideStringUTF16LE(properPath),
-        FileApiExt.MAX_PATH,
-        resolvedName,
-        null
-      )
-      fromCWideString(resolvedName, StandardCharsets.UTF_16LE)
+      withFileOpen(
+        path,
+        access = 0.toUInt,
+        attributes = FILE_FLAG_BACKUP_SEMANTICS
+      ) { handle =>
+        val flags = FILE_NAME_NORMALIZED
+        val capacity = GetFinalPathNameByHandleW(handle, null, 0.toUInt, flags)
+        if (capacity == 0.toUInt) throw WindowsException.onPath(path)
+        val resolvedName = alloc[WChar](capacity)
+        val length =
+          GetFinalPathNameByHandleW(handle, resolvedName, capacity, flags)
+        if (length == 0.toUInt || length >= capacity)
+          throw WindowsException.onPath(path)
+        fromWindowsPath(
+          fromCWideString(resolvedName, StandardCharsets.UTF_16LE)
+        )
+      }
     } else {
       val resolvedName: Ptr[Byte] = alloc[Byte](limits.PATH_MAX)
       if (realpath(toCString(path), resolvedName) == null) {
@@ -439,7 +447,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
       flags: windows.DWord,
       checkIsNotSet: Boolean = false
   ): Boolean = Zone.acquire { implicit z =>
-    GetFileAttributesW(toCWideStringUTF16LE(properPath)) match {
+    GetFileAttributesW(toWindowsPath(properPath)) match {
       case INVALID_FILE_ATTRIBUTES => false // File does not exist
       case attrsSet                =>
         if (checkIsNotSet)
@@ -499,7 +507,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
     }
 
   private def setReadOnlyWindows(enabled: Boolean)(implicit z: Zone) = {
-    val filename = toCWideStringUTF16LE(properPath)
+    val filename = toWindowsPath(properPath)
     val currentAttributes = GetFileAttributesW(filename)
 
     def newAttributes =
@@ -573,7 +581,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
     Zone.acquire { implicit z =>
       if (isWindows)
         CreateDirectoryW(
-          toCWideStringUTF16LE(properPath),
+          toWindowsPath(properPath),
           securityAttributes = null
         )
       else {
@@ -643,7 +651,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
         fn: Ptr[SecurityDescriptor] => Unit
     ): Unit = {
       val securityDescriptorPtr = stackalloc[Ptr[SecurityDescriptor]]()
-      val filename = toCWideStringUTF16LE(properPath)
+      val filename = toWindowsPath(properPath)
       val securityInfo =
         OWNER_SECURITY_INFORMATION |
           GROUP_SECURITY_INFORMATION |

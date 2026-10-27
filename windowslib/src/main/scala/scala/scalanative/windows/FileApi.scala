@@ -11,6 +11,13 @@ import WinBaseApi.SecurityAttributes
 
 @extern
 object FileApi {
+  @name("scalanative_read_symbolic_link")
+  def readSymbolicLink(
+      handle: Handle,
+      buffer: CWString,
+      capacity: DWord
+  ): CInt = extern
+
   private[windows] type PathMax = Nat.Digit3[Nat._2, Nat._6, Nat._0]
   private[windows] type FileName[C] = CArray[C, PathMax]
   private[windows] type AlternateFileName[C] =
@@ -141,6 +148,8 @@ object FileApi {
       lastWriteTime: Ptr[FileTime]
   ): Boolean = extern
 
+  def GetFileType(handle: Handle): DWord = extern
+
   def GetLogicalDriveStringsW(bufferLength: DWord, buffer: CWString): DWord =
     extern
 
@@ -225,6 +234,8 @@ object FileApi {
 
 object FileApiExt {
   final val MAX_PATH = 260.toUInt
+
+  final val FILE_TYPE_CHAR = 2.toUInt
 
   // File Pointer Move Methods
   final val FILE_BEGIN = 0.toUInt

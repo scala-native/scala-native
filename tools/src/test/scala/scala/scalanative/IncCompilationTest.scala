@@ -19,7 +19,14 @@ class IncCompilationTest extends codegen.CodeGenSpec {
   private def buildAwait(config: Config)(implicit scope: Scope) =
     Await.result(Build.build(config), duration.Duration.Inf)
 
-  @Test def generateIRForSingleType(): Unit = {
+  // The directory is deleted once the scope has closed what it opened there
+  private def withOutDir(body: Path => Unit): Unit = {
+    val outDir = Files.createTempDirectory("native-test-out")
+    try body(outDir)
+    finally IO.deleteRecursive(outDir)
+  }
+
+  @Test def generateIRForSingleType(): Unit = withOutDir { outDir =>
     Scope { implicit in =>
       val source =
         """|
@@ -43,7 +50,6 @@ class IncCompilationTest extends codegen.CodeGenSpec {
            |}""".stripMargin
       val entry = "A"
       val changedTop = Set[String]("A", "A$")
-      val outDir = Files.createTempDirectory("native-test-out")
       val files = NIRCompiler.getCompiler(outDir).compile(source)
       makeChanged(outDir, changedTop)
       val nativeConfig = defaultNativeConfig.withOptimize(false)
@@ -52,47 +58,47 @@ class IncCompilationTest extends codegen.CodeGenSpec {
     }
   }
 
-  @Test def generateIRForMultipleTypes(): Unit = {
-    Scope { implicit in =>
-      val sources = Map(
-        "A.scala" ->
-          """|
-             |object A {
-             |  def print(x: String): Unit = {
-             |    println(x)
-             |  }
-             |  def print(x: Int): Unit = {
-             |    println(x)
-             |  }
-             |  def getB(): B = {
-             |    val b = new B
-             |    b.bb = 1
-             |    b
-             |  }
-             |  def main(args: Array[String]): Unit = {
-             |    val b = getB()
-             |    println(b.add())
-             |    println(b.sub())
-             |  }
-             |}""".stripMargin,
-        "B.scala" ->
-          """|
-             |class B {
-             |  var bb = 2
-             |  def add(): Int = 3
-             |  def sub(): Int = 4
-             |}""".stripMargin
-      )
-      val entry = "A"
-      val changedTop = Set[String]("A", "A$")
-      val outDir = Files.createTempDirectory("native-test-out")
-      val compiler = NIRCompiler.getCompiler(outDir)
-      val sourcesDir = NIRCompiler.writeSources(sources)
-      val files = compiler.compile(sourcesDir)
-      makeChanged(outDir, changedTop)
-      val config = makeConfig(outDir, "out1", entry, defaultNativeConfig)
+  @Test def generateIRForMultipleTypes(): Unit = withOutDir { outDir =>
+    val sources = Map(
+      "A.scala" ->
+        """|
+           |object A {
+           |  def print(x: String): Unit = {
+           |    println(x)
+           |  }
+           |  def print(x: Int): Unit = {
+           |    println(x)
+           |  }
+           |  def getB(): B = {
+           |    val b = new B
+           |    b.bb = 1
+           |    b
+           |  }
+           |  def main(args: Array[String]): Unit = {
+           |    val b = getB()
+           |    println(b.add())
+           |    println(b.sub())
+           |  }
+           |}""".stripMargin,
+      "B.scala" ->
+        """|
+           |class B {
+           |  var bb = 2
+           |  def add(): Int = 3
+           |  def sub(): Int = 4
+           |}""".stripMargin
+    )
+    NIRCompiler.withSourceDir(sources) { sourcesDir =>
+      Scope { implicit in =>
+        val entry = "A"
+        val changedTop = Set[String]("A", "A$")
+        val compiler = NIRCompiler.getCompiler(outDir)
+        val files = compiler.compile(sourcesDir)
+        makeChanged(outDir, changedTop)
+        val config = makeConfig(outDir, "out1", entry, defaultNativeConfig)
 
-      buildAwait(config)
+        buildAwait(config)
+      }
     }
   }
 
