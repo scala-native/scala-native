@@ -191,9 +191,11 @@ static bool isContinuationStaleTrapFault(int signal, siginfo_t *siginfo,
         return false;
     if (!isAccessPermissionFault(signal, siginfo->si_code))
         return false;
-    if (!atomic_load_explicit(&Synchronizer_stopThreads, memory_order_acquire))
-        return false;
-    return true;
+    // Do not check Synchronizer_stopThreads: signal delivery can be delayed
+    // past the end of the STW pause, so its value here may no longer match
+    // the state when the fault occurred. Trap pages are never unmapped, so
+    // page identity is a timing-independent check.
+    return YieldPointTrap_isRegisteredPage(siginfo->si_addr);
 }
 
 static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {

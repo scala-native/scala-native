@@ -13,6 +13,7 @@
 #include <string.h>
 #include <stdatomic.h>
 #include "shared/MemoryMap.h"
+#include "shared/MemoryInfo.h"
 #include "shared/Log.h"
 #include "shared/ThreadUtil.h"
 
@@ -94,6 +95,58 @@ static void YieldPointTrap_pushFreeList(safepoint_t ref) {
     mutex_unlock(&YieldPointTrap_freeListLock);
 }
 
+/*
+ * Registry of every trap page ever created by this process, so the signal
+ * handler can tell whether a fault address is one of our own safepoint pages
+ * without consulting Synchronizer_stopThreads.
+ *
+ * stopThreads is a racy signal for that: signal delivery can be delayed past
+ * the end of the STW pause that armed the page, at which point stopThreads is
+ * already false again and a benign stale trap would be reported as an
+ * unhandled SIGSEGV/SIGBUS. Trap pages are never unmapped (see above), so
+ * membership in this registry is a permanent fact from page creation on.
+ *
+ * Append-only with fixed capacity, because the reader runs in a signal
+ * handler and cannot allocate. One entry is added per page created, and pages
+ * are recycled through the freelist, so this is bounded by the peak number of
+ * simultaneously live mutator threads.
+ */
+#define YIELD_POINT_TRAP_REGISTRY_CAPACITY 65536
+static void *YieldPointTrap_registry[YIELD_POINT_TRAP_REGISTRY_CAPACITY];
+static atomic_size_t YieldPointTrap_registryCount = 0;
+
+static void YieldPointTrap_register(void *addr) {
+    // Writers are serialized by the freelist lock. The release store
+    // publishes the slot to the lock-free reader below.
+    YieldPointTrap_initFreeList();
+    mutex_lock(&YieldPointTrap_freeListLock);
+    size_t idx = atomic_load_explicit(&YieldPointTrap_registryCount,
+                                      memory_order_relaxed);
+    if (idx < YIELD_POINT_TRAP_REGISTRY_CAPACITY) {
+        YieldPointTrap_registry[idx] = addr;
+        atomic_store_explicit(&YieldPointTrap_registryCount, idx + 1,
+                              memory_order_release);
+    }
+    mutex_unlock(&YieldPointTrap_freeListLock);
+    // If the registry is full the page is not recorded and a stale trap on it
+    // is handled as before (only while stopThreads is set).
+}
+
+// Async-signal-safe: no locks or allocation.
+bool YieldPointTrap_isRegisteredPage(const void *faultAddress) {
+    if (faultAddress == NULL)
+        return false;
+    uintptr_t pageSize = getPageSize();
+    uintptr_t faultPage = ((uintptr_t)faultAddress) / pageSize;
+    size_t count = atomic_load_explicit(&YieldPointTrap_registryCount,
+                                        memory_order_acquire);
+    for (size_t i = 0; i < count; i++) {
+        if (((uintptr_t)YieldPointTrap_registry[i]) / pageSize == faultPage)
+            return true;
+    }
+    return false;
+}
+
 #if !defined(__APPLE__)
 void YieldPointTrap_resetTaskMachBadAccessPorts(void) {
     /* No-op on non-Apple. The Apple implementation lives in
@@ -127,6 +180,8 @@ safepoint_t YieldPointTrap_init() {
         GC_LOG_ERROR("Failed to create GC safepoint trap: %s", strerror(errno));
         return NULL;
     }
+    // Only new pages are registered, recycled ones already are.
+    YieldPointTrap_register(addr);
 
 #if defined(__APPLE__)
     YieldPointTrap_resetTaskMachBadAccessPorts();
