@@ -224,7 +224,7 @@ private[junit] final class Reporter(
     var head = 0
     while (head <= m && isJunit(head)) head += 1
 
-    var last = head
+    var last = Math.min(head, m)
     while (last < m && !isJunit(last + 1)) last += 1
 
     while (last > head && isReflect(last)) last -= 1

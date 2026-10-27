@@ -76,17 +76,23 @@ class MonetaryTest {
         assertNotEquals(s"strfmon_l() failed with errno: ${errno}\n", -1, n)
 
         val expected = if (Platform.isLinux()) {
-          "[ $**1234.57] [ USD **1,234.57]"
+          Seq("[ $**1234.57] [ USD **1,234.57]")
         } else if (Platform.isFreeBSD()) {
-          "[ **1234.57 ] [ **1234.57 ]"
+          // FreeBSD locale databases differ in currency symbols and spacing;
+          // en_US.UTF-8 also differs from the older en_US locale.
+          Seq(
+            "[ **1234.57 ] [ **1234.57 ]",
+            "[ **1234.57] [ **1234.57]",
+            "[ $**1234.57] [ USD**1,234.57]"
+          )
         } else {
-          "[ $**1234.57] [ USD**1,234.57]"
+          Seq("[ $**1234.57] [ USD**1,234.57]")
         }
 
-        assertEquals(
-          "Unexpected strfmon_l() result",
-          expected,
-          fromCString(buf)
+        val actual = fromCString(buf)
+        assertTrue(
+          s"Unexpected strfmon_l() result: $actual; expected one of $expected",
+          expected.contains(actual)
         )
 
       } finally {

@@ -21,16 +21,16 @@ class NetworkInterfaceTestOnJDK9 {
   val osIPv6LoopbackSuffix =
     if (Platform.isOpenBSD && Platform.executingInScalaNative)
       s":3:0:0:0:0:0:1%${localhostIf}"
-    else if (Platform.isNetBSD && Platform.executingInScalaNative)
+    else if (Platform.isNetBSD)
       s":2:0:0:0:0:0:1%${localhostIf}"
     else
       s":0:0:0:0:0:0:1%${localhostIf}"
 
   val osIPv6LoopbackAddress =
-    if (Platform.isMacOs) s"fe80${osIPv6LoopbackSuffix}"
+    if (Platform.isMacOs || Platform.isFreeBSD) s"fe80${osIPv6LoopbackSuffix}"
     else if (Platform.isOpenBSD && Platform.executingInScalaNative)
       s"fe80${osIPv6LoopbackSuffix}"
-    else if (Platform.isNetBSD && Platform.executingInScalaNative)
+    else if (Platform.isNetBSD)
       s"fe80${osIPv6LoopbackSuffix}"
     else s"0${osIPv6LoopbackSuffix}"
 
@@ -48,18 +48,19 @@ class NetworkInterfaceTestOnJDK9 {
       .filter(e => {
 
         val hostAddr = e.getHostAddress()
+        val address = LoopbackAddressTestUtils.withoutScope(hostAddr, lbIf)
 
-        // macOS can have two forms of IPv6 loopback address.
+        // BSD loopback interfaces can have both ::1 and a link-local address.
         val expected =
-          if (!hostAddr.contains(":")) {
+          if (!address.contains(":")) {
             "127.0.0.1"
-          } else if (hostAddr.startsWith("0")) {
-            s"0:0:0:0:0:0:0:1%${localhostIf}"
-          } else if (hostAddr.startsWith("f")) {
-            s"${osIPv6LoopbackAddress}"
+          } else if (address.startsWith("0")) {
+            "0:0:0:0:0:0:0:1"
+          } else if (address.startsWith("f")) {
+            osIPv6LoopbackAddress.takeWhile(_ != '%')
           } else "" // fail in a way that will print out ifAddrString
 
-        assertEquals("Unexpected result", expected, hostAddr)
+        assertEquals(s"Unexpected result: ${hostAddr}", expected, address)
         true
       })
       .count

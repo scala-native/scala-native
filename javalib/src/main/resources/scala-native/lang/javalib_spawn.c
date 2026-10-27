@@ -5,6 +5,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#ifdef __NetBSD__
+#include <sys/param.h>
+#endif
 
 #undef SCALANATIVE_JAVALIB_HAVE_POSIX_CHDIR
 
@@ -56,15 +59,11 @@ bool hasFileActionsAddChdir() {
 #endif
 
 #elif defined(__NetBSD__)
-    /* Compilation of this branch has not been exercised.
-     * Possible code:
-     *
-     * #include <sys/param.h>
-     *
-     * #if (__NetBSD_Version__ >= 110000000)
-     * result = true;
-     * #endif
-     */
+    // NetBSD 10 provides the unsuffixed API, without an _np alias.
+#if __NetBSD_Version__ >= 1000000000
+#define SCALANATIVE_JAVALIB_HAVE_POSIX_CHDIR 1
+    result = true;
+#endif
 
 #elif defined(__FreeBSD__)
     /* Compilation of this branch has not been exercised.
@@ -86,9 +85,10 @@ bool hasFileActionsAddChdir() {
 }
 
 void fileActionsAddChdir(posix_spawn_file_actions_t *actions, char *newCwd) {
-// Bionic added addchdir_np in API 34. Do not reference the unavailable symbol
-// on older targets, where hasFileActionsAddChdir() selects the fork fallback.
-#if defined(__LP64__) && (!defined(__ANDROID__) || __ANDROID_API__ >= 34)
+// Do not reference unavailable symbols on older NetBSD or Bionic targets,
+// where hasFileActionsAddChdir() selects the fork fallback.
+#if defined(__LP64__) && (!defined(__ANDROID__) || __ANDROID_API__ >= 34) &&   \
+    (!defined(__NetBSD__) || defined(SCALANATIVE_JAVALIB_HAVE_POSIX_CHDIR))
 
 #if defined(SCALANATIVE_JAVALIB_HAVE_POSIX_CHDIR)
     posix_spawn_file_actions_addchdir(actions, newCwd);

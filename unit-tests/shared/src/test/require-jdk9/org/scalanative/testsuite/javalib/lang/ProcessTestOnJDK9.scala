@@ -169,7 +169,10 @@ class ProcessTestOnJDK9 {
   private def runPingWith(redirect: ProcessBuilder.Redirect): String = {
     // Child sends one ping packet to IPv4 localhost; then returns the output.
     val countOption = if (Platform.isWindows) "-n" else "-c"
-    val argv = Seq("ping", countOption, "1", "127.0.0.1")
+    // BSD ping can reverse-resolve even a numeric destination by default.
+    val numericOption = if (Platform.isWindows) Nil else Seq("-n")
+    val argv =
+      Seq("ping") ++ numericOption ++ Seq(countOption, "1", "127.0.0.1")
 
     val proc: Process =
       processForCommand(argv: _*).redirectOutput(redirect).start()

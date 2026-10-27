@@ -87,16 +87,7 @@ _Static_assert(offsetof(struct scalanative_tm, tm_isdst) ==
                    offsetof(struct tm, tm_isdst),
                "offset mismatch: tm.tm_isdst");
 
-#if defined(__FreeBSD__)
-// timeOps in time.scala fixes up the FreeBSD reversed fields.
-_Static_assert(offsetof(struct scalanative_tm, tm_zone) ==
-                   offsetof(struct tm, tm_gmtoff),
-               "offset mismatch: tm.tm_gmtoff");
-
-_Static_assert(offsetof(struct scalanative_tm, tm_offset) ==
-                   offsetof(struct tm, tm_zone),
-               "offset mismatch: tm.tm_zone");
-#elif !defined(__linux__)
+#if !defined(__linux__)
 _Static_assert(offsetof(struct scalanative_tm, tm_gmtoff) ==
                    offsetof(struct tm, tm_gmtoff),
                "offset mismatch: tm.tm_gmtoff");
@@ -155,6 +146,16 @@ _Static_assert(offsetof(struct scalanative_itimerspec, it_value) ==
                "offset mismatch: itimer.it_value");
 #endif
 #endif // __STDC_VERSION__
+
+// Keep header-selected ABI versions, notably NetBSD's time64 entry points.
+int scalanative_clock_gettime(clockid_t clockid, struct timespec *tp) {
+    return clock_gettime(clockid, tp);
+}
+
+int scalanative_nanosleep(const struct timespec *requested,
+                          struct timespec *remaining) {
+    return nanosleep(requested, remaining);
+}
 
 int scalanative_clock_nanosleep(clockid_t clockid, int flags,
                                 struct timespec *request,

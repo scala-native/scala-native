@@ -4,6 +4,9 @@
 #else // Unix
 #include <pthread.h>
 #include <sys/resource.h>
+#ifdef __FreeBSD__
+#include <pthread_np.h>
+#endif
 #endif // Unix
 
 #include "string_constants.h"
@@ -157,6 +160,34 @@ fallback:;
         }
     }
     fclose(maps);
+#elif defined(__FreeBSD__) || defined(__NetBSD__)
+    pthread_attr_t attr;
+    if (pthread_attr_init(&attr) != 0)
+        return false;
+    if (pthread_attr_get_np(pthread_self(), &attr) != 0) {
+        pthread_attr_destroy(&attr);
+        return false;
+    }
+    void *stackTop;
+    size_t stackSize;
+    int status = pthread_attr_getstack(&attr, &stackTop, &stackSize);
+    pthread_attr_destroy(&attr);
+    if (status != 0)
+        return false;
+    void *stackBottom = (char *)stackTop + stackSize;
+    if (!isInRange(onStackPointer, stackTop, stackBottom))
+        return false;
+    currentThreadInfo.stackBottom = stackBottom;
+    // BSD main stacks grow on demand. Protecting a page near the bottom of
+    // the reserved range can prevent the kernel from growing the stack above
+    // it. Start at the active page so tryGrowStack commits the intervening
+    // pages before installing the guard.
+    currentThreadInfo.stackTop = alignToPageStart(onStackPointer);
+    currentThreadInfo.stackSize =
+        (char *)stackBottom - (char *)currentThreadInfo.stackTop;
+    if (currentThreadInfo.maxStackSize > stackSize)
+        currentThreadInfo.maxStackSize = stackSize;
+    return true;
 #elif defined(__APPLE__) && defined(__MACH__)
     // No way to get thread-specific guard size
     // Use the default one

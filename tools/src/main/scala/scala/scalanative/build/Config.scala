@@ -174,6 +174,11 @@ sealed trait Config {
       Seq("linux").exists(customTriple.contains(_))
     }
 
+  private[scalanative] lazy val targetsFreeBSD: Boolean =
+    compilerConfig.targetTriple.fold(Platform.isFreeBSD) { customTriple =>
+      customTriple.contains("freebsd")
+    }
+
   private[scalanative] lazy val targetsOpenBSD: Boolean =
     compilerConfig.targetTriple.fold(Platform.isOpenBSD) { customTriple =>
       Seq("openbsd").exists(customTriple.contains(_))

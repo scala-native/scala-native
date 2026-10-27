@@ -79,6 +79,7 @@ private[scalanative] trait locale {
 
   def localeconv(): Ptr[lconv] = extern
 
+  @name("scalanative_setlocale")
   def setlocale(category: CInt, locale: CString): CString = extern
 }
 
