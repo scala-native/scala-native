@@ -60,6 +60,19 @@ trait NativeThread {
     case _                => _state = newState
   }
 
+  /** Runs `body` in `newState`, then restores the previous state. Nested
+   *  monitor enters, parks and sleeps must not clear `WaitingOnMonitorEnter`,
+   *  so it is kept while `body` runs. `body` must not unmount a virtual thread:
+   *  the state is restored on this carrier.
+   */
+  @alwaysinline
+  protected[runtime] final def withState[T](newState: State)(body: => T): T = {
+    val previous = _state
+    if (previous ne State.WaitingOnMonitorEnter) state = newState
+    try body
+    finally state = previous
+  }
+
   if (isMainThread) {
     TLS.assignCurrentThread(thread, this)
     state = State.Running
