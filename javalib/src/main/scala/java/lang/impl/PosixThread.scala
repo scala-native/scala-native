@@ -163,6 +163,17 @@ private[java] class PosixThread(
     if (time < 0 || (isAbsolute && time == 0)) return
     val absTime = stackalloc[timespec]()
     if (time > 0) toAbsoluteTime(absTime, time, isAbsolute)
+    // Compensation may call unpark on this thread, so run it outside `lock`.
+    withCarrierCompensation {
+      parkLocked(time, isAbsolute, absTime)
+    }
+  }
+
+  private def parkLocked(
+      time: Long,
+      isAbsolute: Boolean,
+      absTime: Ptr[timespec]
+  ): Unit = {
     // Interference with ongoing unpark
     if (pthread_mutex_trylock(lock) != 0) return
 
