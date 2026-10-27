@@ -10,6 +10,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// The value of envName in the environment, else the build's define of the
+// same name, else NULL
+const char *get_defined_or_env(const char *envName);
+
+// The build's define named envName, else NULL
+const char *get_defined(const char *envName);
+
 // =============================================================================
 // Size Parsing (with K/M/G suffixes for heap sizes)
 // =============================================================================

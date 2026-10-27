@@ -20,7 +20,7 @@ The GC_INITIAL_HEAP_SIZE and GC_MAXIMUM_HEAP_SIZE are ignored by None GC when mu
 
 ## Compile Time Memory Settings
 
-The GC_INITIAL_HEAP_SIZE, GC_MAXIMUM_HEAP_SIZE and for None GC the GC_THREAD_HEAP_BLOCK_SIZE can be set at **compile time** by using **defines** in the build. Refer to the None GC section below for details about GC_THREAD_HEAP_BLOCK_SIZE.
+The GC_INITIAL_HEAP_SIZE, GC_MAXIMUM_HEAP_SIZE, for None GC the GC_THREAD_HEAP_BLOCK_SIZE and for Commix the GC_NPROCS can be set at **compile time** by using **defines** in the build. Refer to the None GC section below for details about GC_THREAD_HEAP_BLOCK_SIZE, and to the Commix GC section for GC_NPROCS.
 
 The following examples shows how to set compile time memory values which is useful for the developer to provide a good user experience. A key feature is that the values can be overridden with environment variables by the user if supported on the platform. We also support the define DEBUG_PRINT to see the values passed to the GC as shown below in the first example build setup.
 
@@ -126,6 +126,23 @@ In addition to the variables described above for Immix, Commix has the
 following variable shared with Boehm.
 
 -   GC_NPROCS (default is processor count - 1 up to 8 maximum)
+
+    A build can change the default with the define of the same name, for
+    example `-DGC_NPROCS=4` among its compile options, as for the heap sizes
+    above: the default is then that number, but no more than the processor
+    count - 1 (and at least 1). The environment variable still sets the
+    number exactly, and a value that is not a number is ignored with a
+    warning. The number in use is logged at `SCALANATIVE_GC_LOG_LEVEL=info`.
+
+    ``` scala
+    nativeConfig ~= { c =>
+      c.withGC(GC.commix)
+        .withCompileOptions(_ :+ "-DGC_NPROCS=4")
+    }
+    ```
+
+    The define does not apply to Boehm, which reads only the environment
+    variable.
 
 Commix also adds a few more variables which do not match the Boehm
 settings yet.
