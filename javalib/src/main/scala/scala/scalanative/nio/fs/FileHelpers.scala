@@ -3,6 +3,7 @@ package scala.scalanative.nio.fs
 import java.io.{File, IOException}
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Path, PosixException, WindowsException}
+import java.util.WindowsHelperMethods._
 import java.{lang => jl, util => ju}
 
 import scala.collection.mutable.UnrolledBuffer
@@ -96,12 +97,10 @@ object FileHelpers {
 
     def listWindows() = Zone.acquire { implicit z =>
       val searchPath = raw"$path\*"
-      if (searchPath.length.toUInt > FileApiExt.MAX_PATH)
-        throw new IOException("File name to long")
 
       val fileData = stackalloc[Win32FindDataW]()
       val searchHandle =
-        FindFirstFileW(toCWideStringUTF16LE(searchPath), fileData)
+        FindFirstFileW(toWindowsPath(searchPath), fileData)
       if (searchHandle == INVALID_HANDLE_VALUE) {
         if (allowEmpty) Array.empty[T]
         else throw WindowsException.onPath(path)
@@ -138,7 +137,7 @@ object FileHelpers {
       Zone.acquire { implicit z =>
         if (isWindows) {
           val handle = CreateFileW(
-            toCWideStringUTF16LE(path),
+            toWindowsPath(path),
             desiredAccess = FILE_GENERIC_WRITE,
             shareMode = FILE_SHARE_ALL,
             securityAttributes = null,
@@ -242,7 +241,7 @@ object FileHelpers {
         import ErrorCodes._
         def canAccessAttributes = // fast-path
           GetFileAttributesW(
-            toCWideStringUTF16LE(path)
+            toWindowsPath(path)
           ) != INVALID_FILE_ATTRIBUTES
         def errorCodeIndicatesExistence = GetLastError() match {
           case ERROR_FILE_NOT_FOUND | ERROR_PATH_NOT_FOUND |

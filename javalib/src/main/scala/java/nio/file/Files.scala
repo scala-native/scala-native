@@ -462,7 +462,7 @@ object Files {
       val file = dir.toFile()
       if (isWindows) {
         val created = FileApi.CreateDirectoryW(
-          toCWideStringUTF16LE(file.getAbsolutePath()),
+          toWindowsPath(file.getAbsolutePath()),
           securityAttributes = null
         )
         if (created) None
@@ -541,8 +541,10 @@ object Files {
     def tryCreateLink() = Zone.acquire { implicit z =>
       if (isWindows) {
         import WinBaseApiExt._
-        val targetFilename = toCWideStringUTF16LE(target.toString())
-        val linkFilename = toCWideStringUTF16LE(link.toString())
+        val targetFilename =
+          if (target.isAbsolute()) toWindowsPath(target.toString())
+          else toCWideStringUTF16LE(target.toString())
+        val linkFilename = toWindowsPath(link.toString())
         val resolvedTarget =
           if (target.isAbsolute()) target
           else link.toAbsolutePath().getParent().resolve(target)
@@ -1404,7 +1406,7 @@ object Files {
             val buffer: Ptr[WChar] = alloc[WChar](bufferSize)
             if (FileApi.readSymbolicLink(handle, buffer, bufferSize) < 0)
               throw WindowsException.onPath(link.toString)
-            fromCWideString(buffer, StandardCharsets.UTF_16LE)
+            fromWindowsPath(fromCWideString(buffer, StandardCharsets.UTF_16LE))
           }
         } else {
           val buf: CString = alloc[Byte](limits.PATH_MAX)

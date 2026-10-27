@@ -180,7 +180,7 @@ final class WindowsDosFileAttributeView(path: Path, options: Array[LinkOption])
 
   private def setWinAttribute(attribute: DWord, enabled: Boolean): Unit =
     Zone.acquire { implicit z =>
-      val filename = toCWideStringUTF16LE(pathAbs)
+      val filename = toWindowsPath(pathAbs)
       val previousAttrs = FileApi.GetFileAttributesW(filename)
       def setNewAttrs(): Boolean = {
         val newAttributes =
