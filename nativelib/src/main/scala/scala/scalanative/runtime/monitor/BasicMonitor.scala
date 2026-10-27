@@ -76,7 +76,10 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
         if (current.recursionCount < ThinMonitorMaxRecursion) {
           // No need for atomic operation since we already obtain the lock
           storeRawPtr(lockWordRef, current.withIncreasedRecursion)
-        } else inflate(thread)
+        } else {
+          // inflate counts the earlier entries; add this one
+          inflate(thread).enter(thread)
+        }
       } else lockAndInflate(thread, threadId)
     }
     if (native != null) native.state = State.Running
