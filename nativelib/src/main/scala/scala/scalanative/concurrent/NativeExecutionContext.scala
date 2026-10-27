@@ -70,6 +70,14 @@ object NativeExecutionContext {
      */
     def stealWork(timeout: FiniteDuration): Unit
 
+    /** `stealWork` with a timeout in nanoseconds, which avoids creating a
+     *  `Duration`.
+     */
+    def stealWorkNanos(timeoutNanos: Long): Unit
+
+    /** `stealWork` with a timeout in milliseconds. */
+    def stealWorkMillis(timeoutMillis: Long): Unit
+
     /** Apply work-stealing mechanism to help with completion of available tasks
      *  available for execution. Returns when there is no more tasks available
      *  for execution

@@ -65,15 +65,24 @@ private[concurrent] class QueueExecutionContextImpl()
     }
   }
 
+  // `timeout > Duration.Zero` would initialize the `Duration` module
   override def stealWork(timeout: FiniteDuration): Unit =
-    if (timeout > Duration.Zero) {
-      var clock = nowMillis()
-      val deadline = clock + timeout.toMillis + 1
-      while (nonEmpty && clock <= deadline) {
-        doStealWork()
-        clock = nowMillis()
-      }
+    if (timeout.toNanos > 0L) stealWorkFor(timeout.toMillis)
+
+  override def stealWorkNanos(timeoutNanos: Long): Unit =
+    if (timeoutNanos > 0L) stealWorkFor(timeoutNanos / 1000000L)
+
+  override def stealWorkMillis(timeoutMillis: Long): Unit =
+    if (timeoutMillis > 0L) stealWorkFor(timeoutMillis)
+
+  private def stealWorkFor(timeoutMillis: Long): Unit = {
+    var clock = nowMillis()
+    val deadline = clock + timeoutMillis + 1
+    while (nonEmpty && clock <= deadline) {
+      doStealWork()
+      clock = nowMillis()
     }
+  }
 
   override def helpComplete(): Unit =
     while (nonEmpty) stealWork(Int.MaxValue)
