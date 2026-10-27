@@ -46,4 +46,14 @@ void GC_Roots_RemoveByRange(GC_Roots *roots, AddressRange range) {
     }
     mutex_unlock(&roots->modificationLock);
 }
+
+bool GC_Roots_Covers(GC_Roots *roots, const word_t *low, const word_t *high) {
+    AddressRange range = {low, high};
+    bool covered = false;
+    mutex_lock(&roots->modificationLock);
+    for (GC_Root *it = roots->head; it != NULL && !covered; it = it->next)
+        covered = AddressRange_Contains(it->range, range);
+    mutex_unlock(&roots->modificationLock);
+    return covered;
+}
 #endif
