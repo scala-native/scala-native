@@ -57,17 +57,22 @@ abstract class LinkerSpec {
       entry: String,
       sources: Map[String, String],
       setupConfig: NativeConfig => NativeConfig = identity
-  )(fn: (Config, ReachabilityAnalysis) => T): T =
-    Scope { implicit in =>
-      val outDir = Files.createTempDirectory("native-test-out")
-      val compiler = NIRCompiler.getCompiler(outDir)
-      val sourcesDir = NIRCompiler.writeSources(sources)
-      val files = compiler.compile(sourcesDir)
-      val config = makeConfig(outDir, entry, setupConfig)
-      val entries = ScalaNative.entries(config)
-      val result = linker.Link(config, entries)
-      fn(config, result)
-    }
+  )(fn: (Config, ReachabilityAnalysis) => T): T = {
+    // Deleted once the scope has closed what it opened in the directory
+    val outDir = Files.createTempDirectory("native-test-out")
+    try
+      NIRCompiler.withSourceDir(sources) { sourcesDir =>
+        Scope { implicit in =>
+          val compiler = NIRCompiler.getCompiler(outDir)
+          val files = compiler.compile(sourcesDir)
+          val config = makeConfig(outDir, entry, setupConfig)
+          val entries = ScalaNative.entries(config)
+          val result = linker.Link(config, entries)
+          fn(config, result)
+        }
+      }
+    finally scalanative.build.IO.deleteRecursive(outDir)
+  }
 
   private def makeClasspath(outDir: Path)(implicit in: Scope) = {
     val parts: Array[Path] =
