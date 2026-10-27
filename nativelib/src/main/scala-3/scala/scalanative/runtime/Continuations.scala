@@ -135,10 +135,6 @@ object Continuations:
   private val boundaryBodyFnAny: ContinuationBodyPtr[Any] =
     CFuncPtr2.fromScalaFunction((label, arg) => arg(label))
 
-  @exported("scalanative_continuation_exception_to_failure")
-  def continuationExceptionToFailure(exception: java.lang.Throwable): Try[Any] =
-    Failure(exception)
-
   /** Allocate a blob of memory of `size` bytes, from `continuation`'s
    *  implementation of `Continuation.alloc`.
    */
@@ -209,3 +205,13 @@ object Continuations:
   def handlersReset(): Unit =
     if isContinuationsSupported then Impl.handlersReset()
 end Continuations
+
+/** Entry point used by delimcc.c / eh.cpp. Kept outside of `Continuations` so
+ *  that exporting it does not make `Continuations` (and delimcc) always
+ *  reachable.
+ */
+private[runtime] object ContinuationsExceptions:
+  @exported("scalanative_continuation_exception_to_failure")
+  def continuationExceptionToFailure(
+      exception: java.lang.Throwable
+  ): Try[Any] = Failure(exception)
