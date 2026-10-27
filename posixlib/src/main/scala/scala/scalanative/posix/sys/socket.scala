@@ -380,6 +380,7 @@ object socket {
   @name("scalanative_sockatmark") // A stub on Win32, see top of file
   def sockatmark(socket: CInt): CInt = extern
 
+  @name("scalanative_socket")
   def socket(domain: CInt, tpe: CInt, protocol: CInt): CInt = extern
 
   @name("scalanative_socketpair") // A stub on Win32, see top of file

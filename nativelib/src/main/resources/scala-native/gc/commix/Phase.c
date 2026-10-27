@@ -44,11 +44,11 @@ void Phase_Init(Heap *heap, uint32_t initialBlockCount) {
     char startWorkersName[SEM_MAX_LENGTH];
     char startMasterName[SEM_MAX_LENGTH];
 
-#if defined(__FreeBSD__)
-#define SEM_NAME_PREFIX "/" // FreeBSD semaphore names must start with '/'
+#if defined(__FreeBSD__) || defined(__NetBSD__)
+#define SEM_NAME_PREFIX "/" // BSD semaphore names must start with '/'
 #else
 #define SEM_NAME_PREFIX ""
-#endif // __FreeBSD__
+#endif
 
     snprintf(startWorkersName, SEM_MAX_LENGTH, SEM_NAME_PREFIX "mt_%d_commix",
              pid);

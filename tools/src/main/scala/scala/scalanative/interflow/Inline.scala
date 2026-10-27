@@ -50,10 +50,12 @@ private[interflow] trait Inline { self: Interflow =>
             alwaysInline || hintInline || isSmall || isCtor || hasVirtualArgs
         }
         lazy val shallNot = {
+          // A callee with exception handlers is not inlined: its throws and
+          // calls would have to be remapped to the caller's handlers
           def hardLimits =
-            isRecursive || isDenylisted || noInline || isExtern
+            isRecursive || isDenylisted || noInline || isExtern || hasUnwind
           def softLimits =
-            calleeTooBig || callerTooBig || hasUnwind || inlineDepthLimitExceeded
+            calleeTooBig || callerTooBig || inlineDepthLimitExceeded
 
           if (alwaysInline) hardLimits
           else hardLimits || softLimits

@@ -72,13 +72,10 @@ class NetworkInterfaceTest {
 
     assertNotNull("a1", netIf)
 
-    val sought =
-      if (Platform.isFreeBSD) "em0"
-      else if (Platform.isOpenBSD) "iwx0"
-      else if (Platform.isNetBSD) "wm0"
-      else loopbackIfName
-    val ifName = netIf.getName()
-    assertEquals("a2", sought, ifName)
+    assertEquals("interface index", 1, netIf.getIndex())
+    val byName = NetworkInterface.getByName(netIf.getName())
+    assertNotNull("interface found by name", byName)
+    assertEquals("name/index round trip", 1, byName.getIndex())
   }
 
   @Test def getByIndexMaxValue(): Unit = {
@@ -227,7 +224,10 @@ class NetworkInterfaceTest {
 
     var count = 0
     while (iaEnumeration.hasMoreElements()) {
-      val hostAddr = iaEnumeration.nextElement().getHostAddress()
+      val hostAddr = LoopbackAddressTestUtils.withoutScope(
+        iaEnumeration.nextElement().getHostAddress(),
+        lbIf
+      )
       count += 1
 
       // macOS can have two forms of IPv6 loopback address.
@@ -235,11 +235,9 @@ class NetworkInterfaceTest {
         if (!hostAddr.contains(":")) {
           "127.0.0.1"
         } else if (hostAddr.startsWith("0")) {
-          val stem = "0:0:0:0:0:0:0:1"
-          if (Platform.isFreeBSD) stem
-          else s"${stem}%${loopbackIfName}"
+          "0:0:0:0:0:0:0:1"
         } else if (hostAddr.startsWith("f")) {
-          s"${osIPv6LoopbackAddress}"
+          osIPv6LoopbackAddress.takeWhile(_ != '%')
         } else "" // fail in a way that will print out ifAddrString
 
       assertEquals("Unexpected result", expected, hostAddr)

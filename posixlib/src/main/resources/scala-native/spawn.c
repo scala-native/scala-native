@@ -53,7 +53,7 @@ int scalanative_posix_spawn_setsid() {
 #elif defined(__linux__)
     return 0x80; // HACK, __USE_GNU value
 #else
-#warning "POSIX_SPAWN_SETSID is not defined on this platform, using 0"
+    // Unsupported: zero bits leave the session unchanged.
     return 0x0;
 #endif
 }

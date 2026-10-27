@@ -105,9 +105,9 @@ object Array {
       throw new ArrayIndexOutOfBoundsException("length is negative")
     } else if (len == 0) {
       ()
-    } else if (fromPos < 0 || fromPos + len > from.length) {
+    } else if (fromPos < 0 || len > from.length - fromPos) {
       throwOutOfBounds(fromPos, from.length)
-    } else if (toPos < 0 || toPos + len > to.length) {
+    } else if (toPos < 0 || len > to.length - toPos) {
       throwOutOfBounds(toPos, to.length)
     } else {
       val fromPtr = from.atRawUnsafe(fromPos)
@@ -154,9 +154,9 @@ object Array {
       throw new ArrayStoreException("Invalid array comparison.")
     } else if (len < 0) {
       throw new ArrayIndexOutOfBoundsException("length is negative")
-    } else if (leftPos < 0 || leftPos + len > left.length) {
+    } else if (leftPos < 0 || len > left.length - leftPos) {
       throwOutOfBounds(leftPos, left.length)
-    } else if (rightPos < 0 || rightPos + len > right.length) {
+    } else if (rightPos < 0 || len > right.length - rightPos) {
       throwOutOfBounds(rightPos, right.length)
     } else if (len == 0) {
       0

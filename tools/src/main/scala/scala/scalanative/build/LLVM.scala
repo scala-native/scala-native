@@ -119,7 +119,7 @@ private[scalanative] object LLVM {
     // compile
     config.logger.running(compilec)
     val result = Process(compilec, workDir.toFile) !
-      Logger.toProcessLogger(config.logger)
+      Logger.toCompilerProcessLogger(config.logger)
     if (result != 0) {
       throw new BuildException(s"Failed to compile ${inpath}")
     }
@@ -160,7 +160,7 @@ private[scalanative] object LLVM {
         prepareArchiveCommand(objectsPaths)
     }
     // link
-    val result = command ! Logger.toProcessLogger(config.logger)
+    val result = command ! Logger.toCompilerProcessLogger(config.logger)
     if (result != 0) {
       throw new BuildException(s"Failed to link ${buildPath}")
     }
@@ -174,7 +174,7 @@ private[scalanative] object LLVM {
   def dsymutil(config: Config, path: Path): Unit =
     Discover.tryDiscover("dsymutil", "LLVM_BIN").flatMap { dsymutil =>
       val proc = Process(Seq(dsymutil.abs, path.abs), config.workDir.toFile())
-      val result = proc ! Logger.toProcessLogger(config.logger)
+      val result = proc ! Logger.toCompilerProcessLogger(config.logger)
       if (result != 0) {
         Failure(
           new BuildException(
@@ -223,15 +223,18 @@ private[scalanative] object LLVM {
     val workDir = config.workDir
     val links = {
       val srclinks = analysis.links.map(_.name)
-      val gclinks = config.gc.links
+      // FreeBSD packages the thread-enabled Boehm collector separately.
+      val gclinks =
+        if (config.gc == GC.boehm && config.targetsFreeBSD) Seq("gc-threaded")
+        else config.gc.links
       // We need extra linking dependencies for:
       // * libdl for our vendored libunwind implementation.
       // * libpthread for process APIs and parallel garbage collection.
       // * Dbghelp for windows implementation of unwind libunwind API
       val platformsLinks =
         if (config.targetsWindows) Seq("dbghelp")
-        else if (config.targetsOpenBSD || config.targetsNetBSD)
-          Seq("pthread")
+        else if (config.targetsOpenBSD) Seq("pthread")
+        else if (config.targetsNetBSD) Seq("pthread", "m")
         else Seq("pthread", "dl", "m")
       platformsLinks ++ srclinks ++ gclinks
     }.distinct

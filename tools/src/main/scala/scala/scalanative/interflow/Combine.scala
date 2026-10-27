@@ -259,7 +259,7 @@ private[interflow] trait Combine { self: Interflow =>
           case (BinRef(Lshr, x, nir.Val.Long(a)), nir.Val.Long(b)) =>
             val dist = (a & 63) + (b & 63)
             if (dist >= 64) {
-              nir.Val.Int(0)
+              nir.Val.Long(0)
             } else {
               combine(Lshr, ty, x, nir.Val.Long(dist))
             }
@@ -409,6 +409,9 @@ private[interflow] trait Combine { self: Interflow =>
     }
   }
 
+  /** Combines the comparison `l comp r`. As for binary operations, a
+   *  commutative comparison has its canonical operand, if any, on the right.
+   */
   def combine(comp: nir.Comp, ty: nir.Type, l: nir.Val, r: nir.Val)(implicit
       state: State,
       srcPosition: nir.SourcePosition,
@@ -585,7 +588,7 @@ private[interflow] trait Combine { self: Interflow =>
         combine(Ine, ty, x, y)
 
       case (_, l, r) =>
-        delay(nir.Op.Comp(comp, ty, r, l))
+        delay(nir.Op.Comp(comp, ty, l, r))
     }
   }
 
@@ -662,10 +665,11 @@ private[interflow] trait Combine { self: Interflow =>
       unreachable
   }
 
+  // Zero is no power of two: a division by zero throws
   private def isPowerOfTwoOrMinValue(x: Int): Boolean =
-    (x & (x - 1)) == 0
+    x != 0 && (x & (x - 1)) == 0
 
   private def isPowerOfTwoOrMinValue(x: Long): Boolean =
-    (x & (x - 1)) == 0
+    x != 0 && (x & (x - 1)) == 0
 
 }

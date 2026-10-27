@@ -172,15 +172,16 @@ private[scalanative] object SignalConfig {
       setHandler(SIGQUIT)
       setHandler(SIGTTIN)
       setHandler(SIGTTOU)
-      setHandler(SIGUSR1)
-      setHandler(SIGUSR2)
       setHandler(SIGPROF)
       setHandler(SIGSYS)
       setHandler(SIGTRAP)
       setHandler(SIGVTALRM)
-      if (LinktimeInfo.isMultithreadingEnabled && LinktimeInfo.gc.isBoehm) ()
-      else {
-        // Used by Boehm GC StopTheWorld signal handlers
+      if (!LinktimeInfo.gc.isBoehm) {
+        // Boehm uses SIGUSR1/SIGUSR2 on FreeBSD and SIGXCPU/SIGXFSZ on other platforms.
+        // Preserve its stop-the-world handlers, including with native workers
+        // in single-threaded Scala builds.
+        setHandler(SIGUSR1)
+        setHandler(SIGUSR2)
         setHandler(SIGXCPU)
         setHandler(SIGXFSZ)
       }

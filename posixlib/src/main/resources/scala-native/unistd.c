@@ -26,13 +26,27 @@
  * prevent an application developer from getting the parts of an application
  * which do not actually use the constants from running.
  */
+#ifndef _XOPEN_VERSION
 #define _XOPEN_VERSION 0
+#endif
+#ifndef _PC_2_SYMLINKS
 #define _PC_2_SYMLINKS 0
+#endif
+#ifndef _SC_SS_REPL_MAX
 #define _SC_SS_REPL_MAX 0
+#endif
+#ifndef _SC_TRACE_EVENT_NAME_MAX
 #define _SC_TRACE_EVENT_NAME_MAX 0
+#endif
+#ifndef _SC_TRACE_NAME_MAX
 #define _SC_TRACE_NAME_MAX 0
+#endif
+#ifndef _SC_TRACE_SYS_MAX
 #define _SC_TRACE_SYS_MAX 0
+#endif
+#ifndef _SC_TRACE_USER_EVENT_MAX
 #define _SC_TRACE_USER_EVENT_MAX 0
+#endif
 #endif // __FreeBSD__ || __OpenBSD__ || __NetBSD__
 
 #if defined(__ANDROID__) && !defined(_CS_PATH)
