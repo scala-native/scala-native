@@ -61,37 +61,14 @@ runs:
       with:
         path: |
           ${{steps.resolve-env.outputs.ProgramFiles}}\LLVM\
-        key: llvm-${{ inputs.llvm-version }}
+        # A change to install-llvm.ps1 starts a new cache.
+        key: llvm-${{ inputs.llvm-version }}-${{ hashFiles('.github/actions/windows-setup-env/install-llvm.ps1') }}
 
-    # Install LLVM in case if cache is missing
+    # Does nothing when the cache restored this LLVM version.
     - name: Install LLVM
       shell: pwsh
       run: |
-        $retryCount = 3
-        $retryDelay = 5  # seconds
-
-        function InstallLLVM {
-            Write-Host "Attempting to install LLVM (try $($retryCount + 1 - $global:retryAttempt) of $($retryCount + 1))..."
-            choco install llvm --version=${{ inputs.llvm-version }} --allow-downgrade --force
-        }
-
-        # Attempt to install LLVM with retries
-        for ($global:retryAttempt = 1; $global:retryAttempt -le $retryCount; $global:retryAttempt++) {
-            try {
-                InstallLLVM
-                Write-Host "LLVM installation successful!"
-                break  # Exit the loop if installation is successful
-            } catch {
-                Write-Host "Error installing LLVM: $_"
-                if ($global:retryAttempt -lt $retryCount) {
-                    Write-Host "Retrying in $retryDelay seconds..."
-                    Start-Sleep -Seconds $retryDelay
-                } else {
-                    Write-Host "Maximum retry attempts reached. Exiting."
-                    exit 1
-                }
-            }
-        }
+        & "${{ github.action_path }}\install-llvm.ps1" -Version '${{ inputs.llvm-version }}'
 
     - name: Expose LLVM to Scala Native (PATH and LLVM_BIN)
       shell: pwsh
