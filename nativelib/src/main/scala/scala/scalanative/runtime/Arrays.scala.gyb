@@ -227,7 +227,7 @@ final class ${T}Array private () extends Array[${Repr}] {
 
   @inline override def clone(): ${T}Array = {
     val arrcls  = classOf[${T}Array]
-    val arr     = GC.alloc_array(arrcls, length, ${sizeT})
+    val arr     = GC.alloc_array(arrcls, castIntToRawSizeUnsigned(length), castIntToRawSize(${sizeT}))
     val src     = castObjectToRawPtr(this)
     ffi.memcpy(
       elemRawPtr(arr, MemoryLayout.Array.ValuesOffset),
@@ -249,7 +249,7 @@ object ${T}Array {
       throw new NegativeArraySizeException
     }
     val arrcls  = classOf[${T}Array]
-    val arr = GC.alloc_array(arrcls, length, ${sizeT}) 
+    val arr = GC.alloc_array(arrcls, castIntToRawSizeUnsigned(length), castIntToRawSize(${sizeT})) 
     val array = castRawPtrToObject(arr).asInstanceOf[${T}Array]
   % if T == 'Blob':
     array.setScannableLimitUnsafe(length)

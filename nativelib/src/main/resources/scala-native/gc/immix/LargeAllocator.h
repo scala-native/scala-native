@@ -27,7 +27,8 @@ typedef struct {
 void LargeAllocator_Init(LargeAllocator *allocator,
                          BlockAllocator *blockAllocator, Bytemap *bytemap,
                          word_t *blockMetaStart, word_t *heapStart);
-word_t *LargeAllocator_Alloc(Heap *heap, uint32_t objectSize);
+/** Allocates an object of `objectSize` bytes, or throws OutOfMemoryError. */
+word_t *LargeAllocator_Alloc(Heap *heap, size_t objectSize);
 bool LargeAllocator_Reserve(LargeAllocator *allocator, size_t size);
 // Called only by the stopped-world collection owner.
 bool LargeAllocator_ReserveRecycled(LargeAllocator *allocator, size_t size);

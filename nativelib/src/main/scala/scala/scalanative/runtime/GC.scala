@@ -11,17 +11,20 @@ import scalanative.unsafe._
  */
 @extern
 object GC {
+  // Sizes and lengths are size_t in C, as in the code Lower generates
   @name("scalanative_GC_alloc")
-  private[runtime] def alloc(cls: Class[_], size: Int): RawPtr = extern
+  private[runtime] def alloc(cls: Class[_], size: RawSize): RawPtr = extern
   @name("scalanative_GC_alloc_small")
-  private[runtime] def alloc_small(cls: Class[_], size: Int): RawPtr = extern
+  private[runtime] def alloc_small(cls: Class[_], size: RawSize): RawPtr =
+    extern
   @name("scalanative_GC_alloc_large")
-  private[runtime] def alloc_large(cls: Class[_], size: Int): RawPtr = extern
+  private[runtime] def alloc_large(cls: Class[_], size: RawSize): RawPtr =
+    extern
   @name("scalanative_GC_alloc_array")
   private[runtime] def alloc_array[T <: Array[_]](
       cls: Class[T],
-      length: Int,
-      stride: Int
+      length: RawSize,
+      stride: RawSize
   ): RawPtr = extern
 
   @name("scalanative_GC_collect")

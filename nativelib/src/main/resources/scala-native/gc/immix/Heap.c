@@ -224,7 +224,7 @@ void Heap_ThrowOutOfMemory(Heap *heap) {
     scalanative_throw(error);
 }
 
-static bool Heap_reserveAllocation(uint32_t size) {
+static bool Heap_reserveAllocation(size_t size) {
     if (size >= MIN_BLOCK_SIZE) {
         LargeAllocator *allocator = &currentMutatorThread->largeAllocator;
         return LargeAllocator_ReserveRecycled(allocator, size) ||
@@ -241,7 +241,7 @@ static bool Heap_reserveAllocation(uint32_t size) {
     return available;
 }
 
-static bool Heap_collect(Heap *heap, Stack *stack, uint32_t allocationSize,
+static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
                          uint64_t generation) {
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     if (!(allocationSize == 0 ? Synchronizer_acquire()
@@ -274,7 +274,7 @@ static bool Heap_collect(Heap *heap, Stack *stack, uint32_t allocationSize,
             uint32_t blocks =
                 (allocationSize + BLOCK_TOTAL_SIZE - 1ULL) / BLOCK_TOTAL_SIZE;
             GC_LOG_DEBUG(
-                "Allocation recovery: size=%u, generation=%" PRIuFAST64,
+                "Allocation recovery: size=%zu, generation=%" PRIuFAST64,
                 allocationSize, atomic_load(&heap->collectionGeneration));
             available = Heap_TryGrow(heap, blocks) &&
                         Heap_reserveAllocation(allocationSize);
@@ -302,7 +302,7 @@ static bool Heap_collect(Heap *heap, Stack *stack, uint32_t allocationSize,
 
 void Heap_Collect(Heap *heap, Stack *stack) { Heap_collect(heap, stack, 0, 0); }
 
-bool Heap_RecoverAllocation(Heap *heap, uint32_t size, uint64_t generation) {
+bool Heap_RecoverAllocation(Heap *heap, size_t size, uint64_t generation) {
     if (atomic_load_explicit(&heap->collectionGeneration,
                              memory_order_acquire) != generation)
         return true;

@@ -24,6 +24,28 @@ object Main {
       case error: OutOfMemoryError => error
     }
 
+  /* Arrays of 4 GiB and more: their sizes do not fit in 32 bits, and must not
+   * be cut down to an allocation that does.
+   */
+  private def allocateBeyond32Bits(): Unit = {
+    for (length <- Seq(1 << 29, (1 << 29) + 1, Int.MaxValue)) {
+      try {
+        sink = new Array[Long](length)
+        throw new AssertionError(s"allocation of $length longs succeeded")
+      } catch {
+        case _: OutOfMemoryError => ()
+      }
+    }
+    try {
+      sink = new Array[AnyRef](Int.MaxValue)
+      throw new AssertionError(
+        "allocation of Int.MaxValue references succeeded"
+      )
+    } catch {
+      case _: OutOfMemoryError => ()
+    }
+  }
+
   // The method name is mangled for private methods, match on the suffix.
   private def hasAllocationFrame(error: OutOfMemoryError): Boolean =
     error
@@ -96,6 +118,8 @@ object Main {
     val second = allocateOversized()
     check(!(first eq second), "second error reused the first instance")
     check(hasAllocationFrame(second), "refilled reserve lost the stack")
+
+    allocateBeyond32Bits()
 
     // Running out of the managed heap is recoverable too: the error unwinds to
     // the mutator, and once the retained objects are dropped the program keeps

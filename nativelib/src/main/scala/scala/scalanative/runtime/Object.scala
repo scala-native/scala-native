@@ -49,7 +49,8 @@ private[runtime] class _Object {
     case _: java.lang.Cloneable =>
       val cls = __getClass()
       val size = cls.size
-      val clone = GC.alloc(cls.asInstanceOf[Class[_]], size)
+      val clone =
+        GC.alloc(cls.asInstanceOf[Class[_]], castIntToRawSizeUnsigned(size))
       val src = castObjectToRawPtr(this)
       ffi.memcpy(clone, src, Intrinsics.castIntToRawSize(size))
       if (isMultithreadingEnabled) {

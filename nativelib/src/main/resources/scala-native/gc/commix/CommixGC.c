@@ -88,7 +88,14 @@ INLINE void *scalanative_GC_alloc_large(Rtti *info, size_t size) {
 }
 INLINE void *scalanative_GC_alloc_array(Rtti *info, size_t length,
                                         size_t stride) {
-    size_t size = info->size + length * stride;
+    size_t size;
+    // A size that a size_t cannot hold (on 32-bit platforms) is larger than
+    // any heap: the largest aligned size stands for it, which the large-object
+    // allocator turns into an OutOfMemoryError
+    if (__builtin_mul_overflow(length, stride, &size) ||
+        __builtin_add_overflow(size, (size_t)info->size, &size) ||
+        size > MAX_ALLOCATION_SIZE)
+        size = MAX_ALLOCATION_SIZE;
     ArrayHeader *alloc = (ArrayHeader *)scalanative_GC_alloc(info, size);
     alloc->length = length;
     alloc->stride = stride;
