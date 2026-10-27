@@ -24,9 +24,8 @@ object WindowsHelperMethods {
   def toWindowsPath(path: String)(implicit z: Zone): CWString = {
     val absolute = new java.io.File(path).getAbsolutePath()
     // Directory creation reserves room for an 8.3 file name within MAX_PATH.
-    if (absolute.length < MAX_PATH.toInt - 12 || absolute.startsWith(
-          "\\\\?\\"
-        ) ||
+    if (absolute.length < MAX_PATH.toInt - 12 ||
+        absolute.startsWith("\\\\?\\") ||
         absolute.startsWith("\\\\.\\"))
       toCWideStringUTF16LE(path)
     else {
