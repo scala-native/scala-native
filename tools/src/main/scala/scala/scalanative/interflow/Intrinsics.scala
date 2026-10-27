@@ -49,21 +49,27 @@ private[interflow] trait Intrinsics { self: Interflow =>
       )
 
     name match {
-      case nir.Global.Member(Class, nir.Rt.GetClassSig) =>
+      // The body of getClass loads the class without checking for null, so
+      // a receiver that may be null goes through a lookup, which checks it
+      case nir.Global.Member(Object, nir.Rt.GetClassSig) =>
         val args = rawArgs.map(eval)
         args match {
           case Seq(VirtualRef(_, cls, _)) =>
             Some(nir.Val.Global(cls.name, nir.Rt.Class))
           case Seq(value) =>
-            val ty = value match {
+            val objty = value match {
               case InstanceRef(ty) => ty
               case _               => value.ty
             }
-            ty match {
+            objty match {
+              case refty: nir.Type.RefKind if refty.isNullable =>
+                val obj = state.materialize(value)
+                val meth = state.emit(nir.Op.Method(obj, nir.Rt.GetClassSig))
+                Some(state.emit(nir.Op.Call(ty, meth, Seq(obj))))
               case refty: nir.Type.RefKind if refty.isExact =>
                 Some(nir.Val.Global(refty.className, nir.Rt.Class))
               case _ =>
-                Some(emit(args))
+                None
             }
           case _ =>
             Some(emit(args))
