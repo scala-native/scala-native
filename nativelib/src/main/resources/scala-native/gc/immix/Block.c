@@ -15,6 +15,9 @@ INLINE void Block_recycleUnmarkedBlock(Allocator *allocator,
     ObjectMeta_ClearBlockAt(Bytemap_Get(allocator->bytemap, blockStart));
 }
 
+// Free lines found in partially used blocks by the current sweep.
+uint64_t Block_recycledFreeLines = 0;
+
 /**
  * recycles a block and adds it to the allocator
  */
@@ -85,6 +88,7 @@ void Block_Recycle(Allocator *allocator, BlockMeta *blockMeta,
                     bytemapCursor = Bytemap_NextLine(bytemapCursor);
                 }
                 lastRecyclable->size = size;
+                Block_recycledFreeLines += size;
             }
         }
         // If there is no recyclable line, the block is unavailable
