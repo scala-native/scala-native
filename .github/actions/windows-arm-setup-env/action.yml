@@ -40,12 +40,10 @@ runs:
         }
         sbt --version
 
-    # The shared pagefile action fails on ARM64; configure sizes through CIM.
     - name: Configure Pagefile
       shell: pwsh
       run: |
-        & "${{ github.workspace }}/scripts/ci/windows-arm/configure-pagefile.ps1" -MinimumSizeGB 4 -MaximumSizeGB 12 -DiskRoot "C:"
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        & "${{ github.workspace }}/scripts/ci/windows/configure-pagefile.ps1" -MinimumSize 4GB -MaximumSize 12GB -DiskRoot "C:"
 
     - name: Resolve env variables
       id: resolve-env
@@ -53,7 +51,6 @@ runs:
       env:
         VCPKG_DEFAULT_HOST_TRIPLET: arm64-windows
       run: |
-        "LLVMRoot=$(Join-Path $env:RUNNER_TEMP 'llvm-arm64')" >> $env:GITHUB_OUTPUT
         $vcpkgRoot = $env:VCPKG_INSTALLATION_ROOT
         if ([string]::IsNullOrWhiteSpace($vcpkgRoot)) {
           $vcpkgRoot = 'C:\vcpkg'
@@ -69,46 +66,10 @@ runs:
           echo "project-version=3" >> $env:GITHUB_ENV
         }
 
-    - name: Cache LLVM install
-      id: cache-llvm
-      uses: actions/cache@v5
+    - uses: ./.github/actions/windows-llvm-setup
       with:
-        path: ${{ steps.resolve-env.outputs.LLVMRoot }}
-        key: llvm-windows-arm64-native-${{ inputs.llvm-version }}
-
-    # Chocolatey's llvm package installs an x64 compiler even on ARM64 hosts.
-    - name: Install native ARM64 LLVM
-      if: steps.cache-llvm.outputs.cache-hit != 'true'
-      shell: pwsh
-      run: |
-        $version = '${{ inputs.llvm-version }}'
-        $llvmRoot = '${{ steps.resolve-env.outputs.LLVMRoot }}'
-        $installer = Join-Path $env:RUNNER_TEMP "LLVM-$version-woa64.exe"
-        $url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/LLVM-$version-woa64.exe"
-        Invoke-WebRequest -Uri $url -OutFile $installer
-        $process = Start-Process -FilePath $installer -ArgumentList @('/S', "/D=$llvmRoot") -Wait -PassThru
-        if ($process.ExitCode -notin @(0, 3010)) {
-          throw "LLVM installer failed with exit code $($process.ExitCode)"
-        }
-        # Windows may keep the installer locked after it exits. RUNNER_TEMP is
-        # cleaned by the runner, so leave the download there.
-
-    - name: Expose and verify ARM64 LLVM
-      shell: pwsh
-      run: |
-        $llvmBin = Join-Path '${{ steps.resolve-env.outputs.LLVMRoot }}' 'bin'
-        $clang = Join-Path $llvmBin 'clang.exe'
-        if (-not (Test-Path -LiteralPath $clang)) {
-          throw "No clang.exe under $llvmBin"
-        }
-        $target = & $clang -dumpmachine
-        if ($LASTEXITCODE -ne 0 -or $target -notmatch '^aarch64-.*windows-msvc') {
-          throw "Expected native ARM64 Windows LLVM, got target '$target'"
-        }
-        Add-Content -Path $env:GITHUB_ENV -Value "LLVM_BIN=$llvmBin"
-        $llvmBin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-        & $clang --version
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        version: ${{ inputs.llvm-version }}
+        architecture: arm64
 
     - name: Ensure MSVC ARM64 link libraries
       shell: pwsh

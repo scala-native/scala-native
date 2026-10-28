@@ -1,0 +1,35 @@
+name: Windows LLVM setup
+description: Install, cache and expose a verified native Windows LLVM toolchain
+inputs:
+  version:
+    description: LLVM release version, with a pinned checksum in install-llvm.ps1
+    required: true
+  architecture:
+    description: Native compiler architecture (x64 or arm64)
+    default: x64
+runs:
+  using: composite
+  steps:
+    - name: Resolve LLVM directory
+      id: directory
+      shell: pwsh
+      run: |
+        "root=$(Join-Path $env:ProgramFiles 'LLVM')" >> $env:GITHUB_OUTPUT
+
+    - name: Cache LLVM
+      uses: actions/cache@v5
+      with:
+        path: ${{ steps.directory.outputs.root }}
+        key: llvm-windows-${{ inputs.architecture }}-${{ inputs.version }}-${{ hashFiles('scripts/ci/windows/install-llvm.ps1') }}
+
+    - name: Install LLVM
+      shell: pwsh
+      run: |
+        & "${{ github.workspace }}/scripts/ci/windows/install-llvm.ps1" -Version '${{ inputs.version }}' -Architecture '${{ inputs.architecture }}'
+
+    - name: Expose LLVM
+      shell: pwsh
+      run: |
+        $llvmBin = Join-Path '${{ steps.directory.outputs.root }}' 'bin'
+        Add-Content -Path $env:GITHUB_ENV -Value "LLVM_BIN=$llvmBin"
+        $llvmBin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
