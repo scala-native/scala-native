@@ -139,4 +139,12 @@ package object monitor {
       castRawPtrToObject(addr).asInstanceOf[ObjectMonitor]
     }
   }
+
+  /** Runs a contended monitor enter as `Thread.State.BLOCKED`. */
+  @alwaysinline private[monitor] def waitingOnMonitorEnter[T](body: => T): T = {
+    val native = NativeThread.currentNativeThread
+    // Null while an external thread is being adopted.
+    if (native == null) body
+    else native.withState(NativeThread.State.WaitingOnMonitorEnter)(body)
+  }
 }

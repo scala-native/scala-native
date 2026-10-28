@@ -64,11 +64,9 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
   }
 
   private def enterMonitor(thread: Thread, threadId: ThreadId) = {
-    import NativeThread._
     // External adoption briefly runs with null NativeThread TLS while Thread.currentThread falls back to MainThread.
-    // Never touch .state or treat thin-lock ownership as recursive in that window.
-    val native = currentNativeThread
-    if (native != null) native.state = State.WaitingOnMonitorEnter
+    // Never treat thin-lock ownership as recursive in that window.
+    val native = NativeThread.currentNativeThread
     val current = lockWord
     if (current.isInflated) current.getObjectMonitor.enter(thread)
     else {
@@ -80,9 +78,8 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
           // inflate counts the earlier entries; add this one
           inflate(thread).enter(thread)
         }
-      } else lockAndInflate(thread, threadId)
+      } else waitingOnMonitorEnter(lockAndInflate(thread, threadId))
     }
-    if (native != null) native.state = State.Running
   }
 
   @inline def exit(obj: Object): Unit = {

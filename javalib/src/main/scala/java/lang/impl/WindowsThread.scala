@@ -159,12 +159,13 @@ private[java] class WindowsThread(
         WaitForSingleObject(parkEvent, 0.toUInt) == WAIT_OBJECT_0)
       ResetEvent(parkEvent)
     else {
-      state =
+      val parkedState =
         if (parkTime == Infinite) State.ParkedWaiting
         else State.ParkedWaitingTimed
-      WaitForSingleObject(parkEvent, parkTime)
-      ResetEvent(parkEvent)
-      state = State.Running
+      withState(parkedState) {
+        WaitForSingleObject(parkEvent, parkTime)
+        ResetEvent(parkEvent)
+      }
     }
   }
 
@@ -187,21 +188,19 @@ private[java] class WindowsThread(
       }
     }
 
-    state = State.ParkedWaitingTimed
-    try loop(millisRemaining = millis)
-    finally state = State.Running
+    withState(State.ParkedWaitingTimed)(loop(millisRemaining = millis))
     ResetEvent(sleepEvent)
   }
 
   override def sleepNanos(nanos: Int): Unit = {
     val deadline = System.nanoTime() + nanos
     val millis = nanos / NanosInMillisecond
-    state = State.ParkedWaitingTimed
-    if (millis > 0) sleep(millis)
-    while (!thread.isInterrupted() && System.nanoTime() < deadline) {
-      if (!SwitchToThread()) Thread.onSpinWait()
+    withState(State.ParkedWaitingTimed) {
+      if (millis > 0) sleep(millis)
+      while (!thread.isInterrupted() && System.nanoTime() < deadline) {
+        if (!SwitchToThread()) Thread.onSpinWait()
+      }
     }
-    state = State.Running
   }
 }
 
