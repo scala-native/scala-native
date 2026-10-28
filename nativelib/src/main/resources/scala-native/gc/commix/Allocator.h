@@ -25,6 +25,9 @@ typedef struct {
     word_t *largeLimit;
     // additional things used for Allocator_newBlock
     BlockList recycledBlocks;
+    // Recycled blocks taken off a shared list that still have free lines.
+    // Owned by this mutator until the next collection.
+    LocalBlockList parkedBlocks;
     word_t *blockMetaStart;
     word_t *heapStart;
     BlockAllocator *blockAllocator;

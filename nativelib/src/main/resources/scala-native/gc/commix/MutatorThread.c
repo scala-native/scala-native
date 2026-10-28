@@ -27,6 +27,9 @@ static rwlock_t threadListsModificationLock;
 void MutatorThreads_lockRead() {
     rwlock_lockRead(&threadListsModificationLock);
 }
+bool MutatorThreads_tryLockRead() {
+    return rwlock_tryLockRead(&threadListsModificationLock);
+}
 void MutatorThreads_unlockRead() {
     rwlock_unlockRead(&threadListsModificationLock);
 }

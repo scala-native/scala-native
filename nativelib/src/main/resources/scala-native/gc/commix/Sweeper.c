@@ -382,10 +382,10 @@ void Sweeper_Sweep(Stats *stats, atomic_uint_fast32_t *cursorDone,
                  limit, limitIdx);
 
     // skip superblock_middle these are handled by the previous batch
-    while ((BlockMeta_IsSuperblockStartMe(first) ||
-            BlockMeta_IsSuperblockMiddle(first) ||
-            BlockMeta_IsCoalesceMe(first)) &&
-           first < limit) {
+    // `first` may be past the end of block metadata once sweep is done.
+    while (first < limit && (BlockMeta_IsSuperblockStartMe(first) ||
+                             BlockMeta_IsSuperblockMiddle(first) ||
+                             BlockMeta_IsCoalesceMe(first))) {
         GC_LOG_DEBUG("Sweeper_Sweep SuperblockMiddle %p %" PRIu32, first,
                      BlockMeta_GetBlockIndex(heap.blockMetaStart, first));
         startIdx += 1;
