@@ -286,9 +286,9 @@ uint32_t Sweeper_sweepSuperblock(LargeAllocator *allocator,
                                                    block_superblock_start, 1);
             } else {
                 // If we cross the current batch, then it is not to mark a
-                // block_superblock_tail to block_superblock_start. The other
+                // block_superblock_middle to block_superblock_start. The other
                 // sweeper threads could be in the middle of skipping
-                // block_superblock_tail s. Then creating the superblock will
+                // block_superblock_middle s. Then creating the superblock will
                 // be done by Heap_lazyCoalesce
                 BlockMeta_SetFlag(lastBlock, block_superblock_start_me);
             }
@@ -383,10 +383,10 @@ void Sweeper_Sweep(Stats *stats, atomic_uint_fast32_t *cursorDone,
 
     // skip superblock_middle these are handled by the previous batch
     while ((BlockMeta_IsSuperblockStartMe(first) ||
-            BlockMeta_IsSuperblockTail(first) ||
+            BlockMeta_IsSuperblockMiddle(first) ||
             BlockMeta_IsCoalesceMe(first)) &&
            first < limit) {
-        GC_LOG_DEBUG("Sweeper_Sweep SuperblockTail %p %" PRIu32, first,
+        GC_LOG_DEBUG("Sweeper_Sweep SuperblockMiddle %p %" PRIu32, first,
                      BlockMeta_GetBlockIndex(heap.blockMetaStart, first));
         startIdx += 1;
         first += 1;
@@ -424,7 +424,7 @@ void Sweeper_Sweep(Stats *stats, atomic_uint_fast32_t *cursorDone,
         assert(!BlockMeta_IsCoalesceMe(current));
         assert((reserveFirst != NULL && current >= reserveFirst &&
                 current < reserveLimit) ||
-               !BlockMeta_IsSuperblockTail(current));
+               !BlockMeta_IsSuperblockMiddle(current));
         assert(!BlockMeta_IsSuperblockStartMe(current));
         if (BlockMeta_IsReserved(current) ||
             (reserveFirst != NULL && current >= reserveFirst &&
@@ -685,7 +685,7 @@ void Sweeper_AssertIsConsistent(Heap *heap) {
     while (current < limit) {
         assert(!BlockMeta_IsCoalesceMe(current));
         assert(!BlockMeta_IsSuperblockStartMe(current));
-        assert(!BlockMeta_IsSuperblockTail(current));
+        assert(!BlockMeta_IsSuperblockMiddle(current));
         assert(!BlockMeta_IsMarked(current));
 
         int size = 1;

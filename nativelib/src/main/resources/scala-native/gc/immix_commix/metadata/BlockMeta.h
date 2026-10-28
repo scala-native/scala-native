@@ -1,25 +1,25 @@
-#ifndef IMMIX_BLOCKHEADER_H
-#define IMMIX_BLOCKHEADER_H
+#ifndef IMMIX_COMMIX_BLOCKMETA_H
+#define IMMIX_COMMIX_BLOCKMETA_H
 
 #define LAST_HOLE -1
 
 #include <assert.h>
 #include <stdint.h>
 #include <string.h>
-#include "LineMeta.h"
+#include "immix_commix/metadata/LineMeta.h"
 #include "shared/GCTypes.h"
-#include "commix/Constants.h"
+#include "immix_commix/CommonConstants.h"
 #include "immix_commix/UInt24.h"
 
 typedef enum {
     block_free = 0x0,
     block_simple = 0x1,
     block_superblock_start = 0x2,
-    block_superblock_tail = 0x3,
+    block_superblock_middle = 0x3,
     block_reserved = 0x4,
     block_marked = 0x5,              // 0x4 | block_simple
-    block_superblock_start_me = 0xb, // block_superblock_tail | 0x8
-    block_coalesce_me = 0x13         // block_superblock_tail | 0x10
+    block_superblock_start_me = 0xb, // block_superblock_middle | 0x8
+    block_coalesce_me = 0x13         // block_superblock_middle | 0x10
 } BlockFlag;
 
 typedef struct {
@@ -35,7 +35,7 @@ typedef struct {
             UInt24 size;
         } superblock;
     } block;
-#ifdef GC_ASSERTIONS
+#if defined(SCALANATIVE_GC_COMMIX) && defined(GC_ASSERTIONS)
     int32_t nextBlock : BLOCK_COUNT_BITS;
     uint8_t debugFlag; // only for debugging
 #else
@@ -74,8 +74,8 @@ static inline bool BlockMeta_IsReserved(BlockMeta *blockMeta) {
 static inline bool BlockMeta_IsSuperblockStart(BlockMeta *blockMeta) {
     return blockMeta->block.simple.flags == block_superblock_start;
 }
-static inline bool BlockMeta_IsSuperblockTail(BlockMeta *blockMeta) {
-    return blockMeta->block.simple.flags == block_superblock_tail;
+static inline bool BlockMeta_IsSuperblockMiddle(BlockMeta *blockMeta) {
+    return blockMeta->block.simple.flags == block_superblock_middle;
 }
 static inline bool BlockMeta_IsCoalesceMe(BlockMeta *blockMeta) {
     return blockMeta->block.simple.flags == block_coalesce_me;
@@ -90,7 +90,15 @@ static inline uint32_t BlockMeta_SuperblockSize(BlockMeta *blockMeta) {
 
 static inline bool BlockMeta_ContainsLargeObjects(BlockMeta *blockMeta) {
     return BlockMeta_IsSuperblockStart(blockMeta) ||
-           BlockMeta_IsSuperblockTail(blockMeta);
+           BlockMeta_IsSuperblockMiddle(blockMeta);
+}
+
+static inline void BlockMeta_SetSuperblockSize(BlockMeta *blockMeta,
+                                               int32_t superblockSize) {
+    assert(!BlockMeta_IsSuperblockStart(blockMeta) || superblockSize > 0);
+    assert(!BlockMeta_IsSimpleBlock(blockMeta));
+
+    blockMeta->block.superblock.size = UInt24_fromUInt32(superblockSize);
 }
 
 static inline void BlockMeta_SetFlagAndSuperblockSize(BlockMeta *blockMeta,
@@ -173,7 +181,7 @@ static inline word_t *Block_GetBlockStartForWord(word_t *word) {
 static inline BlockMeta *BlockMeta_GetSuperblockStart(word_t *blockMetaStart,
                                                       BlockMeta *blockMeta) {
     BlockMeta *current = blockMeta;
-    while (BlockMeta_IsSuperblockTail(current)) {
+    while (BlockMeta_IsSuperblockMiddle(current)) {
         current--;
         assert((word_t *)current >= blockMetaStart);
     }
@@ -216,4 +224,4 @@ static inline BlockMeta *Block_GetBlockMeta(word_t *blockMetaStart,
     return BlockMeta_GetFromIndex(blockMetaStart, index);
 }
 
-#endif // IMMIX_BLOCKHEADER_H
+#endif // IMMIX_COMMIX_BLOCKMETA_H

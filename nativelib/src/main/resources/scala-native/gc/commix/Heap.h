@@ -5,7 +5,7 @@
 #include "datastructures/Bytemap.h"
 #include "datastructures/BlockRange.h"
 #include "datastructures/GreyPacket.h"
-#include "metadata/LineMeta.h"
+#include "immix_commix/metadata/LineMeta.h"
 #include "Stats.h"
 #include <stdatomic.h>
 #include <stdbool.h>

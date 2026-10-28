@@ -1,8 +1,10 @@
-#ifndef IMMIX_LINEMETA_H
-#define IMMIX_LINEMETA_H
+#ifndef IMMIX_COMMIX_LINEMETA_H
+#define IMMIX_COMMIX_LINEMETA_H
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "shared/GCTypes.h"
+#include "immix_commix/CommonConstants.h"
 
 typedef struct {
     int8_t next;
@@ -22,4 +24,8 @@ static inline bool Line_IsMarked(LineMeta *lineMeta) {
 static inline void Line_Mark(LineMeta *lineMeta) { *lineMeta = line_marked; }
 static inline void Line_Unmark(LineMeta *lineMeta) { *lineMeta = line_empty; }
 
-#endif // IMMIX_LINEMETA_H
+static LineMeta *Line_getFromBlockIndex(word_t *lineMetaStart, uint32_t block) {
+    return (LineMeta *)lineMetaStart + block * LINE_COUNT;
+}
+
+#endif // IMMIX_COMMIX_LINEMETA_H

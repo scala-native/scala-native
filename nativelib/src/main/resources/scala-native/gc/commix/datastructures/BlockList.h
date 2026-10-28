@@ -1,7 +1,7 @@
 #ifndef IMMIX_BLOCLIST_H
 #define IMMIX_BLOCLIST_H
 
-#include "../metadata/BlockMeta.h"
+#include "immix_commix/metadata/BlockMeta.h"
 #include <stdatomic.h>
 
 typedef struct {

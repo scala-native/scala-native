@@ -1,7 +1,7 @@
 #ifndef IMMIX_SWEEPRESULT_H
 #define IMMIX_SWEEPRESULT_H
 
-#include "metadata/BlockMeta.h"
+#include "immix_commix/metadata/BlockMeta.h"
 #include "datastructures/BlockList.h"
 
 #define SUPERBLOCK_LOCAL_LIST_SIZE 4

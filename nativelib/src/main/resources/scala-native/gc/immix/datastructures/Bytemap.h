@@ -6,7 +6,7 @@
 #include <string.h>
 #include "shared/GCTypes.h"
 #include "immix/Constants.h"
-#include "immix/metadata/ObjectMeta.h"
+#include "immix_commix/metadata/ObjectMeta.h"
 
 typedef struct {
     word_t *firstAddress;

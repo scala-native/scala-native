@@ -3,7 +3,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include "BlockList.h"
-#include "commix/metadata/BlockMeta.h"
+#include "immix_commix/metadata/BlockMeta.h"
 
 #define LAST_BLOCK -1
 

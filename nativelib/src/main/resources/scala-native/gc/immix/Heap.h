@@ -4,7 +4,7 @@
 #include "shared/GCTypes.h"
 #include "datastructures/Stack.h"
 #include "datastructures/Bytemap.h"
-#include "metadata/LineMeta.h"
+#include "immix_commix/metadata/LineMeta.h"
 #include "Stats.h"
 #include "shared/ThreadUtil.h"
 #include <stdatomic.h>

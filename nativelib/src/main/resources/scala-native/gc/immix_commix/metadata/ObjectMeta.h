@@ -1,5 +1,5 @@
-#ifndef IMMIX_OBJECTMETA_H
-#define IMMIX_OBJECTMETA_H
+#ifndef IMMIX_COMMIX_OBJECTMETA_H
+#define IMMIX_COMMIX_OBJECTMETA_H
 
 #include <stddef.h>
 #include <stdbool.h>
@@ -76,11 +76,10 @@ static inline void ObjectMeta_SweepLineAt(ObjectMeta *data) {
 static inline void ObjectMeta_AssertIsValidAllocation(ObjectMeta *start,
                                                       size_t size) {
     ObjectMeta *limit = start + (size / ALLOCATION_ALIGNMENT);
-    int i = 0;
-    for (ObjectMeta *current = start; current < limit; current++, i++) {
+    for (ObjectMeta *current = start; current < limit; current++) {
         assert(ObjectMeta_IsFree(current) || ObjectMeta_IsPlaceholder(current));
     }
 }
 #endif
 
-#endif // IMMIX_OBJECTMETA_H
+#endif // IMMIX_COMMIX_OBJECTMETA_H
