@@ -2,7 +2,9 @@
 # GitHub release. We do not use Chocolatey: its feed often fails with HTTP 503/504.
 param(
     [Parameter(Mandatory = $true)]
-    [string]$Version
+    [string]$Version,
+    [ValidateSet("x64", "arm64")]
+    [string]$Architecture = "x64"
 )
 
 Set-StrictMode -Version 3.0
@@ -12,30 +14,46 @@ $PSNativeCommandUseErrorActionPreference = $false
 
 # SHA-256 of the release installers. Add a line when CI uses a new version.
 $KnownSha256 = @{
-    "19.1.7" = "f19ae5bc4823ac69ec01dc2ded503ec80a04ad2208dda1595d1f0413c148ef90"
-    "20.1.4" = "ee6206043ce6b24edbd6ea60645852f833744d9b5898d9c5f7f7684445381a25"
-    "21.1.8" = "7a5386c26497db1691f320121e5b113364dd0274b98e55f15f4dbc00c0450113"
-    "22.1.8" = "16e5709785fef73c854646241c4a92c5cd574318d1b33c63330dd7721903e55c"
-    "23.1.3" = "5153f848ac87553118340f16f8d3cd4351d729bcba6e4785c6a4a9af29676de9"
+    "x64" = @{
+        "19.1.7" = "f19ae5bc4823ac69ec01dc2ded503ec80a04ad2208dda1595d1f0413c148ef90"
+        "20.1.4" = "ee6206043ce6b24edbd6ea60645852f833744d9b5898d9c5f7f7684445381a25"
+        "21.1.8" = "7a5386c26497db1691f320121e5b113364dd0274b98e55f15f4dbc00c0450113"
+        "22.1.8" = "16e5709785fef73c854646241c4a92c5cd574318d1b33c63330dd7721903e55c"
+        "23.1.3" = "5153f848ac87553118340f16f8d3cd4351d729bcba6e4785c6a4a9af29676de9"
+    }
+    "arm64" = @{
+        "22.1.8" = "76f44ef1ba6eeb5a65904e9500f042f588fade49952778ce48f0374daa934396"
+    }
+}
+
+if (-not $KnownSha256[$Architecture].ContainsKey($Version)) {
+    throw "No known SHA-256 for LLVM $Version ($Architecture). Verify the official release checksum and add it to scripts/ci/windows/install-llvm.ps1."
 }
 
 $BaseUrl = "https://github.com/llvm/llvm-project/releases/download"
 $Attempts = 5
 $Target = Join-Path $env:ProgramFiles "LLVM"
 $Clang = Join-Path $Target "bin\clang.exe"
+$ReleaseArch = if ($Architecture -eq "arm64") { "woa64" } else { "win64" }
+$ExpectedTarget = if ($Architecture -eq "arm64") { "aarch64" } else { "x86_64" }
 
 function Test-MatchingClang {
     if (-not (Test-Path -LiteralPath $Clang)) {
         return $false
     }
     try {
-        $line = "$(& $Clang --version | Select-Object -First 1)"
+        $versionOutput = & $Clang --version
+        if ($LASTEXITCODE -ne 0) { return $false }
+        $line = "$($versionOutput | Select-Object -First 1)"
+        $machine = & $Clang -dumpmachine
+        if ($LASTEXITCODE -ne 0) { return $false }
     } catch {
         Write-Host "Cannot run ${Clang}: $_"
         return $false
     }
-    Write-Host "Found: $line"
-    return $line -match ("clang version " + [regex]::Escape($Version) + "(\s|$)")
+    Write-Host "Found: $line, target $machine"
+    return ($line -match ("clang version " + [regex]::Escape($Version) + "(\s|$)")) -and
+        ($machine -match "^$ExpectedTarget-.*windows-msvc")
 }
 
 # Returns the file path, or $null when the release has no such file (HTTP 404).
@@ -137,21 +155,18 @@ if (Test-MatchingClang) {
 }
 
 # LLVM 23 and newer ship an msi instead of an exe.
-$installer = Save-ReleaseFile -Name "LLVM-$Version-win64.exe"
+$installer = Save-ReleaseFile -Name "LLVM-$Version-$ReleaseArch.exe"
 if (-not $installer) {
-    $installer = Save-ReleaseFile -Name "LLVM-$Version-win64.msi"
+    $installer = Save-ReleaseFile -Name "LLVM-$Version-$ReleaseArch.msi"
 }
 if (-not $installer) {
-    throw "Release llvmorg-$Version has no LLVM-$Version-win64.exe or .msi"
+    throw "Release llvmorg-$Version has no LLVM-$Version-$ReleaseArch.exe or .msi"
 }
 
 $sha256 = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash.ToLowerInvariant()
 Write-Host "SHA-256 $sha256"
-if (-not $KnownSha256.ContainsKey($Version)) {
-    throw "No known SHA-256 for LLVM $Version. Check the file and add `"$Version`" = `"$sha256`" to install-llvm.ps1."
-}
-if ($sha256 -ne $KnownSha256[$Version]) {
-    throw "SHA-256 mismatch for ${installer}: expected $($KnownSha256[$Version]), got $sha256"
+if ($sha256 -ne $KnownSha256[$Architecture][$Version]) {
+    throw "SHA-256 mismatch for ${installer}: expected $($KnownSha256[$Architecture][$Version]), got $sha256"
 }
 
 # Real-time scanning of thousands of new files makes the install much slower.
@@ -179,7 +194,7 @@ if ($installer.EndsWith(".exe")) {
 }
 
 if (-not (Test-MatchingClang)) {
-    throw "clang $Version not found at $Clang after the install"
+    throw "clang $Version ($Architecture) not found at $Clang after the install"
 }
 Write-Host "Installed LLVM $Version"
 exit 0

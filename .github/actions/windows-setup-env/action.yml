@@ -28,7 +28,7 @@ runs:
     - name: Configure Pagefile
       shell: powershell
       run: |
-        & "${{ github.action_path }}\configure-pagefile.ps1" -MinimumSize 4GB -MaximumSize 12GB -DiskRoot 'C:'
+        & "${{ github.workspace }}/scripts/ci/windows/configure-pagefile.ps1" -MinimumSize 4GB -MaximumSize 12GB -DiskRoot 'C:'
 
     #Prepare environment, clang needs to be installed
     #Compilation on MSVC needs c++14 or higher and expects llvm 11.0.0 or newer
@@ -37,7 +37,6 @@ runs:
       id: resolve-env
       shell: pwsh
       run: |
-        "ProgramFiles=${env:ProgramFiles}" >> $env:GITHUB_OUTPUT
         "LocalAppData=${env:LocalAppData}" >> $env:GITHUB_OUTPUT
         "UserProfile=${env:UserProfile}" >> $env:GITHUB_OUTPUT
         $vcpkgRoot = $env:VCPKG_INSTALLATION_ROOT
@@ -55,34 +54,10 @@ runs:
           echo "project-version=3" >> $env:GITHUB_ENV
         }
 
-    - name: Cache dependencies
-      id: cache-deps
-      uses: actions/cache@v5
+    - uses: ./.github/actions/windows-llvm-setup
       with:
-        path: |
-          ${{steps.resolve-env.outputs.ProgramFiles}}\LLVM\
-        # A change to install-llvm.ps1 starts a new cache.
-        key: llvm-${{ inputs.llvm-version }}-${{ hashFiles('.github/actions/windows-setup-env/install-llvm.ps1') }}
-
-    # Does nothing when the cache restored this LLVM version.
-    - name: Install LLVM
-      shell: pwsh
-      run: |
-        & "${{ github.action_path }}\install-llvm.ps1" -Version '${{ inputs.llvm-version }}'
-
-    - name: Expose LLVM to Scala Native (PATH and LLVM_BIN)
-      shell: pwsh
-      run: |
-        $llvmBin = Join-Path (Join-Path $env:ProgramFiles 'LLVM') 'bin'
-        $clang = Join-Path $llvmBin 'clang.exe'
-        if (Test-Path -LiteralPath $clang) {
-          Add-Content -Path $env:GITHUB_ENV -Value "LLVM_BIN=$llvmBin"
-          $llvmBin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          $verLine = (& $clang --version | Select-Object -First 1)
-          Write-Host "Using toolchain: $verLine"
-        } else {
-          Write-Host "::warning::No clang.exe under $llvmBin; set LLVM_BIN on the step if needed."
-        }
+        version: ${{ inputs.llvm-version }}
+        architecture: x64
 
     - name: Exclude workspace from Windows Defender
       shell: pwsh
