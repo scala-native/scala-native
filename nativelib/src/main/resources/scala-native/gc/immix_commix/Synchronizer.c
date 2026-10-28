@@ -1,4 +1,5 @@
-#if defined(SCALANATIVE_MULTITHREADING_ENABLED) && defined(SCALANATIVE_GC_IMMIX)
+#if defined(SCALANATIVE_MULTITHREADING_ENABLED) &&                             \
+    (defined(SCALANATIVE_GC_IMMIX) || defined(SCALANATIVE_GC_COMMIX))
 
 #include "string_constants.h"
 #include "immix_commix/Synchronizer.h"
@@ -9,13 +10,12 @@
 #include <string.h>
 #include <errno.h>
 
-#include "State.h"
+#include "immix_commix/CollectorState.h"
 #include "immix_commix/Settings.h"
 #include "shared/ThreadUtil.h"
 #include "shared/Log.h"
 #include "shared/MemoryInfo.h"
 #include "shared/Time.h"
-#include "MutatorThread.h"
 #include <signal.h>
 #include <errno.h>
 
@@ -173,7 +173,7 @@ static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
             Synchronizer_yield();
             return EXCEPTION_CONTINUE_EXECUTION;
         }
-        GC_LOG_WARN("Caught exception code %p in GC exception handler\n",
+        GC_LOG_WARN("Caught exception code %p in GC exception handler",
                     (void *)(uintptr_t)ex->ExceptionRecord->ExceptionCode);
         StackTrace_PrintStackTrace();
         return EXCEPTION_CONTINUE_SEARCH;
@@ -289,9 +289,9 @@ static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
         return;
     }
 
-    GC_LOG_WARN("%s Unhandled signal %d triggered when accessing "
-                "memory address %p, code=%d\n\n",
-                SN_ERROR_PREFIX, signal, siginfo->si_addr, siginfo->si_code);
+    GC_LOG_ERROR("%s Unhandled signal %d triggered when accessing "
+                 "memory address %p, code=%d",
+                 SN_ERROR_PREFIX, signal, siginfo->si_addr, siginfo->si_code);
     StackTrace_PrintStackTrace();
     abort();
 }
@@ -299,6 +299,7 @@ static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
 
 static void SetupYieldPointTrapHandler(void) {
 #ifdef _WIN32
+    // Call it as first exception handler
     SetUnhandledExceptionFilter(&SafepointTrapHandler);
 #else
     sigemptyset(&threadWakupSignals);
@@ -336,7 +337,7 @@ static void Synchronizer_WaitForResumption(MutatorThread *selfThread) {
     }
     if (WAIT_OBJECT_0 !=
         WaitForSingleObject(selfThread->wakeupEvent, INFINITE)) {
-        GC_LOG_WARN("suspend thread failed");
+        GC_LOG_ERROR("suspend thread failed: errno=%lu", GetLastError());
         exit(GetLastError());
     }
 #else
@@ -504,7 +505,7 @@ static bool Synchronizer_acquireGeneration(atomic_uint_fast64_t *completed,
 #endif
 
     // Don't allow for registration of any new threads
-    MutatorThreads_lock();
+    MutatorThreads_lockRead();
     Synchronizer_SuspendThreads();
     MutatorThread *self = currentMutatorThread;
     MutatorThread_switchState(self, GC_MutatorThreadState_Unmanaged);
@@ -568,10 +569,12 @@ bool Synchronizer_acquire(void) {
     return Synchronizer_acquireGeneration(NULL, 0);
 }
 
+#ifdef SCALANATIVE_GC_IMMIX
 bool Synchronizer_acquireForAllocation(atomic_uint_fast64_t *completed,
                                        uint64_t generation) {
     return Synchronizer_acquireGeneration(completed, generation);
 }
+#endif
 
 void Synchronizer_release(void) {
     Synchronizer_ResumeThreads();
@@ -579,11 +582,11 @@ void Synchronizer_release(void) {
      * acquire the lifecycle lock and accept our old unmanaged snapshot. */
     MutatorThread_switchState(currentMutatorThread,
                               GC_MutatorThreadState_Managed);
-    MutatorThreads_unlock();
+    MutatorThreads_unlockRead();
     mutex_unlock(&synchronizerLock);
 #ifndef _WIN32
     sigprocmask(SIG_UNBLOCK, &signalsBlockedDuringGC, NULL);
 #endif
 }
 
-#endif // SCALANATIVE_MULTITHREADING_ENABLED && SCALANATIVE_GC_IMMIX
+#endif

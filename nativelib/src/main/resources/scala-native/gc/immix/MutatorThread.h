@@ -91,6 +91,10 @@ bool MutatorThreads_add(MutatorThread *node);
 void MutatorThreads_remove(MutatorThread *node);
 void MutatorThreads_lock(void);
 void MutatorThreads_unlock(void);
+// The synchronizer holds the thread list's lock while it stops and scans the
+// threads, Commix's as a read lock; Immix has one lock for both
+static inline void MutatorThreads_lockRead(void) { MutatorThreads_lock(); }
+static inline void MutatorThreads_unlockRead(void) { MutatorThreads_unlock(); }
 
 #define MutatorThreads_foreach(list, node)                                     \
     for (MutatorThreads node = list; node != NULL; node = node->next)
