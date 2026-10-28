@@ -16,9 +16,6 @@
 
 #ifndef _WIN32
 #include <signal.h>
-#ifdef __linux__
-#include <sys/syscall.h>
-#endif
 #endif
 
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
@@ -134,31 +131,6 @@ void MutatorThreads_remove(MutatorThread *node) {
         free(current);
     }
     MutatorThreads_unlockWrite();
-}
-
-void MutatorThreads_afterForkChild(void) {
-    /* Drop the mutators of OS threads that fork() did not copy, and reinit
-     * the list lock in case one of them held it. Their records are leaked
-     * on purpose: freeing them would also have to return their heap blocks,
-     * and the next collection reclaims those anyway. */
-    rwlock_init(&threadListsModificationLock);
-    MutatorThreads kept = NULL;
-    for (MutatorThreads node = mutatorThreads; node != NULL;
-         node = node->next) {
-        if (node->value == currentMutatorThread)
-            kept = node;
-    }
-    if (kept != NULL) {
-        kept->next = NULL;
-#ifdef __linux__
-        /* The child is a new task, so the recorded id belongs to the parent.
-         * Without this the liveness probe would report the caller dead. */
-        kept->value->kernelThreadId = (pid_t)syscall(SYS_gettid);
-#endif
-    }
-    mutatorThreads = kept;
-    atomic_store_explicit(&mutatorThreadsCount, kept != NULL ? 1 : 0,
-                          memory_order_relaxed);
 }
 
 #endif

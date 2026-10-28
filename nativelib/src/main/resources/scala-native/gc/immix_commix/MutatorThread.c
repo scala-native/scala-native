@@ -247,4 +247,32 @@ void MutatorThread_reap(MutatorThread *thread) {
     MutatorThread_dispose(thread);
 }
 
+void MutatorThreads_afterForkChild(void) {
+    /* Drop the mutators of OS threads that fork() did not copy, and reinit
+     * the list lock in case one of them held it. Their records are leaked
+     * on purpose: freeing them would also have to return their heap blocks,
+     * and the next collection reclaims those anyway. */
+    MutatorThreads kept = NULL;
+    for (MutatorThreads node = mutatorThreads; node != NULL;
+         node = node->next) {
+        if (node->value == currentMutatorThread)
+            kept = node;
+    }
+    // Commix initialization clears the list, so save the survivor first.
+    MutatorThreads_init();
+    if (kept != NULL) {
+        kept->next = NULL;
+#ifdef __linux__
+        /* The child is a new task, so the recorded id belongs to the parent.
+         * Without this the liveness probe would report the caller dead. */
+        kept->value->kernelThreadId = (pid_t)syscall(SYS_gettid);
+#endif
+    }
+    mutatorThreads = kept;
+#ifdef SCALANATIVE_GC_COMMIX
+    atomic_store_explicit(&mutatorThreadsCount, kept != NULL ? 1 : 0,
+                          memory_order_relaxed);
+#endif
+}
+
 #endif
