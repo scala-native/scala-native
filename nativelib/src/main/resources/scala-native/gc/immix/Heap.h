@@ -30,35 +30,14 @@ typedef struct {
     mutex_t lock;
 } Heap;
 
-static inline bool Heap_IsWordInHeap(Heap *heap, word_t *word) {
-    return word >= heap->heapStart && word < heap->heapEnd;
-}
-
-static inline LineMeta *Heap_LineMetaForWord(Heap *heap, word_t *word) {
-    // assumes there are no gaps between lines
-    assert(LINE_COUNT * LINE_SIZE == BLOCK_TOTAL_SIZE);
-    assert(Heap_IsWordInHeap(heap, word));
-    word_t lineGlobalIndex =
-        ((word_t)word - (word_t)heap->heapStart) >> LINE_SIZE_BITS;
-    assert(lineGlobalIndex >= 0);
-    LineMeta *lineMeta = (LineMeta *)heap->lineMetaStart + lineGlobalIndex;
-    assert(lineMeta < (LineMeta *)heap->lineMetaEnd);
-    return lineMeta;
-}
+#include "immix_commix/HeapCommon.h"
 
 void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize);
 
-bool Heap_isGrowingPossible(Heap *heap, uint32_t incrementInBlocks);
 void Heap_Collect(Heap *heap, Stack *stack);
 bool Heap_RecoverAllocation(Heap *heap, size_t size, uint64_t generation);
 void Heap_Recycle(Heap *heap);
 bool Heap_TryGrow(Heap *heap, uint32_t increment);
-void Heap_Grow(Heap *heap, uint32_t increment);
 bool Heap_BeginEmergencyAllocation(Heap *heap);
-void Heap_RefillEmergencyBlock(Heap *heap);
-void Heap_ThrowOutOfMemory(Heap *heap);
-void Heap_exitWithOutOfMemory(const char *details);
-size_t Heap_getMemoryLimit();
-size_t Heap_getMemoryUsed(Heap *heap);
 
 #endif // IMMIX_HEAP_H
