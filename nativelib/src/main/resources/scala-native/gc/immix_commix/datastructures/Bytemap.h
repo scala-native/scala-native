@@ -1,12 +1,12 @@
-#ifndef IMMIX_BYTEMAP_H
-#define IMMIX_BYTEMAP_H
+#ifndef IMMIX_COMMIX_BYTEMAP_H
+#define IMMIX_COMMIX_BYTEMAP_H
 
 #include <assert.h>
 #include <stddef.h>
 #include <stdbool.h>
 #include <string.h>
 #include "shared/GCTypes.h"
-#include "commix/Constants.h"
+#include "immix_commix/Constants.h"
 #include "immix_commix/metadata/ObjectMeta.h"
 
 typedef struct {
@@ -41,4 +41,4 @@ static inline ObjectMeta *Bytemap_NextLine(ObjectMeta *cursor) {
     return cursor + WORDS_IN_LINE / ALLOCATION_ALIGNMENT_WORDS;
 }
 
-#endif // IMMIX_BYTEMAP_H
+#endif // IMMIX_COMMIX_BYTEMAP_H

@@ -2,7 +2,7 @@
 #define IMMIX_HEAP_H
 
 #include "shared/GCTypes.h"
-#include "datastructures/Bytemap.h"
+#include "immix_commix/datastructures/Bytemap.h"
 #include "datastructures/BlockRange.h"
 #include "datastructures/GreyPacket.h"
 #include "immix_commix/metadata/LineMeta.h"

@@ -2,8 +2,8 @@
 #define IMMIX_HEAP_H
 
 #include "shared/GCTypes.h"
-#include "datastructures/Stack.h"
-#include "datastructures/Bytemap.h"
+#include "immix_commix/datastructures/Stack.h"
+#include "immix_commix/datastructures/Bytemap.h"
 #include "immix_commix/metadata/LineMeta.h"
 #include "Stats.h"
 #include "shared/ThreadUtil.h"

@@ -5,7 +5,7 @@
 #include "Marker.h"
 #include "Object.h"
 #include "State.h"
-#include "datastructures/Stack.h"
+#include "immix_commix/datastructures/Stack.h"
 #include "immix_commix/headers/ObjectHeader.h"
 #include "Block.h"
 #include "shared/GCTypes.h"

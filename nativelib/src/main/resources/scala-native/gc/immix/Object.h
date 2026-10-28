@@ -2,7 +2,7 @@
 #define IMMIX_OBJECT_H
 
 #include "immix_commix/headers/ObjectHeader.h"
-#include "datastructures/Bytemap.h"
+#include "immix_commix/datastructures/Bytemap.h"
 #include "LargeAllocator.h"
 #include "Heap.h"
 

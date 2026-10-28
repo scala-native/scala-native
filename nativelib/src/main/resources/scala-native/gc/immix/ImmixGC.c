@@ -5,7 +5,7 @@
 #include <memory.h>
 #include "shared/GCTypes.h"
 #include "Heap.h"
-#include "datastructures/Stack.h"
+#include "immix_commix/datastructures/Stack.h"
 #include "State.h"
 #include "immix_commix/utils/MathUtils.h"
 #include "WeakReferences.h"

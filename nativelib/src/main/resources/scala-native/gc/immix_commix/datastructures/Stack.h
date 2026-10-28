@@ -1,5 +1,5 @@
-#ifndef IMMIX_STACK_H
-#define IMMIX_STACK_H
+#ifndef IMMIX_COMMIX_STACK_H
+#define IMMIX_COMMIX_STACK_H
 
 #include "shared/GCTypes.h"
 #include "immix_commix/headers/ObjectHeader.h"
@@ -11,7 +11,7 @@ typedef Object *Stack_Type;
 typedef struct {
     Stack_Type *bottom;
     size_t nb_words;
-    int current;
+    uint32_t current;
 } Stack;
 
 void Stack_Init(Stack *stack, size_t size);
@@ -22,4 +22,4 @@ Stack_Type Stack_Pop(Stack *stack);
 
 bool Stack_IsEmpty(Stack *stack);
 
-#endif // IMMIX_STACK_H
+#endif // IMMIX_COMMIX_STACK_H

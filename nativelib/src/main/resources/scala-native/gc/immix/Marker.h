@@ -2,7 +2,7 @@
 #define IMMIX_MARKER_H
 
 #include "Heap.h"
-#include "datastructures/Stack.h"
+#include "immix_commix/datastructures/Stack.h"
 
 void Marker_MarkRoots(Heap *heap, Stack *stack);
 void Marker_Mark(Heap *heap, Stack *stack);

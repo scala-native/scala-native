@@ -1,7 +1,7 @@
 #if defined(SCALANATIVE_GC_IMMIX)
 
 #include "WeakReferences.h"
-#include "datastructures/Stack.h"
+#include "immix_commix/datastructures/Stack.h"
 #include "immix_commix/metadata/ObjectMeta.h"
 #include "immix_commix/headers/ObjectHeader.h"
 #include "State.h"
