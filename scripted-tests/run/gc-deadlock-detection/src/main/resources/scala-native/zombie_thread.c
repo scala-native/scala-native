@@ -29,16 +29,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/**
- * Leave the thread without returning to Scala code.
- *
- * Linux: exit only this OS thread with the raw syscall. No cleanup runs, so
- * the GC still lists the thread. glibc's pthread_exit uses forced unwind,
- * which crashes in Scala Native's bundled libunwind.
- *
- * Other POSIX: pthread_exit leaves a GC mutator behind for the reaper.
- * Scala Native threads are already detached; do not detach again.
- */
+// Exit without GC cleanup. On Linux, pthread_exit's forced unwind crashes
+// in the bundled libunwind, so use SYS_exit.
 void zombie_thread_exit_no_cleanup(void) {
     fprintf(stderr, "[zombie_thread] Exiting thread without cleanup...\n");
     fflush(stderr);
@@ -52,10 +44,7 @@ void zombie_thread_exit_no_cleanup(void) {
 #endif
 }
 
-/**
- * Stay in managed native code. No safepoint, so a forked child that still
- * has this mutator registered cannot finish stop-the-world.
- */
+// Keep a Managed mutator that never reaches a safepoint.
 void zombie_thread_spin_forever(void) {
     volatile int sink = 0;
     for (;;)

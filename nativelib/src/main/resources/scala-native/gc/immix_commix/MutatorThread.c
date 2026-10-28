@@ -208,8 +208,6 @@ bool MutatorThread_isAtSafepoint(MutatorThread *thread) {
     return atomic_load_explicit(&thread->stackTop, memory_order_acquire) != 0;
 }
 
-// Conservative liveness: a thread counts as alive unless it is known to be
-// gone. Used for diagnostics only.
 bool MutatorThread_isAlive(MutatorThread *thread) {
     return !MutatorThread_hasTerminated(thread);
 }
@@ -226,10 +224,7 @@ bool MutatorThread_hasTerminated(MutatorThread *thread) {
     return exitCode != STILL_ACTIVE;
 #else
 #ifdef __linux__
-    /* Java threads are detached, so their pthread_t dangles once they exit.
-     * tgkill takes the kernel id instead and never reads that descriptor.
-     * Only ESRCH proves the thread is gone; on any other answer liveness
-     * stays unknown and the caller keeps waiting. */
+    // A detached thread's pthread_t may be freed; probe its kernel id instead.
     return syscall(SYS_tgkill, getpid(), thread->kernelThreadId, 0) == -1 &&
            errno == ESRCH;
 #else
@@ -241,30 +236,25 @@ bool MutatorThread_hasTerminated(MutatorThread *thread) {
 void MutatorThread_reap(MutatorThread *thread) {
     if (thread == NULL)
         return;
-    /* No switchState here: it would capture the caller's stack, not the
-     * dead thread's. The caller must not hold the list read lock. */
+    // Do not capture the caller's stack or hold the Commix list read lock.
     MutatorThreads_remove(thread);
     MutatorThread_dispose(thread);
 }
 
 void MutatorThreads_afterForkChild(void) {
-    /* Drop the mutators of OS threads that fork() did not copy, and reinit
-     * the list lock in case one of them held it. Their records are leaked
-     * on purpose: freeing them would also have to return their heap blocks,
-     * and the next collection reclaims those anyway. */
+    // Keep only the caller. Leave other records allocated in the child.
     MutatorThreads kept = NULL;
     for (MutatorThreads node = mutatorThreads; node != NULL;
          node = node->next) {
         if (node->value == currentMutatorThread)
             kept = node;
     }
-    // Commix initialization clears the list, so save the survivor first.
+    // Save the node before Commix initialization clears the list.
     MutatorThreads_init();
     if (kept != NULL) {
         kept->next = NULL;
 #ifdef __linux__
-        /* The child is a new task, so the recorded id belongs to the parent.
-         * Without this the liveness probe would report the caller dead. */
+        // The child has a new kernel thread id.
         kept->value->kernelThreadId = (pid_t)syscall(SYS_gettid);
 #endif
     }

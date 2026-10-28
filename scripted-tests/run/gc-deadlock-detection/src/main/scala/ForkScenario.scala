@@ -4,15 +4,8 @@ import scala.scalanative.posix.sys.wait._
 import scala.scalanative.posix.unistd.{_exit, fork}
 import scala.scalanative.unsafe._
 
-/** Test: GC in a child of fork() in a multithreaded process.
- *
- *  A second mutator spins in native code, so it stays Managed and never reaches
- *  a safepoint. fork() copies that mutator but not its OS thread, so without
- *  the fork handler the child's stop-the-world waits forever.
- *
- *  The child reports success through its exit status only. Both processes leave
- *  with _exit: shutdown hooks would allocate and the spinning thread would
- *  block the collection they trigger.
+/** Check that child GC ignores mutators of threads lost during fork.
+ *  Use _exit to avoid shutdown hooks collecting while the worker spins.
  */
 object ForkScenario {
   def run(): Unit = {

@@ -38,7 +38,6 @@ typedef struct {
 #else
     thread_t thread; // pthread_t - used for liveness check and signals
 #ifdef __linux__
-    /* Kernel id remains safe to probe after the pthread descriptor is freed. */
     pid_t kernelThreadId;
 #endif
 #endif
@@ -94,15 +93,11 @@ word_t **MutatorThread_getStackTop(MutatorThread *thread, bool allowEstimated);
 // registers
 bool MutatorThread_isAtSafepoint(MutatorThread *thread);
 
-// True only when the OS thread is known to be gone. False when liveness
-// cannot be determined.
+// Unknown liveness returns false.
 bool MutatorThread_hasTerminated(MutatorThread *thread);
-// Its negation, for diagnostics: unknown liveness reads as alive.
 bool MutatorThread_isAlive(MutatorThread *thread);
-// Unlink and free the mutator of an OS thread that already terminated.
-// Called by another thread, so it must not touch the caller's stack.
+// Remove a dead thread's mutator without capturing the caller's stack.
 void MutatorThread_reap(MutatorThread *thread);
-// Child side of fork: keep only the calling thread's mutator.
 void MutatorThreads_afterForkChild(void);
 
 // =============================================================================

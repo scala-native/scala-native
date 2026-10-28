@@ -137,9 +137,7 @@ private[scalanative] object SignalConfig {
      */
     val defaultHandler = CFuncPtr1.fromScalaFunction { (sig: CInt) =>
       asyncSafePrintStackTrace(sig)
-      /* exit() is not async-signal-safe: it runs shutdown hooks, which
-       * allocate and can re-enter the GC that just aborted. The stack trace
-       * above is written with write(2), so nothing needs flushing. */
+      // Avoid shutdown hooks re-entering the GC that just aborted.
       if (LinktimeInfo.isWindows) exit(128 + sig)
       else _exit(128 + sig)
     }

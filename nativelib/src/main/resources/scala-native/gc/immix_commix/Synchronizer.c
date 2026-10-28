@@ -440,10 +440,7 @@ static void Synchronizer_ResumeThreads(void) {
 
 #ifndef _WIN32
 static void Synchronizer_afterForkChild(void) {
-    /* Only the forking thread survives fork(). Every GC lock may have been
-     * left locked by a thread that does not exist here, so reinit them all.
-     * Keep this minimal: between fork and exec a child may only call
-     * async-signal-safe code, so do not allocate and do not log. */
+    // Reset locks inherited from other threads. Do not allocate or log here.
     mutex_init(&synchronizerLock);
 #ifndef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
     pthread_mutex_init(&threadSuspension.lock, NULL);
@@ -455,16 +452,14 @@ static void Synchronizer_afterForkChild(void) {
     mutex_init(&heap.lock);
     mutex_init(&blockAllocator.allocationLock);
 #ifdef SCALANATIVE_GC_COMMIX
-    /* GC workers do not survive fork. The child must exec or exit before
-     * another collection needs them to finish the concurrent sweep. */
+    // GC workers are gone; the child must exec or exit before another GC.
     mutex_init(&heap.sweep.growMutex);
 #endif
     if (customRoots != NULL)
         mutex_init(&customRoots->modificationLock);
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
     YieldPointTrap_afterForkChild();
-    /* A fork during stop-the-world copies an armed page. Nothing will resume
-     * the caller here, so it would fault on every yieldpoint. */
+    // Fork may copy an armed trap page.
     if (currentMutatorThread != NULL &&
         currentMutatorThread->yieldpointTrap != NULL)
         YieldPointTrap_disarm(currentMutatorThread->yieldpointTrap);
@@ -472,11 +467,7 @@ static void Synchronizer_afterForkChild(void) {
 }
 #endif
 
-/* A mutator whose OS thread is gone never ran MutatorThread_delete, so it
- * will never reach a safepoint and the wait below cannot finish. Drop it
- * instead. Only mutators the collector is actually waiting for are
- * considered, which keeps the blast radius of a wrong "dead" answer to the
- * threads that already block this collection. */
+// Remove dead mutators that block this collection.
 static bool Synchronizer_reapTerminated(MutatorThread *self) {
     bool reaped = false;
     for (;;) {
@@ -501,14 +492,12 @@ static bool Synchronizer_reapTerminated(MutatorThread *self) {
         GC_LOG_WARN("Reaping mutator of terminated thread id=%lu",
                     (unsigned long)dead->thread);
 #endif
-        /* Commix remove() takes a write lock; its rwlock is not recursive.
-         * Dropping the read lock is safe: a thread registering here stays
-         * Unmanaged, and admit() waits while Synchronizer_stopThreads is set.
-         */
 #ifdef SCALANATIVE_GC_COMMIX
+        // Release the read lock before remove() takes the write lock.
+        // New mutators stay Unmanaged until this collection ends.
         MutatorThreads_unlockRead();
 #endif
-        /* Immix keeps its recursive list mutex locked during removal. */
+        // Immix keeps its recursive mutex locked.
         MutatorThread_reap(dead);
 #ifdef SCALANATIVE_GC_COMMIX
         MutatorThreads_lockRead();
@@ -615,13 +604,11 @@ static bool Synchronizer_acquireGeneration(atomic_uint_fast64_t *completed,
             uint64_t now = Time_current_millis();
             uint64_t elapsed = now - startTime;
 
-            /* Probed once per warning interval, not on every spin: it costs
-             * a syscall per thread, and a healthy thread only needs to
-             * reach its next safepoint. */
+            // Limit liveness probes to one per warning interval.
             if (now - lastReapTime >= Settings_SyncWarningIntervalMs()) {
                 lastReapTime = now;
                 if (Synchronizer_reapTerminated(self))
-                    continue; // recount without the reaped threads
+                    continue; // Recount active threads.
             }
 
             // Periodic warnings about stuck threads

@@ -2,17 +2,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.scalanative.unsafe._
 
-/** Scenario: Zombie Thread
- *
- *  A "zombie" thread is one that:
- *    1. Was registered with the GC (MutatorThread_init called)
- *    2. Terminated WITHOUT calling MutatorThread_delete
- *    3. Still appears in the GC's mutator threads list
- *
- *  GC must not wait for that thread to reach a safepoint. Stop-the-world reaps
- *  a Managed mutator whose pthread has terminated (ESRCH) and then finishes the
- *  collection.
- */
+/** Check that GC reaps a thread that exited without removing its mutator. */
 object ZombieScenario {
   def run(): Unit = {
     assert(
@@ -54,7 +44,6 @@ object ZombieScenario {
     println("[Main] Waiting for thread to become zombie...")
     Thread.sleep(500)
 
-    // The thread is gone but still Managed in the mutator list.
     println("[Main] Triggering GC...")
     val startTime = System.currentTimeMillis()
     System.gc()
