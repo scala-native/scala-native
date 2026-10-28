@@ -9,7 +9,7 @@
 #include "State.h"
 #include "immix_commix/utils/MathUtils.h"
 #include "WeakReferences.h"
-#include "Settings.h"
+#include "immix_commix/Settings.h"
 #include "shared/Parsing.h"
 #include "shared/Log.h"
 #include "shared/jmx.h"

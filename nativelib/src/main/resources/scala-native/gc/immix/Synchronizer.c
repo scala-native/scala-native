@@ -10,7 +10,7 @@
 #include <errno.h>
 
 #include "State.h"
-#include "Settings.h"
+#include "immix_commix/Settings.h"
 #include "shared/ThreadUtil.h"
 #include "shared/Log.h"
 #include "shared/MemoryInfo.h"

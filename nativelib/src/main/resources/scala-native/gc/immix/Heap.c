@@ -9,7 +9,7 @@
 #include "Marker.h"
 #include "State.h"
 #include "StackTrace.h"
-#include "Settings.h"
+#include "immix_commix/Settings.h"
 #include "shared/MemoryInfo.h"
 #include "shared/MemoryMap.h"
 #include "shared/Time.h"
