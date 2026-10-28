@@ -4,8 +4,8 @@ import scala.scalanative.posix.sys.wait._
 import scala.scalanative.posix.unistd.{_exit, fork}
 import scala.scalanative.unsafe._
 
-/** Check that child GC ignores mutators of threads lost during fork.
- *  Use _exit to avoid shutdown hooks collecting while the worker spins.
+/** Check that child GC ignores mutators of threads lost during fork. Use _exit
+ *  to avoid shutdown hooks collecting while the worker spins.
  */
 object ForkScenario {
   def run(): Unit = {
