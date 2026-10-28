@@ -1,7 +1,7 @@
 
 #if defined(SCALANATIVE_GC_COMMIX)
 
-#include "commix/Object.h"
+#include "immix_commix/Object.h"
 #include "GreyPacket.h"
 #include <string.h>
 

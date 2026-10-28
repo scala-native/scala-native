@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <setjmp.h>
 #include "Marker.h"
-#include "Object.h"
+#include "immix_commix/Object.h"
 #include "State.h"
 #include "immix_commix/headers/ObjectHeader.h"
 #include "datastructures/GreyPacket.h"
