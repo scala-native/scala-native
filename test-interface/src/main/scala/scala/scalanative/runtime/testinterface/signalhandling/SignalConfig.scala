@@ -155,8 +155,9 @@ private[scalanative] object SignalConfig {
     setHandler(SIGFPE)
     setHandler(SIGILL)
     setHandler(SIGTERM)
-    if (!LinktimeInfo.isMultithreadingEnabled || LinktimeInfo.isMac) {
-      // Used in GC traps, MacOS uses SIGBUS instead
+    if (!LinktimeInfo.isMultithreadingEnabled && !LinktimeInfo.isMac) {
+      // Not on macOS: GC traps and stack guards there use SIGSEGV too, and
+      // signal() would drop the runtime handler's SA_ONSTACK.
       setHandler(SIGSEGV)
     }
 
