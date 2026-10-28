@@ -14,9 +14,13 @@ git clone -b $REV --depth 1 https://github.com/llvm/llvm-project.git $LLVM_FOLDE
 cp -r "$LIBUNWIND_FOLDER/src/"* "$TARGET_FOLDER/"
 cp -r "$LIBUNWIND_FOLDER/include/"* "$TARGET_FOLDER/"
 
-# Not upstream. A clean copy drops it, and release-fast Linux scripted tests
-# then SIGSEGV in _Unwind_RaiseException (clang -O2, exception_object == NULL).
+# Not upstream. A clean copy drops these, so reapply them before wrapping.
+# 0001: release-fast Linux scripted tests SIGSEGV in _Unwind_RaiseException
+#       (clang -O2, exception_object == NULL) without optnone.
+# 0002: compact-unwind PAuth-LR, plus the Apple Silicon guards that skip
+#       CNTD and autib171615 when the CPU does not implement them.
 git apply "$SCALANATIVE_FOLDER/scripts/patches/0001-libunwind-raise-exception-optnone.patch" || exit 1
+git apply "$SCALANATIVE_FOLDER/scripts/patches/0002-libunwind-pauth-lr-and-apple-feature-checks.patch" || exit 1
 
 # Enable recursive globbing for zsh
 setopt extended_glob
