@@ -2,7 +2,7 @@
 #define IMMIX_BLOCLIST_H
 
 #include <stddef.h>
-#include "immix/metadata/BlockMeta.h"
+#include "immix_commix/metadata/BlockMeta.h"
 
 #define LAST_BLOCK -1
 

@@ -1,7 +1,7 @@
 #ifndef IMMIX_BLOCK_H
 #define IMMIX_BLOCK_H
 
-#include "metadata/BlockMeta.h"
+#include "immix_commix/metadata/BlockMeta.h"
 #include "Allocator.h"
 
 extern uint64_t Block_recycledFreeLines;

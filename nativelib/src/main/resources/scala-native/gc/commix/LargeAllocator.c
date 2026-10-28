@@ -5,7 +5,7 @@
 #include <string.h>
 #include "LargeAllocator.h"
 #include "immix_commix/utils/MathUtils.h"
-#include "Object.h"
+#include "immix_commix/Object.h"
 #include "State.h"
 #include "Sweeper.h"
 #include "shared/Log.h"

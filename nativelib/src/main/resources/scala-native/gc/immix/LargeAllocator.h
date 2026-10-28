@@ -1,7 +1,7 @@
 #ifndef IMMIX_LARGEALLOCATOR_H
 #define IMMIX_LARGEALLOCATOR_H
 
-#include "datastructures/Bytemap.h"
+#include "immix_commix/datastructures/Bytemap.h"
 #include "shared/GCTypes.h"
 #include "immix_commix/headers/ObjectHeader.h"
 #include "BlockAllocator.h"

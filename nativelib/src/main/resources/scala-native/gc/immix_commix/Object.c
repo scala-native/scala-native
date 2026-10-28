@@ -1,8 +1,8 @@
-#if defined(SCALANATIVE_GC_COMMIX)
+#if defined(SCALANATIVE_GC_IMMIX) || defined(SCALANATIVE_GC_COMMIX)
 
 #include <stddef.h>
 #include <stdio.h>
-#include "Object.h"
+#include "immix_commix/Object.h"
 #include "immix_commix/utils/MathUtils.h"
 
 word_t *Object_LastWord(Object *object) {

@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <memory.h>
 #include "Block.h"
-#include "metadata/ObjectMeta.h"
+#include "immix_commix/metadata/ObjectMeta.h"
 #include "Allocator.h"
 
 INLINE void Block_recycleUnmarkedBlock(Allocator *allocator,

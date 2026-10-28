@@ -3,8 +3,8 @@
 
 #include "shared/GCTypes.h"
 #include "datastructures/BlockList.h"
-#include "datastructures/Bytemap.h"
-#include "metadata/BlockMeta.h"
+#include "immix_commix/datastructures/Bytemap.h"
+#include "immix_commix/metadata/BlockMeta.h"
 #include "BlockAllocator.h"
 #include "Heap.h"
 

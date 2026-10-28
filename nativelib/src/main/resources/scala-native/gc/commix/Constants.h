@@ -1,22 +1,12 @@
 #ifndef IMMIX_CONSTANTS_H
 #define IMMIX_CONSTANTS_H
 
-#include "immix_commix/CommonConstants.h"
-#include "metadata/BlockMeta.h"
+#include "immix_commix/Constants.h"
 
 #define DEFAULT_MARK_TIME_RATIO 0.05
 #define DEFAULT_FREE_RATIO 0.5
 #define MAX_UNAVAILABLE_RATIO 0.25
 #define MIN_FREE_RATIO_TO_DEFER_UNAVAILABLE_GROWTH 0.65
-#define METADATA_PER_BLOCK                                                     \
-    (sizeof(BlockMeta) + LINE_COUNT * LINE_METADATA_SIZE +                     \
-     WORDS_IN_BLOCK / ALLOCATION_ALIGNMENT_WORDS)
-#define SPACE_USED_PER_BLOCK (BLOCK_TOTAL_SIZE + METADATA_PER_BLOCK)
-#define MAX_HEAP_SIZE ((uint64_t)SPACE_USED_PER_BLOCK * MAX_BLOCK_COUNT)
-
-#define MIN_HEAP_SIZE (1 * 1024 * 1024ULL)
-#define DEFAULT_MIN_HEAP_SIZE (128 * SPACE_USED_PER_BLOCK)
-#define UNLIMITED_HEAP_SIZE (~((size_t)0))
 
 #define STATS_MEASUREMENTS 2000
 

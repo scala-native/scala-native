@@ -1,7 +1,7 @@
-#if defined(SCALANATIVE_GC_COMMIX)
+#if defined(SCALANATIVE_GC_IMMIX) || defined(SCALANATIVE_GC_COMMIX)
 
 #include "Bytemap.h"
-#include "commix/Constants.h"
+#include "immix_commix/Constants.h"
 #include "immix_commix/utils/MathUtils.h"
 #include <stdio.h>
 

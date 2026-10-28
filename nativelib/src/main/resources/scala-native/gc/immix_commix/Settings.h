@@ -1,5 +1,5 @@
-#ifndef IMMIX_SETTINGS_H
-#define IMMIX_SETTINGS_H
+#ifndef IMMIX_COMMIX_SETTINGS_H
+#define IMMIX_COMMIX_SETTINGS_H
 
 #include <stddef.h>
 #include <stdint.h>
@@ -46,4 +46,4 @@ static inline bool Settings_SyncTimeoutEnabled(void) {
     return SharedSettings_TimeoutEnabled();
 }
 
-#endif // IMMIX_SETTINGS_H
+#endif // IMMIX_COMMIX_SETTINGS_H

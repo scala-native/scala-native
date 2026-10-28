@@ -1,4 +1,4 @@
-#if defined(SCALANATIVE_GC_IMMIX)
+#if defined(SCALANATIVE_GC_IMMIX) || defined(SCALANATIVE_GC_COMMIX)
 
 #ifdef _WIN32
 // sscanf and getEnv is deprecated in WinCRT, disable warnings
@@ -6,10 +6,10 @@
 #endif
 
 #include <stdlib.h>
-#include "Settings.h"
+#include "immix_commix/Settings.h"
 #include "shared/Parsing.h"
 #include "shared/Settings.h"
-#include "Constants.h"
+#include "immix_commix/Constants.h"
 #include "shared/Log.h"
 
 // =============================================================================
@@ -34,4 +34,4 @@ void Settings_Init(void) {
     SharedSettings_Init();
 }
 
-#endif // SCALANATIVE_GC_IMMIX
+#endif // SCALANATIVE_GC_IMMIX || SCALANATIVE_GC_COMMIX

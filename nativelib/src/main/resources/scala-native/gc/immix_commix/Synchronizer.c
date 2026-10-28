@@ -1,23 +1,21 @@
 #if defined(SCALANATIVE_MULTITHREADING_ENABLED) &&                             \
-    defined(SCALANATIVE_GC_COMMIX)
+    (defined(SCALANATIVE_GC_IMMIX) || defined(SCALANATIVE_GC_COMMIX))
 
 #include "string_constants.h"
 #include "immix_commix/Synchronizer.h"
 #include "shared/ScalaNativeGC.h"
-#include "shared/Log.h"
-#include "shared/MemoryInfo.h"
 #include <stdio.h>
 #include <stdatomic.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 
-#include "State.h"
-#include "Settings.h"
+#include "immix_commix/CollectorState.h"
+#include "immix_commix/Settings.h"
 #include "shared/ThreadUtil.h"
-#include "shared/Time.h"
-#include "MutatorThread.h"
 #include "shared/Log.h"
+#include "shared/MemoryInfo.h"
+#include "shared/Time.h"
 #include <signal.h>
 #include <errno.h>
 
@@ -210,12 +208,20 @@ static struct sigaction *previousSignalHandlerFor(int signal) {
     return NULL;
 }
 
-/* See immix Synchronizer.c for the rationale: continuation migration can
- * leave a previous carrier's TLS-derived trap-cell pointer cached in the
- * resumed function, so the fault may land on another armed mutator's trap
- * page rather than the current carrier's. Arming is global, so any
- * SEGV_ACCERR from a registered mutator while stopThreads is set is a
- * legitimate safepoint trap on the current carrier. */
+/*
+ * Continuation migration may leave a previous carrier's TLS-derived trap
+ * cell pointer cached in the resumed function's stack/registers (LLVM is
+ * free to CSE `mrs tpidr_el0` and the subsequent TLS-slot dereference
+ * across arbitrary call boundaries; the runtime cannot announce that a
+ * scalanative_continuation_resume call may have moved execution onto a
+ * different OS thread). The faulting load can therefore land on another
+ * armed mutator's trap page rather than the current carrier's. Because
+ * arming is global (Synchronizer_SuspendThreads sets stopThreads BEFORE
+ * arming every mutator's trap page), any access-permission fault from a
+ * registered mutator while stopThreads is set is a legitimate safepoint
+ * trap on the current carrier - yielding here makes the current carrier
+ * observe stopThreads and synchronise correctly on the next resume.
+ */
 static bool isAccessPermissionFault(int signal, int si_code) {
     if (signal == SIGSEGV)
         return si_code == SEGV_ACCERR;
@@ -481,9 +487,17 @@ void Synchronizer_yield(void) {
     atomic_thread_fence(memory_order_seq_cst);
 }
 
-bool Synchronizer_acquire(void) {
+static bool Synchronizer_acquireGeneration(atomic_uint_fast64_t *completed,
+                                           uint64_t generation) {
     if (!mutex_tryLock(&synchronizerLock)) {
         scalanative_GC_yield();
+        return false;
+    }
+    // Requests made before a completed collection must retry allocation,
+    // without stopping every mutator for an obsolete request.
+    if (completed != NULL &&
+        atomic_load_explicit(completed, memory_order_acquire) != generation) {
+        mutex_unlock(&synchronizerLock);
         return false;
     }
 #ifndef _WIN32
@@ -551,10 +565,21 @@ bool Synchronizer_acquire(void) {
     return true;
 }
 
+bool Synchronizer_acquire(void) {
+    return Synchronizer_acquireGeneration(NULL, 0);
+}
+
+#ifdef SCALANATIVE_GC_IMMIX
+bool Synchronizer_acquireForAllocation(atomic_uint_fast64_t *completed,
+                                       uint64_t generation) {
+    return Synchronizer_acquireGeneration(completed, generation);
+}
+#endif
+
 void Synchronizer_release(void) {
     Synchronizer_ResumeThreads();
-    /* Keep the synchronizer lock until our managed state is published, so
-     * the next collector cannot scan our previous unmanaged snapshot. */
+    /* Publish our return to managed execution before another collector can
+     * acquire the lifecycle lock and accept our old unmanaged snapshot. */
     MutatorThread_switchState(currentMutatorThread,
                               GC_MutatorThreadState_Managed);
     MutatorThreads_unlockRead();

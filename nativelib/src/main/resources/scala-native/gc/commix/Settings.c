@@ -19,17 +19,6 @@
 #include "shared/Log.h"
 #include "shared/Settings.h"
 
-// =============================================================================
-// Heap Settings
-// =============================================================================
-size_t Settings_MinHeapSize(void) {
-    return Parse_Env_Or_Default("GC_INITIAL_HEAP_SIZE", DEFAULT_MIN_HEAP_SIZE);
-}
-
-size_t Settings_MaxHeapSize(void) {
-    return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE", UNLIMITED_HEAP_SIZE);
-}
-
 static double Settings_ratio(const char *name, double defaultRatio) {
     char *str = getenv(name);
     if (str == NULL)
@@ -49,10 +38,6 @@ double Settings_MaxMarkTimeRatio(void) {
 double Settings_MinFreeRatio(void) {
     return Settings_ratio("GC_FREE_RATIO", DEFAULT_FREE_RATIO);
 }
-
-#ifdef ENABLE_GC_STATS
-char *Settings_StatsFileName(void) { return getenv(GC_STATS_FILE_SETTING); }
-#endif
 
 // False if str is NULL or not a number. Counts below 1 become 1.
 static bool Settings_parseThreadCount(const char *source, const char *str,
@@ -101,15 +86,6 @@ int Settings_GCThreadCount(void) {
     count = others > 8 ? 8 : others;
     GC_LOG_INFO("GC_NPROCS not set, using %d GC threads", count);
     return count;
-}
-
-// =============================================================================
-// Settings Initialization
-// =============================================================================
-void Settings_Init(void) {
-
-    // Initialize sync timeout settings
-    SharedSettings_Init();
 }
 
 #endif // SCALANATIVE_GC_COMMIX
