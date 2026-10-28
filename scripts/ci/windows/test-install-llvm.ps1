@@ -19,7 +19,7 @@ $version = if ($installed -match 'clang version 20\.1\.4(\s|$)') { "19.1.7" } el
 if ($Mode -eq "unsupported") { $version = "0.0.0" }
 
 $global:LlvmTestMode = $Mode
-$global:LlvmTestCurl = (Get-Command curl.exe -CommandType Application).Source
+$global:LlvmTestCurl = (Get-Command curl.exe -CommandType Application | Select-Object -First 1).Source
 $global:LlvmTestAttempts = 0
 
 # Override just the download command; keep the installer's retry, checksum,
