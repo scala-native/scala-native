@@ -2,6 +2,7 @@
 package scala.scalanative
 package codegen
 
+import scala.annotation.tailrec
 import scala.collection.mutable
 
 import scalanative.interflow.UseDef.eliminateDeadCode
@@ -60,26 +61,22 @@ private[scalanative] object Lower {
     class BlockInfo(
         val nullGuardedVals: mutable.Set[nir.Val] = mutable.Set.empty
     )
-    private def findNonRecursive(
-        current: Block,
-        predicate: BlockInfo => Boolean,
-        visited: mutable.Set[Block] = mutable.Set.empty
-    ): Option[BlockInfo] = blockInfo.get(current) match {
-      case Some(info) if predicate(info) => Some(info)
-      case _                             =>
-        if (visited.add(current))
-          current.pred.iterator
-            .map(findNonRecursive(_, predicate, visited))
-            .collectFirst { case Some(found) => found }
-        else None
-    }
+
+    // Whether `v` is checked on every path from the method's entry to this point of `currentBlock`.
+    // An exception edge leaves its block in the middle, so its target is unchecked on entry.
     def isNullGuarded(currentBlock: Block, v: nir.Val): Boolean = {
-      def isHandled(block: BlockInfo): Boolean =
-        block.nullGuardedVals.contains(v)
-      blockInfo.get(currentBlock).exists(isHandled) ||
-        currentBlock.pred.nonEmpty && currentBlock.pred.forall {
-          findNonRecursive(_, isHandled).isDefined
-        }
+      def checkedIn(block: Block) = blockInfo.get(block).exists(_.nullGuardedVals.contains(v))
+      def uncheckedOnEntry(block: Block) =
+        block.isEntry || block.inEdges.isEmpty || block.inEdges.exists(_.next.isInstanceOf[nir.Next.Unwind])
+      // Walks back through the blocks that do not check `v`, looking for one entered unchecked
+      @tailrec def guarded(todo: List[Block], visited: Set[nir.Local]): Boolean = todo match {
+        case Nil                                   => true
+        case block :: _ if uncheckedOnEntry(block) => false
+        case block :: rest                         =>
+          val preds = block.pred.filterNot(pred => visited(pred.id) || checkedIn(pred)).toList
+          guarded(preds ::: rest, visited ++ preds.map(_.id))
+      }
+      checkedIn(currentBlock) || guarded(List(currentBlock), Set(currentBlock.id))
     }
 
     private def currentDefnRetType = {

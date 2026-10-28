@@ -13,9 +13,24 @@ class NullGuardsTest {
     assertNotNull(sample.range(field))
     assertThrows(classOf[NullPointerException], sample.range(null))
   }
+
+  @Test def checkOnOnePathIntoAMerge(): Unit = {
+    import NullGuardsTest.{noCollection, sizeUnlessEmpty}
+    assertThrows(classOf[NullPointerException], sizeUnlessEmpty(noCollection))
+    assertEquals(-1, sizeUnlessEmpty(new java.util.ArrayList[Int]()))
+    val one = new java.util.LinkedList[Int]()
+    one.add(1)
+    assertEquals(1, sizeUnlessEmpty(one))
+  }
 }
 
 object NullGuardsTest {
+  var noCollection: java.util.Collection[Int] = null
+
+  // `c` is checked on the way to `c.size` only when it is not null
+  @noinline def sizeUnlessEmpty(c: java.util.Collection[Int]): Int =
+    if ((c ne null) && c.isEmpty) -1 else c.size
+
   object issue3939 {
     trait TemporalAccessor {
       def isSupported(field: TemporalField): Boolean
