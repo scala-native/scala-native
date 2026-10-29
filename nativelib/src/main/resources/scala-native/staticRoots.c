@@ -1,6 +1,7 @@
 #include "staticSections.h"
 #include "gc/shared/ScalaNativeGC.h"
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
@@ -33,19 +34,19 @@ static void registerStringSection(void) {
 }
 
 /* Finish registration before any caller publishes a managed reference in static
- * storage. ClassValue can also use the class registration entry point.
+ * storage. Future ClassValue storage can use the same object entry point.
  */
 #ifndef SCALANATIVE_MULTITHREADING_ENABLED
 static bool classRootsRegistered;
 static bool stringRootsRegistered;
 
-SN_SECTION_LOCAL void scalanative_register_class_roots(void) {
+static void registerClassRoots(void) {
     if (!classRootsRegistered) {
         registerClassSection();
         classRootsRegistered = true;
     }
 }
-SN_SECTION_LOCAL void scalanative_register_string_roots(void) {
+static void registerStringRoots(void) {
     if (!stringRootsRegistered) {
         registerStringSection();
         stringRootsRegistered = true;
@@ -55,8 +56,8 @@ SN_SECTION_LOCAL void scalanative_register_string_roots(void) {
 static INIT_ONCE classRootsOnce = INIT_ONCE_STATIC_INIT;
 static INIT_ONCE stringRootsOnce = INIT_ONCE_STATIC_INIT;
 
-static BOOL CALLBACK registerClassRoots(PINIT_ONCE once, PVOID arg,
-                                        PVOID *context) {
+static BOOL CALLBACK registerClassRootsOnce(PINIT_ONCE once, PVOID arg,
+                                            PVOID *context) {
     (void)once;
     (void)arg;
     (void)context;
@@ -64,8 +65,8 @@ static BOOL CALLBACK registerClassRoots(PINIT_ONCE once, PVOID arg,
     return TRUE;
 }
 
-static BOOL CALLBACK registerStringRoots(PINIT_ONCE once, PVOID arg,
-                                         PVOID *context) {
+static BOOL CALLBACK registerStringRootsOnce(PINIT_ONCE once, PVOID arg,
+                                             PVOID *context) {
     (void)once;
     (void)arg;
     (void)context;
@@ -73,24 +74,26 @@ static BOOL CALLBACK registerStringRoots(PINIT_ONCE once, PVOID arg,
     return TRUE;
 }
 
-SN_SECTION_LOCAL void scalanative_register_class_roots(void) {
-    if (!InitOnceExecuteOnce(&classRootsOnce, registerClassRoots, NULL, NULL))
+static void registerClassRoots(void) {
+    if (!InitOnceExecuteOnce(&classRootsOnce, registerClassRootsOnce, NULL,
+                             NULL))
         abort();
 }
-SN_SECTION_LOCAL void scalanative_register_string_roots(void) {
-    if (!InitOnceExecuteOnce(&stringRootsOnce, registerStringRoots, NULL, NULL))
+static void registerStringRoots(void) {
+    if (!InitOnceExecuteOnce(&stringRootsOnce, registerStringRootsOnce, NULL,
+                             NULL))
         abort();
 }
 #else
 static pthread_once_t classRootsOnce = PTHREAD_ONCE_INIT;
 static pthread_once_t stringRootsOnce = PTHREAD_ONCE_INIT;
 
-SN_SECTION_LOCAL void scalanative_register_class_roots(void) {
+static void registerClassRoots(void) {
     if (pthread_once(&classRootsOnce, registerClassSection) != 0)
         abort();
 }
 
-SN_SECTION_LOCAL void scalanative_register_string_roots(void) {
+static void registerStringRoots(void) {
     if (pthread_once(&stringRootsOnce, registerStringSection) != 0)
         abort();
 }
@@ -107,7 +110,7 @@ static bool containsObject(const SNStaticSection *section, void *object) {
  */
 SN_SECTION_LOCAL void scalanative_register_object_roots(void *object) {
     if (containsObject(scalanative_static_classinfo_section(), object))
-        scalanative_register_class_roots();
+        registerClassRoots();
     else if (containsObject(scalanative_static_strings_section(), object))
-        scalanative_register_string_roots();
+        registerStringRoots();
 }

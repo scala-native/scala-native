@@ -43,7 +43,7 @@ class StringBackingArrayMonitorRootTest {
     val address = castRawPtrToLong(castObjectToRawPtr(backing))
     assertTrue(
       "expected a static literal backing array",
-      address >= section._2.toLong && address < section._3.toLong
+      address >= section._1.toLong && address < section._2.toLong
     )
     ClassMonitorRootTest.assertStaticMonitorSurvives(backing)
   }
@@ -52,5 +52,5 @@ class StringBackingArrayMonitorRootTest {
 @extern
 private[monitor] object BackingArraySections {
   @name("scalanative_static_strings_section")
-  def strings(): Ptr[CStruct3[CString, CVoidPtr, CVoidPtr]] = extern
+  def strings(): Ptr[CStruct2[CVoidPtr, CVoidPtr]] = extern
 }

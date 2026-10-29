@@ -49,34 +49,16 @@ class ClassMonitorRootTest {
     }
   }
 
-  @Test def inflatedMonitorOfAClassSurvivesCollections(): Unit = {
-    assumeTrue(
-      "inflated monitors require multithreading",
-      LinktimeInfo.isMultithreadingEnabled
-    )
-    val cls = classOf[NeverInstantiated]
-    // On a thread that ends before the collections, so that neither its
-    // stack nor its registers keep the monitor
-    var monitor: WeakReference[ObjectMonitor] = null
-    val thread = new Thread(() => {
-      inflate(cls)
-      monitor = monitorOf(cls)
-    })
-    thread.start()
-    thread.join()
-    for (_ <- 0 until 5) {
-      Seq.fill(1000)(new Array[Byte](64))
-      System.gc()
-    }
-    assertNotNull("the monitor was collected", monitor.get())
-    assertSame(monitor.get(), currentMonitor(cls))
-    cls.synchronized(cls.notifyAll())
-  }
+  @Test def inflatedMonitorOfAClassSurvivesCollections(): Unit =
+    // This class must have no allocated instances that could keep its monitor.
+    assertStaticMonitorSurvives(classOf[NeverInstantiated])
 }
 
 object ClassMonitorRootTest {
   private[monitor] def assertStaticMonitorSurvives(obj: AnyRef): Unit = {
     assumeTrue(LinktimeInfo.isMultithreadingEnabled)
+    // End the worker before collecting so its stack and registers cannot keep
+    // the monitor alive instead of the static object's lock word.
     var monitor: WeakReference[ObjectMonitor] = null
     val thread = new Thread(() => {
       inflate(obj)
