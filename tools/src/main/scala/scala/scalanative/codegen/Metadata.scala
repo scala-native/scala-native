@@ -18,6 +18,7 @@ private[scalanative] class Metadata(
   private[codegen] val lockWordVals = lockWordType.map(_ => nir.Val.Null).toList
 
   val layouts = new CommonMemoryLayouts()
+  val globalSections = new GlobalSections
   val rtti = mutable.Map.empty[linker.Info, RuntimeTypeInformation]
   val vtable = mutable.Map.empty[linker.Class, VirtualTable]
   val itable = mutable.Map.empty[linker.Class, ITable]
