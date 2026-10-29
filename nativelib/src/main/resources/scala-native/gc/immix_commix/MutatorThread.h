@@ -15,6 +15,9 @@
 #include "immix_commix/RegistersCapture.h"
 #include "nativeThreadTLS.h"
 #include <stdint.h>
+#ifndef _WIN32
+#include <sys/types.h>
+#endif
 
 typedef struct {
     _Atomic(GC_MutatorThreadState) state;
@@ -34,6 +37,9 @@ typedef struct {
 #endif
 #else
     thread_t thread; // pthread_t - used for liveness check and signals
+#ifdef __linux__
+    pid_t kernelThreadId;
+#endif
 #endif
     ThreadInfo *threadInfo;
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
@@ -87,9 +93,12 @@ word_t **MutatorThread_getStackTop(MutatorThread *thread, bool allowEstimated);
 // registers
 bool MutatorThread_isAtSafepoint(MutatorThread *thread);
 
-// Check if a mutator thread is still alive (useful for detecting zombie
-// threads) Returns true if thread exists, false if thread has terminated
+// Unknown liveness returns false.
+bool MutatorThread_hasTerminated(MutatorThread *thread);
 bool MutatorThread_isAlive(MutatorThread *thread);
+// Remove a dead thread's mutator without capturing the caller's stack.
+void MutatorThread_reap(MutatorThread *thread);
+void MutatorThreads_afterForkChild(void);
 
 // =============================================================================
 // MutatorThreads List Management

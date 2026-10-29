@@ -438,6 +438,74 @@ static void Synchronizer_ResumeThreads(void) {
 }
 #endif // !SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
 
+#ifndef _WIN32
+static void Synchronizer_afterForkChild(void) {
+    // Reset locks inherited from other threads. Do not allocate or log here.
+    mutex_init(&synchronizerLock);
+#ifndef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
+    pthread_mutex_init(&threadSuspension.lock, NULL);
+    pthread_cond_init(&threadSuspension.resume, NULL);
+#endif
+    atomic_store_explicit(&Synchronizer_stopThreads, false,
+                          memory_order_relaxed);
+    MutatorThreads_afterForkChild();
+    mutex_init(&heap.lock);
+    mutex_init(&blockAllocator.allocationLock);
+#ifdef SCALANATIVE_GC_COMMIX
+    // GC workers are gone; the child must exec or exit before another GC.
+    mutex_init(&heap.sweep.growMutex);
+#endif
+    if (customRoots != NULL)
+        mutex_init(&customRoots->modificationLock);
+#ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
+    YieldPointTrap_afterForkChild();
+    // Fork may copy an armed trap page.
+    if (currentMutatorThread != NULL &&
+        currentMutatorThread->yieldpointTrap != NULL)
+        YieldPointTrap_disarm(currentMutatorThread->yieldpointTrap);
+#endif
+}
+#endif
+
+// Remove dead mutators that block this collection.
+static bool Synchronizer_reapTerminated(MutatorThread *self) {
+    bool reaped = false;
+    for (;;) {
+        MutatorThread *dead = NULL;
+        MutatorThreads_foreach(mutatorThreads, node) {
+            MutatorThread *it = node->value;
+            if (it != self && !MutatorThread_isAtSafepoint(it) &&
+                MutatorThread_hasTerminated(it)) {
+                dead = it;
+                break;
+            }
+        }
+        if (dead == NULL)
+            return reaped;
+#ifdef _WIN32
+        GC_LOG_WARN("Reaping mutator of terminated thread id=%p",
+                    (void *)dead->threadHandle);
+#elif defined(__linux__)
+        GC_LOG_WARN("Reaping mutator of terminated thread id=%ld",
+                    (long)dead->kernelThreadId);
+#else
+        GC_LOG_WARN("Reaping mutator of terminated thread id=%lu",
+                    (unsigned long)dead->thread);
+#endif
+#ifdef SCALANATIVE_GC_COMMIX
+        // Release the read lock before remove() takes the write lock.
+        // New mutators stay Unmanaged until this collection ends.
+        MutatorThreads_unlockRead();
+#endif
+        // Immix keeps its recursive mutex locked.
+        MutatorThread_reap(dead);
+#ifdef SCALANATIVE_GC_COMMIX
+        MutatorThreads_lockRead();
+#endif
+        reaped = true;
+    }
+}
+
 // =============================================================================
 // Synchronizer Initialization
 // =============================================================================
@@ -463,6 +531,12 @@ void Synchronizer_init(void) {
         exit(1);
     }
 #endif
+#endif
+#ifndef _WIN32
+    if (pthread_atfork(NULL, NULL, Synchronizer_afterForkChild) != 0) {
+        GC_LOG_ERROR("Failed to register GC fork handler: %s", strerror(errno));
+        exit(1);
+    }
 #endif
 }
 
@@ -512,6 +586,7 @@ static bool Synchronizer_acquireGeneration(atomic_uint_fast64_t *completed,
 
     uint64_t startTime = Time_current_millis();
     uint64_t lastWarningTime = startTime;
+    uint64_t lastReapTime = startTime;
     int activeThreads;
 
     do {
@@ -528,6 +603,13 @@ static bool Synchronizer_acquireGeneration(atomic_uint_fast64_t *completed,
         if (activeThreads > 0) {
             uint64_t now = Time_current_millis();
             uint64_t elapsed = now - startTime;
+
+            // Limit liveness probes to one per warning interval.
+            if (now - lastReapTime >= Settings_SyncWarningIntervalMs()) {
+                lastReapTime = now;
+                if (Synchronizer_reapTerminated(self))
+                    continue; // Recount active threads.
+            }
 
             // Periodic warnings about stuck threads
             if (now - lastWarningTime >= Settings_SyncWarningIntervalMs()) {

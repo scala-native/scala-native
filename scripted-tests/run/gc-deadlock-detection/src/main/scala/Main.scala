@@ -11,6 +11,7 @@ import scala.scalanative.unsafe._
  *      (baseline)
  *    - "deadlock": Missing @blocking - tests timeout detection
  *    - "zombie": Thread exits without GC cleanup (POSIX only)
+ *    - "fork": Child collects after fork with other mutators (POSIX only)
  *    - "allocator": Multiple blocking threads stress test
  */
 object Main {
@@ -21,6 +22,7 @@ object Main {
       case "correct"   => CorrectScenario.run()
       case "deadlock"  => DeadlockScenario.run()
       case "zombie"    => ZombieScenario.run()
+      case "fork"      => ForkScenario.run()
       case "allocator" => AllocatorScenario.run()
       case _           =>
         println("Usage: <binary> <mode>")
@@ -29,6 +31,7 @@ object Main {
         println("  correct   - Correct behavior with @blocking annotation")
         println("  deadlock  - Deadlock scenario (missing @blocking)")
         println("  zombie    - Zombie thread scenario (POSIX only)")
+        println("  fork      - GC in a forked child (POSIX only)")
         println("  allocator - Multiple blocking threads stress test")
         System.exit(1)
     }

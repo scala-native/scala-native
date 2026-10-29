@@ -2,20 +2,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.scalanative.unsafe._
 
-/** Scenario: Zombie Thread
- *
- *  A "zombie" thread is one that:
- *    1. Was registered with the GC (MutatorThread_init called)
- *    2. Terminated WITHOUT calling MutatorThread_delete
- *    3. Still appears in the GC's mutator threads list
- *
- *  GC will wait forever for the zombie to reach a safepoint. With liveness
- *  checking, GC should detect:
- *    - pthread_kill(thread, 0) returns error (thread doesn't exist)
- *    - alive=NO (zombie) in diagnostics
- *
- *  Expected with fix: GC times out with "alive=NO" diagnostic, process aborts
- */
+/** Check that GC reaps a thread that exited without removing its mutator. */
 object ZombieScenario {
   def run(): Unit = {
     assert(
@@ -57,11 +44,7 @@ object ZombieScenario {
     println("[Main] Waiting for thread to become zombie...")
     Thread.sleep(500)
 
-    // Thread should now be a zombie (dead but in GC list)
-    // GC should detect:
-    //   - Thread is not alive (pthread_kill returns error)
-    //   - alive=NO in diagnostics
-    println("// Triggering GC...")
+    println("[Main] Triggering GC...")
     val startTime = System.currentTimeMillis()
     System.gc()
     val elapsed = System.currentTimeMillis() - startTime

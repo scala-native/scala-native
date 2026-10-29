@@ -179,4 +179,9 @@ void YieldPointTrap_free(safepoint_t ref) {
     YieldPointTrap_pushFreeList(ref);
 }
 
+void YieldPointTrap_afterForkChild(void) {
+    if (atomic_load(&YieldPointTrap_freeListReady))
+        mutex_init(&YieldPointTrap_freeListLock);
+}
+
 #endif
