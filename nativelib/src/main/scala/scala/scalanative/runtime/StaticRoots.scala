@@ -9,4 +9,8 @@ private[runtime] object StaticRoots {
   @blocking
   @name("scalanative_register_class_roots")
   def registerClasses(): Unit = extern
+
+  @blocking
+  @name("scalanative_register_string_roots")
+  def registerStrings(): Unit = extern
 }
