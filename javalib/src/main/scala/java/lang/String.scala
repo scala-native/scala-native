@@ -330,13 +330,8 @@ final class _String()
     _String.format(this, args) // Must use underbarString.format()
   }
 
-  def getBytes(): Array[scala.Byte] = {
-    val buffer =
-      Charset.defaultCharset().encode(CharBuffer.wrap(value, offset, count))
-    val bytes = new Array[scala.Byte](buffer.limit())
-    buffer.get(bytes)
-    bytes
-  }
+  def getBytes(): Array[scala.Byte] =
+    getBytes(Charset.defaultCharset())
 
   @Deprecated
   def getBytes(
@@ -393,17 +388,25 @@ final class _String()
         case e: UnsupportedCharsetException =>
           throw new java.io.UnsupportedEncodingException(encoding)
       }
-    val buffer = charset.encode(CharBuffer.wrap(value, offset, count))
+    getBytes(charset)
+  }
+
+  def getBytes(encoding: Charset): Array[scala.Byte] = {
+    val buffer = encoding.encode(encodingBuffer(encoding))
     val bytes = new Array[scala.Byte](buffer.limit())
     buffer.get(bytes)
     bytes
   }
 
-  def getBytes(encoding: Charset): Array[scala.Byte] = {
-    val buffer = encoding.encode(CharBuffer.wrap(value, offset, count))
-    val bytes = new Array[scala.Byte](buffer.limit())
-    buffer.get(bytes)
-    bytes
+  private def encodingBuffer(encoding: Charset): CharBuffer = {
+    import StandardCharsets._
+    // Only the built-in encoders may access the backing array. Compare by
+    // identity: a custom charset can have the same name as a standard one.
+    if ((encoding eq UTF_8) || (encoding eq ISO_8859_1) ||
+        (encoding eq US_ASCII) || (encoding eq UTF_16) ||
+        (encoding eq UTF_16BE) || (encoding eq UTF_16LE))
+      CharBuffer.wrap(value, offset, count)
+    else CharBuffer.wrap(thisString)
   }
 
   override def getChars(

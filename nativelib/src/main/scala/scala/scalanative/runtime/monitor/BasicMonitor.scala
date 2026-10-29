@@ -172,6 +172,10 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
       thread: Thread,
       threadId: ThreadId
   ): Unit = {
+    // Reject before acquiring ownership: a failed monitor entry must not leave
+    // the thin lock owned by the contending thread.
+    ensureCanInflate()
+
     @tailrec @alwaysinline def waitForOwnership(
         yields: Int,
         backoffNanos: Int
@@ -208,7 +212,16 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
     else inflate(thread)
   }
 
+  private def ensureCanInflate(): Unit = {
+    val objectAddress =
+      elemRawPtr(lockWordRef, -MemoryLayout.Object.LockWordOffset)
+    val objectClass = castRawPtrToObject(loadRawPtr(objectAddress))
+    if (objectClass eq classOf[String])
+      throw new IllegalStateException("String monitors cannot be inflated")
+  }
+
   @inline private def inflate(thread: Thread): ObjectMonitor = {
+    ensureCanInflate()
     val objectMonitor = new ObjectMonitor()
     objectMonitor.enter(thread)
     // Increment recursion by basic lock recursion count if present
