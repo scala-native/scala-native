@@ -2656,11 +2656,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
     )(
         bodyGen: ExprBuffer => nir.Val
     )(implicit pos: nir.SourcePosition): nir.Val = {
-      if (receiverp.tpe != null && receiverp.tpe.widen.dealias.typeSymbol == defn.StringClass)
-        reporter.error(
-          receiverp.pos,
-          "Synchronization on String instances is not supported"
-        )
       // Here we wrap the synchronized call into the try-finally block
       // to ensure that monitor would be released even in case of the exception
       // or in case of non-local returns
@@ -2866,11 +2861,6 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           }
 
         case Object_synchronized =>
-          if (receiverp.tpe.widen.dealias.typeSymbol == defn.StringClass)
-            reporter.error(
-              receiverp.pos,
-              "Synchronization on String instances is not supported"
-            )
           assert(argsp.size == 1, "synchronized with wrong number of args")
           genSynchronized(ValTree(receiverp)(boxed), argsp.head)
       }

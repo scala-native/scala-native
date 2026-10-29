@@ -1987,11 +1987,6 @@ trait NirGenExpr(using Context) {
     def genSynchronized(
         receiverp: Tree
     )(bodyGen: ExprBuffer => nir.Val)(using nir.SourcePosition): nir.Val = {
-      if (receiverp.typeOpt.widen.dealias.typeSymbol == defn.StringClass)
-        report.error(
-          "Synchronization on String instances is not supported",
-          receiverp.sourcePos
-        )
       // Here we wrap the synchronized call into the try-finally block
       // to ensure that monitor would be released even in case of the exception
       // or in case of non-local returns
