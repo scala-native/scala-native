@@ -4,13 +4,9 @@ import scala.scalanative.unsafe._
 
 @extern
 private[runtime] object StaticRoots {
-  // Wait for registration before publishing class monitor/ClassValue references.
-  // Other threads may finish a collection while this thread waits for the once.
+  // Register the containing static section before publishing a managed reference.
+  // Also usable before future ClassValue storage is published.
   @blocking
-  @name("scalanative_register_class_roots")
-  def registerClasses(): Unit = extern
-
-  @blocking
-  @name("scalanative_register_string_roots")
-  def registerStrings(): Unit = extern
+  @name("scalanative_register_object_roots")
+  def registerObject(obj: RawPtr): Unit = extern
 }

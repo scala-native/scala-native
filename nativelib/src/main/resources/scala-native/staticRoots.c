@@ -95,3 +95,19 @@ SN_SECTION_LOCAL void scalanative_register_string_roots(void) {
         abort();
 }
 #endif
+
+static bool containsObject(const SNStaticSection *section, void *object) {
+    uintptr_t address = (uintptr_t)object;
+    return address >= (uintptr_t)section->start &&
+           address < (uintptr_t)section->end;
+}
+
+/* Heap objects and unrelated static storage do not activate section scanning.
+ * This works independently of the collector's heap layout or allocation API.
+ */
+SN_SECTION_LOCAL void scalanative_register_object_roots(void *object) {
+    if (containsObject(scalanative_static_classinfo_section(), object))
+        scalanative_register_class_roots();
+    else if (containsObject(scalanative_static_strings_section(), object))
+        scalanative_register_string_roots();
+}

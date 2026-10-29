@@ -16,29 +16,14 @@ import scala.scalanative.runtime.MemoryLayout
 class ClassMonitorRootTest {
   import ClassMonitorRootTest._
 
-  @Test def inflatedMonitorOfAStringLiteralSurvivesCollections(): Unit =
-    assertStaticMonitorSurvives("static string monitor root")
+  @Test def inflatedMonitorOfAStringLiteralSurvivesCollections(): Unit = {
+    val string = "static string monitor root"
+    string.synchronized(())
+    assertStaticMonitorSurvives(string)
+  }
 
   @Test def inflatedMonitorOfAConstantSingletonSurvivesCollections(): Unit =
     assertStaticMonitorSurvives(StaticSingleton)
-
-  private def assertStaticMonitorSurvives(obj: AnyRef): Unit = {
-    assumeTrue(LinktimeInfo.isMultithreadingEnabled)
-    var monitor: WeakReference[ObjectMonitor] = null
-    val thread = new Thread(() => {
-      inflate(obj)
-      monitor = monitorOf(obj)
-    })
-    thread.start()
-    thread.join()
-    for (_ <- 0 until 5) {
-      Seq.fill(1000)(new Array[Byte](64))
-      System.gc()
-    }
-    assertNotNull("the static object's monitor was collected", monitor.get())
-    assertSame(monitor.get(), currentMonitor(obj))
-    obj.synchronized(obj.notifyAll())
-  }
 
   @Test def concurrentClassInflationSurvivesCollections(): Unit = {
     assumeTrue(LinktimeInfo.isMultithreadingEnabled)
@@ -90,6 +75,24 @@ class ClassMonitorRootTest {
 }
 
 object ClassMonitorRootTest {
+  private[monitor] def assertStaticMonitorSurvives(obj: AnyRef): Unit = {
+    assumeTrue(LinktimeInfo.isMultithreadingEnabled)
+    var monitor: WeakReference[ObjectMonitor] = null
+    val thread = new Thread(() => {
+      inflate(obj)
+      monitor = monitorOf(obj)
+    })
+    thread.start()
+    thread.join()
+    for (_ <- 0 until 5) {
+      Seq.fill(1000)(new Array[Byte](64))
+      System.gc()
+    }
+    assertNotNull("the static object's monitor was collected", monitor.get())
+    assertSame(monitor.get(), currentMonitor(obj))
+    obj.synchronized(obj.notifyAll())
+  }
+
   private class NeverInstantiated
   private class AlsoNeverInstantiated
   private object StaticSingleton
