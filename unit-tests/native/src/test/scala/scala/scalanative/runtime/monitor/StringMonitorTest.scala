@@ -14,7 +14,7 @@ import scala.scalanative.runtime.{Intrinsics, MemoryLayout}
 import Intrinsics._
 
 class StringMonitorTest {
-  private def strings: Seq[String] =
+  private def strings: Seq[AnyRef] =
     Seq("thin string monitor", new String(Array('h', 'e', 'a', 'p')))
 
   private def lockWord(obj: AnyRef): LockWord =
