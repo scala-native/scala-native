@@ -212,16 +212,22 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
     else inflate(thread)
   }
 
-  private def ensureCanInflate(): Unit = {
+  private def objectClass: AnyRef = {
     val objectAddress =
       elemRawPtr(lockWordRef, -MemoryLayout.Object.LockWordOffset)
-    val objectClass = castRawPtrToObject(loadRawPtr(objectAddress))
+    castRawPtrToObject(loadRawPtr(objectAddress))
+  }
+
+  private def ensureCanInflate(): Unit = {
     if (objectClass eq classOf[String])
       throw new IllegalStateException("String monitors cannot be inflated")
   }
 
   @inline private def inflate(thread: Thread): ObjectMonitor = {
     ensureCanInflate()
+    if (objectClass eq classOf[Class[_]])
+      StaticRoots.registerClasses()
+
     val objectMonitor = new ObjectMonitor()
     objectMonitor.enter(thread)
     // Increment recursion by basic lock recursion count if present

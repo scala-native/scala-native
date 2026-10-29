@@ -47,12 +47,18 @@ typedef struct {
 
 #endif
 
-/* Returns this image's section descriptors and writes their count. This only
- * discovers storage; callers decide whether to register, inspect, or scan it.
+/* Named accessors and enumeration describe this image's static storage.
+ * Callers decide whether to register, inspect, or scan each section.
  */
 #ifdef __cplusplus
 extern "C" {
 #endif
+SN_SECTION_LOCAL const SNStaticSection *
+scalanative_static_strings_section(void);
+SN_SECTION_LOCAL const SNStaticSection *
+scalanative_static_classinfo_section(void);
+SN_SECTION_LOCAL const SNStaticSection *
+scalanative_static_globals_section(void);
 SN_SECTION_LOCAL const SNStaticSection *
 scalanative_static_sections(size_t *count);
 #ifdef __cplusplus

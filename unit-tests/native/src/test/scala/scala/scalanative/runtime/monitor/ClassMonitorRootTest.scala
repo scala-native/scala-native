@@ -1,6 +1,7 @@
 package scala.scalanative.runtime.monitor
 
 import java.lang.ref.WeakReference
+import java.util.concurrent.CountDownLatch
 
 import org.junit.Assert._
 import org.junit.Assume._
@@ -36,6 +37,30 @@ class ClassMonitorRootTest {
     obj.synchronized(obj.notifyAll())
   }
 
+  @Test def concurrentClassInflationSurvivesCollections(): Unit = {
+    assumeTrue(LinktimeInfo.isMultithreadingEnabled)
+    val classes =
+      Seq(classOf[NeverInstantiated], classOf[AlsoNeverInstantiated])
+    val monitors = new Array[WeakReference[ObjectMonitor]](classes.size)
+    val start = new CountDownLatch(1)
+    val workers = classes.indices.map { index =>
+      new Thread(() => {
+        start.await()
+        val cls = classes(index)
+        inflate(cls)
+        monitors(index) = monitorOf(cls)
+      })
+    }
+    workers.foreach(_.start())
+    start.countDown()
+    workers.foreach(_.join())
+    for (_ <- 0 until 5) System.gc()
+    classes.indices.foreach { index =>
+      assertNotNull("the class monitor was collected", monitors(index).get())
+      assertSame(monitors(index).get(), currentMonitor(classes(index)))
+    }
+  }
+
   @Test def inflatedMonitorOfAClassSurvivesCollections(): Unit = {
     assumeTrue(
       "inflated monitors require multithreading",
@@ -63,6 +88,7 @@ class ClassMonitorRootTest {
 
 object ClassMonitorRootTest {
   private class NeverInstantiated
+  private class AlsoNeverInstantiated
   private object StaticSingleton
 
   private def lockWord(obj: AnyRef): LockWord =
