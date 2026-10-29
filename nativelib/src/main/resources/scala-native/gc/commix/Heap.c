@@ -225,6 +225,7 @@ bool Heap_BeginEmergencyAllocation(Heap *heap) {
 }
 
 bool Heap_Collect(Heap *heap, bool allowHeapGrowth) {
+    SpillCalleeSavedRegisters();
     MutatorThread *mutatorThread = currentMutatorThread;
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     if (!Synchronizer_acquire())

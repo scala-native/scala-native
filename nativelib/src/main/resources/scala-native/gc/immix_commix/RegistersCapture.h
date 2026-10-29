@@ -33,6 +33,16 @@ typedef struct {
 typedef jmp_buf RegistersBuffer;
 #endif
 
+// Saves every callee-saved register in the calling function's frame, where
+// the collector finds the callers' values while that frame is live.
+// RegistersCapture alone misses the values that the prologue of the
+// function around it saved and reused.
+#if defined(__GNUC__) || defined(__clang__)
+#define SpillCalleeSavedRegisters() __builtin_unwind_init()
+#else
+#define SpillCalleeSavedRegisters()
+#endif
+
 #ifdef CAPTURE_SETJMP
 #define RegistersCapture(out) (void)setjmp(out);
 #else
