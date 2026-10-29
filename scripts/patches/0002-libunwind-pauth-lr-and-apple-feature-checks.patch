@@ -1,0 +1,339 @@
+diff --git a/nativelib/src/main/resources/scala-native/platform/posix/libunwind/CompactUnwinder.hpp b/nativelib/src/main/resources/scala-native/platform/posix/libunwind/CompactUnwinder.hpp
+--- a/nativelib/src/main/resources/scala-native/platform/posix/libunwind/CompactUnwinder.hpp
++++ b/nativelib/src/main/resources/scala-native/platform/posix/libunwind/CompactUnwinder.hpp
+@@ -520,6 +520,7 @@ int CompactUnwinder_arm64<A>::stepWithCompactEncoding(
+     A &addressSpace, Registers_arm64 &registers) {
+   switch (compactEncoding & UNWIND_ARM64_MODE_MASK) {
+   case UNWIND_ARM64_MODE_FRAME:
++  case UNWIND_ARM64_MODE_FRAME_PAUTH_LR:
+     return stepWithCompactEncodingFrame(compactEncoding, functionStart,
+                                         addressSpace, registers);
+   case UNWIND_ARM64_MODE_FRAMELESS:
+@@ -619,7 +620,7 @@ int CompactUnwinder_arm64<A>::stepWithCompactEncodingFrameless(
+ 
+ template <typename A>
+ int CompactUnwinder_arm64<A>::stepWithCompactEncodingFrame(
+-    compact_unwind_encoding_t encoding, uint64_t, A &addressSpace,
++    compact_unwind_encoding_t encoding, uint64_t functionStart, A &addressSpace,
+     Registers_arm64 &registers) {
+   Registers_arm64::reg_t savedRegisterLoc = registers.getFP() - 8;
+ 
+@@ -698,7 +699,16 @@ int CompactUnwinder_arm64<A>::stepWithCompactEncodingFrame(
+   registers.setSP(fp + 16);
+ 
+   // pop return address into pc
+-  registers.setIP(addressSpace.get64(fp + 8));
++  uint64_t linkRegister = addressSpace.get64(fp + 8);
++  if ((encoding & UNWIND_ARM64_MODE_MASK) == UNWIND_ARM64_MODE_FRAME_PAUTH_LR) {
++    // Offset from the range start to pacibsppc, in words.
++    uint32_t offset = (encoding & UNWIND_ARM64_PAUTH_LR_OFFSET_MASK) >>
++                      UNWIND_ARM64_PAUTH_LR_OFFSET_SHIFT;
++    uint64_t pacibsppcAddr = functionStart + offset * 4;
++    registers.setIPPAuthLR(linkRegister, pacibsppcAddr);
++  } else {
++    registers.setIP(linkRegister);
++  }
+ 
+   return UNW_STEP_SUCCESS;
+ }
+diff --git a/nativelib/src/main/resources/scala-native/platform/posix/libunwind/Registers.hpp b/nativelib/src/main/resources/scala-native/platform/posix/libunwind/Registers.hpp
+--- a/nativelib/src/main/resources/scala-native/platform/posix/libunwind/Registers.hpp
++++ b/nativelib/src/main/resources/scala-native/platform/posix/libunwind/Registers.hpp
+@@ -16,7 +16,7 @@
+ #include <string.h>
+ 
+ #include "config.h"
+-#include "libunwind.h"
++#include <libunwind.h>
+ #include "libunwind_ext.h"
+ #include "shadow_stack_unwind.h"
+ 
+@@ -1917,6 +1917,37 @@ public:
+ #endif
+     _registers.__pc = value;
+   }
++
++  // Authenticate an LR signed by pacibsppc and store the raw PC.
++  // 0xdac1bffe is autib171615 (FEAT_PAuth_LR): x17 is the signed pointer,
++  // x16 is SP, x15 is the pacibsppc address. The mnemonic is rejected unless
++  // the translation unit is built with target("pauth-lr"), which nativelib is
++  // not, so the encoding is emitted directly. It executes only while stepping
++  // UNWIND_ARM64_MODE_FRAME_PAUTH_LR. Nativelib is not built with
++  // pointer-auth returns, so this register file stores a raw PC. The
++  // authenticated getIP/setIP path above is for a libunwind built with
++  // ptrauth returns, which resigns into the PC slot.
++  void setIPPAuthLR(uint64_t value, uint64_t signingPc) {
++#if defined(__APPLE__) && defined(__aarch64__)
++    // autib171615 needs FEAT_PAuth_LR and is not a hint, so a CPU without
++    // that feature raises SIGILL. Such a CPU also cannot sign the link
++    // register, so the saved value is already a raw PC.
++    if (hasPAuthLR()) {
++      register uint64_t x17 __asm("x17") = value;
++      register uint64_t x16 __asm("x16") = _registers.__sp;
++      register uint64_t x15 __asm("x15") = signingPc;
++      __asm__ __volatile__(".inst 0xdac1bffe"
++                           : "+r"(x17)
++                           : "r"(x16), "r"(x15)
++                           : "cc");
++      value = x17;
++    }
++#else
++    (void)signingPc;
++#endif
++    _registers.__pc = value;
++  }
++
+   uint64_t getFP() const { return _registers.__fp; }
+   void setFP(uint64_t value) { _registers.__fp = value; }
+ 
+@@ -1943,6 +1974,38 @@ private:
+       _LIBUNWIND_ABORT("SME ZA disable failed");
+   }
+ 
++  // The sysctl is missing on CPUs that do not implement FEAT_PAuth_LR.
++  static bool hasPAuthLR() {
++#if defined(__APPLE__)
++    int has = 0;
++    size_t size = sizeof(has);
++    if (sysctlbyname("hw.optional.arm.FEAT_PAuth_LR", &has, &size, NULL, 0))
++      return false;
++    return has != 0;
++#else
++    return false;
++#endif
++  }
++
++  // CNTD belongs to FEAT_SVE. No Apple CPU implements SVE, and its SME cores
++  // still trap CNTD outside streaming mode. Where the feature cannot be
++  // queried, keep running CNTD as before.
++  static bool hasSVE() {
++#if defined(__APPLE__)
++    return false;
++#elif defined(_LIBUNWIND_HAVE_GETAUXVAL)
++    constexpr unsigned long hwcap_sve = 1UL << 22;
++    return (getauxval(AT_HWCAP) & hwcap_sve) != 0;
++#elif defined(_LIBUNWIND_HAVE_ELF_AUX_INFO)
++    constexpr unsigned long hwcap_sve = 1UL << 22;
++    unsigned long hwcap = 0;
++    elf_aux_info(AT_HWCAP, &hwcap, sizeof(hwcap));
++    return (hwcap & hwcap_sve) != 0;
++#else
++    return true;
++#endif
++  }
++
+ #if defined(__APPLE__)
+   static bool checkHasSME() {
+     int has_sme = 0;
+@@ -2056,10 +2119,17 @@ inline bool Registers_arm64::validRegister(int regNum) const {
+ inline uint64_t Registers_arm64::lazyGetVG() const {
+   if (!_misc_registers.__vg) {
+ #if defined(__aarch64__)
+-    register uint64_t vg asm("x0");
+-    asm(".inst 0x04e0e3e0" // CNTD x0
+-        : "=r"(vg));
+-    _misc_registers.__vg = vg;
++    // Running CNTD without SVE raises SIGILL. A zero __vg means "not read
++    // yet", so store 1 when the instruction is skipped. Frames that need a
++    // real vector length only exist on SVE hardware.
++    uint64_t vg = 1;
++    if (hasSVE()) {
++      register uint64_t raw asm("x0");
++      asm(".inst 0x04e0e3e0" // CNTD x0
++          : "=r"(raw));
++      vg = raw == 0 ? 1 : raw;
++    }
++    _misc_registers.__vg = static_cast<uint32_t>(vg);
+ #else
+     _LIBUNWIND_ABORT("arm64 VG undefined");
+ #endif
+diff --git a/nativelib/src/main/resources/scala-native/platform/posix/libunwind/UnwindCursor.hpp b/nativelib/src/main/resources/scala-native/platform/posix/libunwind/UnwindCursor.hpp
+--- a/nativelib/src/main/resources/scala-native/platform/posix/libunwind/UnwindCursor.hpp
++++ b/nativelib/src/main/resources/scala-native/platform/posix/libunwind/UnwindCursor.hpp
+@@ -53,7 +53,7 @@
+ #include "config.h"
+ #include "DwarfInstructions.hpp"
+ #include "EHHeaderParser.hpp"
+-#include "libunwind.h"
++#include <libunwind.h>
+ #include "libunwind_ext.h"
+ #include "Registers.hpp"
+ #include "RWMutex.hpp"
+@@ -1911,6 +1911,7 @@ bool UnwindCursor<A, R>::getInfoFromCompactEncodingSection(
+   // do a binary search of second level page index
+   uint32_t encoding = 0;
+   pint_t funcStart = 0;
++  pint_t rangeStart = 0;
+   pint_t funcEnd = 0;
+   pint_t lsda = 0;
+   pint_t personality = 0;
+@@ -1950,7 +1951,19 @@ bool UnwindCursor<A, R>::getInfoFromCompactEncodingSection(
+       }
+     }
+     encoding = pageIndex.encoding(low);
+-    funcStart = pageIndex.functionOffset(low) + sects.dso_base;
++    rangeStart = pageIndex.functionOffset(low) + sects.dso_base;
++    // A range marked UNWIND_IS_NOT_FUNCTION_START is not the function entry.
++    // Walk back to the entry so the LSDA lookup uses the real function start.
++    // PAuthLR still authenticates against this range, not that entry.
++    funcStart = rangeStart;
++    if ((encoding & UNWIND_IS_NOT_FUNCTION_START) && low > 0) {
++      uint32_t backIndex = low;
++      do {
++        --backIndex;
++      } while (backIndex > 0 &&
++               (pageIndex.encoding(backIndex) & UNWIND_IS_NOT_FUNCTION_START));
++      funcStart = pageIndex.functionOffset(backIndex) + sects.dso_base;
++    }
+     if (pc < funcStart) {
+       if (log)
+         fprintf(
+@@ -1998,14 +2011,43 @@ bool UnwindCursor<A, R>::getInfoFromCompactEncodingSection(
+         high = mid;
+       }
+     }
+-    funcStart = pageIndex.functionOffset(low) + firstLevelFunctionOffset
+-                                                              + sects.dso_base;
++    rangeStart = pageIndex.functionOffset(low) + firstLevelFunctionOffset +
++                 sects.dso_base;
+     if (low < last)
+       funcEnd =
+           pageIndex.functionOffset(low + 1) + firstLevelFunctionOffset
+                                                               + sects.dso_base;
+     else
+       funcEnd = firstLevelNextPageFunctionOffset + sects.dso_base;
++
++    auto encodingAtIndex = [&](uint32_t idx) -> uint32_t {
++      uint16_t encIdx = pageIndex.encodingIndex(idx);
++      if (encIdx < sectionHeader.commonEncodingsArrayCount()) {
++        return _addressSpace.get32(
++            sects.compact_unwind_section +
++            sectionHeader.commonEncodingsArraySectionOffset() +
++            encIdx * sizeof(uint32_t));
++      } else {
++        uint16_t pageEncIdx =
++            encIdx - (uint16_t)sectionHeader.commonEncodingsArrayCount();
++        return _addressSpace.get32(secondLevelAddr +
++                                   pageHeader.encodingsPageOffset() +
++                                   pageEncIdx * sizeof(uint32_t));
++      }
++    };
++
++    encoding = encodingAtIndex(low);
++    funcStart = rangeStart;
++    if ((encoding & UNWIND_IS_NOT_FUNCTION_START) && low > 0) {
++      uint32_t backIndex = low;
++      do {
++        --backIndex;
++      } while (backIndex > 0 &&
++               (encodingAtIndex(backIndex) & UNWIND_IS_NOT_FUNCTION_START));
++      funcStart = pageIndex.functionOffset(backIndex) +
++                  firstLevelFunctionOffset + sects.dso_base;
++    }
++
+     if (pc < funcStart) {
+       _LIBUNWIND_DEBUG_LOG("malformed __unwind_info, pc=0x%llX "
+                            "not in second level compressed unwind table. "
+@@ -2020,21 +2062,6 @@ bool UnwindCursor<A, R>::getInfoFromCompactEncodingSection(
+                            (uint64_t) pc, (uint64_t) funcEnd);
+       return false;
+     }
+-    uint16_t encodingIndex = pageIndex.encodingIndex(low);
+-    if (encodingIndex < sectionHeader.commonEncodingsArrayCount()) {
+-      // encoding is in common table in section header
+-      encoding = _addressSpace.get32(
+-          sects.compact_unwind_section +
+-          sectionHeader.commonEncodingsArraySectionOffset() +
+-          encodingIndex * sizeof(uint32_t));
+-    } else {
+-      // encoding is in page specific table
+-      uint16_t pageEncodingIndex =
+-          encodingIndex - (uint16_t)sectionHeader.commonEncodingsArrayCount();
+-      encoding = _addressSpace.get32(secondLevelAddr +
+-                                     pageHeader.encodingsPageOffset() +
+-                                     pageEncodingIndex * sizeof(uint32_t));
+-    }
+   } else {
+     _LIBUNWIND_DEBUG_LOG(
+         "malformed __unwind_info at 0x%0llX bad second level page",
+@@ -2111,7 +2138,16 @@ bool UnwindCursor<A, R>::getInfoFromCompactEncodingSection(
+     fprintf(stderr, "getInfoFromCompactEncodingSection(pc=0x%llX), "
+                     "encoding=0x%08X, lsda=0x%08llX for funcStart=0x%llX\n",
+             (uint64_t) pc, encoding, (uint64_t) lsda, (uint64_t) funcStart);
++#if defined(_LIBUNWIND_TARGET_AARCH64)
++  // pacibsppc offset is relative to the compact-unwind range, which can
++  // start after the function entry when UNWIND_IS_NOT_FUNCTION_START is set.
++  if ((encoding & UNWIND_ARM64_MODE_MASK) == UNWIND_ARM64_MODE_FRAME_PAUTH_LR)
++    _info.start_ip = rangeStart;
++  else
++    _info.start_ip = funcStart;
++#else
+   _info.start_ip = funcStart;
++#endif
+   _info.end_ip = funcEnd;
+   _info.lsda = lsda;
+   // We use memmove to copy the personality function as we have already manually
+diff --git a/nativelib/src/main/resources/scala-native/platform/posix/libunwind/libunwind.cpp b/nativelib/src/main/resources/scala-native/platform/posix/libunwind/libunwind.cpp
+--- a/nativelib/src/main/resources/scala-native/platform/posix/libunwind/libunwind.cpp
++++ b/nativelib/src/main/resources/scala-native/platform/posix/libunwind/libunwind.cpp
+@@ -569,3 +569,19 @@ bool logDWARF() {
+ 
+ #endif // NDEBUG
+ 
++// Test hooks. They enter the two paths that used to run CNTD and
++// autib171615, so dropping a feature check fails the test suite.
++#if defined(__aarch64__)
++#include "Registers.hpp"
++extern "C" uint64_t
++scalanative_arm64_unwind_pauth_lr_probe(uint64_t linkRegister,
++                                        uint64_t signingPc) {
++  libunwind::Registers_arm64 regs;
++  regs.setIPPAuthLR(linkRegister, signingPc);
++  return regs.getIP();
++}
++extern "C" uint64_t scalanative_arm64_unwind_vg_probe(void) {
++  libunwind::Registers_arm64 regs;
++  return regs.getRegister(UNW_AARCH64_VG);
++}
++#endif
+diff --git a/nativelib/src/main/resources/scala-native/platform/posix/libunwind/mach-o/compact_unwind_encoding.h b/nativelib/src/main/resources/scala-native/platform/posix/libunwind/mach-o/compact_unwind_encoding.h
+--- a/nativelib/src/main/resources/scala-native/platform/posix/libunwind/mach-o/compact_unwind_encoding.h
++++ b/nativelib/src/main/resources/scala-native/platform/posix/libunwind/mach-o/compact_unwind_encoding.h
+@@ -288,6 +288,11 @@ enum {
+     UNWIND_ARM64_MODE_FRAMELESS                = 0x02000000,
+     UNWIND_ARM64_MODE_DWARF                    = 0x03000000,
+     UNWIND_ARM64_MODE_FRAME                    = 0x04000000,
++    UNWIND_ARM64_MODE_FRAME_PAUTH_LR           = 0x05000000,
++
++    // Words from the compact-unwind range start to the pacibsppc.
++    UNWIND_ARM64_PAUTH_LR_OFFSET_MASK          = 0x00FFF000,
++    UNWIND_ARM64_PAUTH_LR_OFFSET_SHIFT         = 12,
+ 
+     UNWIND_ARM64_FRAME_X19_X20_PAIR            = 0x00000001,
+     UNWIND_ARM64_FRAME_X21_X22_PAIR            = 0x00000002,
+@@ -302,7 +307,7 @@ enum {
+     UNWIND_ARM64_FRAMELESS_STACK_SIZE_MASK     = 0x00FFF000,
+     UNWIND_ARM64_DWARF_SECTION_OFFSET          = 0x00FFFFFF,
+ };
+-// For arm64 there are three modes for the compact unwind encoding:
++// For arm64 there are four modes for the compact unwind encoding:
+ // UNWIND_ARM64_MODE_FRAME:
+ //    This is a standard arm64 prolog where FP/LR are immediately pushed on the
+ //    stack, then SP is copied to FP. If there are any non-volatile registers
+@@ -323,12 +328,14 @@ enum {
+ //    This mode is never used in object files.  It is only generated by the
+ //    linker in final linked images which have only DWARF unwind info for a
+ //    function.
++// UNWIND_ARM64_MODE_FRAME_PAUTH_LR:
++//    An arm64e frame whose LR was signed with pacibsppc. The offset bits are
++//    the number of 4-byte words from the start of this unwind range to that
++//    instruction. Zero means the pacibsppc is the first instruction.
+ //
+ 
+ 
+ 
+-
+-
+ ////////////////////////////////////////////////////////////////////////////////
+ //
+ //  Relocatable Object Files: __LD,__compact_unwind

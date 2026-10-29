@@ -7,7 +7,7 @@ import org.junit.Assume._
 import org.junit.Test
 
 import scala.scalanative.junit.utils.AssumesHelper
-import scala.scalanative.meta.LinktimeInfo.isWindows
+import scala.scalanative.meta.LinktimeInfo.{isMac, isWindows, target}
 import scala.scalanative.unsafe._
 
 @extern
@@ -20,6 +20,13 @@ object UnwindBacktraceTestFFI {
   def _Unwind_GetIP(context: Ptr[Byte]): Ptr[Byte] = extern
 
   def dladdr(addr: Ptr[Byte], info: Ptr[Byte]): CInt = extern
+
+  def scalanative_arm64_unwind_pauth_lr_probe(
+      linkRegister: Long,
+      signingPc: Long
+  ): Long = extern
+
+  def scalanative_arm64_unwind_vg_probe(): Long = extern
 }
 
 /** Backtrace has to step through libsystem frames. On macOS 27 / arm64e.x1
@@ -51,10 +58,32 @@ class UnwindBacktraceTest {
     else checkMainThread()
   }
 
+  // Apple Silicon traps CNTD and autib171615, so the unwinder has to skip
+  // them. Reaching either one here kills the test process with SIGILL.
+  @Test def featureInstructionsDoNotRaiseSigill(): Unit = {
+    assumeFalse("unwind probes are not available", isWindows)
+    if (isWindows || target.arch != "aarch64") ()
+    else checkFeatureProbes()
+  }
+
   @Test def backtraceOnWorkerReachesThreadStart(): Unit = {
     assumeFalse("unwind backtrace is not available", isWindows)
     if (isWindows) ()
     else checkWorker()
+  }
+
+  private def checkFeatureProbes(): Unit = {
+    val pc = UnwindBacktraceTestFFI.scalanative_arm64_unwind_pauth_lr_probe(
+      0x1000L,
+      0x2000L
+    )
+    // Without FEAT_PAuth_LR the link register is stored unchanged.
+    assertEquals(0x1000L, pc)
+
+    val vg = UnwindBacktraceTestFFI.scalanative_arm64_unwind_vg_probe()
+    assertTrue(s"vector granule probe returned $vg", vg != 0L)
+    if (isMac)
+      assertEquals(1L, vg)
   }
 
   private def checkMainThread(): Unit = {

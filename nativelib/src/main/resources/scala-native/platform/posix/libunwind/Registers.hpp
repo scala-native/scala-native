@@ -1932,14 +1932,19 @@ public:
   // ptrauth returns, which resigns into the PC slot.
   void setIPPAuthLR(uint64_t value, uint64_t signingPc) {
 #if defined(__APPLE__) && defined(__aarch64__)
-    register uint64_t x17 __asm("x17") = value;
-    register uint64_t x16 __asm("x16") = _registers.__sp;
-    register uint64_t x15 __asm("x15") = signingPc;
-    __asm__ __volatile__(".inst 0xdac1bffe"
-                         : "+r"(x17)
-                         : "r"(x16), "r"(x15)
-                         : "cc");
-    value = x17;
+    // autib171615 needs FEAT_PAuth_LR and is not a hint, so a CPU without
+    // that feature raises SIGILL. Such a CPU also cannot sign the link
+    // register, so the saved value is already a raw PC.
+    if (hasPAuthLR()) {
+      register uint64_t x17 __asm("x17") = value;
+      register uint64_t x16 __asm("x16") = _registers.__sp;
+      register uint64_t x15 __asm("x15") = signingPc;
+      __asm__ __volatile__(".inst 0xdac1bffe"
+                           : "+r"(x17)
+                           : "r"(x16), "r"(x15)
+                           : "cc");
+      value = x17;
+    }
 #else
     (void)signingPc;
 #endif
@@ -1970,6 +1975,38 @@ private:
       return;
     if (__libunwind_Registers_arm64_za_disable() != 0)
       _LIBUNWIND_ABORT("SME ZA disable failed");
+  }
+
+  // The sysctl is missing on CPUs that do not implement FEAT_PAuth_LR.
+  static bool hasPAuthLR() {
+#if defined(__APPLE__)
+    int has = 0;
+    size_t size = sizeof(has);
+    if (sysctlbyname("hw.optional.arm.FEAT_PAuth_LR", &has, &size, NULL, 0))
+      return false;
+    return has != 0;
+#else
+    return false;
+#endif
+  }
+
+  // CNTD belongs to FEAT_SVE. No Apple CPU implements SVE, and its SME cores
+  // still trap CNTD outside streaming mode. Where the feature cannot be
+  // queried, keep running CNTD as before.
+  static bool hasSVE() {
+#if defined(__APPLE__)
+    return false;
+#elif defined(_LIBUNWIND_HAVE_GETAUXVAL)
+    constexpr unsigned long hwcap_sve = 1UL << 22;
+    return (getauxval(AT_HWCAP) & hwcap_sve) != 0;
+#elif defined(_LIBUNWIND_HAVE_ELF_AUX_INFO)
+    constexpr unsigned long hwcap_sve = 1UL << 22;
+    unsigned long hwcap = 0;
+    elf_aux_info(AT_HWCAP, &hwcap, sizeof(hwcap));
+    return (hwcap & hwcap_sve) != 0;
+#else
+    return true;
+#endif
   }
 
 #if defined(__APPLE__)
@@ -2085,10 +2122,17 @@ inline bool Registers_arm64::validRegister(int regNum) const {
 inline uint64_t Registers_arm64::lazyGetVG() const {
   if (!_misc_registers.__vg) {
 #if defined(__aarch64__)
-    register uint64_t vg asm("x0");
-    asm(".inst 0x04e0e3e0" // CNTD x0
-        : "=r"(vg));
-    _misc_registers.__vg = vg;
+    // Running CNTD without SVE raises SIGILL. A zero __vg means "not read
+    // yet", so store 1 when the instruction is skipped. Frames that need a
+    // real vector length only exist on SVE hardware.
+    uint64_t vg = 1;
+    if (hasSVE()) {
+      register uint64_t raw asm("x0");
+      asm(".inst 0x04e0e3e0" // CNTD x0
+          : "=r"(raw));
+      vg = raw == 0 ? 1 : raw;
+    }
+    _misc_registers.__vg = static_cast<uint32_t>(vg);
 #else
     _LIBUNWIND_ABORT("arm64 VG undefined");
 #endif
