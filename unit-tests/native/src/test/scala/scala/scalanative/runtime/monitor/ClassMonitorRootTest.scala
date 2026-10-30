@@ -16,11 +16,8 @@ import scala.scalanative.runtime.MemoryLayout
 class ClassMonitorRootTest {
   import ClassMonitorRootTest._
 
-  @Test def inflatedMonitorOfAStringLiteralSurvivesCollections(): Unit = {
-    val string = "static string monitor root"
-    string.synchronized(())
-    assertStaticMonitorSurvives(string)
-  }
+  @Test def inflatedMonitorOfAStringLiteralSurvivesCollections(): Unit =
+    assertStaticMonitorSurvives("static string monitor root")
 
   @Test def inflatedMonitorOfAConstantSingletonSurvivesCollections(): Unit =
     assertStaticMonitorSurvives(StaticSingleton)

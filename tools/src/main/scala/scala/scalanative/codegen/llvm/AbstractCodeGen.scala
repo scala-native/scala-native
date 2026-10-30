@@ -226,7 +226,7 @@ private[codegen] abstract class AbstractCodeGen(
       sb: ShowBuilder
   ): Unit = {
     val name = section.llvmName(meta.buildConfig)
-    sb.str(s", section \"$name\", align ${platform.sizeOfPtr}")
+    sb.str(s""", section "$name", align ${platform.sizeOfPtr}""")
   }
 
   private def genDefn(defn: nir.Defn)(implicit

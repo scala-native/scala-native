@@ -10,7 +10,7 @@
 #define SN_DECLARE_SECTION(id, elf, mach, coff)                                \
     static uintptr_t id##_start SN_SECTION_STORAGE(coff "$A") = 0;             \
     static uintptr_t id##_end SN_SECTION_STORAGE(coff "$Z") = 0;
-#define SN_SECTION_RANGE(id, elf, mach, coff) {&id##_start + 1, &id##_end}
+#define SN_SECTION_RANGE(id, elf, mach, coff) &id##_start + 1, &id##_end
 #define SN_KEEP_SECTION(id)
 
 #elif defined(__APPLE__)
@@ -20,7 +20,7 @@
     extern uintptr_t id##_end[] __asm("section$end$__DATA$" mach);             \
     static volatile uintptr_t id##_anchor SN_SECTION_STORAGE("__DATA," mach) = \
         0;
-#define SN_SECTION_RANGE(id, elf, mach, coff) {id##_start, id##_end}
+#define SN_SECTION_RANGE(id, elf, mach, coff) id##_start, id##_end
 #define SN_KEEP_SECTION(id) (void)id##_anchor;
 
 #else /* ELF */
@@ -29,7 +29,7 @@
     extern uintptr_t id##_start[] __asm("__start_" elf) SN_SECTION_LOCAL;      \
     extern uintptr_t id##_end[] __asm("__stop_" elf) SN_SECTION_LOCAL;         \
     static volatile uintptr_t id##_anchor SN_SECTION_STORAGE(elf) = 0;
-#define SN_SECTION_RANGE(id, elf, mach, coff) {id##_start, id##_end}
+#define SN_SECTION_RANGE(id, elf, mach, coff) id##_start, id##_end
 #define SN_KEEP_SECTION(id) (void)id##_anchor;
 
 #endif
@@ -40,8 +40,8 @@
 #define SN_DEFINE_SECTION(id, elf, mach, coff)                                 \
     SN_DECLARE_SECTION(id, elf, mach, coff)                                    \
     const SNStaticSection *scalanative_static_##id##_section(void) {           \
-        static const SNStaticSection section =                                 \
-            SN_SECTION_RANGE(id, elf, mach, coff);                             \
+        static const SNStaticSection section = {                               \
+            SN_SECTION_RANGE(id, elf, mach, coff)};                            \
         SN_KEEP_SECTION(id)                                                    \
         return &section;                                                       \
     }
