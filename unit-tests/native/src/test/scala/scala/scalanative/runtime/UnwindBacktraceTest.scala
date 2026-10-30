@@ -36,15 +36,28 @@ object UnwindBacktraceTestFFI {
 class UnwindBacktraceTest {
 
   @Test def repeatedWindowsStackCapturesReachCaller(): Unit = {
+    AssumesHelper.assumeSupportsStackTraces()
+    checkRepeatedWindowsStackCaptures(checkCaller = true)
+  }
+
+  @Test def repeatedWindowsStackCapturesReturnFrames(): Unit = {
+    AssumesHelper.assumeNotASAN()
+    checkRepeatedWindowsStackCaptures(checkCaller = false)
+  }
+
+  private def checkRepeatedWindowsStackCaptures(checkCaller: Boolean): Unit = {
     assumeTrue("Windows stack capture", isWindows)
     if (isWindows) {
       var i = 0
       while (i < 128) {
         val frames = new Exception().getStackTrace()
-        assertTrue(
-          "stack capture must reach the calling test frame",
-          frames.exists(_.getClassName == getClass.getName)
-        )
+        assertTrue("stack capture must return frames", frames.nonEmpty)
+        // Windows LTO builds can unwind even when caller names are unavailable.
+        if (checkCaller)
+          assertTrue(
+            "stack capture must reach the calling test frame",
+            frames.exists(_.getClassName == getClass.getName)
+          )
         i += 1
       }
     }
