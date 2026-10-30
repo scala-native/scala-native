@@ -17,14 +17,16 @@ import LockWord._
 /** Lightweight monitor used for single-threaded execution, upon detection of
  *  access from multiple threads is inflated in ObjectMonitor
  *
- *  @param lockWordRef
- *    Pointer to LockWord, internal field of every object header
+ *  @param obj
+ *    Object whose header contains the lock word
  */
 @inline
-private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
-    extends AnyVal {
+private[runtime] final class BasicMonitor(val obj: Object) extends AnyVal {
   import BasicMonitor._
   type ThreadId = RawPtr
+
+  @alwaysinline private def lockWordRef: RawPtr =
+    elemRawPtr(castObjectToRawPtr(obj), MemoryLayout.Object.LockWordOffset)
 
   @alwaysinline def _notify(): Unit = {
     val current = lockWord
@@ -209,6 +211,11 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
   }
 
   @inline private def inflate(thread: Thread): ObjectMonitor = {
+    val cls = obj.getClass()
+    if ((cls eq classOf[Class[_]]) || (cls eq classOf[String]) ||
+        (cls eq classOf[scala.Array[Char]]))
+      StaticRoots.registerObject(castObjectToRawPtr(obj))
+
     val objectMonitor = new ObjectMonitor()
     objectMonitor.enter(thread)
     // Increment recursion by basic lock recursion count if present
