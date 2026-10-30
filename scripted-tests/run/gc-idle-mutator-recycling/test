@@ -5,7 +5,8 @@
 # after every collection. Those must reach the thread that allocates rather
 # than idle threads (scala-native#5168), and once the heap is at its cap and
 # effectively full the allocator must throw OutOfMemoryError instead of
-# collecting again for every few allocations (scala-native#5169).
+# collecting again for every few allocations (scala-native#5169), while free
+# chunks held by the large allocator still count as free.
 
 > runIdleMutators
 > runFragmentedExhaustion

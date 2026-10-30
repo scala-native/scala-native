@@ -74,5 +74,9 @@ runIdleMutators := {
 runFragmentedExhaustion := {
   implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
   val binary = nativeExecutable((Compile / nativeLink).value)
-  runCapped(binary, "64M", Seq("exhaust"), streams.value.log)
+  val log = streams.value.log
+  runCapped(binary, "64M", Seq("exhaust"), log)
+  // Free chunks left in the large allocator count as free: 32 MB of 8-32 KiB
+  // arrays fit an 80 MB cap, which needs 68 MB on this workload.
+  runCapped(binary, "80M", Seq("medium", (32L * 1024 * 1024).toString), log)
 }

@@ -7,6 +7,10 @@
 #include "BlockAllocator.h"
 #include "Heap.h"
 
+/* Bytes of free chunks handed to the large allocators by the current sweep,
+ * alongside Block_recycledFreeLines for small objects. */
+extern uint64_t LargeAllocator_sweptFreeBytes;
+
 #define FREE_LIST_COUNT                                                        \
     ((1UL << (BLOCK_SIZE_BITS - LARGE_OBJECT_MIN_SIZE_BITS)) - 1)
 

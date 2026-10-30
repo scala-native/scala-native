@@ -185,7 +185,7 @@ static bool Heap_isExhausted(Heap *heap) {
         return false;
     uint64_t freeLines =
         (uint64_t)atomic_load(&blockAllocator.freeBlockCount) * LINE_COUNT +
-        Block_recycledFreeLines;
+        Block_recycledFreeLines + LargeAllocator_sweptFreeBytes / LINE_SIZE;
     uint64_t totalLines = (uint64_t)heap->blockCount * LINE_COUNT;
     return freeLines * 100 < totalLines * HEAP_EXHAUSTED_FREE_PERCENT;
 }
@@ -309,6 +309,7 @@ static MutatorThread *Heap_nextRecycleTarget(MutatorThreads *cursor) {
 
 void Heap_Recycle(Heap *heap) {
     Block_recycledFreeLines = 0;
+    LargeAllocator_sweptFreeBytes = 0;
     MutatorThreads_foreach(mutatorThreads, node) {
         MutatorThread *thread = node->value;
         Allocator_Clear(&thread->allocator);
