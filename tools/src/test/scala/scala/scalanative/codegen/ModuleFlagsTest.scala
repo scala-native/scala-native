@@ -5,6 +5,8 @@ import java.nio.file.Files
 import org.junit.Assert._
 import org.junit.Test
 
+import scala.scalanative.build.BuildTarget
+
 class ModuleFlagsTest extends CodeGenSpec {
 
   private val source = Map(
@@ -32,6 +34,23 @@ class ModuleFlagsTest extends CodeGenSpec {
       assertTrue(s"Expected `$PicFlag` in emitted IR", ir.contains(PicFlag))
       assertTrue(s"Expected `$PieFlag` in emitted IR", ir.contains(PieFlag))
   }
+
+  @Test def omitsPieModuleFlagForLibraries(): Unit =
+    for (target <- Seq(BuildTarget.libraryDynamic, BuildTarget.libraryStatic))
+      codegen(
+        entry = "Main",
+        sources = source,
+        setupConfig = _.withTargetTriple("aarch64-unknown-linux-gnu")
+          .withBuildTarget(target)
+      ) {
+        case (_, _, outfiles) =>
+          val ir = emittedIr(outfiles)
+          assertTrue(s"Expected `$PicFlag` in emitted IR", ir.contains(PicFlag))
+          assertFalse(
+            s"PIE Level must not be emitted for $target",
+            ir.contains(PieFlag)
+          )
+      }
 
   @Test def omitsPicAndPieModuleFlagsOnWindows(): Unit = codegen(
     entry = "Main",
