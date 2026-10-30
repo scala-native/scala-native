@@ -171,6 +171,25 @@ static bool Heap_reserveAllocation(size_t size) {
     return available;
 }
 
+/**
+ * Whether a collection run to recover an allocation left the heap
+ * effectively full. At the size limit, a collection that frees less than
+ * HEAP_EXHAUSTED_FREE_PERCENT of the heap only buys a few more allocations
+ * before the next one: with the reservation retry the allocator would collect
+ * again and again without reaching the out-of-memory path. Counting that as
+ * exhaustion bounds the work, as the JVM's GC overhead limit does.
+ */
+#define HEAP_EXHAUSTED_FREE_PERCENT 2
+static bool Heap_isExhausted(Heap *heap) {
+    if (heap->blockCount < heap->maxBlockCount)
+        return false;
+    uint64_t freeLines =
+        (uint64_t)atomic_load(&blockAllocator.freeBlockCount) * LINE_COUNT +
+        Block_recycledFreeLines + LargeAllocator_sweptFreeBytes / LINE_SIZE;
+    uint64_t totalLines = (uint64_t)heap->blockCount * LINE_COUNT;
+    return freeLines * 100 < totalLines * HEAP_EXHAUSTED_FREE_PERCENT;
+}
+
 static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
                          uint64_t generation) {
     SpillCalleeSavedRegisters();
@@ -199,7 +218,9 @@ static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
     }
     Heap_Recycle(heap);
     bool available = true;
-    if (allocationSize != 0) {
+    if (allocationSize != 0 && Heap_isExhausted(heap)) {
+        available = false;
+    } else if (allocationSize != 0) {
         available = Heap_reserveAllocation(allocationSize);
         if (!available) {
             uint32_t blocks =
@@ -264,8 +285,31 @@ bool Heap_shouldGrow(Heap *heap) {
             20 * freeBlockCount < 13 * blockCount);
 }
 
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+/**
+ * The next thread to receive a partly free block, round-robin over threads
+ * that were running managed code when the world stopped. A thread blocked in
+ * native code (parked, sleeping, in I/O) is Unmanaged; space handed to it
+ * stays out of reach of the threads that allocate until the next collection,
+ * so it is skipped. The collecting thread always counts as running.
+ */
+static MutatorThread *Heap_nextRecycleTarget(MutatorThreads *cursor) {
+    MutatorThreads start = *cursor;
+    do {
+        MutatorThread *thread = (*cursor)->value;
+        *cursor = (*cursor)->next != NULL ? (*cursor)->next : mutatorThreads;
+        if (thread == currentMutatorThread ||
+            atomic_load_explicit(&thread->state, memory_order_acquire) ==
+                GC_MutatorThreadState_Managed)
+            return thread;
+    } while (*cursor != start);
+    return currentMutatorThread;
+}
+#endif
+
 void Heap_Recycle(Heap *heap) {
     Block_recycledFreeLines = 0;
+    LargeAllocator_sweptFreeBytes = 0;
     MutatorThreads_foreach(mutatorThreads, node) {
         MutatorThread *thread = node->value;
         Allocator_Clear(&thread->allocator);
@@ -282,12 +326,7 @@ void Heap_Recycle(Heap *heap) {
     MutatorThreads threadsCursor = mutatorThreads;
     // NextMutatorThread is always going to be assigned with it's first
     // expression
-#define NextMutatorThread()                                                    \
-    threadsCursor->value;                                                      \
-    threadsCursor = threadsCursor->next;                                       \
-    if (threadsCursor == NULL) {                                               \
-        threadsCursor = mutatorThreads;                                        \
-    }
+#define NextMutatorThread() Heap_nextRecycleTarget(&threadsCursor)
 #else
     MutatorThread *mainThread = currentMutatorThread;
 #define NextMutatorThread() mainThread

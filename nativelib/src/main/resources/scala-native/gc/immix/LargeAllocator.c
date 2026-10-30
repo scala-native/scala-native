@@ -63,6 +63,8 @@ void LargeAllocator_Init(LargeAllocator *allocator,
     }
 }
 
+uint64_t LargeAllocator_sweptFreeBytes = 0;
+
 void LargeAllocator_AddChunk(LargeAllocator *allocator, Chunk *chunk,
                              size_t total_block_size) {
     assert(total_block_size >= MIN_BLOCK_SIZE);
@@ -241,6 +243,7 @@ void LargeAllocator_Sweep(LargeAllocator *allocator, BlockMeta *blockMeta,
                 size_t currentSize = (current - chunkStart) * WORD_SIZE;
                 LargeAllocator_AddChunk(allocator, (Chunk *)chunkStart,
                                         currentSize);
+                LargeAllocator_sweptFreeBytes += currentSize;
                 chunkStart = NULL;
             }
         }
@@ -256,6 +259,7 @@ void LargeAllocator_Sweep(LargeAllocator *allocator, BlockMeta *blockMeta,
     } else if (chunkStart != NULL) {
         size_t currentSize = (current - chunkStart) * WORD_SIZE;
         LargeAllocator_AddChunk(allocator, (Chunk *)chunkStart, currentSize);
+        LargeAllocator_sweptFreeBytes += currentSize;
     }
 }
 
