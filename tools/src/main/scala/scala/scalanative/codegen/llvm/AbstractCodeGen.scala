@@ -8,7 +8,7 @@ import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
 
-import scala.scalanative.build.Discover
+import scala.scalanative.build.{BuildTarget, Discover}
 import scala.scalanative.codegen.llvm.Metadata.conversions._
 import scala.scalanative.codegen.llvm.compat.os.OsCompat
 import scala.scalanative.codegen.{Lower, Metadata => CodeGenMetadata}
@@ -93,7 +93,8 @@ private[codegen] abstract class AbstractCodeGen(
     val flags = List.newBuilder[Metadata.Node]
     if (!platform.targetsWindows) {
       flags += tuple(Min, "PIC Level", PIC_LEVEL)
-      flags += tuple(Max, "PIE Level", PIE_LEVEL)
+      if (meta.config.buildTarget == BuildTarget.Application)
+        flags += tuple(Max, "PIE Level", PIE_LEVEL)
     }
     if (generateDebugMetadata) {
       flags += tuple(Max, "Dwarf Version", DWARF_VERSION)
