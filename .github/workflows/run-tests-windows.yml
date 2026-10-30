@@ -102,7 +102,8 @@ jobs:
         env:
           SCALANATIVE_INCLUDE_DIRS: ${{steps.setup.outputs.vcpkg-dir}}\include
           SCALANATIVE_LIB_DIRS: ${{steps.setup.outputs.vcpkg-dir}}\lib
-        run: sbt "test-scripted ${{matrix.scala}}"
+        # Run in the foreground without the boot server's Windows named pipe.
+        run: sbt --server -J-Dsbt.server.autostart=false "test-scripted ${{matrix.scala}}"
         shell: cmd
 
   test-runtime-ext:
