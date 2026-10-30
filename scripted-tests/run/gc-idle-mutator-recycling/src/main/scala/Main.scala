@@ -7,6 +7,8 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
  *   idle <threads> <nodes>  builds <nodes> with <threads> idle threads alive;
  *                           the heap cap that holds them must not depend on
  *                           how many threads are idle
+ *   medium <bytes>          keeps about <bytes> of 8-32 KiB arrays live among
+ *                           discarded ones; must not report exhaustion
  *   exhaust                 builds without bound; must end in
  *                           OutOfMemoryError rather than collect forever
  */
@@ -73,6 +75,26 @@ object Main {
           throw new AssertionError(
             s"kept list has $found nodes, expected $nodes"
           )
+
+      case "medium" =>
+        // Live data mostly 8-32 KiB arrays, one in three kept, filling about
+        // half of the heap cap: collections leave large superblocks with one
+        // survivor and free chunks around it. That free space is still
+        // available and must not be mistaken for exhaustion.
+        val liveBytes = args(1).toLong
+        val sizes = Array(8192, 12288, 16384, 24576, 32768)
+        val slots = (liveBytes / 18432L).toInt
+        val live = new Array[Array[Byte]](slots)
+        var i = 0
+        while (i < slots * 12) {
+          val data = new Array[Byte](sizes(i % sizes.length))
+          data(0) = i.toByte
+          if (i % 3 == 0) live((i / 3) % slots) = data
+          else sink = data
+          i += 1
+        }
+        if (live.exists(_ == null))
+          throw new AssertionError("a live array went missing")
 
       case "exhaust" =>
         try {
