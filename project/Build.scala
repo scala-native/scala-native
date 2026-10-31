@@ -835,8 +835,11 @@ object Build {
       sharedTestSource(withDenylist = false),
       javaVersionSharedTestSources,
       VarHandleTestSources.settings,
-      nativeConfig ~= { c =>
-        c.withLinkStubs(true)
+      nativeConfig := {
+        val gcHeaders = (ThisBuild / baseDirectory).value / "nativelib/src/main/resources/scala-native/gc"
+        nativeConfig.value
+          .withCompileOptions(_ :+ s"-I${gcHeaders.getAbsolutePath}")
+          .withLinkStubs(true)
           .withEmbedResources(true)
           // Tests using threads are ignored in runtime, skip checks and allow to link
           .withCheckFeatures(false)

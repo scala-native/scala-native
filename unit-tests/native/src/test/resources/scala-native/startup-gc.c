@@ -10,9 +10,7 @@
 #include <pthread.h>
 #include <sys/mman.h>
 
-extern int scalanative_GC_pthread_create(pthread_t *, pthread_attr_t *,
-                                         void *(*)(void *), void *);
-extern void scalanative_GC_collect(void);
+#include "shared/ScalaNativeGC.h"
 
 static void *collectBeforeStackBoundsAreInitialized(void *unused) {
     (void)unused;
