@@ -283,6 +283,7 @@ word_t *LargeAllocator_Alloc(Heap *heap, size_t size) {
         word_t *object = LargeAllocator_tryAlloc(largeAllocator, size);
         if (object != NULL) {
             assert(Heap_IsWordInHeap(heap, object));
+            largeAllocator->blocksTaken++;
             return object;
         }
         if (!Heap_RecoverAllocation(heap, size, generation))

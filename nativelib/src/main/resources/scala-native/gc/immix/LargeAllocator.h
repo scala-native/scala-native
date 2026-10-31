@@ -26,6 +26,9 @@ typedef struct {
     word_t *blockMetaStart;
     Bytemap *bytemap;
     BlockAllocator *blockAllocator;
+    // Large objects this thread allocated since the last collection, for
+    // Heap_Recycle as Allocator.blocksTaken is.
+    uint32_t blocksTaken;
 } LargeAllocator;
 
 void LargeAllocator_Init(LargeAllocator *allocator,

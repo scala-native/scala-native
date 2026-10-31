@@ -79,4 +79,13 @@ runFragmentedExhaustion := {
   // Free chunks left in the large allocator count as free: 32 MB of 8-32 KiB
   // arrays fit an 80 MB cap, which needs 68 MB on this workload.
   runCapped(binary, "80M", Seq("medium", (32L * 1024 * 1024).toString), log)
+  // A full heap that is still valid: 118 MB live in 128 MB. Collections free
+  // little but cost little, so the overhead limit must not fire; a rule on
+  // free space alone threw OutOfMemoryError here.
+  runCapped(
+    binary,
+    "128M",
+    Seq("full", (118L * 1024 * 1024).toString, "20000000"),
+    log
+  )
 }

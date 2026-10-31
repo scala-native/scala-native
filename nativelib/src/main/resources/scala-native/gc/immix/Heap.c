@@ -172,22 +172,47 @@ static bool Heap_reserveAllocation(size_t size) {
 }
 
 /**
- * Whether a collection run to recover an allocation left the heap
- * effectively full. At the size limit, a collection that frees less than
- * HEAP_EXHAUSTED_FREE_PERCENT of the heap only buys a few more allocations
- * before the next one: with the reservation retry the allocator would collect
- * again and again without reaching the out-of-memory path. Counting that as
- * exhaustion bounds the work, as the JVM's GC overhead limit does.
+ * The GC overhead limit, after the JVM's (UseGCOverheadLimit): an allocation
+ * fails when HEAP_OVERHEAD_COLLECTIONS recovery collections in a row each
+ * leave less than HEAP_OVERHEAD_FREE_PERCENT of the heap free at its size limit
+ * and take more than HEAP_OVERHEAD_GC_PERCENT of the time since the previous
+ * collection ended. Low yield alone is not enough: a program can run stably
+ * with a nearly full heap, collecting often. Without the limit, the recovery
+ * retry succeeds whenever one object fits, and a heap that really is full
+ * collects every few allocations without reaching the out-of-memory path.
  */
-#define HEAP_EXHAUSTED_FREE_PERCENT 2
-static bool Heap_isExhausted(Heap *heap) {
+#define HEAP_OVERHEAD_FREE_PERCENT 2
+#define HEAP_OVERHEAD_GC_PERCENT 98
+#define HEAP_OVERHEAD_COLLECTIONS 5
+
+/** At the size limit with under HEAP_OVERHEAD_FREE_PERCENT free, counting
+ * free blocks, free lines in recycled blocks and the large allocators' free
+ * chunks. */
+static bool Heap_lowYield(Heap *heap) {
     if (heap->blockCount < heap->maxBlockCount)
         return false;
     uint64_t freeLines =
         (uint64_t)atomic_load(&blockAllocator.freeBlockCount) * LINE_COUNT +
         Block_recycledFreeLines + LargeAllocator_sweptFreeBytes / LINE_SIZE;
     uint64_t totalLines = (uint64_t)heap->blockCount * LINE_COUNT;
-    return freeLines * 100 < totalLines * HEAP_EXHAUSTED_FREE_PERCENT;
+    return freeLines * 100 < totalLines * HEAP_OVERHEAD_FREE_PERCENT;
+}
+
+static bool Heap_overheadLimitReached(Heap *heap, uint64_t start_ns) {
+    uint64_t now = Time_current_nanos();
+    uint64_t gcNs = now - start_ns;
+    uint64_t sinceLast =
+        heap->lastCollectionEndNs == 0 ? gcNs : now - heap->lastCollectionEndNs;
+    bool gcBound = gcNs * 100 >= sinceLast * HEAP_OVERHEAD_GC_PERCENT;
+    if (gcBound && Heap_lowYield(heap))
+        heap->overheadStreak++;
+    else
+        heap->overheadStreak = 0;
+    if (heap->overheadStreak < HEAP_OVERHEAD_COLLECTIONS)
+        return false;
+    // The error is about to be thrown; a program that catches it starts afresh.
+    heap->overheadStreak = 0;
+    return true;
 }
 
 static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
@@ -218,7 +243,7 @@ static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
     }
     Heap_Recycle(heap);
     bool available = true;
-    if (allocationSize != 0 && Heap_isExhausted(heap)) {
+    if (allocationSize != 0 && Heap_overheadLimitReached(heap, start_ns)) {
         available = false;
     } else if (allocationSize != 0) {
         available = Heap_reserveAllocation(allocationSize);
@@ -235,6 +260,7 @@ static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
     atomic_fetch_add_explicit(&heap->collectionGeneration, 1,
                               memory_order_release);
     end_ns = Time_current_nanos();
+    heap->lastCollectionEndNs = end_ns;
     jmx_stats_record_collection(start_ns, end_ns);
     if (stats != NULL) {
         Stats_RecordCollection(stats, start_ns, nullify_start_ns,
@@ -286,12 +312,19 @@ bool Heap_shouldGrow(Heap *heap) {
 }
 
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
+/** Whether `thread` took any space since the last collection. */
+static bool Heap_allocatedSinceCollection(MutatorThread *thread) {
+    return thread->allocator.blocksTaken != 0 ||
+           thread->largeAllocator.blocksTaken != 0;
+}
+
 /**
  * The next thread to receive a partly free block, round-robin over threads
- * that were running managed code when the world stopped. A thread blocked in
- * native code (parked, sleeping, in I/O) is Unmanaged; space handed to it
- * stays out of reach of the threads that allocate until the next collection,
- * so it is skipped. The collecting thread always counts as running.
+ * that allocated since the last collection. A thread that took nothing in the
+ * last cycle (parked, sleeping, waiting for work) would hold its share until
+ * the next collection, out of reach of the threads that allocate, so it is
+ * skipped. Thread state cannot tell the two apart: every stopped thread is
+ * Unmanaged by now. The collecting thread always counts as allocating.
  */
 static MutatorThread *Heap_nextRecycleTarget(MutatorThreads *cursor) {
     MutatorThreads start = *cursor;
@@ -299,8 +332,7 @@ static MutatorThread *Heap_nextRecycleTarget(MutatorThreads *cursor) {
         MutatorThread *thread = (*cursor)->value;
         *cursor = (*cursor)->next != NULL ? (*cursor)->next : mutatorThreads;
         if (thread == currentMutatorThread ||
-            atomic_load_explicit(&thread->state, memory_order_acquire) ==
-                GC_MutatorThreadState_Managed)
+            Heap_allocatedSinceCollection(thread))
             return thread;
     } while (*cursor != start);
     return currentMutatorThread;
@@ -356,6 +388,12 @@ void Heap_Recycle(Heap *heap) {
         current += size;
         currentBlockStart += WORDS_IN_BLOCK * size;
         lineMetas += LINE_COUNT * size;
+    }
+
+    // A new cycle: who allocates in it decides the next distribution.
+    MutatorThreads_foreach(mutatorThreads, node) {
+        node->value->allocator.blocksTaken = 0;
+        node->value->largeAllocator.blocksTaken = 0;
     }
 
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED

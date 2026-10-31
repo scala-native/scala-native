@@ -9,6 +9,8 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
  *                           how many threads are idle
  *   medium <bytes>          keeps about <bytes> of 8-32 KiB arrays live among
  *                           discarded ones; must not report exhaustion
+ *   full <bytes> <n>        keeps <bytes> live and allocates <n> small
+ *                           objects; must not report exhaustion
  *   exhaust                 builds without bound; must end in
  *                           OutOfMemoryError rather than collect forever
  */
@@ -95,6 +97,27 @@ object Main {
         }
         if (live.exists(_ == null))
           throw new AssertionError("a live array went missing")
+
+      case "full" =>
+        // A heap that stays nearly full and is still valid: 1 MiB live arrays
+        // leaving under 2% of the cap free, and a loop of short-lived
+        // allocations. Collections free little each time but cost little,
+        // so this must run to the end rather than report exhaustion.
+        // Just under 1 MiB, so that each chunk and its header fill exactly
+        // 32 blocks and leave no free tail behind.
+        val chunk = (1 << 20) - 64
+        val live = Array.fill(args(1).toInt / (1 << 20))(new Array[Byte](chunk))
+        live.foreach(c => c(chunk - 1) = 1)
+        var i = 0
+        var acc = 0L
+        while (i < args(2).toInt) {
+          val tmp = new Array[Long](4)
+          tmp(0) = i
+          acc += tmp(0)
+          i += 1
+        }
+        sink = live
+        if (acc < 0) throw new AssertionError("unreachable")
 
       case "exhaust" =>
         try {
