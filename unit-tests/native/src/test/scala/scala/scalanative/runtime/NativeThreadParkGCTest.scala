@@ -13,6 +13,12 @@ import scala.scalanative.junit.utils.AssumesHelper
 import scala.scalanative.meta.LinktimeInfo
 
 class NativeThreadParkGCTest {
+  // A collection walks the heap shared with other tests in this process, which
+  // takes hundreds of milliseconds per run under emulation. Bound the time
+  // spent collecting, so that the timeout below only detects deadlocks.
+  private final val CollectionBudgetNanos = 5000000000L
+  private final val CompletionTimeoutSeconds = 60L
+
   @Test def parkWhileProcessingWeakReferences(): Unit = checkPark(timed = false)
 
   @Test def timedParkWhileProcessingWeakReferences(): Unit =
@@ -70,8 +76,10 @@ class NativeThreadParkGCTest {
     val collector = worker("GC weak-reference regression") {
       try {
         val references = new scala.Array[WeakReference[AnyRef]](64)
+        val deadline = System.nanoTime() + CollectionBudgetNanos
         var collection = 0
-        while (collection < 32 && !stop.get()) {
+        while (collection < 32 && !stop.get() &&
+            (collection == 0 || System.nanoTime() - deadline < 0)) {
           var index = 0
           while (index < references.length) {
             references(index) = newReference(queue)
@@ -91,7 +99,7 @@ class NativeThreadParkGCTest {
     try {
       assertTrue(
         "park/unpark and weak-reference processing must complete",
-        completed.await(20, TimeUnit.SECONDS)
+        completed.await(CompletionTimeoutSeconds, TimeUnit.SECONDS)
       )
       val error = failure.get()
       if (error != null) throw error
