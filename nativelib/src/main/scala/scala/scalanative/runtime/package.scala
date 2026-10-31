@@ -255,13 +255,14 @@ package object runtime {
       moduleInstance: AnyRef,
       moduleSlot: unsafe.Ptr[AnyRef],
       cls: Class[_]
-  ): AnyRef = cls.synchronized {
+  ): AnyRef = {
     @alwaysinline def saveResult(instanceOrError: AnyRef): Unit =
       ffi.stdatomic.atomic_store_intptr(
         moduleSlot.rawptr,
         Intrinsics.castObjectToRawPtr(instanceOrError),
         ffi.stdatomic.memory_order.memory_order_release
       )
+    // Monitor slow paths may load this module, so enter only once it is complete.
     try {
       ctor(moduleInstance)
       saveResult(moduleInstance)
@@ -278,7 +279,7 @@ package object runtime {
     } finally {
       if (isMultithreadingEnabled)
         ModuleInitialization.completeForCurrentThread()
-      cls.notifyAll()
+      cls.synchronized(cls.notifyAll())
     }
   }
 
@@ -296,43 +297,52 @@ package object runtime {
   private def waitForModuleInitializationMultithreaded(
       moduleSlot: unsafe.Ptr[AnyRef],
       cls: Class[_]
-  ): AnyRef = cls.synchronized {
-    while (true) {
-      // The slot can contain one of the 3 values:
-      // - Fully initialized object of type `cls`
-      // - ExceptionInInitializerError object set by exception cought when executing constructor
-      // - Stackallocated initialization context created by the owner thread during initialization
-      val moduleRef = ffi.stdatomic.atomic_load_intptr(
-        moduleSlot.rawptr,
-        ffi.stdatomic.memory_order.memory_order_acquire
-      )
-      if (ModuleInitialization.isContext(moduleRef)) {
-        // A stack-local InitializationContext is valid only while its owner is
-        // initializing under this monitor. Competing threads wait and recheck
-        // after the owner publishes the completed module.
-        val initializingInstance =
-          ModuleInitialization.instanceForCurrentThread(moduleRef)
-        if (initializingInstance != null) return initializingInstance
-        cls.wait()
-      } else {
-        // Assumes Class[?] is always 1st filed in the object header
-        val rtti = Intrinsics.loadObject(moduleRef)
-        if (rtti eq cls)
-          return Intrinsics.castRawPtrToObject(moduleRef) // happy-path
+  ): AnyRef = {
+    // Not an interruption point: keep waiting, restore the status at the end.
+    var interrupted = false
+    def awaitNotification(): Unit =
+      try cls.wait()
+      catch { case _: InterruptedException => interrupted = true }
 
-        if (rtti eq classOf[ExceptionInInitializerError]) {
-          val ex: ExceptionInInitializerError = Intrinsics
-            .castRawPtrToObject(moduleRef)
-            .asInstanceOf[ExceptionInInitializerError]
-          throw new NoClassDefFoundError(
-            s"Could not initialize class ${cls.getName()}"
-          ).initCause(ex)
+    try
+      cls.synchronized {
+        while (true) {
+          // The slot can contain one of the 3 values:
+          // - Fully initialized object of type `cls`
+          // - ExceptionInInitializerError object set by exception cought when executing constructor
+          // - Stackallocated initialization context created by the owner thread during initialization
+          val moduleRef = ffi.stdatomic.atomic_load_intptr(
+            moduleSlot.rawptr,
+            ffi.stdatomic.memory_order.memory_order_acquire
+          )
+          if (ModuleInitialization.isContext(moduleRef)) {
+            // A stack-local InitializationContext is valid only while its owner
+            // is initializing. Competing threads wait for its notification.
+            val initializingInstance =
+              ModuleInitialization.instanceForCurrentThread(moduleRef)
+            if (initializingInstance != null) return initializingInstance
+            awaitNotification()
+          } else {
+            // Assumes Class[?] is always 1st filed in the object header
+            val rtti = Intrinsics.loadObject(moduleRef)
+            if (rtti eq cls)
+              return Intrinsics.castRawPtrToObject(moduleRef) // happy-path
+
+            if (rtti eq classOf[ExceptionInInitializerError]) {
+              val ex: ExceptionInInitializerError = Intrinsics
+                .castRawPtrToObject(moduleRef)
+                .asInstanceOf[ExceptionInInitializerError]
+              throw new NoClassDefFoundError(
+                s"Could not initialize class ${cls.getName()}"
+              ).initCause(ex)
+            }
+
+            awaitNotification()
+          }
         }
-
-        cls.wait()
+        ??? // Unreachable
       }
-    }
-    ??? // Unreachable
+    finally if (interrupted) Thread.currentThread().interrupt()
   }
 
   private def waitForModuleInitializationSingleThreaded(
