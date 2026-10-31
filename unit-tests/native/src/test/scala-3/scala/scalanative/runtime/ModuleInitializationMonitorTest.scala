@@ -39,8 +39,7 @@ private final class BlockingModuleWaiter extends Thread {
 }
 
 class ModuleInitializationMonitorTest {
-  // `classOf` on a module type does not initialize the module, so holding its
-  // class monitor here reproduces the owner contending for it deterministically.
+  // `classOf` does not initialize the module, so this forces the contention.
   @Test def constructorDoesNotNeedClassMonitor(): Unit = {
     AssumesHelper.assumeMultithreadingIsEnabled()
     val constructed = MonitorTestControl.constructed
@@ -75,7 +74,7 @@ class ModuleInitializationMonitorTest {
     assertEquals(Thread.State.WAITING, waiter.getState())
 
     waiter.interrupt()
-    Thread.sleep(50) // Let the waiter observe the interrupt
+    Thread.sleep(50)
     proceed.countDown()
     owner.join()
     waiter.join()

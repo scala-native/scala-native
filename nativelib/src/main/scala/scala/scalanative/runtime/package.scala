@@ -262,10 +262,7 @@ package object runtime {
         Intrinsics.castObjectToRawPtr(instanceOrError),
         ffi.stdatomic.memory_order.memory_order_release
       )
-    // Take the class monitor only after the slot holds the final result. This
-    // thread has already published its context, so anything reached while
-    // contending for the monitor (for example the sleep in its backoff) that
-    // loads this module would observe the unconstructed instance.
+    // Monitor slow paths may load this module, so enter only once it is complete.
     try {
       ctor(moduleInstance)
       saveResult(moduleInstance)
@@ -301,8 +298,7 @@ package object runtime {
       moduleSlot: unsafe.Ptr[AnyRef],
       cls: Class[_]
   ): AnyRef = {
-    // Waiting for a module is not an interruption point: keep waiting and
-    // restore the interrupt status for the caller.
+    // Not an interruption point: keep waiting, restore the status at the end.
     var interrupted = false
     def awaitNotification(): Unit =
       try cls.wait()
@@ -321,8 +317,7 @@ package object runtime {
           )
           if (ModuleInitialization.isContext(moduleRef)) {
             // A stack-local InitializationContext is valid only while its owner
-            // is initializing. Competing threads wait and recheck after the owner
-            // publishes the completed module and notifies under this monitor.
+            // is initializing. Competing threads wait for its notification.
             val initializingInstance =
               ModuleInitialization.instanceForCurrentThread(moduleRef)
             if (initializingInstance != null) return initializingInstance
