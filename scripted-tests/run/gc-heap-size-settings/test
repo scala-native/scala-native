@@ -1,0 +1,10 @@
+# Empty or non-numeric GC_*_HEAP_SIZE values must fall back to the defaults.
+# Parse_Size_Or_Default read before the string for "" and used an uninitialised size
+# for values without leading digits.
+
+> set nativeConfig ~= { _.withGC(scala.scalanative.build.GC.immix) }
+> checkInvalidHeapSizes
+> set nativeConfig ~= { _.withGC(scala.scalanative.build.GC.commix) }
+> checkInvalidHeapSizes
+> set nativeConfig ~= { _.withGC(scala.scalanative.build.GC.none) }
+> checkInvalidHeapSizes

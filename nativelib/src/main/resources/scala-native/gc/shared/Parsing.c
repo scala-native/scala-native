@@ -21,10 +21,14 @@ size_t Parse_Size_Or_Default(const char *str, size_t defaultSizeInBytes) {
     if (str == NULL) {
         return defaultSizeInBytes;
     } else {
-        int length = strlen(str);
-        size_t size;
-        sscanf(str, "%zu", &size);
-        char possibleSuffix = str[length - 1];
+        char *end;
+        unsigned long long parsed = strtoull(str, &end, 10);
+        // Empty or no leading digits, e.g. GC_MAXIMUM_HEAP_SIZE= or "G"
+        if (end == str) {
+            return defaultSizeInBytes;
+        }
+        size_t size = (size_t)parsed;
+        char possibleSuffix = str[strlen(str) - 1];
         switch (possibleSuffix) {
         case 'k':
         case 'K':
