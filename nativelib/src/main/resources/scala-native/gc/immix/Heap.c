@@ -243,6 +243,11 @@ static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
     }
     Heap_Recycle(heap);
     bool available = true;
+    // An explicit collection is not an allocation that could not proceed: it
+    // ends any run of qualifying recovery collections, so that space it frees
+    // is never followed by an error counted partly before it.
+    if (allocationSize == 0)
+        heap->overheadStreak = 0;
     if (allocationSize != 0 && Heap_overheadLimitReached(heap, start_ns)) {
         available = false;
     } else if (allocationSize != 0) {
