@@ -62,7 +62,11 @@ object ClassMonitorRootTest {
   )(body: => Unit): Thread = {
     val thread = new Thread(() => {
       try body
-      catch { case error: Throwable => failure.compareAndSet(null, error) }
+      catch {
+        case error: Throwable =>
+          failure.compareAndSet(null, error)
+          ()
+      }
     })
     // A deadlocked worker must not keep the test process alive after failure.
     thread.setDaemon(true)
