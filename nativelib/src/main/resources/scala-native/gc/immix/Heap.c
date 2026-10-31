@@ -324,23 +324,43 @@ static bool Heap_allocatedSinceCollection(MutatorThread *thread) {
 }
 
 /**
- * The next thread to receive a partly free block, round-robin over threads
- * that allocated since the last collection. A thread that took nothing in the
- * last cycle (parked, sleeping, waiting for work) would hold its share until
- * the next collection, out of reach of the threads that allocate, so it is
- * skipped. Thread state cannot tell the two apart: every stopped thread is
- * Unmanaged by now. The collecting thread always counts as allocating.
+ * The threads that receive partly free blocks in this collection: the
+ * collecting thread, then every thread that took or asked for space since the
+ * last one. A thread that did neither (parked, sleeping, waiting for work)
+ * would hold its share until the next collection, out of reach of the threads
+ * that allocate, so it is left out. Thread state cannot tell the two apart:
+ * every stopped thread is Unmanaged by now. Built once per collection, so
+ * handing out a block stays O(1) however many threads are idle. Kept between
+ * collections and grown as needed; if it cannot grow, every block goes to the
+ * collecting thread.
  */
-static MutatorThread *Heap_nextRecycleTarget(MutatorThreads *cursor) {
-    MutatorThreads start = *cursor;
-    do {
-        MutatorThread *thread = (*cursor)->value;
-        *cursor = (*cursor)->next != NULL ? (*cursor)->next : mutatorThreads;
-        if (thread == currentMutatorThread ||
+static MutatorThread **recycleTargets = NULL;
+static size_t recycleTargetsCapacity = 0;
+
+static size_t Heap_collectRecycleTargets(void) {
+    size_t threads = 0;
+    MutatorThreads_foreach(mutatorThreads, node) { threads++; }
+    if (threads + 1 > recycleTargetsCapacity) {
+        MutatorThread **grown =
+            realloc(recycleTargets, (threads + 1) * sizeof(MutatorThread *));
+        if (grown == NULL) {
+            if (recycleTargets == NULL)
+                return 0;
+            recycleTargets[0] = currentMutatorThread;
+            return 1;
+        }
+        recycleTargets = grown;
+        recycleTargetsCapacity = threads + 1;
+    }
+    size_t count = 0;
+    recycleTargets[count++] = currentMutatorThread;
+    MutatorThreads_foreach(mutatorThreads, node) {
+        MutatorThread *thread = node->value;
+        if (thread != currentMutatorThread &&
             Heap_allocatedSinceCollection(thread))
-            return thread;
-    } while (*cursor != start);
-    return currentMutatorThread;
+            recycleTargets[count++] = thread;
+    }
+    return count;
 }
 #endif
 
@@ -360,10 +380,11 @@ void Heap_Recycle(Heap *heap) {
     word_t *end = heap->blockMetaEnd;
 
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
-    MutatorThreads threadsCursor = mutatorThreads;
-    // NextMutatorThread is always going to be assigned with it's first
-    // expression
-#define NextMutatorThread() Heap_nextRecycleTarget(&threadsCursor)
+    size_t targetCount = Heap_collectRecycleTargets();
+    size_t targetIndex = 0;
+#define NextMutatorThread()                                                    \
+    (targetCount == 0 ? currentMutatorThread                                   \
+                      : recycleTargets[targetIndex++ % targetCount])
 #else
     MutatorThread *mainThread = currentMutatorThread;
 #define NextMutatorThread() mainThread
