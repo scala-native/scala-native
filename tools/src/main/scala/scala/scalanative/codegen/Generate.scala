@@ -49,6 +49,7 @@ private[codegen] object Generate {
 
     def genInjects(): Unit = {
       buf += InitDecl
+      buf += RegisterStaticRootsDecl
       buf ++= ThreadBootstrapDecls
       buf ++= Lower.injects
     }
@@ -57,7 +58,10 @@ private[codegen] object Generate {
       meta.classes.foreach { cls =>
         val rtti = meta.rtti(cls)
         val pos = cls.position
-        buf += nir.Defn.Var(nir.Attrs.None, rtti.name, rtti.struct, rtti.value)(pos)
+        buf += meta.globalSections.define(
+          GlobalSections.ClassInfo,
+          nir.Defn.Var(nir.Attrs.None, rtti.name, rtti.struct, rtti.value)(pos)
+        )
       }
     }
 
@@ -65,7 +69,10 @@ private[codegen] object Generate {
       meta.traits.foreach { trt =>
         val rtti = meta.rtti(trt)
         val pos = trt.position
-        buf += nir.Defn.Var(nir.Attrs.None, rtti.name, rtti.struct, rtti.value)(pos)
+        buf += meta.globalSections.define(
+          GlobalSections.ClassInfo,
+          nir.Defn.Var(nir.Attrs.None, rtti.name, rtti.struct, rtti.value)(pos)
+        )
       }
     }
 
@@ -129,13 +136,13 @@ private[codegen] object Generate {
       }
     }
 
-    private def genGcInit(unwindProvider: () => nir.Next)(implicit fresh: nir.Fresh) = {
+    private def genMemoryInit(unwindProvider: () => nir.Next)(implicit fresh: nir.Fresh) = {
       def unwind: nir.Next = unwindProvider()
 
-      Seq(
-        // Init GC
-        nir.Inst.Let(nir.Op.Call(InitSig, Init, Seq.empty), unwind)
-      )
+      val gcInit = nir.Inst.Let(nir.Op.Call(InitSig, Init, Seq.empty), unwind)
+      // Runtime-owned static storage must be rooted before Scala initializers
+      // can inflate monitors or trigger a collection.
+      Seq(gcInit, nir.Inst.Let(nir.Op.Call(InitSig, RegisterStaticRoots, Seq.empty), unwind))
     }
 
     private def genThreadBootstrap(library: Boolean, complete: Boolean)(implicit fresh: nir.Fresh): Seq[nir.Inst] = {
@@ -170,7 +177,7 @@ private[codegen] object Generate {
           val rt = nir.Val.Local(fresh(), Runtime)
           Seq(nir.Inst.Label(fresh(), Nil)) ++
             genThreadBootstrap(library = true, complete = false) ++
-            genGcInit(unwindProvider) ++
+            genMemoryInit(unwindProvider) ++
             Seq(
               nir.Inst.Let(rt.id, nir.Op.Module(Runtime.name), unwindProvider()),
               nir.Inst.Let(nir.Op.Call(RuntimeInitLibrarySig, RuntimeInitLibrary, Seq(rt)), unwindProvider())
@@ -202,7 +209,7 @@ private[codegen] object Generate {
           def unwind = unwindProvider()
           Seq(nir.Inst.Label(fresh(), Seq(argc, argv))) ++
             genThreadBootstrap(library = false, complete = false) ++
-            genGcInit(unwindProvider) ++
+            genMemoryInit(unwindProvider) ++
             genClassInitializersCalls(unwindProvider) ++
             Seq(
               nir.Inst.Let(rt.id, nir.Op.Module(Runtime.name), unwind),
@@ -268,7 +275,7 @@ private[codegen] object Generate {
               instanceVal
             )
 
-            buf += instanceDefn
+            buf += meta.globalSections.define(GlobalSections.GlobalObjects, instanceDefn)
           } else {
             val initSig = nir.Type.Function(Seq(clsTy), nir.Type.Unit)
             val init = nir.Val.Global(name.member(nir.Sig.Ctor(Seq.empty)), nir.Type.Ptr)
@@ -563,6 +570,10 @@ private[codegen] object Generate {
     val InitSig = nir.Type.Function(Seq.empty, nir.Type.Unit)
     val InitDecl = nir.Defn.Declare(nir.Attrs.None, Extern("scalanative_GC_init"), InitSig)
     val Init = nir.Val.Global(InitDecl.name, nir.Type.Ptr)
+
+    val RegisterStaticRootsDecl =
+      nir.Defn.Declare(nir.Attrs.None, Extern("scalanative_register_static_roots"), InitSig)
+    val RegisterStaticRoots = nir.Val.Global(RegisterStaticRootsDecl.name, nir.Type.Ptr)
 
     val moduleArrayName = Extern("__modules")
     val moduleArraySizeName = Extern("__modules_size")

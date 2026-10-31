@@ -209,6 +209,14 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
   }
 
   @inline private def inflate(thread: Thread): ObjectMonitor = {
+    // Preserve the RawPtr value-class ABI used by existing getMonitor callers.
+    val obj = castRawPtrToObject(
+      elemRawPtr(lockWordRef, -MemoryLayout.Object.LockWordOffset)
+    )
+    val cls = obj.getClass()
+    if ((cls eq classOf[Class[_]]) || (cls eq classOf[String]))
+      StaticRoots.registerObject(castObjectToRawPtr(obj))
+
     val objectMonitor = new ObjectMonitor()
     objectMonitor.enter(thread)
     // Increment recursion by basic lock recursion count if present

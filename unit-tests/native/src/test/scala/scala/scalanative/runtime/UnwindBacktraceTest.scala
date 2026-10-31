@@ -146,7 +146,7 @@ object UnwindBacktrace {
     state._1 = 0
     state._2 = 0
     val status = UnwindBacktraceTestFFI._Unwind_Backtrace(
-      onFrame _,
+      CFuncPtr2.fromScalaFunction(onFrame),
       state.asInstanceOf[Ptr[Byte]]
     )
     (status.toInt, state._1.toInt, state._2 != 0)

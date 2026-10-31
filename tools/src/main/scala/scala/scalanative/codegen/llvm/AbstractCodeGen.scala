@@ -11,7 +11,9 @@ import scala.util.control.NonFatal
 import scala.scalanative.build.{BuildTarget, Discover}
 import scala.scalanative.codegen.llvm.Metadata.conversions._
 import scala.scalanative.codegen.llvm.compat.os.OsCompat
-import scala.scalanative.codegen.{Lower, Metadata => CodeGenMetadata}
+import scala.scalanative.codegen.{
+  GlobalSections, Lower, Metadata => CodeGenMetadata
+}
 import scala.scalanative.io.VirtualDirectory
 import scala.scalanative.nir.ControlFlow.{Block, Graph => CFG}
 import scala.scalanative.nir.Defn.Define.DebugInfo
@@ -21,6 +23,13 @@ import scala.scalanative.{build, linker, nir}
 
 import MetadataCodeGen.DefnScopes
 
+private[codegen] object AbstractCodeGen {
+  private final case class ConstantKey(
+      value: nir.Val,
+      section: Option[GlobalSections.Section]
+  )
+}
+
 private[codegen] abstract class AbstractCodeGen(
     env: Map[nir.Global, nir.Defn],
     defns: Seq[nir.Defn]
@@ -28,6 +37,8 @@ private[codegen] abstract class AbstractCodeGen(
     extends MetadataCodeGen {
   import meta.{config, platform}
   import platform._
+
+  import AbstractCodeGen.ConstantKey
 
   val pointerType = if (useOpaquePointers) "ptr" else "i8*"
 
@@ -197,13 +208,26 @@ private[codegen] abstract class AbstractCodeGen(
   private def genConsts()(implicit sb: ShowBuilder): Unit = {
     import sb._
     constMap.toSeq.sortBy(_._2.show).foreach {
-      case (v, name) =>
+      case (ConstantKey(value, section), name) =>
         newline()
         str("@")
         genGlobal(name)
-        str(" = private unnamed_addr constant ")
-        genVal(v)
+        // A literal's characters are immutable, but its object header contains
+        // a mutable lock word. Do not allow LLVM to merge or duplicate it.
+        str(
+          if (section.isDefined) " = private global "
+          else " = private unnamed_addr constant "
+        )
+        genVal(value)
+        section.foreach(genStaticObjectSection)
     }
+  }
+
+  private def genStaticObjectSection(section: GlobalSections.Section)(implicit
+      sb: ShowBuilder
+  ): Unit = {
+    val name = section.llvmName(meta.buildConfig)
+    sb.str(s""", section "$name", align ${platform.sizeOfPtr}""")
   }
 
   private def genDefn(defn: nir.Defn)(implicit
@@ -249,6 +273,7 @@ private[codegen] abstract class AbstractCodeGen(
       genType(ty)
     } else {
       genVal(rhs)
+      meta.globalSections.forGlobal(name).foreach(genStaticObjectSection)
     }
   }
 
@@ -541,16 +566,19 @@ private[codegen] abstract class AbstractCodeGen(
     }
   }
 
-  private val constMap = mutable.Map.empty[nir.Val, nir.Global.Member]
+  private val constMap = mutable.Map.empty[ConstantKey, nir.Global.Member]
   private val constTy = mutable.Map.empty[nir.Global.Member, nir.Type]
-  private[codegen] def constFor(v: nir.Val): nir.Global.Member =
+  private def constFor(
+      value: nir.Val,
+      section: Option[GlobalSections.Section]
+  ): nir.Global.Member =
     constMap.getOrElseUpdate(
-      v, {
+      ConstantKey(value, section), {
         val idx = constMap.size
         val name =
           nir.Global
             .Member(nir.Global.Top("__const"), nir.Sig.Generated(idx.toString))
-        constTy(name) = v.ty
+        constTy(name) = value.ty
         name
       }
     )
@@ -562,7 +590,8 @@ private[codegen] abstract class AbstractCodeGen(
     case nir.Val.ArrayValue(elemty, vals) =>
       nir.Val.ArrayValue(elemty, vals.map(deconstify))
     case nir.Val.Const(value) =>
-      nir.Val.Global(constFor(deconstify(value)), nir.Type.Ptr)
+      val section = meta.globalSections.forConstant(value)
+      nir.Val.Global(constFor(deconstify(value), section), nir.Type.Ptr)
     case _ =>
       v
   }
