@@ -4,6 +4,7 @@ package monitor
 import scala.annotation.tailrec
 
 import scala.scalanative.annotation.alwaysinline
+import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.meta.LinktimeInfo.{is32BitPlatform => is32bit}
 import scala.scalanative.runtime.Intrinsics._
 import scala.scalanative.runtime.VirtualThread
@@ -227,6 +228,10 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
         castLongToRawPtr(lockMark | addr)
       }
     atomic_store_intptr(lockWordRef, inflated, memory_order_release)
+    // Immix and Commix trace a lock word through its object, so one outside
+    // the heap, such as a class's, must become a root
+    if (LinktimeInfo.gc.isImmix || LinktimeInfo.gc.isCommix)
+      GC.lockWordInflated(lockWordRef)
     atomic_thread_fence(memory_order_seq_cst)
 
     objectMonitor

@@ -32,5 +32,7 @@ bool GC_Roots_Add(GC_Roots *roots, AddressRange range);
 /* Remove GC roots nodes for which memory adress range is fully contained within
  * range passed as an argument to this method*/
 void GC_Roots_RemoveByRange(GC_Roots *roots, AddressRange range);
+/* Whether a range of the list contains [low, high) */
+bool GC_Roots_Covers(GC_Roots *roots, const word_t *low, const word_t *high);
 
 #endif

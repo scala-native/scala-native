@@ -53,6 +53,12 @@ object GC {
   @name("scalanative_GC_stats_collection_duration_total")
   def getStatsCollectionDurationTotal(): CSize = extern
 
+  /** Immix and Commix only: after monitor inflation stored a reference to the
+   *  monitor in the lock word at `lockWord`.
+   */
+  @name("scalanative_GC_lock_word_inflated")
+  private[runtime] def lockWordInflated(lockWord: RawPtr): Unit = extern
+
   /*  Multithreading awareness for GC Every implementation of GC supported in
    *  ScalaNative needs to register a given thread The main thread is
    *  automatically registered. Every additional thread needs to explicitly

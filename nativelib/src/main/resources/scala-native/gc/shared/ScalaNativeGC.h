@@ -100,4 +100,9 @@ extern SN_ThreadLocal void **scalanative_GC_yieldpoint_trap;
 void scalanative_GC_add_roots(void *addr_low, void *addr_high);
 void scalanative_GC_remove_roots(void *addr_low, void *addr_high);
 
+// Immix and Commix: after monitor inflation stored a reference to the monitor
+// in the lock word at `lockWord`. A lock word outside the heap, such as a
+// class's, becomes a root, as marking reaches it only through an instance.
+void scalanative_GC_lock_word_inflated(void *lockWord);
+
 #endif // SCALA_NATIVE_GC_H
