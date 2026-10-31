@@ -22,14 +22,23 @@ class NullGuardsTest {
     one.add(1)
     assertEquals(1, sizeUnlessEmpty(one))
   }
+
+  @Test def getClassOfNullInAnInlinedCallee(): Unit = {
+    import NullGuardsTest.{className, noObject}
+    assertEquals("java.lang.String", className("s"))
+    assertThrows(classOf[NullPointerException], className(noObject))
+  }
 }
 
 object NullGuardsTest {
   var noCollection: java.util.Collection[Int] = null
+  var noObject: AnyRef = null
 
   // `c` is checked on the way to `c.size` only when it is not null
   @noinline def sizeUnlessEmpty(c: java.util.Collection[Int]): Int =
     if ((c ne null) && c.isEmpty) -1 else c.size
+
+  @inline def className(x: AnyRef): String = x.getClass.getName
 
   object issue3939 {
     trait TemporalAccessor {

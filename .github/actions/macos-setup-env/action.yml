@@ -47,7 +47,7 @@ runs:
 
     - name: Install and cache LLVM toolchain
       if: ${{ inputs.llvm-version != '' }}
-      uses: gerlero/brew-install@b7bdd6875207fdf3b7ebd0ecc5cf8da6e657eca2 # v1.1.3
+      uses: gerlero/brew-install@f21af2da1f07ad75501992d36996ddb7afe0cedb # v1.1.6
       with:
         # Homebrew ships LLD separately for newer versioned LLVM formulae.
         # A caller that needs LLD for ThinLTO can request an exact compatible
