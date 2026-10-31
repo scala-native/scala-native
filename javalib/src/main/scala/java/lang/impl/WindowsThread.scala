@@ -164,7 +164,7 @@ private[java] class WindowsThread(
       val parkedState =
         if (parkTime == Infinite) State.ParkedWaiting
         else State.ParkedWaitingTimed
-      withState(parkedState) {
+      withState[Unit](parkedState) {
         WaitForSingleObject(parkEvent, parkTime)
         ResetEvent(parkEvent)
       }
@@ -173,8 +173,8 @@ private[java] class WindowsThread(
 
   @inline override def unpark(): Unit = if (isMultithreadingEnabled) {
     if (terminated) return
-    withoutCarrierCompensation {
-      this.synchronized {
+    withoutCarrierCompensation[Unit] {
+      this.synchronized[Unit] {
         if (!terminated) SetEvent(parkEvent)
       }
     }

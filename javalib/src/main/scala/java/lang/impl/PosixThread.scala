@@ -166,9 +166,15 @@ private[java] class PosixThread(
     if (time < 0 || (isAbsolute && time == 0)) return
     val absTime = stackalloc[timespec]()
     if (time > 0) toAbsoluteTime(absTime, time, isAbsolute)
+    val parkedState =
+      if (time == 0) State.ParkedWaiting
+      else State.ParkedWaitingTimed
     // Compensation may call unpark on this thread, so run it outside `lock`.
-    withCarrierCompensation {
-      parkLocked(time, isAbsolute, absTime)
+    // State wrappers can allocate closures and box their results as well.
+    withCarrierCompensation[Unit] {
+      withState[Unit](parkedState) {
+        parkLocked(time, isAbsolute, absTime)
+      }
     }
   }
 
@@ -177,62 +183,97 @@ private[java] class PosixThread(
       isAbsolute: Boolean,
       absTime: Ptr[timespec]
   ): Unit = {
+    val relative = time == 0 || !isAbsolute
+    val index =
+      if (relative) ConditionRelativeIdx
+      else ConditionAbsoluteIdx
+    val waitCondition =
+      if (relative) relativeCondition
+      else absoluteCondition
+    var previousCondition = ConditionUnset
+    var waitStatus = 0
+    var unlockStatus = 0
+
     // Interference with ongoing unpark
     if (pthread_mutex_trylock(lock) != 0) return
 
+    // No managed allocations while holding the park mutex. Even an assert's
+    // by-name message can allocate and synchronously run a GC callback which
+    // unparks this thread, taking its Scala monitor before this mutex.
     try {
       if (counter > 0) { // no wait needed
         counter = 0
-        return
-      }
-
-      assert(
-        conditionIdx == ConditionUnset,
-        s"condition idx: $conditionIdx, expected=$ConditionUnset"
-      )
-      if (time == 0) {
-        conditionIdx = ConditionRelativeIdx
-        val status = withState(State.ParkedWaiting) {
-          pthread_cond_wait(condition(conditionIdx), lock)
-        }
-        assert(
-          status == 0 ||
-            (isMac && status == ETIMEDOUT),
-          "park, wait"
-        )
       } else {
-        conditionIdx =
-          if (isAbsolute) ConditionAbsoluteIdx else ConditionRelativeIdx
-        val status = withState(State.ParkedWaitingTimed) {
-          pthread_cond_timedwait(condition(conditionIdx), lock, absTime)
+        previousCondition = conditionIdx
+        if (previousCondition == ConditionUnset) {
+          conditionIdx = index
+          if (time == 0)
+            waitStatus = pthread_cond_wait(waitCondition, lock)
+          else
+            waitStatus = pthread_cond_timedwait(waitCondition, lock, absTime)
+          conditionIdx = ConditionUnset
+          counter = 0
         }
-        assert(status == 0 || status == ETIMEDOUT, "park, timed-wait")
       }
-
-      conditionIdx = ConditionUnset
-      counter = 0
     } finally {
-      val status = pthread_mutex_unlock(lock)
-      assert(status == 0, "park, unlock")
+      unlockStatus = pthread_mutex_unlock(lock)
       atomic_thread_fence(memory_order_seq_cst)
     }
+
+    checkParkStatus(unlockStatus, "park, unlock")
+    checkConditionIndex(previousCondition)
+    checkParkStatus(
+      waitStatus,
+      if (time == 0) "park, wait" else "park, timed-wait",
+      timeoutAllowed = if (isMac) true else time > 0
+    )
   }
 
   override def unpark(): Unit = if (isMultithreadingEnabled) {
     if (terminated) return
-    withoutCarrierCompensation {
-      this.synchronized {
+    withoutCarrierCompensation[Unit] {
+      this.synchronized[Unit] {
         if (!terminated) {
+          var index = ConditionUnset
           pthread_mutex_lock(lock)
-          val s = counter
-          counter = 1
-          val index = conditionIdx
-          if (s < 1 && index != ConditionUnset)
-            pthread_cond_signal(condition(index))
-          pthread_mutex_unlock(lock)
+          try {
+            val s = counter
+            counter = 1
+            index = conditionIdx
+            if (s < 1 && index >= ConditionRelativeIdx && index <= ConditionAbsoluteIdx) {
+              val waitCondition =
+                if (index == ConditionRelativeIdx) relativeCondition
+                else absoluteCondition
+              // Keep this branch returning Unit; Scala 2 otherwise boxes the result.
+              val _ = pthread_cond_signal(waitCondition)
+            }
+          } finally {
+            pthread_mutex_unlock(lock)
+          }
+          checkConditionIndex(index, waitingAllowed = true)
         }
       }
     }
+  }
+
+  // Strict arguments and deferred checks keep both closure creation and error
+  // construction outside the pthread mutex regions.
+  private def checkParkStatus(
+      status: CInt,
+      operation: String,
+      timeoutAllowed: Boolean = false
+  ): Unit =
+    if (status != 0 && (!timeoutAllowed || status != ETIMEDOUT))
+      throw new AssertionError(s"$operation: status=$status")
+
+  private def checkConditionIndex(
+      index: Int,
+      waitingAllowed: Boolean = false
+  ): Unit = {
+    val valid =
+      index == ConditionUnset ||
+        (waitingAllowed && (index == ConditionRelativeIdx || index == ConditionAbsoluteIdx))
+    if (!valid) throw new AssertionError(s"unexpected condition idx: $index")
   }
 
   override def sleep(millis: Long): Unit =
@@ -470,9 +511,9 @@ private[lang] object PosixThread extends NativeThread.Companion {
   // PosixThread class state
   @alwaysinline private def LockOffset = 0
   @alwaysinline private def ConditionsOffset = pthread_mutex_t_size.toInt
-  @alwaysinline private def ConditionUnset = -1
-  @alwaysinline private def ConditionRelativeIdx = 0
-  @alwaysinline private def ConditionAbsoluteIdx = 1
+  private final val ConditionUnset = -1
+  private final val ConditionRelativeIdx = 0
+  private final val ConditionAbsoluteIdx = 1
   private def StateSize =
     (pthread_mutex_t_size + pthread_cond_t_size * 2.toUInt).toInt
 
