@@ -35,6 +35,17 @@ static void *alternate_stack_worker(void *unused) {
 #endif
 
     callback_pressure();
+#if defined(EXTERNAL_RECLAIMING_GC) && !defined(EXTERNAL_SHARED_LIBRARY)
+    if (multithreaded) {
+        int status = external_collect_on_unguarded_stack();
+        if (status == -1)
+            puts("SKIP unguarded-stack collection: ucontext unavailable");
+        else {
+            CHECK(status == 0);
+            milestone("unguarded-stack-collected");
+        }
+    }
+#endif
     if (multithreaded) {
         host_thread_t collector = worker_start(altstack_collector, NULL);
 

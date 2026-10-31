@@ -160,18 +160,18 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
         stackTop = MutatorThread_getStackTop(thread, false);
     } while (stackTop == NULL);
 #ifdef SCALANATIVE_THREAD_ALT_STACK
-    if (thread->threadInfo != NULL &&
+    // Keep the captured SP until stack bounds are known.
+    if (thread->threadInfo != NULL && thread->threadInfo->stackTop != NULL &&
+        thread->threadInfo->stackBottom != NULL &&
         !isInRange(stackTop, thread->threadInfo->stackTop,
                    thread->threadInfo->stackBottom)) {
-        // Area between thread-stackTop and stackGaurdPage might be guarded
         void *stackScanLimit = threadStackScanableLimit(thread->threadInfo);
+        // Host stacks may lack a Scala guard.
         stackTop =
-            (stackScanLimit != NULL)
-                ? (word_t **)stackScanLimit
-                : stackBottom - 64 * 1024; // not yet initialized, approximate
+            (word_t **)(stackScanLimit != NULL ? stackScanLimit
+                                               : thread->threadInfo->stackTop);
         if (thread->threadInfo->signalHandlerStack != NULL) {
-            // Marking alternative stack should not be needed, but tests showed
-            // that it might contain some pointer to managed object
+            // Signal stacks can retain managed references.
             word_t **signalHandlerStack =
                 (word_t **)thread->threadInfo->signalHandlerStack;
             Marker_markRange(
