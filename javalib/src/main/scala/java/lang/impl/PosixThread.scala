@@ -15,6 +15,7 @@ import scala.scalanative.posix.sched._
 import scala.scalanative.posix.schedOps._
 import scala.scalanative.posix.sys.types._
 import scala.scalanative.posix.time._
+import scala.scalanative.posix.timeOps._
 import scala.scalanative.posix.unistd._
 import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
 import scala.scalanative.runtime._
@@ -340,17 +341,12 @@ private[java] class PosixThread(
   final val NanosInMillisecond = 1000000L
   final val NanosInSecond = 1000000000L
 
-  // Monitor backoff sleeps here, also during module init. Read and write
-  // timespec with raw ops: boxing a CLong loads SizeCache, which may be the
-  // module being initialized (its cache is still null).
-  @alwaysinline private def nanosField(ts: RawPtr): RawPtr =
-    Intrinsics.elemRawPtr(ts, Intrinsics.sizeOf[CLong])
-
+  // Monitor backoff can sleep while SizeCache is initializing, so avoid boxing.
   private def fillTimespec(
       timespec: Ptr[timespec],
       millis: Long, // Only two callers; each guarantees >= 0
       nanos: Long // pre-condition: in range [0, NanosInSecond)
-  ): Unit = {
+  ) = {
     var seconds = millis / MillisInSecond
     var sumNanos = (millis % MillisInSecond) * NanosInMillisecond + nanos
     if (sumNanos >= NanosInSecond) {
@@ -360,7 +356,7 @@ private[java] class PosixThread(
     val ts = toRawPtr(timespec)
     Intrinsics.storeRawSize(ts, Intrinsics.castLongToRawSize(seconds))
     Intrinsics.storeRawSize(
-      nanosField(ts),
+      Intrinsics.elemRawPtr(ts, Intrinsics.sizeOf[CLong]),
       Intrinsics.castLongToRawSize(sumNanos)
     )
   }
@@ -368,7 +364,7 @@ private[java] class PosixThread(
   private def calculateRelativeTime(
       abstime: Ptr[timespec],
       timeout: Long // nanos, full Long range, caller checked >= 0
-  ): Unit = {
+  ) = {
 
     val seconds = timeout / NanosInSecond
 
@@ -383,26 +379,21 @@ private[java] class PosixThread(
      * 292,277,266,000 years or so from now.
      */
 
-    val nowSeconds =
-      Intrinsics.castRawSizeToLong(Intrinsics.loadRawSize(toRawPtr(now)))
-    val nowNanos = Intrinsics.castRawSizeToLong(
-      Intrinsics.loadRawSize(nanosField(toRawPtr(now)))
-    )
-    var totalSeconds = nowSeconds + seconds
-    if (totalSeconds < 0) totalSeconds = jl.Long.MAX_VALUE // overflowed
+    val totalSeconds = now.tv_sec + seconds.toSize
+
+    abstime.tv_sec =
+      if (totalSeconds >= 0) totalSeconds
+      else jl.Long.MAX_VALUE.toSize // overflowed, so saturate
 
     // result range: [0, 2 * NanosInSecond)
-    var totalNanos = nowNanos + (timeout % NanosInSecond)
-    if (totalNanos >= NanosInSecond) {
-      totalSeconds += 1 // can overflow in a few hundred billion years
-      totalNanos -= NanosInSecond
-    }
-    val ts = toRawPtr(abstime)
-    Intrinsics.storeRawSize(ts, Intrinsics.castLongToRawSize(totalSeconds))
-    Intrinsics.storeRawSize(
-      nanosField(ts),
-      Intrinsics.castLongToRawSize(totalNanos)
-    )
+    val totalNanos = now.tv_nsec + (timeout % NanosInSecond)
+
+    abstime.tv_nsec =
+      if (totalNanos < NanosInSecond) totalNanos.toSize
+      else {
+        abstime.tv_sec += 1 // can overflow in a few hundred billion years
+        (totalNanos - NanosInSecond).toSize
+      }
   }
 
   private def toAbsoluteTime(
