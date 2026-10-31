@@ -1,6 +1,7 @@
 package scala.scalanative
 
 import java.io.{File, PrintWriter}
+import java.nio.file.attribute.FileTime
 import java.nio.file.{Files, Path, Paths}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -99,6 +100,63 @@ class IncCompilationTest extends codegen.CodeGenSpec {
 
         buildAwait(config)
       }
+    }
+  }
+
+  @Test def reuseNativeLibraryObjects(): Unit = withOutDir { outDir =>
+    Scope { implicit in =>
+      // Keep the build outside of the classpath: building twice would
+      // otherwise pick up the NIR of the unpacked native libraries.
+      val classesDir = Files.createDirectory(outDir.resolve("classes"))
+      val compiler = NIRCompiler.getCompiler(classesDir)
+      val config = makeConfig(
+        classesDir,
+        "out2",
+        "A",
+        defaultNativeConfig.withOptimize(false)
+      ).withBaseDir(outDir.resolve("build"))
+      def nativeLibObjects(): Map[Path, FileTime] = {
+        val dependencies = config.workDir.resolve("dependencies")
+        IO.getAll(dependencies, "glob:**.o")
+          .map(p => p -> Files.getLastModifiedTime(p))
+          .toMap
+      }
+
+      compiler.compile(
+        """|object A {
+           |  def main(args: Array[String]): Unit = println("hello")
+           |}""".stripMargin
+      )
+      buildAwait(config)
+      val initial = nativeLibObjects()
+      assertTrue("no native library objects", initial.nonEmpty)
+
+      buildAwait(config)
+      assertEquals(
+        "native library objects recompiled with an unchanged config",
+        initial,
+        nativeLibObjects()
+      )
+
+      // Reaching an `@define` adds a preprocessor flag to every native
+      // library, so they all need to be recompiled.
+      compiler.compile(
+        """|import scala.scalanative.unsafe._
+           |import scala.scalanative.libc.locale._
+           |object A {
+           |  def main(args: Array[String]): Unit =
+           |    println(setlocale(LC_ALL, c"C") != null)
+           |}""".stripMargin
+      )
+      buildAwait(config)
+      val afterDefine = nativeLibObjects()
+      val reused = initial.filter {
+        case (p, t) => afterDefine.get(p).contains(t)
+      }
+      assertTrue(
+        s"native library objects not recompiled after a new @define: ${reused.keys.take(5)}",
+        reused.isEmpty
+      )
     }
   }
 

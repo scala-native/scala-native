@@ -25,6 +25,11 @@ private[scalanative] object NativeLib {
   /** Project Descriptor properties file: "scala-native.properties" */
   private val nativeProjectProps = s"${nativeCodeDir}.properties"
 
+  /** Hash of the config a native library was last compiled with, stored in its
+   *  unpacked directory.
+   */
+  private val compileConfigHashFile = "compileConfigHash"
+
   /** Compiles the native code from the library
    *
    *  @param config
@@ -44,9 +49,22 @@ private[scalanative] object NativeLib {
     val destPath = unpackNativeCode(nativeLib)
     val paths = findNativePaths(destPath)
     val projConfig = configureNativeLibrary(config, analysis, destPath)
-    Future.sequence {
-      paths.map(LLVM.compile(projConfig, analysis, _))
-    }
+    /* `projConfig` extends the user's config with flags derived from the
+     * linked program (e.g. `@define`s) and the environment, so it is
+     * compared against what this library was last compiled with rather
+     * than against the user config hash.
+     */
+    val configHash = projConfig.compilerConfig.##.toString()
+    val configHashPath = destPath.resolve(compileConfigHashFile)
+    val configChanged =
+      IO.readFully(configHashPath).forall(_.trim() != configHash)
+    Future
+      .sequence {
+        paths.map(LLVM.compile(projConfig, analysis, _, configChanged))
+      }
+      .andThen {
+        case Success(_) if configChanged => IO.write(configHashPath, configHash)
+      }
   }
 
   /** Update the project configuration if a project `Descriptor` is present.

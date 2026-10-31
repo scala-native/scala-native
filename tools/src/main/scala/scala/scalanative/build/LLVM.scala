@@ -43,13 +43,19 @@ private[scalanative] object LLVM {
    *    The output of the reachability analysis.
    *  @param path
    *    The directory path containing native files to compile.
+   *  @param configChanged
+   *    Whether `config` changed since `path` was last compiled, forcing a
+   *    recompilation. Determined by the caller, as only it knows what to
+   *    compare `config` against (e.g. native libraries compile with per-library
+   *    options that the user config hash does not cover).
    *  @return
    *    The paths of the `.o` files.
    */
   def compile(
       config: Config,
       analysis: ReachabilityAnalysis.Result,
-      path: Path
+      path: Path,
+      configChanged: Boolean
   )(implicit
       ec: ExecutionContext
   ): Future[Path] = {
@@ -60,7 +66,8 @@ private[scalanative] object LLVM {
     val outpath = inpath + oExt
     val objPath = Paths.get(outpath)
     // compile if out of date or no object file
-    if (needsCompiling(path, objPath)) compileFile(path, objPath)
+    if (needsCompiling(path, objPath, configChanged))
+      compileFile(path, objPath)
     else Future.successful(objPath)
   }
 
@@ -378,14 +385,18 @@ private[scalanative] object LLVM {
    *    the source file
    *  @param out
    *    the object file
+   *  @param configChanged
+   *    whether the compilation config changed since the last build
    *  @return
    *    true if it needs compiling false otherwise.
    */
-  @inline private def needsCompiling(in: Path, out: Path)(implicit
-      config: Config
+  @inline private def needsCompiling(
+      in: Path,
+      out: Path,
+      configChanged: Boolean
   ): Boolean = {
     in.toFile().lastModified() > out.toFile().lastModified() ||
-    Build.userConfigHasChanged(config)
+    configChanged
   }
 
   /** Looks at all the object files to see if one is newer than the output

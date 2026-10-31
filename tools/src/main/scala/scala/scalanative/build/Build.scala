@@ -168,11 +168,12 @@ object Build {
   )(implicit ec: ExecutionContext): Future[Seq[Path]] =
     config.logger.timeAsync("Compiling to native code") {
       // compile generated LLVM IR
+      val configChanged = userConfigHasChanged(config)
       val compileGeneratedIR = Future
         .sequence {
           irGenerators.map(irGenerator =>
             irGenerator.flatMap(generatedIR =>
-              LLVM.compile(config, analysis, generatedIR)
+              LLVM.compile(config, analysis, generatedIR, configChanged)
             )
           )
         }
