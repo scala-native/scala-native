@@ -99,6 +99,8 @@ static void protectStackGuardPage() {
     }
 }
 static void unprotectStackGuardPage() {
+    if (currentThreadInfo.stackGuardPage == NULL)
+        return;
     if (mprotect(currentThreadInfo.stackGuardPage, resolvePageSize(),
                  PROT_READ | PROT_WRITE) == -1) {
         perror(SN_FATAL_ERROR_MSG("StackOverflowHandler guard "
@@ -357,6 +359,7 @@ void scalanative_StackOverflowGuards_close() {
 // noop
 #else
     unprotectStackGuardPage();
+    currentThreadInfo.stackGuardPage = NULL;
     if (currentThreadInfo.signalHandlerStack) {
         free(currentThreadInfo.signalHandlerStack);
         currentThreadInfo.signalHandlerStack = NULL;
