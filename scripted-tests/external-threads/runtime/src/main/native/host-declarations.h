@@ -9,6 +9,7 @@ void external_test_check_reclaimed(int);
 void external_altstack_race(void (*ready)(void), int (*done)(void));
 void external_bootstrap_race(void);
 void external_bootstrap_failure(int);
+int external_collect_on_unguarded_stack(void);
 int64_t external_identity(void);
 void external_local_set(int64_t);
 int64_t external_local_get(void);

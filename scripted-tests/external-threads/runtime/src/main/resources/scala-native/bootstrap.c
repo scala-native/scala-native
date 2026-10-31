@@ -1,6 +1,12 @@
-/* A normal scripted native resource: exercise bootstrap without patching
- * runtime sources. */
+#ifdef __APPLE__
+#define _XOPEN_SOURCE 700
+#define _DARWIN_C_SOURCE
+#elif !defined(_GNU_SOURCE)
+#define _GNU_SOURCE
+#endif
+
 #include <stdbool.h>
+#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -99,3 +105,62 @@ BOOTSTRAP_API void external_bootstrap_race(void) {
     CHECK(!"bootstrap collection race requires multithreaded Immix or Commix");
 #endif
 }
+
+#if defined(SCALANATIVE_MULTITHREADING_ENABLED) &&                             \
+    (defined(SCALANATIVE_GC_IMMIX) || defined(SCALANATIVE_GC_COMMIX)) &&       \
+    (defined(__GLIBC__) || defined(__APPLE__) || defined(__FreeBSD__))
+#include <sys/mman.h>
+#include <ucontext.h>
+
+extern void scalanative_GC_collect(void);
+static void collect_on_alternate_stack(void) { scalanative_GC_collect(); }
+
+BOOTSTRAP_API int external_collect_on_unguarded_stack(void) {
+    const size_t mapping_size = 1024 * 1024;
+    const size_t stack_size = 256 * 1024;
+    void *mapping =
+        mmap(NULL, mapping_size, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (mapping == MAP_FAILED)
+        return errno;
+    void *stack = (char *)mapping + mapping_size - stack_size;
+    if (mprotect(stack, stack_size, PROT_READ | PROT_WRITE) != 0) {
+        int result = errno;
+        munmap(mapping, mapping_size);
+        return result;
+    }
+
+    // The host has OS stack bounds but no Scala guard.
+    scalanative_thread_scope_t scope = scalanative_enter_managed_automatic();
+    int result = 0;
+    ucontext_t original, alternate;
+#ifdef __APPLE__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#endif
+    if (getcontext(&alternate) != 0) {
+        result = errno;
+    } else {
+        alternate.uc_stack.ss_sp = stack;
+        alternate.uc_stack.ss_size = stack_size;
+        alternate.uc_stack.ss_flags = 0;
+        alternate.uc_link = &original;
+        makecontext(&alternate, collect_on_alternate_stack, 0);
+        if (swapcontext(&original, &alternate) != 0)
+            result = errno;
+    }
+#ifdef __APPLE__
+#pragma clang diagnostic pop
+#endif
+    scalanative_leave_managed(scope);
+    munmap(mapping, mapping_size);
+    return result;
+}
+#else
+BOOTSTRAP_API int external_collect_on_unguarded_stack(void) {
+#if !defined(SCALANATIVE_MULTITHREADING_ENABLED) ||                            \
+    !(defined(SCALANATIVE_GC_IMMIX) || defined(SCALANATIVE_GC_COMMIX))
+    CHECK(!"unguarded-stack collection requires multithreaded Immix or Commix");
+#endif
+    return -1;
+}
+#endif
