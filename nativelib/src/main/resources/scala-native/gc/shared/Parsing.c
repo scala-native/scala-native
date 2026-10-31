@@ -11,52 +11,59 @@
 #define VAL_STR(x) STR(x)
 #define STR(x) #x
 
+#include <errno.h>
+#include <stdbool.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "shared/Parsing.h"
 #include "shared/Log.h"
 
-size_t Parse_Size_Or_Default(const char *str, size_t defaultSizeInBytes) {
+// Parses a size with an optional K/M/G suffix into *size. Returns false when
+// str is NULL, empty, has no leading digits or the size does not fit size_t.
+static bool Parse_Size(const char *str, size_t *size) {
     if (str == NULL) {
-        return defaultSizeInBytes;
-    } else {
-        char *end;
-        unsigned long long parsed = strtoull(str, &end, 10);
-        // Empty or no leading digits, e.g. GC_MAXIMUM_HEAP_SIZE= or "G"
-        if (end == str) {
-            return defaultSizeInBytes;
-        }
-        size_t size = (size_t)parsed;
-        char possibleSuffix = str[strlen(str) - 1];
-        switch (possibleSuffix) {
-        case 'k':
-        case 'K':
-            if (size < (1ULL << (8 * sizeof(size_t) - 10))) {
-                size <<= 10;
-            } else {
-                size = defaultSizeInBytes;
-            }
-            break;
-        case 'm':
-        case 'M':
-            if (size < (1ULL << (8 * sizeof(size_t) - 20))) {
-                size <<= 20;
-            } else {
-                size = defaultSizeInBytes;
-            }
-            break;
-        case 'g':
-        case 'G':
-            if (size < (1ULL << (8 * sizeof(size_t) - 30))) {
-                size <<= 30;
-            } else {
-                size = defaultSizeInBytes;
-            }
-        }
-        return size;
+        return false;
     }
-    return defaultSizeInBytes;
+    char *end;
+    errno = 0;
+    unsigned long long parsed = strtoull(str, &end, 10);
+    // Empty or no leading digits, e.g. GC_MAXIMUM_HEAP_SIZE= or "G"
+    if (end == str) {
+        return false;
+    }
+    // Out of range, or would wrap when narrowed on 32-bit targets
+    if (errno == ERANGE || parsed > SIZE_MAX) {
+        return false;
+    }
+    *size = (size_t)parsed;
+    int shift = 0;
+    switch (str[strlen(str) - 1]) {
+    case 'k':
+    case 'K':
+        shift = 10;
+        break;
+    case 'm':
+    case 'M':
+        shift = 20;
+        break;
+    case 'g':
+    case 'G':
+        shift = 30;
+        break;
+    }
+    if (shift > 0) {
+        if (*size >= (1ULL << (8 * sizeof(size_t) - shift))) {
+            return false;
+        }
+        *size <<= shift;
+    }
+    return true;
+}
+
+size_t Parse_Size_Or_Default(const char *str, size_t defaultSizeInBytes) {
+    size_t size;
+    return Parse_Size(str, &size) ? size : defaultSizeInBytes;
 }
 
 const char *get_defined_or_env(const char *envName) {
@@ -104,13 +111,19 @@ const char *get_defined(const char *envName) {
 
 size_t Parse_Env_Or_Default(const char *envName, size_t defaultSizeInBytes) {
     const char *res = get_defined_or_env(envName);
-    size_t result = Parse_Size_Or_Default(res, defaultSizeInBytes);
-    if (res != NULL) {
-        GC_LOG_INFO("Found %s=%s, parsed to %zu", envName, res, result);
-    } else {
+    size_t result;
+    if (res == NULL) {
         GC_LOG_INFO("%s not set, using default %zu", envName,
                     defaultSizeInBytes);
+        return defaultSizeInBytes;
     }
+    if (!Parse_Size(res, &result)) {
+        GC_LOG_WARN("Ignoring %s=%s, which is not a valid size, using default "
+                    "%zu",
+                    envName, res, defaultSizeInBytes);
+        return defaultSizeInBytes;
+    }
+    GC_LOG_INFO("Found %s=%s, parsed to %zu", envName, res, result);
     return result;
 }
 
