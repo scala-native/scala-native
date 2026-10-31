@@ -332,7 +332,9 @@ final class _String()
 
   def getBytes(): Array[scala.Byte] = {
     val buffer =
-      Charset.defaultCharset().encode(CharBuffer.wrap(value, offset, count))
+      Charset
+        .defaultCharset()
+        .encode(CharBuffer.wrap(value, offset, count).asReadOnlyBuffer())
     val bytes = new Array[scala.Byte](buffer.limit())
     buffer.get(bytes)
     bytes
@@ -393,14 +395,16 @@ final class _String()
         case e: UnsupportedCharsetException =>
           throw new java.io.UnsupportedEncodingException(encoding)
       }
-    val buffer = charset.encode(CharBuffer.wrap(value, offset, count))
+    val buffer =
+      charset.encode(CharBuffer.wrap(value, offset, count).asReadOnlyBuffer())
     val bytes = new Array[scala.Byte](buffer.limit())
     buffer.get(bytes)
     bytes
   }
 
   def getBytes(encoding: Charset): Array[scala.Byte] = {
-    val buffer = encoding.encode(CharBuffer.wrap(value, offset, count))
+    val buffer =
+      encoding.encode(CharBuffer.wrap(value, offset, count).asReadOnlyBuffer())
     val bytes = new Array[scala.Byte](buffer.limit())
     buffer.get(bytes)
     bytes

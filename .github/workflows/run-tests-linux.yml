@@ -11,6 +11,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  test-static-roots:
+    name: Test static-root registration
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install Clang and LLD
+        run: sudo apt-get update && sudo apt-get install -y clang lld
+      - name: Check independent lazy registration and concurrent completion
+        run: python3 scripts/ci/test-static-roots.py
+
   # Compile all sources for given Scala version
   # Cache external dependencies
   # Test tools, if any of them fails, further tests will not start.

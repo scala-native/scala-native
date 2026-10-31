@@ -11,6 +11,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  test-static-roots:
+    name: Test static-root registration
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check independent lazy registration and concurrent completion
+        run: python3 scripts/ci/test-static-roots.py
+
   test-runtime:
     name: Test runtime
     if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')

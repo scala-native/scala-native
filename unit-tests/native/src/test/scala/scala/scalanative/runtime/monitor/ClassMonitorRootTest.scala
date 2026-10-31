@@ -1,7 +1,8 @@
 package scala.scalanative.runtime.monitor
 
 import java.lang.ref.WeakReference
-import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 import org.junit.Assert._
 import org.junit.Assume._
@@ -28,17 +29,21 @@ class ClassMonitorRootTest {
       Seq(classOf[NeverInstantiated], classOf[AlsoNeverInstantiated])
     val monitors = new Array[WeakReference[ObjectMonitor]](classes.size)
     val start = new CountDownLatch(1)
+    val failure = new AtomicReference[Throwable]()
     val workers = classes.indices.map { index =>
-      new Thread(() => {
-        start.await()
+      worker(failure) {
+        assertTrue(
+          "workers were not released",
+          start.await(10, TimeUnit.SECONDS)
+        )
         val cls = classes(index)
         inflate(cls)
         monitors(index) = monitorOf(cls)
-      })
+      }
     }
     workers.foreach(_.start())
     start.countDown()
-    workers.foreach(_.join())
+    awaitWorkers(workers, failure)
     for (_ <- 0 until 5) System.gc()
     classes.indices.foreach { index =>
       assertNotNull("the class monitor was collected", monitors(index).get())
@@ -52,17 +57,49 @@ class ClassMonitorRootTest {
 }
 
 object ClassMonitorRootTest {
+  private def worker(
+      failure: AtomicReference[Throwable]
+  )(body: => Unit): Thread = {
+    val thread = new Thread(() => {
+      try body
+      catch { case error: Throwable => failure.compareAndSet(null, error) }
+    })
+    // A deadlocked worker must not keep the test process alive after failure.
+    thread.setDaemon(true)
+    thread
+  }
+
+  private def awaitWorkers(
+      workers: Seq[Thread],
+      failure: AtomicReference[Throwable]
+  ): Unit = {
+    val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(20)
+    workers.foreach { thread =>
+      val remaining = deadline - System.nanoTime()
+      if (remaining > 0) {
+        thread.join(math.max(1L, TimeUnit.NANOSECONDS.toMillis(remaining)))
+      }
+      assertFalse(
+        "monitor worker did not finish before the deadline",
+        thread.isAlive()
+      )
+    }
+    val error = failure.get()
+    if (error != null) throw new AssertionError("monitor worker failed", error)
+  }
+
   private[monitor] def assertStaticMonitorSurvives(obj: AnyRef): Unit = {
     assumeTrue(LinktimeInfo.isMultithreadingEnabled)
     // End the worker before collecting so its stack and registers cannot keep
     // the monitor alive instead of the static object's lock word.
     var monitor: WeakReference[ObjectMonitor] = null
-    val thread = new Thread(() => {
+    val failure = new AtomicReference[Throwable]()
+    val thread = worker(failure) {
       inflate(obj)
       monitor = monitorOf(obj)
-    })
+    }
     thread.start()
-    thread.join()
+    awaitWorkers(Seq(thread), failure)
     for (_ <- 0 until 5) {
       Seq.fill(1000)(new Array[Byte](64))
       System.gc()
