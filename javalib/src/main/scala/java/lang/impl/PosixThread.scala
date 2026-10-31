@@ -155,6 +155,9 @@ private[java] class PosixThread(
       time: Long, // if isAbsolute millis else nanos.
       isAbsolute: Boolean
   ): Unit = if (isMultithreadingEnabled) {
+    // Only the owner thread parks. After onTermination destroyed the mutex,
+    // monitor contention can still park here; Bionic aborts on that trylock.
+    if (terminated) return
     // fast-path check, return if can skip parking
     if (counterAtomic.exchange(0) > 0) return
     // Avoid parking if there's an interrupt pending

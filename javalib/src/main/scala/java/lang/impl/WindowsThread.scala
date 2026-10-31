@@ -143,6 +143,8 @@ private[java] class WindowsThread(
       time: Long,
       isAbsolute: Boolean
   ): Unit = if (isMultithreadingEnabled) {
+    // parkEvent is closed in onTermination. Its handle value can be reused.
+    if (terminated) return
     val parkTime =
       if (time < 0) return
       else if (time == 0 && !isAbsolute) Infinite
