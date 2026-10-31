@@ -1,6 +1,8 @@
 #ifdef __APPLE__
 #define _XOPEN_SOURCE 700
 #define _DARWIN_C_SOURCE
+#elif !defined(_GNU_SOURCE)
+#define _GNU_SOURCE
 #endif
 
 #include <stdbool.h>

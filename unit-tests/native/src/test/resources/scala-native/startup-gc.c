@@ -1,5 +1,11 @@
 #if !defined(_WIN32) && defined(SCALANATIVE_MULTITHREADING_ENABLED)
 
+// _GNU_SOURCE needed for MAP_ANONYMOUS and pthread_attr_setstack on glibc
+// (must be before any includes)
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include <errno.h>
 #include <pthread.h>
 #include <sys/mman.h>
@@ -18,14 +24,15 @@ static void *collectBeforeStackBoundsAreInitialized(void *unused) {
 int scalanative_test_collect_before_stack_bounds_are_initialized(void) {
     const size_t mappingSize = 1024 * 1024;
     const size_t stackSize = 256 * 1024;
-    void *mapping =
-        mmap(NULL, mappingSize, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    // Start writable: NetBSD's PaX MPROTECT refuses to raise protections.
+    void *mapping = mmap(NULL, mappingSize, PROT_READ | PROT_WRITE,
+                         MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (mapping == MAP_FAILED)
         return errno;
 
     // A guessed 512 KiB scan must cross the protected mapping.
     void *stack = (char *)mapping + mappingSize - stackSize;
-    int result = mprotect(stack, stackSize, PROT_READ | PROT_WRITE);
+    int result = mprotect(mapping, mappingSize - stackSize, PROT_NONE);
     if (result != 0) {
         result = errno;
         goto unmap;
