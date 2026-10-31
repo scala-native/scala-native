@@ -286,6 +286,8 @@ word_t *LargeAllocator_Alloc(Heap *heap, size_t size) {
             largeAllocator->blocksTaken++;
             return object;
         }
+        // Asking counts as allocating, as in Allocator_allocSlow.
+        largeAllocator->blocksTaken++;
         if (!Heap_RecoverAllocation(heap, size, generation))
             Heap_ThrowOutOfMemory(heap);
     } while (true);

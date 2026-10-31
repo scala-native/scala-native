@@ -289,6 +289,9 @@ NOINLINE word_t *Allocator_allocSlow(Allocator *allocator, Heap *heap,
             ObjectMeta_SetAllocated(objectMeta);
             return object;
         }
+        // Asking counts as allocating: a thread waiting on another thread's
+        // recovery collection must still receive recycled blocks.
+        allocator->blocksTaken++;
         if (!Heap_RecoverAllocation(heap, size, generation))
             Heap_ThrowOutOfMemory(heap);
     } while (true);
