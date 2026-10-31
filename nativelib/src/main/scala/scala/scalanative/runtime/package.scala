@@ -42,7 +42,12 @@ package object runtime {
   @alwaysinline
   def getMonitor(obj: _Object) = {
     if (isMultithreadingEnabled)
-      new BasicMonitor(obj)
+      new BasicMonitor(
+        elemRawPtr(
+          castObjectToRawPtr(obj),
+          castIntToRawSize(MemoryLayout.Object.LockWordOffset)
+        )
+      )
     else
       throw new IllegalStateException(
         "Monitors unavilable in single threaded mode"

@@ -8,10 +8,12 @@ import scala.scalanative.runtime.MemoryLayout
 import scala.scalanative.unsafe._
 
 class StringBackingArrayMonitorRootTest {
-  @Test def literalBackingArrayMonitorSurvivesCollections(): Unit = {
-    val backing = StringBackingArrayMonitorRootTest.backingArray(
-      "static literal backing array"
-    )
+  @Test def backingArrayMonitorSurvivesAfterStringSectionActivation(): Unit = {
+    val literal = "static literal backing array"
+    // Public APIs cannot expose the backing array. Activate the section through
+    // its String before testing a monitor obtained through unsafe test access.
+    ClassMonitorRootTest.assertStaticMonitorSurvives(literal)
+    val backing = StringBackingArrayMonitorRootTest.backingArray(literal)
     val section = !BackingArraySections.strings()
     val address = castRawPtrToLong(castObjectToRawPtr(backing))
     assertTrue(

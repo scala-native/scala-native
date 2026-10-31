@@ -51,8 +51,6 @@ object BinaryIncompatibilities {
   )
 
   final val NativeLib = Seq(
-    // The runtime-private BasicMonitor value class now retains the monitored object.
-    exclude[IncompatibleResultTypeProblem]("scala.scalanative.runtime.package.getMonitor(scala.scalanative.runtime._Object)scala.scalanative.runtime.RawPtr"),
     // Internal error-prefix constants were inlined to avoid Windows LTO symbols.
     exclude[MissingClassProblem]("scala.scalanative.runtime.StringConstants"),
     exclude[MissingClassProblem]("scala.scalanative.runtime.StringConstants$"),
