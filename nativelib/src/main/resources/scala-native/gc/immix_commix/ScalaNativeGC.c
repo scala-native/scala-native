@@ -110,6 +110,19 @@ void scalanative_GC_remove_roots(void *addr_low, void *addr_high) {
     GC_Roots_RemoveByRange(customRoots, range);
 }
 
+void scalanative_GC_lock_word_inflated(void *lockWord) {
+    word_t **slot = (word_t **)lockWord;
+    // Marking reaches a lock word in the heap through its object. The test is
+    // against the heap's reservation, whose bounds do not move as it grows.
+    if ((uintptr_t)slot - (uintptr_t)heap.heapStart < heap.maxHeapSize)
+        return;
+    // A zone's object is in a root range already
+    if (!GC_Roots_Covers(customRoots, (word_t *)slot, (word_t *)(slot + 1)) &&
+        !GC_Roots_Add(customRoots,
+                      (AddressRange){(word_t *)slot, (word_t *)(slot + 1)}))
+        abort();
+}
+
 typedef void *RoutineArgs;
 typedef struct {
     ThreadStartRoutine fn;
