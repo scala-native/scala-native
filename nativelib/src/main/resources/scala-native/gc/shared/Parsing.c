@@ -19,26 +19,26 @@
 #include "shared/Parsing.h"
 #include "shared/Log.h"
 
-// Parses a size with an optional K/M/G suffix into *size. Returns false when
-// str is NULL, empty, has no leading digits or the size does not fit size_t.
+// Parses digits with an optional single K/M/G suffix into *size. Returns false
+// for NULL, anything else (signs, spaces, other trailing text) or a size that
+// does not fit size_t.
 static bool Parse_Size(const char *str, size_t *size) {
-    if (str == NULL) {
+    // strtoull would accept leading spaces and signs, "-1" being SIZE_MAX
+    if (str == NULL || str[0] < '0' || str[0] > '9') {
         return false;
     }
     char *end;
     errno = 0;
     unsigned long long parsed = strtoull(str, &end, 10);
-    // Empty or no leading digits, e.g. GC_MAXIMUM_HEAP_SIZE= or "G"
-    if (end == str) {
-        return false;
-    }
     // Out of range, or would wrap when narrowed on 32-bit targets
     if (errno == ERANGE || parsed > SIZE_MAX) {
         return false;
     }
     *size = (size_t)parsed;
     int shift = 0;
-    switch (str[strlen(str) - 1]) {
+    switch (*end) {
+    case '\0':
+        break;
     case 'k':
     case 'K':
         shift = 10;
@@ -51,6 +51,11 @@ static bool Parse_Size(const char *str, size_t *size) {
     case 'G':
         shift = 30;
         break;
+    default:
+        return false;
+    }
+    if (shift > 0 && end[1] != '\0') {
+        return false;
     }
     if (shift > 0) {
         if (*size >= (1ULL << (8 * sizeof(size_t) - shift))) {

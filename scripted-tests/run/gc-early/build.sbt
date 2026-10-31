@@ -30,12 +30,14 @@ checkInvalidHeapSizes := {
   val heapSizeVars = Seq("GC_INITIAL_HEAP_SIZE", "GC_MAXIMUM_HEAP_SIZE")
   for {
     name <- heapSizeVars
-    value <- Seq("", "abc", "G", "99999999999999999999")
+    value <- Seq("", "abc", "G", "1oopsG", "-1", "99999999999999999999")
   } {
     val proc = new java.lang.ProcessBuilder(binary)
     // Start from a clean slate, CI may export GC_MAXIMUM_HEAP_SIZE.
     heapSizeVars.foreach(proc.environment().remove(_))
+    // The warning must go to the captured output at the default level.
     proc.environment().remove("SCALANATIVE_GC_LOG_LEVEL")
+    proc.environment().remove("GC_LOG_FILE")
     proc.environment().put(name, value)
     proc.redirectErrorStream(true)
     val running = proc.start()
