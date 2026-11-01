@@ -32,11 +32,17 @@ def runCapped(
     binary: java.io.File,
     maxHeap: String,
     args: Seq[String],
-    log: sbt.util.Logger
+    log: sbt.util.Logger,
+    gcLog: Option[java.io.File] = None
 ): Unit = {
   val process = new ProcessBuilder((binary.getAbsolutePath +: args): _*)
   process.environment().put("GC_INITIAL_HEAP_SIZE", "1M")
   process.environment().put("GC_MAXIMUM_HEAP_SIZE", maxHeap)
+  gcLog.foreach { file =>
+    IO.delete(file)
+    process.environment().put("SCALANATIVE_GC_LOG_LEVEL", "debug")
+    process.environment().put("GC_LOG_FILE", file.getAbsolutePath)
+  }
   val started = System.nanoTime()
   val running = process.inheritIO().start()
   if (!running.waitFor(60, TimeUnit.SECONDS)) {
@@ -81,11 +87,21 @@ runFragmentedExhaustion := {
   runCapped(binary, "80M", Seq("medium", (32L * 1024 * 1024).toString), log)
   // A full heap that is still valid: 118 MB live in 128 MB. Collections free
   // little but cost little, so the overhead limit must not fire; a rule on
-  // free space alone threw OutOfMemoryError here.
+  // free space alone threw OutOfMemoryError here. The GC's debug log must
+  // show low-yield recovery collections, so that completing proves the limit
+  // was tested rather than never approached.
+  val gcLog = target.value / "full-heap-gc.log"
   runCapped(
     binary,
     "128M",
     Seq("full", (118L * 1024 * 1024).toString, "20000000"),
-    log
+    log,
+    Some(gcLog)
   )
+  val lowYield = IO
+    .readLines(gcLog)
+    .count(_.contains("Overhead limit: low-yield recovery collection"))
+  if (lowYield == 0)
+    sys.error("the full heap never reached a low-yield recovery collection")
+  log.info(s"full heap: $lowYield low-yield recovery collections, no error")
 }

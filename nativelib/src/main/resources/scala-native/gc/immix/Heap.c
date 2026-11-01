@@ -204,10 +204,15 @@ static bool Heap_overheadLimitReached(Heap *heap, uint64_t start_ns) {
     uint64_t sinceLast =
         heap->lastCollectionEndNs == 0 ? gcNs : now - heap->lastCollectionEndNs;
     bool gcBound = gcNs * 100 >= sinceLast * HEAP_OVERHEAD_GC_PERCENT;
-    if (gcBound && Heap_lowYield(heap))
+    bool lowYield = Heap_lowYield(heap);
+    if (gcBound && lowYield)
         heap->overheadStreak++;
     else
         heap->overheadStreak = 0;
+    if (lowYield)
+        GC_LOG_DEBUG("Overhead limit: low-yield recovery collection, "
+                     "gc-bound: %s, streak: %" PRIu32,
+                     gcBound ? "yes" : "no", heap->overheadStreak);
     if (heap->overheadStreak < HEAP_OVERHEAD_COLLECTIONS)
         return false;
     // The error is about to be thrown; a program that catches it starts afresh.
