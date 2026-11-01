@@ -205,9 +205,6 @@ class PipedInputStreamTest {
     override def run(): Unit = {
       try {
         pos.write(bytes)
-        synchronized {
-          notify()
-        }
       } catch {
         case e: IOException =>
           e.printStackTrace(System.out)
@@ -220,6 +217,13 @@ class PipedInputStreamTest {
   private var pw: PWriter = _
   private var pis: PipedInputStream = _
   private var pos: PipedOutputStream = _
+
+  // Object.wait may wake up spuriously and the writer may notify before the
+  // wait starts, join is the only reliable signal that all bytes were written.
+  private def awaitWriter(): Unit = {
+    t.join(10000)
+    assertFalse("Writer did not finish", t.isAlive())
+  }
 
   /** @tests
    *    java.io.PipedInputStream#PipedInputStream()
@@ -282,9 +286,7 @@ class PipedInputStreamTest {
     t = new Thread(pw)
     t.start()
 
-    pw.synchronized {
-      pw.wait(10000)
-    }
+    awaitWriter()
     assertTrue(
       "Available returned incorrect number of bytes: " + pis.available(),
       pis.available == 1000
@@ -340,9 +342,7 @@ class PipedInputStreamTest {
     t = new Thread(pw)
     t.start()
 
-    pw.synchronized {
-      pw.wait(10000)
-    }
+    awaitWriter()
     assertEquals(
       "Available returned incorrect number of bytes",
       1000,
@@ -363,9 +363,7 @@ class PipedInputStreamTest {
     t = new Thread(pw)
     t.start()
 
-    pw.synchronized {
-      pw.wait(10000)
-    }
+    awaitWriter()
     assertEquals(
       "Available returned incorrect number of bytes",
       1000,
@@ -392,9 +390,7 @@ class PipedInputStreamTest {
     t.start()
 
     val buf = new Array[Byte](400)
-    pw.synchronized {
-      pw.wait(10000)
-    }
+    awaitWriter()
     assertTrue(
       "Available returned incorrect number of bytes: " + pis.available,
       pis.available == 1000
