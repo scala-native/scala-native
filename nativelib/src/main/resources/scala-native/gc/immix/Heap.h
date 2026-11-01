@@ -28,6 +28,10 @@ typedef struct {
     Bytemap *bytemap;
     Stats *stats;
     mutex_t lock;
+    // For the GC overhead limit: when the last collection ended, and how many
+    // recovery collections in a row met both of its conditions.
+    uint64_t lastCollectionEndNs;
+    uint32_t overheadStreak;
 } Heap;
 
 #include "immix_commix/HeapCommon.h"
