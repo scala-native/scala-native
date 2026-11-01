@@ -364,10 +364,11 @@ class TimeTest {
 
       timespecP.tv_sec = 0
       timespecP.tv_nsec = 1
-      assertEquals(
+      // EINTR means the sleep was interrupted, so nanosleep still executed.
+      val result = nanosleep_unglued(timespecP, null)
+      assertTrue(
         s"nanosleep failed with errno: ${posixErrno.errno}",
-        0,
-        nanosleep_unglued(timespecP, null)
+        result == 0 || (result == -1 && posixErrno.errno == EINTR)
       )
     }
 
