@@ -173,6 +173,18 @@ sealed abstract class Val {
     case _ => false
   }
 
+  /** `true` iff `this` is the value held by zero-initialized memory, compared
+   *  bit-exactly.
+   */
+  final def isDefaultValue: Boolean = this match {
+    case Val.Float(v) =>
+      floatToRawIntBits(v) == 0
+    case Val.Double(v) =>
+      doubleToRawLongBits(v) == 0L
+    case _ =>
+      isZero
+  }
+
   /** The canonical form of `this` */
   final def canonicalize: Val = this match {
     case Val.Zero(Type.Bool) =>
