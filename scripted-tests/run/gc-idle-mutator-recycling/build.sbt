@@ -89,15 +89,13 @@ runFragmentedExhaustion := {
   // little but cost little, so the overhead limit must not fire; a rule on
   // free space alone threw OutOfMemoryError here. The GC's debug log must
   // show low-yield recovery collections, so that completing proves the limit
-  // was tested rather than never approached.
+  // was tested rather than never approached. It runs once with default
+  // logging, the configuration programs use, and once with debug logging for
+  // that check: writing the log during collections adds to their time.
+  val fullHeap = Seq("full", (118L * 1024 * 1024).toString, "20000000")
+  runCapped(binary, "128M", fullHeap, log)
   val gcLog = target.value / "full-heap-gc.log"
-  runCapped(
-    binary,
-    "128M",
-    Seq("full", (118L * 1024 * 1024).toString, "20000000"),
-    log,
-    Some(gcLog)
-  )
+  runCapped(binary, "128M", fullHeap, log, Some(gcLog))
   val lowYield = IO
     .readLines(gcLog)
     .count(_.contains("Overhead limit: low-yield recovery collection"))
