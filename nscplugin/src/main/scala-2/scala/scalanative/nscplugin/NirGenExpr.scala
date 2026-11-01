@@ -646,13 +646,14 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       val elemty = genType(tpt.tpe)
       val values = genSimpleArgs(elems)
 
-      if (values.forall(_.isCanonical) && values.exists(v => !v.isZero)) {
+      if (values.forall(_.isCanonical) && values
+            .exists(v => !v.isDefaultValue)) {
         buf.arrayalloc(elemty, nir.Val.ArrayValue(elemty, values), unwind)
       } else {
         val alloc = buf.arrayalloc(elemty, nir.Val.Int(elems.length), unwind)
         values.zip(elems).zipWithIndex.foreach {
           case ((v, elem), i) =>
-            if (!v.isZero) {
+            if (!v.isDefaultValue) {
               buf.arraystore(elemty, alloc, nir.Val.Int(i), v, unwind)(
                 elem.pos.orElse(pos),
                 getScopeId
@@ -1269,7 +1270,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
                 appMeth.symbol == ArrayModule_genericApply &&
                 !elemtpt.tpe.typeSymbol.isBottomClass &&
                 !elemtpt.tpe.typeSymbol.isPrimitiveValueClass /* can happen via specialization.*/ =>
-        
+
           classTagEvidence.attachments.get[analyzer.MacroExpansionAttachment] match {
             case Some(att)
             if att.expandee.symbol.name == nme.materializeClassTag &&
@@ -1310,7 +1311,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
            treeInfo.isExprSafeToInline(nil) &&
            treeInfo.isQualifierSafeToElide(appMethQual) =>
           genArrayValue(TypeTree(elem.tpe.widen), elem :: Nil)
-        
+
         // format: on
         case _ =>
           val sym = fun.symbol
