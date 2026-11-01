@@ -83,6 +83,7 @@ runFragmentedExhaustion := {
   val log = streams.value.log
   // The error must come from the overhead limit, not from some other path:
   // the GC's debug log shows the fifth qualifying collection in a row.
+  runCapped(binary, "64M", Seq("exhaust"), log)
   val exhaustLog = target.value / "exhaust-gc.log"
   runCapped(binary, "64M", Seq("exhaust"), log, Some(exhaustLog))
   if (!IO.readLines(exhaustLog).exists(_.contains("gc-bound: yes, streak: 5")))

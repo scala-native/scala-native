@@ -198,13 +198,13 @@ static bool Heap_lowYield(Heap *heap) {
     return freeLines * 100 < totalLines * HEAP_OVERHEAD_FREE_PERCENT;
 }
 
-static bool Heap_overheadLimitReached(Heap *heap, uint64_t start_ns) {
+static bool Heap_overheadLimitReached(Heap *heap, uint64_t start_ns,
+                                      bool lowYield) {
     uint64_t now = Time_current_nanos();
     uint64_t gcNs = now - start_ns;
     uint64_t sinceLast =
         heap->lastCollectionEndNs == 0 ? gcNs : now - heap->lastCollectionEndNs;
     bool gcBound = gcNs * 100 >= sinceLast * HEAP_OVERHEAD_GC_PERCENT;
-    bool lowYield = Heap_lowYield(heap);
     if (gcBound && lowYield)
         heap->overheadStreak++;
     else
@@ -254,6 +254,11 @@ static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
     if (allocationSize == 0)
         heap->overheadStreak = 0;
     if (allocationSize != 0) {
+        // Yield is judged on the heap as the collection left it: reserving
+        // below takes a whole superblock out of the free count for a large
+        // object, and counting that would make a productive collection look
+        // low-yield.
+        bool lowYield = Heap_lowYield(heap);
         available = Heap_reserveAllocation(allocationSize);
         if (!available) {
             uint32_t blocks =
@@ -261,16 +266,17 @@ static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
             GC_LOG_DEBUG(
                 "Allocation recovery: size=%zu, generation=%" PRIuFAST64,
                 allocationSize, atomic_load(&heap->collectionGeneration));
-            available = Heap_TryGrow(heap, blocks) &&
-                        Heap_reserveAllocation(allocationSize);
+            if (Heap_TryGrow(heap, blocks)) {
+                lowYield = Heap_lowYield(heap);
+                available = Heap_reserveAllocation(allocationSize);
+            }
         }
         // Judged after reservation and growth, so that the time counted as
         // collecting covers the whole recovery. The limit fails the
         // allocation even when one object would fit: near the cap a
         // reservation almost always succeeds, and failing only when it does
-        // not would collect every few allocations without end. If the heap
-        // grew, it is no longer at its limit and the streak resets.
-        if (Heap_overheadLimitReached(heap, start_ns))
+        // not would collect every few allocations without end.
+        if (Heap_overheadLimitReached(heap, start_ns, lowYield))
             available = false;
     }
     atomic_fetch_add_explicit(&heap->collectionGeneration, 1,
