@@ -81,7 +81,12 @@ runFragmentedExhaustion := {
   implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
   val binary = nativeExecutable((Compile / nativeLink).value)
   val log = streams.value.log
-  runCapped(binary, "64M", Seq("exhaust"), log)
+  // The error must come from the overhead limit, not from some other path:
+  // the GC's debug log shows the fifth qualifying collection in a row.
+  val exhaustLog = target.value / "exhaust-gc.log"
+  runCapped(binary, "64M", Seq("exhaust"), log, Some(exhaustLog))
+  if (!IO.readLines(exhaustLog).exists(_.contains("gc-bound: yes, streak: 5")))
+    sys.error("exhaustion was not decided by the overhead limit")
   // Free chunks left in the large allocator count as free: 32 MB of 8-32 KiB
   // arrays fit an 80 MB cap, which needs 68 MB on this workload.
   runCapped(binary, "80M", Seq("medium", (32L * 1024 * 1024).toString), log)

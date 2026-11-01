@@ -253,9 +253,7 @@ static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
     // is never followed by an error counted partly before it.
     if (allocationSize == 0)
         heap->overheadStreak = 0;
-    if (allocationSize != 0 && Heap_overheadLimitReached(heap, start_ns)) {
-        available = false;
-    } else if (allocationSize != 0) {
+    if (allocationSize != 0) {
         available = Heap_reserveAllocation(allocationSize);
         if (!available) {
             uint32_t blocks =
@@ -266,6 +264,14 @@ static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
             available = Heap_TryGrow(heap, blocks) &&
                         Heap_reserveAllocation(allocationSize);
         }
+        // Judged after reservation and growth, so that the time counted as
+        // collecting covers the whole recovery. The limit fails the
+        // allocation even when one object would fit: near the cap a
+        // reservation almost always succeeds, and failing only when it does
+        // not would collect every few allocations without end. If the heap
+        // grew, it is no longer at its limit and the streak resets.
+        if (Heap_overheadLimitReached(heap, start_ns))
+            available = false;
     }
     atomic_fetch_add_explicit(&heap->collectionGeneration, 1,
                               memory_order_release);
