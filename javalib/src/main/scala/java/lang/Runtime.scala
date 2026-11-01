@@ -1,6 +1,7 @@
 package java.lang
 
 import java.io.File
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.{Comparator, Set => juSet}
 
 import scala.scalanative.libc.{signal, stdlib}
@@ -165,10 +166,29 @@ private object ShutdownHookUncaughtExceptionHandler
 object Runtime extends Runtime() {
   def getRuntime(): Runtime = this
 
+  private val signalShutdownStarted = new AtomicBoolean(false)
+
   private def handleSignal(sig: CInt): Unit = {
     Proxy.disableGracefullShutdown()
-    Runtime.getRuntime().runHooks()
-    exit(128 + sig)
+    def runHooksAndExit(): Unit =
+      try Runtime.getRuntime().runHooks()
+      finally exit(128 + sig)
+
+    // On Windows the handler runs on its own thread, it never interrupts a park
+    if (!LinktimeInfo.isMultithreadingEnabled || LinktimeInfo.isWindows)
+      runHooksAndExit()
+    // Hooks are already run by exit, possibly by the interrupted thread
+    else if (!getRuntime().shutdownStarted || signalShutdownStarted.get()) {
+      // The handler might have interrupted a thread in the middle of a park or
+      // a monitor wait, joining the hooks on it would corrupt these operations
+      if (signalShutdownStarted.compareAndSet(false, true)) {
+        val shutdownThread = new Thread(() => runHooksAndExit())
+        shutdownThread.setDaemon(true)
+        shutdownThread.startInternal()
+      }
+      // Returning could let the main thread finish with its own exit status
+      while (true) pause()
+    }
   }
 
   private implicit class ProcessBuilderOps(val pb: ProcessBuilder)
