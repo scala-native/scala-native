@@ -127,7 +127,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
-      - uses: coursier/cache-action@v8
+      - uses: coursier/cache-action@v9
       - uses: coursier/setup-action@v3
         with:
           jvm: 25
