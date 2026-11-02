@@ -39,7 +39,6 @@ private[linker] class Reach(
       pos: nir.SourcePosition
   )
   private val delayedMethods = mutable.Set.empty[DelayedMethod]
-  private val externAliases = mutable.Map.empty[nir.Global, nir.Global.Member]
 
   if (injects.nonEmpty) {
     injects.groupBy(_.name.top).foreach {
@@ -71,7 +70,6 @@ private[linker] class Reach(
 
   def result(): ReachabilityAnalysis = {
     cleanup()
-    resolveExternAliases()
 
     val defns = mutable.UnrolledBuffer.empty[nir.Defn]
     defns.sizeHint(done.size)
@@ -124,55 +122,6 @@ private[linker] class Reach(
             }
         }
 
-      case _ => ()
-    }
-  }
-
-  /** Rewrites references to extern aliases to their targets and drops the
-   *  aliases. They must never reach codegen: `Sig.Extern` is mangled to the
-   *  bare C name, so an alias would define that symbol and shadow the native
-   *  one.
-   */
-  private def resolveExternAliases(): Unit = if (externAliases.nonEmpty) {
-    @tailrec
-    def resolve(
-        name: nir.Global.Member,
-        seen: Set[nir.Global]
-    ): nir.Global.Member = externAliases.get(name) match {
-      case Some(target) if seen.contains(target) =>
-        fail(s"cyclic extern alias of ${name.show}")
-      case Some(target) => resolve(target, seen + target)
-      case None         => name
-    }
-
-    val rewrite = new nir.Transform {
-      override def onVal(value: nir.Val): nir.Val = value match {
-        case nir.Val.Global(name: nir.Global.Member, ty)
-            if externAliases.contains(name) =>
-          nir.Val.Global(resolve(name, Set(name)), ty)
-        case _ => super.onVal(value)
-      }
-    }
-
-    externAliases.keys.foreach { alias =>
-      done -= alias
-      infos.remove(alias).foreach {
-        case info: MemberInfo =>
-          info.owner match {
-            case owner: ScopeInfo => owner.members -= info
-            case _                => ()
-          }
-        case _ => ()
-      }
-    }
-    done.foreach {
-      case (name, defn) if defn != null =>
-        done(name) = rewrite.onDefn(defn)
-      case _ => ()
-    }
-    infos.valuesIterator.foreach {
-      case method: Method if method.isConcrete =>
-        rewrite.onInsts(method.insts.toSeq).copyToArray(method.insts)
       case _ => ()
     }
   }
@@ -348,7 +297,7 @@ private[linker] class Reach(
         // These need to assigned to variable to be reachable
         (sig.isExtern || attrs.isExtern) &&
           sig != Reach.ExternForwarderSig &&
-          externAliasTarget(defn).isEmpty
+          !defn.isExternRedirect
       case _ => false
     }
 
@@ -688,7 +637,6 @@ private[linker] class Reach(
     reachAttrs(attrs)
     reachType(ty)
     reachInsts(insts)
-    externAliasTarget(defn).foreach(externAliases(name) = _)
   }
 
   def reachTrait(defn: nir.Defn.Trait): Unit = {
@@ -1227,32 +1175,6 @@ private[linker] class Reach(
 private[scalanative] object Reach {
   private final val ExternForwarderSig =
     nir.Sig.Generated("$extern$forwarder").mangled
-
-  /** The target of an alias emitted for `unsafe.externRedirect`: a non-extern,
-   *  always inlined function named by `Sig.Extern`, only calling another
-   *  extern.
-   */
-  private def externAliasTarget(
-      defn: nir.Defn.Define
-  ): Option[nir.Global.Member] = defn.name match {
-    case nir.Global.Member(_, sig)
-        if sig.isExtern && !defn.attrs.isExtern &&
-          defn.attrs.inlineHint == nir.Attr.AlwaysInline =>
-      defn.insts match {
-        case Seq(
-              _: nir.Inst.Label,
-              nir.Inst.Let(
-                _,
-                nir.Op.Call(_, nir.Val.Global(target: nir.Global.Member, _), _),
-                _
-              ),
-              _: nir.Inst.Ret
-            ) if target.sig.isExtern =>
-          Some(target)
-        case _ => None
-      }
-    case _ => None
-  }
 
   def apply(
       config: build.Config,

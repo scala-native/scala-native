@@ -112,8 +112,9 @@ package object unsafe extends unsafe.UnsafePackageCompat {
 
   /** Used as right hand side of an extern method kept for binary compatibility
    *  under an old name. The argument must be a direct call to another extern
-   *  method, forwarding all parameters. It is an alias: the linker rewrites
-   *  references to the target and no symbol is emitted for the old name.
+   *  method, forwarding all parameters. Generates an always inlined function
+   *  answering to the old name, with attributes coming from the target. No
+   *  symbol with the bare old name is emitted.
    */
   private[scalanative] def externRedirect(call: Any): Nothing = intrinsic
 
