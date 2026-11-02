@@ -385,7 +385,7 @@ object socket {
 
   // Binary compatibility: code compiled against 0.5.12 links to this extern name.
   @name("socket")
-  private[scalanative] def socket_compat(
+  private[posix] def _socket(
       domain: CInt,
       tpe: CInt,
       protocol: CInt

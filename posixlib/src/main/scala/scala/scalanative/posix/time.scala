@@ -82,7 +82,7 @@ trait time extends libc.time {
 
   // Binary compatibility: code compiled against 0.5.12 links to this extern name.
   @name("clock_gettime")
-  private[scalanative] def clock_gettime_compat(
+  private[posix] def _clock_gettime(
       clockid: clockid_t,
       tp: Ptr[timespec]
   ): CInt = externRedirect(clock_gettime(clockid, tp))
@@ -120,7 +120,7 @@ trait time extends libc.time {
 
   // Binary compatibility: code compiled against 0.5.12 links to this extern name.
   @name("nanosleep")
-  private[scalanative] def nanosleep_compat(
+  private[posix] def _nanosleep(
       requested: Ptr[timespec],
       remaining: Ptr[timespec]
   ): CInt = externRedirect(nanosleep(requested, remaining))

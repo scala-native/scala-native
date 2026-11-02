@@ -349,7 +349,7 @@ import scala.scalanative.unsafe._
   def sigaltstack(ss: Ptr[stack_t], oss: Ptr[stack_t]): CInt = extern
   // Binary compatibility: code compiled against 0.5.12 links to this extern name.
   @name("sigaltstack")
-  private[scalanative] def sigaltstack_compat(
+  private[posix] def _sigaltstack(
       ss: Ptr[stack_t],
       oss: Ptr[stack_t]
   ): CInt = externRedirect(sigaltstack(ss, oss))

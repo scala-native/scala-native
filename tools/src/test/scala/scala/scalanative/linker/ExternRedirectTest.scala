@@ -149,22 +149,37 @@ class ExternRedirectTest extends LinkerSpec {
   @Test def redirectsRenamedLibraryExterns(): Unit =
     link(
       entry,
-      """package scala.scalanative.redirect
-        |import scala.scalanative.libc.locale
-        |import scala.scalanative.posix.{signal, time}
-        |import scala.scalanative.posix.sys.socket
-        |import scala.scalanative.unsafe._
-        |
-        |object Test {
-        |  def main(args: Array[String]): Unit = {
-        |    println(time.clock_gettime_compat(0, null))
-        |    println(time.nanosleep_compat(null, null))
-        |    println(socket.socket_compat(0, 0, 0))
-        |    println(signal.sigaltstack_compat(null, null))
-        |    println(locale.setlocale_compat(0, null))
-        |  }
-        |}
-        |""".stripMargin
+      Map(
+        "posix.scala" ->
+          """package scala.scalanative.posix
+            |
+            |object Compat {
+            |  def run(): Unit = {
+            |    println(time._clock_gettime(0, null))
+            |    println(time._nanosleep(null, null))
+            |    println(sys.socket._socket(0, 0, 0))
+            |    println(signal._sigaltstack(null, null))
+            |  }
+            |}
+            |""".stripMargin,
+        "libc.scala" ->
+          """package scala.scalanative.libc
+            |
+            |object Compat {
+            |  def run(): Unit = println(locale._setlocale(0, null))
+            |}
+            |""".stripMargin,
+        "test.scala" ->
+          """package scala.scalanative.redirect
+            |
+            |object Test {
+            |  def main(args: Array[String]): Unit = {
+            |    scala.scalanative.posix.Compat.run()
+            |    scala.scalanative.libc.Compat.run()
+            |  }
+            |}
+            |""".stripMargin
+      )
     ) { (_, result) =>
       Seq("clock_gettime", "nanosleep", "socket", "sigaltstack", "setlocale")
         .foreach { id =>

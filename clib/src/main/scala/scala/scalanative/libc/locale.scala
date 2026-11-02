@@ -84,7 +84,7 @@ private[scalanative] trait locale {
 
   // Binary compatibility: code compiled against 0.5.12 links to this extern name.
   @name("setlocale")
-  private[scalanative] def setlocale_compat(
+  private[libc] def _setlocale(
       category: CInt,
       locale: CString
   ): CString = externRedirect(setlocale(category, locale))
