@@ -3,13 +3,15 @@ package org.scalanative.testsuite.posixlib
 import java.io.IOException
 import java.{lang => jl}
 
+// libc.string is hidden by posix.string
+import scala.annotation.nowarn
+
 import org.junit.Assert._
 import org.junit.Assume._
 import org.junit.{BeforeClass, Test}
 
 import org.scalanative.testsuite.utils.Platform
 
-// libc.string is hidden by posix.string
 import scala.scalanative.libc.{string => libcString}
 import scala.scalanative.meta.LinktimeInfo.{is32BitPlatform, isWindows}
 import scala.scalanative.posix.timeOps.{timespecOps, tmOps}
@@ -338,6 +340,37 @@ class TimeTest {
       (timespecP.tv_nsec >= 0L) && (timespecP.tv_nsec <= 999999999L)
     )
   }
+
+  /* Code compiled against 0.5.12 and earlier links to the externs named
+   * "clock_gettime" and "nanosleep". Calling the deprecated members emits the
+   * same references, so this fails to link if those names go missing.
+   */
+  @nowarn("cat=deprecation")
+  @Test def ungluedExternsLinkForBinaryCompatibility(): Unit =
+    if (!isWindows) {
+      val timespecP = stackalloc[timespec]()
+      timespecP.tv_nsec = Int.MinValue
+
+      assertEquals(
+        s"clock_gettime failed with errno: ${posixErrno.errno}",
+        0,
+        clock_gettime_unglued(CLOCK_REALTIME, timespecP)
+      )
+      assertTrue(
+        s"clock_gettime nanoseconds ${timespecP.tv_nsec} not in " +
+          s"interval [0, 999999999]",
+        (timespecP.tv_nsec >= 0L) && (timespecP.tv_nsec <= 999999999L)
+      )
+
+      timespecP.tv_sec = 0
+      timespecP.tv_nsec = 1
+      // EINTR means the sleep was interrupted, so nanosleep still executed.
+      val result = nanosleep_unglued(timespecP, null)
+      assertTrue(
+        s"nanosleep failed with errno: ${posixErrno.errno}",
+        result == 0 || (result == -1 && posixErrno.errno == EINTR)
+      )
+    }
 
   @Test def clockNanosleepShouldExecute(): Unit = if (!isWindows) {
     val requestP = stackalloc[timespec]()
