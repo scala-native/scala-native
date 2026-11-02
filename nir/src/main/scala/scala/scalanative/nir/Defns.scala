@@ -41,6 +41,17 @@ sealed abstract class Defn extends Positioned {
     case _ => false
   }
 
+  /** A function created by `unsafe.externRedirect`. Called using an extern
+   *  name, but defined in Scala: it is not an extern symbol, and never uses the
+   *  bare C name, as that would shadow the native function.
+   */
+  final def isExternRedirect = this match {
+    case Define(attrs, Global.Member(_, sig), _, _, _) =>
+      sig.isExtern && !attrs.isExtern &&
+        attrs.inlineHint == Attr.AlwaysInline
+    case _ => false
+  }
+
 }
 
 object Defn {

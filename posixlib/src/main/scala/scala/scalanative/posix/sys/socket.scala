@@ -383,6 +383,14 @@ object socket {
   @name("scalanative_socket")
   def socket(domain: CInt, tpe: CInt, protocol: CInt): CInt = extern
 
+  // Binary compatibility: code compiled against 0.5.12 links to this extern name.
+  @name("socket")
+  private[posix] def _socket(
+      domain: CInt,
+      tpe: CInt,
+      protocol: CInt
+  ): CInt = externRedirect(socket(domain, tpe, protocol))
+
   @name("scalanative_socketpair") // A stub on Win32, see top of file
   def socketpair(domain: CInt, tpe: CInt, protocol: CInt, sv: Ptr[Int]): CInt =
     extern

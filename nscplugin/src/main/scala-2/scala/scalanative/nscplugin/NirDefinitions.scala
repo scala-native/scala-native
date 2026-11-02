@@ -95,6 +95,8 @@ trait NirDefinitions {
       "scala.scalanative.unsafe.package"
     )
     lazy val ExternMethod = getMember(NativeModule, TermName("extern"))
+    lazy val ExternRedirectMethod =
+      getMember(NativeModule, TermName("externRedirect"))
 
     lazy val CQuoteClass = getRequiredClass(
       "scala.scalanative.unsafe.package$CQuote"

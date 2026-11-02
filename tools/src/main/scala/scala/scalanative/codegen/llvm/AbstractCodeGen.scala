@@ -699,12 +699,15 @@ private[codegen] abstract class AbstractCodeGen(
   private[codegen] def mangled(g: nir.Global): String = g match {
     case nir.Global.None =>
       unsupported(g)
-    case nir.Global.Member(_, sig) if sig.isExtern =>
+    case nir.Global.Member(_, sig) if sig.isExtern && !isExternRedirect(g) =>
       val nir.Sig.Extern(id) = sig.unmangled: @unchecked
       id
     case _ =>
       "_S" + g.mangle
   }
+
+  private def isExternRedirect(g: nir.Global): Boolean =
+    env.get(g).exists(_.isExternRedirect)
 
   private[codegen] def genGlobal(
       g: nir.Global
@@ -850,7 +853,7 @@ private[codegen] abstract class AbstractCodeGen(
          */
         val callDef = call.ptr match {
           case nir.Val.Global(m @ nir.Global.Member(_, sig), valty)
-              if sig.isExtern =>
+              if sig.isExtern && !isExternRedirect(m) =>
             val glob = externSigMembers.getOrElseUpdate(sig, m)
             if (glob == m) call
             else call.copy(ptr = nir.Val.Global(glob, valty))

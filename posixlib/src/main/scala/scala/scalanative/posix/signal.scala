@@ -347,6 +347,12 @@ import scala.scalanative.unsafe._
   def sigaddset(set: Ptr[sigset_t], signo: CInt): CInt = extern
   @name("scalanative_sigaltstack")
   def sigaltstack(ss: Ptr[stack_t], oss: Ptr[stack_t]): CInt = extern
+  // Binary compatibility: code compiled against 0.5.12 links to this extern name.
+  @name("sigaltstack")
+  private[posix] def _sigaltstack(
+      ss: Ptr[stack_t],
+      oss: Ptr[stack_t]
+  ): CInt = externRedirect(sigaltstack(ss, oss))
   def sigdelset(set: Ptr[sigset_t], signo: CInt): CInt = extern
   def sigemptyset(set: Ptr[sigset_t]): CInt = extern
   def sigfillset(set: Ptr[sigset_t]): CInt = extern
