@@ -80,6 +80,13 @@ trait time extends libc.time {
   @name("scalanative_clock_gettime")
   def clock_gettime(clockid: clockid_t, tp: Ptr[timespec]): CInt = extern
 
+  // Binary compatibility: code compiled against 0.5.12 links to this extern name.
+  @name("clock_gettime")
+  private[scalanative] def clock_gettime_compat(
+      clockid: clockid_t,
+      tp: Ptr[timespec]
+  ): CInt = externRedirect(clock_gettime(clockid, tp))
+
   // No clock_nanosleep on macOS. time.c provides a stub always returning -1.
   @name("scalanative_clock_nanosleep")
   @blocking
@@ -110,6 +117,13 @@ trait time extends libc.time {
       requested: Ptr[timespec],
       remaining: Ptr[timespec]
   ): CInt = extern
+
+  // Binary compatibility: code compiled against 0.5.12 links to this extern name.
+  @name("nanosleep")
+  private[scalanative] def nanosleep_compat(
+      requested: Ptr[timespec],
+      remaining: Ptr[timespec]
+  ): CInt = externRedirect(nanosleep(requested, remaining))
 
 //  @name("scalanative_strftime")
   def strftime(
