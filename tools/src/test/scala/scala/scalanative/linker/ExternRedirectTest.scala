@@ -12,24 +12,27 @@ class ExternRedirectTest extends LinkerSpec {
   private val entry = "scala.scalanative.redirect.Test"
 
   private def calledExterns(result: ReachabilityAnalysis.Result): Set[String] =
-    result.defns.collect {
-      case defn: nir.Defn.Define =>
-        defn.insts.collect {
-          case nir.Inst.Let(
-                _,
-                nir.Op.Call(
+    result.defns
+      .collect {
+        case defn: nir.Defn.Define =>
+          defn.insts.collect {
+            case nir.Inst.Let(
                   _,
-                  nir.Val.Global(nir.Global.Member(_, sig), _),
+                  nir.Op.Call(
+                    _,
+                    nir.Val.Global(nir.Global.Member(_, sig), _),
+                    _
+                  ),
                   _
-                ),
-                _
-              ) if sig.isExtern =>
-            sig.unmangled match {
-              case nir.Sig.Extern(id) => id
-              case _                  => fail("expected extern"); ""
-            }
-        }
-    }.flatten.toSet
+                ) if sig.isExtern =>
+              sig.unmangled match {
+                case nir.Sig.Extern(id) => id
+                case _                  => fail("expected extern"); ""
+              }
+          }
+      }
+      .flatten
+      .toSet
 
   private def definedExterns(result: ReachabilityAnalysis.Result): Set[String] =
     result.defns.collect {
