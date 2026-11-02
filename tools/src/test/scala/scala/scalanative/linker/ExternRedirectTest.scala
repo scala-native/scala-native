@@ -59,7 +59,25 @@ class ExternRedirectTest extends LinkerSpec {
     )
   }
 
-  @Test def rewritesReferencesToTarget(): Unit =
+  private def assertRedirect(
+      result: ReachabilityAnalysis.Result,
+      id: String
+  ): Unit = {
+    val defns = result.defns.filter {
+      case nir.Defn.Define(_, nir.Global.Member(_, sig), _, _, _) =>
+        sig == nir.Sig.Extern(id).mangled
+      case nir.Defn.Declare(_, nir.Global.Member(_, sig), _) =>
+        sig == nir.Sig.Extern(id).mangled
+      case _ => false
+    }
+    assertTrue(s"$id is not a redirect", defns.nonEmpty)
+    defns.foreach(defn => assertTrue(defn.show, defn.isExternRedirect))
+    defns.foreach { defn =>
+      assertEquals(nir.Attr.AlwaysInline, defn.attrs.inlineHint)
+    }
+  }
+
+  @Test def generatesFunctionCallingTarget(): Unit =
     link(
       entry,
       """package scala.scalanative.redirect
@@ -75,7 +93,7 @@ class ExternRedirectTest extends LinkerSpec {
         |}
         |""".stripMargin
     ) { (_, result) =>
-      assertNotExtern(result, "old_name")
+      assertRedirect(result, "old_name")
       assertTrue(calledExterns(result).contains("new_name"))
     }
 
@@ -120,11 +138,11 @@ class ExternRedirectTest extends LinkerSpec {
         |}
         |""".stripMargin
     ) { (_, result) =>
-      assertNotExtern(result, "old_name")
+      assertRedirect(result, "old_name")
       assertTrue(calledExterns(result).contains("new_name"))
     }
 
-  @Test def unusedAliasIsNotExported(): Unit =
+  @Test def unusedRedirectIsNotExported(): Unit =
     link(
       entry,
       """package scala.scalanative.redirect
@@ -183,7 +201,7 @@ class ExternRedirectTest extends LinkerSpec {
     ) { (_, result) =>
       Seq("clock_gettime", "nanosleep", "socket", "sigaltstack", "setlocale")
         .foreach { id =>
-          assertNotExtern(result, id)
+          assertRedirect(result, id)
           assertTrue(
             s"scalanative_$id not called",
             calledExterns(result).contains(s"scalanative_$id")
