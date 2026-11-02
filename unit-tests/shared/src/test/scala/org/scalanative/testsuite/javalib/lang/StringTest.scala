@@ -1,8 +1,10 @@
 package org.scalanative.testsuite.javalib.lang
 
 import java.lang._
-import java.nio.CharBuffer
-import java.nio.charset.{Charset, StandardCharsets}
+import java.nio.charset.{
+  Charset, CharsetDecoder, CharsetEncoder, CoderResult, StandardCharsets
+}
+import java.nio.{ByteBuffer, CharBuffer, ReadOnlyBufferException}
 
 import org.junit.Assert._
 import org.junit.{Ignore, Test}
@@ -11,6 +13,52 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform.executingInJVM
 
 class StringTest {
+
+  @Test def charsetEncoderCannotModifyStringStorage(): Unit = {
+    assertEncoderCannotModify("literal encoder storage")
+    val parent = new String(Array('x', 'a', 'b', 'c', 'y'))
+    assertEncoderCannotModify(parent.substring(1, 4))
+    assertEquals("xabcy", parent)
+  }
+
+  @scala.noinline
+  private def assertEncoderCannotModify(string: String): Unit = {
+    val original = string.toCharArray()
+    val originalHash = string.hashCode()
+    var retained: CharBuffer = null
+    val charset = new Charset("X-StringStorage", Array.empty[String]) {
+      def contains(other: Charset): scala.Boolean = other eq this
+      def newDecoder(): CharsetDecoder = StandardCharsets.US_ASCII.newDecoder()
+      def newEncoder(): CharsetEncoder = new CharsetEncoder(this, 1f, 1f) {
+        protected def encodeLoop(
+            in: CharBuffer,
+            out: ByteBuffer
+        ): CoderResult = {
+          retained = in.slice()
+          while (in.hasRemaining() && out.hasRemaining())
+            out.put(in.get().toByte)
+          if (in.hasRemaining()) CoderResult.OVERFLOW else CoderResult.UNDERFLOW
+        }
+      }
+    }
+    assertArrayEquals(
+      string.getBytes(StandardCharsets.US_ASCII),
+      string.getBytes(charset)
+    )
+    assertNotNull(retained)
+    // JVMs may supply a writable defensive copy. Either representation must
+    // protect the String, including after the encoder has returned.
+    if (!executingInJVM) {
+      assertTrue(retained.isReadOnly())
+      assertFalse(retained.hasArray())
+    }
+    try retained.put(0, '!')
+    catch { case _: ReadOnlyBufferException => () }
+    try retained.array()(retained.arrayOffset()) = '?'
+    catch { case _: UnsupportedOperationException => () }
+    assertArrayEquals(original, string.toCharArray())
+    assertEquals(originalHash, string.hashCode())
+  }
 
   @Test def stringArrayByteIntIntStringWithNullEncoding(): Unit = {
     assertThrows(

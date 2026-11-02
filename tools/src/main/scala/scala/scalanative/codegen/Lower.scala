@@ -1998,7 +1998,8 @@ private[scalanative] object Lower {
 
       val chars = value.toCharArray
       val charsLength = nir.Val.Int(chars.length)
-      val charsConst = nir.Val.Const(
+      val charsConst = meta.globalSections.constant(
+        GlobalSections.Strings,
         nir.Val.StructValue(
           rtti(CharArrayCls).const ::
             meta.lockWordVals :::
@@ -2024,7 +2025,8 @@ private[scalanative] object Lower {
           util.unreachable
       }
 
-      nir.Val.Const(
+      meta.globalSections.constant(
+        GlobalSections.Strings,
         nir.Val.StructValue(
           rtti(StringCls).const ::
             meta.lockWordVals ++
