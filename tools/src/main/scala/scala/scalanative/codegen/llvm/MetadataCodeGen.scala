@@ -620,7 +620,7 @@ private[codegen] object MetadataCodeGen {
       val linkageName = (defn.name: nir.Global) match {
         case nir.Global.None =>
           unsupported(defn.name)
-        case nir.Global.Member(_, sig) if sig.isExtern =>
+        case nir.Global.Member(_, sig) if sig.isExtern && !defn.isExternRedirect =>
           val nir.Sig.Extern(id) = sig.unmangled: @unchecked
           id
         case _ =>

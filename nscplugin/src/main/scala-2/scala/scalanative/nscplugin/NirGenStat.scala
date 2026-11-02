@@ -879,6 +879,10 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         case Apply(ref: RefTree, Seq()) if ref.symbol == ExternMethod =>
           externMethodDecl(curMethodSym.get)
 
+        case Apply(ref: RefTree, Seq(call))
+            if ref.symbol == ExternRedirectMethod =>
+          genExternRedirect(name, dd, call)
+
         case _ if curMethodSym.hasFlag(ACCESSOR) => None
 
         case Apply(target, _) if isCallingExternMethod(target.symbol) =>
@@ -935,6 +939,58 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             "methods in extern objects must have extern body"
           )
           None
+      }
+    }
+
+    private def genExternRedirect(
+        name: nir.Global.Member,
+        dd: DefDef,
+        call: Tree
+    ): Option[nir.Defn] = {
+      implicit val pos: nir.SourcePosition = dd.rhs.pos
+      val externSig = genExternMethodSig(dd.symbol)
+      val nir.Type.Function(paramtys, _) = externSig
+
+      def stripBoxing(tree: Tree): Tree = tree match {
+        case Apply(fun, Seq(arg))
+            if currentRun.runDefinitions.isBox(fun.symbol) =>
+          stripBoxing(arg)
+        case Typed(expr, _) => stripBoxing(expr)
+        case _              => tree
+      }
+      def error(msg: String): Option[nir.Defn] = {
+        reporter.error(call.pos, msg)
+        None
+      }
+
+      stripBoxing(call) match {
+        case Apply(target, args) if target.symbol.isExtern =>
+          val params = dd.vparamss.flatten.map(_.symbol)
+          val targetName = genMethodName(target.symbol)
+          if (args.map(_.symbol) != params)
+            error("externRedirect must forward all parameters in order")
+          else if (genExternMethodSig(target.symbol) != externSig)
+            error("externRedirect target must have the same signature")
+          else if (targetName == name)
+            error("externRedirect target must have a different extern name")
+          else {
+            val fresh = nir.Fresh()
+            val buf = new ExprBuffer()(fresh)
+            val locals = paramtys.map(ty => nir.Val.Local(fresh(), ty))
+            buf.label(fresh(), locals)
+            val targetRef = nir.Val.Global(targetName, nir.Type.Ptr)
+            buf.ret(buf.call(externSig, targetRef, locals, nir.Next.None))
+            Some(
+              new nir.Defn.Define(
+                nir.Attrs.None.withInlineHint(nir.Attr.AlwaysInline),
+                name,
+                externSig,
+                buf.toSeq
+              )
+            )
+          }
+        case _ =>
+          error("externRedirect requires a direct call to an extern method")
       }
     }
 
