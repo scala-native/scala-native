@@ -11,8 +11,8 @@ import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.unsafe._
 
 class StackOverflowExceptionHandlingTest {
-  // Regression for #4190. Run with LTO and custom exception handling
-  // (cppOptions = Seq("-fno-cxx-exceptions")) to bypass the C++ fallback.
+  // Regression for #4190. LTO must preserve custom exception handlers so that
+  // unwinding releases every nested monitor.
   @Test def releasesNestedPrintStreamMonitor(): Unit = {
     assumeTrue("requires multithreading", LinktimeInfo.isMultithreadingEnabled)
     val devNull = new PrintStream(

@@ -212,9 +212,7 @@ sealed trait Config {
     targetsWindows || {
       val disabled = compilerConfig.cppOptions.contains("-fno-cxx-exceptions")
       val enabled = compilerConfig.cppOptions.contains("-fcxx-exceptions")
-      // New EH does not work good with LTO https://github.com/scala-native/scala-native/issues/4190
-      val enabledLTO = compilerConfig.lto != build.LTO.none
-      !disabled && (enabled || enabledLTO)
+      !disabled && enabled
     }
 }
 
