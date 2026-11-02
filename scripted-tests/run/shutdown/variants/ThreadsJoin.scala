@@ -5,7 +5,11 @@ object Test {
     val threads = List
       .tabulate(8) { id =>
         new Thread(() => {
-          sys.addShutdownHook(println(s"On shutdown:$id"))
+          sys.addShutdownHook {
+            // Keep the hook alive until runtime starts joining it
+            Thread.sleep(50)
+            println(s"On shutdown:$id")
+          }
           while (true) {
             Thread.sleep(100 + Random.nextInt(1000))
             print(s"$id;")
