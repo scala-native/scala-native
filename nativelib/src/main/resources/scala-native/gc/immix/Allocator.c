@@ -42,6 +42,7 @@ bool Allocator_newOverflowBlock(Allocator *allocator) {
     if (largeBlock == NULL) {
         return false;
     }
+    allocator->blocksTaken++;
     allocator->largeBlock = largeBlock;
     word_t *largeBlockStart = BlockMeta_GetBlockStart(
         allocator->blockMetaStart, allocator->heapStart, largeBlock);
@@ -227,6 +228,7 @@ bool Allocator_newBlock(Allocator *allocator) {
     word_t *blockStart;
 
     if (block != NULL) {
+        allocator->blocksTaken++;
         atomic_fetch_sub_explicit(&allocator->recycledBlockCount, 1,
                                   memory_order_relaxed);
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
@@ -254,6 +256,7 @@ bool Allocator_newBlock(Allocator *allocator) {
         if (block == NULL) {
             return false;
         }
+        allocator->blocksTaken++;
         blockStart = BlockMeta_GetBlockStart(allocator->blockMetaStart,
                                              allocator->heapStart, block);
 
@@ -286,6 +289,9 @@ NOINLINE word_t *Allocator_allocSlow(Allocator *allocator, Heap *heap,
             ObjectMeta_SetAllocated(objectMeta);
             return object;
         }
+        // Asking counts as allocating: a thread waiting on another thread's
+        // recovery collection must still receive recycled blocks.
+        allocator->blocksTaken++;
         if (!Heap_RecoverAllocation(heap, size, generation))
             Heap_ThrowOutOfMemory(heap);
     } while (true);

@@ -171,6 +171,55 @@ static bool Heap_reserveAllocation(size_t size) {
     return available;
 }
 
+/**
+ * The GC overhead limit, after the JVM's (UseGCOverheadLimit): an allocation
+ * fails when HEAP_OVERHEAD_COLLECTIONS recovery collections in a row each
+ * leave less than HEAP_OVERHEAD_FREE_PERCENT of the heap free at its size limit
+ * and take more than HEAP_OVERHEAD_GC_PERCENT of the time since the previous
+ * collection ended. Low yield alone is not enough: a program can run stably
+ * with a nearly full heap, collecting often. Without the limit, the recovery
+ * retry succeeds whenever one object fits, and a heap that really is full
+ * collects every few allocations without reaching the out-of-memory path.
+ */
+#define HEAP_OVERHEAD_FREE_PERCENT 2
+#define HEAP_OVERHEAD_GC_PERCENT 98
+#define HEAP_OVERHEAD_COLLECTIONS 5
+
+/** At the size limit with under HEAP_OVERHEAD_FREE_PERCENT free, counting
+ * free blocks, free lines in recycled blocks and the large allocators' free
+ * chunks. */
+static bool Heap_lowYield(Heap *heap) {
+    if (heap->blockCount < heap->maxBlockCount)
+        return false;
+    uint64_t freeLines =
+        (uint64_t)atomic_load(&blockAllocator.freeBlockCount) * LINE_COUNT +
+        Block_recycledFreeLines + LargeAllocator_sweptFreeBytes / LINE_SIZE;
+    uint64_t totalLines = (uint64_t)heap->blockCount * LINE_COUNT;
+    return freeLines * 100 < totalLines * HEAP_OVERHEAD_FREE_PERCENT;
+}
+
+static bool Heap_overheadLimitReached(Heap *heap, uint64_t start_ns,
+                                      bool lowYield) {
+    uint64_t now = Time_current_nanos();
+    uint64_t gcNs = now - start_ns;
+    uint64_t sinceLast =
+        heap->lastCollectionEndNs == 0 ? gcNs : now - heap->lastCollectionEndNs;
+    bool gcBound = gcNs * 100 >= sinceLast * HEAP_OVERHEAD_GC_PERCENT;
+    if (gcBound && lowYield)
+        heap->overheadStreak++;
+    else
+        heap->overheadStreak = 0;
+    if (lowYield)
+        GC_LOG_DEBUG("Overhead limit: low-yield recovery collection, "
+                     "gc-bound: %s, streak: %" PRIu32,
+                     gcBound ? "yes" : "no", heap->overheadStreak);
+    if (heap->overheadStreak < HEAP_OVERHEAD_COLLECTIONS)
+        return false;
+    // The error is about to be thrown; a program that catches it starts afresh.
+    heap->overheadStreak = 0;
+    return true;
+}
+
 static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
                          uint64_t generation) {
     SpillCalleeSavedRegisters();
@@ -199,7 +248,17 @@ static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
     }
     Heap_Recycle(heap);
     bool available = true;
+    // An explicit collection is not an allocation that could not proceed: it
+    // ends any run of qualifying recovery collections, so that space it frees
+    // is never followed by an error counted partly before it.
+    if (allocationSize == 0)
+        heap->overheadStreak = 0;
     if (allocationSize != 0) {
+        // Yield is judged on the heap as the collection left it: reserving
+        // below takes a whole superblock out of the free count for a large
+        // object, and counting that would make a productive collection look
+        // low-yield.
+        bool lowYield = Heap_lowYield(heap);
         available = Heap_reserveAllocation(allocationSize);
         if (!available) {
             uint32_t blocks =
@@ -207,13 +266,23 @@ static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
             GC_LOG_DEBUG(
                 "Allocation recovery: size=%zu, generation=%" PRIuFAST64,
                 allocationSize, atomic_load(&heap->collectionGeneration));
-            available = Heap_TryGrow(heap, blocks) &&
-                        Heap_reserveAllocation(allocationSize);
+            if (Heap_TryGrow(heap, blocks)) {
+                lowYield = Heap_lowYield(heap);
+                available = Heap_reserveAllocation(allocationSize);
+            }
         }
+        // Judged after reservation and growth, so that the time counted as
+        // collecting covers the whole recovery. The limit fails the
+        // allocation even when one object would fit: near the cap a
+        // reservation almost always succeeds, and failing only when it does
+        // not would collect every few allocations without end.
+        if (Heap_overheadLimitReached(heap, start_ns, lowYield))
+            available = false;
     }
     atomic_fetch_add_explicit(&heap->collectionGeneration, 1,
                               memory_order_release);
     end_ns = Time_current_nanos();
+    heap->lastCollectionEndNs = end_ns;
     jmx_stats_record_collection(start_ns, end_ns);
     if (stats != NULL) {
         Stats_RecordCollection(stats, start_ns, nullify_start_ns,
@@ -264,8 +333,57 @@ bool Heap_shouldGrow(Heap *heap) {
             20 * freeBlockCount < 13 * blockCount);
 }
 
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+/** Whether `thread` took any space since the last collection. */
+static bool Heap_allocatedSinceCollection(MutatorThread *thread) {
+    return thread->allocator.blocksTaken != 0 ||
+           thread->largeAllocator.blocksTaken != 0;
+}
+
+/**
+ * The threads that receive partly free blocks in this collection: the
+ * collecting thread, then every thread that took or asked for space since the
+ * last one. A thread that did neither (parked, sleeping, waiting for work)
+ * would hold its share until the next collection, out of reach of the threads
+ * that allocate, so it is left out. Thread state cannot tell the two apart:
+ * every stopped thread is Unmanaged by now. Built once per collection, so
+ * handing out a block stays O(1) however many threads are idle. Kept between
+ * collections and grown as needed; if it cannot grow, every block goes to the
+ * collecting thread.
+ */
+static MutatorThread **recycleTargets = NULL;
+static size_t recycleTargetsCapacity = 0;
+
+static size_t Heap_collectRecycleTargets(void) {
+    size_t threads = 0;
+    MutatorThreads_foreach(mutatorThreads, node) { threads++; }
+    if (threads + 1 > recycleTargetsCapacity) {
+        MutatorThread **grown =
+            realloc(recycleTargets, (threads + 1) * sizeof(MutatorThread *));
+        if (grown == NULL) {
+            if (recycleTargets == NULL)
+                return 0;
+            recycleTargets[0] = currentMutatorThread;
+            return 1;
+        }
+        recycleTargets = grown;
+        recycleTargetsCapacity = threads + 1;
+    }
+    size_t count = 0;
+    recycleTargets[count++] = currentMutatorThread;
+    MutatorThreads_foreach(mutatorThreads, node) {
+        MutatorThread *thread = node->value;
+        if (thread != currentMutatorThread &&
+            Heap_allocatedSinceCollection(thread))
+            recycleTargets[count++] = thread;
+    }
+    return count;
+}
+#endif
+
 void Heap_Recycle(Heap *heap) {
     Block_recycledFreeLines = 0;
+    LargeAllocator_sweptFreeBytes = 0;
     MutatorThreads_foreach(mutatorThreads, node) {
         MutatorThread *thread = node->value;
         Allocator_Clear(&thread->allocator);
@@ -279,15 +397,11 @@ void Heap_Recycle(Heap *heap) {
     word_t *end = heap->blockMetaEnd;
 
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
-    MutatorThreads threadsCursor = mutatorThreads;
-    // NextMutatorThread is always going to be assigned with it's first
-    // expression
+    size_t targetCount = Heap_collectRecycleTargets();
+    size_t targetIndex = 0;
 #define NextMutatorThread()                                                    \
-    threadsCursor->value;                                                      \
-    threadsCursor = threadsCursor->next;                                       \
-    if (threadsCursor == NULL) {                                               \
-        threadsCursor = mutatorThreads;                                        \
-    }
+    (targetCount == 0 ? currentMutatorThread                                   \
+                      : recycleTargets[targetIndex++ % targetCount])
 #else
     MutatorThread *mainThread = currentMutatorThread;
 #define NextMutatorThread() mainThread
@@ -317,6 +431,12 @@ void Heap_Recycle(Heap *heap) {
         current += size;
         currentBlockStart += WORDS_IN_BLOCK * size;
         lineMetas += LINE_COUNT * size;
+    }
+
+    // A new cycle: who allocates in it decides the next distribution.
+    MutatorThreads_foreach(mutatorThreads, node) {
+        node->value->allocator.blocksTaken = 0;
+        node->value->largeAllocator.blocksTaken = 0;
     }
 
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED

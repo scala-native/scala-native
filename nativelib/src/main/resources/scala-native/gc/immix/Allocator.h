@@ -36,6 +36,11 @@ typedef struct {
     // as possible from fast path.
     atomic_uint_fast32_t recycledBlockCount;
     bool canUseReserve;
+    // Blocks this thread took, or failed to get, since the last collection.
+    // Written only by the owning thread, read and reset by the collector while
+    // the world is stopped; Heap_Recycle uses it to tell allocating threads
+    // from idle ones.
+    uint32_t blocksTaken;
 } Allocator;
 
 void Allocator_Init(Allocator *allocator, BlockAllocator *blockAllocator,

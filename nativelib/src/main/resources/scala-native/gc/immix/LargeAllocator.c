@@ -63,6 +63,8 @@ void LargeAllocator_Init(LargeAllocator *allocator,
     }
 }
 
+uint64_t LargeAllocator_sweptFreeBytes = 0;
+
 void LargeAllocator_AddChunk(LargeAllocator *allocator, Chunk *chunk,
                              size_t total_block_size) {
     assert(total_block_size >= MIN_BLOCK_SIZE);
@@ -241,6 +243,7 @@ void LargeAllocator_Sweep(LargeAllocator *allocator, BlockMeta *blockMeta,
                 size_t currentSize = (current - chunkStart) * WORD_SIZE;
                 LargeAllocator_AddChunk(allocator, (Chunk *)chunkStart,
                                         currentSize);
+                LargeAllocator_sweptFreeBytes += currentSize;
                 chunkStart = NULL;
             }
         }
@@ -256,6 +259,7 @@ void LargeAllocator_Sweep(LargeAllocator *allocator, BlockMeta *blockMeta,
     } else if (chunkStart != NULL) {
         size_t currentSize = (current - chunkStart) * WORD_SIZE;
         LargeAllocator_AddChunk(allocator, (Chunk *)chunkStart, currentSize);
+        LargeAllocator_sweptFreeBytes += currentSize;
     }
 }
 
@@ -279,8 +283,11 @@ word_t *LargeAllocator_Alloc(Heap *heap, size_t size) {
         word_t *object = LargeAllocator_tryAlloc(largeAllocator, size);
         if (object != NULL) {
             assert(Heap_IsWordInHeap(heap, object));
+            largeAllocator->blocksTaken++;
             return object;
         }
+        // Asking counts as allocating, as in Allocator_allocSlow.
+        largeAllocator->blocksTaken++;
         if (!Heap_RecoverAllocation(heap, size, generation))
             Heap_ThrowOutOfMemory(heap);
     } while (true);

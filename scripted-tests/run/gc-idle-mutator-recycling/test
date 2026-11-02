@@ -1,0 +1,16 @@
+# =============================================================================
+# Immix: recycled blocks and idle mutators, and exhaustion among garbage
+# =============================================================================
+# A long-lived list built among short-lived garbage leaves partly free blocks
+# after every collection. Those must reach the thread that allocates rather
+# than idle threads (scala-native#5168), and once the heap is at its cap and
+# effectively full the allocator must throw OutOfMemoryError instead of
+# collecting again for every few allocations (scala-native#5169). That limit
+# follows the JVM's: low yield and collection-dominated time over several
+# collections in a row, so a heap that is full but still making progress runs.
+
+> runIdleMutators
+> runFragmentedExhaustion
+> set nativeConfig ~= (_.withMode(scala.scalanative.build.Mode.releaseFast))
+> runIdleMutators
+> runFragmentedExhaustion
