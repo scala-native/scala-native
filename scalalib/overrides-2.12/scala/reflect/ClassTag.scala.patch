@@ -6,7 +6,7 @@
  import scala.collection.mutable
 -import scala.runtime.BoxedUnit
  
-+/* Override for default scala ClassTag due to missing caching using java.lang.Value.ClassValue */
++/* Override for default scala ClassTag, it does not cache using java.lang.ClassValue */
 +
  /**
   *
