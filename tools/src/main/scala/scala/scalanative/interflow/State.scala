@@ -10,14 +10,6 @@ import scalanative.util.unreachable
 private[interflow] final class State(val blockId: nir.Local)(
     preserveDebugInfo: Boolean
 ) {
-  // Allocations start with all-zero bits, not merely a numerically zero value.
-  // In particular, omitting an initialization store must not turn -0.0 into +0.0.
-  private def isDefaultValue(value: nir.Val): Boolean = value match {
-    case nir.Val.Float(v)  => java.lang.Float.floatToRawIntBits(v) == 0
-    case nir.Val.Double(v) => java.lang.Double.doubleToRawLongBits(v) == 0L
-    case _                 => value.isZero
-  }
-
   var fresh = nir.Fresh(blockId.id)
   /* Performance Note: nir.OpenHashMap/LongMap/AnyRefMap have a faster clone()
    * operation. This really makes a difference on fullClone() */
@@ -332,7 +324,7 @@ private[interflow] final class State(val blockId: nir.Local)(
         val canConstantInit =
           (!elemty.isInstanceOf[nir.Type.RefKind]
             && values.forall(_.isCanonical)
-            && values.exists(v => !isDefaultValue(v)))
+            && values.exists(v => !v.isDefaultValue))
         val init =
           if (canConstantInit) {
             nir.Val.ArrayValue(elemty, values.toSeq)
@@ -381,11 +373,11 @@ private[interflow] final class State(val blockId: nir.Local)(
         val canConstantInit =
           (!elemty.isInstanceOf[nir.Type.RefKind]
             && values.forall(_.isCanonical)
-            && values.exists(v => !isDefaultValue(v)))
+            && values.exists(v => !v.isDefaultValue))
         if (!canConstantInit) {
           values.zipWithIndex.foreach {
             case (value, idx) =>
-              if (!isDefaultValue(value)) {
+              if (!value.isDefaultValue) {
                 reachVal(value)
                 zone.foreach(reachVal)
                 emitVirtual(addr)(
@@ -407,7 +399,7 @@ private[interflow] final class State(val blockId: nir.Local)(
       case VirtualInstance(_, cls, vals, zone) =>
         cls.fields.zip(vals).foreach {
           case (fld, value) =>
-            if (!isDefaultValue(value)) {
+            if (!value.isDefaultValue) {
               reachVal(value)
               zone.foreach(reachVal)
               emitVirtual(addr)(

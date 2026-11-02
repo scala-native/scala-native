@@ -533,11 +533,11 @@ trait NirGenExpr(using Context) {
       val values = genSimpleArgs(elems)
       given nir.SourcePosition = tree.span
 
-      if (values.forall(_.isCanonical) && values.exists(v => !v.isZero))
+      if (values.forall(_.isCanonical) && values.exists(v => !v.isDefaultValue))
         buf.arrayalloc(elemty, nir.Val.ArrayValue(elemty, values), unwind)
       else
         val alloc = buf.arrayalloc(elemty, nir.Val.Int(values.length), unwind)
-        for (v, i) <- values.zipWithIndex if !v.isZero do
+        for (v, i) <- values.zipWithIndex if !v.isDefaultValue do
           given nir.SourcePosition = elems(i).span
           buf.arraystore(elemty, alloc, nir.Val.Int(i), v, unwind)
         alloc
