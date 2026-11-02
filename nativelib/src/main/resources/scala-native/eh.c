@@ -42,7 +42,11 @@ typedef struct ExceptionWrapper {
     _Unwind_Exception unwindException;
 } ExceptionWrapper;
 
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
 static _Thread_local ExceptionWrapper fallbackExceptionWrapper;
+#else
+static ExceptionWrapper fallbackExceptionWrapper;
+#endif
 
 extern OnCatchHandler scalanative_Throwable_onCatchHandler(Exception exception);
 extern void scalanative_Throwable_showStackTrace(Exception exception);

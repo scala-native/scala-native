@@ -174,7 +174,11 @@ private[scalanative] object Lower {
       // Native entry wrappers can box arguments or initialize their module
       // before calling the Scala method. Admission must precede all of that,
       // including the stack check below.
-      val entryScope = if (ExternalThreadEntry.shouldGuard(defn)) {
+      // A freestanding program has one thread and no foreign callers; its
+      // platform hooks run before the GC exists and must not be admitted.
+      val guarded = !meta.config.freestanding &&
+        ExternalThreadEntry.shouldGuard(defn)
+      val entryScope = if (guarded) {
         Some(buf.call(EnterManagedSig, EnterManaged, Nil, nir.Next.None)(defn.pos, nir.ScopeId.TopLevel))
       } else None
       def leaveEntry()(implicit pos: nir.SourcePosition): Unit =

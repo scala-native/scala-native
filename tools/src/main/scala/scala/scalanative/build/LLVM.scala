@@ -97,7 +97,12 @@ private[scalanative] object LLVM {
         else Nil
       val allowTargetOverrrides =
         config.compilerConfig.targetTriple.map(_ => s"-Wno-override-module")
-      multithreadingEnabled ++ usingCppExceptions ++ allowTargetOverrrides
+      val freestanding =
+        if (config.compilerConfig.freestanding)
+          Seq("-DSCALANATIVE_FREESTANDING", "-D_LIBUNWIND_HAS_NO_THREADS")
+        else Nil
+      multithreadingEnabled ++ usingCppExceptions ++ allowTargetOverrrides ++
+        freestanding
     }
     val debugFlags = sourceLevelDebugFlags
 
@@ -215,7 +220,13 @@ private[scalanative] object LLVM {
       objectsPaths: Seq[Path]
   )(implicit config: Config, analysis: ReachabilityAnalysis.Result) = {
     val workDir = config.workDir
-    val links = {
+    val links = if (config.compilerConfig.freestanding) {
+      if (analysis.links.nonEmpty)
+        config.logger.warn(
+          s"Freestanding build ignores @link libraries: ${analysis.links.map(_.name).mkString(", ")}"
+        )
+      Nil
+    } else {
       val srclinks = analysis.links.map(_.name)
       // FreeBSD packages the thread-enabled Boehm collector separately.
       val gclinks =
@@ -243,8 +254,12 @@ private[scalanative] object LLVM {
     val asNeededLinkerFlags =
       if (config.targetsWindows || config.targetsMac) Nil
       else List("-Wl,--as-needed")
+    val freestandingFlags =
+      if (config.compilerConfig.freestanding) List("-static", "-nostdlib")
+      else Nil
     val linkopts =
-      asNeededLinkerFlags ++ config.linkingOptions ++ links.map("-l" + _)
+      asNeededLinkerFlags ++ freestandingFlags ++ config.linkingOptions ++
+        links.map("-l" + _)
 
     val debugFlags = sourceLevelDebugFlags
 
@@ -527,7 +542,8 @@ private[scalanative] object LLVM {
     val optRdynamic =
       if (config.targetsWindows) Nil
       else {
-        if (config.linkingOptions.contains("-static")) Nil
+        if (config.linkingOptions.contains("-static") ||
+            config.compilerConfig.freestanding) Nil
         else Seq("-rdynamic")
       }
     config.compilerConfig.buildTarget match {
