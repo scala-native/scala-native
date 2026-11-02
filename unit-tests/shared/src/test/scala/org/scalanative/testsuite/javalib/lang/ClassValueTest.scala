@@ -148,7 +148,7 @@ class ClassValueTest {
     // hang or fail if it would be executed inside of the underlying map.
     val classValue: ClassValue[Integer] = new ClassValue[Integer] {
       protected def computeValue(cls: Class[_]): Integer = {
-        val superclass = cls.getSuperclass()
+        val superclass: Class[_] = cls.getSuperclass()
         if (superclass == null) Integer.valueOf(0)
         else Integer.valueOf(get(superclass).intValue() + 1)
       }
@@ -278,7 +278,9 @@ object ClassValueTest {
           start.await(TimeoutSeconds, TimeUnit.SECONDS)
           body(index)
         } catch {
-          case ex: Throwable => failure.set(ex)
+          case ex: Throwable =>
+            failure.compareAndSet(null, ex)
+            ()
         }
       )
       worker.setDaemon(true)
