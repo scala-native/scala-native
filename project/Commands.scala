@@ -115,7 +115,9 @@ object Commands {
     case (version, state) =>
       val tests = Build.publishedMultiScalaProjects
         .flatMap(_.forBinaryVersionIfDefined(version).map(_.id))
-        .map(id => s"$id/mimaReportBinaryIssues")
+        .flatMap(id =>
+          Seq(s"$id/mimaReportBinaryIssues", s"$id/nirExternReportIssues")
+        )
         .toList
 
       tests ::: state
