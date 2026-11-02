@@ -1,9 +1,10 @@
 package build
 
-import com.typesafe.tools.mima.plugin.MimaPlugin
-import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
 import sbt.Keys._
 import sbt._
+
+import com.typesafe.tools.mima.plugin.MimaPlugin
+import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
 
 /** Reports externs broken since the releases checked by MiMa. */
 object NirExternCompatPlugin extends AutoPlugin {

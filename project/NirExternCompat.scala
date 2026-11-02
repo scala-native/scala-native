@@ -35,7 +35,8 @@ object NirExternCompat {
 
   /** Reads externs from a directory or a jar. Visibility is not a part of NIR,
    *  so internal externs are included too. An alias created using
-   *  `unsafe.externRedirect` counts as an extern, it keeps the old name working.
+   *  `unsafe.externRedirect` counts as an extern, it keeps the old name
+   *  working.
    */
   def collect(path: Path): Externs = Scope { implicit in =>
     val directory =
@@ -70,9 +71,9 @@ object NirExternCompat {
     previous.toSeq.sortBy(_._1).flatMap {
       case (symbol, ty) =>
         current.get(symbol) match {
-          case None                  => Some(Missing(symbol, ty))
-          case Some(`ty`)            => None
-          case Some(changed)         => Some(TypeChanged(symbol, ty, changed))
+          case None          => Some(Missing(symbol, ty))
+          case Some(`ty`)    => None
+          case Some(changed) => Some(TypeChanged(symbol, ty, changed))
         }
     }
 
