@@ -34,7 +34,7 @@ static void registerStringSection(void) {
 }
 
 /* Finish registration before any caller publishes a managed reference in static
- * storage. Future ClassValue storage can use the same object entry point.
+ * storage.
  */
 #ifndef SCALANATIVE_MULTITHREADING_ENABLED
 static bool classRootsRegistered;
