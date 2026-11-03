@@ -279,7 +279,16 @@ private[runtime] object _Class {
 
 private object LinkedClassesRepository {
   private def loadAll(): scala.Array[_Class[_]] = intrinsic
-  val byName: Map[String, _Class[_]] = loadAll().map { cls =>
-    cls.name -> cls
-  }.toMap
+  // Reached from the initializer of ClassTag, so it must not use a ClassTag
+  val byName: Map[String, _Class[_]] = {
+    val classes = loadAll()
+    val builder = Map.newBuilder[String, _Class[_]]
+    var index = 0
+    while (index < classes.length) {
+      val cls = classes(index)
+      builder += cls.name -> cls
+      index += 1
+    }
+    builder.result()
+  }
 }
