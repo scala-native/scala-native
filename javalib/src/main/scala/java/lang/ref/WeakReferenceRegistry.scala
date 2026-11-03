@@ -7,9 +7,11 @@ import scala.annotation.tailrec
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.libc.stdatomic._
 import scala.scalanative.meta.LinktimeInfo
-import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
-import scala.scalanative.runtime.fromRawPtr
+import scala.scalanative.runtime.Intrinsics.{
+  classFieldRawPtr, loadObject, stackalloc => rawStackalloc, storeObject
+}
 import scala.scalanative.runtime.javalib.Proxy
+import scala.scalanative.runtime.{RawPtr, fromRawPtr}
 import scala.scalanative.unsafe._
 
 /* Should always be treated as a module by the compiler.
@@ -22,6 +24,11 @@ private[java] object WeakReferenceRegistry {
   @alwaysinline private def weakRefsHeadPtr = fromRawPtr[WeakReference[_]](
     classFieldRawPtr(this, "weakRefsHead")
   )
+
+  // A Tag of a class would call ClassTag.apply, which caches its result in a
+  // WeakReference. These accessors work on raw memory to avoid that recursion.
+  @alwaysinline private def loadHead(slot: RawPtr): WeakReference[_] =
+    loadObject(slot).asInstanceOf[WeakReference[_]]
 
   @tailrec private def enqueueCollectedReferences(
       head: WeakReference[_],
@@ -53,25 +60,31 @@ private[java] object WeakReferenceRegistry {
     // This method is designed for calls from C and therefore should not include
     // non statically reachable fields or methods.
     // Detach current weak refs linked-list to allow for unsynchronized updated
-    val detachedHeadPtr = stackalloc[WeakReference[_]]()
+    val detachedHeadSlot = rawStackalloc[RawPtr]()
     def replaceHead(head: WeakReference[_])(reset: => Unit): Unit = {
-      !detachedHeadPtr = weakRefsHead
+      storeObject(detachedHeadSlot, weakRefsHead)
       while ({
         reset
-        !atomic_compare_exchange_strong(weakRefsHeadPtr, detachedHeadPtr, head)
+        !atomic_compare_exchange_strong(
+          weakRefsHeadPtr,
+          fromRawPtr[WeakReference[_]](detachedHeadSlot),
+          head
+        )
       }) {}
     }
 
     replaceHead(null) {}
 
-    val detachedHead = !detachedHeadPtr
+    val detachedHead = loadHead(detachedHeadSlot)
     val (newHead, newLast) =
       enqueueCollectedReferences(detachedHead, detachedHead, null)
 
     // Reattach the weak refs list to the possibly updated head
     if (newHead ne null) {
       assert(newLast ne null)
-      replaceHead(newHead) { newLast.nextReference = !detachedHeadPtr }
+      replaceHead(newHead) {
+        newLast.nextReference = loadHead(detachedHeadSlot)
+      }
     }
   }
 
@@ -102,14 +115,14 @@ private[java] object WeakReferenceRegistry {
   private[ref] def add(weakRef: WeakReference[_]): Unit =
     if (LinktimeInfo.isWeakReferenceSupported) {
       assert(weakRef.nextReference == null)
-      val prevHeadPtr = stackalloc[WeakReference[_]]()
-      !prevHeadPtr = null
+      val prevHeadSlot = rawStackalloc[RawPtr]()
+      storeObject(prevHeadSlot, null)
       while (!atomic_compare_exchange_weak(
             weakRefsHeadPtr,
-            prevHeadPtr,
+            fromRawPtr[WeakReference[_]](prevHeadSlot),
             weakRef
           )) {
-        weakRef.nextReference = !prevHeadPtr
+        weakRef.nextReference = loadHead(prevHeadSlot)
       }
     }
 
