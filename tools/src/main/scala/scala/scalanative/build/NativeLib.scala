@@ -25,6 +25,11 @@ private[scalanative] object NativeLib {
   /** Project Descriptor properties file: "scala-native.properties" */
   private val nativeProjectProps = s"${nativeCodeDir}.properties"
 
+  /** Hash of the config a native library was last compiled with, stored in its
+   *  unpacked directory.
+   */
+  private val compileConfigHashFile = "compileConfigHash"
+
   /** Compiles the native code from the library
    *
    *  @param config
@@ -44,8 +49,32 @@ private[scalanative] object NativeLib {
     val destPath = unpackNativeCode(nativeLib)
     val paths = findNativePaths(destPath)
     val projConfig = configureNativeLibrary(config, analysis, destPath)
-    Future.sequence {
-      paths.map(LLVM.compile(projConfig, analysis, _))
+    /* `projConfig` extends the user's config with flags derived from the
+     * linked program (e.g. `@define`s) and the environment, so it is
+     * compared against what this library was last compiled with rather
+     * than against the user config hash.
+     */
+    val configHash = projConfig.compilerConfig.##.toString()
+    val configHashPath = destPath.resolve(compileConfigHashFile)
+    val configChanged =
+      IO.readFully(configHashPath).forall(_.trim() != configHash)
+    /* The objects are about to be overwritten with another config, so the
+     * stored hash must not authorize reusing them if this compilation fails.
+     * The new hash is written only once every object has been compiled.
+     */
+    if (configChanged) Files.deleteIfExists(configHashPath)
+    /* Wait for every compilation, even after one has failed, so that no
+     * object is still being written once the result is reported.
+     */
+    val compilations = paths.map { path =>
+      LLVM.compile(projConfig, analysis, path, configChanged).transform {
+        Success(_)
+      }
+    }
+    Future.sequence(compilations).map { results =>
+      val objects = results.map(_.get)
+      if (configChanged) IO.write(configHashPath, configHash)
+      objects
     }
   }
 
