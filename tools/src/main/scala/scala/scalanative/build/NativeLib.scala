@@ -58,13 +58,24 @@ private[scalanative] object NativeLib {
     val configHashPath = destPath.resolve(compileConfigHashFile)
     val configChanged =
       IO.readFully(configHashPath).forall(_.trim() != configHash)
-    Future
-      .sequence {
-        paths.map(LLVM.compile(projConfig, analysis, _, configChanged))
+    /* The objects are about to be overwritten with another config, so the
+     * stored hash must not authorize reusing them if this compilation fails.
+     * The new hash is written only once every object has been compiled.
+     */
+    if (configChanged) Files.deleteIfExists(configHashPath)
+    /* Wait for every compilation, even after one has failed, so that no
+     * object is still being written once the result is reported.
+     */
+    val compilations = paths.map { path =>
+      LLVM.compile(projConfig, analysis, path, configChanged).transform {
+        Success(_)
       }
-      .andThen {
-        case Success(_) if configChanged => IO.write(configHashPath, configHash)
-      }
+    }
+    Future.sequence(compilations).map { results =>
+      val objects = results.map(_.get)
+      if (configChanged) IO.write(configHashPath, configHash)
+      objects
+    }
   }
 
   /** Update the project configuration if a project `Descriptor` is present.

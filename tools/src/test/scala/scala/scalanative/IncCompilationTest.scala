@@ -6,6 +6,7 @@ import java.nio.file.{Files, Path, Paths}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Await, duration}
+import scala.util.Try
 
 import org.junit.Assert._
 import org.junit.Test
@@ -103,10 +104,13 @@ class IncCompilationTest extends codegen.CodeGenSpec {
     }
   }
 
-  @Test def reuseNativeLibraryObjects(): Unit = withOutDir { outDir =>
+  /* Builds outside of the classpath: building twice would otherwise pick up
+   * the NIR of the unpacked native libraries.
+   */
+  private def withNativeLibBuild(
+      body: Scope => (Config, NIRCompiler) => Unit
+  ): Unit = withOutDir { outDir =>
     Scope { implicit in =>
-      // Keep the build outside of the classpath: building twice would
-      // otherwise pick up the NIR of the unpacked native libraries.
       val classesDir = Files.createDirectory(outDir.resolve("classes"))
       val compiler = NIRCompiler.getCompiler(classesDir)
       val config = makeConfig(
@@ -115,27 +119,47 @@ class IncCompilationTest extends codegen.CodeGenSpec {
         "A",
         defaultNativeConfig.withOptimize(false)
       ).withBaseDir(outDir.resolve("build"))
-      def nativeLibObjects(): Map[Path, FileTime] = {
-        val dependencies = config.workDir.resolve("dependencies")
-        IO.getAll(dependencies, "glob:**.o")
-          .map(p => p -> Files.getLastModifiedTime(p))
-          .toMap
-      }
-
       compiler.compile(
         """|object A {
            |  def main(args: Array[String]): Unit = println("hello")
            |}""".stripMargin
       )
+      body(in)(config, compiler)
+    }
+  }
+
+  private def objects(dir: Path): Map[Path, FileTime] =
+    IO.getAll(dir, "glob:**.o")
+      .map(p => p -> Files.getLastModifiedTime(p))
+      .toMap
+
+  private def nativeLibObjects(config: Config): Map[Path, FileTime] =
+    objects(config.workDir.resolve("dependencies"))
+
+  private def generatedIRObjects(config: Config): Map[Path, FileTime] = {
+    val dependencies = config.workDir.resolve("dependencies")
+    objects(config.workDir).filter {
+      case (p, _) => !p.startsWith(dependencies)
+    }
+  }
+
+  private def unchanged(
+      before: Map[Path, FileTime],
+      after: Map[Path, FileTime]
+  ): Map[Path, FileTime] =
+    before.filter { case (p, t) => after.get(p).contains(t) }
+
+  @Test def reuseNativeLibraryObjects(): Unit = withNativeLibBuild {
+    implicit in => (config, compiler) =>
       buildAwait(config)
-      val initial = nativeLibObjects()
+      val initial = nativeLibObjects(config)
       assertTrue("no native library objects", initial.nonEmpty)
 
       buildAwait(config)
       assertEquals(
         "native library objects recompiled with an unchanged config",
         initial,
-        nativeLibObjects()
+        nativeLibObjects(config)
       )
 
       // Reaching an `@define` adds a preprocessor flag to every native
@@ -149,16 +173,111 @@ class IncCompilationTest extends codegen.CodeGenSpec {
            |}""".stripMargin
       )
       buildAwait(config)
-      val afterDefine = nativeLibObjects()
-      val reused = initial.filter {
-        case (p, t) => afterDefine.get(p).contains(t)
-      }
+      val reused = unchanged(initial, nativeLibObjects(config))
       assertTrue(
         s"native library objects not recompiled after a new @define: ${reused.keys.take(5)}",
         reused.isEmpty
       )
-    }
   }
+
+  @Test def recompileNativeLibraryAfterFailedConfigChange(): Unit =
+    withNativeLibBuild { implicit in => (config, compiler) =>
+      /* A native library of the program itself, with one source failing to
+       * compile once the program reaches `@define("SCALANATIVE_TEST_FAIL")`.
+       * The user config does not change, so the unpacked library is kept.
+       */
+      val nativeDir = Files.createDirectories(
+        config.classPath.last.resolve(NativeLib.nativeCodeDir)
+      )
+      IO.write(nativeDir.resolve("ok.c"), "int test_ok(void) { return 1; }\n")
+      IO.write(
+        nativeDir.resolve("fail.c"),
+        """|#ifdef SCALANATIVE_TEST_FAIL
+           |#error "compiled with SCALANATIVE_TEST_FAIL"
+           |#endif
+           |""".stripMargin
+      )
+      def okObject() =
+        nativeLibObjects(config).find(_._1.toString.endsWith("ok.c.o")).get
+      buildAwait(config)
+      val initial = okObject()
+
+      compiler.compile(
+        """|import scala.scalanative.unsafe._
+           |@extern @define("SCALANATIVE_TEST_FAIL")
+           |object failing { def test_ok(): CInt = extern }
+           |object A {
+           |  def main(args: Array[String]): Unit = println(failing.test_ok())
+           |}""".stripMargin
+      )
+      assertTrue(
+        "build reaching SCALANATIVE_TEST_FAIL succeeded",
+        Try(buildAwait(config)).isFailure
+      )
+      // Let compilations still running after the failure finish writing.
+      def settled(previous: Map[Path, FileTime], attempts: Int): Unit = {
+        Thread.sleep(2000)
+        val current = nativeLibObjects(config)
+        if (current != previous && attempts > 0) settled(current, attempts - 1)
+      }
+      settled(nativeLibObjects(config), attempts = 30)
+      val overwritten = okObject()
+      assertNotEquals(
+        "ok.c not compiled with the failing config",
+        initial,
+        overwritten
+      )
+
+      compiler.compile(
+        """|object A {
+           |  def main(args: Array[String]): Unit = println("hello")
+           |}""".stripMargin
+      )
+      buildAwait(config)
+      assertNotEquals(
+        "ok.c object compiled with the failing config reused",
+        overwritten,
+        okObject()
+      )
+    }
+
+  @Test def nativeLibraryChangeKeepsGeneratedIR(): Unit =
+    withNativeLibBuild { implicit in => (config, _) =>
+      def rebuiltIR(): Set[Path] = {
+        val before = generatedIRObjects(config)
+        buildAwait(config)
+        val after = generatedIRObjects(config)
+        (before -- unchanged(before, after).keys).keySet
+      }
+      buildAwait(config)
+      assertTrue("no generated IR objects", generatedIRObjects(config).nonEmpty)
+      // Some IR, such as `__buildInfo.ll`, is regenerated on every build.
+      rebuiltIR()
+      val alwaysRebuilt = rebuiltIR()
+      val nativeObjects = nativeLibObjects(config)
+
+      // Touching a native source recompiles its object only.
+      val source = nativeObjects.keys
+        .map(o => Paths.get(o.toString.stripSuffix(".o")))
+        .find(_.toString.endsWith(".c"))
+        .get
+      Files.setLastModifiedTime(
+        source,
+        FileTime.fromMillis(System.currentTimeMillis() + 1000)
+      )
+      assertEquals(
+        "generated IR recompiled after a native library change",
+        alwaysRebuilt,
+        rebuiltIR()
+      )
+      val recompiled =
+        nativeObjects -- unchanged(nativeObjects, nativeLibObjects(config)).keys
+      assertEquals(
+        "recompiled native library objects",
+        Set(Paths.get(source.toString + ".o")),
+        recompiled.keySet
+      )
+    }
 
   private def makeChanged(outDir: Path, changedTop: Set[String])(implicit
       in: Scope
