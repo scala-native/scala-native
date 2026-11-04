@@ -113,10 +113,10 @@ sealed trait NativeConfig {
   /** Build for a target without an operating system or C library.
    *
    *  The runtime carries a minimal C library of its own, built on hooks the
-   *  program defines (see `platform/freestanding/sn_platform.h` in
-   *  nativelib). The program also provides the entry point, which calls
-   *  `scalanative_freestanding_start`. The binary is linked statically with
-   *  no default libraries. Requires `LTO.none` and multithreading disabled.
+   *  program defines (see `platform/freestanding/sn_platform.h` in nativelib).
+   *  The program also provides the entry point, which calls
+   *  `scalanative_freestanding_start`. The binary is linked statically with no
+   *  default libraries. Requires `LTO.none` and multithreading disabled.
    */
   def freestanding: Boolean
 

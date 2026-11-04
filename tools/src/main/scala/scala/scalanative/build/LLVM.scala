@@ -241,8 +241,8 @@ private[scalanative] object LLVM {
         else if (config.targetsOpenBSD) Seq("pthread")
         else if (config.targetsNetBSD) Seq("pthread", "m")
         else Seq("pthread", "dl", "m")
-      platformsLinks ++ srclinks ++ gclinks
-    }.distinct
+      (platformsLinks ++ srclinks ++ gclinks).distinct
+    }
     config.logger.info(s"Linking with [${links.mkString(", ")}]")
     // GNU ld and ld.lld support the --as-needed flag which avoids linking
     // libraries (defined after the option) you don't use. LLVM intrinsics
