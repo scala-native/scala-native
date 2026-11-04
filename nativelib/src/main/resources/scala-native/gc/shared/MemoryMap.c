@@ -17,6 +17,14 @@
 // Allow read and write
 #define HEAP_MEM_PROT (PROT_READ | PROT_WRITE)
 
+// Freestanding builds reserve without access and commit on use
+// (GC_COMMIT_ON_USE), so pages are zeroed only once the GC uses them.
+#ifdef SCALANATIVE_FREESTANDING
+#define HEAP_RESERVE_PROT PROT_NONE
+#else
+#define HEAP_RESERVE_PROT HEAP_MEM_PROT
+#endif
+
 #ifndef MAP_NORESERVE
 #define MAP_NORESERVE 0
 #endif
@@ -44,7 +52,7 @@ word_t *memoryMap(size_t memorySize) {
     // supports only 32-bit address space and is in most cases not recommended.
     return VirtualAlloc(NULL, memorySize, MEM_RESERVE, PAGE_NOACCESS);
 #else // Unix
-    word_t *addr = mmap(NULL, memorySize, HEAP_MEM_PROT, HEAP_MEM_FLAGS,
+    word_t *addr = mmap(NULL, memorySize, HEAP_RESERVE_PROT, HEAP_MEM_FLAGS,
                         HEAP_MEM_FD, HEAP_MEM_FD_OFFSET);
     if (addr == MAP_FAILED)
         return NULL;
@@ -86,6 +94,8 @@ word_t *memoryMapPrealloc(size_t memorySize, size_t doPrealloc) {
 bool memoryCommit(void *ref, size_t memorySize) {
 #ifdef _WIN32
     return VirtualAlloc(ref, memorySize, MEM_COMMIT, PAGE_READWRITE) != NULL;
+#elif defined(SCALANATIVE_FREESTANDING)
+    return mprotect(ref, memorySize, HEAP_MEM_PROT) == 0;
 #else
     // No need for committing on UNIX
     return true;
@@ -106,11 +116,11 @@ word_t *memoryMapOrExitOnError(size_t memorySize) {
     if (memory == NULL) {
         exitWithOutOfMemory();
     }
-#ifdef _WIN32
+#ifdef GC_COMMIT_ON_USE
     if (!memoryCommit(memory, memorySize)) {
         exitWithOutOfMemory();
     };
-#endif // _WIN32
+#endif // GC_COMMIT_ON_USE
     return memory;
 }
 

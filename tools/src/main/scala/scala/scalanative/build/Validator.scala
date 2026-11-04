@@ -53,6 +53,11 @@ private[build] object Validator {
     if (config.baseName.trim().isEmpty())
       issues += s"Provided baseName is blank, provide a name of target artifact without extensions to allow for determinstic builds"
 
+    if (c.freestanding && c.lto != LTO.none)
+      issues += "A freestanding build requires LTO.none: LTO switches exception handling to C++, which needs the C++ runtime"
+    if (c.freestanding && c.multithreadingSupport)
+      issues += "A freestanding build requires multithreading disabled: withMultithreading(false)"
+
     if (config.targetsMac && c.lto == LTO.thin)
       warn(
         "LTO.thin is unstable on MacOS, it can lead to compilation errors. Consider using LTO.full (legacy, slower) or LTO.none (disabled)"

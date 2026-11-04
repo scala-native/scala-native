@@ -5,6 +5,13 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+// Mapped memory is only reserved and must be committed before use: on
+// Windows, and in freestanding builds, whose libc zeroes pages when they are
+// committed.
+#if defined(_WIN32) || defined(SCALANATIVE_FREESTANDING)
+#define GC_COMMIT_ON_USE
+#endif
+
 word_t *memoryMap(size_t memorySize);
 bool memoryCommit(void *ref, size_t memorySize);
 

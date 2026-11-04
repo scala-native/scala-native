@@ -110,6 +110,16 @@ sealed trait NativeConfig {
   private[scalanative] def multithreadingSupport: Boolean =
     multithreading.getOrElse(true)
 
+  /** Build for a target without an operating system or C library.
+   *
+   *  The runtime carries a minimal C library of its own, built on hooks the
+   *  program defines (see `platform/freestanding/sn_platform.h` in nativelib).
+   *  The program also provides the entry point, which calls
+   *  `scalanative_freestanding_start`. The binary is linked statically with no
+   *  default libraries. Requires `LTO.none` and multithreading disabled.
+   */
+  def freestanding: Boolean
+
   /** Map of user defined properties resolved at linktime */
   def linktimeProperties: NativeConfig.LinktimeProperites
 
@@ -270,6 +280,9 @@ sealed trait NativeConfig {
   /** Create a new config with support for multithreading */
   def withMultithreading(defined: Option[Boolean]): NativeConfig
 
+  /** Create a new config for a target without an operating system. */
+  def withFreestanding(value: Boolean): NativeConfig
+
   /** Create a new config with given linktime properites */
   final def withLinktimeProperties(
       value: NativeConfig.LinktimeProperites
@@ -348,6 +361,7 @@ object NativeConfig {
       optimize = true,
       useIncrementalCompilation = true,
       multithreading = None, // detect
+      freestanding = false,
       linktimeProperties = Map.empty,
       embedResources = false,
       resourceIncludePatterns = Seq("**"),
@@ -380,6 +394,7 @@ object NativeConfig {
       optimize: Boolean,
       useIncrementalCompilation: Boolean,
       multithreading: Option[Boolean],
+      freestanding: Boolean,
       linktimeProperties: LinktimeProperites,
       embedResources: Boolean,
       resourceIncludePatterns: Seq[String],
@@ -463,6 +478,9 @@ object NativeConfig {
 
     def withMultithreading(defined: Option[Boolean]): NativeConfig =
       copy(multithreading = defined)
+
+    def withFreestanding(value: Boolean): NativeConfig =
+      copy(freestanding = value)
 
     def withLinktimeProperties(
         update: Mapping[LinktimeProperites]
@@ -552,6 +570,7 @@ object NativeConfig {
           | - optimize                 $optimize
           | - incrementalCompilation:  $useIncrementalCompilation
           | - multithreading           ${multithreading.getOrElse("detect")}
+          | - freestanding             $freestanding
           | - linktimeProperties:      ${showMap(linktimeProperties)}
           | - embedResources:          $embedResources
           | - resourceIncludePatterns: ${showSeq(resourceIncludePatterns)}

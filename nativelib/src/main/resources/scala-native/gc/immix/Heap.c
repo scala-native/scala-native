@@ -102,7 +102,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     heap->heapStart = heapStart;
     heap->heapEnd = heapStart + initialBlockCount * WORDS_IN_BLOCK;
 
-#ifdef _WIN32
+#ifdef GC_COMMIT_ON_USE
     // Commit memory chunks reserved using mapMemory
     bool commitStatus =
         memoryCommit(blockMetaStart, blockMetaSpaceSize) &&
@@ -116,7 +116,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     if (!commitStatus) {
         Heap_exitWithOutOfMemory("commit memmory");
     }
-#endif // _WIN32
+#endif // GC_COMMIT_ON_USE
 
     BlockAllocator_Init(&blockAllocator, blockMetaStart, initialBlockCount);
     Bytemap_Init(bytemap, heapStart, maxHeapSize);
@@ -489,7 +489,7 @@ bool Heap_TryGrow(Heap *heap, uint32_t incrementInBlocks) {
     heap->lineMetaEnd +=
         incrementInBlocks * LINE_COUNT * LINE_METADATA_SIZE / WORD_SIZE;
 
-#ifdef _WIN32
+#ifdef GC_COMMIT_ON_USE
     // Windows does not allow for over-committing, therefore we commit the
     // next chunk of memory when growing the heap. Without this, the process
     // might take over all available memory leading to OutOfMemory errors for
@@ -498,7 +498,7 @@ bool Heap_TryGrow(Heap *heap, uint32_t incrementInBlocks) {
     if (!memoryCommit(heapEnd, incrementInBytes)) {
         Heap_exitWithOutOfMemory("grow heap, commit memmory");
     };
-#endif // WIN32
+#endif // GC_COMMIT_ON_USE
 
     BlockAllocator_AddFreeBlocks(&blockAllocator, (BlockMeta *)blockMetaEnd,
                                  incrementInBlocks);
