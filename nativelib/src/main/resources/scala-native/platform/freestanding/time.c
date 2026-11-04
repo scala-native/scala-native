@@ -77,7 +77,9 @@ struct tm *gmtime(const time_t *t) {
     return gmtime_r(t, &tm);
 }
 
-struct tm *localtime_r(const time_t *t, struct tm *tm) { return gmtime_r(t, tm); }
+struct tm *localtime_r(const time_t *t, struct tm *tm) {
+    return gmtime_r(t, tm);
+}
 
 struct tm *localtime(const time_t *t) {
     static struct tm tm;

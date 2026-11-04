@@ -237,7 +237,8 @@ int vfprintf(FILE *f, const char *fmt, va_list ap) {
     va_copy(copy, ap);
     int n = vsnprintf(buf, sizeof buf, fmt, copy);
     va_end(copy);
-    console(stream_of(f), buf, n < (int)sizeof buf ? (size_t)n : sizeof buf - 1);
+    console(stream_of(f), buf,
+            n < (int)sizeof buf ? (size_t)n : sizeof buf - 1);
     return n;
 }
 
@@ -317,7 +318,8 @@ static int no_scan(const char *s, const char *fmt, ...) {
     (void)s, (void)fmt;
     return 0;
 }
-int sscanf(const char *s, const char *fmt, ...) __attribute__((alias("no_scan")));
+int sscanf(const char *s, const char *fmt, ...)
+    __attribute__((alias("no_scan")));
 int __isoc99_sscanf(const char *s, const char *fmt, ...)
     __attribute__((alias("no_scan")));
 int __isoc23_sscanf(const char *s, const char *fmt, ...)

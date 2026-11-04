@@ -202,8 +202,8 @@ extern const ElfW(Ehdr) __ehdr_start;
 
 int dl_iterate_phdr(int (*cb)(struct dl_phdr_info *, size_t, void *),
                     void *data) {
-    const ElfW(Phdr) *ph =
-        (const ElfW(Phdr) *)((const char *)&__ehdr_start + __ehdr_start.e_phoff);
+    const ElfW(Phdr) *ph = (const ElfW(Phdr) *)((const char *)&__ehdr_start +
+                                                __ehdr_start.e_phoff);
     struct dl_phdr_info info;
     memset(&info, 0, sizeof info);
     info.dlpi_name = "";
@@ -219,7 +219,9 @@ void *dlopen(const char *f, int flags) { return (void)f, (void)flags, NULL; }
 void *dlsym(void *h, const char *s) { return (void)h, (void)s, NULL; }
 int dlclose(void *h) { return (void)h, 0; }
 char *dlerror(void) { return "no dynamic loading"; }
-int dladdr(const void *addr, Dl_info *info) { return (void)addr, (void)info, 0; }
+int dladdr(const void *addr, Dl_info *info) {
+    return (void)addr, (void)info, 0;
+}
 
 int uname(struct utsname *u) {
     memset(u, 0, sizeof *u);

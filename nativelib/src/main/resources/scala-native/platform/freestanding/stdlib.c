@@ -38,7 +38,8 @@ static unsigned long long parse_unsigned(const char *s, char **end, int base,
     *negative = 0;
     if (*s == '-' || *s == '+')
         *negative = *s++ == '-';
-    if ((base == 0 || base == 16) && s[0] == '0' && (s[1] == 'x' || s[1] == 'X'))
+    if ((base == 0 || base == 16) && s[0] == '0' &&
+        (s[1] == 'x' || s[1] == 'X'))
         base = 16, s += 2;
     else if (base == 0)
         base = s[0] == '0' ? 8 : 10;
