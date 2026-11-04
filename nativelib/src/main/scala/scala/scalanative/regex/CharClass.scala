@@ -10,6 +10,8 @@ package regex
 
 import java.{lang => jl}
 
+import scala.annotation.tailrec
+
 // A "builder"-style helper class for manipulating character classes
 // represented as an array of pairs of runes [lo, hi], each denoting an
 // inclusive interval.
@@ -285,16 +287,13 @@ class CharClass(
       }
 
       if (stride > 1) {
-        val candidates = List.range(lo, hi).filterNot(_ % stride == 0)
-
-        // Keep this code simple (but slooow! Ok because it is not
-        // frequently executed). Correctness is more important than
-        // execution speed here
-
         // rely on appendRange coalescing abutting ranges.
-        for (c <- candidates) {
-          appendRange(c, c)
-        }
+        @tailrec def appendOffStride(c: Int): Unit =
+          if (c < hi) {
+            if (c % stride != 0) appendRange(c, c)
+            appendOffStride(c + 1)
+          }
+        appendOffStride(lo)
       }
 
       mark = hi + 1
