@@ -13,13 +13,16 @@
 #define MAX_ARENA (64u << 20)
 
 // The platform region, split once into the mmap area (GC heap and its
-// metadata) followed by the malloc arena.
+// metadata) followed by the malloc arena. unknown has one bit per mmap-area
+// page, set while the page's content is unknown; it lives in the first pages
+// of the area.
 static struct {
     int ready;
     char *mmap_base;
     size_t mmap_size, mmap_used;
     char *arena_base;
     size_t arena_size, arena_used;
+    unsigned char *unknown;
 } region;
 
 static void region_init(void) {
@@ -38,11 +41,55 @@ static void region_init(void) {
         arena = MAX_ARENA;
     if (arena > usable)
         arena = usable;
-    region.mmap_base = (char *)start;
-    region.mmap_size = usable - arena;
-    region.arena_base = (char *)start + region.mmap_size;
+    size_t area = usable - arena;
+    size_t bitmap = ((area / PAGE + 7) / 8 + PAGE - 1) & ~(size_t)(PAGE - 1);
+    if (bitmap > area)
+        bitmap = area;
+    region.unknown = (unsigned char *)start;
+    memset(region.unknown, 0xff, bitmap);
+    region.mmap_base = (char *)start + bitmap;
+    region.mmap_size = area - bitmap;
+    region.arena_base = (char *)start + area;
     region.arena_size = arena;
     region.ready = 1;
+}
+
+// The mmap-area pages that [addr, addr + len) touches, clamped to the area, as
+// a page index range [*first, *end).
+static void page_range(void *addr, size_t len, size_t *first, size_t *end) {
+    uintptr_t base = (uintptr_t)region.mmap_base;
+    uintptr_t top = base + region.mmap_size;
+    uintptr_t a = (uintptr_t)addr, b = a + len;
+    if (a < base)
+        a = base;
+    if (b > top)
+        b = top;
+    *first = *end = 0;
+    if (a < b) {
+        *first = (a - base) / PAGE;
+        *end = (b - base + PAGE - 1) / PAGE;
+    }
+}
+
+// Zeroes the pages of [addr, addr + len) whose content is unknown and marks
+// them known.
+static void zero_unknown(void *addr, size_t len) {
+    size_t i, end;
+    page_range(addr, len, &i, &end);
+    for (; i < end; i++) {
+        unsigned char bit = (unsigned char)(1u << (i % 8));
+        if (region.unknown[i / 8] & bit) {
+            memset(region.mmap_base + i * PAGE, 0, PAGE);
+            region.unknown[i / 8] &= (unsigned char)~bit;
+        }
+    }
+}
+
+static void mark_unknown(void *addr, size_t len) {
+    size_t i, end;
+    page_range(addr, len, &i, &end);
+    for (; i < end; i++)
+        region.unknown[i / 8] |= (unsigned char)(1u << (i % 8));
 }
 
 // What sysconf reports as physical memory: the GC reserves this much for the
@@ -52,10 +99,12 @@ size_t scalanative_freestanding_reported_memory(void) {
     return region.mmap_size / 3;
 }
 
-// Hands out zeroed pages from the mmap area. Protection and flags are ignored
-// and munmap returns nothing.
+// Hands out pages from the mmap area. Accessible pages are zero; a PROT_NONE
+// reservation is zeroed by the mprotect that makes it accessible, so pages the
+// GC reserves but never uses are never touched. Flags are ignored and munmap
+// returns nothing.
 void *mmap(void *addr, size_t len, int prot, int flags, int fd, off_t off) {
-    (void)addr, (void)prot, (void)flags, (void)fd, (void)off;
+    (void)addr, (void)flags, (void)fd, (void)off;
     region_init();
     size_t rounded = (len + PAGE - 1) & ~(size_t)(PAGE - 1);
     if (rounded > region.mmap_size - region.mmap_used) {
@@ -64,17 +113,20 @@ void *mmap(void *addr, size_t len, int prot, int flags, int fd, off_t off) {
     }
     void *p = region.mmap_base + region.mmap_used;
     region.mmap_used += rounded;
-    memset(p, 0, rounded);
+    if (prot != PROT_NONE)
+        zero_unknown(p, rounded);
     return p;
 }
 
 int munmap(void *addr, size_t len) {
-    (void)addr, (void)len;
+    mark_unknown(addr, len);
     return 0;
 }
 
 int mprotect(void *addr, size_t len, int prot) {
-    (void)addr, (void)len, (void)prot;
+    region_init();
+    if (prot != PROT_NONE)
+        zero_unknown(addr, len);
     return 0;
 }
 

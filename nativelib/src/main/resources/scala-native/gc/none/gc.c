@@ -61,12 +61,12 @@ static bool initEmergencyBlock() {
         return true;
 
     emergencyBlock = memoryMapPrealloc(EMERGENCY_BLOCK_SIZE, 1);
-#ifdef _WIN32
+#ifdef GC_COMMIT_ON_USE
     if (emergencyBlock != NULL &&
         !memoryCommit(emergencyBlock, EMERGENCY_BLOCK_SIZE)) {
         emergencyBlock = NULL;
     }
-#endif
+#endif // GC_COMMIT_ON_USE
     if (emergencyBlock != NULL)
         emergencyEnd = (char *)emergencyBlock + EMERGENCY_BLOCK_SIZE;
     return emergencyBlock != NULL;
@@ -148,11 +148,11 @@ static bool allocateChunk() {
         return false;
     }
     end = current + CHUNK;
-#ifdef _WIN32
+#ifdef GC_COMMIT_ON_USE
     if (!memoryCommit(current, CHUNK)) {
         return false;
     };
-#endif // _WIN32
+#endif // GC_COMMIT_ON_USE
 #endif // GC_ASAN
     return true;
 }
