@@ -274,8 +274,8 @@ class StreamTest {
     val spliter = s.spliterator()
 
     val expectedCharacteristics =
-      Spliterator.SIZED | Spliterator.SUBSIZED |
-        Spliterator.ORDERED | Spliterator.IMMUTABLE // 0x4450
+      Spliterator.SIZED | Spliterator.SUBSIZED | Spliterator.ORDERED |
+        Spliterator.IMMUTABLE // 0x4450
 
     assertEquals(
       "characteristics",
@@ -298,8 +298,8 @@ class StreamTest {
     val spliter = s.spliterator()
 
     val expectedCharacteristics =
-      Spliterator.SIZED | Spliterator.SUBSIZED |
-        Spliterator.ORDERED | Spliterator.IMMUTABLE // 0x4450
+      Spliterator.SIZED | Spliterator.SUBSIZED | Spliterator.ORDERED |
+        Spliterator.IMMUTABLE // 0x4450
 
     assertEquals(
       "characteristics",
@@ -871,18 +871,16 @@ class StreamTest {
     assertEquals(s"unexpected element count", expectedCount, s1.count())
   }
 
-  /*  Note Well: The Issue #3309 tests are written to match Java 8 behavior.
-   *  Scala Native javalib currently advertises itself as Java 8 (1.8)
-   *  compliant, so these tests match that.
+  /*  Note Well: The Issue #3309 tests are now written to match Java 17
+   *  behavior.
    *
-   *  Somewhere after Java 11  and before or at Java 17, the behavior changes
-   *  and these tests will begin to fail for parallel ORDERED streams.
-   *  See the issue for details.
+   *  This differs from previous SN Java 8 behavior for for parallel ORDERED
+   *  streams.
    */
 
   // Issue #3309 - 1 of 5
   @Test def streamLimit_Size(): Unit = {
-    StreamTestHelpers.requireJDK8CompatibleCharacteristics()
+    StreamTestHelpers.requireJDK17CompatibleCharacteristics()
 
     val srcSize = 10
 
@@ -912,7 +910,7 @@ class StreamTest {
 
   // Issue #3309 - 2 of 5
   @Test def streamLimit_Characteristics(): Unit = {
-    StreamTestHelpers.requireJDK8CompatibleCharacteristics()
+    StreamTestHelpers.requireJDK17CompatibleCharacteristics()
 
     val zeroCharacteristicsSpliter =
       new Spliterators.AbstractSpliterator[Object](Long.MaxValue, 0x0) {
@@ -949,11 +947,10 @@ class StreamTest {
     val sAllLimited = sAll.limit(9)
     val sAllLimitedSpliter = sAllLimited.spliterator()
 
-    // JVM 8 expects 0x11 (decimal 17), JVM >= 17 expects 0x4051 (Dec 16465)
+    // JVM >= 17 expects 0x4051 (Dec 16465), JVM 8 used only 0x11 (decimal 17)
     val expectedSAllLimitedCharacteristics =
-      Spliterator.ORDERED | Spliterator.DISTINCT // 0x11
-    // Drop SIZED, SUBSIZED, CONCURRENT, IMMUTABLE, & NONNULL.
-    // SORTED was not there to drop.
+      Spliterator.SIZED | Spliterator.SUBSIZED | Spliterator.ORDERED |
+        Spliterator.DISTINCT // 0x4051
 
     assertEquals(
       "Unexpected characteristics for all characteristics stream",
@@ -964,7 +961,7 @@ class StreamTest {
 
   // Issue #3309 - 3 of 5
   @Test def streamLimit_SortedCharacteristics(): Unit = {
-    StreamTestHelpers.requireJDK8CompatibleCharacteristics()
+    StreamTestHelpers.requireJDK17CompatibleCharacteristics()
 
     /* Address issues with SORTED described in Test
      * streamLimit_sequentialAlwaysCharacteristics
@@ -979,9 +976,12 @@ class StreamTest {
     val sAllLimited = sAll.sorted().limit(9)
     val sAllLimitedSpliter = sAllLimited.spliterator()
 
-    // JVM 8 expects 0x15 (decimal 21), JVM >= 17 expects 0x4055 (Dec 16469)
+    // JVM >= 17 expects 0x4055 (Dec 16469), JVM 8 used only 0x15 (decimal 21)
     val expectedSAllLimitedCharacteristics =
-      Spliterator.ORDERED | Spliterator.DISTINCT | Spliterator.SORTED // 0x15        // Drop SIZED, SUBSIZED, CONCURRENT, IMMUTABLE, & NONNULL.
+      Spliterator.SIZED | Spliterator.SUBSIZED |
+        Spliterator.ORDERED |
+        Spliterator.SORTED |
+        Spliterator.DISTINCT
 
     assertEquals(
       "Unexpected characteristics for all characteristics sorted stream",
@@ -992,7 +992,7 @@ class StreamTest {
 
   // Issue #3309 - 4 of 5
   @Test def streamLimit_UnsizedCharacteristics(): Unit = {
-    StreamTestHelpers.requireJDK8CompatibleCharacteristics()
+    StreamTestHelpers.requireJDK17CompatibleCharacteristics()
 
     val srcSize = 20
 
@@ -1016,13 +1016,13 @@ class StreamTest {
 
   // Issue #3309 - 5 of 5
   @Test def streamLimit_SizedCharacteristics(): Unit = {
-    StreamTestHelpers.requireJDK8CompatibleCharacteristics()
+    StreamTestHelpers.requireJDK17CompatibleCharacteristics()
 
     val proofSpliter = Stream.of("Air", "Earth", "Fire", "Water").spliterator()
 
-    val expectedProofCharacteristics =
+    val expectedProofCharacteristics = // 0x4450
       Spliterator.SIZED | Spliterator.SUBSIZED |
-        Spliterator.ORDERED | Spliterator.IMMUTABLE // 0x4450
+        Spliterator.ORDERED | Spliterator.IMMUTABLE
 
     assertEquals(
       "Unexpected origin stream characteristics",
@@ -1035,8 +1035,9 @@ class StreamTest {
       .limit(3)
       .spliterator()
 
-    // JVM 8 expects 0x10 (decimal 16), JVM >= 17 expects 0x4050 (Dec 16464)
-    val expectedSizedLimitCharacteristics = Spliterator.ORDERED
+    // JVM >= 17 expects 0x4050 (Dec 16464), JVM 8 used only 0x10 (decimal 16)
+    val expectedSizedLimitCharacteristics =
+      Spliterator.SIZED | Spliterator.SUBSIZED | Spliterator.ORDERED // 0x4050
 
     assertEquals(
       "Unexpected characteristics for SIZED stream",

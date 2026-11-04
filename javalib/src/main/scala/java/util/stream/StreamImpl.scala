@@ -434,11 +434,8 @@ private[stream] class StreamImpl[T](
 
     /* Important:
      * See Issue #3309 for discussion of size & characteristics
-     * in JVM 17 (and possibly as early as JVM 12) for parallel ORDERED
-     * streams.  The behavior implemented here is Java 8 and at least Java 11.
-     *
-     * If you are reading this block with more than a passing interest,
-     * prepare yourself for not having a good day, the muck is deep.
+     * in JVM 17+ for parallel ORDERED streams. This implementation follows
+     * the JVM 17+ practice.
      */
 
     if (maxSize < 0)
@@ -450,9 +447,11 @@ private[stream] class StreamImpl[T](
 
     val startingBits = _spliter.characteristics()
 
+    /* JDK 8 & a few forward clear Spliterator.SIZED | Spliterator.SUBSIZED.
+     * Follow JDK 17+ practice and do not change those two.
+     */
     val alwaysClearedBits =
-      Spliterator.SIZED | Spliterator.SUBSIZED |
-        Spliterator.NONNULL | Spliterator.IMMUTABLE | Spliterator.CONCURRENT
+      Spliterator.NONNULL | Spliterator.IMMUTABLE | Spliterator.CONCURRENT
 
     val newStreamCharacteristics = startingBits & ~alwaysClearedBits
 
