@@ -396,6 +396,13 @@ private[stream] class DoubleStreamImpl(
 
     val startingBits = _spliter.characteristics()
 
+    val downstreamSize = {
+      val exactSize = _spliter.getExactSizeIfKnown()
+
+      if (exactSize == -1) Long.MaxValue
+      else Math.min(exactSize, maxSize)
+    }
+
     /* JDK 8 & a few forward clear Spliterator.SIZED | Spliterator.SUBSIZED.
      * Follow JDK 17+ practice and do not change those two.
      */
@@ -405,7 +412,7 @@ private[stream] class DoubleStreamImpl(
     val newStreamCharacteristics = startingBits & ~alwaysClearedBits
 
     val spl = new Spliterators.AbstractDoubleSpliterator(
-      Long.MaxValue,
+      downstreamSize,
       newStreamCharacteristics
     ) {
       def tryAdvance(action: DoubleConsumer): Boolean =

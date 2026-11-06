@@ -54,7 +54,7 @@ class LongStreamTest {
   }
 
   @Test def streamUnorderedOnOrderedStream(): Unit = {
-    val s = LongStream.of(1L, 11, -11, 22, -22)
+    val s = LongStream.of(1L, 11L, -11L, 22L, -22L)
     val sSpliter = s.spliterator()
 
     assertTrue(
@@ -63,7 +63,7 @@ class LongStreamTest {
     )
 
     // s was ordered, 'so' should be same same. Avoid "already used" exception
-    val so = LongStream.of(1L, 11, -11, 22, -22)
+    val so = LongStream.of(1L, 11L, -11L, 22L, -22L)
     val su = so.unordered()
     val suSpliter = su.spliterator()
 
@@ -78,10 +78,10 @@ class LongStreamTest {
 
     val wild = new Array[Long](nElements) // holds arbitrarily jumbled data
     wild(0) = 13245L
-    wild(1) = 421
-    wild(2) = 211
-    wild(3) = 5531
-    wild(4) = 1668
+    wild(1) = 421L
+    wild(2) = 211L
+    wild(3) = 5531L
+    wild(4) = 1668L
 
     val sPar0 =
       StreamSupport.longStream(Spliterators.spliterator(wild, 0), true)
@@ -140,11 +140,11 @@ class LongStreamTest {
     val nElements = 5
 
     val wild = new Array[Long](nElements) // holds arbitrarily jumbled data
-    wild(0) = 13245
-    wild(1) = 421
-    wild(2) = 211
-    wild(3) = 5531
-    wild(4) = 1668
+    wild(0) = 13245L
+    wild(1) = 421L
+    wild(2) = 211L
+    wild(3) = 5531L
+    wild(4) = 1668L
 
     val sSeq0 =
       StreamSupport.longStream(Spliterators.spliterator(wild, 0), false)
@@ -234,7 +234,7 @@ class LongStreamTest {
   }
 
   @Test def longStreamOf_SingleElement(): Unit = {
-    val expected = 77
+    val expected = 77L
     val s = LongStream.of(expected)
     val it = s.iterator()
     assertTrue("LongStream should not be empty", it.hasNext())
@@ -243,7 +243,7 @@ class LongStreamTest {
   }
 
   @Test def streamOf_SingleElementCharacteristics(): Unit = {
-    val expected = 77
+    val expected = 77L
 
     val s = LongStream.of(expected)
     val spliter = s.spliterator()
@@ -260,16 +260,16 @@ class LongStreamTest {
   }
 
   @Test def longStreamOf_MultipleElements(): Unit = {
-    val s = LongStream.of(11, 22, 33)
+    val s = LongStream.of(11L, 22L, 33L)
     val it = s.iterator()
-    assertEquals("element_1", 11, it.nextLong())
-    assertEquals("element_2", 22, it.nextLong())
-    assertEquals("element_3", 33, it.nextLong())
+    assertEquals("element_1", 11L, it.nextLong())
+    assertEquals("element_2", 22L, it.nextLong())
+    assertEquals("element_3", 33L, it.nextLong())
     assertFalse(it.hasNext())
   }
 
   @Test def streamOf_MultipleElementsCharacteristics(): Unit = {
-    val s = LongStream.of(11, 22, 33)
+    val s = LongStream.of(11L, 22L, 33L)
     val spliter = s.spliterator()
 
     val expectedCharacteristics =
@@ -284,7 +284,7 @@ class LongStreamTest {
   }
 
   @Test def longStreamFlatMapWorks(): Unit = {
-    val s = LongStream.of(11, 22, 33)
+    val s = LongStream.of(11L, 22L, 33L)
 
     val mapper = new LongFunction[LongStream] {
       override def apply(v: Long): LongStream =
@@ -295,20 +295,20 @@ class LongStreamTest {
 
     val it = s2.iterator()
 
-    assertEquals(11, it.nextLong())
-    assertEquals(11, it.nextLong())
+    assertEquals(11L, it.nextLong())
+    assertEquals(11L, it.nextLong())
 
-    assertEquals(22, it.nextLong())
-    assertEquals(22, it.nextLong())
+    assertEquals(22L, it.nextLong())
+    assertEquals(22L, it.nextLong())
 
-    assertEquals(33, it.nextLong())
-    assertEquals(33, it.nextLong())
+    assertEquals(33L, it.nextLong())
+    assertEquals(33L, it.nextLong())
 
     assertFalse(it.hasNext())
   }
 
   @Test def longStreamForEachWorks(): Unit = {
-    val s = LongStream.of(-11, -22, -33, 0)
+    val s = LongStream.of(-11L, -22L, -33L, 0L)
 
     var sum = 0L
     val longConsumer = new LongConsumer {
@@ -320,7 +320,7 @@ class LongStreamTest {
   }
 
   @Test def longStreamFlatMapWorksTwice(): Unit = {
-    val s = LongStream.of(11, 22, 33)
+    val s = LongStream.of(11L, 22L, 33L)
 
     val mapper1 = new LongFunction[LongStream] {
       override def apply(v: Long): LongStream =
@@ -339,9 +339,9 @@ class LongStreamTest {
 // format: off
     val expected =
       Seq(
-        -11, -11, -11, -11, -11, -11,
-        -22, -22, -22, -22, -22, -22,
-        -33, -33, -33, -33, -33, -33
+        -11L, -11L, -11L, -11L, -11L, -11L,
+        -22L, -22L, -22L, -22L, -22L, -22L,
+        -33L, -33L, -33L, -33L, -33L, -33L
       )
 // format: on
 
@@ -375,8 +375,8 @@ class LongStreamTest {
 // Static methods -------------------------------------------------------
 
   @Test def longStreamConcat(): Unit = {
-    val a = LongStream.of(99, 88, 66, 77, 55)
-    val b = LongStream.of(0, 33, 22)
+    val a = LongStream.of(99L, 88L, 66L, 77L, 55L)
+    val b = LongStream.of(0L, 33L, 22L)
 
     val s = LongStream.concat(a, b)
 
@@ -384,15 +384,15 @@ class LongStreamTest {
     assertNotNull("s.iterator() should not be NULL", it)
     assertTrue("stream should not be empty", it.hasNext())
 
-    assertEquals(s"element", 99, it.nextLong())
-    assertEquals(s"element", 88, it.nextLong())
-    assertEquals(s"element", 66, it.nextLong())
-    assertEquals(s"element", 77, it.nextLong())
-    assertEquals(s"element", 55, it.nextLong())
+    assertEquals(s"element", 99L, it.nextLong())
+    assertEquals(s"element", 88L, it.nextLong())
+    assertEquals(s"element", 66L, it.nextLong())
+    assertEquals(s"element", 77L, it.nextLong())
+    assertEquals(s"element", 55L, it.nextLong())
 
-    assertEquals(s"element", 0, it.nextLong())
-    assertEquals(s"element", 33, it.nextLong())
-    assertEquals(s"element", 22, it.nextLong())
+    assertEquals(s"element", 0L, it.nextLong())
+    assertEquals(s"element", 33L, it.nextLong())
+    assertEquals(s"element", 22L, it.nextLong())
 
     assertFalse("stream should be empty", it.hasNext())
   }
@@ -429,15 +429,15 @@ class LongStreamTest {
 
   @Test def longStreamIterate_Unbounded(): Unit = {
     val nElements = 4
-    var count = -1.0
+    var count = -1
 
-    val expectedSeed = 1775
+    val expectedSeed = 1775L
 
-    val expected = Seq(expectedSeed, 1786, 1797, 1808)
+    val expected = Seq(expectedSeed, 1786L, 1797L, 1808L)
 
     val s = LongStream.iterate(
       expectedSeed,
-      e => e + 11
+      e => e + 11L
     )
 
     val it = s.iterator()
@@ -451,7 +451,7 @@ class LongStreamTest {
   }
 
   @Test def longStreamIterate_Unbounded_Characteristics(): Unit = {
-    val s = LongStream.iterate(0, n => n + 11)
+    val s = LongStream.iterate(0, n => n + 11L)
     val spliter = s.spliterator()
 
     // spliterator should have required characteristics and no others.
@@ -484,7 +484,7 @@ class LongStreamTest {
   }
 
   @Test def longStreamOf_OneItem(): Unit = {
-    val expected = 667
+    val expected = 667L
     val s = LongStream.of(expected)
 
     val it = s.iterator()
@@ -498,13 +498,13 @@ class LongStreamTest {
   // places in this file, so no Test for that case here.
 
   @Test def longStreamRange(): Unit = {
-    val startInclusive = 5
-    val endExclusive = 15
+    val startInclusive = 5L
+    val endExclusive = 15L
     val expectedCount = endExclusive - startInclusive
 
     val s = LongStream.range(startInclusive, endExclusive)
 
-    var count = 0
+    var count = 0L
 
     s.spliterator()
       .forEachRemaining((e: Long) => {
@@ -513,7 +513,7 @@ class LongStreamTest {
           count + startInclusive,
           e
         )
-        count += 1
+        count += 1L
       })
 
     assertEquals(s"unexpected range count", expectedCount, count)
@@ -527,7 +527,7 @@ class LongStreamTest {
 
     val s = LongStream.rangeClosed(startInclusive, endInclusive)
 
-    var count = 0
+    var count = 0L
 
     s.spliterator()
       .forEachRemaining((e: Long) => {
@@ -536,7 +536,7 @@ class LongStreamTest {
           count + startInclusive,
           e
         )
-        count += 1
+        count += 1L
       })
 
     assertEquals(s"unexpected rangeClosed count", expectedCount, count)
@@ -560,19 +560,19 @@ class LongStreamTest {
      * Since streams can not be re-used, count s0. If it is non-empty, assume
      * its sibling s is also non-empty, distingishing the two "true"s.
      */
-    val s0 = LongStream.of(0, 11, 22, 33)
-    assertTrue("unexpected empty stream", s0.count > 0)
+    val s0 = LongStream.of(0L, 11L, 22L, 33L)
+    assertTrue("unexpected empty stream", s0.count > 0L)
 
-    val s = LongStream.of(0, 11, 22, 33)
+    val s = LongStream.of(0L, 11L, 22L, 33L)
 
-    val matched = s.allMatch((e) => { (e >= 0) && (e < 90) })
+    val matched = s.allMatch((e) => { (e >= 0L) && (e < 90L) })
     assertTrue("unexpected match failure", matched)
   }
 
   @Test def longStreamAllMatch_False(): Unit = {
-    val s = LongStream.of(0, 11, 22, 33)
+    val s = LongStream.of(0L, 11L, 22L, 33L)
 
-    val matched = s.allMatch((e) => e > 22)
+    val matched = s.allMatch((e) => e > 22L)
     assertFalse("unexpected match", matched)
   }
 
@@ -586,16 +586,16 @@ class LongStreamTest {
   }
 
   @Test def longStreamAnyMatch_True(): Unit = {
-    val s = LongStream.of(0, 11, 22, 33)
+    val s = LongStream.of(0L, 11L, 22L, 33L)
 
-    val matched = s.anyMatch((e) => (e > 10) && (e < 20))
+    val matched = s.anyMatch((e) => (e > 10L) && (e < 20L))
     assertTrue("unexpected predicate failure", matched)
   }
 
   @Test def longStreamAnyMatch_False(): Unit = {
-    val s = LongStream.of(0, 11, 22, 33)
+    val s = LongStream.of(0L, 11L, 22L, 33L)
 
-    val matched = s.anyMatch((e) => e > 90)
+    val matched = s.anyMatch((e) => e > 90L)
     assertFalse("unexpected predicate failure", matched)
   }
 
@@ -617,7 +617,7 @@ class LongStreamTest {
     assertEquals("unexpected count", nElements, count)
 
     // Right content
-    val s2 = LongStream.of(11, 22, 33, 44L)
+    val s2 = LongStream.of(11L, 22L, 33L, 44L)
 
     val s3 = s2.asDoubleStream()
 
@@ -644,14 +644,14 @@ class LongStreamTest {
     val nElements = 8
 
     val wild = new Array[Long](nElements) // holds arbitrarily jumbled data
-    wild(0) = 13245
-    wild(1) = 421
-    wild(2) = 211
-    wild(3) = 5531
-    wild(4) = 1668
-    wild(5) = 773
-    wild(6) = 4461
-    wild(7) = 609
+    wild(0) = 13245L
+    wild(1) = 421L
+    wild(2) = 211L
+    wild(3) = 5531L
+    wild(4) = 1668L
+    wild(5) = 773L
+    wild(6) = 4461L
+    wild(7) = 609L
 
     val expectedAverage = 3364.875 // test against known value, not calculated.
 
@@ -672,11 +672,11 @@ class LongStreamTest {
   @Test def longStreamBoxed(): Unit = {
     val nElements = 5
     val data = new Array[Long](nElements)
-    data(0) = 0
-    data(1) = 11
-    data(2) = 22
-    data(3) = 33
-    data(4) = 44
+    data(0) = 0L
+    data(1) = 11L
+    data(2) = 22L
+    data(3) = 33L
+    data(4) = 44L
 
     val sd = Arrays.stream(data)
 
@@ -722,11 +722,11 @@ class LongStreamTest {
 
     val nElements = 5
     val data = new Array[Long](nElements)
-    data(0) = 0
-    data(1) = 11
-    data(2) = 22
-    data(3) = 33
-    data(4) = 44
+    data(0) = 0L
+    data(1) = 11L
+    data(2) = 22L
+    data(3) = 33L
+    data(4) = 44L
 
     val s = Arrays.stream(data)
 
@@ -766,12 +766,12 @@ class LongStreamTest {
     val expectedMax = 55L
 
     val data = new Array[Long](nElements)
-    data(0) = 11
-    data(1) = 22
+    data(0) = 11L
+    data(1) = 22L
     data(2) = expectedMin
-    data(3) = 33
+    data(3) = 33L
     data(4) = expectedMax
-    data(5) = 44
+    data(5) = 44L
 
     val s = Arrays.stream(data)
 
@@ -792,7 +792,7 @@ class LongStreamTest {
   @Test def longStreamCount(): Unit = {
     val expectedCount = 5
 
-    val s = LongStream.of(0, 11, 22, 33, 44)
+    val s = LongStream.of(0L, 11L, 22L, 33L, 44L)
 
     assertEquals(s"unexpected element count", expectedCount, s.count())
   }
@@ -809,7 +809,7 @@ class LongStreamTest {
 
     val expectedElements = new Array[Long](expectedCount)
     for (j <- range)
-      expectedElements(j) = j * 2
+      expectedElements(j) = j * 2L
 
     val expectedSet = new ju.HashSet[Long]()
     for (j <- range)
@@ -868,8 +868,8 @@ class LongStreamTest {
   }
 
   @Test def longStreamFindAny_True(): Unit = {
-    val s = LongStream.of(0, 11, 22, 33)
-    val acceptableValues = List(0, 11, 22, 33)
+    val s = LongStream.of(0L, 11L, 22L, 33L)
+    val acceptableValues = List(0L, 11L, 22L, 33L)
 
     val optional = s.findAny()
 
@@ -891,8 +891,8 @@ class LongStreamTest {
   }
 
   @Test def longStreamFindFirst_True(): Unit = {
-    val expectedFirst = 0
-    val s = LongStream.of(expectedFirst, 11, 22, 33)
+    val expectedFirst = 0L
+    val s = LongStream.of(expectedFirst, 11L, 22L, 33L)
 
     val optional = s.findFirst()
 
@@ -915,11 +915,9 @@ class LongStreamTest {
   @Test def longStreamFilter(): Unit = {
     val expectedCount = 4
 
-    val s0 = LongStream.of(
-      1011, 11, 1022, 22, 1032, 33, 44
-    )
+    val s0 = LongStream.of(1011L, 11L, 1022L, 22L, 1032L, 33L, 44L)
 
-    val s1 = s0.filter(e => e < 1000)
+    val s1 = s0.filter(e => e < 1000L)
     assertEquals(s"unexpected element count", expectedCount, s1.count())
   }
 
@@ -927,9 +925,7 @@ class LongStreamTest {
   @Test def longStreamFilter_Characteristics(): Unit = {
     val expectedCount = 2
 
-    val ls = LongStream.of(
-      55L, 44L, -11L, 0L, -22L, 33L
-    )
+    val ls = LongStream.of(55L, 44L, -11L, 0L, -22L, 33L)
 
     val spliter = ls.filter((d: scala.Long) => d < 0L).spliterator()
 
@@ -941,33 +937,105 @@ class LongStreamTest {
   }
 
   @Test def longStreamForeachOrdered(): Unit = {
-    val s = LongStream.of(11, 22, 33)
+    val s = LongStream.of(11L, 22L, 33L)
 
     var sum = 0L
     val consumer = new LongConsumer {
       def accept(i: Long): Unit = { sum = sum + i }
     }
     s.forEachOrdered(consumer)
-    assertEquals("unexpected sum", 66, sum)
+    assertEquals("unexpected sum", 66L, sum)
   }
 
   @Test def longStreamLimit_NegativeArg(): Unit = {
-    val s = LongStream.of(11, 22, 33)
-    assertThrows(classOf[IllegalArgumentException], s.limit(-1))
+    val s = LongStream.of(11L, 22L, 33L)
+    assertThrows(classOf[IllegalArgumentException], s.limit(-1L))
   }
 
-  @Test def longStreamLimit(): Unit = {
-    val expectedCount = 10
+  @Test def longStreamLimit_Count_SrcUnsized(): Unit = {
+    val expectedCount = 10L
     var data = -1
 
     val s0 = LongStream.iterate(
-      161803,
-      e => e + 10
+      161803L,
+      e => e + 10L
     )
 
     val s1 = s0.limit(expectedCount)
 
     assertEquals(s"unexpected element count", expectedCount, s1.count())
+  }
+
+  @Test def longStreamLimit_Count_SrcSmaller(): Unit = {
+    StreamTestHelpers.requireJDK17CompatibleCharacteristics()
+
+    val limit = 5L
+    val expectedSize = 4L
+    val s0 = LongStream.of(1L, 2L, 3L, 4L)
+
+    val s1 = s0.limit(limit)
+
+    assertEquals(s"unexpected element count", expectedSize, s1.count())
+  }
+
+  @Test def longStreamLimit_Count_SrcLarger(): Unit = {
+    StreamTestHelpers.requireJDK17CompatibleCharacteristics()
+
+    val limit = 3L
+    val expectedSize = 3L
+    val s0 = LongStream.of(1L, 2L, 3L, 4L, 5L)
+
+    val s1 = s0.limit(limit)
+
+    assertEquals(s"unexpected element count", limit, s1.count())
+  }
+
+  @Test def longStreamLimit_Spliterator_SrcSmaller(): Unit = {
+    StreamTestHelpers.requireJDK17CompatibleCharacteristics()
+
+    val limit = 6L
+    val s0 = LongStream.of(1L, 2L, 3L, 4L)
+
+    val expectedExactSize = 4L
+    val expectedEstimatedSize = expectedExactSize
+
+    val spliter = s0.limit(limit).spliterator()
+
+    assertEquals(
+      "expected exact size",
+      expectedExactSize,
+      spliter.getExactSizeIfKnown()
+    )
+
+    assertEquals(
+      "expected estimated size",
+      expectedEstimatedSize,
+      spliter.estimateSize()
+    )
+  }
+
+  @Test def longStreamLimit_Spliterator_SrcLarger(): Unit = {
+    StreamTestHelpers.requireJDK17CompatibleCharacteristics()
+
+    val limit = 3L
+    val s0 = LongStream.of(1L, 2L, 3L, 4L, 5L)
+
+    val expectedExactSize = 3L
+    val expectedEstimatedSize = expectedExactSize
+
+    val spliter = s0.limit(limit).spliterator()
+
+    assertEquals(
+      "expected exact size",
+      expectedExactSize,
+      spliter.getExactSizeIfKnown()
+    )
+
+    assertEquals(
+      "expected estimated size",
+      expectedEstimatedSize,
+      spliter.estimateSize()
+    )
   }
 
   /*  Note Well: See Issue #3309 comments in StreamTest.scala and
@@ -981,11 +1049,11 @@ class LongStreamTest {
     val srcSize = 10
 
     val spliter = LongStream
-      .iterate(271828, e => e + 10)
+      .iterate(271828L, e => e + 10L)
       .limit(srcSize)
       .spliterator()
 
-    val expectedExactSize = -1
+    val expectedExactSize = -1L
     assertEquals(
       "expected exact size",
       expectedExactSize,
@@ -1010,7 +1078,7 @@ class LongStreamTest {
       }
 
     val sZero = StreamSupport.longStream(zeroCharacteristicsSpliter, false)
-    val sZeroLimited = sZero.limit(9)
+    val sZeroLimited = sZero.limit(9L)
 
     val sZeroLimitedSpliter = sZeroLimited.spliterator()
 
@@ -1036,7 +1104,7 @@ class LongStreamTest {
 
     val sAll = StreamSupport.longStream(allCharacteristicsSpliter, false)
 
-    val sAllLimited = sAll.limit(9)
+    val sAllLimited = sAll.limit(9L)
     val sAllLimitedSpliter = sAllLimited.spliterator()
 
     // JVM >= 17 expects 0x4051 (Dec 16465), JVM 8 used only 0x11 (decimal 17)
@@ -1059,13 +1127,13 @@ class LongStreamTest {
      * streamLimit_sequentialAlwaysCharacteristics
      */
     val allCharacteristicsSpliter =
-      new Spliterators.AbstractLongSpliterator(0, 0x5551) {
+      new Spliterators.AbstractLongSpliterator(0L, 0x5551) {
         def tryAdvance(action: LongConsumer): Boolean = false
       }
 
     val sAll = StreamSupport.longStream(allCharacteristicsSpliter, false)
 
-    val sAllLimited = sAll.sorted().limit(9)
+    val sAllLimited = sAll.sorted().limit(9L)
     val sAllLimitedSpliter = sAllLimited.spliterator()
 
     // JVM >= 17 expects 0x4055 (Dec 16469), JVM 8 used only 0x15 (decimal 21)
@@ -1086,10 +1154,10 @@ class LongStreamTest {
   @Test def streamLimit_UnsizedCharacteristics(): Unit = {
     StreamTestHelpers.requireJDK17CompatibleCharacteristics()
 
-    val srcSize = 20
+    val srcSize = 20L
 
     val unsizedSpliter = LongStream
-      .iterate(12, n => n + 11)
+      .iterate(12L, n => n + 11L)
       .limit(srcSize)
       .spliterator()
 
@@ -1106,7 +1174,7 @@ class LongStreamTest {
   @Test def streamLimit_SizedCharacteristics(): Unit = {
     StreamTestHelpers.requireJDK17CompatibleCharacteristics()
 
-    val proofSpliter = LongStream.of(112, 223, 334, -112).spliterator()
+    val proofSpliter = LongStream.of(112L, 223L, 334L, -112L).spliterator()
 
     val expectedProofCharacteristics =
       Spliterator.SIZED | Spliterator.SUBSIZED |
@@ -1119,8 +1187,8 @@ class LongStreamTest {
     )
 
     val sizedSpliter = LongStream
-      .of(112, 223, 334, -112)
-      .limit(3)
+      .of(112L, 223L, 334L, -112L)
+      .limit(3L)
       .spliterator()
 
     // JVM >= 17 expects 0x4050 (Dec 16464), JVM 8 used only 0x10 (decimal 16)
@@ -1139,7 +1207,7 @@ class LongStreamTest {
     val prefix = "mapped_"
     var count = 0
 
-    val s0 = LongStream.of(11, 22, 33, 44)
+    val s0 = LongStream.of(11L, 22L, 33L, 44L)
 
     val s1 = s0.map((e) => {
       count += 1
@@ -1156,7 +1224,7 @@ class LongStreamTest {
     s1.forEach((e) =>
       assertTrue(
         s"unexpected map element: ${e}",
-        (e > 100) && (e < 450)
+        (e > 100L) && (e < 450L)
       )
     )
     assertEquals("unexpected count", nElements, count)
@@ -1166,7 +1234,7 @@ class LongStreamTest {
     val nElements = 4
     var count = 0
 
-    val s0 = LongStream.of(11, 22, 33, 44L)
+    val s0 = LongStream.of(11L, 22L, 33L, 44L)
 
     val s1 = s0.mapToDouble((e) => e.toDouble)
 
@@ -1180,7 +1248,7 @@ class LongStreamTest {
     assertEquals("unexpected count", nElements, count)
 
     // Right content
-    val s2 = LongStream.of(11, 22, 33, 44)
+    val s2 = LongStream.of(11L, 22L, 33L, 44L)
 
     val s3 = s2.mapToDouble((e) => e.toDouble)
 
@@ -1189,7 +1257,7 @@ class LongStreamTest {
     for (j <- 1 to nElements)
       assertEquals(
         "unexpected element",
-        (j * 11).toDouble,
+        (j * 11L).toDouble,
         it.nextDouble(),
         epsilon
       )
@@ -1199,7 +1267,7 @@ class LongStreamTest {
     val nElements = 4
     var count = 0
 
-    val s0 = LongStream.of(11, 22, 33, 44L)
+    val s0 = LongStream.of(11L, 22L, 33L, 44L)
 
     val s1 = s0.mapToInt((e: Long) => e.toInt)
 
@@ -1213,7 +1281,7 @@ class LongStreamTest {
     assertEquals("unexpected count", nElements, count)
 
     // Right content
-    val s2 = LongStream.of(11, 22, 33, 44L)
+    val s2 = LongStream.of(11L, 22L, 33L, 44L)
 
     val s3 = s2.mapToInt((e: Long) => e.toInt)
 
@@ -1228,7 +1296,7 @@ class LongStreamTest {
     val prefix = "mapped_"
     var count = 0
 
-    val s0 = LongStream.of(11, 22, 33, 44)
+    val s0 = LongStream.of(11L, 22L, 33L, 44L)
 
     val s1 = s0.mapToObj[String]((e) => {
       count += 1
@@ -1268,16 +1336,16 @@ class LongStreamTest {
   }
 
   @Test def longStreamNoneMatch_True(): Unit = {
-    val s = LongStream.of(0, 11, 22, 33)
+    val s = LongStream.of(0L, 11L, 22L, 33L)
 
     val matched = s.noneMatch((e) => e < 0)
     assertTrue("unexpected predicate failure", matched)
   }
 
   @Test def longStreamNone_MatchFalse(): Unit = {
-    val s = LongStream.of(0, 11, 22, 33)
+    val s = LongStream.of(0L, 11L, 22L, 33L)
 
-    val matched = s.noneMatch((e) => e > 22)
+    val matched = s.noneMatch((e) => e > 22L)
     assertFalse("unexpected predicate failure", matched)
   }
 
@@ -1290,7 +1358,7 @@ class LongStreamTest {
   }
 
   @Test def longStreamMax(): Unit = {
-    val stream = LongStream.of(8585, 44, 8787, 2525, 77)
+    val stream = LongStream.of(8585L, 44L, 8787L, 2525L, 77L)
 
     val maxOpt = stream.max()
 
@@ -1304,7 +1372,7 @@ class LongStreamTest {
   }
 
   @Test def longStreamMax_NegativeZero(): Unit = {
-    val stream = LongStream.of(-8585, -0, -8787, -2525, -77)
+    val stream = LongStream.of(-8585L, -0L, -8787L, -2525L, -77L)
 
     val maxOpt = stream.max()
 
@@ -1312,7 +1380,7 @@ class LongStreamTest {
 
     assertEquals(
       s"wrong max item found: '${maxOpt.getAsLong()}'",
-      0,
+      0L,
       maxOpt.getAsLong()
     )
   }
@@ -1326,7 +1394,7 @@ class LongStreamTest {
   }
 
   @Test def longStreamMin(): Unit = {
-    val stream = LongStream.of(8585, 44, 8787, 2525, 77)
+    val stream = LongStream.of(8585L, 44L, 8787L, 2525L, 77L)
 
     val minOpt = stream.min()
 
@@ -1334,13 +1402,13 @@ class LongStreamTest {
 
     assertEquals(
       "wrong min item found",
-      44,
+      44L,
       minOpt.getAsLong()
     )
   }
 
   @Test def longStreamMin_NegativeZero(): Unit = {
-    val stream = LongStream.of(8585, -0, 8787, 0, 2525, 77)
+    val stream = LongStream.of(8585L, -0L, 8787L, 0L, 2525L, 77L)
 
     val minOpt = stream.min()
 
@@ -1348,7 +1416,7 @@ class LongStreamTest {
 
     assertEquals(
       s"wrong min item found: '${minOpt.getAsLong()}'",
-      0,
+      0L,
       minOpt.getAsLong()
     )
   }
@@ -1418,8 +1486,8 @@ class LongStreamTest {
   }
 
   @Test def longStreamReduce_OneArg(): Unit = {
-    val s = LongStream.of(33, 55, 77, 1111)
-    val expectedSum = 1276
+    val s = LongStream.of(33L, 55L, 77L, 1111L)
+    val expectedSum = 1276L
 
     val optional: OptionalLong = s.reduce((r, e) => r + e)
 
@@ -1442,7 +1510,7 @@ class LongStreamTest {
   }
 
   @Test def longStreamReduce_TwoArg(): Unit = {
-    val s = LongStream.of(33, 55, 77, 1111L)
+    val s = LongStream.of(33L, 55L, 77L, 1111L)
     val expectedProduct = 155267805L
 
     val product: Long = s.reduce(1L, (r, e) => r * e)
@@ -1455,22 +1523,22 @@ class LongStreamTest {
   }
 
   @Test def longStreamSkip_NegativeArg(): Unit = {
-    val s = LongStream.of(11, 22, 33)
-    assertThrows(classOf[IllegalArgumentException], s.skip(-1))
+    val s = LongStream.of(11L, 22L, 33L)
+    assertThrows(classOf[IllegalArgumentException], s.skip(-1L))
   }
 
   @Test def longStreamSkip_TooMany(): Unit = {
-    val s = LongStream.of(11, 22, 33)
+    val s = LongStream.of(11L, 22L, 33L)
 
-    val isEmptyStream = !s.skip(10).iterator.hasNext()
+    val isEmptyStream = !s.skip(10L).iterator.hasNext()
     assertTrue("expected empty stream", isEmptyStream)
   }
 
   @Test def longStreamSkip(): Unit = {
-    val expectedValue = 9999
-    val s = LongStream.of(11, 22, 33, 44, expectedValue, 66, 77)
+    val expectedValue = 9999L
+    val s = LongStream.of(11L, 22L, 33L, 44L, expectedValue, 66L, 77L)
 
-    val iter = s.skip(4).iterator()
+    val iter = s.skip(4L).iterator()
 
     assertTrue("expected non-empty stream", iter.hasNext())
     assertEquals(
@@ -1485,23 +1553,23 @@ class LongStreamTest {
     val wild = new Array[Long](nElements)
 
     // Ensure that the Elements are not inserted in sorted or reverse order.
-    wild(0) = 4532
-    wild(1) = 214
-    wild(2) = 112
-    wild(3) = 315
-    wild(4) = 6816
-    wild(5) = 377
-    wild(6) = 6144
+    wild(0) = 4532L
+    wild(1) = 214L
+    wild(2) = 112L
+    wild(3) = 315L
+    wild(4) = 6816L
+    wild(5) = 377L
+    wild(6) = 6144L
     wild(7) = 960L
 
     val ordered = new Array[Long](nElements)
-    ordered(0) = 112
-    ordered(1) = 214
-    ordered(2) = 315
-    ordered(3) = 377
-    ordered(4) = 960
-    ordered(5) = 4532
-    ordered(6) = 6144
+    ordered(0) = 112L
+    ordered(1) = 214L
+    ordered(2) = 315L
+    ordered(3) = 377L
+    ordered(4) = 960L
+    ordered(5) = 4532L
+    ordered(6) = 6144L
     ordered(7) = 6816L
 
     val s = LongStream.of(wild: _*)
@@ -1529,14 +1597,14 @@ class LongStreamTest {
     val wild = new Array[Long](nElements)
 
     // Ensure that the Elements are not inserted in sorted or reverse order.
-    wild(0) = 4532
-    wild(1) = 214
-    wild(2) = 112
-    wild(3) = 315
-    wild(4) = 6816
-    wild(5) = 377
-    wild(6) = 6144
-    wild(7) = 960
+    wild(0) = 4532L
+    wild(1) = 214L
+    wild(2) = 112L
+    wild(3) = 315L
+    wild(4) = 6816L
+    wild(5) = 377L
+    wild(6) = 6144L
+    wild(7) = 960L
 
     val seqLongStream = LongStream.of(wild: _*)
     assertFalse(
@@ -1609,7 +1677,7 @@ class LongStreamTest {
       s0Spliter.hasCharacteristics(Spliterator.SIZED)
     )
 
-    // Validating un-SIZED terminated s0, so need fresh similar stream
+    // Validating un-SIZED terminated s0L, so need fresh similar stream
     val iter1 = Spliterators.iterator(Spliterators.spliterator(wild, 0))
     val spliter1 = Spliterators.spliteratorUnknownSize(iter1, 0)
 
@@ -1659,7 +1727,7 @@ class LongStreamTest {
       s0Spliter.hasCharacteristics(Spliterator.SIZED)
     )
 
-    // Validating un-SIZED terminated s0, so need fresh similar stream.
+    // Validating un-SIZED terminated s0L, so need fresh similar stream.
     val rs1 = rng
       .longs(0L, jl.Long.MAX_VALUE) // "Infinite" stream
 
@@ -1691,7 +1759,7 @@ class LongStreamTest {
     val sorted = s.sorted()
     val count = sorted.count()
 
-    assertEquals("expected an empty stream", 0, count)
+    assertEquals("expected an empty stream", 0L, count)
   }
 
   // Issue 3378
@@ -1703,7 +1771,7 @@ class LongStreamTest {
     val rng = new ju.Random(1234567890)
 
     val s = rng
-      .longs(0, jl.Long.MAX_VALUE) // "Infinite" stream
+      .longs(0L, jl.Long.MAX_VALUE) // "Infinite" stream
 
     /* The sorted() implementation should be a late binding, intermediate
      * operation. Expect no "max array size" error here, but later.
@@ -1724,16 +1792,16 @@ class LongStreamTest {
     val nElements = 9
 
     val wild = new Array[Long](nElements) // holds arbitrarily jumbled data
-    wild(0) = 4532
-    wild(1) = 214
-    wild(2) = 112
-    wild(3) = 315
-    wild(4) = 6816
-    wild(5) = 377
-    wild(6) = 6144
-    wild(7) = 960
+    wild(0) = 4532L
+    wild(1) = 214L
+    wild(2) = 112L
+    wild(3) = 315L
+    wild(4) = 6816L
+    wild(5) = 377L
+    wild(6) = 6144L
+    wild(7) = 960L
 
-    val expectedSum = 19470
+    val expectedSum = 19470L
 
     val s = LongStream.of(wild: _*)
 
@@ -1746,19 +1814,19 @@ class LongStreamTest {
     val nElements = 8
 
     val wild = new Array[Long](nElements) // holds arbitrarily jumbled data
-    wild(0) = 4532
-    wild(1) = 214
-    wild(2) = 112
-    wild(3) = 315
-    wild(4) = 6816
-    wild(5) = 377
-    wild(6) = 6144
-    wild(7) = 960
+    wild(0) = 4532L
+    wild(1) = 214L
+    wild(2) = 112L
+    wild(3) = 315L
+    wild(4) = 6816L
+    wild(5) = 377L
+    wild(6) = 6144L
+    wild(7) = 960L
 
     val expectedCount = nElements
-    val expectedMax = 6816
-    val expectedMin = 112
-    val expectedSum = 19470
+    val expectedMax = 6816L
+    val expectedMin = 112L
+    val expectedSum = 19470L
     val expectedAverage = expectedSum.toDouble / nElements
 
     val s = LongStream.of(wild: _*)
@@ -1785,14 +1853,14 @@ class LongStreamTest {
     val nElements = 9
 
     val wild = new Array[Long](nElements) // holds arbitrarily jumbled data
-    wild(0) = 4532
-    wild(1) = 214
-    wild(2) = 112
-    wild(3) = 315
-    wild(4) = 6816
-    wild(5) = 377
-    wild(6) = 6144
-    wild(7) = 960
+    wild(0) = 4532L
+    wild(1) = 214L
+    wild(2) = 112L
+    wild(3) = 315L
+    wild(4) = 6816L
+    wild(5) = 377L
+    wild(6) = 6144L
+    wild(7) = 960L
 
     val s = LongStream.of(wild: _*)
 

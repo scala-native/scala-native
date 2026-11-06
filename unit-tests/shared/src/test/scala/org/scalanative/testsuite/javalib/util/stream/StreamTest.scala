@@ -854,7 +854,7 @@ class StreamTest {
     assertThrows(classOf[IllegalArgumentException], s.limit(-1))
   }
 
-  @Test def streamLimit(): Unit = {
+  @Test def streamLimit_Count_SrcUnsized(): Unit = {
     val expectedCount = 10
     var data = -1
 
@@ -869,6 +869,78 @@ class StreamTest {
     val s1 = s0.limit(expectedCount)
 
     assertEquals(s"unexpected element count", expectedCount, s1.count())
+  }
+
+  @Test def streamLimit_Count_SrcSmaller(): Unit = {
+    StreamTestHelpers.requireJDK17CompatibleCharacteristics()
+
+    val limit = 5
+    val expectedSize = 4
+    val s0 = Stream.of("A", "B", "C", "D")
+
+    val s1 = s0.limit(limit)
+
+    assertEquals(s"unexpected element count", expectedSize, s1.count())
+  }
+
+  @Test def streamLimit_Count_SrcLarger(): Unit = {
+    StreamTestHelpers.requireJDK17CompatibleCharacteristics()
+
+    val limit = 3
+    val expectedSize = 3
+    val s0 = Stream.of("A", "B", "C", "D", "E")
+
+    val s1 = s0.limit(limit)
+
+    assertEquals(s"unexpected element count", limit, s1.count())
+  }
+
+  @Test def streamLimit_Spliterator_SrcSmaller(): Unit = {
+    StreamTestHelpers.requireJDK17CompatibleCharacteristics()
+
+    val limit = 6
+    val s0 = Stream.of("A", "B", "C", "D")
+
+    val expectedExactSize = 4
+    val expectedEstimatedSize = expectedExactSize
+
+    val spliter = s0.limit(limit).spliterator()
+
+    assertEquals(
+      "expected exact size",
+      expectedExactSize,
+      spliter.getExactSizeIfKnown()
+    )
+
+    assertEquals(
+      "expected estimated size",
+      expectedEstimatedSize,
+      spliter.estimateSize()
+    )
+  }
+
+  @Test def streamLimit_Spliterator_SrcLarger(): Unit = {
+    StreamTestHelpers.requireJDK17CompatibleCharacteristics()
+
+    val limit = 3
+    val s0 = Stream.of("A", "B", "C", "D", "E")
+
+    val expectedExactSize = 3
+    val expectedEstimatedSize = expectedExactSize
+
+    val spliter = s0.limit(limit).spliterator()
+
+    assertEquals(
+      "expected exact size",
+      expectedExactSize,
+      spliter.getExactSizeIfKnown()
+    )
+
+    assertEquals(
+      "expected estimated size",
+      expectedEstimatedSize,
+      spliter.estimateSize()
+    )
   }
 
   /*  Note Well: The Issue #3309 tests are now written to match Java 17

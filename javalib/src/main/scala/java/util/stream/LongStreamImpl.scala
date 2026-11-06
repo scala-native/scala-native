@@ -395,6 +395,13 @@ private[stream] class LongStreamImpl(
 
     var nSeen = 0L
 
+    val downstreamSize = {
+      val exactSize = _spliter.getExactSizeIfKnown()
+
+      if (exactSize == -1) Long.MaxValue
+      else Math.min(exactSize, maxSize)
+    }
+
     val startingBits = _spliter.characteristics()
 
     /* JDK 8 & a few forward clear Spliterator.SIZED | Spliterator.SUBSIZED.
@@ -406,7 +413,7 @@ private[stream] class LongStreamImpl(
     val newStreamCharacteristics = startingBits & ~alwaysClearedBits
 
     val spl = new Spliterators.AbstractLongSpliterator(
-      Long.MaxValue,
+      downstreamSize,
       newStreamCharacteristics
     ) {
       def tryAdvance(action: LongConsumer): Boolean =

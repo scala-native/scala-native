@@ -884,7 +884,7 @@ class DoubleStreamTest {
     assertThrows(classOf[IllegalArgumentException], s.limit(-1))
   }
 
-  @Test def doubleStreamLimit(): Unit = {
+  @Test def doubleStreamLimit_Count_SrcUnsized(): Unit = {
     val expectedCount = 10
     var data = -1
 
@@ -898,12 +898,84 @@ class DoubleStreamTest {
     assertEquals(s"unexpected element count", expectedCount, s1.count())
   }
 
+  @Test def doubleStreamLimit_Count_SrcSmaller(): Unit = {
+    StreamTestHelpers.requireJDK17CompatibleCharacteristics()
+
+    val limit = 5
+    val expectedSize = 4
+    val s0 = DoubleStream.of(1.1, 2.2, 3.3, 4.4)
+
+    val s1 = s0.limit(limit)
+
+    assertEquals(s"unexpected element count", expectedSize, s1.count())
+  }
+
+  @Test def doubleStreamLimit_Count_SrcLarger(): Unit = {
+    StreamTestHelpers.requireJDK17CompatibleCharacteristics()
+
+    val limit = 3
+    val expectedSize = 3
+    val s0 = DoubleStream.of(1.1, 2.2, 3.3, 4.4, 5.5)
+
+    val s1 = s0.limit(limit)
+
+    assertEquals(s"unexpected element count", limit, s1.count())
+  }
+
+  @Test def doubleStreamLimit_Spliterator_SrcSmaller(): Unit = {
+    StreamTestHelpers.requireJDK17CompatibleCharacteristics()
+
+    val limit = 6
+    val s0 = DoubleStream.of(1.1, 2.2, 3.3, 4.4)
+
+    val expectedExactSize = 4
+    val expectedEstimatedSize = expectedExactSize
+
+    val spliter = s0.limit(limit).spliterator()
+
+    assertEquals(
+      "expected exact size",
+      expectedExactSize,
+      spliter.getExactSizeIfKnown()
+    )
+
+    assertEquals(
+      "expected estimated size",
+      expectedEstimatedSize,
+      spliter.estimateSize()
+    )
+  }
+
+  @Test def doubleStreamLimit_Spliterator_SrcLarger(): Unit = {
+    StreamTestHelpers.requireJDK17CompatibleCharacteristics()
+
+    val limit = 3
+    val s0 = DoubleStream.of(1.1, 2.2, 3.3, 4.4, 5.5)
+
+    val expectedExactSize = 3
+    val expectedEstimatedSize = expectedExactSize
+
+    val spliter = s0.limit(limit).spliterator()
+
+    assertEquals(
+      "expected exact size",
+      expectedExactSize,
+      spliter.getExactSizeIfKnown()
+    )
+
+    assertEquals(
+      "expected estimated size",
+      expectedEstimatedSize,
+      spliter.estimateSize()
+    )
+  }
+
   /*  Note Well: See Issue #3309 comments in StreamTest.scala and
    *             in original issue.
    */
 
   // Issue #3309 - 1 of 5
-  @Test def doubleSstreamLimit_Size(): Unit = {
+  @Test def doubleStreamLimit_Size(): Unit = {
     StreamTestHelpers.requireJDK17CompatibleCharacteristics()
 
     val srcSize = 10
