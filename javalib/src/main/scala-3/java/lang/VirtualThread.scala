@@ -452,6 +452,8 @@ private[java] final class VirtualThread(
   // analogous to pinning around scheduler submission.
   @volatile private var pinnedForSubmit: scala.Boolean = false
 
+  override def isPinned: scala.Boolean = pinnedForSubmit || super.isPinned
+
   /** Timed `LockSupport.parkNanos` for this VT: may yield the continuation or pin the native carrier when already
    *  inside scheduler submission or nested suspension.
    */
@@ -464,8 +466,8 @@ private[java] final class VirtualThread(
     if (nanos <= 0) return
 
     state match {
-      case State.Running if pinnedForSubmit =>
-        // Pinned during submit: park on carrier instead of yielding
+      case State.Running if isPinned =>
+        // Pinned: park on the carrier instead of yielding
         state = State.TimedPinned
         NativeThread.currentNativeThread.parkNanos(nanos)
         state = State.Running
@@ -509,8 +511,8 @@ private[java] final class VirtualThread(
     if (interruptedState) return
 
     state match {
-      case State.Running if pinnedForSubmit =>
-        // Pinned during submit: park on carrier instead of yielding
+      case State.Running if isPinned =>
+        // Pinned: park on the carrier instead of yielding
         state = State.Pinned
         NativeThread.currentNativeThread.park()
         setParkPermit(false)

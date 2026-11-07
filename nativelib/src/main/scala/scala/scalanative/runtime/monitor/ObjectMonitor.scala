@@ -330,11 +330,16 @@ private[monitor] class ObjectMonitor() {
 
     val savedRecursion = this.recursion
     this.recursion = 0
+    // A pinned VT waits like a platform thread.
+    val suspendsWhileWaiting = currentThread match {
+      case vt: VirtualThread => !vt.isPinned
+      case _                 => false
+    }
     // For VTs: place a sentinel on resumeForWait BEFORE releasing the monitor.
     // This guarantees (via monitor happens-before) that onExit will see the
     // sentinel and spin-wait for the real continuation resume instead of
     // falling back to LockSupport.unpark which would consume the parking permit.
-    if (currentThread.isInstanceOf[VirtualThread]) {
+    if (suspendsWhileWaiting) {
       node.resumeForWait = RESUME_SENTINEL
       node.resumeForWaitGeneration = 0L
     }
@@ -347,7 +352,7 @@ private[monitor] class ObjectMonitor() {
     val interruped = currentThread.isInterrupted()
     if (!interruped && !node.isNotified) {
       currentThread match {
-        case vt: VirtualThread =>
+        case vt: VirtualThread if suspendsWhileWaiting =>
           vt.blockForMonitorWait(
             nanos,
             (resume: () => Unit, generation: Long) => {

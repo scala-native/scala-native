@@ -357,6 +357,9 @@ static void destroyBound(ExternalThread *record) {
     freeRecord(record);
 }
 
+// Mirrors the current record's depth for a cheap scalanative_in_managed_scope.
+static SN_ThreadLocal uintptr_t managedScopeDepth = 0;
+
 scalanative_thread_scope_t scalanative_enter_managed_automatic(void) {
     ExternalThread *record;
     int status = attach(&record);
@@ -376,9 +379,11 @@ scalanative_thread_scope_t scalanative_enter_managed_automatic(void) {
     scalanative_externalGC_admit();
     if (record->depth == 0)
         drainRetired();
-    record->depth++;
+    managedScopeDepth = ++record->depth;
     return (record->depth << 1) | (uintptr_t)previous;
 }
+
+int scalanative_in_managed_scope(void) { return managedScopeDepth != 0; }
 
 void scalanative_leave_managed(scalanative_thread_scope_t scope) {
     ExternalThread *record = currentRecord();
@@ -391,7 +396,7 @@ void scalanative_leave_managed(scalanative_thread_scope_t scope) {
         scalanative_externalGC_admit();
     else
         scalanative_GC_set_mutator_thread_state(previous);
-    record->depth--;
+    managedScopeDepth = --record->depth;
     if (record->depth == 0 && !record->internal &&
         previous == GC_MutatorThreadState_Unmanaged)
         unbind(record);

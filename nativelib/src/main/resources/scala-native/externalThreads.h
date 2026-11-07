@@ -16,6 +16,8 @@ enum {
 };
 scalanative_thread_scope_t scalanative_enter_managed_automatic(void);
 void scalanative_leave_managed(scalanative_thread_scope_t scope);
+/* Nonzero while a guarded Scala entry is active on the current OS thread. */
+int scalanative_in_managed_scope(void);
 #ifdef __cplusplus
 }
 #endif
