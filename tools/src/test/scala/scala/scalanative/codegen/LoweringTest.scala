@@ -57,42 +57,60 @@ class LoweringTest extends CodeGenSpec {
       )
   }
 
-  // Blocker call types must include the module receiver.
-  @Test def blockerCallTypesMatchDefinitions(): Unit = lowered(
+  // Blocker calls must pass the module receiver before `attempted`.
+  @Test def blockerCallsPassModuleReceiver(): Unit = lowered(
     entry = "Main",
     sources = Map(
       "Main.scala" ->
-        """|
+        """|import scala.scalanative.unsafe._
+           |
+           |@extern object Native {
+           |  @blocking def usleep(usec: CInt): CInt = extern
+           |}
+           |
            |object Main {
-           |  def main(args: Array[String]): Unit = println(args.length)
+           |  def main(args: Array[String]): Unit = {
+           |    val vt = Thread.ofVirtual().start(() => Native.usleep(1))
+           |    vt.join()
+           |  }
            |}""".stripMargin
     ),
-    setupConfig = _.withMultithreading(true)
+    // Virtual threads need a target with continuations.
+    setupConfig =
+      _.withMultithreading(true).withTargetTriple("x86_64-unknown-linux-gnu")
   ) { defns =>
-    def definedType(name: scala.scalanative.nir.Global) =
-      defns.collectFirst {
-        case defn: scala.scalanative.nir.Defn.Define if defn.name == name =>
-          defn.ty
-      }
-    for {
-      (name, callTy) <- Seq(
-        Lower.RuntimeBlockerBeginName -> Lower.RuntimeBlockerBeginTy,
-        Lower.RuntimeBlockerEndName -> Lower.RuntimeBlockerEndTy
-      )
-    } {
-      val defined = definedType(name)
-      assertTrue(s"$name is not defined", defined.isDefined)
-      val scala.scalanative.nir.Type.Function(definedArgs, definedRet) =
-        defined.get: @unchecked
-      val scala.scalanative.nir.Type.Function(callArgs, callRet) =
-        callTy: @unchecked
-      assertEquals(s"$name arity", definedArgs.size, callArgs.size)
-      assertEquals(s"$name result", definedRet, callRet)
-      assertEquals(
-        s"$name Boolean arguments",
-        definedArgs.map(_ == scala.scalanative.nir.Type.Bool),
-        callArgs.map(_ == scala.scalanative.nir.Type.Bool)
-      )
+    import scala.scalanative.nir
+    def definedType(name: nir.Global) = defns.collectFirst {
+      case defn: nir.Defn.Define if defn.name == name => defn.ty
+    }
+    assertEquals(
+      Some(Lower.RuntimeBlockerBeginTy),
+      definedType(Lower.RuntimeBlockerBeginName)
+    )
+    assertEquals(
+      Some(Lower.RuntimeBlockerEndTy),
+      definedType(Lower.RuntimeBlockerEndName)
+    )
+
+    val insts = defns.collect { case defn: nir.Defn.Define => defn.insts }
+    def callsTo(name: nir.Global) = insts.flatten.collect {
+      case nir.Inst.Let(
+            id,
+            nir.Op.Call(_, nir.Val.Global(`name`, _), args),
+            _
+          ) =>
+        (id, args)
+    }
+    val begins = callsTo(Lower.RuntimeBlockerBeginName)
+    val ends = callsTo(Lower.RuntimeBlockerEndName)
+    assertTrue("no Blocker.begin call generated", begins.nonEmpty)
+    assertEquals(begins.size, ends.size)
+    begins.foreach { case (_, args) => assertEquals(Seq(nir.Val.Null), args) }
+    val beginIds = begins.map(_._1).toSet
+    ends.foreach {
+      case (_, Seq(nir.Val.Null, nir.Val.Local(attempted, nir.Type.Bool))) =>
+        assertTrue(beginIds.contains(attempted))
+      case (_, args) => fail(s"unexpected Blocker.end arguments: $args")
     }
   }
 }
