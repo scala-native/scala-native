@@ -9,7 +9,8 @@ private[codegen] object GlobalSections {
   final case class Section(
       name: String,
       machOName: String,
-      coffName: String
+      coffName: String,
+      used: Boolean = false
   ) {
     require(
       machOName.length <= 16,
@@ -30,7 +31,8 @@ private[codegen] object GlobalSections {
   val ClassInfo = Section(
     name = "sn_classinfo",
     machOName = "__sn_classinfo",
-    coffName = ".sncls"
+    coffName = ".sncls",
+    used = true // Class.forName scans this section
   )
   val GlobalObjects = Section(
     name = "sn_global_objects",

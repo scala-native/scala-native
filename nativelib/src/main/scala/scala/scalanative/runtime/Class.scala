@@ -4,6 +4,7 @@ import java.io.InputStream
 import java.lang.ClassLoader
 import java.lang.reflect.{Field, Method}
 import java.nio.file.Paths
+import java.util.concurrent.ConcurrentHashMap
 
 import scala.language.implicitConversions
 
@@ -248,11 +249,7 @@ private[runtime] object _Class {
     false
   }
 
-  def forName(name: String): Class[_] =
-    LinkedClassesRepository.byName
-      .get(name)
-      .getOrElse(throw new ClassNotFoundException(name))
-      .asInstanceOf[Class[_]]
+  def forName(name: String): Class[_] = LinkedClasses.forName(name)
 
   def forName(
       name: String,
@@ -277,9 +274,38 @@ private[runtime] object _Class {
     }
 }
 
-private object LinkedClassesRepository {
-  private def loadAll(): scala.Array[_Class[_]] = intrinsic
-  val byName: Map[String, _Class[_]] = loadAll().map { cls =>
-    cls.name -> cls
-  }.toMap
+private object LinkedClasses {
+  import Intrinsics._
+
+  private val cache = new ConcurrentHashMap[String, Class[_]]
+
+  def forName(className: String): Class[_] = {
+    val cached = cache.get(className)
+    if (cached != null) cached
+    else {
+      val cls = find(className)
+      cache.putIfAbsent(className, cls)
+      cls
+    }
+  }
+
+  // Every class instance starts with a pointer to classOf[Class]
+  private def find(className: String): Class[_] = {
+    val ptrSize = castRawSizeToInt(sizeOf[RawPtr])
+    val section = StaticRoots.classInfoSection()
+    val start = loadRawPtr(section)
+    val end = loadRawPtr(elemRawPtr(section, ptrSize))
+    val size = (castRawPtrToLong(end) - castRawPtrToLong(start)).toInt
+    val classOfClass = castObjectToRawPtr(classOf[_Class[_]])
+    var offset = 0
+    while (offset < size) {
+      val ptr = elemRawPtr(start, offset)
+      if (loadRawPtr(ptr) == classOfClass) {
+        val cls = castRawPtrToObject(ptr).asInstanceOf[_Class[_]]
+        if (cls.name == className) return cls
+      }
+      offset += ptrSize
+    }
+    throw new ClassNotFoundException(className)
+  }
 }
