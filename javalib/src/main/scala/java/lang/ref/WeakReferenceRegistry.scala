@@ -26,8 +26,7 @@ private[java] object WeakReferenceRegistry {
     classFieldRawPtr(this, "weakRefsHead")
   )
 
-  // A Tag of a class would call ClassTag.apply, which caches its result in a
-  // WeakReference. These accessors work on raw memory to avoid that recursion.
+  // Raw memory, a Tag would call ClassTag.apply, which creates a WeakReference
   @alwaysinline private def loadHead(slot: RawPtr): WeakReference[_] =
     loadObject(slot).asInstanceOf[WeakReference[_]]
 

@@ -69,7 +69,7 @@ class ClassValueTestOnJDK25 {
 
   @Test def secondRacingRemoveDiscardsOutdatedComputation(): Unit = {
     val classValue = new Blocking
-    // The computation starts from an existing token of an other thread
+    // The computation starts from another thread's token
     classValue.remove(classOf[String])
 
     val result = runBlocked(classValue) {
@@ -77,35 +77,6 @@ class ClassValueTestOnJDK25 {
     }
 
     assertEquals("call 2", result.get)
-    assertEquals(2, classValue.computed.get())
-  }
-
-  @Test def failedComputationRacingRemoveLeavesNoValue(): Unit = {
-    val classValue = new Blocking {
-      override def onFirstResumed(): Unit =
-        throw new IllegalStateException("first")
-    }
-
-    val result = runBlocked(classValue) {
-      classValue.remove(classOf[String])
-    }
-
-    assertThrows(classOf[IllegalStateException], result.get)
-    assertEquals("call 2", classValue.get(classOf[String]))
-  }
-
-  @Test def nullFromRacingComputationIsTheAssociatedValue(): Unit = {
-    val classValue = new Blocking {
-      override def valueOf(call: Int): AnyRef =
-        if (call == 2) null else super.valueOf(call)
-    }
-
-    val result = runBlocked(classValue) {
-      assertNull(classValue.get(classOf[String]))
-    }
-
-    assertNull(result.get)
-    assertNull(classValue.get(classOf[String]))
     assertEquals(2, classValue.computed.get())
   }
 

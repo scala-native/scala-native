@@ -8,15 +8,9 @@ import scala.scalanative.libc.stdatomic.AtomicRef
 import scala.scalanative.libc.stdatomic.memory_order._
 import scala.scalanative.runtime.{ObjectArray, fromRawPtr}
 
-/* Unlike on the JVM the bindings are owned by the ClassValue, not by the Class.
- * Classes are static and never unloaded, so the lifetime of a value depends
- * only on its ClassValue. Keeping them here requires no weak references, no
- * mutable state in Class and no scanning of class metadata by the GC.
- *
- * Readers are lock-free. Slots are only ever replaced, never cleared, so probe
- * sequences stay valid. A binding is published by a release store to its slot,
- * a resized table by the volatile field. Writers are serialized by the lock,
- * which is never held in computeValue.
+/* Values are owned by the ClassValue: classes are never unloaded, so no weak
+ * references or state in Class are needed. Reads are lock-free, writes hold the
+ * lock, but never while computing a value.
  */
 abstract class ClassValue[T <: AnyRef] protected () {
   import ClassValue._
@@ -26,9 +20,7 @@ abstract class ClassValue[T <: AnyRef] protected () {
   // Number of occupied slots, guarded by the lock
   private var occupied: Int = 0
 
-  // Like final fields on the JVM these must be visible to threads receiving
-  // this instance through a data race. The constructor can be inlined, which
-  // would lose the fence emitted for @safePublish.
+  // Safely publish the fields, @safePublish is lost in inlined constructors
   stdatomic.atomic_thread_fence(memory_order_release)
 
   protected def computeValue(`type`: Class[_]): T
@@ -61,9 +53,7 @@ abstract class ClassValue[T <: AnyRef] protected () {
     binding
   }
 
-  /** @param start
-   *    the token, or null, observed before computing the value
-   */
+  // start is the token, or null, observed before computing the value
   @noinline @tailrec private def computeAndAssociate(
       cls: Class[_],
       start: Binding
@@ -85,9 +75,7 @@ abstract class ClassValue[T <: AnyRef] protected () {
     else computeAndAssociate(cls, associated)
   }
 
-  /** @return
-   *    the associated value, or the token invalidating the computed one
-   */
+  // Returns the associated value, or the token invalidating the computed one
   private def associate(
       cls: Class[_],
       start: Binding,
@@ -130,7 +118,6 @@ abstract class ClassValue[T <: AnyRef] protected () {
     slot(bindings, index).store(binding, memory_order_release)
   }
 
-  // The index is always masked by the length of the table
   @alwaysinline private def slot(
       bindings: scala.Array[Binding],
       index: Int
@@ -149,9 +136,7 @@ object ClassValue {
   private final val InitialCapacity = 8
   private final val NoRemover = -1L
 
-  /** Either a value, possibly null, associated to a class, or a removal token
-   *  created by the thread identified by removerId
-   */
+  // A value, possibly null, or a removal token made by the removerId thread
   private final class Binding(
       val cls: Class[_],
       val value: AnyRef,
@@ -160,8 +145,6 @@ object ClassValue {
     @alwaysinline def isValue: scala.Boolean = removerId == NoRemover
   }
 
-  /* Not used. The class file of java.lang.Class on the JDK refers to it as an
-   * inner class of ClassValue, the Scala compilers crash if they can't find it.
-   */
+  // Unused, scalac crashes without it as the JDK's Class.class refers to it
   private[lang] class ClassValueMap
 }

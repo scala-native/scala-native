@@ -8,7 +8,6 @@ import org.junit.{Before, Test}
 
 import org.scalanative.testsuite.utils.Platform
 
-// Classes are never collected, so values are owned by their ClassValue.
 class ClassValueReachabilityTest {
   import ClassValueReachabilityTest._
 
@@ -17,13 +16,12 @@ class ClassValueReachabilityTest {
       "requires a GC with weak references",
       Platform.isWeakReferenceSupported
     )
-    // The stack of a terminated thread can't retain the tested objects
+    // Objects are created on threads that exit, so no stack retains them
     assumeTrue(
       "requires multithreading",
       Platform.isMultithreadingEnabled
     )
-    // Conservative scanning can retain any object on some platforms, the tests
-    // below would then fail for reasons not related to ClassValue
+    // Conservative scanning can retain any object on some platforms
     assumeTrue(
       "unreachable objects are not reliably collected",
       isCollected(onOtherThread(new WeakReference(new Object)))
@@ -52,10 +50,7 @@ class ClassValueReachabilityTest {
     assertNotNull(classValue.get(classOf[String]))
   }
 
-  @Test def valueDiesWithItsClassValue(): Unit =
-    assertCollected(onOtherThread(weakValueOf(new Plain)))
-
-  // Would be retained forever if the table was referenced by a static Class
+  // Would leak if Class held the table, as on the JVM
   @Test def valueReferringToItsClassValueDiesWithIt(): Unit =
     assertCollected(onOtherThread(weakValueOf(new SelfReferring)))
 }

@@ -313,8 +313,7 @@ failure:
 static int attach(ExternalThread **result) {
     int state = atomic_load_explicit(&runtimeState, memory_order_acquire);
     if (state != RuntimeReady) {
-        /* The bootstrapping thread is bound already and can run callbacks, as
-         * needed to read the OS properties. Other threads have no record. */
+        // The bootstrapping thread is already bound and may run callbacks
         ExternalThread *bootstrap =
             state == RuntimeInitializing ? currentRecord() : NULL;
         if (bootstrap == NULL || !bootstrap->bound)

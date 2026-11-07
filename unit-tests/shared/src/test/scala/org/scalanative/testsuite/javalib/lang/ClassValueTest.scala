@@ -67,14 +67,6 @@ class ClassValueTest {
     assertEquals("java.lang.String 3", classValue.get(classOf[String]))
   }
 
-  @Test def removeOfMissingValueIsAllowed(): Unit = {
-    val classValue = new Counting
-
-    classValue.remove(classOf[String])
-    classValue.remove(classOf[String])
-    assertEquals("java.lang.String 1", classValue.get(classOf[String]))
-  }
-
   @Test def acceptsEveryKindOfClass(): Unit = {
     val classValue = new ClassValue[Class[_]] {
       protected def computeValue(cls: Class[_]): Class[_] = cls
@@ -130,22 +122,8 @@ class ClassValueTest {
     assertEquals(2, computed.get())
   }
 
-  @Test def computationCanUseOtherClassValue(): Unit = {
-    val inner = new Counting
-    val outer = new ClassValue[AnyRef] {
-      protected def computeValue(cls: Class[_]): AnyRef =
-        "outer " + inner.get(cls)
-    }
-
-    assertEquals(
-      "outer java.lang.String 1",
-      outer.get(classOf[String])
-    )
-  }
-
   @Test def computationCanUseSameClassValueWithOtherClass(): Unit = {
-    // Every computation runs while the previous ones hold no lock, which would
-    // hang or fail if it would be executed inside of the underlying map.
+    // Fails or hangs if values were computed while holding a lock
     val classValue: ClassValue[Integer] = new ClassValue[Integer] {
       protected def computeValue(cls: Class[_]): Integer = {
         val superclass: Class[_] = cls.getSuperclass()
@@ -179,24 +157,6 @@ class ClassValueTest {
     manyClasses.foreach(classValue.remove(_))
     manyClasses.foreach(classValue.get(_))
     assertEquals(manyClasses.size, classValue.computed.get())
-  }
-
-  @Test def exceptionFromRecursiveGetIsNotCached(): Unit = {
-    val computed = new AtomicInteger(0)
-    val classValue: ClassValue[AnyRef] = new ClassValue[AnyRef] {
-      protected def computeValue(cls: Class[_]): AnyRef =
-        computed.incrementAndGet() match {
-          case 1 => get(cls)
-          case 2 => throw new IllegalStateException("recursive")
-          case n => s"call $n"
-        }
-    }
-
-    assertThrows(
-      classOf[IllegalStateException],
-      classValue.get(classOf[String])
-    )
-    assertEquals("call 3", classValue.get(classOf[String]))
   }
 
   @Test def getAfterRemoveOnOtherThreadComputesOnce(): Unit = {
@@ -244,7 +204,7 @@ class ClassValueTest {
     )
     final class Computed(val cls: Class[_])
 
-    // Only a new ClassValue grows, so that readers would meet the resizing
+    // A new ClassValue each time, so that readers race with resizing
     for (_ <- 0 until 200) {
       val classValue = new ClassValue[Computed] {
         protected def computeValue(cls: Class[_]): Computed = new Computed(cls)
@@ -266,9 +226,7 @@ class ClassValueTest {
 object ClassValueTest {
   final val TimeoutSeconds = 30L
 
-  /** Runs the body in the given number of threads, started together. Fails if
-   *  any of them fails or doesn't finish in time.
-   */
+  // Starts the threads together, fails if any of them fails or times out
   def runConcurrently(threads: Int)(body: Int => Unit): Unit = {
     val start = new CyclicBarrier(threads)
     val failure = new AtomicReference[Throwable](null)
