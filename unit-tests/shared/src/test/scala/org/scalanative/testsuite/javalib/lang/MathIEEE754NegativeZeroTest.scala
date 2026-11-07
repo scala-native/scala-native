@@ -4,10 +4,8 @@ import java.lang._
 import java.{lang => jl}
 
 import org.junit.Assert._
-import org.junit.Assume.assumeTrue
 import org.junit.Test
 
-import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
 
 /* Most Tests in this suite use 'AssertEquals' because it displays
@@ -117,23 +115,11 @@ class MathIEEE754NegativeZeroSundryTest {
   final val negZeroF = jl.Float.valueOf(-0.0f)
   final val posZeroF = jl.Float.valueOf(+0.0f)
 
-  /* The methods in this class all pass on JVM (8, 22). They also pass
-   * CI when release-mode is Mode.Debug or in a private Clang 18 development
-   * environments with either Mode.Debug or Mode.ReleaseFull.
+  /* Historically Scala Native javalib has had problems with IEEE negative
+   * zeros, especially with release-fast mode. See Scala Native Issue #3986.
    *
-   * They fail in the CI environment when built with Mode.ReleseFast.
-   * The 11 JVM compliance tests and two multi-arch tests build in this manner.
-   *
-   * This problem is being actively investigated. Scala Native Issue #3986.
-   *
-   * For now, run only on the JVM. Keep Tests available for manually running
-   * on Scala Native.
+   * Enable tests on Scala Native to detect regressions.
    */
-
-  assumeTrue(
-    "IEEE 754 Negative zeros used by sundry methods are tested only on JVM",
-    Platform.executingInJVM
-  )
 
   // Check that proper negative zeros are created, even in Release-fast mode.
   @Test def validateIEEE754NegativeZeros(): Unit = {
