@@ -1108,9 +1108,10 @@ private[scalanative] object Lower {
               val unwindForPrep =
                 if (unwindHandler.isInitialized) unwind
                 else nir.Next.None
-              val attemptedVal = buf.let(nir.Op.Call(Lower.RuntimeBlockerBeginTy, Lower.RuntimeBlockerBegin, Seq.empty), unwindForPrep)
+              // Module methods take the (unused) receiver first.
+              val attemptedVal = buf.let(nir.Op.Call(Lower.RuntimeBlockerBeginTy, Lower.RuntimeBlockerBegin, Seq(nir.Val.Null)), unwindForPrep)
               body
-              buf.call(Lower.RuntimeBlockerEndTy, Lower.RuntimeBlockerEnd, Seq(attemptedVal), nir.Next.None)
+              buf.call(Lower.RuntimeBlockerEndTy, Lower.RuntimeBlockerEnd, Seq(nir.Val.Null, attemptedVal), nir.Next.None)
             } else body
           }
 
@@ -2452,8 +2453,9 @@ private[scalanative] object Lower {
   private val RuntimeBlockerEndSigUnmangled = nir.Sig.Method("end", Seq(nir.Type.Bool, nir.Type.Unit), nir.Sig.Scope.Public)
   val RuntimeBlockerBeginName = RuntimeBlockerModule.member(RuntimeBlockerBeginSigUnmangled)
   val RuntimeBlockerEndName = RuntimeBlockerModule.member(RuntimeBlockerEndSigUnmangled)
-  val RuntimeBlockerBeginTy = nir.Type.Function(Nil, nir.Type.Bool)
-  val RuntimeBlockerEndTy = nir.Type.Function(Seq(nir.Type.Bool), nir.Type.Unit)
+  private val RuntimeBlockerModuleTy = nir.Type.Ref(RuntimeBlockerModule)
+  val RuntimeBlockerBeginTy = nir.Type.Function(Seq(RuntimeBlockerModuleTy), nir.Type.Bool)
+  val RuntimeBlockerEndTy = nir.Type.Function(Seq(RuntimeBlockerModuleTy, nir.Type.Bool), nir.Type.Unit)
   val RuntimeBlockerBegin = nir.Val.Global(RuntimeBlockerBeginName, nir.Type.Ptr)
   val RuntimeBlockerEnd = nir.Val.Global(RuntimeBlockerEndName, nir.Type.Ptr)
 
