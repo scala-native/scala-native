@@ -3,7 +3,10 @@ package scala.scalanative.codegen
 import java.nio.file.Files
 
 import org.junit.Assert._
+import org.junit.Assume._
 import org.junit.Test
+
+import scala.scalanative.buildinfo.ScalaNativeBuildInfo
 
 class LoweringTest extends CodeGenSpec {
 
@@ -58,7 +61,13 @@ class LoweringTest extends CodeGenSpec {
   }
 
   // Blocker calls must pass the module receiver before `attempted`.
-  @Test def blockerCallsPassModuleReceiver(): Unit = lowered(
+  @Test def blockerCallsPassModuleReceiver(): Unit = {
+    // Virtual threads exist only in the Scala 3 javalib.
+    assumeTrue(ScalaNativeBuildInfo.scalaVersion.startsWith("3"))
+    blockerCallsPassModuleReceiverImpl()
+  }
+
+  private def blockerCallsPassModuleReceiverImpl(): Unit = lowered(
     entry = "Main",
     sources = Map(
       "Main.scala" ->
