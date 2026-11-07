@@ -1042,7 +1042,7 @@ class ArraysOfDoubleCornerCasesTestOnJDK9 {
      * implementation and the historical method: results should be the same.
      */
 
-    assertFalse("!arrA.equals(arrBb), 2 arg", Arrays.equals(arrA, arrB))
+    assertFalse("!arrA.equals(arrB), 2 arg", Arrays.equals(arrA, arrB))
 
     assertTrue(
       "arrA > arrB",
