@@ -22,11 +22,13 @@ class ClassValueReachabilityTest {
       "requires multithreading",
       Platform.isMultithreadingEnabled
     )
+    // Conservative scanning can retain any object on some platforms, the tests
+    // below would then fail for reasons not related to ClassValue
+    assumeTrue(
+      "unreachable objects are not reliably collected",
+      isCollected(onOtherThread(new WeakReference(new Object)))
+    )
   }
-
-  // Control for the tests below, not related to ClassValue
-  @Test def unreachableObjectIsCollected(): Unit =
-    assertCollected(onOtherThread(new WeakReference(new Object)))
 
   @Test def valueLivesAsLongAsItsClassValue(): Unit = {
     val classValue = new Plain
@@ -91,12 +93,15 @@ object ClassValueReachabilityTest {
     Thread.sleep(10)
   }
 
-  private def assertCollected(ref: WeakReference[AnyRef]): Unit = {
+  private def isCollected(ref: WeakReference[AnyRef]): Boolean = {
     var attempts = 100
     while (!isCleared(ref) && attempts > 0) {
       collect()
       attempts -= 1
     }
-    assertTrue("the object was not collected", isCleared(ref))
+    isCleared(ref)
   }
+
+  private def assertCollected(ref: WeakReference[AnyRef]): Unit =
+    assertTrue("the object was not collected", isCollected(ref))
 }

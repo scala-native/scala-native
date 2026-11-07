@@ -311,9 +311,17 @@ failure:
 }
 
 static int attach(ExternalThread **result) {
-    if (atomic_load_explicit(&runtimeState, memory_order_acquire) !=
-        RuntimeReady)
-        return SCALANATIVE_THREAD_NOT_INITIALIZED;
+    int state = atomic_load_explicit(&runtimeState, memory_order_acquire);
+    if (state != RuntimeReady) {
+        /* The bootstrapping thread is bound already and can run callbacks, as
+         * needed to read the OS properties. Other threads have no record. */
+        ExternalThread *bootstrap =
+            state == RuntimeInitializing ? currentRecord() : NULL;
+        if (bootstrap == NULL || !bootstrap->bound)
+            return SCALANATIVE_THREAD_NOT_INITIALIZED;
+        *result = bootstrap;
+        return SCALANATIVE_THREAD_SUCCESS;
+    }
     ExternalThread *record;
     int status = ensureRecord(&record);
     if (status != SCALANATIVE_THREAD_SUCCESS)
