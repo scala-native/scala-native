@@ -469,7 +469,9 @@ private[java] final class VirtualThread(
       case State.Running if isPinned =>
         // Pinned: park on the carrier instead of yielding
         state = State.TimedPinned
-        NativeThread.currentNativeThread.parkNanos(nanos)
+        // unpark sets the permit before reading the state: re-check it.
+        if (!getAndSetParkPermit(false))
+          NativeThread.currentNativeThread.parkNanos(nanos)
         state = State.Running
 
       case State.Running =>
@@ -514,7 +516,9 @@ private[java] final class VirtualThread(
       case State.Running if isPinned =>
         // Pinned: park on the carrier instead of yielding
         state = State.Pinned
-        NativeThread.currentNativeThread.park()
+        // unpark sets the permit before reading the state: re-check it.
+        if (!getAndSetParkPermit(false))
+          NativeThread.currentNativeThread.park()
         setParkPermit(false)
         state = State.Running
 
