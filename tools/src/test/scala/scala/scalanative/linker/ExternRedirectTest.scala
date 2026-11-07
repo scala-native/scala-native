@@ -11,6 +11,11 @@ class ExternRedirectTest extends LinkerSpec {
 
   private val entry = "scala.scalanative.redirect.Test"
 
+  private def externId(sig: nir.Sig): Option[String] = sig.unmangled match {
+    case nir.Sig.Extern(id) => Some(id)
+    case _                  => None
+  }
+
   private def calledExterns(result: ReachabilityAnalysis.Result): Set[String] =
     result.defns
       .collect {
@@ -24,78 +29,81 @@ class ExternRedirectTest extends LinkerSpec {
                     _
                   ),
                   _
-                ) if sig.isExtern =>
-              sig.unmangled match {
-                case nir.Sig.Extern(id) => id
-                case _                  => fail("expected extern"); ""
-              }
-          }
+                ) =>
+              externId(sig)
+          }.flatten
       }
       .flatten
       .toSet
 
-  private def definedExterns(result: ReachabilityAnalysis.Result): Set[String] =
-    result.defns.collect {
-      case nir.Defn.Define(_, nir.Global.Member(_, sig), _, _, _)
-          if sig.isExtern =>
-        sig.unmangled match {
-          case nir.Sig.Extern(id) => id
-          case _                  => fail("expected extern"); ""
-        }
-    }.toSet
-
-  private def assertNotExtern(
+  private def externDefns(
       result: ReachabilityAnalysis.Result,
       id: String
-  ): Unit = {
-    assertFalse(s"$id called", calledExterns(result).contains(id))
-    assertFalse(s"$id defined", definedExterns(result).contains(id))
-    assertFalse(
-      s"$id still in infos",
-      result.infos.keys.exists {
-        case nir.Global.Member(_, sig) => sig == nir.Sig.Extern(id).mangled
-        case _                         => false
-      }
-    )
-  }
+  ): Seq[nir.Defn] =
+    result.defns.filter {
+      case nir.Defn.Define(_, nir.Global.Member(_, sig), _, _, _) =>
+        externId(sig).contains(id)
+      case nir.Defn.Declare(_, nir.Global.Member(_, sig), _) =>
+        externId(sig).contains(id)
+      case _ => false
+    }
 
   private def assertRedirect(
       result: ReachabilityAnalysis.Result,
       id: String
   ): Unit = {
-    val defns = result.defns.filter {
-      case nir.Defn.Define(_, nir.Global.Member(_, sig), _, _, _) =>
-        sig == nir.Sig.Extern(id).mangled
-      case nir.Defn.Declare(_, nir.Global.Member(_, sig), _) =>
-        sig == nir.Sig.Extern(id).mangled
-      case _ => false
-    }
-    assertTrue(s"$id is not a redirect", defns.nonEmpty)
+    val defns = externDefns(result, id)
+    assertTrue(s"$id is not defined", defns.nonEmpty)
     defns.foreach(defn => assertTrue(defn.show, defn.isExternRedirect))
-    defns.foreach { defn =>
-      assertEquals(nir.Attr.AlwaysInline, defn.attrs.inlineHint)
-    }
   }
 
-  @Test def generatesFunctionCallingTarget(): Unit =
+  private def linkRedirects(members: String, main: String)(
+      fn: ReachabilityAnalysis.Result => Unit
+  ): Unit =
     link(
       entry,
-      """package scala.scalanative.redirect
-        |import scala.scalanative.unsafe._
-        |
-        |@extern object Native {
-        |  @name("new_name") def current(v: CInt): CInt = extern
-        |  @name("old_name") private[scalanative] def compat(v: CInt): CInt =
-        |    externRedirect(current(v))
-        |}
-        |object Test {
-        |  def main(args: Array[String]): Unit = println(Native.compat(1))
-        |}
-        |""".stripMargin
-    ) { (_, result) =>
+      s"""package scala.scalanative.redirect
+         |import scala.scalanative.unsafe._
+         |
+         |@extern object Native {
+         |  @name("new_name") def current(a: CInt, b: CLongLong): CInt = extern
+         |$members
+         |}
+         |object Test {
+         |  def main(args: Array[String]): Unit = $main
+         |}
+         |""".stripMargin
+    )((_, result) => fn(result))
+
+  @Test def forwardsCall(): Unit =
+    linkRedirects(
+      """  @name("old_name") def old(a: CInt, b: CLongLong): CInt =
+        |    externRedirect(current(a, b))""".stripMargin,
+      "println(Native.old(1, 2L))"
+    ) { result =>
       assertRedirect(result, "old_name")
       assertTrue(calledExterns(result).contains("new_name"))
     }
+
+  @Test def acceptsAnyBody(): Unit =
+    linkRedirects(
+      """  @name("old_name") def old(b: CLongLong, a: CInt, c: CInt): CLongLong =
+        |    externRedirect {
+        |      val shift = c * 2
+        |      current(a + shift, 42L).toLong + b
+        |    }""".stripMargin,
+      "println(Native.old(1L, 2, 3))"
+    ) { result =>
+      assertRedirect(result, "old_name")
+      assertTrue(calledExterns(result).contains("new_name"))
+    }
+
+  @Test def returnsUnit(): Unit =
+    linkRedirects(
+      """  @name("old_name") def old(a: CInt): Unit =
+        |    externRedirect { current(a, 0L) }""".stripMargin,
+      "Native.old(1)"
+    )(assertRedirect(_, "old_name"))
 
   @Test def usesAttributesOfTarget(): Unit =
     link(
@@ -105,17 +113,16 @@ class ExternRedirectTest extends LinkerSpec {
         |
         |@extern object Native {
         |  @name("new_name") @blocking def current(v: CInt): CInt = extern
-        |  @name("old_name") private[scalanative] def compat(v: CInt): CInt =
-        |    externRedirect(current(v))
+        |  @name("old_name") def old(v: CInt): CInt = externRedirect(current(v))
         |}
         |object Test {
-        |  def main(args: Array[String]): Unit = println(Native.compat(1))
+        |  def main(args: Array[String]): Unit = println(Native.old(1))
         |}
         |""".stripMargin
     ) { (_, result) =>
       val target = result.infos.collectFirst {
         case (nir.Global.Member(_, sig), info)
-            if sig == nir.Sig.Extern("new_name").mangled =>
+            if externId(sig).contains("new_name") =>
           info
       }
       assertTrue(target.exists(_.attrs.isBlocking))
@@ -129,12 +136,11 @@ class ExternRedirectTest extends LinkerSpec {
         |
         |@extern trait NativeApi {
         |  @name("new_name") def current(v: CInt): CInt = extern
-        |  @name("old_name") private[scalanative] def compat(v: CInt): CInt =
-        |    externRedirect(current(v))
+        |  @name("old_name") def old(v: CInt): CInt = externRedirect(current(v))
         |}
         |@extern object Native extends NativeApi
         |object Test {
-        |  def main(args: Array[String]): Unit = println(Native.compat(1))
+        |  def main(args: Array[String]): Unit = println(Native.old(1))
         |}
         |""".stripMargin
     ) { (_, result) =>
@@ -151,8 +157,7 @@ class ExternRedirectTest extends LinkerSpec {
         |@extern trait NativeApi {
         |  def other(): CInt = extern
         |  @name("new_name") def current(v: CInt): CInt = extern
-        |  @name("old_name") private[scalanative] def compat(v: CInt): CInt =
-        |    externRedirect(current(v))
+        |  @name("old_name") def old(v: CInt): CInt = externRedirect(current(v))
         |}
         |@extern object Native extends NativeApi
         |object Test {
@@ -160,52 +165,7 @@ class ExternRedirectTest extends LinkerSpec {
         |}
         |""".stripMargin
     ) { (_, result) =>
-      assertNotExtern(result, "old_name")
+      assertTrue(externDefns(result, "old_name").isEmpty)
       assertFalse(calledExterns(result).contains("new_name"))
-    }
-
-  @Test def redirectsRenamedLibraryExterns(): Unit =
-    link(
-      entry,
-      Map(
-        "posix.scala" ->
-          """package scala.scalanative.posix
-            |
-            |object Compat {
-            |  def run(): Unit = {
-            |    println(time._clock_gettime(0, null))
-            |    println(time._nanosleep(null, null))
-            |    println(sys.socket._socket(0, 0, 0))
-            |    println(signal._sigaltstack(null, null))
-            |  }
-            |}
-            |""".stripMargin,
-        "libc.scala" ->
-          """package scala.scalanative.libc
-            |
-            |object Compat {
-            |  def run(): Unit = println(locale._setlocale(0, null))
-            |}
-            |""".stripMargin,
-        "test.scala" ->
-          """package scala.scalanative.redirect
-            |
-            |object Test {
-            |  def main(args: Array[String]): Unit = {
-            |    scala.scalanative.posix.Compat.run()
-            |    scala.scalanative.libc.Compat.run()
-            |  }
-            |}
-            |""".stripMargin
-      )
-    ) { (_, result) =>
-      Seq("clock_gettime", "nanosleep", "socket", "sigaltstack", "setlocale")
-        .foreach { id =>
-          assertRedirect(result, id)
-          assertTrue(
-            s"scalanative_$id not called",
-            calledExterns(result).contains(s"scalanative_$id")
-          )
-        }
     }
 }

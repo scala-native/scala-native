@@ -111,12 +111,13 @@ package object unsafe extends unsafe.UnsafePackageCompat {
   def extern: Nothing = intrinsic
 
   /** Used as right hand side of an extern method kept for binary compatibility
-   *  under an old name. The argument must be a direct call to another extern
-   *  method, forwarding all parameters. Generates an always inlined function
-   *  answering to the old name, with attributes coming from the target. No
-   *  symbol with the bare old name is emitted.
+   *  under an old name. The body is a normal Scala expression, typically
+   *  calling the extern replacing it. It becomes an always inlined function
+   *  answering to the old extern name, without defining a native symbol of that
+   *  name. In an extern trait, `this` is `null`, so the body can call externs
+   *  but not other members of the trait.
    */
-  private[scalanative] def externRedirect(call: Any): Nothing = intrinsic
+  private[scalanative] def externRedirect[T](body: T): T = intrinsic
 
   /** Used as right hand side of values resolved at link-time. */
   private[scalanative] def resolved: Nothing = intrinsic

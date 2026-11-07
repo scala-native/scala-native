@@ -141,53 +141,28 @@ class NIRCompilerTest {
     )
   }
 
-  private def assertExternRedirectError(body: String, msg: String): Unit = {
+  @Test def externRedirectOutsideExternMethod(): Unit = {
     val code =
-      s"""|package scala.scalanative
-          |import scala.scalanative.unsafe._
-          |
-          |@extern object Dummy {
-          |  @name("new_foo") def foo(a: Int, b: Int): Int = extern
-          |  def bar(a: Long): Int = extern
-          |  $body
-          |}
-          |""".stripMargin
+      """|package scala.scalanative
+         |import scala.scalanative.unsafe._
+         |
+         |object Dummy {
+         |  def foo(a: Int): Int = externRedirect(a + 1)
+         |}
+         |""".stripMargin
     val err = assertThrows(
       classOf[CompilationFailedException],
       () => NIRCompiler(_.compile(code))
     )
-    assertTrue(err.getMessage(), err.getMessage().contains(msg))
+    assertTrue(
+      err.getMessage(),
+      err
+        .getMessage()
+        .contains(
+          "externRedirect can be used only as the body of an extern method"
+        )
+    )
   }
-
-  @Test def externRedirectToNonExtern(): Unit =
-    assertExternRedirectError(
-      """@name("old") def compat(a: Int): Int = externRedirect(a + 1)""",
-      "externRedirect requires a direct call to an extern method"
-    )
-
-  @Test def externRedirectReorderedParams(): Unit =
-    assertExternRedirectError(
-      """@name("old") def compat(a: Int, b: Int): Int = externRedirect(foo(b, a))""",
-      "externRedirect must forward all parameters in order"
-    )
-
-  @Test def externRedirectChangedArgument(): Unit =
-    assertExternRedirectError(
-      """@name("old") def compat(a: Int, b: Int): Int = externRedirect(foo(a, 1))""",
-      "externRedirect must forward all parameters in order"
-    )
-
-  @Test def externRedirectDifferentSignature(): Unit =
-    assertExternRedirectError(
-      """@name("old") def compat(a: Long): Long = externRedirect(bar(a))""",
-      "externRedirect target must have the same signature"
-    )
-
-  @Test def externRedirectToItself(): Unit =
-    assertExternRedirectError(
-      """@name("new_foo") def compat(a: Int, b: Int): Int = externRedirect(foo(a, b))""",
-      "externRedirect target must have a different extern name"
-    )
 
   @Test def externMemberOverload(): Unit = {
     val code =
