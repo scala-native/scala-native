@@ -33,7 +33,6 @@ import org.junit.Assert._
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import org.scalanative.testsuite.utils.Platform
 
 
 class ArraysOfBooleanTestOnJDK9 {
@@ -4810,16 +4809,9 @@ class ArraysOfCharCornerCasesTestOnJDK9 {
 }
 
 class ArraysOfDoubleCornerCasesTestOnJDK9 {
-  /* The exerciseDouble* tests check that the JDK behavior for compareTo is
-   * being followed, not the IEEE 754 specification.
-   */
 
   @Test def exerciseDoubleNegativeZero: Unit = {
-    /* See Scala Native Issues #4281, #3982 & #3986 re SN bugs with -0.0.
-     *
-     * Also there is a bug in the SN JDK8 implementation of
-     * Arrays.equals(a, b) for Double and probably also for Float.
-     */
+    // See Scala Native Issues #4281, #3982 & #3986 re SN bugs with -0.0.
 
     val srcSize = 16
 
@@ -4858,43 +4850,29 @@ class ArraysOfDoubleCornerCasesTestOnJDK9 {
       arrA(changeAt).compareTo(arrB(changeAt)) > 0
     )
 
-    /* Scala Native Issue #3986 prevents this block from passing on SN.
-     *
-     * The Test passes manually when built with Debug mode. It fails
-     * with ReleaseFast. ReleaseFull is failing to build at all.
-     *
-     * It is difficult to use LinktimeInfo.debugMode in a Test which
-     * must also run on the JVM.
-     *
-     * This Test little value to CI but is useful when run manually.
-     * It is kept in the hope that one day the SN bug will be fixed and
-     * the Test enabled. Then it can shine.
+    assertFalse(
+      "!arrA.equals(arrB), 6 Arg",
+      Arrays.equals(arrA, 0, arrA.length, arrB, 0, arrB.length))
+
+    /* Use the 2 argument overload to cross check the JDK 9 six argument
+     * implementation and the historical method: results should be the same.
      */
-    if (Platform.executingInJVM) {
-      assertFalse(
-	"!arrA.equals(arrB), 6 Arg",
-	Arrays.equals(arrA, 0, arrA.length, arrB, 0, arrB.length))
 
-      /* Use the 2 argument overload to cross check the JDK 9 six argument
-       * implementation and the historical method: results should be the same.
-       *
-       * Expand coverage to Scala Native once its 2 argument overload is
-       * corrected.
-       */
+    assertFalse("!arrA.equals(arrB), 2 arg", Arrays.equals(arrA, arrB))
 
-      if (Platform.executingInJVM)
-        assertFalse("!arrA.equals(arrBb), 2 arg", Arrays.equals(arrA, arrB))
+    assertTrue(
+      "arrA > arrB",
+      Arrays.compare(arrA, 0, arrA.length, arrB, 0, arrB.length) > 0)
 
-      assertTrue(
-	"arrA > arrB",
-	Arrays.compare(arrA, 0, arrA.length, arrB, 0, arrB.length) > 0)
-
-      assertEquals(
-	"mismatch position,",
-	changeAt,
-	Arrays.mismatch(arrA, 0, arrA.length, arrB, 0, arrB.length))
-    }
+    assertEquals(
+      "mismatch position,",
+      changeAt,
+      Arrays.mismatch(arrA, 0, arrA.length, arrB, 0, arrB.length))
   }
+
+  /* The exerciseDouble* tests below check that the JDK behavior for
+   * compareTo is being followed, not the IEEE 754 specification.
+   */
 
   @Test def exerciseDoubleJavaNaNs: Unit = {
     val srcSize = 16
@@ -4942,8 +4920,7 @@ class ArraysOfDoubleCornerCasesTestOnJDK9 {
      * implementation and the historical method: results should be the same.
      */
 
-    if (Platform.executingInJVM)
-      assertTrue("arrA.equals(arrB), 2 Arg", Arrays.equals(arrA, arrB))
+    assertTrue("arrA.equals(arrB), 2 Arg", Arrays.equals(arrA, arrB))
 
     assertEquals(
       "arrA.compareTo(arrB)",
@@ -5006,8 +4983,7 @@ class ArraysOfDoubleCornerCasesTestOnJDK9 {
      * implementation and the historical method: results should be the same.
      */
 
-    if (Platform.executingInJVM)
-      assertTrue("arrA.equals(arrB), 2 Arg", Arrays.equals(arrA, arrB))
+    assertTrue("arrA.equals(arrB), 2 Arg", Arrays.equals(arrA, arrB))
 
     assertEquals(
       "a.compareTo(b)",
@@ -5072,34 +5048,24 @@ class ArraysOfFloatCornerCasesTestOnJDK9 {
       arrA(changeAt).compareTo(arrB(changeAt)) > 0
     )
 
-    /* Scala Native Issue #3986 prevents this block from passing on SN.
-     * See full discussion above equivalent block in
-     * class ArraysOfDoubleCornerCasesTestOnJDK9.
+    assertFalse(
+      "!arrA.equals(arrB), 6 Arg",
+      Arrays.equals(arrA, 0, arrA.length, arrB, 0, arrB.length))
+
+    /* Use the 2 argument overload to cross check the JDK 9 six argument
+     * implementation and the historical method: results should be the same.
      */
-    if (Platform.executingInJVM) {
-      assertFalse(
-	"!arrA.equals(arrB), 6 Arg",
-	Arrays.equals(arrA, 0, arrA.length, arrB, 0, arrB.length))
 
-      /* Use the 2 argument overload to cross check the JDK 9 six argument
-       * implementation and the historical method: results should be the same.
-       *
-       * Expand coverage to Scala Native once its 2 argument overload is
-       * corrected.
-       */
+    assertFalse("!arrA.equals(arrB), 2 arg", Arrays.equals(arrA, arrB))
 
-      if (Platform.executingInJVM)
-        assertFalse("!arrA.equals(arrB), 2 arg", Arrays.equals(arrA, arrB))
-
-      assertTrue(
+    assertTrue(
 	"arrA > arrB",
 	Arrays.compare(arrA, 0, arrA.length, arrB, 0, arrB.length) > 0)
 
-      assertEquals(
+    assertEquals(
 	"mismatch position,",
 	changeAt,
 	Arrays.mismatch(arrA, 0, arrA.length, arrB, 0, arrB.length))
-    }
   }
 
   @Test def exerciseFloatJavaNaNs: Unit = {
@@ -5139,13 +5105,6 @@ class ArraysOfFloatCornerCasesTestOnJDK9 {
       arrA(changeAt).compareTo(arrB(changeAt)) == 0
     )
 
-    /* Scala Native Issue #3986 prevents this from running on Scala Native.
-     * The Test passes manually when built with Debug mode. It fails
-     * with ReleaseFast. ReleaseFull is failing to build at all.
-     *
-     * It is difficult to use LinktimeInfo.debugMode in a Test which
-     * must also run on the JVM.
-     */
     assertTrue(
       "arrA.equals(arrB), 6 Arg",
       Arrays.equals(arrA, 0, arrA.length, arrB, 0, arrB.length))
@@ -5154,8 +5113,7 @@ class ArraysOfFloatCornerCasesTestOnJDK9 {
      * implementation and the historical method: results should be the same.
      */
 
-    if (Platform.executingInJVM)
-      assertTrue("arrA.equals(arrB), 2 Arg", Arrays.equals(arrA, arrB))
+    assertTrue("arrA.equals(arrB), 2 Arg", Arrays.equals(arrA, arrB))
 
     assertEquals(
       "a.compareTo(b)",
@@ -5221,8 +5179,7 @@ class ArraysOfFloatCornerCasesTestOnJDK9 {
      * implementation and the historical method: results should be the same.
      */
 
-    if (Platform.executingInJVM)
-      assertTrue("arrA.equals(arrB), 2 Arg", Arrays.equals(arrA, arrB))
+    assertTrue("arrA.equals(arrB), 2 Arg", Arrays.equals(arrA, arrB))
 
     assertEquals(
       "arrA.compareTo(arrB)",
