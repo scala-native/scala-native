@@ -634,6 +634,35 @@ class SubmissionPublisherTest extends JSR166Test {
     assertEquals(1, s1.completes)
   }
 
+  /** submit from a non-pool thread never fails nor returns a negative lag */
+  @Test def testCap1SubmitFromPlatformThread(): Unit = {
+    val failure = new java.util.concurrent.atomic.AtomicReference[Throwable]()
+    val producer = new Thread(() =>
+      try
+        for (_ <- 1 to 200) {
+          val p = new SubmissionPublisher[Integer](basicExecutor, 1)
+          val s1 = new TestSubscriber()
+          val s2 = new TestSubscriber()
+          p.subscribe(s1)
+          p.subscribe(s2)
+          for (i <- 1 to 20) {
+            val lag = p.submit(i)
+            assertTrue(s"negative lag $lag", lag >= 0)
+          }
+          p.close()
+          s2.awaitComplete()
+          s1.awaitComplete()
+          assertEquals(20, s1.nexts)
+          assertEquals(20, s2.nexts)
+        }
+      catch { case t: Throwable => failure.set(t) }
+    )
+    producer.start()
+    producer.join(LONG_DELAY_MS)
+    assertFalse("producer did not finish", producer.isAlive())
+    if (failure.get() != null) throw failure.get()
+  }
+
   /** offer to a publisher with no subscribers returns lag 0 */
   @Test def testEmptyOffer(): Unit = {
     val p = basicPublisher()
