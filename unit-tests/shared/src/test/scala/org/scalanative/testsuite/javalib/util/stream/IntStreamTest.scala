@@ -982,7 +982,7 @@ class IntStreamTest {
     assertThrows(classOf[IllegalArgumentException], s.limit(-1))
   }
 
-  @Test def intStreamLimit(): Unit = {
+  @Test def intStreamLimit_Count_SrcUnsized(): Unit = {
     val expectedCount = 10
     var data = -1
 
@@ -996,13 +996,85 @@ class IntStreamTest {
     assertEquals(s"unexpected element count", expectedCount, s1.count())
   }
 
+  @Test def intStreamLimit_Count_SrcSmaller(): Unit = {
+    StreamTestHelpers.requireJDK17CompatibleCharacteristics()
+
+    val limit = 5
+    val expectedSize = 4
+    val s0 = IntStream.of(1, 2, 3, 4)
+
+    val s1 = s0.limit(limit)
+
+    assertEquals(s"unexpected element count", expectedSize, s1.count())
+  }
+
+  @Test def intStreamLimit_Count_SrcLarger(): Unit = {
+    StreamTestHelpers.requireJDK17CompatibleCharacteristics()
+
+    val limit = 3
+    val expectedSize = 3
+    val s0 = IntStream.of(1, 2, 3, 4, 5)
+
+    val s1 = s0.limit(limit)
+
+    assertEquals(s"unexpected element count", limit, s1.count())
+  }
+
+  @Test def intStreamLimit_Spliterator_SrcSmaller(): Unit = {
+    StreamTestHelpers.requireJDK17CompatibleCharacteristics()
+
+    val limit = 6
+    val s0 = IntStream.of(1, 2, 3, 4)
+
+    val expectedExactSize = 4
+    val expectedEstimatedSize = expectedExactSize
+
+    val spliter = s0.limit(limit).spliterator()
+
+    assertEquals(
+      "expected exact size",
+      expectedExactSize,
+      spliter.getExactSizeIfKnown()
+    )
+
+    assertEquals(
+      "expected estimated size",
+      expectedEstimatedSize,
+      spliter.estimateSize()
+    )
+  }
+
+  @Test def intStreamLimit_Spliterator_SrcLarger(): Unit = {
+    StreamTestHelpers.requireJDK17CompatibleCharacteristics()
+
+    val limit = 3
+    val s0 = IntStream.of(1, 2, 3, 4, 5)
+
+    val expectedExactSize = 3
+    val expectedEstimatedSize = expectedExactSize
+
+    val spliter = s0.limit(limit).spliterator()
+
+    assertEquals(
+      "expected exact size",
+      expectedExactSize,
+      spliter.getExactSizeIfKnown()
+    )
+
+    assertEquals(
+      "expected estimated size",
+      expectedEstimatedSize,
+      spliter.estimateSize()
+    )
+  }
+
   /*  Note Well: See Issue #3309 comments in StreamTest.scala and
    *             in original issue.
    */
 
   // Issue #3309 - 1 of 5
   @Test def intStreamLimit_Size(): Unit = {
-    StreamTestHelpers.requireJDK8CompatibleCharacteristics()
+    StreamTestHelpers.requireJDK17CompatibleCharacteristics()
 
     val srcSize = 10
 
@@ -1028,7 +1100,7 @@ class IntStreamTest {
 
   // Issue #3309 - 2 of 5
   @Test def intStreamLimit_Characteristics(): Unit = {
-    StreamTestHelpers.requireJDK8CompatibleCharacteristics()
+    StreamTestHelpers.requireJDK17CompatibleCharacteristics()
 
     val zeroCharacteristicsSpliter =
       new Spliterators.AbstractIntSpliterator(Long.MaxValue, 0x0) {
@@ -1065,11 +1137,18 @@ class IntStreamTest {
     val sAllLimited = sAll.limit(9)
     val sAllLimitedSpliter = sAllLimited.spliterator()
 
+    /*
     // JVM 8 expects 0x11 (decimal 17), JVM >= 17 expects 0x4051 (Dec 16465)
     val expectedSAllLimitedCharacteristics =
       Spliterator.ORDERED | Spliterator.DISTINCT // 0x11
     // Drop SIZED, SUBSIZED, CONCURRENT, IMMUTABLE, & NONNULL.
     // SORTED was not there to drop.
+     */
+
+    // JVM >= 17 expects 0x4051 (Dec 16465), JVM 8 used only 0x11 (decimal 17)
+    val expectedSAllLimitedCharacteristics =
+      Spliterator.SIZED | Spliterator.SUBSIZED | Spliterator.ORDERED |
+        Spliterator.DISTINCT // 0x4051
 
     assertEquals(
       "Unexpected characteristics for all characteristics stream",
@@ -1080,7 +1159,7 @@ class IntStreamTest {
 
   // Issue #3309 - 3 of 5
   @Test def intStreamLimit_SortedCharacteristics(): Unit = {
-    StreamTestHelpers.requireJDK8CompatibleCharacteristics()
+    StreamTestHelpers.requireJDK17CompatibleCharacteristics()
 
     /* Address issues with SORTED described in Test
      * streamLimit_sequentialAlwaysCharacteristics
@@ -1095,9 +1174,12 @@ class IntStreamTest {
     val sAllLimited = sAll.sorted().limit(9)
     val sAllLimitedSpliter = sAllLimited.spliterator()
 
-    // JVM 8 expects 0x15 (decimal 21), JVM >= 17 expects 0x4055 (Dec 16469)
+    // JVM >= 17 expects 0x4055 (Dec 16469), JVM 8 used only 0x15 (decimal 21)
     val expectedSAllLimitedCharacteristics =
-      Spliterator.ORDERED | Spliterator.DISTINCT | Spliterator.SORTED // 0x15        // Drop SIZED, SUBSIZED, CONCURRENT, IMMUTABLE, & NONNULL.
+      Spliterator.SIZED | Spliterator.SUBSIZED |
+        Spliterator.ORDERED |
+        Spliterator.SORTED |
+        Spliterator.DISTINCT
 
     assertEquals(
       "Unexpected characteristics for all characteristics sorted stream",
@@ -1108,7 +1190,7 @@ class IntStreamTest {
 
   // Issue #3309 - 4 of 5
   @Test def streamLimit_UnsizedCharacteristics(): Unit = {
-    StreamTestHelpers.requireJDK8CompatibleCharacteristics()
+    StreamTestHelpers.requireJDK17CompatibleCharacteristics()
 
     val srcSize = 20
 
@@ -1128,7 +1210,7 @@ class IntStreamTest {
 
   // Issue #3309 - 5 of 5
   @Test def streamLimit_SizedCharacteristics(): Unit = {
-    StreamTestHelpers.requireJDK8CompatibleCharacteristics()
+    StreamTestHelpers.requireJDK17CompatibleCharacteristics()
 
     val proofSpliter = IntStream.of(112, 223, 334, -112).spliterator()
 
@@ -1147,8 +1229,9 @@ class IntStreamTest {
       .limit(3)
       .spliterator()
 
-    // JVM 8 expects 0x10 (decimal 16), JVM >= 17 expects 0x4050 (Dec 16464)
-    val expectedSizedLimitCharacteristics = Spliterator.ORDERED
+    // JVM >= 17 expects 0x4050 (Dec 16464), JVM 8 used only 0x10 (decimal 16)
+    val expectedSizedLimitCharacteristics =
+      Spliterator.SIZED | Spliterator.SUBSIZED | Spliterator.ORDERED // 0x4050
 
     assertEquals(
       "Unexpected characteristics for SIZED stream",
