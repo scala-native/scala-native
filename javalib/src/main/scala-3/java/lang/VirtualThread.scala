@@ -472,6 +472,7 @@ private[java] final class VirtualThread(
         // unpark sets the permit before reading the state: re-check it.
         if (!getAndSetParkPermit(false))
           NativeThread.currentNativeThread.parkNanos(nanos)
+        setParkPermit(false) // consume an unpark that ended the wait
         state = State.Running
 
       case State.Running =>
