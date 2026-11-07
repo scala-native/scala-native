@@ -295,11 +295,11 @@ private object LinkedClasses {
     val section = StaticRoots.classInfoSection()
     val start = loadRawPtr(section)
     val end = loadRawPtr(elemRawPtr(section, ptrSize))
-    val size = (castRawPtrToLong(end) - castRawPtrToLong(start)).toInt
+    val size = castRawPtrToLong(end) - castRawPtrToLong(start)
     val classOfClass = castObjectToRawPtr(classOf[_Class[_]])
-    var offset = 0
+    var offset = 0L
     while (offset < size) {
-      val ptr = elemRawPtr(start, offset)
+      val ptr = elemRawPtr(start, castLongToRawSize(offset))
       if (loadRawPtr(ptr) == classOfClass) {
         val cls = castRawPtrToObject(ptr).asInstanceOf[_Class[_]]
         if (cls.name == className) return cls
