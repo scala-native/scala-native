@@ -89,7 +89,7 @@ static void continuation_terminate_handler() {
                 jmp_buf *env = ceh.env;
                 *ceh.exception_slot = e.obj;
                 scalanative_continuation_exception_handler_clear();
-                longjmp(*env, 1);
+                SN_CONTINUATION_LONGJMP(*env, 1);
             }
             if (scalanative_continuation_exception_escape(e.obj))
                 __builtin_unreachable();

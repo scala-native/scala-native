@@ -783,7 +783,7 @@ void *scalanative_continuation_resume(Continuation *continuation, void *out) {
     volatile int resume_handler_pushed = 0;
     ContinuationExceptionHandler previous_exception_handler =
         scalanative_continuation_exception_handler();
-    if (setjmp(exception_env) != 0) {
+    if (SN_CONTINUATION_SETJMP(exception_env) != 0) {
         if (resume_handler_pushed) {
             handlers_store((Handler *)saved_handlers);
             resume_handler_pushed = 0;

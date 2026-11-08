@@ -3,6 +3,19 @@
 #include <stdlib.h>
 #include <setjmp.h>
 
+/* Exception escapes from resumed continuations. setjmp/longjmp also save and
+ * restore signal state (the signal mask and, on Darwin, the sigaltstack
+ * flag); _setjmp/_longjmp only save registers. The escape stays on the same
+ * thread, so restoring signal state is not needed, and a stale sigaltstack
+ * flag breaks stack overflow handling. */
+#ifdef _WIN32
+#define SN_CONTINUATION_SETJMP(env) setjmp(env)
+#define SN_CONTINUATION_LONGJMP(env, val) longjmp(env, val)
+#else
+#define SN_CONTINUATION_SETJMP(env) _setjmp(env)
+#define SN_CONTINUATION_LONGJMP(env, val) _longjmp(env, val)
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
