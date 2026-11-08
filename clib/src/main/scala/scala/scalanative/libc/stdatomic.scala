@@ -1,7 +1,7 @@
 // format: off
 package scala.scalanative.libc
 
-import scala.scalanative.runtime.{fromRawPtr, Intrinsics}
+import scala.scalanative.runtime.{fromRawPtr, Intrinsics, RawPtr}
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.language.implicitConversions
@@ -1629,36 +1629,37 @@ object stdatomic extends stdatomicExt {
     def fetchXor(value: T): T= atomic_fetch_xor(underlying, value)
     def fetchXor(value: T, memoryOrder: memory_order): T = atomic_fetch_xor_explicit(underlying, value, memoryOrder)
 
+    // A raw slot, a Tag[AnyRef] would need a ClassTag
     def compareExchangeStrong(expectedValue: T, desired: T)(implicit dummy: DummyImplicit): Boolean = {
-      val expectedPtr = stackalloc[AnyRef]()
-      !expectedPtr = expectedValue
-      atomic_compare_exchange_strong(underlying, expectedPtr.asInstanceOf[Ptr[T]], desired)
+      val expectedSlot = Intrinsics.stackalloc[RawPtr]()
+      Intrinsics.storeObject(expectedSlot, expectedValue)
+      atomic_compare_exchange_strong(underlying, fromRawPtr[T](expectedSlot), desired)
     }
     def compareExchangeStrong(expectedValue: T, desired: T, memoryOrderOnSuccess: memory_order, memoryOrderOnFailure: memory_order)(implicit dummy: DummyImplicit): Boolean = {
-      val expectedPtr = stackalloc[AnyRef]()
-      !expectedPtr = expectedValue
-      atomic_compare_exchange_strong_explicit(underlying, expectedPtr.asInstanceOf[Ptr[T]], desired, memoryOrderOnSuccess, memoryOrderOnFailure)
+      val expectedSlot = Intrinsics.stackalloc[RawPtr]()
+      Intrinsics.storeObject(expectedSlot, expectedValue)
+      atomic_compare_exchange_strong_explicit(underlying, fromRawPtr[T](expectedSlot), desired, memoryOrderOnSuccess, memoryOrderOnFailure)
     }
     def compareExchangeStrong(expectedValue: T, desired: T, memoryOrder: memory_order)(implicit dummy: DummyImplicit): Boolean = {
-      val expectedPtr = stackalloc[AnyRef]()
-      !expectedPtr = expectedValue
-      atomic_compare_exchange_strong_explicit(underlying, expectedPtr.asInstanceOf[Ptr[T]], desired, memoryOrder, memoryOrder)
+      val expectedSlot = Intrinsics.stackalloc[RawPtr]()
+      Intrinsics.storeObject(expectedSlot, expectedValue)
+      atomic_compare_exchange_strong_explicit(underlying, fromRawPtr[T](expectedSlot), desired, memoryOrder, memoryOrder)
     }
 
     def compareExchangeWeak(expectedValue: T, desired: T): Boolean = {
-      val expectedPtr = stackalloc[AnyRef]()
-      !expectedPtr = expectedValue
-      atomic_compare_exchange_weak(underlying, expectedPtr.asInstanceOf[Ptr[T]], desired)
+      val expectedSlot = Intrinsics.stackalloc[RawPtr]()
+      Intrinsics.storeObject(expectedSlot, expectedValue)
+      atomic_compare_exchange_weak(underlying, fromRawPtr[T](expectedSlot), desired)
     }
     def compareExchangeWeak(expectedValue: T, desired: T, memoryOrderOnSuccess: memory_order, memoryOrderOnFailure: memory_order)(implicit dummy: DummyImplicit): Boolean = {
-      val expectedPtr = stackalloc[AnyRef]()
-      !expectedPtr = expectedValue
-      atomic_compare_exchange_weak_explicit(underlying, expectedPtr.asInstanceOf[Ptr[T]], desired, memoryOrderOnSuccess, memoryOrderOnFailure)
+      val expectedSlot = Intrinsics.stackalloc[RawPtr]()
+      Intrinsics.storeObject(expectedSlot, expectedValue)
+      atomic_compare_exchange_weak_explicit(underlying, fromRawPtr[T](expectedSlot), desired, memoryOrderOnSuccess, memoryOrderOnFailure)
     }
     def compareExchangeWeak(expectedValue: T, desired: T, memoryOrder: memory_order)(implicit dummy: DummyImplicit): Boolean = {
-      val expectedPtr = stackalloc[AnyRef]()
-      !expectedPtr = expectedValue
-      atomic_compare_exchange_weak_explicit(underlying, expectedPtr.asInstanceOf[Ptr[T]], desired, memoryOrder, memoryOrder)
+      val expectedSlot = Intrinsics.stackalloc[RawPtr]()
+      Intrinsics.storeObject(expectedSlot, expectedValue)
+      atomic_compare_exchange_weak_explicit(underlying, fromRawPtr[T](expectedSlot), desired, memoryOrder, memoryOrder)
     }
   }
 }
