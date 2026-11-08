@@ -36,6 +36,8 @@ The interrupted code can be a leaf function that keeps live spills in the 128-by
 
 A poll is not a call, so the trampoline saves all of **Q0–Q31**, **X0–X30**, **NZCV** and **FPSR**. It resumes with `br x16`, so the code generator emits aarch64 polls as inline asm that declares **x16 as clobbered**.
 
+Darwin gives leaf functions a 128-byte **red zone** below `sp`, as SysV does on x86_64. There `prepare_redirect` lowers `sp` by 128 before the trampoline builds its frame, and the trampoline adds it back before `br x16`.
+
 Windows uses the **vectored exception** path and still runs `Synchronizer_yield()` from the filter (no `ucontext`); the trampoline header stubs `prepare_redirect` to a no-op there.
 
 ## Source layout

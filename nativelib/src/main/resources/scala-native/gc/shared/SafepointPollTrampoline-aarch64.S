@@ -16,6 +16,14 @@
 #define SFPT_Q 288
 #define SFPT_FRAME 800
 
+#if defined(__APPLE__)
+/* Darwin lets leaf functions use 128 bytes below sp; prepare_redirect skips
+ * them. Keep in sync with SN_RED_ZONE in SafepointPollTrampoline.c */
+#define SFPT_RED_ZONE 128
+#else
+#define SFPT_RED_ZONE 0
+#endif
+
 .text
 .balign 16
 
@@ -118,7 +126,7 @@ scalanative_gc_safepoint_poll_trampoline:
     ldp x0, x1, [sp, #0]
 
     ldr x16, [sp, #SFPT_RESUME]
-    add sp, sp, #SFPT_FRAME
+    add sp, sp, #(SFPT_FRAME + SFPT_RED_ZONE)
     br x16
 
 #else

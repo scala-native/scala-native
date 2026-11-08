@@ -81,6 +81,12 @@ void scalanative_gc_safepoint_poll_trampoline(void);
 #define SN_UC_GET_PC(uc) ((uintptr_t)(uc)->uc_mcontext->__ss.__pc)
 #define SN_UC_SET_PC(uc, addr)                                                 \
     ((uc)->uc_mcontext->__ss.__pc = (__uint64_t)(uintptr_t)(addr))
+#define SN_UC_GET_SP(uc) ((uintptr_t)(uc)->uc_mcontext->__ss.__sp)
+#define SN_UC_SET_SP(uc, sp)                                                   \
+    ((uc)->uc_mcontext->__ss.__sp = (__uint64_t)(uintptr_t)(sp))
+/* Darwin arm64 lets leaf functions use 128 bytes below sp. Keep in sync with
+ * SFPT_RED_ZONE in SafepointPollTrampoline-aarch64.S */
+#define SN_RED_ZONE 128
 #elif defined(__linux__)
 #define SN_UC_GET_PC(uc) ((uintptr_t)(uc)->uc_mcontext.pc)
 #define SN_UC_SET_PC(uc, addr)                                                 \
@@ -105,6 +111,8 @@ bool scalanative_gc_safepoint_prepare_redirect(void *uap, void *mutatorThread) {
     uintptr_t sp = SN_UC_GET_SP(uc) - 128 - sizeof(uintptr_t);
     *(uintptr_t *)sp = pc;
     SN_UC_SET_SP(uc, sp);
+#elif defined(__aarch64__) && defined(SN_RED_ZONE)
+    SN_UC_SET_SP(uc, SN_UC_GET_SP(uc) - SN_RED_ZONE);
 #endif
     SN_UC_SET_PC(uc, (void *)scalanative_gc_safepoint_poll_trampoline);
     return true;
