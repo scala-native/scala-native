@@ -75,6 +75,10 @@ void MutatorThread_suspendContext(MutatorThread *self);
 void MutatorThread_delete(MutatorThread *self);
 void MutatorThread_switchState(MutatorThread *self,
                                GC_MutatorThreadState newState);
+/* Not inlined, so that no value has to be kept across a register capture. */
+MutatorThread *MutatorThread_current(void);
+/* Switches to Unmanaged after the caller captured registersBuffer. */
+void MutatorThread_enterUnmanaged(MutatorThread *self);
 
 // =============================================================================
 // Thread State Checks

@@ -180,10 +180,14 @@ int scalanative_GC_pthread_create(pthread_t *thread, pthread_attr_t *attr,
 #endif
 
 void scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState state) {
-    if (state == GC_MutatorThreadState_Managed)
+    if (state == GC_MutatorThreadState_Managed) {
         MutatorThread_admit(currentMutatorThread);
-    else
-        MutatorThread_switchState(currentMutatorThread, state);
+        return;
+    }
+    // Capture the caller's callee-saved registers before this function needs
+    // any of them: nothing here is live across the capture.
+    RegistersCapture(MutatorThread_current()->registersBuffer);
+    MutatorThread_enterUnmanaged(MutatorThread_current());
 }
 
 void scalanative_GC_yield() {
