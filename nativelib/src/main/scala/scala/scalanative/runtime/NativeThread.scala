@@ -80,6 +80,10 @@ trait NativeThread {
   }
 
   protected def park(time: Long, isAbsolute: Boolean): Unit
+
+  /** Must not enter any monitor: monitor exit unparks its successor, so a
+   *  monitor taken here recurses through each contended successor in turn.
+   */
   def unpark(): Unit
   def sleep(millis: Long): Unit
   def sleepNanos(nanos: Int): Unit
