@@ -30,6 +30,9 @@ sealed abstract class Tag[T] {
 
 object Tag {
   @alwaysinline def SizeOfPtr = castRawSizeToInt(Intrinsics.sizeOf[unsafe.Ptr[_]])
+  // ABI alignment of 64-bit primitives, only pointer-size on some 32-bit targets
+  @alwaysinline def AlignOf64Bit =
+    castRawSizeToInt(Intrinsics.alignmentOf[scala.Long])
 
   final case class Ptr[T](of: Tag[T])
       extends Tag[unsafe.Ptr[T]] {
@@ -78,10 +81,10 @@ object Tag {
   %          ('UShort', 'unsigned.UShort', '2', '2'),
   %          ('Int', 'scala.Int', '4', '4'),
   %          ('UInt', 'unsigned.UInt', '4', '4'),
-  %          ('Long', 'scala.Long', '8', 'SizeOfPtr'),
-  %          ('ULong', 'unsigned.ULong', '8', 'SizeOfPtr'),
+  %          ('Long', 'scala.Long', '8', 'AlignOf64Bit'),
+  %          ('ULong', 'unsigned.ULong', '8', 'AlignOf64Bit'),
   %          ('Float', 'scala.Float', '4', '4'),
-  %          ('Double', 'scala.Double', '8', 'SizeOfPtr')]
+  %          ('Double', 'scala.Double', '8', 'AlignOf64Bit')]
   % for (name, T, size, align) in prims:
 
   object ${name} extends Tag[${T}] {

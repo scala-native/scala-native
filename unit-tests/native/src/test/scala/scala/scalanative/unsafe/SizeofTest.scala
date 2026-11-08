@@ -4,10 +4,13 @@ package unsafe
 import org.junit.Assert._
 import org.junit.Test
 
-import scala.scalanative.meta.LinktimeInfo.is32BitPlatform
+import scala.scalanative.meta.LinktimeInfo.{is32BitPlatform, isWindows, target}
 import scalanative.unsigned._
 
 class SizeofTest {
+  // Only the i386 System V ABI aligns 64-bit primitives to 4 bytes
+  private val isLongAlignedTo4 =
+    is32BitPlatform && target.arch == "i386" && !isWindows
 
   @Test def testByte(): Unit = {
     assertTrue(sizeof[Byte] == 1)
@@ -66,7 +69,7 @@ class SizeofTest {
   }
 
   @Test def testInnerStructCStruct2ByteCStruct2LongByte(): Unit = {
-    val expectedSize = if (!is32BitPlatform) {
+    val expectedSize = if (!isLongAlignedTo4) {
       24
     } else {
       16
@@ -78,7 +81,7 @@ class SizeofTest {
   }
 
   @Test def testInnerStructCStruct3ByteLongCStruct3IntIntByte(): Unit = {
-    val expectedSize = if (!is32BitPlatform) {
+    val expectedSize = if (!isLongAlignedTo4) {
       32
     } else {
       24
@@ -93,7 +96,7 @@ class SizeofTest {
 
   @Test def testInnerStructCStruct3ByteLongCStruct3IntIntCStruct4ByteIntShortByte()
       : Unit = {
-    val expectedSize = if (!is32BitPlatform) {
+    val expectedSize = if (!isLongAlignedTo4) {
       40
     } else {
       32

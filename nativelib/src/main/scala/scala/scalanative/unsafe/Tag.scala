@@ -30,6 +30,9 @@ sealed abstract class Tag[T] {
 
 object Tag {
   @alwaysinline def SizeOfPtr = castRawSizeToInt(Intrinsics.sizeOf[unsafe.Ptr[_]])
+  // ABI alignment of 64-bit primitives, only pointer-size on some 32-bit targets
+  @alwaysinline def AlignOf64Bit =
+    castRawSizeToInt(Intrinsics.alignmentOf[scala.Long])
 
   final case class Ptr[T](of: Tag[T])
       extends Tag[unsafe.Ptr[T]] {
@@ -162,7 +165,7 @@ object Tag {
 
   object Long extends Tag[scala.Long] {
     @alwaysinline def size: Int = 8
-    @alwaysinline def alignment: Int = SizeOfPtr
+    @alwaysinline def alignment: Int = AlignOf64Bit
     @alwaysinline private[unsafe] override def load(rawptr: RawPtr): scala.Long =
       loadLong(rawptr)
     @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: scala.Long): Unit =
@@ -172,7 +175,7 @@ object Tag {
 
   object ULong extends Tag[unsigned.ULong] {
     @alwaysinline def size: Int = 8
-    @alwaysinline def alignment: Int = SizeOfPtr
+    @alwaysinline def alignment: Int = AlignOf64Bit
     @alwaysinline private[unsafe] override def load(rawptr: RawPtr): unsigned.ULong =
       loadLong(rawptr).toULong
     @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: unsigned.ULong): Unit =
@@ -192,7 +195,7 @@ object Tag {
 
   object Double extends Tag[scala.Double] {
     @alwaysinline def size: Int = 8
-    @alwaysinline def alignment: Int = SizeOfPtr
+    @alwaysinline def alignment: Int = AlignOf64Bit
     @alwaysinline private[unsafe] override def load(rawptr: RawPtr): scala.Double =
       loadDouble(rawptr)
     @alwaysinline private[unsafe] override def store(rawptr: RawPtr, value: scala.Double): Unit =

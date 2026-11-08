@@ -4,6 +4,7 @@ package unsafe
 import org.junit.Assert._
 import org.junit.Test
 
+import scalanative.meta.LinktimeInfo.{is32BitPlatform, isWindows, target}
 import scalanative.unsigned._
 
 class TagTest {
@@ -65,6 +66,9 @@ class TagTest {
   }
 
   @Test def tagAlignment(): Unit = {
+    // Only the i386 System V ABI aligns 64-bit primitives to 4 bytes
+    val alignOf64Bit =
+      if (is32BitPlatform && target.arch == "i386" && !isWindows) 4 else 8
     assertTrue(tagof[Ptr[_]].alignment == sizeof[Size])
     assertTrue(tagof[Object].alignment == sizeof[Size])
     assertTrue(tagof[Array[_]].alignment == sizeof[Size])
@@ -77,10 +81,10 @@ class TagTest {
     assertTrue(tagof[UShort].alignment == 2)
     assertTrue(tagof[Int].alignment == 4)
     assertTrue(tagof[UInt].alignment == 4)
-    assertTrue(tagof[Long].alignment == sizeof[Size])
-    assertTrue(tagof[ULong].alignment == sizeof[Size])
+    assertTrue(tagof[Long].alignment == alignOf64Bit)
+    assertTrue(tagof[ULong].alignment == alignOf64Bit)
     assertTrue(tagof[Float].alignment == 4)
-    assertTrue(tagof[Double].alignment == sizeof[Size])
+    assertTrue(tagof[Double].alignment == alignOf64Bit)
     assertTrue(tagof[CArray[Int, Nat._0]].alignment == 4)
     assertTrue(tagof[CArray[Int, Nat._3]].alignment == 4)
     assertTrue(tagof[CArray[Int, Nat._9]].alignment == 4)
