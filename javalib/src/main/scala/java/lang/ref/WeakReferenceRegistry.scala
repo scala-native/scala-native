@@ -1,5 +1,6 @@
 package java.lang.ref
 
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.LockSupport
 
 import scala.annotation.tailrec
@@ -75,32 +76,51 @@ private[java] object WeakReferenceRegistry {
     }
   }
 
-  private object Multithreaded {
-    private val referenceHandlerThread = Thread
-      .ofPlatform()
-      .daemon()
-      .group(ThreadGroup.System)
-      .name("GC-WeakReferenceHandler")
-      .startInternal(() =>
-        while (true) {
-          handleCollectedReferences()
-          LockSupport.park()
-        }
-      )
-
-    def unpark(): Unit =
-      LockSupport.unpark(referenceHandlerThread)
+  // The GC callback runs inside an allocation, so it must not start a thread.
+  // It handles references inline and requests the handler, started by `add`.
+  private object HandlerState {
+    final val Idle = 0
+    final val Requested = 1
+    final val Starting = 2
+    final val Started = 3
   }
+  import HandlerState._
+  private val handlerState = new AtomicInteger(Idle)
+
+  private lazy val referenceHandlerThread: Thread = Thread
+    .ofPlatform()
+    .daemon()
+    .group(ThreadGroup.System)
+    .name("GC-WeakReferenceHandler")
+    .startInternal(() =>
+      while (true) {
+        handleCollectedReferences()
+        LockSupport.park()
+      }
+    )
+
+  private def startRequestedHandler(): Unit =
+    if (handlerState.compareAndSet(Requested, Starting)) {
+      referenceHandlerThread
+      handlerState.set(Started)
+    }
 
   if (LinktimeInfo.isWeakReferenceSupported) {
     Proxy.GC_setWeakReferencesCollectedCallback { () =>
-      if (LinktimeInfo.isMultithreadingEnabled) Multithreaded.unpark()
-      else handleCollectedReferences()
+      if (LinktimeInfo.isMultithreadingEnabled) {
+        if (handlerState.get() == Started)
+          LockSupport.unpark(referenceHandlerThread)
+        else {
+          handlerState.compareAndSet(Idle, Requested)
+          handleCollectedReferences()
+        }
+      } else handleCollectedReferences()
     }
   }
 
   private[ref] def add(weakRef: WeakReference[_]): Unit =
     if (LinktimeInfo.isWeakReferenceSupported) {
+      if (LinktimeInfo.isMultithreadingEnabled) startRequestedHandler()
       assert(weakRef.nextReference == null)
       val prevHeadPtr = stackalloc[WeakReference[_]]()
       !prevHeadPtr = null
