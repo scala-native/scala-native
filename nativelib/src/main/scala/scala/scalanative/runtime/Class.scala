@@ -280,13 +280,15 @@ private object LinkedClasses {
   // ConcurrentHashMap does not allow null values
   private val NotFound = new Object
   private val cache = new ConcurrentHashMap[String, AnyRef]
-  private val lookup: java.util.function.Function[String, AnyRef] = name => {
-    val cls = find(name)
-    if (cls != null) cls else NotFound
-  }
 
   def forName(className: String): Class[_] =
-    cache.computeIfAbsent(className, lookup) match {
+    cache.computeIfAbsent(
+      className,
+      name => {
+        val cls = find(name)
+        if (cls != null) cls else NotFound
+      }
+    ) match {
       case cls: Class[_] => cls
       case _             => throw new ClassNotFoundException(className)
     }
