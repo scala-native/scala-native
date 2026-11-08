@@ -2067,14 +2067,16 @@ object ForkJoinPool {
       e: Executor,
       blocker: ManagedBlocker
   ): Unit = {
-    Thread.currentThread() match {
+    val w = Thread.currentThread() match {
       case wt: ForkJoinWorkerThread =>
-        val w =
-          if (wt.pool eq e) wt.workQueue
-          else if (e eq common) commonQueue()
-          else null
-        if (w != null) w.helpAsyncBlocker(blocker)
+        if (wt.pool eq e) wt.workQueue else null
+      case _ =>
+        e match {
+          case p: ForkJoinPool => p.externalQueue()
+          case _               => null
+        }
     }
+    if (w != null) w.helpAsyncBlocker(blocker)
   }
 
   private[concurrent] def getSurplusQueuedTaskCount(): Int = {

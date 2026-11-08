@@ -882,10 +882,13 @@ object SubmissionPublisher {
     def retryOffer(item: T): Int = {
       var stat = 0
       val mask = buffer.length - 1
-      val idx = mask & tail
+      val _tail = tail
+      // Read head before the CAS; the consumer may advance it afterwards.
+      val _head = head
+      val idx = mask & _tail
 
       if (arrayCompareAndSet(buffer, idx, null, item.asInstanceOf[AnyRef]))
-        stat = tailIncrementAndGet() - head
+        stat = tailIncrementAndGet() - _head
 
       startOnOffer(stat);
     }
