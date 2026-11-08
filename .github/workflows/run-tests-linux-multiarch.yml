@@ -24,10 +24,10 @@ jobs:
         # Scala 2.13 only for increased tests coverage (Scala2 partests) while keeping total number of jobs low
         scala: [2.13]
         include:
-          # dockcross uses a vendor-specific triple (arm-cortexa8_neon-linux-gnueabihf),
-          # with plain `arm` LLVM would default to ARMv4T
+          # dockcross triple (arm-cortexa8_neon-linux-gnueabihf) is needed to find its GCC toolchain,
+          # but with plain `arm` LLVM would default to ARMv4T
           - arch: linux-armv7a
-            target-triple: armv7a-unknown-linux-gnueabihf
+            native-flags: -march=armv7-a -mfpu=neon -mfloat-abi=hard
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/linux-setup-env
@@ -47,17 +47,17 @@ jobs:
             nativeConfig ~= { prev =>
               val crossRoot = sys.env("CROSS_ROOT");
               val crossTriple = sys.env("CROSS_TRIPLE");
-              val targetTriple = Option("${{ matrix.target-triple }}").filter(_.nonEmpty).getOrElse(crossTriple);
+              val archFlags = "${{ matrix.native-flags }}".split(' ').filter(_.nonEmpty).toList;
               val sysRoot: List[String] = {
                 assert(java.nio.file.Files.exists(java.nio.file.Paths.get(crossRoot)), "crossroot does not exist");
                 assert(java.nio.file.Files.exists(java.nio.file.Paths.get(crossRoot, crossTriple, "sysroot")), "sysroot does not exist");
                 List(
                   s"--sysroot=\${crossRoot}/\${crossTriple}/sysroot",
                   s"--gcc-toolchain=\${crossRoot}"
-                )
+                ) ++ archFlags
               };
               prev
-                .withTargetTriple(targetTriple)
+                .withTargetTriple(crossTriple)
                 .withCompileOptions(sysRoot)
                 .withLinkingOptions(sysRoot ++ List("-latomic"))
             }
