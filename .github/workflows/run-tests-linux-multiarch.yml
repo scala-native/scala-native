@@ -24,8 +24,7 @@ jobs:
         # Scala 2.13 only for increased tests coverage (Scala2 partests) while keeping total number of jobs low
         scala: [2.13]
         include:
-          # dockcross triple (arm-cortexa8_neon-linux-gnueabihf) is needed to find its GCC toolchain,
-          # but with plain `arm` LLVM would default to ARMv4T
+          # dockcross triple `arm-cortexa8_neon-...` would default to ARMv4T
           - arch: linux-armv7a
             native-flags: -march=armv7-a -mfpu=neon -mfloat-abi=hard
     steps:

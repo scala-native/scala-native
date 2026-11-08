@@ -1,8 +1,7 @@
 #if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_POSIX_DIRENT)
 #if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
-// Scala Native structs are 64-bit wide, use the 64-bit inode and offset
-// variants on 32-bit targets, otherwise these fail with EOVERFLOW.
+// 64-bit inodes and offsets on 32-bit targets, avoids EOVERFLOW
 #define _FILE_OFFSET_BITS 64
 #include <dirent.h>
 #include <string.h>

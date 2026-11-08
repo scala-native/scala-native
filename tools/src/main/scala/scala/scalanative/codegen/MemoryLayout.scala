@@ -89,11 +89,8 @@ private[scalanative] object MemoryLayout {
         unsupported(s"alignment $ty")
     }
 
-  /** Alignment assumed by loads and stores. 64-bit values accessed through raw
-   *  pointers (e.g. buffers, SWAR scans over char arrays) are not guaranteed to
-   *  satisfy their ABI alignment on 32-bit targets, assume only pointer-size
-   *  alignment to not emit instructions trapping on misaligned addresses (e.g.
-   *  LDREXD on ARM).
+  /** Alignment assumed by loads and stores, raw pointers to 64-bit values are
+   *  not guaranteed to be 8-byte aligned on 32-bit targets.
    */
   def accessAlignmentOf(ty: nir.Type)(implicit platform: PlatformInfo): Long =
     ty match {

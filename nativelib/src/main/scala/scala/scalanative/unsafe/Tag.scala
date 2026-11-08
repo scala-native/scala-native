@@ -30,7 +30,6 @@ sealed abstract class Tag[T] {
 
 object Tag {
   @alwaysinline def SizeOfPtr = castRawSizeToInt(Intrinsics.sizeOf[unsafe.Ptr[_]])
-  // ABI alignment of 64-bit primitives, only pointer-size on some 32-bit targets
   @alwaysinline def AlignOf64Bit =
     castRawSizeToInt(Intrinsics.alignmentOf[scala.Long])
 

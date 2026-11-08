@@ -30,10 +30,7 @@ private[scalanative] object PlatformInfo {
     )
   )
 
-  /** ABI alignment of i64 and f64, needs to match LLVM data layout of the
-   *  target. Only the i386 System V ABI aligns them to 4 bytes, other 32-bit
-   *  ABIs (ARM EABI, Windows x86, MIPS O32, PowerPC) use natural alignment.
-   */
+  /** Only the i386 System V ABI aligns i64 and f64 to 4 bytes. */
   private def alignmentOf64BitPrimitives(triple: TargetTriple): Int = {
     import TargetTriple._
     if (triple.arch == Arch.x86 && triple.os != OS.Win32) 4 else 8

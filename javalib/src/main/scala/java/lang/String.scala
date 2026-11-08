@@ -359,8 +359,7 @@ final class _String()
           val srcRaw = toRawPtr(value.at(offset + start))
           val dstRaw = toRawPtr(data.at(_index))
           var i = 0
-          // Long loads need to be 8-byte aligned on some targets (32-bit ARM),
-          // copy leading chars one by one up to the alignment boundary.
+          // Long loads must be 8-byte aligned on 32-bit ARM
           val unaligned = charsBeforeAlign8(srcRaw, len)
           while (i < unaligned) {
             val ch =
@@ -470,9 +469,7 @@ final class _String()
     fromIndex
   }
 
-  /** Number of chars (at most `len`) before the 2-byte aligned `charsRaw`
-   *  reaches 8-byte alignment.
-   */
+  // Chars to process before `charsRaw` is 8-byte aligned
   @inline private def charsBeforeAlign8(charsRaw: RawPtr, len: Int): Int =
     (((8 - Intrinsics.castRawPtrToLong(charsRaw)) & 7L) >> 1).toInt.min(len)
 
@@ -493,8 +490,7 @@ final class _String()
           ch.toLong | (ch.toLong << 16) | (ch.toLong << 32) | (ch.toLong << 48)
         val srcRaw = toRawPtr(value.at(offset + start))
         var i = 0
-        // Long loads need to be 8-byte aligned on some targets (32-bit ARM),
-        // check leading chars one by one up to the alignment boundary.
+        // Long loads must be 8-byte aligned on 32-bit ARM
         val unaligned = charsBeforeAlign8(srcRaw, len)
         while (i < unaligned) {
           if (Intrinsics.loadChar(Intrinsics.elemRawPtr(srcRaw, i * 2)) == ch)

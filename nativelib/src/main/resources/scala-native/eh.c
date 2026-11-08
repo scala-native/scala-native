@@ -40,7 +40,6 @@ typedef void (*OnCatchHandler)(Exception);
 typedef struct ExceptionWrapper {
     Exception obj;
     bool nativeAllocated;
-    // Set while the wrapper embedded in a Throwable is used by a throw
     atomic_bool inFlight;
     _Unwind_Exception unwindException;
 } ExceptionWrapper;
@@ -62,8 +61,6 @@ static void Exception_cleanup(Exception *self) {
         handler(self);
 }
 
-/* Ends the wrapper's use by a throw: frees a natively allocated wrapper,
- * otherwise makes the one embedded in the Throwable available again. */
 static void releaseExceptionWrapper(ExceptionWrapper *wrapper) {
     if (wrapper->nativeAllocated) {
         scalanative_GC_remove_roots(&wrapper->obj, &wrapper->obj + 1);
@@ -270,7 +267,7 @@ _Unwind_Reason_Code set_landing_pad(_Unwind_Context *context,
     return _URC_INSTALL_CONTEXT;
 }
 
-// Catches all exceptions: shared by the Itanium and ARM EHABI entry points
+// Catches all exceptions
 static _Unwind_Reason_Code personality_impl(_Unwind_Action actions,
                                             _Unwind_Exception *unwindException,
                                             _Unwind_Context *context) {
@@ -324,9 +321,7 @@ static _Unwind_Reason_Code personality_impl(_Unwind_Action actions,
 
 #if defined(__arm__) && !defined(__USING_SJLJ_EXCEPTIONS__) &&                 \
     !defined(__ARM_DWARF_EH__)
-/* 32-bit ARM uses the ARM EHABI unwinder (IHI 0038), which calls the
- * personality with (_Unwind_State, _Unwind_Control_Block *, _Unwind_Context *)
- * and expects it to unwind the frame and maintain the barrier cache itself. */
+// ARM EHABI (IHI 0038): the personality unwinds frames itself
 static _Unwind_Reason_Code continue_unwind(_Unwind_Exception *unwindException,
                                            _Unwind_Context *context) {
     if (__gnu_unwind_frame(unwindException, context) != _URC_OK)
@@ -337,8 +332,7 @@ static _Unwind_Reason_Code continue_unwind(_Unwind_Exception *unwindException,
 _Unwind_Reason_Code scalanative_personality(_Unwind_State state,
                                             _Unwind_Exception *unwindException,
                                             _Unwind_Context *context) {
-    const int SP = 13, IP = 12;
-    // EHABI 8.4.1: the personality must save the UCB address in r12
+    enum { IP = 12, SP = 13 };
     _Unwind_SetGR(context, IP, (uintptr_t)unwindException);
 
     _Unwind_Action actions;
@@ -362,7 +356,6 @@ _Unwind_Reason_Code scalanative_personality(_Unwind_State state,
         personality_impl(actions, unwindException, context);
     switch (code) {
     case _URC_HANDLER_FOUND:
-        // Identifies the handler frame in phase 2, see above
         unwindException->barrier_cache.sp = _Unwind_GetGR(context, SP);
         return code;
     case _URC_CONTINUE_UNWIND:
@@ -380,11 +373,8 @@ _Unwind_Reason_Code scalanative_personality(int version, _Unwind_Action actions,
 }
 #endif
 
-/* The same Throwable can be thrown concurrently by multiple threads (e.g.
- * shared ControlThrowable instances), but the unwind header holds per-throw
- * unwinder state (on ARM EHABI also the personality cache). Only a single throw
- * at a time can use the wrapper embedded in the Throwable, other throws get
- * their own natively allocated one. */
+// A Throwable can be thrown concurrently (e.g. shared ControlThrowable), only
+// one throw at a time may use its embedded unwind header.
 static ExceptionWrapper *acquireExceptionWrapper(Exception obj) {
     ExceptionWrapper *wrapper = scalanative_Throwable_exceptionWrapper(obj);
     if (wrapper == NULL)
@@ -466,7 +456,6 @@ __attribute__((noreturn)) void scalanative_throw(Exception obj) {
             SN_CONTINUATION_LONGJMP(*env, 1);
             __builtin_unreachable();
         }
-        // A native wrapper is still freed by the cleanup below if not escaping
         if (!exceptionWrapper->nativeAllocated)
             releaseExceptionWrapper(exceptionWrapper);
         if (scalanative_continuation_exception_escape(obj)) {

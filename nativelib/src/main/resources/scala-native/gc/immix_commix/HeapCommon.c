@@ -33,8 +33,7 @@ size_t Heap_getMemoryLimit() {
     uint64_t limit = getMemorySize();
     if (limit > MAX_HEAP_SIZE)
         limit = MAX_HEAP_SIZE;
-    // The heap is reserved upfront as one contiguous mapping, which cannot be
-    // as large as physical memory in a 32-bit address space
+    // The heap is reserved upfront, it needs to fit in 32-bit address space
     if (sizeof(void *) == 4 && limit > MAX_HEAP_SIZE_32BIT)
         limit = MAX_HEAP_SIZE_32BIT;
     return (size_t)limit;

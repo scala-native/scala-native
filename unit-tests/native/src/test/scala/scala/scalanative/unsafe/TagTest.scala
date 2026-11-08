@@ -67,7 +67,6 @@ class TagTest {
   }
 
   @Test def tagAlignment(): Unit = {
-    val alignOf64Bit = Platform.alignmentOf64BitPrimitives
     assertTrue(tagof[Ptr[_]].alignment == sizeof[Size])
     assertTrue(tagof[Object].alignment == sizeof[Size])
     assertTrue(tagof[Array[_]].alignment == sizeof[Size])
@@ -80,10 +79,10 @@ class TagTest {
     assertTrue(tagof[UShort].alignment == 2)
     assertTrue(tagof[Int].alignment == 4)
     assertTrue(tagof[UInt].alignment == 4)
-    assertTrue(tagof[Long].alignment == alignOf64Bit)
-    assertTrue(tagof[ULong].alignment == alignOf64Bit)
+    assertTrue(tagof[Long].alignment == Platform.alignmentOf64BitPrimitives)
+    assertTrue(tagof[ULong].alignment == Platform.alignmentOf64BitPrimitives)
     assertTrue(tagof[Float].alignment == 4)
-    assertTrue(tagof[Double].alignment == alignOf64Bit)
+    assertTrue(tagof[Double].alignment == Platform.alignmentOf64BitPrimitives)
     assertTrue(tagof[CArray[Int, Nat._0]].alignment == 4)
     assertTrue(tagof[CArray[Int, Nat._3]].alignment == 4)
     assertTrue(tagof[CArray[Int, Nat._9]].alignment == 4)

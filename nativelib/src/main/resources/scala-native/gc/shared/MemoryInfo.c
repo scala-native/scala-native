@@ -27,8 +27,7 @@
 #error "Unable to define getMemorySize() for an unknown OS."
 #endif
 
-/* Memory sizes can exceed the 32-bit address space; saturate instead of
- * wrapping around to a tiny value. */
+// Saturate memory sizes not fitting in 32-bit size_t
 static size_t toSize(uint64_t value) {
     return value > SIZE_MAX ? SIZE_MAX : (size_t)value;
 }
