@@ -64,6 +64,7 @@ object BinaryIncompatibilities {
     exclude[ReversedMissingMethodProblem]("scala.scalanative.runtime.NativeThread.carrierCompensationSuppressed()Boolean"),
     exclude[ReversedMissingMethodProblem]("scala.scalanative.runtime.NativeThread.carrierCompensationSuppressed_=(Boolean)Unit"),
     exclude[ReversedMissingMethodProblem]("scala.scalanative.runtime.NativeThread#Companion.defaultOSStackSize"),
+    exclude[ReversedMissingMethodProblem]("scala.scalanative.runtime.VirtualThread.doParkCarrierForMonitorWait"),
     exclude[Problem]("scala.scalanative.runtime._Class.*"),
     exclude[Problem]("scala.scalanative.runtime.unwind.*"),
     exclude[DirectMissingMethodProblem]("scala.scalanative.unsafe.package.toCWideStringImpl"),
