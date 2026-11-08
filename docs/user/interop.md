@@ -112,6 +112,33 @@ If a library has multiple components, you could split the bindings into
 separate objects as it is permitted to use the same `@link` annotation
 more than once.
 
+### Renaming extern methods
+
+Compiled code refers to an extern method by its enclosing object and its
+native name. Changing either breaks libraries compiled against the previous
+version. To keep them working, leave a method with the old name, in the
+same object and with the same signature, and use `externRedirect` as its
+body:
+
+``` scala
+import scala.scalanative.unsafe._
+
+@link("mylib")
+@extern
+object mylib {
+  @name("mylib_open_v2")
+  def open(path: CString, flags: CInt): CInt = extern
+
+  @name("mylib_open")
+  private[mylib] def openCompat(path: CString): CInt =
+    externRedirect(open(path, 0))
+}
+```
+
+The body of `externRedirect` can be any expression of the method's result
+type. The old name is only visible to Scala Native code, it does not
+replace a native function of the same name.
+
 ### Variadic functions
 
 Scala Native supports native interoperability with C's variadic

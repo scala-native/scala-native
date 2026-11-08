@@ -637,6 +637,8 @@ trait NirGenStat(using Context) {
 
       case ApplyExtern() => externMethodDecl(curMethodSym.get)
 
+      case ExternRedirect(body) => genExternRedirect(name, dd, body)
+
       case _
           if curMethodSym.get.isOneOf(Accessor | Synthetic, butNot = Bridge) =>
         None
@@ -688,6 +690,96 @@ trait NirGenStat(using Context) {
         )
         None
     }
+  }
+
+  /** The body of `unsafe.externRedirect`, under the adaptations of erasure. */
+  private object ExternRedirect {
+    def unapply(tree: Tree)(using Context): Option[Tree] = tree match {
+      case Apply(fun, Seq(body))
+          if fun.symbol == defnNir.UnsafePackage_externRedirect =>
+        Some(stripAdaptations(body))
+      case _ =>
+        val stripped = stripAdaptations(tree)
+        if (stripped eq tree) None else unapply(stripped)
+    }
+
+    private def stripAdaptations(tree: Tree)(using Context): Tree = tree match {
+      case Apply(fun, Seq(arg)) if isBoxing(fun.symbol) =>
+        stripAdaptations(arg)
+      case TypeApply(Select(qual, _), _)
+          if tree.symbol == defn.Any_asInstanceOf =>
+        stripAdaptations(qual)
+      case Typed(expr, _) => stripAdaptations(expr)
+      // A result discarded to return Unit
+      case Block(Seq(expr), Literal(Constant(()))) => stripAdaptations(expr)
+      case _                                       => tree
+    }
+
+    private def isBoxing(sym: Symbol)(using Context): Boolean =
+      (sym.name == nme.box || sym.name == nme.unbox) &&
+        defn.ScalaValueClasses().contains(sym.owner.companionClass)
+  }
+
+  /** A normal function answering to an extern name, see
+   *  `Defn.isExternRedirect`. Parameters and result use the extern types,
+   *  converted like in a forwarder.
+   */
+  private def genExternRedirect(
+      name: nir.Global.Member,
+      dd: DefDef,
+      body: Tree
+  )(using nir.SourcePosition): Option[nir.Defn] = {
+    val externSig @ nir.Type.Function(paramtys, retty) =
+      genExternMethodSig(dd.symbol): @unchecked
+    given fresh: nir.Fresh = curFresh.get
+    val buf = ExprBuffer()
+    val params = paramtys.map(ty => nir.Val.Local(fresh(), ty))
+    buf.label(fresh(), params)
+    // Extern calls ignore their receiver, an extern trait has no single instance
+    val owner = curClassSym.get
+    val self =
+      if owner.is(ModuleClass) then buf.genModule(owner) else nir.Val.Null
+
+    scoped(
+      curExprBuffer := buf,
+      curMethodSig := externSig,
+      curMethodThis := Some(self),
+      curMethodIsExtern := false
+    ) {
+      dd.paramss.take(1).flatten.map(_.symbol).zip(params).foreach {
+        (sym, param) =>
+          val ty = genType(sym.info.resultType)
+          curMethodEnv.enter(sym, buf.fromExtern(ty, param))
+      }
+      curMethodInfo.mutableVars.foreach { sym =>
+        val ty = genType(sym.info)
+        val name = genLocalName(sym)
+        val slot =
+          buf.let(fresh.namedId(name), nir.Op.Var(ty), unwind(using fresh))
+        curMethodEnv.enter(sym, slot)
+      }
+      val value = buf.genExpr(body)
+      buf.ret(
+        if (retty == nir.Type.Unit) nir.Val.Unit else buf.toExtern(retty, value)
+      )
+    }
+
+    val env = curMethodEnv.get
+    Some(
+      nir.Defn.Define(
+        nir.Attrs.None
+          .withInlineHint(nir.Attr.AlwaysInline)
+          .withIsLinktimeResolved(env.isUsingLinktimeResolvedValue)
+          .withIsUsingIntrinsics(env.isUsingIntrinsics),
+        name,
+        externSig,
+        nir.ControlFlow.removeDeadBlocks(buf.toSeq),
+        nir.Defn.Define.DebugInfo(
+          localNames = curMethodLocalNames.get.toMap,
+          lexicalScopes = curScopes.get.toList
+        )
+      )
+    )
   }
 
   def validateExternCtor(rhs: Tree): Unit = {

@@ -141,6 +141,29 @@ class NIRCompilerTest {
     )
   }
 
+  @Test def externRedirectOutsideExternMethod(): Unit = {
+    val code =
+      """|package scala.scalanative
+         |import scala.scalanative.unsafe._
+         |
+         |object Dummy {
+         |  def foo(a: Int): Int = externRedirect(a + 1)
+         |}
+         |""".stripMargin
+    val err = assertThrows(
+      classOf[CompilationFailedException],
+      () => NIRCompiler(_.compile(code))
+    )
+    assertTrue(
+      err.getMessage(),
+      err
+        .getMessage()
+        .contains(
+          "externRedirect can be used only as the body of an extern method"
+        )
+    )
+  }
+
   @Test def externMemberOverload(): Unit = {
     val code =
       """|import scala.scalanative.unsafe.extern

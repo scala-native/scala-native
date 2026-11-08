@@ -1247,6 +1247,10 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       tree match {
         case _ if fun.symbol == ExternMethod =>
           fail(s"extern can be used only from non-inlined extern methods")
+        case _ if fun.symbol == ExternRedirectMethod =>
+          fail(
+            "externRedirect can be used only as the body of an extern method"
+          )
         case Apply(_: TypeApply, _) =>
           genApplyTypeApply(app)
         case Apply(Select(Super(_, _), _), _) =>

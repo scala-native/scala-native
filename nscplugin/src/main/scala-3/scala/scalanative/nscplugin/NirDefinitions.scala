@@ -78,6 +78,7 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val UnsafePackageVal = requiredPackage("scala.scalanative.unsafe")
   @tu lazy val UnsafePackage = UnsafePackageVal.moduleClass.asClass
   @tu lazy val UnsafePackage_extern = UnsafePackageVal.requiredMethod("extern")
+  @tu lazy val UnsafePackage_externRedirect = UnsafePackageVal.requiredMethod("externRedirect")
   @tu lazy val UnsafePackage_resolved = UnsafePackageVal.requiredMethod("resolved")
   @tu lazy val UnsafePackageCompatClass = requiredClass("scala.scalanative.unsafe.UnsafePackageCompat")
   @tu lazy val LayoutStackallocMethods =

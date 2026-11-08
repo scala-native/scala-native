@@ -108,6 +108,10 @@ trait NirGenExpr(using Context) {
       fun match {
         case _ if sym == defnNir.UnsafePackage_extern =>
           fail(s"extern can be used only from non-inlined extern methods")
+        case _ if sym == defnNir.UnsafePackage_externRedirect =>
+          fail(
+            "externRedirect can be used only as the body of an extern method"
+          )
 
         case _: TypeApply           => genApplyTypeApply(app)
         case Select(Super(_, _), _) =>
