@@ -86,6 +86,7 @@ private[codegen] abstract class AbstractCodeGen(
         implicit val sb: ShowBuilder = new FileShowBuilder(writer)
         genPrelude()
         genConsts()
+        genUsedGlobals()
         genDeps()
       }
 
@@ -273,9 +274,27 @@ private[codegen] abstract class AbstractCodeGen(
       genType(ty)
     } else {
       genVal(rhs)
-      meta.globalSections.forGlobal(name).foreach(genStaticObjectSection)
+      meta.globalSections.forGlobal(name).foreach { section =>
+        genStaticObjectSection(section)
+        if (section.used) usedGlobals += name
+      }
     }
   }
+
+  private val usedGlobals = mutable.UnrolledBuffer.empty[nir.Global]
+
+  private def genUsedGlobals()(implicit sb: ShowBuilder): Unit =
+    if (usedGlobals.nonEmpty) {
+      import sb._
+      newline()
+      str(
+        s"@llvm.used = appending global [${usedGlobals.size} x $pointerType] ["
+      )
+      rep(usedGlobals, sep = ", ")(name =>
+        genVal(nir.Val.Global(name, nir.Type.Ptr))
+      )
+      str("""], section "llvm.metadata"""")
+    }
 
   private[codegen] def genFunctionDefn(
       defn: nir.Defn,

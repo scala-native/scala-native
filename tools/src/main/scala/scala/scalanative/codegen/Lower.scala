@@ -986,12 +986,6 @@ private[scalanative] object Lower {
         n: nir.Local,
         op: nir.Op.Call
     )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = kind match {
-      case IntrinsicCall.LoadAllClassess =>
-        // rtti is keyed by identity; sort by name for a deterministic order
-        val rtti = meta.rtti.toSeq.sortBy(entry => entry._1.name: nir.Global)
-        val allClasses = nir.Val.ArrayValue(nir.Rt.Class, rtti.map(_._2.const))
-        genArrayallocOp(buf, n, nir.Op.Arrayalloc(nir.Rt.Class, init = allClasses, None))
-
       case IntrinsicCall.MultiplyHigh | IntrinsicCall.UnsignedMultiplyHigh =>
         val isSigned = kind == IntrinsicCall.MultiplyHigh
         val i64to128Conv = if (isSigned) nir.Conv.Sext else nir.Conv.Zext
@@ -2085,7 +2079,6 @@ private[scalanative] object Lower {
 
   private sealed trait IntrinsicCall
   private object IntrinsicCall {
-    object LoadAllClassess extends IntrinsicCall
     object MultiplyHigh extends IntrinsicCall
     object UnsignedMultiplyHigh extends IntrinsicCall
 
@@ -2096,7 +2089,6 @@ private[scalanative] object Lower {
         currentDefn: util.ScopedVar[nir.Defn.Define]
     ): Option[IntrinsicCall] = {
       (owner.id, sig.unmangled) match {
-        case ("scala.scalanative.runtime.LinkedClassesRepository$", nir.Sig.Method("loadAll", _, _)) => Some(LoadAllClassess)
         case ("scala.scalanative.runtime.Intrinsics$", nir.Sig.Method("multiplyHigh", _, _))         => Some(MultiplyHigh)
         case ("scala.scalanative.runtime.Intrinsics$", nir.Sig.Method("unsignedMultiplyHigh", _, _)) => Some(UnsignedMultiplyHigh)
 

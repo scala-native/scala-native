@@ -300,6 +300,11 @@ class ClassTest {
     )
   }
 
+  @Test def classForNameOfInterfaceAndAbstractClass(): Unit = {
+    assertEqualClass(classOf[Runnable], Class.forName("java.lang.Runnable"))
+    assertEqualClass(classOf[Number], Class.forName("java.lang.Number"))
+  }
+
   @Test def getClassLoader(): Unit = {
     val cl = getClass().getClassLoader()
     assertTrue(cl != null)
