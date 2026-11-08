@@ -30,12 +30,14 @@ bool Heap_isGrowingPossible(Heap *heap, uint32_t incrementInBlocks) {
 }
 
 size_t Heap_getMemoryLimit() {
-    size_t memorySize = getMemorySize();
-    if ((uint64_t)memorySize > MAX_HEAP_SIZE) {
-        return (size_t)MAX_HEAP_SIZE;
-    } else {
-        return memorySize;
-    }
+    uint64_t limit = getMemorySize();
+    if (limit > MAX_HEAP_SIZE)
+        limit = MAX_HEAP_SIZE;
+    // The heap is reserved upfront as one contiguous mapping, which cannot be
+    // as large as physical memory in a 32-bit address space
+    if (sizeof(void *) == 4 && limit > MAX_HEAP_SIZE_32BIT)
+        limit = MAX_HEAP_SIZE_32BIT;
+    return (size_t)limit;
 }
 
 size_t Heap_getMemoryUsed(Heap *heap) { return heap->heapSize; }

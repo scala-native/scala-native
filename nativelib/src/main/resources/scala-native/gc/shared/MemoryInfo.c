@@ -27,6 +27,12 @@
 #error "Unable to define getMemorySize() for an unknown OS."
 #endif
 
+/* Memory sizes can exceed the 32-bit address space; saturate instead of
+ * wrapping around to a tiny value. */
+static size_t toSize(uint64_t value) {
+    return value > SIZE_MAX ? SIZE_MAX : (size_t)value;
+}
+
 /**
  * Returns the size of physical memory (RAM) in bytes.
  */
@@ -45,7 +51,7 @@ size_t getMemorySize(void) {
     MEMORYSTATUSEX status;
     status.dwLength = sizeof(status);
     GlobalMemoryStatusEx(&status);
-    return (size_t)status.ullTotalPhys;
+    return toSize(status.ullTotalPhys);
 
 #elif defined(__unix__) || defined(__unix) || defined(unix) ||                 \
     (defined(__APPLE__) && defined(__MACH__))
@@ -65,20 +71,22 @@ size_t getMemorySize(void) {
     int64_t size = 0;
     size_t len = sizeof(size);
     if (sysctl(mib, 2, &size, &len, NULL, 0) == 0)
-        return (size_t)size;
+        return toSize((uint64_t)size);
     return 0L; /* Failed? */
 
 #elif defined(_SC_AIX_REALMEM)
     /* AIX. ----------------------------------------------------- */
-    return (size_t)sysconf(_SC_AIX_REALMEM) * (size_t)1024L;
+    return toSize((uint64_t)sysconf(_SC_AIX_REALMEM) * 1024);
 
 #elif defined(_SC_PHYS_PAGES) && defined(_SC_PAGESIZE)
     /* FreeBSD, Linux, OpenBSD, and Solaris. -------------------- */
-    return (size_t)sysconf(_SC_PHYS_PAGES) * (size_t)sysconf(_SC_PAGESIZE);
+    return toSize((uint64_t)sysconf(_SC_PHYS_PAGES) *
+                  (uint64_t)sysconf(_SC_PAGESIZE));
 
 #elif defined(_SC_PHYS_PAGES) && defined(_SC_PAGE_SIZE)
     /* Legacy. -------------------------------------------------- */
-    return (size_t)sysconf(_SC_PHYS_PAGES) * (size_t)sysconf(_SC_PAGE_SIZE);
+    return toSize((uint64_t)sysconf(_SC_PHYS_PAGES) *
+                  (uint64_t)sysconf(_SC_PAGE_SIZE));
 
 #elif defined(CTL_HW) && (defined(HW_PHYSMEM) || defined(HW_REALMEM))
     /* DragonFly BSD, FreeBSD, NetBSD, OpenBSD, and OSX. -------- */
@@ -120,7 +128,7 @@ size_t getFreeMemorySize(void) {
     MEMORYSTATUSEX status;
     status.dwLength = sizeof(status);
     GlobalMemoryStatusEx(&status);
-    return (size_t)status.ullAvailPhys;
+    return toSize(status.ullAvailPhys);
 
 #elif defined(__FreeBSD__)
     /* FreeBSD uses a different paging model. It documents that it tries
@@ -151,7 +159,7 @@ size_t getFreeMemorySize(void) {
     long page_size = sysconf(_SC_PAGESIZE);
     if (pages == -1 || page_size == -1)
         return 0L;
-    return (size_t)pages * (size_t)page_size;
+    return toSize((uint64_t)pages * (uint64_t)page_size);
 
 #else
     return 0L; /* Unknown OS. */
