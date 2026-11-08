@@ -258,9 +258,8 @@ _Unwind_Reason_Code set_landing_pad(_Unwind_Context *context,
     return _URC_INSTALL_CONTEXT;
 }
 
-// A personality function to catch all exceptions
-_Unwind_Reason_Code scalanative_personality(int version, _Unwind_Action actions,
-                                            uint64_t exception_class,
+// Catches all exceptions: shared by the Itanium and ARM EHABI entry points
+static _Unwind_Reason_Code personality_impl(_Unwind_Action actions,
                                             _Unwind_Exception *unwindException,
                                             _Unwind_Context *context) {
     LSDA header;
@@ -310,6 +309,64 @@ _Unwind_Reason_Code scalanative_personality(int version, _Unwind_Action actions,
     }
     return _URC_CONTINUE_UNWIND;
 }
+
+#if defined(__arm__) && !defined(__USING_SJLJ_EXCEPTIONS__) &&                 \
+    !defined(__ARM_DWARF_EH__)
+/* 32-bit ARM uses the ARM EHABI unwinder (IHI 0038), which calls the
+ * personality with (_Unwind_State, _Unwind_Control_Block *, _Unwind_Context *)
+ * and expects it to unwind the frame and maintain the barrier cache itself. */
+static _Unwind_Reason_Code continue_unwind(_Unwind_Exception *unwindException,
+                                           _Unwind_Context *context) {
+    if (__gnu_unwind_frame(unwindException, context) != _URC_OK)
+        return _URC_FAILURE;
+    return _URC_CONTINUE_UNWIND;
+}
+
+_Unwind_Reason_Code scalanative_personality(_Unwind_State state,
+                                            _Unwind_Exception *unwindException,
+                                            _Unwind_Context *context) {
+    const int SP = 13, IP = 12;
+    // EHABI 8.4.1: the personality must save the UCB address in r12
+    _Unwind_SetGR(context, IP, (uintptr_t)unwindException);
+
+    _Unwind_Action actions;
+    switch (state & _US_ACTION_MASK) {
+    case _US_VIRTUAL_UNWIND_FRAME:
+        actions = _UA_SEARCH_PHASE;
+        break;
+    case _US_UNWIND_FRAME_STARTING:
+        actions = _UA_CLEANUP_PHASE;
+        if (!(state & _US_FORCE_UNWIND) &&
+            unwindException->barrier_cache.sp == _Unwind_GetGR(context, SP))
+            actions |= _UA_HANDLER_FRAME;
+        break;
+    case _US_UNWIND_FRAME_RESUME:
+        return continue_unwind(unwindException, context);
+    default:
+        return _URC_FAILURE;
+    }
+
+    _Unwind_Reason_Code code =
+        personality_impl(actions, unwindException, context);
+    switch (code) {
+    case _URC_HANDLER_FOUND:
+        // Identifies the handler frame in phase 2, see above
+        unwindException->barrier_cache.sp = _Unwind_GetGR(context, SP);
+        return code;
+    case _URC_CONTINUE_UNWIND:
+        return continue_unwind(unwindException, context);
+    default:
+        return code;
+    }
+}
+#else
+_Unwind_Reason_Code scalanative_personality(int version, _Unwind_Action actions,
+                                            uint64_t exception_class,
+                                            _Unwind_Exception *unwindException,
+                                            _Unwind_Context *context) {
+    return personality_impl(actions, unwindException, context);
+}
+#endif
 
 Exception scalanative_catch(_Unwind_Exception *unwindException) {
     /* An exception can return from a blocking native call, bypassing its
