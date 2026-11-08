@@ -89,6 +89,19 @@ private[scalanative] object MemoryLayout {
         unsupported(s"alignment $ty")
     }
 
+  /** Alignment assumed by loads and stores. 64-bit values accessed through raw
+   *  pointers (e.g. buffers, SWAR scans over char arrays) are not guaranteed to
+   *  satisfy their ABI alignment on 32-bit targets, assume only pointer-size
+   *  alignment to not emit instructions trapping on misaligned addresses (e.g.
+   *  LDREXD on ARM).
+   */
+  def accessAlignmentOf(ty: nir.Type)(implicit platform: PlatformInfo): Long =
+    ty match {
+      case nir.Type.Long | nir.Type.Double =>
+        alignmentOf(ty).min(platform.sizeOfPtr)
+      case _ => alignmentOf(ty)
+    }
+
   def align(offset: Long, alignment: Long): Long = {
     val alignmentMask = alignment - 1L
     val padding =
