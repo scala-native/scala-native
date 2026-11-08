@@ -71,7 +71,9 @@ private[scalanative] object MemoryLayout {
 
   def alignmentOf(ty: nir.Type)(implicit platform: PlatformInfo): Long =
     ty match {
-      case nir.Type.Long | nir.Type.Double | nir.Type.Size =>
+      case nir.Type.Long | nir.Type.Double =>
+        platform.alignmentOf64BitPrimitives
+      case nir.Type.Size =>
         platform.sizeOfPtr
       case nir.Type.Nothing | nir.Type.Ptr | _: nir.Type.RefKind =>
         platform.sizeOfPtr

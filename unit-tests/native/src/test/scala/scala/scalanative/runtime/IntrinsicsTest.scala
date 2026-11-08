@@ -177,35 +177,45 @@ class IntrinsicsTest {
 
     implicit def rawSizeToInt(size: RawSize): Int = castRawSizeToInt(size)
 
-    case class Entry(actualSize: Int, fieldsSize64: Int, fieldsSize32: Int)
     val SizeOfPtr = if (is32BitPlatform) 4 else 8
     val ClassHeaderSize =
       if (isMultithreadingEnabled) 2 * SizeOfPtr
       else SizeOfPtr
+    // Only the i386 System V ABI aligns 64-bit primitives to 4 bytes
+    val AlignOfLong =
+      if (is32BitPlatform && target.arch == "i386" && !isWindows) 4 else 8
 
     assertEquals(4, sizeOf[Int]: Int)
     assertEquals(8, sizeOf[Long]: Int)
     assertEquals(SizeOfPtr, sizeOf[Ptr[_]]: Int)
 
+    case class FieldKind(size: Int, align: Int)
+    val I = FieldKind(4, 4)
+    val L = FieldKind(8, AlignOfLong)
+    val R = FieldKind(SizeOfPtr, SizeOfPtr)
+    def alignTo(offset: Int, align: Int) = (offset + align - 1) / align * align
+    def expectedSize(fields: FieldKind*): Int = {
+      val (end, maxAlign) = fields.foldLeft((ClassHeaderSize, SizeOfPtr)) {
+        case ((offset, maxAlign), field) =>
+          (alignTo(offset, field.align) + field.size, maxAlign.max(field.align))
+      }
+      alignTo(end, maxAlign)
+    }
+
     for {
-      Entry(actual, fieldsSize64, fieldsSize32) <- Seq(
-        Entry(sizeOf[A], 0, 0),
-        Entry(sizeOf[B], 8, 4),
-        Entry(sizeOf[C], 8, 8),
-        Entry(sizeOf[C2], 8, 8),
-        Entry(sizeOf[D], 16, 12),
-        Entry(sizeOf[E], 24, 16),
-        Entry(sizeOf[E.type], 32, 20), // Fields of E + reference to outer
+      (name, actual, expected) <- Seq(
+        ("A", sizeOf[A]: Int, expectedSize()),
+        ("B", sizeOf[B]: Int, expectedSize(I)),
+        ("C", sizeOf[C]: Int, expectedSize(L)),
+        ("C2", sizeOf[C2]: Int, expectedSize(I, I)),
+        ("D", sizeOf[D]: Int, expectedSize(I, L)),
+        ("E", sizeOf[E]: Int, expectedSize(I, L, R)),
+        // Fields of E + reference to outer
+        ("E.type", sizeOf[E.type]: Int, expectedSize(I, L, R, R)),
         // Size of each reference field should to sizeOf[Ptr]
-        Entry(sizeOf[F], 8, 4)
+        ("F", sizeOf[F]: Int, expectedSize(R))
       )
-      fieldsSize = if (is32BitPlatform) fieldsSize32 else fieldsSize64
-      expected = ClassHeaderSize + fieldsSize
-    } assertEquals(
-      s"fieldsSize=${fieldsSize64}/${fieldsSize32}, total=$expected",
-      expected,
-      actual
-    )
+    } assertEquals(name, expected, actual)
   }
 
   @Test def alignmentOfTest(): Unit = {
@@ -217,19 +227,22 @@ class IntrinsicsTest {
         Intrinsics.castRawSizeToInt(actual)
       )
     val sizeOfPtr = Intrinsics.castRawSizeToInt(Intrinsics.sizeOf[Ptr[_]])
+    // Only the i386 System V ABI aligns 64-bit primitives to 4 bytes
+    val alignOf64Bit =
+      if (is32BitPlatform && target.arch == "i386" && !isWindows) 4 else 8
 
     assertEquals("byte", 1, alignmentOf[Byte])
     assertEquals("short", 2, alignmentOf[Short])
     assertEquals("char", 2, alignmentOf[Char])
     assertEquals("int", 4, alignmentOf[Int])
-    assertEquals("long", sizeOfPtr, alignmentOf[Long])
+    assertEquals("long", alignOf64Bit, alignmentOf[Long])
     assertEquals("float", 4, alignmentOf[Float])
-    assertEquals("double", sizeOfPtr, alignmentOf[Double])
+    assertEquals("double", alignOf64Bit, alignmentOf[Double])
     assertEquals("ptr", sizeOfPtr, alignmentOf[Ptr[_]])
     assertEquals("ubyte", 1, alignmentOf[UByte])
     assertEquals("ushort", 2, alignmentOf[UShort])
     assertEquals("uint", 4, alignmentOf[UInt])
-    assertEquals("ulong", sizeOfPtr, alignmentOf[ULong])
+    assertEquals("ulong", alignOf64Bit, alignmentOf[ULong])
     assertEquals("size", sizeOfPtr, alignmentOf[Size])
     assertEquals("usize", sizeOfPtr, alignmentOf[USize])
     assertEquals("ref", sizeOfPtr, alignmentOf[java.lang.String])
