@@ -32,6 +32,10 @@ The interrupted code can be a leaf function that keeps live spills in the 128-by
 
 `safepointResumePc` is still recorded, but only the aarch64 trampoline reads it.
 
+### aarch64: SIMD registers and x16
+
+A poll is not a call, so the trampoline saves all of **Q0–Q31**, **X0–X30**, **NZCV** and **FPSR**. It resumes with `br x16`, so the code generator emits aarch64 polls as inline asm that declares **x16 as clobbered**.
+
 Windows uses the **vectored exception** path and still runs `Synchronizer_yield()` from the filter (no `ucontext`); the trampoline header stubs `prepare_redirect` to a no-op there.
 
 ## Source layout
@@ -41,7 +45,7 @@ Windows uses the **vectored exception** path and still runs `Synchronizer_yield(
 | `gc/shared/SafepointPollTrampoline.h` | Public C API between synchronizer and trampoline |
 | `gc/shared/SafepointPollTrampoline.c` | `ucontext` PC get/set, `prepare_redirect`, small C helpers for the asm |
 | `gc/shared/SafepointPollTrampoline-x86_64.S` | Trampoline: XMM0–15 + GPRs + rflags, then yield, `ret $128` |
-| `gc/shared/SafepointPollTrampoline-aarch64.S` | Trampoline: Q0–Q7 + X0–X30, then yield, resume |
+| `gc/shared/SafepointPollTrampoline-aarch64.S` | Trampoline: Q0–Q31 + X0–X30 + NZCV/FPSR, then yield, resume via x16 |
 | `gc/immix/Synchronizer.c`, `gc/commix/Synchronizer.c` | Install trap handler; call `prepare_redirect` or fall back to in-handler yield |
 
 ## Platform support
@@ -53,7 +57,7 @@ Windows uses the **vectored exception** path and still runs `Synchronizer_yield(
 ## Limitations and future work
 
 - **x86_64:** The trampoline saves **XMM0–15** (128-bit lanes). It does **not** save **YMM/ZMM** upper lanes, **MXCSR**, or x87 state. Poll sites that rely on wider AVX across the fault are theoretically at risk; extending the frame would follow the same pattern.
-- **aarch64:** **Q0–Q7** are saved (typical caller-saved SIMD). **Callee-saved** `d8`–`d15` / `q8`–`q15` follow the AAPCS64 callee rules for the C code we call. Full FP control registers are not saved.
+- **aarch64:** **Q0–Q31** (128-bit), NZCV and FPSR are saved. SVE `Z`/`P` registers beyond 128 bits and FPCR are not; generated code does not use SVE unless targeted explicitly, and FPCR is preserved by the C code we call.
 - **Other Unixes** (e.g. *BSD) may need extra `ucontext` field mappings to enable redirect; until then they use the in-handler fallback.
 
 ## Related user-facing behavior
