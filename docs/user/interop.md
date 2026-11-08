@@ -112,6 +112,38 @@ If a library has multiple components, you could split the bindings into
 separate objects as it is permitted to use the same `@link` annotation
 more than once.
 
+### Renaming extern methods
+
+Code calling an extern method refers to it by its owner and its native
+name, the `@name` value or the Scala name. Both are fixed when that code is
+compiled. Changing them breaks libraries compiled against the previous
+version: they fail to link with an `Unknown extern symbol` error.
+
+To keep them working, add a method under the old name with an
+`externRedirect` body:
+
+``` scala
+import scala.scalanative.unsafe._
+
+@extern
+object uv {
+  @name("uv_uptime_v2")
+  def uptime(result: Ptr[CDouble]): Int = extern
+
+  // Kept for code compiled when `uptime` used the native name "uv_uptime"
+  @name("uv_uptime")
+  private[uv] def uptimeCompat(result: Ptr[CDouble]): Int =
+    externRedirect(uptime(result))
+}
+```
+
+The body of `externRedirect` is a normal Scala expression of the method's
+result type: it can reorder arguments, pass constants or call several
+functions. It is compiled to an always inlined function answering to the
+old name, without defining a native symbol of that name, so a redirect may
+use the name of a native function without replacing it. In an extern trait
+the body can call extern methods, but not other members of the trait.
+
 ### Variadic functions
 
 Scala Native supports native interoperability with C's variadic

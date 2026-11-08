@@ -117,7 +117,7 @@ package object unsafe extends unsafe.UnsafePackageCompat {
    *  name. In an extern trait, `this` is `null`, so the body can call externs
    *  but not other members of the trait.
    */
-  private[scalanative] def externRedirect[T](body: T): T = intrinsic
+  def externRedirect[T](body: T): T = intrinsic
 
   /** Used as right hand side of values resolved at link-time. */
   private[scalanative] def resolved: Nothing = intrinsic
