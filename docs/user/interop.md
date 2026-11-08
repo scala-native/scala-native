@@ -114,35 +114,30 @@ more than once.
 
 ### Renaming extern methods
 
-Code calling an extern method refers to it by its owner and its native
-name, the `@name` value or the Scala name. Both are fixed when that code is
-compiled. Changing them breaks libraries compiled against the previous
-version: they fail to link with an `Unknown extern symbol` error.
-
-To keep them working, add a method under the old name with an
-`externRedirect` body:
+Compiled code refers to an extern method by its enclosing object and its
+native name. Changing either breaks libraries compiled against the previous
+version. To keep them working, leave a method with the old name, in the
+same object and with the same signature, and use `externRedirect` as its
+body:
 
 ``` scala
 import scala.scalanative.unsafe._
 
+@link("mylib")
 @extern
-object uv {
-  @name("uv_uptime_v2")
-  def uptime(result: Ptr[CDouble]): Int = extern
+object mylib {
+  @name("mylib_open_v2")
+  def open(path: CString, flags: CInt): CInt = extern
 
-  // Kept for code compiled when `uptime` used the native name "uv_uptime"
-  @name("uv_uptime")
-  private[uv] def uptimeCompat(result: Ptr[CDouble]): Int =
-    externRedirect(uptime(result))
+  @name("mylib_open")
+  private[mylib] def openCompat(path: CString): CInt =
+    externRedirect(open(path, 0))
 }
 ```
 
-The body of `externRedirect` is a normal Scala expression of the method's
-result type: it can reorder arguments, pass constants or call several
-functions. It is compiled to an always inlined function answering to the
-old name, without defining a native symbol of that name, so a redirect may
-use the name of a native function without replacing it. In an extern trait
-the body can call extern methods, but not other members of the trait.
+The body of `externRedirect` can be any expression of the method's result
+type. The old name is only visible to Scala Native code, it does not
+replace a native function of the same name.
 
 ### Variadic functions
 
