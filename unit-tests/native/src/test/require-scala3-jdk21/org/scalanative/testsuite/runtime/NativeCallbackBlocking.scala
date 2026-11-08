@@ -12,21 +12,25 @@ object NativeCallbackBlocking {
     final val TimedPark = 0
     final val Park = 1
     final val MonitorWait = 2
+    final val MonitorWaitKeepsPermit = 3
   }
 
   @volatile private var mode = Mode.TimedPark
   @volatile var carrierChanged = false
+  @volatile var permitKept = true
   private val monitor = new Object
 
   def reset(selected: Int): Unit = {
     mode = selected
     carrierChanged = false
+    permitKept = true
   }
 
   def wake(thread: Thread): Unit = mode match {
-    case Mode.Park        => LockSupport.unpark(thread)
-    case Mode.MonitorWait => monitor.synchronized(monitor.notifyAll())
-    case _                => ()
+    case Mode.Park => LockSupport.unpark(thread)
+    case Mode.MonitorWait | Mode.MonitorWaitKeepsPermit =>
+      monitor.synchronized(monitor.notifyAll())
+    case _ => ()
   }
 
   val callback: CFuncPtr0[Int] = () => {
@@ -38,6 +42,13 @@ object NativeCallbackBlocking {
         LockSupport.park()
       case Mode.MonitorWait =>
         monitor.synchronized(monitor.wait())
+      case Mode.MonitorWaitKeepsPermit =>
+        // Object.wait must not consume a pending LockSupport permit.
+        LockSupport.unpark(Thread.currentThread())
+        monitor.synchronized(monitor.wait())
+        val start = System.nanoTime()
+        LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(5))
+        permitKept = System.nanoTime() - start < TimeUnit.SECONDS.toNanos(1)
     }
     carrierChanged = NativeThread.currentNativeThread ne carrier
     1

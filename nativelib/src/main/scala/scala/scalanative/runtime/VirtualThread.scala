@@ -38,6 +38,11 @@ trait VirtualThread extends Any { self: Thread =>
   ): Unit =
     doBlockForMonitorWait(nanos, setResume)
 
+  /** Pinned `Object.wait`: blocks the carrier without using the park permit. */
+  private[runtime] def parkCarrierForMonitorWait(nanos: scala.Long): Unit =
+    doParkCarrierForMonitorWait(nanos)
+  protected def doParkCarrierForMonitorWait(nanos: scala.Long): Unit
+
   private[runtime] def blockForMonitorEnter(
       setResume: SetResumeContinuation
   ): Unit =

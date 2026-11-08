@@ -23,6 +23,14 @@ class VirtualThreadNativeCallbackPinningTest {
   @Test def monitorWaitInsideCallbackKeepsCarrier(): Unit =
     check(Mode.MonitorWait)
 
+  @Test def monitorWaitInsideCallbackKeepsParkPermit(): Unit = {
+    check(Mode.MonitorWaitKeepsPermit)
+    assertTrue(
+      "wait consumed the park permit",
+      NativeCallbackBlocking.permitKept
+    )
+  }
+
   private def check(mode: Int): Unit = {
     AssumesHelper.assumeSupportsVirtualThreads()
     NativeCallbackBlocking.reset(mode)

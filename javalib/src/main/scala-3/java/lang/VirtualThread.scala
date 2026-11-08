@@ -273,6 +273,20 @@ private[java] final class VirtualThread(
    *  the carrier so many VTs can wait. For timed wait we schedule a delayed unblock, so the carrier is not pinned. Uses
    *  Blocked/TimedBlocked states so unblock() is the single entry point for notify.
    */
+  override protected def doParkCarrierForMonitorWait(
+      nanos: scala.Long
+  ): Unit = {
+    val previous = state
+    // Pinned states let unpark and interrupt wake the carrier.
+    state = if (nanos == 0) State.Pinned else State.TimedPinned
+    try
+      if (!interruptedState) {
+        if (nanos == 0) NativeThread.currentNativeThread.park()
+        else NativeThread.currentNativeThread.parkNanos(nanos)
+      }
+    finally state = previous
+  }
+
   override protected def doBlockForMonitorWait(
       nanos: scala.Long,
       setResume: SetResumeContinuation

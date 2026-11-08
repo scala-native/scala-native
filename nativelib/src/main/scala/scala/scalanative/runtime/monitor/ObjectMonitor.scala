@@ -361,6 +361,9 @@ private[monitor] class ObjectMonitor() {
               if (node.isNotified) vt.scheduleWithResume(resume, generation)
             }
           )
+        case vt: VirtualThread =>
+          // Notify unparks the carrier; keep the VT park permit intact.
+          vt.parkCarrierForMonitorWait(nanos)
         case _ =>
           if (nanos == 0) LockSupport.park()
           else LockSupport.parkNanos(nanos)
