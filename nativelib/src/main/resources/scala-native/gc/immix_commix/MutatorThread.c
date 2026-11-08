@@ -164,15 +164,29 @@ NOINLINE static stackptr_t MutatorThread_approximateStackTop() {
     return (stackptr_t)sp;
 }
 
+static void MutatorThread_publishStackTop(MutatorThread *self) {
+    atomic_store_explicit(&self->stackTop,
+                          (intptr_t)MutatorThread_approximateStackTop(),
+                          memory_order_release);
+}
+
+NOINLINE MutatorThread *MutatorThread_current(void) {
+    return currentMutatorThread;
+}
+
+void MutatorThread_enterUnmanaged(MutatorThread *self) {
+    assert(self != NULL);
+    MutatorThread_publishStackTop(self);
+    self->state = GC_MutatorThreadState_Unmanaged;
+}
+
 INLINE void MutatorThread_switchState(MutatorThread *self,
                                       GC_MutatorThreadState newState) {
     assert(self != NULL);
     switch (newState) {
     case GC_MutatorThreadState_Unmanaged:
         RegistersCapture(self->registersBuffer);
-        atomic_store_explicit(&self->stackTop,
-                              (intptr_t)MutatorThread_approximateStackTop(),
-                              memory_order_release);
+        MutatorThread_publishStackTop(self);
         break;
 
     case GC_MutatorThreadState_Managed:
