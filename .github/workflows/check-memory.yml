@@ -1,0 +1,79 @@
+name: Check memory safety
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/check-memory.yml"
+      - "scripts/joern/**"
+      - "scripts/sanitizers/**"
+  schedule:
+    # Every day at 3 AM UTC
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+    inputs:
+      sbt-command:
+        description: "sbt command for asan/lsan (default: sandbox3/run)"
+        required: false
+        default: ""
+concurrency:
+  group: check-memory-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sanitizers:
+    name: ${{ matrix.mode }}
+    if: github.event_name != 'schedule' || github.repository == 'scala-native/scala-native'
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        # Not valgrind: see scripts/sanitizers/run.sh
+        mode: [asan, lsan]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: 3
+      - name: Run ${{ matrix.mode }}
+        env:
+          SBT_COMMAND: ${{ inputs.sbt-command }}
+        run: scripts/sanitizers/run.sh ${{ matrix.mode }}
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: memory-${{ matrix.mode }}
+          path: target/sanitizers/${{ matrix.mode }}
+          if-no-files-found: ignore
+
+  joern:
+    name: Joern static analysis
+    if: github.event_name != 'schedule' || github.repository == 'scala-native/scala-native'
+    runs-on: ubuntu-24.04
+    env:
+      JOERN_VERSION: v4.0.660
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Install Joern
+        run: |
+          base=https://github.com/joernio/joern/releases/download/$JOERN_VERSION
+          cd "$RUNNER_TEMP"
+          curl -fsSLO "$base/joern-cli-linux-x86_64.zip"
+          curl -fsSLO "$base/joern-cli-linux-x86_64.zip.sha512"
+          # The checksum file names the zip with a build path, compare hashes only.
+          echo "$(cut -d' ' -f1 joern-cli-linux-x86_64.zip.sha512)  joern-cli-linux-x86_64.zip" |
+            sha512sum -c -
+          unzip -q joern-cli-linux-x86_64.zip
+          echo "$RUNNER_TEMP/joern-cli" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/joern-cli/joern-scan" --updatedb --dbversion "${JOERN_VERSION#v}"
+      - name: Scan runtime sources
+        run: scripts/joern/scan.sh
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: joern-reports
+          path: |
+            target/joern/joern-scan.txt
+            target/joern/runtime-checks.txt

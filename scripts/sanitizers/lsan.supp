@@ -1,0 +1,3 @@
+# LeakSanitizer suppressions for scripts/sanitizers/run.sh.
+# Format: leak:<function, file or library substring>
+# Keep entries narrow and explain why each one is a false positive.

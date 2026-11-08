@@ -8,6 +8,7 @@ import scala.sys.env
 import scala.scalanative.sbtplugin.ScalaNativePlugin
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import scala.scalanative.sbtplugin.Utilities._
+import scala.scalanative.build.Sanitizer
 
 import build.OutputType._
 import complete.DefaultParsers._
@@ -63,6 +64,21 @@ object MyScalaNativePlugin extends AutoPlugin {
       case None    => None
     }
   }
+
+  /* Started as: SCALANATIVE_SANITIZER=address sbt ...
+   * Allowed values: address, thread, undefined. Used by scripts/sanitizers.
+   */
+  private def sanitizerFromEnv(): Option[Sanitizer] =
+    env.get("SCALANATIVE_SANITIZER").filter(_.nonEmpty).map {
+      case Sanitizer.AddressSanitizer.name => Sanitizer.AddressSanitizer
+      case Sanitizer.ThreadSanitizer.name  => Sanitizer.ThreadSanitizer
+      case Sanitizer.UndefinedBehaviourSanitizer.name =>
+        Sanitizer.UndefinedBehaviourSanitizer
+      case other =>
+        throw new IllegalArgumentException(
+          s"Unknown SCALANATIVE_SANITIZER '$other', expected one of: address, thread, undefined"
+        )
+    }
 
   private def nativeLinkProfilingImpl = Def.inputTaskDyn {
     val sbtLogger = streams.value.log
@@ -155,6 +171,7 @@ object MyScalaNativePlugin extends AutoPlugin {
           multithreadingEnabledBySbtSysProps()
             .orElse(nc.multithreading)
         )
+        .withSanitizer(sanitizerFromEnv().orElse(nc.sanitizer))
     },
     inConfig(Compile) {
       nativeLinkProfiling := nativeLinkProfilingImpl
