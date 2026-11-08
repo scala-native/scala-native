@@ -20,6 +20,11 @@ trait VirtualThread extends Any { self: Thread =>
    */
   def scheduler: VirtualThreadScheduler
 
+  /** True when this virtual thread must block on its carrier instead of
+   *  unmounting, e.g. inside a native callback.
+   */
+  def isPinned: scala.Boolean = NativeThread.isInsideNativeCallback
+
   // ObjectMonitor integration (Object.wait / contended monitor enter)
   protected type Continuation = () => Unit
   protected type SetResumeContinuation = (Continuation, scala.Long) => Unit
@@ -32,6 +37,11 @@ trait VirtualThread extends Any { self: Thread =>
       setResume: SetResumeContinuation
   ): Unit =
     doBlockForMonitorWait(nanos, setResume)
+
+  /** Pinned `Object.wait`: blocks the carrier without using the park permit. */
+  private[runtime] def parkCarrierForMonitorWait(nanos: scala.Long): Unit =
+    doParkCarrierForMonitorWait(nanos)
+  protected def doParkCarrierForMonitorWait(nanos: scala.Long): Unit
 
   private[runtime] def blockForMonitorEnter(
       setResume: SetResumeContinuation

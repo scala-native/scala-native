@@ -273,6 +273,20 @@ private[java] final class VirtualThread(
    *  the carrier so many VTs can wait. For timed wait we schedule a delayed unblock, so the carrier is not pinned. Uses
    *  Blocked/TimedBlocked states so unblock() is the single entry point for notify.
    */
+  override protected def doParkCarrierForMonitorWait(
+      nanos: scala.Long
+  ): Unit = {
+    val previous = state
+    // Pinned states let unpark and interrupt wake the carrier.
+    state = if (nanos == 0) State.Pinned else State.TimedPinned
+    try
+      if (!interruptedState) {
+        if (nanos == 0) NativeThread.currentNativeThread.park()
+        else NativeThread.currentNativeThread.parkNanos(nanos)
+      }
+    finally state = previous
+  }
+
   override protected def doBlockForMonitorWait(
       nanos: scala.Long,
       setResume: SetResumeContinuation
@@ -452,6 +466,8 @@ private[java] final class VirtualThread(
   // analogous to pinning around scheduler submission.
   @volatile private var pinnedForSubmit: scala.Boolean = false
 
+  override def isPinned: scala.Boolean = pinnedForSubmit || super.isPinned
+
   /** Timed `LockSupport.parkNanos` for this VT: may yield the continuation or pin the native carrier when already
    *  inside scheduler submission or nested suspension.
    */
@@ -464,10 +480,13 @@ private[java] final class VirtualThread(
     if (nanos <= 0) return
 
     state match {
-      case State.Running if pinnedForSubmit =>
-        // Pinned during submit: park on carrier instead of yielding
+      case State.Running if isPinned =>
+        // Pinned: park on the carrier instead of yielding
         state = State.TimedPinned
-        NativeThread.currentNativeThread.parkNanos(nanos)
+        // unpark sets the permit before reading the state: re-check it.
+        if (!getAndSetParkPermit(false))
+          NativeThread.currentNativeThread.parkNanos(nanos)
+        setParkPermit(false) // consume an unpark that ended the wait
         state = State.Running
 
       case State.Running =>
@@ -509,10 +528,12 @@ private[java] final class VirtualThread(
     if (interruptedState) return
 
     state match {
-      case State.Running if pinnedForSubmit =>
-        // Pinned during submit: park on carrier instead of yielding
+      case State.Running if isPinned =>
+        // Pinned: park on the carrier instead of yielding
         state = State.Pinned
-        NativeThread.currentNativeThread.park()
+        // unpark sets the permit before reading the state: re-check it.
+        if (!getAndSetParkPermit(false))
+          NativeThread.currentNativeThread.park()
         setParkPermit(false)
         state = State.Running
 
