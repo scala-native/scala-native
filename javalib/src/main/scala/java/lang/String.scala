@@ -359,6 +359,15 @@ final class _String()
           val srcRaw = toRawPtr(value.at(offset + start))
           val dstRaw = toRawPtr(data.at(_index))
           var i = 0
+          // Long loads need to be 8-byte aligned on some targets (32-bit ARM),
+          // copy leading chars one by one up to the alignment boundary.
+          val srcAddr = Intrinsics.castRawPtrToLong(srcRaw)
+          while (i < len && ((srcAddr + i * 2) & 7L) != 0L) {
+            val ch =
+              Intrinsics.loadChar(Intrinsics.elemRawPtr(srcRaw, i * 2))
+            Intrinsics.storeByte(Intrinsics.elemRawPtr(dstRaw, i), ch.toByte)
+            i += 1
+          }
           // Process 4 chars (8 bytes) at a time using Long loads.
           // Extract the low byte of each char and pack into a single Int.
           while (i + 4 <= len) {
@@ -478,6 +487,13 @@ final class _String()
           ch.toLong | (ch.toLong << 16) | (ch.toLong << 32) | (ch.toLong << 48)
         val srcRaw = toRawPtr(value.at(offset + start))
         var i = 0
+        // Long loads need to be 8-byte aligned on some targets (32-bit ARM),
+        // check leading chars one by one up to the alignment boundary.
+        val srcAddr = Intrinsics.castRawPtrToLong(srcRaw)
+        while (i < len && ((srcAddr + i * 2) & 7L) != 0L) {
+          if (value(offset + start + i) == ch) return start + i
+          i += 1
+        }
         while (i + 4 <= len) {
           val long =
             Intrinsics.loadLong(Intrinsics.elemRawPtr(srcRaw, i * 2))
