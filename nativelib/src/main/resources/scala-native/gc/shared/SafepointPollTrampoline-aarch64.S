@@ -129,13 +129,6 @@ scalanative_gc_safepoint_poll_trampoline:
     add sp, sp, #(SFPT_FRAME + SFPT_RED_ZONE)
     br x16
 
-#else
-.text
-.balign 4
-.globl scalanative_gc_safepoint_trampoline_aarch64_skipped
-scalanative_gc_safepoint_trampoline_aarch64_skipped:
-    /* Placeholder only, no instructions: this file is assembled for every
-     * target, and `ret` is not a valid mnemonic on all of them (ARM32). */
 #endif
 
 #if defined(__linux__) && defined(__ELF__)

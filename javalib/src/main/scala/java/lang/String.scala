@@ -14,7 +14,7 @@ import java.{lang => jl}
 import scala.annotation.{switch, tailrec}
 
 import scalanative.libc.string.memcmp
-import scalanative.runtime.{Intrinsics, toRawPtr}
+import scalanative.runtime.{Intrinsics, RawPtr, toRawPtr}
 import scalanative.unsafe._
 import scalanative.unsigned._
 
@@ -361,8 +361,8 @@ final class _String()
           var i = 0
           // Long loads need to be 8-byte aligned on some targets (32-bit ARM),
           // copy leading chars one by one up to the alignment boundary.
-          val srcAddr = Intrinsics.castRawPtrToLong(srcRaw)
-          while (i < len && ((srcAddr + i * 2) & 7L) != 0L) {
+          val unaligned = charsBeforeAlign8(srcRaw, len)
+          while (i < unaligned) {
             val ch =
               Intrinsics.loadChar(Intrinsics.elemRawPtr(srcRaw, i * 2))
             Intrinsics.storeByte(Intrinsics.elemRawPtr(dstRaw, i), ch.toByte)
@@ -470,6 +470,12 @@ final class _String()
     fromIndex
   }
 
+  /** Number of chars (at most `len`) before the 2-byte aligned `charsRaw`
+   *  reaches 8-byte alignment.
+   */
+  @inline private def charsBeforeAlign8(charsRaw: RawPtr, len: Int): Int =
+    (((8 - Intrinsics.castRawPtrToLong(charsRaw)) & 7L) >> 1).toInt.min(len)
+
   /* Preconditions:
    *   By convention, caller has validated arguments, but strangely.
    *   beginIndex is usually guaranteed to be within 'this' but there is no
@@ -489,9 +495,10 @@ final class _String()
         var i = 0
         // Long loads need to be 8-byte aligned on some targets (32-bit ARM),
         // check leading chars one by one up to the alignment boundary.
-        val srcAddr = Intrinsics.castRawPtrToLong(srcRaw)
-        while (i < len && ((srcAddr + i * 2) & 7L) != 0L) {
-          if (value(offset + start + i) == ch) return start + i
+        val unaligned = charsBeforeAlign8(srcRaw, len)
+        while (i < unaligned) {
+          if (Intrinsics.loadChar(Intrinsics.elemRawPtr(srcRaw, i * 2)) == ch)
+            return start + i
           i += 1
         }
         while (i + 4 <= len) {

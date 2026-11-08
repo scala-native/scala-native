@@ -62,19 +62,25 @@ static void Exception_cleanup(Exception *self) {
         handler(self);
 }
 
+/* Ends the wrapper's use by a throw: frees a natively allocated wrapper,
+ * otherwise makes the one embedded in the Throwable available again. */
+static void releaseExceptionWrapper(ExceptionWrapper *wrapper) {
+    if (wrapper->nativeAllocated) {
+        scalanative_GC_remove_roots(&wrapper->obj, &wrapper->obj + 1);
+        free(wrapper);
+    } else
+        atomic_store_explicit(&wrapper->inFlight, false, memory_order_release);
+}
+
 // Cleanup function for the exception
 void generic_exception_cleanup(_Unwind_Reason_Code code,
                                _Unwind_Exception *exception) {
     ExceptionWrapper *exceptionWrapper = GetExceptionWrapper(exception);
-    if (exceptionWrapper->nativeAllocated) {
-        scalanative_GC_remove_roots(&exceptionWrapper->obj,
-                                    &exceptionWrapper->obj + 1);
-        free(exceptionWrapper);
-    } else {
-        atomic_store_explicit(&exceptionWrapper->inFlight, false,
-                              memory_order_release);
-        Exception_cleanup(exceptionWrapper->obj);
-    }
+    bool nativeAllocated = exceptionWrapper->nativeAllocated;
+    Exception obj = exceptionWrapper->obj;
+    releaseExceptionWrapper(exceptionWrapper);
+    if (!nativeAllocated)
+        Exception_cleanup(obj);
 }
 
 typedef const uint8_t *LSDA_ptr;
@@ -400,23 +406,13 @@ static ExceptionWrapper *acquireExceptionWrapper(Exception obj) {
     return nativeWrapper;
 }
 
-static void releaseEmbeddedExceptionWrapper(ExceptionWrapper *wrapper) {
-    if (!wrapper->nativeAllocated)
-        atomic_store_explicit(&wrapper->inFlight, false, memory_order_release);
-}
-
 Exception scalanative_catch(_Unwind_Exception *unwindException) {
     /* An exception can return from a blocking native call, bypassing its
      * normal managed-state restoration. Admit before invoking Scala hooks. */
     scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState_Managed);
     ExceptionWrapper *exceptionWrapper = GetExceptionWrapper(unwindException);
     Exception exception = exceptionWrapper->obj;
-    if (exceptionWrapper->nativeAllocated) {
-        scalanative_GC_remove_roots(&exceptionWrapper->obj,
-                                    &exceptionWrapper->obj + 1);
-        free(exceptionWrapper);
-    } else
-        releaseEmbeddedExceptionWrapper(exceptionWrapper);
+    releaseExceptionWrapper(exceptionWrapper);
     Exception_cleanup(exception);
     return exception;
 }
@@ -465,12 +461,14 @@ __attribute__((noreturn)) void scalanative_throw(Exception obj) {
             jmp_buf *env = ceh.env;
             *ceh.exception_slot = obj;
             scalanative_continuation_exception_handler_clear();
-            releaseEmbeddedExceptionWrapper(exceptionWrapper);
+            releaseExceptionWrapper(exceptionWrapper);
             // Do not run exception cleanup; we're transferring to the resumer.
             SN_CONTINUATION_LONGJMP(*env, 1);
             __builtin_unreachable();
         }
-        releaseEmbeddedExceptionWrapper(exceptionWrapper);
+        // A native wrapper is still freed by the cleanup below if not escaping
+        if (!exceptionWrapper->nativeAllocated)
+            releaseExceptionWrapper(exceptionWrapper);
         if (scalanative_continuation_exception_escape(obj)) {
             __builtin_unreachable();
         }

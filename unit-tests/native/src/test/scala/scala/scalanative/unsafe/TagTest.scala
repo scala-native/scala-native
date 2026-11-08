@@ -4,7 +4,8 @@ package unsafe
 import org.junit.Assert._
 import org.junit.Test
 
-import scalanative.meta.LinktimeInfo.{is32BitPlatform, isWindows, target}
+import org.scalanative.testsuite.utils.Platform
+
 import scalanative.unsigned._
 
 class TagTest {
@@ -66,9 +67,7 @@ class TagTest {
   }
 
   @Test def tagAlignment(): Unit = {
-    // Only the i386 System V ABI aligns 64-bit primitives to 4 bytes
-    val alignOf64Bit =
-      if (is32BitPlatform && target.arch == "i386" && !isWindows) 4 else 8
+    val alignOf64Bit = Platform.alignmentOf64BitPrimitives
     assertTrue(tagof[Ptr[_]].alignment == sizeof[Size])
     assertTrue(tagof[Object].alignment == sizeof[Size])
     assertTrue(tagof[Array[_]].alignment == sizeof[Size])

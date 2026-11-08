@@ -36,8 +36,6 @@ private[scalanative] object PlatformInfo {
    */
   private def alignmentOf64BitPrimitives(triple: TargetTriple): Int = {
     import TargetTriple._
-    if (isArch64Bit(triple.arch)) 8
-    else if (triple.arch == Arch.x86 && triple.os != OS.Win32) 4
-    else 8
+    if (triple.arch == Arch.x86 && triple.os != OS.Win32) 4 else 8
   }
 }

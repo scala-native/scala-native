@@ -4,13 +4,12 @@ package unsafe
 import org.junit.Assert._
 import org.junit.Test
 
-import scala.scalanative.meta.LinktimeInfo.{is32BitPlatform, isWindows, target}
+import org.scalanative.testsuite.utils.Platform
+
 import scalanative.unsigned._
 
 class SizeofTest {
-  // Only the i386 System V ABI aligns 64-bit primitives to 4 bytes
-  private val isLongAlignedTo4 =
-    is32BitPlatform && target.arch == "i386" && !isWindows
+  private val isLongAlignedTo4 = Platform.alignmentOf64BitPrimitives == 4
 
   @Test def testByte(): Unit = {
     assertTrue(sizeof[Byte] == 1)

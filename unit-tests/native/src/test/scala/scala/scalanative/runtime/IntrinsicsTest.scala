@@ -5,6 +5,8 @@ import scala.language.implicitConversions
 import org.junit.Assert._
 import org.junit.{Assert, Test}
 
+import org.scalanative.testsuite.utils.{Platform => TestPlatform}
+
 import scala.scalanative.meta.LinktimeInfo._
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
@@ -181,9 +183,7 @@ class IntrinsicsTest {
     val ClassHeaderSize =
       if (isMultithreadingEnabled) 2 * SizeOfPtr
       else SizeOfPtr
-    // Only the i386 System V ABI aligns 64-bit primitives to 4 bytes
-    val AlignOfLong =
-      if (is32BitPlatform && target.arch == "i386" && !isWindows) 4 else 8
+    val AlignOfLong = TestPlatform.alignmentOf64BitPrimitives
 
     assertEquals(4, sizeOf[Int]: Int)
     assertEquals(8, sizeOf[Long]: Int)
@@ -227,9 +227,7 @@ class IntrinsicsTest {
         Intrinsics.castRawSizeToInt(actual)
       )
     val sizeOfPtr = Intrinsics.castRawSizeToInt(Intrinsics.sizeOf[Ptr[_]])
-    // Only the i386 System V ABI aligns 64-bit primitives to 4 bytes
-    val alignOf64Bit =
-      if (is32BitPlatform && target.arch == "i386" && !isWindows) 4 else 8
+    val alignOf64Bit = TestPlatform.alignmentOf64BitPrimitives
 
     assertEquals("byte", 1, alignmentOf[Byte])
     assertEquals("short", 2, alignmentOf[Short])

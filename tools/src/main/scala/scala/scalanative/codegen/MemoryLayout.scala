@@ -97,9 +97,8 @@ private[scalanative] object MemoryLayout {
    */
   def accessAlignmentOf(ty: nir.Type)(implicit platform: PlatformInfo): Long =
     ty match {
-      case nir.Type.Long | nir.Type.Double =>
-        alignmentOf(ty).min(platform.sizeOfPtr)
-      case _ => alignmentOf(ty)
+      case nir.Type.Long | nir.Type.Double => platform.sizeOfPtr
+      case _                               => alignmentOf(ty)
     }
 
   def align(offset: Long, alignment: Long): Long = {
