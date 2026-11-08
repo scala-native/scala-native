@@ -189,6 +189,12 @@ sealed trait Config {
       Seq("netbsd").exists(customTriple.contains(_))
     }
 
+  private[scalanative] lazy val targetsAarch64: Boolean =
+    compilerConfig.configuredOrDetectedTriple.arch match {
+      case TargetTriple.Arch.aarch64 | TargetTriple.Arch.aarch64_be => true
+      case _                                                        => false
+    }
+
   // see https://no-color.org/
   private[scalanative] lazy val noColor: Boolean = sys.env.contains("NO_COLOR")
 

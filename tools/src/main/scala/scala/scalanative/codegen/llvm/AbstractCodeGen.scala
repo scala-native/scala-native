@@ -1109,8 +1109,16 @@ private[codegen] abstract class AbstractCodeGen(
         val nir.Sig.Extern(safepointTrapField) =
           Lower.GCYieldPointTrapName.sig.unmangled: @unchecked
         touch(Lower.GCYieldPointTrapName)
+        // The aarch64 safepoint trampoline resumes through x16
+        val pollClobbersX16 = meta.buildConfig.targetsAarch64 &&
+          (meta.buildConfig.targetsLinux || meta.buildConfig.targetsMac)
+        val trapPtrType = if (useOpaquePointers) "ptr" else "i8**"
         str {
-          if (useOpaquePointers)
+          if (pollClobbersX16)
+            s"""|
+                |  %_${trap.id} = load volatile $pointerType, $trapPtrType @${safepointTrapField}
+                |  call void asm sideeffect "ldr xzr, [$$0]", "r,~{x16}"($pointerType %_${trap.id})""".stripMargin
+          else if (useOpaquePointers)
             s"""|
                 |  %_${trap.id} = load volatile ptr, ptr @${safepointTrapField}
                 |  %_${fresh().id} = load volatile ptr, ptr %_${trap.id}""".stripMargin
