@@ -27,6 +27,14 @@ typedef struct {
     void *xmm[16 * 2];
 } RegistersBuffer[1];
 
+#elif defined(__aarch64__) && (defined(__GNUC__) || defined(__clang__))
+// Not setjmp: Android's bionic stores x19-x29 XOR-ed with a cookie.
+#define CAPTURE_AARCH64
+typedef struct {
+    void *x[11]; // x19-x29
+    void *d[8];  // d8-d15
+} RegistersBuffer[1];
+
 #else
 #define CAPTURE_SETJMP
 #include <setjmp.h>
@@ -65,6 +73,23 @@ INLINE static void RegistersCapture(RegistersBuffer out) {
     out->esi = regEsi;
     out->edi = regEdi;
     out->ebx = regEbx;
+
+#elif defined(CAPTURE_AARCH64)
+    // x16 is a scratch register, so loading the address keeps x19-x29 intact
+    register void *base __asm__("x16") = out;
+    __asm__ volatile("stp x19, x20, [%0, #0]\n\t"
+                     "stp x21, x22, [%0, #16]\n\t"
+                     "stp x23, x24, [%0, #32]\n\t"
+                     "stp x25, x26, [%0, #48]\n\t"
+                     "stp x27, x28, [%0, #64]\n\t"
+                     "str x29, [%0, #80]\n\t"
+                     "stp d8, d9, [%0, #88]\n\t"
+                     "stp d10, d11, [%0, #104]\n\t"
+                     "stp d12, d13, [%0, #120]\n\t"
+                     "stp d14, d15, [%0, #136]\n\t"
+                     :
+                     : "r"(base)
+                     : "memory");
 
 #elif defined(CAPTURE_X86_64)
 #ifdef _WIN32
