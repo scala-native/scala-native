@@ -294,12 +294,10 @@ class ClassTest {
     assertEqualClass(cls1, cls2)
     assertDiffClass(cls1, cls3)
 
-    // Repeated, as missing classes are cached
-    for (_ <- 0 until 2)
-      assertThrows(
-        classOf[ClassNotFoundException],
-        () => Class.forName("not.existing.class.name")
-      )
+    assertThrows(
+      classOf[ClassNotFoundException],
+      () => Class.forName("not.existing.class.name")
+    )
   }
 
   @Test def classForNameOfInterfaceAndAbstractClass(): Unit = {

@@ -277,20 +277,22 @@ private[runtime] object _Class {
 private object LinkedClasses {
   import Intrinsics._
 
-  // None for missing classes, ConcurrentHashMap does not allow null values
-  private val cache = new ConcurrentHashMap[String, Option[Class[_]]]
-
-  def forName(className: String): Class[_] = {
-    var cached = cache.get(className)
-    if (cached == null) {
-      cached = find(className)
-      cache.putIfAbsent(className, cached)
-    }
-    cached.getOrElse(throw new ClassNotFoundException(className))
+  // ConcurrentHashMap does not allow null values
+  private val NotFound = new Object
+  private val cache = new ConcurrentHashMap[String, AnyRef]
+  private val lookup: java.util.function.Function[String, AnyRef] = name => {
+    val cls = find(name)
+    if (cls != null) cls else NotFound
   }
 
+  def forName(className: String): Class[_] =
+    cache.computeIfAbsent(className, lookup) match {
+      case cls: Class[_] => cls
+      case _             => throw new ClassNotFoundException(className)
+    }
+
   // Every class instance starts with a pointer to classOf[Class]
-  private def find(className: String): Option[Class[_]] = {
+  private def find(className: String): Class[_] = {
     val ptrSize = castRawSizeToInt(sizeOf[RawPtr])
     val section = StaticRoots.classInfoSection()
     val start = loadRawPtr(section)
@@ -302,10 +304,10 @@ private object LinkedClasses {
       val ptr = elemRawPtr(start, castLongToRawSize(offset))
       if (loadRawPtr(ptr) == classOfClass) {
         val cls = castRawPtrToObject(ptr).asInstanceOf[_Class[_]]
-        if (cls.name == className) return Some(cls)
+        if (cls.name == className) return cls
       }
       offset += ptrSize
     }
-    None
+    null
   }
 }
