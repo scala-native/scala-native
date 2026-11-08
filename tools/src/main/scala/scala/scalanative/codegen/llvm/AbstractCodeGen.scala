@@ -915,6 +915,9 @@ private[codegen] abstract class AbstractCodeGen(
           str(MemoryLayout.accessAlignmentOf(ty))
         } else {
           ty match {
+            case nir.Type.Long | nir.Type.Double =>
+              str(", align ")
+              str(MemoryLayout.accessAlignmentOf(ty))
             case refty: nir.Type.RefKind =>
               val (nonnull, deref, size) = toDereferenceable(refty)
               if (nonnull) {
