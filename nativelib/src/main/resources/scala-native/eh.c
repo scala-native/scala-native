@@ -9,6 +9,7 @@
 #include "externalThreads.h"
 #include "externalThreadGC.h"
 #include <stddef.h>
+#include <stdatomic.h>
 
 #if defined(__SCALANATIVE_DELIMCC)
 #include "delimcc.h"
@@ -39,6 +40,8 @@ typedef void (*OnCatchHandler)(Exception);
 typedef struct ExceptionWrapper {
     Exception obj;
     bool nativeAllocated;
+    // Set while the wrapper embedded in a Throwable is used by a throw
+    atomic_bool inFlight;
     _Unwind_Exception unwindException;
 } ExceptionWrapper;
 
@@ -67,8 +70,11 @@ void generic_exception_cleanup(_Unwind_Reason_Code code,
         scalanative_GC_remove_roots(&exceptionWrapper->obj,
                                     &exceptionWrapper->obj + 1);
         free(exceptionWrapper);
-    } else
+    } else {
+        atomic_store_explicit(&exceptionWrapper->inFlight, false,
+                              memory_order_release);
         Exception_cleanup(exceptionWrapper->obj);
+    }
 }
 
 typedef const uint8_t *LSDA_ptr;
@@ -368,6 +374,37 @@ _Unwind_Reason_Code scalanative_personality(int version, _Unwind_Action actions,
 }
 #endif
 
+/* The same Throwable can be thrown concurrently by multiple threads (e.g.
+ * shared ControlThrowable instances), but the unwind header holds per-throw
+ * unwinder state (on ARM EHABI also the personality cache). Only a single throw
+ * at a time can use the wrapper embedded in the Throwable, other throws get
+ * their own natively allocated one. */
+static ExceptionWrapper *acquireExceptionWrapper(Exception obj) {
+    ExceptionWrapper *wrapper = scalanative_Throwable_exceptionWrapper(obj);
+    if (wrapper == NULL)
+        return &fallbackExceptionWrapper;
+    if (!atomic_exchange_explicit(&wrapper->inFlight, true,
+                                  memory_order_acquire)) {
+        wrapper->nativeAllocated = false;
+        return wrapper;
+    }
+    ExceptionWrapper *nativeWrapper = calloc(1, sizeof(ExceptionWrapper));
+    if (nativeWrapper == NULL) {
+        fprintf(stderr, "%s Failed to allocate exception wrapper\n",
+                SN_FATAL_ERROR_PREFIX);
+        abort();
+    }
+    nativeWrapper->nativeAllocated = true;
+    nativeWrapper->obj = obj;
+    scalanative_GC_add_roots(&nativeWrapper->obj, &nativeWrapper->obj + 1);
+    return nativeWrapper;
+}
+
+static void releaseEmbeddedExceptionWrapper(ExceptionWrapper *wrapper) {
+    if (!wrapper->nativeAllocated)
+        atomic_store_explicit(&wrapper->inFlight, false, memory_order_release);
+}
+
 Exception scalanative_catch(_Unwind_Exception *unwindException) {
     /* An exception can return from a blocking native call, bypassing its
      * normal managed-state restoration. Admit before invoking Scala hooks. */
@@ -378,7 +415,8 @@ Exception scalanative_catch(_Unwind_Exception *unwindException) {
         scalanative_GC_remove_roots(&exceptionWrapper->obj,
                                     &exceptionWrapper->obj + 1);
         free(exceptionWrapper);
-    }
+    } else
+        releaseEmbeddedExceptionWrapper(exceptionWrapper);
     Exception_cleanup(exception);
     return exception;
 }
@@ -408,11 +446,7 @@ scalanative_leave_managed_and_throw(scalanative_thread_scope_t scope,
 }
 
 __attribute__((noreturn)) void scalanative_throw(Exception obj) {
-    ExceptionWrapper *exceptionWrapper =
-        scalanative_Throwable_exceptionWrapper(obj);
-    if (exceptionWrapper == NULL)
-        exceptionWrapper = &fallbackExceptionWrapper;
-    exceptionWrapper->nativeAllocated = false;
+    ExceptionWrapper *exceptionWrapper = acquireExceptionWrapper(obj);
     exceptionWrapper->unwindException.exception_cleanup =
         generic_exception_cleanup;
     exceptionWrapper->obj = obj;
@@ -431,10 +465,12 @@ __attribute__((noreturn)) void scalanative_throw(Exception obj) {
             jmp_buf *env = ceh.env;
             *ceh.exception_slot = obj;
             scalanative_continuation_exception_handler_clear();
+            releaseEmbeddedExceptionWrapper(exceptionWrapper);
             // Do not run exception cleanup; we're transferring to the resumer.
             SN_CONTINUATION_LONGJMP(*env, 1);
             __builtin_unreachable();
         }
+        releaseEmbeddedExceptionWrapper(exceptionWrapper);
         if (scalanative_continuation_exception_escape(obj)) {
             __builtin_unreachable();
         }
