@@ -16,6 +16,7 @@
 #include "shared/Log.h"
 #include "shared/MemoryInfo.h"
 #include "shared/Time.h"
+#include "stackOverflowGuards.h"
 #include <signal.h>
 #include <errno.h>
 
@@ -255,7 +256,9 @@ static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
     if (trapCell == NULL) {
         trapCell = (void *)scalanative_GC_yieldpoint_trap;
     }
-    bool isOwnTrap = isSafepointTrapSignal(signal) && trapCell != NULL &&
+    bool isSelfSent = isSelfSentSignal(siginfo);
+    bool isOwnTrap = !isSelfSent && isSafepointTrapSignal(signal) &&
+                     trapCell != NULL &&
                      isTrapFaultAddress(siginfo->si_addr, trapCell);
     bool isStaleCarrierTrap =
         !isOwnTrap && isContinuationStaleTrapFault(signal, siginfo, self);
@@ -286,6 +289,11 @@ static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
                 return previousSignalHandler->sa_handler(signal);
             }
         }
+        return;
+    }
+
+    if (isSelfSent) {
+        errno = old_errno;
         return;
     }
 

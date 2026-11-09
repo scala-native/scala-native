@@ -161,7 +161,8 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
     ThreadInfo threadInfo = currentThreadInfo;
     bool threadInfoInitialized = threadInfo.stackSize != 0 &&
                                  threadInfo.stackBottom && threadInfo.stackTop;
-    if (!threadInfoInitialized) {
+    bool isSelfSent = isSelfSentSignal(info);
+    if (!threadInfoInitialized || isSelfSent) {
         goto dispatchDefaultSignal;
     }
     switch (sig) {
@@ -257,8 +258,10 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
                 }
             }
         }
+        if (isSelfSent)
+            return;
         fprintf(stderr, "%s Unhandled signal %d, si_addr=%p\n", SN_ERROR_PREFIX,
-                sig, faultAddr);
+                sig, info->si_addr);
         StackTrace_PrintStackTrace();
         // _exit rather than exit: exit() is not async-signal-safe, and would
         // run shutdown hooks on a spawned thread that can deadlock on a GC lock
