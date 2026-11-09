@@ -107,8 +107,11 @@ class IssueTests {
       worker.start()
       ready.await()
       try for (_ <- 0 until 3) GC.collect()
-      finally stop.set(true)
-      worker.join()
+      finally {
+        stop.set(true)
+        worker.join(30000)
+      }
+      assertFalse("worker did not terminate", worker.isAlive())
     }
   }
 
