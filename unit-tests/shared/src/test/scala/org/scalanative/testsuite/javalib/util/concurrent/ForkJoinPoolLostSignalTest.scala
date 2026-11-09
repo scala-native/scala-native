@@ -27,6 +27,7 @@ class ForkJoinPoolLostSignalTest {
     val pool = new ForkJoinPool(parallelism)
     val release = new CountDownLatch(1)
     val blocked = new CountDownLatch(parallelism - 1)
+    var failed = true // do not mask an earlier failure in finally
     try {
       for (_ <- 1 until parallelism) pool.execute(new Runnable {
         def run(): Unit = {
@@ -59,10 +60,12 @@ class ForkJoinPoolLostSignalTest {
           Thread.onSpinWait()
         }
       }
+      failed = false
     } finally {
       release.countDown()
       pool.shutdownNow()
-      pool.awaitTermination(10, TimeUnit.SECONDS)
+      val terminated = pool.awaitTermination(10, TimeUnit.SECONDS)
+      if (!failed) assertTrue(s"pool did not terminate: $pool", terminated)
     }
   }
 
