@@ -27,7 +27,9 @@ static void *collect(void *unused) {
 
 // Overwrites the stack left by the state switch, then collects from another
 // thread with the callee-saved registers spilled far below the stack top.
-__attribute__((noinline)) void scalanative_test_collect_in_deep_frame(void) {
+// Referenced only from inline asm, so `used` keeps LTO from dropping it.
+__attribute__((noinline, used)) void
+scalanative_test_collect_in_deep_frame(void) {
     volatile char pad[16 * 1024];
     for (size_t i = 0; i < sizeof(pad); i++)
         pad[i] = 0;
