@@ -16,6 +16,7 @@
 #include "shared/Log.h"
 #include "shared/MemoryInfo.h"
 #include "shared/Time.h"
+#include "stackOverflowGuards.h"
 #include <signal.h>
 #include <errno.h>
 
@@ -247,6 +248,10 @@ static bool isContinuationStaleTrapFault(int signal, siginfo_t *siginfo,
 
 static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
     int old_errno = errno;
+    if (isSelfSentSignal(siginfo)) {
+        errno = old_errno;
+        return;
+    }
     void *trapCell = NULL;
     MutatorThread *self = currentMutatorThread;
     if (self != NULL) {

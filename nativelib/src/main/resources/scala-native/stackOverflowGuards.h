@@ -11,6 +11,7 @@
 #ifdef _WIN32
 #include <windows.h>
 #else
+#include <signal.h>
 #include <unistd.h>
 #endif
 
@@ -94,4 +95,24 @@ static inline bool inStackPageBound(void *pageAddr, void *addr) {
     void *upperBound = (char *)pageAddr + resolvePageSize() * stackGuardPages();
     return isInRange(addr, pageAddr, upperBound);
 }
+#ifndef _WIN32
+// SIGSEGV/SIGBUS raised by this process (e.g. re-raised by LLVM's crash
+// handler, #4805) has no fault address; returning without chaining to
+// previous handlers re-executes the fault.
+static inline bool isSelfSentSignal(const siginfo_t *info) {
+    switch (info->si_code) {
+    case SI_USER:
+    case SI_QUEUE:
+#ifdef SI_TKILL
+    case SI_TKILL:
+#endif
+#ifdef SI_LWP
+    case SI_LWP:
+#endif
+        return info->si_pid == getpid();
+    default:
+        return false;
+    }
+}
+#endif
 #endif

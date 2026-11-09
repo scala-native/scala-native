@@ -158,6 +158,8 @@ static void setupStackOverflowGuards() {
 }
 
 static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
+    if (isSelfSentSignal(info))
+        return;
     ThreadInfo threadInfo = currentThreadInfo;
     bool threadInfoInitialized = threadInfo.stackSize != 0 &&
                                  threadInfo.stackBottom && threadInfo.stackTop;
@@ -258,7 +260,7 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
             }
         }
         fprintf(stderr, "%s Unhandled signal %d, si_addr=%p\n", SN_ERROR_PREFIX,
-                sig, faultAddr);
+                sig, info->si_addr);
         StackTrace_PrintStackTrace();
         // _exit rather than exit: exit() is not async-signal-safe, and would
         // run shutdown hooks on a spawned thread that can deadlock on a GC lock
