@@ -1,4 +1,3 @@
-#include <alloca.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -23,7 +22,7 @@ int scalanative_test_call_below_soft_limit(void (*callback)(void **)) {
     if (info->maxStackSize <= info->stackSize ||
         target < realLow + 256 * 1024 || target >= (uintptr_t)&here)
         return 0;
-    void **slot = (void **)alloca((uintptr_t)&here - target);
+    void **slot = (void **)__builtin_alloca((uintptr_t)&here - target);
     *slot = NULL;
     callback(slot);
     __asm__ volatile("" : : "r"(slot) : "memory");
