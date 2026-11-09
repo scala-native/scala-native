@@ -38,6 +38,9 @@ run/noInlineUnknownIndy
 run/specialize-functional-interface
 run/t13007
 run/t13307b
+run/pr11021
+run/t12301b
+run/t13110
 
 ## Uses testkit java files
 run/small-seq-apply.scala
@@ -1105,6 +1108,28 @@ run/structural.scala
 run/t8601d.scala
 run/t10069b.scala
 run/t11665.scala
+
+## Uses the compiler at runtime (DirectTest, ReplTest, ToolBox, nsc.Global)
+run/inferred-structural-3.scala
+run/repeatedHKtoString.scala
+run/sd884.scala
+run/sd884b
+run/t10240.scala
+run/t12074-norange.scala
+run/t13038.scala
+run/t13087
+run/t13115.scala
+run/t13140.scala
+run/t8859.scala
+run/t9152
+
+## Uses scala.tools.testkit.ReflectUtil
+run/t8946.scala
+
+## ArrayOps.transpose needs the component type of nested arrays,
+## Array[Array[T]] is erased to ObjectArray
+run/t0421-new.scala
+run/t0421-old.scala
 
 ## JVM compliance
 run/t5680.scala
