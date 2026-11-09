@@ -189,6 +189,12 @@ static sigset_t threadWakupSignals;
 static struct sigaction previousSigsegvHandler = {};
 #ifdef __APPLE__
 static struct sigaction previousSigbusHandler = {};
+static sigset_t trapSignals;
+
+// Darwin's sigprocmask is process-wide; undo blocks left by e.g. libc tmpfile.
+static void YieldPointTrap_unblockSignals(void) {
+    sigprocmask(SIG_UNBLOCK, &trapSignals, NULL);
+}
 #endif
 
 static bool isSafepointTrapSignal(int signal) {
@@ -248,7 +254,9 @@ static bool isContinuationStaleTrapFault(int signal, siginfo_t *siginfo,
 
 static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
     int old_errno = errno;
-    if (isSelfSentSignal(siginfo)) {
+    if (isSelfSentSignal(siginfo) ||
+        (isSafepointTrapSignal(signal) && siginfo->si_code != SI_USER &&
+         scalanative_gc_safepoint_is_stale_fault_signal(uap))) {
         errno = old_errno;
         return;
     }
@@ -324,6 +332,9 @@ static void SetupYieldPointTrapHandler(void) {
         exit(errno);
     }
 #ifdef __APPLE__
+    sigemptyset(&trapSignals);
+    sigaddset(&trapSignals, SIGBUS);
+    sigaddset(&trapSignals, SIGSEGV);
     if (sigaction(SIGBUS, &sa, &previousSigbusHandler) == -1) {
         GC_LOG_ERROR("Cannot setup safepoint synchronization handler for "
                      "SIGBUS: %s",
@@ -347,11 +358,15 @@ static void Synchronizer_WaitForResumption(MutatorThread *selfThread) {
     }
 #else
     int signum;
-    if (0 != sigwait(&threadWakupSignals, &signum)) {
-        GC_LOG_ERROR("sigwait failed: %s", strerror(errno));
-        exit(errno);
+    int status = sigwait(&threadWakupSignals, &signum);
+    if (status != 0) {
+        int error = status > 0 ? status : errno;
+        // The caller re-checks stopThreads, so an interrupted wait is harmless.
+        if (error == EINTR)
+            return;
+        GC_LOG_ERROR("sigwait failed: %s", strerror(error));
+        exit(error);
     }
-    assert(signum == THREAD_WAKEUP_SIGNAL);
 #endif
 }
 
@@ -373,6 +388,9 @@ static void Synchronizer_SuspendThreads(void) {
     atomic_store_explicit(&Synchronizer_stopThreads, true,
                           memory_order_release);
     YieldPointTrap_resetTaskMachBadAccessPorts();
+#ifdef __APPLE__
+    YieldPointTrap_unblockSignals();
+#endif
     YieldPointTrap_armAllMutators();
 }
 
@@ -647,6 +665,9 @@ static bool Synchronizer_acquireGeneration(atomic_uint_fast64_t *completed,
                 abort();
             }
 
+#if defined(SCALANATIVE_GC_USE_YIELDPOINT_TRAPS) && defined(__APPLE__)
+            YieldPointTrap_unblockSignals();
+#endif
             thread_yield();
         }
     } while (activeThreads > 0);

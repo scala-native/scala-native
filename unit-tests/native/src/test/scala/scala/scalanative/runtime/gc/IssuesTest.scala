@@ -1,5 +1,6 @@
 package scala.scalanative.runtime.gc
 
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicLong}
 
 import scala.concurrent.duration._
@@ -9,6 +10,10 @@ import org.junit.Assert._
 import org.junit.{Assume, Test}
 
 import scala.scalanative.junit.utils.AssumesHelper
+import scala.scalanative.meta.LinktimeInfo
+import scala.scalanative.posix.signal._
+import scala.scalanative.runtime.GC
+import scala.scalanative.unsafe._
 
 class IssueTests {
 
@@ -78,4 +83,34 @@ class IssueTests {
     }
     assertEquals(nThreads.toLong * perThread, total.get())
   }
+
+  // macOS: a mutator with SIGBUS/SIGSEGV blocked (e.g. by libc tmpfile) wedged GC
+  @Test def issue5051(): Unit = {
+    AssumesHelper.assumeMultithreadingIsEnabled()
+    Assume.assumeTrue("macOS only", LinktimeInfo.isMac)
+    if (LinktimeInfo.isMac) {
+      val ready = new CountDownLatch(1)
+      val stop = new AtomicBoolean(false)
+      val worker = new Thread(() => {
+        val set = stackalloc[Byte](128).asInstanceOf[Ptr[sigset_t]]
+        val old = stackalloc[Byte](128).asInstanceOf[Ptr[sigset_t]]
+        sigemptyset(set)
+        sigaddset(set, SIGBUS)
+        sigaddset(set, SIGSEGV)
+        pthread_sigmask(SIG_BLOCK, set, old)
+        try {
+          ready.countDown()
+          while (!stop.get()) issue5051Alloc()
+        } finally pthread_sigmask(SIG_SETMASK, old, null)
+      })
+      worker.setDaemon(true)
+      worker.start()
+      ready.await()
+      try for (_ <- 0 until 3) GC.collect()
+      finally stop.set(true)
+      worker.join()
+    }
+  }
+
+  @noinline private def issue5051Alloc(): AnyRef = new Array[AnyRef](2)
 }
