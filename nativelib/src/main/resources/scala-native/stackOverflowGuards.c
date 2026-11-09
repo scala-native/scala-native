@@ -158,11 +158,12 @@ static void setupStackOverflowGuards() {
 }
 
 static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
+    if (isSelfSentSignal(info))
+        return;
     ThreadInfo threadInfo = currentThreadInfo;
     bool threadInfoInitialized = threadInfo.stackSize != 0 &&
                                  threadInfo.stackBottom && threadInfo.stackTop;
-    bool isSelfSent = isSelfSentSignal(info);
-    if (!threadInfoInitialized || isSelfSent) {
+    if (!threadInfoInitialized) {
         goto dispatchDefaultSignal;
     }
     switch (sig) {
@@ -258,8 +259,6 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
                 }
             }
         }
-        if (isSelfSent)
-            return;
         fprintf(stderr, "%s Unhandled signal %d, si_addr=%p\n", SN_ERROR_PREFIX,
                 sig, info->si_addr);
         StackTrace_PrintStackTrace();

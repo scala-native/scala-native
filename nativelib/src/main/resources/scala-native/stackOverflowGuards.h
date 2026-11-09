@@ -97,7 +97,8 @@ static inline bool inStackPageBound(void *pageAddr, void *addr) {
 }
 #ifndef _WIN32
 // SIGSEGV/SIGBUS raised by this process (e.g. re-raised by LLVM's crash
-// handler, #4805) has no fault address; returning re-executes the fault.
+// handler, #4805) has no fault address; returning without chaining to
+// previous handlers re-executes the fault.
 static inline bool isSelfSentSignal(const siginfo_t *info) {
     switch (info->si_code) {
     case SI_USER:

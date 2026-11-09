@@ -248,6 +248,10 @@ static bool isContinuationStaleTrapFault(int signal, siginfo_t *siginfo,
 
 static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
     int old_errno = errno;
+    if (isSelfSentSignal(siginfo)) {
+        errno = old_errno;
+        return;
+    }
     void *trapCell = NULL;
     MutatorThread *self = currentMutatorThread;
     if (self != NULL) {
@@ -256,9 +260,7 @@ static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
     if (trapCell == NULL) {
         trapCell = (void *)scalanative_GC_yieldpoint_trap;
     }
-    bool isSelfSent = isSelfSentSignal(siginfo);
-    bool isOwnTrap = !isSelfSent && isSafepointTrapSignal(signal) &&
-                     trapCell != NULL &&
+    bool isOwnTrap = isSafepointTrapSignal(signal) && trapCell != NULL &&
                      isTrapFaultAddress(siginfo->si_addr, trapCell);
     bool isStaleCarrierTrap =
         !isOwnTrap && isContinuationStaleTrapFault(signal, siginfo, self);
@@ -289,11 +291,6 @@ static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
                 return previousSignalHandler->sa_handler(signal);
             }
         }
-        return;
-    }
-
-    if (isSelfSent) {
-        errno = old_errno;
         return;
     }
 
