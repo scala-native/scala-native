@@ -4,13 +4,19 @@ import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.junit.Assert._
+import org.junit.Assume._
 import org.junit.{BeforeClass, Test}
+
+import org.scalanative.testsuite.utils.Platform
 
 import scala.scalanative.junit.utils.AssumesHelper
 
 object ForkJoinPoolLostSignalTest {
-  @BeforeClass def checkRuntime(): Unit =
+  @BeforeClass def checkRuntime(): Unit = {
     AssumesHelper.assumeMultithreadingIsEnabled()
+    // Tests our javalib; the lost wake-up still reproduces on some JDKs (21).
+    assumeFalse("Tests the Scala Native ForkJoinPool", Platform.executingInJVM)
+  }
 }
 
 /** A task submitted while the only free worker is going idle must still run
