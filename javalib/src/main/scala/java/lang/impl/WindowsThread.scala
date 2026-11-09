@@ -3,7 +3,9 @@ package java.lang.impl
 import scala.annotation.{switch, tailrec}
 
 import scala.scalanative.annotation._
+import scala.scalanative.libc.stdatomic._
 import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
+import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
 import scala.scalanative.runtime._
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
@@ -56,6 +58,8 @@ private[java] class WindowsThread(
     }
 
   @volatile private var terminated = false
+  // See UnparkGuard. Not private: classFieldRawPtr needs the field kept.
+  @volatile private[impl] var unparkGuard: Int = 0
 
   private val handle: Handle = try {
     if (isMainThread) 0.toPtr // main thread
@@ -98,6 +102,7 @@ private[java] class WindowsThread(
     if (if (isMultithreadingEnabled) true else isExternalThread) {
       this.synchronized {
         terminated = true
+        UnparkGuard.close(unparkGuardAtomic)
         CloseHandle(parkEvent)
         CloseHandle(sleepEvent)
         if (!isMainThread) CloseHandle(handle)
@@ -172,13 +177,15 @@ private[java] class WindowsThread(
   }
 
   @inline override def unpark(): Unit = if (isMultithreadingEnabled) {
-    if (terminated) return
-    withoutCarrierCompensation[Unit] {
-      this.synchronized[Unit] {
-        if (!terminated) SetEvent(parkEvent)
-      }
-    }
+    val guard = unparkGuardAtomic
+    if (!UnparkGuard.tryEnter(guard)) return
+    try withoutCarrierCompensation[Unit](SetEvent(parkEvent))
+    finally UnparkGuard.exit(guard)
   }
+
+  @alwaysinline private def unparkGuardAtomic = new AtomicInt(
+    fromRawPtr(classFieldRawPtr(this, "unparkGuard"))
+  )
 
   override def sleep(millis: scala.Long): Unit = {
     val deadline = System.currentTimeMillis() + millis
