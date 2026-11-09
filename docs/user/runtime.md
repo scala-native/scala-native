@@ -149,6 +149,8 @@ settings yet.
 
 -   GC_TIME_RATIO (default is .05)
 -   GC_FREE_RATIO (default is .5)
+-   GC_MAX_FREE_RATIO (default is .8): growth for GC_TIME_RATIO only happens
+    while less than this fraction of the heap is free after a collection.
 
 Note: GC_STATS_FILE shared with Immix is only honored if the compiler
 defines -DGC_ENABLE_STATS for Commix.

@@ -1,6 +1,8 @@
 # A System.gc() loop must not grow the commix heap to the maximum.
 # Heap_shouldGrow read every explicit collection as a slow mark.
 # https://github.com/scala-native/scala-native/issues/5052
+# Many small live objects must not grow it for mark time either (#2436).
 
 > set nativeConfig ~= { _.withGC(scala.scalanative.build.GC.commix) }
-> runExplicitCollectGrowth
+> runExplicitCollectGrowth 64M
+> runExplicitCollectGrowth 512M mark-time

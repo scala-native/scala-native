@@ -30,6 +30,7 @@ typedef struct {
     atomic_bool emergencyBlockClaimed;
     double maxMarkTimeRatio;
     double minFreeRatio;
+    double maxFreeRatio;
     // Set only for collections caused by a failed allocation.
     // System.gc() must not drive heap growth.
     atomic_bool growAfterCollection;

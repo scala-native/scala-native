@@ -51,7 +51,41 @@ object Main {
     peak
   }
 
-  def main(args: Array[String]): Unit = {
+  // #2436: many tiny live arrays among fast 1600-byte garbage.
+  private def markTimeGrowth(): Unit = {
+    val iterations = 500000
+    val maxHeap = 384L * 1024 * 1024
+    val retained = new scala.collection.mutable.ArrayBuffer[Array[Char]](
+      iterations
+    )
+    var sum = 0
+    var peakHeap = 0L
+    var i = 0
+    while (i < iterations) {
+      var j = 0
+      while (j < 9) {
+        sum += new Array[Byte](1600)(0)
+        j += 1
+      }
+      retained += new Array[Char](0)
+      if (i % 4096 == 0)
+        peakHeap = math.max(peakHeap, GC.getUsedHeapSize().toLong)
+      i += 1
+    }
+    peakHeap = math.max(peakHeap, GC.getUsedHeapSize().toLong)
+    println(s"mark-time: sum=$sum peakMiB=${peakHeap >> 20}")
+    if (peakHeap > maxHeap)
+      throw new AssertionError(
+        s"issue 2436: the heap grew to ${peakHeap >> 20}MiB " +
+          s"(limit ${maxHeap >> 20}MiB)"
+      )
+  }
+
+  def main(args: Array[String]): Unit =
+    if (args.headOption.contains("mark-time")) markTimeGrowth()
+    else explicitCollectGrowth()
+
+  private def explicitCollectGrowth(): Unit = {
     val startHeap = GC.getUsedHeapSize().toLong
     startDaemon("gc-loop", () => collectLoop())
     startDaemon("blocking", () => sleepLoop())
