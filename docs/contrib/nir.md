@@ -706,6 +706,25 @@ without implementation. If the linker is configured with
 linking error will be reported. If `linkStubs = true`, these definitions
 will be linked.
 
+### Class hierarchy
+
+#### final
+
+``` text
+final
+```
+
+On a class or module: no class, in any compilation unit, extends it. The
+compiler emits it for final, module and anonymous classes. On a method: no
+subclass, in any compilation unit, overrides it. The compiler emits it for
+final methods and for methods of final classes. On a field: the field is
+assigned only during initialization.
+
+The toolchain may call such methods directly and test the type of such
+classes by identity without knowing the rest of the program, so the attribute
+must never be emitted for a definition that can be extended or overridden.
+Definitions without it are treated as extensible.
+
 ### Misc
 
 #### dyn

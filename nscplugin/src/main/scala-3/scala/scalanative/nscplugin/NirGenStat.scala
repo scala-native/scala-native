@@ -85,8 +85,17 @@ trait NirGenStat(using Context) {
         nir.Attr.Define(name)
     }
     val isAbstract = Option.when(sym.is(Abstract))(nir.Attr.Abstract)
-    nir.Attrs.fromSeq(annotationAttrs ++ isAbstract)
+    val isFinal = Option.when(isFinalClass(sym))(nir.Attr.Final)
+    nir.Attrs.fromSeq(annotationAttrs ++ isAbstract ++ isFinal)
   }
+
+  // Not isEffectivelyFinal: classes nested in a final class can be extended
+  private def isFinalClass(sym: Symbol): Boolean =
+    sym.isClass && !sym.is(Trait) &&
+      (sym.is(Final) || sym.is(ModuleClass) || sym.isAnonymousClass)
+
+  private def isFinalMethod(sym: Symbol): Boolean =
+    sym.isEffectivelyFinal || isFinalClass(sym.owner)
 
   private def genClassParent(sym: ClassSymbol): Option[nir.Global.Top] = {
     if sym.isExternType && sym.superClass != defn.ObjectClass then
@@ -335,6 +344,8 @@ trait NirGenStat(using Context) {
       attrs += nir.Attr.AlwaysInline
     if (isExtern)
       attrs += nir.Attr.Extern(sym.isBlocking || sym.owner.isBlocking)
+    if (isFinalMethod(sym))
+      attrs += nir.Attr.Final
 
     def requireLiteralStringAnnotation(annotation: Annotation): Option[String] =
       annotation.tree match {

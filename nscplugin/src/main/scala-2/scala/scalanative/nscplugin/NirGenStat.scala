@@ -171,9 +171,18 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       }
       val abstractAttr =
         if (sym.isAbstract) Seq(nir.Attr.Abstract) else Seq.empty
+      val finalAttr =
+        if (isFinalClass(sym)) Seq(nir.Attr.Final) else Seq.empty
 
-      nir.Attrs.fromSeq(annotationAttrs ++ abstractAttr)
+      nir.Attrs.fromSeq(annotationAttrs ++ abstractAttr ++ finalAttr)
     }
+
+    private def isFinalClass(sym: Symbol): Boolean =
+      sym.isClass && !sym.isTraitOrInterface &&
+        (sym.isEffectivelyFinal || sym.isAnonymousClass)
+
+    private def isFinalMethod(sym: Symbol): Boolean =
+      sym.isEffectivelyFinal || isFinalClass(sym.owner)
 
     def genClassInterfaces(sym: Symbol) = {
       val isExtern = sym.isExternType
@@ -1092,6 +1101,8 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         attrs += nir.Attr.AlwaysInline
       if (isExtern)
         attrs += nir.Attr.Extern(sym.isBlocking || sym.owner.isBlocking)
+      if (isFinalMethod(sym))
+        attrs += nir.Attr.Final
 
       def requireLiteralStringAnnotation(
           annotation: Annotation
