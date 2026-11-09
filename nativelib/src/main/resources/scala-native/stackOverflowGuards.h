@@ -96,8 +96,10 @@ static inline bool isOnThreadStack(ThreadInfo *threadInfo, void *addr) {
     size_t size = threadInfo->maxStackSize > threadInfo->stackSize
                       ? threadInfo->maxStackSize
                       : threadInfo->stackSize;
-    return isInRange(addr, (char *)threadInfo->stackBottom - size,
-                     threadInfo->stackBottom);
+    uintptr_t bottom = (uintptr_t)threadInfo->stackBottom;
+    // An unlimited RLIMIT_STACK would wrap below address 0.
+    void *low = size < bottom ? (void *)(bottom - size) : NULL;
+    return isInRange(addr, low, threadInfo->stackBottom);
 }
 #ifndef _WIN32
 static inline bool isOnSignalHandlerStack(ThreadInfo *threadInfo, void *addr) {

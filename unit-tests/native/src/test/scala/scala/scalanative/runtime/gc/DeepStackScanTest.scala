@@ -10,7 +10,6 @@ import scala.scalanative.junit.utils.AssumesHelper
 import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
 import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
 
 class DeepStackScanTest {
   import DeepStackScanTest._
@@ -23,15 +22,15 @@ class DeepStackScanTest {
       LinktimeInfo.gc.isImmix || LinktimeInfo.gc.isCommix
     )
     assumeTrue("weak references", LinktimeInfo.isWeakReferenceSupported)
-    // glibc gives new threads an 8MB stack, past the 1MB default soft limit
     assumeTrue("Linux", LinktimeInfo.isLinux && !LinktimeInfo.isAndroid)
 
     survived = false
-    val thread = new Thread(() =>
-      Native.callBelow((2 * 1024 * 1024).toCSize, collectFromSlot)
-    )
+    ran = false
+    val thread =
+      new Thread(() => ran = Native.callBelowSoftLimit(collectFromSlot) != 0)
     thread.start()
     thread.join()
+    assumeTrue("thread stack does not extend past its soft limit", ran)
     assertTrue(
       "object reachable only from a deep frame was collected",
       survived
@@ -43,6 +42,7 @@ object DeepStackScanTest {
   final class Box(val value: Long)
 
   @volatile var survived = false
+  @volatile var ran = false
 
   val collectFromSlot: CFuncPtr1[Ptr[Ptr[Byte]], Unit] =
     CFuncPtr1.fromScalaFunction { (slot: Ptr[Ptr[Byte]]) =>
@@ -58,8 +58,8 @@ object DeepStackScanTest {
   }
 
   @extern private object Native {
-    @name("scalanative_test_call_below")
-    def callBelow(gap: CSize, callback: CFuncPtr1[Ptr[Ptr[Byte]], Unit]): Unit =
+    @name("scalanative_test_call_below_soft_limit")
+    def callBelowSoftLimit(callback: CFuncPtr1[Ptr[Ptr[Byte]], Unit]): CInt =
       extern
   }
 }
