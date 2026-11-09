@@ -4,6 +4,8 @@
 //   not only when it was the last active one, so a task pushed while the
 //   remaining active workers are blocked in user code is not stranded.
 // - tryTrim decrements the total count without touching the active count.
+// - signalWork and reactivate look up the idle-stack head in the current
+//   queues array on every retry.
 
 /*
  * Written by Doug Lea with assistance from members of JCP JSR-166
@@ -223,7 +225,7 @@ class ForkJoinPool private (
       while (!break) {
         var create = false
         val sp = c.toInt & ~INACTIVE
-        val v = qs(sp & (n - 1))
+        val v = idleWorkerAt(sp)
         val deficit: Int = pc - (c >>> TC_SHIFT).toShort
         val ac: Long = (c + RC_UNIT) & RC_MASK
         var nc = 0L
@@ -251,29 +253,36 @@ class ForkJoinPool private (
     }
   }
 
+  /** The worker at the top of the idle stack described by `sp`, or null. Looks
+   *  it up by its full index in the current `queues`: the array may have grown
+   *  since `sp` was read, and masking with a stale length would select another
+   *  worker and pop the real head without waking it.
+   */
+  @alwaysinline private def idleWorkerAt(sp: Int): WorkQueue = {
+    val qs = queues
+    val i = sp & SMASK
+    if (sp != 0 && qs != null && i < qs.length) qs(i) else null
+  }
+
   private def reactivate(): WorkQueue = {
     var c = ctl
-    val qs = queues
-    val n = if (qs != null) qs.length else 0
-    if (n > 0) {
-      while (true) {
-        val sp = c.toInt & ~INACTIVE
-        val v = qs(sp & (n - 1))
-        val ac = UC_MASK & (c + RC_UNIT)
-        if (sp == 0 || v == null)
-          return null
-        if (c == {
-              c = compareAndExchangeCtl(c, (v.stackPred & SP_MASK) | ac); c
-            }) {
-          val owner = v.owner
-          v.phase = sp
-          if (v.access == PARKED)
-            LockSupport.unpark(owner)
-          return v
-        }
+    while (true) {
+      val sp = c.toInt & ~INACTIVE
+      val v = idleWorkerAt(sp)
+      val ac = UC_MASK & (c + RC_UNIT)
+      if (v == null)
+        return null
+      if (c == {
+            c = compareAndExchangeCtl(c, (v.stackPred & SP_MASK) | ac); c
+          }) {
+        val owner = v.owner
+        v.phase = sp
+        if (v.access == PARKED)
+          LockSupport.unpark(owner)
+        return v
       }
     }
-    null
+    null // unreachable
   }
 
   private def tryTrim(w: WorkQueue): Boolean = {
