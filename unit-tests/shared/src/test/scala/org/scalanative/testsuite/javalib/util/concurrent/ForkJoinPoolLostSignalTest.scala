@@ -14,8 +14,11 @@ import scala.scalanative.junit.utils.AssumesHelper
 object ForkJoinPoolLostSignalTest {
   @BeforeClass def checkRuntime(): Unit = {
     AssumesHelper.assumeMultithreadingIsEnabled()
-    // Tests our javalib; the lost wake-up still reproduces on some JDKs (21).
-    assumeFalse("Tests the Scala Native ForkJoinPool", Platform.executingInJVM)
+    // The same lost wake-up still reproduces on JDK 21 (e.g. 21.0.13).
+    assumeFalse(
+      "ForkJoinPool lost wake-up is not fixed in this JDK",
+      Platform.executingInJVMOnLowerThanJDK(22)
+    )
   }
 }
 
