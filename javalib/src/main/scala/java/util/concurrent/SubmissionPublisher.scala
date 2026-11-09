@@ -429,7 +429,7 @@ class SubmissionPublisher[T](
     try {
       val _thread = Thread.currentThread()
       val _ownerThread = ownerThread
-      val unowned = _ownerThread != _thread && _ownerThread != null
+      val unowned = _ownerThread != _thread
       if (unowned && _ownerThread != null)
         ownerThread = null // disable bias
 
@@ -644,7 +644,8 @@ object SubmissionPublisher {
   private[SubmissionPublisher] final class ConsumerTask[T](
       private[SubmissionPublisher] val consumer: BufferedSubscription[T]
   ) extends ForkJoinTask[Unit]
-      with Runnable {
+      with Runnable
+      with CompletableFuture.AsynchronousCompletionTask {
     override final def getRawResult(): Unit =
       ()
 
@@ -709,11 +710,11 @@ object SubmissionPublisher {
     // next position to put
     private var tail: Int = 0
     // atomic run state flags
-    private var ctl: Int = 0
+    @volatile private var ctl: Int = 0
     // buffer array, the type constraint is T <: AnyRef
     private var buffer = new Array[Object](initCapacity)
     // blocked producer thread
-    private var waiter: Thread = _
+    @volatile private var waiter: Thread = _
     // holds until onError issued
     private var pendingError: Throwable = _
 
@@ -723,7 +724,7 @@ object SubmissionPublisher {
     private[SubmissionPublisher] var nextRetry: BufferedSubscription[T] = _
 
     // unfilled requests
-    @Contended("c") private var demand: Long = 0L
+    @Contended("c") @volatile private var demand: Long = 0L
     // nonzero if producer blocked
     @Contended("c") @volatile private var waiting: Int = 0
 
