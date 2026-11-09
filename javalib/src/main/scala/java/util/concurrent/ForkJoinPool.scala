@@ -1,4 +1,9 @@
 // Ported from JSR-166, revision: 1.411
+// Scala Native changes:
+// - awaitWork re-checks all queues after the worker is published as idle,
+//   not only when it was the last active one, so a task pushed while the
+//   remaining active workers are blocked in user code is not stranded.
+// - tryTrim decrements the total count without touching the active count.
 
 /*
  * Written by Doug Lea with assistance from members of JCP JSR-166
@@ -278,7 +283,10 @@ class ForkJoinPool private (
       val c = ctl
       val sp = c.toInt & ~INACTIVE
       if ((sp & SMASK) == (cfg & SMASK) &&
-          compareAndSetCtl(c, (pred & SP_MASK) | (UC_MASK & (c - TC_UNIT)))) {
+          compareAndSetCtl(
+            c,
+            (pred & SP_MASK) | (RC_MASK & c) | (TC_MASK & (c - TC_UNIT))
+          )) {
         w.config = cfg // add sentinel for deregisterWorker
         w.phase = sp
         return true
@@ -393,9 +401,15 @@ class ForkJoinPool private (
       pc != { pc = compareAndExchangeCtl(pc, qc); pc }
     }) ()
 
+    // A producer that pushed into an empty queue while this worker was still
+    // counted as active may have skipped signalWork (RC >= parallelism, e.g.
+    // when other workers are blocked in user code). Now that this worker is
+    // published as idle, re-check all queues: either such a producer sees the
+    // new ctl and pops an idle worker, or this check sees its task.
+    VarHandle.fullFence()
+    if (hasTasks(false) && (w.phase >= 0 || (reactivate() eq w)))
+      return 0 // rescan; if another worker was reactivated instead, park
     if ((qc & RC_MASK) <= 0L) {
-      if (hasTasks(true) && (w.phase >= 0 || (reactivate() eq w)))
-        return 0 // check for stragglers
       if (runState != 0 && tryTerminate(false, false))
         return -1 // quiescent termination
       idle = true
