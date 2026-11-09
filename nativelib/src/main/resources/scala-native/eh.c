@@ -9,6 +9,7 @@
 #include "externalThreads.h"
 #include "externalThreadGC.h"
 #include <stddef.h>
+#include <stdatomic.h>
 
 #if defined(__SCALANATIVE_DELIMCC)
 #include "delimcc.h"
@@ -39,6 +40,7 @@ typedef void (*OnCatchHandler)(Exception);
 typedef struct ExceptionWrapper {
     Exception obj;
     bool nativeAllocated;
+    atomic_bool inFlight;
     _Unwind_Exception unwindException;
 } ExceptionWrapper;
 
@@ -59,16 +61,23 @@ static void Exception_cleanup(Exception *self) {
         handler(self);
 }
 
+static void releaseExceptionWrapper(ExceptionWrapper *wrapper) {
+    if (wrapper->nativeAllocated) {
+        scalanative_GC_remove_roots(&wrapper->obj, &wrapper->obj + 1);
+        free(wrapper);
+    } else
+        atomic_store_explicit(&wrapper->inFlight, false, memory_order_release);
+}
+
 // Cleanup function for the exception
 void generic_exception_cleanup(_Unwind_Reason_Code code,
                                _Unwind_Exception *exception) {
     ExceptionWrapper *exceptionWrapper = GetExceptionWrapper(exception);
-    if (exceptionWrapper->nativeAllocated) {
-        scalanative_GC_remove_roots(&exceptionWrapper->obj,
-                                    &exceptionWrapper->obj + 1);
-        free(exceptionWrapper);
-    } else
-        Exception_cleanup(exceptionWrapper->obj);
+    bool nativeAllocated = exceptionWrapper->nativeAllocated;
+    Exception obj = exceptionWrapper->obj;
+    releaseExceptionWrapper(exceptionWrapper);
+    if (!nativeAllocated)
+        Exception_cleanup(obj);
 }
 
 typedef const uint8_t *LSDA_ptr;
@@ -258,9 +267,8 @@ _Unwind_Reason_Code set_landing_pad(_Unwind_Context *context,
     return _URC_INSTALL_CONTEXT;
 }
 
-// A personality function to catch all exceptions
-_Unwind_Reason_Code scalanative_personality(int version, _Unwind_Action actions,
-                                            uint64_t exception_class,
+// Catches all exceptions
+static _Unwind_Reason_Code personality_impl(_Unwind_Action actions,
                                             _Unwind_Exception *unwindException,
                                             _Unwind_Context *context) {
     LSDA header;
@@ -311,17 +319,90 @@ _Unwind_Reason_Code scalanative_personality(int version, _Unwind_Action actions,
     return _URC_CONTINUE_UNWIND;
 }
 
+#if defined(__arm__) && !defined(__USING_SJLJ_EXCEPTIONS__) &&                 \
+    !defined(__ARM_DWARF_EH__)
+// ARM EHABI (IHI 0038): the personality unwinds frames itself
+static _Unwind_Reason_Code continue_unwind(_Unwind_Exception *unwindException,
+                                           _Unwind_Context *context) {
+    if (__gnu_unwind_frame(unwindException, context) != _URC_OK)
+        return _URC_FAILURE;
+    return _URC_CONTINUE_UNWIND;
+}
+
+_Unwind_Reason_Code scalanative_personality(_Unwind_State state,
+                                            _Unwind_Exception *unwindException,
+                                            _Unwind_Context *context) {
+    enum { IP = 12, SP = 13 };
+    _Unwind_SetGR(context, IP, (uintptr_t)unwindException);
+
+    _Unwind_Action actions;
+    switch (state & _US_ACTION_MASK) {
+    case _US_VIRTUAL_UNWIND_FRAME:
+        actions = _UA_SEARCH_PHASE;
+        break;
+    case _US_UNWIND_FRAME_STARTING:
+        actions = _UA_CLEANUP_PHASE;
+        if (!(state & _US_FORCE_UNWIND) &&
+            unwindException->barrier_cache.sp == _Unwind_GetGR(context, SP))
+            actions |= _UA_HANDLER_FRAME;
+        break;
+    case _US_UNWIND_FRAME_RESUME:
+        return continue_unwind(unwindException, context);
+    default:
+        return _URC_FAILURE;
+    }
+
+    _Unwind_Reason_Code code =
+        personality_impl(actions, unwindException, context);
+    switch (code) {
+    case _URC_HANDLER_FOUND:
+        unwindException->barrier_cache.sp = _Unwind_GetGR(context, SP);
+        return code;
+    case _URC_CONTINUE_UNWIND:
+        return continue_unwind(unwindException, context);
+    default:
+        return code;
+    }
+}
+#else
+_Unwind_Reason_Code scalanative_personality(int version, _Unwind_Action actions,
+                                            uint64_t exception_class,
+                                            _Unwind_Exception *unwindException,
+                                            _Unwind_Context *context) {
+    return personality_impl(actions, unwindException, context);
+}
+#endif
+
+// A Throwable can be thrown concurrently (e.g. shared ControlThrowable), only
+// one throw at a time may use its embedded unwind header.
+static ExceptionWrapper *acquireExceptionWrapper(Exception obj) {
+    ExceptionWrapper *wrapper = scalanative_Throwable_exceptionWrapper(obj);
+    if (wrapper == NULL)
+        return &fallbackExceptionWrapper;
+    if (!atomic_exchange_explicit(&wrapper->inFlight, true,
+                                  memory_order_acquire)) {
+        wrapper->nativeAllocated = false;
+        return wrapper;
+    }
+    ExceptionWrapper *nativeWrapper = calloc(1, sizeof(ExceptionWrapper));
+    if (nativeWrapper == NULL) {
+        fprintf(stderr, "%s Failed to allocate exception wrapper\n",
+                SN_FATAL_ERROR_PREFIX);
+        abort();
+    }
+    nativeWrapper->nativeAllocated = true;
+    nativeWrapper->obj = obj;
+    scalanative_GC_add_roots(&nativeWrapper->obj, &nativeWrapper->obj + 1);
+    return nativeWrapper;
+}
+
 Exception scalanative_catch(_Unwind_Exception *unwindException) {
     /* An exception can return from a blocking native call, bypassing its
      * normal managed-state restoration. Admit before invoking Scala hooks. */
     scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState_Managed);
     ExceptionWrapper *exceptionWrapper = GetExceptionWrapper(unwindException);
     Exception exception = exceptionWrapper->obj;
-    if (exceptionWrapper->nativeAllocated) {
-        scalanative_GC_remove_roots(&exceptionWrapper->obj,
-                                    &exceptionWrapper->obj + 1);
-        free(exceptionWrapper);
-    }
+    releaseExceptionWrapper(exceptionWrapper);
     Exception_cleanup(exception);
     return exception;
 }
@@ -351,11 +432,7 @@ scalanative_leave_managed_and_throw(scalanative_thread_scope_t scope,
 }
 
 __attribute__((noreturn)) void scalanative_throw(Exception obj) {
-    ExceptionWrapper *exceptionWrapper =
-        scalanative_Throwable_exceptionWrapper(obj);
-    if (exceptionWrapper == NULL)
-        exceptionWrapper = &fallbackExceptionWrapper;
-    exceptionWrapper->nativeAllocated = false;
+    ExceptionWrapper *exceptionWrapper = acquireExceptionWrapper(obj);
     exceptionWrapper->unwindException.exception_cleanup =
         generic_exception_cleanup;
     exceptionWrapper->obj = obj;
@@ -374,10 +451,13 @@ __attribute__((noreturn)) void scalanative_throw(Exception obj) {
             jmp_buf *env = ceh.env;
             *ceh.exception_slot = obj;
             scalanative_continuation_exception_handler_clear();
+            releaseExceptionWrapper(exceptionWrapper);
             // Do not run exception cleanup; we're transferring to the resumer.
             SN_CONTINUATION_LONGJMP(*env, 1);
             __builtin_unreachable();
         }
+        if (!exceptionWrapper->nativeAllocated)
+            releaseExceptionWrapper(exceptionWrapper);
         if (scalanative_continuation_exception_escape(obj)) {
             __builtin_unreachable();
         }

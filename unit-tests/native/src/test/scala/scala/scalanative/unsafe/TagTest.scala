@@ -4,6 +4,8 @@ package unsafe
 import org.junit.Assert._
 import org.junit.Test
 
+import org.scalanative.testsuite.utils.Platform
+
 import scalanative.unsigned._
 
 class TagTest {
@@ -77,10 +79,10 @@ class TagTest {
     assertTrue(tagof[UShort].alignment == 2)
     assertTrue(tagof[Int].alignment == 4)
     assertTrue(tagof[UInt].alignment == 4)
-    assertTrue(tagof[Long].alignment == sizeof[Size])
-    assertTrue(tagof[ULong].alignment == sizeof[Size])
+    assertTrue(tagof[Long].alignment == Platform.alignmentOf64BitPrimitives)
+    assertTrue(tagof[ULong].alignment == Platform.alignmentOf64BitPrimitives)
     assertTrue(tagof[Float].alignment == 4)
-    assertTrue(tagof[Double].alignment == sizeof[Size])
+    assertTrue(tagof[Double].alignment == Platform.alignmentOf64BitPrimitives)
     assertTrue(tagof[CArray[Int, Nat._0]].alignment == 4)
     assertTrue(tagof[CArray[Int, Nat._3]].alignment == 4)
     assertTrue(tagof[CArray[Int, Nat._9]].alignment == 4)

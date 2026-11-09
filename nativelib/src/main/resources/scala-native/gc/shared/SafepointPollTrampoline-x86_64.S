@@ -106,12 +106,6 @@ scalanative_gc_safepoint_poll_trampoline:
     leaq SFPT_FRAME(%rsp), %rsp
     ret $128
 
-#else
-.text
-.balign 4
-.globl scalanative_gc_safepoint_trampoline_x86_64_skipped
-scalanative_gc_safepoint_trampoline_x86_64_skipped:
-    ret
 #endif
 
 #if defined(__linux__) && defined(__ELF__)

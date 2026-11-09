@@ -20,9 +20,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [linux-arm64, linux-riscv64, linux-x86]
+        arch: [linux-arm64, linux-riscv64, linux-x86, linux-armv6, linux-armv7a]
         # Scala 2.13 only for increased tests coverage (Scala2 partests) while keeping total number of jobs low
         scala: [2.13]
+        include:
+          # dockcross triple `arm-cortexa8_neon-...` would default to ARMv4T
+          - arch: linux-armv7a
+            native-flags: -march=armv7-a -mfpu=neon -mfloat-abi=hard
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/linux-setup-env
@@ -42,13 +46,14 @@ jobs:
             nativeConfig ~= { prev =>
               val crossRoot = sys.env("CROSS_ROOT");
               val crossTriple = sys.env("CROSS_TRIPLE");
+              val archFlags = "${{ matrix.native-flags }}".split(' ').filter(_.nonEmpty).toList;
               val sysRoot: List[String] = {
                 assert(java.nio.file.Files.exists(java.nio.file.Paths.get(crossRoot)), "crossroot does not exist");
                 assert(java.nio.file.Files.exists(java.nio.file.Paths.get(crossRoot, crossTriple, "sysroot")), "sysroot does not exist");
                 List(
                   s"--sysroot=\${crossRoot}/\${crossTriple}/sysroot",
                   s"--gcc-toolchain=\${crossRoot}"
-                )
+                ) ++ archFlags
               };
               prev
                 .withTargetTriple(crossTriple)

@@ -71,7 +71,9 @@ private[scalanative] object MemoryLayout {
 
   def alignmentOf(ty: nir.Type)(implicit platform: PlatformInfo): Long =
     ty match {
-      case nir.Type.Long | nir.Type.Double | nir.Type.Size =>
+      case nir.Type.Long | nir.Type.Double =>
+        platform.alignmentOf64BitPrimitives
+      case nir.Type.Size =>
         platform.sizeOfPtr
       case nir.Type.Nothing | nir.Type.Ptr | _: nir.Type.RefKind =>
         platform.sizeOfPtr
@@ -85,6 +87,15 @@ private[scalanative] object MemoryLayout {
         tys.map(alignmentOf).max
       case _ =>
         unsupported(s"alignment $ty")
+    }
+
+  /** Alignment assumed by loads and stores, raw pointers to 64-bit values are
+   *  not guaranteed to be 8-byte aligned on 32-bit targets.
+   */
+  def accessAlignmentOf(ty: nir.Type)(implicit platform: PlatformInfo): Long =
+    ty match {
+      case nir.Type.Long | nir.Type.Double => platform.sizeOfPtr
+      case _                               => alignmentOf(ty)
     }
 
   def align(offset: Long, alignment: Long): Long = {

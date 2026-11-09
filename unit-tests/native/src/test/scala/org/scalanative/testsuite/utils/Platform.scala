@@ -77,6 +77,13 @@ object Platform {
   final val isArm64 = runtime.PlatformExt.isArm64
   final val is32BitPlatform =
     scala.scalanative.meta.LinktimeInfo.is32BitPlatform
+  // Only the i386 System V ABI aligns 64-bit primitives to 4 bytes
+  final val alignmentOf64BitPrimitives = {
+    import scala.scalanative.meta.LinktimeInfo
+    if (LinktimeInfo.is32BitPlatform && LinktimeInfo.target.arch == "i386" &&
+        !LinktimeInfo.isWindows) 4
+    else 8
+  }
   final val asanEnabled = scala.scalanative.meta.LinktimeInfo.asanEnabled
 
   /* Scala Native has problem sending C signals on Apple arm64 hardware.

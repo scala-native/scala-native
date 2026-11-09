@@ -912,9 +912,12 @@ private[codegen] abstract class AbstractCodeGen(
           str(" ")
           memoryOrder.foreach(genMemoryOrder)
           str(", align ")
-          str(MemoryLayout.alignmentOf(ty))
+          str(MemoryLayout.accessAlignmentOf(ty))
         } else {
           ty match {
+            case nir.Type.Long | nir.Type.Double =>
+              str(", align ")
+              str(MemoryLayout.accessAlignmentOf(ty))
             case refty: nir.Type.RefKind =>
               val (nonnull, deref, size) = toDereferenceable(refty)
               if (nonnull) {
@@ -965,7 +968,7 @@ private[codegen] abstract class AbstractCodeGen(
           genMemoryOrder(_)
         }
         str(", align ")
-        str(MemoryLayout.alignmentOf(ty))
+        str(MemoryLayout.accessAlignmentOf(ty))
 
       case nir.Op.Elem(ty, ptr, indexes) =>
         val pointee = fresh()

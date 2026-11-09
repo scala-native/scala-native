@@ -129,12 +129,6 @@ scalanative_gc_safepoint_poll_trampoline:
     add sp, sp, #(SFPT_FRAME + SFPT_RED_ZONE)
     br x16
 
-#else
-.text
-.balign 4
-.globl scalanative_gc_safepoint_trampoline_aarch64_skipped
-scalanative_gc_safepoint_trampoline_aarch64_skipped:
-    ret
 #endif
 
 #if defined(__linux__) && defined(__ELF__)
