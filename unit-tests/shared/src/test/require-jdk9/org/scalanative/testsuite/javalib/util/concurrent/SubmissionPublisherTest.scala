@@ -637,12 +637,14 @@ class SubmissionPublisherTest extends JSR166Test {
   /** submit from a non-pool thread never fails nor returns a negative lag */
   @Test def testCap1SubmitFromPlatformThread(): Unit = {
     val failure = new java.util.concurrent.atomic.AtomicReference[Throwable]()
+    @volatile var subscribers: (TestSubscriber, TestSubscriber) = null
     val body: Runnable = () =>
       try
         for (_ <- 1 to 200) {
           val p = new SubmissionPublisher[Integer](basicExecutor, 1)
           val s1 = new TestSubscriber()
           val s2 = new TestSubscriber()
+          subscribers = (s1, s2)
           p.subscribe(s1)
           p.subscribe(s2)
           for (i <- 1 to 20) {
@@ -656,8 +658,50 @@ class SubmissionPublisherTest extends JSR166Test {
           assertEquals(20, s2.nexts)
         }
       catch { case t: Throwable => failure.set(t) }
-    awaitTermination(newStartedThread(body))
+    val thread = newStartedThread(body)
+    thread.join(LONG_DELAY_MS)
+    if (thread.isAlive()) {
+      // Tell a consumer that never ran (executor starvation) from a lost wakeup
+      def describe(s: TestSubscriber) =
+        s"nexts=${s.nexts}, completes=${s.completes}, errors=${s.errors}"
+      val (s1, s2) = subscribers
+      System.err.println(
+        s"testCap1SubmitFromPlatformThread: thread state=${thread.getState()}, " +
+          s"s1: ${describe(s1)}, s2: ${describe(s2)}, executor=$basicExecutor"
+      )
+    }
+    awaitTermination(thread, 1L)
     if (failure.get() != null) throw failure.get()
+  }
+
+  /** A producer outside the executor helps to run consumer tasks while it waits
+   *  for buffer space, so submit does not depend on a free pool worker
+   */
+  @Test def testSubmitHelpsWhenExecutorIsBusy(): Unit = {
+    val pool = new ForkJoinPool(1)
+    val started = new CountDownLatch(1)
+    val release = new CountDownLatch(1)
+    try {
+      // Occupy the only worker
+      pool.execute(() => {
+        started.countDown()
+        release.await()
+      })
+      assertTrue(started.await(LONG_DELAY_MS, MILLISECONDS))
+      val p = new SubmissionPublisher[Integer](pool, 1)
+      val s = new TestSubscriber()
+      val producer = newStartedThread(new CheckedRunnable {
+        def realRun(): Unit = {
+          p.subscribe(s)
+          for (i <- 1 to 20) p.submit(i)
+        }
+      })
+      awaitTermination(producer)
+      assertTrue(s"nexts=${s.nexts}", s.nexts >= 19)
+    } finally {
+      release.countDown()
+      pool.shutdown()
+    }
   }
 
   /** offer to a publisher with no subscribers returns lag 0 */
