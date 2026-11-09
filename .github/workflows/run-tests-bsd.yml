@@ -29,7 +29,7 @@ jobs:
           envs: SBT_VERSION
           release: "14.4"
           usesh: true
-          mem: 8192
+          mem: 12288
           prepare: |
             set -eu
             pkg update -f
@@ -64,7 +64,7 @@ jobs:
           sync: scp
           release: "10.1"
           usesh: true
-          mem: 8192
+          mem: 12288
           prepare: |
             set -eu
             export PATH="/usr/pkg/bin:/usr/pkg/sbin:$PATH"
