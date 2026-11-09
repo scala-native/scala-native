@@ -34,7 +34,8 @@ runExplicitCollectGrowth := {
   val args = Def.spaceDelimited().parsed
   implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
   val binary = nativeExecutable((Compile / nativeLink).value)
-  val proc = new ProcessBuilder((binary.getAbsolutePath +: args.tail): _*)
+  val proc = new ProcessBuilder(binary.getAbsolutePath)
+  args.tail.foreach(arg => proc.command().add(arg))
   proc.environment().put("GC_INITIAL_HEAP_SIZE", "4M")
   // Caps a runaway grow, which would otherwise reserve physical RAM.
   proc.environment().put("GC_MAXIMUM_HEAP_SIZE", args.head)

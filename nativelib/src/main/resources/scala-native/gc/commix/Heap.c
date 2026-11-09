@@ -281,7 +281,8 @@ bool Heap_Collect(Heap *heap, bool allowHeapGrowth) {
 }
 
 bool Heap_shouldGrow(Heap *heap) {
-    uint32_t freeBlockCount = (uint32_t)blockAllocator.freeBlockCount;
+    // Not net of the blocks mutators took during the concurrent sweep.
+    uint32_t freeBlockCount = (uint32_t)blockAllocator.sweptFreeBlockCount;
     uint32_t blockCount = heap->blockCount;
     uint32_t recycledBlockCount = 0;
     MutatorThreads_foreach(mutatorThreads, node) {
@@ -290,22 +291,19 @@ bool Heap_shouldGrow(Heap *heap) {
     uint32_t unavailableBlockCount =
         blockCount - (freeBlockCount + recycledBlockCount);
 
-    uint32_t sweptFreeBlockCount = (uint32_t)blockAllocator.sweptFreeBlockCount;
-
-    GC_LOG_DEBUG("Max mark time ratio: %lf, Min free ratio: %lf, "
-                 "Max free ratio: %lf, Block count: %" PRIu32
-                 ", Unavailable: %" PRIu32 ", Free: %" PRIu32
-                 ", Recycled: %" PRIu32 ", Swept free: %" PRIu32,
-                 heap->maxMarkTimeRatio, heap->minFreeRatio, heap->maxFreeRatio,
-                 blockCount, unavailableBlockCount, freeBlockCount,
-                 recycledBlockCount, sweptFreeBlockCount);
+    GC_LOG_DEBUG(
+        "Max mark time ratio: %lf, Min free ratio: %lf, "
+        "Max free ratio: %lf, Block count: %" PRIu32 ", Unavailable: %" PRIu32
+        ", Free: %" PRIu32 ", Recycled: %" PRIu32,
+        heap->maxMarkTimeRatio, heap->minFreeRatio, heap->maxFreeRatio,
+        blockCount, unavailableBlockCount, freeBlockCount, recycledBlockCount);
 
     uint64_t timeInMark = heap->mark.currentEnd_ns - heap->mark.currentStart_ns;
     uint64_t timeTotal = heap->mark.currentEnd_ns - heap->mark.lastEnd_ns;
 
     // Growing does not shorten marking; skip it while the heap is mostly free
     bool markTooLong = timeInMark >= heap->maxMarkTimeRatio * timeTotal &&
-                       sweptFreeBlockCount < heap->maxFreeRatio * blockCount;
+                       freeBlockCount < heap->maxFreeRatio * blockCount;
     return markTooLong || freeBlockCount < heap->minFreeRatio * blockCount ||
            (unavailableBlockCount > blockCount * MAX_UNAVAILABLE_RATIO &&
             freeBlockCount <
