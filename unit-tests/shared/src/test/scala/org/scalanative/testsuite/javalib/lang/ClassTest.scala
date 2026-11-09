@@ -303,6 +303,10 @@ class ClassTest {
   @Test def classForNameOfInterfaceAndAbstractClass(): Unit = {
     assertEqualClass(classOf[Runnable], Class.forName("java.lang.Runnable"))
     assertEqualClass(classOf[Number], Class.forName("java.lang.Number"))
+    assertSame(
+      classOf[ClassValue[_]],
+      Class.forName("java.lang.ClassValue", false, null)
+    )
   }
 
   @Test def getClassLoader(): Unit = {

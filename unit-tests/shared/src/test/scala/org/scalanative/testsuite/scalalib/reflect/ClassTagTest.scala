@@ -6,6 +6,22 @@ import org.junit.Assert._
 import org.junit._
 
 class ClassTagTest {
+  import ClassTagTest._
+
+  @Test def cachesTagsOfClasses(): Unit = {
+    // A collection can clear the cached tag before apply returns it
+    val cached = (0 until 10).exists { _ =>
+      val tag = ClassTag[Marker](classOf[Marker])
+      tag eq ClassTag[Marker](classOf[Marker])
+    }
+    assertTrue("ClassTag.apply should cache tags", cached)
+  }
+
+  @Test def applyUsesPredefinedTags(): Unit = {
+    assertSame(ClassTag.Int, ClassTag[Int](classOf[Int]))
+    assertSame(ClassTag.Object, ClassTag[Object](classOf[Object]))
+    assertSame(ClassTag.Unit, ClassTag[Unit](java.lang.Void.TYPE))
+  }
 
   @Test def referentialEquality(): Unit = {
     assertSame(ClassTag.Byte, implicitly[ClassTag[Byte]])
@@ -25,4 +41,8 @@ class ClassTagTest {
     assertSame(ClassTag.Nothing, ClassTag.Nothing)
     assertSame(ClassTag.Null, ClassTag.Null)
   }
+}
+
+object ClassTagTest {
+  class Marker
 }
