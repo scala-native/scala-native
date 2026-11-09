@@ -452,6 +452,8 @@ void BlockAllocator_UseReserve(BlockAllocator *blockAllocator) {
     if (reserved != NULL) {
         BlockAllocator_splitAndAdd(blockAllocator, reserved,
                                    SWEEP_RESERVE_BLOCKS);
+        atomic_fetch_add_explicit(&blockAllocator->sweptFreeBlockCount,
+                                  SWEEP_RESERVE_BLOCKS, memory_order_relaxed);
     }
     BlockAllocator_Release(blockAllocator);
 }
