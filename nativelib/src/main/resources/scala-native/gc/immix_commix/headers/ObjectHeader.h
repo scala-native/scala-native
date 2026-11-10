@@ -20,14 +20,22 @@ extern const int __weak_ref_field_offset;
 #define RTTI_FLAG_IS_INTERFACE (1 << 0)
 #define RTTI_FLAG_IS_PRIMITIVE (1 << 1)
 #define RTTI_FLAG_IS_ARRAY (1 << 2)
-#define RTTI_FLAG_IS_OBJECT_ARRAY (1 << 3)
-#define RTTI_FLAG_IS_BLOB_ARRAY (1 << 4)
-#define RTTI_FLAG_IS_BOXED_PTR (1 << 5)
-#define RTTI_FLAG_IS_WEAK_REFERENCE (1 << 6)
+/* Arrays only, bits 3-4: how the GC scans the elements */
+#define RTTI_ARRAY_SCAN_MASK (3 << 3)
+#define RTTI_ARRAY_SCAN_NONE (0 << 3)         // primitive values
+#define RTTI_ARRAY_SCAN_REFERENCES (1 << 3)   // references
+#define RTTI_ARRAY_SCAN_CONSERVATIVE (2 << 3) // raw bytes, up to a limit
+/* Bits 5-6: subclasses of java.lang.ref.Reference */
+#define RTTI_REFERENCE_KIND_MASK (3 << 5)
+#define RTTI_REFERENCE_KIND_WEAK (1 << 5)
+#define RTTI_REFERENCE_KIND_SOFT (2 << 5)
+#define RTTI_REFERENCE_KIND_PHANTOM (3 << 5)
 /* Traits only: implementors hold the trait in its home itable slot (bit 7),
  * low 24 bits of the itable key (bits 8-31) */
 #define RTTI_FLAG_IS_AT_HOME_SLOT (1 << 7)
 #define RTTI_TRAIT_KEY_SHIFT 8
+/* Arrays only, bits 8-15: number of dimensions */
+#define RTTI_ARRAY_DIMENSIONS_SHIFT 8
 
 /* Length of the lineage stored inline in class RTTI, keep in sync with
  * codegen.CommonMemoryLayouts.LineageSize */
@@ -67,12 +75,17 @@ typedef struct Rtti {
     } rt;
     // Fields defined only for instantiable types (classes)
     int32_t size;
-    int32_t superclassCount;  // 0 for java.lang.Object and primitives
-    int32_t *refFieldOffsets; // Array of field offsets (in bytes) from object
-                              // start, terminated with -1
-    int32_t itableMask;       // itable size - 1, size is a power of two
-    int32_t itableShift;      // lookups start at (key >> shift) & mask
-    ITableEntry *itable;      // ITableEntry[itableMask + 1]
+    int32_t superclassCount; // 0 for java.lang.Object and primitives
+    union {
+        // Classes: offsets in bytes, from the object start, of reference
+        // fields, -1, then of raw pointer fields scanned conservatively, -1
+        int32_t *refFieldOffsets;
+        // Arrays: RTTI of the element type
+        struct Rtti *componentType;
+    };
+    int32_t itableMask;  // itable size - 1, size is a power of two
+    int32_t itableShift; // lookups start at (key >> shift) & mask
+    ITableEntry *itable; // ITableEntry[itableMask + 1]
     struct Rtti *superclass;
     // Superclasses from the root, then the class itself, then NULLs:
     // lineage[superclassCount] is the class itself
@@ -134,6 +147,10 @@ static inline bool Object_IsArray(const Object *object) {
     return Rtti_HasFlag(object->rtti, RTTI_FLAG_IS_ARRAY);
 }
 
+static inline int32_t Rtti_ArrayScan(const Rtti *rtti) {
+    return rtti->rt.flags & RTTI_ARRAY_SCAN_MASK;
+}
+
 static inline size_t Array_Stride(const ArrayHeader *header) {
     // clang would optimize it to llvm.max(stride, 1)
     // negative stride is used only for blob array
@@ -142,7 +159,7 @@ static inline size_t Array_Stride(const ArrayHeader *header) {
 }
 
 static inline size_t BlobArray_ScannableLimit(const ArrayHeader *header) {
-    assert(Rtti_HasFlag(header->rtti, RTTI_FLAG_IS_BLOB_ARRAY));
+    assert(Rtti_ArrayScan(header->rtti) == RTTI_ARRAY_SCAN_CONSERVATIVE);
     size_t length = (size_t)header->length;
     size_t limit = (size_t)-header->stride; // limit is stored as negative
     return (limit < length) ? limit : length;
@@ -161,7 +178,10 @@ static inline size_t Object_Size(const Object *object) {
 }
 
 static inline bool Object_IsWeakReference(const Object *object) {
-    return Rtti_HasFlag(object->rtti, RTTI_FLAG_IS_WEAK_REFERENCE);
+    // Only weak references clear their referent, soft and phantom references
+    // keep the referent like any other field
+    return (object->rtti->rt.flags & RTTI_REFERENCE_KIND_MASK) ==
+           RTTI_REFERENCE_KIND_WEAK;
 }
 
 static inline bool Object_IsReferantOfWeakReference(const Object *object,

@@ -94,7 +94,7 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
           base ::
             nir.Val.Int(typeSize) :: // size
             nir.Val.Int(meta.superclassCount(cls)) ::
-            meta.layout(cls).referenceOffsetsValue :: // refFieldOffsets
+            referenceMapOrComponentType(cls) ::
             nir.Val.Int(itable.mask) ::
             nir.Val.Int(itable.shift) ::
             itable.value ::
@@ -108,6 +108,19 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
         base
     }
   }
+
+  /* Reference map of instances, or for array classes the RTTI of the
+   * element type: the GC scans arrays according to flags instead.
+   */
+  private def referenceMapOrComponentType(cls: Class): nir.Val =
+    if (!nir.Type.isArray(cls.name) && cls.name != nir.Rt.GenericArray.name)
+      meta.layout(cls).referenceOffsetsValue
+    else
+      arrayComponentTypes
+        .get(cls.name.top)
+        .flatMap(name => meta.analysis.infos.get(name))
+        .map(info => meta.rtti(info).const)
+        .getOrElse(nir.Val.Null)
 
   /* Superclasses from the root, then the class itself, padded with nulls.
    * lineage(C)(superclassCount(C)) is C, so an object is an instance of C
@@ -133,21 +146,35 @@ private[codegen] object RuntimeTypeInformation {
     final val IsInterface = 1 << 0
     final val IsPrimitive = 1 << 1
     final val IsArray = 1 << 2
-    final val IsObjectArray = 1 << 3
-    final val IsBlobArray = 1 << 4
-    final val IsBoxedPtr = 1 << 5
-    final val IsWeakReference = 1 << 6
-    // Traits store the low 24 bits of their itable key in bits 8-31, enough
-    // for java.lang.Class to start lookups in itables up to 2^24 slots
+
+    // Arrays only, bits 3-4: how the GC scans the elements
+    final val ArrayScanShift = 3
+    final val ArrayScanNone = 0 << ArrayScanShift // primitive values
+    final val ArrayScanReferences = 1 << ArrayScanShift // references
+    final val ArrayScanConservative = 2 << ArrayScanShift // raw bytes
+
+    // Bits 5-6: java.lang.ref.Reference subclasses
+    final val ReferenceKindShift = 5
+    final val WeakReferenceKind = 1 << ReferenceKindShift
+    final val SoftReferenceKind = 2 << ReferenceKindShift
+    final val PhantomReferenceKind = 3 << ReferenceKindShift
+
     // Traits only: every class holds the trait in the slot where its lookup
     // starts, see Metadata.alwaysAtHomeSlot
     final val IsAtHomeSlot = 1 << 7
+    // Traits only, bits 8-31: low 24 bits of the itable key, enough for
+    // java.lang.Class to start lookups in itables up to 2^24 slots
     final val TraitKeyShift = 8
     final val TraitKeyMask = 0xffffff
+    // Arrays only, bits 8-15: number of dimensions
+    final val ArrayDimensionsShift = 8
 
     private val ObjectArray =
       nir.Global.Top("scala.scalanative.runtime.ObjectArray")
     private val WeakReference = nir.Global.Top("java.lang.ref.WeakReference")
+    private val SoftReference = nir.Global.Top("java.lang.ref.SoftReference")
+    private val PhantomReference =
+      nir.Global.Top("java.lang.ref.PhantomReference")
 
     /** Computed from the type and its ancestors only. */
     def apply(info: ScopeInfo)(implicit meta: Metadata): Int = info match {
@@ -157,14 +184,45 @@ private[codegen] object RuntimeTypeInformation {
           (StableHash.traitKey(trt) & TraitKeyMask) << TraitKeyShift
       case cls: Class =>
         val names = meta.ancestors(cls).map(_.name)
-        def flag(cond: Boolean, bit: Int) = if (cond) bit else 0
+        def flag(cond: Boolean, bits: Int) = if (cond) bits else 0
+        val isArray = names.contains(nir.Rt.GenericArray.name)
+        val arrayFlags =
+          if (!isArray) 0
+          else
+            IsArray | (1 << ArrayDimensionsShift) | {
+              if (cls.name == ObjectArray) ArrayScanReferences
+              else if (cls.name == nir.Rt.BlobArray.name) ArrayScanConservative
+              else ArrayScanNone
+            }
+        val referenceKind =
+          if (names.contains(WeakReference)) WeakReferenceKind
+          else if (names.contains(SoftReference)) SoftReferenceKind
+          else if (names.contains(PhantomReference)) PhantomReferenceKind
+          else 0
         flag(nir.Rt.PrimitiveTypes.contains(cls.name), IsPrimitive) |
-          flag(names.contains(nir.Rt.GenericArray.name), IsArray) |
-          flag(cls.name == ObjectArray, IsObjectArray) |
-          flag(cls.name == nir.Rt.BlobArray.name, IsBlobArray) |
-          flag(cls.name == nir.Rt.BoxedPtr.name, IsBoxedPtr) |
-          flag(names.contains(WeakReference), IsWeakReference)
+          arrayFlags |
+          referenceKind
     }
+  }
+
+  /** Element type of the array classes: its RTTI is stored in place of the
+   *  reference field offsets, which arrays do not use. The abstract
+   *  runtime.Array has none.
+   */
+  private val arrayComponentTypes: Map[nir.Global.Top, nir.Global.Top] = {
+    def rt(name: String) = nir.Global.Top("scala.scalanative.runtime." + name)
+    Map(
+      rt("BooleanArray") -> rt("PrimitiveBoolean"),
+      rt("CharArray") -> rt("PrimitiveChar"),
+      rt("ByteArray") -> rt("PrimitiveByte"),
+      rt("ShortArray") -> rt("PrimitiveShort"),
+      rt("IntArray") -> rt("PrimitiveInt"),
+      rt("LongArray") -> rt("PrimitiveLong"),
+      rt("FloatArray") -> rt("PrimitiveFloat"),
+      rt("DoubleArray") -> rt("PrimitiveDouble"),
+      rt("BlobArray") -> rt("PrimitiveByte"),
+      rt("ObjectArray") -> nir.Rt.Object.name
+    )
   }
 
   private val classConst =

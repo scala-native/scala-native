@@ -30,7 +30,9 @@ private[runtime] final class _Class[A] {
   // Warning! Fields below are populated if !isInterface()
   var size: Int = _
   var superclassCount: Int = _
-  var refFieldOffsets: RawPtr = _ // Ptr[Int]
+  // Classes: Ptr[Int], the reference map used by the GC
+  // Arrays: the _Class of the element type, see getComponentType
+  var refFieldOffsets: RawPtr = _
   var itablesMask: Int = _
   var itablesShift: Int = _
   var itables: RawPtr = _ // Ptr[{trait: _Class[_], vtable: Ptr[_]}]
@@ -42,19 +44,11 @@ private[runtime] final class _Class[A] {
   def cast(obj: Object): A =
     obj.asInstanceOf[A]
 
-  def getComponentType(): _Class[_] = if (isArray()) {
-    if (is(classOf[ObjectArray])) classOf[java.lang.Object] // hot path
-    else if (is(classOf[ByteArray])) classOf[scala.Byte]
-    else if (is(classOf[CharArray])) classOf[scala.Char]
-    else if (is(classOf[IntArray])) classOf[scala.Int]
-    else if (is(classOf[LongArray])) classOf[scala.Long]
-    else if (is(classOf[FloatArray])) classOf[scala.Float]
-    else if (is(classOf[DoubleArray])) classOf[scala.Double]
-    else if (is(classOf[BooleanArray])) classOf[scala.Boolean]
-    else if (is(classOf[ShortArray])) classOf[scala.Short]
-    else if (is(classOf[BlobArray])) classOf[scala.Byte]
+  def getComponentType(): _Class[_] =
+    if (isArray())
+      // Array RTTI stores the element type in place of the reference map
+      Intrinsics.castRawPtrToObject(refFieldOffsets).asInstanceOf[_Class[_]]
     else null // JVM compliance
-  } else null // JVM compliance
 
   def getName(): String = name
 
@@ -328,19 +322,19 @@ private object LinkedClasses {
       case _             => throw new ClassNotFoundException(className)
     }
 
-  // Every class instance starts with a pointer to classOf[Class]
+  // The class list section holds a pointer to the RTTI of every class and
+  // trait, the RTTI of a type is its java.lang.Class instance
   private def find(className: String): Class[_] = {
     val ptrSize = castRawSizeToInt(sizeOf[RawPtr])
-    val section = StaticRoots.classInfoSection()
+    val section = StaticRoots.classListSection()
     val start = loadRawPtr(section)
     val end = loadRawPtr(elemRawPtr(section, ptrSize))
     val size = castRawPtrToLong(end) - castRawPtrToLong(start)
-    val classOfClass = castObjectToRawPtr(classOf[_Class[_]])
     var offset = 0L
     while (offset < size) {
-      val ptr = elemRawPtr(start, castLongToRawSize(offset))
-      if (loadRawPtr(ptr) == classOfClass) {
-        val cls = castRawPtrToObject(ptr).asInstanceOf[_Class[_]]
+      val rtti = loadRawPtr(elemRawPtr(start, castLongToRawSize(offset)))
+      if (castRawPtrToLong(rtti) != 0L) {
+        val cls = castRawPtrToObject(rtti).asInstanceOf[_Class[_]]
         if (cls.name == className) return cls
       }
       offset += ptrSize

@@ -15,14 +15,12 @@ private[codegen] final case class MemoryLayout(
     tys: Seq[MemoryLayout.PositionedType]
 ) {
 
-  /** A list of offsets pointing to inner fields of reference types excluding
-   *  object header from the address of memory directly after the object header
-   *  end expresed as number of words. Used by the GC for scanning objects.
-   *  Terminated with offset=-1
+  /** Offsets in bytes, from the start of the object, of fields holding
+   *  references. Used by the GC for scanning objects.
    */
   private[codegen] def referenceFieldsOffsets(implicit
       meta: Metadata
-  ): Seq[nir.Val.Int] = {
+  ): Seq[Int] = {
     import nir.Type._
     val offsets =
       tys.collect {
@@ -34,9 +32,14 @@ private[codegen] final case class MemoryLayout(
             ) =>
           offset.toInt
       }
-
-    (offsets :+ -1).map(nir.Val.Int(_))
+    offsets
   }
+
+  /** Offsets in bytes, from the start of the object, of raw pointer fields. */
+  private[codegen] def rawPointerFieldsOffsets: Seq[Int] =
+    tys.collect {
+      case MemoryLayout.PositionedType(nir.Type.Ptr, offset) => offset.toInt
+    }
 
   /** A list of offsets pointing to all inner reference types excluding object
    *  header from the start of the object address.

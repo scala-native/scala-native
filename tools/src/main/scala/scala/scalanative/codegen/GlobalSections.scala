@@ -31,8 +31,14 @@ private[codegen] object GlobalSections {
   val ClassInfo = Section(
     name = "sn_classinfo",
     machOName = "__sn_classinfo",
-    coffName = ".sncls",
-    used = true // Class.forName scans this section
+    coffName = ".sncls"
+  )
+  // A pointer to the RTTI of every class and trait
+  val ClassList = Section(
+    name = "sn_classlist",
+    machOName = "__sn_classlist",
+    coffName = ".sncll",
+    used = true // Class.forName iterates this section
   )
   val GlobalObjects = Section(
     name = "sn_global_objects",

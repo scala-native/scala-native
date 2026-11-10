@@ -228,6 +228,14 @@ class TypeTestsTest {
     assertFalse(classOf[D12].isInterface())
   }
 
+  @Test def forNameFindsClassesAndTraits(): Unit = {
+    assertSame(classOf[D12], Class.forName(classOf[D12].getName))
+    assertSame(classOf[Base3], Class.forName(classOf[Base3].getName))
+    // java.lang.Class appears in its own lineage, which must not be
+    // mistaken for the start of another class
+    assertSame(classOf[Class[_]], Class.forName("java.lang.Class"))
+  }
+
   @Test def manyTraits(): Unit = {
     val many: AnyRef = new Many
     val half: AnyRef = new ManyHalf

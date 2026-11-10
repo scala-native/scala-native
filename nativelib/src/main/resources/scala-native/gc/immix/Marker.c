@@ -102,13 +102,13 @@ void Marker_Mark(Heap *heap, Stack *stack) {
         const Rtti *rtti = object->rtti;
         if (Object_IsArray(object)) {
             ArrayHeader *arrayHeader = (ArrayHeader *)object;
-            if (Rtti_HasFlag(rtti, RTTI_FLAG_IS_OBJECT_ARRAY)) {
+            if (Rtti_ArrayScan(rtti) == RTTI_ARRAY_SCAN_REFERENCES) {
                 const size_t length = arrayHeader->length;
                 word_t **fields = (word_t **)(arrayHeader + 1);
                 for (int i = 0; i < length; i++) {
                     Marker_markField(heap, stack, fields[i]);
                 }
-            } else if (Rtti_HasFlag(rtti, RTTI_FLAG_IS_BLOB_ARRAY)) {
+            } else if (Rtti_ArrayScan(rtti) == RTTI_ARRAY_SCAN_CONSERVATIVE) {
                 int8_t *start = (int8_t *)(arrayHeader + 1);
                 size_t bytesLength = BlobArray_ScannableLimit(arrayHeader);
                 size_t wordsLength =
@@ -120,20 +120,23 @@ void Marker_Mark(Heap *heap, Stack *stack) {
             // non-object arrays do not contain pointers
         } else {
             int32_t *refFieldOffsets = object->rtti->refFieldOffsets;
-            for (int i = 0; refFieldOffsets[i] != LAST_FIELD_OFFSET; i++) {
+            int i = 0;
+            for (; refFieldOffsets[i] != LAST_FIELD_OFFSET; i++) {
                 size_t fieldOffset = (size_t)refFieldOffsets[i];
                 Field_t *fieldRef = (Field_t *)((int8_t *)object + fieldOffset);
                 if (Object_IsReferantOfWeakReference(object, fieldOffset))
                     continue;
                 Marker_markField(heap, stack, *fieldRef);
             }
-            if (Rtti_HasFlag(rtti, RTTI_FLAG_IS_BOXED_PTR)) {
-                // Boxed ptr always has a single field
-                word_t *rawPtr = object->fields[0];
+            // Raw pointer fields that may point into the heap
+            for (i++; refFieldOffsets[i] != LAST_FIELD_OFFSET; i++) {
+                word_t *rawPtr =
+                    *(word_t **)((int8_t *)object + refFieldOffsets[i]);
                 if (Heap_IsWordInHeap(heap, rawPtr)) {
                     Marker_markConservative(heap, stack, rawPtr);
                 }
-            } else if (UNLIKELY((void *)object->rtti == tracedRtti)) {
+            }
+            if (UNLIKELY((void *)object->rtti == tracedRtti)) {
                 ScanContext context = {heap, stack};
                 atomic_load (&ObjectTracer_trace)((void **)object->fields,
                                                   Marker_scanRange, &context);

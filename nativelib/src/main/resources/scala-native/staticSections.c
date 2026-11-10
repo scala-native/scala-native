@@ -52,3 +52,4 @@
 SN_DEFINE_SECTION(strings, "sn_strings", "__sn_strings", ".snstr")
 SN_DEFINE_SECTION(classinfo, "sn_classinfo", "__sn_classinfo", ".sncls")
 SN_DEFINE_SECTION(globals, "sn_global_objects", "__sn_globals", ".snglob")
+SN_DEFINE_SECTION(classlist, "sn_classlist", "__sn_classlist", ".sncll")
