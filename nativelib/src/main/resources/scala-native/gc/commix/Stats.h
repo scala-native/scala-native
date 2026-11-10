@@ -13,7 +13,7 @@
 #define ENABLE_GC_STATS_BATCHES
 #endif
 
-#ifdef ENABLE_GC_STATS_BATCHES
+#if defined(ENABLE_GC_STATS_BATCHES) || defined(GC_ENABLE_STATS)
 #define ENABLE_GC_STATS
 #endif
 
@@ -38,7 +38,11 @@ typedef enum {
     mark_waiting = 0xA,
     nullify_waiting = 0xB,
     // any synchronization on common concurrent data structures
-    event_sync = 0xC
+    event_sync = 0xC,
+    // from the collection request until all other mutators are stopped
+    event_stop_mutators = 0xD,
+    // waiting for the previous concurrent sweep before marking
+    event_wait_sweep = 0xE
 } eventType;
 
 typedef struct {
