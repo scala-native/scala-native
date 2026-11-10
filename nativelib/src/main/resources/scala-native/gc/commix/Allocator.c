@@ -22,15 +22,11 @@ void Allocator_Init(Allocator *allocator, BlockAllocator *blockAllocator,
     allocator->bytemap = bytemap;
     allocator->heapStart = heapStart;
 
-    BlockList_Init(&allocator->recycledBlocks);
     LocalBlockList_Clear(&allocator->parkedBlocks);
-    allocator->recycledBlockCount = 0;
 }
 
 void Allocator_Clear(Allocator *allocator) {
-    BlockList_Clear(&allocator->recycledBlocks);
     LocalBlockList_Clear(&allocator->parkedBlocks);
-    allocator->recycledBlockCount = 0;
     allocator->block = NULL;
     allocator->cursor = NULL;
     allocator->limit = NULL;
@@ -130,8 +126,8 @@ static bool Allocator_claimFromList(Allocator *allocator, BlockList *list,
     return false;
 }
 
-// Sweep spreads recycled blocks over all mutators. After a collection, take
-// free lines from any of them before growing the heap.
+// After a collection, take free lines from recycled blocks, including holes
+// too small for the fast path, before growing the heap.
 static bool Allocator_claimRecycled(Allocator *allocator, size_t size) {
     if (size > LINE_SIZE &&
         (Allocator_takeMediumHole(allocator, allocator->largeBlock,
@@ -139,26 +135,8 @@ static bool Allocator_claimRecycled(Allocator *allocator, size_t size) {
          Allocator_takeMediumHole(allocator, allocator->block,
                                   allocator->blockStart, size)))
         return true;
-    if (Allocator_claimFromList(allocator, &allocator->recycledBlocks, size))
-        return true;
-
-    // Blocking here could deadlock with a collector that holds the lock and
-    // waits for this thread. Reach a safepoint before each retry.
-    while (!MutatorThreads_tryLockRead()) {
-        scalanative_GC_yield();
-        thread_yield();
-    }
-    bool claimed = false;
-    MutatorThreads_foreach(mutatorThreads, node) {
-        Allocator *source = &node->value->allocator;
-        if (source != allocator &&
-            Allocator_claimFromList(allocator, &source->recycledBlocks, size)) {
-            claimed = true;
-            break;
-        }
-    }
-    MutatorThreads_unlockRead();
-    return claimed;
+    return Allocator_claimFromList(
+        allocator, &allocator->blockAllocator->recycledBlocks, size);
 }
 
 static word_t *Allocator_allocRecycled(Allocator *allocator, size_t size) {
@@ -282,8 +260,8 @@ bool Allocator_newBlock(Allocator *allocator) {
     word_t *blockMetaStart = allocator->blockMetaStart;
     BlockMeta *block = Allocator_popParked(allocator);
     if (block == NULL) {
-        // Other mutators may pop this list too, see Allocator_claimRecycled.
-        block = BlockList_Pop(&allocator->recycledBlocks, blockMetaStart);
+        block = BlockList_Pop(&allocator->blockAllocator->recycledBlocks,
+                              blockMetaStart);
     }
     word_t *blockStart;
 

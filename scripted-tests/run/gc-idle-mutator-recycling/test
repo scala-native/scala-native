@@ -17,3 +17,8 @@
 > set nativeConfig ~= (_.withMode(scala.scalanative.build.Mode.releaseFast))
 > runIdleMutators
 > runFragmentedExhaustion
+
+# Commix: recycled blocks were handed out round-robin to every mutator, so
+# idle threads held free lines while the allocating thread collected and grew.
+> set nativeConfig ~= (_.withGC(scala.scalanative.build.GC.commix))
+> runIdleMutatorsHeapSize

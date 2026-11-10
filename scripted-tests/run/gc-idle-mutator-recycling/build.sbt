@@ -68,6 +68,10 @@ lazy val runChurnGrowth = taskKey[Unit](
   "Fast allocation with little kept alive must grow the heap"
 )
 
+lazy val runIdleMutatorsHeapSize = taskKey[Unit](
+  "Idle threads must not make the heap grow larger"
+)
+
 lazy val runFragmentedExhaustion = taskKey[Unit](
   "Unbounded growth among garbage must end in OutOfMemoryError"
 )
@@ -109,6 +113,35 @@ runChurnGrowth := {
   log.info(s"churn grew the heap to $heapSize bytes")
   if (heapSize < 16L * 1024 * 1024)
     sys.error(s"churn left the heap at $heapSize bytes")
+}
+
+runIdleMutatorsHeapSize := {
+  implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
+  val binary = nativeExecutable((Compile / nativeLink).value)
+  val log = streams.value.log
+  // Commix runs out of free blocks before it runs out of the cap: with
+  // partly free blocks handed to idle threads it collected and grew more
+  // often, reaching twice the heap of the same run without idle threads.
+  def finalHeapSize(threads: Int): Long = {
+    val gcLog = target.value / s"idle-$threads-gc.log"
+    runCapped(
+      binary,
+      "1G",
+      Seq("idle", threads.toString, "300000"),
+      log,
+      Some(gcLog)
+    )
+    val Grown = """.*Growing heap by \d+ bytes, to (\d+) bytes.*""".r
+    IO.readLines(gcLog)
+      .collect { case Grown(size) => size.toLong }
+      .lastOption
+      .getOrElse(0L)
+  }
+  val alone = finalHeapSize(0)
+  val withIdle = finalHeapSize(16)
+  log.info(s"heap without idle threads: $alone, with 16: $withIdle")
+  if (withIdle > alone)
+    sys.error(s"16 idle threads grew the heap to $withIdle bytes, not $alone")
 }
 
 runFragmentedExhaustion := {

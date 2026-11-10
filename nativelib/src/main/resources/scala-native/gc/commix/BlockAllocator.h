@@ -23,6 +23,11 @@ typedef struct {
     word_t *blockMetaStart;
     atomic_bool concurrent;
     BlockList freeSuperblocks[SUPERBLOCK_LIST_SIZE];
+    // Swept blocks with free lines, shared by all mutators. A list per
+    // mutator would leave the lines given to idle threads unused.
+    BlockList recycledBlocks;
+    // Not decremented on allocation.
+    atomic_uint_fast32_t recycledBlockCount;
     atomic_uintptr_t reservedSuperblock;
     mutex_t allocationLock;
 } BlockAllocator;

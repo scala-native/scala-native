@@ -29,6 +29,7 @@ void BlockAllocator_Init(BlockAllocator *blockAllocator, word_t *blockMetaStart,
     for (int i = 0; i < SUPERBLOCK_LIST_SIZE; i++) {
         BlockList_Init(&blockAllocator->freeSuperblocks[i]);
     }
+    BlockList_Init(&blockAllocator->recycledBlocks);
     BlockAllocator_Clear(blockAllocator);
 
     blockAllocator->blockMetaStart = blockMetaStart;
@@ -394,6 +395,8 @@ void BlockAllocator_Clear(BlockAllocator *blockAllocator) {
     for (int i = 0; i < SUPERBLOCK_LIST_SIZE; i++) {
         BlockList_Clear(&blockAllocator->freeSuperblocks[i]);
     }
+    BlockList_Clear(&blockAllocator->recycledBlocks);
+    blockAllocator->recycledBlockCount = 0;
     // sweeping is about to start, use concurrent data structures
     blockAllocator->concurrent = true;
     blockAllocator->freeBlockCount = 0;
