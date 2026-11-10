@@ -26,18 +26,19 @@ def nativeExecutable(
     case ref: xsbti.VirtualFileRef => conv.toPath(ref).toFile()
   }
 
-lazy val runExplicitCollectGrowth = inputKey[Unit](
-  "<maxHeap> [args...]: run the binary and fail if commix over-reserves the heap"
+lazy val runWithMaxHeap = inputKey[Unit](
+  "<maxHeap> [scenario]: run the binary and fail if it hangs or fails"
 )
 
-runExplicitCollectGrowth := {
+runWithMaxHeap := {
   val args = Def.spaceDelimited().parsed
   implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
   val binary = nativeExecutable((Compile / nativeLink).value)
   val proc = new ProcessBuilder(binary.getAbsolutePath)
   args.tail.foreach(arg => proc.command().add(arg))
   proc.environment().put("GC_INITIAL_HEAP_SIZE", "4M")
-  // Caps a runaway grow, which would otherwise reserve physical RAM.
+  // Caps a runaway grow, which would otherwise reserve physical RAM. The
+  // grey packet pool is also sized from it.
   proc.environment().put("GC_MAXIMUM_HEAP_SIZE", args.head)
   proc.inheritIO()
 
@@ -45,13 +46,13 @@ runExplicitCollectGrowth := {
   if (!running.waitFor(60, TimeUnit.SECONDS)) {
     running.destroyForcibly()
     throw new RuntimeException(
-      "explicit-collect growth test did not finish within 60s"
+      s"${args.mkString(" ")} did not finish within 60s"
     )
   }
 
   val exitCode = running.exitValue()
   if (exitCode != 0)
     throw new RuntimeException(
-      s"explicit-collect growth test exited with $exitCode"
+      s"${args.mkString(" ")} exited with $exitCode"
     )
 }

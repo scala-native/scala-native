@@ -1,6 +1,0 @@
-# Commix marking must not hang when the grey set outgrows the grey packet pool
-# (1% of the maximum heap): markers waited for an empty packet while holding
-# all of them.
-
-> set nativeConfig ~= { _.withGC(scala.scalanative.build.GC.commix) }
-> runWithMaxHeap 128M
