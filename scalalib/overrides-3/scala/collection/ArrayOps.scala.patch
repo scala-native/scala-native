@@ -1,0 +1,14 @@
+--- 3.8.4/scala/collection/ArrayOps.scala
++++ overrides-3/scala/collection/ArrayOps.scala
+@@ -1299,7 +1299,10 @@
+    *  @return         An array obtained by replacing elements of this arrays with rows the represent.
+    */
+   def transpose[B](implicit asArray: A => Array[B]): Array[Array[B]] = {
+-    val aClass = xs.getClass.getComponentType
++    // Scala Native: nested arrays are ObjectArrays, use the first row class
++    val aClass =
++      if (xs.length == 0) xs.getClass.getComponentType
++      else asArray(xs(0)).getClass
+     val bb = new ArrayBuilder.ofRef[Array[B]]()(using ClassTag[Array[B]](aClass))
+     if (xs.length == 0) bb.result()
+     else {

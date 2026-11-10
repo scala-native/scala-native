@@ -1126,11 +1126,6 @@ run/t9152
 ## Uses scala.tools.testkit.ReflectUtil
 run/t8946.scala
 
-## ArrayOps.transpose needs the component type of nested arrays,
-## Array[Array[T]] is erased to ObjectArray
-run/t0421-new.scala
-run/t0421-old.scala
-
 ## JVM compliance
 run/t5680.scala
 run/t2755.scala

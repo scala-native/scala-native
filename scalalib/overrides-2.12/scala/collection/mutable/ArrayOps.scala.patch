@@ -1,0 +1,13 @@
+--- 2.12.21/scala/collection/mutable/ArrayOps.scala
++++ overrides-2.12/scala/collection/mutable/ArrayOps.scala
+@@ -108,7 +108,9 @@
+     val bb: Builder[Array[U], Array[Array[U]]] = Array.newBuilder(ClassTag[Array[U]](elementClass))
+     if (isEmpty) bb.result()
+     else {
+-      def mkRowBuilder() = Array.newBuilder(ClassTag[U](elementClass.getComponentType))
++      // Scala Native: nested arrays are ObjectArrays, use the first row class
++      val rowClass = asArray(head).getClass
++      def mkRowBuilder() = Array.newBuilder(ClassTag[U](rowClass.getComponentType))
+       val bs = asArray(head) map (_ => mkRowBuilder())
+       for (xs <- this) {
+         var i = 0
