@@ -163,8 +163,8 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
     // Keep the captured SP until stack bounds are known.
     if (thread->threadInfo != NULL && thread->threadInfo->stackTop != NULL &&
         thread->threadInfo->stackBottom != NULL &&
-        !isInRange(stackTop, thread->threadInfo->stackTop,
-                   thread->threadInfo->stackBottom)) {
+        (isOnSignalHandlerStack(thread->threadInfo, stackTop) ||
+         !isOnThreadStack(thread->threadInfo, stackTop))) {
         void *stackScanLimit = threadStackScanableLimit(thread->threadInfo);
         // Host stacks may lack a Scala guard.
         stackTop =

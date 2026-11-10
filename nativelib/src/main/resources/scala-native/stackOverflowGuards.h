@@ -91,6 +91,25 @@ static inline bool isInRange(void *addr, void *start, void *end) {
     }
     return start <= addr && addr < end;
 }
+// Frames larger than the guard can jump past the soft limit (stackTop) into
+// the rest of the thread's stack.
+static inline bool isOnThreadStack(ThreadInfo *threadInfo, void *addr) {
+    size_t size = threadInfo->maxStackSize > threadInfo->stackSize
+                      ? threadInfo->maxStackSize
+                      : threadInfo->stackSize;
+    uintptr_t bottom = (uintptr_t)threadInfo->stackBottom;
+    // An unlimited RLIMIT_STACK would wrap below address 0.
+    void *low = size < bottom ? (void *)(bottom - size) : NULL;
+    return isInRange(addr, low, threadInfo->stackBottom);
+}
+#ifndef _WIN32
+static inline bool isOnSignalHandlerStack(ThreadInfo *threadInfo, void *addr) {
+    return threadInfo->signalHandlerStack != NULL &&
+           isInRange(addr, threadInfo->signalHandlerStack,
+                     (char *)threadInfo->signalHandlerStack +
+                         threadInfo->signalHandlerStackSize);
+}
+#endif
 static inline bool inStackPageBound(void *pageAddr, void *addr) {
     void *upperBound = (char *)pageAddr + resolvePageSize() * stackGuardPages();
     return isInRange(addr, pageAddr, upperBound);
