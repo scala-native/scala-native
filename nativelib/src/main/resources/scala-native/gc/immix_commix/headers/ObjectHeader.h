@@ -13,14 +13,25 @@
 #include "limits.h"
 #include "assert.h"
 
-extern const int __object_array_id;
-extern const int __blob_array_id;
-extern const int __weak_ref_ids_min;
-extern const int __weak_ref_ids_max;
 extern const int __weak_ref_field_offset;
-extern const int __array_ids_min;
-extern const int __array_ids_max;
-extern const int __boxed_ptr_id;
+
+/* Bits of BaseRtti.flags, keep in sync with
+ * codegen.RuntimeTypeInformation.Flags */
+#define RTTI_FLAG_IS_INTERFACE (1 << 0)
+#define RTTI_FLAG_IS_PRIMITIVE (1 << 1)
+#define RTTI_FLAG_IS_ARRAY (1 << 2)
+#define RTTI_FLAG_IS_OBJECT_ARRAY (1 << 3)
+#define RTTI_FLAG_IS_BLOB_ARRAY (1 << 4)
+#define RTTI_FLAG_IS_BOXED_PTR (1 << 5)
+#define RTTI_FLAG_IS_WEAK_REFERENCE (1 << 6)
+/* Traits only: implementors hold the trait in its home itable slot (bit 7),
+ * low 24 bits of the itable key (bits 8-31) */
+#define RTTI_FLAG_IS_AT_HOME_SLOT (1 << 7)
+#define RTTI_TRAIT_KEY_SHIFT 8
+
+/* Length of the lineage stored inline in class RTTI, keep in sync with
+ * codegen.CommonMemoryLayouts.LineageSize */
+#define SCALANATIVE_RTTI_LINEAGE_SIZE 8
 
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
 #define USES_LOCKWORD 1
@@ -33,8 +44,12 @@ extern const int __boxed_ptr_id;
 
 typedef struct StringObject StringObject;
 
+struct BaseRtti;
+
+/* Slot of an open-addressing table of implemented traits, see codegen.ITable.
+ * A NULL trait marks an empty slot. */
 typedef struct ITableEntry {
-    int32_t interfaceId;
+    struct BaseRtti *trait;
     void **vtable;
 } ITableEntry;
 
@@ -45,19 +60,24 @@ typedef struct Rtti {
 #ifdef USES_LOCKWORD
         word_t *lockWord;
 #endif
-        int32_t id;
+        int32_t flags; // RTTI_FLAG_*
         int32_t interfacesCount;
-        struct BaseRtti *interfaces;
+        struct BaseRtti **interfaces; // all implemented traits
         StringObject *name;
     } rt;
     // Fields defined only for instantiable types (classes)
     int32_t size;
-    int32_t idRangeUntil;
+    int32_t superclassCount;  // 0 for java.lang.Object and primitives
     int32_t *refFieldOffsets; // Array of field offsets (in bytes) from object
                               // start, terminated with -1
-    int32_t itableCount;
-    ITableEntry *itable; // ITableEntry[itableCount]
+    int32_t itableMask;       // itable size - 1, size is a power of two
+    int32_t itableShift;      // lookups start at (key >> shift) & mask
+    ITableEntry *itable;      // ITableEntry[itableMask + 1]
     struct Rtti *superclass;
+    // Superclasses from the root, then the class itself, then NULLs:
+    // lineage[superclassCount] is the class itself
+    struct Rtti *lineage[SCALANATIVE_RTTI_LINEAGE_SIZE];
+    void *dynmap;
 } Rtti;
 
 typedef word_t *Field_t;
@@ -106,9 +126,12 @@ struct Chunk {
     Chunk *next;
 };
 
+static inline bool Rtti_HasFlag(const Rtti *rtti, int32_t flag) {
+    return (rtti->rt.flags & flag) != 0;
+}
+
 static inline bool Object_IsArray(const Object *object) {
-    int32_t id = object->rtti->rt.id;
-    return __array_ids_min <= id && id <= __array_ids_max;
+    return Rtti_HasFlag(object->rtti, RTTI_FLAG_IS_ARRAY);
 }
 
 static inline size_t Array_Stride(const ArrayHeader *header) {
@@ -119,7 +142,7 @@ static inline size_t Array_Stride(const ArrayHeader *header) {
 }
 
 static inline size_t BlobArray_ScannableLimit(const ArrayHeader *header) {
-    assert(header->rtti->rt.id == __blob_array_id);
+    assert(Rtti_HasFlag(header->rtti, RTTI_FLAG_IS_BLOB_ARRAY));
     size_t length = (size_t)header->length;
     size_t limit = (size_t)-header->stride; // limit is stored as negative
     return (limit < length) ? limit : length;
@@ -138,8 +161,7 @@ static inline size_t Object_Size(const Object *object) {
 }
 
 static inline bool Object_IsWeakReference(const Object *object) {
-    int32_t id = object->rtti->rt.id;
-    return __weak_ref_ids_min <= id && id <= __weak_ref_ids_max;
+    return Rtti_HasFlag(object->rtti, RTTI_FLAG_IS_WEAK_REFERENCE);
 }
 
 static inline bool Object_IsReferantOfWeakReference(const Object *object,

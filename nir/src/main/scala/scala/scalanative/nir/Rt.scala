@@ -38,16 +38,18 @@ private[scalanative] object Rt {
 
   val ClassName = Class.name
   def jlClassFields = Seq(
-    ClassName.member(Sig.Field("id")),
+    ClassName.member(Sig.Field("flags")),
     ClassName.member(Sig.Field("interfacesCount")),
     ClassName.member(Sig.Field("interfaces")),
     ClassName.member(Sig.Field("name")),
     ClassName.member(Sig.Field("size")),
-    ClassName.member(Sig.Field("idRangeUntil")),
+    ClassName.member(Sig.Field("superclassCount")),
     ClassName.member(Sig.Field("refFieldOffsets")),
-    ClassName.member(Sig.Field("itablesCount")),
+    ClassName.member(Sig.Field("itablesMask")),
+    ClassName.member(Sig.Field("itablesShift")),
     ClassName.member(Sig.Field("itables")),
-    ClassName.member(Sig.Field("superClass"))
+    ClassName.member(Sig.Field("superClass")),
+    ClassName.member(Sig.Field("lineage"))
   )
 
   val StringName = String.name

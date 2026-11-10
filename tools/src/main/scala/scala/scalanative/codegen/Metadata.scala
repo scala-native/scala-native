@@ -3,7 +3,7 @@ package codegen
 
 import scala.collection.mutable
 
-import scalanative.linker.{Class, ReachabilityAnalysis, Trait}
+import scalanative.linker.{Class, ReachabilityAnalysis, ScopeInfo, Trait}
 
 private[scalanative] class Metadata(
     val analysis: ReachabilityAnalysis.Result,
@@ -24,79 +24,86 @@ private[scalanative] class Metadata(
   val itable = mutable.Map.empty[linker.Class, ITable]
   val layout = mutable.Map.empty[linker.Class, FieldLayout]
   val dynmap = mutable.Map.empty[linker.Class, DynamicHashMap]
-  val ids = mutable.Map.empty[linker.ScopeInfo, Int]
-  val ranges = mutable.Map.empty[linker.Class, Range]
+  private val atHomeSlotCache = mutable.Map.empty[Trait, Boolean]
 
-  val classes = initClassIdsAndRanges()
-  val (traits, traitIdsContext) = initTraitIds()
-  val moduleArray = new ModuleArray(this)
+  val classes: Seq[Class] = initClasses()
+  val traits: Seq[Trait] = analysis.infos.valuesIterator
+    .collect { case info: Trait => info }
+    .toIndexedSeq
+    .sortBy(_.name.mangle)
 
+  checkDynsigKeys()
   initTraitMetadata()
   initClassMetadata()
 
-  val canAlwaysUseFastITables = rtti.valuesIterator.forall(_.canUseFastITables)
+  /** Number of superclasses: 0 for java.lang.Object and primitives */
+  def superclassCount(cls: Class): Int =
+    cls.parent.fold(0)(superclassCount(_) + 1)
 
-  def initTraitIds(): (Seq[Trait], TraitsUniverse.TraitId.Context) = {
-    // Sorted: trait ids must not follow hash order of infos
-    val traits = analysis.infos.valuesIterator
-      .collect { case info: Trait => info }
-      .toIndexedSeq
-      .sortBy[nir.Global](_.name)
-    val universe = new TraitsUniverse(traits)
-    val ctx = universe.assignIds(ids)
-    (traits, ctx)
-  }
+  /** The class followed by its ancestors, up to the root class */
+  def ancestors(cls: Class): List[Class] =
+    cls :: cls.parent.fold(List.empty[Class])(ancestors)
 
-  def initClassIdsAndRanges(): Seq[Class] = {
-    val out = mutable.UnrolledBuffer.empty[Class]
-    var id = 0
-
-    def loop(
-        node: Class,
-        topLevelSubclassOrdering: Array[Class] => Array[Class]
-    ): Unit = {
-      out += node
-      val start = id
-      id += 1
-      topLevelSubclassOrdering(
-        node.subclasses
-          .filter(_.parent.contains(node))
-          .toArray
-      ).foreach(loop(_, identity))
-      val end = id - 1
-      ids(node) = start
-      ranges(node) = start to end
-    }
-
-    def fromRootClass(
-        symbol: nir.Global.Top,
-        ordering: Array[Class] => Array[Class] = identity
-    ) =
-      loop(
-        node = analysis.infos(symbol).asInstanceOf[Class],
-        topLevelSubclassOrdering = ordering
+  /** Every class of the program stores `trt` in the itable slot where its
+   *  lookup starts, so a single probe decides any lookup. A whole-program fact,
+   *  used by generated code and recorded in the trait's RTTI flags.
+   */
+  def alwaysAtHomeSlot(trt: Trait): Boolean =
+    atHomeSlotCache.getOrElseUpdate(
+      trt,
+      trt.implementors.forall(cls =>
+        itable.get(cls).forall(_.atHomeSlot.contains(trt))
       )
-
-    nir.Rt.PrimitiveTypes.foreach(fromRootClass(_))
-    fromRootClass(
-      nir.Rt.Object.name,
-      ordering = subclasses => {
-        val (arrays, other) =
-          subclasses.partition(_.name == nir.Rt.GenericArray.name)
-        arrays ++ other
-      }
     )
 
+  /** Traits implemented by the class or trait, ordered by name */
+  def interfaces(info: ScopeInfo): Seq[Trait] =
+    info.linearized
+      .collect { case trt: Trait if trt != info => trt }
+      .distinct
+      .sortBy(_.name.mangle)
+
+  // Classes in pre-order of the class hierarchy, primitive types first
+  private def initClasses(): Seq[Class] = {
+    val out = mutable.UnrolledBuffer.empty[Class]
+
+    def loop(node: Class): Unit = {
+      out += node
+      node.subclasses
+        .filter(_.parent.contains(node))
+        .toSeq
+        .sortBy(_.name.mangle)
+        .foreach(loop)
+    }
+
+    nir.Rt.PrimitiveTypes.foreach { name =>
+      loop(analysis.infos(name).asInstanceOf[Class])
+    }
+    loop(analysis.infos(nir.Rt.Object.name).asInstanceOf[Class])
     out.toSeq
+  }
+
+  /* Reflective calls look methods up by a hash of their signature, so two
+   * signatures with the same key could dispatch to a wrong method.
+   */
+  private def checkDynsigKeys(): Unit = {
+    val sigs = (analysis.dynsigs ++ proxies.map(_.name).collect {
+      case name: nir.Global.Member => name.sig
+    }).distinct
+    sigs.groupBy(StableHash.dynsigKey).foreach {
+      case (key, colliding) if colliding.size > 1 =>
+        throw new build.BuildException(
+          s"Reflective method signatures ${colliding.map(_.show).mkString(", ")} share the dispatch key $key"
+        )
+      case _ => ()
+    }
   }
 
   def initClassMetadata(): Unit = {
     classes.foreach { node =>
       vtable(node) = new VirtualTable(node)
       layout(node) = new FieldLayout(node)
-      if (layouts.ClassRtti.usesDynMap) {
-        dynmap(node) = new DynamicHashMap(node, proxies)
-      }
+      dynmap(node) = new DynamicHashMap(node, proxies)
       itable(node) = ITable.build(node)
       rtti(node) = new RuntimeTypeInformation(node)
     }

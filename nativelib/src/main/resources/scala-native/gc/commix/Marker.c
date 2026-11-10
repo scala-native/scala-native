@@ -17,9 +17,6 @@
 #include "SyncGreyLists.h"
 #include "stackOverflowGuards.h"
 
-extern word_t *__modules;
-extern int __modules_size;
-
 #define LAST_FIELD_OFFSET -1
 
 // Marking uses multiple threads in parallel. Note that there is no need to
@@ -315,7 +312,7 @@ int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
         objectsTraced += Marker_markField(heap, stats, outHolder,
                                           outWeakRefHolder, fieldReferant);
     }
-    if (object->rtti->rt.id == __boxed_ptr_id) {
+    if (Rtti_HasFlag(object->rtti, RTTI_FLAG_IS_BOXED_PTR)) {
         // Boxed ptr always has a single field
         word_t *rawPtr = object->fields[0];
         if (Heap_IsWordInHeap(heap, rawPtr)) {
@@ -442,11 +439,11 @@ void Marker_markPacket(Heap *heap, Stats *stats, GreyPacket *in,
     while (!GreyPacket_IsEmpty(in)) {
         Object *object = GreyPacket_Pop(in);
         if (Object_IsArray(object)) {
-            const int arrayId = object->rtti->rt.id;
-            if (arrayId == __object_array_id) {
+            const Rtti *rtti = object->rtti;
+            if (Rtti_HasFlag(rtti, RTTI_FLAG_IS_OBJECT_ARRAY)) {
                 objectsTraced += Marker_markObjectArray(
                     heap, stats, object, outHolder, outWeakRefHolder);
-            } else if (arrayId == __blob_array_id) {
+            } else if (Rtti_HasFlag(rtti, RTTI_FLAG_IS_BLOB_ARRAY)) {
                 objectsTraced += Marker_markBlobArray(
                     heap, stats, object, outHolder, outWeakRefHolder);
             }
@@ -633,17 +630,6 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
                      registerBufferStride);
 }
 
-void Marker_markModules(Heap *heap, Stats *stats, GreyPacket **outHolder,
-                        GreyPacket **outWeakRefHolder) {
-    word_t **modules = &__modules;
-    int nb_modules = __modules_size;
-    Bytemap *bytemap = heap->bytemap;
-    word_t **limit = modules + nb_modules;
-    for (word_t **current = modules; current < limit; current++) {
-        Marker_markField(heap, stats, outHolder, outWeakRefHolder, *current);
-    }
-}
-
 void Marker_markCustomRoots(Heap *heap, Stats *stats, GreyPacket **outHolder,
                             GreyPacket **outWeakRefHolder, GC_Roots *roots) {
     mutex_lock(&roots->modificationLock);
@@ -665,7 +651,6 @@ void Marker_MarkRoots(Heap *heap, Stats *stats) {
         MutatorThread *thread = node->value;
         Marker_markProgramStack(thread, heap, stats, &out, &weakRefOut);
     }
-    Marker_markModules(heap, stats, &out, &weakRefOut);
     Marker_markCustomRoots(heap, stats, &out, &weakRefOut, customRoots);
     ScanContext context = {heap, stats, &out, &weakRefOut, 0};
     GCHooks_scanDynamicRoots(Marker_scanRange, &context);
