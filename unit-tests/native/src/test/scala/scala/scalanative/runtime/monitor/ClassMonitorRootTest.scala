@@ -54,6 +54,14 @@ class ClassMonitorRootTest {
   @Test def inflatedMonitorOfAClassSurvivesCollections(): Unit =
     // This class must have no allocated instances that could keep its monitor.
     assertStaticMonitorSurvives(classOf[NeverInstantiated])
+
+  // More lock words than one chunk of the runtime's list of static lock words
+  @Test def inflatedMonitorsOfManyStaticObjectsSurviveCollections(): Unit =
+    assertStaticMonitorsSurvive(
+      ManyStringLiterals :+ classOf[NeverInstantiated] :+ classOf[
+        AlsoNeverInstantiated
+      ]
+    )
 }
 
 object ClassMonitorRootTest {
@@ -92,15 +100,21 @@ object ClassMonitorRootTest {
     if (error != null) throw new AssertionError("monitor worker failed", error)
   }
 
-  private[monitor] def assertStaticMonitorSurvives(obj: AnyRef): Unit = {
+  private[monitor] def assertStaticMonitorSurvives(obj: AnyRef): Unit =
+    assertStaticMonitorsSurvive(Seq(obj))
+
+  private def assertStaticMonitorsSurvive(objs: Seq[AnyRef]): Unit = {
     assumeTrue(LinktimeInfo.isMultithreadingEnabled)
     // End the worker before collecting so its stack and registers cannot keep
-    // the monitor alive instead of the static object's lock word.
-    var monitor: WeakReference[ObjectMonitor] = null
+    // the monitors alive instead of the static objects' lock words.
+    val monitors = new Array[WeakReference[ObjectMonitor]](objs.size)
     val failure = new AtomicReference[Throwable]()
     val thread = worker(failure) {
-      inflate(obj)
-      monitor = monitorOf(obj)
+      objs.zipWithIndex.foreach {
+        case (obj, index) =>
+          inflate(obj)
+          monitors(index) = monitorOf(obj)
+      }
     }
     thread.start()
     awaitWorkers(Seq(thread), failure)
@@ -108,10 +122,99 @@ object ClassMonitorRootTest {
       Seq.fill(1000)(new Array[Byte](64))
       System.gc()
     }
-    assertNotNull("the static object's monitor was collected", monitor.get())
-    assertSame(monitor.get(), currentMonitor(obj))
-    obj.synchronized(obj.notifyAll())
+    objs.zipWithIndex.foreach {
+      case (obj, index) =>
+        assertNotNull(
+          s"the monitor of static object $index was collected",
+          monitors(index).get()
+        )
+        assertSame(monitors(index).get(), currentMonitor(obj))
+        obj.synchronized(obj.notifyAll())
+    }
   }
+
+  private val ManyStringLiterals: Seq[AnyRef] = Seq(
+    "static monitor root 0",
+    "static monitor root 1",
+    "static monitor root 2",
+    "static monitor root 3",
+    "static monitor root 4",
+    "static monitor root 5",
+    "static monitor root 6",
+    "static monitor root 7",
+    "static monitor root 8",
+    "static monitor root 9",
+    "static monitor root 10",
+    "static monitor root 11",
+    "static monitor root 12",
+    "static monitor root 13",
+    "static monitor root 14",
+    "static monitor root 15",
+    "static monitor root 16",
+    "static monitor root 17",
+    "static monitor root 18",
+    "static monitor root 19",
+    "static monitor root 20",
+    "static monitor root 21",
+    "static monitor root 22",
+    "static monitor root 23",
+    "static monitor root 24",
+    "static monitor root 25",
+    "static monitor root 26",
+    "static monitor root 27",
+    "static monitor root 28",
+    "static monitor root 29",
+    "static monitor root 30",
+    "static monitor root 31",
+    "static monitor root 32",
+    "static monitor root 33",
+    "static monitor root 34",
+    "static monitor root 35",
+    "static monitor root 36",
+    "static monitor root 37",
+    "static monitor root 38",
+    "static monitor root 39",
+    "static monitor root 40",
+    "static monitor root 41",
+    "static monitor root 42",
+    "static monitor root 43",
+    "static monitor root 44",
+    "static monitor root 45",
+    "static monitor root 46",
+    "static monitor root 47",
+    "static monitor root 48",
+    "static monitor root 49",
+    "static monitor root 50",
+    "static monitor root 51",
+    "static monitor root 52",
+    "static monitor root 53",
+    "static monitor root 54",
+    "static monitor root 55",
+    "static monitor root 56",
+    "static monitor root 57",
+    "static monitor root 58",
+    "static monitor root 59",
+    "static monitor root 60",
+    "static monitor root 61",
+    "static monitor root 62",
+    "static monitor root 63",
+    "static monitor root 64",
+    "static monitor root 65",
+    "static monitor root 66",
+    "static monitor root 67",
+    "static monitor root 68",
+    "static monitor root 69",
+    "static monitor root 70",
+    "static monitor root 71",
+    "static monitor root 72",
+    "static monitor root 73",
+    "static monitor root 74",
+    "static monitor root 75",
+    "static monitor root 76",
+    "static monitor root 77",
+    "static monitor root 78",
+    "static monitor root 79"
+  )
 
   private class NeverInstantiated
   private class AlsoNeverInstantiated

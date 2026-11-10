@@ -16,7 +16,7 @@
 #include "shared/ThreadUtil.h"
 #include "SyncGreyLists.h"
 #include "stackOverflowGuards.h"
-#include "staticSections.h"
+#include "staticRoots.h"
 
 #define LAST_FIELD_OFFSET -1
 
@@ -298,7 +298,8 @@ static void Marker_scanRange(void *ctx, void *low, void *high) {
         context->outWeakRefHolder, (word_t **)low, words, sizeof(word_t));
 }
 
-// Monitors of classes are reachable only from their lock words
+// Monitors of static classes and strings are reachable only from their
+// lock words
 static void Marker_scanLockWord(void **lockWord, void *ctx) {
     Marker_scanRange(ctx, lockWord, lockWord + 1);
 }
@@ -661,7 +662,7 @@ void Marker_MarkRoots(Heap *heap, Stats *stats) {
     Marker_markCustomRoots(heap, stats, &out, &weakRefOut, customRoots);
     ScanContext context = {heap, stats, &out, &weakRefOut, 0};
     GCHooks_scanDynamicRoots(Marker_scanRange, &context);
-    scalanative_foreach_class_lock_word(Marker_scanLockWord, &context);
+    scalanative_foreach_static_lock_word(Marker_scanLockWord, &context);
     if (out != NULL) {
         if (GreyPacket_IsEmpty(out)) {
             Marker_giveEmptyPacket(heap, stats, out);

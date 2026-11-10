@@ -6,7 +6,7 @@
 #include <gc/gc_mark.h>
 #include "shared/ScalaNativeGC.h"
 #include "shared/GCHooks.h"
-#include "staticSections.h"
+#include "staticRoots.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -39,7 +39,8 @@ static void pushRange(void *ctx, void *low, void *high) {
     GC_push_all_eager(low, high);
 }
 
-// Monitors of classes are reachable only from their lock words
+// Monitors of static classes and strings are reachable only from their
+// lock words
 static void pushLockWord(void **lockWord, void *ctx) {
     pushRange(ctx, lockWord, lockWord + 1);
 }
@@ -50,7 +51,7 @@ static void GC_CALLBACK pushCustomRoots(void) {
     for (Root *it = customRoots; it != NULL; it = it->next)
         GC_push_all_eager(it->low, it->high);
     GCHooks_scanDynamicRoots(pushRange, NULL);
-    scalanative_foreach_class_lock_word(pushLockWord, NULL);
+    scalanative_foreach_static_lock_word(pushLockWord, NULL);
 }
 
 // =============================
