@@ -28,7 +28,6 @@ private[scalanative] object Lower {
 
     private val zero = nir.Val.Int(0)
     private val one = nir.Val.Int(1)
-    val ClassRttiDynmapPath = Seq(zero, nir.Val.Int(ClassRtti.DynmapIdx))
     val ClassRttiVtablePath = Seq(zero, nir.Val.Int(ClassRtti.VtableIdx))
     val ClassRttiITableMaskPath = Seq(zero, nir.Val.Int(ClassRtti.ITableMaskIdx))
     val ClassRttiITableShiftPath = Seq(zero, nir.Val.Int(ClassRtti.ITableShiftIdx))
@@ -1296,26 +1295,17 @@ private[scalanative] object Lower {
       }
 
       def genReflectiveLookup(): nir.Val = {
-        val methodIndex =
-          StableHash.dynsigKey(sig)
-
-        // Load the type information pointer
+        // The program's reflective proxy table, see ReflectiveProxyTable
         val typeptr = load(nir.Type.Ptr, obj, unwind)
-        // Load the dynamic hash map for given type, make sure it's not null
-        val mapelem = elem(classRttiType, typeptr, ClassRttiDynmapPath, unwind)
-        val mapptr = load(nir.Type.Ptr, mapelem, unwind)
-        // If hash map is not null, it has to contain at least one entry
-        throwIfNull(mapptr)
-        // Perform dynamic dispatch via dyndispatch helper
-        val methptrptr = call(
+        val proxy = call(
           dyndispatchSig,
           dyndispatch,
-          Seq(mapptr, nir.Val.Int(methodIndex)),
+          Seq(typeptr, nir.Val.Int(StableHash.dynsigKey(sig))),
           unwind
         )
-        // Hash map lookup can still not contain given signature
-        throwIfNull(methptrptr)
-        let(n, nir.Op.Load(nir.Type.Ptr, methptrptr), unwind)
+        // The class has no proxy for the signature
+        throwIfNull(proxy)
+        let(n, nir.Op.Copy(proxy), unwind)
       }
 
       genGuardNotNull(buf, obj)
@@ -2229,7 +2219,7 @@ private[scalanative] object Lower {
     nir.Sig.Method("allocImpl", Seq(nir.Type.Ptr, nir.Type.Size, nir.Type.Ptr))
   )
 
-  val dyndispatchName = Extern("scalanative_dyndispatch")
+  val dyndispatchName = Extern("scalanative_dynmethod")
   val dyndispatchSig =
     nir.Type.Function(Seq(nir.Type.Ptr, nir.Type.Int), nir.Type.Ptr)
   val dyndispatch = nir.Val.Global(dyndispatchName, dyndispatchSig)

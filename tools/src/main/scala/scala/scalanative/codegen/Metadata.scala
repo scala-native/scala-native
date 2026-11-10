@@ -23,7 +23,6 @@ private[scalanative] class Metadata(
   val vtable = mutable.Map.empty[linker.Class, VirtualTable]
   val itable = mutable.Map.empty[linker.Class, ITable]
   val layout = mutable.Map.empty[linker.Class, FieldLayout]
-  val dynmap = mutable.Map.empty[linker.Class, DynamicHashMap]
   private val atHomeSlotCache = mutable.Map.empty[Trait, Boolean]
 
   val classes: Seq[Class] = initClasses()
@@ -35,6 +34,10 @@ private[scalanative] class Metadata(
   checkDynsigKeys()
   initTraitMetadata()
   initClassMetadata()
+
+  /** Proxies of reflectively called methods, registered at startup */
+  lazy val reflectiveProxies: nir.Defn.Const =
+    ReflectiveProxyTable.defn(proxies)
 
   /** Number of superclasses: 0 for java.lang.Object and primitives */
   def superclassCount(cls: Class): Int =
@@ -103,7 +106,6 @@ private[scalanative] class Metadata(
     classes.foreach { node =>
       vtable(node) = new VirtualTable(node)
       layout(node) = new FieldLayout(node)
-      dynmap(node) = new DynamicHashMap(node, proxies)
       itable(node) = ITable.build(node)
       rtti(node) = new RuntimeTypeInformation(node)
     }

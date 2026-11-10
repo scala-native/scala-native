@@ -25,11 +25,11 @@ private[codegen] object StableHash {
   /** Key of a trait in itables: decides where lookups for the trait start. */
   def traitKey(trt: linker.Trait): Int = fnv1a32(trt.name.mangle)
 
-  /** Key of a reflective proxy signature in dynmaps. -1 marks empty dynmap
-   *  slots, so no signature uses it.
+  /** Key of a reflective proxy signature, see ReflectiveProxyTable. */
+  def dynsigKey(sig: nir.Sig): Int = fnv1a32(sig.mangle)
+
+  /** Low 16 bits of a hash of the class name, stored in class RTTI flags to
+   *  start lookups in the reflective proxy table.
    */
-  def dynsigKey(sig: nir.Sig): Int = {
-    val hash = fnv1a32(sig.mangle)
-    if (hash == -1) 0 else hash
-  }
+  def classKey(cls: linker.Class): Int = fnv1a32(cls.name.mangle) & 0xffff
 }

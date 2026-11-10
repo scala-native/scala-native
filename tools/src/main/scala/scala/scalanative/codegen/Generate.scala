@@ -46,6 +46,8 @@ private[codegen] object Generate {
     def genInjects(): Unit = {
       buf += InitDecl
       buf += RegisterStaticRootsDecl
+      buf += RegisterReflectiveProxiesDecl
+      buf += meta.reflectiveProxies
       buf ++= ThreadBootstrapDecls
       buf ++= Lower.injects
     }
@@ -153,7 +155,17 @@ private[codegen] object Generate {
       val gcInit = nir.Inst.Let(nir.Op.Call(InitSig, Init, Seq.empty), unwind)
       // Runtime-owned static storage must be rooted before Scala initializers
       // can inflate monitors or trigger a collection.
-      Seq(gcInit, nir.Inst.Let(nir.Op.Call(InitSig, RegisterStaticRoots, Seq.empty), unwind))
+      val registerRoots = nir.Inst.Let(nir.Op.Call(InitSig, RegisterStaticRoots, Seq.empty), unwind)
+      // Reflective calls look proxies up in the program's table
+      val registerProxies = nir.Inst.Let(
+        nir.Op.Call(
+          RegisterReflectiveProxiesSig,
+          RegisterReflectiveProxies,
+          Seq(nir.Val.Global(ReflectiveProxyTable.name, nir.Type.Ptr))
+        ),
+        unwind
+      )
+      Seq(gcInit, registerRoots, registerProxies)
     }
 
     private def genThreadBootstrap(library: Boolean, complete: Boolean)(implicit fresh: nir.Fresh): Seq[nir.Inst] = {
@@ -500,6 +512,14 @@ private[codegen] object Generate {
     val RegisterStaticRootsDecl =
       nir.Defn.Declare(nir.Attrs.None, Extern("scalanative_register_static_roots"), InitSig)
     val RegisterStaticRoots = nir.Val.Global(RegisterStaticRootsDecl.name, nir.Type.Ptr)
+
+    val RegisterReflectiveProxiesSig = nir.Type.Function(Seq(nir.Type.Ptr), nir.Type.Unit)
+    val RegisterReflectiveProxiesDecl = nir.Defn.Declare(
+      nir.Attrs.None,
+      Extern("scalanative_register_reflective_proxies"),
+      RegisterReflectiveProxiesSig
+    )
+    val RegisterReflectiveProxies = nir.Val.Global(RegisterReflectiveProxiesDecl.name, nir.Type.Ptr)
 
     val weakRefFieldOffsetName = Extern("__weak_ref_field_offset")
   }

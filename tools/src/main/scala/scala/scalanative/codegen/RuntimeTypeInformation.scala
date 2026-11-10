@@ -100,7 +100,6 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
             itable.value ::
             superClass ::
             lineage(cls) ::
-            meta.dynmap(cls).value ::
             meta.vtable(cls).value ::
             Nil
         )
@@ -168,6 +167,8 @@ private[codegen] object RuntimeTypeInformation {
     final val TraitKeyMask = 0xffffff
     // Arrays only, bits 8-15: number of dimensions
     final val ArrayDimensionsShift = 8
+    // Classes, bits 16-31: StableHash.classKey, for reflective proxy lookups
+    final val ClassKeyShift = 16
 
     private val ObjectArray =
       nir.Global.Top("scala.scalanative.runtime.ObjectArray")
@@ -201,7 +202,8 @@ private[codegen] object RuntimeTypeInformation {
           else 0
         flag(nir.Rt.PrimitiveTypes.contains(cls.name), IsPrimitive) |
           arrayFlags |
-          referenceKind
+          referenceKind |
+          StableHash.classKey(cls) << ClassKeyShift
     }
   }
 
