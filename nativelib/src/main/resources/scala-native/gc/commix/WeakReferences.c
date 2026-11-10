@@ -5,8 +5,11 @@
 #include "GCThread.h"
 #include "SyncGreyLists.h"
 #include "nativeThreadTLS.h"
+#include "shared/ThreadUtil.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
+#include <stdatomic.h>
 
 // WeakReferences is a structure used for the gc_nullify phase.
 // It collects WeakReference objects visited during marking phase.
@@ -27,26 +30,69 @@ static inline GreyPacket *WeakReferences_takeWeakRefPacket(Heap *heap,
         heap, stats, &heap->mark.foundWeakRefs, nullify_waiting);
 }
 
-static void WeakReferences_NullifyPacket(Heap *heap, Stats *stats,
-                                         GreyPacket *weakRefsPacket) {
-    Bytemap *bytemap = heap->bytemap;
-    while (!GreyPacket_IsEmpty(weakRefsPacket)) {
-        Object *object = GreyPacket_Pop(weakRefsPacket);
-        assert(Object_IsWeakReference(object));
+// WeakReferences found while no grey packet was free, see Marker.c. Rare, so
+// a spin lock is enough.
+static struct {
+    Object **items;
+    size_t size;
+    size_t capacity;
+} overflow;
+static atomic_flag overflowLock = ATOMIC_FLAG_INIT;
 
-        Object **weakRefReferantField =
-            (Object **)((int8_t *)object + __weak_ref_field_offset);
-        word_t *weakRefReferant = (word_t *)*weakRefReferantField;
-        if (Heap_IsWordInHeap(heap, weakRefReferant)) {
-            ObjectMeta *objectMeta = Bytemap_Get(bytemap, weakRefReferant);
-            if (ObjectMeta_IsAllocated(objectMeta) &&
-                !ObjectMeta_IsMarked(objectMeta)) {
-                *weakRefReferantField = NULL;
-                // idempotent operation - does not need to be synchronized
-                collectedWeakReferences = true;
-            }
+void WeakReferences_AddOverflow(Object *object) {
+    while (atomic_flag_test_and_set_explicit(&overflowLock,
+                                             memory_order_acquire)) {
+        thread_yield();
+    }
+    if (overflow.size == overflow.capacity) {
+        size_t capacity =
+            overflow.capacity == 0 ? GREY_PACKET_ITEMS : overflow.capacity * 2;
+        Object **items = realloc(overflow.items, capacity * sizeof(Object *));
+        if (items == NULL) {
+            Heap_exitWithOutOfMemory("for the weak reference overflow list");
+        }
+        overflow.items = items;
+        overflow.capacity = capacity;
+    }
+    overflow.items[overflow.size++] = object;
+    atomic_flag_clear_explicit(&overflowLock, memory_order_release);
+}
+
+bool WeakReferences_HasOverflow() { return overflow.size > 0; }
+
+static void WeakReferences_nullifyObject(Heap *heap, Object *object) {
+    assert(Object_IsWeakReference(object));
+
+    Object **weakRefReferantField =
+        (Object **)((int8_t *)object + __weak_ref_field_offset);
+    word_t *weakRefReferant = (word_t *)*weakRefReferantField;
+    if (Heap_IsWordInHeap(heap, weakRefReferant)) {
+        ObjectMeta *objectMeta = Bytemap_Get(heap->bytemap, weakRefReferant);
+        if (ObjectMeta_IsAllocated(objectMeta) &&
+            !ObjectMeta_IsMarked(objectMeta)) {
+            *weakRefReferantField = NULL;
+            // idempotent operation - does not need to be synchronized
+            collectedWeakReferences = true;
         }
     }
+}
+
+static void WeakReferences_NullifyPacket(Heap *heap, Stats *stats,
+                                         GreyPacket *weakRefsPacket) {
+    while (!GreyPacket_IsEmpty(weakRefsPacket)) {
+        WeakReferences_nullifyObject(heap, GreyPacket_Pop(weakRefsPacket));
+    }
+}
+
+// Called by a single thread after marking has finished.
+void WeakReferences_NullifyOverflow(Heap *heap) {
+    for (size_t i = 0; i < overflow.size; i++) {
+        WeakReferences_nullifyObject(heap, overflow.items[i]);
+    }
+    free(overflow.items);
+    overflow.items = NULL;
+    overflow.size = 0;
+    overflow.capacity = 0;
 }
 
 void WeakReferences_Nullify(Heap *heap, Stats *stats) {
