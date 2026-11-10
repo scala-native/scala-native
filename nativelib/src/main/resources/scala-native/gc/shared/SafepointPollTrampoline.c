@@ -99,6 +99,17 @@ void scalanative_gc_safepoint_poll_trampoline(void);
 #define SN_UC_UNSUPPORTED 1
 #endif
 
+bool scalanative_gc_safepoint_is_stale_fault_signal(void *uap) {
+#if defined(__APPLE__) && defined(__aarch64__)
+    // Raised at a syscall (ESR class SVC): a fault left pending while masked.
+    ucontext_t *uc = (ucontext_t *)uap;
+    return uc != NULL && (uc->uc_mcontext->__es.__esr >> 26) == 0x15;
+#else
+    (void)uap;
+    return false;
+#endif
+}
+
 bool scalanative_gc_safepoint_prepare_redirect(void *uap, void *mutatorThread) {
 #ifndef SN_UC_UNSUPPORTED
     MutatorThread *self = (MutatorThread *)mutatorThread;
