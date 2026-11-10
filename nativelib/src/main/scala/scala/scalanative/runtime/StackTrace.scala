@@ -20,8 +20,21 @@ private[runtime] object StackTrace {
       unwind.get_context(context)
       unwind.init_local(cursor, context)
 
-      override def hasNext: Boolean = unwind.step(cursor) > 0
+      // Each step moves the cursor to the caller, so hasNext must step once
+      // per element however often it is called
+      private var stepped = false
+      private var hasFrame = false
+
+      override def hasNext: Boolean = {
+        if (!stepped) {
+          hasFrame = unwind.step(cursor) > 0
+          stepped = true
+        }
+        hasFrame
+      }
       override def next(): StackTraceElement = {
+        if (!hasNext) throw new NoSuchElementException("no more stack frames")
+        stepped = false
         unwind.get_reg(cursor, unwind.UNW_REG_IP, ip)
         val addr =
           Intrinsics.castRawSizeToLongUnsigned(Intrinsics.loadRawSize(ip))
