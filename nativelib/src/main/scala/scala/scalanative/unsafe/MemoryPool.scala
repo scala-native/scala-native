@@ -191,6 +191,7 @@ final class MemoryPoolZone(private val pool: MemoryPool) extends Zone {
 
   private def allocLarge(size: CSize): Ptr[Byte] = {
     val result = fromRawPtr[Byte](ffi.malloc(size))
+    if (result == null) throw new OutOfMemoryError("Zone large allocation")
     GC.addRoots(result, result + size)
     largeAllocations =
       new MemoryPoolZone.LargeAllocation(result, size, largeAllocations)
