@@ -88,24 +88,40 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
 
     val threadId = getThreadId(thread)
     val current = lockWord
-    val lockedOnce = lockedWithThreadId(threadId)
-    if (current == lockedOnce)
+    if (current == lockedWithThreadId(threadId))
       atomic_store_intptr(
         lockWordRef,
         castIntToRawPtr(0),
         memory_order_release
       )
-    else if (current.isUnlocked) () // can happen only on the main thread
-    else if (current.isInflated) current.getObjectMonitor.exit(thread)
-    else if (current.recursionCount == 0 && current.isContended &&
-        current.threadId == threadId)
-      inflateOnContendedExit(thread)
-    else storeRawPtr(lockWordRef, current.withDecresedRecursion)
+    else exitSlowPath(thread, threadId, current)
   }
 
-  // A contender flagged the thin lock: inflate so it can queue on the monitor.
-  @noinline private def inflateOnContendedExit(thread: Thread): Unit =
-    inflate(thread).exit(thread)
+  // Kept out of line so every synchronized exit site only carries the fast path.
+  @noinline private def exitSlowPath(
+      thread: Thread,
+      threadId: ThreadId,
+      current: LockWord
+  ): Unit =
+    if (current.isUnlocked) () // can happen only on the main thread
+    else if (current.isInflated) current.getObjectMonitor.exit(thread)
+    else if (current.recursionCount == 0 && current.isContended &&
+        current.threadId == threadId) {
+      // A contender flagged the thin lock: inflate so it can queue on the
+      // monitor. If inflating fails (e.g. OOM) release the thin lock anyway,
+      // contenders then acquire it with tryLock.
+      var monitor: ObjectMonitor = null
+      try monitor = inflate(thread)
+      finally {
+        if (monitor == null && !lockWord.isInflated)
+          atomic_store_intptr(
+            lockWordRef,
+            castIntToRawPtr(0),
+            memory_order_release
+          )
+      }
+      monitor.exit(thread)
+    } else storeRawPtr(lockWordRef, current.withDecresedRecursion)
 
   @alwaysinline def isLockedBy(thread: Thread): Boolean = {
     val current = lockWord

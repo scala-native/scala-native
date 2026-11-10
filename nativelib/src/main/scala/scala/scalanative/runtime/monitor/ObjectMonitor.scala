@@ -307,24 +307,29 @@ private[monitor] class ObjectMonitor() {
         transformToDLL(cur.next, cur)
       }
 
-    val starving = starvingThread
-    if (starving != null) {
-      // Direct handoff: the monitor is never observed free, so no barging.
-      starvingThread = null
-      successorThread = starving
-      atomic_store_intptr(
-        ownerThreadPtr,
-        castObjectToRawPtr(starving),
-        memory_order_release
-      )
-      atomic_thread_fence(memory_order_seq_cst)
-      wakePlatformWaiter(starving)
-      return
+    // Direct handoff: the monitor is never observed free, so no barging.
+    // Re-checked on every iteration, a waiter may start starving after a
+    // release and re-acquire below.
+    @alwaysinline def handOffToStarving(): Boolean = {
+      val starving = starvingThread
+      starving != null && {
+        starvingThread = null
+        successorThread = starving
+        atomic_store_intptr(
+          ownerThreadPtr,
+          castObjectToRawPtr(starving),
+          memory_order_release
+        )
+        atomic_thread_fence(memory_order_seq_cst)
+        wakePlatformWaiter(starving)
+        true
+      }
     }
 
     var looping = true
     while (looping) {
-      if (successorThread == null) {
+      if (handOffToStarving()) looping = false
+      else if (successorThread == null) {
         val w = entryList
         if (w != null) {
           transformToDLL(w, null)
