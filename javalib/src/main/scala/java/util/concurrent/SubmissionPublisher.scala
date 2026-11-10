@@ -1160,8 +1160,8 @@ object SubmissionPublisher {
 
     /** Unblocks waiting producer. */
     def signalWaiter(): Unit = {
-      val w: Thread = waiter
       waiting = 0
+      val w: Thread = waiter
       if (w != null) LockSupport.unpark(w)
     }
 

@@ -1,4 +1,13 @@
 // Ported from JSR-166, revision: 1.411
+// Scala Native changes:
+// - awaitWork re-checks all queues after the worker is published as idle,
+//   not only when it was the last active one, so a task pushed while the
+//   remaining active workers are blocked in user code is not stranded.
+// - tryTrim decrements the total count without touching the active count.
+// - signalWork and reactivate look up the idle-stack head in the current
+//   queues array on every retry.
+// - Full fences around the park handshake (phase vs. access), so a wake-up is
+//   not lost where volatile store-load ordering is not enforced (qemu-user).
 
 /*
  * Written by Doug Lea with assistance from members of JCP JSR-166
@@ -218,7 +227,7 @@ class ForkJoinPool private (
       while (!break) {
         var create = false
         val sp = c.toInt & ~INACTIVE
-        val v = qs(sp & (n - 1))
+        val v = idleWorkerAt(sp)
         val deficit: Int = pc - (c >>> TC_SHIFT).toShort
         val ac: Long = (c + RC_UNIT) & RC_MASK
         var nc = 0L
@@ -237,6 +246,7 @@ class ForkJoinPool private (
           else {
             val owner = v.owner
             v.phase = sp
+            VarHandle.fullFence() // see awaitWork
             if (v.access == PARKED)
               LockSupport.unpark(owner)
           }
@@ -246,29 +256,37 @@ class ForkJoinPool private (
     }
   }
 
+  /** The worker at the top of the idle stack described by `sp`, or null. Looks
+   *  it up by its full index in the current `queues`: the array may have grown
+   *  since `sp` was read, and masking with a stale length would select another
+   *  worker and pop the real head without waking it.
+   */
+  @alwaysinline private def idleWorkerAt(sp: Int): WorkQueue = {
+    val qs = queues
+    val i = sp & SMASK
+    if (sp != 0 && qs != null && i < qs.length) qs(i) else null
+  }
+
   private def reactivate(): WorkQueue = {
     var c = ctl
-    val qs = queues
-    val n = if (qs != null) qs.length else 0
-    if (n > 0) {
-      while (true) {
-        val sp = c.toInt & ~INACTIVE
-        val v = qs(sp & (n - 1))
-        val ac = UC_MASK & (c + RC_UNIT)
-        if (sp == 0 || v == null)
-          return null
-        if (c == {
-              c = compareAndExchangeCtl(c, (v.stackPred & SP_MASK) | ac); c
-            }) {
-          val owner = v.owner
-          v.phase = sp
-          if (v.access == PARKED)
-            LockSupport.unpark(owner)
-          return v
-        }
+    while (true) {
+      val sp = c.toInt & ~INACTIVE
+      val v = idleWorkerAt(sp)
+      val ac = UC_MASK & (c + RC_UNIT)
+      if (v == null)
+        return null
+      if (c == {
+            c = compareAndExchangeCtl(c, (v.stackPred & SP_MASK) | ac); c
+          }) {
+        val owner = v.owner
+        v.phase = sp
+        VarHandle.fullFence() // see awaitWork
+        if (v.access == PARKED)
+          LockSupport.unpark(owner)
+        return v
       }
     }
-    null
+    null // unreachable
   }
 
   private def tryTrim(w: WorkQueue): Boolean = {
@@ -278,7 +296,10 @@ class ForkJoinPool private (
       val c = ctl
       val sp = c.toInt & ~INACTIVE
       if ((sp & SMASK) == (cfg & SMASK) &&
-          compareAndSetCtl(c, (pred & SP_MASK) | (UC_MASK & (c - TC_UNIT)))) {
+          compareAndSetCtl(
+            c,
+            (pred & SP_MASK) | (RC_MASK & c) | (TC_MASK & (c - TC_UNIT))
+          )) {
         w.config = cfg // add sentinel for deregisterWorker
         w.phase = sp
         return true
@@ -393,9 +414,15 @@ class ForkJoinPool private (
       pc != { pc = compareAndExchangeCtl(pc, qc); pc }
     }) ()
 
+    // A producer that pushed into an empty queue while this worker was still
+    // counted as active may have skipped signalWork (RC >= parallelism, e.g.
+    // when other workers are blocked in user code). Now that this worker is
+    // published as idle, re-check all queues: either such a producer sees the
+    // new ctl and pops an idle worker, or this check sees its task.
+    VarHandle.fullFence()
+    if (hasTasks(false) && (w.phase >= 0 || (reactivate() eq w)))
+      return 0 // rescan; if another worker was reactivated instead, park
     if ((qc & RC_MASK) <= 0L) {
-      if (hasTasks(true) && (w.phase >= 0 || (reactivate() eq w)))
-        return 0 // check for stragglers
       if (runState != 0 && tryTerminate(false, false))
         return -1 // quiescent termination
       idle = true
@@ -415,6 +442,12 @@ class ForkJoinPool private (
         if (runState < 0)
           return -1
         w.access = PARKED
+        // Store-load handshake with the phase store and access read in
+        // signalWork/reactivate. Volatile accesses alone are not enough under
+        // some emulators (qemu-user aarch64 on x86 does not order stlr before
+        // a later ldar), which let both sides miss and the worker park
+        // while counted as active.
+        VarHandle.fullFence()
         if (w.phase < 0) {
           if (idle)
             LockSupport.parkUntil(deadline)
