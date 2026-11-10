@@ -298,6 +298,10 @@ package object runtime {
       moduleSlot: unsafe.Ptr[AnyRef],
       cls: Class[_]
   ): AnyRef = {
+    // Modules loaded by this wait are awaited by spinning in module_load.c
+    // instead of recursing. Virtual threads can unmount here, so not for them.
+    val isPlatformThread = !Thread.currentThread().isInstanceOf[VirtualThread]
+    val isNested = isPlatformThread && ModuleInitialization.setAwaiting(true)
     // Not an interruption point: keep waiting, restore the status at the end.
     var interrupted = false
     def awaitNotification(): Unit =
@@ -342,7 +346,16 @@ package object runtime {
         }
         ??? // Unreachable
       }
-    finally if (interrupted) Thread.currentThread().interrupt()
+    finally {
+      if (interrupted) Thread.currentThread().interrupt()
+      if (isPlatformThread && !isNested) {
+        ModuleInitialization.setAwaiting(false)
+        // This wait can run inside a park, e.g. one loading a module, and
+        // consume its permit. Restore it; a spurious wakeup is allowed.
+        val nativeThread = NativeThread.currentNativeThread
+        if (nativeThread != null) nativeThread.unpark()
+      }
+    }
   }
 
   private def waitForModuleInitializationSingleThreaded(
@@ -393,6 +406,10 @@ package object runtime {
 
     @name("scalanative_completeModuleInitializationForCurrentThread")
     def completeForCurrentThread(): Unit = extern
+
+    /** Returns the previous value. */
+    @name("scalanative_setAwaitingModuleInitialization")
+    def setAwaiting(value: Boolean): Boolean = extern
   }
 
 }
