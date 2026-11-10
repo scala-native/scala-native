@@ -80,6 +80,25 @@ void scalanative_completeModuleInitializationForCurrentThread(void) {
     currentInitializationContext = currentInitializationContext->previous;
 }
 
+// Set while the thread runs the managed wait, which can itself load modules.
+static SN_ThreadLocal bool awaitingInitialization = false;
+
+bool scalanative_setAwaitingModuleInitialization(bool value) {
+    bool previous = awaitingInitialization;
+    awaitingInitialization = value;
+    return previous;
+}
+
+// Waits without monitors or park permits, so it never re-enters the managed
+// wait. Used only for modules needed by the wait itself.
+static void spinUntilInitialized(ModuleSlot slot) {
+    scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState_Unmanaged);
+    while (isInitializationContext(
+        atomic_load_explicit(slot, memory_order_acquire)))
+        thread_yield();
+    scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState_Managed);
+}
+
 NOINLINE static ModuleRef
 __scalanative_waitForModuleInitialization(ModuleSlot slot, void *classInfo) {
     // Match the shared pointer against this thread's live context chain without
@@ -89,6 +108,12 @@ __scalanative_waitForModuleInitialization(ModuleSlot slot, void *classInfo) {
         scalanative_moduleInitializationInstanceForCurrentThread(module);
     if (instance != NULL)
         return instance;
+    if (awaitingInitialization) {
+        spinUntilInitialized(slot);
+        module = atomic_load_explicit(slot, memory_order_acquire);
+        if (*module == classInfo)
+            return module;
+    }
     return scalanative_awaitForInitialization(slot, classInfo);
 }
 
