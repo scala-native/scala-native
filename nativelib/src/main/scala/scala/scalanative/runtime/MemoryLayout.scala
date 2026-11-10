@@ -24,13 +24,15 @@ private[runtime] object MemoryLayout {
     @alwaysinline def LockWordOffset =
       if (isMultithreadingEnabled) PtrSize
       else requiresEnabledMulithreading
-    @alwaysinline def IdOffset =
+    @alwaysinline def FlagsOffset =
       if (isMultithreadingEnabled) LockWordOffset + PtrSize
       else PtrSize
+    @deprecated("Class ids were replaced by flags", since = "0.5.13")
+    @alwaysinline def IdOffset = FlagsOffset
 
     @deprecated("No longer used", since = "0.5.6") @alwaysinline
     def TraitIdOffset = -1
-    @alwaysinline def InterfacesCountOffset = IdOffset + IntSize
+    @alwaysinline def InterfacesCountOffset = FlagsOffset + IntSize
     @alwaysinline def InterfacesOffset = InterfacesCountOffset + IntSize
     @alwaysinline def NameOffset = InterfacesOffset + PtrSize
 

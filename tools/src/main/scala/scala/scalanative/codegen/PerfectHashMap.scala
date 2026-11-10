@@ -168,20 +168,14 @@ private[codegen] class PerfectHashMap[K, V](
 
 private[codegen] object DynmethodPerfectHashMap {
 
-  def apply(
-      dynmethods: Seq[nir.Global.Member],
-      allSignatures: Seq[nir.Sig]
-  ): nir.Val = {
-
-    val signaturesWithIndex =
-      allSignatures.zipWithIndex.foldLeft(Map[nir.Sig, Int]()) {
-        case (acc, (signature, index)) => acc + (signature -> index)
-      }
-
+  /** Keys are `StableHash.dynsigKey` of the method signatures, so a class's map
+   *  does not depend on the reflective calls made elsewhere in the program.
+   */
+  def apply(dynmethods: Seq[nir.Global.Member]): nir.Val = {
     val entries = dynmethods.foldLeft(Map[Int, (Int, nir.Val)]()) {
       case (acc, m) =>
-        val index = signaturesWithIndex(m.sig)
-        acc + (index -> (index, nir.Val.Global(m, nir.Type.Ptr)))
+        val key = StableHash.dynsigKey(m.sig)
+        acc + (key -> (key, nir.Val.Global(m, nir.Type.Ptr)))
     }
 
     val perfectHashMap = PerfectHashMap[Int, (Int, nir.Val)](hash, entries)

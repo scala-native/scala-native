@@ -226,8 +226,7 @@ void *scalanative_GC_alloc_large(Rtti *info, size_t size) {
 void *scalanative_GC_alloc_array(Rtti *info, size_t length, size_t stride) {
     size_t size = info->size + length * stride;
     ArrayHeader *alloc;
-    int32_t classId = info->rt.id;
-    if (classId == __object_array_id || classId == __blob_array_id)
+    if (info->rt.flags & (RTTI_FLAG_IS_OBJECT_ARRAY | RTTI_FLAG_IS_BLOB_ARRAY))
         alloc = (ArrayHeader *)GC_malloc(size);
     else
         alloc = (ArrayHeader *)GC_malloc_atomic(size);

@@ -22,6 +22,6 @@ private[codegen] class DynamicHashMap(cls: Class, proxies: Seq[nir.Defn])(
       .filterNot(m => sigs.contains(m.sig)) ++ own
   }
 
-  val value: nir.Val = DynmethodPerfectHashMap(methods, meta.analysis.dynsigs)
+  val value: nir.Val = DynmethodPerfectHashMap(methods)
 
 }

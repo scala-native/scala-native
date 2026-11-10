@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 #include "perfecthashmap.h"
 
 int mod(int a, int b);
@@ -30,7 +31,11 @@ void *scalanative_dyndispatch(PerfectHashMap *perfectHashMap, int key) {
     }
 }
 
-inline int hash(int key, int salt) { return (key + (salt * 31)) ^ salt; }
+/* Keys are 32-bit signature hashes: wrap around like the JVM-side
+ * DynmethodPerfectHashMap.hash instead of overflowing a signed int. */
+inline int hash(int key, int salt) {
+    return (int)(((uint32_t)key + (uint32_t)salt * 31u) ^ (uint32_t)salt);
+}
 
 inline int mod(int a, int b) {
     int m = a % b;

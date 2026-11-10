@@ -79,10 +79,10 @@ class DispatchTableOrderTest extends CodeGenSpec {
           linked.dynimpls
         )
 
-        val traitIds = meta.traits.map(meta.ids)
-        val sortedIds = meta.traits
-          .sortBy[nir.Global](_.name)
-          .map(meta.ids)
-        assertEquals("traits visited in name order", sortedIds, traitIds)
+        assertEquals(
+          "traits visited in name order",
+          meta.traits.sortBy(_.name.mangle),
+          meta.traits
+        )
     }
 }

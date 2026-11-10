@@ -70,11 +70,9 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
     case _ => meta.layouts.Rtti.layout
   }
   lazy val value: nir.Val.StructValue = {
-    val typeId = nir.Val.Int(meta.ids(info))
+    val flags = nir.Val.Int(Flags(info))
     val typeStr = nir.Val.String(typeName)
-    val traits = info.linearized
-      .collect { case cls: Trait if cls != info => cls }
-      .sortBy(meta.ids(_))
+    val traits = meta.interfaces(info)
     val interfacesCount = nir.Val.Int(traits.size)
     val interfaces = nir.Val.Const(
       nir.Val.ArrayValue(nir.Type.Ptr, traits.map(meta.rtti(_).const))
@@ -82,36 +80,27 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
 
     val base = nir.Val.StructValue(
       classConst :: meta.lockWordVals :::
-        typeId ::
+        flags ::
         interfacesCount ::
         interfaces ::
         typeStr :: Nil
     )
     info match {
       case cls: Class =>
-        val dynmap =
-          if (!meta.layouts.ClassRtti.usesDynMap) Nil
-          else List(meta.dynmap(cls).value)
-        val range = meta.ranges(cls)
         val itable = meta.itable(cls)
-        val itablesSize = {
-          // we want to have compile-time computed mask for fast selction
-          // negative size to mark requirement of using slow-path binary search
-          if (itable.useFastITables) (itable.size - 1).max(0)
-          else -itable.size
-        }
         val superClass =
           cls.parent.map(meta.rtti(_).const).getOrElse(nir.Val.Null)
         nir.Val.StructValue(
           base ::
             nir.Val.Int(typeSize) :: // size
-            nir.Val.Int(range.last) :: // idRangeUntil
+            nir.Val.Int(meta.superclassCount(cls)) ::
             meta.layout(cls).referenceOffsetsValue :: // refFieldOffsets
-            // Free slot for additional Int32 to be used in the future
-            nir.Val.Int(itablesSize) ::
-            itable.const ::
+            nir.Val.Int(itable.mask) ::
+            nir.Val.Int(itable.shift) ::
+            itable.value ::
             superClass ::
-            dynmap :::
+            lineage(cls) ::
+            meta.dynmap(cls).value ::
             meta.vtable(cls).value ::
             Nil
         )
@@ -120,13 +109,63 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
     }
   }
 
-  lazy val canUseFastITables: Boolean = info match {
-    case cls: Class => meta.itable(cls).useFastITables
-    case cls: Trait => cls.implementors.forall(meta.rtti(_).canUseFastITables)
+  /* Superclasses from the root, then the class itself, padded with nulls.
+   * lineage(C)(superclassCount(C)) is C, so an object is an instance of C
+   * exactly when lineage(superclassCount(C)) of its class is C.
+   */
+  private def lineage(cls: Class): nir.Val = {
+    val rootFirst = meta.ancestors(cls).reverse.map(meta.rtti(_).const)
+    nir.Val.ArrayValue(
+      nir.Type.Ptr,
+      rootFirst
+        .take(CommonMemoryLayouts.LineageSize)
+        .padTo(CommonMemoryLayouts.LineageSize, nir.Val.Null)
+    )
   }
 }
 
 private[codegen] object RuntimeTypeInformation {
+
+  /** Bits of the RTTI flags word. Keep in sync with ObjectHeader.h and
+   *  scala.scalanative.runtime.Class.
+   */
+  object Flags {
+    final val IsInterface = 1 << 0
+    final val IsPrimitive = 1 << 1
+    final val IsArray = 1 << 2
+    final val IsObjectArray = 1 << 3
+    final val IsBlobArray = 1 << 4
+    final val IsBoxedPtr = 1 << 5
+    final val IsWeakReference = 1 << 6
+    // Traits store the low 24 bits of their itable key in bits 8-31, enough
+    // for java.lang.Class to start lookups in itables up to 2^24 slots
+    // Traits only: every class holds the trait in the slot where its lookup
+    // starts, see Metadata.alwaysAtHomeSlot
+    final val IsAtHomeSlot = 1 << 7
+    final val TraitKeyShift = 8
+    final val TraitKeyMask = 0xffffff
+
+    private val ObjectArray =
+      nir.Global.Top("scala.scalanative.runtime.ObjectArray")
+    private val WeakReference = nir.Global.Top("java.lang.ref.WeakReference")
+
+    /** Computed from the type and its ancestors only. */
+    def apply(info: ScopeInfo)(implicit meta: Metadata): Int = info match {
+      case trt: Trait =>
+        IsInterface |
+          (if (meta.alwaysAtHomeSlot(trt)) IsAtHomeSlot else 0) |
+          (StableHash.traitKey(trt) & TraitKeyMask) << TraitKeyShift
+      case cls: Class =>
+        val names = meta.ancestors(cls).map(_.name)
+        def flag(cond: Boolean, bit: Int) = if (cond) bit else 0
+        flag(nir.Rt.PrimitiveTypes.contains(cls.name), IsPrimitive) |
+          flag(names.contains(nir.Rt.GenericArray.name), IsArray) |
+          flag(cls.name == ObjectArray, IsObjectArray) |
+          flag(cls.name == nir.Rt.BlobArray.name, IsBlobArray) |
+          flag(cls.name == nir.Rt.BoxedPtr.name, IsBoxedPtr) |
+          flag(names.contains(WeakReference), IsWeakReference)
+    }
+  }
 
   private val classConst =
     nir.Val.Global(
