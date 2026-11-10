@@ -43,6 +43,7 @@ void BlockAllocator_Init(BlockAllocator *blockAllocator, word_t *blockMetaStart,
 
     blockAllocator->concurrent = false;
     blockAllocator->freeBlockCount = blockCount;
+    blockAllocator->sweptFreeBlockCount = blockCount;
 
     mutex_init(&blockAllocator->allocationLock);
 
@@ -319,6 +320,8 @@ void BlockAllocator_AddFreeSuperblockLocal(BlockAllocator *blockAllocator,
     // blockAllocator->freeBlockCount += count;
     atomic_fetch_add_explicit(&blockAllocator->freeBlockCount, count,
                               memory_order_relaxed);
+    atomic_fetch_add_explicit(&blockAllocator->sweptFreeBlockCount, count,
+                              memory_order_relaxed);
 }
 
 void BlockAllocator_AddFreeSuperblock(BlockAllocator *blockAllocator,
@@ -341,6 +344,8 @@ void BlockAllocator_AddFreeSuperblock(BlockAllocator *blockAllocator,
     BlockAllocator_splitAndAdd(blockAllocator, superblock, count);
     // blockAllocator->freeBlockCount += count;
     atomic_fetch_add_explicit(&blockAllocator->freeBlockCount, count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&blockAllocator->sweptFreeBlockCount, count,
                               memory_order_relaxed);
 }
 
@@ -377,6 +382,8 @@ void BlockAllocator_AddFreeBlocks(BlockAllocator *blockAllocator,
     // blockAllocator->freeBlockCount += count;
     atomic_fetch_add_explicit(&blockAllocator->freeBlockCount, count,
                               memory_order_relaxed);
+    atomic_fetch_add_explicit(&blockAllocator->sweptFreeBlockCount, count,
+                              memory_order_relaxed);
 }
 
 void BlockAllocator_FinishCoalescing(BlockAllocator *blockAllocator) {
@@ -390,6 +397,7 @@ void BlockAllocator_Clear(BlockAllocator *blockAllocator) {
     // sweeping is about to start, use concurrent data structures
     blockAllocator->concurrent = true;
     blockAllocator->freeBlockCount = 0;
+    blockAllocator->sweptFreeBlockCount = 0;
     blockAllocator->smallestSuperblock.cursor = NULL;
     blockAllocator->smallestSuperblock.limit = NULL;
     BlockRange_Clear(&blockAllocator->coalescingSuperblock);
@@ -444,6 +452,8 @@ void BlockAllocator_UseReserve(BlockAllocator *blockAllocator) {
     if (reserved != NULL) {
         BlockAllocator_splitAndAdd(blockAllocator, reserved,
                                    SWEEP_RESERVE_BLOCKS);
+        atomic_fetch_add_explicit(&blockAllocator->sweptFreeBlockCount,
+                                  SWEEP_RESERVE_BLOCKS, memory_order_relaxed);
     }
     BlockAllocator_Release(blockAllocator);
 }

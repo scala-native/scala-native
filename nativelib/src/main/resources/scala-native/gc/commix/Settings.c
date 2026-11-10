@@ -39,6 +39,10 @@ double Settings_MinFreeRatio(void) {
     return Settings_ratio("GC_FREE_RATIO", DEFAULT_FREE_RATIO);
 }
 
+double Settings_MaxFreeRatio(void) {
+    return Settings_ratio("GC_MAX_FREE_RATIO", DEFAULT_MAX_FREE_RATIO);
+}
+
 // False if str is NULL or not a number. Counts below 1 become 1.
 static bool Settings_parseThreadCount(const char *source, const char *str,
                                       int *count) {

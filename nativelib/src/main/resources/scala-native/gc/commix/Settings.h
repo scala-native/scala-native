@@ -8,6 +8,7 @@
 // =============================================================================
 double Settings_MaxMarkTimeRatio(void);
 double Settings_MinFreeRatio(void);
+double Settings_MaxFreeRatio(void);
 int Settings_GCThreadCount(void);
 
 #endif // COMMIX_SETTINGS_H

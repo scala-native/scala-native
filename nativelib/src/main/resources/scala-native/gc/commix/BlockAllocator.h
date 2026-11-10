@@ -17,6 +17,8 @@ typedef struct {
         BlockMeta *limit;
     } smallestSuperblock;
     atomic_uint_fast32_t freeBlockCount;
+    // Not decremented on allocation.
+    atomic_uint_fast32_t sweptFreeBlockCount;
     BlockRange coalescingSuperblock;
     word_t *blockMetaStart;
     atomic_bool concurrent;

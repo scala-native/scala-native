@@ -26,17 +26,19 @@ def nativeExecutable(
     case ref: xsbti.VirtualFileRef => conv.toPath(ref).toFile()
   }
 
-lazy val runExplicitCollectGrowth = taskKey[Unit](
-  "Run a System.gc() loop and fail if commix over-reserves the heap"
+lazy val runExplicitCollectGrowth = inputKey[Unit](
+  "<maxHeap> [args...]: run the binary and fail if commix over-reserves the heap"
 )
 
 runExplicitCollectGrowth := {
+  val args = Def.spaceDelimited().parsed
   implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
   val binary = nativeExecutable((Compile / nativeLink).value)
   val proc = new ProcessBuilder(binary.getAbsolutePath)
+  args.tail.foreach(arg => proc.command().add(arg))
   proc.environment().put("GC_INITIAL_HEAP_SIZE", "4M")
   // Caps a runaway grow, which would otherwise reserve physical RAM.
-  proc.environment().put("GC_MAXIMUM_HEAP_SIZE", "64M")
+  proc.environment().put("GC_MAXIMUM_HEAP_SIZE", args.head)
   proc.inheritIO()
 
   val running = proc.start()
