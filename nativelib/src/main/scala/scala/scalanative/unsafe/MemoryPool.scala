@@ -103,14 +103,12 @@ private[unsafe] object MemoryPool {
 
 /** An optimized implementation of a zone that performs all allocations
  *  sequentially in pages that are claimed from memory pool. Larger allocations
- *  are allocated using the system allocator and persisted in an array buffer.
+ *  are allocated using the system allocator and tracked in a linked list.
  */
 final class MemoryPoolZone(private val pool: MemoryPool) extends Zone {
   private var tailPage = pool.claim()
   private var headPage = tailPage
-  private var largeAllocations: scala.Array[CVoidPtr] = null
-  private var largeSizes: scala.Array[CSize] = null
-  private var largeOffset = 0
+  private var largeAllocations: MemoryPoolZone.LargeAllocation = null
 
   private def checkOpen(): Unit =
     if (!isOpen)
@@ -142,17 +140,13 @@ final class MemoryPoolZone(private val pool: MemoryPool) extends Zone {
     tailPage = null
 
     // Free all large allocations which were allocated with malloc.
-    if (largeAllocations != null) {
-      var i = 0
-      while (i < largeOffset) {
-        val ptr = largeAllocations(i).asInstanceOf[Ptr[Byte]]
-        GC.removeRoots(ptr, ptr + largeSizes(i))
-        ffi.free(ptr)
-        i += 1
-      }
-      largeAllocations = null
-      largeSizes = null
+    var large = largeAllocations
+    while (large != null) {
+      GC.removeRoots(large.start, large.start + large.size)
+      ffi.free(large.start)
+      large = large.next
     }
+    largeAllocations = null
   }
 
   override def alloc(usize: CSize): Ptr[Byte] = {
@@ -196,36 +190,21 @@ final class MemoryPoolZone(private val pool: MemoryPool) extends Zone {
   }
 
   private def allocLarge(size: CSize): Ptr[Byte] = {
-    if (largeAllocations == null) {
-      largeAllocations = new scala.Array[CVoidPtr](16)
-      largeSizes = new scala.Array[CSize](16)
-    }
-    if (largeOffset == largeAllocations.length) {
-      val newLargeAllocations =
-        new scala.Array[CVoidPtr](largeAllocations.length * 2)
-      Array.copy(
-        largeAllocations,
-        0,
-        newLargeAllocations,
-        0,
-        largeAllocations.length
-      )
-      largeAllocations = newLargeAllocations
-      val newLargeSizes = new scala.Array[CSize](largeSizes.length * 2)
-      Array.copy(largeSizes, 0, newLargeSizes, 0, largeSizes.length)
-      largeSizes = newLargeSizes
-    }
     val result = fromRawPtr[Byte](ffi.malloc(size))
     GC.addRoots(result, result + size)
-    largeAllocations(largeOffset) = result
-    largeSizes(largeOffset) = size
-    largeOffset += 1
-
+    largeAllocations =
+      new MemoryPoolZone.LargeAllocation(result, size, largeAllocations)
     result
   }
 }
 
 private[unsafe] object MemoryPoolZone {
+  private final class LargeAllocation(
+      val start: Ptr[Byte],
+      val size: CSize,
+      val next: LargeAllocation
+  )
+
   def open(pool: MemoryPool): MemoryPoolZone =
     new MemoryPoolZone(pool)
 }
