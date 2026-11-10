@@ -18,6 +18,9 @@
 size_t Settings_MinHeapSize(void);
 size_t Settings_MaxHeapSize(void);
 char *Settings_StatsFileName(void);
+// The ratio in environment variable `name`, or `defaultRatio` when it is not
+// set or not a number.
+double Settings_Ratio(const char *name, double defaultRatio);
 
 // =============================================================================
 // Settings Initialization
