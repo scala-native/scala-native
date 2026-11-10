@@ -64,7 +64,6 @@ private[codegen] class CommonMemoryLayouts(implicit meta: Metadata) {
         nir.Type.Ptr :: // superClass
         // superclasses from the root, then the class itself, then nulls
         nir.Type.ArrayValue(nir.Type.Ptr, LineageSize) :: // lineage
-        DynamicHashMap.ty :: // dynmap, null if the class has no proxies
         Nil
 
     override val layout =
@@ -84,8 +83,7 @@ private[codegen] class CommonMemoryLayouts(implicit meta: Metadata) {
     final val ItablesIdx = ITableShiftIdx + 1
     final val SuperClassIdx = ItablesIdx + 1
     final val LineageIdx = SuperClassIdx + 1
-    final val DynmapIdx = LineageIdx + 1
-    final val VtableIdx = DynmapIdx + 1
+    final val VtableIdx = LineageIdx + 1
   }
 
   object ITable extends Layout() {

@@ -34,7 +34,6 @@ Fields of classes only:
 | `itables`         | pointer       | itable entries, see below                         |
 | `superClass`      | pointer       | RTTI of the parent class, or null                 |
 | `lineage`         | pointer[8]    | superclasses from the root, the class, then nulls |
-| `dynmap`          | pointer       | reflective proxies, or null                       |
 | `vtable`          | pointer[]     | virtual method table                              |
 
 The layout is defined by `codegen.CommonMemoryLayouts` and mirrored by
@@ -51,6 +50,7 @@ The layout is defined by `codegen.CommonMemoryLayouts` and mirrored by
 | 5-6  | reference kind: 0 none, 1 weak, 2 soft, 3 phantom              |
 | 7    | traits: every implementor holds it in its home itable slot     |
 | 8-15 | arrays: number of dimensions                                   |
+| 16-31 | classes: hash of the class name, for reflective calls         |
 | 8-31 | traits: low 24 bits of the itable key                          |
 
 The garbage collectors and `java.lang.Class` read these bits instead of
@@ -116,6 +116,11 @@ roots. Constant modules use a statically allocated instance instead.
 
 ## Reflective calls
 
-Reflective proxies are found through a per-class perfect hash map keyed by the
-FNV-1a hash of the proxy signature. The toolchain fails the build if two
+Reflective calls, from structural types, look up proxies of the called method
+in one table per program, keyed by class RTTI and a hash of the proxy
+signature. Each class in the table lists its own proxies and the inherited
+ones. The program registers the table at startup, so class RTTI and the code
+calling reflectively do not depend on which reflective calls the program
+makes. A lookup starts at a slot derived from both hashes, the class hash being
+stored in its flags, and compares RTTI addresses. The build fails if two
 signatures used by the program share a key.

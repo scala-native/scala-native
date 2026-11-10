@@ -36,6 +36,8 @@ extern const int __weak_ref_field_offset;
 #define RTTI_TRAIT_KEY_SHIFT 8
 /* Arrays only, bits 8-15: number of dimensions */
 #define RTTI_ARRAY_DIMENSIONS_SHIFT 8
+/* Classes, bits 16-31: hash of the class name, see codegen.StableHash */
+#define RTTI_CLASS_KEY_SHIFT 16
 
 /* Length of the lineage stored inline in class RTTI, keep in sync with
  * codegen.CommonMemoryLayouts.LineageSize */
@@ -90,7 +92,6 @@ typedef struct Rtti {
     // Superclasses from the root, then the class itself, then NULLs:
     // lineage[superclassCount] is the class itself
     struct Rtti *lineage[SCALANATIVE_RTTI_LINEAGE_SIZE];
-    void *dynmap;
 } Rtti;
 
 typedef word_t *Field_t;

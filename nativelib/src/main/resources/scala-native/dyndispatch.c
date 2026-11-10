@@ -1,47 +1,46 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+#include "gc/immix_commix/headers/ObjectHeader.h"
+#include <stddef.h>
 #include <stdint.h>
-#include "perfecthashmap.h"
 
-int mod(int a, int b);
-int hash(int key, int d);
+/* Reflective proxies of the program, keep in sync with
+ * codegen.ReflectiveProxyTable: an open-addressing table, at most half full,
+ * of {class rtti, signature key, proxy} entries. A NULL rtti marks an empty
+ * slot. */
+typedef struct {
+    Rtti *rtti;
+    int32_t key;
+    void *proxy;
+} ReflectiveProxy;
 
-void *scalanative_dyndispatch(PerfectHashMap *perfectHashMap, int key) {
-    int size = perfectHashMap->size;
-    int lh1 = mod(hash(key, 0), size);
+typedef struct {
+    int32_t mask;
+    ReflectiveProxy *entries;
+} ReflectiveProxyTable;
 
-    int h1 = mod(lh1, size);
-    int salt = perfectHashMap->salts[h1];
+static const ReflectiveProxyTable *reflectiveProxies;
 
-    if (salt < 0) {
-        int index = -salt - 1;
-        if (perfectHashMap->keys[index] == key) {
-            return &(perfectHashMap->values[index]);
-        } else {
-            return NULL;
-        }
-    } else {
-        int index = mod(hash(key, salt), size);
-        if (perfectHashMap->keys[index] == key) {
-            return &(perfectHashMap->values[index]);
-        } else {
-            return NULL;
-        }
-    }
+/* Called by the program at startup, before any Scala code runs. */
+void scalanative_register_reflective_proxies(
+    const ReflectiveProxyTable *table) {
+    reflectiveProxies = table;
 }
 
-/* Keys are 32-bit signature hashes: wrap around like the JVM-side
- * DynmethodPerfectHashMap.hash instead of overflowing a signed int. */
-inline int hash(int key, int salt) {
-    return (int)(((uint32_t)key + (uint32_t)salt * 31u) ^ (uint32_t)salt);
-}
-
-inline int mod(int a, int b) {
-    int m = a % b;
-    if (m < 0) {
-        return m + b;
-    } else {
-        return m;
+/* Proxy for the reflectively called signature `key` on an instance of
+ * `rtti`, or NULL when the class has none. */
+void *scalanative_dynmethod(Rtti *rtti, int32_t key) {
+    const ReflectiveProxyTable *table = reflectiveProxies;
+    if (table == NULL)
+        return NULL;
+    uint32_t classKey = (uint32_t)rtti->rt.flags >> RTTI_CLASS_KEY_SHIFT;
+    uint32_t mask = (uint32_t)table->mask;
+    uint32_t pos = (((uint32_t)key * 0x9e3779b1u) ^ classKey) & mask;
+    for (uint32_t probes = 0; probes <= mask; probes++) {
+        ReflectiveProxy *entry = &table->entries[pos];
+        if (entry->rtti == rtti && entry->key == key)
+            return entry->proxy;
+        if (entry->rtti == NULL)
+            return NULL;
+        pos = (pos + 1) & mask;
     }
+    return NULL;
 }
