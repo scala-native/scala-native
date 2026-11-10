@@ -36,8 +36,17 @@ private[codegen] class FieldLayout(cls: Class)(implicit meta: Metadata) {
 
   val struct = nir.Type.StructValue(layout.tys.map(_.ty))
   val size = layout.size
-  val referenceOffsetsValue = nir.Val.Const(
-    nir.Val.ArrayValue(nir.Type.Int, layout.referenceFieldsOffsets)
-  )
+  /* Reference map used by the GC: offsets of reference fields, -1, then
+   * offsets of raw pointer fields to scan conservatively, -1. Only boxed
+   * pointers (unsafe.Ptr) scan raw pointers: one can point into the heap, for
+   * example to an array element, and be the only thing keeping it alive.
+   */
+  val referenceOffsetsValue = {
+    val conservative =
+      if (cls.name == nir.Rt.BoxedPtr.name) layout.rawPointerFieldsOffsets
+      else Nil
+    val offsets = layout.referenceFieldsOffsets ++ (-1 +: conservative) :+ -1
+    nir.Val.Const(nir.Val.ArrayValue(nir.Type.Int, offsets.map(nir.Val.Int(_))))
+  }
 
 }

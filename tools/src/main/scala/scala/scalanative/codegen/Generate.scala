@@ -59,8 +59,21 @@ private[codegen] object Generate {
           GlobalSections.ClassInfo,
           nir.Defn.Var(nir.Attrs.None, rtti.name, rtti.struct, rtti.value)(pos)
         )
+        buf += classListEntry(rtti)(pos)
       }
     }
+
+    // Lists the RTTI in the class list section iterated by Class.forName
+    private def classListEntry(rtti: RuntimeTypeInformation)(implicit pos: nir.SourcePosition): nir.Defn.Var =
+      meta.globalSections.define(
+        GlobalSections.ClassList,
+        nir.Defn.Var(
+          nir.Attrs.None,
+          rtti.name.owner.member(nir.Sig.Generated("classlist")),
+          nir.Type.Ptr,
+          rtti.const
+        )
+      )
 
     def genTraitMetadata(): Unit = {
       meta.traits.foreach { trt =>
@@ -70,6 +83,7 @@ private[codegen] object Generate {
           GlobalSections.ClassInfo,
           nir.Defn.Var(nir.Attrs.None, rtti.name, rtti.struct, rtti.value)(pos)
         )
+        buf += classListEntry(rtti)(pos)
       }
     }
 

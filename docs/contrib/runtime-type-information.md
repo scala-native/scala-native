@@ -28,7 +28,7 @@ Fields of classes only:
 |-------------------|---------------|---------------------------------------------------|
 | `size`            | `int`         | instance size in bytes                            |
 | `superclassCount` | `int`         | number of superclasses, 0 for root classes        |
-| `refFieldOffsets` | pointer       | offsets of reference fields, terminated with -1   |
+| `refFieldOffsets` | pointer       | classes: reference map, see below; arrays: element type RTTI |
 | `itableMask`      | `int`         | itable size minus one                             |
 | `itableShift`     | `int`         | selects the trait key bits that index the itable  |
 | `itables`         | pointer       | itable entries, see below                         |
@@ -42,20 +42,39 @@ The layout is defined by `codegen.CommonMemoryLayouts` and mirrored by
 
 ## Flags
 
-| Bit | Meaning                                         |
-|-----|-------------------------------------------------|
-| 0   | trait                                           |
-| 1   | primitive type                                  |
-| 2   | `runtime.Array` or one of its subclasses        |
-| 3   | `runtime.ObjectArray`                           |
-| 4   | `runtime.BlobArray`                             |
-| 5   | `unsafe.Ptr` (a boxed pointer)                  |
-| 6   | `java.lang.ref.WeakReference` or a subclass     |
-| 7   | traits only: every implementor holds it in its home itable slot |
-| 8-31 | traits only: low 24 bits of the itable key    |
+| Bits | Meaning                                                        |
+|------|----------------------------------------------------------------|
+| 0    | trait                                                          |
+| 1    | primitive type                                                 |
+| 2    | `runtime.Array` or one of its subclasses                       |
+| 3-4  | arrays: element scan, 0 none, 1 references, 2 conservative     |
+| 5-6  | reference kind: 0 none, 1 weak, 2 soft, 3 phantom              |
+| 7    | traits: every implementor holds it in its home itable slot     |
+| 8-15 | arrays: number of dimensions                                   |
+| 8-31 | traits: low 24 bits of the itable key                          |
 
 The garbage collectors and `java.lang.Class` read these bits instead of
-comparing class ids.
+comparing class ids. Only weak references clear their referent today; soft and
+phantom references are marked for future support.
+
+## Reference map and arrays
+
+For classes, `refFieldOffsets` points to the offsets, in bytes from the start
+of an object, of its reference fields, terminated with -1, followed by the
+offsets of raw pointer fields to scan conservatively, terminated with -1. Only
+`unsafe.Ptr` has such a field: a boxed pointer can point into the heap, for
+example to an array element, and be the only thing keeping it alive.
+
+Arrays have no fields to scan, the GC uses the element scan kind from the flags
+instead. In array RTTI the same slot holds the RTTI of the element type, read
+by `Class.getComponentType`. Reference arrays are all `ObjectArray` today, with
+`java.lang.Object` as element type; one RTTI per array type would only change
+this slot and the dimensions in the flags.
+
+## Class list
+
+Every class and trait also has `<Name>$G9classlist`, a pointer to its RTTI in
+the `sn_classlist` section. `Class.forName` iterates that section.
 
 ## Class instance tests
 

@@ -302,7 +302,8 @@ int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
                              GreyPacket **outWeakRefHolder, Bytemap *bytemap) {
     int objectsTraced = 0;
     int32_t *refFieldOffsets = object->rtti->refFieldOffsets;
-    for (int i = 0; refFieldOffsets[i] != LAST_FIELD_OFFSET; i++) {
+    int i = 0;
+    for (; refFieldOffsets[i] != LAST_FIELD_OFFSET; i++) {
         size_t fieldOffset = (size_t)refFieldOffsets[i];
         Field_t *fieldRef = (Field_t *)((int8_t *)object + fieldOffset);
         Field_t fieldReferant = *fieldRef;
@@ -312,9 +313,9 @@ int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
         objectsTraced += Marker_markField(heap, stats, outHolder,
                                           outWeakRefHolder, fieldReferant);
     }
-    if (Rtti_HasFlag(object->rtti, RTTI_FLAG_IS_BOXED_PTR)) {
-        // Boxed ptr always has a single field
-        word_t *rawPtr = object->fields[0];
+    // Raw pointer fields that may point into the heap
+    for (i++; refFieldOffsets[i] != LAST_FIELD_OFFSET; i++) {
+        word_t *rawPtr = *(word_t **)((int8_t *)object + refFieldOffsets[i]);
         if (Heap_IsWordInHeap(heap, rawPtr)) {
             Marker_markConservative(heap, stats, outHolder, outWeakRefHolder,
                                     rawPtr);
@@ -440,10 +441,10 @@ void Marker_markPacket(Heap *heap, Stats *stats, GreyPacket *in,
         Object *object = GreyPacket_Pop(in);
         if (Object_IsArray(object)) {
             const Rtti *rtti = object->rtti;
-            if (Rtti_HasFlag(rtti, RTTI_FLAG_IS_OBJECT_ARRAY)) {
+            if (Rtti_ArrayScan(rtti) == RTTI_ARRAY_SCAN_REFERENCES) {
                 objectsTraced += Marker_markObjectArray(
                     heap, stats, object, outHolder, outWeakRefHolder);
-            } else if (Rtti_HasFlag(rtti, RTTI_FLAG_IS_BLOB_ARRAY)) {
+            } else if (Rtti_ArrayScan(rtti) == RTTI_ARRAY_SCAN_CONSERVATIVE) {
                 objectsTraced += Marker_markBlobArray(
                     heap, stats, object, outHolder, outWeakRefHolder);
             }
