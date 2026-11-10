@@ -252,9 +252,10 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
     val obj = castRawPtrToObject(
       elemRawPtr(lockWordRef, -MemoryLayout.Object.LockWordOffset)
     )
-    val cls = obj.getClass()
-    if ((cls eq classOf[Class[_]]) || (cls eq classOf[String]))
-      StaticRoots.registerObject(castObjectToRawPtr(obj))
+    // A static object, such as a class, a string literal or its backing
+    // array, only reaches its monitor through its lock word: register it as
+    // a root. Heap objects are ignored.
+    StaticRoots.registerObject(castObjectToRawPtr(obj))
 
     val objectMonitor = new ObjectMonitor()
     objectMonitor.enter(thread)

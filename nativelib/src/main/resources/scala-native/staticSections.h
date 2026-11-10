@@ -26,14 +26,6 @@ scalanative_static_globals_section(void);
 SN_SECTION_LOCAL const SNStaticSection *
 scalanative_static_classlist_section(void);
 
-/* Calls `visit` with the address of every inflated class lock word, which
- * points to a heap allocated monitor. Classes are walked only once a monitor
- * was inflated on any class. Garbage collectors call it while marking roots.
- * Classes have no lock word without multithreading.
- */
-typedef void (*SNLockWordVisitor)(void **lockWord, void *context);
-SN_SECTION_LOCAL void
-scalanative_foreach_class_lock_word(SNLockWordVisitor visit, void *context);
 #ifdef __cplusplus
 }
 #endif
