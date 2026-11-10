@@ -1,5 +1,6 @@
 #include "staticSections.h"
 #include "gc/shared/ScalaNativeGC.h"
+#include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -25,8 +26,35 @@ SN_SECTION_LOCAL void scalanative_register_static_roots(void) {
     registerSection(scalanative_static_globals_section());
 }
 
-static void registerClassSection(void) {
-    registerSection(scalanative_static_classinfo_section());
+/* Class monitors are found through the class list, see
+ * scalanative_foreach_class_lock_word, instead of scanning every class. */
+static atomic_bool classMonitorsInflated;
+
+static void enableClassMonitorRoots(void) {
+    atomic_store_explicit(&classMonitorsInflated, true, memory_order_release);
+}
+
+SN_SECTION_LOCAL void
+scalanative_foreach_class_lock_word(SNLockWordVisitor visit, void *context) {
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+    if (!atomic_load_explicit(&classMonitorsInflated, memory_order_acquire))
+        return;
+    const SNStaticSection *classes = scalanative_static_classlist_section();
+    for (void **entry = classes->start; entry < (void **)classes->end;
+         entry++) {
+        void **rtti = (void **)*entry;
+        if (rtti == NULL)
+            continue;
+        // Object header: the RTTI of java.lang.Class, then the lock word.
+        // Only inflated lock words point to a monitor, thin locks hold none.
+        void **lockWord = &rtti[1];
+        if (((word_t)*lockWord & MONITOR_INFLATION_MARK_MASK) != 0)
+            visit(lockWord, context);
+    }
+#else
+    (void)visit;
+    (void)context;
+#endif
 }
 
 static void registerStringSection(void) {
@@ -42,7 +70,7 @@ static bool stringRootsRegistered;
 
 static void registerClassRoots(void) {
     if (!classRootsRegistered) {
-        registerClassSection();
+        enableClassMonitorRoots();
         classRootsRegistered = true;
     }
 }
@@ -61,7 +89,7 @@ static BOOL CALLBACK registerClassRootsOnce(PINIT_ONCE once, PVOID arg,
     (void)once;
     (void)arg;
     (void)context;
-    registerClassSection();
+    enableClassMonitorRoots();
     return TRUE;
 }
 
@@ -89,7 +117,7 @@ static pthread_once_t classRootsOnce = PTHREAD_ONCE_INIT;
 static pthread_once_t stringRootsOnce = PTHREAD_ONCE_INIT;
 
 static void registerClassRoots(void) {
-    if (pthread_once(&classRootsOnce, registerClassSection) != 0)
+    if (pthread_once(&classRootsOnce, enableClassMonitorRoots) != 0)
         abort();
 }
 
