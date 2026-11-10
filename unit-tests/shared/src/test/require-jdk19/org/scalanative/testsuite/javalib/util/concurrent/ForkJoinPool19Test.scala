@@ -239,6 +239,52 @@ class ForkJoinPool19Test extends JSR166Test {
     testInvokeOnPool(p, a)
   }
 
+  /** Repeats the testLazySubmit pattern. A worker that helps while joining a
+   *  subtask of `f` must not take `j` (which joins `f`) from a queue outside
+   *  its steal chain: running `j` inside `f`'s own frame never completes.
+   */
+  @Test def testLazySubmitJoinDoesNotDeadlock(): Unit = {
+    val iterations = 200
+    val completed = new java.util.concurrent.atomic.AtomicInteger(0)
+    val failure = new java.util.concurrent.atomic.AtomicReference[Throwable]
+    val runner = new Thread(() =>
+      try
+        while (completed.get() < iterations) {
+          val p = new ForkJoinPool()
+          try {
+            val f = new FibAction(8)
+            val j = new RecursiveAction() {
+              protected def compute(): Unit = f.join()
+            }
+            p.invoke(new RecursiveAction() {
+              protected def compute(): Unit = {
+                p.invoke(new FibAction(8))
+                p.lazySubmit(f)
+                p.invoke(new FibAction(8))
+                p.invoke(j)
+              }
+            })
+            assertEquals(21, f.result)
+          } finally p.shutdown()
+          completed.incrementAndGet()
+        }
+      catch { case t: Throwable => failure.set(t) }
+    )
+    runner.setDaemon(true) // a deadlocked iteration must not block exit
+    runner.start()
+    var seen = -1
+    while (runner.isAlive() && seen != completed.get()) {
+      seen = completed.get()
+      runner.join(LONG_DELAY_MS)
+    }
+    if (failure.get() != null) threadUnexpectedException(failure.get())
+    assertFalse(
+      s"lazySubmit/join deadlocked after ${completed.get()} iterations",
+      runner.isAlive()
+    )
+    assertEquals(iterations, completed.get())
+  }
+
   /** quietlyInvoke task returns when task completes normally.
    *  isCompletedAbnormally and isCancelled return false for normally completed
    *  tasks

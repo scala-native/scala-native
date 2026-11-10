@@ -665,8 +665,8 @@ class ForkJoinPool private (
                   rescan = true // resized or stalled
                 break = true
               }
-            } else if ((t eq task) && !eligible)
-              break = true
+            } else if ((t ne task) && !eligible)
+              break = true // only the joined task itself may be taken here
             else if (WorkQueue.casSlotToNull(a, k, t)) {
               q.base = nb
               w.source = src
