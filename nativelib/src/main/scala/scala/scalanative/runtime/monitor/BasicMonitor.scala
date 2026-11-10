@@ -97,8 +97,15 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
       )
     else if (current.isUnlocked) () // can happen only on the main thread
     else if (current.isInflated) current.getObjectMonitor.exit(thread)
+    else if (current.recursionCount == 0 && current.isContended &&
+        current.threadId == threadId)
+      inflateOnContendedExit(thread)
     else storeRawPtr(lockWordRef, current.withDecresedRecursion)
   }
+
+  // A contender flagged the thin lock: inflate so it can queue on the monitor.
+  @noinline private def inflateOnContendedExit(thread: Thread): Unit =
+    inflate(thread).exit(thread)
 
   @alwaysinline def isLockedBy(thread: Thread): Boolean = {
     val current = lockWord
@@ -166,6 +173,21 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
     )
   }
 
+  // Ask the thin lock owner to inflate on exit; a racing plain store by the
+  // owner may drop the flag, so callers retry it on every poll.
+  @inline private def requestInflation(): Unit = {
+    val current = lockWord
+    if (!current.isUnlocked && !current.isInflated && !current.isContended) {
+      val expected = stackalloc[RawPtr]()
+      storeRawPtr(expected, current.value)
+      atomic_compare_exchange_intptr(
+        lockWordRef,
+        expected,
+        current.withContended
+      )
+    }
+  }
+
   // Monitor is currently locked by other thread. Wait until getting over ownership
   // of this object and transform LockWord to use HeavyWeight monitor
   @inline private def lockAndInflate(
@@ -179,6 +201,7 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
       def MaxSleepNanos = 128000
       if (!tryLock(threadId) && !lockWord.isInflated) {
         if (yields > 8) {
+          requestInflation()
           thread match {
             case vt: VirtualThread =>
               // Avoid pinning a carrier while contending on a thin monitor.
