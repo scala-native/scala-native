@@ -6,6 +6,8 @@
 // - tryTrim decrements the total count without touching the active count.
 // - signalWork and reactivate look up the idle-stack head in the current
 //   queues array on every retry.
+// - Full fences around the park handshake (phase vs. access), so a wake-up is
+//   not lost where volatile store-load ordering is not enforced (qemu-user).
 
 /*
  * Written by Doug Lea with assistance from members of JCP JSR-166
@@ -244,6 +246,7 @@ class ForkJoinPool private (
           else {
             val owner = v.owner
             v.phase = sp
+            VarHandle.fullFence() // see awaitWork
             if (v.access == PARKED)
               LockSupport.unpark(owner)
           }
@@ -277,6 +280,7 @@ class ForkJoinPool private (
           }) {
         val owner = v.owner
         v.phase = sp
+        VarHandle.fullFence() // see awaitWork
         if (v.access == PARKED)
           LockSupport.unpark(owner)
         return v
@@ -438,6 +442,12 @@ class ForkJoinPool private (
         if (runState < 0)
           return -1
         w.access = PARKED
+        // Store-load handshake with the phase store and access read in
+        // signalWork/reactivate. Volatile accesses alone are not enough under
+        // some emulators (qemu-user aarch64 on x86 does not order stlr before
+        // a later ldar), which let both sides miss and the worker park
+        // while counted as active.
+        VarHandle.fullFence()
         if (w.phase < 0) {
           if (idle)
             LockSupport.parkUntil(deadline)
