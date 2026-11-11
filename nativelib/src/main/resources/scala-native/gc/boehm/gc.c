@@ -3,6 +3,7 @@
 #define GC_THREADS
 
 #include <gc/gc.h>
+#include <gc/gc_mark.h>
 #include "shared/ScalaNativeGC.h"
 #include <stdlib.h>
 #include <string.h>
@@ -21,8 +22,47 @@ static WeakReferencesCollectedCallback weakReferencesCollectedCallback = NULL;
 static void GC_CALLBACK handleOnCollectionEvent(GC_EventType event);
 static void GC_CALLBACK weakRefFinalizer(void *obj, void *client_data);
 
+// GC_add_roots aborts after a few thousand ranges (e.g. open Zones), so
+// custom roots are kept in a list, modified only under the allocation lock.
+typedef struct Root {
+    void *low, *high;
+    struct Root *next;
+} Root;
+static Root *customRoots = NULL;
+static GC_push_other_roots_proc defaultPushOtherRoots = NULL;
+
+static void GC_CALLBACK pushCustomRoots(void) {
+    if (defaultPushOtherRoots != NULL)
+        defaultPushOtherRoots();
+    for (Root *it = customRoots; it != NULL; it = it->next)
+        GC_push_all_eager(it->low, it->high);
+}
+
+static void *GC_CALLBACK addRoot(void *root) {
+    ((Root *)root)->next = customRoots;
+    customRoots = (Root *)root;
+    return NULL;
+}
+
+static void *GC_CALLBACK removeRoots(void *range) {
+    Root *r = (Root *)range;
+    Root **link = &customRoots;
+    while (*link != NULL) {
+        Root *it = *link;
+        if (it->low >= r->low && it->high <= r->high) {
+            *link = it->next;
+            free(it);
+        } else {
+            link = &it->next;
+        }
+    }
+    return NULL;
+}
+
 void scalanative_GC_init() {
     GC_INIT();
+    defaultPushOtherRoots = GC_get_push_other_roots();
+    GC_set_push_other_roots(pushCustomRoots);
     GC_allow_register_threads();
     // Keep this hook enabled at all times to collect Boehm GC statistics.
     GC_set_on_collection_event(handleOnCollectionEvent);
@@ -217,17 +257,24 @@ GC_MutatorThreadState scalanative_externalGC_state(void) {
     return executionState;
 }
 bool scalanative_externalGC_addRoots(void *low, void *high) {
-    GC_add_roots(low, high);
+    Root *root = malloc(sizeof(Root));
+    if (root == NULL)
+        return false;
+    root->low = low;
+    root->high = high;
+    GC_call_with_alloc_lock(addRoot, root);
     return true;
 }
 
 void scalanative_GC_yield() {}
 
 void scalanative_GC_add_roots(void *addr_low, void *addr_high) {
-    GC_add_roots(addr_low, addr_high);
+    if (!scalanative_externalGC_addRoots(addr_low, addr_high))
+        abort();
 }
 
 void scalanative_GC_remove_roots(void *addr_low, void *addr_high) {
-    GC_remove_roots(addr_low, addr_high);
+    Root range = {addr_low, addr_high, NULL};
+    GC_call_with_alloc_lock(removeRoots, &range);
 }
 #endif
