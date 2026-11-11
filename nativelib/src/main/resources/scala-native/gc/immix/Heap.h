@@ -32,6 +32,12 @@ typedef struct {
     // recovery collections in a row met both of its conditions.
     uint64_t lastCollectionEndNs;
     uint32_t overheadStreak;
+    // For growing when collections take too much of the time: when the
+    // current collection was requested, and whether System.gc() requested it.
+    uint64_t collectionRequestNs;
+    bool explicitCollection;
+    double maxGcTimeRatio;
+    double maxFreeRatio;
 } Heap;
 
 #include "immix_commix/HeapCommon.h"

@@ -116,9 +116,15 @@ Log messages include timestamps in `[HH:MM:SS.mmm]` format with millisecond prec
 ## Immix GC
 
 The Immix GC uses the three variables shown above as well as the following
-variable.
+variables.
 
 -   GC_STATS_FILE (set to the file name)
+-   GC_TIME_RATIO (default is .05): the heap grows when a collection, from
+    its request until it ends, took this fraction of the time since the
+    previous collection ended. Explicit `System.gc()` calls do not count.
+-   GC_MAX_FREE_RATIO (default is .8): above 128 MB, growth for
+    GC_TIME_RATIO only happens while less than this fraction of the heap is
+    free after a collection.
 
 ## Commix GC
 

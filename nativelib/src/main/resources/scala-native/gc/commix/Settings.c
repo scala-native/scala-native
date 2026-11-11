@@ -14,33 +14,22 @@
 #include <string.h>
 #include <stdbool.h>
 #include "Settings.h"
+#include "immix_commix/Settings.h"
 #include "Constants.h"
 #include "shared/Parsing.h"
 #include "shared/Log.h"
 #include "shared/Settings.h"
 
-static double Settings_ratio(const char *name, double defaultRatio) {
-    char *str = getenv(name);
-    if (str == NULL)
-        return defaultRatio;
-    double ratio;
-    if (sscanf(str, "%lf", &ratio) != 1) {
-        GC_LOG_WARN("Ignoring %s=%s, which is not a number", name, str);
-        return defaultRatio;
-    }
-    return ratio;
-}
-
 double Settings_MaxMarkTimeRatio(void) {
-    return Settings_ratio("GC_TIME_RATIO", DEFAULT_MARK_TIME_RATIO);
+    return Settings_Ratio("GC_TIME_RATIO", DEFAULT_MARK_TIME_RATIO);
 }
 
 double Settings_MinFreeRatio(void) {
-    return Settings_ratio("GC_FREE_RATIO", DEFAULT_FREE_RATIO);
+    return Settings_Ratio("GC_FREE_RATIO", DEFAULT_FREE_RATIO);
 }
 
 double Settings_MaxFreeRatio(void) {
-    return Settings_ratio("GC_MAX_FREE_RATIO", DEFAULT_MAX_FREE_RATIO);
+    return Settings_Ratio("GC_MAX_FREE_RATIO", DEFAULT_MAX_FREE_RATIO);
 }
 
 // False if str is NULL or not a number. Counts below 1 become 1.
