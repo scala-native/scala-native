@@ -436,7 +436,7 @@ static void onThreadExit(void *raw) {
             fatal("thread exit context restoration failed");
     }
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
-    /* A POSIX thread may no longer accept GC wakeup signals once its TLS
+    /* A POSIX thread may no longer be resumed by the GC once its TLS
      * destructors run. Stay unmanaged and unregister its stack here; retire
      * Scala identities on the next admitted thread instead of executing Scala
      * on an exiting OS thread. Roots remain published until retirement. */
