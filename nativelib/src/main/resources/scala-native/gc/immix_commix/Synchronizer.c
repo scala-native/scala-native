@@ -184,8 +184,6 @@ static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
     }
 }
 #else
-#define THREAD_WAKEUP_SIGNAL SIGCONT
-static sigset_t threadWakupSignals;
 static struct sigaction previousSigsegvHandler = {};
 #ifdef __APPLE__
 static struct sigaction previousSigbusHandler = {};
@@ -315,11 +313,6 @@ static void SetupYieldPointTrapHandler(void) {
     // Call it as first exception handler
     SetUnhandledExceptionFilter(&SafepointTrapHandler);
 #else
-    sigemptyset(&threadWakupSignals);
-    sigaddset(&threadWakupSignals, THREAD_WAKEUP_SIGNAL);
-    sigprocmask(SIG_BLOCK, &threadWakupSignals, NULL);
-    assert(sigismember(&threadWakupSignals, THREAD_WAKEUP_SIGNAL));
-
     struct sigaction sa;
     memset(&sa, 0, sizeof(struct sigaction));
     sigemptyset(&sa.sa_mask);
@@ -348,25 +341,25 @@ static void SetupYieldPointTrapHandler(void) {
 static void Synchronizer_WaitForResumption(MutatorThread *selfThread) {
     assert(selfThread == currentMutatorThread);
 #ifdef _WIN32
-    if (!ResetEvent(selfThread->wakeupEvent)) {
-        GC_LOG_WARN("Failed to reset event %lu", GetLastError());
-    }
     if (WAIT_OBJECT_0 !=
         WaitForSingleObject(selfThread->wakeupEvent, INFINITE)) {
         GC_LOG_ERROR("suspend thread failed: errno=%lu", GetLastError());
         exit(GetLastError());
     }
 #else
-    int signum;
-    int status = sigwait(&threadWakupSignals, &signum);
-    if (status != 0) {
-        int error = status > 0 ? status : errno;
-        // The caller re-checks stopThreads, so an interrupted wait is harmless.
-        if (error == EINTR)
-            return;
-        GC_LOG_ERROR("sigwait failed: %s", strerror(error));
-        exit(error);
-    }
+    // Not a signal: Darwin was seen to drop a SIGCONT wakeup. A pending flag
+    // keeps an early wakeup; a stale one only causes a stopThreads re-check.
+    // Without the trampoline redirect this runs in the trap handler; the lock
+    // is only taken here and in Synchronizer_ResumeThread.
+    // Cancellation in the wait would hold the lock the collector resumes with.
+    int oldCancelState;
+    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldCancelState);
+    pthread_mutex_lock(&selfThread->wakeupLock);
+    while (!selfThread->wakeupPending)
+        pthread_cond_wait(&selfThread->wakeupCond, &selfThread->wakeupLock);
+    selfThread->wakeupPending = false;
+    pthread_mutex_unlock(&selfThread->wakeupLock);
+    pthread_setcancelstate(oldCancelState, NULL);
 #endif
 }
 
@@ -377,10 +370,10 @@ static void Synchronizer_ResumeThread(MutatorThread *thread) {
         GC_LOG_ERROR("Failed to set event %lu", GetLastError());
     }
 #else
-    int status = pthread_kill(thread->thread, THREAD_WAKEUP_SIGNAL);
-    if (status != 0) {
-        GC_LOG_ERROR("Failed to resume thread after GC, retval: %d", status);
-    }
+    pthread_mutex_lock(&thread->wakeupLock);
+    thread->wakeupPending = true;
+    pthread_cond_signal(&thread->wakeupCond);
+    pthread_mutex_unlock(&thread->wakeupLock);
 #endif
 }
 
@@ -398,6 +391,8 @@ static void Synchronizer_ResumeThreads(void) {
     YieldPointTrap_disarmAllMutators();
     atomic_store_explicit(&Synchronizer_stopThreads, false,
                           memory_order_release);
+    // Pairs with the fence in Synchronizer_yield.
+    atomic_thread_fence(memory_order_seq_cst);
     MutatorThreads_foreach(mutatorThreads, node) {
         MutatorThread *thread = node->value;
         if (atomic_load_explicit(&thread->isWaiting, memory_order_acquire)) {
@@ -573,6 +568,8 @@ void Synchronizer_yield(void) {
     atomic_thread_fence(memory_order_seq_cst);
 
     atomic_store_explicit(&self->isWaiting, true, memory_order_release);
+    // Pairs with the fence in Synchronizer_ResumeThreads.
+    atomic_thread_fence(memory_order_seq_cst);
     while (
         atomic_load_explicit(&Synchronizer_stopThreads, memory_order_consume)) {
         Synchronizer_WaitForResumption(self);

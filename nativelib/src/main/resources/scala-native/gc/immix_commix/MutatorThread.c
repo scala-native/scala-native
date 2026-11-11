@@ -22,6 +22,21 @@
 #include "shared/YieldPointTrap.h"
 #endif
 
+#ifdef GC_WAKEUP_CONDVAR
+static bool MutatorThread_initWakeup(MutatorThread *self) {
+    self->wakeupPending = false;
+    self->wakeupInitialized = false;
+    if (pthread_mutex_init(&self->wakeupLock, NULL) != 0)
+        return false;
+    if (pthread_cond_init(&self->wakeupCond, NULL) != 0) {
+        pthread_mutex_destroy(&self->wakeupLock);
+        return false;
+    }
+    self->wakeupInitialized = true;
+    return true;
+}
+#endif
+
 static void MutatorThread_dispose(MutatorThread *self) {
 #ifdef _WIN32
     if (self->threadHandle != NULL)
@@ -34,6 +49,12 @@ static void MutatorThread_dispose(MutatorThread *self) {
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
     if (self->yieldpointTrap != NULL)
         YieldPointTrap_free(self->yieldpointTrap);
+#ifdef GC_WAKEUP_CONDVAR
+    if (self->wakeupInitialized) {
+        pthread_cond_destroy(&self->wakeupCond);
+        pthread_mutex_destroy(&self->wakeupLock);
+    }
+#endif
 #endif
     free(self);
 }
@@ -62,7 +83,8 @@ bool MutatorThread_register(Field_t *stackbottom) {
         goto failure;
     }
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
-    self->wakeupEvent = CreateEvent(NULL, true, false, NULL);
+    // Auto-reset: a wakeup set before the thread waits is not lost.
+    self->wakeupEvent = CreateEvent(NULL, false, false, NULL);
     if (self->wakeupEvent == NULL) {
         GC_LOG_ERROR("Failed to setup mutator thread wakeup event: errno=%lu",
                      GetLastError());
@@ -75,6 +97,14 @@ bool MutatorThread_register(Field_t *stackbottom) {
 #ifdef __linux__
     self->kernelThreadId = (pid_t)syscall(SYS_gettid);
 #endif
+#endif
+
+#ifdef GC_WAKEUP_CONDVAR
+    if (!MutatorThread_initWakeup(self)) {
+        GC_LOG_ERROR("Failed to setup mutator thread wakeup: %s",
+                     strerror(errno));
+        goto failure;
+    }
 #endif
 
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
@@ -270,6 +300,10 @@ void MutatorThreads_afterForkChild(void) {
 #ifdef __linux__
         // The child has a new kernel thread id.
         kept->value->kernelThreadId = (pid_t)syscall(SYS_gettid);
+#endif
+#ifdef GC_WAKEUP_CONDVAR
+        // Another thread may have held the lock at fork.
+        MutatorThread_initWakeup(kept->value);
 #endif
     }
     mutatorThreads = kept;

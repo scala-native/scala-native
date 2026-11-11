@@ -19,6 +19,11 @@
 #include <sys/types.h>
 #endif
 
+// POSIX trap mode resumes stopped threads with a condition variable.
+#if defined(SCALANATIVE_GC_USE_YIELDPOINT_TRAPS) && !defined(_WIN32)
+#define GC_WAKEUP_CONDVAR
+#endif
+
 typedef struct {
     _Atomic(GC_MutatorThreadState) state;
     atomic_intptr_t stackTop;
@@ -39,6 +44,13 @@ typedef struct {
     thread_t thread; // pthread_t - used for liveness check and signals
 #ifdef __linux__
     pid_t kernelThreadId;
+#endif
+#ifdef GC_WAKEUP_CONDVAR
+    // Thread wake-up (trap mode only)
+    pthread_mutex_t wakeupLock;
+    pthread_cond_t wakeupCond;
+    bool wakeupPending;
+    bool wakeupInitialized;
 #endif
 #endif
     ThreadInfo *threadInfo;

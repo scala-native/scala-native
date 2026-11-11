@@ -16,8 +16,8 @@ package object monitor {
    *
    * 64bit platforms
    * 64bit lock word as ThinMonitor =
-   * |------56bit-------|---7bit----|--1bit--|
-   * | threadID (owner) | recursion |   0    |
+   * |------56bit-------|----1bit---|---6bit----|--1bit--|
+   * | threadID (owner) | contended | recursion |   0    |
    *
    * InflatedMonitor contains reference to heavy-weight ObjectMonitor
    * 64bit lock word as InflatedMonitor
@@ -26,8 +26,12 @@ package object monitor {
    *
    * 32bit platforms
    * Thin monitor
-   * |------24bit-------|---7bit----|--1bit--|
-   * | threadID (owner) | recursion |   0    |
+   * |------24bit-------|----1bit---|---6bit----|--1bit--|
+   * | threadID (owner) | contended | recursion |   0    |
+   *
+   * The contended bit is set by a thread waiting for a thin monitor; the
+   * owner then inflates the monitor when exiting, so the waiter can queue on
+   * the ObjectMonitor instead of polling the thin lock.
    *
    * Fat monitor
    * |------31bit-------------------|--1bit--|
@@ -37,9 +41,12 @@ package object monitor {
   private[runtime] object LockWord {
     // For information why we use `def` instead of `val` see comments in the runtime/MemoryLayout
     @alwaysinline def RecursionOffset = 1
-    @alwaysinline def RecursionBits = 7
+    @alwaysinline def RecursionBits = 6
     @alwaysinline def ThinMonitorMaxRecursion = (1 << RecursionBits) - 1
     @alwaysinline def RecursionMask = ThinMonitorMaxRecursion << RecursionOffset
+
+    @alwaysinline def ContendedOffset = RecursionOffset + RecursionBits
+    @alwaysinline def ContendedMask = 1 << ContendedOffset
 
     @alwaysinline def ThreadIdOffset = 8
     @alwaysinline def ThreadIdBits = 56
@@ -106,6 +113,14 @@ package object monitor {
     @alwaysinline def recursionCount =
       if (is32bit) ((intValue & RecursionMask) >>> RecursionOffset).toInt
       else ((longValue & RecursionMask) >>> RecursionOffset).toInt
+
+    @alwaysinline def isContended =
+      if (is32bit) (intValue & ContendedMask) != 0
+      else (longValue & ContendedMask) != 0L
+
+    @alwaysinline def withContended: RawPtr =
+      if (is32bit) castIntToRawPtr(intValue | ContendedMask)
+      else castLongToRawPtr(longValue | ContendedMask)
 
     @alwaysinline def withIncreasedRecursion: RawPtr = {
       if (is32bit)

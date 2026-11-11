@@ -12,7 +12,7 @@ See `tools/.../AbstractCodeGen.scala` (GC yield lowering) and `gc/shared/YieldPo
 
 ## Why not call `Synchronizer_yield()` inside the signal handler?
 
-POSIX limits which library calls are **async-signal-safe** inside a signal handler. `Synchronizer_yield()` uses atomics, `sigwait`, and other runtime that is not in that set. Calling it directly from `sigaction` works on many platforms in practice but is fragile.
+POSIX limits which library calls are **async-signal-safe** inside a signal handler. `Synchronizer_yield()` uses atomics, a mutex and condition variable wait, and other runtime that is not in that set. Calling it directly from `sigaction` works on many platforms in practice but is fragile.
 
 In that family of VMs, the usual approach is: in the handler, **only** classify the fault, then **resume in normal thread context** at a small stub (or generated entry) that performs the real safepoint work—rather than running the full safepoint logic inside the async-signal handler.
 
