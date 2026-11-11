@@ -62,7 +62,8 @@ bool MutatorThread_register(Field_t *stackbottom) {
         goto failure;
     }
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
-    self->wakeupEvent = CreateEvent(NULL, true, false, NULL);
+    // Auto-reset, see Synchronizer_WaitForResumption
+    self->wakeupEvent = CreateEvent(NULL, false, false, NULL);
     if (self->wakeupEvent == NULL) {
         GC_LOG_ERROR("Failed to setup mutator thread wakeup event: errno=%lu",
                      GetLastError());

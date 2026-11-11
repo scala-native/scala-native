@@ -348,9 +348,10 @@ static void SetupYieldPointTrapHandler(void) {
 static void Synchronizer_WaitForResumption(MutatorThread *selfThread) {
     assert(selfThread == currentMutatorThread);
 #ifdef _WIN32
-    if (!ResetEvent(selfThread->wakeupEvent)) {
-        GC_LOG_WARN("Failed to reset event %lu", GetLastError());
-    }
+    // Auto-reset event: a resume signalled after the caller read stopThreads
+    // stays pending. Resetting it here would lose that wake-up and block the
+    // thread until the next collection. A stale signal only causes one more
+    // check of stopThreads.
     if (WAIT_OBJECT_0 !=
         WaitForSingleObject(selfThread->wakeupEvent, INFINITE)) {
         GC_LOG_ERROR("suspend thread failed: errno=%lu", GetLastError());
@@ -398,6 +399,9 @@ static void Synchronizer_ResumeThreads(void) {
     YieldPointTrap_disarmAllMutators();
     atomic_store_explicit(&Synchronizer_stopThreads, false,
                           memory_order_release);
+    // Store-load barrier, pairs with the one in Synchronizer_yield: either
+    // we see isWaiting and wake the thread, or it sees stopThreads cleared.
+    atomic_thread_fence(memory_order_seq_cst);
     MutatorThreads_foreach(mutatorThreads, node) {
         MutatorThread *thread = node->value;
         if (atomic_load_explicit(&thread->isWaiting, memory_order_acquire)) {
@@ -573,6 +577,8 @@ void Synchronizer_yield(void) {
     atomic_thread_fence(memory_order_seq_cst);
 
     atomic_store_explicit(&self->isWaiting, true, memory_order_release);
+    // Store-load barrier, see Synchronizer_ResumeThreads.
+    atomic_thread_fence(memory_order_seq_cst);
     while (
         atomic_load_explicit(&Synchronizer_stopThreads, memory_order_consume)) {
         Synchronizer_WaitForResumption(self);
