@@ -33,11 +33,13 @@ def runCapped(
     maxHeap: String,
     args: Seq[String],
     log: sbt.util.Logger,
-    gcLog: Option[java.io.File] = None
+    gcLog: Option[java.io.File] = None,
+    env: Map[String, String] = Map.empty
 ): Unit = {
   val process = new ProcessBuilder((binary.getAbsolutePath +: args): _*)
   process.environment().put("GC_INITIAL_HEAP_SIZE", "1M")
   process.environment().put("GC_MAXIMUM_HEAP_SIZE", maxHeap)
+  env.foreach { case (name, value) => process.environment().put(name, value) }
   gcLog.foreach { file =>
     IO.delete(file)
     process.environment().put("SCALANATIVE_GC_LOG_LEVEL", "debug")
@@ -62,6 +64,10 @@ lazy val runIdleMutators = taskKey[Unit](
   "A list that fits a heap cap with no idle threads must fit it with 16"
 )
 
+lazy val runChurnGrowth = taskKey[Unit](
+  "Fast allocation with little kept alive must grow the heap"
+)
+
 lazy val runFragmentedExhaustion = taskKey[Unit](
   "Unbounded growth among garbage must end in OutOfMemoryError"
 )
@@ -75,6 +81,34 @@ runIdleMutators := {
   // collection used to raise the requirement to well past this cap.
   runCapped(binary, "128M", Seq("idle", "0", "300000"), log)
   runCapped(binary, "128M", Seq("idle", "16", "300000"), log)
+}
+
+runChurnGrowth := {
+  implicit val conv: xsbti.FileConverter = Keys.fileConverter.value
+  val binary = nativeExecutable((Compile / nativeLink).value)
+  val log = streams.value.log
+  // Immix grew only when less than half of the heap was free, so a program
+  // keeping almost nothing alive collected thousands of times a second in
+  // its initial heap. Collections taking GC_TIME_RATIO of the time must grow
+  // it; a low ratio makes that certain on any machine.
+  val gcLog = target.value / "churn-gc.log"
+  runCapped(
+    binary,
+    "256M",
+    Seq("churn", "2048"),
+    log,
+    Some(gcLog),
+    Map("GC_TIME_RATIO" -> "0.01")
+  )
+  val Grown = """.*Growing heap by \d+ bytes, to (\d+) bytes.*""".r
+  val heapSize = IO
+    .readLines(gcLog)
+    .collect { case Grown(size) => size.toLong }
+    .lastOption
+    .getOrElse(0L)
+  log.info(s"churn grew the heap to $heapSize bytes")
+  if (heapSize < 16L * 1024 * 1024)
+    sys.error(s"churn left the heap at $heapSize bytes")
 }
 
 runFragmentedExhaustion := {
