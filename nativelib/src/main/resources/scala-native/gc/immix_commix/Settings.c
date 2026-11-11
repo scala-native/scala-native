@@ -31,8 +31,10 @@ double Settings_Ratio(const char *name, double defaultRatio) {
     if (str == NULL)
         return defaultRatio;
     double ratio;
-    if (sscanf(str, "%lf", &ratio) != 1) {
-        GC_LOG_WARN("Ignoring %s=%s, which is not a number", name, str);
+    // The negated range check also rejects NaN.
+    if (sscanf(str, "%lf", &ratio) != 1 || !(ratio >= 0.0 && ratio <= 1.0)) {
+        GC_LOG_WARN("Ignoring %s=%s, which is not a number between 0 and 1",
+                    name, str);
         return defaultRatio;
     }
     return ratio;
