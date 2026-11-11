@@ -149,7 +149,12 @@ static bool Allocator_claimRecycled(Allocator *allocator, size_t size) {
         Allocator_claimFromList(allocator, &blockAllocator->rejectedBlocks,
                                 size))
         return true;
-    return Allocator_claimFromList(allocator, &blockAllocator->recycledBlocks,
+    if (Allocator_claimFromList(allocator, &blockAllocator->recycledBlocks,
+                                size))
+        return true;
+    // A medium allocation may have rejected a recycled block meanwhile.
+    return size <= LINE_SIZE &&
+           Allocator_claimFromList(allocator, &blockAllocator->rejectedBlocks,
                                    size);
 }
 
