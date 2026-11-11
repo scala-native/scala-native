@@ -393,7 +393,8 @@ class StampedLock extends Serializable {
   }
 
   private def releaseWrite(s: Long): Long = {
-    val nextState = { state = unlockWriteState(s); state }
+    val nextState = unlockWriteState(s)
+    state = nextState
     signalNext(head)
     nextState
   }
@@ -526,9 +527,9 @@ class StampedLock extends Serializable {
     val nanos = unit.toNanos(time)
 
     if (!Thread.interrupted()) {
-      var nextState = tryAcquireRead()
+      var nextState = 0L
 
-      if ((tail == head) && nextState != 0L)
+      if ((tail == head) && { nextState = tryAcquireRead(); nextState } != 0L)
         return nextState
       if (nanos <= 0L)
         return 0L
@@ -621,7 +622,7 @@ class StampedLock extends Serializable {
     if ((stamp & RBITS) != 0L) {
       var s = 0L
       var m = 0L
-      while (({ s = state; state } & SBITS) == (stamp & SBITS) &&
+      while (({ s = state; s } & SBITS) == (stamp & SBITS) &&
           ({ m = s & RBITS; m } != 0L)) {
         if (m < RFULL) {
           if (casState(s, s - RUNIT)) {
@@ -720,8 +721,8 @@ class StampedLock extends Serializable {
         if (s != stamp) // write stamp
           done = true
         else {
-          state = unlockWriteState(s) + RUNIT
-          nextState = state
+          nextState = unlockWriteState(s) + RUNIT
+          state = nextState
           signalNext(head)
           return nextState
         }
@@ -1005,10 +1006,10 @@ class StampedLock extends Serializable {
   }
 
   final def unstampedUnlockRead(): Unit = {
-    val s = state
-    val m = s & RBITS
+    var s = 0L
+    var m = 0L
 
-    while (m > 0L) {
+    while ({ s = state; m = s & RBITS; m } > 0L) {
       if (m < RFULL) {
         if (casState(s, s - RUNIT)) {
           if (m == RUNIT)
@@ -1070,7 +1071,8 @@ class StampedLock extends Serializable {
         nextState = s - RUNIT
       }
 
-      return { state = nextState; state }
+      state = nextState
+      return nextState
     }
 
     0L

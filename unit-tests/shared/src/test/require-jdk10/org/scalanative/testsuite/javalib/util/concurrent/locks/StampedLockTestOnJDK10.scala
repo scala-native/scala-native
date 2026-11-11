@@ -1588,7 +1588,7 @@ class StampedLockTestOnJDK10 extends JSR166Test {
     val testDurationMillis = if (expensiveTests) 1000 else 2
     val nTasks = ThreadLocalRandom.current().nextInt(1, 10)
     val done = new AtomicBoolean(false)
-    val futures = new ArrayList[Future[_]]()
+    val futures = new ArrayList[CompletableFuture[Void]]()
 
     val stampedWriteLockers: List[Callable[Long]] = List.of(
       () => sl.writeLock(),
@@ -1734,7 +1734,51 @@ class StampedLockTestOnJDK10 extends JSR166Test {
     Thread.sleep(testDurationMillis)
 
     done.setRelease(true)
-    for (i <- 0 until futures.size())
-      futures.get(i).cancel(true)
+    futures.forEach(future => checkTimedGet(future, null: Void))
+  }
+
+  /* SN: a timed tryReadLock must not take a read hold that it then drops
+   * while a writer is queued. Leaked holds overflow the reader count and
+   * starve the writer forever.
+   */
+  @Test def testTimedTryReadLockWithQueuedWriterDoesNotLeakReadHolds(): Unit = {
+    val lock = new StampedLock()
+    val stamp = lock.readLock()
+    val writer = newStartedThread(new CheckedRunnable() {
+      def realRun(): Unit = lock.unlockWrite(lock.writeLock())
+    })
+    waitForThreadToEnterWaitState(writer)
+
+    // More than the 126 reader holds that fit in the state word.
+    for (_ <- 0 until 300)
+      assertEquals(0L, lock.tryReadLock(0L, DAYS))
+    assertEquals(1, lock.getReadLockCount())
+
+    lock.unlockRead(stamp)
+    awaitTermination(writer)
+    assertUnlocked(lock)
+  }
+
+  /* SN: the read lock view's unlock must retry its CAS against the current
+   * state; retrying with a stale state spins forever and keeps the hold.
+   */
+  @Test def testReadLockViewUnlockUnderContention(): Unit = {
+    val lock = new StampedLock()
+    val rl = lock.asReadLock()
+    val done = new AtomicBoolean(false)
+    val threads = new ArrayList[Thread]()
+    for (_ <- 0 until 4)
+      threads.add(newStartedThread(new CheckedRunnable() {
+        def realRun(): Unit =
+          while (!done.getAcquire()) {
+            rl.lock()
+            rl.unlock()
+          }
+      }))
+
+    Thread.sleep(100)
+    done.setRelease(true)
+    threads.forEach(t => awaitTermination(t))
+    assertUnlocked(lock)
   }
 }
