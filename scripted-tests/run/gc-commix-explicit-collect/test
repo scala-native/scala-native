@@ -4,5 +4,9 @@
 # Many small live objects must not grow it for mark time either (#2436).
 
 > set nativeConfig ~= { _.withGC(scala.scalanative.build.GC.commix) }
-> runExplicitCollectGrowth 64M
-> runExplicitCollectGrowth 512M mark-time
+> runWithMaxHeap 64M
+> runWithMaxHeap 512M mark-time
+
+# Marking must not hang when the grey set outgrows the grey packet pool (1% of
+# the maximum heap): markers waited for an empty packet while holding them all.
+> runWithMaxHeap 128M grey-packet-overflow

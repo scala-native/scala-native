@@ -7,6 +7,9 @@
 void WeakReferences_NullifyAndScale(Heap *heap, Stats *stats);
 void WeakReferences_Nullify(Heap *heap, Stats *stats);
 void WeakReferences_NullifyUntilDone(Heap *heap, Stats *stats);
+void WeakReferences_AddOverflow(Object *object);
+bool WeakReferences_HasOverflow();
+void WeakReferences_NullifyOverflow(Heap *heap);
 void WeakReferences_SetGCFinishedCallback(void *handler);
 void WeakReferences_InvokeGCFinishedCallback();
 

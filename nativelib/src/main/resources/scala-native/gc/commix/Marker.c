@@ -2,8 +2,11 @@
 #include "shared/GCTypes.h"
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <setjmp.h>
 #include "Marker.h"
+#include "WeakReferences.h"
 #include "immix_commix/Object.h"
 #include "State.h"
 #include "immix_commix/headers/ObjectHeader.h"
@@ -62,9 +65,62 @@ extern int __modules_size;
 // find any more full packets. If we left these threads running they would
 // continuously query for new packets spending CPU resources, slowing other
 // threads and not doing any work.
+//
+// The grey packet pool has a fixed size (GREY_PACKET_RATIO of the max heap),
+// while the grey set of a large live heap can exceed it. A marker that needs
+// an empty packet must never wait for one while it holds packets: every other
+// marker may be doing the same, and nobody would return any. Instead, objects
+// that find no packet go to a thread-local overflow stack, which the marker
+// drains through its own `in` packet before taking more work or returning its
+// packets. While a marker holds `in`, `Marker_IsMarkDone` stays false, so the
+// overflow is never lost. WeakReferences that find no packet are handed to
+// WeakReferences directly.
+
+typedef struct {
+    Object **items;
+    size_t size;
+    size_t capacity;
+} MarkOverflow;
+
+/* Marking runs on GC threads even in single-threaded builds, so this is
+ * always thread-local. */
+static _Thread_local MarkOverflow overflow;
+
+static void Marker_pushOverflow(Object *object) {
+    if (overflow.size == overflow.capacity) {
+        size_t capacity =
+            overflow.capacity == 0 ? GREY_PACKET_ITEMS : overflow.capacity * 2;
+        Object **items = realloc(overflow.items, capacity * sizeof(Object *));
+        if (items == NULL) {
+            Heap_exitWithOutOfMemory("for the mark overflow stack");
+        }
+        overflow.items = items;
+        overflow.capacity = capacity;
+    }
+    overflow.items[overflow.size++] = object;
+}
+
+static void Marker_releaseOverflow() {
+    assert(overflow.size == 0);
+    free(overflow.items);
+    overflow.items = NULL;
+    overflow.capacity = 0;
+}
+
+/* Moves up to a packet worth of overflow objects into an empty packet. */
+static void Marker_refillFromOverflow(GreyPacket *packet) {
+    assert(GreyPacket_IsEmpty(packet));
+    size_t count =
+        overflow.size < GREY_PACKET_ITEMS ? overflow.size : GREY_PACKET_ITEMS;
+    overflow.size -= count;
+    memcpy(packet->items, overflow.items + overflow.size,
+           count * sizeof(Stack_Type));
+    packet->size = (uint16_t)count;
+    packet->type = grey_packet_reflist;
+}
 
 /* May return NULL when all grey packets are in flight (e.g. many refrange
- * slices queued). Callers that must have a packet should use
+ * slices queued). Only a thread that holds no packets may wait for one, see
  * `Marker_takeEmptyPacket`. */
 static inline GreyPacket *Marker_tryTakeEmptyPacket(Heap *heap, Stats *stats) {
     return SyncGreyLists_takeEmptyPacket(heap, stats);
@@ -124,20 +180,32 @@ void Marker_markObject(Heap *heap, Stats *stats, GreyPacket **outHolder,
     Marker_markLockWords(heap, stats, outHolder, outWeakRefHolder, object);
 
     Object_Mark(heap, object, objectMeta);
-    GreyPacket *out;
     if (Object_IsWeakReference(object)) {
-        out = *outWeakRefHolder;
-        if (!GreyPacket_Push(out, object)) {
-            Marker_giveWeakRefPacket(heap, stats, out);
-            *outWeakRefHolder = out = Marker_takeEmptyPacket(heap, stats);
-            GreyPacket_Push(out, object);
+        GreyPacket *weakRefOut = *outWeakRefHolder;
+        if (weakRefOut == NULL || !GreyPacket_Push(weakRefOut, object)) {
+            if (weakRefOut != NULL) {
+                Marker_giveWeakRefPacket(heap, stats, weakRefOut);
+            }
+            *outWeakRefHolder = weakRefOut =
+                Marker_tryTakeEmptyPacket(heap, stats);
+            if (weakRefOut != NULL) {
+                GreyPacket_Push(weakRefOut, object);
+            } else {
+                WeakReferences_AddOverflow(object);
+            }
         }
     }
-    out = *outHolder;
-    if (!GreyPacket_Push(out, object)) {
-        Marker_giveFullPacket(heap, stats, out);
-        *outHolder = out = Marker_takeEmptyPacket(heap, stats);
-        GreyPacket_Push(out, object);
+    GreyPacket *out = *outHolder;
+    if (out == NULL || !GreyPacket_Push(out, object)) {
+        if (out != NULL) {
+            Marker_giveFullPacket(heap, stats, out);
+        }
+        *outHolder = out = Marker_tryTakeEmptyPacket(heap, stats);
+        if (out != NULL) {
+            GreyPacket_Push(out, object);
+        } else {
+            Marker_pushOverflow(object);
+        }
     }
 }
 
@@ -332,10 +400,11 @@ static inline void Marker_splitIncomingPacket(Heap *heap, Stats *stats,
     }
 }
 
+/* Stays NULL when no packet is free; Marker_markObject then overflows. */
 static inline void Marker_RetakeIfNull(Heap *heap, Stats *stats,
                                        GreyPacket **outHolder) {
     if (*outHolder == NULL) {
-        *outHolder = Marker_takeEmptyPacket(heap, stats);
+        *outHolder = Marker_tryTakeEmptyPacket(heap, stats);
     }
 }
 
@@ -398,46 +467,32 @@ static inline void Marker_markBatch(Heap *heap, Stats *stats, GreyPacket *in,
     Stats_RecordEventBatches(stats, event_mark_batch, start_ns, end_ns);
 }
 
-void Marker_Mark(Heap *heap, Stats *stats) {
-    GreyPacket *in = Marker_takeFullPacket(heap, stats);
-    GreyPacket *out = NULL;
-    GreyPacket *weakRefOut = NULL;
-    while (in != NULL) {
-        Marker_markBatch(heap, stats, in, &out, &weakRefOut);
-
-        assert(out != NULL);
-        assert(GreyPacket_IsEmpty(in));
-        GreyPacket *next = Marker_takeFullPacket(heap, stats);
-        if (next != NULL) {
-            Marker_giveEmptyPacket(heap, stats, in);
-        } else {
-            if (!GreyPacket_IsEmpty(out)) {
-                // use the out packet as source
-                next = out;
-                out = in;
-            } else {
-                // next == NULL, exits
-                Marker_giveEmptyPacket(heap, stats, in);
-                Marker_giveEmptyPacket(heap, stats, out);
-                Marker_giveWeakRefPacket(heap, stats, weakRefOut);
+/* Picks the next packet to mark after `in` has been emptied, or returns NULL
+ * after giving back all packets held by this thread. */
+static inline GreyPacket *Marker_nextPacket(Heap *heap, Stats *stats,
+                                            GreyPacket *in,
+                                            GreyPacket **outHolder,
+                                            GreyPacket **outWeakRefHolder,
+                                            bool scale) {
+    assert(GreyPacket_IsEmpty(in));
+    if (overflow.size > 0) {
+        // Let other markers help when packets are free again.
+        while (overflow.size > GREY_PACKET_ITEMS) {
+            GreyPacket *slice = Marker_tryTakeEmptyPacket(heap, stats);
+            if (slice == NULL) {
+                break;
             }
+            Marker_refillFromOverflow(slice);
+            Marker_giveFullPacket(heap, stats, slice);
         }
-        in = next;
+        Marker_refillFromOverflow(in);
+        return in;
     }
-}
-
-void Marker_MarkAndScale(Heap *heap, Stats *stats) {
-    GreyPacket *in = Marker_takeFullPacket(heap, stats);
-    GreyPacket *out = NULL;
-    GreyPacket *weakRefOut = NULL;
-    while (in != NULL) {
-        Marker_markBatch(heap, stats, in, &out, &weakRefOut);
-
-        assert(out != NULL);
-        assert(GreyPacket_IsEmpty(in));
-        GreyPacket *next = Marker_takeFullPacket(heap, stats);
-        if (next != NULL) {
-            Marker_giveEmptyPacket(heap, stats, in);
+    GreyPacket *out = *outHolder;
+    GreyPacket *next = Marker_takeFullPacket(heap, stats);
+    if (next != NULL) {
+        Marker_giveEmptyPacket(heap, stats, in);
+        if (scale) {
             uint32_t remainingFullPackets =
                 UInt24_toUInt32(next->next.sep.size);
             // Make sure than enough worker threads are running
@@ -447,20 +502,41 @@ void Marker_MarkAndScale(Heap *heap, Stats *stats) {
             // get a packet and do useful work. Others would add unnecessary
             // overhead by checking the list of full packets.
             GCThread_ScaleMarkerThreads(heap, remainingFullPackets);
-        } else {
-            if (!GreyPacket_IsEmpty(out)) {
-                // use the out packet as source
-                next = out;
-                out = in;
-            } else {
-                // next == NULL, exits
-                Marker_giveEmptyPacket(heap, stats, in);
-                Marker_giveEmptyPacket(heap, stats, out);
-                Marker_giveWeakRefPacket(heap, stats, weakRefOut);
-            }
         }
-        in = next;
+    } else if (out != NULL && !GreyPacket_IsEmpty(out)) {
+        // use the out packet as source
+        next = out;
+        *outHolder = in;
+    } else {
+        // next == NULL, exits
+        Marker_giveEmptyPacket(heap, stats, in);
+        if (out != NULL) {
+            Marker_giveEmptyPacket(heap, stats, out);
+        }
+        if (*outWeakRefHolder != NULL) {
+            Marker_giveWeakRefPacket(heap, stats, *outWeakRefHolder);
+        }
+        Marker_releaseOverflow();
     }
+    return next;
+}
+
+static inline void Marker_markLoop(Heap *heap, Stats *stats, bool scale) {
+    GreyPacket *in = Marker_takeFullPacket(heap, stats);
+    GreyPacket *out = NULL;
+    GreyPacket *weakRefOut = NULL;
+    while (in != NULL) {
+        Marker_markBatch(heap, stats, in, &out, &weakRefOut);
+        in = Marker_nextPacket(heap, stats, in, &out, &weakRefOut, scale);
+    }
+}
+
+void Marker_Mark(Heap *heap, Stats *stats) {
+    Marker_markLoop(heap, stats, false);
+}
+
+void Marker_MarkAndScale(Heap *heap, Stats *stats) {
+    Marker_markLoop(heap, stats, true);
 }
 
 void Marker_MarkUntilDone(Heap *heap, Stats *stats) {
@@ -556,16 +632,32 @@ void Marker_markCustomRoots(Heap *heap, Stats *stats, GreyPacket **outHolder,
 void Marker_MarkRoots(Heap *heap, Stats *stats) {
     atomic_thread_fence(memory_order_seq_cst);
 
-    GreyPacket *out = Marker_takeEmptyPacket(heap, stats);
-    GreyPacket *weakRefOut = Marker_takeEmptyPacket(heap, stats);
+    GreyPacket *out = Marker_tryTakeEmptyPacket(heap, stats);
+    GreyPacket *weakRefOut = Marker_tryTakeEmptyPacket(heap, stats);
     MutatorThreads_foreach(mutatorThreads, node) {
         MutatorThread *thread = node->value;
         Marker_markProgramStack(thread, heap, stats, &out, &weakRefOut);
     }
     Marker_markModules(heap, stats, &out, &weakRefOut);
     Marker_markCustomRoots(heap, stats, &out, &weakRefOut, customRoots);
-    Marker_giveFullPacket(heap, stats, out);
-    Marker_giveWeakRefPacket(heap, stats, weakRefOut);
+    if (out != NULL) {
+        if (GreyPacket_IsEmpty(out)) {
+            Marker_giveEmptyPacket(heap, stats, out);
+        } else {
+            Marker_giveFullPacket(heap, stats, out);
+        }
+    }
+    if (weakRefOut != NULL) {
+        Marker_giveWeakRefPacket(heap, stats, weakRefOut);
+    }
+    // Roots that found no packet. This thread holds no packets now, so it can
+    // wait for the markers to return some.
+    while (overflow.size > 0) {
+        GreyPacket *packet = Marker_takeEmptyPacket(heap, stats);
+        Marker_refillFromOverflow(packet);
+        Marker_giveFullPacket(heap, stats, packet);
+    }
+    Marker_releaseOverflow();
 }
 
 bool Marker_IsMarkDone(Heap *heap) {
