@@ -18,7 +18,7 @@ static void virtual_identity(void) {
     exit(64);
 #endif
 }
-#ifdef __cplusplus
+#if defined(__cplusplus) && defined(EXTERNAL_RECLAIMING_GC)
 static void *check_released_exception(void *unused) {
     (void)unused;
     external_exception_reclaimed();
@@ -43,8 +43,9 @@ static void exception_lifetime(void) {
         milestone("exception-retained");
     }
     CHECK(caught);
-#ifdef EXTERNAL_COLLECTING_GC
+#ifdef EXTERNAL_RECLAIMING_GC
     /* Exclude stale pointers on the collecting host's suspended native stack.
+     * Boehm scans conservatively and may legitimately retain the exception.
      */
 
     worker_join(worker_start(check_released_exception, NULL));
@@ -65,8 +66,9 @@ static void exception_lifetime(void) {
      */
     std::thread release([&retained] { retained = nullptr; });
     release.join();
-#ifdef EXTERNAL_COLLECTING_GC
+#ifdef EXTERNAL_RECLAIMING_GC
     /* Exclude stale pointers on the collecting host's suspended native stack.
+     * Boehm scans conservatively and may legitimately retain the exception.
      */
 
     worker_join(worker_start(check_released_exception, NULL));
