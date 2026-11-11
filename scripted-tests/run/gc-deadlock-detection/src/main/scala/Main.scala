@@ -1,4 +1,6 @@
+import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 
 /** GC Deadlock Detection Test - Main Entry Point
  *
@@ -17,6 +19,7 @@ import scala.scalanative.unsafe._
 object Main {
   def main(args: Array[String]): Unit = {
     val mode = if (args.length > 0) args(0) else "help"
+    disableCoreDumps()
 
     mode match {
       case "correct"   => CorrectScenario.run()
@@ -36,4 +39,20 @@ object Main {
         System.exit(1)
     }
   }
+
+  /** Scenarios end in an intentional abort(). Piped core handlers (e.g.
+   *  systemd-coredump on CI runners) ignore RLIMIT_CORE=0 and dump the whole
+   *  reserved GC heap, which can outlast the test timeout. A limit of 1 makes
+   *  the kernel skip the dump for both piped and file core patterns.
+   */
+  private def disableCoreDumps(): Unit =
+    if (!LinktimeInfo.isWindows) {
+      import scala.scalanative.posix.sys.resource._
+      import scala.scalanative.posix.sys.resourceOps._
+      val limit = stackalloc[rlimit]()
+      if (getrlimit(RLIMIT_CORE, limit) == 0) {
+        limit.rlim_cur = 1.toUSize
+        setrlimit(RLIMIT_CORE, limit)
+      }
+    }
 }
