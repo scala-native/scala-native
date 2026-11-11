@@ -33,7 +33,7 @@ class AdaptLazyVals(defnNir: NirDefinitions) {
   private def compilerUsesVarHandles(using Context) = currentScalaVersion
     .exists {
       case SpecificScalaVersion(3, 3, patch, _) if patch >= 8 =>
-        // For source compatibility we need cannot refer to the setting directlly, defined only in Scala 3.3 series starting with 3.3.8
+        // For source compatibility we need cannot refer to the setting directlly, defined only in Scala 3.3 series starting with 3.3.9
         ctx.settings.allSettings
           .find(_.name == "-Yfuture-lazy-vals")
           .orElse {
