@@ -351,6 +351,10 @@ word_t *Allocator_lazySweep(Allocator *allocator, Heap *heap, uint32_t size) {
             atomic_thread_fence(memory_order_acquire);
         }
     }
+    // Coalescing, and growth after the collection, can free blocks between
+    // the last attempt above and the end of the sweep.
+    if (object == NULL)
+        object = Allocator_tryAlloc(allocator, size);
     Stats_RecordTime(stats, end_ns);
     Stats_RecordEvent(stats, event_sweep, start_ns, end_ns);
     return object;
@@ -398,7 +402,10 @@ NOINLINE word_t *Allocator_allocSlow(Allocator *allocator, Heap *heap,
         }
 
         if (Sweeper_IsSweepDone(heap)) {
-            object = Allocator_allocRecycled(allocator, size);
+            // The sweep may have ended after the attempt above.
+            object = Allocator_tryAlloc(allocator, size);
+            if (object == NULL)
+                object = Allocator_allocRecycled(allocator, size);
             if (object != NULL)
                 goto done;
         }
