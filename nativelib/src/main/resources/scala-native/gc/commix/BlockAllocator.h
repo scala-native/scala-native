@@ -26,6 +26,9 @@ typedef struct {
     // Swept blocks with free lines, shared by all mutators. A list per
     // mutator would leave the lines given to idle threads unused.
     BlockList recycledBlocks;
+    // Recycled blocks a medium allocation found no room in. Their lines still
+    // serve small objects on any mutator.
+    BlockList rejectedBlocks;
     // Not decremented on allocation.
     atomic_uint_fast32_t recycledBlockCount;
     atomic_uintptr_t reservedSuperblock;

@@ -110,9 +110,17 @@ static bool Allocator_useRecycledBlock(Allocator *allocator, BlockMeta *block,
         return true;
     }
     bool found = Allocator_takeMediumHole(allocator, block, blockStart, size);
-    if (BlockMeta_FirstFreeLine(block) != LAST_HOLE)
+    if (!found) {
+        // Untouched: any mutator may take its lines for small objects. Kept
+        // private, one thread could take every recycled block out of reach
+        // of the others, and they would grow the heap instead.
+        BlockList_Push(&allocator->blockAllocator->rejectedBlocks,
+                       allocator->blockMetaStart, block);
+    } else if (BlockMeta_FirstFreeLine(block) != LAST_HOLE) {
+        // Still this mutator's medium block: no other thread may use it.
         LocalBlockList_Push(&allocator->parkedBlocks, allocator->blockMetaStart,
                             block);
+    }
     return found;
 }
 
@@ -129,14 +137,20 @@ static bool Allocator_claimFromList(Allocator *allocator, BlockList *list,
 // After a collection, take free lines from recycled blocks, including holes
 // too small for the fast path, before growing the heap.
 static bool Allocator_claimRecycled(Allocator *allocator, size_t size) {
+    BlockAllocator *blockAllocator = allocator->blockAllocator;
     if (size > LINE_SIZE &&
         (Allocator_takeMediumHole(allocator, allocator->largeBlock,
                                   allocator->largeBlockStart, size) ||
          Allocator_takeMediumHole(allocator, allocator->block,
                                   allocator->blockStart, size)))
         return true;
-    return Allocator_claimFromList(
-        allocator, &allocator->blockAllocator->recycledBlocks, size);
+    // Any free line fits a small object.
+    if (size <= LINE_SIZE &&
+        Allocator_claimFromList(allocator, &blockAllocator->rejectedBlocks,
+                                size))
+        return true;
+    return Allocator_claimFromList(allocator, &blockAllocator->recycledBlocks,
+                                   size);
 }
 
 static word_t *Allocator_allocRecycled(Allocator *allocator, size_t size) {
@@ -259,6 +273,10 @@ bool Allocator_getNextLine(Allocator *allocator) {
 bool Allocator_newBlock(Allocator *allocator) {
     word_t *blockMetaStart = allocator->blockMetaStart;
     BlockMeta *block = Allocator_popParked(allocator);
+    if (block == NULL) {
+        block = BlockList_Pop(&allocator->blockAllocator->rejectedBlocks,
+                              blockMetaStart);
+    }
     if (block == NULL) {
         block = BlockList_Pop(&allocator->blockAllocator->recycledBlocks,
                               blockMetaStart);
