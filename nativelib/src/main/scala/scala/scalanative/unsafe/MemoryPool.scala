@@ -1,7 +1,7 @@
 package scala.scalanative.unsafe
 
 import scala.scalanative.meta.LinktimeInfo.asanEnabled
-import scala.scalanative.runtime.{Intrinsics, RawPtr, ffi, fromRawPtr}
+import scala.scalanative.runtime.{GC, Intrinsics, RawPtr, ffi, fromRawPtr}
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 
@@ -12,6 +12,9 @@ import scala.scalanative.unsigned._
  *  Pages and chunks are organized in an intrusive linked list way to minimise
  *  memory overhead and re-use the same nodes for the whole lifetime of the
  *  pool.
+ *
+ *  Chunks are registered as GC roots for the lifetime of the pool, so objects
+ *  referenced from zone memory stay alive. Free pages are always zeroed.
  *
  *  Memory is reclaimed back to underlying allocator once the pool is finalized.
  */
@@ -27,13 +30,18 @@ private[unsafe] final class MemoryPool private {
       chunkPageCount *= 2.toUSize
     }
     val chunkSize = MemoryPool.PAGE_SIZE * chunkPageCount
-    val start = ffi.malloc(chunkSize)
+    val start = ffi.calloc(chunkSize.rawSize, 1.toUSize.rawSize)
+    val ptr = fromRawPtr[Byte](start)
+    if (ptr == null) throw new OutOfMemoryError("Zone memory pool")
+    GC.addRoots(ptr, ptr + chunkSize)
     chunk = new MemoryPool.Chunk(start, 0.toUSize, chunkSize, chunk)
   }
 
   /** Released all claimed memory chunks */
   private[scalanative] def freeChunks(): Unit = synchronized {
     while (chunk != null) {
+      val ptr = fromRawPtr[Byte](chunk.start)
+      GC.removeRoots(ptr, ptr + chunk.size)
       ffi.free(chunk.start)
       chunk = chunk.next
     }
@@ -95,13 +103,12 @@ private[unsafe] object MemoryPool {
 
 /** An optimized implementation of a zone that performs all allocations
  *  sequentially in pages that are claimed from memory pool. Larger allocations
- *  are allocated using the system allocator and persisted in an array buffer.
+ *  are allocated using the system allocator and tracked in a linked list.
  */
 final class MemoryPoolZone(private val pool: MemoryPool) extends Zone {
   private var tailPage = pool.claim()
   private var headPage = tailPage
-  private var largeAllocations: scala.Array[CVoidPtr] = null
-  private var largeOffset = 0
+  private var largeAllocations: MemoryPoolZone.LargeAllocation = null
 
   private def checkOpen(): Unit =
     if (!isOpen)
@@ -122,20 +129,24 @@ final class MemoryPoolZone(private val pool: MemoryPool) extends Zone {
   override def close(): Unit = {
     checkOpen()
 
-    // Reclaim borrowed pages to the memory pool.
+    // Reclaim borrowed pages to the memory pool, free pages must be zeroed.
+    var page = headPage
+    while (page != null) {
+      ffi.memset(page.start, 0, page.offset.rawSize)
+      page = page.next
+    }
     pool.reclaim(headPage, tailPage)
     headPage = null
     tailPage = null
 
     // Free all large allocations which were allocated with malloc.
-    if (largeAllocations != null) {
-      var i = 0
-      while (i < largeOffset) {
-        ffi.free(largeAllocations(i))
-        i += 1
-      }
-      largeAllocations = null
+    var large = largeAllocations
+    while (large != null) {
+      GC.removeRoots(large.start, large.start + large.size)
+      ffi.free(large.start)
+      large = large.next
     }
+    largeAllocations = null
   }
 
   override def alloc(usize: CSize): Ptr[Byte] = {
@@ -179,30 +190,22 @@ final class MemoryPoolZone(private val pool: MemoryPool) extends Zone {
   }
 
   private def allocLarge(size: CSize): Ptr[Byte] = {
-    if (largeAllocations == null) {
-      largeAllocations = new scala.Array[CVoidPtr](16)
-    }
-    if (largeOffset == largeAllocations.length) {
-      val newLargeAllocations =
-        new scala.Array[CVoidPtr](largeAllocations.length * 2)
-      Array.copy(
-        largeAllocations,
-        0,
-        newLargeAllocations,
-        0,
-        largeAllocations.length
-      )
-      largeAllocations = newLargeAllocations
-    }
     val result = fromRawPtr[Byte](ffi.malloc(size))
-    largeAllocations(largeOffset) = result
-    largeOffset += 1
-
+    if (result == null) throw new OutOfMemoryError("Zone large allocation")
+    GC.addRoots(result, result + size)
+    largeAllocations =
+      new MemoryPoolZone.LargeAllocation(result, size, largeAllocations)
     result
   }
 }
 
 private[unsafe] object MemoryPoolZone {
+  private final class LargeAllocation(
+      val start: Ptr[Byte],
+      val size: CSize,
+      val next: LargeAllocation
+  )
+
   def open(pool: MemoryPool): MemoryPoolZone =
     new MemoryPoolZone(pool)
 }

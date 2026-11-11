@@ -19,8 +19,10 @@ cp -r "$LIBUNWIND_FOLDER/include/"* "$TARGET_FOLDER/"
 #       (clang -O2, exception_object == NULL) without optnone.
 # 0002: compact-unwind PAuth-LR, plus the Apple Silicon guards that skip
 #       CNTD and autib171615 when the CPU does not implement them.
+# 0003: skip ld64.lld's duplicate encoding 0 __unwind_info entries (#4882).
 git apply "$SCALANATIVE_FOLDER/scripts/patches/0001-libunwind-raise-exception-optnone.patch" || exit 1
 git apply "$SCALANATIVE_FOLDER/scripts/patches/0002-libunwind-pauth-lr-and-apple-feature-checks.patch" || exit 1
+git apply "$SCALANATIVE_FOLDER/scripts/patches/0003-libunwind-skip-lld-duplicate-no-unwind-entries.patch" || exit 1
 
 # Enable recursive globbing for zsh
 setopt extended_glob

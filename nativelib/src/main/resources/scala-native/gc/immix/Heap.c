@@ -227,7 +227,7 @@ static bool Heap_overheadLimitReached(Heap *heap, uint64_t start_ns,
 static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
                          uint64_t generation) {
     SpillCalleeSavedRegisters();
-    // Stopping the other mutators is part of the collection's cost.
+    // Stopping the other mutators is part of the pause.
     uint64_t request_ns = Time_current_nanos();
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     if (!(allocationSize == 0 ? Synchronizer_acquire()
@@ -293,7 +293,7 @@ static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
     heap->lastCollectionEndNs = end_ns;
     jmx_stats_record_collection(start_ns, end_ns);
     if (stats != NULL) {
-        Stats_RecordCollection(stats, start_ns, nullify_start_ns,
+        Stats_RecordCollection(stats, request_ns, start_ns, nullify_start_ns,
                                sweep_start_ns, end_ns);
     }
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED

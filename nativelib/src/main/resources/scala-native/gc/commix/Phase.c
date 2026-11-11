@@ -108,7 +108,8 @@ void Phase_MarkDone(Heap *heap) {
 }
 
 void Phase_Nullify(Heap *heap, Stats *stats) {
-    if (GreyList_Size(&heap->mark.foundWeakRefs) != 0) {
+    if (GreyList_Size(&heap->mark.foundWeakRefs) != 0 ||
+        WeakReferences_HasOverflow()) {
         uint64_t nullifyStart = Time_current_nanos();
         Phase_Set(heap, gc_nullify);
         // make sure all threads see the phase change
@@ -117,6 +118,7 @@ void Phase_Nullify(Heap *heap, Stats *stats) {
         GCThread_WakeMaster(heap);
         WeakReferences_NullifyUntilDone(heap, stats);
         Phase_Set(heap, gc_idle);
+        WeakReferences_NullifyOverflow(heap);
 
         uint64_t nullifyEnd = Time_current_nanos();
         Stats_RecordEvent(stats, event_nullify, nullifyStart, nullifyEnd);
@@ -182,8 +184,10 @@ void Phase_SweepDone(Heap *heap, Stats *stats) {
         Phase_Set(heap, gc_idle);
 
         Stats_RecordTime(stats, end_ns);
-        Stats_RecordEvent(stats, event_collection,
-                          heap->stats->collection_start_ns, end_ns);
+        if (heap->stats != NULL) {
+            Stats_RecordEvent(stats, event_collection,
+                              heap->stats->collection_start_ns, end_ns);
+        }
 
         jmx_stats_record_collection(heap->gcCollectionStart_ns,
                                     Time_current_nanos());

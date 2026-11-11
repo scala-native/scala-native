@@ -1,0 +1,99 @@
+diff --git a/nativelib/src/main/resources/scala-native/platform/posix/libunwind/UnwindCursor.hpp b/nativelib/src/main/resources/scala-native/platform/posix/libunwind/UnwindCursor.hpp
+--- a/nativelib/src/main/resources/scala-native/platform/posix/libunwind/UnwindCursor.hpp
++++ b/nativelib/src/main/resources/scala-native/platform/posix/libunwind/UnwindCursor.hpp
+@@ -1898,14 +1898,15 @@ bool UnwindCursor<A, R>::getInfoFromCompactEncodingSection(
+       high = mid;
+     }
+   }
++  const uint32_t firstLevelIndex = low;
+   const uint32_t firstLevelFunctionOffset = topIndex.functionOffset(low);
+   const uint32_t firstLevelNextPageFunctionOffset =
+       topIndex.functionOffset(low + 1);
+   const pint_t secondLevelAddr =
+       sects.compact_unwind_section + topIndex.secondLevelPagesSectionOffset(low);
+-  const pint_t lsdaArrayStartAddr =
++  pint_t lsdaArrayStartAddr =
+       sects.compact_unwind_section + topIndex.lsdaIndexArraySectionOffset(low);
+-  const pint_t lsdaArrayEndAddr =
++  pint_t lsdaArrayEndAddr =
+       sects.compact_unwind_section + topIndex.lsdaIndexArraySectionOffset(low+1);
+   if (log)
+     fprintf(stderr, "\tfirst level search for result index=%d "
+@@ -1953,6 +1954,10 @@ bool UnwindCursor<A, R>::getInfoFromCompactEncodingSection(
+         high = mid;
+       }
+     }
++    // ld64.lld may add an encoding 0 entry at the offset of a real one (#4882).
++    while (low > 0 && pageIndex.encoding(low) == 0 &&
++           pageIndex.functionOffset(low - 1) == pageIndex.functionOffset(low))
++      --low;
+     encoding = pageIndex.encoding(low);
+     rangeStart = pageIndex.functionOffset(low) + sects.dso_base;
+     // A range marked UNWIND_IS_NOT_FUNCTION_START is not the function entry.
+@@ -2039,6 +2044,9 @@ bool UnwindCursor<A, R>::getInfoFromCompactEncodingSection(
+       }
+     };
+ 
++    while (low > 0 && encodingAtIndex(low) == 0 &&
++           pageIndex.functionOffset(low - 1) == pageIndex.functionOffset(low))
++      --low;
+     encoding = encodingAtIndex(low);
+     funcStart = rangeStart;
+     if ((encoding & UNWIND_IS_NOT_FUNCTION_START) && low > 0) {
+@@ -2072,6 +2080,56 @@ bool UnwindCursor<A, R>::getInfoFromCompactEncodingSection(
+     return false;
+   }
+ 
++  // ld64.lld's duplicate opened this page: use the real entry that ends the
++  // previous page (#4882).
++  if (encoding == 0 && firstLevelIndex > 0 &&
++      rangeStart == firstLevelFunctionOffset + sects.dso_base) {
++    const uint32_t prevIndex = firstLevelIndex - 1;
++    const pint_t prevPageAddr = sects.compact_unwind_section +
++                                topIndex.secondLevelPagesSectionOffset(prevIndex);
++    uint32_t prevOffset = 0;
++    uint32_t prevEncoding = 0;
++    uint32_t prevPageKind = _addressSpace.get32(prevPageAddr);
++    if (prevPageKind == UNWIND_SECOND_LEVEL_REGULAR) {
++      UnwindSectionRegularPageHeader<A> prevHeader(_addressSpace, prevPageAddr);
++      UnwindSectionRegularArray<A> prevPage(
++          _addressSpace, prevPageAddr + prevHeader.entryPageOffset());
++      if (prevHeader.entryCount() > 0) {
++        prevOffset = prevPage.functionOffset(prevHeader.entryCount() - 1);
++        prevEncoding = prevPage.encoding(prevHeader.entryCount() - 1);
++      }
++    } else if (prevPageKind == UNWIND_SECOND_LEVEL_COMPRESSED) {
++      UnwindSectionCompressedPageHeader<A> prevHeader(_addressSpace,
++                                                      prevPageAddr);
++      UnwindSectionCompressedArray<A> prevPage(
++          _addressSpace, prevPageAddr + prevHeader.entryPageOffset());
++      if (prevHeader.entryCount() > 0) {
++        const uint32_t prevLast = prevHeader.entryCount() - 1;
++        prevOffset = prevPage.functionOffset(prevLast) +
++                     topIndex.functionOffset(prevIndex);
++        uint16_t encIdx = prevPage.encodingIndex(prevLast);
++        if (encIdx < sectionHeader.commonEncodingsArrayCount())
++          prevEncoding = _addressSpace.get32(
++              sects.compact_unwind_section +
++              sectionHeader.commonEncodingsArraySectionOffset() +
++              encIdx * sizeof(uint32_t));
++        else
++          prevEncoding = _addressSpace.get32(
++              prevPageAddr + prevHeader.encodingsPageOffset() +
++              (encIdx - (uint16_t)sectionHeader.commonEncodingsArrayCount()) *
++                  sizeof(uint32_t));
++      }
++    }
++    if (prevOffset != firstLevelFunctionOffset || prevEncoding == 0 ||
++        (prevEncoding & UNWIND_IS_NOT_FUNCTION_START))
++      return false;
++    encoding = prevEncoding;
++    lsdaArrayStartAddr = sects.compact_unwind_section +
++                         topIndex.lsdaIndexArraySectionOffset(prevIndex);
++    lsdaArrayEndAddr = sects.compact_unwind_section +
++                       topIndex.lsdaIndexArraySectionOffset(prevIndex + 1);
++  }
++
+   // look up LSDA, if encoding says function has one
+   if (encoding & UNWIND_HAS_LSDA) {
+     UnwindSectionLsdaArray<A> lsdaIndex(_addressSpace, lsdaArrayStartAddr);

@@ -383,6 +383,10 @@ unmanaged memory.
     zone-allocated memory after the end of the zone is undefined
     behavior.
 
+    Memory of an open zone is scanned conservatively by the garbage
+    collector, so objects referenced from it stay alive until the zone
+    is closed.
+
 2.  **Stack allocation.**
 
     > Scala Native provides a built-in way to perform stack allocations
@@ -412,7 +416,7 @@ unmanaged memory.
     > Calling those will let you allocate memory using system's
     > standard dynamic memory allocator. Every single manual allocation
     > must also be freed manually as soon as it's not needed any
-    > longer.
+    > longer. This memory is not scanned by the garbage collector.
     >
     > Apart from the standard system allocator one might also bind to
     > plethora of 3-rd party allocators such as
