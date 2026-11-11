@@ -391,6 +391,8 @@ static void Synchronizer_ResumeThreads(void) {
     YieldPointTrap_disarmAllMutators();
     atomic_store_explicit(&Synchronizer_stopThreads, false,
                           memory_order_release);
+    // Pairs with the fence in Synchronizer_yield.
+    atomic_thread_fence(memory_order_seq_cst);
     MutatorThreads_foreach(mutatorThreads, node) {
         MutatorThread *thread = node->value;
         if (atomic_load_explicit(&thread->isWaiting, memory_order_acquire)) {
@@ -566,6 +568,8 @@ void Synchronizer_yield(void) {
     atomic_thread_fence(memory_order_seq_cst);
 
     atomic_store_explicit(&self->isWaiting, true, memory_order_release);
+    // Pairs with the fence in Synchronizer_ResumeThreads.
+    atomic_thread_fence(memory_order_seq_cst);
     while (
         atomic_load_explicit(&Synchronizer_stopThreads, memory_order_consume)) {
         Synchronizer_WaitForResumption(self);
