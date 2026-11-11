@@ -34,8 +34,11 @@ static inline void GCThread_markMaster(Heap *heap, Stats *stats) {
 
     Stats_RecordTime(stats, end_ns);
     Stats_RecordEvent(stats, event_concurrent_mark, start_ns, end_ns);
-    Stats_RecordEventSync(stats, mark_waiting, stats->packet_waiting_start_ns,
-                          stats->packet_waiting_end_ns);
+    if (stats != NULL) {
+        Stats_RecordEventSync(stats, mark_waiting,
+                              stats->packet_waiting_start_ns,
+                              stats->packet_waiting_end_ns);
+    }
 }
 
 static inline void GCThread_mark(Heap *heap, Stats *stats) {
@@ -47,8 +50,11 @@ static inline void GCThread_mark(Heap *heap, Stats *stats) {
 
     Stats_RecordTime(stats, end_ns);
     Stats_RecordEvent(stats, event_concurrent_mark, start_ns, end_ns);
-    Stats_RecordEvent(stats, mark_waiting, stats->packet_waiting_start_ns,
-                      stats->packet_waiting_end_ns);
+    if (stats != NULL) {
+        Stats_RecordEventSync(stats, mark_waiting,
+                              stats->packet_waiting_start_ns,
+                              stats->packet_waiting_end_ns);
+    }
 }
 
 static inline void GCThread_nullify(Heap *heap, Stats *stats) {
