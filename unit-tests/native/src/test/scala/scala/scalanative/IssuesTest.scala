@@ -841,6 +841,7 @@ class IssuesTest {
   @Test def issue4372(): Unit = {
     import scala.scalanative.issue4372._
     assertEquals("Both(Leaf(1),Leaf(2))", Both(Leaf(1), Leaf(2)).toString)
+    assertEquals(3, new Impl().depth())
   }
 }
 
@@ -985,4 +986,15 @@ package issue4372 {
   }
   final case class Leaf(i: Int) extends Cause
   final case class Both(l: Cause, r: Cause) extends Cause with Composite
+
+  trait Node { self: Impl =>
+    final def depth(): Int = {
+      @scala.annotation.tailrec
+      def loop(n: Int, acc: Int): Int =
+        if (n == 0) acc else loop(n - 1, acc + step())
+      loop(3, 0)
+    }
+    private def step(): Int = 1
+  }
+  final class Impl extends Node
 }

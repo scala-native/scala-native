@@ -1183,7 +1183,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             // In a trait with a self-type, `_$this` is typed as the self-type
             case (self, 0) if !isStatic =>
               val labelThisTy = label.params.head.tpe
-              if (labelThisTy.typeSymbol.isSubClass(curClassSym.get)) self
+              if (curClassSym.get.isSubClass(labelThisTy.typeSymbol)) self
               else buf.as(genType(labelThisTy), self, unwind(fresh))
             case (param, _) => param
           }
