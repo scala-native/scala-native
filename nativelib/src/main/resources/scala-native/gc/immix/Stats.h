@@ -12,12 +12,14 @@ typedef struct {
     uint64_t mark_time_ns[STATS_MEASUREMENTS];
     uint64_t nullify_time_ns[STATS_MEASUREMENTS];
     uint64_t sweep_time_ns[STATS_MEASUREMENTS];
+    // From the collection request until all other mutators are stopped.
+    uint64_t sync_time_ns[STATS_MEASUREMENTS];
 } Stats;
 
 void Stats_Init(Stats *stats, const char *statsFile);
-void Stats_RecordCollection(Stats *stats, uint64_t start_ns,
-                            uint64_t nullify_start_ns, uint64_t sweep_start_ns,
-                            uint64_t end_ns);
+void Stats_RecordCollection(Stats *stats, uint64_t request_ns,
+                            uint64_t start_ns, uint64_t nullify_start_ns,
+                            uint64_t sweep_start_ns, uint64_t end_ns);
 void Stats_OnExit(Stats *stats);
 
 #endif // IMMIX_STATS_H

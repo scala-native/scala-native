@@ -22,6 +22,10 @@
  * Allocates the heap struct and initializes it
  */
 void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
+    heap->maxGcTimeRatio =
+        Settings_Ratio("GC_TIME_RATIO", DEFAULT_GC_TIME_RATIO);
+    heap->maxFreeRatio =
+        Settings_Ratio("GC_MAX_FREE_RATIO", DEFAULT_MAX_FREE_RATIO);
     size_t memoryLimit = Heap_getMemoryLimit();
 
     if (maxHeapSize < MIN_HEAP_SIZE) {
@@ -223,6 +227,8 @@ static bool Heap_overheadLimitReached(Heap *heap, uint64_t start_ns,
 static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
                          uint64_t generation) {
     SpillCalleeSavedRegisters();
+    // Stopping the other mutators is part of the pause.
+    uint64_t request_ns = Time_current_nanos();
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     if (!(allocationSize == 0 ? Synchronizer_acquire()
                               : Synchronizer_acquireForAllocation(
@@ -246,6 +252,8 @@ static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
     if (stats != NULL) {
         sweep_start_ns = Time_current_nanos();
     }
+    heap->collectionRequestNs = request_ns;
+    heap->explicitCollection = allocationSize == 0;
     Heap_Recycle(heap);
     bool available = true;
     // An explicit collection is not an allocation that could not proceed: it
@@ -285,7 +293,7 @@ static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
     heap->lastCollectionEndNs = end_ns;
     jmx_stats_record_collection(start_ns, end_ns);
     if (stats != NULL) {
-        Stats_RecordCollection(stats, start_ns, nullify_start_ns,
+        Stats_RecordCollection(stats, request_ns, start_ns, nullify_start_ns,
                                sweep_start_ns, end_ns);
     }
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
@@ -328,7 +336,19 @@ bool Heap_shouldGrow(Heap *heap) {
                  usedLines, (uint64_t)blockCount * LINE_COUNT,
                  (usedLines * LINE_SIZE) >> 20);
 
-    return freeBlockCount * 2 < blockCount ||
+    // Collections took too much of the time since the previous one ended:
+    // growing makes them rarer. A heap that stays mostly free grows for this
+    // only while small, or a program keeping many small objects alive would
+    // grow it without bound (#2436). System.gc() does not count (#5052).
+    uint64_t now = Time_current_nanos();
+    bool gcTooFrequent =
+        !heap->explicitCollection && heap->lastCollectionEndNs != 0 &&
+        now - heap->collectionRequestNs >=
+            heap->maxGcTimeRatio * (now - heap->lastCollectionEndNs) &&
+        (heap->heapSize < EARLY_GROWTH_THRESHOLD ||
+         freeBlockCount < heap->maxFreeRatio * blockCount);
+
+    return gcTooFrequent || freeBlockCount * 2 < blockCount ||
            (4 * unavailableBlockCount > blockCount &&
             20 * freeBlockCount < 13 * blockCount);
 }

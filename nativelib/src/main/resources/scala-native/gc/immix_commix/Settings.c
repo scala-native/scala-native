@@ -6,6 +6,7 @@
 #endif
 
 #include <stdlib.h>
+#include <stdio.h>
 #include "immix_commix/Settings.h"
 #include "shared/Parsing.h"
 #include "shared/Settings.h"
@@ -24,6 +25,20 @@ size_t Settings_MaxHeapSize(void) {
 }
 
 char *Settings_StatsFileName(void) { return getenv(GC_STATS_FILE_SETTING); }
+
+double Settings_Ratio(const char *name, double defaultRatio) {
+    char *str = getenv(name);
+    if (str == NULL)
+        return defaultRatio;
+    double ratio;
+    // The negated range check also rejects NaN.
+    if (sscanf(str, "%lf", &ratio) != 1 || !(ratio >= 0.0 && ratio <= 1.0)) {
+        GC_LOG_WARN("Ignoring %s=%s, which is not a number between 0 and 1",
+                    name, str);
+        return defaultRatio;
+    }
+    return ratio;
+}
 
 // =============================================================================
 // Settings Initialization

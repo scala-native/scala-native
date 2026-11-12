@@ -70,4 +70,25 @@ class ZoneTest {
     )
     assertThrows(classOf[IllegalStateException], zone.close())
   }
+
+  // Issue #2491
+  @Test def objectsReferencedFromZoneMemoryStayAlive(): Unit =
+    Zone.acquire { implicit z =>
+      val small = alloc[BigInt](64) // in a pool page
+      val large = alloc[BigInt](1024) // separate allocation
+      ZoneTest.fill(small, 64)
+      ZoneTest.fill(large, 1024)
+      System.gc()
+      ZoneTest.churn()
+      for (i <- 0 until 64) assertEquals(BigInt(i) << 100, small(i))
+      for (i <- 0 until 1024) assertEquals(BigInt(i) << 100, large(i))
+    }
+}
+
+object ZoneTest {
+  @noinline def fill(ptr: Ptr[BigInt], n: Int): Unit =
+    for (i <- 0 until n) ptr(i) = BigInt(i) << 100
+
+  @noinline def churn(): Unit =
+    for (i <- 0 until 100000) new Array[Int](8).update(0, i)
 }

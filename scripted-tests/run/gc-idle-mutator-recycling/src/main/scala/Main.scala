@@ -11,6 +11,8 @@ import java.util.concurrent.{CountDownLatch, TimeUnit}
  *                           discarded ones; must not report exhaustion
  *   full <bytes> <n>        keeps <bytes> live and allocates <n> small
  *                           objects; must not report exhaustion
+ *   churn <MiB>             allocates <MiB> of short-lived objects keeping
+ *                           almost nothing; the heap must grow for GC time
  *   exhaust                 builds without bound; must end in
  *                           OutOfMemoryError rather than collect forever
  */
@@ -118,6 +120,17 @@ object Main {
         }
         sink = live
         if (acc < 0) throw new AssertionError("unreachable")
+
+      case "churn" =>
+        // About <MiB> of short-lived nodes, keeping only a small window.
+        val window = new Array[Node](1024)
+        val count = args(1).toLong * 1024 * 1024 / 32
+        var i = 0L
+        while (i < count) {
+          window((i & 1023).toInt) = new Node(null, i.toInt)
+          i += 1
+        }
+        sink = window
 
       case "exhaust" =>
         try {

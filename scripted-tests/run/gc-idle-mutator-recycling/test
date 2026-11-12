@@ -8,9 +8,12 @@
 # collecting again for every few allocations (scala-native#5169). That limit
 # follows the JVM's: low yield and collection-dominated time over several
 # collections in a row, so a heap that is full but still making progress runs.
+# Fast allocation keeping almost nothing alive must grow the heap once
+# collections take GC_TIME_RATIO of the time, not stay in the initial heap.
 
 > runIdleMutators
 > runFragmentedExhaustion
+> runChurnGrowth
 > set nativeConfig ~= (_.withMode(scala.scalanative.build.Mode.releaseFast))
 > runIdleMutators
 > runFragmentedExhaustion

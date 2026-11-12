@@ -39,6 +39,12 @@ private[monitor] class ObjectMonitor() {
   /** Thread selected for timed parking to alleviate rare deadlocks. */
   @volatile private var activeWaiterThread: Thread = _
 
+  /** Entry-list waiter that failed to acquire for longer than
+   *  StarvationThresholdNanos. The next exit transfers ownership directly to it
+   *  instead of releasing the monitor, so it cannot be barged again.
+   */
+  @volatile private var starvingThread: Thread = _
+
   /** Contenders CAS onto head; successor is tail (FIFO). Only owner manipulates
    *  for succession; wakee unlinks self on acquire.
    */
@@ -139,10 +145,15 @@ private[monitor] class ObjectMonitor() {
       var forcedTimedRecheck = node.consumeTimedParkHint()
 
       val native = NativeThread.currentNativeThread
-      while (!tryLockThenSpin()) {
+      val waitStart = System.nanoTime()
+      while (!(ownerThread eq currentThread) && !tryLockThenSpin()) {
+        if ((starvingThread eq null) &&
+            System.nanoTime() - waitStart > StarvationThresholdNanos)
+          casStarvingThread(null, currentThread)
         if (activeWaiterThread eq null)
           casActiveWaiterThread(null, currentThread)
-        if (forcedTimedRecheck || hasUnmountedVThreads()) {
+        if (awaitHandoff(currentThread)) ()
+        else if (forcedTimedRecheck || hasUnmountedVThreads()) {
           if (native != null)
             native.parkNanos(recheckIntervalMs * 1000000L)
           else Thread.`yield`()
@@ -157,6 +168,7 @@ private[monitor] class ObjectMonitor() {
         clearSuccessorAndFenceBeforeRetry(currentThread)
       }
 
+      if (starvingThread eq currentThread) starvingThread = null
       if (successorThread eq currentThread) successorThread = null
       if (activeWaiterThread eq currentThread) activeWaiterThread = null
       atomic_thread_fence(memory_order_seq_cst)
@@ -205,6 +217,15 @@ private[monitor] class ObjectMonitor() {
     node.state = WaiterNode.Active
     atomic_thread_fence(memory_order_seq_cst)
   }
+
+  // The starving waiter spins briefly so a handoff does not wait for unpark.
+  private def awaitHandoff(currentThread: Thread): Boolean =
+    (starvingThread eq currentThread) && {
+      val deadline = System.nanoTime() + StarvingSpinNanos
+      while (!(ownerThread eq currentThread) &&
+          System.nanoTime() < deadline) NativeThread.onSpinWait()
+      ownerThread eq currentThread
+    }
 
   private def exitMonitor(currentThread: Thread): Unit = {
     @alwaysinline def releaseOwnerThread() = {
@@ -286,9 +307,29 @@ private[monitor] class ObjectMonitor() {
         transformToDLL(cur.next, cur)
       }
 
+    // Direct handoff: the monitor is never observed free, so no barging.
+    // Re-checked on every iteration, a waiter may start starving after a
+    // release and re-acquire below.
+    @alwaysinline def handOffToStarving(): Boolean = {
+      val starving = starvingThread
+      starving != null && {
+        starvingThread = null
+        successorThread = starving
+        atomic_store_intptr(
+          ownerThreadPtr,
+          castObjectToRawPtr(starving),
+          memory_order_release
+        )
+        atomic_thread_fence(memory_order_seq_cst)
+        wakePlatformWaiter(starving)
+        true
+      }
+    }
+
     var looping = true
     while (looping) {
-      if (successorThread == null) {
+      if (handOffToStarving()) looping = false
+      else if (successorThread == null) {
         val w = entryList
         if (w != null) {
           transformToDLL(w, null)
@@ -554,6 +595,19 @@ private[monitor] class ObjectMonitor() {
     )
   }
 
+  @alwaysinline private def casStarvingThread(
+      expected: Thread,
+      value: Thread
+  ): Boolean = {
+    val expectedPtr = stackalloc[CVoidPtr]()
+    storeObject(expectedPtr, expected)
+    atomic_compare_exchange_intptr(
+      classFieldRawPtr(this, "starvingThread"),
+      expectedPtr,
+      castObjectToRawPtr(value)
+    )
+  }
+
   @alwaysinline private def casWaitList(
       ref: RawPtr,
       expected: WaiterNode,
@@ -666,6 +720,10 @@ private[monitor] class ObjectMonitor() {
 }
 
 private object ObjectMonitor {
+
+  /** How long an entry-list waiter may lose to barging threads. */
+  final val StarvationThresholdNanos = 1000000L
+  final val StarvingSpinNanos = 50000L
 
   /** Sentinel on WaiterNode.resumeForWait so ObjectMonitor spin-waits for real
    *  resume.

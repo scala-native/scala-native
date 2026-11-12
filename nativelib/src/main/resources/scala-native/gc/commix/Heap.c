@@ -228,9 +228,13 @@ bool Heap_BeginEmergencyAllocation(Heap *heap) {
 bool Heap_Collect(Heap *heap, bool allowHeapGrowth) {
     SpillCalleeSavedRegisters();
     MutatorThread *mutatorThread = currentMutatorThread;
+    // Stopping the other mutators and finishing the previous sweep are part
+    // of the pause.
+    Stats_RecordTime(Stats_OrNull(heap->stats), request_ns);
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     if (!Synchronizer_acquire())
         return false;
+    Stats_RecordTime(Stats_OrNull(heap->stats), stopped_ns);
     while (!Sweeper_IsSweepDone(heap)) {
         // Unlock mutator threads list to allow registration of new threads
         // WriteLock has higher priority then ReadLock - it does NOT wait until
@@ -246,6 +250,7 @@ bool Heap_Collect(Heap *heap, bool allowHeapGrowth) {
 #else
     MutatorThread_switchState(currentMutatorThread,
                               GC_MutatorThreadState_Unmanaged);
+    Stats_RecordTime(Stats_OrNull(heap->stats), stopped_ns);
     // GC sweep workers also run in a single-mutator build. Explicit System.gc
     // can arrive before the preceding concurrent sweep finishes; starting a
     // new mark/sweep cycle then would race with its allocator metadata updates.
@@ -258,6 +263,9 @@ bool Heap_Collect(Heap *heap, bool allowHeapGrowth) {
     heap->gcCollectionStart_ns = Time_current_nanos();
     Stats *stats = Stats_OrNull(heap->stats);
     Stats_CollectionStarted(stats);
+    Stats_RecordEvent(stats, event_stop_mutators, request_ns, stopped_ns);
+    Stats_RecordEvent(stats, event_wait_sweep, stopped_ns,
+                      heap->gcCollectionStart_ns);
 #ifdef GC_ASSERTIONS
     Sweeper_ClearIsSwept(heap);
     Sweeper_AssertIsConsistent(heap);
