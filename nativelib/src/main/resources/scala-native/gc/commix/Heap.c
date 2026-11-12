@@ -1,5 +1,6 @@
 #if defined(SCALANATIVE_GC_COMMIX)
 
+#include "shared/SuspendedStacks.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include "Heap.h"
@@ -270,10 +271,12 @@ bool Heap_Collect(Heap *heap, bool allowHeapGrowth) {
     Sweeper_ClearIsSwept(heap);
     Sweeper_AssertIsConsistent(heap);
 #endif
+    SuspendedStacks_markStarted();
     Phase_StartMark(heap);
     Marker_MarkRoots(heap, stats);
     Marker_MarkUntilDone(heap, stats);
     Phase_MarkDone(heap);
+    SuspendedStacks_markCompleted();
     Stats_RecordEvent(stats, event_mark, heap->mark.currentStart_ns,
                       heap->mark.currentEnd_ns);
     Phase_Nullify(heap, stats);

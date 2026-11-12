@@ -1,6 +1,7 @@
 #ifndef DELIMCC_H
 #define DELIMCC_H
 #include <stdlib.h>
+#include <stdint.h>
 #include <setjmp.h>
 
 /* Exception escapes from resumed continuations. setjmp/longjmp also save and
@@ -20,56 +21,65 @@
 extern "C" {
 #endif
 
-typedef unsigned long ContinuationBoundaryLabel;
+typedef uintptr_t ContinuationBoundaryLabel;
 
 typedef struct Continuation Continuation;
 
-// ContinuationBody = ContBoundaryLabel -> any -> any
+// ContinuationBody = BoundaryLabel -> any -> any
 typedef void *ContinuationBody(ContinuationBoundaryLabel, void *);
 
 // SuspendFn = Continuation -> any -> any
 typedef void *SuspendFn(Continuation *, void *);
 
-// Initializes the continuation helpers,
-// set the allocation function for Continuations and stack fragments.
-// without calling this, malloc is the default allocation function.
-// The allocation function may take another parameter, as given in
-// `scalanative_continuation_suspend`.
-void scalanative_continuation_init(void *(*alloc_f)(unsigned long, void *));
+// Allocates GC-visible memory on behalf of `alloc_arg`, the value given to
+// `suspend`.
+typedef void *ContinuationAllocFn(unsigned long size, void *alloc_arg);
 
-// cont_boundary : ContinuationBody -> any -> any
-// Installs a boundary handler and passes the boundary label associated with
-// the handler to the ContinuationBody. Returns the return value of
-// ContinuationBody (or the `scalanative_continuation_suspend` result
-// corresponding to this handler).
-void *scalanative_continuation_boundary(ContinuationBody *, void *);
+/* Both runtimes share one shape:
+ *
+ * - init: sets the allocation function for continuations and the stack data
+ *   they keep.
+ * - boundary: runs the body with a fresh label and returns its result, or the
+ *   result of the SuspendFn of a `suspend` to that label.
+ * - suspend: captures the computation up to the boundary of `label` as a
+ *   Continuation, passes it to the SuspendFn, and returns that result from
+ *   the boundary. Returns the resume argument once resumed.
+ * - resume: continues a Continuation with `arg` and returns the result of
+ *   the boundary it was captured from.
+ */
 
-// cont_suspend[T, R] : BoundaryLabel[T] -> (Continuation[T, R] -> T) -> R
-// Suspends to the boundary handler corresponding to the given boundary label,
-// reifying the suspended computation up to (and including) the handler as a
-// Continuation struct, and passing it to the SuspendFn (alongside with `arg`),
-// returning its result to the caller of scalanative_continuation_boundary.
-//
-// The reified computation is stored into memory allocated with `alloc_f(size,
-// alloc_arg)`, the function set up by `scalanative_continuation_init`.
-void *scalanative_continuation_suspend(ContinuationBoundaryLabel b,
-                                       SuspendFn *f, void *arg,
-                                       void *alloc_arg);
+/* One-shot (delimcc_oneshot.c): every boundary runs on its own stack and
+ * frames never move. Here a Continuation is opaque, needs no allocation
+ * function, and must be resumed at most once. Its SuspendFn calls `captured`
+ * with the SuspendedStacks object that points to it. */
+void *scalanative_continuation_oneshot_boundary(ContinuationBody *, void *);
+void *scalanative_continuation_oneshot_suspend(ContinuationBoundaryLabel label,
+                                               SuspendFn *f, void *arg);
+// Returns `result` from the boundary of `label`; does not return.
+void scalanative_continuation_oneshot_leave(ContinuationBoundaryLabel label,
+                                            void *result);
+void scalanative_continuation_oneshot_captured(Continuation *continuation,
+                                               void *owner);
+void *scalanative_continuation_oneshot_resume(Continuation *continuation,
+                                              void *arg);
 
-// resume[T, R] : Continuation[T, R] -> R -> Result
-// Resumes the given Continuation under the resume call, passing back the
-// argument into the suspended computation and returns its result.
-void *scalanative_continuation_resume(Continuation *continuation, void *arg);
-
-// Reset the thread-local handler chain to NULL. Call before entering a new
-// boundary (e.g. before dispatching a virtual thread) so the carrier does not
-// inherit stale handlers from a previous VT that ran on the same carrier.
-void scalanative_continuation_handlers_reset(void);
+/* Multi-shot (delimcc_multishot.c): the captured stack is copied out and
+ * copied back on every resume, possibly to another address. */
+void scalanative_continuation_multishot_init(ContinuationAllocFn *alloc_f);
+void *scalanative_continuation_multishot_boundary(ContinuationBody *, void *);
+void *scalanative_continuation_multishot_suspend(ContinuationBoundaryLabel b,
+                                                 SuspendFn *f, void *arg,
+                                                 void *alloc_arg);
+void *scalanative_continuation_multishot_resume(Continuation *continuation,
+                                                void *arg);
+// Drops the handler chain of the current thread.
+void scalanative_continuation_multishot_handlers_reset(void);
 
 /* Exception type compatible with eh.c (void* = Scala object). */
 typedef void *Exception;
 
 /*
+ * Multi-shot only.
  * Exception escape from resumed continuations: when a resumed body throws and
  * no handler in the continuation catches it, we longjmp back to the resumer
  * instead of aborting (eh.c) or terminating (eh.cpp). The resumer can then

@@ -1235,7 +1235,9 @@ private[scalanative] object Reach {
     case object VirtualThreads
         extends Kind("VirtualThreads are not supported yet on this platform")
     case object Continuations
-        extends Kind("Continuations are not supported yet on this platform")
+        extends Kind(
+          "Continuations are not supported yet on this platform or with the selected GC"
+        )
     case object Other extends Kind("Other unsupported feature")
   }
 }

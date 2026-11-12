@@ -1,4 +1,4 @@
-#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_DELIMCC)
+#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_DELIMCC_MULTISHOT)
 
 #if defined(__x86_64__) && (defined(__linux__) || defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__))
 
@@ -548,7 +548,7 @@ __lh_get_sp:
   ret
 
 #endif // setjmp_x64.S
-#endif // SCALANATIVE_COMPILE_ALWAYS) || __SCALANATIVE_DELIMCC
+#endif // SCALANATIVE_COMPILE_ALWAYS || __SCALANATIVE_DELIMCC_MULTISHOT
 
 #if defined(__linux__) && defined(__ELF__)
 /* Reference:

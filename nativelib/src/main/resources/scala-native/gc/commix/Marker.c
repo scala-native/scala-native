@@ -1,4 +1,5 @@
 #if defined(SCALANATIVE_GC_COMMIX)
+#include "shared/SuspendedStacks.h"
 #include "shared/GCTypes.h"
 #include <stdint.h>
 #include <stdio.h>
@@ -305,6 +306,22 @@ int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
                                     rawPtr);
             objectsTraced += 1;
         }
+    } else if ((void *)object->rtti == scalanative_GC_suspendedStacksRtti) {
+        SuspendedStack *stacks = (SuspendedStack *)object->fields[0];
+        // Empty until the continuation is handed over to its object.
+        if (stacks != NULL && stacks->top == NULL)
+            stacks = NULL;
+        if (stacks != NULL) {
+            atomic_store(&stacks->slot->markedIn,
+                         atomic_load(&scalanative_GC_markCycle));
+        }
+        for (SuspendedStack *it = stacks; it != NULL; it = it->next) {
+            size_t words =
+                ((uintptr_t)it->bottom - (uintptr_t)it->top) / sizeof(word_t);
+            objectsTraced +=
+                Marker_markRange(heap, stats, outHolder, outWeakRefHolder,
+                                 (word_t **)it->top, words, sizeof(word_t));
+        }
     }
     return objectsTraced;
 }
@@ -558,6 +575,14 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
         stackTop = MutatorThread_getStackTop(thread, false);
     } while (stackTop == NULL);
 
+    // A continuation runs on its own stack (delimcc_oneshot.c), which
+    // ThreadInfo then describes.
+    if (thread->threadInfo != NULL && thread->threadInfo->stackTop != NULL &&
+        thread->threadInfo->stackBottom != NULL &&
+        isInRange(stackTop, thread->threadInfo->stackTop,
+                  thread->threadInfo->stackBottom)) {
+        stackBottom = (word_t **)thread->threadInfo->stackBottom;
+    }
 #ifdef SCALANATIVE_THREAD_ALT_STACK
     // Keep the captured SP until stack bounds are known.
     if (thread->threadInfo != NULL && thread->threadInfo->stackTop != NULL &&
@@ -640,6 +665,16 @@ void Marker_MarkRoots(Heap *heap, Stats *stats) {
     }
     Marker_markModules(heap, stats, &out, &weakRefOut);
     Marker_markCustomRoots(heap, stats, &out, &weakRefOut, customRoots);
+    FOREACH_STACK_SLOT(slot) {
+        void *top =
+            atomic_load_explicit(&slot->waitingTop, memory_order_relaxed);
+        if (top != NULL) {
+            size_t words =
+                ((uintptr_t)slot->bottom - (uintptr_t)top) / sizeof(word_t);
+            Marker_markRange(heap, stats, &out, &weakRefOut, (word_t **)top,
+                             words, sizeof(word_t));
+        }
+    }
     if (out != NULL) {
         if (GreyPacket_IsEmpty(out)) {
             Marker_giveEmptyPacket(heap, stats, out);

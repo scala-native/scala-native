@@ -1,4 +1,5 @@
 #if defined(SCALANATIVE_GC_IMMIX)
+#include "shared/SuspendedStacks.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <setjmp.h>
@@ -82,6 +83,19 @@ void Marker_markConservative(Heap *heap, Stack *stack, word_t *address) {
     }
 }
 
+static void Marker_markSuspendedStacks(Heap *heap, Stack *stack,
+                                       SuspendedStack *stacks) {
+    // Empty until the continuation is handed over to its object.
+    if (stacks == NULL || stacks->top == NULL)
+        return;
+    atomic_store(&stacks->slot->markedIn,
+                 atomic_load(&scalanative_GC_markCycle));
+    for (SuspendedStack *it = stacks; it != NULL; it = it->next) {
+        Marker_markRange(heap, stack, (word_t **)it->top, (word_t **)it->bottom,
+                         sizeof(word_t));
+    }
+}
+
 void Marker_Mark(Heap *heap, Stack *stack) {
     Bytemap *bytemap = heap->bytemap;
     while (!Stack_IsEmpty(stack)) {
@@ -120,6 +134,10 @@ void Marker_Mark(Heap *heap, Stack *stack) {
                 if (Heap_IsWordInHeap(heap, rawPtr)) {
                     Marker_markConservative(heap, stack, rawPtr);
                 }
+            } else if ((void *)object->rtti ==
+                       scalanative_GC_suspendedStacksRtti) {
+                Marker_markSuspendedStacks(heap, stack,
+                                           (SuspendedStack *)object->fields[0]);
             }
         }
     }
@@ -159,6 +177,14 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
         // Can spuriously fail, very rare, yet deadly
         stackTop = MutatorThread_getStackTop(thread, false);
     } while (stackTop == NULL);
+    // A continuation runs on its own stack (delimcc_oneshot.c), which
+    // ThreadInfo then describes.
+    if (thread->threadInfo != NULL && thread->threadInfo->stackTop != NULL &&
+        thread->threadInfo->stackBottom != NULL &&
+        isInRange(stackTop, thread->threadInfo->stackTop,
+                  thread->threadInfo->stackBottom)) {
+        stackBottom = (word_t **)thread->threadInfo->stackBottom;
+    }
 #ifdef SCALANATIVE_THREAD_ALT_STACK
     // Keep the captured SP until stack bounds are known.
     if (thread->threadInfo != NULL && thread->threadInfo->stackTop != NULL &&
@@ -231,6 +257,14 @@ void Marker_MarkRoots(Heap *heap, Stack *stack) {
     }
     Marker_markModules(heap, stack);
     Marker_markCustomRoots(heap, stack, customRoots);
+    FOREACH_STACK_SLOT(slot) {
+        void *top =
+            atomic_load_explicit(&slot->waitingTop, memory_order_relaxed);
+        if (top != NULL) {
+            Marker_markRange(heap, stack, (word_t **)top,
+                             (word_t **)slot->bottom, sizeof(word_t));
+        }
+    }
     Marker_Mark(heap, stack);
 }
 

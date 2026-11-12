@@ -53,11 +53,19 @@ object LinktimeInfo {
   )
   def isWeakReferenceSupported: Boolean = resolved
 
+  /** `Continuations.multi` */
   @resolvedAtLinktime()
-  def isContinuationsSupported: Boolean =
+  def isMultiShotContinuationsSupported: Boolean =
     (isLinux || isMac || isFreeBSD || isOpenBSD || isNetBSD) &&
       !is32BitPlatform &&
       (target.arch == "x86_64" || target.arch == "aarch64")
+
+  /** `Continuations` and `Continuations.single`. Boehm GC cannot scan the
+   *  stacks they run on.
+   */
+  @resolvedAtLinktime()
+  def isContinuationsSupported: Boolean =
+    isMultiShotContinuationsSupported && garbageCollector != "boehm"
 
   @resolvedAtLinktime()
   def isVirtualThreadsSupported: Boolean =

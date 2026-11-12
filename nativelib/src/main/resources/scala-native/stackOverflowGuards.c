@@ -337,6 +337,12 @@ void scalanative_StackOverflowGuards_setup(bool isMainThread) {
     }
 }
 
+// Guards the continuation stack described by currentThreadInfo. The signal
+// handler and its alternate stack belong to the thread.
+void scalanative_StackOverflowGuards_setupSegment() {
+    setupStackOverflowGuards();
+}
+
 void scalanative_StackOverflowGuards_reset() {
     int dummy;
     void *curStackTop = &dummy;

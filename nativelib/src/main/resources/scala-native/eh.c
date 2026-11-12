@@ -11,20 +11,20 @@
 #include <stddef.h>
 #include <stdatomic.h>
 
-#if defined(__SCALANATIVE_DELIMCC)
+#if defined(__SCALANATIVE_DELIMCC_MULTISHOT)
 #include "delimcc.h"
 #include <setjmp.h>
 #endif
 
-#if defined(__SCALANATIVE_DELIMCC)
+#if defined(__SCALANATIVE_DELIMCC_MULTISHOT)
 #include "delimcc.h"
 #include <setjmp.h>
 #endif
 
 // Recover the containing wrapper without assumptions about struct padding.
 #define GetExceptionWrapper(exceptionPointer)                                  \
-    ((ExceptionWrapper *)((char *)(exceptionPointer)-offsetof(                 \
-        ExceptionWrapper, unwindException)))
+    ((ExceptionWrapper *)((char *)(exceptionPointer) -                         \
+                          offsetof(ExceptionWrapper, unwindException)))
 
 typedef void *Exception;
 typedef void (*OnCatchHandler)(Exception);
@@ -440,7 +440,7 @@ __attribute__((noreturn)) void scalanative_throw(Exception obj) {
     _Unwind_Reason_Code code = _Unwind_RaiseException(unwindException);
 
     if (code == _URC_END_OF_STACK) {
-#if defined(__SCALANATIVE_DELIMCC)
+#if defined(__SCALANATIVE_DELIMCC_MULTISHOT)
         /* If we're inside a resumed continuation, escape to the resumer instead
          * of aborting. Unwinding already ran and found no handler (or could not
          * traverse the copied stack); local try/catch in the continuation body
