@@ -347,11 +347,6 @@ static void Synchronizer_WaitForResumption(MutatorThread *selfThread) {
         exit(GetLastError());
     }
 #else
-    // Not a signal: Darwin was seen to drop a SIGCONT wakeup. A pending flag
-    // keeps an early wakeup; a stale one only causes a stopThreads re-check.
-    // Without the trampoline redirect this runs in the trap handler; the lock
-    // is only taken here and in Synchronizer_ResumeThread.
-    // Cancellation in the wait would hold the lock the collector resumes with.
     int oldCancelState;
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldCancelState);
     pthread_mutex_lock(&selfThread->wakeupLock);
