@@ -53,7 +53,7 @@ private[process] object UnixProcessFactory {
 
   def forkChild(builder: ProcessBuilder)(implicit z: Zone): GenericProcess = {
     val cmd = builder.command()
-    val binaries = binaryPaths(builder.environment(), cmd.get(0)).toList
+    val binaries = binaryPaths(builder, cmd.get(0)).toList
     if (binaries.isEmpty) throw programNotFound(cmd)
 
     var success = false
@@ -241,14 +241,15 @@ private[process] object UnixProcessFactory {
         } else status
       }
 
-      val execIter = binaryPaths(builder.environment(), cmd.get(0))
+      val execIter = binaryPaths(builder, cmd.get(0))
       if (!execIter.hasNext) throw programNotFound(cmd)
 
       var status = ENOEXEC
       var exec: String = null
       while (status == ENOEXEC && execIter.hasNext) {
-        exec = execIter.next()
-        status = spawn(exec, argv)
+        val candidate = execIter.next()
+        status = spawn(candidate, argv)
+        if (status == ENOEXEC && exec == null) exec = candidate
       }
 
       if (status == ENOEXEC) { // try falling back to shell script
@@ -281,7 +282,8 @@ private[process] object UnixProcessFactory {
 
   private def programNotFound(cmd: ju.List[String]): IOException =
     new IOException(
-      s"Cannot run program \"${cmd.get(0)}\": error=$ENOENT, No such file or directory"
+      "Cannot run program \"" + cmd.get(0) + "\": error=" + ENOENT +
+        ", No such file or directory"
     )
 
   // ENOEXEC fallback like execvp: `sh ./file args...`, args never joined.
@@ -424,10 +426,12 @@ private[process] object UnixProcessFactory {
 
   // The execvpe function isn't available on all platforms so find the
   // possible binaries to exec.
+  // Relative PATH entries are checked against the child's directory.
   private def binaryPaths(
-      environment: java.util.Map[String, String],
+      builder: ProcessBuilder,
       bin: String
   ): Iterator[String] = {
+    val environment = builder.environment()
     if (bin.indexOf('/') >= 0 || bin.startsWith(".")) {
       Iterator(bin)
     } else {
@@ -437,7 +441,10 @@ private[process] object UnixProcessFactory {
       }
       path.split(File.pathSeparator).iterator.flatMap { absPath =>
         val f = if (absPath.isEmpty) new File(bin) else new File(absPath, bin)
-        if (f.canExecute()) Some(f.toString()) else None
+        val inChildDir =
+          if (builder.isCwd || f.isAbsolute()) f
+          else new File(builder.directory(), f.getPath())
+        if (inChildDir.canExecute()) Some(f.toString()) else None
       }
     }
   }
