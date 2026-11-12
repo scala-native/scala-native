@@ -1179,7 +1179,14 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
               label @ LabelDef(name, Ident(nme.THIS) :: _, rhs)
             ) =>
           val local = curMethodEnv.enterLabel(label)
-          val values = params.take(label.params.length)
+          val values = params.take(label.params.length).zipWithIndex.map {
+            // In a trait with a self-type, `_$this` is typed as the self-type
+            case (self, 0) if !isStatic =>
+              val labelThisTy = label.params.head.tpe
+              if (labelThisTy.typeSymbol.isSubClass(curClassSym.get)) self
+              else buf.as(genType(labelThisTy), self, unwind(fresh))
+            case (param, _) => param
+          }
 
           buf.jump(local, values)(label.pos)
           scoped(

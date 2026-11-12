@@ -837,6 +837,11 @@ class IssuesTest {
       new XString().startsWith(null)
     )
   }
+
+  @Test def issue4372(): Unit = {
+    import scala.scalanative.issue4372._
+    assertEquals("Both(Leaf(1),Leaf(2))", Both(Leaf(1), Leaf(2)).toString)
+  }
 }
 
 package issue1090 {
@@ -942,4 +947,42 @@ package object issue2712 {
 
 object t13022 {
   case class StringValue(value: String) extends AnyVal
+}
+
+package issue4372 {
+  sealed abstract class Cause
+  sealed trait Composite { self: Cause =>
+    private final def render(): String = {
+      val stack = new java.util.ArrayDeque[Any]()
+      val results = new java.util.ArrayDeque[String]()
+
+      @scala.annotation.tailrec
+      def loop(): String = {
+        def visit(c: Cause): Unit = c match {
+          case Both(l, r) =>
+            stack.push(() => {
+              val right = results.pop()
+              results.push(s"Both(${results.pop()},$right)")
+            })
+            stack.push(r)
+            stack.push(l)
+          case other => results.push(other.toString)
+        }
+        if (stack.isEmpty) results.pop()
+        else {
+          stack.pop() match {
+            case fn: Function0[_] => fn()
+            case c: Cause         => visit(c)
+          }
+          loop()
+        }
+      }
+
+      stack.push(self)
+      loop()
+    }
+    override def toString(): String = render()
+  }
+  final case class Leaf(i: Int) extends Cause
+  final case class Both(l: Cause, r: Cause) extends Cause with Composite
 }

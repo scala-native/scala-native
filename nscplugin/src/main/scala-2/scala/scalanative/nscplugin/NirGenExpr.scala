@@ -189,8 +189,16 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         genExpr(label.rhs)
       } else
         withFreshBlockScope(label.rhs.pos) { _ =>
+          // In a trait with a self-type, `_$this` is typed as the self-type
+          val thisSym = label.params.head.tpe.typeSymbol
+          val self =
+            if (thisSym.isSubClass(curClassSym.get)) params.head
+            else {
+              implicit val pos: nir.SourcePosition = label.rhs.pos
+              buf.as(genType(curClassSym.tpe), params.head, unwind)
+            }
           scoped(
-            curMethodThis := Some(params.head)
+            curMethodThis := Some(self)
           )(genExpr(label.rhs))
         }
     }
