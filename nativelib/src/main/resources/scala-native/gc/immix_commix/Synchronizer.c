@@ -82,6 +82,9 @@ static void Synchronizer_WaitForResumption(MutatorThread *selfThread);
 // so Synchronizer_yield runs from the asm trampoline (normal context), not
 // inside the signal handler. See docs/contrib/gc-safepoint-trampoline.md.
 // Windows: still yields from the exception filter.
+//
+// All mutators poll one trap page, so a poll needs no thread-local lookup and
+// stays valid when a continuation resumes on another carrier thread.
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
 #include "shared/YieldPointTrap.h"
 #include "shared/SafepointPollTrampoline.h"
@@ -96,66 +99,21 @@ static void Synchronizer_WaitForResumption(MutatorThread *selfThread);
 #include <unistd.h>
 #endif
 
-SN_ThreadLocal void **scalanative_GC_yieldpoint_trap;
+void **scalanative_GC_yieldpoint_trap;
 
-static void YieldPointTrap_armAllMutators(void) {
-    MutatorThreads_foreach(mutatorThreads, node) {
-        YieldPointTrap_arm(node->value->yieldpointTrap);
-    }
-}
-
-static void YieldPointTrap_disarmAllMutators(void) {
-    MutatorThreads_foreach(mutatorThreads, node) {
-        YieldPointTrap_disarm(node->value->yieldpointTrap);
-    }
-}
-
-static bool isTrapFaultAddress(const void *faultAddress, const void *trapCell) {
-    if (faultAddress == NULL || trapCell == NULL) {
+// A trap fault is a load from the trap page by a registered mutator.
+static bool isTrapFault(const void *faultAddress, MutatorThread *self) {
+    void **trap = scalanative_GC_yieldpoint_trap;
+    if (self == NULL || faultAddress == NULL || trap == NULL) {
         return false;
     }
     uintptr_t pageSize = getPageSize();
     uintptr_t faultPage = ((uintptr_t)faultAddress) / pageSize;
-    uintptr_t trapPage = ((uintptr_t)trapCell) / pageSize;
+    uintptr_t trapPage = ((uintptr_t)trap) / pageSize;
     return faultPage == trapPage;
 }
 
 #ifdef _WIN32
-static bool isWin32AccessPermissionFault(EXCEPTION_POINTERS *ex) {
-    if (ex->ExceptionRecord->ExceptionCode != EXCEPTION_ACCESS_VIOLATION) {
-        return false;
-    }
-    ULONG_PTR type = ex->ExceptionRecord->ExceptionInformation[0];
-    return type == 0 || type == 1;
-}
-
-static bool isWin32ContinuationStaleTrapFault(EXCEPTION_POINTERS *ex,
-                                              MutatorThread *self) {
-    if (self == NULL) {
-        return false;
-    }
-    if (!isWin32AccessPermissionFault(ex)) {
-        return false;
-    }
-    if (!atomic_load_explicit(&Synchronizer_stopThreads,
-                              memory_order_acquire)) {
-        return false;
-    }
-    return true;
-}
-
-static void *currentYieldpointTrapCell(void) {
-    void *trapCell = NULL;
-    MutatorThread *self = currentMutatorThread;
-    if (self != NULL) {
-        trapCell = (void *)self->yieldpointTrap;
-    }
-    if (trapCell == NULL) {
-        trapCell = (void *)scalanative_GC_yieldpoint_trap;
-    }
-    return trapCell;
-}
-
 static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
     if (ex->ExceptionRecord->ExceptionFlags != 0) {
         return EXCEPTION_CONTINUE_SEARCH;
@@ -164,13 +122,7 @@ static LONG WINAPI SafepointTrapHandler(EXCEPTION_POINTERS *ex) {
     case EXCEPTION_ACCESS_VIOLATION: {
         void *faultAddress =
             (void *)(uintptr_t)ex->ExceptionRecord->ExceptionInformation[1];
-        void *trapCell = currentYieldpointTrapCell();
-        MutatorThread *self = currentMutatorThread;
-        bool isOwnTrap =
-            trapCell != NULL && isTrapFaultAddress(faultAddress, trapCell);
-        bool isStaleCarrierTrap =
-            !isOwnTrap && isWin32ContinuationStaleTrapFault(ex, self);
-        if (isOwnTrap || isStaleCarrierTrap) {
+        if (isTrapFault(faultAddress, currentMutatorThread)) {
             Synchronizer_yield();
             return EXCEPTION_CONTINUE_EXECUTION;
         }
@@ -213,43 +165,6 @@ static struct sigaction *previousSignalHandlerFor(int signal) {
     return NULL;
 }
 
-/*
- * Continuation migration may leave a previous carrier's TLS-derived trap
- * cell pointer cached in the resumed function's stack/registers (LLVM is
- * free to CSE `mrs tpidr_el0` and the subsequent TLS-slot dereference
- * across arbitrary call boundaries; the runtime cannot announce that a
- * scalanative_continuation_resume call may have moved execution onto a
- * different OS thread). The faulting load can therefore land on another
- * armed mutator's trap page rather than the current carrier's. Because
- * arming is global (Synchronizer_SuspendThreads sets stopThreads BEFORE
- * arming every mutator's trap page), any access-permission fault from a
- * registered mutator while stopThreads is set is a legitimate safepoint
- * trap on the current carrier - yielding here makes the current carrier
- * observe stopThreads and synchronise correctly on the next resume.
- */
-static bool isAccessPermissionFault(int signal, int si_code) {
-    if (signal == SIGSEGV)
-        return si_code == SEGV_ACCERR;
-#ifdef __APPLE__
-    if (signal == SIGBUS)
-        return si_code == BUS_ADRERR;
-#endif
-    return false;
-}
-
-static bool isContinuationStaleTrapFault(int signal, siginfo_t *siginfo,
-                                         MutatorThread *self) {
-    if (self == NULL)
-        return false;
-    if (!isSafepointTrapSignal(signal))
-        return false;
-    if (!isAccessPermissionFault(signal, siginfo->si_code))
-        return false;
-    if (!atomic_load_explicit(&Synchronizer_stopThreads, memory_order_acquire))
-        return false;
-    return true;
-}
-
 static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
     int old_errno = errno;
     if (isSelfSentSignal(siginfo) ||
@@ -258,19 +173,8 @@ static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
         errno = old_errno;
         return;
     }
-    void *trapCell = NULL;
     MutatorThread *self = currentMutatorThread;
-    if (self != NULL) {
-        trapCell = (void *)self->yieldpointTrap;
-    }
-    if (trapCell == NULL) {
-        trapCell = (void *)scalanative_GC_yieldpoint_trap;
-    }
-    bool isOwnTrap = isSafepointTrapSignal(signal) && trapCell != NULL &&
-                     isTrapFaultAddress(siginfo->si_addr, trapCell);
-    bool isStaleCarrierTrap =
-        !isOwnTrap && isContinuationStaleTrapFault(signal, siginfo, self);
-    if (isOwnTrap || isStaleCarrierTrap) {
+    if (isSafepointTrapSignal(signal) && isTrapFault(siginfo->si_addr, self)) {
 #ifdef _WIN32
         Synchronizer_yield();
 #else
@@ -379,11 +283,11 @@ static void Synchronizer_SuspendThreads(void) {
 #ifdef __APPLE__
     YieldPointTrap_unblockSignals();
 #endif
-    YieldPointTrap_armAllMutators();
+    YieldPointTrap_arm(scalanative_GC_yieldpoint_trap);
 }
 
 static void Synchronizer_ResumeThreads(void) {
-    YieldPointTrap_disarmAllMutators();
+    YieldPointTrap_disarm(scalanative_GC_yieldpoint_trap);
     atomic_store_explicit(&Synchronizer_stopThreads, false,
                           memory_order_release);
     // Pairs with the fence in Synchronizer_yield.
@@ -471,11 +375,9 @@ static void Synchronizer_afterForkChild(void) {
     if (customRoots != NULL)
         mutex_init(&customRoots->modificationLock);
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
-    YieldPointTrap_afterForkChild();
     // Fork may copy an armed trap page.
-    if (currentMutatorThread != NULL &&
-        currentMutatorThread->yieldpointTrap != NULL)
-        YieldPointTrap_disarm(currentMutatorThread->yieldpointTrap);
+    if (scalanative_GC_yieldpoint_trap != NULL)
+        YieldPointTrap_disarm(scalanative_GC_yieldpoint_trap);
 #endif
 }
 #endif
@@ -525,6 +427,10 @@ static bool Synchronizer_reapTerminated(MutatorThread *self) {
 void Synchronizer_init(void) {
     mutex_init(&synchronizerLock);
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
+    scalanative_GC_yieldpoint_trap = YieldPointTrap_init();
+    if (scalanative_GC_yieldpoint_trap == NULL)
+        exit(1);
+    YieldPointTrap_disarm(scalanative_GC_yieldpoint_trap);
     SetupYieldPointTrapHandler();
 #else
 #ifdef _WIN32

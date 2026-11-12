@@ -9,7 +9,5 @@ safepoint_t YieldPointTrap_init(void);
 void YieldPointTrap_resetTaskMachBadAccessPorts(void);
 void YieldPointTrap_arm(safepoint_t ref);
 void YieldPointTrap_disarm(safepoint_t ref);
-void YieldPointTrap_free(safepoint_t ref);
-void YieldPointTrap_afterForkChild(void);
 
 #endif

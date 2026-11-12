@@ -6,7 +6,7 @@ The design is described in terms of a well-known **polling-page safepoint** idea
 
 ## What the mutator does at a yield point
 
-The compiler lowers `scalanative_GC_yield` (when traps are on) to a **volatile load** through the thread-local pointer `scalanative_GC_yieldpoint_trap`. That pointer refers to a small mapping: readable while idle, **`PROT_NONE` while the GC wants a safepoint**, so the load faults.
+The compiler lowers `scalanative_GC_yield` (when traps are on) to a **volatile load** through the global pointer `scalanative_GC_yieldpoint_trap`. That pointer refers to one small mapping shared by all mutators: readable while idle, **`PROT_NONE` while the GC wants a safepoint**, so the load faults.
 
 See `tools/.../AbstractCodeGen.scala` (GC yield lowering) and `gc/shared/YieldPointTrap.c` (`mprotect` arm/disarm).
 

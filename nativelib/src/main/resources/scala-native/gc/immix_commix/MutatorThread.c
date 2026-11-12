@@ -18,10 +18,6 @@
 #endif
 #endif
 
-#ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
-#include "shared/YieldPointTrap.h"
-#endif
-
 #ifdef GC_WAKEUP_CONDVAR
 static bool MutatorThread_initWakeup(MutatorThread *self) {
     self->wakeupPending = false;
@@ -47,8 +43,6 @@ static void MutatorThread_dispose(MutatorThread *self) {
 #endif
 #endif
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
-    if (self->yieldpointTrap != NULL)
-        YieldPointTrap_free(self->yieldpointTrap);
 #ifdef GC_WAKEUP_CONDVAR
     if (self->wakeupInitialized) {
         pthread_cond_destroy(&self->wakeupCond);
@@ -107,14 +101,6 @@ bool MutatorThread_register(Field_t *stackbottom) {
     }
 #endif
 
-#ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
-    self->yieldpointTrap = YieldPointTrap_init();
-    if (self->yieldpointTrap == NULL)
-        goto failure;
-    YieldPointTrap_disarm(self->yieldpointTrap);
-    scalanative_GC_yieldpoint_trap = self->yieldpointTrap;
-#endif
-
     /* Publication must not make GC wait for an unadmitted thread. */
     atomic_init(&self->state, GC_MutatorThreadState_Unmanaged);
     MutatorThread_switchState(self, GC_MutatorThreadState_Unmanaged);
@@ -129,9 +115,6 @@ bool MutatorThread_register(Field_t *stackbottom) {
 
 failure:
     currentMutatorThread = NULL;
-#ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
-    scalanative_GC_yieldpoint_trap = NULL;
-#endif
     MutatorThread_dispose(self);
     return false;
 }
@@ -177,9 +160,6 @@ void MutatorThread_delete(MutatorThread *self) {
 
     assert(currentMutatorThread == self);
     currentMutatorThread = NULL;
-#ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
-    scalanative_GC_yieldpoint_trap = NULL;
-#endif
     MutatorThread_dispose(self);
 }
 
