@@ -284,13 +284,7 @@ private[process] object UnixProcessFactory {
       s"Cannot run program \"${cmd.get(0)}\": error=$ENOENT, No such file or directory"
     )
 
-  /* Run a file that failed to exec with ENOEXEC as a shell script, the same
-   * way POSIX execvp does: `sh file args...`. Arguments are passed to the
-   * shell as separate argv entries, never joined into a `sh -c` command
-   * string, so they are not subject to shell parsing (Issue #5241).
-   * A relative file is prefixed with "./" so that the shell neither searches
-   * PATH for it nor treats a leading '-' as an option.
-   */
+  // ENOEXEC fallback like execvp: `sh ./file args...`, args never joined.
   private def shellFallbackCommand(
       file: String,
       cmd: ju.List[String]

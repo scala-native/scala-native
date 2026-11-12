@@ -456,7 +456,7 @@ class ProcessTest {
     )
   }
 
-  // Issue #5241: the shell fallback must keep arguments separate.
+  // Issue #5241
   @Test def shellFallbackPreservesArguments(): Unit = {
     assumeFalse("Not tested in Windows", isWindows)
     assumeNotCrossCompiling()
@@ -493,7 +493,7 @@ class ProcessTest {
     }
   }
 
-  // Issue #5241: a program not found on PATH must not run through a shell.
+  // Issue #5241
   @Test def programNotFoundOnPathThrows(): Unit = {
     assumeFalse("Not tested in Windows", isWindows)
     assumeNotCrossCompiling()
