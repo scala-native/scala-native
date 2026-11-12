@@ -70,12 +70,29 @@ private[linker] class Reach(
 
   def result(): ReachabilityAnalysis = {
     cleanup()
+    orderFieldsByDeclaration()
 
+    // Drop nulls from reachUnavailable. Fields of classes follow their
+    // ordered members: relinking takes the field order from this sequence.
     val defns = mutable.UnrolledBuffer.empty[nir.Defn]
     defns.sizeHint(done.size)
-    // drop the null values that have been introduced
-    // in reachUnavailable
-    done.valuesIterator.filter(_ != null).foreach(defns += _)
+    def isClassField(defn: nir.Defn) = defn match {
+      case _: nir.Defn.Var | _: nir.Defn.Const =>
+        infos.get(defn.name.top).exists(_.isInstanceOf[Class])
+      case _ => false
+    }
+    done.valuesIterator.foreach { defn =>
+      if (defn != null && !isClassField(defn)) defns += defn
+    }
+    infos.valuesIterator.foreach {
+      case cls: Class =>
+        cls.members.foreach {
+          case fld: Field =>
+            done.get(fld.name).filter(_ != null).foreach(defns += _)
+          case _ => ()
+        }
+      case _ => ()
+    }
 
     if (unreachable.isEmpty && unsupported.isEmpty)
       new ReachabilityAnalysis.Result(
@@ -98,6 +115,32 @@ private[linker] class Reach(
         foundServiceProviders = foundServiceProviders
       )
   }
+
+  // Fields are added in reach order, which follows hash-ordered collections
+  // and differs between linker builds; the layout needs declaration order.
+  private def orderFieldsByDeclaration(): Unit =
+    infos.valuesIterator.foreach {
+      case cls: Class =>
+        val fields = cls.members.collect { case fld: Field => fld }
+        if (fields.size > 1) {
+          val declared = loader
+            .load(cls.name)
+            .getOrElse(injects.filter(_.name.top == cls.name))
+            .iterator
+            .collect {
+              case defn @ (_: nir.Defn.Var | _: nir.Defn.Const) => defn.name
+            }
+            .zipWithIndex
+            .toMap
+          val others = cls.members.filterNot(_.isInstanceOf[Field])
+          cls.members.clear()
+          cls.members ++= others
+          cls.members ++= fields.sortBy(fld =>
+            declared.getOrElse(fld.name, Int.MaxValue)
+          )
+        }
+      case _ => ()
+    }
 
   def cleanup(): Unit = {
     // Remove all unreachable methods from the

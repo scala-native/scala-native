@@ -52,9 +52,10 @@ final class BinaryDeserializer(buffer: ByteBuffer, nirSource: NIRSource) {
     allDefns.toSeq
   }
 
-  private lazy val offsets: mutable.Map[Global, Int] = {
+  // Ordered: field layout follows declaration order
+  private lazy val offsets: mutable.ArrayBuffer[(Global, Int)] = {
     buffer.position(prelude.sections.offsets)
-    val entries = mutable.Map.empty[Global, Int]
+    val entries = mutable.ArrayBuffer.empty[(Global, Int)]
 
     while ({
       val global = getGlobal()
@@ -62,14 +63,13 @@ final class BinaryDeserializer(buffer: ByteBuffer, nirSource: NIRSource) {
       global match {
         case Global.None => false
         case _           =>
-          entries(global) = offset
+          entries += global -> offset
           true
       }
     }) ()
 
     entries
   }
-  private lazy val globals = offsets.keySet
 
   private val cache = new mutable.LongMap[Any]
   private def in[T](start: Int)(getT: => T): T = {
