@@ -75,7 +75,6 @@ object ExternalThreadScenarios {
            Seq("-DEXTERNAL_SHARED_LIBRARY")
          else Nil) ++
         (if (cppExceptions) Seq("-DEXTERNAL_CPP_EXCEPTIONS") else Nil) ++
-        (if (cfg.gc != GC.none) Seq("-DEXTERNAL_COLLECTING_GC") else Nil) ++
         (if (Set(GC.immix, GC.commix)(cfg.gc)) Seq("-DEXTERNAL_RECLAIMING_GC")
          else Nil)
     for ((language, compiler, standard, extension) <- Seq(
