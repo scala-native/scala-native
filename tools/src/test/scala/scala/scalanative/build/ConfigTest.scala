@@ -8,7 +8,7 @@ import org.junit.Test
 class ConfigTest {
 
   @Test def relativeBaseDirIsMadeAbsolute(): Unit = {
-    val config = Config.empty.withBaseDir(Paths.get("target/../native"))
+    val config = Config.empty.withBaseDir(Paths.get("native"))
     val expected = Paths.get("native").toAbsolutePath()
     assertEquals(expected, config.baseDir)
     assertTrue(config.workDir.isAbsolute())

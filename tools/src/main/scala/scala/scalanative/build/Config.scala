@@ -252,7 +252,7 @@ object Config {
   ) extends Config {
 
     def withBaseDir(value: Path): Config =
-      copy(baseDir = value.toAbsolutePath().normalize())
+      copy(baseDir = value.toAbsolutePath())
 
     def withTestConfig(value: Boolean): Config =
       copy(testConfig = value)
