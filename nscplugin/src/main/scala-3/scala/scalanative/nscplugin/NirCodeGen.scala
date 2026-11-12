@@ -34,24 +34,30 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
   protected val cachedMethodSig =
     collection.mutable.Map.empty[(Symbol, Boolean, Boolean), nir.Type.Function]
 
-  protected val curClassSym = new util.ScopedVar[ClassSymbol]
-  protected val curClassFresh = new util.ScopedVar[nir.Fresh]
+  protected val curClassSym = new util.ScopedVar[ClassSymbol]("curClassSym")
+  protected val curClassFresh = new util.ScopedVar[nir.Fresh]("curClassFresh")
 
-  protected val curMethodSym = new util.ScopedVar[Symbol]
-  protected val curMethodSig = new util.ScopedVar[nir.Type]
-  protected val curMethodInfo = new util.ScopedVar[CollectMethodInfo]
-  protected val curMethodEnv = new util.ScopedVar[MethodEnv]
-  protected val curMethodLabels = new util.ScopedVar[MethodLabelsEnv]
+  protected val curMethodSym = new util.ScopedVar[Symbol]("curMethodSym")
+  protected val curMethodSig = new util.ScopedVar[nir.Type]("curMethodSig")
+  protected val curMethodInfo =
+    new util.ScopedVar[CollectMethodInfo]("curMethodInfo")
+  protected val curMethodEnv = new util.ScopedVar[MethodEnv]("curMethodEnv")
+  protected val curMethodLabels =
+    new util.ScopedVar[MethodLabelsEnv]("curMethodLabels")
   protected val curMethodLocalNames =
-    new util.ScopedVar[mutable.Map[nir.Local, nir.LocalName]]
-  protected val curMethodThis = new util.ScopedVar[Option[nir.Val]]
-  protected val curMethodIsExtern = new util.ScopedVar[Boolean]
+    new util.ScopedVar[mutable.Map[nir.Local, nir.LocalName]](
+      "curMethodLocalNames"
+    )
+  protected val curMethodThis =
+    new util.ScopedVar[Option[nir.Val]]("curMethodThis")
+  protected val curMethodIsExtern =
+    new util.ScopedVar[Boolean]("curMethodIsExtern")
 
-  protected val curFresh = new util.ScopedVar[nir.Fresh]
+  protected val curFresh = new util.ScopedVar[nir.Fresh]("curFresh")
   protected var curScopes =
-    new util.ScopedVar[mutable.Set[DebugInfo.LexicalScope]]
-  protected val curFreshScope = new util.ScopedVar[nir.Fresh]
-  protected val curScopeId = new util.ScopedVar[nir.ScopeId]
+    new util.ScopedVar[mutable.Set[DebugInfo.LexicalScope]]("curScopes")
+  protected val curFreshScope = new util.ScopedVar[nir.Fresh]("curFreshScope")
+  protected val curScopeId = new util.ScopedVar[nir.ScopeId]("curScopeId")
   protected implicit def getScopeId: nir.ScopeId = {
     val res = curScopeId.get
     assert(res.id >= nir.ScopeId.TopLevel.id)
@@ -63,7 +69,8 @@ class NirCodeGen(val settings: GenNIR.Settings)(using ctx: Context)
     case _               => 0L
   })
 
-  protected val curUnwindHandler = new util.ScopedVar[Option[nir.Local]]
+  protected val curUnwindHandler =
+    new util.ScopedVar[Option[nir.Local]]("curUnwindHandler")
 
   protected val lazyValsAdapter = AdaptLazyVals(defnNir)
 
