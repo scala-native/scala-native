@@ -20,7 +20,7 @@
 //
 // Sweeper calls sweepSimpleBlock and sweepSuperblock they update the
 // corresponding internal structures that relate to partially free blocks
-//(recycledBlocks in Allocator and freeLists in LargeAllocator).
+//(recycledBlocks in BlockAllocator and freeLists in LargeAllocator).
 // If there is a superblock that crosses the batch boundary,
 // it is handled in the batch where it starts.
 // Sweeper finds free superblocks (i.e. range of free blocks) within its batch.
@@ -166,7 +166,7 @@ uint32_t Sweeper_sweepSimpleBlock(MutatorThread *thread, BlockMeta *blockMeta,
 
             assert(BlockMeta_FirstFreeLine(blockMeta) >= 0);
             assert(BlockMeta_FirstFreeLine(blockMeta) < LINE_COUNT);
-            atomic_fetch_add_explicit(&allocator->recycledBlockCount, 1,
+            atomic_fetch_add_explicit(&blockAllocator.recycledBlockCount, 1,
                                       memory_order_relaxed);
 
 #ifdef GC_ASSERTIONS
@@ -307,30 +307,13 @@ uint32_t Sweeper_sweepSuperblock(LargeAllocator *allocator,
     return freeCount;
 }
 
-static MutatorThread *Sweep_SelectMutatorThread() {
-    static atomic_uint_fast32_t sweepCounter;
-    int sweepId = atomic_fetch_add(&sweepCounter, 1);
-    int threadId = sweepId % mutatorThreadsCount;
-    atomic_thread_fence(memory_order_acquire);
-    MutatorThreads thread = mutatorThreads;
-    for (int i = 0; i < threadId && thread->next != NULL; i++) {
-        thread = thread->next;
-    }
-    return thread->value;
-}
-
-void Sweep_applyResult(SweepResult *result, BlockAllocator *blockAllocator,
-                       MutatorThread *optionalMutatorThread) {
-    MutatorThread *selectedThread = optionalMutatorThread;
-    if (selectedThread == NULL)
-        selectedThread = Sweep_SelectMutatorThread();
-    Allocator *allocator = &selectedThread->allocator;
+void Sweep_applyResult(SweepResult *result, BlockAllocator *blockAllocator) {
+    word_t *blockMetaStart = blockAllocator->blockMetaStart;
     {
         BlockMeta *first = result->recycledBlocks.first;
         if (first != NULL) {
-            BlockList_PushAll(&allocator->recycledBlocks,
-                              allocator->blockMetaStart, first,
-                              result->recycledBlocks.last);
+            BlockList_PushAll(&blockAllocator->recycledBlocks, blockMetaStart,
+                              first, result->recycledBlocks.last);
         }
     }
 
@@ -339,7 +322,7 @@ void Sweep_applyResult(SweepResult *result, BlockAllocator *blockAllocator,
         BlockMeta *first = item.first;
         if (first != NULL) {
             BlockList_PushAll(&blockAllocator->freeSuperblocks[i],
-                              allocator->blockMetaStart, first, item.last);
+                              blockMetaStart, first, item.last);
         }
     }
     SweepResult_clear(result);
@@ -527,10 +510,8 @@ void Sweeper_Sweep(Stats *stats, atomic_uint_fast32_t *cursorDone,
 
     Stats_RecordTimeSync(stats, postsync_start_ns);
 
-    Sweep_applyResult(&sweepResult, &blockAllocator, recycleBlocksTo);
+    Sweep_applyResult(&sweepResult, &blockAllocator);
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
-    // The selected allocator must stay alive through publication of recycled
-    // blocks, not only through scanning the batch.
     if (useThreadsIterator)
         MutatorThreads_unlockRead();
 #endif

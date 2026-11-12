@@ -24,7 +24,6 @@ typedef struct {
     word_t *largeCursor;
     word_t *largeLimit;
     // additional things used for Allocator_newBlock
-    BlockList recycledBlocks;
     // Recycled blocks taken off a shared list that still have free lines.
     // Owned by this mutator until the next collection.
     LocalBlockList parkedBlocks;
@@ -34,9 +33,6 @@ typedef struct {
     // additional things used for
     BlockMeta *largeBlock;
     word_t *largeBlockStart;
-    // This gets concurrently updated by other threads, keep if it as far away
-    // as possible from fast path.
-    atomic_uint_fast32_t recycledBlockCount;
 } Allocator;
 
 void Allocator_Init(Allocator *allocator, BlockAllocator *blockAllocator,

@@ -292,10 +292,7 @@ bool Heap_shouldGrow(Heap *heap) {
     // Not net of the blocks mutators took during the concurrent sweep.
     uint32_t freeBlockCount = (uint32_t)blockAllocator.sweptFreeBlockCount;
     uint32_t blockCount = heap->blockCount;
-    uint32_t recycledBlockCount = 0;
-    MutatorThreads_foreach(mutatorThreads, node) {
-        recycledBlockCount += node->value->allocator.recycledBlockCount;
-    }
+    uint32_t recycledBlockCount = (uint32_t)blockAllocator.recycledBlockCount;
     uint32_t unavailableBlockCount =
         blockCount - (freeBlockCount + recycledBlockCount);
 

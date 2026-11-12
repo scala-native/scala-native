@@ -212,6 +212,10 @@ word_t *LargeAllocator_lazySweep(LargeAllocator *largeAllocator, Heap *heap,
             atomic_thread_fence(memory_order_acquire);
         }
     }
+    // Coalescing, and growth after the collection, can free blocks between
+    // the last attempt above and the end of the sweep.
+    if (object == NULL)
+        object = LargeAllocator_tryAlloc(largeAllocator, size);
     Stats_RecordTime(stats, end_ns);
     Stats_RecordEvent(stats, event_sweep, start_ns, end_ns);
     return object;
@@ -276,6 +280,11 @@ word_t *LargeAllocator_Alloc(Heap *heap, size_t size) {
 
         if (!Sweeper_IsSweepDone(heap)) {
             object = LargeAllocator_lazySweep(largeAllocator, heap, size);
+            if (object != NULL)
+                goto done;
+        } else {
+            // The sweep may have ended after the attempt above.
+            object = LargeAllocator_tryAlloc(largeAllocator, size);
             if (object != NULL)
                 goto done;
         }

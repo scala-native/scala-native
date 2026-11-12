@@ -22,15 +22,11 @@ void Allocator_Init(Allocator *allocator, BlockAllocator *blockAllocator,
     allocator->bytemap = bytemap;
     allocator->heapStart = heapStart;
 
-    BlockList_Init(&allocator->recycledBlocks);
     LocalBlockList_Clear(&allocator->parkedBlocks);
-    allocator->recycledBlockCount = 0;
 }
 
 void Allocator_Clear(Allocator *allocator) {
-    BlockList_Clear(&allocator->recycledBlocks);
     LocalBlockList_Clear(&allocator->parkedBlocks);
-    allocator->recycledBlockCount = 0;
     allocator->block = NULL;
     allocator->cursor = NULL;
     allocator->limit = NULL;
@@ -114,9 +110,17 @@ static bool Allocator_useRecycledBlock(Allocator *allocator, BlockMeta *block,
         return true;
     }
     bool found = Allocator_takeMediumHole(allocator, block, blockStart, size);
-    if (BlockMeta_FirstFreeLine(block) != LAST_HOLE)
+    if (!found) {
+        // Untouched: any mutator may take its lines for small objects. Kept
+        // private, one thread could take every recycled block out of reach
+        // of the others, and they would grow the heap instead.
+        BlockList_Push(&allocator->blockAllocator->rejectedBlocks,
+                       allocator->blockMetaStart, block);
+    } else if (BlockMeta_FirstFreeLine(block) != LAST_HOLE) {
+        // Still this mutator's medium block: no other thread may use it.
         LocalBlockList_Push(&allocator->parkedBlocks, allocator->blockMetaStart,
                             block);
+    }
     return found;
 }
 
@@ -130,35 +134,28 @@ static bool Allocator_claimFromList(Allocator *allocator, BlockList *list,
     return false;
 }
 
-// Sweep spreads recycled blocks over all mutators. After a collection, take
-// free lines from any of them before growing the heap.
+// After a collection, take free lines from recycled blocks, including holes
+// too small for the fast path, before growing the heap.
 static bool Allocator_claimRecycled(Allocator *allocator, size_t size) {
+    BlockAllocator *blockAllocator = allocator->blockAllocator;
     if (size > LINE_SIZE &&
         (Allocator_takeMediumHole(allocator, allocator->largeBlock,
                                   allocator->largeBlockStart, size) ||
          Allocator_takeMediumHole(allocator, allocator->block,
                                   allocator->blockStart, size)))
         return true;
-    if (Allocator_claimFromList(allocator, &allocator->recycledBlocks, size))
+    // Any free line fits a small object.
+    if (size <= LINE_SIZE &&
+        Allocator_claimFromList(allocator, &blockAllocator->rejectedBlocks,
+                                size))
         return true;
-
-    // Blocking here could deadlock with a collector that holds the lock and
-    // waits for this thread. Reach a safepoint before each retry.
-    while (!MutatorThreads_tryLockRead()) {
-        scalanative_GC_yield();
-        thread_yield();
-    }
-    bool claimed = false;
-    MutatorThreads_foreach(mutatorThreads, node) {
-        Allocator *source = &node->value->allocator;
-        if (source != allocator &&
-            Allocator_claimFromList(allocator, &source->recycledBlocks, size)) {
-            claimed = true;
-            break;
-        }
-    }
-    MutatorThreads_unlockRead();
-    return claimed;
+    if (Allocator_claimFromList(allocator, &blockAllocator->recycledBlocks,
+                                size))
+        return true;
+    // A medium allocation may have rejected a recycled block meanwhile.
+    return size <= LINE_SIZE &&
+           Allocator_claimFromList(allocator, &blockAllocator->rejectedBlocks,
+                                   size);
 }
 
 static word_t *Allocator_allocRecycled(Allocator *allocator, size_t size) {
@@ -282,8 +279,12 @@ bool Allocator_newBlock(Allocator *allocator) {
     word_t *blockMetaStart = allocator->blockMetaStart;
     BlockMeta *block = Allocator_popParked(allocator);
     if (block == NULL) {
-        // Other mutators may pop this list too, see Allocator_claimRecycled.
-        block = BlockList_Pop(&allocator->recycledBlocks, blockMetaStart);
+        block = BlockList_Pop(&allocator->blockAllocator->rejectedBlocks,
+                              blockMetaStart);
+    }
+    if (block == NULL) {
+        block = BlockList_Pop(&allocator->blockAllocator->recycledBlocks,
+                              blockMetaStart);
     }
     word_t *blockStart;
 
@@ -355,6 +356,10 @@ word_t *Allocator_lazySweep(Allocator *allocator, Heap *heap, uint32_t size) {
             atomic_thread_fence(memory_order_acquire);
         }
     }
+    // Coalescing, and growth after the collection, can free blocks between
+    // the last attempt above and the end of the sweep.
+    if (object == NULL)
+        object = Allocator_tryAlloc(allocator, size);
     Stats_RecordTime(stats, end_ns);
     Stats_RecordEvent(stats, event_sweep, start_ns, end_ns);
     return object;
@@ -402,7 +407,10 @@ NOINLINE word_t *Allocator_allocSlow(Allocator *allocator, Heap *heap,
         }
 
         if (Sweeper_IsSweepDone(heap)) {
-            object = Allocator_allocRecycled(allocator, size);
+            // The sweep may have ended after the attempt above.
+            object = Allocator_tryAlloc(allocator, size);
+            if (object == NULL)
+                object = Allocator_allocRecycled(allocator, size);
             if (object != NULL)
                 goto done;
         }
