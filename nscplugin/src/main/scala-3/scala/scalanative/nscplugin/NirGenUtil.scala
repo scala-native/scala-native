@@ -128,8 +128,7 @@ trait NirGenUtil(using Context) { self: NirCodeGen =>
 }
 
 object NirGenUtil {
-  // Shared by all compilations using the plugin's class loader, which might
-  // run in parallel: the context and its value must be read and written together
+  // May be shared by parallel compilations
   class ContextCached[T](init: Context ?=> T) {
     @volatile private var cached: (Context, T) | Null = null
 
