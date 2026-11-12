@@ -62,9 +62,6 @@ void *scalanative_externalGC_saveContext(ThreadInfo *info) {
 
 bool scalanative_externalGC_restoreContext(void *context) {
     currentMutatorThread = context;
-#ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
-    scalanative_GC_yieldpoint_trap = currentMutatorThread->yieldpointTrap;
-#endif
     return context != NULL;
 }
 #endif

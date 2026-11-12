@@ -121,13 +121,13 @@ object GC {
   @name("scalanative_GC_yield")
   private[runtime] def `yield`(): Unit = extern
 
-  /** Thread-local pointer to this mutator's trap page (distinct per pthread).
-   *  The GC mprotects each mutator's page during STW. Used only with trap-based
-   *  yieldpoints when multithreading is enabled (same condition as the
+  /** Pointer to the trap page polled by all mutators. The GC protects the page
+   *  to stop the world. Used only with trap-based yieldpoints when
+   *  multithreading is enabled (same condition as the
    *  `SCALANATIVE_GC_USE_YIELDPOINT_TRAPS` nativelib define).
    */
   @name("scalanative_GC_yieldpoint_trap")
-  private[runtime] var yieldPointTrap: /* thread local */ RawPtr = extern
+  private[runtime] var yieldPointTrap: RawPtr = extern
 
   /** Notify the Garbage Collector about the range of memory which should be
    *  scanned when marking the objects. The range should contain only memory NOT
