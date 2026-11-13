@@ -7,6 +7,7 @@ import org.junit.Assert._
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.Platform._
 
 import scala.scalanative.junit.utils.AssumesHelper._
 
@@ -35,12 +36,25 @@ object ProcessWaitForInterruptTest {
       assertTrue("process still alive", proc.isAlive())
     }
 
-  def checkInterruptedBeforeWaitOnExited(wait: Wait): Unit = {
-    val proc = processSleep(0).start()
-    assertTrue(proc.waitFor(10, TimeUnit.SECONDS))
+  /* The JVM on Windows throws even when the process has already exited.
+   * Elsewhere, and in Scala Native, waitFor returns and keeps the status.
+   */
+  def checkInterruptedBeforeWaitOnExited(wait: Wait, observed: Boolean) = {
+    val proc = processForCommand("echo").start()
+    if (observed) assertTrue(proc.waitFor(30, TimeUnit.SECONDS))
+    else Thread.sleep(500)
     Thread.currentThread().interrupt()
-    try wait(proc)
-    finally assertTrue("interrupt status kept", Thread.interrupted())
+    val res =
+      try { wait(proc); "returned" }
+      catch { case _: InterruptedException => "threw" }
+    val interrupted = Thread.interrupted()
+    if (executingInJVM && isWindows) {
+      assertEquals("interrupt status", res == "returned", interrupted)
+    } else {
+      assertEquals("waitFor result", "returned", res)
+      assertTrue("interrupt status kept", interrupted)
+    }
+    assertFalse("process alive", proc.isAlive())
   }
 
   def checkInterruptedDuringWait(
@@ -89,10 +103,11 @@ class ProcessWaitForInterruptTest {
     }
   }
 
-  @Test def waitForOnExitedProcessIgnoresInterrupt(): Unit = {
-    checkInterruptedBeforeWaitOnExited(waitUntimed)
-    checkInterruptedBeforeWaitOnExited(waitTimed)
-  }
+  @Test def waitForOnExitedProcessIgnoresInterrupt(): Unit =
+    for (observed <- Seq(true, false)) {
+      checkInterruptedBeforeWaitOnExited(waitUntimed, observed)
+      checkInterruptedBeforeWaitOnExited(waitTimed, observed)
+    }
 
   @Test def waitForThrowsIfInterruptedDuringWait(): Unit = {
     assumeMultithreadingIsEnabled()

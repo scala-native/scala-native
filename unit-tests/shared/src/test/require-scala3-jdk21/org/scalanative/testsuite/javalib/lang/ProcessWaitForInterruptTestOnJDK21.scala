@@ -26,7 +26,7 @@ class ProcessWaitForInterruptTestOnJDK21 {
     onVirtualThread {
       checkInterruptedBeforeWait(waitUntimed)
       checkInterruptedBeforeWait(waitTimed)
-      checkInterruptedBeforeWaitOnExited(waitUntimed)
+      checkInterruptedBeforeWaitOnExited(waitUntimed, observed = true)
     }
   }
 

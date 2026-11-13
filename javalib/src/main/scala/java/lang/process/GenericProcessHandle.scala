@@ -104,22 +104,21 @@ private[process] abstract class GenericProcessHandle(
   @inline private def destroy(force: Boolean) =
     hasExited || destroyImpl(force = force)
 
-  private def waitForWith(check: => Boolean) = hasExited || check && hasExited
+  private def waitForWith(check: => Boolean) =
+    hasExited || exitedWhileInterrupted() || check && hasExited
 
   // Single-threaded exit checkers do not observe a pending interrupt.
-  private def checkInterrupted(): Unit =
-    if (Thread.interrupted()) throw new InterruptedException()
+  private def exitedWhileInterrupted(): Boolean =
+    Thread.currentThread().isInterrupted() && (checkIfExited() || {
+      Thread.interrupted()
+      throw new InterruptedException()
+    })
 
-  def waitFor(): Boolean = waitForWith {
-    checkInterrupted()
-    exitChecker.waitAndReapSome(0, None)
-  }
+  def waitFor(): Boolean = waitForWith(exitChecker.waitAndReapSome(0, None))
 
   def waitFor(timeout: scala.Long, unit: TimeUnit): Boolean =
-    waitForWith(timeout > 0L && {
-      checkInterrupted()
-      exitChecker.waitAndReapSome(timeout, Some(unit))
-    })
+    hasExited || timeout > 0L &&
+      waitForWith(exitChecker.waitAndReapSome(timeout, Some(unit)))
 
   def waitFor(duration: java.time.Duration): Boolean = {
     // Be robust to SN CI uncertainty, use only JDK 8 methods
