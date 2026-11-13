@@ -13,7 +13,6 @@ import scalanative.unsafe._
 import scalanative.unsigned._
 
 import ju.ArrayList
-import ju.ScalaOps._
 
 private[process] object UnixProcessFactory {
   val haveSpawnAddChdir = JavalibSpawn.hasFileActionsAddChdir()
@@ -53,6 +52,10 @@ private[process] object UnixProcessFactory {
    */
 
   def forkChild(builder: ProcessBuilder)(implicit z: Zone): GenericProcess = {
+    val cmd = builder.command()
+    val binaries = binaryPaths(builder, cmd.get(0)).toList
+    if (binaries.isEmpty) throw programNotFound(cmd)
+
     var success = false
     val (infds, outfds, errfds) = createPipes(builder)
 
@@ -69,8 +72,6 @@ private[process] object UnixProcessFactory {
     }
 
     def runChild(): Nothing = {
-      val cmd = builder.command()
-      val binaries = binaryPaths(builder.environment(), cmd.get(0))
       val argv = nullTerminate(cmd)
       val envp = nullTerminate(builder.getEnvironmentAsList())
 
@@ -103,10 +104,7 @@ private[process] object UnixProcessFactory {
       binaries.foreach { b =>
         val bin = toCString(b)
         if (unistd.execve(bin, argv, envp) == -1 && errno == ENOEXEC) {
-          val al = new ArrayList[String](3)
-          al.add(shell); al.add("-c")
-          al.add(cmd.scalaOps.mkString(sep = " "))
-          val newArgv = nullTerminate(al)
+          val newArgv = nullTerminate(shellFallbackCommand(b, cmd))
           unistd.execve(toCString(shell), newArgv, envp)
         }
       }
@@ -243,16 +241,20 @@ private[process] object UnixProcessFactory {
         } else status
       }
 
-      var status = ENOEXEC
-      val execIter = binaryPaths(builder.environment(), cmd.get(0))
+      val execIter = binaryPaths(builder, cmd.get(0))
+      if (!execIter.hasNext) throw programNotFound(cmd)
 
-      while (status == ENOEXEC && execIter.hasNext)
-        status = spawn(execIter.next(), argv)
+      var status = ENOEXEC
+      var exec: String = null
+      while (status == ENOEXEC && execIter.hasNext) {
+        val candidate = execIter.next()
+        status = spawn(candidate, argv)
+        if (status == ENOEXEC && exec == null) exec = candidate
+      }
 
       if (status == ENOEXEC) { // try falling back to shell script
-        val shCmd = shell
-        val fallbackCmd = Array(shCmd, "-c", cmd.scalaOps.mkString(sep = " "))
-        status = spawn(shCmd, nullTerminate(ju.Arrays.asList(fallbackCmd)))
+        val fallbackCmd = shellFallbackCommand(exec, cmd)
+        status = spawn(shell, nullTerminate(fallbackCmd))
       }
 
       UnixProcess.throwOnErrnum(status, "Unable to posix_spawn process")
@@ -276,6 +278,24 @@ private[process] object UnixProcessFactory {
         "posix_spawn_file_actions_destroy"
       )
     }
+  }
+
+  private def programNotFound(cmd: ju.List[String]): IOException =
+    new IOException(
+      "Cannot run program \"" + cmd.get(0) + "\": error=" + ENOENT +
+        ", No such file or directory"
+    )
+
+  // ENOEXEC fallback like execvp: `sh ./file args...`, args never joined.
+  private def shellFallbackCommand(
+      file: String,
+      cmd: ju.List[String]
+  ): ju.List[String] = {
+    val res = new ArrayList[String](cmd.size() + 1)
+    res.add(shell)
+    res.add(if (file.startsWith("/")) file else "./" + file)
+    res.addAll(cmd.subList(1, cmd.size()))
+    res
   }
 
   private def nullTerminate(
@@ -406,10 +426,12 @@ private[process] object UnixProcessFactory {
 
   // The execvpe function isn't available on all platforms so find the
   // possible binaries to exec.
+  // Relative PATH entries are checked against the child's directory.
   private def binaryPaths(
-      environment: java.util.Map[String, String],
+      builder: ProcessBuilder,
       bin: String
   ): Iterator[String] = {
+    val environment = builder.environment()
     if (bin.indexOf('/') >= 0 || bin.startsWith(".")) {
       Iterator(bin)
     } else {
@@ -419,7 +441,10 @@ private[process] object UnixProcessFactory {
       }
       path.split(File.pathSeparator).iterator.flatMap { absPath =>
         val f = if (absPath.isEmpty) new File(bin) else new File(absPath, bin)
-        if (f.canExecute()) Some(f.toString()) else None
+        val inChildDir =
+          if (builder.isCwd || f.isAbsolute()) f
+          else new File(builder.directory(), f.getPath())
+        if (inChildDir.canExecute()) Some(f.toString()) else None
       }
     }
   }

@@ -456,6 +456,66 @@ class ProcessTest {
     )
   }
 
+  // Issue #5241
+  @Test def shellFallbackPreservesArguments(): Unit = {
+    assumeFalse("Not tested in Windows", isWindows)
+    assumeNotCrossCompiling()
+    val dir = Files.createTempDirectory("process-5241")
+    val script = dir.resolve("noshebang")
+    val marker = dir.resolve("INJECTED")
+    try {
+      Files.write(
+        script,
+        "for a in \"$@\"; do printf '[%s]\\n' \"$a\"; done\n"
+          .getBytes(StandardCharsets.UTF_8)
+      )
+      assertTrue(script.toFile().setExecutable(true))
+
+      val proc = processForCommand(
+        script.toString,
+        "a b",
+        s"c;touch $marker",
+        "$HOME"
+      ).start()
+
+      assertProcessExitOrTimeout(proc)
+      assertEquals("", readInputStream(proc.getErrorStream()))
+      assertEquals(
+        s"[a b]$EOL[c;touch $marker]$EOL[$$HOME]$EOL",
+        readInputStream(proc.getInputStream())
+      )
+      assertEquals(0, proc.exitValue())
+      assertFalse("shell injection", Files.exists(marker))
+    } finally {
+      Files.deleteIfExists(marker)
+      Files.deleteIfExists(script)
+      Files.deleteIfExists(dir)
+    }
+  }
+
+  // Issue #5241
+  @Test def programNotFoundOnPathThrows(): Unit = {
+    assumeFalse("Not tested in Windows", isWindows)
+    assumeNotCrossCompiling()
+    val dir = Files.createTempDirectory("process-5241")
+    val marker = dir.resolve("INJECTED")
+    try {
+      val pb = processForCommand(
+        "scala-native-no-such-program-5241",
+        s"x; touch $marker"
+      )
+      val proc =
+        try Some(pb.start())
+        catch { case _: IOException => None }
+      proc.foreach(_.waitFor(5, TimeUnit.SECONDS))
+      assertFalse("shell injection", Files.exists(marker))
+      assertTrue("expected IOException", proc.isEmpty)
+    } finally {
+      Files.deleteIfExists(marker)
+      Files.deleteIfExists(dir)
+    }
+  }
+
   /* concurrentPipe() Design Note: Issue 4164
    *
    *   This evolution of concurrentPipe() is motivated by both experience
