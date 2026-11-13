@@ -11,6 +11,7 @@ import java.nio.file.attribute.PosixFilePermission._
 import java.nio.file.attribute._
 import java.util.WindowsHelperMethods._
 import java.util._
+import java.util.concurrent.ThreadLocalRandom
 import java.util.function.{BiPredicate, Consumer, Supplier}
 import java.util.stream.{Stream, StreamSupport}
 import java.{lang => jl}
@@ -440,24 +441,25 @@ object Files {
       dir
     }
 
-  def createDirectory(dir: Path, attrs: Array[FileAttribute[_]]): Path =
+  def createDirectory(dir: Path, attrs: Array[FileAttribute[_]]): Path = {
+    val mode = creationMode(attrs, default = 0x1ff) // 0777
     if (exists(dir, Array.empty))
       throw new FileAlreadyExistsException(dir.toString)
     else
-      tryMkdir(dir) match {
+      tryMkdir(dir, mode) match {
         case None =>
-          setAttributes(dir, attrs)
           dir
         case Some(_) if exists(dir, Array.empty) =>
           throw new FileAlreadyExistsException(dir.toString)
         case Some(failure) =>
           throw failure
       }
+  }
 
   // File.mkdir does not keep errno: Zone cleanup can clear it. Make the
   // directory here and turn the syscall's own error into an IOException
-  // that names the path. 0777 matches java.io.File.mkdir.
-  private def tryMkdir(dir: Path): Option[IOException] =
+  // that names the path.
+  private def tryMkdir(dir: Path, mode: Int): Option[IOException] =
     Zone.acquire { implicit z =>
       val file = dir.toFile()
       if (isWindows) {
@@ -474,20 +476,72 @@ object Files {
             )
           )
       } else {
-        val mode = Integer.parseInt("777", 8).toUInt
-        if (stat.mkdir(toCString(file.getPath()), mode) == 0) None
+        if (stat.mkdir(toCString(file.getPath()), mode.toUInt) == 0) None
         else Some(UnixException(dir.toString, errno))
       }
     }
 
   def createFile(path: Path, attrs: Array[FileAttribute[_]]): Path = {
-    if (exists(path, Array.empty))
+    val mode = creationMode(attrs, default = 0x1b6) // 0666
+    if (isWindows) {
+      if (exists(path, Array.empty) ||
+          !FileHelpers.createNewFile(path.toString, throwOnError = true))
+        throw new FileAlreadyExistsException(path.toString)
+    } else if (!createNewUnixFile(path.toString, mode))
       throw new FileAlreadyExistsException(path.toString)
-    else if (FileHelpers.createNewFile(path.toString, throwOnError = true)) {
-      setAttributes(path, attrs)
-    }
     path
   }
+
+  /* The mode a file is created with, from its initial attributes; the
+   * process umask still applies. Only POSIX permissions can be set
+   * atomically at creation, any other attribute is rejected up front.
+   */
+  private def creationMode(
+      attrs: Array[FileAttribute[_]],
+      default: Int
+  ): Int = {
+    var mode = default
+    var i = 0
+    while (i < attrs.length) {
+      val attr = attrs(i)
+      attr.name() match {
+        case "posix:permissions" | "unix:permissions" if !isWindows =>
+          mode = permissionsToMode(attr.value().asInstanceOf[Set[_]])
+        case name =>
+          throw new UnsupportedOperationException(
+            s"'$name' not supported as initial attribute"
+          )
+      }
+      i += 1
+    }
+    mode
+  }
+
+  private def permissionsToMode(perms: Set[_]): Int = {
+    var mode = 0
+    val it = perms.iterator()
+    while (it.hasNext()) {
+      val perm = it.next().asInstanceOf[PosixFilePermission]
+      if (perm == null) throw new NullPointerException()
+      mode |= 0x100 >> perm.ordinal() // OWNER_READ is 0400
+    }
+    mode
+  }
+
+  // false if path already exists
+  private def createNewUnixFile(path: String, mode: Int): Boolean =
+    Zone.acquire { implicit z =>
+      val fd = fcntl.open(
+        toCString(path),
+        fcntl.O_WRONLY | fcntl.O_CREAT | fcntl.O_EXCL,
+        mode.toUInt
+      )
+      if (fd >= 0) {
+        unistd.close(fd)
+        true
+      } else if (errno == EEXIST) false
+      else throw UnixException(path, errno)
+    }
 
   def createLink(link: Path, existing: Path): Path = Zone.acquire {
     implicit z =>
@@ -580,10 +634,13 @@ object Files {
       }
     }
 
-    if (exists(link, Array(LinkOption.NOFOLLOW_LINKS))) {
+    if (attrs.length > 0) {
+      throw new UnsupportedOperationException(
+        "Initial file attributes not supported when creating symbolic link"
+      )
+    } else if (exists(link, Array(LinkOption.NOFOLLOW_LINKS))) {
       throw new FileAlreadyExistsException(target.toString)
     } else if (tryCreateLink()) {
-      setAttributes(link, attrs)
       link
     } else {
       throw new IOException("Cannot create symbolic link")
@@ -596,14 +653,15 @@ object Files {
       attrs: Array[FileAttribute[_]]
   ): Path = {
 
+    val mode = creationMode(attrs, default = 0x1c0) // 0700
     if (!isWindows) {
-      val tempDirPath = FileHelpers.createTempDirectoryUnixImpl(dir, prefix)
-
-      if (attrs.length > 0)
-        setAttributes(tempDirPath, attrs)
-
-      tempDirPath
-
+      createTempUnix(dir.toString, prefix, "") { path =>
+        Zone.acquire { implicit z =>
+          if (stat.mkdir(toCString(path), mode.toUInt) == 0) true
+          else if (errno == EEXIST) false
+          else throw UnixException(path, errno)
+        }
+      }
     } else {
       val p = if (prefix == null) "" else prefix
       val temp = FileHelpers.createTempFile(
@@ -614,9 +672,7 @@ object Files {
         throwOnError = true
       )
       if (temp.delete() && temp.mkdir()) {
-        val tempPath = temp.toPath()
-        setAttributes(tempPath, attrs)
-        tempPath
+        temp.toPath()
       } else {
         throw new IOException()
       }
@@ -644,17 +700,42 @@ object Files {
       suffix: String,
       attrs: Array[FileAttribute[_]]
   ): Path = {
+    val mode = creationMode(attrs, default = 0x180) // 0600
+    if (!isWindows) {
+      val dirName = if (dir == null) FileHelpers.tempDir else dir.toString
+      val sfx = if (suffix == null) ".tmp" else suffix
+      createTempUnix(dirName, prefix, sfx)(createNewUnixFile(_, mode))
+    } else {
+      val p = if (prefix == null) "" else prefix
+      val temp = FileHelpers.createTempFile(
+        p,
+        suffix,
+        dir,
+        minLength = false,
+        throwOnError = true
+      )
+      temp.toPath()
+    }
+  }
+
+  /* Picks fresh names in dir until create makes one; create returns false
+   * when the name is already taken.
+   */
+  private def createTempUnix(dir: String, prefix: String, suffix: String)(
+      create: String => Boolean
+  ): Path = {
     val p = if (prefix == null) "" else prefix
-    val temp = FileHelpers.createTempFile(
-      p,
-      suffix,
-      dir,
-      minLength = false,
-      throwOnError = true
-    )
-    val tempPath = temp.toPath()
-    setAttributes(tempPath, attrs)
-    tempPath
+    var result: Path = null
+    var attempts = 0
+    while (result == null) {
+      if (attempts == 100)
+        throw new IOException(s"Unable to create a temporary file in '$dir'")
+      attempts += 1
+      val id = ThreadLocalRandom.current().nextLong() & jl.Long.MAX_VALUE
+      val candidate = Path.of(dir, Array(s"$p$id$suffix"))
+      if (create(candidate.toString)) result = candidate
+    }
+    result
   }
 
   def createTempFile(
@@ -1608,12 +1689,6 @@ object Files {
       options: Array[OpenOption]
   ): Path =
     write(path, lines, StandardCharsets.UTF_8, options)
-
-  private def setAttributes(path: Path, attrs: Array[FileAttribute[_]]): Unit =
-    attrs.map(a => (a.name(), a.value())).toMap.foreach {
-      case (name, value) =>
-        setAttribute(path, name, value.asInstanceOf[AnyRef], Array.empty)
-    }
 
   private val attributesClassesToViews: Map[Class[
     _ <: BasicFileAttributes
