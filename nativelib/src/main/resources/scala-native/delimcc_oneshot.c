@@ -232,17 +232,38 @@ static void unmapCoroutine(Coroutine *coroutine) {
     munmap(coroutine->mapping, STACK_SIZE + pageSize());
 }
 
+// Advises the system about the memory of a free stack, except the page of
+// the coroutine itself.
+static void adviseStack(Coroutine *coroutine, int advice) {
+    size_t page = pageSize();
+    char *low = (char *)coroutine->bounds.guardPage + page;
+    char *high = (char *)((uintptr_t)coroutine & ~(uintptr_t)(page - 1));
+    madvise(low, (size_t)(high - low), advice);
+}
+
+#if defined(__APPLE__)
+#define RELEASE_PAGES MADV_FREE_REUSABLE
+#elif defined(__linux__)
+#define RELEASE_PAGES MADV_DONTNEED
+#else
+#define RELEASE_PAGES MADV_FREE
+#endif
+
+// Stacks in the shared pool hold no memory besides the coroutine.
 static bool giveShared(Coroutine *coroutine) {
-    bool pooled = false;
     pthread_mutex_lock(&sharedPoolLock);
-    if (sharedPoolSize < SHARED_POOL_CAPACITY) {
-        coroutine->returnTo = sharedPool;
-        sharedPool = coroutine;
+    bool pooled = sharedPoolSize < SHARED_POOL_CAPACITY;
+    if (pooled)
         sharedPoolSize++;
-        pooled = true;
-    }
     pthread_mutex_unlock(&sharedPoolLock);
-    return pooled;
+    if (!pooled)
+        return false;
+    adviseStack(coroutine, RELEASE_PAGES);
+    pthread_mutex_lock(&sharedPoolLock);
+    coroutine->returnTo = sharedPool;
+    sharedPool = coroutine;
+    pthread_mutex_unlock(&sharedPoolLock);
+    return true;
 }
 
 static Coroutine *takeShared(void) {
@@ -253,6 +274,11 @@ static Coroutine *takeShared(void) {
         sharedPoolSize--;
     }
     pthread_mutex_unlock(&sharedPoolLock);
+#if defined(__APPLE__)
+    // Without it the pages used again are not accounted to the process.
+    if (coroutine != NULL)
+        adviseStack(coroutine, MADV_FREE_REUSE);
+#endif
     return coroutine;
 }
 
