@@ -155,6 +155,11 @@ object MyScalaNativePlugin extends AutoPlugin {
           multithreadingEnabledBySbtSysProps()
             .orElse(nc.multithreading)
         )
+        // Cross-compile all projects of this build, used e.g. to test iOS
+        .withTargetTriple(
+          env.get("SCALANATIVE_TARGET_TRIPLE").filter(_.nonEmpty)
+            .orElse(nc.targetTriple)
+        )
     },
     inConfig(Compile) {
       nativeLinkProfiling := nativeLinkProfilingImpl

@@ -281,7 +281,14 @@ object ScalaNativePluginInternal {
       val env = (run / envVars).value.toSeq
       val logger = streams.value.log
       val binary = toFile(nativeLink.value).getAbsolutePath
-      val args = binary +: spaceDelimited("<arg>").parsed
+      // Optional launcher used internally when the binary cannot be executed
+      // directly on the host, e.g. QEMU user mode emulator or iOS simulator
+      val emulatorOpts = sys.env
+        .get("CROSSCOMPILING_EMULATOR")
+        .toList
+        .flatMap(_.split(" "))
+        .filter(_.nonEmpty)
+      val args = emulatorOpts ++: binary +: spaceDelimited("<arg>").parsed
 
       @volatile var pipeOutputThreads: List[Thread] = Nil
 

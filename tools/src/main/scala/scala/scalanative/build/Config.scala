@@ -158,6 +158,14 @@ sealed trait Config {
       Seq("mac", "apple", "darwin").exists(customTriple.contains(_))
     }
 
+  private[scalanative] lazy val targetsIOS: Boolean =
+    compilerConfig.targetTriple.exists { customTriple =>
+      customTriple.contains("apple") && customTriple.contains("-ios")
+    }
+
+  private[scalanative] lazy val targetsIOSSimulator: Boolean =
+    targetsIOS && compilerConfig.targetTriple.exists(_.endsWith("-simulator"))
+
   private[scalanative] lazy val targetsMsys: Boolean = {
     compilerConfig.targetTriple.fold(Platform.isMsys) { customTriple =>
       customTriple.contains("windows-msys")

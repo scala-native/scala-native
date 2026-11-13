@@ -22,10 +22,17 @@ object LinktimeInfo {
   @resolvedAtLinktime
   def isAndroid: Boolean = target.env == "android"
 
+  /** True for all Darwin based Apple platforms: macOS, but also iOS (see
+   *  [[isIOS]]) which shares the same kernel interfaces and C ABI.
+   */
   @resolvedAtLinktime
   def isMac: Boolean =
     target.vendor == "apple" &&
-      (target.os == "darwin" || target.os == "macosx")
+      (target.os == "darwin" || target.os == "macosx" || target.os == "ios")
+
+  /** True when targeting iOS, either a physical device or the simulator */
+  @resolvedAtLinktime
+  def isIOS: Boolean = target.vendor == "apple" && target.os == "ios"
 
   @resolvedAtLinktime
   def isFreeBSD: Boolean = target.os == "freebsd"
