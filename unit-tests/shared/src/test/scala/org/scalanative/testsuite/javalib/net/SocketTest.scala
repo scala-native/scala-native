@@ -287,6 +287,34 @@ class SocketTest {
     }
   }
 
+  @Test def connectToServerSendingGreeting(): Unit = {
+    assumeTrue("requires multithreading", Platform.isMultithreadingEnabled)
+    val loopback = InetAddress.getLoopbackAddress
+    val server = new ServerSocket(0, 2, loopback)
+    val timeouts = Seq(0, 10000)
+    try {
+      val acceptor = new Thread(() =>
+        timeouts.foreach { _ =>
+          val peer = server.accept()
+          try peer.getOutputStream().write(42)
+          finally peer.close()
+        }
+      )
+      acceptor.start()
+      timeouts.foreach { timeout =>
+        val s = new Socket()
+        try {
+          s.connect(
+            new InetSocketAddress(loopback, server.getLocalPort),
+            timeout
+          )
+          assertEquals(42, s.getInputStream().read())
+        } finally s.close()
+      }
+      acceptor.join(10000)
+    } finally server.close()
+  }
+
   // Issue #4480
   @Test def closeUnblocksConnect(): Unit =
     checkCloseUnblocksConnect(timeout = 0)

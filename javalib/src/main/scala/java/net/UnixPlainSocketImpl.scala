@@ -125,13 +125,16 @@ private[net] class UnixPlainSocketImpl extends AbstractPlainSocketImpl {
             throw new ConnectException(
               s"connect failed: ${LibcExt.strError(soError)}"
             )
-          else if ((revents & (POLLIN | POLLHUP)) != 0) {
+          else if ((revents & POLLOUT) == 0) {
+            // Writable with no pending error means connected, even if the
+            // peer has already sent data (POLLIN) or closed (POLLHUP).
+            if ((revents & POLLERR) != 0)
+              throw new ConnectException(
+                s"connect failed, poll POLLERR: ${revents}"
+              )
             // Not enough information at this point to report remote host:port.
             throw new ConnectException("Connection refused")
-          } else if ((revents & POLLERR) != 0) {
-            val msg = s"connect failed, poll POLLERR: ${revents}"
-            throw new ConnectException(msg)
-          } // else should be POLLOUT - Open for Business, ignore XSI bits if set
+          }
       }
     }
 
