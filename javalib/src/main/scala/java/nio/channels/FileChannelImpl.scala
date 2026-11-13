@@ -306,31 +306,62 @@ private[java] final class FileChannelImpl(
     totalRead
   }
 
+  private def readIntoBuffer(dst: ByteBuffer)(
+      readArray: (Array[Byte], Int, Int) => Int
+  ): Int = {
+    if (dst.isReadOnly())
+      throw new IllegalArgumentException("Read-only buffer")
+
+    val dstPos = dst.position()
+    val len = dst.limit() - dstPos
+
+    if (dst.hasArray()) {
+      val n = readArray(dst.array(), dst.arrayOffset() + dstPos, len)
+      if (n > 0) dst.position(dstPos + n)
+      n
+    } else {
+      val tmp = new Array[Byte](len)
+      val n = readArray(tmp, 0, len)
+      if (n > 0) dst.put(tmp, 0, n)
+      n
+    }
+  }
+
+  // Read at absolute position, do not change current position.
   override def read(buffer: ByteBuffer, pos: Long): Int = {
+    if (pos < 0)
+      throw new IllegalArgumentException("Negative position")
+
     ensureOpen()
-    val stashPosition = position()
-    compelPosition(pos)
-    val bufPosition: Int = buffer.position()
-    read(buffer.array(), bufPosition, buffer.limit() - bufPosition) match {
-      case bytesRead if bytesRead < 0 =>
-        compelPosition(stashPosition)
-        bytesRead
-      case bytesRead =>
-        buffer.position(bufPosition + bytesRead)
-        compelPosition(stashPosition)
-        bytesRead
+
+    if (isWindows) {
+      val stashPosition = position()
+      compelPosition(pos)
+      try readIntoBuffer(buffer)(read(_, _, _))
+      finally compelPosition(stashPosition)
+    } else {
+      readIntoBuffer(buffer)(preadArray(_, _, _, pos))
     }
   }
 
   override def read(buffer: ByteBuffer): Int = {
     ensureOpen()
-    val bufPosition: Int = buffer.position()
-    read(buffer.array(), bufPosition, buffer.limit() - bufPosition) match {
-      case bytesRead if bytesRead < 0 =>
-        bytesRead
-      case bytesRead =>
-        buffer.position(bufPosition + bytesRead)
-        bytesRead
+    readIntoBuffer(buffer)(read(_, _, _))
+  }
+
+  private def preadArray(
+      buffer: Array[Byte],
+      offset: Int,
+      count: Int,
+      pos: Long
+  ): Int = {
+    if (count == 0) 0
+    else {
+      val readCount =
+        unistd.pread(fd.fd, buffer.at(offset), count.toCSize, pos.toSize)
+      if (readCount == 0) -1 // end of file
+      else if (readCount < 0) throw UnixException(getFileName(), errno)
+      else readCount.toInt
     }
   }
 
@@ -687,17 +718,23 @@ private[java] final class FileChannelImpl(
     writeArray(buffer, offset, count)
   }
 
-  private def writeByteBuffer(src: ByteBuffer): Int = {
+  private def writeByteBuffer(src: ByteBuffer): Int =
+    writeByteBuffer(src, writeArray(_, _, _))
+
+  private def writeByteBuffer(
+      src: ByteBuffer,
+      writeArray: (Array[Byte], Int, Int) => Int
+  ): Int = {
     // Precondition: caller has ensured that channel is open and open for write
     val srcPos = src.position()
     val srcLim = src.limit()
     val nBytes = srcLim - srcPos // number of bytes in range.
 
     val (arr, offset) = if (src.hasArray()) {
-      (src.array(), srcPos)
+      (src.array(), src.arrayOffset() + srcPos)
     } else {
       val ba = new Array[Byte](nBytes)
-      src.get(ba, srcPos, nBytes)
+      src.get(ba, 0, nBytes)
       (ba, 0)
     }
 
@@ -753,18 +790,40 @@ private[java] final class FileChannelImpl(
    * really changing the "current position".
    */
   override def write(src: ByteBuffer, pos: Long): Int = {
+    if (pos < 0)
+      throw new IllegalArgumentException("Negative position")
+
     ensureOpenForWrite()
-    val stashPosition = position()
-    compelPosition(pos)
 
-    val nBytesWritten = writeByteBuffer(src)
+    val nBytesWritten =
+      if (isWindows) {
+        val stashPosition = position()
+        compelPosition(pos)
+        try writeByteBuffer(src)
+        finally if (!openForAppending) compelPosition(stashPosition)
+      } else {
+        writeByteBuffer(src, pwriteArray(_, _, _, pos))
+      }
 
-    if (!openForAppending)
-      compelPosition(stashPosition)
-    else
+    if (openForAppending)
       seekEOF()
 
     nBytesWritten
+  }
+
+  private def pwriteArray(
+      array: Array[Byte],
+      offset: Int,
+      count: Int,
+      pos: Long
+  ): Int = {
+    if (count == 0) 0
+    else {
+      val writeCount =
+        unistd.pwrite(fd.fd, array.at(offset), count.toCSize, pos.toSize)
+      if (writeCount < 0) throw UnixException(getFileName(), errno)
+      writeCount.toInt
+    }
   }
 
   // Write relative to current position (SEEK_CUR) or, for APPEND, SEEK_END.

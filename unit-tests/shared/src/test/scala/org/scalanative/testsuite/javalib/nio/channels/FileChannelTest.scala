@@ -1118,4 +1118,209 @@ class FileChannelTest {
     }
   }
 
+  @Test def absoluteReadPastEndOfFileReturnsMinusOne(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      Files.write(f, "hello".getBytes("UTF-8"))
+
+      val channel = FileChannel.open(f, StandardOpenOption.READ)
+      try {
+        channel.position(1)
+        val dst = ByteBuffer.allocate(4)
+        assertEquals("read at EOF", -1, channel.read(dst, 5))
+        assertEquals("read past EOF", -1, channel.read(dst, 100))
+        assertEquals("dst position", 0, dst.position())
+        assertEquals("channel position", 1L, channel.position())
+      } finally channel.close()
+    }
+  }
+
+  @Test def absoluteReadAndWriteRejectNegativePosition(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      Files.write(f, "hello".getBytes("UTF-8"))
+
+      val channel = FileChannel.open(
+        f,
+        StandardOpenOption.READ,
+        StandardOpenOption.WRITE
+      )
+      try {
+        assertThrows(
+          classOf[IllegalArgumentException],
+          channel.read(ByteBuffer.allocate(1), -1L)
+        )
+        assertThrows(
+          classOf[IllegalArgumentException],
+          channel.write(ByteBuffer.allocate(1), -1L)
+        )
+        assertEquals("channel position", 0L, channel.position())
+      } finally channel.close()
+    }
+  }
+
+  @Test def absoluteReadAndWriteOnClosedChannelThrow(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      Files.write(f, "hello".getBytes("UTF-8"))
+
+      val channel = FileChannel.open(
+        f,
+        StandardOpenOption.READ,
+        StandardOpenOption.WRITE
+      )
+      channel.close()
+
+      assertThrows(
+        classOf[ClosedChannelException],
+        channel.read(ByteBuffer.allocate(1), 0L)
+      )
+      assertThrows(
+        classOf[ClosedChannelException],
+        channel.write(ByteBuffer.allocate(1), 0L)
+      )
+    }
+  }
+
+  @Test def absoluteWriteShouldNotChangeChannelPosition(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      Files.write(f, "hello, world!".getBytes("UTF-8"))
+
+      val channel = FileChannel.open(
+        f,
+        StandardOpenOption.READ,
+        StandardOpenOption.WRITE
+      )
+      try {
+        channel.position(3)
+
+        val src = ByteBuffer.wrap("W".getBytes("UTF-8"))
+        assertEquals("bytes written", 1, channel.write(src, 7))
+        assertEquals("src position", 1, src.position())
+        assertEquals("position after write", 3L, channel.position())
+
+        val tail = ByteBuffer.wrap("?".getBytes("UTF-8"))
+        assertEquals("bytes written past EOF", 1, channel.write(tail, 15))
+        assertEquals("size", 16L, channel.size())
+        assertEquals("position after write past EOF", 3L, channel.position())
+
+        val dst = ByteBuffer.allocate(2)
+        channel.read(dst)
+        assertEquals("relative read", "lo", new String(dst.array(), "UTF-8"))
+      } finally channel.close()
+
+      val bytes = Files.readAllBytes(f)
+      assertEquals("hello, World!", new String(bytes, 0, 13, "UTF-8"))
+      assertEquals('?'.toByte, bytes(15))
+    }
+  }
+
+  @Test def absoluteReadIntoDirectAndSlicedBuffers(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      Files.write(f, "abcdefghij".getBytes("UTF-8"))
+
+      val channel = FileChannel.open(f, StandardOpenOption.READ)
+      try {
+        val direct = ByteBuffer.allocateDirect(3)
+        assertEquals("direct bytes read", 3, channel.read(direct, 2))
+        direct.flip()
+        val fromDirect = new Array[Byte](3)
+        direct.get(fromDirect)
+        assertEquals("direct content", "cde", new String(fromDirect, "UTF-8"))
+
+        val backing = ByteBuffer.wrap("________".getBytes("UTF-8"))
+        backing.position(4)
+        val sliced = backing.slice()
+        sliced.position(1)
+        assertEquals("sliced bytes read", 3, channel.read(sliced, 5))
+        assertEquals(
+          "sliced content",
+          "_____fgh",
+          new String(backing.array(), "UTF-8")
+        )
+
+        assertEquals("channel position", 0L, channel.position())
+      } finally channel.close()
+    }
+  }
+
+  @Test def absoluteWriteFromDirectAndSlicedBuffers(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      Files.write(f, "abcdefghij".getBytes("UTF-8"))
+
+      val channel = FileChannel.open(
+        f,
+        StandardOpenOption.READ,
+        StandardOpenOption.WRITE
+      )
+      try {
+        val direct = ByteBuffer.allocateDirect(4)
+        direct.put("xXYZ".getBytes("UTF-8"))
+        direct.position(1)
+        assertEquals("direct bytes written", 3, channel.write(direct, 1))
+        assertEquals("direct position", 4, direct.position())
+
+        val backing = ByteBuffer.wrap("____PQR".getBytes("UTF-8"))
+        backing.position(4)
+        val sliced = backing.slice()
+        assertEquals("sliced bytes written", 3, channel.write(sliced, 6))
+        assertEquals("sliced position", 3, sliced.position())
+
+        assertEquals("channel position", 0L, channel.position())
+      } finally channel.close()
+
+      assertEquals(
+        "aXYZefPQRj",
+        new String(Files.readAllBytes(f), "UTF-8")
+      )
+    }
+  }
+
+  @Test def concurrentAbsoluteReadsDoNotDisturbEachOther(): Unit = {
+    assumeMultithreadingIsEnabled()
+
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      val fileSize = 4096
+      val data = Array.tabulate[Byte](fileSize)(i => (i % 251).toByte)
+      Files.write(f, data)
+
+      val channel = FileChannel.open(f, StandardOpenOption.READ)
+      try {
+        channel.position(17)
+
+        val nThreads = 4
+        val iterations = 2000
+        val failures = new java.util.concurrent.atomic.AtomicInteger(0)
+
+        val threads = Array.tabulate(nThreads) { t =>
+          new Thread(() => {
+            val dst = ByteBuffer.allocate(8)
+            var i = 0
+            while (i < iterations) {
+              val pos = ((t * 997 + i * 31) % (fileSize - 8)).toLong
+              dst.clear()
+              val n = channel.read(dst, pos)
+              var j = 0
+              while (j < n) {
+                if (dst.get(j) != data(pos.toInt + j))
+                  failures.incrementAndGet()
+                j += 1
+              }
+              if (n != 8) failures.incrementAndGet()
+              i += 1
+            }
+          })
+        }
+        threads.foreach(_.start())
+        threads.foreach(_.join())
+
+        assertEquals("mismatched reads", 0, failures.get())
+        assertEquals("channel position", 17L, channel.position())
+      } finally channel.close()
+    }
+  }
 }
