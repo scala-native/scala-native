@@ -451,7 +451,10 @@ bool scalanative_continuation_multishot_on_current_stack(
     uintptr_t top = (uintptr_t)currentThreadInfo.stackTop;
     uintptr_t bottom = (uintptr_t)currentThreadInfo.stackBottom;
     uintptr_t boundary = (uintptr_t)it->stack_btm;
-    if (top == 0 || bottom == 0)
+    uintptr_t sp = (uintptr_t)_lh_get_sp();
+    // Resumed onto a heap fragment, which the bounds do not describe; a
+    // one-shot stack always has bounds.
+    if (top == 0 || bottom == 0 || sp < top || sp > bottom)
         return true;
     return top <= boundary && boundary <= bottom;
 }

@@ -479,11 +479,20 @@ static void applyBounds(ThreadState *thread, Coroutine *coroutine) {
     info->maxStackSize = coroutine->bounds.maxSize;
 }
 
+// The page a scan of the parked stack has to skip. The guard region of a
+// continuation stack opens as a whole, so a stack that reaches into it is
+// readable there; on the stack of a thread a large frame can step over the
+// guard page while it is still closed.
+static void *closedGuardPage(Coroutine *coroutine) {
+    return coroutine->bounds.guardLow != NULL ? NULL
+                                              : coroutine->bounds.guardPage;
+}
+
 // Read by the collector only while this thread is stopped at a safepoint.
 static void addRoots(Coroutine *coroutine) {
     StackSlot *slot = coroutine->slot;
     slot->bottom = coroutine->bounds.bottom;
-    slot->guardPage = coroutine->bounds.guardPage;
+    slot->guardPage = closedGuardPage(coroutine);
     atomic_store_explicit(&slot->waitingTop, coroutine->sp,
                           memory_order_relaxed);
 }
@@ -701,7 +710,7 @@ void scalanative_continuation_oneshot_captured(Continuation *continuation,
     FOREACH_CAPTURED(it, top) {
         it->captured.top = it->sp;
         it->captured.bottom = it->bounds.bottom;
-        it->captured.guardPage = it->bounds.guardPage;
+        it->captured.guardPage = closedGuardPage(it);
         it->captured.next = it == top->label ? NULL : &it->returnTo->captured;
         removeRoots(it);
     }

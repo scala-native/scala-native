@@ -67,6 +67,10 @@ static inline int threadStackScanableRanges(void *stackTop, void *stackBottom,
                                             ThreadInfo *threadInfo,
                                             StackScanRange out[2]) {
     void *guard = threadInfo != NULL ? threadInfo->stackGuardPage : NULL;
+    // That guard region opens as a whole: a stack reaching into it is
+    // readable there.
+    if (threadInfo != NULL && threadInfo->stackGuardLow != NULL)
+        guard = NULL;
     if (guard != NULL && guard >= stackTop && guard < stackBottom) {
         void *afterGuard = (char *)guard + resolvePageSize();
         out[0].from = stackTop;

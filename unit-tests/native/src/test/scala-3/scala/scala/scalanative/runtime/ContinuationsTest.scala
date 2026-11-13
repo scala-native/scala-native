@@ -12,7 +12,9 @@ import org.junit.Assert._
 import org.junit.Test
 
 import scala.scalanative.annotation.nooptimize
-import scala.scalanative.meta.LinktimeInfo.isContinuationsSupported
+import scala.scalanative.meta.LinktimeInfo.{
+  isContinuationsSupported, isMultithreadingEnabled
+}
 import scala.scalanative.unsafe.{CFuncPtr2, CUnsignedLong, Ptr, stackalloc}
 
 import Continuations._
@@ -53,7 +55,7 @@ class ContinuationsTest extends ContinuationsApiTest:
     else resumeDeeper(depth - 1, resume) + depth - depth
 
   @Test def stackallocSurvivesResumeOnAnotherStack(): Unit =
-    if isContinuationsSupported then
+    if isContinuationsSupported && isMultithreadingEnabled then
       var resume: Unit => Long = null
       def suspended(): Long =
         boundary[Long](stackallocAcrossSuspend(k => resume = k))
@@ -98,7 +100,7 @@ class ContinuationsTest extends ContinuationsApiTest:
   // The suspended stack is the only holder of `kept` while the continuation
   // waits in the queue, and collections run meanwhile.
   @Test def suspendedStacksKeepObjectsAliveAcrossThreads(): Unit =
-    if isContinuationsSupported then
+    if isContinuationsSupported && isMultithreadingEnabled then
       val producers = 4
       val perProducer = 5000
       val queue = new LinkedBlockingQueue[Unit => Long]()
@@ -172,7 +174,7 @@ class ContinuationsTest extends ContinuationsApiTest:
     finally Continuations.inline$reachabilityFence(continuation)
 
   @Test def codeCompiledAgainst0_5_12StillRuns(): Unit =
-    if isContinuationsSupported then
+    if isContinuationsSupported && isMultithreadingEnabled then
       var resume: Int => Int = null
       val first = boundaryAsIn0_5_12[Int] { label =>
         suspendAsIn0_5_12[Int, Int](label) { k => resume = k; -1 } + 1

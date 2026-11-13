@@ -321,6 +321,7 @@ abstract class ContinuationsApiTest:
 
       val pool = scala.Array.tabulate(workers) { idx =>
         val t = new Thread(() => workerLoop(), s"cont-stress-worker-$idx")
+        t.setDaemon(true)
         t.start()
         t
       }
@@ -549,6 +550,7 @@ abstract class ContinuationsApiTest:
 
       val pool = scala.Array.tabulate(workers) { idx =>
         val t = new Thread(() => workerLoop(), s"regtest-$idx")
+        t.setDaemon(true)
         t.start()
         t
       }
@@ -593,6 +595,7 @@ abstract class ContinuationsApiTest:
 
       val pool = scala.Array.tabulate(workers) { idx =>
         val t = new Thread(() => workerLoop(), s"stacktest-$idx")
+        t.setDaemon(true)
         t.start()
         t
       }
@@ -655,6 +658,7 @@ abstract class ContinuationsApiTest:
 
       val pool = scala.Array.tabulate(workers) { idx =>
         val t = new Thread(() => workerLoop(), s"deeptest-$idx")
+        t.setDaemon(true)
         t.start()
         t
       }
