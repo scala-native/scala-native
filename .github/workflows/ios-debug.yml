@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        attempt: [1, 2, 3]
+        attempt: [1, 2, 3, 4]
     env:
       SCALANATIVE_MODE: release-fast
       SCALANATIVE_GC: immix
@@ -47,7 +47,25 @@ jobs:
         run: |
           for i in $(seq 1 15); do
             echo "::group::iteration $i"
-            if ! sbt -J-Xmx5G "tests3/testFull" > "run-$i.log" 2>&1; then
+            sbt -J-Xmx5G "tests3/testFull" > "run-$i.log" 2>&1 &
+            SBT=$!
+            for t in $(seq 1 90); do
+              sleep 10
+              kill -0 $SBT 2>/dev/null || break
+            done
+            if kill -0 $SBT 2>/dev/null; then
+              echo "::endgroup::"
+              echo "iteration $i hung"
+              tail -30 "run-$i.log"
+              for pid in $(pgrep -f "tests/tests-test"); do
+                echo "=== backtrace of $pid"; ps -p "$pid" -o pid,command || true
+                sudo lldb -p "$pid" -batch -o "thread backtrace all" -o "detach" || true
+              done
+              pkill -9 -f "tests/tests-test" || true
+              kill -9 $SBT || true
+              exit 1
+            fi
+            if ! wait $SBT; then
               echo "::endgroup::"
               echo "iteration $i failed"
               grep -n -E "signal|Illegal|Failed:|error\]" "run-$i.log" | tail -40
@@ -93,4 +111,3 @@ jobs:
         with:
           name: crash-${{ matrix.attempt }}
           path: crash
-# rerun
