@@ -28,6 +28,7 @@
 #include "delimcc.h"
 #include "nativeThreadTLS.h"
 #include "gc/shared/SuspendedStacks.h"
+#include "gc/immix_commix/headers/ObjectHeader.h"
 #include <pthread.h>
 #include <stdatomic.h>
 #include <stdbool.h>
@@ -37,7 +38,7 @@
 #include <unistd.h>
 
 extern void scalanative_GC_collect(void);
-extern void scalanative_StackOverflowGuards_setupSegment(void);
+extern size_t scalanative_StackOverflowGuards_size(void);
 
 // delimcc/switch.S
 extern void scalanative_continuation_entry(void);
@@ -91,7 +92,8 @@ struct Coroutine {
     ThreadInfo *thread; // owner of a THREAD coroutine
     void *mapping;      // start of the stack mapping this struct lives in
     StackBounds bounds;
-    bool guarded; // the stack overflow guard page is installed
+    // ThreadInfo.pendingStackOverflowException while this stack does not run.
+    bool pendingOverflow;
 
     // Values handed over by a switch. No safepoint runs between the store
     // and the read on the other side.
@@ -114,14 +116,31 @@ typedef struct ThreadState {
     ThreadInfo *info;
 } ThreadState;
 
-static SN_ThreadLocal ThreadState threadState;
+// On the heap: it has to outlive the thread-local block for the cleanup
+// that runs when the thread exits.
+static SN_ThreadLocal ThreadState *threadState;
+static pthread_key_t threadStateKey;
+static pthread_once_t threadStateKeyOnce = PTHREAD_ONCE_INIT;
+
+static void releaseThreadState(void *state);
+
+static void createThreadStateKey(void) {
+    pthread_key_create(&threadStateKey, releaseThreadState);
+}
 
 // Not inlined: a coroutine can continue on another thread, so the result
 // must not be used across a switch.
 __attribute__((noinline)) static ThreadState *currentThread(void) {
-    ThreadState *thread = &threadState;
-    if (thread->info == NULL)
+    ThreadState *thread = threadState;
+    if (thread == NULL) {
+        thread = calloc(1, sizeof(ThreadState));
+        if (thread == NULL)
+            FATAL("out of memory");
         thread->info = scalanative_currentThreadInfo();
+        threadState = thread;
+        pthread_once(&threadStateKeyOnce, createThreadStateKey);
+        pthread_setspecific(threadStateKey, thread);
+    }
     return thread;
 }
 
@@ -134,9 +153,6 @@ __attribute__((noinline)) static ThreadState *currentThread(void) {
 static Coroutine *sharedPool;
 static int sharedPoolSize;
 static pthread_mutex_t sharedPoolLock = PTHREAD_MUTEX_INITIALIZER;
-
-static pthread_key_t threadStateKey;
-static pthread_once_t threadStateKeyOnce = PTHREAD_ONCE_INIT;
 
 // Slots are never returned to the system; free ones are linked through
 // `bottom`, which the collector ignores while `waitingTop` is unset.
@@ -177,6 +193,9 @@ static size_t pageSize(void) {
     return size;
 }
 
+// Low to high: an inaccessible page, room to handle a stack overflow, the
+// guard page that detects one (stackOverflowGuards.c), then the stack and
+// the coroutine itself. Returns NULL when the system refuses the mapping.
 static Coroutine *mapCoroutine(void) {
     size_t page = pageSize();
     size_t size = STACK_SIZE + page;
@@ -185,15 +204,23 @@ static Coroutine *mapCoroutine(void) {
     flags |= MAP_STACK; // required for stack memory on OpenBSD
 #endif
     char *low = mmap(NULL, size, PROT_READ | PROT_WRITE, flags, -1, 0);
-    if (low == MAP_FAILED || mprotect(low, page, PROT_NONE) != 0)
-        FATAL("cannot map a stack of %zu bytes", size);
+    if (low == MAP_FAILED)
+        return NULL;
+    char *top = low + page;
+    char *guardPage = top + scalanative_StackOverflowGuards_size();
+    if (mprotect(low, page, PROT_NONE) != 0 ||
+        mprotect(guardPage, page, PROT_NONE) != 0) {
+        munmap(low, size);
+        return NULL;
+    }
     Coroutine *coroutine =
         (Coroutine *)(((uintptr_t)low + size - sizeof(Coroutine)) &
                       ~(uintptr_t)15);
-    size_t usable = (size_t)((char *)coroutine - (low + page));
+    size_t usable = (size_t)((char *)coroutine - top);
     coroutine->mapping = low;
-    coroutine->bounds = (StackBounds){.top = low + page,
+    coroutine->bounds = (StackBounds){.top = top,
                                       .bottom = coroutine,
+                                      .guardPage = guardPage,
                                       .size = usable,
                                       .maxSize = usable};
     coroutine->slot = acquireSlot();
@@ -230,29 +257,24 @@ static Coroutine *takeShared(void) {
 }
 
 // Runs when a thread exits.
-static void releaseThreadState(void *unused) {
-    (void)unused;
-    ThreadState *thread = &threadState;
+static void releaseThreadState(void *state) {
+    ThreadState *thread = state;
     while (thread->pool != NULL) {
         Coroutine *coroutine = thread->pool;
         thread->pool = coroutine->returnTo;
         if (!giveShared(coroutine))
             unmapCoroutine(coroutine);
     }
-    thread->poolSize = 0;
     if (thread->current != NULL && thread->current->state == THREAD) {
         releaseSlot(thread->current->slot);
         free(thread->current);
-        thread->current = NULL;
     }
+    free(thread);
 }
 
-static void createThreadStateKey(void) {
-    pthread_key_create(&threadStateKey, releaseThreadState);
-}
-
-// A pooled coroutine keeps its mapping, bounds and guard; every other field
-// is set again before it is read.
+// A pooled coroutine keeps its mapping, bounds and guards; every other
+// field is set again before it is read. Returns NULL when none is free and
+// the system refuses a new mapping.
 static Coroutine *acquire(ThreadState *thread) {
     Coroutine *coroutine = thread->pool;
     if (coroutine != NULL) {
@@ -265,6 +287,11 @@ static Coroutine *acquire(ThreadState *thread) {
 }
 
 static void destroy(ThreadState *thread, Coroutine *coroutine) {
+    // Left unprotected by an overflow that was never reported.
+    if (coroutine->pendingOverflow) {
+        mprotect(coroutine->bounds.guardPage, pageSize(), PROT_NONE);
+        coroutine->pendingOverflow = false;
+    }
     if (thread->poolSize < LOCAL_POOL_CAPACITY) {
         coroutine->returnTo = thread->pool;
         thread->pool = coroutine;
@@ -294,34 +321,42 @@ static void destroy(ThreadState *thread, Coroutine *coroutine) {
  */
 #if defined(__aarch64__)
 #define SWITCH_FRAME 144
+// x18 is reserved by the platform on Apple; elsewhere it is an ordinary
+// register that the switch does not preserve.
+#if defined(__APPLE__)
+#define PLATFORM_REGISTER
+#else
+#define PLATFORM_REGISTER "x18",
+#endif
 static inline __attribute__((always_inline)) void switchStacks(void **saveSp,
                                                                void *loadSp) {
     register void **save __asm__("x0") = saveSp;
     register void *load __asm__("x1") = loadSp;
-    __asm__ volatile(
-        "adr x9, 1f\n"
-        "mrs x10, fpcr\n"
-        "stp x29, x9, [sp, #-144]!\n"
-        "str x10, [sp, #16]\n"
-        "mov x9, sp\n"
-        "str x9, [x0]\n"
-        "mov sp, x1\n"
-        "ldr x10, [sp, #16]\n"
-        "mrs x11, fpcr\n"
-        "cmp x10, x11\n"
-        "b.eq 2f\n"
-        "msr fpcr, x10\n" // slow, and rarely needed
-        "2: ldp x29, x9, [sp], #144\n"
-        "br x9\n"
-        "1: hint #36\n" // bti j
-        : "+r"(save), "+r"(load)
-        :
-        : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12",
-          "x13", "x14", "x15", "x16", "x17", "x19", "x20", "x21", "x22", "x23",
-          "x24", "x25", "x26", "x27", "x28", "x30", "v0", "v1", "v2", "v3",
-          "v4", "v5", "v6", "v7", "v8", "v9", "v10", "v11", "v12", "v13", "v14",
-          "v15", "v16", "v17", "v18", "v19", "v20", "v21", "v22", "v23", "v24",
-          "v25", "v26", "v27", "v28", "v29", "v30", "v31", "cc", "memory");
+    __asm__ volatile("adr x9, 1f\n"
+                     "mrs x10, fpcr\n"
+                     "stp x29, x9, [sp, #-144]!\n"
+                     "str x10, [sp, #16]\n"
+                     "mov x9, sp\n"
+                     "str x9, [x0]\n"
+                     "mov sp, x1\n"
+                     "ldr x10, [sp, #16]\n"
+                     "mrs x11, fpcr\n"
+                     "cmp x10, x11\n"
+                     "b.eq 2f\n"
+                     "msr fpcr, x10\n" // slow, and rarely needed
+                     "2: ldp x29, x9, [sp], #144\n"
+                     "br x9\n"
+                     "1: hint #36\n" // bti j
+                     : "+r"(save), "+r"(load)
+                     :
+                     : PLATFORM_REGISTER "x2", "x3", "x4", "x5", "x6", "x7",
+                       "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15",
+                       "x16", "x17", "x19", "x20", "x21", "x22", "x23", "x24",
+                       "x25", "x26", "x27", "x28", "x30", "v0", "v1", "v2",
+                       "v3", "v4", "v5", "v6", "v7", "v8", "v9", "v10", "v11",
+                       "v12", "v13", "v14", "v15", "v16", "v17", "v18", "v19",
+                       "v20", "v21", "v22", "v23", "v24", "v25", "v26", "v27",
+                       "v28", "v29", "v30", "v31", "cc", "memory");
 }
 
 static void prepareControlState(void **frame) {
@@ -415,6 +450,7 @@ static void applyBounds(ThreadState *thread, Coroutine *coroutine) {
 static void addRoots(Coroutine *coroutine) {
     StackSlot *slot = coroutine->slot;
     slot->bottom = coroutine->bounds.bottom;
+    slot->guardPage = coroutine->bounds.guardPage;
     atomic_store_explicit(&slot->waitingTop, coroutine->sp,
                           memory_order_relaxed);
 }
@@ -430,6 +466,7 @@ static ThreadState *arrive(Coroutine *self) {
     ThreadState *thread = currentThread();
     thread->current = self;
     applyBounds(thread, self);
+    thread->info->pendingStackOverflowException = self->pendingOverflow;
     removeRoots(self);
     CoroutineState state = self->from->state;
     if (state != FINISHED && state != LEFT)
@@ -445,6 +482,7 @@ switchTo(ThreadState *thread, Coroutine *self, Coroutine *target) {
     // The stack of a thread can grow; the others have fixed bounds.
     if (self->state == THREAD)
         captureBounds(thread, self);
+    self->pendingOverflow = thread->info->pendingStackOverflowException;
     target->from = self;
     switchStacks(&self->sp, target->sp);
     return arrive(self);
@@ -459,8 +497,6 @@ static Coroutine *currentCoroutine(ThreadState *thread) {
         self->thread = thread->info;
         self->slot = acquireSlot();
         thread->current = self;
-        pthread_once(&threadStateKeyOnce, createThreadStateKey);
-        pthread_setspecific(threadStateKey, thread);
     }
     return thread->current;
 }
@@ -468,12 +504,7 @@ static Coroutine *currentCoroutine(ThreadState *thread) {
 // Entered through scalanative_continuation_entry.
 __attribute__((visibility("hidden"))) void
 scalanative_continuation_main(Coroutine *self) {
-    ThreadState *thread = arrive(self);
-    if (!self->guarded) {
-        scalanative_StackOverflowGuards_setupSegment();
-        captureBounds(thread, self);
-        self->guarded = true;
-    }
+    arrive(self);
     self->state = RUNNING;
     // The body catches every Throwable, nothing unwinds past this frame.
     self->result = self->body((ContinuationBoundaryLabel)self, self->bodyArg);
@@ -493,6 +524,7 @@ scalanative_continuation_main(Coroutine *self) {
 static atomic_size_t capturedCount;
 static atomic_size_t capturedLimit = MIN_CAPTURED_LIMIT;
 static atomic_uint_fast64_t reclaimedIn;
+static atomic_uint_fast64_t captures; // numbers them, starting at 1
 
 // From `first` up to and including `label`.
 static void destroyChain(ThreadState *thread, Coroutine *first,
@@ -525,10 +557,14 @@ static void reclaimUnreachable(ThreadState *thread) {
     size_t count = 0;
     pthread_mutex_lock(&slotsLock);
     FOREACH_STACK_SLOT(slot) {
-        Coroutine *top = atomic_load(&slot->captured);
-        if (top != NULL && slot->capturedIn < cycle &&
-            atomic_load(&slot->markedIn) != cycle) {
-            atomic_store(&slot->captured, NULL);
+        // Another thread may resume this continuation and capture the stack
+        // again meanwhile. The exchange fails then, as the number changed,
+        // and what was read in between is ignored.
+        uint_fast64_t capture = atomic_load(&slot->capture);
+        if (capture != 0 && atomic_load(&slot->capturedIn) < cycle &&
+            atomic_load(&slot->markedIn) != cycle &&
+            atomic_compare_exchange_strong(&slot->capture, &capture, 0)) {
+            Coroutine *top = slot->captured;
             top->nextUnreachable = unreachable;
             unreachable = top;
             count++;
@@ -571,6 +607,16 @@ void *scalanative_continuation_oneshot_boundary(ContinuationBody *body,
     reclaimUnreachable(thread);
     Coroutine *self = currentCoroutine(thread);
     Coroutine *coroutine = acquire(thread);
+    if (coroutine == NULL) {
+        // Stacks of unreachable continuations may be all that is missing.
+        scalanative_GC_collect();
+        thread = currentThread();
+        reclaimUnreachable(thread);
+        coroutine = acquire(thread);
+        if (coroutine == NULL)
+            return NULL;
+    }
+    coroutine->pendingOverflow = false;
     coroutine->state = CREATED;
     coroutine->body = body;
     coroutine->bodyArg = arg;
@@ -622,36 +668,53 @@ void scalanative_continuation_oneshot_captured(Continuation *continuation,
     FOREACH_CAPTURED(it, top) {
         it->captured.top = it->sp;
         it->captured.bottom = it->bounds.bottom;
+        it->captured.guardPage = it->bounds.guardPage;
         it->captured.next = it == top->label ? NULL : &it->returnTo->captured;
         removeRoots(it);
     }
     FOREACH_CAPTURED(it, top) it->captured.slot = top->slot;
     atomic_store(&top->slot->markedIn, 0);
     top->slot->capturedIn = atomic_load(&scalanative_GC_completedMarkCycle);
-    atomic_store(&top->slot->captured, top);
+    top->slot->captured = top;
+    atomic_store(&top->slot->capture, atomic_fetch_add(&captures, 1) + 1);
     if (atomic_fetch_add(&capturedCount, 1) >= atomic_load(&capturedLimit)) {
         scalanative_GC_collect();
         reclaimUnreachable(currentThread());
     }
 }
 
-/* The caller resumes a continuation at most once and has cleared the
- * SuspendedStacks object that pointed to it. */
-void *scalanative_continuation_oneshot_resume(Continuation *continuation,
-                                              void *arg) {
-    Coroutine *top = (Coroutine *)continuation;
+/* `owner` is the SuspendedStacks object of a continuation that the caller
+ * resumes at most once. Its stacks are roots again before `owner` stops
+ * pointing to them. */
+void *scalanative_continuation_oneshot_resume(void *owner, void *arg) {
     ThreadState *thread = currentThread();
     Coroutine *self = currentCoroutine(thread);
-    atomic_store(&top->slot->captured, NULL);
+    Field_t *stacks = &((Object *)owner)->fields[0];
+    Coroutine *top = (Coroutine *)*stacks;
+    atomic_store(&top->slot->capture, 0);
     atomic_fetch_sub(&capturedCount, 1);
     FOREACH_CAPTURED(it, top) {
         addRoots(it);
         it->captured = (SuspendedStack){0};
     }
+    *stacks = NULL;
     top->label->returnTo = self;
     top->resumeArg = arg;
     thread = switchTo(thread, self, top);
     return dispatch(thread, self);
+}
+
+// Entry points that `boundary` and `suspend` were inlined to in code
+// compiled against 0.5.12 and older.
+void *scalanative_continuation_boundary(ContinuationBody *body, void *arg) {
+    return scalanative_continuation_oneshot_boundary(body, arg);
+}
+
+void *scalanative_continuation_suspend(ContinuationBoundaryLabel label,
+                                       SuspendFn *f, void *arg,
+                                       void *alloc_arg) {
+    (void)alloc_arg;
+    return scalanative_continuation_oneshot_suspend(label, f, arg);
 }
 
 #endif

@@ -21,13 +21,15 @@
 typedef struct StackSlot {
     _Atomic(void *) waitingTop;
     void *bottom;
+    void *guardPage; // inaccessible, may lie inside [waitingTop, bottom)
     atomic_uint_fast64_t markedIn;
     // Owned by the continuation runtime.
-    uint_fast64_t capturedIn;
-    _Atomic(void *) captured;
+    atomic_uint_fast64_t capturedIn;
+    atomic_uint_fast64_t capture; // 0 while no continuation holds the stack
+    void *captured;
 } StackSlot;
 
-#define STACK_SLOTS_PER_BLOCK 100
+#define STACK_SLOTS_PER_BLOCK 80
 
 typedef struct StackSlotBlock {
     struct StackSlotBlock *next;
@@ -38,8 +40,9 @@ typedef struct StackSlotBlock {
 extern StackSlotBlock *scalanative_GC_stackSlots;
 
 typedef struct SuspendedStack {
-    void *top;    // lowest address in use, NULL while not handed over
-    void *bottom; // highest address
+    void *top;       // lowest address in use, NULL while not handed over
+    void *bottom;    // highest address
+    void *guardPage; // inaccessible, may lie inside [top, bottom)
     struct SuspendedStack *next;
     StackSlot *slot;
 } SuspendedStack;

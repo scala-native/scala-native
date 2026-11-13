@@ -102,18 +102,19 @@ object Continuations:
     if !isContinuationsSupported then UnsupportedFeature.continuations()
 
     protected def enter[T](body: this.BoundaryLabel[T] => T): T =
-      OneShot.boundary[T](runBody, body.asInstanceOf[Body]).get
+      val result = OneShot.boundary[T](runBody, body.asInstanceOf[Body])
+      if result == null then
+        throw new OutOfMemoryError("Cannot allocate a continuation stack")
+      result.get
 
     protected def capture[R, T](
         label: this.BoundaryLabel[T],
         onSuspend: (R => T) => T
     ): R =
       val call: OnSuspend = native =>
-        // From `captured` on, the GC finds the suspended stacks through
-        // this object. Passing it makes sure it is allocated before.
-        val stacks = new SuspendedStacks(toRawPtr(native))
-        OneShot.captured(native, stacks)
-        onSuspend(new OneShotContinuation[R, T](stacks))
+        val continuation = new Continuation[R, T]
+        continuation.inner = native
+        onSuspend(continuation)
       OneShot.suspend[R](toNative(label), runOnSuspend, call)
 
     protected def leave[T](label: this.BoundaryLabel[T], value: T): Nothing =
@@ -158,16 +159,29 @@ object Continuations:
   private type Body = Label => Any
   private type OnSuspend = NativeContinuation => Any
 
-  /** `true` once resumed. */
-  private final class OneShotContinuation[-R, +T](stacks: SuspendedStacks)
+  /** A one-shot continuation; `true` once resumed.
+   *
+   *  Code compiled against 0.5.12 and older creates it and sets `inner` too,
+   *  see [[Impl]].
+   */
+  private[runtime] class Continuation[-R, +T]
       extends AtomicBoolean
       with (R => T):
+    private var stacks: SuspendedStacks = null
+
+    def inner: NativeContinuation = fromRawPtr(stacks.stacks)
+
+    /** From here on the GC finds the suspended stacks through `stacks`. Passing
+     *  it to `captured` makes sure it is allocated before.
+     */
+    def inner_=(native: NativeContinuation): Unit =
+      stacks = new SuspendedStacks(toRawPtr(native))
+      OneShot.captured(native, stacks)
+
     def apply(value: R): T =
       if !compareAndSet(false, true) then
         throw new IllegalStateException("Continuation was already resumed")
-      val native = fromRawPtr[Any](stacks.stacks)
-      stacks.stacks = null
-      OneShot.resume[R, T](native, value).get
+      OneShot.resume[R, T](stacks, value).get
 
   /** Owns the copies of the suspended stack, which the GC has to scan. */
   private final class MultiShotContinuation[-R, +T] extends (R => T):
@@ -231,9 +245,67 @@ object Continuations:
       extern
 
     @name("scalanative_continuation_oneshot_resume")
-    def resume[R, T](continuation: NativeContinuation, value: R): Try[T] =
-      extern
+    def resume[R, T](stacks: SuspendedStacks, value: R): Try[T] = extern
   end OneShot
+
+  /** What `boundary` and `suspend` expand to in code compiled against 0.5.12
+   *  and older, where they were inline methods: these externs, the accessors
+   *  below, and [[Continuation]]. Such code runs on the one-shot runtime.
+   */
+  @extern @define("__SCALANATIVE_DELIMCC_ONESHOT")
+  private[runtime] object Impl:
+    @name("scalanative_continuation_boundary")
+    def boundary[T](
+        run: CFuncPtr2[Label, Label => Try[T], Try[T]],
+        body: Label => Try[T]
+    ): Try[T] = extern
+
+    @name("scalanative_continuation_suspend")
+    def suspend[R, T](
+        label: Label,
+        run: CFuncPtr2[
+          NativeContinuation,
+          NativeContinuation => Try[T],
+          Try[T]
+        ],
+        onSuspend: NativeContinuation => Try[T],
+        owner: Continuation[R, T]
+    ): R = extern
+  end Impl
+
+  private[runtime] def inline$Impl: Impl.type = Impl
+  private[runtime] def inline$reachabilityFence(target: Any): Unit = ()
+  private[runtime] def inline$inner$i1[T, R](
+      continuation: Continuation[R, T]
+  ): NativeContinuation = continuation.inner
+  private[runtime] def inline$inner_$eq$i1[T, R](
+      continuation: Continuation[R, T],
+      native: NativeContinuation
+  ): Unit = continuation.inner = native
+  private[runtime] def inline$boundaryBodyFnAny
+      : CFuncPtr2[Label, Label => Try[Any], Try[Any]] = legacyRunBody
+  private[runtime] def inline$suspendFnAny: CFuncPtr2[
+    NativeContinuation,
+    NativeContinuation => Try[Any],
+    Try[Any]
+  ] = legacyRunOnSuspend
+
+  // The old callbacks return a `Try` that only holds non-fatal throwables.
+  private val legacyRunBody: CFuncPtr2[Label, Label => Try[Any], Try[Any]] =
+    CFuncPtr2.fromScalaFunction((label, body) =>
+      try body(label)
+      catch case ex: Throwable => Failure(ex)
+    )
+
+  private val legacyRunOnSuspend: CFuncPtr2[
+    NativeContinuation,
+    NativeContinuation => Try[Any],
+    Try[Any]
+  ] =
+    CFuncPtr2.fromScalaFunction((native, onSuspend) =>
+      try onSuspend(native)
+      catch case ex: Throwable => Failure(ex)
+    )
 
   /** delimcc_multishot.c */
   @extern @define("__SCALANATIVE_DELIMCC_MULTISHOT")

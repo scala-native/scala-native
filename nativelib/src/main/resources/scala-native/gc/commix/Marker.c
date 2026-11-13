@@ -283,6 +283,26 @@ NO_SANITIZE int Marker_markRange(Heap *heap, Stats *stats,
     return objectsTraced;
 }
 
+// Skips the guard page: a frame larger than the room below the guard can
+// leave the stack pointer under it.
+static int Marker_markParkedStack(Heap *heap, Stats *stats,
+                                  GreyPacket **outHolder,
+                                  GreyPacket **outWeakRefHolder, void *top,
+                                  void *bottom, void *guardPage) {
+    ThreadInfo guard = {.stackGuardPage = guardPage};
+    StackScanRange ranges[2];
+    int count = threadStackScanableRanges(top, bottom, &guard, ranges);
+    int objectsTraced = 0;
+    for (int i = 0; i < count; i++) {
+        size_t words = ((uintptr_t)ranges[i].to - (uintptr_t)ranges[i].from) /
+                       sizeof(word_t);
+        objectsTraced +=
+            Marker_markRange(heap, stats, outHolder, outWeakRefHolder,
+                             (word_t **)ranges[i].from, words, sizeof(word_t));
+    }
+    return objectsTraced;
+}
+
 int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
                              GreyPacket **outHolder,
                              GreyPacket **outWeakRefHolder, Bytemap *bytemap) {
@@ -316,11 +336,9 @@ int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
                          atomic_load(&scalanative_GC_markCycle));
         }
         for (SuspendedStack *it = stacks; it != NULL; it = it->next) {
-            size_t words =
-                ((uintptr_t)it->bottom - (uintptr_t)it->top) / sizeof(word_t);
             objectsTraced +=
-                Marker_markRange(heap, stats, outHolder, outWeakRefHolder,
-                                 (word_t **)it->top, words, sizeof(word_t));
+                Marker_markParkedStack(heap, stats, outHolder, outWeakRefHolder,
+                                       it->top, it->bottom, it->guardPage);
         }
     }
     return objectsTraced;
@@ -576,11 +594,16 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
     } while (stackTop == NULL);
 
     // A continuation runs on its own stack (delimcc_oneshot.c), which
-    // ThreadInfo then describes.
+    // ThreadInfo then describes. A thread stopped on its signal stack was
+    // interrupted on that stack too.
     if (thread->threadInfo != NULL && thread->threadInfo->stackTop != NULL &&
         thread->threadInfo->stackBottom != NULL &&
-        isInRange(stackTop, thread->threadInfo->stackTop,
-                  thread->threadInfo->stackBottom)) {
+        (isInRange(stackTop, thread->threadInfo->stackTop,
+                   thread->threadInfo->stackBottom)
+#ifdef SCALANATIVE_THREAD_ALT_STACK
+         || isOnSignalHandlerStack(thread->threadInfo, stackTop)
+#endif
+             )) {
         stackBottom = (word_t **)thread->threadInfo->stackBottom;
     }
 #ifdef SCALANATIVE_THREAD_ALT_STACK
@@ -669,10 +692,8 @@ void Marker_MarkRoots(Heap *heap, Stats *stats) {
         void *top =
             atomic_load_explicit(&slot->waitingTop, memory_order_relaxed);
         if (top != NULL) {
-            size_t words =
-                ((uintptr_t)slot->bottom - (uintptr_t)top) / sizeof(word_t);
-            Marker_markRange(heap, stats, &out, &weakRefOut, (word_t **)top,
-                             words, sizeof(word_t));
+            Marker_markParkedStack(heap, stats, &out, &weakRefOut, top,
+                                   slot->bottom, slot->guardPage);
         }
     }
     if (out != NULL) {

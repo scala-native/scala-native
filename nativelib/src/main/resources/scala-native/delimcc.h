@@ -50,7 +50,8 @@ typedef void *ContinuationAllocFn(unsigned long size, void *alloc_arg);
 
 /* One-shot (delimcc_oneshot.c): every boundary runs on its own stack and
  * frames never move. Here a Continuation is opaque, needs no allocation
- * function, and must be resumed at most once. Its SuspendFn calls `captured`
+ * function, and must be resumed at most once. `boundary` returns NULL when
+ * no stack can be allocated. Its SuspendFn calls `captured`
  * with the SuspendedStacks object that points to it. */
 void *scalanative_continuation_oneshot_boundary(ContinuationBody *, void *);
 void *scalanative_continuation_oneshot_suspend(ContinuationBoundaryLabel label,
@@ -60,8 +61,15 @@ void scalanative_continuation_oneshot_leave(ContinuationBoundaryLabel label,
                                             void *result);
 void scalanative_continuation_oneshot_captured(Continuation *continuation,
                                                void *owner);
-void *scalanative_continuation_oneshot_resume(Continuation *continuation,
-                                              void *arg);
+// `owner` is the SuspendedStacks object given to `captured`.
+void *scalanative_continuation_oneshot_resume(void *owner, void *arg);
+
+// For code compiled against 0.5.12 and older, which has `boundary` and
+// `suspend` inlined; they run on the one-shot runtime.
+void *scalanative_continuation_boundary(ContinuationBody *, void *);
+void *scalanative_continuation_suspend(ContinuationBoundaryLabel label,
+                                       SuspendFn *f, void *arg,
+                                       void *alloc_arg);
 
 /* Multi-shot (delimcc_multishot.c): the captured stack is copied out and
  * copied back on every resume, possibly to another address. */

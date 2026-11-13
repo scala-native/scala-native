@@ -5,13 +5,14 @@ import java.util.concurrent.atomic.AtomicInteger
 
 // `Array` alone is scala.scalanative.runtime.Array in this package.
 import scala.Array
+import scala.util.Try
 
 import org.junit.Assert._
 import org.junit.Test
 
 import scala.scalanative.annotation.nooptimize
 import scala.scalanative.meta.LinktimeInfo.isContinuationsSupported
-import scala.scalanative.unsafe.stackalloc
+import scala.scalanative.unsafe.{CFuncPtr2, CUnsignedLong, Ptr, stackalloc}
 
 import Continuations._
 
@@ -131,5 +132,39 @@ class ContinuationsTest extends ContinuationsApiTest:
       threads.foreach(_.start())
       threads.foreach(_.join())
       assertEquals(0, errors.get())
+
+  // What the inline `boundary` and `suspend` of 0.5.12 expanded to; libraries
+  // compiled against it contain these calls.
+  private def boundaryAsIn0_5_12[T](body: CUnsignedLong => T): T =
+    val call: CUnsignedLong => Try[T] = label => Try(body(label))
+    val run = Continuations.inline$boundaryBodyFnAny
+      .asInstanceOf[CFuncPtr2[CUnsignedLong, CUnsignedLong => Try[T], Try[T]]]
+    Continuations.inline$Impl.boundary(run, call).get
+
+  private def suspendAsIn0_5_12[R, T](
+      label: CUnsignedLong
+  )(onSuspend: (R => T) => T): R =
+    val continuation = new Continuations.Continuation[R, T]()
+    val call: Ptr[?] => Try[T] = inner =>
+      Continuations.inline$inner_$eq$i1(continuation, inner)
+      Try(onSuspend(continuation))
+    val run = Continuations.inline$suspendFnAny
+      .asInstanceOf[CFuncPtr2[Ptr[?], Ptr[?] => Try[T], Try[T]]]
+    try Continuations.inline$Impl.suspend(label, run, call, continuation)
+    finally Continuations.inline$reachabilityFence(continuation)
+
+  @Test def codeCompiledAgainst0_5_12StillRuns(): Unit =
+    if isContinuationsSupported then
+      var resume: Int => Int = null
+      val first = boundaryAsIn0_5_12[Int] { label =>
+        suspendAsIn0_5_12[Int, Int](label) { k => resume = k; -1 } + 1
+      }
+      assertEquals(-1, first)
+      @volatile var result = 0
+      val thread = new Thread(() => result = resume(41))
+      thread.start()
+      thread.join()
+      assertEquals(42, result)
+      assertThrows(classOf[IllegalStateException], () => resume(1))
 
 end ContinuationsTest

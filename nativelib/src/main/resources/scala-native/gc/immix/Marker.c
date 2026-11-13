@@ -83,6 +83,19 @@ void Marker_markConservative(Heap *heap, Stack *stack, word_t *address) {
     }
 }
 
+// Skips the guard page: a frame larger than the room below the guard can
+// leave the stack pointer under it.
+static void Marker_markParkedStack(Heap *heap, Stack *stack, void *top,
+                                   void *bottom, void *guardPage) {
+    ThreadInfo guard = {.stackGuardPage = guardPage};
+    StackScanRange ranges[2];
+    int count = threadStackScanableRanges(top, bottom, &guard, ranges);
+    for (int i = 0; i < count; i++) {
+        Marker_markRange(heap, stack, (word_t **)ranges[i].from,
+                         (word_t **)ranges[i].to, sizeof(word_t));
+    }
+}
+
 static void Marker_markSuspendedStacks(Heap *heap, Stack *stack,
                                        SuspendedStack *stacks) {
     // Empty until the continuation is handed over to its object.
@@ -91,8 +104,7 @@ static void Marker_markSuspendedStacks(Heap *heap, Stack *stack,
     atomic_store(&stacks->slot->markedIn,
                  atomic_load(&scalanative_GC_markCycle));
     for (SuspendedStack *it = stacks; it != NULL; it = it->next) {
-        Marker_markRange(heap, stack, (word_t **)it->top, (word_t **)it->bottom,
-                         sizeof(word_t));
+        Marker_markParkedStack(heap, stack, it->top, it->bottom, it->guardPage);
     }
 }
 
@@ -178,11 +190,16 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
         stackTop = MutatorThread_getStackTop(thread, false);
     } while (stackTop == NULL);
     // A continuation runs on its own stack (delimcc_oneshot.c), which
-    // ThreadInfo then describes.
+    // ThreadInfo then describes. A thread stopped on its signal stack was
+    // interrupted on that stack too.
     if (thread->threadInfo != NULL && thread->threadInfo->stackTop != NULL &&
         thread->threadInfo->stackBottom != NULL &&
-        isInRange(stackTop, thread->threadInfo->stackTop,
-                  thread->threadInfo->stackBottom)) {
+        (isInRange(stackTop, thread->threadInfo->stackTop,
+                   thread->threadInfo->stackBottom)
+#ifdef SCALANATIVE_THREAD_ALT_STACK
+         || isOnSignalHandlerStack(thread->threadInfo, stackTop)
+#endif
+             )) {
         stackBottom = (word_t **)thread->threadInfo->stackBottom;
     }
 #ifdef SCALANATIVE_THREAD_ALT_STACK
@@ -261,8 +278,8 @@ void Marker_MarkRoots(Heap *heap, Stack *stack) {
         void *top =
             atomic_load_explicit(&slot->waitingTop, memory_order_relaxed);
         if (top != NULL) {
-            Marker_markRange(heap, stack, (word_t **)top,
-                             (word_t **)slot->bottom, sizeof(word_t));
+            Marker_markParkedStack(heap, stack, top, slot->bottom,
+                                   slot->guardPage);
         }
     }
     Marker_Mark(heap, stack);
