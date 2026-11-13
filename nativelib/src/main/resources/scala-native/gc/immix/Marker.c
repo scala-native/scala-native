@@ -9,6 +9,7 @@
 #include "immix_commix/headers/ObjectHeader.h"
 #include "Block.h"
 #include "shared/GCTypes.h"
+#include "shared/AsanFakeStack.h"
 #include <stdatomic.h>
 #include "shared/ThreadUtil.h"
 #include "stackOverflowGuards.h"
@@ -21,7 +22,7 @@ extern int __modules_size;
 static inline void Marker_markLockWords(Heap *heap, Stack *stack,
                                         Object *object);
 static void Marker_markRange(Heap *heap, Stack *stack, word_t **from,
-                             word_t **to, const size_t stride);
+                             word_t **to, const size_t stride, void *fakeStack);
 
 void Marker_markObject(Heap *heap, Stack *stack, Bytemap *bytemap,
                        Object *object, ObjectMeta *objectMeta) {
@@ -102,7 +103,7 @@ void Marker_Mark(Heap *heap, Stack *stack) {
                     (bytesLength + sizeof(word_t) - 1) / sizeof(word_t);
                 int8_t *end = start + wordsLength * sizeof(word_t);
                 Marker_markRange(heap, stack, (word_t **)start, (word_t **)end,
-                                 sizeof(word_t));
+                                 sizeof(word_t), NULL);
             }
             // non-object arrays do not contain pointers
         } else {
@@ -127,7 +128,7 @@ void Marker_Mark(Heap *heap, Stack *stack) {
 
 NO_SANITIZE static void Marker_markRange(Heap *heap, Stack *stack,
                                          word_t **from, word_t **to,
-                                         const size_t stride) {
+                                         const size_t stride, void *fakeStack) {
     assert(from != NULL);
     assert(to != NULL);
     if (from > to) {
@@ -147,6 +148,19 @@ NO_SANITIZE static void Marker_markRange(Heap *heap, Stack *stack,
         word_t *addr = *(word_t **)current;
         if (Heap_IsWordInHeap(heap, addr)) {
             Marker_markConservative(heap, stack, addr);
+        } else {
+            // addr may not point into the heap, but ASan may still have made
+            // it point at a fake stack. Follow that frame and mark any heap
+            // pointers inside it.
+            void *frameBegin = NULL;
+            void *frameEnd = NULL;
+            if (AsanFakeStack_frame(fakeStack, addr, &frameBegin, &frameEnd)) {
+                for (word_t **slot = (word_t **)frameBegin;
+                     (void *)slot < frameEnd; slot++) {
+                    if (Heap_IsWordInHeap(heap, *slot))
+                        Marker_markConservative(heap, stack, *slot);
+                }
+            }
         }
     }
 }
@@ -178,7 +192,7 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
                 heap, stack, signalHandlerStack,
                 (word_t **)((char *)signalHandlerStack +
                             thread->threadInfo->signalHandlerStackSize),
-                sizeof(word_t));
+                sizeof(word_t), thread->asanFakeStack);
         }
     }
 #endif
@@ -187,7 +201,8 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
                                             thread->threadInfo, ranges);
     for (int i = 0; i < nRanges; i++)
         Marker_markRange(heap, stack, (word_t **)ranges[i].from,
-                         (word_t **)ranges[i].to, sizeof(word_t));
+                         (word_t **)ranges[i].to, sizeof(word_t),
+                         thread->asanFakeStack);
 
     // Mark registers buffer
     size_t registerBufferStride =
@@ -199,7 +214,7 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
 #endif
     Marker_markRange(heap, stack, (word_t **)&thread->registersBuffer,
                      (word_t **)(&thread->registersBuffer + 1),
-                     registerBufferStride);
+                     registerBufferStride, thread->asanFakeStack);
 }
 
 void Marker_markModules(Heap *heap, Stack *stack) {
@@ -216,7 +231,8 @@ void Marker_markCustomRoots(Heap *heap, Stack *stack, GC_Roots *roots) {
     mutex_lock(&roots->modificationLock);
     for (GC_Root *it = roots->head; it != NULL; it = it->next) {
         Marker_markRange(heap, stack, (word_t **)it->range.address_low,
-                         (word_t **)it->range.address_high, sizeof(word_t));
+                         (word_t **)it->range.address_high, sizeof(word_t),
+                         NULL);
     }
     mutex_unlock(&roots->modificationLock);
 }

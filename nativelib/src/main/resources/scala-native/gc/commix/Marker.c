@@ -1,5 +1,6 @@
 #if defined(SCALANATIVE_GC_COMMIX)
 #include "shared/GCTypes.h"
+#include "shared/AsanFakeStack.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -265,7 +266,8 @@ void Marker_markConservative(Heap *heap, Stats *stats, GreyPacket **outHolder,
 NO_SANITIZE int Marker_markRange(Heap *heap, Stats *stats,
                                  GreyPacket **outHolder,
                                  GreyPacket **outWeakRefHolder, word_t **from,
-                                 size_t wordsLength, const size_t stride) {
+                                 size_t wordsLength, const size_t stride,
+                                 void *fakeStack) {
     int objectsTraced = 0;
     const intptr_t alignmentMask = ~(sizeof(word_t) - 1);
     ubyte_t *alignedFrom = (ubyte_t *)((intptr_t)from & alignmentMask);
@@ -277,6 +279,22 @@ NO_SANITIZE int Marker_markRange(Heap *heap, Stats *stats,
             Marker_markConservative(heap, stats, outHolder, outWeakRefHolder,
                                     field);
             objectsTraced += 1;
+        } else {
+            // field may not point into the heap, but ASan may still have made
+            // it point at a fake stack. Follow that frame and mark any heap
+            // pointers inside it.
+            void *frameBegin = NULL;
+            void *frameEnd = NULL;
+            if (AsanFakeStack_frame(fakeStack, field, &frameBegin, &frameEnd)) {
+                for (word_t **slot = (word_t **)frameBegin;
+                     (void *)slot < frameEnd; slot++) {
+                    if (Heap_IsWordInHeap(heap, *slot)) {
+                        Marker_markConservative(heap, stats, outHolder,
+                                                outWeakRefHolder, *slot);
+                        objectsTraced += 1;
+                    }
+                }
+            }
         }
     }
     return objectsTraced;
@@ -328,7 +346,7 @@ int Marker_splitObjectArray(Heap *heap, Stats *stats, GreyPacket **outHolder,
              * length). Mark this batch on the current thread instead. */
             objectsTraced += Marker_markRange(
                 heap, stats, outHolder, outWeakRefHolder, batchFields,
-                ARRAY_SPLIT_BATCH, sizeof(word_t));
+                ARRAY_SPLIT_BATCH, sizeof(word_t), NULL);
         } else {
             slice->type = grey_packet_refrange;
             slice->items[0] = (Stack_Type)batchFields;
@@ -341,7 +359,7 @@ int Marker_splitObjectArray(Heap *heap, Stats *stats, GreyPacket **outHolder,
     if (lastBatchSize > 0) {
         objectsTraced +=
             Marker_markRange(heap, stats, outHolder, outWeakRefHolder,
-                             lastBatch, lastBatchSize, sizeof(word_t));
+                             lastBatch, lastBatchSize, sizeof(word_t), NULL);
     }
     return objectsTraced;
 }
@@ -356,7 +374,7 @@ static int Marker_markObjectArray(Heap *heap, Stats *stats, Object *object,
     if (length <= ARRAY_SPLIT_THRESHOLD) {
         objectsTraced =
             Marker_markRange(heap, stats, outHolder, outWeakRefHolder, fields,
-                             length, sizeof(word_t));
+                             length, sizeof(word_t), NULL);
     } else {
         // object array is two large, split it into pieces for multiple threads
         // to handle
@@ -378,7 +396,7 @@ static int Marker_markBlobArray(Heap *heap, Stats *stats, Object *object,
     if (objectsLength <= ARRAY_SPLIT_THRESHOLD) {
         objectsTraced =
             Marker_markRange(heap, stats, outHolder, outWeakRefHolder,
-                             blobStart, objectsLength, sizeof(word_t));
+                             blobStart, objectsLength, sizeof(word_t), NULL);
     } else {
         // object array is two large, split it into pieces for multiple threads
         // to handle
@@ -446,7 +464,7 @@ void Marker_markRangePacket(Heap *heap, Stats *stats, GreyPacket *in,
     Marker_RetakeIfNull(heap, stats, outWeakRefHolder);
     word_t **fields = (word_t **)in->items[0];
     Marker_markRange(heap, stats, outHolder, outWeakRefHolder, fields,
-                     ARRAY_SPLIT_BATCH, sizeof(word_t));
+                     ARRAY_SPLIT_BATCH, sizeof(word_t), NULL);
     in->type = grey_packet_reflist;
     in->size = 0;
 }
@@ -575,7 +593,7 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
                              (word_t **)thread->threadInfo->signalHandlerStack,
                              thread->threadInfo->signalHandlerStackSize /
                                  sizeof(word_t),
-                             sizeof(word_t));
+                             sizeof(word_t), thread->asanFakeStack);
         }
     }
 #endif
@@ -588,7 +606,8 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
         word_t **from = (word_t **)ranges[i].from;
         word_t **to = (word_t **)ranges[i].to;
         Marker_markRange(heap, stats, outHolder, outWeakRefHolder, from,
-                         (size_t)(to - from), sizeof(word_t));
+                         (size_t)(to - from), sizeof(word_t),
+                         thread->asanFakeStack);
     }
 
     // Mark registers buffer
@@ -603,7 +622,7 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
     Marker_markRange(heap, stats, outHolder, outWeakRefHolder,
                      (word_t **)&thread->registersBuffer,
                      registersBufferBytes / sizeof(word_t),
-                     registerBufferStride);
+                     registerBufferStride, thread->asanFakeStack);
 }
 
 void Marker_markModules(Heap *heap, Stats *stats, GreyPacket **outHolder,
@@ -623,8 +642,8 @@ void Marker_markCustomRoots(Heap *heap, Stats *stats, GreyPacket **outHolder,
     for (GC_Root *it = roots->head; it != NULL; it = it->next) {
         size_t size = it->range.address_high - it->range.address_low;
         Marker_markRange(heap, stats, outHolder, outWeakRefHolder,
-                         (word_t **)it->range.address_low, size,
-                         sizeof(word_t));
+                         (word_t **)it->range.address_low, size, sizeof(word_t),
+                         NULL);
     }
     mutex_unlock(&roots->modificationLock);
 }

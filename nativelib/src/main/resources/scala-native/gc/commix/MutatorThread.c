@@ -47,6 +47,7 @@ void MutatorThread_suspendContext(MutatorThread *self) {
     assert(self->state == GC_MutatorThreadState_Unmanaged);
     self->threadInfo = NULL;
     memset(&self->registersBuffer, 0, sizeof(self->registersBuffer));
+    self->asanFakeStack = NULL;
     self->stackBottom = (word_t **)&self->registersBuffer;
     atomic_store(&self->stackTop, (intptr_t)self->stackBottom);
     MutatorThreads_unlockWrite();
