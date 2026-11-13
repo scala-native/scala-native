@@ -21,4 +21,18 @@ while IFS= read -r name; do
   esac
 done < <(compgen -e)
 
-exec xcrun simctl spawn "${IOS_SIMULATOR_UDID:-booted}" "$@"
+# `simctl spawn` does not preserve the working directory either, use a small
+# trampoline built for the simulator to restore it.
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+trampoline_src="$script_dir/ios-simulator-exec.c"
+trampoline="${TMPDIR:-/tmp}/scala-native-ios-simulator-exec-$(uname -m)"
+if [[ ! -x "$trampoline" || "$trampoline_src" -nt "$trampoline" ]]; then
+  tmp="$trampoline.$$"
+  xcrun --sdk iphonesimulator clang \
+    -target "$(uname -m)-apple-ios${IOS_MIN_VERSION:-16.0}-simulator" \
+    -O1 -o "$tmp" "$trampoline_src"
+  mv -f "$tmp" "$trampoline"
+fi
+
+exec xcrun simctl spawn "${IOS_SIMULATOR_UDID:-booted}" \
+  "$trampoline" "$PWD" "$@"
