@@ -182,17 +182,10 @@ size_t scalanative_sigaction_size() {
 
 static void scalanative_sigaction_copy_to_host(struct scalanative_sigaction *sn,
                                                struct sigaction *host) {
-    if (sn->flags & SA_SIGINFO) {
-        if (sn->action != NULL)
-            host->sa_sigaction = sn->action;
-        else
-            host->sa_handler = sn->handler;
-    } else {
-        if (sn->handler != NULL)
-            host->sa_handler = sn->handler;
-        else
-            host->sa_sigaction = sn->action;
-    }
+    if (sn->flags & SA_SIGINFO)
+        host->sa_sigaction = sn->action;
+    else
+        host->sa_handler = sn->handler;
     sigemptyset(&host->sa_mask);
     for (int sig = 1; sig <= SCALANATIVE_SA_MASK_BITS; sig++) {
         if (sn->mask & ((uintptr_t)1 << (sig - 1)))

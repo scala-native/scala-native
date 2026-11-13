@@ -52,6 +52,13 @@ class SignalTest {
       received = 0
       assertEquals(0, raise(SIGUSR1))
       assertEquals(SIGUSR1, received)
+
+      current.sa_handler = SIG_DFL
+      assertEquals(0, sigaction(SIGUSR1, current, null))
+      val reset = stackalloc[sigaction]()
+      assertEquals(0, sigaction(SIGUSR1, null, reset))
+      // SIG_DFL is a null pointer
+      assertNull(!reset.at1.asInstanceOf[Ptr[CVoidPtr]])
     } finally {
       assertEquals(0, sigaction(SIGUSR1, oact, restored))
     }
