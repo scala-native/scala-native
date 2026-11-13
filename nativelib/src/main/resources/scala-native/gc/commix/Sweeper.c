@@ -112,6 +112,7 @@ uint32_t Sweeper_sweepSimpleBlock(MutatorThread *thread, BlockMeta *blockMeta,
         ObjectMeta *bytemapCursor = Bytemap_Get(bytemap, lineStart);
 
         FreeLineMeta *lastRecyclable = NULL;
+        uint32_t freeLines = 0;
         while (lineIndex < LINE_COUNT) {
             // If the line is marked, we need to unmark all objects in the line
             if (Line_IsMarked(lineMeta)) {
@@ -158,6 +159,7 @@ uint32_t Sweeper_sweepSimpleBlock(MutatorThread *thread, BlockMeta *blockMeta,
                     bytemapCursor = Bytemap_NextLine(bytemapCursor);
                 }
                 lastRecyclable->size = size;
+                freeLines += size;
             }
         }
         // If there is no recyclable line, the block is unavailable
@@ -168,6 +170,8 @@ uint32_t Sweeper_sweepSimpleBlock(MutatorThread *thread, BlockMeta *blockMeta,
             assert(BlockMeta_FirstFreeLine(blockMeta) < LINE_COUNT);
             atomic_fetch_add_explicit(&blockAllocator.recycledBlockCount, 1,
                                       memory_order_relaxed);
+            atomic_fetch_add_explicit(&blockAllocator.recycledFreeLineCount,
+                                      freeLines, memory_order_relaxed);
 
 #ifdef GC_ASSERTIONS
             blockMeta->debugFlag = dbg_partial_free;

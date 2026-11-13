@@ -31,6 +31,7 @@ typedef struct {
     BlockList rejectedBlocks;
     // Not decremented on allocation.
     atomic_uint_fast32_t recycledBlockCount;
+    atomic_uint_fast64_t recycledFreeLineCount;
     atomic_uintptr_t reservedSuperblock;
     mutex_t allocationLock;
 } BlockAllocator;
