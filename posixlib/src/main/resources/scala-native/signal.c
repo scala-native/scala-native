@@ -3,6 +3,8 @@
     (defined(__APPLE__) && defined(__MACH__))
 #include <signal.h>
 #include <stddef.h>
+#include <stdint.h>
+#include <string.h>
 
 #ifdef __OpenBSD__
 
@@ -157,6 +159,74 @@ int scalanative_sigaltstack(struct scalanative_stack_t *sn_ss,
     int rc = sigaltstack(p_host_ss, p_host_oss);
     if (sn_oss != NULL && rc == 0) {
         scalanative_stack_t_copy_to_sn(sn_oss, &host_oss);
+    }
+    return rc;
+}
+
+// The Scala binding `sigaction` is `CStruct4[handler, sigset_t, CInt,
+// sigaction]`, which matches no host layout (Linux 152 bytes, macOS 16,
+// FreeBSD flags-before-mask). This bridge converts between the two.
+// sa_mask holds signals 1..(8 * sizeof(void *)) as bit (signo - 1).
+struct scalanative_sigaction {
+    void (*handler)(int);
+    uintptr_t mask;
+    int flags;
+    void (*action)(int, siginfo_t *, void *);
+};
+
+size_t scalanative_sigaction_size() {
+    return sizeof(struct scalanative_sigaction);
+}
+
+#define SCALANATIVE_SA_MASK_BITS ((int)(8 * sizeof(uintptr_t)))
+
+static void scalanative_sigaction_copy_to_host(struct scalanative_sigaction *sn,
+                                               struct sigaction *host) {
+    if (sn->flags & SA_SIGINFO) {
+        if (sn->action != NULL)
+            host->sa_sigaction = sn->action;
+        else
+            host->sa_handler = sn->handler;
+    } else {
+        if (sn->handler != NULL)
+            host->sa_handler = sn->handler;
+        else
+            host->sa_sigaction = sn->action;
+    }
+    sigemptyset(&host->sa_mask);
+    for (int sig = 1; sig <= SCALANATIVE_SA_MASK_BITS; sig++) {
+        if (sn->mask & ((uintptr_t)1 << (sig - 1)))
+            sigaddset(&host->sa_mask, sig);
+    }
+    host->sa_flags = sn->flags;
+}
+
+static void scalanative_sigaction_copy_to_sn(struct scalanative_sigaction *sn,
+                                             struct sigaction *host) {
+    sn->handler = host->sa_handler;
+    sn->action = host->sa_sigaction;
+    sn->mask = 0;
+    for (int sig = 1; sig <= SCALANATIVE_SA_MASK_BITS; sig++) {
+        if (sigismember(&host->sa_mask, sig) == 1)
+            sn->mask |= (uintptr_t)1 << (sig - 1);
+    }
+    sn->flags = host->sa_flags;
+}
+
+int scalanative_sigaction(int sig, struct scalanative_sigaction *sn_act,
+                          struct scalanative_sigaction *sn_oact) {
+    struct sigaction host_act;
+    struct sigaction host_oact;
+    memset(&host_act, 0, sizeof(host_act));
+    memset(&host_oact, 0, sizeof(host_oact));
+    struct sigaction *p_host_act = NULL;
+    if (sn_act != NULL) {
+        scalanative_sigaction_copy_to_host(sn_act, &host_act);
+        p_host_act = &host_act;
+    }
+    int rc = sigaction(sig, p_host_act, sn_oact != NULL ? &host_oact : NULL);
+    if (sn_oact != NULL && rc == 0) {
+        scalanative_sigaction_copy_to_sn(sn_oact, &host_oact);
     }
     return rc;
 }
