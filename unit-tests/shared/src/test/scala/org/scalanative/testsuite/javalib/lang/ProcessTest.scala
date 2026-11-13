@@ -14,7 +14,7 @@ import scala.util.{Failure, Success, Try}
 
 import org.junit.Assert._
 import org.junit.Assume._
-import org.junit.{Ignore, Test}
+import org.junit.{BeforeClass, Ignore, Test}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
@@ -1301,6 +1301,8 @@ class ProcessTest {
 }
 
 object ProcessTest {
+  @BeforeClass
+  def checkRuntime(): Unit = assumeSupportsSubprocesses()
 
   def runArgv(to: Duration = 30.seconds, cwd: Path = null)(
       cmd: String*

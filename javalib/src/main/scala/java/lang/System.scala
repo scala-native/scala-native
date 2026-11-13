@@ -444,7 +444,9 @@ private[java] object SystemProperties {
       val res = pwd.getpwuid(uid, buf)
       if (res == 0 && buf.pw_dir != null)
         Some(fromCString(buf.pw_dir))
-      else None
+      else
+        // No usable password database entry, e.g. in sandboxed iOS apps
+        Option(getenv("HOME")).filter(_.nonEmpty)
     }
   }
 

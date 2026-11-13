@@ -41,6 +41,7 @@ object Platform {
   final val isNetBSD = runtime.Platform.isNetBSD()
   final val isLinux = runtime.Platform.isLinux()
   final val isMacOs = runtime.Platform.isMac()
+  final val isIOS = scala.scalanative.meta.LinktimeInfo.isIOS
   final val isWindows = runtime.Platform.isWindows()
 
   /** True when the current process can create symbolic links. */

@@ -7,12 +7,19 @@ import java.util.concurrent.TimeUnit
 import scala.io.Source
 
 import org.junit.Assert._
-import org.junit.Test
+import org.junit.{BeforeClass, Test}
+
+import scala.scalanative.junit.utils.AssumesHelper._
 
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.posix.{fcntl, unistd}
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
+
+object ProcessInheritTest {
+  @BeforeClass
+  def checkRuntime(): Unit = assumeSupportsSubprocesses()
+}
 
 class ProcessInheritTest {
   import ProcessUtils._

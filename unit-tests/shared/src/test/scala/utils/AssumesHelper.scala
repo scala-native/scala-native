@@ -61,6 +61,13 @@ object AssumesHelper {
     )
   }
 
+  def assumeSupportsSubprocesses() = {
+    Assume.assumeFalse(
+      "iOS does not allow to spawn subprocesses",
+      Platform.isIOS
+    )
+  }
+
   def assumeNotCrossCompiling() = {
     Assume.assumeFalse(
       "Ignore when running in emulated mode",

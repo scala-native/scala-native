@@ -25,6 +25,7 @@ object ProcessTestOnJDK9 {
   @BeforeClass
   def checkRuntime(): Unit = {
     assumeTrue(isMultithreadingEnabled)
+    assumeSupportsSubprocesses()
   }
 }
 

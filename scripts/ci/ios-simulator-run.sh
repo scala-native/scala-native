@@ -16,7 +16,7 @@ while IFS= read -r name; do
   case "$name" in
     SIMCTL_* | DYLD_* | XPC_* | __CF* | _ | SHLVL | OLDPWD | IFS | BASH* | name) ;;
     # Used by the simulator runtime to locate its own root directories
-    HOME | TMPDIR | PATH | CFFIXED_USER_HOME | IPHONE_* ) ;;
+    TMPDIR | PATH | CFFIXED_USER_HOME | IPHONE_* ) ;;
     *) export "SIMCTL_CHILD_${name}=${!name}" ;;
   esac
 done < <(compgen -e)
