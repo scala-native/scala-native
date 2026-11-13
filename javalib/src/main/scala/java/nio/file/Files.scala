@@ -1257,59 +1257,101 @@ object Files {
       throw new OutOfMemoryError("Required array size too large")
     }
 
-    if (pathSize == 0L) { // SN Issue #I4384, part 1.
+    if (!isWindows) {
+      errno = 0
+      val pathCString = toCString(path.toString)
+      val fd = fcntl.open(pathCString, fcntl.O_RDONLY, 0.toUInt)
+
+      if (fd == -1) {
+        val msg = LibcExt.strError()
+        throw new IOException(s"error opening path '${path}': ${msg}")
+      }
+
+      try readAllBytesUnix(path, fd, pathSize.toInt)
+      finally unistd.close(fd)
+    } else if (pathSize == 0L) { // SN Issue #I4384, part 1.
       Array.empty[Byte]
     } else {
       val len = pathSize.toInt
       val bytes = scala.scalanative.runtime.ByteArray.alloc(len)
 
-      if (isWindows) {
-        val bytesRead = stackalloc[DWord]()
+      val bytesRead = stackalloc[DWord]()
 
-        withFileOpen(
-          path.toString,
-          access = FILE_GENERIC_READ,
-          shareMode = FILE_SHARE_READ
-        ) { handle =>
-          if (!FileApi.ReadFile(
-                handle,
-                bytes.at(0),
-                pathSize.toUInt,
-                bytesRead,
-                null
-              )) {
-            throw WindowsException.onPath(path.toString())
-          }
-        }
-      } else {
-        errno = 0
-        val pathCString = toCString(path.toString)
-        val fd = fcntl.open(pathCString, fcntl.O_RDONLY, 0.toUInt)
-
-        if (fd == -1) {
-          val msg = LibcExt.strError()
-          throw new IOException(s"error opening path '${path}': ${msg}")
-        }
-
-        try {
-          var offset = 0
-          var read = 0
-          while ({
-            read = unistd.read(fd, bytes.at(offset), (len - offset).toUInt);
-            read != -1 && (offset + read) < len
-          }) {
-            offset += read
-          }
-
-          if (read == -1)
-            throw UnixException(path.toString, errno)
-        } finally {
-          unistd.close(fd)
+      withFileOpen(
+        path.toString,
+        access = FILE_GENERIC_READ,
+        shareMode = FILE_SHARE_READ
+      ) { handle =>
+        if (!FileApi.ReadFile(
+              handle,
+              bytes.at(0),
+              pathSize.toUInt,
+              bytesRead,
+              null
+            )) {
+          throw WindowsException.onPath(path.toString())
         }
       }
 
       bytes.asInstanceOf[Array[Byte]]
     }
+  }
+
+  /* The size reported by stat is only a hint: files in /proc report 0,
+   * files in /sys report 4096 while holding less, FIFOs report 0.
+   * Read until read() reports end of file. SN Issue #5238.
+   */
+  private def readAllBytesUnix(
+      path: Path,
+      fd: CInt,
+      sizeHint: Int
+  ): Array[Byte] = {
+    val MaxArraySize = Int.MaxValue - 8
+    val DefaultBufferSize = 8192
+
+    var buf = new Array[Byte](if (sizeHint > 0) sizeHint else DefaultBufferSize)
+    var offset = 0
+    var eof = false
+
+    def readOrThrow(ptr: Ptr[Byte], count: Int): Int = {
+      var read = -1
+      while ({
+        errno = 0
+        read = unistd.read(fd, ptr, count.toUInt).toInt
+        read == -1 && errno == EINTR
+      }) ()
+      if (read == -1) throw UnixException(path.toString, errno)
+      read
+    }
+
+    while (!eof) {
+      if (offset == buf.length) {
+        // Buffer full: probe for more data before growing it, so that
+        // files matching their reported size are not copied.
+        val probe = stackalloc[Byte]()
+        if (readOrThrow(probe, 1) == 0) eof = true
+        else {
+          if (buf.length >= MaxArraySize)
+            throw new OutOfMemoryError("Required array size too large")
+          val newLength = Math
+            .min(
+              MaxArraySize.toLong,
+              Math.max(buf.length * 2L, DefaultBufferSize.toLong)
+            )
+            .toInt
+          buf = Arrays.copyOf(buf, newLength)
+          buf(offset) = !probe
+          offset += 1
+        }
+      } else {
+        val read = readOrThrow(buf.at(offset), buf.length - offset)
+        if (read == 0) eof = true
+        else offset += read
+      }
+    }
+
+    if (offset == buf.length) buf
+    else Arrays.copyOf(buf, offset)
   }
 
   def readAllLines(path: Path): List[String] =

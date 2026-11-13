@@ -2577,6 +2577,78 @@ class FilesTest {
     }
   }
 
+  private def readAllBytesViaStream(path: Path): Array[Byte] = {
+    val in = Files.newInputStream(path)
+    try {
+      val out = new ByteArrayOutputStream()
+      val buf = new Array[Byte](1024)
+      var n = in.read(buf)
+      while (n != -1) {
+        out.write(buf, 0, n)
+        n = in.read(buf)
+      }
+      out.toByteArray()
+    } finally in.close()
+  }
+
+  // Issue #5238: size reported as 0, but the file has content.
+  @Test def filesReadAllBytesFifoWithZeroReportedSize(): Unit = {
+    assumeFalse("FIFO not available on Windows", isWindows)
+    withTemporaryDirectory { dirFile =>
+      val fifo = dirFile.toPath().resolve("fifo")
+      val mkfifo = new ProcessBuilder("mkfifo", fifo.toString()).start()
+      assertEquals("mkfifo exit code", 0, mkfifo.waitFor())
+      assertEquals("Files.size(fifo)", 0L, Files.size(fifo))
+
+      val expected = ("0123456789" * 1000).getBytes(StandardCharsets.UTF_8)
+      // Blocks on opening the FIFO until we open it for reading.
+      val writer = new ProcessBuilder(
+        "sh",
+        "-c",
+        s"""printf '%s' "$$1" > "$$2"""",
+        "sh",
+        new String(expected, StandardCharsets.UTF_8),
+        fifo.toString()
+      ).start()
+      try {
+        val bytes = Files.readAllBytes(fifo)
+        assertArrayEquals("content", expected, bytes)
+        assertTrue(
+          "writer finished",
+          writer.waitFor(10, java.util.concurrent.TimeUnit.SECONDS)
+        )
+        assertEquals("writer exit code", 0, writer.exitValue())
+      } finally writer.destroyForcibly()
+    }
+  }
+
+  // Issue #5238: /proc files report size 0.
+  @Test def filesReadAllBytesProcFile(): Unit = {
+    val path = Paths.get("/proc/self/cmdline")
+    assumeTrue("/proc not available", Files.exists(path))
+    val bytes = Files.readAllBytes(path)
+    assertTrue("bytes read from /proc/self/cmdline", bytes.length > 0)
+  }
+
+  // Issue #5238: /sys files report size 4096 but hold less.
+  @Test def filesReadAllBytesSysFile(): Unit = {
+    val path = Paths.get("/sys/class/net/lo/address")
+    assumeTrue("/sys not available", Files.exists(path))
+    assumeTrue("size != 4096", Files.size(path) == 4096L)
+    val expected = readAllBytesViaStream(path)
+    assertTrue("content not empty", expected.length > 0)
+    assertArrayEquals("content", expected, Files.readAllBytes(path))
+  }
+
+  @Test def filesReadAllBytesLargerThanInternalBuffers(): Unit = {
+    withTemporaryDirectory { dirFile =>
+      val f0 = dirFile.toPath().resolve("f0")
+      val expected = Array.tabulate[Byte](100003)(i => (i * 31).toByte)
+      Files.write(f0, expected)
+      assertArrayEquals("content", expected, Files.readAllBytes(f0))
+    }
+  }
+
   @Test def filesReadAttributesPathClassArrayLinkOptionWorks(): Unit = {
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath
