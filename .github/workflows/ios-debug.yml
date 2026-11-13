@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        attempt: [1, 2, 3, 4]
+        attempt: [1, 2, 3]
     env:
       SCALANATIVE_MODE: release-fast
       SCALANATIVE_GC: immix
@@ -45,9 +45,9 @@ jobs:
         run: sbt -J-Xmx5G "tests3/Test/nativeLink"
       - name: Run until crash
         run: |
-          for i in 1 2 3 4 5 6; do
+          for i in $(seq 1 15); do
             echo "::group::iteration $i"
-            if ! sbt -J-Xmx5G "tests3/test" > "run-$i.log" 2>&1; then
+            if ! sbt -J-Xmx5G "tests3/testFull" > "run-$i.log" 2>&1; then
               echo "::endgroup::"
               echo "iteration $i failed"
               grep -n -E "signal|Illegal|Failed:|error\]" "run-$i.log" | tail -40
