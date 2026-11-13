@@ -1,60 +1,61 @@
-// Temporary reproducer of ContinuationsTest.stressSuspendResumeAcrossPlatformThreads
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.{CountDownLatch, LinkedBlockingQueue, TimeUnit}
+// Temporary experiment: cost of Thread.yield in the iOS simulator
+import java.util.concurrent.CountDownLatch
 
-import scala.scalanative.runtime.Continuations._
+import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
+
+@extern object qos {
+  def qos_class_self(): CUnsignedInt = extern
+  def qos_class_main(): CUnsignedInt = extern
+  def pthread_set_qos_class_self_np(qos: CUnsignedInt, relpri: CInt): CInt =
+    extern
+  def sched_yield(): CInt = extern
+}
 
 object Test {
+  def measure(label: String, threads: Int, raiseQos: Boolean, spin: Boolean)(
+      op: () => Unit
+  ): Unit = {
+    val done = new CountDownLatch(threads)
+    val n = 300
+    val start = System.nanoTime()
+    @volatile var stop = false
+    if (spin) {
+      val t = new Thread(() => while (!stop) {})
+      t.setDaemon(true)
+      t.start()
+    }
+    (0 until threads).foreach { _ =>
+      new Thread(() => {
+        if (raiseQos) qos.pthread_set_qos_class_self_np(0x21.toUInt, 0)
+        var i = 0
+        while (i < n) { op(); i += 1 }
+        done.countDown()
+      }).start()
+    }
+    done.await()
+    stop = true
+    val micros = (System.nanoTime() - start) / 1000
+    println(
+      s"$label threads=$threads raiseQos=$raiseQos spin=$spin: " +
+        s"${micros / n} us/iteration"
+    )
+  }
+
   def main(args: Array[String]): Unit = {
-    val fibers = 50
-    val iterations = 1000
-    val workers = math.max(4, Runtime.getRuntime().availableProcessors())
-    println(s"workers=$workers")
-
-    val ready = new LinkedBlockingQueue[() => Unit]()
-    val finished = new CountDownLatch(fibers)
-    val resumedSteps = new AtomicInteger(0)
-
-    var fiberId = 0
-    while (fiberId < fibers) {
-      boundary[Unit] {
-        var step = 0
-        while (step < iterations) {
-          suspend[Unit] { resume => ready.put(resume) }
-          resumedSteps.incrementAndGet()
-          step += 1
-        }
-        finished.countDown()
-      }
-      fiberId += 1
+    println(
+      s"cpus=${Runtime.getRuntime().availableProcessors()} " +
+        s"qos_main=${qos.qos_class_main().toHexString} " +
+        s"qos_self=${qos.qos_class_self().toHexString}"
+    )
+    for {
+      spin <- List(false, true)
+      raise <- List(false, true)
+      threads <- List(1, 4, 8)
+    } {
+      measure("Thread.yield", threads, raise, spin)(() => Thread.`yield`())
+      measure("sched_yield ", threads, raise, spin)(() => qos.sched_yield())
     }
-    println("fibers created")
-
-    def workerLoop(idx: Int): Unit = {
-      var keepRunning = true
-      var n = 0
-      while (keepRunning) {
-        val resume = ready.poll(100, TimeUnit.MILLISECONDS)
-        if (resume != null) {
-          if (n < 3) System.err.println(s"worker $idx resuming #$n")
-          resume()
-          if (n < 3) System.err.println(s"worker $idx resumed #$n")
-          n += 1
-          Thread.`yield`()
-        } else if (finished.getCount() == 0 && ready.isEmpty())
-          keepRunning = false
-      }
-    }
-
-    (0 until workers).foreach { idx =>
-      new Thread(() => workerLoop(idx), s"cont-stress-worker-$idx").start()
-    }
-    val ok = finished.await(30, TimeUnit.SECONDS)
-    println(s"finished=$ok resumed=${resumedSteps.get()} queue=${ready.size()}")
-    if (!ok) {
-      println("HUNG")
-      Thread.sleep(120000)
-      System.exit(1)
-    }
+    println("finished=true")
   }
 }
