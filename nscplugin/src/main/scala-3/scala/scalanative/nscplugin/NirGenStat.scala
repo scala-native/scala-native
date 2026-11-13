@@ -372,7 +372,7 @@ trait NirGenStat(using Context) {
     nir.Attrs.fromSeq(attrs.result())
   }
 
-  protected val curExprBuffer = ScopedVar[ExprBuffer]()
+  protected val curExprBuffer = ScopedVar[ExprBuffer]("curExprBuffer")
   private def genMethodBody(
       dd: DefDef,
       bodyp: Tree,

@@ -31,26 +31,32 @@ abstract class NirGenPhase[G <: Global with Singleton](override val global: G)
 
   val phaseName = "scalanative-genNIR"
 
-  protected val curClassSym = new util.ScopedVar[Symbol]
-  protected val curClassFresh = new util.ScopedVar[nir.Fresh]
-  protected val curMethodSym = new util.ScopedVar[Symbol]
-  protected val curMethodSig = new util.ScopedVar[nir.Type]
-  protected val curMethodInfo = new util.ScopedVar[CollectMethodInfo]
-  protected val curMethodEnv = new util.ScopedVar[MethodEnv]
-  protected val curMethodThis = new util.ScopedVar[Option[nir.Val]]
+  protected val curClassSym = new util.ScopedVar[Symbol]("curClassSym")
+  protected val curClassFresh = new util.ScopedVar[nir.Fresh]("curClassFresh")
+  protected val curMethodSym = new util.ScopedVar[Symbol]("curMethodSym")
+  protected val curMethodSig = new util.ScopedVar[nir.Type]("curMethodSig")
+  protected val curMethodInfo =
+    new util.ScopedVar[CollectMethodInfo]("curMethodInfo")
+  protected val curMethodEnv = new util.ScopedVar[MethodEnv]("curMethodEnv")
+  protected val curMethodThis =
+    new util.ScopedVar[Option[nir.Val]]("curMethodThis")
   protected val curMethodLocalNames =
-    new util.ScopedVar[mutable.Map[nir.Local, nir.LocalName]]
-  protected val curMethodIsExtern = new util.ScopedVar[Boolean]
-  protected val curFresh = new util.ScopedVar[nir.Fresh]
-  protected val curUnwindHandler = new util.ScopedVar[Option[nir.Local]]
-  protected val curStatBuffer = new util.ScopedVar[StatBuffer]
+    new util.ScopedVar[mutable.Map[nir.Local, nir.LocalName]](
+      "curMethodLocalNames"
+    )
+  protected val curMethodIsExtern =
+    new util.ScopedVar[Boolean]("curMethodIsExtern")
+  protected val curFresh = new util.ScopedVar[nir.Fresh]("curFresh")
+  protected val curUnwindHandler =
+    new util.ScopedVar[Option[nir.Local]]("curUnwindHandler")
+  protected val curStatBuffer = new util.ScopedVar[StatBuffer]("curStatBuffer")
   protected val cachedMethodSig =
     collection.mutable.Map.empty[(Symbol, Boolean, Boolean), nir.Type.Function]
 
   protected var curScopes =
-    new util.ScopedVar[mutable.Set[DebugInfo.LexicalScope]]
-  protected val curFreshScope = new util.ScopedVar[nir.Fresh]
-  protected val curScopeId = new util.ScopedVar[nir.ScopeId]
+    new util.ScopedVar[mutable.Set[DebugInfo.LexicalScope]]("curScopes")
+  protected val curFreshScope = new util.ScopedVar[nir.Fresh]("curFreshScope")
+  protected val curScopeId = new util.ScopedVar[nir.ScopeId]("curScopeId")
   protected implicit def getScopeId: nir.ScopeId = curScopeId.get
   protected def initFreshScope(rhs: Tree) = nir.Fresh(rhs match {
     case _: Block => -1L // Conpensate the top-level block

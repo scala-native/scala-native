@@ -5,20 +5,30 @@ import scala.annotation.nowarn
 
 import language.implicitConversions
 
-class ScopedVar[A] {
+class ScopedVar[A](name: String) {
   import ScopedVar.Assignment
+
+  def this() = this(null)
 
   private var init = false
   @nowarn("msg=`= _` has been deprecated")
   private var value: A = _
 
-  def get: A = if (!init) throw ScopedVar.Unitialized() else value
+  def get: A =
+    if (!init) throw new ScopedVar.UninitializedAccess(name) else value
   def :=(newValue: A): Assignment[A] = new Assignment(this, newValue)
   def isInitialized: Boolean = init
 }
 
 object ScopedVar {
   case class Unitialized() extends Exception
+
+  private final class UninitializedAccess(name: String) extends Unitialized() {
+    override def getMessage(): String = {
+      val desc = if (name == null) "ScopedVar" else s"ScopedVar '$name'"
+      s"Internal error: $desc was read outside of a scope that assigns it"
+    }
+  }
 
   class Assignment[T](scVar: ScopedVar[T], value: T) {
     private[ScopedVar] def push(): AssignmentStackElement[T] = {
