@@ -7,7 +7,7 @@ import java.util.zip._
 import java.{lang => jl}
 
 import org.junit.Assert._
-import org.junit.{AfterClass, Ignore, Test}
+import org.junit.{AfterClass, Test}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
@@ -55,9 +55,7 @@ object ZipEntryTest {
   val orgCompressedSize = zentry.getCompressedSize()
   val orgCrc = zentry.getCrc()
 
-// Revert PR #3794 so I can chase intermittent bad values & Segfault
-//  lazy val orgTime = zentry.getTime()
-  val orgTime = -1
+  val orgTime = zentry.getTime()
 
   val orgComment = zentry.getComment()
 
@@ -181,11 +179,24 @@ class ZipEntryTest {
     assertTrue(ze.getSize() == orgSize)
   }
 
-// Revert PR #3794 so I can chase intermittent bad values & Segfault
-  @Ignore
   @Test def getTime(): Unit = {
     val ze = zfile.getEntry("File1.txt")
     assertEquals("getTime", orgTime, ze.getTime())
+  }
+
+  // Issue 3816
+  @Test def setTimeGetTimeRoundTrip(): Unit = {
+    // Midday UTC, 2000 to 2032: clear of DST transitions and of 2038.
+    val y2k = 946684800000L
+    val day = 24L * 60 * 60 * 1000
+    val midday = 12L * 60 * 60 * 1000
+
+    for (i <- 0 until 400) {
+      val millis = y2k + midday + i * 29L * day + (i % 60) * 2000L
+      val ze = new ZipEntry("roundTrip")
+      ze.setTime(millis) // even seconds: exact in MS-DOS time
+      assertEquals(s"getTime() for $millis", millis, ze.getTime())
+    }
   }
 
   @Test def isDirectory(): Unit = {
