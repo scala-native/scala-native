@@ -18,7 +18,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [simulator, macos]
+        # macos-busy: host binary executed while the simulator is booted
+        target: [simulator, macos, macos-busy]
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/macos-setup-env
@@ -26,7 +27,7 @@ jobs:
           scala-version: 3
           llvm-version: 19
       - name: Boot simulator
-        if: matrix.target == 'simulator'
+        if: matrix.target != 'macos'
         run: |
           UDID=$(xcrun simctl list devices available --json | jq -r '
             [ .devices | to_entries[]
@@ -37,7 +38,9 @@ jobs:
           xcrun simctl boot "$UDID"
           xcrun simctl bootstatus "$UDID" -b
           echo "IOS_SIMULATOR_UDID=$UDID" >> "$GITHUB_ENV"
-          echo "SCALANATIVE_TARGET_TRIPLE=$(uname -m)-apple-ios16.0-simulator" >> "$GITHUB_ENV"
+          if [[ "${{ matrix.target }}" == "simulator" ]]; then
+            echo "SCALANATIVE_TARGET_TRIPLE=$(uname -m)-apple-ios16.0-simulator" >> "$GITHUB_ENV"
+          fi
       - name: Build
         run: |
           cp scripts/ci/ios-debug/ContStress.scala sandbox/src/main/scala/Test.scala
