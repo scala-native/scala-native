@@ -30,8 +30,8 @@ class WordexpTest {
 
   @Test def wordexpExpectBadcharError(): Unit = {
     assumeTrue(
-      "wordexp.scala is not implemented on Windows or OpenBSD",
-      !isWindows && !isOpenBSD
+      "wordexp.scala is not implemented on Windows, OpenBSD or iOS",
+      !isWindows && !isOpenBSD && !isIOS
     )
     // musl and Termux's compatibility library accept ";" (return 0 with
     // the first word expanded only) where glibc returns WRDE_BADCHAR.
@@ -39,7 +39,7 @@ class WordexpTest {
       "musl and Termux wordexp do not return WRDE_BADCHAR for ';'",
       isMusl || LinktimeInfo.isAndroid
     )
-    if (!isWindows && !isOpenBSD) Zone.acquire { implicit z =>
+    if (!isWindows && !isOpenBSD && !isIOS) Zone.acquire { implicit z =>
       val wrdeP = stackalloc[wordexp_t]()
 
       /* wordexp is defined as using the sh shell. That shell does not
@@ -59,11 +59,11 @@ class WordexpTest {
 
   @Test def wordexpTildeExpansion: Unit = {
     assumeTrue(
-      "wordexp.scala is not implemented on Windows or OpenBSD",
-      !isWindows && !isOpenBSD
+      "wordexp.scala is not implemented on Windows, OpenBSD or iOS",
+      !isWindows && !isOpenBSD && !isIOS
     )
 
-    if (!isWindows && !isOpenBSD) Zone.acquire { implicit z =>
+    if (!isWindows && !isOpenBSD && !isIOS) Zone.acquire { implicit z =>
       val wrdeP = stackalloc[wordexp_t]()
 
       val pattern = "~"
@@ -84,13 +84,13 @@ class WordexpTest {
       } finally {
         wordfree(wrdeP)
       }
-    } // !isWindows && !isOpenBSD
+    } // !isWindows && !isOpenBSD && !isIOS
   }
 
   @Test def wordexpVariableSubstitution: Unit = {
     assumeTrue(
-      "wordexp.scala is not implemented on Windows or OpenBSD",
-      !isWindows && !isOpenBSD
+      "wordexp.scala is not implemented on Windows, OpenBSD or iOS",
+      !isWindows && !isOpenBSD && !isIOS
     )
 
     /* The environment variable $HOME may not exist on all non-CI systems.
@@ -106,7 +106,7 @@ class WordexpTest {
       hasHomeEnvvar != null
     )
 
-    if (!isWindows && !isOpenBSD) Zone.acquire { implicit z =>
+    if (!isWindows && !isOpenBSD && !isIOS) Zone.acquire { implicit z =>
       val wrdeP = stackalloc[wordexp_t]()
 
       val pattern = "Phil $HOME Ochs"
@@ -127,6 +127,6 @@ class WordexpTest {
       } finally {
         wordfree(wrdeP)
       }
-    } // !isWindows && !isOpenBSD
+    } // !isWindows && !isOpenBSD && !isIOS
   }
 }
