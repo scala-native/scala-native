@@ -397,6 +397,19 @@ void scalanative_StackOverflowGuards_close() {
     currentThreadInfo.stackGuardPage = NULL;
     currentThreadInfo.stackGuardLow = NULL;
     if (currentThreadInfo.signalHandlerStack) {
+        // The thread can still receive signals after this point, e.g. a GC
+        // safepoint trap. Unregister the alternate stack before releasing
+        // it: otherwise the kernel would build the signal frame in freed
+        // memory, which either fails (uncatchable SIGILL on Darwin) or
+        // overwrites whatever reuses that memory, typically the alternate
+        // stack of a thread started later.
+        stack_t disabled = {};
+        disabled.ss_flags = SS_DISABLE;
+        if (sigaltstack(&disabled, NULL) == -1) {
+            // Still registered, leaking it is the only safe option.
+            currentThreadInfo.signalHandlerStack = NULL;
+            return;
+        }
         free(currentThreadInfo.signalHandlerStack);
         currentThreadInfo.signalHandlerStack = NULL;
     }
