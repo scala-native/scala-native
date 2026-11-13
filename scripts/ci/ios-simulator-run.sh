@@ -11,6 +11,8 @@
 set -euo pipefail
 
 while IFS= read -r name; do
+  # e.g. GitHub Actions allows env variables with names rejected by bash
+  [[ "$name" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || continue
   case "$name" in
     SIMCTL_* | DYLD_* | XPC_* | __CF* | _ | SHLVL | OLDPWD | IFS | BASH* | name) ;;
     # Used by the simulator runtime to locate its own root directories
