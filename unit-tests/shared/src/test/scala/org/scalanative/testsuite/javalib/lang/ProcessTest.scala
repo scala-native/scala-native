@@ -169,6 +169,13 @@ class ProcessTest {
     }
   }
 
+  @Test def directoryAsCommand(): Unit = {
+    assumeFalse("Not tested in Windows", isWindows)
+    withScriptDir { dir =>
+      assertCannotRun(new ProcessBuilder(dir.getAbsolutePath()), 13)
+    }
+  }
+
   @Test def nonExecutableFile(): Unit = {
     assumeFalse("Not tested in Windows", isWindows)
     assumeNotRoot()

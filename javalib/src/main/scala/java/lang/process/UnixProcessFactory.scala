@@ -442,27 +442,35 @@ private[process] object UnixProcessFactory {
   private def isExecutableIn(builder: ProcessBuilder, path: String): Boolean =
     inChildDir(builder, path).canExecute()
 
+  // Like execvp, skip only candidates that do not exist; other errors
+  // (e.g. EACCES for a directory) are left for the exec attempt to report.
+  private def mayExist(builder: ProcessBuilder, path: String)(implicit
+      z: Zone
+  ): Boolean = {
+    val p = toCString(inChildDir(builder, path).getPath())
+    unistd.access(p, unistd.F_OK) == 0 || (errno != ENOENT && errno != ENOTDIR)
+  }
+
   /* Executable lookup follows the JVM: a command without '/' is searched in
    * the PATH of this (parent) process, not in the PATH set in the child's
    * environment. Relative PATH entries are resolved against the child's
-   * working directory. Only regular files are candidates.
+   * working directory.
    */
-  private def binaryPaths(
-      builder: ProcessBuilder,
-      bin: String
+  private def binaryPaths(builder: ProcessBuilder, bin: String)(implicit
+      z: Zone
   ): Iterator[String] = {
-    if (bin.indexOf('/') >= 0) Iterator(bin)
-    else {
-      val path = System.getenv("PATH") match {
-        case null => "/bin:/usr/bin"
-        case p    => p
+    val candidates =
+      if (bin.indexOf('/') >= 0) Iterator(bin)
+      else {
+        val path = System.getenv("PATH") match {
+          case null => "/bin:/usr/bin"
+          case p    => p
+        }
+        path.split(File.pathSeparator, -1).iterator.map { dir =>
+          if (dir.isEmpty) bin else new File(dir, bin).getPath()
+        }
       }
-      path.split(File.pathSeparator, -1).iterator.flatMap { dir =>
-        val f = if (dir.isEmpty) new File(bin) else new File(dir, bin)
-        if (inChildDir(builder, f.getPath()).isFile()) Some(f.getPath())
-        else None
-      }
-    }
+    candidates.filter(mayExist(builder, _))
   }
 
 }
