@@ -317,6 +317,7 @@ abstract class ContinuationsApiTest:
               Thread.`yield`()
             else if finished.getCount() == 0 && ready.isEmpty() then
               keepRunning = false
+        catch case _: InterruptedException => ()
         finally workersFinished.countDown()
 
       val pool = scala.Array.tabulate(workers) { idx =>
@@ -325,20 +326,20 @@ abstract class ContinuationsApiTest:
         t.start()
         t
       }
-      val _ = pool
+      try
+        assertTrue(
+          s"Timed out waiting for fiber completion; resumed=${resumedSteps.get()}, queue=${ready.size()}",
+          finished.await(60, TimeUnit.SECONDS)
+        )
+        assertTrue(
+          s"Timed out waiting for workers to stop; queue=${ready.size()}",
+          workersFinished.await(10, TimeUnit.SECONDS)
+        )
 
-      assertTrue(
-        s"Timed out waiting for fiber completion; resumed=${resumedSteps.get()}, queue=${ready.size()}",
-        finished.await(60, TimeUnit.SECONDS)
-      )
-      assertTrue(
-        s"Timed out waiting for workers to stop; queue=${ready.size()}",
-        workersFinished.await(10, TimeUnit.SECONDS)
-      )
-
-      val expected = fibers * iterations
-      assertEquals(expected, resumedSteps.get())
-      assertEquals(expected, enqueued.get())
+        val expected = fibers * iterations
+        assertEquals(expected, resumedSteps.get())
+        assertEquals(expected, enqueued.get())
+      finally stopWorkers(pool)
     }
 
   // -----------------------------------------------------------------------
@@ -466,6 +467,10 @@ abstract class ContinuationsApiTest:
       assertEquals("deep stack corruption", 0, errors.get())
     }
 
+  private def stopWorkers(workers: scala.Array[Thread]): Unit =
+    workers.foreach(_.interrupt())
+    workers.foreach(_.join(5000))
+
   private final class WorkerPool(name: String, numWorkers: Int):
     private val queue = new LinkedBlockingQueue[() => Unit]()
     private val done = new AtomicBoolean(false)
@@ -546,6 +551,7 @@ abstract class ContinuationsApiTest:
             if task != null then task()
             else if finished.getCount() == 0 && ready.isEmpty() then
               keepRunning = false
+        catch case _: InterruptedException => ()
         finally workersFinished.countDown()
 
       val pool = scala.Array.tabulate(workers) { idx =>
@@ -554,17 +560,17 @@ abstract class ContinuationsApiTest:
         t.start()
         t
       }
-      val _ = pool
-
-      assertTrue(
-        s"registerPreservation timed out; errors=${errors.get()}",
-        finished.await(60, TimeUnit.SECONDS)
-      )
-      assertTrue(
-        "workers did not stop",
-        workersFinished.await(10, TimeUnit.SECONDS)
-      )
-      assertEquals(s"register corruption detected", 0, errors.get())
+      try
+        assertTrue(
+          s"registerPreservation timed out; errors=${errors.get()}",
+          finished.await(60, TimeUnit.SECONDS)
+        )
+        assertTrue(
+          "workers did not stop",
+          workersFinished.await(10, TimeUnit.SECONDS)
+        )
+        assertEquals(s"register corruption detected", 0, errors.get())
+      finally stopWorkers(pool)
     }
 
   @Test def repeatedSuspendResumeNoStackGrowth(): Unit =
@@ -591,6 +597,7 @@ abstract class ContinuationsApiTest:
             if task != null then task()
             else if finished.getCount() == 0 && ready.isEmpty() then
               keepRunning = false
+        catch case _: InterruptedException => ()
         finally workersFinished.countDown()
 
       val pool = scala.Array.tabulate(workers) { idx =>
@@ -599,16 +606,16 @@ abstract class ContinuationsApiTest:
         t.start()
         t
       }
-      val _ = pool
-
-      assertTrue(
-        "repeatedSuspendResume timed out — possible stack overflow",
-        finished.await(60, TimeUnit.SECONDS)
-      )
-      assertTrue(
-        "workers did not stop",
-        workersFinished.await(10, TimeUnit.SECONDS)
-      )
+      try
+        assertTrue(
+          "repeatedSuspendResume timed out — possible stack overflow",
+          finished.await(60, TimeUnit.SECONDS)
+        )
+        assertTrue(
+          "workers did not stop",
+          workersFinished.await(10, TimeUnit.SECONDS)
+        )
+      finally stopWorkers(pool)
     }
 
   @Test def deepStackSuspendResume(): Unit =
@@ -654,6 +661,7 @@ abstract class ContinuationsApiTest:
             if task != null then task()
             else if finished.getCount() == 0 && ready.isEmpty() then
               keepRunning = false
+        catch case _: InterruptedException => ()
         finally workersFinished.countDown()
 
       val pool = scala.Array.tabulate(workers) { idx =>
@@ -662,17 +670,17 @@ abstract class ContinuationsApiTest:
         t.start()
         t
       }
-      val _ = pool
-
-      assertTrue(
-        s"deepStackSuspendResume timed out; errors=${errors.get()}",
-        finished.await(60, TimeUnit.SECONDS)
-      )
-      assertTrue(
-        "workers did not stop",
-        workersFinished.await(10, TimeUnit.SECONDS)
-      )
-      assertEquals("deep stack local corruption", 0, errors.get())
+      try
+        assertTrue(
+          s"deepStackSuspendResume timed out; errors=${errors.get()}",
+          finished.await(60, TimeUnit.SECONDS)
+        )
+        assertTrue(
+          "workers did not stop",
+          workersFinished.await(10, TimeUnit.SECONDS)
+        )
+        assertEquals("deep stack local corruption", 0, errors.get())
+      finally stopWorkers(pool)
     }
 
 end ContinuationsApiTest

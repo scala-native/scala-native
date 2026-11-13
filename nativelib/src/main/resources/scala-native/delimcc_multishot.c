@@ -442,9 +442,14 @@ static inline void *clamp_ptr_to_fragment(void *p, void *frag_lo,
 // to the boundary are not contiguous.
 bool scalanative_continuation_multishot_on_current_stack(
     ContinuationBoundaryLabel label) {
+    // A resume handler has no stack_btm; the boundaries above it belong to
+    // the continuation being resumed, the ones below to whoever resumed it.
+    bool belowResume = false;
     Handler *it = handlers_load();
-    while (it != NULL && it->id != label)
+    while (it != NULL && it->id != label) {
+        belowResume |= it->stack_btm == NULL;
         it = it->next;
+    }
     // A missing label is reported by suspend.
     if (it == NULL || it->stack_btm == NULL)
         return true;
@@ -452,9 +457,13 @@ bool scalanative_continuation_multishot_on_current_stack(
     uintptr_t bottom = (uintptr_t)currentThreadInfo.stackBottom;
     uintptr_t boundary = (uintptr_t)it->stack_btm;
     uintptr_t sp = (uintptr_t)_lh_get_sp();
-    // Resumed onto a heap fragment, which the bounds do not describe; a
-    // one-shot stack always has bounds.
-    if (top == 0 || bottom == 0 || sp < top || sp > bottom)
+    if (top == 0 || bottom == 0)
+        return true;
+    // Resumed onto a heap fragment, which the bounds do not describe: its
+    // own boundaries are fine, the others have to be on the stack that
+    // resumed it.
+    bool onFragment = sp < top || sp > bottom;
+    if (onFragment && !belowResume)
         return true;
     return top <= boundary && boundary <= bottom;
 }
