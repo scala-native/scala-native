@@ -4,6 +4,7 @@ import java.io.{File, IOException}
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Path, PosixException, WindowsException}
 import java.util.WindowsHelperMethods._
+import java.util.concurrent.ThreadLocalRandom
 import java.{lang => jl, util => ju}
 
 import scala.collection.mutable.UnrolledBuffer
@@ -22,7 +23,7 @@ import scalanative.meta.LinktimeInfo.isWindows
 import scalanative.posix.DirentImpl.scalanative_readdirImpl
 import scalanative.posix.dirent._
 // Import posix name errno as variable, not class or type.
-import scalanative.posix.{errno => posixErrno, stdlib, unistd}
+import scalanative.posix.{errno => posixErrno, fcntl, stdlib, unistd}
 import scalanative.unsafe._
 import scalanative.unsigned._
 
@@ -227,12 +228,64 @@ object FileHelpers {
     else {
       val tmpDir = Option(dir).fold(tempDir)(_.toString)
       val newSuffix = Option(suffix).getOrElse(".tmp")
+      var attempts = 0
       var result: File = null
-      while ({
-        result = genTempFile(prefix, newSuffix, tmpDir)
-        !createNewFile(result.toString, throwOnError)
-      }) ()
+      while (result == null) {
+        if (attempts == maxTempNameAttempts)
+          throw new IOException(
+            s"Unable to create a temporary file in '$tmpDir' " +
+              s"after $maxTempNameAttempts attempts"
+          )
+        attempts += 1
+        val candidate = genTempFile(prefix, newSuffix, tmpDir)
+        if (createNewFileExclusive(candidate.toString)) result = candidate
+      }
       result
+    }
+
+  private final val maxTempNameAttempts = 100
+
+  /* Atomically creates a new, empty file. Returns false when something
+   * already exists at path; throws on any other error.
+   */
+  private def createNewFileExclusive(path: String): Boolean =
+    Zone.acquire { implicit z =>
+      if (isWindows) {
+        val handle = CreateFileW(
+          toWindowsPath(path),
+          desiredAccess = FILE_GENERIC_WRITE,
+          shareMode = FILE_SHARE_ALL,
+          securityAttributes = null,
+          creationDisposition = CREATE_NEW,
+          flagsAndAttributes = FILE_ATTRIBUTE_NORMAL,
+          templateFile = null
+        )
+        if (handle != INVALID_HANDLE_VALUE) {
+          HandleApi.CloseHandle(handle)
+          true
+        } else
+          GetLastError() match {
+            case ErrorCodes.ERROR_FILE_EXISTS |
+                ErrorCodes.ERROR_ALREADY_EXISTS =>
+              false
+            case errCode =>
+              throw WindowsException(
+                s"Cannot create new file $path",
+                errorCode = errCode
+              )
+          }
+      } else {
+        val fd = fcntl.open(
+          toCString(path),
+          fcntl.O_WRONLY | fcntl.O_CREAT | fcntl.O_EXCL,
+          0x1b6.toUInt // 0666, masked by umask
+        )
+        if (fd != -1) {
+          unistd.close(fd)
+          true
+        } else if (posixErrno.errno == EEXIST) false
+        else throw UnixException(path, posixErrno.errno)
+      }
     }
 
   def exists(path: String): Boolean =
@@ -266,14 +319,8 @@ object FileHelpers {
     dir
   }
 
-  private lazy val random = new scala.util.Random()
-
   private def genTempIdent(prefix: String, suffix: String): String = {
-    val id = random.nextLong() match {
-      case l if l == java.lang.Long.MIN_VALUE => 0
-      case l                                  => math.llabs(l)
-    }
-
+    val id = ThreadLocalRandom.current().nextLong() & jl.Long.MAX_VALUE
     s"${prefix}${id}${suffix}"
   }
 
