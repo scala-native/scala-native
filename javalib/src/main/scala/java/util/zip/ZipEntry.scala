@@ -168,9 +168,9 @@ class ZipEntry private (
         localtime_r(timer, tm) == null
       }
 
-    val msDosYears = if (failed) 0 else tm.tm_year - 80
+    val msDosYears = tm.tm_year - 80
 
-    if (msDosYears <= 0) {
+    if (failed || msDosYears < 0) {
       modDate = 0x21 // 01-01-1980 00:00 MS-DOS epoch
       time = 0
     } else {

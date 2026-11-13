@@ -191,6 +191,11 @@ class ZipEntryTest {
     val day = 24L * 60 * 60 * 1000
     val midday = 12L * 60 * 60 * 1000
 
+    val mid1980 = 329918400000L // 1980-06-15T12:00:00Z, MS-DOS year 0
+    val ze1980 = new ZipEntry("roundTrip1980")
+    ze1980.setTime(mid1980)
+    assertEquals("getTime() in 1980", mid1980, ze1980.getTime())
+
     for (i <- 0 until 400) {
       val millis = y2k + midday + i * 29L * day + (i % 60) * 2000L
       val ze = new ZipEntry("roundTrip")
