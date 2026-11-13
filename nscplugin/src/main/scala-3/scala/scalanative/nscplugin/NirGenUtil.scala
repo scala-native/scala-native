@@ -5,7 +5,6 @@ import dotty.tools.dotc.ast.tpd
 import dotty.tools.dotc.ast.tpd._
 import dotty.tools.dotc.{core, report}
 import scala.collection.mutable
-import scala.compiletime.uninitialized
 
 import scala.scalanative.nir
 import scala.scalanative.util.ScopedVar
@@ -129,16 +128,18 @@ trait NirGenUtil(using Context) { self: NirCodeGen =>
 }
 
 object NirGenUtil {
+  // May be shared by parallel compilations
   class ContextCached[T](init: Context ?=> T) {
-    private var lastContext: Context = uninitialized
-    private var cached: T = uninitialized
+    @volatile private var cached: (Context, T) | Null = null
 
-    def get(using Context): T = {
-      if (lastContext != ctx) {
-        cached = init
-        lastContext = ctx
+    def get(using ctx: Context): T = {
+      val last = cached
+      if (last != null && (last._1 eq ctx)) last._2
+      else {
+        val value = init
+        cached = (ctx, value)
+        value
       }
-      cached
     }
   }
 }
