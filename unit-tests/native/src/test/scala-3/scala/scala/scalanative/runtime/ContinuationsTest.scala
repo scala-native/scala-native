@@ -5,6 +5,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 // `Array` alone is scala.scalanative.runtime.Array in this package.
 import scala.Array
+import scala.annotation.nowarn
 import scala.util.Try
 
 import org.junit.Assert._
@@ -135,12 +136,14 @@ class ContinuationsTest extends ContinuationsApiTest:
 
   // What the inline `boundary` and `suspend` of 0.5.12 expanded to; libraries
   // compiled against it contain these calls.
+  @nowarn("cat=deprecation")
   private def boundaryAsIn0_5_12[T](body: CUnsignedLong => T): T =
     val call: CUnsignedLong => Try[T] = label => Try(body(label))
     val run = Continuations.inline$boundaryBodyFnAny
       .asInstanceOf[CFuncPtr2[CUnsignedLong, CUnsignedLong => Try[T], Try[T]]]
     Continuations.inline$Impl.boundary(run, call).get
 
+  @nowarn("cat=deprecation")
   private def suspendAsIn0_5_12[R, T](
       label: CUnsignedLong
   )(onSuspend: (R => T) => T): R =

@@ -248,10 +248,14 @@ object Continuations:
     def resume[R, T](stacks: SuspendedStacks, value: R): Try[T] = extern
   end OneShot
 
+  private final val legacyExpansion =
+    "Only for code compiled against Scala Native 0.5.12 and older; will be removed"
+
   /** What `boundary` and `suspend` expand to in code compiled against 0.5.12
    *  and older, where they were inline methods: these externs, the accessors
    *  below, and [[Continuation]]. Such code runs on the one-shot runtime.
    */
+  @deprecated(legacyExpansion, since = "0.5.13")
   @extern @define("__SCALANATIVE_DELIMCC_ONESHOT")
   private[runtime] object Impl:
     @name("scalanative_continuation_boundary")
@@ -273,17 +277,23 @@ object Continuations:
     ): R = extern
   end Impl
 
+  @deprecated(legacyExpansion, since = "0.5.13")
   private[runtime] def inline$Impl: Impl.type = Impl
+  @deprecated(legacyExpansion, since = "0.5.13")
   private[runtime] def inline$reachabilityFence(target: Any): Unit = ()
+  @deprecated(legacyExpansion, since = "0.5.13")
   private[runtime] def inline$inner$i1[T, R](
       continuation: Continuation[R, T]
   ): NativeContinuation = continuation.inner
+  @deprecated(legacyExpansion, since = "0.5.13")
   private[runtime] def inline$inner_$eq$i1[T, R](
       continuation: Continuation[R, T],
       native: NativeContinuation
   ): Unit = continuation.inner = native
+  @deprecated(legacyExpansion, since = "0.5.13")
   private[runtime] def inline$boundaryBodyFnAny
       : CFuncPtr2[Label, Label => Try[Any], Try[Any]] = legacyRunBody
+  @deprecated(legacyExpansion, since = "0.5.13")
   private[runtime] def inline$suspendFnAny: CFuncPtr2[
     NativeContinuation,
     NativeContinuation => Try[Any],
