@@ -18,7 +18,9 @@ sealed abstract class ScopeInfo extends Info {
   val calls = mutable.Set.empty[nir.Sig]
   val responds = mutable.Map.empty[nir.Sig, nir.Global.Member]
 
-  def methods = calls.toSeq.filter(_.isVirtual)
+  // Sorted: itable slots must not follow hash order. Read after reachability.
+  lazy val methods: Seq[nir.Sig] =
+    calls.toSeq.filter(_.isVirtual).sortBy(_.mangle)
 
   def isClass: Boolean = this.isInstanceOf[Class]
   def isTrait: Boolean = this.isInstanceOf[Trait]

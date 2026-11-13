@@ -102,8 +102,8 @@ private[linker] class Reach(
         linkCppRuntime = linkCppRuntime,
         preprocessorDefinitions = preprocessorDefinitions.toSeq.sortBy(_.name),
         defns = defns.toSeq,
-        dynsigs = dynsigs.toSeq,
-        dynimpls = dynimpls.toSeq,
+        dynsigs = dynsigs.toSeq.sortBy(_.mangle),
+        dynimpls = dynimpls.toSeq.sorted(nir.Global.globalOrdering),
         resolvedVals = resolvedNirValues,
         foundServiceProviders = foundServiceProviders
       )
