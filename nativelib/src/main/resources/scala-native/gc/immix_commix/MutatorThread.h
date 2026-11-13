@@ -57,6 +57,8 @@ typedef struct {
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
     /* Faulting PC when using deferred safepoint trampoline (POSIX). */
     uintptr_t safepointResumePc;
+    /* Set from the redirect until the trampoline has read the resume PC. */
+    volatile bool safepointRedirectActive;
 #endif
 } MutatorThread;
 

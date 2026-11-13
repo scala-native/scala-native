@@ -28,6 +28,8 @@ bool scalanative_gc_safepoint_prepare_redirect(void *uap, void *mutatorThread);
  * instruction. */
 bool scalanative_gc_safepoint_is_stale_fault_signal(void *uap);
 
+void scalanative_gc_safepoint_diag_dump(void *uap, void *mutatorThread,
+                                        const char *what);
 void scalanative_gc_safepoint_poll_run_yield(void);
 uintptr_t scalanative_gc_safepoint_load_resume_pc(void);
 
@@ -38,6 +40,14 @@ scalanative_gc_safepoint_prepare_redirect(void *uap, void *mutatorThread) {
     (void)uap;
     (void)mutatorThread;
     return false;
+}
+
+static inline void scalanative_gc_safepoint_diag_dump(void *uap,
+                                                      void *mutatorThread,
+                                                      const char *what) {
+    (void)uap;
+    (void)mutatorThread;
+    (void)what;
 }
 
 static inline bool scalanative_gc_safepoint_is_stale_fault_signal(void *uap) {
