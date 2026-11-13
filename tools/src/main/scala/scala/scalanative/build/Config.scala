@@ -8,7 +8,7 @@ sealed trait Config {
 
   private val testSuffix = "-test"
 
-  /** Base Directory for native work products. */
+  /** Base Directory for native work products, always absolute. */
   def baseDir: Path
 
   /** Indicates whether this is a test config or not. */
@@ -230,7 +230,7 @@ object Config {
    */
   def empty: Config =
     Impl(
-      baseDir = Paths.get(""),
+      baseDir = Paths.get("").toAbsolutePath(),
       testConfig = false,
       moduleName = "",
       mainClass = None,
@@ -252,7 +252,7 @@ object Config {
   ) extends Config {
 
     def withBaseDir(value: Path): Config =
-      copy(baseDir = value)
+      copy(baseDir = value.toAbsolutePath())
 
     def withTestConfig(value: Boolean): Config =
       copy(testConfig = value)
