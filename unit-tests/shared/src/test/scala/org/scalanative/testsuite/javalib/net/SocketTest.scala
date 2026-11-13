@@ -234,6 +234,67 @@ class SocketTest {
     }
   }
 
+  /* Fill the accept queue of a listener which never accepts, so that the
+   * next connect attempt to it blocks. Skips the test if the platform does
+   * not block in that case (e.g. it refuses the connection instead).
+   */
+  private def withBlockingListener(body: InetSocketAddress => Unit): Unit = {
+    val loopback = InetAddress.getLoopbackAddress
+    val server = new ServerSocket(0, 1, loopback)
+    val addr = new InetSocketAddress(loopback, server.getLocalPort)
+    val fillers = scala.collection.mutable.ListBuffer.empty[Socket]
+    try {
+      var blocking = false
+      while (!blocking && fillers.size < 64) {
+        val s = new Socket()
+        fillers += s
+        try s.connect(addr, 200)
+        catch {
+          case _: SocketTimeoutException => blocking = true
+          case _: java.io.IOException    => ()
+        }
+      }
+      assumeTrue("Could not exhaust the listener backlog", blocking)
+      body(addr)
+    } finally {
+      fillers.foreach(_.close())
+      server.close()
+    }
+  }
+
+  private def checkCloseUnblocksConnect(timeout: Int): Unit = {
+    assumeTrue("requires multithreading", Platform.isMultithreadingEnabled)
+    withBlockingListener { addr =>
+      val s = new Socket()
+      @volatile var result: Throwable = null
+      val connector = new Thread(() =>
+        try {
+          s.connect(addr, timeout)
+          result = new AssertionError("connect unexpectedly succeeded")
+        } catch { case e: Throwable => result = e }
+      )
+      connector.start()
+      connector.join(500)
+      assumeTrue("connect did not block", connector.isAlive())
+
+      s.close()
+      connector.join(10000)
+      assertFalse("connect still blocked after close", connector.isAlive())
+      assertTrue(
+        s"expected SocketException, got $result",
+        result.isInstanceOf[SocketException]
+      )
+    }
+  }
+
+  // Issue #4480
+  @Test def closeUnblocksConnect(): Unit =
+    checkCloseUnblocksConnect(timeout = 0)
+
+  // Issue #4480
+  @Test def closeUnblocksConnectWithTimeout(): Unit =
+    checkCloseUnblocksConnect(timeout = 30000)
+
   @Test def bind(): Unit = {
     val s1 = new Socket()
     try {
