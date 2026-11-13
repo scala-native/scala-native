@@ -669,8 +669,8 @@ void *scalanative_continuation_oneshot_boundary(ContinuationBody *body,
 }
 
 // From delimcc_multishot.c once multi-shot continuations are in use: tells
-// whether the innermost multi-shot boundary of this thread was entered in
-// [low, high].
+// whether a multi-shot boundary or resume of this thread is in progress on
+// the stack [low, high].
 static bool (*multiShotBoundaryIn)(void *low, void *high);
 
 void scalanative_continuation_oneshot_watch_multishot(void *probe) {
@@ -784,6 +784,8 @@ void *scalanative_continuation_suspend(ContinuationBoundaryLabel label,
                                        SuspendFn *f, void *arg,
                                        void *alloc_arg) {
     (void)alloc_arg;
+    if (scalanative_continuation_oneshot_crosses_multishot(label))
+        FATAL("suspension across a multi-shot boundary");
     return scalanative_continuation_oneshot_suspend(label, f, arg);
 }
 

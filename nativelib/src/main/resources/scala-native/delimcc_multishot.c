@@ -467,22 +467,25 @@ bool scalanative_continuation_multishot_on_current_stack(
     return top <= boundary && boundary <= bottom;
 }
 
-// Whether the innermost boundary of this thread was entered in [low, high].
-static bool innermost_boundary_in(void *low, void *high) {
-    Handler *it = handlers_load();
-    while (it != NULL && it->stack_btm == NULL)
-        it = it->next;
-    if (it == NULL)
-        return false;
-    uintptr_t boundary = (uintptr_t)it->stack_btm;
-    return (uintptr_t)low <= boundary && boundary <= (uintptr_t)high;
+// Whether a boundary or a resume of this thread is in progress on the stack
+// [low, high]. A handler is a local of the frame that pushed it, so a resume
+// onto a heap fragment is found through the frame that called it.
+static bool handler_in(void *low, void *high) {
+    uintptr_t lo = (uintptr_t)low, hi = (uintptr_t)high;
+    for (Handler *it = handlers_load(); it != NULL; it = it->next) {
+        uintptr_t self = (uintptr_t)it;
+        uintptr_t boundary = (uintptr_t)it->stack_btm;
+        if ((lo <= self && self <= hi) || (lo <= boundary && boundary <= hi))
+            return true;
+    }
+    return false;
 }
 
 // For the one-shot runtime, which is not always linked together with this
 // one: lets it refuse to suspend a stack that holds a multi-shot boundary,
 // whose handler would stay behind on this thread.
 void *scalanative_continuation_multishot_boundary_probe(void) {
-    return (void *)innermost_boundary_in;
+    return (void *)handler_in;
 }
 
 // suspend[T, R] : BoundaryLabel[T] -> T -> R
