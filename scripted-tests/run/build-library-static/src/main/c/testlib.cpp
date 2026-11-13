@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <stdexcept>
 #include "libtest.hpp"
 
 int main() {
@@ -35,6 +36,16 @@ int main() {
 
     sn_runGC();
 
+    handledException();
+
+    // Host C++ exceptions must keep working with the library linked in (#3893)
+    bool hostCaught = false;
+    try {
+        throw std::runtime_error("host");
+    } catch (const std::runtime_error &) {
+        hostCaught = true;
+    }
+    assert(hostCaught);
     handledException();
 
     return 0;
