@@ -10,7 +10,6 @@ import org.junit.Assert._
 import org.junit.{BeforeClass, Test}
 
 import scala.scalanative.junit.utils.AssumesHelper._
-
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.posix.{fcntl, unistd}
 import scala.scalanative.unsafe._
