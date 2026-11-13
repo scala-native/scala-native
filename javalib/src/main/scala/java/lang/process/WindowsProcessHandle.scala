@@ -73,8 +73,11 @@ object WindowsProcessHandle {
 
       @tailrec
       private def waitUntil(deadline: Long): Boolean = {
+        val remainingNanos = deadline - System.nanoTime()
+        // round up, so that a sub-millisecond remainder still waits
         val remainingMillis =
-          TimeUnit.NANOSECONDS.toMillis(deadline - System.nanoTime())
+          if (remainingNanos <= 0L) 0L
+          else (remainingNanos - 1L) / 1000000L + 1L
         val capped = remainingMillis > MaxWaitMillis
         val millis = Math.clamp(remainingMillis, 0L, MaxWaitMillis)
         waitOnce(millis.toUInt) match {
