@@ -668,6 +668,34 @@ void *scalanative_continuation_oneshot_boundary(ContinuationBody *body,
     return dispatch(thread, self);
 }
 
+// From delimcc_multishot.c once multi-shot continuations are in use: tells
+// whether the innermost multi-shot boundary of this thread was entered in
+// [low, high].
+static bool (*multiShotBoundaryIn)(void *low, void *high);
+
+void scalanative_continuation_oneshot_watch_multishot(void *probe) {
+    multiShotBoundaryIn = (bool (*)(void *, void *))probe;
+}
+
+// Whether suspending or leaving to `label` would take a multi-shot boundary
+// off this thread while its handler stays registered here.
+bool scalanative_continuation_oneshot_crosses_multishot(
+    ContinuationBoundaryLabel label) {
+    if (multiShotBoundaryIn == NULL)
+        return false;
+    Coroutine *target = (Coroutine *)label;
+    Coroutine *it = currentCoroutine(currentThread());
+    // A label that does not enclose the caller is reported by suspend.
+    while (it != NULL && it->state != THREAD) {
+        if (multiShotBoundaryIn(it->bounds.top, it->bounds.bottom))
+            return true;
+        if (it == target)
+            return false;
+        it = it->returnTo;
+    }
+    return false;
+}
+
 void *scalanative_continuation_oneshot_suspend(ContinuationBoundaryLabel label,
                                                SuspendFn *f, void *arg) {
     ThreadState *thread = currentThread();

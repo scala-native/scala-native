@@ -37,4 +37,18 @@ class MultiShotContinuationsTest extends ContinuationsApiTest:
       }
       assertEquals(2, result)
 
+  @Test def oneShotCannotSuspendAcrossMultiShotBoundary(): Unit =
+    if isContinuationsSupported then
+      val single = Continuations.single
+      val result = single.boundary[Int] { label ?=>
+        boundary[Int] {
+          assertThrows(
+            classOf[IllegalStateException],
+            () => single.suspend[Int, Int](_ => 1)(using label)
+          )
+          2
+        } + 1
+      }
+      assertEquals(3, result)
+
 end MultiShotContinuationsTest

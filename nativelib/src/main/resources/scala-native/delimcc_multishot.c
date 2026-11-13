@@ -438,8 +438,9 @@ static inline void *clamp_ptr_to_fragment(void *p, void *frag_lo,
 }
 
 // False when the boundary of `label` was entered on another stack than the
-// running one: a one-shot boundary was entered in between, and the frames up
-// to the boundary are not contiguous.
+// running one, so the frames up to it are not contiguous: a one-shot boundary
+// was entered in between, or the caller was resumed onto a heap fragment and
+// the boundary belongs to its resumer.
 bool scalanative_continuation_multishot_on_current_stack(
     ContinuationBoundaryLabel label) {
     // A resume handler has no stack_btm; the boundaries above it belong to
@@ -459,13 +460,29 @@ bool scalanative_continuation_multishot_on_current_stack(
     uintptr_t sp = (uintptr_t)_lh_get_sp();
     if (top == 0 || bottom == 0)
         return true;
-    // Resumed onto a heap fragment, which the bounds do not describe: its
-    // own boundaries are fine, the others have to be on the stack that
-    // resumed it.
-    bool onFragment = sp < top || sp > bottom;
-    if (onFragment && !belowResume)
-        return true;
+    // Resumed onto a heap fragment, which the bounds do not describe: only
+    // its own boundaries are contiguous with the running frames.
+    if (sp < top || sp > bottom)
+        return !belowResume;
     return top <= boundary && boundary <= bottom;
+}
+
+// Whether the innermost boundary of this thread was entered in [low, high].
+static bool innermost_boundary_in(void *low, void *high) {
+    Handler *it = handlers_load();
+    while (it != NULL && it->stack_btm == NULL)
+        it = it->next;
+    if (it == NULL)
+        return false;
+    uintptr_t boundary = (uintptr_t)it->stack_btm;
+    return (uintptr_t)low <= boundary && boundary <= (uintptr_t)high;
+}
+
+// For the one-shot runtime, which is not always linked together with this
+// one: lets it refuse to suspend a stack that holds a multi-shot boundary,
+// whose handler would stay behind on this thread.
+void *scalanative_continuation_multishot_boundary_probe(void) {
+    return (void *)innermost_boundary_in;
 }
 
 // suspend[T, R] : BoundaryLabel[T] -> T -> R

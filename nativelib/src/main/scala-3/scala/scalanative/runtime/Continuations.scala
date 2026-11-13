@@ -22,8 +22,9 @@ import scala.scalanative.unsafe.*
  *      stack is copied on every resume, so the suspended computation must not
  *      hold addresses of stack memory.
  *
- *  A `multi` continuation cannot be captured across a `single` boundary, and a
- *  `single` suspension must not cross a `multi` boundary.
+ *  The two do not mix across a boundary: capturing a `multi` continuation
+ *  across a `single` boundary, or suspending or breaking a `single` one across
+ *  a `multi` boundary, throws `IllegalStateException`.
  *
  *  The members of `Continuations` itself are those of `single`.
  */
@@ -114,6 +115,7 @@ object Continuations:
         label: this.BoundaryLabel[T],
         onSuspend: (R => T) => T
     ): R =
+      checkNoMultiShotBoundary(toNative(label))
       val call: OnSuspend = native =>
         val continuation = new Continuation[R, T]
         continuation.inner = native
@@ -121,8 +123,15 @@ object Continuations:
       OneShot.suspend[R](toNative(label), runOnSuspend, call)
 
     protected def leave[T](label: this.BoundaryLabel[T], value: T): Nothing =
+      checkNoMultiShotBoundary(toNative(label))
       OneShot.leave(toNative(label), Success(value))
       throw new IllegalStateException("Left boundary was resumed")
+
+    private def checkNoMultiShotBoundary(label: Label): Unit =
+      if multiShotInUse && OneShot.crossesMultiShot(label) then
+        throw new IllegalStateException(
+          "A `single` continuation cannot suspend or break across a `multi` boundary"
+        )
   end single
 
   /** Multi-shot continuations.
@@ -132,7 +141,11 @@ object Continuations:
    *  `boundary` and `suspend`.
    */
   object multi extends Api:
-    if isMultiShotContinuationsSupported then MultiShot.init(allocate)
+    if isMultiShotContinuationsSupported then
+      MultiShot.init(allocate)
+      if isContinuationsSupported then
+        OneShot.watchMultiShot(MultiShot.boundaryProbe())
+        multiShotInUse = true
     else UnsupportedFeature.continuations()
 
     protected def enter[T](body: this.BoundaryLabel[T] => T): T =
@@ -144,7 +157,7 @@ object Continuations:
     ): R =
       if !MultiShot.onCurrentStack(toNative(label)) then
         throw new IllegalStateException(
-          "A `multi` continuation cannot be captured across a `single` boundary"
+          "A `multi` continuation cannot be captured: its boundary was entered on another stack, across a `single` boundary or a resume"
         )
       val continuation = new MultiShotContinuation[R, T]
       val call: OnSuspend = native =>
@@ -160,6 +173,11 @@ object Continuations:
     /** Drops the boundaries known to the current thread. */
     def handlersReset(): Unit = MultiShot.handlersReset()
   end multi
+
+  /** Set once `multi` is initialised; `single` then refuses to cross its
+   *  boundaries.
+   */
+  @volatile private var multiShotInUse = false
 
   private type Label = CUnsignedLong
   private type NativeContinuation = Ptr[?]
@@ -253,6 +271,12 @@ object Continuations:
 
     @name("scalanative_continuation_oneshot_resume")
     def resume[R, T](stacks: SuspendedStacks, value: R): Try[T] = extern
+
+    @name("scalanative_continuation_oneshot_watch_multishot")
+    def watchMultiShot(probe: Ptr[?]): Unit = extern
+
+    @name("scalanative_continuation_oneshot_crosses_multishot")
+    def crossesMultiShot(label: Label): Boolean = extern
   end OneShot
 
   private final val legacyExpansion =
@@ -355,6 +379,9 @@ object Continuations:
 
     @name("scalanative_continuation_multishot_on_current_stack")
     def onCurrentStack(label: Label): Boolean = extern
+
+    @name("scalanative_continuation_multishot_boundary_probe")
+    def boundaryProbe(): Ptr[?] = extern
   end MultiShot
 end Continuations
 

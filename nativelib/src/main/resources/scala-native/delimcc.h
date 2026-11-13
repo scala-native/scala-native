@@ -64,6 +64,9 @@ void scalanative_continuation_oneshot_captured(Continuation *continuation,
                                                void *owner);
 // `owner` is the SuspendedStacks object given to `captured`.
 void *scalanative_continuation_oneshot_resume(void *owner, void *arg);
+void scalanative_continuation_oneshot_watch_multishot(void *probe);
+bool scalanative_continuation_oneshot_crosses_multishot(
+    ContinuationBoundaryLabel label);
 
 // For code compiled against 0.5.12 and older, which has `boundary` and
 // `suspend` inlined; they run on the one-shot runtime.
@@ -85,6 +88,7 @@ void *scalanative_continuation_multishot_resume(Continuation *continuation,
 void scalanative_continuation_multishot_handlers_reset(void);
 bool scalanative_continuation_multishot_on_current_stack(
     ContinuationBoundaryLabel label);
+void *scalanative_continuation_multishot_boundary_probe(void);
 
 /* Exception type compatible with eh.c (void* = Scala object). */
 typedef void *Exception;
