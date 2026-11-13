@@ -63,6 +63,7 @@ typedef struct StackBounds {
     void *top;    // lowest usable address
     void *bottom; // highest address
     void *guardPage;
+    void *guardLow;
     size_t size;
     size_t maxSize;
 } StackBounds;
@@ -195,7 +196,9 @@ static size_t pageSize(void) {
 
 // Low to high: an inaccessible page, room to handle a stack overflow, the
 // guard page that detects one (stackOverflowGuards.c), then the stack and
-// the coroutine itself. Returns NULL when the system refuses the mapping.
+// the coroutine itself. The room stays inaccessible until an overflow, so a
+// stack is two mappings to the system: Linux limits their number. Returns
+// NULL when the system refuses the mapping.
 static Coroutine *mapCoroutine(void) {
     size_t page = pageSize();
     size_t size = STACK_SIZE + page;
@@ -208,8 +211,7 @@ static Coroutine *mapCoroutine(void) {
         return NULL;
     char *top = low + page;
     char *guardPage = top + scalanative_StackOverflowGuards_size();
-    if (mprotect(low, page, PROT_NONE) != 0 ||
-        mprotect(guardPage, page, PROT_NONE) != 0) {
+    if (mprotect(low, (size_t)(guardPage + page - low), PROT_NONE) != 0) {
         munmap(low, size);
         return NULL;
     }
@@ -221,6 +223,7 @@ static Coroutine *mapCoroutine(void) {
     coroutine->bounds = (StackBounds){.top = top,
                                       .bottom = coroutine,
                                       .guardPage = guardPage,
+                                      .guardLow = top,
                                       .size = usable,
                                       .maxSize = usable};
     coroutine->slot = acquireSlot();
@@ -315,7 +318,9 @@ static Coroutine *acquire(ThreadState *thread) {
 static void destroy(ThreadState *thread, Coroutine *coroutine) {
     // Left unprotected by an overflow that was never reported.
     if (coroutine->pendingOverflow) {
-        mprotect(coroutine->bounds.guardPage, pageSize(), PROT_NONE);
+        char *guardLow = coroutine->bounds.guardLow;
+        char *guardEnd = (char *)coroutine->bounds.guardPage + pageSize();
+        mprotect(guardLow, (size_t)(guardEnd - guardLow), PROT_NONE);
         coroutine->pendingOverflow = false;
     }
     if (thread->poolSize < LOCAL_POOL_CAPACITY) {
@@ -459,6 +464,7 @@ static void captureBounds(ThreadState *thread, Coroutine *coroutine) {
     coroutine->bounds = (StackBounds){.top = info->stackTop,
                                       .bottom = info->stackBottom,
                                       .guardPage = info->stackGuardPage,
+                                      .guardLow = info->stackGuardLow,
                                       .size = info->stackSize,
                                       .maxSize = info->maxStackSize};
 }
@@ -468,6 +474,7 @@ static void applyBounds(ThreadState *thread, Coroutine *coroutine) {
     info->stackTop = coroutine->bounds.top;
     info->stackBottom = coroutine->bounds.bottom;
     info->stackGuardPage = coroutine->bounds.guardPage;
+    info->stackGuardLow = coroutine->bounds.guardLow;
     info->stackSize = coroutine->bounds.size;
     info->maxStackSize = coroutine->bounds.maxSize;
 }

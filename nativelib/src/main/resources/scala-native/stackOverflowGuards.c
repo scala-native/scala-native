@@ -89,9 +89,24 @@ static struct sigaction *resolvePreviousSignalHandler(int sig) {
     }
 }
 
+// [stackGuardLow, stackGuardPage] when set, the guard page alone otherwise.
+static void *stackGuardStart() {
+    void *low = currentThreadInfo.stackGuardLow;
+    return low != NULL ? low : currentThreadInfo.stackGuardPage;
+}
+static size_t stackGuardLength() {
+    return (size_t)((char *)currentThreadInfo.stackGuardPage -
+                    (char *)stackGuardStart()) +
+           resolvePageSize();
+}
+static bool inStackGuard(ThreadInfo *info, void *addr) {
+    return inStackPageBound(info->stackGuardPage, addr) ||
+           (info->stackGuardLow != NULL &&
+            isInRange(addr, info->stackGuardLow, info->stackGuardPage));
+}
+
 static void protectStackGuardPage() {
-    if (mprotect(currentThreadInfo.stackGuardPage, resolvePageSize(),
-                 PROT_NONE) == -1) {
+    if (mprotect(stackGuardStart(), stackGuardLength(), PROT_NONE) == -1) {
         perror(SN_FATAL_ERROR_MSG("StackOverflowHandler guard "
                                   "protection failed"));
         // _exit rather than exit: reachable from the signal handler.
@@ -101,7 +116,7 @@ static void protectStackGuardPage() {
 static void unprotectStackGuardPage() {
     if (currentThreadInfo.stackGuardPage == NULL)
         return;
-    if (mprotect(currentThreadInfo.stackGuardPage, resolvePageSize(),
+    if (mprotect(stackGuardStart(), stackGuardLength(),
                  PROT_READ | PROT_WRITE) == -1) {
         perror(SN_FATAL_ERROR_MSG("StackOverflowHandler guard "
                                   "unprotection failed"));
@@ -208,7 +223,7 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
          * are recursive, only these would check if throwing StackOverflowError
          * is needed when entering the function.
          */
-        if (inStackPageBound(threadInfo.stackGuardPage, faultAddr)) {
+        if (inStackGuard(&threadInfo, faultAddr)) {
             unprotectStackGuardPage();
             if (threadInfo.stackSize < threadInfo.maxStackSize) {
                 if (tryGrowStack()) {
@@ -342,7 +357,7 @@ void scalanative_StackOverflowGuards_reset() {
     void *curStackTop = &dummy;
     ThreadInfo info = currentThreadInfo;
     currentThreadInfo.pendingStackOverflowException = false;
-    if (inStackPageBound(info.stackGuardPage, curStackTop))
+    if (inStackGuard(&info, curStackTop))
         return; // still unwinding
     protectStackGuardPage();
 }
@@ -362,6 +377,7 @@ void scalanative_StackOverflowGuards_close() {
 #else
     unprotectStackGuardPage();
     currentThreadInfo.stackGuardPage = NULL;
+    currentThreadInfo.stackGuardLow = NULL;
     if (currentThreadInfo.signalHandlerStack) {
         free(currentThreadInfo.signalHandlerStack);
         currentThreadInfo.signalHandlerStack = NULL;
