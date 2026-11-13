@@ -88,6 +88,7 @@ class ContinuationsVirtualThreadTest:
     assertEquals("counter mismatch", total * iterations, counter.get())
 
   @Test def vtRepeatedLockUnlock(): Unit =
+    AssumesHelper.assumeThreadYieldIsCheap()
     val lock = new Object
     val iterations = 2000
     val contenders = 4

@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - "claude/ios-**"
-    paths-ignore:
-      - ".github/workflows/ios-debug.yml"
-      - "scripts/ci/ios-debug/**"
 concurrency:
   group: iOS-${{ github.ref }}
   cancel-in-progress: true
