@@ -98,6 +98,34 @@ jobs:
           SCALANATIVE_MODE: ${{ matrix.build-mode }}
         run: sbt "test-runtime ${{ matrix.scala }}"      
 
+  test-runtime-asan:
+    name: Test runtime (AddressSanitizer)
+    if: github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
+    runs-on: ubuntu-22.04
+    needs: tests-tools
+    env:
+      ENABLE_EXPERIMENTAL_COMPILER: true
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [3]
+        gc: [immix, commix]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: ${{matrix.scala}}
+
+      - name: Run tests
+        timeout-minutes: 90
+        env:
+          SCALANATIVE_MODE: debug
+          SCALANATIVE_GC: ${{ matrix.gc }}
+          ASAN_OPTIONS: detect_stack_use_after_return=1:detect_leaks=0:halt_on_error=1
+          SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
+        run: |
+          sbt 'set tests.forBinaryVersion("${{ env.project-version }}")/nativeConfig ~= (_.withSanitizer(scala.scalanative.build.Sanitizer.AddressSanitizer)); tests${{ env.project-version }}/test'
+
   test-runtime-ext:
     name: Test runtime extension
     if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
