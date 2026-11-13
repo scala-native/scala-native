@@ -1,5 +1,6 @@
 #ifndef DELIMCC_H
 #define DELIMCC_H
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <setjmp.h>
@@ -82,6 +83,8 @@ void *scalanative_continuation_multishot_resume(Continuation *continuation,
                                                 void *arg);
 // Drops the handler chain of the current thread.
 void scalanative_continuation_multishot_handlers_reset(void);
+bool scalanative_continuation_multishot_on_current_stack(
+    ContinuationBoundaryLabel label);
 
 /* Exception type compatible with eh.c (void* = Scala object). */
 typedef void *Exception;

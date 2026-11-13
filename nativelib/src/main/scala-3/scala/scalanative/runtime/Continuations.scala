@@ -22,6 +22,9 @@ import scala.scalanative.unsafe.*
  *      stack is copied on every resume, so the suspended computation must not
  *      hold addresses of stack memory.
  *
+ *  A `multi` continuation cannot be captured across a `single` boundary, and
+ *  a `single` suspension must not cross a `multi` boundary.
+ *
  *  The members of `Continuations` itself are those of `single`.
  */
 object Continuations:
@@ -139,6 +142,10 @@ object Continuations:
         label: this.BoundaryLabel[T],
         onSuspend: (R => T) => T
     ): R =
+      if !MultiShot.onCurrentStack(toNative(label)) then
+        throw new IllegalStateException(
+          "A `multi` continuation cannot be captured across a `single` boundary"
+        )
       val continuation = new MultiShotContinuation[R, T]
       val call: OnSuspend = native =>
         continuation.native = native
@@ -345,6 +352,9 @@ object Continuations:
 
     @name("scalanative_continuation_multishot_handlers_reset")
     def handlersReset(): Unit = extern
+
+    @name("scalanative_continuation_multishot_on_current_stack")
+    def onCurrentStack(label: Label): Boolean = extern
   end MultiShot
 end Continuations
 

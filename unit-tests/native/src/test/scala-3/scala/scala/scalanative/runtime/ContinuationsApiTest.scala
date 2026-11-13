@@ -91,6 +91,8 @@ abstract class ContinuationsApiTest:
       } finally
         carriers.foreach(_.interrupt())
         assertTrue("carriers did not stop", stopped.await(5, TimeUnit.SECONDS))
+      // A carrier stores its failure after the continuation counted down.
+      assertNull("carrier failed", failure.get())
     }
 
   @Test def canBoundaryNoSuspend() =

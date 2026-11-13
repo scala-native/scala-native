@@ -437,6 +437,25 @@ static inline void *clamp_ptr_to_fragment(void *p, void *frag_lo,
     return p;
 }
 
+// False when the boundary of `label` was entered on another stack than the
+// running one: a one-shot boundary was entered in between, and the frames up
+// to the boundary are not contiguous.
+bool scalanative_continuation_multishot_on_current_stack(
+    ContinuationBoundaryLabel label) {
+    Handler *it = handlers_load();
+    while (it != NULL && it->id != label)
+        it = it->next;
+    // A missing label is reported by suspend.
+    if (it == NULL || it->stack_btm == NULL)
+        return true;
+    uintptr_t top = (uintptr_t)currentThreadInfo.stackTop;
+    uintptr_t bottom = (uintptr_t)currentThreadInfo.stackBottom;
+    uintptr_t boundary = (uintptr_t)it->stack_btm;
+    if (top == 0 || bottom == 0)
+        return true;
+    return top <= boundary && boundary <= bottom;
+}
+
 // suspend[T, R] : BoundaryLabel[T] -> T -> R
 NO_SANITIZE
 void *scalanative_continuation_multishot_suspend(ContinuationBoundaryLabel b,

@@ -3,7 +3,9 @@ package scala.scalanative.runtime
 import org.junit.Assert._
 import org.junit.Test
 
-import scala.scalanative.meta.LinktimeInfo.isMultiShotContinuationsSupported
+import scala.scalanative.meta.LinktimeInfo.{
+  isContinuationsSupported, isMultiShotContinuationsSupported
+}
 
 import Continuations.multi._
 
@@ -21,5 +23,18 @@ class MultiShotContinuationsTest extends ContinuationsApiTest:
       assertEquals(-1, first)
       assertEquals(2, resume(1))
       assertEquals(3, resume(2))
+
+  @Test def cannotCaptureAcrossOneShotBoundary(): Unit =
+    if isContinuationsSupported then
+      val result = boundary[Int] { label ?=>
+        Continuations.single.boundary[Int] {
+          assertThrows(
+            classOf[IllegalStateException],
+            () => suspend[Int, Int](_ => 1)(using label)
+          )
+          2
+        }
+      }
+      assertEquals(2, result)
 
 end MultiShotContinuationsTest
