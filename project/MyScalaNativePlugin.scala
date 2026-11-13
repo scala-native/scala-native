@@ -157,7 +157,9 @@ object MyScalaNativePlugin extends AutoPlugin {
         )
         // Cross-compile all projects of this build, used e.g. to test iOS
         .withTargetTriple(
-          env.get("SCALANATIVE_TARGET_TRIPLE").filter(_.nonEmpty)
+          env
+            .get("SCALANATIVE_TARGET_TRIPLE")
+            .filter(_.nonEmpty)
             .orElse(nc.targetTriple)
         )
     },
