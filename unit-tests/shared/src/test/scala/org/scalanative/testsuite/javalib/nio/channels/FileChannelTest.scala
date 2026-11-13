@@ -1312,6 +1312,8 @@ class FileChannelTest {
 
   @Test def concurrentAbsoluteReadsDoNotDisturbEachOther(): Unit = {
     assumeMultithreadingIsEnabled()
+    // Windows positional I/O still moves and restores the shared position.
+    assumeFalse("Not atomic on Windows", Platform.isWindows)
 
     withTemporaryDirectory { dir =>
       val f = dir.resolve("f")
@@ -1326,9 +1328,11 @@ class FileChannelTest {
         val nThreads = 4
         val iterations = 2000
         val failures = new java.util.concurrent.atomic.AtomicInteger(0)
+        val workerError =
+          new java.util.concurrent.atomic.AtomicReference[Throwable](null)
 
         val threads = Array.tabulate(nThreads) { t =>
-          new Thread(() => {
+          val t0 = new Thread(() => {
             val dst = ByteBuffer.allocate(8)
             var i = 0
             while (i < iterations) {
@@ -1345,9 +1349,17 @@ class FileChannelTest {
               i += 1
             }
           })
+          t0.setUncaughtExceptionHandler { (_, e) =>
+            workerError.compareAndSet(null, e)
+            ()
+          }
+          t0
         }
         threads.foreach(_.start())
         threads.foreach(_.join())
+
+        val err = workerError.get()
+        if (err != null) throw err
 
         assertEquals("mismatched reads", 0, failures.get())
         assertEquals("channel position", 17L, channel.position())
