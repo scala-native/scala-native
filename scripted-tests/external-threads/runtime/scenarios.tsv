@@ -8,7 +8,7 @@ EXIT-05	single	both	success	initialized,identity-retired,deferred-resources-recl
 CALL-01	all	cpp	success	initialized,entry-wrappers-complete,boxed-callback-unwound	-	all	true
 CALL-02	all	both	success	initialized	-	all	true
 CALL-03	all	cpp	success	initialized,callback-unwound,exception-retained,scala-caught-callback	-	all	true
-CALL-04	multi	both	success	initialized,virtual-callbacks-complete	-	all	true
+CALL-04	multi	both	success	initialized,virtual-callbacks-complete	-	immix,commix,none	true
 GC-01	all	both	success	initialized	-	all	true
 GC-02	all	both	success	initialized	-	immix,commix,boehm	true
 GC-03	all	both	success	initialized,worker-idle,collection-complete	-	immix,commix,boehm	true

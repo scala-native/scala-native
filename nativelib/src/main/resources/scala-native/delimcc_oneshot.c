@@ -789,4 +789,37 @@ void *scalanative_continuation_suspend(ContinuationBoundaryLabel label,
     return scalanative_continuation_oneshot_suspend(label, f, arg);
 }
 
+#elif defined(_WIN32) && defined(__SCALANATIVE_DELIMCC_ONESHOT)
+
+// Not supported on Windows yet. Programs that only mention continuations
+// still have to link; the Scala side reports the unsupported feature.
+#include "delimcc.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+#define UNSUPPORTED(signature)                                                 \
+    signature {                                                                \
+        fprintf(stderr, "[ScalaNative Continuations | Error] one-shot "        \
+                        "continuations are not supported on Windows\n");       \
+        abort();                                                               \
+    }
+
+UNSUPPORTED(void *scalanative_continuation_oneshot_boundary(
+    ContinuationBody *body, void *arg))
+UNSUPPORTED(void *scalanative_continuation_oneshot_suspend(
+    ContinuationBoundaryLabel label, SuspendFn *f, void *arg))
+UNSUPPORTED(void scalanative_continuation_oneshot_leave(
+    ContinuationBoundaryLabel label, void *result))
+UNSUPPORTED(void scalanative_continuation_oneshot_captured(
+    Continuation *continuation, void *owner))
+UNSUPPORTED(void *scalanative_continuation_oneshot_resume(void *owner,
+                                                          void *arg))
+UNSUPPORTED(void scalanative_continuation_oneshot_watch_multishot(void *probe))
+UNSUPPORTED(bool scalanative_continuation_oneshot_crosses_multishot(
+    ContinuationBoundaryLabel label))
+UNSUPPORTED(void *scalanative_continuation_boundary(ContinuationBody *body,
+                                                    void *arg))
+UNSUPPORTED(void *scalanative_continuation_suspend(
+    ContinuationBoundaryLabel label, SuspendFn *f, void *arg, void *alloc_arg))
+
 #endif
