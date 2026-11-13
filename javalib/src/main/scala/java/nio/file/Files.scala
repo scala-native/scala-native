@@ -504,14 +504,16 @@ object Files {
     var i = 0
     while (i < attrs.length) {
       val attr = attrs(i)
-      attr.name() match {
-        case "posix:permissions" | "unix:permissions" if !isWindows =>
-          mode = permissionsToMode(attr.value().asInstanceOf[Set[_]])
-        case name =>
-          throw new UnsupportedOperationException(
-            s"'$name' not supported as initial attribute"
-          )
-      }
+      val name = attr.name()
+      val isPermissions =
+        if (isWindows) false
+        else name == "posix:permissions" || name == "unix:permissions"
+      if (isPermissions)
+        mode = permissionsToMode(attr.value().asInstanceOf[Set[_]])
+      else
+        throw new UnsupportedOperationException(
+          s"'$name' not supported as initial attribute"
+        )
       i += 1
     }
     mode
