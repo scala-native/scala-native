@@ -538,37 +538,23 @@ private[java] final class FileChannelImpl(
 
       val buf = ByteBuffer.allocate(bufSize)
 
-      /* The reading is known to be sequential, reduce wasted seek()ing
-       * by using relative I/O with save/restore of original position
-       * rather than attractive but expensive absolute I/O plus math.
-       */
-      val savedPosition = position()
-      if (savedPosition != _position)
-        position(_position)
-
       var totalWritten = 0L
+      var done = false
 
-      try {
+      while ((!done) && (totalWritten < count)) {
+        buf.clear()
+        // Bounding the limit is key to not reading/writing too many bytes.
+        val nRemaining = count - totalWritten
+        if (nRemaining < bufSize)
+          buf.limit(nRemaining.toInt)
 
-        var done = false
-
-        while ((!done) && (totalWritten < count)) {
-          // Bounding the limit is key to not reading/writing too many bytes.
-          val nRemaining = count - totalWritten
-          if (nRemaining < bufSize)
-            buf.limit(nRemaining.toInt) // Enable next partial buf short read
-
-          if (this.read(buf) == -1) {
-            done = true
-          } else {
-            buf.flip()
-            while (buf.hasRemaining())
-              totalWritten += target.write(buf)
-            buf.flip()
-          }
+        if (this.read(buf, _position + totalWritten) == -1) {
+          done = true
+        } else {
+          buf.flip()
+          while (buf.hasRemaining())
+            totalWritten += target.write(buf)
         }
-      } finally {
-        position(savedPosition)
       }
 
       totalWritten

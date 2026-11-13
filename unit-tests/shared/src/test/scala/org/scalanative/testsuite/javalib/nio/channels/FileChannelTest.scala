@@ -1279,6 +1279,37 @@ class FileChannelTest {
     }
   }
 
+  @Test def transferToShouldNotChangeChannelPosition(): Unit = {
+    withTemporaryDirectory { dir =>
+      val src = dir.resolve("src")
+      val dst = dir.resolve("dst")
+      Files.write(src, "abcdefghij".getBytes("UTF-8"))
+
+      val srcChannel = FileChannel.open(src, StandardOpenOption.READ)
+      val dstChannel = FileChannel.open(
+        dst,
+        StandardOpenOption.CREATE_NEW,
+        StandardOpenOption.WRITE
+      )
+      try {
+        srcChannel.position(1)
+        assertEquals("transferred", 4L, srcChannel.transferTo(3, 4, dstChannel))
+        assertEquals("src position", 1L, srcChannel.position())
+        assertEquals(
+          "transferred up to EOF",
+          2L,
+          srcChannel.transferTo(8, 100, dstChannel)
+        )
+        assertEquals("src position after EOF", 1L, srcChannel.position())
+      } finally {
+        srcChannel.close()
+        dstChannel.close()
+      }
+
+      assertEquals("defgij", new String(Files.readAllBytes(dst), "UTF-8"))
+    }
+  }
+
   @Test def concurrentAbsoluteReadsDoNotDisturbEachOther(): Unit = {
     assumeMultithreadingIsEnabled()
 
