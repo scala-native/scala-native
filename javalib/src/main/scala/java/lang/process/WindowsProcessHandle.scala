@@ -3,6 +3,7 @@ package java.lang.process
 import java.nio.file.WindowsException
 import java.util.concurrent.TimeUnit
 
+import scala.annotation.tailrec
 // Required only for cross-compilation with Scala 2
 import scala.language.existentials
 
@@ -60,18 +61,39 @@ object WindowsProcessHandle {
       override def waitAndReapSome(
           timeout: Long,
           unitOpt: Option[TimeUnit]
-      ): Boolean = {
-        val timeoutMillis = unitOpt
-          .fold(Constants.Infinite)(_.toMillis(timeout).toUInt)
-        SynchApi.WaitForSingleObject(handle, timeoutMillis) match {
-          case SynchApiExt.WAIT_TIMEOUT => false
+      ): Boolean = unitOpt match {
+        case None       => waitOnce(Constants.Infinite).getOrElse(false)
+        case Some(unit) =>
+          val deadline = System.nanoTime() + Math.max(0L, unit.toNanos(timeout))
+          waitUntil(deadline)
+      }
+
+      // Constants.Infinite (0xFFFFFFFF) must never be passed for finite waits
+      private final val MaxWaitMillis = 0xfffffffeL
+
+      @tailrec
+      private def waitUntil(deadline: Long): Boolean = {
+        val remainingMillis =
+          TimeUnit.NANOSECONDS.toMillis(deadline - System.nanoTime())
+        val capped = remainingMillis > MaxWaitMillis
+        val millis = Math.clamp(remainingMillis, 0L, MaxWaitMillis)
+        waitOnce(millis.toUInt) match {
+          case Some(res)      => res
+          case None if capped => waitUntil(deadline)
+          case None           => false
+        }
+      }
+
+      // None on timeout
+      private def waitOnce(millis: UInt): Option[Boolean] =
+        SynchApi.WaitForSingleObject(handle, millis) match {
+          case SynchApiExt.WAIT_TIMEOUT => None
           case SynchApiExt.WAIT_FAILED  =>
             if (!checkIfExited())
               throw WindowsException("Failed to wait on process handle")
-            true // someone may have closed the handle
-          case _ => checkIfExited()
+            Some(true) // someone may have closed the handle
+          case _ => Some(checkIfExited())
         }
-      }
     }
 
   }
