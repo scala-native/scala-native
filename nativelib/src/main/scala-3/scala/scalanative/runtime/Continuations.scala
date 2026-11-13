@@ -22,8 +22,8 @@ import scala.scalanative.unsafe.*
  *      stack is copied on every resume, so the suspended computation must not
  *      hold addresses of stack memory.
  *
- *  A `multi` continuation cannot be captured across a `single` boundary, and
- *  a `single` suspension must not cross a `multi` boundary.
+ *  A `multi` continuation cannot be captured across a `single` boundary, and a
+ *  `single` suspension must not cross a `multi` boundary.
  *
  *  The members of `Continuations` itself are those of `single`.
  */
