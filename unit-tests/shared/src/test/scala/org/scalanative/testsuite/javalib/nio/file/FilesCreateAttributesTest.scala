@@ -39,8 +39,11 @@ class FilesCreateAttributesTest {
     val dir = Files.createTempDirectory("FilesCreateAttributesTest")
     try fn(dir)
     finally {
-      val it = Files.list(dir).iterator()
-      while (it.hasNext()) Files.delete(it.next())
+      val s = Files.list(dir)
+      try {
+        val it = s.iterator()
+        while (it.hasNext()) Files.delete(it.next())
+      } finally s.close()
       Files.delete(dir)
     }
   }
