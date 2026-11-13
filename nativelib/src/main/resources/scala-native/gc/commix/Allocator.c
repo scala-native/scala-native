@@ -365,6 +365,22 @@ word_t *Allocator_lazySweep(Allocator *allocator, Heap *heap, uint32_t size) {
     return object;
 }
 
+// Whether the last sweep freed enough space for `size` that a failed
+// allocation means other mutators took it, not that the heap is full.
+static bool Allocator_collectionFreedSpace(Allocator *allocator, Heap *heap,
+                                           size_t size) {
+    BlockAllocator *blockAllocator = allocator->blockAllocator;
+    uint64_t freeLines =
+        (uint64_t)atomic_load_explicit(&blockAllocator->sweptFreeBlockCount,
+                                       memory_order_relaxed) *
+        LINE_COUNT;
+    if (size <= LINE_SIZE)
+        freeLines += atomic_load_explicit(
+            &blockAllocator->recycledFreeLineCount, memory_order_relaxed);
+    uint64_t totalLines = (uint64_t)heap->blockCount * LINE_COUNT;
+    return freeLines * 100 >= totalLines * OOM_MIN_FREE_PERCENT;
+}
+
 NOINLINE word_t *Allocator_allocSlow(Allocator *allocator, Heap *heap,
                                      uint32_t size) {
     do {
@@ -421,7 +437,8 @@ NOINLINE word_t *Allocator_allocSlow(Allocator *allocator, Heap *heap,
 
         // A small object can always fit in a single free block
         // because it is no larger than 8K while the block is 32K.
-        if (!Heap_TryGrow(heap, 1))
+        if (!Heap_TryGrow(heap, 1) &&
+            !Allocator_collectionFreedSpace(allocator, heap, size))
             Heap_ThrowOutOfMemory(heap);
     } while (true);
     return NULL; // unreachable

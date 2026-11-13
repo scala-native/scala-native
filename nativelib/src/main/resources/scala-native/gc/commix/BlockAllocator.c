@@ -399,6 +399,7 @@ void BlockAllocator_Clear(BlockAllocator *blockAllocator) {
     BlockList_Clear(&blockAllocator->recycledBlocks);
     BlockList_Clear(&blockAllocator->rejectedBlocks);
     blockAllocator->recycledBlockCount = 0;
+    blockAllocator->recycledFreeLineCount = 0;
     // sweeping is about to start, use concurrent data structures
     blockAllocator->concurrent = true;
     blockAllocator->freeBlockCount = 0;
