@@ -253,7 +253,9 @@ private[process] object UnixProcessFactory {
       var done = false
       while (!done && execIter.hasNext) {
         val candidate = execIter.next()
-        status = spawn(candidate, argv)
+        status =
+          if (isDirectoryIn(builder, candidate)) EACCES
+          else spawn(candidate, argv)
         if (status == ENOEXEC) {
           status =
             spawn(shell, nullTerminate(shellFallbackCommand(candidate, cmd)))
@@ -439,11 +441,17 @@ private[process] object UnixProcessFactory {
     else new File(builder.directory(), path)
   }
 
+  /* exec of a directory fails with EACCES, but some setups (fork path,
+   * qemu-user) cannot report exec failures to the parent, so check here.
+   */
+  private def isDirectoryIn(builder: ProcessBuilder, path: String): Boolean =
+    inChildDir(builder, path).isDirectory()
+
   private def isExecutableIn(builder: ProcessBuilder, path: String): Boolean =
-    inChildDir(builder, path).canExecute()
+    !isDirectoryIn(builder, path) && inChildDir(builder, path).canExecute()
 
   // Like execvp, skip only candidates that do not exist; other errors
-  // (e.g. EACCES for a directory) are left for the exec attempt to report.
+  // are left for the exec attempt to report.
   private def mayExist(builder: ProcessBuilder, path: String)(implicit
       z: Zone
   ): Boolean = {
