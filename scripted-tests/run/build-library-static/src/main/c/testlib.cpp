@@ -48,5 +48,13 @@ int main() {
     assert(hostCaught);
     handledException();
 
+    bool scalaCaught = false;
+    try {
+        unhandledException();
+    } catch (...) {
+        scalaCaught = true;
+    }
+    assert(scalaCaught);
+
     return 0;
 }

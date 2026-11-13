@@ -58,6 +58,10 @@ object libtest {
   }
 
   @exported
+  def unhandledException(): Unit =
+    throw new RuntimeException("Exception escaping to the host")
+
+  @exported
   @name("sn_runGC")
   @noinline
   def enforceGC(): Unit = System.gc()
