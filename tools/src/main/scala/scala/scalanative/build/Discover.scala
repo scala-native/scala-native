@@ -46,7 +46,6 @@ object Discover {
    */
   def targetRunner(): Seq[String] =
     getenv("SCALANATIVE_TARGET_RUNNER")
-      .orElse(getenv("CROSSCOMPILING_EMULATOR")) // legacy, undocumented
       .toList
       .flatMap(_.trim().split("\\s+"))
       .filter(_.nonEmpty)

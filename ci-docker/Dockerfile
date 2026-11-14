@@ -6,6 +6,8 @@ FROM $BASE_IMAGE
 ARG LLVM_VERSION
 ARG IMAGE_NAME
 ENV DEFAULT_DOCKCROSS_IMAGE=${IMAGE_NAME}
+# Emulator of the base image (if any) used to run the cross-compiled binaries
+ENV SCALANATIVE_TARGET_RUNNER=${CROSSCOMPILING_EMULATOR}
 
 RUN echo "BASE_IMAGE: $BASE_IMAGE, LLVM toolchain: $LLVM_VERSION"
 RUN apt-get -o Acquire::Retries=5 update && apt-get -o Acquire::Retries=5 install -y zip unzip lsb-release curl wget software-properties-common iputils-ping libgc-dev libz-dev git
