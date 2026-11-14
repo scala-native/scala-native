@@ -4,8 +4,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-_Atomic(void *) ObjectTracer_rtti = NULL;
-_Atomic(GC_ObjectTracerFn *) ObjectTracer_trace = NULL;
+// Zero-initialized; clang 16 rejects NULL as the initializer of an atomic
+// function pointer.
+_Atomic(void *) ObjectTracer_rtti;
+_Atomic(GC_ObjectTracerFn *) ObjectTracer_trace;
 
 // These collectors know the class of the objects they mark: the owner
 // itself is traced and no anchor is needed.
