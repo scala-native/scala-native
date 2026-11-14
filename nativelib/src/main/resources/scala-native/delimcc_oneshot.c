@@ -819,8 +819,8 @@ UNSUPPORTED(void scalanative_continuation_oneshot_leave(
     ContinuationBoundaryLabel label, void *result))
 UNSUPPORTED(void scalanative_continuation_oneshot_captured(
     Continuation *continuation, void *owner))
-UNSUPPORTED(void scalanative_continuation_oneshot_discard(
-    Continuation *continuation))
+UNSUPPORTED(
+    void scalanative_continuation_oneshot_discard(Continuation *continuation))
 UNSUPPORTED(void *scalanative_continuation_oneshot_resume(void *owner,
                                                           void *arg))
 UNSUPPORTED(void scalanative_continuation_oneshot_watch_multishot(void *probe))
