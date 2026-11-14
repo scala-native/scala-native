@@ -167,53 +167,6 @@ object FileHelpers {
         }
       }
 
-  def createTempDirectoryUnixImpl(
-      dir: Path,
-      prefix: String
-  ): Path = Zone.acquire { implicit z =>
-    /* Use os 'mkdtemp()' to come closer to atomically determining
-     * a temporary name and creating a directory with that name and
-     * its specified default 700 file permissions.  This also the JVM
-     * default, so everything is harmonious.
-     *
-     * Go thru the extra step of using genTempIdent() so that user visible
-     * names are similar, but not identical, to JVM practice. The
-     * detail oriented or those running scripts may notice that the
-     * last (righmost) 6 characters are now alpha-numeric. JVM practice
-     * is that they be strictly numeric.  The added safety of atomic action
-     * is worth the slight but regretable difference. It is hard being atomic.
-     */
-
-    val maxElementLen = 255
-    val reservedLen = 6 // leave room for template suffix length
-
-    val sb = new jl.StringBuilder(maxElementLen).append(dir.toString)
-
-    if (sb.charAt(sb.length() - 1) != '/')
-      sb.append('/')
-
-    sb.append(genTempIdent(if (prefix == null) "" else prefix, ""))
-
-    val maxUnReservedLen = (maxElementLen - reservedLen)
-    if (sb.length() > maxUnReservedLen)
-      sb.setLength(maxUnReservedLen)
-
-    sb.repeat('X', reservedLen)
-
-    val template = sb.toString()
-
-    val cDir = stdlib.mkdtemp(toCString(template))
-
-    if (cDir == null) {
-      throw PosixException(
-        s"Create temporary directory '${template}'",
-        posixErrno.errno
-      )
-    }
-
-    Path.of(fromCString(cDir), Array.empty)
-  }
-
   def createTempFile(
       prefix: String,
       suffix: String,
