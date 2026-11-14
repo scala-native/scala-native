@@ -46,9 +46,7 @@ runs:
       shell: bash
       if: ${{ inputs.llvm-version != '' }}
       run: |
-        wget https://apt.llvm.org/llvm.sh
-        chmod +x llvm.sh
-        (yes "" || true) | sudo ./llvm.sh ${{ inputs.llvm-version }}
+        sudo ./ci-docker/install-llvm.sh ${{ inputs.llvm-version }}
         # Prefer apt.llvm.org install over /usr/bin/clang (Discover uses LLVM_BIN / PATH).
         LLVM_TOOLCHAIN="/usr/lib/llvm-${{ inputs.llvm-version }}/bin"
         if [[ -d "$LLVM_TOOLCHAIN" ]]; then
