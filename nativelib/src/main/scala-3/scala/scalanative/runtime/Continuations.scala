@@ -12,6 +12,64 @@ import scala.scalanative.meta.LinktimeInfo.{
 }
 import scala.scalanative.unsafe.*
 
+/** What [[Continuations]] (one-shot) and [[Continuations.multi]] share. */
+sealed abstract class ContinuationsApi:
+  /** A marker for a given `boundary`. Use `break` or `suspend` to suspend the
+   *  continuation up to the specified `boundary`. This value MUST NOT escape
+   *  the `boundary` that created it.
+   */
+  opaque type BoundaryLabel[T] = CUnsignedLong
+
+  /** Marks the given body as suspendable with a `BoundaryLabel` that `suspend`
+   *  can refer to. Forwards the return value of `body`, or the return value of
+   *  the `suspend` call, if it happens during the execution of `body`.
+   *
+   *  __Safety__: suspending to a `BoundaryLabel` not created by a `boundary`
+   *  call higher on the same call stack is undefined behaviour.
+   */
+  inline def boundary[T](inline body: BoundaryLabel[T] ?=> T): T =
+    enter[T](label => body(using label))
+
+  /** Suspends the current running stack up to the corresponding `boundary` into
+   *  a continuation `cont: R => T` and passes it into `onSuspend`. The return
+   *  value of `onSuspend(cont)` is returned to `boundary`. Returns the value
+   *  passed to `cont` once it is resumed.
+   */
+  inline def suspend[R, T](
+      inline onSuspend: (R => T) => T
+  )(using label: BoundaryLabel[T]): R =
+    capture[R, T](label, continuation => onSuspend(continuation))
+
+  /** Same as `suspend` where the continuation expects no parameters. */
+  inline def suspend[T](
+      inline onSuspend: (() => T) => T
+  )(using label: BoundaryLabel[T]): Unit =
+    capture[Unit, T](
+      label,
+      continuation => onSuspend(() => continuation(()))
+    )
+
+  /** Immediately return to the `boundary`. */
+  inline def break(using label: BoundaryLabel[Unit]): Nothing =
+    leave[Unit](label, ())
+
+  /** Immediately return to the `boundary`, returning the given value. */
+  inline def break[T](inline value: T)(using
+      label: BoundaryLabel[T]
+  ): Nothing =
+    leave[T](label, value)
+
+  protected def enter[T](body: BoundaryLabel[T] => T): T
+  protected def capture[R, T](
+      label: BoundaryLabel[T],
+      onSuspend: (R => T) => T
+  ): R
+  protected def leave[T](label: BoundaryLabel[T], value: T): Nothing
+
+  protected final def toNative[T](label: BoundaryLabel[T]): CUnsignedLong =
+    label
+end ContinuationsApi
+
 /** Delimited continuations.
  *
  *  Two implementations share one API:
@@ -26,10 +84,9 @@ import scala.scalanative.unsafe.*
  *  across a `single` boundary, or suspending or breaking a `single` one across
  *  a `multi` boundary, throws `IllegalStateException`.
  *
- *  The members of `Continuations` itself are those of `single`.
+ *  `Continuations` itself is `single`.
  */
-object Continuations:
-  export single.{BoundaryLabel, boundary, break, suspend}
+object Continuations extends ContinuationsApi:
 
   @deprecated(
     "One-shot continuations keep no state in the thread; use `multi.handlersReset` for multi-shot ones",
@@ -37,102 +94,55 @@ object Continuations:
   )
   def handlersReset(): Unit = ()
 
-  sealed abstract class Api:
-    /** A marker for a given `boundary`. Use `break` or `suspend` to suspend the
-     *  continuation up to the specified `boundary`. This value MUST NOT escape
-     *  the `boundary` that created it.
-     */
-    opaque type BoundaryLabel[T] = Label
-
-    /** Marks the given body as suspendable with a `BoundaryLabel` that
-     *  `suspend` can refer to. Forwards the return value of `body`, or the
-     *  return value of the `suspend` call, if it happens during the execution
-     *  of `body`.
-     *
-     *  __Safety__: suspending to a `BoundaryLabel` not created by a `boundary`
-     *  call higher on the same call stack is undefined behaviour.
-     */
-    inline def boundary[T](inline body: BoundaryLabel[T] ?=> T): T =
-      enter[T](label => body(using label))
-
-    /** Suspends the current running stack up to the corresponding `boundary`
-     *  into a continuation `cont: R => T` and passes it into `onSuspend`. The
-     *  return value of `onSuspend(cont)` is returned to `boundary`. Returns the
-     *  value passed to `cont` once it is resumed.
-     */
-    inline def suspend[R, T](
-        inline onSuspend: (R => T) => T
-    )(using label: BoundaryLabel[T]): R =
-      capture[R, T](label, continuation => onSuspend(continuation))
-
-    /** Same as `suspend` where the continuation expects no parameters. */
-    inline def suspend[T](
-        inline onSuspend: (() => T) => T
-    )(using label: BoundaryLabel[T]): Unit =
-      capture[Unit, T](
-        label,
-        continuation => onSuspend(() => continuation(()))
-      )
-
-    /** Immediately return to the `boundary`. */
-    inline def break(using label: BoundaryLabel[Unit]): Nothing =
-      leave[Unit](label, ())
-
-    /** Immediately return to the `boundary`, returning the given value. */
-    inline def break[T](inline value: T)(using
-        label: BoundaryLabel[T]
-    ): Nothing =
-      leave[T](label, value)
-
-    protected def enter[T](body: BoundaryLabel[T] => T): T
-    protected def capture[R, T](
-        label: BoundaryLabel[T],
-        onSuspend: (R => T) => T
-    ): R
-    protected def leave[T](label: BoundaryLabel[T], value: T): Nothing
-
-    protected final def toNative[T](label: BoundaryLabel[T]): Label = label
-  end Api
-
-  /** One-shot continuations: resuming a continuation a second time throws
-   *  `IllegalStateException`.
+  /** `Continuations` itself. One-shot continuations: resuming a continuation a
+   *  second time throws `IllegalStateException`.
    *
    *  `onSuspend` runs after the suspended computation left its stack, in the
    *  context that receives the result: the caller of `boundary`, or of the
    *  continuation that resumed it. It cannot `suspend` to the label it was
    *  given.
    */
-  object single extends Api:
+  final val single: Continuations.type = this
+
+  type Api = ContinuationsApi
+
+  /** Reports the use of one-shot continuations where they are not supported,
+   *  when it is loaded.
+   */
+  private object oneShotSupport:
     if !isContinuationsSupported then UnsupportedFeature.continuations()
+    def require(): Unit = ()
 
-    protected def enter[T](body: this.BoundaryLabel[T] => T): T =
-      val result = OneShot.boundary[T](runBody, body.asInstanceOf[Body])
-      if result == null then
-        throw new OutOfMemoryError("Cannot allocate a continuation stack")
-      result.get
+  protected def enter[T](body: this.BoundaryLabel[T] => T): T =
+    oneShotSupport.require()
+    val result = OneShot.boundary[T](runBody, body.asInstanceOf[Body])
+    if result == null then
+      throw new OutOfMemoryError("Cannot allocate a continuation stack")
+    result.get
 
-    protected def capture[R, T](
-        label: this.BoundaryLabel[T],
-        onSuspend: (R => T) => T
-    ): R =
-      checkNoMultiShotBoundary(toNative(label))
-      val call: OnSuspend = native =>
-        val continuation = new Continuation[R, T]
-        continuation.inner = native
-        onSuspend(continuation)
-      OneShot.suspend[R](toNative(label), runOnSuspend, call)
+  protected def capture[R, T](
+      label: this.BoundaryLabel[T],
+      onSuspend: (R => T) => T
+  ): R =
+    oneShotSupport.require()
+    checkNoMultiShotBoundary(toNative(label))
+    val call: OnSuspend = native =>
+      val continuation = new Continuation[R, T]
+      continuation.inner = native
+      onSuspend(continuation)
+    OneShot.suspend[R](toNative(label), runOnSuspend, call)
 
-    protected def leave[T](label: this.BoundaryLabel[T], value: T): Nothing =
-      checkNoMultiShotBoundary(toNative(label))
-      OneShot.leave(toNative(label), Success(value))
-      throw new IllegalStateException("Left boundary was resumed")
+  protected def leave[T](label: this.BoundaryLabel[T], value: T): Nothing =
+    oneShotSupport.require()
+    checkNoMultiShotBoundary(toNative(label))
+    OneShot.leave(toNative(label), Success(value))
+    throw new IllegalStateException("Left boundary was resumed")
 
-    private def checkNoMultiShotBoundary(label: Label): Unit =
-      if multiShotInUse && OneShot.crossesMultiShot(label) then
-        throw new IllegalStateException(
-          "A `single` continuation cannot suspend or break across a `multi` boundary"
-        )
-  end single
+  private def checkNoMultiShotBoundary(label: Label): Unit =
+    if multiShotInUse && OneShot.crossesMultiShot(label) then
+      throw new IllegalStateException(
+        "A `single` continuation cannot suspend or break across a `multi` boundary"
+      )
 
   /** Multi-shot continuations.
    *
@@ -140,7 +150,7 @@ object Continuations:
    *  must not hold addresses of its own stack: no `stackalloc` between
    *  `boundary` and `suspend`.
    */
-  object multi extends Api:
+  object multi extends ContinuationsApi:
     if isMultiShotContinuationsSupported then
       MultiShot.init(allocate)
       if isContinuationsSupported then

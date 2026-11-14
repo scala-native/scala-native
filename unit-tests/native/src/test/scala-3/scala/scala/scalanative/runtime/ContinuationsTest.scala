@@ -114,8 +114,8 @@ class ContinuationsTest extends ContinuationsApiTest:
           case ex: java.lang.Throwable =>
             failure.compareAndSet(null, ex); ()
       )
-      val produce = (0 until producers).map: _ =>
-        worker:
+      val produce = (0 until producers).map { _ =>
+        worker {
           var i = 0
           while i < perProducer do
             val base = i
@@ -132,19 +132,24 @@ class ContinuationsTest extends ContinuationsApiTest:
             if i % 7 == 0 then
               boundary[Long] { suspend[Unit, Long](_ => 0L); 0L }
             i += 1
-      val consume = (0 until producers).map: _ =>
-        worker:
+        }
+      }
+      val consume = (0 until producers).map { _ =>
+        worker {
           var n = 0
           while n < perProducer do
             queue.take()(())
             resumed.incrementAndGet()
             n += 1
+        }
+      }
       val threads = produce ++ consume
       threads.foreach(_.start())
       try
         val deadline = System.nanoTime() + TimeUnit.MINUTES.toNanos(2)
-        threads.foreach: thread =>
+        threads.foreach { thread =>
           thread.join(1L.max((deadline - System.nanoTime()) / 1000000))
+        }
         assertNull("worker failed", failure.get())
         assertFalse("workers did not finish", threads.exists(_.isAlive))
       finally threads.foreach(_.interrupt())
