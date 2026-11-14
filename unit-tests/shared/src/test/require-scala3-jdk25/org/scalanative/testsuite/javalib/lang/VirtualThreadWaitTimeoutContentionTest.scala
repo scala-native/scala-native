@@ -251,6 +251,7 @@ class VirtualThreadWaitTimeoutContentionTest {
       else None
     val waiterFailure = new AtomicReference[Throwable](null)
     val notifierFailure = new AtomicReference[Throwable](null)
+    val completedIterations = new AtomicInteger(0)
 
     val waiter = Thread.ofVirtual().start { () =>
       try {
@@ -268,6 +269,7 @@ class VirtualThreadWaitTimeoutContentionTest {
           }
           end.foreach(barrier => awaitBarrier(barrier, s"end/waiter/$i"))
           i += 1
+          completedIterations.set(i)
         }
       } catch {
         case ex: Throwable =>
@@ -295,11 +297,13 @@ class VirtualThreadWaitTimeoutContentionTest {
       }
     }
 
-    waiter.join(Timeout)
+    // Coarse timers (~15.6ms ticks on Windows) make each 1ms wait much
+    // longer, so only fail when an iteration stops making progress.
+    joinWhileProgressing(waiter, completedIterations)
     notifier.join(Timeout)
 
     assertFalse(
-      s"waiter should terminate in notified-then-timeout race (barrierInSynchronizedBlock=$barrierInSynchronizedBlock)",
+      s"waiter should terminate in notified-then-timeout race (barrierInSynchronizedBlock=$barrierInSynchronizedBlock, completed ${completedIterations.get()}/$iterations iterations)",
       waiter.isAlive()
     )
     assertFalse(
@@ -320,6 +324,24 @@ class VirtualThreadWaitTimeoutContentionTest {
         "notifier failed in notified-then-timeout race",
         notifierThrown
       )
+  }
+
+  private def joinWhileProgressing(
+      thread: Thread,
+      progress: AtomicInteger
+  ): Unit = {
+    var lastProgress = progress.get()
+    var lastProgressAt = System.nanoTime()
+    val stallNanos = TimeUnit.MILLISECONDS.toNanos(Timeout)
+    def stalled = System.nanoTime() - lastProgressAt >= stallNanos
+    while (thread.isAlive() && !stalled) {
+      thread.join(100)
+      val current = progress.get()
+      if (current != lastProgress) {
+        lastProgress = current
+        lastProgressAt = System.nanoTime()
+      }
+    }
   }
 
   private def awaitBarrier(barrier: CyclicBarrier, label: String): Unit = {
