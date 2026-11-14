@@ -23,6 +23,14 @@
  * scans them when the collector marks the SuspendedStacks object of that
  * continuation. A continuation that was not traced in a completed mark cycle
  * is unreachable, so its stacks are reclaimed.
+ *
+ * Boehm GC can stop a thread anywhere, so collections are paused from before
+ * a switch until the receiving side has taken over what was handed to it,
+ * and around every change of what the collector callbacks read.
+ * `pauseCollections`/`resumeCollections` do nothing with the other
+ * collectors, which stop threads only at safepoints, and none of this code
+ * has one. Boehm also cannot trace by class: there a continuation keeps a
+ * traced anchor instead.
  */
 
 #include "delimcc_oneshot.h"
@@ -50,6 +58,9 @@ extern void scalanative_continuation_entry(void);
 // Continuations waiting to be resumed before a collection is requested to
 // find the unreachable ones. Their stacks are invisible to the GC heap.
 #define MIN_CAPTURED_LIMIT 1024
+
+#define pauseCollections scalanative_GC_pause_collections
+#define resumeCollections scalanative_GC_resume_collections
 
 #define FATAL(...)                                                             \
     do {                                                                       \
@@ -136,6 +147,7 @@ struct Coroutine {
     Coroutine *from; // the coroutine that last switched to this one
     CoroutineState state;
     ThreadInfo *thread; // owner of a THREAD coroutine
+    void *threadBottom; // of a THREAD coroutine, as the collector knows it
     void *mapping;      // start of the stack mapping this struct lives in
     StackBounds bounds;
     // ThreadInfo.pendingStackOverflowException while this stack does not run.
@@ -237,6 +249,23 @@ static void scanCapturedStacks(void **fields, GC_ScanRangeFn *scan, void *ctx) {
         return;
     atomic_store(&stacks->slot->markedIn, scalanative_GC_mark_cycle());
     for (SuspendedStack *it = stacks; it != NULL; it = it->next) {
+        scanStack(scan, ctx, it->top, it->bottom, it->guardPage);
+    }
+}
+
+/* GC_ObjectTracerFn of a traced anchor, which names a stack slot and the
+ * capture it was made for, not the stacks. A conservative collector can mark
+ * an anchor that died earlier: the stacks are reached through the slot,
+ * which is never freed, and only while it holds that capture, so stacks that
+ * were unmapped or given to another continuation are not read. */
+static void scanAnchoredStacks(void **fields, GC_ScanRangeFn *scan, void *ctx) {
+    StackSlot *slot = fields[0];
+    uint_fast64_t capture = (uintptr_t)fields[1];
+    if (atomic_load(&slot->capture) != capture)
+        return;
+    atomic_store(&slot->markedIn, scalanative_GC_mark_cycle());
+    // The first stack; a SuspendedStack is the start of its coroutine.
+    for (SuspendedStack *it = slot->captured; it != NULL; it = it->next) {
         scanStack(scan, ctx, it->top, it->bottom, it->guardPage);
     }
 }
@@ -593,6 +622,8 @@ static ThreadState *arrive(Coroutine *self) {
     thread->current = self;
     applyBounds(thread, self);
     thread->info->pendingStackOverflowException = self->pendingOverflow;
+    scalanative_GC_set_current_stack_bottom(
+        self->state == THREAD ? self->threadBottom : self->bounds.bottom);
     removeRoots(self);
     CoroutineState state = self->from->state;
     if (state != FINISHED && state != LEFT)
@@ -621,6 +652,7 @@ static Coroutine *currentCoroutine(ThreadState *thread) {
             FATAL("out of memory");
         self->state = THREAD;
         self->thread = thread->info;
+        self->threadBottom = scalanative_GC_current_stack_bottom();
         self->slot = acquireSlot();
         thread->current = self;
     }
@@ -632,8 +664,13 @@ __attribute__((visibility("hidden"))) void
 scalanative_continuation_main(Coroutine *self) {
     arrive(self);
     self->state = RUNNING;
+    ContinuationBody *body = self->body;
+    void *bodyArg = self->bodyArg;
+    resumeCollections();
     // The body catches every Throwable, nothing unwinds past this frame.
-    self->result = self->body((ContinuationBoundaryLabel)self, self->bodyArg);
+    void *result = body((ContinuationBoundaryLabel)self, bodyArg);
+    pauseCollections();
+    self->result = result;
     self->state = FINISHED;
     switchTo(currentThread(), self, self->returnTo);
     FATAL("a finished coroutine was resumed");
@@ -675,10 +712,16 @@ static void checkEnclosing(Coroutine *self, Coroutine *target) {
 
 // Frees the continuations that the last completed mark cycle did not reach.
 static void reclaimUnreachable(ThreadState *thread) {
-    uint_fast64_t cycle = scalanative_GC_completed_mark_cycle();
-    if (atomic_load_explicit(&reclaimedIn, memory_order_relaxed) == cycle ||
-        atomic_exchange(&reclaimedIn, cycle) == cycle)
+    if (atomic_load_explicit(&reclaimedIn, memory_order_relaxed) ==
+        scalanative_GC_completed_mark_cycle())
         return;
+    // The marks must not change while they are compared with `cycle`.
+    pauseCollections();
+    uint_fast64_t cycle = scalanative_GC_completed_mark_cycle();
+    if (atomic_exchange(&reclaimedIn, cycle) == cycle) {
+        resumeCollections();
+        return;
+    }
     Coroutine *unreachable = NULL;
     size_t count = 0;
     pthread_mutex_lock(&slotsLock);
@@ -697,6 +740,7 @@ static void reclaimUnreachable(ThreadState *thread) {
         }
     }
     pthread_mutex_unlock(&slotsLock);
+    resumeCollections();
     size_t remaining = atomic_fetch_sub(&capturedCount, count) - count;
     atomic_store(&capturedLimit, remaining * 2 > MIN_CAPTURED_LIMIT
                                      ? remaining * 2
@@ -708,22 +752,26 @@ static void reclaimUnreachable(ThreadState *thread) {
     }
 }
 
-// Runs in the context that received control in `boundary` or `resume`.
+// Runs in the context that received control in `boundary` or `resume`, with
+// collections still paused by the side that switched here.
 static void *dispatch(ThreadState *thread, Coroutine *self) {
     Coroutine *from = self->from;
     if (from->state == FINISHED) {
         void *result = from->result;
+        resumeCollections();
         destroy(thread, from);
         return result;
     }
     if (from->state == LEFT) {
         void *result = from->result;
+        resumeCollections();
         destroyChain(thread, from, from->label);
         return result;
     }
     // Once the callback publishes the continuation, another thread can
     // resume `from` and change its fields.
     SuspendRequest request = from->request;
+    resumeCollections();
     return request.fn((Continuation *)from, request.arg);
 }
 
@@ -743,6 +791,7 @@ void *scalanative_continuation_oneshot_boundary(ContinuationBody *body,
             return NULL;
     }
     coroutine->pendingOverflow = false;
+    pauseCollections();
     coroutine->state = CREATED;
     coroutine->body = body;
     coroutine->bodyArg = arg;
@@ -787,13 +836,16 @@ void *scalanative_continuation_oneshot_suspend(ContinuationBoundaryLabel label,
     Coroutine *target = (Coroutine *)label;
     checkEnclosing(self, target);
 
+    pauseCollections();
     self->request = (SuspendRequest){f, arg};
     self->label = target;
     self->state = SUSPENDED;
     switchTo(thread, self, target->returnTo);
 
     self->state = RUNNING;
-    return self->resumeArg;
+    void *resumeArg = self->resumeArg;
+    resumeCollections();
+    return resumeArg;
 }
 
 /* Returns `result` from the boundary of `label` and drops the computation
@@ -804,6 +856,7 @@ void scalanative_continuation_oneshot_leave(ContinuationBoundaryLabel label,
     Coroutine *self = currentCoroutine(thread);
     Coroutine *target = (Coroutine *)label;
     checkEnclosing(self, target);
+    pauseCollections();
     self->result = result;
     self->label = target;
     self->state = LEFT;
@@ -812,36 +865,48 @@ void scalanative_continuation_oneshot_leave(ContinuationBoundaryLabel label,
 }
 
 /* Hands the stacks of a suspended continuation over to `owner`, the
- * SuspendedStacks object that points to `continuation`. The caller keeps it
- * reachable. Until this call the stacks are scanned as roots. */
-void scalanative_continuation_oneshot_captured(Continuation *continuation,
-                                               void *owner) {
-    // The same for all owners.
+ * SuspendedStacks object that points to `continuation`. Until this call the
+ * stacks are scanned as roots. Returns what the caller has to keep reachable
+ * from `owner` for the collector to find them: a traced anchor, or NULL when
+ * `owner` itself is traced. */
+void *scalanative_continuation_oneshot_captured(Continuation *continuation,
+                                                void *owner) {
+    Coroutine *top = (Coroutine *)continuation;
+    void **anchor = scalanative_GC_alloc_traced_anchor(scanAnchoredStacks);
+    // Without anchors `owner` is traced by its class, the same for all.
     static atomic_flag traced = ATOMIC_FLAG_INIT;
     static atomic_bool tracerSet;
-    if (!atomic_load_explicit(&tracerSet, memory_order_relaxed)) {
+    if (anchor == NULL &&
+        !atomic_load_explicit(&tracerSet, memory_order_relaxed)) {
         if (!atomic_flag_test_and_set(&traced) &&
             !scalanative_GC_add_object_tracer(owner, scanCapturedStacks))
             FATAL("cannot register the continuation stacks with the GC");
         atomic_store(&tracerSet, true);
     }
-    Coroutine *top = (Coroutine *)continuation;
+    pauseCollections();
     FOREACH_CAPTURED(it, top) {
         it->captured.top = it->sp;
         it->captured.bottom = it->bounds.bottom;
         it->captured.guardPage = closedGuardPage(it);
         it->captured.next = it == top->label ? NULL : &it->returnTo->captured;
+        it->captured.slot = top->slot;
         removeRoots(it);
     }
-    FOREACH_CAPTURED(it, top) it->captured.slot = top->slot;
     atomic_store(&top->slot->markedIn, 0);
     top->slot->capturedIn = scalanative_GC_completed_mark_cycle();
     top->slot->captured = top;
-    atomic_store(&top->slot->capture, atomic_fetch_add(&captures, 1) + 1);
+    uint_fast64_t capture = atomic_fetch_add(&captures, 1) + 1;
+    atomic_store(&top->slot->capture, capture);
+    if (anchor != NULL) {
+        anchor[0] = top->slot;
+        anchor[1] = (void *)(uintptr_t)capture;
+    }
+    resumeCollections();
     if (atomic_fetch_add(&capturedCount, 1) >= atomic_load(&capturedLimit)) {
         scalanative_GC_collect();
         reclaimUnreachable(currentThread());
     }
+    return anchor;
 }
 
 /* `stacks` is the field of a SuspendedStacks object that points to a
@@ -850,6 +915,7 @@ void scalanative_continuation_oneshot_captured(Continuation *continuation,
 void *scalanative_continuation_oneshot_resume(void **stacks, void *arg) {
     ThreadState *thread = currentThread();
     Coroutine *self = currentCoroutine(thread);
+    pauseCollections();
     Coroutine *top = (Coroutine *)*stacks;
     atomic_store(&top->slot->capture, 0);
     atomic_fetch_sub(&capturedCount, 1);
@@ -907,7 +973,7 @@ UNSUPPORTED(void *scalanative_continuation_oneshot_suspend(
     ContinuationBoundaryLabel label, SuspendFn *f, void *arg))
 UNSUPPORTED(void scalanative_continuation_oneshot_leave(
     ContinuationBoundaryLabel label, void *result))
-UNSUPPORTED(void scalanative_continuation_oneshot_captured(
+UNSUPPORTED(void *scalanative_continuation_oneshot_captured(
     Continuation *continuation, void *owner))
 UNSUPPORTED(
     void scalanative_continuation_oneshot_discard(Continuation *continuation))

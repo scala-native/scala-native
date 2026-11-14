@@ -19,8 +19,9 @@ void *scalanative_continuation_oneshot_suspend(ContinuationBoundaryLabel label,
 // Returns `result` from the boundary of `label`; does not return.
 void scalanative_continuation_oneshot_leave(ContinuationBoundaryLabel label,
                                             void *result);
-void scalanative_continuation_oneshot_captured(Continuation *continuation,
-                                               void *owner);
+// Returns what to keep reachable from `owner` until the resume, or NULL.
+void *scalanative_continuation_oneshot_captured(Continuation *continuation,
+                                                void *owner);
 // `stacks` is the first field of the SuspendedStacks object given to
 // `captured`.
 void *scalanative_continuation_oneshot_resume(void **stacks, void *arg);

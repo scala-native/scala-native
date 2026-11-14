@@ -179,14 +179,14 @@ object Continuations {
       @name("scalanative_continuation_oneshot_leave")
       def leave(label: Label, result: Try[Any]): Unit = extern
 
+      /** Returns what has to stay reachable until the resume, or null. */
       @name("scalanative_continuation_oneshot_captured")
       def captured(
           continuation: NativeContinuation,
           owner: SuspendedStacks
-      ): Unit =
-        extern
+      ): RawPtr = extern
 
-      /** `stacks` is the address of `SuspendedStacks.stacks`. */
+      /** `stacks` is `SuspendedStacks.stacksAddress`. */
       @name("scalanative_continuation_oneshot_resume")
       def resume[R, T](stacks: RawPtr, value: R): Try[T] = extern
 
@@ -211,6 +211,9 @@ object Continuations {
       extends AtomicBoolean
       with (R => T) {
     private var stacks: SuspendedStacks = null
+    // What a GC that cannot trace `stacks` by its class (Boehm) scans the
+    // suspended stacks through; null otherwise.
+    private var anchor: RawPtr = null
 
     def inner: NativeContinuation = fromRawPtr(stacks.stacks)
 
@@ -224,13 +227,13 @@ object Continuations {
           case ex: Throwable =>
             single.FFI.discard(native)
             throw ex
-      single.FFI.captured(native, stacks)
+      anchor = single.FFI.captured(native, stacks)
 
     def apply(value: R): T =
       if !compareAndSet(false, true) then
         throw new IllegalStateException("Continuation was already resumed")
-      val field = Intrinsics.classFieldRawPtr(stacks, "stacks")
-      single.FFI.resume[R, T](field, value).get
+      try single.FFI.resume[R, T](stacks.stacksAddress, value).get
+      finally reachabilityFence(this)
   }
 
   // ==========================================================================

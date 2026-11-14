@@ -32,6 +32,19 @@ bool scalanative_GC_add_root_provider(GC_RootProviderFn *provider, void *data) {
     return added;
 }
 
+#ifdef SCALANATIVE_GC_BOEHM
+// gc/boehm/gc.c has the traced anchors.
+bool scalanative_GC_add_object_tracer(void *object, GC_ObjectTracerFn *tracer) {
+    (void)object;
+    (void)tracer;
+    return false;
+}
+#else
+void **scalanative_GC_alloc_traced_anchor(GC_ObjectTracerFn *tracer) {
+    (void)tracer;
+    return NULL;
+}
+
 bool scalanative_GC_add_object_tracer(void *object, GC_ObjectTracerFn *tracer) {
     // The type descriptor is the first word of every object.
     void *rtti = *(void **)object;
@@ -46,6 +59,7 @@ bool scalanative_GC_add_object_tracer(void *object, GC_ObjectTracerFn *tracer) {
     atomic_flag_clear(&registrationLock);
     return added;
 }
+#endif
 
 void GCHooks_scanDynamicRoots(GC_ScanRangeFn *scan, void *ctx) {
     size_t count = atomic_load(&rootProvidersCount);

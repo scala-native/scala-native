@@ -60,12 +60,9 @@ object LinktimeInfo {
       !is32BitPlatform &&
       (target.arch == "x86_64" || target.arch == "aarch64")
 
-  /** `Continuations` and `Continuations.single`. Boehm GC cannot scan the
-   *  stacks they run on.
-   */
+  /** `Continuations` and `Continuations.single`. */
   @resolvedAtLinktime()
-  def isContinuationsSupported: Boolean =
-    isMultiShotContinuationsSupported && garbageCollector != "boehm"
+  def isContinuationsSupported: Boolean = isMultiShotContinuationsSupported
 
   @resolvedAtLinktime()
   def isVirtualThreadsSupported: Boolean =
