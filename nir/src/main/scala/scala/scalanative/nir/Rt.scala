@@ -98,4 +98,14 @@ private[scalanative] object Rt {
   val RuntimeObjectMonitor = Ref(
     Global.Top("scala.scalanative.runtime.monitor.ObjectMonitor")
   )
+
+  val LinkedClasses = Global.Top("scala.scalanative.runtime.LinkedClasses$")
+  val LinkedClassesFind =
+    LinkedClasses.member(
+      Sig.Method(
+        "find",
+        Seq(String, Class),
+        Sig.Scope.Private(LinkedClasses)
+      )
+    )
 }

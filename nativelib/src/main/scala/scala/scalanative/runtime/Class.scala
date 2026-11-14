@@ -293,7 +293,11 @@ private object LinkedClasses {
       case _             => throw new ClassNotFoundException(className)
     }
 
-  // Every class instance starts with a pointer to classOf[Class]
+  // Every class instance starts with a pointer to classOf[Class].
+  // Codegen removes sanitize_address on this method, since
+  // this walks the entire memory of globals including ASan redzones.
+  // See: AbstractCodeGen.noAddressSanitize
+  @noinline // no_sanitize
   private def find(className: String): Class[_] = {
     val ptrSize = castRawSizeToInt(sizeOf[RawPtr])
     val section = StaticRoots.classInfoSection()

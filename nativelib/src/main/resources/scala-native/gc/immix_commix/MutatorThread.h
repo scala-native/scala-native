@@ -29,6 +29,8 @@ typedef struct {
     atomic_intptr_t stackTop;
     atomic_bool isWaiting;
     RegistersBuffer registersBuffer;
+    // Captured at the safepoint. See shared/AsanFakeStack.h.
+    void *asanFakeStack;
     // immutable fields
     word_t **stackBottom;
     Allocator allocator;
