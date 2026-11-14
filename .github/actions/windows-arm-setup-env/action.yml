@@ -108,3 +108,5 @@ runs:
           exit 1
         }
         Write-Host "OK: $zlib"
+
+    - uses: ./.github/actions/sbt-warmup

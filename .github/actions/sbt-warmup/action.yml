@@ -1,0 +1,16 @@
+name: "sbt warm-up"
+description: "Bootstrap sbt and load the build with retries to survive transient artifact download failures"
+runs:
+  using: "composite"
+  steps:
+    # The sbt launcher ignores the coursier mirror/retry settings from .sbtopts.
+    # --server avoids leaving a background server with this step's environment.
+    - name: Warm up sbt
+      uses: nick-fields/retry@v4
+      with:
+        timeout_minutes: 15
+        max_attempts: 3
+        retry_wait_seconds: 30
+        retry_on: error
+        shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
+        command: sbt --server exit

@@ -58,3 +58,5 @@ runs:
         else
           echo "::warning::No directory $LLVM_TOOLCHAIN (e.g. llvm-version=latest); set LLVM_BIN on the step if needed."
         fi
+
+    - uses: ./.github/actions/sbt-warmup
