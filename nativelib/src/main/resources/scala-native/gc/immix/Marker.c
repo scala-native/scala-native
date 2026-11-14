@@ -98,7 +98,8 @@ static void Marker_scanRange(void *ctx, void *low, void *high) {
 void Marker_Mark(Heap *heap, Stack *stack) {
     Bytemap *bytemap = heap->bytemap;
     // Does not change during a collection; read once, not for every object.
-    void *const tracedRtti = ObjectTracer_rtti;
+    void *const tracedRtti =
+        atomic_load_explicit(&ObjectTracer_rtti, memory_order_relaxed);
     while (!Stack_IsEmpty(stack)) {
         Object *object = Stack_Pop(stack);
         const int objectId = object->rtti->rt.id;
@@ -137,8 +138,8 @@ void Marker_Mark(Heap *heap, Stack *stack) {
                 }
             } else if (UNLIKELY((void *)object->rtti == tracedRtti)) {
                 ScanContext context = {heap, stack};
-                ObjectTracer_trace((void **)object->fields, Marker_scanRange,
-                                   &context);
+                atomic_load (&ObjectTracer_trace)((void **)object->fields,
+                                                  Marker_scanRange, &context);
             }
         }
     }

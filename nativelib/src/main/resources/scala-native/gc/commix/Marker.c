@@ -323,9 +323,12 @@ int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
                                     rawPtr);
             objectsTraced += 1;
         }
-    } else if (UNLIKELY((void *)object->rtti == ObjectTracer_rtti)) {
+    } else if (UNLIKELY((void *)object->rtti ==
+                        atomic_load_explicit(&ObjectTracer_rtti,
+                                             memory_order_relaxed))) {
         ScanContext context = {heap, stats, outHolder, outWeakRefHolder, 0};
-        ObjectTracer_trace((void **)object->fields, Marker_scanRange, &context);
+        atomic_load (&ObjectTracer_trace)((void **)object->fields,
+                                          Marker_scanRange, &context);
         objectsTraced += context.objectsTraced;
     }
     return objectsTraced;

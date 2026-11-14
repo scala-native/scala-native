@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void *ObjectTracer_rtti = NULL;
-GC_ObjectTracerFn *ObjectTracer_trace = NULL;
+_Atomic(void *) ObjectTracer_rtti = NULL;
+_Atomic(GC_ObjectTracerFn *) ObjectTracer_trace = NULL;
 
 // These collectors know the class of the objects they mark: the owner
 // itself is traced and no anchor is needed.
@@ -14,16 +14,18 @@ void **scalanative_GC_trace_owned(void *owner, GC_ObjectTracerFn *ownerTracer,
     (void)anchorTracer;
     // The type descriptor is the first word of every object.
     void *rtti = *(void **)owner;
-    if (ObjectTracer_rtti == rtti)
+    void *traced = atomic_load(&ObjectTracer_rtti);
+    if (traced == rtti)
         return NULL;
-    if (ObjectTracer_rtti != NULL) {
+    // The tracer first: a marker that sees the type also sees the tracer.
+    // Racing callers for the same class store the same values.
+    atomic_store(&ObjectTracer_trace, ownerTracer);
+    if (traced != NULL ||
+        (!atomic_compare_exchange_strong(&ObjectTracer_rtti, &traced, rtti) &&
+         traced != rtti)) {
         fprintf(stderr, "Only one class can be traced by the GC\n");
         abort();
     }
-    // The tracer first: a marker that sees the type also sees the tracer.
-    // Racing callers store the same values.
-    ObjectTracer_trace = ownerTracer;
-    ObjectTracer_rtti = rtti;
     return NULL;
 }
 

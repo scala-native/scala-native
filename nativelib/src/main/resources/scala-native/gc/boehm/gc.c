@@ -134,7 +134,13 @@ void **scalanative_GC_trace_owned(void *owner, GC_ObjectTracerFn *ownerTracer,
         fprintf(stderr, "Only one kind of memory can be traced by the GC\n");
         abort();
     }
-    return GC_generic_malloc(2 * sizeof(void *), (int)tracedAnchorKind);
+    void **anchor =
+        GC_generic_malloc(2 * sizeof(void *), (int)tracedAnchorKind);
+    if (anchor == NULL) {
+        fprintf(stderr, "Out of memory for an object traced by the GC\n");
+        abort();
+    }
+    return anchor;
 }
 
 static void initTracedAnchorKind(void) {
