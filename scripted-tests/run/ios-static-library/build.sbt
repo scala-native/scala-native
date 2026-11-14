@@ -61,11 +61,11 @@ testInSimulator := Def.taskDyn {
   val log = streams.value.log
   missingRequirement match {
     case Some(reason) if simulatorDevice.isEmpty =>
-      Def.task(log.warn(s"Skipping iOS simulator test: $reason"))
+      Def.task[Unit](log.warn(s"Skipping iOS simulator test: $reason"))
     case Some(reason) =>
-      Def.task(sys.error(s"Cannot run iOS simulator test: $reason"))
+      Def.task[Unit](sys.error(s"Cannot run iOS simulator test: $reason"))
     case None =>
-      Def.task {
+      Def.task[Unit] {
         val _ = (Compile / nativeLink).value
         val libDir = crossTarget.value
         val host = baseDirectory.value / "host"
