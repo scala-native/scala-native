@@ -7,6 +7,7 @@
 #include "shared/ScalaNativeGC.h"
 #include <stdlib.h>
 #include <string.h>
+#include "shared/GCConfig.h"
 #include "shared/Parsing.h"
 #include "shared/Time.h"
 #include "shared/jmx.h"
@@ -60,7 +61,22 @@ static void *GC_CALLBACK removeRoots(void *range) {
 }
 
 void scalanative_GC_init() {
+    /* Boehm GC reads GC_INITIAL_HEAP_SIZE and GC_MAXIMUM_HEAP_SIZE on its own
+     * in GC_INIT, the sizes set in the build apply only without them.
+     */
+#ifdef SCALANATIVE_GC_CONFIG_MAX_HEAP_SIZE
+    if (getenv("GC_MAXIMUM_HEAP_SIZE") == NULL)
+        GC_set_max_heap_size((GC_word)SCALANATIVE_GC_CONFIG_MAX_HEAP_SIZE);
+#endif
     GC_INIT();
+#ifdef SCALANATIVE_GC_CONFIG_INITIAL_HEAP_SIZE
+    if (getenv("GC_INITIAL_HEAP_SIZE") == NULL) {
+        size_t initial = (size_t)SCALANATIVE_GC_CONFIG_INITIAL_HEAP_SIZE;
+        size_t current = GC_get_heap_size();
+        if (initial > current)
+            GC_expand_hp(initial - current);
+    }
+#endif
     defaultPushOtherRoots = GC_get_push_other_roots();
     GC_set_push_other_roots(pushCustomRoots);
     GC_allow_register_threads();
@@ -104,7 +120,8 @@ void *scalanative_GC_alloc_array(Rtti *info, size_t length, size_t stride) {
 }
 
 size_t scalanative_GC_get_init_heapsize() {
-    return Parse_Env_Or_Default("GC_INITIAL_HEAP_SIZE", 0L);
+    return Parse_Env_Or_Default("GC_INITIAL_HEAP_SIZE",
+                                GC_CONFIG_INITIAL_HEAP_SIZE_OR(0L));
 }
 
 size_t scalanative_GC_get_max_heapsize() {
@@ -113,7 +130,8 @@ size_t scalanative_GC_get_max_heapsize() {
     GC_get_prof_stats(stats, sizeof(struct GC_prof_stats_s));
     size_t heap_sz = stats->heapsize_full;
     free(stats);
-    return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE", heap_sz);
+    return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE",
+                                GC_CONFIG_MAX_HEAP_SIZE_OR(heap_sz));
 }
 
 size_t scalanative_GC_get_used_heapsize() {

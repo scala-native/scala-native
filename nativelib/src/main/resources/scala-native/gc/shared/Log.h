@@ -10,16 +10,18 @@
 // GC Logging Utility
 // =============================================================================
 // Log levels: DEBUG < INFO < WARN < ERROR
-// Controlled by environment variable SCALANATIVE_GC_LOG_LEVEL:
+// Controlled by environment variable SCALANATIVE_GC_LOG_LEVEL, the default
+// is set in the build (see shared/GCConfig.h):
 //   - "debug" or "DEBUG" - show all messages (internal operations, allocations)
 //   - "info" or "INFO"   - show info, warnings and errors (parsed options,
 //   stats)
-//   - "warn" or "WARN"   - show warnings and errors (default)
+//   - "warn" or "WARN"   - show warnings and errors
 //   - "error" or "ERROR" - show only errors
 //   - "none" or "NONE"   - suppress all messages
 //
 // Log output destination controlled by GC_LOG_FILE:
-//   - If not set or empty: logs go to stderr (default)
+//   - If not set: logs go to the file set in the build, else to stderr
+//   - If empty: logs go to stderr
 //   - If set to a file path: logs are appended to that file
 //
 // Timestamps are included by default in [HH:MM:SS.mmm] format.
@@ -49,32 +51,32 @@ void GC_Log_Write(GC_LogLevel level, const char *prefix, const char *format,
 #define GC_LOG_DEBUG(fmt, ...)                                                 \
     do {                                                                       \
         if (GC_Log_GetLevel() <= GC_LOG_LEVEL_DEBUG) {                         \
-            GC_Log_Write(GC_LOG_LEVEL_DEBUG, "[ScalaNative GC|Debug]", fmt,    \
-                         ##__VA_ARGS__);                                       \
+            GC_Log_Write(GC_LOG_LEVEL_DEBUG, "[ScalaNative GC|Debug]",         \
+                         fmt, ##__VA_ARGS__);                                  \
         }                                                                      \
     } while (0)
 
 #define GC_LOG_INFO(fmt, ...)                                                  \
     do {                                                                       \
         if (GC_Log_GetLevel() <= GC_LOG_LEVEL_INFO) {                          \
-            GC_Log_Write(GC_LOG_LEVEL_INFO, "[ScalaNative GC|Info]", fmt,      \
-                         ##__VA_ARGS__);                                       \
+            GC_Log_Write(GC_LOG_LEVEL_INFO, "[ScalaNative GC|Info]",           \
+                         fmt, ##__VA_ARGS__);                                  \
         }                                                                      \
     } while (0)
 
 #define GC_LOG_WARN(fmt, ...)                                                  \
     do {                                                                       \
         if (GC_Log_GetLevel() <= GC_LOG_LEVEL_WARN) {                          \
-            GC_Log_Write(GC_LOG_LEVEL_WARN, "[ScalaNative GC|Warning]", fmt,   \
-                         ##__VA_ARGS__);                                       \
+            GC_Log_Write(GC_LOG_LEVEL_WARN, "[ScalaNative GC|Warning]",        \
+                         fmt, ##__VA_ARGS__);                                  \
         }                                                                      \
     } while (0)
 
 #define GC_LOG_ERROR(fmt, ...)                                                 \
     do {                                                                       \
         if (GC_Log_GetLevel() <= GC_LOG_LEVEL_ERROR) {                         \
-            GC_Log_Write(GC_LOG_LEVEL_ERROR, "[ScalaNative GC|Error]", fmt,    \
-                         ##__VA_ARGS__);                                       \
+            GC_Log_Write(GC_LOG_LEVEL_ERROR, "[ScalaNative GC|Error]",         \
+                         fmt, ##__VA_ARGS__);                                  \
         }                                                                      \
     } while (0)
 

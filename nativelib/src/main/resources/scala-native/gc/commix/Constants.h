@@ -3,9 +3,6 @@
 
 #include "immix_commix/Constants.h"
 
-#define DEFAULT_MARK_TIME_RATIO 0.05
-#define DEFAULT_FREE_RATIO 0.5
-#define DEFAULT_MAX_FREE_RATIO 0.8
 #define MAX_UNAVAILABLE_RATIO 0.25
 #define MIN_FREE_RATIO_TO_DEFER_UNAVAILABLE_GROWTH 0.65
 // Free heap below which a failed allocation at the size limit throws OOM.

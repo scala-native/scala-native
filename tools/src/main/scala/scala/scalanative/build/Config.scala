@@ -206,9 +206,13 @@ sealed trait Config {
     compilerConfig.gc match {
       case GC.Immix | GC.Commix | GC.Experimental =>
         compilerConfig.multithreadingSupport && {
-          sys.env
-            .get("SCALANATIVE_GC_TRAP_BASED_YIELDPOINTS")
-            .map(_ == "1")
+          /* GarbageCollectorConfig.trapBasedYieldPoints, else the
+           * SCALANATIVE_GC_TRAP_BASED_YIELDPOINTS environment variable.
+           */
+          GarbageCollectorConfig.Settings
+            .resolve(compilerConfig)
+            .values
+            .trapBasedYieldPoints
             .getOrElse(compilerConfig.mode.isInstanceOf[Mode.Release])
         }
       case _ => false

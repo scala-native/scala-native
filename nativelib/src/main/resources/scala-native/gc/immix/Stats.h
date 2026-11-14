@@ -2,6 +2,7 @@
 #define IMMIX_STATS_H
 
 #include "Constants.h"
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <time.h>
@@ -16,7 +17,8 @@ typedef struct {
     uint64_t sync_time_ns[STATS_MEASUREMENTS];
 } Stats;
 
-void Stats_Init(Stats *stats, const char *statsFile);
+// False if the file could not be opened, the stats must not be used then.
+bool Stats_Init(Stats *stats, const char *statsFile);
 void Stats_RecordCollection(Stats *stats, uint64_t request_ns,
                             uint64_t start_ns, uint64_t nullify_start_ns,
                             uint64_t sweep_start_ns, uint64_t end_ns);

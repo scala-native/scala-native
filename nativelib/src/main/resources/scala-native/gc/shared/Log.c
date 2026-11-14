@@ -10,6 +10,7 @@
 #endif
 
 #include "shared/Log.h"
+#include "shared/GCConfig.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
@@ -72,8 +73,15 @@ static const char *GC_Log_GetProgName(void) {
 }
 #endif
 
-// Global log level - default to WARN
-static GC_LogLevel GC_logLevel = GC_LOG_LEVEL_WARN;
+// Global log level - defaults to the one set in the build
+static GC_LogLevel GC_logLevel = SCALANATIVE_GC_CONFIG_LOG_LEVEL;
+
+// Log file set in the build, if any
+#ifdef SCALANATIVE_GC_CONFIG_LOG_FILE
+static const char GC_builtinLogFile[] = SCALANATIVE_GC_CONFIG_LOG_FILE;
+#else
+static const char *GC_builtinLogFile = NULL;
+#endif
 static bool GC_logInitialized = false;
 
 // Output stream - default to stderr, can be redirected to file
@@ -87,8 +95,11 @@ void GC_Log_Init(void) {
     // Default output to stderr
     GC_logOutput = stderr;
 
-    // Check for log file redirection
-    char *fileEnv = getenv("GC_LOG_FILE");
+    // Check for log file redirection. An empty GC_LOG_FILE selects stderr
+    // also when a log file was set in the build.
+    const char *fileEnv = getenv("GC_LOG_FILE");
+    if (fileEnv == NULL)
+        fileEnv = GC_builtinLogFile;
     if (fileEnv != NULL && fileEnv[0] != '\0') {
         FILE *logFile = fopen(fileEnv, "a");
         if (logFile != NULL) {
@@ -102,7 +113,7 @@ void GC_Log_Init(void) {
     }
 
     // Default level
-    GC_logLevel = GC_LOG_LEVEL_WARN;
+    GC_logLevel = SCALANATIVE_GC_CONFIG_LOG_LEVEL;
 
     char *levelEnv = getenv("SCALANATIVE_GC_LOG_LEVEL");
     if (levelEnv != NULL) {

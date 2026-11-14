@@ -86,7 +86,9 @@ size_t scalanative_GC_get_init_heapsize() { return Settings_MinHeapSize(); }
 /* then this size will be returned.*/
 /* Otherwise, the total size of the physical memory (guarded) will be returned*/
 size_t scalanative_GC_get_max_heapsize() {
-    return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE", Heap_getMemoryLimit());
+    return Parse_Env_Or_Default(
+        "GC_MAXIMUM_HEAP_SIZE",
+        GC_CONFIG_MAX_HEAP_SIZE_OR(Heap_getMemoryLimit()));
 }
 
 size_t scalanative_GC_get_used_heapsize() { return Heap_getMemoryUsed(&heap); }
