@@ -508,7 +508,20 @@ private[lang] object PosixThread extends NativeThread.Companion {
   def adoptCurrentThread(thread: Thread): PosixThread =
     new PosixThread(thread, 0L, isExternalThread = true)
 
-  @alwaysinline def yieldThread(): Unit = sched_yield()
+  // sched_yield() depresses the priority of the thread, in the simulators of
+  // Apple platforms it costs a whole time slice (~10ms)
+  @alwaysinline def yieldThread(): Unit =
+    if (isAppleSimulator) mach.thread_switch(0.toUInt, 0, 0.toUInt)
+    else sched_yield()
+
+  @extern private object mach {
+    // thread_switch(MACH_PORT_NULL, SWITCH_OPTION_NONE, 0)
+    def thread_switch(
+        thread: CUnsignedInt,
+        option: CInt,
+        time: CUnsignedInt
+    ): CInt = extern
+  }
 
   override lazy val defaultOSStackSize: Long = {
     if (!isMultithreadingEnabled) 0L

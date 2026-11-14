@@ -68,16 +68,6 @@ object AssumesHelper {
     )
   }
 
-  /* sched_yield() executed in the simulators of Apple platforms always gives up the remaining
-   * time slice (~10ms), tests yielding in a hot loop would time out.
-   */
-  def assumeThreadYieldIsCheap() = {
-    Assume.assumeFalse(
-      "Thread.yield() in the simulator blocks for a whole time slice",
-      Platform.isAppleSimulator
-    )
-  }
-
   def assumeNotCrossCompiling() = {
     Assume.assumeFalse(
       "Ignore when running in emulated mode",
