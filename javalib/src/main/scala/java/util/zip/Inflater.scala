@@ -91,8 +91,6 @@ class Inflater(noHeader: Boolean) extends AutoCloseable {
       throw new ArrayIndexOutOfBoundsException()
     } else if (stream == null) {
       throw new NullPointerException()
-    } else if (needsInput()) {
-      0
     } else {
       val neededDict = doesNeedDictionary
       doesNeedDictionary = false
@@ -119,6 +117,8 @@ class Inflater(noHeader: Boolean) extends AutoCloseable {
       inLength = 0
       inRead = 0
       inputBuffer = null
+      stream.nextIn = null
+      stream.availableIn = 0.toUInt
       val err = zlib.inflateReset(stream)
       if (err != zlib.Z_OK) {
         throw new ZipException(err.toString)
@@ -172,7 +172,7 @@ class Inflater(noHeader: Boolean) extends AutoCloseable {
     val err = zlib.inflate(stream, zlib.Z_SYNC_FLUSH)
 
     if (err != zlib.Z_OK) {
-      if (err == zlib.Z_STREAM_ERROR) {
+      if (err == zlib.Z_STREAM_ERROR || err == zlib.Z_BUF_ERROR) {
         0
       } else if (err == zlib.Z_STREAM_END || err == zlib.Z_NEED_DICT) {
         val totalIn = stream.totalIn
