@@ -269,10 +269,7 @@ object FileHelpers {
                 ErrorCodes.ERROR_ALREADY_EXISTS =>
               false
             case errCode =>
-              throw WindowsException(
-                s"Cannot create new file $path",
-                errorCode = errCode
-              )
+              throw WindowsException.onPathWithLastEror(path, errCode)
           }
       } else {
         val fd = fcntl.open(
