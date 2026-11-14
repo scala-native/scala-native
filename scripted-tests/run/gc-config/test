@@ -1,0 +1,33 @@
+# =============================================================================
+# GarbageCollectorConfig
+# =============================================================================
+# The settings of nativeConfig.garbageCollectorConfig are built into the
+# program, the environment variables of the program override them, and
+# settings which are unsupported or invalid fail the build.
+
+# -----------------------------------------------------------------------------
+# Immix GC
+# -----------------------------------------------------------------------------
+> set nativeConfig ~= { _.withGC(scala.scalanative.build.GC.immix) }
+> checkBuiltInSettings
+
+# -----------------------------------------------------------------------------
+# Commix GC
+# -----------------------------------------------------------------------------
+> set nativeConfig ~= { _.withGC(scala.scalanative.build.GC.commix).withGarbageCollectorConfig(_.withThreads(2)) }
+> checkBuiltInSettings
+
+# -----------------------------------------------------------------------------
+# Settings failing the build
+# -----------------------------------------------------------------------------
+# threads are supported only by Commix
+> set nativeConfig ~= { _.withGC(scala.scalanative.build.GC.immix) }
+-> nativeLink
+
+# initial heap larger than the maximal one
+> set nativeConfig ~= { _.withGarbageCollectorConfig(_ => scala.scalanative.build.GarbageCollectorConfig.default.withInitialHeapSize(2.gb).withMaxHeapSize(1.gb)) }
+-> nativeLink
+
+# valid again
+> set nativeConfig ~= { _.withGarbageCollectorConfig(_.withInitialHeapSize(1.gb)) }
+> nativeLink

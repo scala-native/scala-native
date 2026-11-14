@@ -28,7 +28,10 @@ INLINE Stats *Heap_createMutatorStats(void) {
     char *statsFile = Settings_StatsFileName();
     if (statsFile != NULL) {
         Stats *stats = malloc(sizeof(Stats));
-        Stats_Init(stats, statsFile, MUTATOR_THREAD_ID);
+        if (!Stats_Init(stats, statsFile, MUTATOR_THREAD_ID)) {
+            free(stats);
+            return NULL;
+        }
         return stats;
     } else {
         return NULL;
@@ -42,7 +45,10 @@ INLINE Stats *Heap_createStatsForThread(int id) {
         char *threadSpecificFile = (char *)malloc(len);
         snprintf(threadSpecificFile, len, "%s.t%d", statsFile, id);
         Stats *stats = malloc(sizeof(Stats));
-        Stats_Init(stats, threadSpecificFile, (uint8_t)id);
+        if (!Stats_Init(stats, threadSpecificFile, (uint8_t)id)) {
+            free(stats);
+            return NULL;
+        }
         return stats;
     } else {
         return NULL;

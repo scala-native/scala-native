@@ -1,6 +1,7 @@
 #if defined(SCALANATIVE_GC_IMMIX) || defined(SCALANATIVE_GC_COMMIX)
 
 #include "Settings.h"
+#include "GCConfig.h"
 #include "Parsing.h"
 #include "Log.h"
 
@@ -8,8 +9,9 @@
 // Static state for cached settings
 // =============================================================================
 static bool syncSettingsInitialized = false;
-static uint64_t syncTimeoutMs = GC_SYNC_TIMEOUT_MS_DEFAULT;
-static uint64_t syncWarningIntervalMs = GC_SYNC_WARNING_INTERVAL_MS_DEFAULT;
+static uint64_t syncTimeoutMs = SCALANATIVE_GC_CONFIG_SYNC_TIMEOUT_MS;
+static uint64_t syncWarningIntervalMs =
+    SCALANATIVE_GC_CONFIG_SYNC_WARNING_INTERVAL_MS;
 
 // =============================================================================
 // GC Synchronization Settings Implementation
@@ -20,13 +22,13 @@ void SharedSettings_Init(void) {
     syncSettingsInitialized = true;
 
     // Parse sync timeout (0 means disabled - will wait forever)
-    syncTimeoutMs = Parse_Env_Or_Default_Long(GC_SYNC_TIMEOUT_MS_SETTING,
-                                              GC_SYNC_TIMEOUT_MS_DEFAULT);
+    syncTimeoutMs = Parse_Env_Or_Default_Long(
+        GC_SYNC_TIMEOUT_MS_SETTING, SCALANATIVE_GC_CONFIG_SYNC_TIMEOUT_MS);
 
     // Parse warning interval (must be > 0)
-    uint64_t warningVal =
-        Parse_Env_Or_Default_Long(GC_SYNC_WARNING_INTERVAL_MS_SETTING,
-                                  GC_SYNC_WARNING_INTERVAL_MS_DEFAULT);
+    uint64_t warningVal = Parse_Env_Or_Default_Long(
+        GC_SYNC_WARNING_INTERVAL_MS_SETTING,
+        SCALANATIVE_GC_CONFIG_SYNC_WARNING_INTERVAL_MS);
     if (warningVal > 0) {
         syncWarningIntervalMs = warningVal;
     }

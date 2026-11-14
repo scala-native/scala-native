@@ -182,6 +182,21 @@ object ScalaNativePluginInternal {
   private final val isGeneratingForIDE =
     sys.env.getOrElse("METALS_ENABLED", "false").toBoolean
 
+  /** Garbage collector settings read from the environment of the build. They
+   *  are an input of linking that is not a part of `nativeConfig`, so the link
+   *  tasks depend on it to not be served a stale result from the task cache of
+   *  sbt 2.
+   */
+  private val gcBuildEnvironment: Def.Initialize[Task[Seq[String]]] =
+    Def.task {
+      Def.uncached {
+        for {
+          name <- GarbageCollectorConfig.Settings.all.flatMap(_.envVar)
+          value <- sys.env.get(name)
+        } yield s"$name=$value"
+      }
+    }
+
   private def nativeLinkCachedTask(
       testConfig: Boolean,
       moduleSuffix: String,
@@ -194,6 +209,7 @@ object ScalaNativePluginInternal {
         val nativeLogger = sbtLogger.toLogger
         val classpath = PluginCompat.toNioPaths(fullClasspath.value)
         val userConfig = (linkKey / nativeConfig).value
+        val _ = gcBuildEnvironment.value
         val sourcesClassPath = resolveSourcesClassPath(
           userConfig,
           dependencyResolution.value,

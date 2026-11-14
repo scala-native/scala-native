@@ -12,78 +12,87 @@ system.
 
 ## Build settings via environment variables
 
-Two build settings, `nativeGC` and `nativeMode` can be changed via
-environment variables. They have default settings that are used unless
-changed. The setting that controls the garbage collector is
-`nativeGC`. Scala Native has a high performance Garbage
-Collector (GC) `immix` that comes with the system or the
-`boehm` GC which can be used when the supporting library is
-installed. The setting `none` also exists for a short
-running script or where memory is not an issue.
+All build settings live in the `nativeConfig` task of the sbt plugin, a
+`scala.scalanative.build.NativeConfig`. Its defaults for the garbage
+collector, the build mode, LTO and the optimizer are read from
+environment variables when `sbt` loads the build, so they can be changed
+without editing any build file.
+
+The garbage collector is selected with `SCALANATIVE_GC`. Scala Native has
+a high performance Garbage Collector (GC) `immix`, which is the default,
+its concurrent variant `commix`, and the `boehm` GC which can be used when
+the supporting library is installed. The value `none` also exists for a
+short running script or where memory is not an issue.
 
 Scala Native uses Continuous integration (CI) to compile and test the
 code on different platforms[^1] and using different garbage
-collectors[^2]. The Scala Native sbt plugin includes the
-ability to set an environment variable `SCALANATIVE_GC` to
-set the garbage collector value used by `sbt`. Setting this
-as follows will set the value in the plugin when `sbt` is
-run.
+collectors[^2], which are selected with this variable.
 
 ```shell
-$ export SCALANATIVE_GC=immix
+$ export SCALANATIVE_GC=commix
 $ sbt
-> show nativeGC
+> show sandbox3/nativeConfig
 ```
 
-This setting remains unless changed at the `sbt` prompt. If
-changed, the value will be restored to the environment variable value if
-`sbt` is restarted or `reload` is called at the
-`sbt` prompt. You can also revert to the default setting
-value by running `unset SCALANATIVE_GC` at the command line
-and then restarting `sbt`.
+The value is read again whenever `sbt` is restarted or `reload` is called
+at the `sbt` prompt. Run `unset SCALANATIVE_GC` at the command line and
+restart `sbt` to go back to the default.
 
-The `nativeMode` setting is controlled via the
-`SCALANATIVE_MODE` environment variable. The default mode,
-`debug` is designed to optimize but compile fast whereas the
-`release` mode performs additional optimizations and takes
-longer to compile. The `release-fast` mode builds faster,
-performs less optimizations, but may perform better than
-`release`. The `release-size` mode optimizes for
-reduced size.
+The build mode is controlled via the `SCALANATIVE_MODE` environment
+variable. The default mode, `debug` is designed to optimize but compile
+fast whereas the `release` mode performs additional optimizations and
+takes longer to compile. The `release-fast` mode builds faster, performs
+less optimizations, but may perform better than `release`. The
+`release-size` mode optimizes for reduced size.
 
-The `optimize` setting is controlled via the
-`SCALANATIVE_OPTIMIZE` environment variable. Valid values
-are `true` and `false`. The default value is
-`true`. This setting controls whether the Interflow
-optimizer is enabled or not.
+Link-time optimization is controlled via the `SCALANATIVE_LTO`
+environment variable. Valid values are `none`, `thin` and `full`.
+
+The Interflow optimizer is controlled via the `SCALANATIVE_OPTIMIZE`
+environment variable. Valid values are `true` and `false`. The default
+value is `true`.
 
 The path to used include and library dirs is controlled via environment
 variables the `SCALANATIVE_INCLUDE_DIRS` and
 `SCALANATIVE_LIB_DIRS`.
 
-## Setting the GC setting via `sbt`
+The settings of the selected garbage collector, e.g. `GC_MAXIMUM_HEAP_SIZE`
+or `SCALANATIVE_GC_LOG_LEVEL`, are also read from the environment when
+building, unless they are defined in the `GarbageCollectorConfig` of
+`nativeConfig`. They are described in the
+[runtime settings](../user/runtime.md) of the user guide.
 
-The GC setting is only used during the link phase of the Scala Native
-compiler so it can be applied to one or all the Scala Native projects
-that use the `sbtScalaNative` plugin. This is an example to
-only change the setting for the `sandbox`.
+## Changing `nativeConfig` via `sbt`
+
+There are no separate sbt settings for the GC or the build mode, they are
+changed by updating `nativeConfig`. The config is only used during the
+link phase of the Scala Native compiler so it can be applied to one or
+all the Scala Native projects that use the `sbtScalaNative` plugin. This
+is an example to only change the GC of the `sandbox`.
 
 ``` text
 $ sbt
-> show nativeGC
-> set nativeGC in sandbox := "none"
-> show nativeGC
-> sandbox/run
+> show sandbox3/nativeConfig
+> set sandbox3/nativeConfig ~= { _.withGC(scala.scalanative.build.GC.none) }
+> show sandbox3/nativeConfig
+> sandbox3/run
 ```
 
-The following shows how to set `nativeGC` on all the projects.
+The following shows how to set the GC on all the projects. A change made
+for a single project, like the one above, is applied on top of it, run
+`session clear` first to drop such changes.
 
 ``` text
-> set every nativeGC := "immix"
-> show nativeGC
+> set ThisBuild / nativeConfig ~= { _.withGC(scala.scalanative.build.GC.immix) }
 ```
 
-The same process above will work for setting `nativeMode`.
+The same process works for the other settings, e.g.
+`_.withMode(scala.scalanative.build.Mode.releaseFast)` for the build mode
+or `_.withGarbageCollectorConfig(_.withMaxHeapSize(1.gb))` for the
+settings of the garbage collector. To keep a local change across `sbt`
+restarts put it in an untracked `.sbt` file in the root of the
+repository. See the [sbt settings](../user/sbt.md) of the user guide for
+the scopes of `nativeConfig`.
 
 ## Organization of the build
 

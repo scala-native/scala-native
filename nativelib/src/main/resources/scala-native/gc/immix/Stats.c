@@ -6,16 +6,22 @@
 #endif
 
 #include "Stats.h"
+#include "shared/Log.h"
 #include <stdio.h>
 #include <inttypes.h>
 
 void Stats_writeToFile(Stats *stats);
 
-void Stats_Init(Stats *stats, const char *statsFile) {
+bool Stats_Init(Stats *stats, const char *statsFile) {
     stats->outFile = fopen(statsFile, "w");
+    if (stats->outFile == NULL) {
+        GC_LOG_WARN("Failed to open GC stats file: %s", statsFile);
+        return false;
+    }
     fprintf(stats->outFile,
             "mark_time_ns,nullify_time_ns,sweep_time_ns,sync_time_ns\n");
     stats->collections = 0;
+    return true;
 }
 
 void Stats_RecordCollection(Stats *stats, uint64_t request_ns,

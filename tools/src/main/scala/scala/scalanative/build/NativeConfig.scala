@@ -36,6 +36,9 @@ sealed trait NativeConfig {
   /** The garbage collector to use. */
   def gc: GC
 
+  /** Settings of the selected garbage collector. */
+  def garbageCollectorConfig: GarbageCollectorConfig
+
   /** The LTO mode to use used during a release build. */
   def lto: LTO
 
@@ -228,6 +231,18 @@ sealed trait NativeConfig {
   /** Create a new config with given garbage collector. */
   def withGC(value: GC): NativeConfig
 
+  /** Create a new config with given settings of the garbage collector. */
+  final def withGarbageCollectorConfig(
+      value: GarbageCollectorConfig
+  ): NativeConfig = withGarbageCollectorConfig(_ => value)
+
+  /** Update the settings of the garbage collector, for example
+   *  `withGarbageCollectorConfig(_.withMaxHeapSize(MemorySize.gb(1)))`
+   */
+  def withGarbageCollectorConfig(
+      update: Mapping[GarbageCollectorConfig]
+  ): NativeConfig
+
   /** Create a new config with the given lto mode. */
   def withLTO(value: LTO): NativeConfig
 
@@ -336,6 +351,7 @@ object NativeConfig {
       cppOptions = Seq.empty,
       targetTriple = None,
       gc = GC.default,
+      garbageCollectorConfig = GarbageCollectorConfig.default,
       lto = LTO.default,
       mode = Mode.default,
       buildTarget = BuildTarget.default,
@@ -368,6 +384,7 @@ object NativeConfig {
       cppOptions: Seq[String],
       targetTriple: Option[String],
       gc: GC,
+      garbageCollectorConfig: GarbageCollectorConfig,
       lto: LTO,
       mode: Mode,
       buildTarget: BuildTarget,
@@ -427,6 +444,11 @@ object NativeConfig {
 
     def withGC(value: GC): NativeConfig =
       copy(gc = value)
+
+    def withGarbageCollectorConfig(
+        update: Mapping[GarbageCollectorConfig]
+    ): NativeConfig =
+      copy(garbageCollectorConfig = update(garbageCollectorConfig))
 
     def withMode(value: Mode): NativeConfig =
       copy(mode = value)
@@ -540,6 +562,7 @@ object NativeConfig {
           | - cppOptions:              ${showSeq(cppOptions)}
           | - targetTriple:            $targetTriple
           | - GC:                      $gc
+          | - garbageCollectorConfig:  ${garbageCollectorConfig.show(" " * 4)}
           | - LTO:                     $lto
           | - mode:                    $mode
           | - buildTarget              $buildTarget

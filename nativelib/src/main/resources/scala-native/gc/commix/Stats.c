@@ -6,6 +6,7 @@
 #endif
 
 #include "Stats.h"
+#include "shared/Log.h"
 #include "shared/GCTypes.h"
 #include <stdio.h>
 #include <inttypes.h>
@@ -18,11 +19,16 @@ const char *const Stats_eventNames[] = {
     "sweep_batch", "coalesce_batch", "mark_waiting", "nullify_waiting",
     "sync",        "stop_mutators",  "wait_sweep"};
 
-void Stats_Init(Stats *stats, const char *statsFile, int8_t gc_thread) {
+bool Stats_Init(Stats *stats, const char *statsFile, int8_t gc_thread) {
     stats->outFile = fopen(statsFile, "w");
+    if (stats->outFile == NULL) {
+        GC_LOG_WARN("Failed to open GC stats file: %s", statsFile);
+        return false;
+    }
     stats->gc_thread = gc_thread;
     fprintf(stats->outFile, "event_type,gc_thread,start_ns,time_ns\n");
     stats->events = 0;
+    return true;
 }
 
 void Stats_CollectionStarted(Stats *stats) {

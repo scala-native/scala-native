@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include "shared/MemoryMap.h"
 #include "shared/MemoryInfo.h"
+#include "shared/GCConfig.h"
 #include "shared/Parsing.h"
 #include "shared/ThreadUtil.h"
 #include "shared/ScalaNativeGC.h"
@@ -20,7 +21,7 @@
 #include <stdatomic.h>
 
 // Dummy GC that maps chunks of memory and allocates but never frees.
-#define DEFAULT_CHUNK_SIZE "64M"
+#define DEFAULT_CHUNK_SIZE ((size_t)64 * 1024 * 1024)
 
 #if defined(__has_feature)
 #if __has_feature(address_sanitizer)
@@ -85,11 +86,13 @@ static void throwOutOfMemory() {
 }
 
 size_t scalanative_GC_get_init_heapsize() {
-    return Parse_Env_Or_Default("GC_INITIAL_HEAP_SIZE", 0L);
+    return Parse_Env_Or_Default("GC_INITIAL_HEAP_SIZE",
+                                GC_CONFIG_INITIAL_HEAP_SIZE_OR(0L));
 }
 
 size_t scalanative_GC_get_max_heapsize() {
-    return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE", getMemorySize());
+    return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE",
+                                GC_CONFIG_MAX_HEAP_SIZE_OR(getMemorySize()));
 }
 
 size_t scalanative_GC_get_used_heapsize() { return TOTAL_ALLOCATED; }
@@ -108,17 +111,20 @@ void Prealloc_Or_Default() {
         // Every starting thread would want to allocate chunk of memory.
         // We want to limit their size to prevent OOM errors.
         DEFAULT_CHUNK =
-            Choose_IF(Parse_Env_Or_Default_String("GC_THREAD_HEAP_BLOCK_SIZE",
-                                                  DEFAULT_CHUNK_SIZE),
+            Choose_IF(Parse_Env_Or_Default(
+                          "GC_THREAD_HEAP_BLOCK_SIZE",
+                          (size_t)SCALANATIVE_GC_CONFIG_THREAD_HEAP_BLOCK_SIZE),
                       Less_OR_Equal, memorySize);
         // Preallocation not support in multithreading mode
 #else
         DEFAULT_CHUNK =
-            Choose_IF(Parse_Env_Or_Default_String("GC_MAXIMUM_HEAP_SIZE",
-                                                  DEFAULT_CHUNK_SIZE),
+            Choose_IF(Parse_Env_Or_Default(
+                          "GC_MAXIMUM_HEAP_SIZE",
+                          GC_CONFIG_MAX_HEAP_SIZE_OR(DEFAULT_CHUNK_SIZE)),
                       Less_OR_Equal, memorySize);
         PREALLOC_CHUNK = // Preallocation
-            Choose_IF(Parse_Env_Or_Default("GC_INITIAL_HEAP_SIZE", 0L),
+            Choose_IF(Parse_Env_Or_Default("GC_INITIAL_HEAP_SIZE",
+                                           GC_CONFIG_INITIAL_HEAP_SIZE_OR(0L)),
                       Less_OR_Equal, DEFAULT_CHUNK);
 #endif
 

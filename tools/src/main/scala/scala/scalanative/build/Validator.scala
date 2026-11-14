@@ -58,6 +58,10 @@ private[build] object Validator {
         "LTO.thin is unstable on MacOS, it can lead to compilation errors. Consider using LTO.full (legacy, slower) or LTO.none (disabled)"
       )
 
+    val gcConfig = GarbageCollectorConfig.Settings.resolve(c)
+    gcConfig.warnings.foreach(warn)
+    issues ++= gcConfig.issues.map("Garbage collector setting " + _)
+
     issues.result() match {
       case Nil    => config
       case issues =>

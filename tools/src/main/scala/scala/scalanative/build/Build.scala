@@ -259,8 +259,10 @@ object Build {
     // - the output native binary ('s mtime)
     // Since the NIR code is shipped in jars, we should be able to detect the changes in NIRs.
     // One thing we miss is, we cannot detect changes in c libraries somewhere in `/usr/lib`.
+    // - settings of the garbage collector in the environment of the build
     (
       config,
+      GarbageCollectorConfig.Settings.resolve(config.compilerConfig).values,
       config.classPath.map(getLastModifiedChild(_)),
       getLastModified(config.artifactPath)
     ).hashCode()
@@ -319,14 +321,22 @@ object Build {
 
   private[scalanative] final val userConfigHashFile = "userConfigHash"
 
+  /* Includes the settings of the garbage collector taken from the environment
+   * of the build, which are built into the program like the ones of the config.
+   */
+  private def userConfigHash(config: Config): String = (
+    config.compilerConfig,
+    GarbageCollectorConfig.Settings.resolve(config.compilerConfig).values
+  ).##.toString()
+
   private[scalanative] def userConfigHasChanged(config: Config): Boolean =
     IO.readFully(config.workDir.resolve(userConfigHashFile))
-      .forall(_.trim() != config.compilerConfig.##.toString())
+      .forall(_.trim() != userConfigHash(config))
 
   private[scalanative] def dumpUserConfigHash(config: Config): Unit =
     IO.write(
       path = config.workDir.resolve(userConfigHashFile),
-      content = config.compilerConfig.##.toString()
+      content = userConfigHash(config)
     )
 
   private def await[T](

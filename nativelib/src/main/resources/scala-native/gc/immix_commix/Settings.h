@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "shared/GCConfig.h"
 #include "shared/Settings.h"
 
 // =============================================================================
@@ -17,9 +18,12 @@
 // =============================================================================
 size_t Settings_MinHeapSize(void);
 size_t Settings_MaxHeapSize(void);
+// The name of the file in GC_STATS_FILE, else the one set in the build, else
+// NULL. An empty GC_STATS_FILE yields NULL, and so does a build without the
+// statistics enabled.
 char *Settings_StatsFileName(void);
-// The ratio in environment variable `name`, or `defaultRatio` when it is not
-// set or not a number.
+// The ratio in environment variable `name`, or `defaultRatio`, the one built
+// into the program, when it is not set or not a number.
 double Settings_Ratio(const char *name, double defaultRatio);
 
 // =============================================================================

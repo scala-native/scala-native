@@ -23,9 +23,9 @@
  */
 void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     heap->maxGcTimeRatio =
-        Settings_Ratio("GC_TIME_RATIO", DEFAULT_GC_TIME_RATIO);
-    heap->maxFreeRatio =
-        Settings_Ratio("GC_MAX_FREE_RATIO", DEFAULT_MAX_FREE_RATIO);
+        Settings_Ratio("GC_TIME_RATIO", SCALANATIVE_GC_CONFIG_TIME_RATIO);
+    heap->maxFreeRatio = Settings_Ratio("GC_MAX_FREE_RATIO",
+                                        SCALANATIVE_GC_CONFIG_MAX_FREE_RATIO);
     size_t memoryLimit = Heap_getMemoryLimit();
 
     if (maxHeapSize < MIN_HEAP_SIZE) {
@@ -128,7 +128,10 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     char *statsFile = Settings_StatsFileName();
     if (statsFile != NULL) {
         heap->stats = malloc(sizeof(Stats));
-        Stats_Init(heap->stats, statsFile);
+        if (!Stats_Init(heap->stats, statsFile)) {
+            free(heap->stats);
+            heap->stats = NULL;
+        }
     }
     mutex_init(&heap->lock);
 }
