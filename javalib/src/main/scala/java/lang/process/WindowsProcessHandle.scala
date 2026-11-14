@@ -8,6 +8,7 @@ import scala.annotation.tailrec
 import scala.language.existentials
 
 import scala.scalanative.javalib.io.ObjectHandle
+import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.windows._
@@ -62,28 +63,35 @@ object WindowsProcessHandle {
           timeout: Long,
           unitOpt: Option[TimeUnit]
       ): Boolean = unitOpt match {
-        case None       => waitOnce(Constants.Infinite).getOrElse(false)
+        case None       => waitUntil(None)
         case Some(unit) =>
-          val deadline = System.nanoTime() + Math.max(0L, unit.toNanos(timeout))
-          waitUntil(deadline)
+          waitUntil(
+            Some(System.nanoTime() + Math.max(0L, unit.toNanos(timeout)))
+          )
       }
 
-      // Constants.Infinite (0xFFFFFFFF) must never be passed for finite waits
-      private final val MaxWaitMillis = 0xfffffffeL
+      /* Constants.Infinite (0xFFFFFFFF) must never be passed for finite waits.
+       * With multithreading, wait in short slices to notice interrupts.
+       */
+      private final val MaxWaitMillis =
+        if (LinktimeInfo.isMultithreadingEnabled) 100L else 0xfffffffeL
 
       @tailrec
-      private def waitUntil(deadline: Long): Boolean = {
-        val remainingNanos = deadline - System.nanoTime()
-        // round up, so that a sub-millisecond remainder still waits
-        val remainingMillis =
+      private def waitUntil(deadline: Option[Long]): Boolean = {
+        val remainingMillis = deadline.fold(Long.MaxValue) { deadline =>
+          val remainingNanos = deadline - System.nanoTime()
+          // round up, so that a sub-millisecond remainder still waits
           if (remainingNanos <= 0L) 0L
           else (remainingNanos - 1L) / 1000000L + 1L
+        }
         val capped = remainingMillis > MaxWaitMillis
-        val millis = Math.clamp(remainingMillis, 0L, MaxWaitMillis)
+        val millis = Math.min(remainingMillis, MaxWaitMillis)
         waitOnce(millis.toUInt) match {
           case Some(res)      => res
-          case None if capped => waitUntil(deadline)
-          case None           => false
+          case None if capped =>
+            if (Thread.interrupted()) throw new InterruptedException()
+            waitUntil(deadline)
+          case None => false
         }
       }
 
