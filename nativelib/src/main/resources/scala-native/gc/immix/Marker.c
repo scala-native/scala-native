@@ -1,4 +1,5 @@
 #if defined(SCALANATIVE_GC_IMMIX)
+#include "immix_commix/ObjectTracer.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <setjmp.h>
@@ -82,8 +83,23 @@ void Marker_markConservative(Heap *heap, Stack *stack, word_t *address) {
     }
 }
 
+// What the callbacks of shared/GCHooks.h scan into.
+typedef struct ScanContext {
+    Heap *heap;
+    Stack *stack;
+} ScanContext;
+
+static void Marker_scanRange(void *ctx, void *low, void *high) {
+    ScanContext *context = ctx;
+    Marker_markRange(context->heap, context->stack, (word_t **)low,
+                     (word_t **)high, sizeof(word_t));
+}
+
 void Marker_Mark(Heap *heap, Stack *stack) {
     Bytemap *bytemap = heap->bytemap;
+    // Does not change during a collection; read once, not for every object.
+    void *const tracedRtti =
+        atomic_load_explicit(&ObjectTracer_rtti, memory_order_relaxed);
     while (!Stack_IsEmpty(stack)) {
         Object *object = Stack_Pop(stack);
         const int objectId = object->rtti->rt.id;
@@ -120,6 +136,10 @@ void Marker_Mark(Heap *heap, Stack *stack) {
                 if (Heap_IsWordInHeap(heap, rawPtr)) {
                     Marker_markConservative(heap, stack, rawPtr);
                 }
+            } else if (UNLIKELY((void *)object->rtti == tracedRtti)) {
+                ScanContext context = {heap, stack};
+                atomic_load (&ObjectTracer_trace)((void **)object->fields,
+                                                  Marker_scanRange, &context);
             }
         }
     }
@@ -159,6 +179,8 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
         // Can spuriously fail, very rare, yet deadly
         stackTop = MutatorThread_getStackTop(thread, false);
     } while (stackTop == NULL);
+    stackBottom = (word_t **)threadStackScanBottom(thread->threadInfo, stackTop,
+                                                   stackBottom);
 #ifdef SCALANATIVE_THREAD_ALT_STACK
     // Keep the captured SP until stack bounds are known.
     if (thread->threadInfo != NULL && thread->threadInfo->stackTop != NULL &&
@@ -231,6 +253,8 @@ void Marker_MarkRoots(Heap *heap, Stack *stack) {
     }
     Marker_markModules(heap, stack);
     Marker_markCustomRoots(heap, stack, customRoots);
+    ScanContext context = {heap, stack};
+    GCHooks_scanDynamicRoots(Marker_scanRange, &context);
     Marker_Mark(heap, stack);
 }
 

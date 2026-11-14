@@ -16,13 +16,13 @@
 __attribute__((used)) static void *const scalanative_unwind_api =
     (void *)&_Unwind_GetIPInfo;
 
-#if defined(__SCALANATIVE_DELIMCC)
-#include "delimcc.h"
+#if defined(__SCALANATIVE_DELIMCC_MULTISHOT)
+#include "delimcc_multishot.h"
 #include <setjmp.h>
 #endif
 
-#if defined(__SCALANATIVE_DELIMCC)
-#include "delimcc.h"
+#if defined(__SCALANATIVE_DELIMCC_MULTISHOT)
+#include "delimcc_multishot.h"
 #include <setjmp.h>
 #endif
 
@@ -445,7 +445,7 @@ __attribute__((noreturn)) void scalanative_throw(Exception obj) {
     _Unwind_Reason_Code code = _Unwind_RaiseException(unwindException);
 
     if (code == _URC_END_OF_STACK) {
-#if defined(__SCALANATIVE_DELIMCC)
+#if defined(__SCALANATIVE_DELIMCC_MULTISHOT)
         /* If we're inside a resumed continuation, escape to the resumer instead
          * of aborting. Unwinding already ran and found no handler (or could not
          * traverse the copied stack); local try/catch in the continuation body

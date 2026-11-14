@@ -33,6 +33,13 @@ typedef struct ThreadInfo {
     void *signalHandlerStack;
     size_t signalHandlerStackSize;
 #endif
+    /* Lowest address that is inaccessible together with stackGuardPage and
+     * made accessible with it on a stack overflow; NULL when only that page
+     * is. Set for the stacks of continuations. */
+    void *stackGuardLow;
+    /* The guard was made accessible by a stack overflow and not yet
+     * protected again. Outlives pendingStackOverflowException. */
+    bool stackGuardOpen;
 } ThreadInfo;
 
 extern SN_ThreadLocal ThreadInfo currentThreadInfo;
