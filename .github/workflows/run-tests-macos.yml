@@ -155,3 +155,152 @@ jobs:
         #   SCALANATIVE_MODE: release-fast
         #   SCALANATIVE_LTO: thin
         run: sbt "test-runtime ${{ matrix.scala }}"
+
+  # Builds and runs the tests inside of the iOS simulator
+  test-ios-simulator:
+    name: Test iOS simulator
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
+    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [3]
+        build-mode: [release-fast]
+        gc: [commix]
+    env:
+      SCALANATIVE_MODE: ${{ matrix.build-mode }}
+      SCALANATIVE_GC: ${{ matrix.gc }}
+      SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/macos-setup-env
+        with:
+          scala-version: ${{matrix.scala}}
+          llvm-version: 19
+      - uses: ./.github/actions/ios-simulator-setup
+      - name: Target simulator
+        run: |
+          echo "SCALANATIVE_TARGET_RUNNER=$GITHUB_WORKSPACE/scripts/ci/ios-simulator/run.sh" >> "$GITHUB_ENV"
+          echo "SCALANATIVE_TARGET_TRIPLE=$(uname -m)-apple-ios${IOS_MIN_VERSION}-simulator" >> "$GITHUB_ENV"
+
+      - name: Test GCs
+        timeout-minutes: 45
+        run: sbt -J-Xmx5G "test-gc ${{matrix.scala}}"
+
+      - name: Run unit tests
+        if: ${{ !cancelled() }}
+        timeout-minutes: 60
+        run: sbt -J-Xmx5G "tests${{env.project-version}}/test"
+
+  test-ios-simulator-ext:
+    name: Test iOS simulator extension
+    if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
+    runs-on: macos-15
+    needs: [test-ios-simulator]
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [3]
+        build-mode: [debug]
+        gc: [immix, commix]
+        include:
+          - scala: 3
+            build-mode: release-fast
+            gc: immix
+    env:
+      SCALANATIVE_MODE: ${{ matrix.build-mode }}
+      SCALANATIVE_GC: ${{ matrix.gc }}
+      SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/macos-setup-env
+        with:
+          scala-version: ${{matrix.scala}}
+          llvm-version: 19
+      - uses: ./.github/actions/ios-simulator-setup
+      - name: Target simulator
+        run: |
+          echo "SCALANATIVE_TARGET_RUNNER=$GITHUB_WORKSPACE/scripts/ci/ios-simulator/run.sh" >> "$GITHUB_ENV"
+          echo "SCALANATIVE_TARGET_TRIPLE=$(uname -m)-apple-ios${IOS_MIN_VERSION}-simulator" >> "$GITHUB_ENV"
+
+      - name: Run unit tests
+        timeout-minutes: 60
+        run: sbt -J-Xmx5G "tests${{env.project-version}}/test"
+
+  # Scala Native code used as a static library from a foreign host program
+  # running its own threads, the way an iOS application would embed it.
+  test-ios-static-library:
+    name: Test static library in iOS simulator
+    if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
+    runs-on: macos-15
+    needs: [test-ios-simulator]
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [3]
+        build-mode: [debug, release-fast]
+        gc: [immix]
+        include:
+          - scala: 3
+            build-mode: debug
+            gc: commix
+    env:
+      SCALANATIVE_MODE: ${{ matrix.build-mode }}
+      SCALANATIVE_GC: ${{ matrix.gc }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/macos-setup-env
+        with:
+          scala-version: ${{matrix.scala}}
+          llvm-version: 19
+      # The scripted test would be skipped if simulator is not available
+      - uses: ./.github/actions/ios-simulator-setup
+
+      - name: Test scripted
+        timeout-minutes: 60
+        run: sbt "test-scripted ${{matrix.scala}} run/ios-static-library"
+
+  # There is no way to execute binaries built for physical devices in the CI,
+  # tvOS and watchOS have no simulator launcher yet. Ensure at least that the
+  # runtime and tests can be compiled and linked for these targets.
+  build-apple-platforms:
+    name: Build ${{ matrix.target }}
+    if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
+    runs-on: macos-15
+    needs: [test-ios-simulator]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - scala: 3
+            target: arm64-apple-ios16.0
+            sdk: iphoneos
+          - scala: 3
+            target: arm64-apple-tvos16.0
+            sdk: appletvos
+          - scala: 3
+            target: arm64-apple-tvos16.0-simulator
+            sdk: appletvsimulator
+          - scala: 3
+            target: arm64-apple-watchos9.0-simulator
+            sdk: watchsimulator
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/macos-setup-env
+        with:
+          scala-version: ${{matrix.scala}}
+          llvm-version: 19
+
+      - name: Set target
+        run: |
+          echo "SCALANATIVE_TARGET_TRIPLE=${{ matrix.target }}" >> "$GITHUB_ENV"
+          echo "SDKROOT=$(xcrun --sdk ${{ matrix.sdk }} --show-sdk-path)" >> "$GITHUB_ENV"
+
+      - name: Link sandbox
+        timeout-minutes: 30
+        run: sbt "sandbox${{env.project-version}}/nativeLink"
+
+      - name: Link unit tests
+        if: ${{ !cancelled() }}
+        timeout-minutes: 45
+        run: sbt -J-Xmx5G "tests${{env.project-version}}/Test/nativeLink"
