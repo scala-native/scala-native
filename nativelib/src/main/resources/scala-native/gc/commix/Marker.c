@@ -323,7 +323,7 @@ int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
                                     rawPtr);
             objectsTraced += 1;
         }
-    } else if ((void *)object->rtti == ObjectTracer_rtti) {
+    } else if (UNLIKELY((void *)object->rtti == ObjectTracer_rtti)) {
         ScanContext context = {heap, stats, outHolder, outWeakRefHolder, 0};
         ObjectTracer_trace((void **)object->fields, Marker_scanRange, &context);
         objectsTraced += context.objectsTraced;

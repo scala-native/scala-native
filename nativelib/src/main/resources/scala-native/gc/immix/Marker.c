@@ -97,6 +97,8 @@ static void Marker_scanRange(void *ctx, void *low, void *high) {
 
 void Marker_Mark(Heap *heap, Stack *stack) {
     Bytemap *bytemap = heap->bytemap;
+    // Does not change during a collection; read once, not for every object.
+    void *const tracedRtti = ObjectTracer_rtti;
     while (!Stack_IsEmpty(stack)) {
         Object *object = Stack_Pop(stack);
         const int objectId = object->rtti->rt.id;
@@ -133,7 +135,7 @@ void Marker_Mark(Heap *heap, Stack *stack) {
                 if (Heap_IsWordInHeap(heap, rawPtr)) {
                     Marker_markConservative(heap, stack, rawPtr);
                 }
-            } else if ((void *)object->rtti == ObjectTracer_rtti) {
+            } else if (UNLIKELY((void *)object->rtti == tracedRtti)) {
                 ScanContext context = {heap, stack};
                 ObjectTracer_trace((void **)object->fields, Marker_scanRange,
                                    &context);
