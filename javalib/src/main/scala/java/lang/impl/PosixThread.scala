@@ -516,6 +516,7 @@ private[lang] object PosixThread extends NativeThread.Companion {
 
   @extern private object mach {
     // thread_switch(MACH_PORT_NULL, SWITCH_OPTION_NONE, 0)
+    @blocking
     def thread_switch(
         thread: CUnsignedInt,
         option: CInt,
