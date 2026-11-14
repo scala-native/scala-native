@@ -1,7 +1,10 @@
-// Ported from Scala.js commit: f7be410 dated: 2020-10-12
-
-/*
- *  Static method newLinkedHashMap added for Scala Native.
+/* Ported from Scala.js commit: f7be410 dated: 2020-10-12
+ *
+ * Contains Scala Native specific updates subsequent to original port.
+ * See Scala Native git repository history for comprehensive list.
+ * Briefly:
+ *   - Static method newLinkedHashMap
+ *   - JEP 431 Sequenced methods
  */
 
 package java.util
@@ -80,6 +83,17 @@ class LinkedHashMap[K, V](
     node.older = older
     node.younger = null
     youngest = node
+  }
+
+  private def prependToOrderedList(node: Node[K, V]): Unit = {
+    val younger = eldest
+    if (younger ne null)
+      younger.older = node
+    else
+      youngest = node
+    node.older = null
+    node.younger = younger
+    eldest = node
   }
 
   private def removeFromOrderedList(node: Node[K, V]): Unit = {
@@ -172,6 +186,113 @@ class LinkedHashMap[K, V](
     val result = new LinkedHashMap[K, V](size(), loadFactor, accessOrder)
     result.putAll(this)
     result
+  }
+
+  // JEP 431 SequencedMap methods. Since: Java 21
+
+  override def putFirst(key: K, value: V): V = {
+    val hmNode = findNode(key)
+
+    val previousValue =
+      if (hmNode == null) null.asInstanceOf[V]
+      else hmNode.value
+
+    val newNode =
+      if (hmNode != null) {
+        hmNode.value = value
+        hmNode
+      } else if (removeEldestEntry(eldest)) {
+        null.asInstanceOf[Node[K, V]]
+      } else {
+        put(key, value)
+        findNode(key)
+      }
+
+    if (newNode != null) {
+      val lhmNode = asMyNode(newNode)
+      if (lhmNode ne eldest) {
+        removeFromOrderedList(lhmNode)
+        prependToOrderedList(lhmNode)
+      }
+    }
+
+    previousValue
+  }
+
+  override def putLast(key: K, value: V): V = {
+    val hmNode = findNode(key)
+
+    if (hmNode == null) {
+      put(key, value)
+//        null.asInstanceOf[V]
+    } else {
+      val previousValue = hmNode.value
+      hmNode.value = value
+      val lhmNode = asMyNode(hmNode)
+
+      if (lhmNode.younger ne eldest) {
+        removeFromOrderedList(lhmNode)
+        appendToOrderedList(lhmNode)
+      }
+
+      previousValue
+    }
+
+  }
+
+  override def reversed(): SequencedMap[K, V] =
+    throw new UnsupportedOperationException(
+      "LinkedHashMap: reversed() is not-yet-implemented"
+    )
+
+  /* The JDK 27 doc implies that SequencedMap default
+   * methods are used. The implementations below vary a bit by
+   * using much more efficient O(1) access to 'eldest' (head) and
+   * 'youngest' (tail) afforded by the readily available doubly-linked list.
+   * There should be no user visible change, aside from improved performance.
+   */
+
+  override def firstEntry(): Map.Entry[K, V] = {
+    // JVM firstEntry() using accessOrder does not cause 'nodeWasAccessed()'
+    val entry = eldest
+    if (entry == null) null
+    else SequencedMap.CopyOfEntry(entry)
+  }
+
+  override def lastEntry(): Map.Entry[K, V] = {
+    /* JVM j lastEntry() using accessOrder probably does not call
+     * 'nodeWasAccessed()'. If it does, there no visible net change.
+     */
+    val entry = youngest
+    if (entry == null) null
+    else SequencedMap.CopyOfEntry(entry)
+  }
+
+  override def pollFirstEntry(): Map.Entry[K, V] = {
+    val fe = firstEntry()
+
+    if (fe != null) {
+      val savedEldest = eldest
+      removeFromOrderedList(eldest)
+      remove(savedEldest.key)
+    }
+
+    fe
+  }
+
+  override def pollLastEntry(): Map.Entry[K, V] = {
+    if (this.isEmpty()) null
+    else {
+      val le = lastEntry()
+
+      if (le != null) {
+        val entry = youngest
+        removeFromOrderedList(youngest)
+        remove(entry.key)
+      }
+
+      le
+    }
   }
 }
 
