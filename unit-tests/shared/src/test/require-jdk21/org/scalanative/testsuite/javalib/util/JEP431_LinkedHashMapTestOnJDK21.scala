@@ -6,8 +6,6 @@ import java.{lang => jl, util => ju}
 import org.junit.Assert._
 import org.junit.Test
 
-import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-
 /* This file exercises local overrides of SequencedMap default methods.
  *   - It exercises both insertion and access orders.
  *

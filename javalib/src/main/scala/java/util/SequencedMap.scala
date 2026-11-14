@@ -44,7 +44,7 @@ trait SequencedMap[K /* <: AnyRef */, V /* <: AnyRef */ ] extends Map[K, V] {
   def sequencedKeySet(): SequencedSet[K] = {
     val originMap = this
 
-    new SequencedSet[K] {
+    new AbstractSet[K] with SequencedSet[K] {
       val ks = originMap.keySet()
 
       override def add(e: K): Boolean =
@@ -59,13 +59,41 @@ trait SequencedMap[K /* <: AnyRef */, V /* <: AnyRef */ ] extends Map[K, V] {
       override def addLast(e: K): Unit =
         throw new UnsupportedOperationException
 
-      override def getFirst(): K = originMap.firstEntry().getKey()
+      override def getFirst(): K = {
+        val fe = originMap.firstEntry()
 
-      override def getLast(): K = originMap.lastEntry().getKey()
+        if (fe == null)
+          throw new NoSuchElementException()
+        else
+          fe.getKey()
+      }
 
-      override def removeFirst(): K = originMap.pollFirstEntry().getKey()
+      override def getLast(): K = {
+        val le = originMap.lastEntry()
 
-      override def removeLast(): K = originMap.pollLastEntry().getKey()
+        if (le == null)
+          throw new NoSuchElementException()
+        else
+          le.getKey()
+      }
+
+      override def removeFirst(): K = {
+        val fe = originMap.pollFirstEntry()
+
+        if (fe == null)
+          throw new NoSuchElementException()
+        else
+          fe.getKey()
+      }
+
+      override def removeLast(): K = {
+        val le = originMap.pollLastEntry()
+
+        if (le == null)
+          throw new NoSuchElementException()
+        else
+          le.getKey()
+      }
 
       override def reversed(): SequencedSet[K] =
         originMap.reversed().sequencedKeySet()
@@ -103,7 +131,6 @@ trait SequencedMap[K /* <: AnyRef */, V /* <: AnyRef */ ] extends Map[K, V] {
     val originMap = this
 
     new SequencedCollection[V] {
-
       val vc = originMap.values()
 
       override def add(e: V): Boolean =
@@ -118,13 +145,41 @@ trait SequencedMap[K /* <: AnyRef */, V /* <: AnyRef */ ] extends Map[K, V] {
       override def addLast(e: V): Unit =
         throw new UnsupportedOperationException
 
-      override def getFirst(): V = originMap.firstEntry().getValue()
+      override def getFirst(): V = {
+        val fe = originMap.firstEntry()
 
-      override def getLast(): V = originMap.lastEntry().getValue()
+        if (fe == null)
+          throw new NoSuchElementException()
+        else
+          fe.getValue()
+      }
 
-      override def removeFirst(): V = originMap.pollFirstEntry().getValue()
+      override def getLast(): V = {
+        val le = originMap.lastEntry()
 
-      override def removeLast(): V = originMap.pollLastEntry().getValue()
+        if (le == null)
+          throw new NoSuchElementException()
+        else
+          le.getValue()
+      }
+
+      override def removeFirst(): V = {
+        val fe = originMap.pollFirstEntry()
+
+        if (fe == null)
+          throw new NoSuchElementException()
+        else
+          fe.getValue()
+      }
+
+      override def removeLast(): V = {
+        val le = originMap.lastEntry()
+
+        if (le == null)
+          throw new NoSuchElementException()
+        else
+          le.getValue()
+      }
 
       override def reversed(): SequencedCollection[V] =
         originMap.reversed().sequencedValues()
@@ -162,7 +217,7 @@ trait SequencedMap[K /* <: AnyRef */, V /* <: AnyRef */ ] extends Map[K, V] {
     type E = Map.Entry[K, V]
     val originMap = this
 
-    new SequencedSet[E] {
+    new AbstractSet[E] with SequencedSet[E] {
       val es = originMap.entrySet()
 
       override def add(e: E): Boolean =
