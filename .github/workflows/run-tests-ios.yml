@@ -126,12 +126,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        scala: [3]
-        target:
-          - arm64-apple-ios16.0
-          - arm64-apple-tvos16.0
-          - arm64-apple-tvos16.0-simulator
-          - arm64-apple-watchos9.0-simulator
+        include:
+          - scala: 3
+            target: arm64-apple-ios16.0
+            sdk: iphoneos
+          - scala: 3
+            target: arm64-apple-tvos16.0
+            sdk: appletvos
+          - scala: 3
+            target: arm64-apple-tvos16.0-simulator
+            sdk: appletvsimulator
+          - scala: 3
+            target: arm64-apple-watchos9.0-simulator
+            sdk: watchsimulator
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/macos-setup-env
@@ -140,7 +147,9 @@ jobs:
           llvm-version: 19
 
       - name: Set target
-        run: echo "SCALANATIVE_TARGET_TRIPLE=${{ matrix.target }}" >> "$GITHUB_ENV"
+        run: |
+          echo "SCALANATIVE_TARGET_TRIPLE=${{ matrix.target }}" >> "$GITHUB_ENV"
+          echo "SDKROOT=$(xcrun --sdk ${{ matrix.sdk }} --show-sdk-path)" >> "$GITHUB_ENV"
 
       - name: Link sandbox
         timeout-minutes: 30

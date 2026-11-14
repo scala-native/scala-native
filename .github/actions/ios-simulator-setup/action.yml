@@ -25,3 +25,4 @@ runs:
         xcrun simctl list devices booted
         echo "IOS_SIMULATOR_UDID=$UDID" >> "$GITHUB_ENV"
         echo "IOS_MIN_VERSION=${{ inputs.ios-min-version }}" >> "$GITHUB_ENV"
+        echo "SDKROOT=$(xcrun --sdk iphonesimulator --show-sdk-path)" >> "$GITHUB_ENV"

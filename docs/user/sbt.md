@@ -326,17 +326,21 @@ fat binaries for Linux.
 ### Cross compilation to iOS, tvOS and watchOS
 
 These targets need the headers and libraries of a dedicated Xcode SDK
-instead of the ones found on the host. Use `Discover` to find the options
-for the given target triple (the SDK is located using `xcrun`):
+instead of the ones of the host. The SDK is not discovered automatically,
+set it explicitly using either the `SDKROOT` environment variable
+
+``` sh
+SDKROOT="$(xcrun --sdk iphonesimulator --show-sdk-path)" sbt nativeLink
+```
+
+or the compile and linking options:
 
 ``` scala
-import scala.scalanative.build.Discover
-
 nativeConfig ~= { c =>
-  val triple = "arm64-apple-ios16.0-simulator"
-  c.withTargetTriple(triple)
-    .withCompileOptions(Discover.compileOptions(triple))
-    .withLinkingOptions(Discover.linkingOptions(triple))
+  val sysroot = Seq("-isysroot", "/path/to/iPhoneSimulator.sdk")
+  c.withTargetTriple("arm64-apple-ios16.0-simulator")
+    .withCompileOptions(_ ++ sysroot)
+    .withLinkingOptions(_ ++ sysroot)
 }
 ```
 

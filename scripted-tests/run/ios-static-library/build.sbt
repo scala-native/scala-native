@@ -1,8 +1,6 @@
 import scala.sys.process.Process
 import scala.util.Try
 
-import scala.scalanative.build.Discover
-
 enablePlugins(ScalaNativePlugin)
 
 scalaVersion := {
@@ -24,16 +22,14 @@ val simulatorDevice = sys.env.get("IOS_SIMULATOR_UDID").filter(_.nonEmpty)
 def output(cmd: String*): Option[String] =
   Try(Process(cmd).!!.trim).toOption.filter(_.nonEmpty)
 
+lazy val simulatorSdk: Option[String] =
+  if (!sys.props("os.name").toLowerCase.startsWith("mac")) None
+  else output("xcrun", "--sdk", "iphonesimulator", "--show-sdk-path")
+lazy val simulatorSysroot: Seq[String] =
+  simulatorSdk.toSeq.flatMap(Seq("-isysroot", _))
+
 lazy val missingRequirement: Option[String] =
-  if (!sys.props("os.name").toLowerCase.startsWith("mac"))
-    Some("not a macOS host")
-  else if (output(
-        "xcrun",
-        "--sdk",
-        "iphonesimulator",
-        "--show-sdk-path"
-      ).isEmpty)
-    Some("iOS simulator SDK not found")
+  if (simulatorSdk.isEmpty) Some("iOS simulator SDK not found")
   else if (simulatorDevice.isEmpty &&
       !output("xcrun", "simctl", "list", "devices", "booted")
         .exists(_.contains("(Booted)")))
@@ -54,8 +50,8 @@ nativeConfig ~= { config =>
     config
       .withBuildTarget(scalanative.build.BuildTarget.libraryStatic)
       .withTargetTriple(simulatorTriple)
-      .withCompileOptions(Discover.compileOptions(simulatorTriple))
-      .withLinkingOptions(Discover.linkingOptions(simulatorTriple))
+      .withCompileOptions(_ ++ simulatorSysroot)
+      .withLinkingOptions(_ ++ simulatorSysroot)
       .withBaseName("test")
 }
 

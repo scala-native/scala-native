@@ -167,7 +167,22 @@ sealed trait Config {
    *  macOS, e.g. `iphoneos` or `appletvsimulator`.
    */
   private[scalanative] lazy val appleSdkName: Option[String] =
-    compilerConfig.targetTriple.flatMap(Discover.appleSdkName(_))
+    compilerConfig.targetTriple
+      .filter(_ => targetsApple)
+      .map(TargetTriple.parse(_))
+      .flatMap { triple =>
+        val isSimulator = triple.env == "simulator"
+        def sdk(device: String, simulator: String) =
+          Some(if (isSimulator) simulator else device)
+        triple.os match {
+          case "ios" if triple.env == "macabi" => None // uses the macOS SDK
+          case "ios"     => sdk("iphoneos", "iphonesimulator")
+          case "tvos"    => sdk("appletvos", "appletvsimulator")
+          case "watchos" => sdk("watchos", "watchsimulator")
+          case "xros"    => sdk("xros", "xrsimulator")
+          case _         => None
+        }
+      }
 
   private[scalanative] lazy val targetsMsys: Boolean = {
     compilerConfig.targetTriple.fold(Platform.isMsys) { customTriple =>

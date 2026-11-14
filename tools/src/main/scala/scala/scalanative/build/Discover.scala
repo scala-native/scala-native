@@ -89,61 +89,6 @@ object Discover {
     includes :+ "-Qunused-arguments"
   }
 
-  /** Find default clang compilation options when cross-compiling to given
-   *  target triple. Targets using a dedicated Xcode SDK (iOS, tvOS, watchOS,
-   *  visionOS) use its sysroot instead of the include directories of the host.
-   */
-  def compileOptions(targetTriple: String): Seq[String] =
-    appleSdkName(targetTriple) match {
-      case Some(sdk) => appleSdkSysroot(sdk) :+ "-Qunused-arguments"
-      case None      => compileOptions()
-    }
-
-  /** Find default options passed to the native linker when cross-compiling to
-   *  given target triple, see [[compileOptions(targetTriple:String)*]]
-   */
-  def linkingOptions(targetTriple: String): Seq[String] =
-    appleSdkName(targetTriple) match {
-      case Some(sdk) => appleSdkSysroot(sdk)
-      case None      => linkingOptions()
-    }
-
-  /** Name of the Xcode SDK required to build for Apple platforms other than
-   *  macOS, e.g. `iphoneos` or `appletvsimulator`.
-   */
-  private[scalanative] def appleSdkName(targetTriple: String): Option[String] =
-    if (!targetTriple.contains("apple")) None
-    else {
-      val triple = TargetTriple.parse(targetTriple)
-      val isSimulator = triple.env == "simulator"
-      def sdk(device: String, simulator: String) =
-        Some(if (isSimulator) simulator else device)
-      triple.os match {
-        case "ios" if triple.env == "macabi" => None // uses the macOS SDK
-        case "ios"     => sdk("iphoneos", "iphonesimulator")
-        case "tvos"    => sdk("appletvos", "appletvsimulator")
-        case "watchos" => sdk("watchos", "watchsimulator")
-        case "xros"    => sdk("xros", "xrsimulator")
-        case _         => None
-      }
-    }
-
-  // SDKROOT env variable is respected by clang, no need for explicit sysroot
-  private def appleSdkSysroot(sdk: String): Seq[String] =
-    if (getenv("SDKROOT").exists(_.nonEmpty)) Nil
-    else
-      Try(
-        Process(Seq("xcrun", "--sdk", sdk, "--show-sdk-path")).!!.trim
-      ).toOption
-        .filter(_.nonEmpty) match {
-        case Some(path) => Seq("-isysroot", path)
-        case None       =>
-          throw new BuildException(
-            s"Unable to locate the $sdk SDK using `xcrun`, install it using " +
-              "Xcode or set its path using SDKROOT environment variable"
-          )
-      }
-
   /** Find default options passed to the system's native linker. */
   def linkingOptions(): Seq[String] = {
     val llvmLibDirs =

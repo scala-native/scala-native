@@ -68,7 +68,8 @@ private[build] object Validator {
       if !c.compileOptions.exists(_.contains("-isysroot"))
     } warn(
       s"Target ${c.targetTriple.mkString} requires the $sdk SDK, but no sysroot is set. " +
-        "Use Discover.compileOptions(targetTriple) and Discover.linkingOptions(targetTriple) or set SDKROOT environment variable"
+        "Add `-isysroot <path>` to compile and linking options or set SDKROOT environment variable, " +
+        s"the path can be found using `xcrun --sdk $sdk --show-sdk-path`"
     )
 
     issues.result() match {
