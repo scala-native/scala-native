@@ -596,22 +596,31 @@ static void *closedGuardPage(Coroutine *coroutine) {
                                               : coroutine->bounds.guardPage;
 }
 
-// Where the scan of a parked stack starts. A thread can switch away while it
-// runs a multi-shot continuation from its heap fragment: its stack pointer
-// is then outside its stack, which is scanned as a whole; the fragment is
+// Where the scan of a parked stack starts. A stack can be left while it runs
+// a multi-shot continuation from its heap fragment: its stack pointer is
+// then outside of it and the stack is scanned as a whole; the fragment is
 // scanned with the continuation that owns it.
 static void *scanTop(Coroutine *coroutine) {
-    if (coroutine->state != THREAD)
-        return coroutine->sp;
-    ThreadInfo stack = {.stackSize = coroutine->bounds.size,
-                        .maxStackSize = coroutine->bounds.maxSize,
-                        .stackTop = coroutine->bounds.top,
-                        .stackBottom = coroutine->bounds.bottom,
-                        .stackGuardPage = coroutine->bounds.guardPage};
-    if (isOnThreadStack(&stack, coroutine->sp))
-        return coroutine->sp;
-    void *limit = threadStackScanableLimit(&stack);
-    return limit != NULL ? limit : stack.stackTop;
+    void *sp = coroutine->sp;
+    if (coroutine->state == THREAD) {
+        ThreadInfo stack = {.stackSize = coroutine->bounds.size,
+                            .maxStackSize = coroutine->bounds.maxSize,
+                            .stackTop = coroutine->bounds.top,
+                            .stackBottom = coroutine->bounds.bottom,
+                            .stackGuardPage = coroutine->bounds.guardPage};
+        if (isOnThreadStack(&stack, sp))
+            return sp;
+        void *limit = threadStackScanableLimit(&stack);
+        return limit != NULL ? limit : stack.stackTop;
+    }
+    // The guard region, [guardLow, guardPage], is readable and can hold
+    // frames only once an overflow opened it.
+    void *low = coroutine->bounds.guardLow;
+    if (isInRange(sp, low, coroutine->bounds.bottom))
+        return sp;
+    return coroutine->guardOpen
+               ? low
+               : (void *)((char *)coroutine->bounds.guardPage + pageSize());
 }
 
 // Read by the collector only while this thread is stopped at a safepoint.
@@ -891,7 +900,7 @@ void *scalanative_continuation_oneshot_captured(Continuation *continuation,
                                                scanAnchoredStacks);
     pauseCollections();
     FOREACH_CAPTURED(it, top) {
-        it->captured.top = it->sp;
+        it->captured.top = scanTop(it);
         it->captured.bottom = it->bounds.bottom;
         it->captured.guardPage = closedGuardPage(it);
         it->captured.next = it == top->label ? NULL : &it->returnTo->captured;

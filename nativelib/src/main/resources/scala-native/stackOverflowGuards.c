@@ -371,6 +371,15 @@ void scalanative_StackOverflowGuards_check() {
         currentThreadInfo.pendingStackOverflowException = false;
         scalanative_throwStackOverflowError();
     }
+#ifndef _WIN32
+    // `reset` leaves the guard open when the error is caught by a frame that
+    // is still inside it. Close it once the stack is back above the guard.
+    else if (currentThreadInfo.stackGuardOpen) {
+        int dummy;
+        if (!inStackGuard(&currentThreadInfo, &dummy))
+            protectStackGuardPage();
+    }
+#endif
 }
 
 void scalanative_StackOverflowGuards_close() {
