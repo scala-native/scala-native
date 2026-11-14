@@ -132,8 +132,7 @@ object ScalaNativePluginInternal {
         .withMode(Discover.mode())
         .withOptimize(Discover.optimize())
     },
-    nativeRunConfig :=
-      build.RunConfig.empty.withTargetRunner(Discover.targetRunner()),
+    nativeExecutionConfig := NativeExecutionConfig.discover(),
     ThisBuild / nativeConfig := (Global / nativeConfig).value,
     nativeWarnOldJVM := {
       val logger = streams.value.log
@@ -283,7 +282,7 @@ object ScalaNativePluginInternal {
       val env = (run / envVars).value.toSeq
       val logger = streams.value.log
       val binary = toFile(nativeLink.value).getAbsolutePath
-      val targetRunner = nativeRunConfig.value.targetRunner
+      val targetRunner = nativeExecutionConfig.value.targetRunner
       val args = targetRunner ++: binary +: spaceDelimited("<arg>").parsed
 
       @volatile var pipeOutputThreads: List[Thread] = Nil
@@ -366,7 +365,7 @@ object ScalaNativePluginInternal {
             .Config()
             .withBinaryFile(testBinary)
             .withEnvVars(envVars)
-            .withTargetRunner(nativeRunConfig.value.targetRunner)
+            .withTargetRunner(nativeExecutionConfig.value.targetRunner)
             .withLogger(logger)
 
           val adapter = newTestAdapter(config)

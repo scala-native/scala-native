@@ -41,14 +41,6 @@ object Discover {
       .map(build.GC(_))
       .getOrElse(build.GC.default)
 
-  /** Command used to execute built binaries from SCALANATIVE_TARGET_RUNNER env
-   *  var, empty by default. Arguments are delimited by whitespaces.
-   */
-  def targetRunner(): Seq[String] =
-    getenv("SCALANATIVE_TARGET_RUNNER").toList
-      .flatMap(_.trim().split("\\s+"))
-      .filter(_.nonEmpty)
-
   /** Use the clang binary on the path or via LLVM_BIN env var. */
   def clang(): Path = {
     val path = discover("clang", "LLVM_BIN")

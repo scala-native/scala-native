@@ -55,9 +55,9 @@ object ScalaNativePlugin extends AutoPlugin {
         "User configuration for the native build, NativeConfig"
       )
 
-    val nativeRunConfig =
-      settingKey[build.RunConfig](
-        "Configuration of how the built binaries are executed, RunConfig"
+    val nativeExecutionConfig =
+      settingKey[NativeExecutionConfig](
+        "Configuration of how the built binaries are executed by run and test"
       )
 
     val nativeLink =

@@ -136,7 +136,8 @@ object TestAdapter {
     def binaryFile: File
     def envVars: Map[String, String]
 
-    /** Command used to execute the test binary, see `RunConfig.targetRunner`
+    /** Command used to execute the test binary, e.g. an emulator. The path of
+     *  the binary and its arguments are appended to it.
      */
     def targetRunner: Seq[String]
     def logger: Logger

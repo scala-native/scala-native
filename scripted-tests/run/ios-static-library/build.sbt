@@ -25,7 +25,12 @@ def output(cmd: String*): Option[String] =
 lazy val missingRequirement: Option[String] =
   if (!sys.props("os.name").toLowerCase.startsWith("mac"))
     Some("not a macOS host")
-  else if (output("xcrun", "--sdk", "iphonesimulator", "--show-sdk-path").isEmpty)
+  else if (output(
+        "xcrun",
+        "--sdk",
+        "iphonesimulator",
+        "--show-sdk-path"
+      ).isEmpty)
     Some("iOS simulator SDK not found")
   else if (simulatorDevice.isEmpty &&
       !output("xcrun", "simctl", "list", "devices", "booted")
@@ -65,15 +70,32 @@ testInSimulator := Def.taskDyn {
         val libDir = crossTarget.value
         val host = baseDirectory.value / "host"
         def clang(binary: String, args: String*): Unit = {
-          val cmd = Seq("xcrun", "--sdk", "iphonesimulator", binary, "-target",
-            simulatorTriple) ++ args
+          val cmd = Seq(
+            "xcrun",
+            "--sdk",
+            "iphonesimulator",
+            binary,
+            "-target",
+            simulatorTriple
+          ) ++ args
           assert(Process(cmd, baseDirectory.value).! == 0, s"failed: $cmd")
         }
         clang("clang", "-c", "src/main/c/host.c", "-o", "host.o")
-        clang("clang++", "host.o", s"-L${libDir.absolutePath}", "-ltest",
-          "-o", host.absolutePath)
-        val run = Seq("xcrun", "simctl", "spawn",
-          simulatorDevice.getOrElse("booted"), host.absolutePath)
+        clang(
+          "clang++",
+          "host.o",
+          s"-L${libDir.absolutePath}",
+          "-ltest",
+          "-o",
+          host.absolutePath
+        )
+        val run = Seq(
+          "xcrun",
+          "simctl",
+          "spawn",
+          simulatorDevice.getOrElse("booted"),
+          host.absolutePath
+        )
         val exitCode = Process(run).!
         assert(exitCode == 0, s"host program failed with code $exitCode")
       }
