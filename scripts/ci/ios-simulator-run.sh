@@ -2,7 +2,7 @@
 # Launcher of Scala Native binaries built for the iOS simulator
 # (target triple `<arch>-apple-ios<version>-simulator`).
 #
-# Usage: CROSSCOMPILING_EMULATOR=<path-to-this-script> sbt tests3/test
+# Usage: SCALANATIVE_TARGET_RUNNER=<path-to-this-script> sbt tests3/test
 #
 # The binary is spawned inside of a booted simulator device. The device can be
 # selected using IOS_SIMULATOR_UDID env variable, defaults to `booted`.

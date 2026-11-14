@@ -61,7 +61,7 @@ jobs:
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl list devices booted
           echo "IOS_SIMULATOR_UDID=$UDID" >> "$GITHUB_ENV"
-          echo "CROSSCOMPILING_EMULATOR=$GITHUB_WORKSPACE/scripts/ci/ios-simulator-run.sh" >> "$GITHUB_ENV"
+          echo "SCALANATIVE_TARGET_RUNNER=$GITHUB_WORKSPACE/scripts/ci/ios-simulator-run.sh" >> "$GITHUB_ENV"
           echo "SCALANATIVE_TARGET_TRIPLE=$(uname -m)-apple-ios${IOS_MIN_VERSION}-simulator" >> "$GITHUB_ENV"
 
       - name: Run sandbox
@@ -125,7 +125,7 @@ jobs:
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl list devices booted
           echo "IOS_SIMULATOR_UDID=$UDID" >> "$GITHUB_ENV"
-          echo "CROSSCOMPILING_EMULATOR=$GITHUB_WORKSPACE/scripts/ci/ios-simulator-run.sh" >> "$GITHUB_ENV"
+          echo "SCALANATIVE_TARGET_RUNNER=$GITHUB_WORKSPACE/scripts/ci/ios-simulator-run.sh" >> "$GITHUB_ENV"
           echo "SCALANATIVE_TARGET_TRIPLE=$(uname -m)-apple-ios${IOS_MIN_VERSION}-simulator" >> "$GITHUB_ENV"
 
       - name: Build and run host program

@@ -14,6 +14,7 @@ import scala.scalanative.testinterface.common._
 private[testinterface] final class NativeRunnerRPC(
     executableFile: File,
     envVars: Map[String, String],
+    targetRunner: Seq[String],
     args: Seq[String],
     logger: Logger
 )(implicit ec: ExecutionContext)
@@ -26,6 +27,7 @@ private[testinterface] final class NativeRunnerRPC(
   val processRunner = new ProcessRunner(
     executableFile,
     envVars,
+    targetRunner,
     args,
     logger,
     serverSocket.getLocalPort

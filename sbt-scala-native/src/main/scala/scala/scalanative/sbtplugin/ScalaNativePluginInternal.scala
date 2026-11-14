@@ -131,6 +131,7 @@ object ScalaNativePluginInternal {
         .withGC(Discover.GC())
         .withMode(Discover.mode())
         .withOptimize(Discover.optimize())
+        .withTargetRunner(Discover.targetRunner())
     },
     ThisBuild / nativeConfig := (Global / nativeConfig).value,
     nativeWarnOldJVM := {
@@ -281,14 +282,8 @@ object ScalaNativePluginInternal {
       val env = (run / envVars).value.toSeq
       val logger = streams.value.log
       val binary = toFile(nativeLink.value).getAbsolutePath
-      // Optional launcher used internally when the binary cannot be executed
-      // directly on the host, e.g. QEMU user mode emulator or iOS simulator
-      val emulatorOpts = sys.env
-        .get("CROSSCOMPILING_EMULATOR")
-        .toList
-        .flatMap(_.split(" "))
-        .filter(_.nonEmpty)
-      val args = emulatorOpts ++: binary +: spaceDelimited("<arg>").parsed
+      val targetRunner = nativeConfig.value.targetRunner
+      val args = targetRunner ++: binary +: spaceDelimited("<arg>").parsed
 
       @volatile var pipeOutputThreads: List[Thread] = Nil
 
@@ -370,6 +365,7 @@ object ScalaNativePluginInternal {
             .Config()
             .withBinaryFile(testBinary)
             .withEnvVars(envVars)
+            .withTargetRunner(nativeConfig.value.targetRunner)
             .withLogger(logger)
 
           val adapter = newTestAdapter(config)

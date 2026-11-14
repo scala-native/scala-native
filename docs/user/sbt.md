@@ -323,6 +323,20 @@ platform.
 You may use [`FatELF](https://icculus.org/fatelf/) to build
 fat binaries for Linux.
 
+### Running cross compiled binaries
+
+Binaries built for a different platform cannot be executed directly by
+`run` and `test`. Use the target runner to set a command which would be
+used to launch them, e.g. an emulator or a simulator launcher. The path
+of the binary and its arguments are appended to it:
+
+``` scala
+nativeConfig ~= { _.withTargetRunner(Seq("qemu-aarch64-static", "-L", "/usr/aarch64-linux-gnu")) }
+```
+
+By default it is read from the `SCALANATIVE_TARGET_RUNNER` environment
+variable (whitespace delimited).
+
 (sbt_build_target)=
 ## Build target
 

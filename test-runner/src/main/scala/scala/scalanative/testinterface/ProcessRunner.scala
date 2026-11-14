@@ -9,26 +9,20 @@ import scala.scalanative.build.Logger
 private[testinterface] class ProcessRunner(
     executableFile: File,
     envVars: Map[String, String],
+    targetRunner: Seq[String],
     args: Seq[String],
     logger: Logger,
     port: Int
 ) extends AutoCloseable {
 
   private val process = {
-    // Optional emulator config used internally for testing non amd64 architectures
-    val emulatorOpts: List[String] = sys.env
-      .get("CROSSCOMPILING_EMULATOR")
-      .map(_.split(" ").toList)
-      .filter(_.nonEmpty)
-      .getOrElse(Nil)
-
-    if (emulatorOpts.nonEmpty) {
-      logger.info(s"Using test process emulator: ${emulatorOpts.mkString(" ")}")
+    if (targetRunner.nonEmpty) {
+      logger.info(s"Using target runner: ${targetRunner.mkString(" ")}")
     }
 
     val builder =
       new ProcessBuilder(
-        emulatorOpts ++:
+        targetRunner ++:
           executableFile.getAbsolutePath() +:
           port.toString +:
           args: _*

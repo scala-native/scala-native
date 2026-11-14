@@ -121,6 +121,7 @@ final class TestAdapter(config: TestAdapter.Config) {
     val com = new NativeRunnerRPC(
       executableFile = config.binaryFile,
       envVars = config.envVars,
+      targetRunner = config.targetRunner,
       args = Seq.empty,
       logger = config.logger
     )
@@ -134,10 +135,15 @@ object TestAdapter {
   sealed trait Config {
     def binaryFile: File
     def envVars: Map[String, String]
+
+    /** Command used to execute the test binary, see `NativeConfig.targetRunner`
+     */
+    def targetRunner: Seq[String]
     def logger: Logger
 
     def withEnvVars(envVars: Map[String, String]): Config
     def withBinaryFile(binaryFile: File): Config
+    def withTargetRunner(targetRunner: Seq[String]): Config
     def withLogger(logger: Logger): Config
   }
 
@@ -145,12 +151,14 @@ object TestAdapter {
     def apply(): Config = ConfigImpl(
       binaryFile = Paths.get("").toFile,
       envVars = Map.empty,
+      targetRunner = Nil,
       logger = Logger.default
     )
 
     private case class ConfigImpl(
         binaryFile: File,
         envVars: Map[String, String],
+        targetRunner: Seq[String],
         logger: Logger
     ) extends Config {
       override def withEnvVars(envVars: Map[String, String]): Config =
@@ -158,6 +166,9 @@ object TestAdapter {
 
       override def withBinaryFile(binaryFile: File): Config =
         copy(binaryFile = binaryFile)
+
+      override def withTargetRunner(targetRunner: Seq[String]): Config =
+        copy(targetRunner = targetRunner)
 
       override def withLogger(logger: Logger): Config = copy(logger = logger)
     }
