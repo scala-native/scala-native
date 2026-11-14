@@ -56,7 +56,6 @@ jobs:
             if kill -0 $SBT 2>/dev/null; then
               echo "::endgroup::"
               echo "iteration $i hung"
-              grep -a -h "safepoint-diag" "run-$i.log" | head -20 || true
               tail -30 "run-$i.log"
               for pid in $(pgrep -f "tests/tests-test"); do
                 echo "=== backtrace of $pid"; ps -p "$pid" -o pid,command || true
@@ -69,13 +68,11 @@ jobs:
             if ! wait $SBT; then
               echo "::endgroup::"
               echo "iteration $i failed"
-              grep -a -h "safepoint-diag" "run-$i.log" | head -20 || true
               grep -n -E "signal|Illegal|Failed:|error\]" "run-$i.log" | tail -40
               exit 1
             fi
             tail -5 "run-$i.log"
             echo "::endgroup::"
-            grep -a -h "safepoint-diag" "run-$i.log" | head -10 || true
           done
       - name: Crash reports
         if: failure()

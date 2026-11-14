@@ -128,13 +128,6 @@ scalanative_gc_safepoint_poll_trampoline:
     ldr x16, [sp, #SFPT_RESUME]
     add sp, sp, #(SFPT_FRAME + SFPT_RED_ZONE)
     br x16
-#if defined(__APPLE__)
-.globl _scalanative_gc_safepoint_poll_trampoline_end
-_scalanative_gc_safepoint_poll_trampoline_end:
-#else
-.globl scalanative_gc_safepoint_poll_trampoline_end
-scalanative_gc_safepoint_poll_trampoline_end:
-#endif
 
 #endif
 

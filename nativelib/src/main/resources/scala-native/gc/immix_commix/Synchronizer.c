@@ -205,7 +205,6 @@ static void SafepointTrapHandler(int signal, siginfo_t *siginfo, void *uap) {
         return;
     }
 
-    scalanative_gc_safepoint_diag_dump(uap, self, "unhandled");
     GC_LOG_ERROR("%s Unhandled signal %d triggered when accessing "
                  "memory address %p, code=%d",
                  SN_ERROR_PREFIX, signal, siginfo->si_addr, siginfo->si_code);
