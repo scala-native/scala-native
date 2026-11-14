@@ -37,9 +37,11 @@ private[scalanative] class Metadata(
   val canAlwaysUseFastITables = rtti.valuesIterator.forall(_.canUseFastITables)
 
   def initTraitIds(): (Seq[Trait], TraitsUniverse.TraitId.Context) = {
-    val traits = analysis.infos.valuesIterator.collect {
-      case info: Trait => info
-    }.toIndexedSeq
+    // Sorted: trait ids must not follow hash order of infos
+    val traits = analysis.infos.valuesIterator
+      .collect { case info: Trait => info }
+      .toIndexedSeq
+      .sortBy[nir.Global](_.name)
     val universe = new TraitsUniverse(traits)
     val ctx = universe.assignIds(ids)
     (traits, ctx)

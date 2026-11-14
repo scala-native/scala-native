@@ -30,6 +30,14 @@ typedef void (*OnCatchHandler)(Exception);
 extern "C" OnCatchHandler
 scalanative_Throwable_onCatchHandler(Exception exception);
 
+#if !defined(_WIN32)
+#include "unwind.h"
+// Link the whole _Unwind_* API from a static library: a host linked with
+// libgcc_s would otherwise mix both unwinders and terminate (#3893).
+__attribute__((used)) static void *const scalanative_unwind_api =
+    (void *)&_Unwind_GetIPInfo;
+#endif
+
 namespace scalanative {
 class ExceptionWrapper : public std::exception {
   public:
