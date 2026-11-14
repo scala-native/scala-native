@@ -17,18 +17,18 @@
  * The suspend callback runs in the receiving context, after the suspending
  * coroutine has switched out. Another thread may then resume it right away.
  *
- * GC (see gc/shared/SuspendedStacks.h): ThreadInfo describes the stack that
- * runs. A stack that waits for a coroutine it started or resumed is scanned
- * as a root. The stacks captured by a continuation are not roots: the
- * collector scans them when it marks the SuspendedStacks object of that
- * continuation. A continuation that was not marked in a completed cycle is
- * unreachable, so its stacks are reclaimed.
+ * GC (see gc/shared/GCHooks.h): ThreadInfo describes the stack that runs. A
+ * stack that waits for a coroutine it started or resumed is a dynamic root.
+ * The stacks captured by a continuation are not roots: an object tracer
+ * scans them when the collector marks the SuspendedStacks object of that
+ * continuation. A continuation that was not traced in a completed mark cycle
+ * is unreachable, so its stacks are reclaimed.
  */
 
 #include "delimcc_oneshot.h"
 #include "nativeThreadTLS.h"
-#include "gc/shared/SuspendedStacks.h"
-#include "gc/immix_commix/headers/ObjectHeader.h"
+#include "stackOverflowGuards.h"
+#include "gc/shared/GCHooks.h"
 #include <pthread.h>
 #include <stdatomic.h>
 #include <stdbool.h>
@@ -81,6 +81,51 @@ typedef struct SuspendRequest {
     SuspendFn *fn;
     void *arg;
 } SuspendRequest;
+
+/* What the collector callbacks read about a stack. Every stack has a slot in
+ * a table of blocks; the table changes only while no collection runs.
+ *
+ * - A stack that waits for a coroutine it started or resumed has `waitingTop`
+ *   set: [waitingTop, bottom) is reported as a root.
+ * - The stacks captured by a suspended continuation are a list that a
+ *   `scala.scalanative.runtime.SuspendedStacks` object points to. Tracing
+ *   that object scans the list and records the mark cycle in the slot of the
+ *   first stack.
+ */
+typedef struct StackSlot {
+    _Atomic(void *) waitingTop;
+    void *bottom;
+    void *guardPage; // inaccessible, may lie inside [waitingTop, bottom)
+    atomic_uint_fast64_t markedIn;
+    atomic_uint_fast64_t capturedIn;
+    atomic_uint_fast64_t capture; // 0 while no continuation holds the stack
+    void *captured;
+} StackSlot;
+
+#define STACK_SLOTS_PER_BLOCK 80
+
+typedef struct StackSlotBlock {
+    struct StackSlotBlock *next;
+    size_t used;
+    StackSlot slots[STACK_SLOTS_PER_BLOCK];
+} StackSlotBlock;
+
+static StackSlotBlock *stackSlots;
+
+#define FOREACH_STACK_SLOT(slot)                                               \
+    for (StackSlotBlock *slot##Block = stackSlots; slot##Block != NULL;        \
+         slot##Block = slot##Block->next)                                      \
+        for (StackSlot *slot = slot##Block->slots,                             \
+                       *slot##End = slot + slot##Block->used;                  \
+             slot < slot##End; slot++)
+
+typedef struct SuspendedStack {
+    void *top;       // lowest address in use, NULL while not handed over
+    void *bottom;    // highest address
+    void *guardPage; // inaccessible, may lie inside [top, bottom)
+    struct SuspendedStack *next;
+    StackSlot *slot;
+} SuspendedStack;
 
 typedef struct Coroutine Coroutine;
 struct Coroutine {
@@ -156,9 +201,45 @@ static int sharedPoolSize;
 static pthread_mutex_t sharedPoolLock = PTHREAD_MUTEX_INITIALIZER;
 
 // Slots are never returned to the system; free ones are linked through
-// `bottom`, which the collector ignores while `waitingTop` is unset.
+// `bottom`, which is not read while `waitingTop` is unset.
 static StackSlot *freeSlots;
 static pthread_mutex_t slotsLock = PTHREAD_MUTEX_INITIALIZER;
+
+// Skips the guard page: a frame larger than the room below the guard can
+// leave the stack pointer under it.
+static void scanStack(GC_ScanRangeFn *scan, void *ctx, void *top, void *bottom,
+                      void *guardPage) {
+    ThreadInfo guard = {.stackGuardPage = guardPage};
+    StackScanRange ranges[2];
+    int count = threadStackScanableRanges(top, bottom, &guard, ranges);
+    for (int i = 0; i < count; i++) {
+        scan(ctx, ranges[i].from, ranges[i].to);
+    }
+}
+
+// GC_RootProviderFn: the stacks that wait for a coroutine.
+static void scanWaitingStacks(void *data, GC_ScanRangeFn *scan, void *ctx) {
+    (void)data;
+    FOREACH_STACK_SLOT(slot) {
+        void *top =
+            atomic_load_explicit(&slot->waitingTop, memory_order_relaxed);
+        if (top != NULL)
+            scanStack(scan, ctx, top, slot->bottom, slot->guardPage);
+    }
+}
+
+// GC_ObjectTracerFn: the stacks of the continuation that a SuspendedStacks
+// object points to with its first field.
+static void scanCapturedStacks(void **fields, GC_ScanRangeFn *scan, void *ctx) {
+    SuspendedStack *stacks = fields[0];
+    // Empty until the continuation is handed over to its object.
+    if (stacks == NULL || stacks->top == NULL)
+        return;
+    atomic_store(&stacks->slot->markedIn, scalanative_GC_mark_cycle());
+    for (SuspendedStack *it = stacks; it != NULL; it = it->next) {
+        scanStack(scan, ctx, it->top, it->bottom, it->guardPage);
+    }
+}
 
 static StackSlot *acquireSlot(void) {
     pthread_mutex_lock(&slotsLock);
@@ -166,13 +247,16 @@ static StackSlot *acquireSlot(void) {
     if (slot != NULL) {
         freeSlots = slot->bottom;
     } else {
-        StackSlotBlock *block = scalanative_GC_stackSlots;
+        StackSlotBlock *block = stackSlots;
+        if (block == NULL &&
+            !scalanative_GC_add_root_provider(scanWaitingStacks, NULL))
+            FATAL("cannot register the stacks with the GC");
         if (block == NULL || block->used == STACK_SLOTS_PER_BLOCK) {
             block = calloc(1, sizeof(StackSlotBlock));
             if (block == NULL)
                 FATAL("out of memory");
-            block->next = scalanative_GC_stackSlots;
-            scalanative_GC_stackSlots = block;
+            block->next = stackSlots;
+            stackSlots = block;
         }
         slot = &block->slots[block->used++];
     }
@@ -591,7 +675,7 @@ static void checkEnclosing(Coroutine *self, Coroutine *target) {
 
 // Frees the continuations that the last completed mark cycle did not reach.
 static void reclaimUnreachable(ThreadState *thread) {
-    uint_fast64_t cycle = atomic_load(&scalanative_GC_completedMarkCycle);
+    uint_fast64_t cycle = scalanative_GC_completed_mark_cycle();
     if (atomic_load_explicit(&reclaimedIn, memory_order_relaxed) == cycle ||
         atomic_exchange(&reclaimedIn, cycle) == cycle)
         return;
@@ -732,8 +816,15 @@ void scalanative_continuation_oneshot_leave(ContinuationBoundaryLabel label,
  * reachable. Until this call the stacks are scanned as roots. */
 void scalanative_continuation_oneshot_captured(Continuation *continuation,
                                                void *owner) {
-    // Lets the collector recognise these objects; the same for all of them.
-    scalanative_GC_suspendedStacksRtti = *(void **)owner;
+    // The same for all owners.
+    static atomic_flag traced = ATOMIC_FLAG_INIT;
+    static atomic_bool tracerSet;
+    if (!atomic_load_explicit(&tracerSet, memory_order_relaxed)) {
+        if (!atomic_flag_test_and_set(&traced) &&
+            !scalanative_GC_add_object_tracer(owner, scanCapturedStacks))
+            FATAL("cannot register the continuation stacks with the GC");
+        atomic_store(&tracerSet, true);
+    }
     Coroutine *top = (Coroutine *)continuation;
     FOREACH_CAPTURED(it, top) {
         it->captured.top = it->sp;
@@ -744,7 +835,7 @@ void scalanative_continuation_oneshot_captured(Continuation *continuation,
     }
     FOREACH_CAPTURED(it, top) it->captured.slot = top->slot;
     atomic_store(&top->slot->markedIn, 0);
-    top->slot->capturedIn = atomic_load(&scalanative_GC_completedMarkCycle);
+    top->slot->capturedIn = scalanative_GC_completed_mark_cycle();
     top->slot->captured = top;
     atomic_store(&top->slot->capture, atomic_fetch_add(&captures, 1) + 1);
     if (atomic_fetch_add(&capturedCount, 1) >= atomic_load(&capturedLimit)) {
@@ -753,13 +844,12 @@ void scalanative_continuation_oneshot_captured(Continuation *continuation,
     }
 }
 
-/* `owner` is the SuspendedStacks object of a continuation that the caller
- * resumes at most once. Its stacks are roots again before `owner` stops
- * pointing to them. */
-void *scalanative_continuation_oneshot_resume(void *owner, void *arg) {
+/* `stacks` is the field of a SuspendedStacks object that points to a
+ * continuation, which the caller resumes at most once. Its stacks are roots
+ * again before the field stops pointing to them. */
+void *scalanative_continuation_oneshot_resume(void **stacks, void *arg) {
     ThreadState *thread = currentThread();
     Coroutine *self = currentCoroutine(thread);
-    Field_t *stacks = &((Object *)owner)->fields[0];
     Coroutine *top = (Coroutine *)*stacks;
     atomic_store(&top->slot->capture, 0);
     atomic_fetch_sub(&capturedCount, 1);
@@ -821,7 +911,7 @@ UNSUPPORTED(void scalanative_continuation_oneshot_captured(
     Continuation *continuation, void *owner))
 UNSUPPORTED(
     void scalanative_continuation_oneshot_discard(Continuation *continuation))
-UNSUPPORTED(void *scalanative_continuation_oneshot_resume(void *owner,
+UNSUPPORTED(void *scalanative_continuation_oneshot_resume(void **stacks,
                                                           void *arg))
 UNSUPPORTED(void scalanative_continuation_oneshot_watch_multishot(void *probe))
 UNSUPPORTED(bool scalanative_continuation_oneshot_crosses_multishot(

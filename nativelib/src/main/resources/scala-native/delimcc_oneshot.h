@@ -21,8 +21,9 @@ void scalanative_continuation_oneshot_leave(ContinuationBoundaryLabel label,
                                             void *result);
 void scalanative_continuation_oneshot_captured(Continuation *continuation,
                                                void *owner);
-// `owner` is the SuspendedStacks object given to `captured`.
-void *scalanative_continuation_oneshot_resume(void *owner, void *arg);
+// `stacks` is the first field of the SuspendedStacks object given to
+// `captured`.
+void *scalanative_continuation_oneshot_resume(void **stacks, void *arg);
 void scalanative_continuation_oneshot_discard(Continuation *continuation);
 void scalanative_continuation_oneshot_watch_multishot(void *probe);
 bool scalanative_continuation_oneshot_crosses_multishot(

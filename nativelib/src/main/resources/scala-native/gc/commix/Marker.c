@@ -1,5 +1,5 @@
 #if defined(SCALANATIVE_GC_COMMIX)
-#include "shared/SuspendedStacks.h"
+#include "shared/GCHooks.h"
 #include "shared/GCTypes.h"
 #include <stdint.h>
 #include <stdio.h>
@@ -283,24 +283,21 @@ NO_SANITIZE int Marker_markRange(Heap *heap, Stats *stats,
     return objectsTraced;
 }
 
-// Skips the guard page: a frame larger than the room below the guard can
-// leave the stack pointer under it.
-static int Marker_markParkedStack(Heap *heap, Stats *stats,
-                                  GreyPacket **outHolder,
-                                  GreyPacket **outWeakRefHolder, void *top,
-                                  void *bottom, void *guardPage) {
-    ThreadInfo guard = {.stackGuardPage = guardPage};
-    StackScanRange ranges[2];
-    int count = threadStackScanableRanges(top, bottom, &guard, ranges);
-    int objectsTraced = 0;
-    for (int i = 0; i < count; i++) {
-        size_t words = ((uintptr_t)ranges[i].to - (uintptr_t)ranges[i].from) /
-                       sizeof(word_t);
-        objectsTraced +=
-            Marker_markRange(heap, stats, outHolder, outWeakRefHolder,
-                             (word_t **)ranges[i].from, words, sizeof(word_t));
-    }
-    return objectsTraced;
+// What the callbacks of shared/GCHooks.h scan into.
+typedef struct ScanContext {
+    Heap *heap;
+    Stats *stats;
+    GreyPacket **outHolder;
+    GreyPacket **outWeakRefHolder;
+    int objectsTraced;
+} ScanContext;
+
+static void Marker_scanRange(void *ctx, void *low, void *high) {
+    ScanContext *context = ctx;
+    size_t words = ((uintptr_t)high - (uintptr_t)low) / sizeof(word_t);
+    context->objectsTraced += Marker_markRange(
+        context->heap, context->stats, context->outHolder,
+        context->outWeakRefHolder, (word_t **)low, words, sizeof(word_t));
 }
 
 int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
@@ -326,19 +323,12 @@ int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
                                     rawPtr);
             objectsTraced += 1;
         }
-    } else if ((void *)object->rtti == scalanative_GC_suspendedStacksRtti) {
-        SuspendedStack *stacks = (SuspendedStack *)object->fields[0];
-        // Empty until the continuation is handed over to its object.
-        if (stacks != NULL && stacks->top == NULL)
-            stacks = NULL;
-        if (stacks != NULL) {
-            atomic_store(&stacks->slot->markedIn,
-                         atomic_load(&scalanative_GC_markCycle));
-        }
-        for (SuspendedStack *it = stacks; it != NULL; it = it->next) {
-            objectsTraced +=
-                Marker_markParkedStack(heap, stats, outHolder, outWeakRefHolder,
-                                       it->top, it->bottom, it->guardPage);
+    } else {
+        GC_ObjectTracerFn *tracer = GCHooks_objectTracer(object->rtti);
+        if (tracer != NULL) {
+            ScanContext context = {heap, stats, outHolder, outWeakRefHolder, 0};
+            tracer((void **)object->fields, Marker_scanRange, &context);
+            objectsTraced += context.objectsTraced;
         }
     }
     return objectsTraced;
@@ -593,19 +583,8 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
         stackTop = MutatorThread_getStackTop(thread, false);
     } while (stackTop == NULL);
 
-    // A continuation runs on its own stack (delimcc_oneshot.c), which
-    // ThreadInfo then describes. A thread stopped on its signal stack was
-    // interrupted on that stack too.
-    if (thread->threadInfo != NULL && thread->threadInfo->stackTop != NULL &&
-        thread->threadInfo->stackBottom != NULL &&
-        (isInRange(stackTop, thread->threadInfo->stackTop,
-                   thread->threadInfo->stackBottom)
-#ifdef SCALANATIVE_THREAD_ALT_STACK
-         || isOnSignalHandlerStack(thread->threadInfo, stackTop)
-#endif
-             )) {
-        stackBottom = (word_t **)thread->threadInfo->stackBottom;
-    }
+    stackBottom = (word_t **)threadStackScanBottom(thread->threadInfo, stackTop,
+                                                   stackBottom);
 #ifdef SCALANATIVE_THREAD_ALT_STACK
     // Keep the captured SP until stack bounds are known.
     if (thread->threadInfo != NULL && thread->threadInfo->stackTop != NULL &&
@@ -688,14 +667,8 @@ void Marker_MarkRoots(Heap *heap, Stats *stats) {
     }
     Marker_markModules(heap, stats, &out, &weakRefOut);
     Marker_markCustomRoots(heap, stats, &out, &weakRefOut, customRoots);
-    FOREACH_STACK_SLOT(slot) {
-        void *top =
-            atomic_load_explicit(&slot->waitingTop, memory_order_relaxed);
-        if (top != NULL) {
-            Marker_markParkedStack(heap, stats, &out, &weakRefOut, top,
-                                   slot->bottom, slot->guardPage);
-        }
-    }
+    ScanContext context = {heap, stats, &out, &weakRefOut, 0};
+    GCHooks_scanDynamicRoots(Marker_scanRange, &context);
     if (out != NULL) {
         if (GreyPacket_IsEmpty(out)) {
             Marker_giveEmptyPacket(heap, stats, out);

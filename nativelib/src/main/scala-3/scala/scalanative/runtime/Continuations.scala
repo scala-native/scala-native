@@ -186,8 +186,9 @@ object Continuations {
       ): Unit =
         extern
 
+      /** `stacks` is the address of `SuspendedStacks.stacks`. */
       @name("scalanative_continuation_oneshot_resume")
-      def resume[R, T](stacks: SuspendedStacks, value: R): Try[T] = extern
+      def resume[R, T](stacks: RawPtr, value: R): Try[T] = extern
 
       @name("scalanative_continuation_oneshot_discard")
       def discard(continuation: NativeContinuation): Unit = extern
@@ -228,7 +229,8 @@ object Continuations {
     def apply(value: R): T =
       if !compareAndSet(false, true) then
         throw new IllegalStateException("Continuation was already resumed")
-      single.FFI.resume[R, T](stacks, value).get
+      val field = Intrinsics.classFieldRawPtr(stacks, "stacks")
+      single.FFI.resume[R, T](field, value).get
   }
 
   // ==========================================================================

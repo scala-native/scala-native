@@ -114,6 +114,26 @@ static inline bool isOnSignalHandlerStack(ThreadInfo *threadInfo, void *addr) {
                          threadInfo->signalHandlerStackSize);
 }
 #endif
+
+/* The bottom of the stack to scan for a thread stopped with the stack
+ * pointer `sp`. A thread can run on a stack other than the one it started
+ * on, which had `initialBottom`: code that switches stacks keeps the bounds
+ * in ThreadInfo those of the stack that runs. A thread stopped on its signal
+ * stack was interrupted on that stack too. */
+static inline void *threadStackScanBottom(ThreadInfo *threadInfo, void *sp,
+                                          void *initialBottom) {
+    if (threadInfo == NULL || threadInfo->stackTop == NULL ||
+        threadInfo->stackBottom == NULL)
+        return initialBottom;
+    if (isInRange(sp, threadInfo->stackTop, threadInfo->stackBottom)
+#ifdef SCALANATIVE_THREAD_ALT_STACK
+        || isOnSignalHandlerStack(threadInfo, sp)
+#endif
+    )
+        return threadInfo->stackBottom;
+    return initialBottom;
+}
+
 static inline bool inStackPageBound(void *pageAddr, void *addr) {
     void *upperBound = (char *)pageAddr + resolvePageSize() * stackGuardPages();
     return isInRange(addr, pageAddr, upperBound);

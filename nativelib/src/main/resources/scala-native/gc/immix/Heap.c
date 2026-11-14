@@ -1,6 +1,6 @@
 #if defined(SCALANATIVE_GC_IMMIX)
 
-#include "shared/SuspendedStacks.h"
+#include "shared/GCHooks.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include "Heap.h"
@@ -245,9 +245,9 @@ static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
     Stats *stats = heap->stats;
     GC_LOG_INFO("GC collection started");
     start_ns = Time_current_nanos();
-    SuspendedStacks_markStarted();
+    GCHooks_markStarted();
     Marker_MarkRoots(heap, stack);
-    SuspendedStacks_markCompleted();
+    GCHooks_markCompleted();
     if (stats != NULL) {
         nullify_start_ns = Time_current_nanos();
     }
