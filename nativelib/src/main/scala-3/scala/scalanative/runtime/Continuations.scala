@@ -17,8 +17,12 @@ sealed abstract class ContinuationsApi:
   /** A marker for a given `boundary`. Use `break` or `suspend` to suspend the
    *  continuation up to the specified `boundary`. This value MUST NOT escape
    *  the `boundary` that created it.
+   *
+   *  Abstract here and opaque in each implementation: Scala 3.1 does not finish
+   *  compiling a call made through an `Api` value when the opaque type is a
+   *  member of this class.
    */
-  opaque type BoundaryLabel[T] = CUnsignedLong
+  type BoundaryLabel[T]
 
   /** Marks the given body as suspendable with a `BoundaryLabel` that `suspend`
    *  can refer to. Forwards the return value of `body`, or the return value of
@@ -65,9 +69,6 @@ sealed abstract class ContinuationsApi:
       onSuspend: (R => T) => T
   ): R
   protected def leave[T](label: BoundaryLabel[T], value: T): Nothing
-
-  protected final def toNative[T](label: BoundaryLabel[T]): CUnsignedLong =
-    label
 end ContinuationsApi
 
 /** Delimited continuations.
@@ -138,6 +139,9 @@ object Continuations:
       if !isContinuationsSupported then UnsupportedFeature.continuations()
       def require(): Unit = ()
 
+    opaque type BoundaryLabel[T] = CUnsignedLong
+    private def toNative[T](label: BoundaryLabel[T]): Label = label
+
     /** What `boundary` runs; use `boundary`. */
     def enter[T](body: this.BoundaryLabel[T] => T): T =
       support.require()
@@ -191,6 +195,9 @@ object Continuations:
         OneShot.watchMultiShot(MultiShot.boundaryProbe())
         multiShotInUse = true
     else UnsupportedFeature.continuations()
+
+    opaque type BoundaryLabel[T] = CUnsignedLong
+    private def toNative[T](label: BoundaryLabel[T]): Label = label
 
     protected def enter[T](body: this.BoundaryLabel[T] => T): T =
       MultiShot.boundary[T](runBody, body.asInstanceOf[Body]).get
