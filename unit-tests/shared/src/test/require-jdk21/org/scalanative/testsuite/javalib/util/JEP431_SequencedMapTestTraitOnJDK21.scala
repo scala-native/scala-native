@@ -7,6 +7,7 @@ import org.junit.Assume.assumeTrue
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.Platform
 
 /* This trait is used by JEP431_LinkedHashMapTestOnJDK21 and
  * JEP431_TreeMapTestOnJDK21 to ensure that a common core of Tests
@@ -209,8 +210,10 @@ trait JEP431_SequencedMapTestTraitOnJDK21 {
 
   @Test def reversed(): Unit = {
 
-    // Soft fail on not-yet-implemented LinkedHashMap & SortedMap
-    val isImplemented = (classUnderTest == "TreeMap")
+    // Soft fail on SN not-yet-implemented LinkedHashMap & SortedMap
+    val isImplemented = (Platform.executingInJVM) ||
+      (classUnderTest == "TreeMap")
+
     assumeTrue(
       s"${classUnderTest}#reversed() is Not Yet Implemented",
       isImplemented
@@ -230,14 +233,29 @@ trait JEP431_SequencedMapTestTraitOnJDK21 {
       reversedSeqEntrySet.size()
     )
 
-    val reversedEntryList = new ju.ArrayList(reversedEntrySet)
-    val reversedSeqEntryList = new ju.ArrayList(reversedSeqEntrySet)
+    locally {
+      val reversedEntryList = new ju.ArrayList(reversedEntrySet)
+      val reversedSeqEntryList = new ju.ArrayList(reversedSeqEntrySet)
 
-    assertEquals(
-      s"${classUnderTest}# reversed contents",
-      reversedEntryList,
-      reversedSeqEntryList
-    )
+      // CodeRabbit suggested using an independently generated expected.
+      val seqMapAsUnmodifiableList =
+        seqMap.entrySet().stream().toList()
+      val generatedReverseEntryList =
+        new ju.ArrayList(seqMapAsUnmodifiableList)
+      ju.Collections.reverse(generatedReverseEntryList)
+
+      assertEquals(
+        s"${classUnderTest}#reversed contents, independent",
+        generatedReverseEntryList,
+        reversedSeqEntryList
+      )
+
+      assertEquals(
+        s"${classUnderTest}#reversed contents",
+        reversedEntryList,
+        reversedSeqEntryList
+      )
+    }
   }
 
 // ---------------------------------------------------------------------------
