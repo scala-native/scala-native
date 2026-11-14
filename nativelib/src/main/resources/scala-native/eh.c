@@ -11,6 +11,11 @@
 #include <stddef.h>
 #include <stdatomic.h>
 
+// Link the whole _Unwind_* API from a static library: a host linked with
+// libgcc_s would otherwise mix both unwinders and terminate (#3893).
+__attribute__((used)) static void *const scalanative_unwind_api =
+    (void *)&_Unwind_GetIPInfo;
+
 #if defined(__SCALANATIVE_DELIMCC)
 #include "delimcc.h"
 #include <setjmp.h>

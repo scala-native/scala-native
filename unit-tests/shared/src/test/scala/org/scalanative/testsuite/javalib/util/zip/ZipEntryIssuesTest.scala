@@ -6,7 +6,7 @@ import java.util.Arrays
 import java.util.zip.{ZipEntry, ZipFile, ZipOutputStream}
 
 import org.junit.Assert._
-import org.junit.{BeforeClass, Ignore, Test}
+import org.junit.{BeforeClass, Test}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
@@ -135,8 +135,6 @@ class ZipEntryIssuesTest {
     }
   }
 
-// Revert PR #3794 so I can chase intermittent bad values & Segfault
-  @Ignore
   // Issue 3787
   @Test def setEntryDosTime(): Unit = {
     val srcName =

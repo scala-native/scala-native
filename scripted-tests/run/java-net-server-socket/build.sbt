@@ -1,6 +1,6 @@
 import java.io.{BufferedReader, InputStreamReader, PrintWriter}
 import java.net.{InetSocketAddress, Socket}
-import java.nio.file.{Files, Paths}
+import java.nio.file.Files
 
 enablePlugins(ScalaNativePlugin)
 
@@ -16,16 +16,26 @@ scalaVersion := {
 
 lazy val launchClient = taskKey[Unit]("Launching a client for tests")
 
+// Echoes every line received from the server started by `run`.
+// The server writes its port to `server-port.txt` once it is listening.
 launchClient := {
-  new java.util.Timer().schedule(
-    new java.util.TimerTask() {
-      def run = {
-        val portFile = Paths.get("server-port.txt")
-        val lines = Files.readAllLines(portFile)
-        val port = lines.get(0).toInt
+  val portFile = (baseDirectory.value / "server-port.txt").toPath
+  Files.deleteIfExists(portFile)
+  val client = new Thread(new Runnable {
+    def run(): Unit = {
+      val deadline = System.nanoTime() + 600L * 1000 * 1000 * 1000
+      var port = -1
+      while (port < 0 && System.nanoTime() < deadline) {
+        if (Files.exists(portFile))
+          port = new String(Files.readAllBytes(portFile)).trim.toInt
+        else Thread.sleep(100)
+      }
+      if (port < 0) sys.error("Server port file was not created in time")
 
-        val socket = new Socket
-        socket.connect(new InetSocketAddress("127.0.0.1", port), 1000)
+      val socket = new Socket
+      try {
+        socket.connect(new InetSocketAddress("127.0.0.1", port), 10000)
+        socket.setSoTimeout(30000)
         val out = new PrintWriter(socket.getOutputStream, true)
         val in =
           new BufferedReader(new InputStreamReader(socket.getInputStream))
@@ -35,12 +45,9 @@ launchClient := {
           out.println(line)
           line = in.readLine
         }
-
-        in.close
-        out.close
-        socket.close
-      }
-    },
-    10000
-  )
+      } finally socket.close()
+    }
+  })
+  client.setDaemon(true)
+  client.start()
 }

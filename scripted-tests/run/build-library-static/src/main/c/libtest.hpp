@@ -24,5 +24,6 @@ long add_longs(long l, long r);
 struct Foo *retStructPtr(void);
 void updateStruct(struct Foo *p);
 void handledException();
+void unhandledException();
 void sn_runGC(void);
 }

@@ -362,11 +362,17 @@ private[util] object TreeSet {
 
     @inline
     protected def nextKey(key: E, boundKind: RB.BoundKind): E =
-      ifWithinUpperBound(RB.minKeyAfter(tree, key, boundKind))
+      ifWithinUpperBound(
+        if (isWithinLowerBound(key)) RB.minKeyAfter(tree, key, boundKind)
+        else RB.minKeyAfter(tree, lowerBound, lowerKind)
+      )
 
     @inline
     protected def previousKey(key: E, boundKind: RB.BoundKind): E =
-      ifWithinLowerBound(RB.maxKeyBefore(tree, key, boundKind))
+      ifWithinLowerBound(
+        if (isWithinUpperBound(key)) RB.maxKeyBefore(tree, key, boundKind)
+        else RB.maxKeyBefore(tree, upperBound, upperKind)
+      )
 
     protected def subSetGeneric(
         newFromElement: E,
@@ -475,10 +481,16 @@ private[util] object TreeSet {
     // Implementation of the abstract methods from AbstractProjection
 
     protected def nextKey(key: E, boundKind: RB.BoundKind): E =
-      ifWithinLowerBound(RB.maxKeyBefore(tree, key, boundKind))
+      ifWithinLowerBound(
+        if (isWithinUpperBound(key)) RB.maxKeyBefore(tree, key, boundKind)
+        else RB.maxKeyBefore(tree, upperBound, upperKind)
+      )
 
     protected def previousKey(key: E, boundKind: RB.BoundKind): E =
-      ifWithinUpperBound(RB.minKeyAfter(tree, key, boundKind))
+      ifWithinUpperBound(
+        if (isWithinLowerBound(key)) RB.minKeyAfter(tree, key, boundKind)
+        else RB.minKeyAfter(tree, lowerBound, lowerKind)
+      )
 
     protected def subSetGeneric(
         newFromElement: E,
@@ -494,7 +506,7 @@ private[util] object TreeSet {
         new RB.Bound(toElement, toBoundKind),
         new RB.Bound(newToElement, newToBoundKind)
       )
-      new Projection(
+      new DescendingProjection(
         tree,
         intersectedFromBound.bound,
         intersectedFromBound.kind,

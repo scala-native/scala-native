@@ -373,6 +373,45 @@ class ProcessTest {
     }
   }
 
+  // Issue 4965
+  @Test def waitForWithTimeoutAcceptsHugeTimeouts(): Unit = {
+    val timeouts = Seq(
+      (Long.MaxValue, TimeUnit.NANOSECONDS),
+      (Long.MaxValue, TimeUnit.MILLISECONDS),
+      (Long.MaxValue, TimeUnit.SECONDS),
+      (Long.MaxValue, TimeUnit.DAYS),
+      (Long.MaxValue / 2, TimeUnit.NANOSECONDS),
+      (1L << 32, TimeUnit.MILLISECONDS),
+      (100000L * 365, TimeUnit.DAYS)
+    )
+    for ((timeout, unit) <- timeouts) {
+      val proc = processSleep(0.2).start()
+      try {
+        assertTrue(
+          s"process should have exited (limit: $timeout $unit)",
+          proc.waitFor(timeout, unit)
+        )
+        assertEquals(s"exit code (limit: $timeout $unit)", 0, proc.exitValue)
+      } finally {
+        proc.destroyForcibly()
+      }
+    }
+  }
+
+  @Test def waitForWithNonPositiveTimeoutDoesNotWait(): Unit = {
+    val proc = processSleep(2.0).start()
+    try {
+      for (timeout <- Seq(0L, -1L, Long.MinValue))
+        assertFalse(
+          s"waitFor($timeout) should not wait",
+          proc.waitFor(timeout, TimeUnit.SECONDS)
+        )
+      assertTrue("process should be alive", proc.isAlive)
+    } finally {
+      proc.destroyForcibly()
+    }
+  }
+
   private def processForDestruction(): Process = {
     /* Return a Process that is suitable to receive a SIGTERM or SIGKILL
      * signal and return that signal as its exit code.
