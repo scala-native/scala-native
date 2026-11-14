@@ -48,6 +48,8 @@ object CVarArgList {
 
   @resolvedAtLinktime
   def isWindowsOrApple = isWindows || isApple
+  // Kept for binary compatibility
+  def isWindowsOrMac = isWindowsOrApple
   @resolvedAtLinktime
   def isArm64 = target.arch == "aarch64"
   @resolvedAtLinktime
