@@ -19,8 +19,8 @@ mkdir -p sandbox/src/main/scala
 cp "$here/StaticLib.scala" sandbox/src/main/scala/
 
 project="sandbox${version/./_}"
-sbt "set $project/nativeConfig ~= { _.withBuildTarget(scala.scalanative.build.BuildTarget.libraryStatic) }" \
-  "$project/nativeLink"
+# A single argument: the sbt client would join multiple ones into one command
+sbt "set LocalProject(\"$project\") / nativeConfig ~= { _.withBuildTarget(scala.scalanative.build.BuildTarget.libraryStatic) }; $project/nativeLink"
 
 lib="$(find "$root/target" "$root/sandbox" -name '*sandbox*.a' -newer "$here/run.sh" 2>/dev/null | head -n 1)"
 test -n "$lib" || { echo "Static library not found" >&2; exit 1; }
