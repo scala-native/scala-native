@@ -27,7 +27,7 @@ trap 'rm -rf "$workdir"' EXIT
 
 # Force IPv4: GitHub runners often have no IPv6, and apt.llvm.org prefers AAAA.
 fetch() {
-  curl -4 -fsSL --connect-timeout 20 --max-time 120 -o "$2" "$1"
+  curl -4 -fsSL --connect-timeout 20 --max-time 30 -o "$2" "$1"
 }
 
 install_from_apt_llvm_org() {
