@@ -774,6 +774,13 @@ void *scalanative_continuation_oneshot_resume(void *owner, void *arg) {
     return dispatch(thread, self);
 }
 
+/* Releases a suspended continuation that cannot be handed over to an owner,
+ * dropping what it left pending. */
+void scalanative_continuation_oneshot_discard(Continuation *continuation) {
+    Coroutine *top = (Coroutine *)continuation;
+    destroyChain(currentThread(), top, top->label);
+}
+
 // Entry points that `boundary` and `suspend` were inlined to in code
 // compiled against 0.5.12 and older.
 void *scalanative_continuation_boundary(ContinuationBody *body, void *arg) {
@@ -812,6 +819,8 @@ UNSUPPORTED(void scalanative_continuation_oneshot_leave(
     ContinuationBoundaryLabel label, void *result))
 UNSUPPORTED(void scalanative_continuation_oneshot_captured(
     Continuation *continuation, void *owner))
+UNSUPPORTED(void scalanative_continuation_oneshot_discard(
+    Continuation *continuation))
 UNSUPPORTED(void *scalanative_continuation_oneshot_resume(void *owner,
                                                           void *arg))
 UNSUPPORTED(void scalanative_continuation_oneshot_watch_multishot(void *probe))
