@@ -37,10 +37,11 @@ object FakeStackRootTest {
   @noinline def hold(): WeakReference[Box] = {
     val slot = stackalloc[Ptr[Byte]]()
     val ref = store(slot)
-    assumeTrue(
-      "ASAN_OPTIONS=detect_stack_use_after_return=1 is required",
-      !LinktimeInfo.asanEnabled || Native.inFakeStack(slot) != 0
-    )
+    if (LinktimeInfo.asanEnabled)
+      assertTrue(
+        "stackalloc was not placed on the fake stack",
+        Native.inFakeStack(slot) != 0
+      )
     Native.collect(slot)
     ref
   }
