@@ -180,10 +180,16 @@ private[scalanative] class Interflow(val config: build.Config)(implicit
   def popBlockFresh(): Unit =
     blockFreshTl.set(blockFreshTl.get.tail)
 
+  // Keeps the order of the input: relinking takes the order of each class's
+  // fields, and so the object layout, from the order of these definitions.
   def result(): Seq[nir.Defn] = {
-    val optimized = originals.clone()
-    optimized ++= done
-    optimized.values.toSeq
+    val optimized = analysis.defns.map { defn =>
+      defn.name match {
+        case name: nir.Global.Member => done.getOrElse(name, defn)
+        case _                       => defn
+      }
+    }
+    optimized ++ done.valuesIterator.filterNot(d => originals.contains(d.name))
   }
 
   protected def mode: build.Mode = config.compilerConfig.mode

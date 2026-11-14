@@ -28,14 +28,14 @@ private[codegen] class VirtualTable(cls: linker.Class)(implicit
       impls(sig) = impl
     }
     slots.foreach { sig => addImpl(sig) }
-    cls.calls.foreach { sig =>
-      if (cls.targets(sig).size > 1) {
-        if (!impls.contains(sig)) {
-          addSlot(sig)
-          addImpl(sig)
-        }
+    // Sorted: slot order must not follow hash order of calls
+    cls.calls.toSeq
+      .filter(sig => !impls.contains(sig) && cls.targets(sig).size > 1)
+      .sortBy(_.mangle)
+      .foreach { sig =>
+        addSlot(sig)
+        addImpl(sig)
       }
-    }
   }
   val value: nir.Val =
     nir.Val.ArrayValue(nir.Type.Ptr, slots.map(impls).toSeq)
