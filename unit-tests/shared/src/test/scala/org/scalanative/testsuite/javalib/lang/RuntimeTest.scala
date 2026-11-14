@@ -10,8 +10,6 @@ import org.junit.Test
 
 import org.scalanative.testsuite.utils.Platform._
 
-import scala.scalanative.junit.utils.AssumesHelper._
-
 class RuntimeTest {
   import ProcessUtils._
   private val EOL = System.lineSeparator()
@@ -49,16 +47,18 @@ class RuntimeTest {
     assertEquals(Scripts.values.map(_.filename), out.split(EOL).toSet)
   }
   @Test def execEnvp(): Unit = {
-    assumeNotJVMCompliant()
     assumeFalse(
       "Not possible in Windows, would use dir keyword anyway",
       isWindows
     )
 
+    // The command is looked up in the parent's PATH, as on the JVM, so the
+    // fake 'ls' in resourceDir is not used.
     val envp = Array(s"PATH=$resourceDir")
-    val proc = Runtime.getRuntime.exec(Array("ls"), envp)
+    val proc = Runtime.getRuntime.exec(Array("ls", resourceDir), envp)
+    val out = readInputStream(proc.getInputStream)
     assertTrue(proc.waitFor(30, TimeUnit.SECONDS))
-    assertEquals("1", readInputStream(proc.getInputStream))
+    assertEquals(Scripts.values.map(_.filename), out.split(EOL).toSet)
   }
   @Test def execDir(): Unit = {
     val proc =

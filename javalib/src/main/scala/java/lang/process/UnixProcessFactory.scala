@@ -5,6 +5,7 @@ import java.{util => ju}
 
 import scala.annotation.tailrec
 
+import scalanative.libc.LibcExt
 import scalanative.meta.LinktimeInfo
 import scalanative.posix.errno._
 import scalanative.posix.spawn._
@@ -53,8 +54,10 @@ private[process] object UnixProcessFactory {
 
   def forkChild(builder: ProcessBuilder)(implicit z: Zone): GenericProcess = {
     val cmd = builder.command()
-    val binaries = binaryPaths(builder, cmd.get(0)).toList
-    if (binaries.isEmpty) throw programNotFound(cmd)
+    val candidates = binaryPaths(builder, cmd.get(0)).toList
+    if (candidates.isEmpty) throw cannotRun(cmd, ENOENT)
+    val binaries = candidates.filter(isExecutableIn(builder, _))
+    if (binaries.isEmpty) throw cannotRun(cmd, EACCES)
 
     var success = false
     val (infds, outfds, errfds) = createPipes(builder)
@@ -106,6 +109,7 @@ private[process] object UnixProcessFactory {
         if (unistd.execve(bin, argv, envp) == -1 && errno == ENOEXEC) {
           val newArgv = nullTerminate(shellFallbackCommand(b, cmd))
           unistd.execve(toCString(shell), newArgv, envp)
+          unistd._exit(127)
         }
       }
 
@@ -241,23 +245,27 @@ private[process] object UnixProcessFactory {
         } else status
       }
 
+      // Like execvp: skip candidates that cannot be executed, report
+      // EACCES if any candidate was found but none could be run.
       val execIter = binaryPaths(builder, cmd.get(0))
-      if (!execIter.hasNext) throw programNotFound(cmd)
-
-      var status = ENOEXEC
-      var exec: String = null
-      while (status == ENOEXEC && execIter.hasNext) {
+      var status = ENOENT
+      var sawEACCES = false
+      var done = false
+      while (!done && execIter.hasNext) {
         val candidate = execIter.next()
-        status = spawn(candidate, argv)
-        if (status == ENOEXEC && exec == null) exec = candidate
+        status =
+          if (isDirectoryIn(builder, candidate)) EACCES
+          else spawn(candidate, argv)
+        if (status == ENOEXEC) {
+          status =
+            spawn(shell, nullTerminate(shellFallbackCommand(candidate, cmd)))
+          done = true
+        } else if (status == EACCES) sawEACCES = true
+        else if (!isSkippable(status)) done = true
       }
+      if (status != 0 && sawEACCES && isSkippable(status)) status = EACCES
 
-      if (status == ENOEXEC) { // try falling back to shell script
-        val fallbackCmd = shellFallbackCommand(exec, cmd)
-        status = spawn(shell, nullTerminate(fallbackCmd))
-      }
-
-      UnixProcess.throwOnErrnum(status, "Unable to posix_spawn process")
+      if (status != 0) throw cannotRun(cmd, status)
 
       success = true
       val handle = new UnixProcessHandle(!pidPtr)(builder)
@@ -280,10 +288,13 @@ private[process] object UnixProcessFactory {
     }
   }
 
-  private def programNotFound(cmd: ju.List[String]): IOException =
+  private def isSkippable(errnum: CInt): Boolean =
+    errnum == ENOENT || errnum == ENOTDIR || errnum == EACCES
+
+  private def cannotRun(cmd: ju.List[String], errnum: CInt): IOException =
     new IOException(
-      "Cannot run program \"" + cmd.get(0) + "\": error=" + ENOENT +
-        ", No such file or directory"
+      "Cannot run program \"" + cmd.get(0) + "\": error=" + errnum + ", " +
+        LibcExt.strError(errnum)
     )
 
   // ENOEXEC fallback like execvp: `sh ./file args...`, args never joined.
@@ -424,29 +435,50 @@ private[process] object UnixProcessFactory {
   private def getFileNameCString(f: File)(implicit z: Zone) =
     toCString(f.getAbsolutePath())
 
-  // The execvpe function isn't available on all platforms so find the
-  // possible binaries to exec.
-  // Relative PATH entries are checked against the child's directory.
-  private def binaryPaths(
-      builder: ProcessBuilder,
-      bin: String
+  private def inChildDir(builder: ProcessBuilder, path: String): File = {
+    val f = new File(path)
+    if (builder.isCwd || f.isAbsolute()) f
+    else new File(builder.directory(), path)
+  }
+
+  /* exec of a directory fails with EACCES, but some setups (fork path,
+   * qemu-user) cannot report exec failures to the parent, so check here.
+   */
+  private def isDirectoryIn(builder: ProcessBuilder, path: String): Boolean =
+    inChildDir(builder, path).isDirectory()
+
+  private def isExecutableIn(builder: ProcessBuilder, path: String): Boolean =
+    !isDirectoryIn(builder, path) && inChildDir(builder, path).canExecute()
+
+  // Like execvp, skip only candidates that do not exist; other errors
+  // are left for the exec attempt to report.
+  private def mayExist(builder: ProcessBuilder, path: String)(implicit
+      z: Zone
+  ): Boolean = {
+    val p = toCString(inChildDir(builder, path).getPath())
+    unistd.access(p, unistd.F_OK) == 0 || (errno != ENOENT && errno != ENOTDIR)
+  }
+
+  /* Executable lookup follows the JVM: a command without '/' is searched in
+   * the PATH of this (parent) process, not in the PATH set in the child's
+   * environment. Relative PATH entries are resolved against the child's
+   * working directory.
+   */
+  private def binaryPaths(builder: ProcessBuilder, bin: String)(implicit
+      z: Zone
   ): Iterator[String] = {
-    val environment = builder.environment()
-    if (bin.indexOf('/') >= 0 || bin.startsWith(".")) {
-      Iterator(bin)
-    } else {
-      val path = environment.get("PATH") match {
-        case null => "/bin:/usr/bin:/usr/local/bin"
-        case p    => p
+    val candidates =
+      if (bin.indexOf('/') >= 0) Iterator(bin)
+      else {
+        val path = System.getenv("PATH") match {
+          case null => "/bin:/usr/bin"
+          case p    => p
+        }
+        path.split(File.pathSeparator, -1).iterator.map { dir =>
+          if (dir.isEmpty) bin else new File(dir, bin).getPath()
+        }
       }
-      path.split(File.pathSeparator).iterator.flatMap { absPath =>
-        val f = if (absPath.isEmpty) new File(bin) else new File(absPath, bin)
-        val inChildDir =
-          if (builder.isCwd || f.isAbsolute()) f
-          else new File(builder.directory(), f.getPath())
-        if (inChildDir.canExecute()) Some(f.toString()) else None
-      }
-    }
+    candidates.filter(mayExist(builder, _))
   }
 
 }
