@@ -33,4 +33,7 @@ trait NavigableMap[K, V] extends SortedMap[K, V] {
   def subMap(fromKey: K, toKey: K): SortedMap[K, V]
   def headMap(toKey: K): SortedMap[K, V]
   def tailMap(fromKey: K): SortedMap[K, V]
+
+  /* Since JDK 21 */
+  override def reversed(): NavigableMap[K, V] = descendingMap()
 }
