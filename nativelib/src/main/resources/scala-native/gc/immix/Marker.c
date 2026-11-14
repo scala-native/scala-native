@@ -137,8 +137,7 @@ void Marker_Mark(Heap *heap, Stack *stack) {
                 GC_ObjectTracerFn *tracer = GCHooks_objectTracer(object->rtti);
                 if (tracer != NULL) {
                     ScanContext context = {heap, stack};
-                    tracer((void **)object->fields, Marker_scanRange,
-                           &context);
+                    tracer((void **)object->fields, Marker_scanRange, &context);
                 }
             }
         }
