@@ -134,13 +134,6 @@ sealed trait NativeConfig {
   /** Base name for executable or library, typically the project name. */
   def baseName: String
 
-  /** Command used to execute binaries built for a target that cannot be
-   *  executed directly on the host, e.g. QEMU user mode emulator or a launcher
-   *  for iOS simulator. The path of the binary and its arguments are appended
-   *  to it. Empty when the binary should be executed directly.
-   */
-  def targetRunner: Seq[String]
-
   /** Configuration when doing optimization */
   def optimizerConfig: OptimizerConfig
 
@@ -326,10 +319,6 @@ sealed trait NativeConfig {
    */
   def withBaseName(value: String): NativeConfig
 
-  /** Create a new config with given command used to execute built binaries.
-   */
-  def withTargetRunner(value: Seq[String]): NativeConfig
-
   /** Create an optimization configuration */
   final def withOptimizerConfig(value: OptimizerConfig): NativeConfig =
     withOptimizerConfig(_ => value)
@@ -381,7 +370,6 @@ object NativeConfig {
       resourceExcludePatterns = Seq.empty,
       serviceProviders = Map.empty,
       baseName = "",
-      targetRunner = Seq.empty,
       optimizerConfig = OptimizerConfig.empty,
       sourceLevelDebuggingConfig = SourceLevelDebuggingConfig.disabled,
       semanticsConfig = SemanticsConfig.default
@@ -415,7 +403,6 @@ object NativeConfig {
       resourceExcludePatterns: Seq[String],
       serviceProviders: Map[ServiceName, Iterable[ServiceProviderName]],
       baseName: String,
-      targetRunner: Seq[String],
       optimizerConfig: OptimizerConfig,
       sourceLevelDebuggingConfig: SourceLevelDebuggingConfig,
       semanticsConfig: SemanticsConfig
@@ -529,9 +516,6 @@ object NativeConfig {
       copy(baseName = value)
     }
 
-    def withTargetRunner(value: Seq[String]): NativeConfig =
-      copy(targetRunner = value)
-
     override def withOptimizerConfig(
         update: Mapping[OptimizerConfig]
     ): NativeConfig = {
@@ -596,7 +580,6 @@ object NativeConfig {
           | - resourceIncludePatterns: ${showSeq(resourceIncludePatterns)}
           | - resourceExcludePatterns: ${showSeq(resourceExcludePatterns)}
           | - serviceProviders:        ${showMap(serviceProviders)}
-          | - targetRunner:            ${showSeq(targetRunner)}
           | - optimizerConfig:         ${optimizerConfig.show(" " * 4)}
           | - semanticsConfig:         ${semanticsConfig.show(" " * 4)}
           | - sourceLevelDebuggingConfig: ${sourceLevelDebuggingConfig.show(

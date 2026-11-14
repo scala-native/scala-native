@@ -331,7 +331,7 @@ used to launch them, e.g. an emulator or a simulator launcher. The path
 of the binary and its arguments are appended to it:
 
 ``` scala
-nativeConfig ~= { _.withTargetRunner(Seq("qemu-aarch64-static", "-L", "/usr/aarch64-linux-gnu")) }
+nativeRunConfig ~= { _.withTargetRunner(Seq("qemu-aarch64-static", "-L", "/usr/aarch64-linux-gnu")) }
 ```
 
 By default it is read from the `SCALANATIVE_TARGET_RUNNER` environment

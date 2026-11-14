@@ -45,8 +45,7 @@ object Discover {
    *  var, empty by default. Arguments are delimited by whitespaces.
    */
   def targetRunner(): Seq[String] =
-    getenv("SCALANATIVE_TARGET_RUNNER")
-      .toList
+    getenv("SCALANATIVE_TARGET_RUNNER").toList
       .flatMap(_.trim().split("\\s+"))
       .filter(_.nonEmpty)
 

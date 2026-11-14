@@ -136,7 +136,7 @@ object TestAdapter {
     def binaryFile: File
     def envVars: Map[String, String]
 
-    /** Command used to execute the test binary, see `NativeConfig.targetRunner`
+    /** Command used to execute the test binary, see `RunConfig.targetRunner`
      */
     def targetRunner: Seq[String]
     def logger: Logger
