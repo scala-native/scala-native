@@ -48,7 +48,7 @@ class NetworkInterfaceTest {
       s":0:0:0:0:0:0:1%${loopbackIfName}"
 
   val osIPv6LoopbackAddress =
-    if ((Platform.isMacOs) || (Platform.isFreeBSD) || (Platform.isOpenBSD) || (Platform.isNetBSD))
+    if ((Platform.isApple) || (Platform.isFreeBSD) || (Platform.isOpenBSD) || (Platform.isNetBSD))
       s"fe80${osIPv6LoopbackSuffix}"
     else
       s"0${osIPv6LoopbackSuffix}"
@@ -209,7 +209,7 @@ class NetworkInterfaceTest {
     assertNotNull(lbIf)
 
     val expected =
-      if ((Platform.isMacOs) || (Platform.isFreeBSD) || (Platform.isOpenBSD) || (Platform.isNetBSD))
+      if ((Platform.isApple) || (Platform.isFreeBSD) || (Platform.isOpenBSD) || (Platform.isNetBSD))
         true
       else false // Linux
 

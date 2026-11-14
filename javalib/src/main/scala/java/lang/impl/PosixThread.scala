@@ -225,7 +225,7 @@ private[java] class PosixThread(
     checkParkStatus(
       waitStatus,
       if (time == 0) "park, wait" else "park, timed-wait",
-      timeoutAllowed = if (isMac) true else time > 0
+      timeoutAllowed = if (isApple) true else time > 0
     )
   }
 
@@ -490,7 +490,7 @@ private[lang] object PosixThread extends NativeThread.Companion {
 
   // MacOS does not define `pthread_condattr_setclock`, use realtime (default) clocks instead
   val usesClockMonotonicCondAttr =
-    if (isMac || isFreeBSD) false
+    if (isApple || isFreeBSD) false
     else {
       if (isMultithreadingEnabled) {
         checkStatus("relative-time conditions attrs - set clock") {

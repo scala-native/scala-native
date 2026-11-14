@@ -20,6 +20,9 @@ object Platform {
   @name("scalanative_platform_is_mac")
   def isMac(): Boolean = extern
 
+  @name("scalanative_platform_is_apple")
+  def isApple(): Boolean = extern
+
   @name("scalanative_platform_probe_mac_x8664_is_arm64")
   def probeMacX8664IsArm64(): CInt = extern
 

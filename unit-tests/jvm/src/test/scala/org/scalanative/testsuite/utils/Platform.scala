@@ -46,7 +46,9 @@ object Platform {
   final val isNetBSD = osNameProp.equals("NetBSD")
   final val isLinux = osNameProp.toLowerCase.contains("linux")
   final val isMacOs = osNameProp.toLowerCase.contains("mac")
-  final val isIOS = false
+  final val isApple = isMacOs
+  final val isAppleEmbedded = false
+  final val isAppleSimulator = false
   final val isWindows = osNameProp.toLowerCase.startsWith("windows")
 
   /** True when the current process can create symbolic links. */

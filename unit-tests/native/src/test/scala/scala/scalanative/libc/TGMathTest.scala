@@ -331,7 +331,7 @@ class TGMathTest {
       //
       // The condition when a  truthful isArm64 is available should be:
       // (Platform.isMac() && PlatformExt.isArm64)
-      val nEps = if (Platform.isMac()) 4 else 2
+      val nEps = if (Platform.isApple()) 4 else 2
 
       assertEquals(
         tanN0,

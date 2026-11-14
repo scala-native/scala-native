@@ -148,7 +148,7 @@ object netdbOps {
   import netdb._
 
   @resolvedAtLinktime
-  def useBsdAddrinfo = (LinktimeInfo.isMac ||
+  def useBsdAddrinfo = (LinktimeInfo.isApple ||
     LinktimeInfo.isFreeBSD ||
     LinktimeInfo.isNetBSD ||
     LinktimeInfo.isWindows ||

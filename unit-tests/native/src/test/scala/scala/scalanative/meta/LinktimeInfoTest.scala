@@ -27,6 +27,7 @@ class LinktimeInfoTest {
     assertEquals("FreeBSD", Platform.isFreeBSD(), LinktimeInfo.isFreeBSD)
     assertEquals("Linux", Platform.isLinux(), LinktimeInfo.isLinux)
     assertEquals("Mac", Platform.isMac(), LinktimeInfo.isMac)
+    assertEquals("Apple", Platform.isApple(), LinktimeInfo.isApple)
     assertEquals("Windows", Platform.isWindows(), LinktimeInfo.isWindows)
   }
 

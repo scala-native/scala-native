@@ -72,7 +72,7 @@ class SystemTest {
       val osVersion = System.getProperty("os.version")
       assertNotNull("os.version should not be null", osVersion)
       assertTrue("os.version should not be empty", osVersion.nonEmpty)
-      if (isMacOs) {
+      if (isApple) {
         // macOS version should be a dotted numeric string like "15.4" or "14.2.1"
         assertTrue(
           s"os.version '$osVersion' should match macOS version pattern",

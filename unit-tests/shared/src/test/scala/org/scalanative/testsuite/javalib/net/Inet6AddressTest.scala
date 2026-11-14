@@ -29,7 +29,7 @@ class Inet6AddressTest {
      * ScalaJVM on some operating systems throws one.
      */
 
-    if (!Platform.isMacOs) {
+    if (!Platform.isApple) {
       // Invalid interface name does throw.
       assertThrows(
         "getByName(\"::1%bogus\")",

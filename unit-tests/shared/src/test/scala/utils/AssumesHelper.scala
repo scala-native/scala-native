@@ -63,18 +63,18 @@ object AssumesHelper {
 
   def assumeSupportsSubprocesses() = {
     Assume.assumeFalse(
-      "iOS does not allow to spawn subprocesses",
-      Platform.isIOS
+      "iOS, tvOS and watchOS do not allow to spawn subprocesses",
+      Platform.isAppleEmbedded
     )
   }
 
-  /* sched_yield() executed in the iOS simulator always gives up the remaining
+  /* sched_yield() executed in the simulators of Apple platforms always gives up the remaining
    * time slice (~10ms), tests yielding in a hot loop would time out.
    */
   def assumeThreadYieldIsCheap() = {
     Assume.assumeFalse(
-      "Thread.yield() in iOS simulator blocks for a whole time slice",
-      Platform.isIOS
+      "Thread.yield() in the simulator blocks for a whole time slice",
+      Platform.isAppleSimulator
     )
   }
 

@@ -45,7 +45,7 @@ private[process] object ProcessExitChecker {
     else if (LinktimeInfo.isLinux)
       if (!scala.scalanative.linux.pidfd.has_pidfd_open()) None
       else Some(ProcessExitCheckerLinux)
-    else if (LinktimeInfo.isMac || LinktimeInfo.isFreeBSD)
+    else if (LinktimeInfo.isApple || LinktimeInfo.isFreeBSD)
       Some(ProcessExitCheckerFreeBSD) // Other BSDs should work but untested
     else None
 

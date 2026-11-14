@@ -1096,7 +1096,7 @@ private[codegen] abstract class AbstractCodeGen(
         touch(Lower.GCYieldPointTrapName)
         // The aarch64 safepoint trampoline resumes through x16
         val pollClobbersX16 = meta.buildConfig.targetsAarch64 &&
-          (meta.buildConfig.targetsLinux || meta.buildConfig.targetsMac)
+          (meta.buildConfig.targetsLinux || meta.buildConfig.targetsApple)
         val trapPtrType = if (useOpaquePointers) "ptr" else "i8**"
         str {
           if (pollClobbersX16)

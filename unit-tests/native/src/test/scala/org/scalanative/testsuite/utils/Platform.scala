@@ -41,7 +41,12 @@ object Platform {
   final val isNetBSD = runtime.Platform.isNetBSD()
   final val isLinux = runtime.Platform.isLinux()
   final val isMacOs = runtime.Platform.isMac()
-  final val isIOS = scala.scalanative.meta.LinktimeInfo.isIOS
+  // Any of Apple platforms, isMacOs is true only for macOS
+  final val isApple = runtime.Platform.isApple()
+  // iOS, tvOS, watchOS, visionOS: sandboxed, with a reduced C library
+  final val isAppleEmbedded = isApple && !isMacOs
+  final val isAppleSimulator =
+    scala.scalanative.meta.LinktimeInfo.isAppleSimulator
   final val isWindows = runtime.Platform.isWindows()
 
   /** True when the current process can create symbolic links. */

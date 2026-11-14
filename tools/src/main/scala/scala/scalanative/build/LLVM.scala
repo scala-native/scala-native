@@ -248,7 +248,7 @@ private[scalanative] object LLVM {
     // in a separate library there, so we use it only in other UNIX targets
     // (also Windows on msys and cgwin)
     val asNeededLinkerFlags =
-      if (config.targetsWindows || config.targetsMac) Nil
+      if (config.targetsWindows || config.targetsApple) Nil
       else List("-Wl,--as-needed")
     val linkopts =
       asNeededLinkerFlags ++ config.linkingOptions ++ links.map("-l" + _)
@@ -271,7 +271,7 @@ private[scalanative] object LLVM {
       if (config.compilerConfig.buildTarget == BuildTarget.LibraryDynamic)
         if (config.targetsLinux)
           List(s"-Wl,-soname,${config.artifactName}")
-        else if (config.targetsMac)
+        else if (config.targetsApple)
           List(s"-Wl,-install_name,@rpath/${config.artifactName}")
         else Nil
       else Nil
@@ -449,7 +449,7 @@ private[scalanative] object LLVM {
           if isNativeSource && config.compilerConfig.multithreadingSupport && usesContinuations =>
         Seq("-fno-lto")
       // Apple ld does not materialize unw_* symbols that exist only in bitcode.
-      case _ if config.targetsMac && isVendoredUnwind => Seq("-fno-lto")
+      case _ if config.targetsApple && isVendoredUnwind => Seq("-fno-lto")
       case lto => Seq(s"-flto=${lto.name}")
     }
   }
@@ -467,29 +467,28 @@ private[scalanative] object LLVM {
       case None     => Seq("-Wno-override-module")
     }
 
-  /** When cross-compiling to iOS the headers and libraries of the host macOS
-   *  SDK cannot be used. Unless the user has selected an SDK explicitly (using
-   *  `-isysroot` or `SDKROOT` env variable) try to locate one using `xcrun`.
+  /** When cross-compiling to iOS, tvOS or watchOS the headers and libraries of
+   *  the host macOS SDK cannot be used. Unless the user has selected an SDK
+   *  explicitly (using `-isysroot` or `SDKROOT` env variable) try to locate one
+   *  using `xcrun`.
    */
   private def appleSdkSysroot(implicit config: Config): Seq[String] = {
     def userDefined =
       sys.env.contains("SDKROOT") ||
         (config.compileOptions ++ config.linkingOptions)
           .exists(opt => opt == "-isysroot" || opt.startsWith("--sysroot"))
-    if (!config.targetsIOS || userDefined) Nil
-    else {
-      val sdk =
-        if (config.targetsIOSSimulator) "iphonesimulator" else "iphoneos"
-      Try(Process(Seq("xcrun", "--sdk", sdk, "--show-sdk-path")).!!.trim)
-        .filter(_.nonEmpty) match {
-        case Success(path) => Seq("-isysroot", path)
-        case Failure(_)    =>
-          config.logger.warn(
-            s"Unable to locate the $sdk SDK using `xcrun`, " +
-              "use `-isysroot` in compile and linking options to set it explicitly"
-          )
-          Nil
-      }
+    config.appleSdkName.filterNot(_ => userDefined).fold(Seq.empty[String]) {
+      sdk =>
+        Try(Process(Seq("xcrun", "--sdk", sdk, "--show-sdk-path")).!!.trim)
+          .filter(_.nonEmpty) match {
+          case Success(path) => Seq("-isysroot", path)
+          case Failure(_)    =>
+            config.logger.warn(
+              s"Unable to locate the $sdk SDK using `xcrun`, " +
+                "use `-isysroot` in compile and linking options to set it explicitly"
+            )
+            Nil
+        }
     }
   }
 
@@ -572,7 +571,7 @@ private[scalanative] object LLVM {
       case BuildTarget.LibraryStatic =>
         optionalPICflag ++ Seq("--emit-static-lib")
       case BuildTarget.LibraryDynamic =>
-        val libFlag = if (config.targetsMac) "-dynamiclib" else "-shared"
+        val libFlag = if (config.targetsApple) "-dynamiclib" else "-shared"
         Seq(libFlag) ++ optionalPICflag ++ optRdynamic
     }
   }

@@ -18,7 +18,7 @@ private[codegen] object GlobalSections {
     )
 
     def llvmName(config: build.Config): String =
-      if (config.targetsMac) s"__DATA,$machOName"
+      if (config.targetsApple) s"__DATA,$machOName"
       else if (config.targetsWindows) s"$coffName$$M"
       else name
   }

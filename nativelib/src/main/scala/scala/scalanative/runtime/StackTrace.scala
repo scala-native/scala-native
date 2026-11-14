@@ -187,7 +187,7 @@ private[runtime] object StackTrace {
 
   @resolvedAtLinktime
   private def hasDebugInfo: Boolean =
-    (LinktimeInfo.isMac || LinktimeInfo.isLinux || LinktimeInfo.isWindows) &&
+    (LinktimeInfo.isApple || LinktimeInfo.isLinux || LinktimeInfo.isWindows) &&
       !LinktimeInfo.is32BitPlatform &&
       LinktimeInfo.sourceLevelDebuging.generateFunctionSourcePositions
 

@@ -47,18 +47,18 @@ object CVarArgList {
   }
 
   @resolvedAtLinktime
-  def isWindowsOrMac = isWindows || isMac
+  def isWindowsOrApple = isWindows || isApple
   @resolvedAtLinktime
   def isArm64 = target.arch == "aarch64"
   @resolvedAtLinktime
   def isRiscV64 = target.arch == "riscv64"
 
   private final val countGPRegisters =
-    if (isArm64 && !isWindowsOrMac) 8
+    if (isArm64 && !isWindowsOrApple) 8
     else 6
   private final val countFPRegisters = 8
   private final val fpRegisterWords =
-    if (isArm64 && !isWindowsOrMac)
+    if (isArm64 && !isWindowsOrApple)
       16 / castRawSizeToInt(Intrinsics.sizeOf[Size])
     else 2
   private final val registerSaveWords =
@@ -69,7 +69,7 @@ object CVarArgList {
       varargs: Seq[CVarArg]
   )(implicit z: Zone): CVarArgList = {
     if (isWindows) toCVarArgList_X86_64_Windows(varargs)
-    else if (isArm64 && isMac)
+    else if (isArm64 && isApple)
       toCVarArgList_Arm64_MacOS(varargs)
     else if (isRiscV64)
       toCVarArgList_RiscV64(varargs)
@@ -165,7 +165,7 @@ object CVarArgList {
       )
     )
     val rawPtr = if (isArm64) {
-      if (isMac) toRawPtr(storageStart)
+      if (isApple) toRawPtr(storageStart)
       else {
         val vrTop = resultStorage + fpRegisterWords * countFPRegisters
         val grTop = vrTop + countGPRegisters

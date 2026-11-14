@@ -22,17 +22,43 @@ object LinktimeInfo {
   @resolvedAtLinktime
   def isAndroid: Boolean = target.env == "android"
 
-  /** True for all Darwin based Apple platforms: macOS, but also iOS (see
-   *  [[isIOS]]) which shares the same kernel interfaces and C ABI.
+  /** True for all Darwin based Apple platforms: macOS, iOS, tvOS, watchOS and
+   *  visionOS. They share the kernel interfaces, the C library and, for a given
+   *  CPU architecture, the C ABI. Equivalent of `__APPLE__` in C.
+   */
+  @resolvedAtLinktime
+  def isApple: Boolean = target.vendor == "apple"
+
+  /** True only when targeting macOS, see [[isApple]] for a check covering all
+   *  Apple platforms. Equivalent of `TARGET_OS_OSX` in C.
    */
   @resolvedAtLinktime
   def isMac: Boolean =
-    target.vendor == "apple" &&
-      (target.os == "darwin" || target.os == "macosx" || target.os == "ios")
+    isApple && (target.os == "darwin" || target.os == "macosx")
 
-  /** True when targeting iOS, either a physical device or the simulator */
+  /** True when targeting iOS, either a physical device, the simulator or Mac
+   *  Catalyst. Equivalent of `TARGET_OS_IOS` in C.
+   */
   @resolvedAtLinktime
-  def isIOS: Boolean = target.vendor == "apple" && target.os == "ios"
+  def isIOS: Boolean = isApple && target.os == "ios"
+
+  /** True when targeting tvOS, either a physical device or the simulator.
+   *  Equivalent of `TARGET_OS_TV` in C.
+   */
+  @resolvedAtLinktime
+  def isTvOS: Boolean = isApple && target.os == "tvos"
+
+  /** True when targeting watchOS, either a physical device or the simulator.
+   *  Equivalent of `TARGET_OS_WATCH` in C.
+   */
+  @resolvedAtLinktime
+  def isWatchOS: Boolean = isApple && target.os == "watchos"
+
+  /** True when targeting a simulator of one of Apple platforms. Equivalent of
+   *  `TARGET_OS_SIMULATOR` in C.
+   */
+  @resolvedAtLinktime
+  def isAppleSimulator: Boolean = isApple && target.env == "simulator"
 
   @resolvedAtLinktime
   def isFreeBSD: Boolean = target.os == "freebsd"
@@ -63,7 +89,7 @@ object LinktimeInfo {
   /** `Continuations.multi` */
   @resolvedAtLinktime()
   def isMultiShotContinuationsSupported: Boolean =
-    (isLinux || isMac || isFreeBSD || isOpenBSD || isNetBSD) &&
+    (isLinux || isApple || isFreeBSD || isOpenBSD || isNetBSD) &&
       !is32BitPlatform &&
       (target.arch == "x86_64" || target.arch == "aarch64")
 

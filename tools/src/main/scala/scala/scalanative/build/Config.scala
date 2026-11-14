@@ -153,18 +153,36 @@ sealed trait Config {
     }
   }
 
-  private[scalanative] lazy val targetsMac: Boolean =
+  /** Any of Apple platforms: macOS, iOS, tvOS, watchOS, visionOS */
+  private[scalanative] lazy val targetsApple: Boolean =
     compilerConfig.targetTriple.fold(Platform.isMac) { customTriple =>
       Seq("mac", "apple", "darwin").exists(customTriple.contains(_))
     }
 
-  private[scalanative] lazy val targetsIOS: Boolean =
-    compilerConfig.targetTriple.exists { customTriple =>
-      customTriple.contains("apple") && customTriple.contains("-ios")
-    }
+  /** macOS only, see [[targetsApple]] */
+  private[scalanative] lazy val targetsMac: Boolean =
+    targetsApple && appleSdkName.isEmpty
 
-  private[scalanative] lazy val targetsIOSSimulator: Boolean =
-    targetsIOS && compilerConfig.targetTriple.exists(_.endsWith("-simulator"))
+  /** Name of the Xcode SDK required to build for Apple platforms other than
+   *  macOS, e.g. `iphoneos` or `appletvsimulator`.
+   */
+  private[scalanative] lazy val appleSdkName: Option[String] =
+    compilerConfig.targetTriple
+      .filter(_ => targetsApple)
+      .map(TargetTriple.parse(_))
+      .flatMap { triple =>
+        val isSimulator = triple.env == "simulator"
+        def sdk(device: String, simulator: String) =
+          Some(if (isSimulator) simulator else device)
+        triple.os match {
+          case "ios" if triple.env == "macabi" => None // uses the macOS SDK
+          case "ios"     => sdk("iphoneos", "iphonesimulator")
+          case "tvos"    => sdk("appletvos", "appletvsimulator")
+          case "watchos" => sdk("watchos", "watchsimulator")
+          case "xros"    => sdk("xros", "xrsimulator")
+          case _         => None
+        }
+      }
 
   private[scalanative] lazy val targetsMsys: Boolean = {
     compilerConfig.targetTriple.fold(Platform.isMsys) { customTriple =>
