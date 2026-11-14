@@ -718,6 +718,25 @@ class InflaterTest {
 
     assertThrows(classOfIllegalStateException, inflate.getTotalOut())
   }
+
+  @Test def roundTripWithBuffersLargerThan64KiB(): Unit = {
+    val input = Array.tabulate[Byte](200000)(i => (i % 251).toByte)
+    val deflater = new Deflater(Deflater.NO_COMPRESSION)
+    val compressed = new Array[Byte](input.length + 1024)
+    deflater.setInput(input)
+    deflater.finish()
+    val compressedLength = deflater.deflate(compressed)
+    assertTrue("deflater finished", deflater.finished())
+    deflater.end()
+
+    val inflater = new Inflater()
+    inflater.setInput(compressed, 0, compressedLength)
+    val output = new Array[Byte](input.length)
+    assertEquals(input.length, inflater.inflate(output))
+    assertTrue("inflater finished", inflater.finished())
+    inflater.end()
+    assertArrayEquals(input, output)
+  }
 }
 
 class InflaterInputRetentionTest {
