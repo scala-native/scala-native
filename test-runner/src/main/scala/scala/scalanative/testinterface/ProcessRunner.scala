@@ -9,13 +9,13 @@ import scala.scalanative.build.Logger
 private[testinterface] class ProcessRunner(
     executableFile: File,
     envVars: Map[String, String],
-    targetRunner: Seq[String],
     args: Seq[String],
     logger: Logger,
     port: Int
 ) extends AutoCloseable {
 
   private val process = {
+    val targetRunner = TargetRunner.fromEnv()
     if (targetRunner.nonEmpty) {
       logger.info(s"Using target runner: ${targetRunner.mkString(" ")}")
     }

@@ -340,19 +340,27 @@ nativeConfig ~= { c =>
 }
 ```
 
-### Running cross compiled binaries
+### Running binaries using a custom launcher
 
-Binaries built for a different platform cannot be executed directly by
-`run` and `test`. Use the target runner to set a command which would be
-used to launch them, e.g. an emulator or a simulator launcher. The path
-of the binary and its arguments are appended to it:
+The `run` and `test` tasks execute the built binary directly. Set the
+`SCALANATIVE_TARGET_RUNNER` environment variable to execute it using a
+different command instead. The command is delimited by whitespaces, the
+path of the binary and its arguments are appended to it:
 
-``` scala
-nativeExecutionConfig ~= { _.withTargetRunner(Seq("qemu-aarch64-static", "-L", "/usr/aarch64-linux-gnu")) }
+``` sh
+SCALANATIVE_TARGET_RUNNER="qemu-aarch64-static -L /usr/aarch64-linux-gnu" sbt test
 ```
 
-By default it is read from the `SCALANATIVE_TARGET_RUNNER` environment
-variable (whitespace delimited).
+It allows to:
+
+-   run binaries built for a different platform, e.g. using an emulator
+    or a launcher spawning the process in the iOS simulator,
+-   wrap the binary with additional tools, e.g. `valgrind`, a profiler
+    or a debugger running in batch mode.
+
+The command needs to preserve the standard streams and the exit code of
+the binary. Tests communicate with sbt using a local socket, the wrapped
+binary needs to be able to connect to the host.
 
 (sbt_build_target)=
 ## Build target

@@ -26,6 +26,7 @@ import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport.{
   ScalaNativeCrossVersion => _, _
 }
 import scala.scalanative.sbtplugin.Utilities._
+import scala.scalanative.testinterface.TargetRunner
 import scala.scalanative.testinterface.adapter.TestAdapter
 import scala.scalanative.util.Scope
 
@@ -132,7 +133,6 @@ object ScalaNativePluginInternal {
         .withMode(Discover.mode())
         .withOptimize(Discover.optimize())
     },
-    nativeExecutionConfig := NativeExecutionConfig.discover(),
     ThisBuild / nativeConfig := (Global / nativeConfig).value,
     nativeWarnOldJVM := {
       val logger = streams.value.log
@@ -282,7 +282,7 @@ object ScalaNativePluginInternal {
       val env = (run / envVars).value.toSeq
       val logger = streams.value.log
       val binary = toFile(nativeLink.value).getAbsolutePath
-      val targetRunner = nativeExecutionConfig.value.targetRunner
+      val targetRunner = TargetRunner.fromEnv()
       val args = targetRunner ++: binary +: spaceDelimited("<arg>").parsed
 
       @volatile var pipeOutputThreads: List[Thread] = Nil
@@ -365,7 +365,6 @@ object ScalaNativePluginInternal {
             .Config()
             .withBinaryFile(testBinary)
             .withEnvVars(envVars)
-            .withTargetRunner(nativeExecutionConfig.value.targetRunner)
             .withLogger(logger)
 
           val adapter = newTestAdapter(config)
