@@ -145,8 +145,9 @@ object FileHelpers {
             flagsAndAttributes = FILE_ATTRIBUTE_NORMAL,
             templateFile = null
           )
-          HandleApi.CloseHandle(handle)
-          GetLastError() match {
+          val lastError = GetLastError()
+          if (handle != INVALID_HANDLE_VALUE) HandleApi.CloseHandle(handle)
+          lastError match {
             case ErrorCodes.ERROR_FILE_EXISTS => false
             case errCode                      =>
               if (handle != INVALID_HANDLE_VALUE) true
