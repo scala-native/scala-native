@@ -26,7 +26,9 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
   import AbstractPlainSocketImpl._
 
   protected def setSocketFdBlocking(fd: FileDescriptor, blocking: Boolean): Unit
-  protected def tryPollOnConnect(timeout: Int): Unit
+  protected def useNonBlockingConnect(timeout: Int): Boolean
+  protected def tryPollOnConnect(sockFd: FileDescriptor, timeout: Int): Unit
+  protected def wakeUpBlockedConnect(): Unit
   protected def tryPollOnAccept(): Unit
 
   protected[net] var fd = new FileDescriptor
@@ -41,7 +43,7 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
 
   override def getInetAddress: InetAddress = address
   override def getFileDescriptor: FileDescriptor = fd
-  protected final var isClosed: Boolean =
+  @volatile protected final var isClosed: Boolean =
     fd == InvalidSocketDescriptor
 
   private def throwIfClosed(methodName: String): Unit = {
@@ -170,81 +172,70 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
 
   private def connect4(addr: InetAddress, port: Int, timeout: Int): Unit = {
     val sa4 = stackalloc[in.sockaddr_in]()
-    val sa4Len = sizeof[in.sockaddr_in].toUInt
     SocketHelpers.prepareSockaddrIn4(addr, port, sa4)
-
-    if (timeout != 0)
-      setSocketFdBlocking(fd, blocking = false)
-
-    val connectRet = socket.connect(
-      fd.fd,
+    doConnect(
       sa4.asInstanceOf[Ptr[socket.sockaddr]],
-      sa4Len
+      sizeof[in.sockaddr_in].toUInt,
+      socket.AF_INET,
+      addr,
+      port,
+      timeout
     )
-
-    if (connectRet < 0) {
-      def inProgress = mapLastError(
-        onUnix = _ == EINPROGRESS,
-        onWindows = {
-          case WSAEINPROGRESS | WSAEWOULDBLOCK => true
-          case _                               => false
-        }
-      )
-      if (timeout > 0 && inProgress) {
-        tryPollOnConnect(timeout)
-      } else {
-        throw new ConnectException(
-          s"Could not connect to address: $addr on port: $port, errno: ${lastError()}"
-        )
-      }
-    }
-
-    this.address = addr
-    this.port = port
-    this.localport = fetchLocalPort(socket.AF_INET).getOrElse {
-      throw new ConnectException(
-        "Could not resolve a local port when connecting"
-      )
-    }
   }
 
   private def connect6(addr: InetAddress, port: Int, timeout: Int): Unit = {
     val sa6 = stackalloc[in.sockaddr_in6]()
-    val sa6Len = sizeof[in.sockaddr_in6].toUInt
-
     // By contract, all the bytes in sa6 are zero going in.
     SocketHelpers.prepareSockaddrIn6(addr, port, sa6)
-
-    if (timeout != 0)
-      setSocketFdBlocking(fd, blocking = false)
-
-    val connectRet = socket.connect(
-      fd.fd,
+    doConnect(
       sa6.asInstanceOf[Ptr[socket.sockaddr]],
-      sa6Len
+      sizeof[in.sockaddr_in6].toUInt,
+      sa6.sin6_family.toInt,
+      addr,
+      port,
+      timeout
     )
+  }
 
-    if (connectRet < 0) {
-      def inProgress = mapLastError(
-        onUnix = _ == EINPROGRESS,
-        onWindows = {
-          case WSAEINPROGRESS | WSAEWOULDBLOCK => true
-          case _                               => false
-        }
-      )
+  private def doConnect(
+      sa: Ptr[socket.sockaddr],
+      saLen: socket.socklen_t,
+      family: Int,
+      addr: InetAddress,
+      port: Int,
+      timeout: Int
+  ): Unit = {
+    // close() may replace `fd` concurrently, keep using the one we started with
+    val sockFd = fd
+    val nonBlocking = useNonBlockingConnect(timeout)
+    if (nonBlocking)
+      setSocketFdBlocking(sockFd, blocking = false)
 
-      if (timeout > 0 && inProgress) {
-        tryPollOnConnect(timeout)
-      } else {
-        throw new ConnectException(
-          s"Could not connect to address: $addr on port: $port, errno: ${lastError()}"
-        )
+    try {
+      if (socket.connect(sockFd.fd, sa, saLen) < 0) {
+        val err = lastError()
+        val inProgress =
+          if (isWindows) err == WSAEINPROGRESS || err == WSAEWOULDBLOCK
+          else err == EINPROGRESS
+        if (nonBlocking && inProgress) tryPollOnConnect(sockFd, timeout)
+        else
+          throw new ConnectException(
+            s"Could not connect to address: $addr on port: $port, errno: $err"
+          )
+      }
+    } catch {
+      case _: IOException if isClosed => throwIfClosed("connect")
+    } finally {
+      if (nonBlocking && !isClosed) {
+        try setSocketFdBlocking(sockFd, blocking = true)
+        catch { case _: IOException if isClosed => () }
       }
     }
+    throwIfClosed("connect")
 
     this.address = addr
     this.port = port
-    this.localport = fetchLocalPort(sa6.sin6_family.toInt).getOrElse {
+    this.localport = fetchLocalPort(family).getOrElse {
       throw new ConnectException(
         "Could not resolve a local port when connecting"
       )
@@ -278,6 +269,8 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
 
   override def close(): Unit = {
     if (!isClosed) {
+      isClosed = true
+      wakeUpBlockedConnect()
       if (isWindows) {
         WinSocketApi.closeSocket(fd.handle)
       } else {
@@ -294,7 +287,6 @@ private[net] abstract class AbstractPlainSocketImpl extends SocketImpl {
         unistd.close(fd.fd)
       }
       fd = InvalidSocketDescriptor
-      isClosed = true
     }
   }
 

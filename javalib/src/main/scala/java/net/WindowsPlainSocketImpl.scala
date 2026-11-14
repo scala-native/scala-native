@@ -30,13 +30,21 @@ private[net] class WindowsPlainSocketImpl extends AbstractPlainSocketImpl {
     fd = new FileDescriptor(socket, readOnly = false)
   }
 
-  protected final def tryPollOnConnect(timeout: Int): Unit = {
+  protected def useNonBlockingConnect(timeout: Int): Boolean = timeout > 0
+
+  // closesocket() aborts pending operations on the socket
+  protected def wakeUpBlockedConnect(): Unit = ()
+
+  protected final def tryPollOnConnect(
+      sockFd: FileDescriptor,
+      timeout: Int
+  ): Unit = {
     val hasTimeout = timeout > 0
     val deadline = if (hasTimeout) System.currentTimeMillis() + timeout else 0L
     val nAlloc = 1.toUInt
     val pollFd: Ptr[WSAPollFd] = stackalloc[WSAPollFd](nAlloc)
 
-    pollFd.socket = fd.handle
+    pollFd.socket = sockFd.handle
     pollFd.revents = 0.toShort
     pollFd.events = (POLLIN | POLLOUT).toShort
 
@@ -73,8 +81,7 @@ private[net] class WindowsPlainSocketImpl extends AbstractPlainSocketImpl {
       }
     }
 
-    try loop(timeout)
-    finally setSocketFdBlocking(fd, blocking = true)
+    loop(timeout)
   }
 
   protected def tryPollOnAccept(): Unit = {
