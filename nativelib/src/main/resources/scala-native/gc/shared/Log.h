@@ -51,32 +51,32 @@ void GC_Log_Write(GC_LogLevel level, const char *prefix, const char *format,
 #define GC_LOG_DEBUG(fmt, ...)                                                 \
     do {                                                                       \
         if (GC_Log_GetLevel() <= GC_LOG_LEVEL_DEBUG) {                         \
-            GC_Log_Write(GC_LOG_LEVEL_DEBUG, "[ScalaNative GC|Debug]",         \
-                         fmt, ##__VA_ARGS__);                                  \
+            GC_Log_Write(GC_LOG_LEVEL_DEBUG, "[ScalaNative GC|Debug]", fmt,    \
+                         ##__VA_ARGS__);                                       \
         }                                                                      \
     } while (0)
 
 #define GC_LOG_INFO(fmt, ...)                                                  \
     do {                                                                       \
         if (GC_Log_GetLevel() <= GC_LOG_LEVEL_INFO) {                          \
-            GC_Log_Write(GC_LOG_LEVEL_INFO, "[ScalaNative GC|Info]",           \
-                         fmt, ##__VA_ARGS__);                                  \
+            GC_Log_Write(GC_LOG_LEVEL_INFO, "[ScalaNative GC|Info]", fmt,      \
+                         ##__VA_ARGS__);                                       \
         }                                                                      \
     } while (0)
 
 #define GC_LOG_WARN(fmt, ...)                                                  \
     do {                                                                       \
         if (GC_Log_GetLevel() <= GC_LOG_LEVEL_WARN) {                          \
-            GC_Log_Write(GC_LOG_LEVEL_WARN, "[ScalaNative GC|Warning]",        \
-                         fmt, ##__VA_ARGS__);                                  \
+            GC_Log_Write(GC_LOG_LEVEL_WARN, "[ScalaNative GC|Warning]", fmt,   \
+                         ##__VA_ARGS__);                                       \
         }                                                                      \
     } while (0)
 
 #define GC_LOG_ERROR(fmt, ...)                                                 \
     do {                                                                       \
         if (GC_Log_GetLevel() <= GC_LOG_LEVEL_ERROR) {                         \
-            GC_Log_Write(GC_LOG_LEVEL_ERROR, "[ScalaNative GC|Error]",         \
-                         fmt, ##__VA_ARGS__);                                  \
+            GC_Log_Write(GC_LOG_LEVEL_ERROR, "[ScalaNative GC|Error]", fmt,    \
+                         ##__VA_ARGS__);                                       \
         }                                                                      \
     } while (0)
 
