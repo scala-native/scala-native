@@ -130,10 +130,17 @@ object Continuations:
    *  given.
    */
   object single extends ContinuationsApi:
-    if !isContinuationsSupported then UnsupportedFeature.continuations()
+    /** Loaded by `enter` only, so that a program reports continuations as
+     *  unsupported when it can enter a boundary, not when it merely contains
+     *  code that could suspend, as `LockSupport.park` does for virtual threads.
+     */
+    private object support:
+      if !isContinuationsSupported then UnsupportedFeature.continuations()
+      def require(): Unit = ()
 
     /** What `boundary` runs; use `boundary`. */
     def enter[T](body: this.BoundaryLabel[T] => T): T =
+      support.require()
       val result = OneShot.boundary[T](runBody, body.asInstanceOf[Body])
       if result == null then
         throw new OutOfMemoryError("Cannot allocate a continuation stack")
