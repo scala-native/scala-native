@@ -17,6 +17,8 @@ class Inflater(noHeader: Boolean) extends AutoCloseable {
   private[zip] var inLength: Int = 0
   private[zip] var inRead: Int = 0
   private var doesNeedDictionary: Boolean = false
+  // zlib keeps a pointer into this array, so it must stay reachable.
+  private var inputBuffer: Array[Byte] = null
   private var stream: zlib#z_streamp = Inflater.createStream(noHeader)
 
   def this() = this(noHeader = false)
@@ -26,6 +28,7 @@ class Inflater(noHeader: Boolean) extends AutoCloseable {
       zlib.inflateEnd(stream)
       inRead = 0
       inLength = 0
+      inputBuffer = null
       stdlib.free(stream.asInstanceOf[Ptr[Byte]])
       stream = null
     }
@@ -88,8 +91,6 @@ class Inflater(noHeader: Boolean) extends AutoCloseable {
       throw new ArrayIndexOutOfBoundsException()
     } else if (stream == null) {
       throw new NullPointerException()
-    } else if (needsInput()) {
-      0
     } else {
       val neededDict = doesNeedDictionary
       doesNeedDictionary = false
@@ -115,6 +116,9 @@ class Inflater(noHeader: Boolean) extends AutoCloseable {
       doesNeedDictionary = false
       inLength = 0
       inRead = 0
+      inputBuffer = null
+      stream.nextIn = null
+      stream.availableIn = 0.toUInt
       val err = zlib.inflateReset(stream)
       if (err != zlib.Z_OK) {
         throw new ZipException(err.toString)
@@ -145,6 +149,7 @@ class Inflater(noHeader: Boolean) extends AutoCloseable {
     } else if (off <= buf.length && nbytes >= 0 && off >= 0 && buf.length - off >= nbytes) {
       inRead = 0
       inLength = nbytes
+      inputBuffer = buf
       if (buf.length == 0) {
         stream.nextIn = Inflater.empty.at(off)
       } else {
@@ -167,7 +172,7 @@ class Inflater(noHeader: Boolean) extends AutoCloseable {
     val err = zlib.inflate(stream, zlib.Z_SYNC_FLUSH)
 
     if (err != zlib.Z_OK) {
-      if (err == zlib.Z_STREAM_ERROR) {
+      if (err == zlib.Z_STREAM_ERROR || err == zlib.Z_BUF_ERROR) {
         0
       } else if (err == zlib.Z_STREAM_END || err == zlib.Z_NEED_DICT) {
         val totalIn = stream.totalIn

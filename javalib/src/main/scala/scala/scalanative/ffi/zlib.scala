@@ -385,14 +385,14 @@ object zlibOps {
       ULONG // future
     ]
 
-  private type z_stream_32 = z_stream[CUnsignedShort, CUnsignedInt]
+  private type z_stream_32 = z_stream[CUnsignedInt, CUnsignedInt]
   private type z_stream_64 = z_stream[CUnsignedInt, CUnsignedLong]
 
   object z_stream {
     // Depending on the OS zlib can use different types inside z_stream
     // We can distinguish to layouts using different size of integers:
     // 64-bit: using uint32 and uint64, it can be found on Unix
-    // 32-bit  using uint15 and uint32, which is present on Windows
+    // 32-bit: using uint32 for both uInt and uLong, which is present on Windows
     def size: CSize = fromRawUSize(
       if (isWindows) Intrinsics.sizeOf[z_stream_32]
       else Intrinsics.sizeOf[z_stream_64]
@@ -415,7 +415,7 @@ object zlibOps {
       CInt, // gcrc
       CInt // done
     ]
-  private type gz_header_32 = gz_header[CUnsignedShort, CUnsignedInt]
+  private type gz_header_32 = gz_header[CUnsignedInt, CUnsignedInt]
   private type gz_header_64 = gz_header[CUnsignedInt, CUnsignedLong]
 
   object gz_header {
@@ -454,13 +454,13 @@ object zlibOps {
 
     def nextIn_=(v: Ptr[Bytef]): Unit = asZStream32._1 = v
     def availableIn_=(v: uInt): Unit =
-      if (isWindows) asZStream32._2 = v.toUShort else asZStream64._2 = v
+      if (isWindows) asZStream32._2 = v else asZStream64._2 = v
     def totalIn_=(v: uLong): Unit =
       if (isWindows) asZStream32._3 = v.toUInt else asZStream64._3 = v
     def nextOut_=(v: Ptr[Bytef]): Unit =
       if (isWindows) asZStream32._4 = v else asZStream64._4 = v
     def availableOut_=(v: uInt): Unit =
-      if (isWindows) asZStream32._5 = v.toUShort else asZStream64._5 = v
+      if (isWindows) asZStream32._5 = v else asZStream64._5 = v
     def totalOut_=(v: uLong): Unit =
       if (isWindows) asZStream32._6 = v.toUInt else asZStream64._6 = v
     def msg_=(v: CString): Unit =
@@ -516,22 +516,22 @@ object zlibOps {
       if (isWindows) asZStream32._5 = v
       else asZStream64._5 = v
     def extra_len_=(v: uInt): Unit =
-      if (isWindows) asZStream32._6 = v.toUShort
+      if (isWindows) asZStream32._6 = v
       else asZStream64._6 = v
     def extra_max_=(v: uInt): Unit =
-      if (isWindows) asZStream32._7 = v.toUShort
+      if (isWindows) asZStream32._7 = v
       else asZStream64._7 = v
     def name_=(v: Ptr[Bytef]): Unit =
       if (isWindows) asZStream32._8 = v
       else asZStream64._8 = v
     def name_max_=(v: uInt): Unit =
-      if (isWindows) asZStream32._9 = v.toUShort
+      if (isWindows) asZStream32._9 = v
       else asZStream64._9 = v
     def comment_=(v: Ptr[Bytef]): Unit =
       if (isWindows) asZStream32._10 = v
       else asZStream64._10 = v
     def comm_max_=(v: uInt): Unit =
-      if (isWindows) asZStream32._11 = v.toUShort
+      if (isWindows) asZStream32._11 = v
       else asZStream64._11 = v
     def gcrc_=(v: CInt): Unit =
       if (isWindows) asZStream32._12 = v
