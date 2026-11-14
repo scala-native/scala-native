@@ -40,6 +40,11 @@ object time {
   @name("_localtime32_s")
   def localtime_s(tm: Ptr[tm], time: Ptr[time_t]): errno_t = extern
 
+  @name("_localtime64_s")
+  def localtime64_s(tm: Ptr[tm], time: Ptr[CLongLong]): errno_t = extern
+  @name("_mktime64")
+  def mktime64(tm: Ptr[tm]): CLongLong = extern
+
   def strftime(
       str: Ptr[CChar],
       count: CSize,

@@ -7,9 +7,11 @@ import java.io.{
 }
 import java.nio.charset.Charset
 
+import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.posix.time._
 import scala.scalanative.posix.timeOps.tmOps
 import scala.scalanative.unsafe._
+import scala.scalanative.windows.crt.{time => winTime}
 
 class ZipEntry private (
     private[zip] val name: String, // immutable for safety
@@ -72,29 +74,26 @@ class ZipEntry private (
     size
 
   def getTime(): Long = {
-    // Revert PR #3794 so I can chase intermittent bad values & Segfault
-    if (true) -1
+    if ((time == -1) || (modDate == -1)) -1L
     else {
-      if ((time == -1) || (modDate == -1)) -1L
-      else
-        synchronized {
-          val tm = stackalloc[tm]()
+      val tm = stackalloc[tm]()
 
-          tm.tm_year = ((modDate >> 9) & 0x7f) + 80
-          tm.tm_mon = ((modDate >> 5) & 0xf) - 1
-          tm.tm_mday = modDate & 0x1f
+      tm.tm_year = ((modDate >> 9) & 0x7f) + 80
+      tm.tm_mon = ((modDate >> 5) & 0xf) - 1
+      tm.tm_mday = modDate & 0x1f
 
-          tm.tm_hour = (time >> 11) & 0x1f
-          tm.tm_min = (time >> 5) & 0x3f
-          tm.tm_sec = (time & 0x1f) << 1
+      tm.tm_hour = (time >> 11) & 0x1f
+      tm.tm_min = (time >> 5) & 0x3f
+      tm.tm_sec = (time & 0x1f) << 1
 
-          tm.tm_isdst = -1
+      tm.tm_isdst = -1
 
-          val unixEpochSeconds = mktime(tm)
+      val unixEpochSeconds =
+        if (isWindows) winTime.mktime64(tm.asInstanceOf[Ptr[winTime.tm]])
+        else mktime(tm).toLong
 
-          if (unixEpochSeconds < 0) -1L // Per JVM doc, -1 means "Unspecified"
-          else unixEpochSeconds * 1000L
-        }
+      if (unixEpochSeconds < 0) -1L // Per JVM doc, -1 means "Unspecified"
+      else unixEpochSeconds * 1000L
     }
   }
 
@@ -150,52 +149,33 @@ class ZipEntry private (
     }
 
   def setTime(value: Long): Unit = {
-    // Revert PR #3794 so I can chase intermittent bad values & Segfault
-    if (false) {
-      /* Convert Java time in milliseconds since the Unix epoch to
-       * MS-DOS standard time.
-       *
-       * This URL gives a good description of standard MS-DOS time & the
-       * required bit manipulations:
-       *     https://learn.microsoft.com/en-us/windows/win32/api/oleauto/
-       *         nf-oleauto-dosdatetimetovarianttime
-       *
-       * Someone familiar with Windows could probably provide an operating
-       * system specific version of this method.
-       */
+    /* Convert Java time in milliseconds since the Unix epoch to
+     * MS-DOS date & time, in local time, with 2 second resolution.
+     *   https://learn.microsoft.com/en-us/windows/win32/api/oleauto/
+     *       nf-oleauto-dosdatetimetovarianttime
+     */
+    val seconds = Math.floorDiv(value, 1000L)
+    val tm = stackalloc[tm]()
 
-      /* Concurrency issue:
-       *   localtime() is not required to be thread-safe, but is likely to exist
-       *   on Windows. Change to known thread-safe localtime_r() when this
-       *   section is unix-only.
-       */
-
-      val timer = stackalloc[time_t]()
-
-      // truncation OK, MS-DOS uses 2 second intervals, no rounding.
-      !timer = (value / 1000L).toSize
-
-      val tm = localtime(timer) // Not necessarily thread safe.
-
-      if (tm == null) {
-        modDate = 0x21
-        time = 0
+    val failed =
+      if (isWindows) {
+        val timer = stackalloc[Long]()
+        !timer = seconds
+        winTime.localtime64_s(tm.asInstanceOf[Ptr[winTime.tm]], timer) != 0
       } else {
-        val msDosYears = tm.tm_year - 80
-
-        if (msDosYears <= 0) {
-          modDate = 0x21 // 01-01-1980 00:00 MS-DOS epoch
-          time = 0
-        } else {
-          modDate = tm.tm_mday
-          modDate = ((tm.tm_mon + 1) << 5) | modDate
-          modDate = (msDosYears << 9) | modDate
-
-          time = tm.tm_sec >> 1
-          time = (tm.tm_min << 5) | time
-          time = (tm.tm_hour << 11) | time
-        }
+        val timer = stackalloc[time_t]()
+        !timer = seconds.toSize
+        localtime_r(timer, tm) == null
       }
+
+    val msDosYears = tm.tm_year - 80
+
+    if (failed || msDosYears < 0) {
+      modDate = 0x21 // 01-01-1980 00:00 MS-DOS epoch
+      time = 0
+    } else {
+      modDate = (msDosYears << 9) | ((tm.tm_mon + 1) << 5) | tm.tm_mday
+      time = (tm.tm_hour << 11) | (tm.tm_min << 5) | (tm.tm_sec >> 1)
     }
   }
 
