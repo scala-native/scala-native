@@ -1,4 +1,4 @@
-name: Run tests iOS
+name: Run tests Apple platforms
 on:
   workflow_dispatch:
   push:
@@ -86,15 +86,67 @@ jobs:
         timeout-minutes: 45
         run: sbt -J-Xmx5G "testsExt${{env.project-version}}/test"
 
-  # There is no way to execute binaries built for physical devices in the CI,
-  # ensure at least that runtime and tests can be compiled and linked.
-  build-device:
-    name: Device build
+  # Scala Native code used as a static library from a foreign host program
+  # running its own threads, the way an iOS application would embed it.
+  static-library:
+    name: Static library in simulator
     runs-on: macos-15
     strategy:
       fail-fast: false
       matrix:
         scala: [3]
+        build-mode: [debug, release-fast]
+        gc: [immix]
+        include:
+          - scala: 3
+            build-mode: debug
+            gc: commix
+    env:
+      SCALANATIVE_MODE: ${{ matrix.build-mode }}
+      SCALANATIVE_GC: ${{ matrix.gc }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/macos-setup-env
+        with:
+          scala-version: ${{matrix.scala}}
+          llvm-version: 19
+
+      - name: Boot simulator
+        run: |
+          # Newest available iOS runtime, first iPhone device
+          UDID=$(xcrun simctl list devices available --json | jq -r '
+            [ .devices | to_entries[]
+              | select(.key | test("SimRuntime\\.iOS-"))
+              | { version: (.key | capture("iOS-(?<v>[0-9-]+)$").v | split("-") | map(tonumber)), devices: .value }
+            ] | sort_by(.version) | last | .devices
+              | map(select(.name | startswith("iPhone"))) | first | .udid')
+          test -n "$UDID" && test "$UDID" != "null"
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl list devices booted
+          echo "IOS_SIMULATOR_UDID=$UDID" >> "$GITHUB_ENV"
+          echo "CROSSCOMPILING_EMULATOR=$GITHUB_WORKSPACE/scripts/ci/ios-simulator-run.sh" >> "$GITHUB_ENV"
+          echo "SCALANATIVE_TARGET_TRIPLE=$(uname -m)-apple-ios${IOS_MIN_VERSION}-simulator" >> "$GITHUB_ENV"
+
+      - name: Build and run host program
+        timeout-minutes: 45
+        run: scripts/ci/ios-static-lib/run.sh "${{env.project-version}}"
+
+  # There is no way to execute binaries built for physical devices in the CI,
+  # tvOS and watchOS have no simulator launcher yet. Ensure at least that the
+  # runtime and tests can be compiled and linked for these targets.
+  build-only:
+    name: Build ${{ matrix.target }}
+    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [3]
+        target:
+          - arm64-apple-ios16.0
+          - arm64-apple-tvos16.0
+          - arm64-apple-tvos16.0-simulator
+          - arm64-apple-watchos9.0-simulator
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/macos-setup-env
@@ -103,7 +155,7 @@ jobs:
           llvm-version: 19
 
       - name: Set target
-        run: echo "SCALANATIVE_TARGET_TRIPLE=arm64-apple-ios${IOS_MIN_VERSION}" >> "$GITHUB_ENV"
+        run: echo "SCALANATIVE_TARGET_TRIPLE=${{ matrix.target }}" >> "$GITHUB_ENV"
 
       - name: Link sandbox
         timeout-minutes: 30
