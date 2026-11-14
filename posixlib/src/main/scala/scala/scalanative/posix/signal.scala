@@ -157,11 +157,12 @@ import scala.scalanative.unsafe._
 
   // The storage occupied by sa_handler and sa_sigaction may overlap,
   // and a conforming application shall not use both simultaneously.
+  // This layout differs from the host one; sigaction() converts it in C.
   type sigaction = CStruct4[
     CFuncPtr1[CInt, Unit], // sa_handler Ptr to a signal-catching function or one
                            // of the SIG_IGN or SIG_DFL
     sigset_t,              // sa_mask Set of signals to be blocked during execution
-                           // of the signal handling func
+                           // of the signal handling func, stored as bit (signo - 1)
     CInt,                  // sa_flags Special flags
                            // sa_sigaction Pointer to a signal-catching function
     CFuncPtr3[CInt, Ptr[siginfo_t], CVoidPtr, Unit]
@@ -342,8 +343,16 @@ import scala.scalanative.unsafe._
       oset: Ptr[sigset_t]
   ): CInt =
     extern
+  @name("scalanative_sigaction")
   def sigaction(sig: CInt, act: Ptr[sigaction], oact: Ptr[sigaction]): CInt =
     extern
+  // Binary compatibility: code compiled against 0.5.12 links to this extern name.
+  @name("sigaction")
+  private[posix] def _sigaction(
+      sig: CInt,
+      act: Ptr[sigaction],
+      oact: Ptr[sigaction]
+  ): CInt = externRedirect(sigaction(sig, act, oact))
   def sigaddset(set: Ptr[sigset_t], signo: CInt): CInt = extern
   @name("scalanative_sigaltstack")
   def sigaltstack(ss: Ptr[stack_t], oss: Ptr[stack_t]): CInt = extern
