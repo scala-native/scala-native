@@ -52,7 +52,7 @@ trait JEP431_SequencedMapTestTraitOnJDK21 {
       expectedValue: Int
   ) = {}
 
-  @Test def firstEntry_empty(): Unit = {
+  @Test def firstEntry_emptyMap(): Unit = {
     val seqMap = sequencedMapFactory[String, Int]()
 
     assertEquals(
@@ -81,7 +81,7 @@ trait JEP431_SequencedMapTestTraitOnJDK21 {
     )
   }
 
-  @Test def lastEntry_empty(): Unit = {
+  @Test def lastEntry_emptyMap(): Unit = {
     val seqMap = sequencedMapFactory[String, Int]()
 
     assertEquals(
@@ -110,7 +110,7 @@ trait JEP431_SequencedMapTestTraitOnJDK21 {
     )
   }
 
-  @Test def pollFirstEntry_empty(): Unit = {
+  @Test def pollFirstEntry_emptyMap(): Unit = {
     val seqMap = sequencedMapFactory[String, Int]()
 
     assertEquals(
@@ -151,7 +151,7 @@ trait JEP431_SequencedMapTestTraitOnJDK21 {
     )
   }
 
-  @Test def pollLastEntry_empty(): Unit = {
+  @Test def pollLastEntry_emptyMap(): Unit = {
     val seqMap = sequencedMapFactory[String, Int]()
 
     assertEquals(
@@ -281,6 +281,36 @@ trait JEP431_SequencedMapTestTraitOnJDK21 {
     )
   }
 
+  @Test def sequencedKeySet_emptyMap(): Unit = {
+    val seqMap = sequencedMapFactory[String, Int]()
+
+    val ks = seqMap.sequencedKeySet()
+
+    assertThrows(
+      "getFirst",
+      classOf[NoSuchElementException],
+      ks.getFirst()
+    )
+
+    assertThrows(
+      "getLast",
+      classOf[NoSuchElementException],
+      ks.getLast()
+    )
+
+    assertThrows(
+      "removeFirst",
+      classOf[NoSuchElementException],
+      ks.removeFirst()
+    )
+
+    assertThrows(
+      "getFirst",
+      classOf[NoSuchElementException],
+      ks.removeLast()
+    )
+  }
+
   @Test def sequencedKeySet(): Unit = {
     val seqMap = sequencedMapFactory[String, Int]()
     populateStringIntMap(seqMap)
@@ -301,6 +331,36 @@ trait JEP431_SequencedMapTestTraitOnJDK21 {
       s"${classUnderTest}#sequencedKeySet contents",
       keyList,
       seqKeyList
+    )
+  }
+
+  @Test def sequencedValues_emptyMap(): Unit = {
+    val seqMap = sequencedMapFactory[String, Int]()
+
+    val vc = seqMap.sequencedValues()
+
+    assertThrows(
+      "getFirst",
+      classOf[NoSuchElementException],
+      vc.getFirst()
+    )
+
+    assertThrows(
+      "getLast",
+      classOf[NoSuchElementException],
+      vc.getLast()
+    )
+
+    assertThrows(
+      "removeFirst",
+      classOf[NoSuchElementException],
+      vc.removeFirst()
+    )
+
+    assertThrows(
+      "getFirst",
+      classOf[NoSuchElementException],
+      vc.removeLast()
     )
   }
 
