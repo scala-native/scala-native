@@ -9,7 +9,7 @@ import org.junit.Test
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
 
-class FilesCreateTempTest {
+class FilesCreateTempExceptionsTest {
 
   private def createTemp(isDir: Boolean, dir: Path, prefix: String): Path =
     if (isDir) Files.createTempDirectory(dir, prefix)

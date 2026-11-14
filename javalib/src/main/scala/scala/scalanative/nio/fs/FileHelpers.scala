@@ -151,10 +151,7 @@ object FileHelpers {
             case errCode                      =>
               if (handle != INVALID_HANDLE_VALUE) true
               else if (throwOnError)
-                throw WindowsException(
-                  s"Cannot create new file $path",
-                  errorCode = errCode
-                )
+                throw WindowsException.onPathWithLastEror(path, errCode)
               else false
           }
         } else {
