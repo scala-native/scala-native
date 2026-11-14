@@ -11,7 +11,7 @@ set -euo pipefail
 version="${1:?missing Scala binary version}"
 triple="${SCALANATIVE_TARGET_TRIPLE:?missing SCALANATIVE_TARGET_TRIPLE}"
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-root="$(cd "$here/../.." && pwd)"
+root="$(cd "$here/../../.." && pwd)"
 cd "$root"
 
 rm -rf sandbox/src/main/scala*
