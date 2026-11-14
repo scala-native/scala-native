@@ -270,4 +270,13 @@ bool scalanative_externalGC_addRoots(void *low, void *high) {
 void scalanative_GC_yield() {}
 void scalanative_GC_add_roots(void *addr_low, void *addr_high) {}
 void scalanative_GC_remove_roots(void *addr_low, void *addr_high) {}
+
+// shared/GCHooks.h: nothing is ever collected, so nothing is traced.
+void **scalanative_GC_trace_owned(void *owner, void *ownerTracer,
+                                  void *anchorTracer) {
+    (void)owner;
+    (void)ownerTracer;
+    (void)anchorTracer;
+    return NULL;
+}
 #endif

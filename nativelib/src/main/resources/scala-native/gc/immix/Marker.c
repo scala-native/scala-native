@@ -1,5 +1,5 @@
 #if defined(SCALANATIVE_GC_IMMIX)
-#include "shared/GCHooks.h"
+#include "immix_commix/ObjectTracers.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <setjmp.h>
@@ -134,7 +134,7 @@ void Marker_Mark(Heap *heap, Stack *stack) {
                     Marker_markConservative(heap, stack, rawPtr);
                 }
             } else {
-                GC_ObjectTracerFn *tracer = GCHooks_objectTracer(object->rtti);
+                GC_ObjectTracerFn *tracer = ObjectTracers_find(object->rtti);
                 if (tracer != NULL) {
                     ScanContext context = {heap, stack};
                     tracer((void **)object->fields, Marker_scanRange, &context);

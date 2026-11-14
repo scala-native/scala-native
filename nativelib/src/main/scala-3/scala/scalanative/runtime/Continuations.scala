@@ -211,8 +211,7 @@ object Continuations {
       extends AtomicBoolean
       with (R => T) {
     private var stacks: SuspendedStacks = null
-    // What a GC that cannot trace `stacks` by its class (Boehm) scans the
-    // suspended stacks through; null otherwise.
+    // Kept reachable for a GC that traces the stacks through it; else null.
     private var anchor: RawPtr = null
 
     def inner: NativeContinuation = fromRawPtr(stacks.stacks)

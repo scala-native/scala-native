@@ -86,9 +86,9 @@ void scalanative_GC_set_current_stack_bottom(void *bottom) {
 }
 #endif
 
-/* A traced anchor is an object of its own kind, with a mark procedure that
- * calls the tracer. Free objects are cleared except for their first word, so
- * a free anchor has a zero second word. */
+// Boehm does not know the class of what it marks: owners are traced through
+// an anchor, an object of its own kind whose mark procedure calls the
+// tracer. Free objects are cleared except for their first word.
 static unsigned tracedAnchorKind;
 static _Atomic(GC_ObjectTracerFn *) anchorTracer;
 
@@ -117,11 +117,16 @@ markTracedAnchor(GC_word *anchor, struct GC_ms_entry *markStack,
     return stack.top;
 }
 
-void **scalanative_GC_alloc_traced_anchor(GC_ObjectTracerFn *tracer) {
+void **scalanative_GC_trace_owned(void *owner, GC_ObjectTracerFn *ownerTracer,
+                                  GC_ObjectTracerFn *tracer) {
+    (void)owner;
+    (void)ownerTracer;
     GC_ObjectTracerFn *current = NULL;
     if (!atomic_compare_exchange_strong(&anchorTracer, &current, tracer) &&
-        current != tracer)
-        return NULL;
+        current != tracer) {
+        fprintf(stderr, "Only one kind of memory can be traced by the GC\n");
+        abort();
+    }
     return GC_generic_malloc(2 * sizeof(void *), (int)tracedAnchorKind);
 }
 

@@ -115,11 +115,10 @@ static inline bool isOnSignalHandlerStack(ThreadInfo *threadInfo, void *addr) {
 }
 #endif
 
-/* The bottom of the stack to scan for a thread stopped with the stack
- * pointer `sp`. A thread can run on a stack other than the one it started
- * on, which had `initialBottom`: code that switches stacks keeps the bounds
- * in ThreadInfo those of the stack that runs. A thread stopped on its signal
- * stack was interrupted on that stack too. */
+/* The bottom of the stack to scan for a thread stopped at `sp`. A thread can
+ * run on another stack than the one it started on (`initialBottom`);
+ * ThreadInfo then has the bounds of the running one. A thread stopped on its
+ * signal stack was interrupted on that stack too. */
 static inline void *threadStackScanBottom(ThreadInfo *threadInfo, void *sp,
                                           void *initialBottom) {
     if (threadInfo == NULL || threadInfo->stackTop == NULL ||

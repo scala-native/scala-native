@@ -17,20 +17,16 @@
  * The suspend callback runs in the receiving context, after the suspending
  * coroutine has switched out. Another thread may then resume it right away.
  *
- * GC (see gc/shared/GCHooks.h): ThreadInfo describes the stack that runs. A
+ * GC (gc/shared/GCHooks.h): ThreadInfo describes the stack that runs. A
  * stack that waits for a coroutine it started or resumed is a dynamic root.
- * The stacks captured by a continuation are not roots: an object tracer
- * scans them when the collector marks the SuspendedStacks object of that
- * continuation. A continuation that was not traced in a completed mark cycle
- * is unreachable, so its stacks are reclaimed.
+ * The stacks of a suspended continuation are traced through its
+ * SuspendedStacks object; one that a completed mark cycle did not trace is
+ * unreachable, and its stacks are reclaimed.
  *
- * Boehm GC can stop a thread anywhere, so collections are paused from before
- * a switch until the receiving side has taken over what was handed to it,
- * and around every change of what the collector callbacks read.
- * `pauseCollections`/`resumeCollections` do nothing with the other
- * collectors, which stop threads only at safepoints, and none of this code
- * has one. Boehm also cannot trace by class: there a continuation keeps a
- * traced anchor instead.
+ * A collector that stops threads anywhere needs collections paused from
+ * before a switch until the receiving side has taken over, and around every
+ * change of what the callbacks read. None of this code has a safepoint, so
+ * the pauses are no-ops for the other collectors.
  */
 
 #include "delimcc_oneshot.h"
@@ -93,15 +89,13 @@ typedef struct SuspendRequest {
     void *arg;
 } SuspendRequest;
 
-/* What the collector callbacks read about a stack. Every stack has a slot in
- * a table of blocks; the table changes only while no collection runs.
+/* What the collector callbacks read about a stack. Slots live in a table of
+ * blocks that changes only while no collection runs.
  *
- * - A stack that waits for a coroutine it started or resumed has `waitingTop`
- *   set: [waitingTop, bottom) is reported as a root.
- * - The stacks captured by a suspended continuation are a list that a
- *   `scala.scalanative.runtime.SuspendedStacks` object points to. Tracing
- *   that object scans the list and records the mark cycle in the slot of the
- *   first stack.
+ * - Waiting for a coroutine: `waitingTop` is set and [waitingTop, bottom) is
+ *   a root.
+ * - Captured by a suspended continuation: tracing its owner scans the list
+ *   of stacks and records the mark cycle in the slot of the first one.
  */
 typedef struct StackSlot {
     _Atomic(void *) waitingTop;
@@ -253,11 +247,9 @@ static void scanCapturedStacks(void **fields, GC_ScanRangeFn *scan, void *ctx) {
     }
 }
 
-/* GC_ObjectTracerFn of a traced anchor, which names a stack slot and the
- * capture it was made for, not the stacks. A conservative collector can mark
- * an anchor that died earlier: the stacks are reached through the slot,
- * which is never freed, and only while it holds that capture, so stacks that
- * were unmapped or given to another continuation are not read. */
+// GC_ObjectTracerFn of an anchor: {slot, capture number}. An anchor that died
+// earlier can still be marked, so the stacks are read through the slot,
+// which is never freed, and only while it holds that capture.
 static void scanAnchoredStacks(void **fields, GC_ScanRangeFn *scan, void *ctx) {
     StackSlot *slot = fields[0];
     uint_fast64_t capture = (uintptr_t)fields[1];
@@ -864,25 +856,14 @@ void scalanative_continuation_oneshot_leave(ContinuationBoundaryLabel label,
     FATAL("a coroutine that left its boundary was resumed");
 }
 
-/* Hands the stacks of a suspended continuation over to `owner`, the
- * SuspendedStacks object that points to `continuation`. Until this call the
- * stacks are scanned as roots. Returns what the caller has to keep reachable
- * from `owner` for the collector to find them: a traced anchor, or NULL when
- * `owner` itself is traced. */
+/* Hands the stacks of a suspended continuation, roots until now, over to
+ * `owner`, the SuspendedStacks object that points to it. Returns the anchor
+ * to keep reachable from `owner`, or NULL when `owner` itself is traced. */
 void *scalanative_continuation_oneshot_captured(Continuation *continuation,
                                                 void *owner) {
     Coroutine *top = (Coroutine *)continuation;
-    void **anchor = scalanative_GC_alloc_traced_anchor(scanAnchoredStacks);
-    // Without anchors `owner` is traced by its class, the same for all.
-    static atomic_flag traced = ATOMIC_FLAG_INIT;
-    static atomic_bool tracerSet;
-    if (anchor == NULL &&
-        !atomic_load_explicit(&tracerSet, memory_order_relaxed)) {
-        if (!atomic_flag_test_and_set(&traced) &&
-            !scalanative_GC_add_object_tracer(owner, scanCapturedStacks))
-            FATAL("cannot register the continuation stacks with the GC");
-        atomic_store(&tracerSet, true);
-    }
+    void **anchor = scalanative_GC_trace_owned(owner, scanCapturedStacks,
+                                               scanAnchoredStacks);
     pauseCollections();
     FOREACH_CAPTURED(it, top) {
         it->captured.top = it->sp;
@@ -909,9 +890,9 @@ void *scalanative_continuation_oneshot_captured(Continuation *continuation,
     return anchor;
 }
 
-/* `stacks` is the field of a SuspendedStacks object that points to a
- * continuation, which the caller resumes at most once. Its stacks are roots
- * again before the field stops pointing to them. */
+/* `stacks` is the field of a SuspendedStacks object that points to the
+ * continuation; resumed at most once. Its stacks are roots again before the
+ * field is cleared. */
 void *scalanative_continuation_oneshot_resume(void **stacks, void *arg) {
     ThreadState *thread = currentThread();
     Coroutine *self = currentCoroutine(thread);
