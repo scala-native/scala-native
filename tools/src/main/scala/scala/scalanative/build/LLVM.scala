@@ -463,34 +463,9 @@ private[scalanative] object LLVM {
 
   private def target(implicit config: Config): Seq[String] =
     config.compilerConfig.targetTriple match {
-      case Some(tt) => Seq("-target", tt) ++ appleSdkSysroot
+      case Some(tt) => Seq("-target", tt)
       case None     => Seq("-Wno-override-module")
     }
-
-  /** When cross-compiling to iOS, tvOS or watchOS the headers and libraries of
-   *  the host macOS SDK cannot be used. Unless the user has selected an SDK
-   *  explicitly (using `-isysroot` or `SDKROOT` env variable) try to locate one
-   *  using `xcrun`.
-   */
-  private def appleSdkSysroot(implicit config: Config): Seq[String] = {
-    def userDefined =
-      sys.env.contains("SDKROOT") ||
-        (config.compileOptions ++ config.linkingOptions)
-          .exists(opt => opt == "-isysroot" || opt.startsWith("--sysroot"))
-    config.appleSdkName.filterNot(_ => userDefined).fold(Seq.empty[String]) {
-      sdk =>
-        Try(Process(Seq("xcrun", "--sdk", sdk, "--show-sdk-path")).!!.trim)
-          .filter(_.nonEmpty) match {
-          case Success(path) => Seq("-isysroot", path)
-          case Failure(_)    =>
-            config.logger.warn(
-              s"Unable to locate the $sdk SDK using `xcrun`, " +
-                "use `-isysroot` in compile and linking options to set it explicitly"
-            )
-            Nil
-        }
-    }
-  }
 
   private def opt(implicit config: Config): String =
     config.mode match {

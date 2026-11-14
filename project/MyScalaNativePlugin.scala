@@ -155,13 +155,19 @@ object MyScalaNativePlugin extends AutoPlugin {
           multithreadingEnabledBySbtSysProps()
             .orElse(nc.multithreading)
         )
-        // Cross-compile all projects of this build, used e.g. to test iOS
-        .withTargetTriple(
-          env
-            .get("SCALANATIVE_TARGET_TRIPLE")
-            .filter(_.nonEmpty)
-            .orElse(nc.targetTriple)
-        )
+    },
+    // Cross-compile all projects of this build, used e.g. to test iOS
+    nativeConfig ~= { nc =>
+      env.get("SCALANATIVE_TARGET_TRIPLE").filter(_.nonEmpty).fold(nc) {
+        triple =>
+          nc.withTargetTriple(triple)
+            .withCompileOptions(
+              scala.scalanative.build.Discover.compileOptions(triple)
+            )
+            .withLinkingOptions(
+              scala.scalanative.build.Discover.linkingOptions(triple)
+            )
+      }
     },
     inConfig(Compile) {
       nativeLinkProfiling := nativeLinkProfilingImpl

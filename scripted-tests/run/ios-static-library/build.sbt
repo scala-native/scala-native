@@ -1,6 +1,8 @@
 import scala.sys.process.Process
 import scala.util.Try
 
+import scala.scalanative.build.Discover
+
 enablePlugins(ScalaNativePlugin)
 
 scalaVersion := {
@@ -52,6 +54,8 @@ nativeConfig ~= { config =>
     config
       .withBuildTarget(scalanative.build.BuildTarget.libraryStatic)
       .withTargetTriple(simulatorTriple)
+      .withCompileOptions(Discover.compileOptions(simulatorTriple))
+      .withLinkingOptions(Discover.linkingOptions(simulatorTriple))
       .withBaseName("test")
 }
 

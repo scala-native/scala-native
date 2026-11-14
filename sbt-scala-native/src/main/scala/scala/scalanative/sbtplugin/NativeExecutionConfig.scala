@@ -1,8 +1,8 @@
 package scala.scalanative
 package sbtplugin
 
-/** Configuration of how the built binaries are executed by the sbt plugin,
- *  e.g. by `run` and `test` tasks. Does not affect the build.
+/** Configuration of how the built binaries are executed by the sbt plugin, e.g.
+ *  by `run` and `test` tasks. Does not affect the build.
  */
 sealed trait NativeExecutionConfig {
 

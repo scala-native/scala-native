@@ -323,6 +323,23 @@ platform.
 You may use [`FatELF](https://icculus.org/fatelf/) to build
 fat binaries for Linux.
 
+### Cross compilation to iOS, tvOS and watchOS
+
+These targets need the headers and libraries of a dedicated Xcode SDK
+instead of the ones found on the host. Use `Discover` to find the options
+for the given target triple (the SDK is located using `xcrun`):
+
+``` scala
+import scala.scalanative.build.Discover
+
+nativeConfig ~= { c =>
+  val triple = "arm64-apple-ios16.0-simulator"
+  c.withTargetTriple(triple)
+    .withCompileOptions(Discover.compileOptions(triple))
+    .withLinkingOptions(Discover.linkingOptions(triple))
+}
+```
+
 ### Running cross compiled binaries
 
 Binaries built for a different platform cannot be executed directly by

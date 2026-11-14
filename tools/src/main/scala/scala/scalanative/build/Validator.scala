@@ -62,6 +62,15 @@ private[build] object Validator {
     gcConfig.warnings.foreach(warn)
     issues ++= gcConfig.issues.map("Garbage collector setting " + _)
 
+    for {
+      sdk <- config.appleSdkName
+      if !sys.env.get("SDKROOT").exists(_.nonEmpty)
+      if !c.compileOptions.exists(_.contains("-isysroot"))
+    } warn(
+      s"Target ${c.targetTriple.mkString} requires the $sdk SDK, but no sysroot is set. " +
+        "Use Discover.compileOptions(targetTriple) and Discover.linkingOptions(targetTriple) or set SDKROOT environment variable"
+    )
+
     issues.result() match {
       case Nil    => config
       case issues =>
