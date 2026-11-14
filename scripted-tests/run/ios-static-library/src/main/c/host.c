@@ -1,4 +1,3 @@
-// Fixture of scripts/ci/ios-static-lib/run.sh
 // Foreign host program using Scala Native static library from its own threads,
 // the same way as an iOS application would do.
 #include <pthread.h>

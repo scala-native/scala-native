@@ -1,31 +1,64 @@
 name: Run tests Apple platforms
 on:
+  workflow_call:
+  pull_request:
+  schedule:
+    # Every day at 2 AM UTC
+    - cron: "0 2 * * *"
   workflow_dispatch:
-  push:
-    branches:
-      - "claude/ios-**"
 concurrency:
-  group: iOS-${{ github.ref }}
+  group: apple-${{ github.head_ref }}-${{ github.event_name }}
   cancel-in-progress: true
-
-env:
-  IOS_MIN_VERSION: "16.0"
 
 jobs:
   # Builds and runs the tests inside of the iOS simulator
   test-simulator:
     name: Simulator tests
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
     runs-on: macos-15
     strategy:
       fail-fast: false
       matrix:
         scala: [3]
+        build-mode: [release-fast]
+        gc: [commix]
+    env:
+      SCALANATIVE_MODE: ${{ matrix.build-mode }}
+      SCALANATIVE_GC: ${{ matrix.gc }}
+      SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/macos-setup-env
+        with:
+          scala-version: ${{matrix.scala}}
+          llvm-version: 19
+      - uses: ./.github/actions/ios-simulator-setup
+      - name: Target simulator
+        run: |
+          echo "SCALANATIVE_TARGET_RUNNER=$GITHUB_WORKSPACE/scripts/ci/ios-simulator/run.sh" >> "$GITHUB_ENV"
+          echo "SCALANATIVE_TARGET_TRIPLE=$(uname -m)-apple-ios${IOS_MIN_VERSION}-simulator" >> "$GITHUB_ENV"
+
+      - name: Test GCs
+        timeout-minutes: 45
+        run: sbt -J-Xmx5G "test-gc ${{matrix.scala}}"
+
+      - name: Run unit tests
+        if: ${{ !cancelled() }}
+        timeout-minutes: 60
+        run: sbt -J-Xmx5G "tests${{env.project-version}}/test"
+
+  test-simulator-ext:
+    name: Simulator tests ext
+    if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
+    runs-on: macos-15
+    needs: [test-simulator]
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: [3]
         build-mode: [debug]
-        gc: [immix]
+        gc: [immix, commix]
         include:
-          - scala: 3
-            build-mode: debug
-            gc: commix
           - scala: 3
             build-mode: release-fast
             gc: immix
@@ -39,58 +72,23 @@ jobs:
         with:
           scala-version: ${{matrix.scala}}
           llvm-version: 19
-
-      - name: Show Xcode environment
+      - uses: ./.github/actions/ios-simulator-setup
+      - name: Target simulator
         run: |
-          xcodebuild -version
-          xcrun --sdk iphonesimulator --show-sdk-path
-          xcrun --sdk iphonesimulator --show-sdk-version
-          xcrun simctl list runtimes
-
-      - name: Boot simulator
-        run: |
-          # Newest available iOS runtime, first iPhone device
-          UDID=$(xcrun simctl list devices available --json | jq -r '
-            [ .devices | to_entries[]
-              | select(.key | test("SimRuntime\\.iOS-"))
-              | { version: (.key | capture("iOS-(?<v>[0-9-]+)$").v | split("-") | map(tonumber)), devices: .value }
-            ] | sort_by(.version) | last | .devices
-              | map(select(.name | startswith("iPhone"))) | first | .udid')
-          test -n "$UDID" && test "$UDID" != "null"
-          xcrun simctl boot "$UDID"
-          xcrun simctl bootstatus "$UDID" -b
-          xcrun simctl list devices booted
-          echo "IOS_SIMULATOR_UDID=$UDID" >> "$GITHUB_ENV"
-          echo "SCALANATIVE_TARGET_RUNNER=$GITHUB_WORKSPACE/scripts/ci/ios-simulator-run.sh" >> "$GITHUB_ENV"
+          echo "SCALANATIVE_TARGET_RUNNER=$GITHUB_WORKSPACE/scripts/ci/ios-simulator/run.sh" >> "$GITHUB_ENV"
           echo "SCALANATIVE_TARGET_TRIPLE=$(uname -m)-apple-ios${IOS_MIN_VERSION}-simulator" >> "$GITHUB_ENV"
 
-      - name: Run sandbox
-        timeout-minutes: 30
-        run: sbt "show sandbox${{env.project-version}}/nativeConfig; sandbox${{env.project-version}}/run"
-
-      - name: Test infrastructure
-        if: ${{ !cancelled() }}
-        timeout-minutes: 30
-        run: >
-          sbt -J-Xmx5G
-          "testInterface${{env.project-version}}/test;
-          junitTestOutputsNative${{env.project-version}}/test"
-
       - name: Run unit tests
-        if: ${{ !cancelled() }}
         timeout-minutes: 60
         run: sbt -J-Xmx5G "tests${{env.project-version}}/test"
-
-      - name: Run extended unit tests
-        if: ${{ !cancelled() }}
-        timeout-minutes: 45
-        run: sbt -J-Xmx5G "testsExt${{env.project-version}}/test"
 
   # Scala Native code used as a static library from a foreign host program
   # running its own threads, the way an iOS application would embed it.
   static-library:
     name: Static library in simulator
+    if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
     runs-on: macos-15
+    needs: [test-simulator]
     strategy:
       fail-fast: false
       matrix:
@@ -110,34 +108,21 @@ jobs:
         with:
           scala-version: ${{matrix.scala}}
           llvm-version: 19
+      # The scripted test would be skipped if simulator is not available
+      - uses: ./.github/actions/ios-simulator-setup
 
-      - name: Boot simulator
-        run: |
-          # Newest available iOS runtime, first iPhone device
-          UDID=$(xcrun simctl list devices available --json | jq -r '
-            [ .devices | to_entries[]
-              | select(.key | test("SimRuntime\\.iOS-"))
-              | { version: (.key | capture("iOS-(?<v>[0-9-]+)$").v | split("-") | map(tonumber)), devices: .value }
-            ] | sort_by(.version) | last | .devices
-              | map(select(.name | startswith("iPhone"))) | first | .udid')
-          test -n "$UDID" && test "$UDID" != "null"
-          xcrun simctl boot "$UDID"
-          xcrun simctl bootstatus "$UDID" -b
-          xcrun simctl list devices booted
-          echo "IOS_SIMULATOR_UDID=$UDID" >> "$GITHUB_ENV"
-          echo "SCALANATIVE_TARGET_RUNNER=$GITHUB_WORKSPACE/scripts/ci/ios-simulator-run.sh" >> "$GITHUB_ENV"
-          echo "SCALANATIVE_TARGET_TRIPLE=$(uname -m)-apple-ios${IOS_MIN_VERSION}-simulator" >> "$GITHUB_ENV"
-
-      - name: Build and run host program
-        timeout-minutes: 45
-        run: scripts/ci/ios-static-lib/run.sh "${{env.project-version}}"
+      - name: Test scripted
+        timeout-minutes: 60
+        run: sbt "test-scripted ${{matrix.scala}} run/ios-static-library"
 
   # There is no way to execute binaries built for physical devices in the CI,
   # tvOS and watchOS have no simulator launcher yet. Ensure at least that the
   # runtime and tests can be compiled and linked for these targets.
   build-only:
     name: Build ${{ matrix.target }}
+    if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
     runs-on: macos-15
+    needs: [test-simulator]
     strategy:
       fail-fast: false
       matrix:

@@ -1,4 +1,3 @@
-// Fixture of scripts/ci/ios-static-lib/run.sh
 // Scala Native code built as a static library and used from a foreign host
 // program, see https://github.com/scala-native/scala-native/issues/4334
 import java.nio.charset.StandardCharsets

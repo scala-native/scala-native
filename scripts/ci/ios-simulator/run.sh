@@ -24,7 +24,7 @@ done < <(compgen -e)
 # `simctl spawn` does not preserve the working directory either, use a small
 # trampoline built for the simulator to restore it.
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-trampoline_src="$script_dir/ios-simulator-exec.c"
+trampoline_src="$script_dir/exec.c"
 trampoline="${TMPDIR:-/tmp}/scala-native-ios-simulator-exec-$(uname -m)"
 if [[ ! -x "$trampoline" || "$trampoline_src" -nt "$trampoline" ]]; then
   tmp="$trampoline.$$"

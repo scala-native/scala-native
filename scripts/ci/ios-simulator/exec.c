@@ -1,7 +1,7 @@
-// Helper of ios-simulator-run.sh: `simctl spawn` always starts the process in
+// Helper of run.sh: `simctl spawn` always starts the process in
 // the root directory, restore working directory of the caller before
 // executing the actual binary.
-// Usage: ios-simulator-exec <working-directory> <binary> [args...]
+// Usage: exec <working-directory> <binary> [args...]
 #include <stdio.h>
 #include <unistd.h>
 
@@ -12,10 +12,10 @@ int main(int argc, char **argv) {
         return 2;
     }
     if (chdir(argv[1]) != 0) {
-        perror("ios-simulator-exec: chdir");
+        perror("exec: chdir");
         return 126;
     }
     execv(argv[2], &argv[2]);
-    perror("ios-simulator-exec: execv");
+    perror("exec: execv");
     return 127;
 }
