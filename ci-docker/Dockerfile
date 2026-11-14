@@ -8,12 +8,11 @@ ARG IMAGE_NAME
 ENV DEFAULT_DOCKCROSS_IMAGE=${IMAGE_NAME}
 
 RUN echo "BASE_IMAGE: $BASE_IMAGE, LLVM toolchain: $LLVM_VERSION"
-RUN apt-get update && apt-get install -y zip unzip lsb-release curl wget software-properties-common iputils-ping libgc-dev libz-dev git
+RUN apt-get -o Acquire::Retries=5 update && apt-get -o Acquire::Retries=5 install -y zip unzip lsb-release curl wget software-properties-common iputils-ping libgc-dev libz-dev git
 
-# Force IPv4: GitHub runners often have no IPv6, and apt.llvm.org prefers AAAA.
+COPY install-llvm.sh /tmp/install-llvm.sh
 RUN set -eux; \
-    wget -4 -O /tmp/llvm.sh https://apt.llvm.org/llvm.sh; \
-    bash /tmp/llvm.sh "$LLVM_VERSION"; \
+    bash /tmp/install-llvm.sh "$LLVM_VERSION"; \
     update-alternatives --install /usr/bin/clang clang /usr/bin/clang-"$LLVM_VERSION" 100; \
     update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-"$LLVM_VERSION" 100
 
