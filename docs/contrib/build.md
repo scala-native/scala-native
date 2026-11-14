@@ -85,6 +85,36 @@ The following shows how to set `nativeGC` on all the projects.
 
 The same process above will work for setting `nativeMode`.
 
+## Checking memory safety
+
+Inside this build the `SCALANATIVE_SANITIZER` environment variable
+(`address`, `thread` or `undefined`) enables a clang sanitizer for
+every linked binary, tests included.
+
+`scripts/sanitizers/run.sh <asan|lsan|valgrind> [sbt-project]` runs a
+project (default `sandbox3`) under AddressSanitizer, AddressSanitizer
+with LeakSanitizer, or Valgrind memcheck, and summarises the leaked
+bytes. For `asan` and `lsan` the `SBT_COMMAND` variable replaces the
+sbt command, e.g. `SBT_COMMAND="tests3/testOnly *ZoneTest"`. Reports
+go to `target/sanitizers/<mode>`. LeakSanitizer and Valgrind need
+Linux. On macOS, `scripts/sanitizers/docker.sh` takes the same
+arguments and runs the script in a container. Only `malloc`-based
+memory is checked for leaks: objects in the GC heap are not. Sanitizers
+instrument the C and C++ sources and intercept C library calls. Code
+generated from Scala is not instrumented, so a direct out-of-bounds write
+through a `Ptr` in Scala is not reported.
+
+`scripts/joern/scan.sh` runs [Joern](https://joern.io) over the C and
+C++ sources of the runtime: the stock `joern-scan` queries plus the
+heuristics in `scripts/joern/runtime-checks.sc` (unchecked allocations,
+`realloc` self-assignment, allocations and file handles that never
+leave a function). Reports go to `target/joern`.
+
+The `Check memory safety` workflow runs AddressSanitizer, LeakSanitizer
+and Joern nightly and on demand. Valgrind is left out: it currently stops
+at startup, because the stack overflow guards touch pages far below the
+stack pointer, which memcheck does not allow on the main thread.
+
 ## Organization of the build
 
 The build has roughly five groups of sub-projects as follows:
