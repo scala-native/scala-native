@@ -6,6 +6,8 @@
 #include <stdint.h>
 
 extern atomic_bool Synchronizer_stopThreads;
+/* Mutators resuming from a safepoint or waiting for the thread list lock. */
+extern atomic_int Synchronizer_lifecycleWaiters;
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
 extern void **scalanative_GC_yieldpoint_trap;
 #endif

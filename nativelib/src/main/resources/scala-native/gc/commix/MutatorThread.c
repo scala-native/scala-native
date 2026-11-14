@@ -35,7 +35,15 @@ void MutatorThreads_unlockRead() {
 }
 
 static void MutatorThreads_lockWrite() {
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+    atomic_fetch_add_explicit(&Synchronizer_lifecycleWaiters, 1,
+                              memory_order_relaxed);
+#endif
     rwlock_lockWrite(&threadListsModificationLock);
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+    atomic_fetch_sub_explicit(&Synchronizer_lifecycleWaiters, 1,
+                              memory_order_release);
+#endif
 }
 static void MutatorThreads_unlockWrite() {
     rwlock_unlockWrite(&threadListsModificationLock);
