@@ -1,5 +1,5 @@
 #if defined(SCALANATIVE_GC_IMMIX)
-#include "immix_commix/ObjectTracers.h"
+#include "immix_commix/ObjectTracer.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <setjmp.h>
@@ -133,12 +133,10 @@ void Marker_Mark(Heap *heap, Stack *stack) {
                 if (Heap_IsWordInHeap(heap, rawPtr)) {
                     Marker_markConservative(heap, stack, rawPtr);
                 }
-            } else {
-                GC_ObjectTracerFn *tracer = ObjectTracers_find(object->rtti);
-                if (tracer != NULL) {
-                    ScanContext context = {heap, stack};
-                    tracer((void **)object->fields, Marker_scanRange, &context);
-                }
+            } else if ((void *)object->rtti == ObjectTracer_rtti) {
+                ScanContext context = {heap, stack};
+                ObjectTracer_trace((void **)object->fields, Marker_scanRange,
+                                   &context);
             }
         }
     }

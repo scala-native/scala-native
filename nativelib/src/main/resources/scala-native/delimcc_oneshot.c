@@ -146,6 +146,8 @@ struct Coroutine {
     StackBounds bounds;
     // ThreadInfo.pendingStackOverflowException while this stack does not run.
     bool pendingOverflow;
+    // ThreadInfo.stackGuardOpen while this stack does not run.
+    bool guardOpen;
 
     // Values handed over by a switch. No safepoint runs between the store
     // and the read on the other side.
@@ -421,13 +423,14 @@ static Coroutine *acquire(ThreadState *thread) {
 }
 
 static void destroy(ThreadState *thread, Coroutine *coroutine) {
-    // Left unprotected by an overflow that was never reported.
-    if (coroutine->pendingOverflow) {
+    // An overflow opened the guard and nothing closed it again.
+    if (coroutine->guardOpen) {
         char *guardLow = coroutine->bounds.guardLow;
         char *guardEnd = (char *)coroutine->bounds.guardPage + pageSize();
         mprotect(guardLow, (size_t)(guardEnd - guardLow), PROT_NONE);
-        coroutine->pendingOverflow = false;
+        coroutine->guardOpen = false;
     }
+    coroutine->pendingOverflow = false;
     if (thread->poolSize < LOCAL_POOL_CAPACITY) {
         coroutine->returnTo = thread->pool;
         thread->pool = coroutine;
@@ -593,12 +596,30 @@ static void *closedGuardPage(Coroutine *coroutine) {
                                               : coroutine->bounds.guardPage;
 }
 
+// Where the scan of a parked stack starts. A thread can switch away while it
+// runs a multi-shot continuation from its heap fragment: its stack pointer
+// is then outside its stack, which is scanned as a whole; the fragment is
+// scanned with the continuation that owns it.
+static void *scanTop(Coroutine *coroutine) {
+    if (coroutine->state != THREAD)
+        return coroutine->sp;
+    ThreadInfo stack = {.stackSize = coroutine->bounds.size,
+                        .maxStackSize = coroutine->bounds.maxSize,
+                        .stackTop = coroutine->bounds.top,
+                        .stackBottom = coroutine->bounds.bottom,
+                        .stackGuardPage = coroutine->bounds.guardPage};
+    if (isOnThreadStack(&stack, coroutine->sp))
+        return coroutine->sp;
+    void *limit = threadStackScanableLimit(&stack);
+    return limit != NULL ? limit : stack.stackTop;
+}
+
 // Read by the collector only while this thread is stopped at a safepoint.
 static void addRoots(Coroutine *coroutine) {
     StackSlot *slot = coroutine->slot;
     slot->bottom = coroutine->bounds.bottom;
     slot->guardPage = closedGuardPage(coroutine);
-    atomic_store_explicit(&slot->waitingTop, coroutine->sp,
+    atomic_store_explicit(&slot->waitingTop, scanTop(coroutine),
                           memory_order_relaxed);
 }
 
@@ -614,8 +635,11 @@ static ThreadState *arrive(Coroutine *self) {
     thread->current = self;
     applyBounds(thread, self);
     thread->info->pendingStackOverflowException = self->pendingOverflow;
-    scalanative_GC_set_current_stack_bottom(
-        self->state == THREAD ? self->threadBottom : self->bounds.bottom);
+    thread->info->stackGuardOpen = self->guardOpen;
+    if (self->state == THREAD)
+        scalanative_GC_set_running_stack(NULL, self->threadBottom);
+    else
+        scalanative_GC_set_running_stack(self->mapping, self->bounds.bottom);
     removeRoots(self);
     CoroutineState state = self->from->state;
     if (state != FINISHED && state != LEFT)
@@ -632,6 +656,7 @@ switchTo(ThreadState *thread, Coroutine *self, Coroutine *target) {
     if (self->state == THREAD)
         captureBounds(thread, self);
     self->pendingOverflow = thread->info->pendingStackOverflowException;
+    self->guardOpen = thread->info->stackGuardOpen;
     target->from = self;
     switchStacks(&self->sp, target->sp);
     return arrive(self);

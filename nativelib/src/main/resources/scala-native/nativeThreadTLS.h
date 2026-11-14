@@ -37,6 +37,9 @@ typedef struct ThreadInfo {
      * made accessible with it on a stack overflow; NULL when only that page
      * is. Set for the stacks of continuations. */
     void *stackGuardLow;
+    /* The guard was made accessible by a stack overflow and not yet
+     * protected again. Outlives pendingStackOverflowException. */
+    bool stackGuardOpen;
 } ThreadInfo;
 
 extern SN_ThreadLocal ThreadInfo currentThreadInfo;

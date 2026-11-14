@@ -69,14 +69,18 @@ static inline uint_fast64_t scalanative_GC_completed_mark_cycle(void) {
 // These nest, across threads.
 void scalanative_GC_pause_collections(void);
 void scalanative_GC_resume_collections(void);
-// The bottom of the stack the calling thread runs on. Set while paused.
+// The bottom of the stack the calling thread runs on, to restore later;
+// NULL when the collector keeps it.
 void *scalanative_GC_current_stack_bottom(void);
-void scalanative_GC_set_current_stack_bottom(void *bottom);
+// The calling thread now runs on [low, bottom), or on its own stack with
+// the bottom returned above when `low` is NULL. Called while paused.
+void scalanative_GC_set_running_stack(void *low, void *bottom);
 #else
 static inline void scalanative_GC_pause_collections(void) {}
 static inline void scalanative_GC_resume_collections(void) {}
 static inline void *scalanative_GC_current_stack_bottom(void) { return NULL; }
-static inline void scalanative_GC_set_current_stack_bottom(void *bottom) {
+static inline void scalanative_GC_set_running_stack(void *low, void *bottom) {
+    (void)low;
     (void)bottom;
 }
 #endif

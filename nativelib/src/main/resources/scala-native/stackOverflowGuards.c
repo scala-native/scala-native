@@ -112,6 +112,7 @@ static void protectStackGuardPage() {
         // _exit rather than exit: reachable from the signal handler.
         _exit(EXIT_FAILURE);
     }
+    currentThreadInfo.stackGuardOpen = false;
 }
 static void unprotectStackGuardPage() {
     if (currentThreadInfo.stackGuardPage == NULL)
@@ -123,6 +124,7 @@ static void unprotectStackGuardPage() {
         // _exit rather than exit: reachable from the signal handler.
         _exit(EXIT_FAILURE);
     }
+    currentThreadInfo.stackGuardOpen = true;
 }
 
 static bool tryGrowStack() {

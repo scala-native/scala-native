@@ -52,7 +52,7 @@ static void GC_CALLBACK pushCustomRoots(void) {
 void scalanative_GC_pause_collections(void) { GC_disable(); }
 void scalanative_GC_resume_collections(void) { GC_enable(); }
 
-#if GC_VERSION_MAJOR >= 8
+#if GC_VERSION_MAJOR > 8 || (GC_VERSION_MAJOR == 8 && GC_VERSION_MINOR >= 2)
 void *scalanative_GC_current_stack_bottom(void) {
     struct GC_stack_base base;
     GC_get_my_stackbottom(&base);
@@ -65,24 +65,31 @@ static void *GC_CALLBACK setStackBottom(void *bottom) {
     return NULL;
 }
 
-void scalanative_GC_set_current_stack_bottom(void *bottom) {
+void scalanative_GC_set_running_stack(void *low, void *bottom) {
+    (void)low;
     GC_call_with_alloc_lock(setStackBottom, bottom);
 }
+#elif !defined(_WIN32)
+// Before 8.2 the stack bottom of a thread cannot be moved. A thread found on
+// its registered alternate stack is scanned from its stack pointer to the
+// end of that stack instead, which is what a running coroutine needs.
+void *scalanative_GC_current_stack_bottom(void) { return NULL; }
+
+void scalanative_GC_set_running_stack(void *low, void *bottom) {
+    if (low == NULL)
+        GC_register_altstack(NULL, 0, NULL, 0);
+    else
+        GC_register_altstack(NULL, 0, low,
+                             (GC_word)((char *)bottom - (char *)low));
+}
 #else
-// GC_set_stackbottom is missing.
-static void needsNewerBoehm(void) {
-    fprintf(stderr, "Running on another stack needs Boehm GC 8.0 or newer\n");
-    abort();
-}
+void *scalanative_GC_current_stack_bottom(void) { return NULL; }
 
-void *scalanative_GC_current_stack_bottom(void) {
-    needsNewerBoehm();
-    return NULL;
-}
-
-void scalanative_GC_set_current_stack_bottom(void *bottom) {
+void scalanative_GC_set_running_stack(void *low, void *bottom) {
+    (void)low;
     (void)bottom;
-    needsNewerBoehm();
+    fprintf(stderr, "Running on another stack needs Boehm GC 8.2 or newer\n");
+    abort();
 }
 #endif
 

@@ -1,5 +1,5 @@
 #if defined(SCALANATIVE_GC_COMMIX)
-#include "immix_commix/ObjectTracers.h"
+#include "immix_commix/ObjectTracer.h"
 #include "shared/GCTypes.h"
 #include <stdint.h>
 #include <stdio.h>
@@ -323,13 +323,10 @@ int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
                                     rawPtr);
             objectsTraced += 1;
         }
-    } else {
-        GC_ObjectTracerFn *tracer = ObjectTracers_find(object->rtti);
-        if (tracer != NULL) {
-            ScanContext context = {heap, stats, outHolder, outWeakRefHolder, 0};
-            tracer((void **)object->fields, Marker_scanRange, &context);
-            objectsTraced += context.objectsTraced;
-        }
+    } else if ((void *)object->rtti == ObjectTracer_rtti) {
+        ScanContext context = {heap, stats, outHolder, outWeakRefHolder, 0};
+        ObjectTracer_trace((void **)object->fields, Marker_scanRange, &context);
+        objectsTraced += context.objectsTraced;
     }
     return objectsTraced;
 }
