@@ -422,23 +422,38 @@ object GarbageCollectorConfig {
         }
       }
 
+      private def fromBuild(source: Source) =
+        source == Source.Config || source == Source.Default
+
       /** Validates the picked value against all the picked values. A wrong
        *  value that was not set explicitly is replaced by the default.
+       *
+       *  @param explicit
+       *    whether to check the values defined in the build, done only after
+       *    the wrong values of the other sources were replaced
        */
-      private[Settings] def check(state: State, picked: Context): Unit =
+      private[Settings] def check(
+          state: State,
+          picked: Context,
+          explicit: Boolean
+      ): Unit =
         for {
           value <- get(picked.values)
           source <- state.sources.get(name)
+          if fromBuild(source) == explicit
           problems = validate(value, picked)
           if problems.nonEmpty
-        } source match {
-          case Source.Config | Source.Default =>
-            state.issues ++= problems.map(p => s"$name $p")
-          case _ =>
+        } {
+          if (explicit) state.issues ++= problems.map(p => s"$name $p")
+          else {
             state.warnings ++= problems.map { p =>
               s"Ignoring ${source.describe(name)}: $name $p"
             }
             state.values = update(state.values, default)
+            state.sources = default.fold(state.sources - name)(_ =>
+              state.sources + (name -> Source.Default)
+            )
+          }
         }
     }
 
@@ -462,13 +477,16 @@ object GarbageCollectorConfig {
       val state = new State(
         config.gc,
         config.multithreadingSupport,
-        config.targetTriple.isDefined && config.is32BitPlatform
+        // The target is detected using clang unless it is configured
+        scala.util.Try(config.is32BitPlatform).getOrElse(false)
       )
       val explicit = config.garbageCollectorConfig
       val defines = legacyDefines(config.compileOptions ++ config.cOptions)
       all.foreach(_.pick(state, explicit, env, defines))
       val picked = state.context
-      all.foreach(_.check(state, picked))
+      all.foreach(_.check(state, picked, explicit = false))
+      val replaced = state.context
+      all.foreach(_.check(state, replaced, explicit = true))
       Resolved(
         config.gc,
         state.values,
@@ -512,6 +530,8 @@ object GarbageCollectorConfig {
       } catch {
         case _: NumberFormatException =>
           Left(s"'$value' is not a number of milliseconds")
+        // Out of the range of FiniteDuration
+        case _: IllegalArgumentException => Left(s"'$value' is too large")
       }
     private def encodeMillis(value: FiniteDuration) = s"${value.toMillis}ULL"
 
@@ -578,6 +598,11 @@ object GarbageCollectorConfig {
 
     private val tracing = Set[GC](GC.immix, GC.commix)
 
+    /* MIN_HEAP_SIZE of gc/immix_commix/Constants.h, these collectors refuse to
+     * start with a smaller limit.
+     */
+    private val minTracingHeapSize = MemorySize.mb(1)
+
     val initialHeapSize = new Setting[MemorySize](
       name = "initialHeapSize",
       envVar = Some("GC_INITIAL_HEAP_SIZE"),
@@ -611,7 +636,12 @@ object GarbageCollectorConfig {
       encode = encodeSize,
       applicable =
         noneGCRequires(multithreading = false, "threadHeapBlockSize"),
-      validate = positiveSize
+      validate = (size, ctx) =>
+        positiveSize(size, ctx) ++ {
+          if (tracing(ctx.gc) && size.bytes > 0 && size < minTracingHeapSize)
+            Seq(s"of $size is less than the minimum of $minTracingHeapSize")
+          else Nil
+        }
     )
 
     val threadHeapBlockSize = new Setting[MemorySize](

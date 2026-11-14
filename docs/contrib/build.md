@@ -78,7 +78,9 @@ $ sbt
 > sandbox3/run
 ```
 
-The following shows how to set the GC on all the projects.
+The following shows how to set the GC on all the projects. A change made
+for a single project, like the one above, is applied on top of it, run
+`session clear` first to drop such changes.
 
 ``` text
 > set ThisBuild / nativeConfig ~= { _.withGC(scala.scalanative.build.GC.immix) }

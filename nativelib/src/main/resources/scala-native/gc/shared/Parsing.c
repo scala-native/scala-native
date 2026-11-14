@@ -83,6 +83,11 @@ size_t Parse_Env_Or_Default(const char *envName, size_t defaultSizeInBytes) {
     return result;
 }
 
+bool Parse_Env_Is_Size(const char *envName) {
+    size_t ignored;
+    return Parse_Size(getenv(envName), &ignored);
+}
+
 // =============================================================================
 // Plain Integer Parsing (for timeouts, counts, etc.)
 // =============================================================================

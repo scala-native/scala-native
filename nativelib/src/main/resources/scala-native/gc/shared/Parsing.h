@@ -7,6 +7,7 @@
 #include <windows.h>
 #endif
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -18,6 +19,9 @@ size_t Parse_Size_Or_Default(const char *str, size_t defaultSizeInBytes);
 // The size in environment variable envName, else defaultSizeInBytes which is
 // either the value built into the program (see shared/GCConfig.h) or computed
 size_t Parse_Env_Or_Default(const char *envName, size_t defaultSizeInBytes);
+
+// Whether environment variable envName is set to a valid size
+bool Parse_Env_Is_Size(const char *envName);
 
 // =============================================================================
 // Plain Integer Parsing (for timeouts, counts, etc.)

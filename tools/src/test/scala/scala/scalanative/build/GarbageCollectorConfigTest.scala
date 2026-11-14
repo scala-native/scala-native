@@ -156,7 +156,7 @@ class GarbageCollectorConfigTest {
         .withLogLevel(LogLevel.Off)
         .withLogFile(Paths.get("gc.log"))
         .withStatsEnabled(true)
-        .withStatsFile(Paths.get("a\"b"))
+        .withStatsFile(Paths.get("a b"))
     )
     assertValid(resolved)
     assertEquals(
@@ -171,10 +171,22 @@ class GarbageCollectorConfigTest {
         "SCALANATIVE_GC_CONFIG_SYNC_WARNING_INTERVAL_MS=2000ULL",
         "SCALANATIVE_GC_CONFIG_LOG_LEVEL=GC_LOG_LEVEL_NONE",
         "SCALANATIVE_GC_CONFIG_LOG_FILE={103,99,46,108,111,103,0}",
-        "SCALANATIVE_GC_CONFIG_STATS_FILE={97,34,98,0}",
+        "SCALANATIVE_GC_CONFIG_STATS_FILE={97,32,98,0}",
         "SCALANATIVE_GC_CONFIG_STATS_ENABLED=1"
       ),
       resolved.defines
+    )
+  }
+
+  @Test def quotesInPathsNeedNoEscaping(): Unit = {
+    // Not a valid path on Windows
+    org.junit.Assume.assumeFalse(Platform.isWindows)
+    val resolved = resolve(GC.immix)(
+      _.withStatsEnabled(true).withStatsFile(Paths.get("a\"b"))
+    )
+    assertValid(resolved)
+    assertTrue(
+      resolved.defines.contains("SCALANATIVE_GC_CONFIG_STATS_FILE={97,34,98,0}")
     )
   }
 
@@ -338,8 +350,7 @@ class GarbageCollectorConfigTest {
     def traps(
         gc: GC,
         mode: Mode = Mode.debug,
-        multithreading: Boolean = true,
-        env: Map[String, String] = Map.empty
+        multithreading: Boolean = true
     )(update: GarbageCollectorConfig => GarbageCollectorConfig) = {
       val config = Config.empty.withCompilerConfig(
         NativeConfig.empty
@@ -350,9 +361,12 @@ class GarbageCollectorConfigTest {
       )
       config.useTrapBasedGCYieldPoints
     }
-    // Derived from the build mode unless set
-    assertFalse(traps(GC.immix)(identity))
-    assertTrue(traps(GC.immix, Mode.releaseFast)(identity))
+    // Derived from the build mode unless set, also in the environment which
+    // is the one of this process here
+    if (System.getenv("SCALANATIVE_GC_TRAP_BASED_YIELDPOINTS") == null) {
+      assertFalse(traps(GC.immix)(identity))
+      assertTrue(traps(GC.immix, Mode.releaseFast)(identity))
+    }
     assertTrue(traps(GC.commix)(_.withTrapBasedYieldPoints(true)))
     assertFalse(
       traps(GC.immix, Mode.releaseFull)(_.withTrapBasedYieldPoints(false))
@@ -395,6 +409,34 @@ class GarbageCollectorConfigTest {
       resolve(GC.immix)(_.withTrapBasedYieldPoints(true)).defines
         .exists(_.contains("YIELD"))
     )
+  }
+
+  @Test def wrongEnvironmentValueDoesNotFailExplicitSetting(): Unit = {
+    val resolved = resolve(
+      GC.immix,
+      env = Map("GC_MAXIMUM_HEAP_SIZE" -> "0")
+    )(_.withInitialHeapSize(2.gb))
+    assertWarning(resolved, "GC_MAXIMUM_HEAP_SIZE")
+    assertEquals(Some(2.gb), resolved.values.initialHeapSize)
+    assertEquals(None, resolved.values.maxHeapSize)
+  }
+
+  @Test def tooLargeDurationInEnvironmentIsIgnored(): Unit = {
+    val resolved = resolve(
+      GC.immix,
+      env = Map("SCALANATIVE_GC_SYNC_TIMEOUT_MS" -> Long.MaxValue.toString)
+    )(identity)
+    assertWarning(resolved, "SCALANATIVE_GC_SYNC_TIMEOUT_MS")
+  }
+
+  @Test def maxHeapSizeBelowMinimumOfTracingCollectors(): Unit = {
+    for (gc <- Seq(GC.immix, GC.commix))
+      assertIssue(
+        resolve(gc)(_.withMaxHeapSize(512.kb)),
+        "maxHeapSize of 512k is less than the minimum of 1m"
+      )
+    assertValid(resolve(GC.immix)(_.withMaxHeapSize(1.mb)))
+    assertValid(resolve(GC.boehm)(_.withMaxHeapSize(512.kb)))
   }
 
   @Test def allIssuesAreReported(): Unit = {

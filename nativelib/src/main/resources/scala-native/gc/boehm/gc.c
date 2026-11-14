@@ -2,6 +2,11 @@
 // Native hosts can create OS workers even in single-threaded Scala builds.
 #define GC_THREADS
 
+// The build resolves these legacy compile options into SCALANATIVE_GC_CONFIG_*
+// defines, GC_INIT must not apply them again on top of the resolved values.
+#undef GC_INITIAL_HEAP_SIZE
+#undef GC_MAXIMUM_HEAP_SIZE
+
 #include <gc/gc.h>
 #include <gc/gc_mark.h>
 #include "shared/ScalaNativeGC.h"
@@ -62,15 +67,17 @@ static void *GC_CALLBACK removeRoots(void *range) {
 
 void scalanative_GC_init() {
     /* Boehm GC reads GC_INITIAL_HEAP_SIZE and GC_MAXIMUM_HEAP_SIZE on its own
-     * in GC_INIT, the sizes set in the build apply only without them.
+     * in GC_INIT, the sizes set in the build apply only without them. A value
+     * that is not a valid size makes GC_INIT remove the limit, so the sizes of
+     * the build are applied after it.
      */
+    GC_INIT();
 #ifdef SCALANATIVE_GC_CONFIG_MAX_HEAP_SIZE
-    if (getenv("GC_MAXIMUM_HEAP_SIZE") == NULL)
+    if (!Parse_Env_Is_Size("GC_MAXIMUM_HEAP_SIZE"))
         GC_set_max_heap_size((GC_word)SCALANATIVE_GC_CONFIG_MAX_HEAP_SIZE);
 #endif
-    GC_INIT();
 #ifdef SCALANATIVE_GC_CONFIG_INITIAL_HEAP_SIZE
-    if (getenv("GC_INITIAL_HEAP_SIZE") == NULL) {
+    if (!Parse_Env_Is_Size("GC_INITIAL_HEAP_SIZE")) {
         size_t initial = (size_t)SCALANATIVE_GC_CONFIG_INITIAL_HEAP_SIZE;
         size_t current = GC_get_heap_size();
         if (initial > current)

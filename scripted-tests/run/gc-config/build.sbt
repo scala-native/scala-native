@@ -43,6 +43,8 @@ def runBinary(binary: String, env: (String, String)*): String = {
   val proc = new java.lang.ProcessBuilder(binary)
   // Start from a clean slate, CI may export some of the variables.
   gcVariables.foreach(proc.environment().remove(_))
+  // Log to stderr even if a log file was set in the environment of the build
+  proc.environment().put("GC_LOG_FILE", "")
   env.foreach { case (name, value) => proc.environment().put(name, value) }
   proc.redirectErrorStream(true)
   val running = proc.start()
