@@ -185,6 +185,10 @@ private[process] object ProcessExitCheckerFreeBSD
     )
   }
 
+  /* kevent fails with EINVAL on macOS when tv_sec exceeds Int.MaxValue;
+   * longer timeouts are waited for in chunks. */
+  private final val MaxKeventTimeoutNanos = Int.MaxValue * 1000000000L
+
   @tailrec
   private def keventWith(
       kq: Int,
@@ -196,8 +200,14 @@ private[process] object ProcessExitCheckerFreeBSD
       pr: ProcessRegistry
   ): Boolean = {
     val ts = stackalloc[time.timespec]()
+    var capped = false
     val tsOrNull = deadlineNanos.map { nanos =>
-      UnixProcess.nanosToTimespec(nanos - System.nanoTime(), ts)
+      val remaining = nanos - System.nanoTime()
+      capped = remaining > MaxKeventTimeoutNanos
+      UnixProcess.nanosToTimespec(
+        Math.min(remaining, MaxKeventTimeoutNanos),
+        ts
+      )
       ts
     }.orNull
 
@@ -231,7 +241,7 @@ private[process] object ProcessExitCheckerFreeBSD
       idx += 1
     }
 
-    reaped || eventsGetNum > 0 &&
+    reaped || (eventsGetNum > 0 || capped) &&
       keventWith(kq, eventsAdd, eventsAddNum, eventsGet, eventsGetMax)(
         errmsg,
         deadlineNanos
