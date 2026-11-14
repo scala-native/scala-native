@@ -2,7 +2,7 @@
 // out on suspend and copied back, possibly to another address, on resume.
 #if defined(SCALANATIVE_COMPILE_ALWAYS) ||                                     \
     defined(__SCALANATIVE_DELIMCC_MULTISHOT)
-#include "delimcc.h"
+#include "delimcc_multishot.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <assert.h>

@@ -25,7 +25,7 @@
  * unreachable, so its stacks are reclaimed.
  */
 
-#include "delimcc.h"
+#include "delimcc_oneshot.h"
 #include "nativeThreadTLS.h"
 #include "gc/shared/SuspendedStacks.h"
 #include "gc/immix_commix/headers/ObjectHeader.h"
@@ -800,7 +800,7 @@ void *scalanative_continuation_suspend(ContinuationBoundaryLabel label,
 
 // Not supported on Windows yet. Programs that only mention continuations
 // still have to link; the Scala side reports the unsupported feature.
-#include "delimcc.h"
+#include "delimcc_oneshot.h"
 #include <stdio.h>
 #include <stdlib.h>
 

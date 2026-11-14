@@ -13,7 +13,7 @@ void scalanative_externalGC_admit(void);
 #include <cstdio>
 
 #if defined(__SCALANATIVE_DELIMCC_MULTISHOT)
-#include "delimcc.h"
+#include "delimcc_multishot.h"
 #include "string_constants.h"
 #include <cstdio>
 #endif

@@ -17,12 +17,12 @@ __attribute__((used)) static void *const scalanative_unwind_api =
     (void *)&_Unwind_GetIPInfo;
 
 #if defined(__SCALANATIVE_DELIMCC_MULTISHOT)
-#include "delimcc.h"
+#include "delimcc_multishot.h"
 #include <setjmp.h>
 #endif
 
 #if defined(__SCALANATIVE_DELIMCC_MULTISHOT)
-#include "delimcc.h"
+#include "delimcc_multishot.h"
 #include <setjmp.h>
 #endif
 
