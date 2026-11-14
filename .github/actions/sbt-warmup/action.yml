@@ -11,6 +11,5 @@ runs:
         timeout_minutes: 15
         max_attempts: 3
         retry_wait_seconds: 30
-        retry_on: error
         shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
         command: sbt --server exit
