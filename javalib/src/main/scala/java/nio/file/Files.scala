@@ -654,7 +654,7 @@ object Files {
       prefix: String,
       attrs: Array[FileAttribute[_]]
   ): Path = {
-
+    checkTempNamePart(prefix)
     val mode = creationMode(attrs, default = 0x1c0) // 0700
     if (!isWindows) {
       createTempUnix(dir.toString, prefix, "") { path =>
@@ -676,7 +676,11 @@ object Files {
       if (temp.delete() && temp.mkdir()) {
         temp.toPath()
       } else {
-        throw new IOException()
+        throw new FileSystemException(
+          temp.toString,
+          null,
+          "Unable to create temporary directory"
+        )
       }
     }
   }
@@ -702,6 +706,8 @@ object Files {
       suffix: String,
       attrs: Array[FileAttribute[_]]
   ): Path = {
+    checkTempNamePart(prefix)
+    checkTempNamePart(suffix)
     val mode = creationMode(attrs, default = 0x180) // 0600
     if (!isWindows) {
       val dirName = if (dir == null) FileHelpers.tempDir else dir.toString
@@ -719,6 +725,15 @@ object Files {
       temp.toPath()
     }
   }
+
+  private def checkTempNamePart(part: String): Unit =
+    if (part != null) {
+      val hasSeparator =
+        if (isWindows) part.indexOf('/') >= 0 || part.indexOf('\\') >= 0
+        else part.indexOf('/') >= 0
+      if (hasSeparator)
+        throw new IllegalArgumentException("Invalid prefix or suffix")
+    }
 
   /* Picks fresh names in dir until create makes one; create returns false
    * when the name is already taken.
