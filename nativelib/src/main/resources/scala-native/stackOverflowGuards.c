@@ -373,10 +373,14 @@ void scalanative_StackOverflowGuards_check() {
     }
 #ifndef _WIN32
     // `reset` leaves the guard open when the error is caught by a frame that
-    // is still inside it. Close it once the stack is back above the guard.
+    // is still inside it. Close it once this stack is back above the guard;
+    // code running elsewhere, as a multi-shot continuation resumed from a
+    // heap fragment does, may still have frames of this stack inside it.
     else if (currentThreadInfo.stackGuardOpen) {
         int dummy;
-        if (!inStackGuard(&currentThreadInfo, &dummy))
+        void *guardEnd =
+            (char *)currentThreadInfo.stackGuardPage + resolvePageSize();
+        if (isInRange(&dummy, guardEnd, currentThreadInfo.stackBottom))
             protectStackGuardPage();
     }
 #endif
