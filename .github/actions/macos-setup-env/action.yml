@@ -80,3 +80,5 @@ runs:
         else
           echo "::warning::No directory $LLVM_TOOLCHAIN; set LLVM_BIN on the step if needed."
         fi
+
+    - uses: ./.github/actions/sbt-warmup
