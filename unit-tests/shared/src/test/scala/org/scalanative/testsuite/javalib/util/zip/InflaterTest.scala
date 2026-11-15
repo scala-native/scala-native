@@ -718,4 +718,73 @@ class InflaterTest {
 
     assertThrows(classOfIllegalStateException, inflate.getTotalOut())
   }
+
+  @Test def roundTripWithBuffersLargerThan64KiB(): Unit = {
+    val input = Array.tabulate[Byte](200000)(i => (i % 251).toByte)
+    val deflater = new Deflater(Deflater.NO_COMPRESSION)
+    val compressed = new Array[Byte](input.length + 1024)
+    deflater.setInput(input)
+    deflater.finish()
+    val compressedLength = deflater.deflate(compressed)
+    assertTrue("deflater finished", deflater.finished())
+    deflater.end()
+
+    val inflater = new Inflater()
+    inflater.setInput(compressed, 0, compressedLength)
+    val output = new Array[Byte](input.length)
+    assertEquals(input.length, inflater.inflate(output))
+    assertTrue("inflater finished", inflater.finished())
+    inflater.end()
+    assertArrayEquals(input, output)
+  }
+}
+
+class InflaterInputRetentionTest {
+  private val uncompressed: Array[Byte] =
+    Array.tabulate[Byte](64 * 1024)(i => ((i * 31) ^ (i >>> 7)).toByte)
+
+  private def compressed(): Array[Byte] = {
+    val deflater = new Deflater()
+    try {
+      deflater.setInput(uncompressed)
+      deflater.finish()
+      val bos = new ByteArrayOutputStream()
+      val buf = new Array[Byte](4096)
+      while (!deflater.finished()) {
+        bos.write(buf, 0, deflater.deflate(buf))
+      }
+      bos.toByteArray()
+    } finally deflater.end()
+  }
+
+  // The inflater must keep its input reachable: the caller is free to drop
+  // its reference to the array passed to setInput.
+  private def setFreshInput(inflater: Inflater): Unit =
+    inflater.setInput(compressed())
+
+  private def churn(size: Int): Unit = {
+    var i = 0
+    while (i < 64) {
+      java.util.Arrays.fill(new Array[Byte](size), 0xff.toByte)
+      i += 1
+    }
+    System.gc()
+  }
+
+  @Test def inflaterKeepsInputReachable(): Unit = {
+    val inputSize = compressed().length
+    val inflater = new Inflater()
+    try {
+      setFreshInput(inflater)
+      val out = new ByteArrayOutputStream()
+      val buf = new Array[Byte](1024)
+      while (!inflater.finished()) {
+        churn(inputSize)
+        val n = inflater.inflate(buf)
+        assertFalse("needs input", n == 0 && inflater.needsInput())
+        out.write(buf, 0, n)
+      }
+      assertArrayEquals(uncompressed, out.toByteArray())
+    } finally inflater.end()
+  }
 }
