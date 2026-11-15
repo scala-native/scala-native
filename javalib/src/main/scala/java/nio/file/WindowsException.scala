@@ -27,12 +27,12 @@ object WindowsException {
     import ErrorCodes._
     lazy val e = errno
     winError match {
-      case _ if e == ENOTDIR   => new NotDirectoryException(file)
       case ERROR_ACCESS_DENIED => new AccessDeniedException(file)
       case ERROR_FILE_NOT_FOUND | ERROR_PATH_NOT_FOUND =>
         new NoSuchFileException(file)
       case ERROR_ALREADY_EXISTS => new FileAlreadyExistsException(file)
-      case e                    =>
+      case _ if e == ENOTDIR    => new NotDirectoryException(file)
+      case _                    =>
         new IOException(s"$file - ${errorMessage(winError)} ($winError)")
     }
   }
