@@ -376,7 +376,8 @@ void scalanative_StackOverflowGuards_check() {
     // is still inside it. Close it once this stack is back above the guard;
     // code running elsewhere, as a multi-shot continuation resumed from a
     // heap fragment does, may still have frames of this stack inside it.
-    else if (currentThreadInfo.stackGuardOpen) {
+    else if (currentThreadInfo.stackGuardOpen &&
+             currentThreadInfo.stackGuardPage != NULL) {
         int dummy;
         void *guardEnd =
             (char *)currentThreadInfo.stackGuardPage + resolvePageSize();
@@ -391,6 +392,8 @@ void scalanative_StackOverflowGuards_close() {
 // noop
 #else
     unprotectStackGuardPage();
+    // No guard left to protect again.
+    currentThreadInfo.stackGuardOpen = false;
     currentThreadInfo.stackGuardPage = NULL;
     currentThreadInfo.stackGuardLow = NULL;
     if (currentThreadInfo.signalHandlerStack) {
