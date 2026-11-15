@@ -412,9 +412,12 @@ private[codegen] object Generate {
       val WeakReferenceGCReferent = WeakReferenceClass.member(
         nir.Sig.Field("_gc_modified_referent")
       )
+      // Not only when WeakReference itself is allocated: the RTTI flags mark
+      // every subclass as a weak reference, and the GC reads the referent of
+      // each one at this offset
       def weakRefClsInfo = reachabilityAnalysis.infos
         .get(WeakReferenceClass)
-        .collect { case cls: Class if cls.allocated => cls }
+        .collect { case cls: Class => cls }
       def weakRefReferentField =
         reachabilityAnalysis.infos
           .get(WeakReferenceGCReferent)
