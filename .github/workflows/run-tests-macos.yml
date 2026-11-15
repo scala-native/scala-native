@@ -227,37 +227,11 @@ jobs:
         timeout-minutes: 60
         run: sbt -J-Xmx5G "tests${{env.project-version}}/test"
 
-  # Scala Native code used as a static library from a foreign host program
-  # running its own threads, the way an iOS application would embed it.
-  test-ios-static-library:
-    name: Test static library in iOS simulator
-    if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
-    runs-on: macos-15
-    needs: [test-ios-simulator]
-    strategy:
-      fail-fast: false
-      matrix:
-        scala: [3]
-        build-mode: [debug, release-fast]
-        gc: [immix]
-        include:
-          - scala: 3
-            build-mode: debug
-            gc: commix
-    env:
-      SCALANATIVE_MODE: ${{ matrix.build-mode }}
-      SCALANATIVE_GC: ${{ matrix.gc }}
-    steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/macos-setup-env
-        with:
-          scala-version: ${{matrix.scala}}
-          llvm-version: 19
-      # The scripted test would be skipped if simulator is not available
-      - uses: ./.github/actions/ios-simulator-setup
-
-      - name: Test scripted
-        timeout-minutes: 60
+      # Scala Native code used as a static library from a foreign host program
+      # running its own threads, the way an iOS application would embed it.
+      - name: Test static library
+        if: ${{ !cancelled() }}
+        timeout-minutes: 30
         run: sbt "test-scripted ${{matrix.scala}} run/ios-static-library"
 
   # There is no way to execute binaries built for physical devices in the CI,
