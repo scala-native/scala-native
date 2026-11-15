@@ -231,6 +231,9 @@ private[codegen] abstract class AbstractCodeGen(
     sb.str(s""", section "$name", align ${platform.sizeOfPtr}""")
   }
 
+  private def noAddressSanitize(name: nir.Global): Boolean =
+    name == nir.Rt.LinkedClassesFind
+
   private def genDefn(defn: nir.Defn)(implicit
       sb: ShowBuilder,
       metaCtx: MetadataCodeGen.Context
@@ -349,6 +352,10 @@ private[codegen] abstract class AbstractCodeGen(
         implicit val cfg: CFG = CFG(insts)
         implicit val _fresh: nir.Fresh = fresh
         implicit val _debugInfo: DebugInfo = debugInfo
+        // ASan skips functions that lack this attribute.
+        if (config.sanitizer.contains(build.Sanitizer.AddressSanitizer) &&
+            !noAddressSanitize(name))
+          str(" sanitize_address")
         str(" ")
         str(os.gxxPersonality)
         def genBody() = {

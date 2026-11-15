@@ -13,6 +13,7 @@
 #endif
 #include "shared/ScalaNativeGC.h"
 #include "shared/GCTypes.h"
+#include "shared/AsanFakeStack.h"
 #include "shared/Parsing.h"
 #include "shared/Log.h"
 #include "shared/jmx.h"
@@ -187,6 +188,9 @@ void scalanative_GC_set_mutator_thread_state(GC_MutatorThreadState state) {
     // Capture the caller's callee-saved registers before this function needs
     // any of them: nothing here is live across the capture.
     RegistersCapture(MutatorThread_current()->registersBuffer);
+    // Save this thread's ASan fake stack before it becomes unmanaged, so the
+    // collector can read it while the thread is stopped.
+    MutatorThread_current()->asanFakeStack = AsanFakeStack_current();
     MutatorThread_enterUnmanaged(MutatorThread_current());
 }
 

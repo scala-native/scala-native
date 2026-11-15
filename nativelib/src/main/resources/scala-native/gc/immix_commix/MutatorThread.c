@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include "shared/ThreadUtil.h"
 #include "shared/Log.h"
+#include "shared/AsanFakeStack.h"
 #include <assert.h>
 
 #ifndef _WIN32
@@ -196,10 +197,14 @@ INLINE void MutatorThread_switchState(MutatorThread *self,
     switch (newState) {
     case GC_MutatorThreadState_Unmanaged:
         RegistersCapture(self->registersBuffer);
+        // Save this thread's fake stack before it becomes unmanaged, so the
+        // collector can read it while the thread is stopped.
+        self->asanFakeStack = AsanFakeStack_current();
         MutatorThread_publishStackTop(self);
         break;
 
     case GC_MutatorThreadState_Managed:
+        self->asanFakeStack = NULL;
         atomic_store_explicit(&self->stackTop, 0, memory_order_release);
         break;
     }
