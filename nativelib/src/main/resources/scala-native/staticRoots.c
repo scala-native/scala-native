@@ -1,5 +1,6 @@
 #include "staticRoots.h"
 #include "gc/shared/ScalaNativeGC.h"
+#include "gc/shared/GCHooks.h"
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -18,13 +19,6 @@
 static void registerSection(const SNStaticSection *section) {
     if (section->start != section->end)
         scalanative_GC_add_roots(section->start, section->end);
-}
-
-/* Class and string objects are not scanned: only lock words of their
- * inflated monitors are, see scalanative_register_object_roots.
- */
-SN_SECTION_LOCAL void scalanative_register_static_roots(void) {
-    registerSection(scalanative_static_globals_section());
 }
 
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
@@ -60,12 +54,17 @@ static void lockLockWords(void) {
 static void unlockLockWords(void) { pthread_mutex_unlock(&lockWordsLock); }
 #endif
 
+// The i-th registered lock word, `chunk` holds the chunk of entry i - 1
+static void **lockWordAt(LockWordChunk **chunk, size_t i) {
+    if (i > 0 && i % LOCK_WORDS_PER_CHUNK == 0)
+        *chunk = (*chunk)->next;
+    return (*chunk)->lockWords[i % LOCK_WORDS_PER_CHUNK];
+}
+
 static bool isRegistered(void **lockWord, size_t count) {
     LockWordChunk *chunk = &firstChunk;
     for (size_t i = 0; i < count; i++) {
-        if (i > 0 && i % LOCK_WORDS_PER_CHUNK == 0)
-            chunk = chunk->next;
-        if (chunk->lockWords[i % LOCK_WORDS_PER_CHUNK] == lockWord)
+        if (lockWordAt(&chunk, i) == lockWord)
             return true;
     }
     return false;
@@ -95,18 +94,17 @@ static void registerLockWord(void **lockWord) {
     unlockLockWords();
 }
 
-SN_SECTION_LOCAL void
-scalanative_foreach_static_lock_word(SNLockWordVisitor visit, void *context) {
+/* Root provider, see GCHooks.h: scans the inflated lock words, the only ones
+ * pointing to a monitor, thin locks hold none. */
+static void scanLockWords(void *data, GC_ScanRangeFn *scan, void *ctx) {
+    (void)data;
     size_t count =
         atomic_load_explicit(&publishedLockWords, memory_order_acquire);
     LockWordChunk *chunk = &firstChunk;
     for (size_t i = 0; i < count; i++) {
-        if (i > 0 && i % LOCK_WORDS_PER_CHUNK == 0)
-            chunk = chunk->next;
-        void **lockWord = chunk->lockWords[i % LOCK_WORDS_PER_CHUNK];
-        // Only inflated lock words point to a monitor, thin locks hold none
-        if (((word_t)*lockWord & MONITOR_INFLATION_MARK_MASK) != 0)
-            visit(lockWord, context);
+        void **lockWord = lockWordAt(&chunk, i);
+        if (Field_isInflatedLock(*lockWord))
+            scan(ctx, lockWord, lockWord + 1);
     }
 }
 
@@ -124,19 +122,22 @@ static bool containsObject(const SNStaticSection *section, void *object) {
 SN_SECTION_LOCAL void scalanative_register_object_roots(void *object) {
     if (containsObject(scalanative_static_classinfo_section(), object) ||
         containsObject(scalanative_static_strings_section(), object)) {
-        // Object header: the RTTI, then the lock word
-        registerLockWord(&((void **)object)[1]);
+        registerLockWord((void **)&((Object *)object)->lockWord);
     }
+}
+
+SN_SECTION_LOCAL void scalanative_register_static_roots(void) {
+    registerSection(scalanative_static_globals_section());
+    if (!scalanative_GC_add_root_provider(scanLockWords, NULL))
+        abort();
 }
 
 #else
 
 // Without multithreading objects have no lock word to register
 
-SN_SECTION_LOCAL void
-scalanative_foreach_static_lock_word(SNLockWordVisitor visit, void *context) {
-    (void)visit;
-    (void)context;
+SN_SECTION_LOCAL void scalanative_register_static_roots(void) {
+    registerSection(scalanative_static_globals_section());
 }
 
 SN_SECTION_LOCAL void scalanative_register_object_roots(void *object) {
