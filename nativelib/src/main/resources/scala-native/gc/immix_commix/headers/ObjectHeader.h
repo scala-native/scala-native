@@ -81,8 +81,7 @@ typedef struct Rtti {
     int32_t superclassCount; // 0 for java.lang.Object and primitives
     union {
         // Classes: offsets in bytes, from the object start, of reference
-        // fields, -1, then of raw pointer fields scanned conservatively, -1.
-        // Weak references then hold the offset of their referent, -1.
+        // fields, -1, then of raw pointer fields scanned conservatively, -1
         int32_t *refFieldOffsets;
         // Arrays: RTTI of the element type
         struct Rtti *componentType;
@@ -133,6 +132,17 @@ typedef struct StringObject {
     int32_t count;
     int32_t cached_hash_code;
 } StringObject;
+
+/* java.lang.ref.Reference: codegen.FieldLayout pins the referent right after
+ * the header in every reference object */
+typedef struct {
+    // ObjectHeader
+    Rtti *rtti;
+#ifdef USES_LOCKWORD
+    word_t *lockWord;
+#endif
+    Object *referent;
+} ReferenceObject;
 
 typedef struct Chunk Chunk;
 
@@ -187,20 +197,10 @@ static inline bool Object_IsWeakReference(const Object *object) {
            RTTI_REFERENCE_KIND_WEAK;
 }
 
-/* The referent field of a weak reference, which is not among the reference
- * fields the GC marks: its offset follows the second section of the
- * reference map. NULL when the class has no such field. */
+// The referent of a weak reference, which the GC does not mark
 static inline Field_t *WeakReference_ReferentField(const Object *object) {
     assert(Object_IsWeakReference(object));
-    const int32_t *offsets = object->rtti->refFieldOffsets;
-    for (int section = 0; section < 2; section++) {
-        while (*offsets != LAST_FIELD_OFFSET)
-            offsets++;
-        offsets++;
-    }
-    if (*offsets == LAST_FIELD_OFFSET)
-        return NULL;
-    return (Field_t *)((int8_t *)object + *offsets);
+    return (Field_t *)&((ReferenceObject *)object)->referent;
 }
 
 #ifdef USES_LOCKWORD

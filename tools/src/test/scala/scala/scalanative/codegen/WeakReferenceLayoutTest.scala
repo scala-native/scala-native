@@ -6,8 +6,8 @@ import org.junit.Test
 
 import scala.scalanative.linker.Class
 
-/* The GC finds the referent of a weak reference in the reference map of its
- * class, after the reference fields and the raw pointer fields.
+/* The GC finds the referent of every reference object right after the object
+ * header, and marks it only for references other than weak ones.
  */
 class WeakReferenceLayoutTest extends CodeGenSpec {
 
@@ -24,7 +24,8 @@ class WeakReferenceLayoutTest extends CodeGenSpec {
          |    val h = new Holder
          |    h.a = args
          |    val ref = new Ref(h, args)
-         |    println(ref.get().## + ref.extra.## + h.a.##)
+         |    val soft = new java.lang.ref.SoftReference[AnyRef](h)
+         |    println(ref.get().## + ref.extra.## + h.a.## + soft.get().##)
          |  }
          |}
          |""".stripMargin
@@ -42,11 +43,11 @@ class WeakReferenceLayoutTest extends CodeGenSpec {
   private def referentOffset(meta: Metadata, name: String): Int = {
     val cls = meta.analysis.infos(nir.Global.Top(name)).asInstanceOf[Class]
     val layout = meta.layout(cls)
-    val referent = layout.entries.find(_.name == FieldLayout.WeakReferent).get
+    val referent = layout.entries.find(_.name == FieldLayout.Referent).get
     layout.layout.tys(layout.index(referent)).offset.toInt
   }
 
-  @Test def weakReferencesListTheirReferentApart(): Unit =
+  @Test def referentFollowsTheHeader(): Unit =
     optimize("Test", sources) {
       case (config, optimized) =>
         implicit val platform: PlatformInfo = PlatformInfo(config)
@@ -54,25 +55,32 @@ class WeakReferenceLayoutTest extends CodeGenSpec {
           GenerateReflectiveProxies(optimized.dynimpls, optimized.defns)
         val meta = new Metadata(optimized, config, proxies)
 
-        val holder = referenceMap(meta, "Holder")
-        assertEquals("no weak referent section", 2, holder.count(_ == -1))
+        val headerSize =
+          MemoryLayout.sizeOf(meta.layouts.ObjectHeader.layout)(platform)
+        for (name <- Seq("Ref", "java.lang.ref.SoftReference"))
+          assertEquals(
+            s"referent of $name follows the header",
+            headerSize,
+            referentOffset(meta, name).toLong
+          )
 
-        val ref = referenceMap(meta, "Ref")
+        def marked(name: String) = {
+          val map = referenceMap(meta, name)
+          assertEquals(s"$name has two map sections", 2, map.count(_ == -1))
+          map.take(map.indexOf(-1))
+        }
         val offset = referentOffset(meta, "Ref")
-        val firstEnd = ref.indexOf(-1)
-        val secondEnd = ref.indexOf(-1, firstEnd + 1)
-        assertFalse(
-          "referent is not marked",
-          ref.take(firstEnd).contains(offset)
-        )
+        val ref = marked("Ref")
+        assertFalse("weak referent is not marked", ref.contains(offset))
+        assertTrue("other reference fields are marked", ref.nonEmpty)
         assertTrue(
-          "other reference fields are marked",
-          ref.take(firstEnd).nonEmpty
+          "soft referent is marked",
+          marked("java.lang.ref.SoftReference").contains(offset)
         )
         assertEquals(
-          "referent offset after the raw pointer section",
-          Seq(offset, -1),
-          ref.drop(secondEnd + 1)
+          "plain classes keep two sections",
+          Seq(-1, -1),
+          referenceMap(meta, "Holder").drop(1)
         )
     }
 }

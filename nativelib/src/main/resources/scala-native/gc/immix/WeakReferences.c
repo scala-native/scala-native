@@ -21,8 +21,6 @@ void WeakReferences_Nullify(void) {
         Object *object = Stack_Pop(&weakRefStack);
         Object **weakRefReferantField =
             (Object **)WeakReference_ReferentField(object);
-        if (weakRefReferantField == NULL)
-            continue;
         word_t *weakRefReferant = (word_t *)*weakRefReferantField;
         if (Heap_IsWordInHeap(&heap, weakRefReferant)) {
             ObjectMeta *objectMeta = Bytemap_Get(bytemap, weakRefReferant);
