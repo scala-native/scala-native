@@ -102,6 +102,113 @@ object TypeTestsTest {
   trait M37 { def m37: Int = 37 }
   trait M38 { def m38: Int = 38 }
   trait M39 { def m39: Int = 39 }
+  /* Keys of these traits collide in every itable placement of Crowded the
+   * toolchain tries: Qkemd, Qkphm, Qpadk and Qpgfp end up outside the slot
+   * where their lookup starts, so lookups continue in scalanative_itable_find.
+   */
+  trait Qkemd { def qkemd: Int = 0 }
+  trait Qpadk { def qpadk: Int = 1 }
+  trait Qolha { def qolha: Int = 2 }
+  trait Qhnlm { def qhnlm: Int = 3 }
+  trait Qbhlf { def qbhlf: Int = 4 }
+  trait Qpgfp { def qpgfp: Int = 5 }
+  trait Qjojg { def qjojg: Int = 6 }
+  trait Qdldo { def qdldo: Int = 7 }
+  trait Qkhna { def qkhna: Int = 8 }
+  trait Qigki { def qigki: Int = 9 }
+  trait Qbfkj { def qbfkj: Int = 10 }
+  trait Qdhhl { def qdhhl: Int = 11 }
+  trait Qoghd { def qoghd: Int = 12 }
+  trait Qiohe { def qiohe: Int = 13 }
+  trait Qkphm { def qkphm: Int = 14 }
+  trait Qbckk { def qbckk: Int = 15 }
+  trait Qpmbe { def qpmbe: Int = 16 }
+  trait Qjdhk { def qjdhk: Int = 17 }
+  trait Qnphn { def qnphn: Int = 18 }
+  trait Qjopj { def qjopj: Int = 19 }
+  trait Qkcim { def qkcim: Int = 20 }
+  trait Qoejc { def qoejc: Int = 21 }
+  trait Qhmla { def qhmla: Int = 22 }
+  trait Qhjdm { def qhjdm: Int = 23 }
+  class Crowded
+      extends Qkemd
+      with Qpadk
+      with Qolha
+      with Qhnlm
+      with Qbhlf
+      with Qpgfp
+      with Qjojg
+      with Qdldo
+      with Qkhna
+      with Qigki
+      with Qbfkj
+      with Qdhhl
+      with Qoghd
+      with Qiohe
+      with Qkphm
+      with Qbckk
+      with Qpmbe
+      with Qjdhk
+      with Qnphn
+      with Qjopj
+      with Qkcim
+      with Qoejc
+      with Qhmla
+      with Qhjdm
+  class Sparse extends Qkemd with Qkphm
+  def crowdedTraits(x: AnyRef): Seq[Boolean] = Seq(
+    x.isInstanceOf[Qkemd],
+    x.isInstanceOf[Qpadk],
+    x.isInstanceOf[Qolha],
+    x.isInstanceOf[Qhnlm],
+    x.isInstanceOf[Qbhlf],
+    x.isInstanceOf[Qpgfp],
+    x.isInstanceOf[Qjojg],
+    x.isInstanceOf[Qdldo],
+    x.isInstanceOf[Qkhna],
+    x.isInstanceOf[Qigki],
+    x.isInstanceOf[Qbfkj],
+    x.isInstanceOf[Qdhhl],
+    x.isInstanceOf[Qoghd],
+    x.isInstanceOf[Qiohe],
+    x.isInstanceOf[Qkphm],
+    x.isInstanceOf[Qbckk],
+    x.isInstanceOf[Qpmbe],
+    x.isInstanceOf[Qjdhk],
+    x.isInstanceOf[Qnphn],
+    x.isInstanceOf[Qjopj],
+    x.isInstanceOf[Qkcim],
+    x.isInstanceOf[Qoejc],
+    x.isInstanceOf[Qhmla],
+    x.isInstanceOf[Qhjdm]
+  )
+  def crowdedCalls(x: Crowded): Seq[Int] = Seq(
+    (x: Qkemd).qkemd,
+    (x: Qpadk).qpadk,
+    (x: Qolha).qolha,
+    (x: Qhnlm).qhnlm,
+    (x: Qbhlf).qbhlf,
+    (x: Qpgfp).qpgfp,
+    (x: Qjojg).qjojg,
+    (x: Qdldo).qdldo,
+    (x: Qkhna).qkhna,
+    (x: Qigki).qigki,
+    (x: Qbfkj).qbfkj,
+    (x: Qdhhl).qdhhl,
+    (x: Qoghd).qoghd,
+    (x: Qiohe).qiohe,
+    (x: Qkphm).qkphm,
+    (x: Qbckk).qbckk,
+    (x: Qpmbe).qpmbe,
+    (x: Qjdhk).qjdhk,
+    (x: Qnphn).qnphn,
+    (x: Qjopj).qjopj,
+    (x: Qkcim).qkcim,
+    (x: Qoejc).qoejc,
+    (x: Qhmla).qhmla,
+    (x: Qhjdm).qhjdm
+  )
+
   class Many
       extends M0
       with M1
@@ -232,6 +339,19 @@ class TypeTestsTest {
     assertFalse(classOf[NeverImplemented].isInstance(chain(12)))
     assertFalse(classOf[Int].isInstance(Integer.valueOf(1)))
     assertTrue(classOf[Object].isInstance(Array(1)))
+  }
+
+  @Test def traitsOutsideTheirFirstSlot(): Unit = {
+    val crowded: AnyRef = new Crowded
+    assertEquals(Seq.fill(24)(true), crowdedTraits(crowded))
+    assertEquals((0 until 24).toList, crowdedCalls(new Crowded).toList)
+    val sparse = crowdedTraits(new Sparse)
+    assertEquals(Seq(true, false), Seq(sparse(0), sparse(1)))
+    assertEquals(2, sparse.count(identity))
+    assertEquals(Seq.fill(24)(false), crowdedTraits(new D12))
+    assertTrue(classOf[Qkphm].isInstance(crowded))
+    assertTrue(classOf[Qpgfp].isAssignableFrom(classOf[Crowded]))
+    assertFalse(classOf[Qpgfp].isAssignableFrom(classOf[Sparse]))
   }
 
   @Test def forNameFindsClassesAndTraits(): Unit = {

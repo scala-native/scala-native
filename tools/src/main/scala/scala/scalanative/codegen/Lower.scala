@@ -930,11 +930,11 @@ private[scalanative] object Lower {
       }
     }
 
-    /* Itable lookup for `trt`, see codegen.ITable: probes slots linearly from
-     * the one selected by the trait key. Jumps to `found` with the itable
-     * pointer and slot index as arguments, or to `missing` at the first empty
-     * slot. Tables are at most half full, so the loop always ends and most
-     * lookups take one probe.
+    /* Itable lookup for `trt`, see codegen.ITable. Jumps to `found` with the
+     * itable pointer and slot index as arguments, or to `missing`. Probes the
+     * slot where the lookup starts inline: most classes store `trt` there. A
+     * slot holding another trait continues the lookup out of line, in
+     * scalanative_itable_find.
      */
     def genItableProbe(buf: nir.InstructionBuilder, rttiPtr: nir.Val, trt: Trait)(found: nir.Local, missing: nir.Local)(implicit
         srcPosition: nir.SourcePosition,
@@ -942,24 +942,21 @@ private[scalanative] object Lower {
     ): Unit = {
       import buf._
       val traitRtti = rtti(trt).const
-      val (mask, itables, start) = genItableStart(buf, rttiPtr, trt)
-      val probeL, checkEmptyL, nextL = fresh()
-      jump(probeL, Seq(start))
+      val (_, itables, start) = genItableStart(buf, rttiPtr, trt)
+      val checkEmptyL, searchL = fresh()
 
-      val pos = nir.Val.Local(fresh(), nir.Type.Int)
-      label(probeL, Seq(pos))
-      val entryTrait = genLoadEntryTrait(buf, itables, pos)
+      val entryTrait = genLoadEntryTrait(buf, itables, start)
       val isFound = let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, entryTrait, traitRtti), unwind)
-      branch(isFound, nir.Next.Label(found, Seq(itables, pos)), nir.Next(checkEmptyL))
+      branch(isFound, nir.Next.Label(found, Seq(itables, start)), nir.Next(checkEmptyL))
 
       label(checkEmptyL)
       val isEmpty = let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, entryTrait, nir.Val.Null), unwind)
-      branch(isEmpty, nir.Next(missing), nir.Next(nextL))
+      branch(isEmpty, nir.Next(missing), nir.Next(searchL))
 
-      label(nextL)
-      val incremented = let(nir.Op.Bin(nir.Bin.Iadd, nir.Type.Int, pos, one), unwind)
-      val next = let(nir.Op.Bin(nir.Bin.And, nir.Type.Int, incremented, mask), unwind)
-      jump(probeL, Seq(next))
+      label(searchL)
+      val pos = call(ItableFindSig, ItableFind, Seq(rttiPtr, traitRtti, start), unwind)
+      val isMissing = let(nir.Op.Comp(nir.Comp.Slt, nir.Type.Int, pos, zero), unwind)
+      branch(isMissing, nir.Next(missing), nir.Next.Label(found, Seq(itables, pos)))
     }
 
     // The trait RTTI stored in slot `pos` of `itables`, null for an empty slot
@@ -2221,6 +2218,10 @@ private[scalanative] object Lower {
     nir.Sig.Method("allocImpl", Seq(nir.Type.Ptr, nir.Type.Size, nir.Type.Ptr))
   )
 
+  val ItableFindName = Extern("scalanative_itable_find")
+  val ItableFindSig = nir.Type.Function(Seq(nir.Type.Ptr, nir.Type.Ptr, nir.Type.Int), nir.Type.Int)
+  val ItableFind = nir.Val.Global(ItableFindName, nir.Type.Ptr)
+
   val dyndispatchName = Extern("scalanative_dynmethod")
   val dyndispatchSig =
     nir.Type.Function(Seq(nir.Type.Ptr, nir.Type.Int), nir.Type.Ptr)
@@ -2527,6 +2528,7 @@ private[scalanative] object Lower {
     buf += externDecl(allocSmallName, allocSig)
     buf += externDecl(largeAllocName, allocSig)
     buf += externDecl(dyndispatchName, dyndispatchSig)
+    buf += externDecl(ItableFindName, ItableFindSig)
     buf += externDecl(throwName, throwSig)
     buf += externDecl(memsetName, memsetSig)
     buf += externDecl(ExceptionOnCatchName, ExceptionOnCatchSig)

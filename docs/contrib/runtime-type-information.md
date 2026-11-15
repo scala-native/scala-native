@@ -109,9 +109,12 @@ with equal keys only make a lookup longer.
 
 Tables are at most half full, so every lookup ends at an empty slot. The
 toolchain picks for each class the smallest table, up to four times that size,
-and the smallest shift, in which every trait is found on the first probe. Generated code inlines the
-whole lookup. When every class of the program holds a trait in the slot where
-its lookup starts, calls and instance tests for that trait read only that slot.
+and the smallest shift, in which every trait is found on the first probe.
+Generated code probes the slot where the lookup starts inline, and continues
+past a slot holding another trait in `scalanative_itable_find`. When every
+class of the program holds a trait in the slot where its lookup starts, calls
+and instance tests for that trait read only that slot; when no class shifts its
+key, they skip loading the shift too.
 `java.lang.Class` runs the same lookup, taking the key from the trait's flags.
 
 ## Modules
