@@ -24,6 +24,8 @@ private[scalanative] class Metadata(
   val itable = mutable.Map.empty[linker.Class, ITable]
   val layout = mutable.Map.empty[linker.Class, FieldLayout]
 
+  // Superclasses from the root, then the class itself, see lineage
+  private val lineages = mutable.Map.empty[Class, Vector[Class]]
   val classes: Seq[Class] = initClasses()
   val traits: Seq[Trait] = analysis.infos.valuesIterator
     .collect { case info: Trait => info }
@@ -45,13 +47,25 @@ private[scalanative] class Metadata(
   lazy val reflectiveProxies: nir.Defn.Const =
     ReflectiveProxyTable.defn(proxies)
 
-  /** Number of superclasses: 0 for java.lang.Object and primitives */
-  def superclassCount(cls: Class): Int =
-    cls.parent.fold(0)(superclassCount(_) + 1)
+  /** Superclasses of the class from the root, then the class itself */
+  def lineage(cls: Class): Vector[Class] = lineages(cls)
 
-  /** The class followed by its ancestors, up to the root class */
-  def ancestors(cls: Class): List[Class] =
-    cls :: cls.parent.fold(List.empty[Class])(ancestors)
+  /** Number of superclasses: 0 for java.lang.Object and primitives */
+  def superclassCount(cls: Class): Int = lineage(cls).size - 1
+
+  /** Whether `cls` is `ancestor` or one of its subclasses: `ancestor` has
+   *  `depth` superclasses.
+   */
+  def isAt(cls: Class, depth: Int, ancestor: nir.Global.Top): Boolean =
+    lineage(cls).lift(depth).exists(_.name == ancestor)
+
+  /** WeakReference, SoftReference or PhantomReference for reference objects:
+   *  java.lang.ref.Reference, a direct subclass of Object, is extended only by
+   *  them.
+   */
+  def referenceKind(cls: Class): Option[nir.Global.Top] =
+    if (!isAt(cls, 1, FieldLayout.Reference)) None
+    else lineage(cls).lift(2).map(_.name)
 
   /** Every class of the program stores `trt` in the itable slot where its
    *  lookup starts, so a single probe decides any lookup. A whole-program fact,
@@ -73,19 +87,21 @@ private[scalanative] class Metadata(
   private def initClasses(): Seq[Class] = {
     val out = mutable.UnrolledBuffer.empty[Class]
 
-    def loop(node: Class): Unit = {
+    def loop(node: Class, parentLineage: Vector[Class]): Unit = {
       out += node
+      val lineage = parentLineage :+ node
+      lineages(node) = lineage
       node.subclasses
         .filter(_.parent.contains(node))
         .toSeq
         .sortBy(_.name.mangle)
-        .foreach(loop)
+        .foreach(loop(_, lineage))
     }
 
     nir.Rt.PrimitiveTypes.foreach { name =>
-      loop(analysis.infos(name).asInstanceOf[Class])
+      loop(analysis.infos(name).asInstanceOf[Class], Vector.empty)
     }
-    loop(analysis.infos(nir.Rt.Object.name).asInstanceOf[Class])
+    loop(analysis.infos(nir.Rt.Object.name).asInstanceOf[Class], Vector.empty)
     out.toSeq
   }
 

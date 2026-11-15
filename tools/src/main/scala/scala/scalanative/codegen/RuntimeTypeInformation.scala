@@ -129,7 +129,7 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
    * exactly when lineage(superclassCount(C)) of its class is C.
    */
   private def lineage(cls: Class): nir.Val = {
-    val rootFirst = meta.ancestors(cls).reverse.map(meta.rtti(_).const)
+    val rootFirst = meta.lineage(cls).map(meta.rtti(_).const)
     nir.Val.ArrayValue(
       nir.Type.Ptr,
       rootFirst
@@ -175,9 +175,6 @@ private[codegen] object RuntimeTypeInformation {
 
     private val ObjectArray =
       nir.Global.Top("scala.scalanative.runtime.ObjectArray")
-    private val SoftReference = nir.Global.Top("java.lang.ref.SoftReference")
-    private val PhantomReference =
-      nir.Global.Top("java.lang.ref.PhantomReference")
 
     /** Computed from the type and its ancestors only. */
     def apply(info: ScopeInfo)(implicit meta: Metadata): Int = info match {
@@ -186,9 +183,9 @@ private[codegen] object RuntimeTypeInformation {
           (if (meta.alwaysAtHomeSlot(trt)) IsAtHomeSlot else 0) |
           (meta.traitKey(trt) & TraitKeyMask) << TraitKeyShift
       case cls: Class =>
-        val names = meta.ancestors(cls).map(_.name)
         def flag(cond: Boolean, bits: Int) = if (cond) bits else 0
-        val isArray = names.contains(nir.Rt.GenericArray.name)
+        // runtime.Array is a direct subclass of Object
+        val isArray = meta.isAt(cls, 1, nir.Rt.GenericArray.name)
         val arrayFlags =
           if (!isArray) 0
           else
@@ -197,11 +194,12 @@ private[codegen] object RuntimeTypeInformation {
               else if (cls.name == nir.Rt.BlobArray.name) ArrayScanConservative
               else ArrayScanNone
             }
-        val referenceKind =
-          if (names.contains(FieldLayout.WeakReference)) WeakReferenceKind
-          else if (names.contains(SoftReference)) SoftReferenceKind
-          else if (names.contains(PhantomReference)) PhantomReferenceKind
-          else 0
+        val referenceKind = meta.referenceKind(cls) match {
+          case Some(FieldLayout.WeakReference)    => WeakReferenceKind
+          case Some(FieldLayout.SoftReference)    => SoftReferenceKind
+          case Some(FieldLayout.PhantomReference) => PhantomReferenceKind
+          case _                                  => 0
+        }
         flag(nir.Rt.PrimitiveTypes.contains(cls.name), IsPrimitive) |
           arrayFlags |
           referenceKind |

@@ -49,7 +49,7 @@ private[codegen] class FieldLayout(cls: Class)(implicit meta: Metadata) {
       else Nil
     val referent = referentOffset
     val weakReferent =
-      if (meta.ancestors(cls).exists(_.name == FieldLayout.WeakReference))
+      if (meta.referenceKind(cls).contains(FieldLayout.WeakReference))
         referent
       else None
     val strong = layout.referenceFieldsOffsets.filterNot(weakReferent.contains)
@@ -74,10 +74,11 @@ private[codegen] class FieldLayout(cls: Class)(implicit meta: Metadata) {
 }
 
 private[codegen] object FieldLayout {
+  val Reference = nir.Global.Top("java.lang.ref.Reference")
   val WeakReference = nir.Global.Top("java.lang.ref.WeakReference")
+  val SoftReference = nir.Global.Top("java.lang.ref.SoftReference")
+  val PhantomReference = nir.Global.Top("java.lang.ref.PhantomReference")
   // The first field of every reference object, see java.lang.ref.Reference
   val Referent: nir.Global.Member =
-    nir.Global
-      .Top("java.lang.ref.Reference")
-      .member(nir.Sig.Field("_gc_modified_referent"))
+    Reference.member(nir.Sig.Field("_gc_modified_referent"))
 }
