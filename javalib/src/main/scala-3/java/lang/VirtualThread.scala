@@ -962,11 +962,6 @@ object VirtualThread {
       val vt = vThread
       if (vt == null) return
 
-      /* Clear delimcc handler TLS before any early return. If tryAcquireRunLoopToken
-       * fails we still leave this worker with a clean chain; otherwise a stale head
-       * from another VT (or a partial suspend) can make handler_pop / handler_split_at
-       * see the wrong label and abort, which strands Object.wait continuations. */
-      Continuations.handlersReset()
       // Recovery guard: if a previous VT left TLS currentThread mapped to a VT,
       // reset to the platform carrier before dispatching this continuation.
       val platformThread = Thread.currentPlatformThread
@@ -1009,11 +1004,6 @@ object VirtualThread {
             var didAfterYieldSubmit = false
             vt.mount()
             try {
-              // Every VT run/resume must start from a clean carrier handler TLS.
-              // The continuation/boundary machinery re-installs the VT's own
-              // captured chain; keeping stale handlers from a previous VT on
-              // the carrier corrupts handler_pop/split_at during park/wait.
-              Continuations.handlersReset()
               // initial run
               if (initialState == State.Started) {
                 Continuations.boundary[Unit] {
@@ -1039,10 +1029,6 @@ object VirtualThread {
                 vt.getUncaughtExceptionHandler().uncaughtException(vt, ex)
                 vt.afterDone()
             } finally {
-              // A yielded continuation has already captured the VT handler chain.
-              // Clear carrier-local delimcc TLS eagerly so no stale handlers leak
-              // into the next VT dispatched on this worker.
-              Continuations.handlersReset()
               // Post-yield on carrier: reconcile parked state with permit.
               val s = vt.state
               // Park path: Parked/TimedParked (LockSupport.park) + parkPermit; skip when resumeExecution null (wait).

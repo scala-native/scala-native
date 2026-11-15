@@ -167,6 +167,9 @@ private[scalanative] object NativeLib {
         val gcName = config.compilerConfig.gc.toString().toUpperCase()
         Seq(
           Some(s"-DSCALANATIVE_GC_${gcName}"),
+          // See gc/shared/GCHooks.h
+          if (config.compilerConfig.gc != GC.boehm) None
+          else Some("-DSCALANATIVE_GC_STOPS_THREADS_ANYWHERE"),
           if (!config.useTrapBasedGCYieldPoints) None
           else Some("-DSCALANATIVE_GC_USE_YIELDPOINT_TRAPS")
         ).flatten

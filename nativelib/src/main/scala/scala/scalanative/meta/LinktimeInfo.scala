@@ -53,11 +53,16 @@ object LinktimeInfo {
   )
   def isWeakReferenceSupported: Boolean = resolved
 
+  /** `Continuations.multi` */
   @resolvedAtLinktime()
-  def isContinuationsSupported: Boolean =
+  def isMultiShotContinuationsSupported: Boolean =
     (isLinux || isMac || isFreeBSD || isOpenBSD || isNetBSD) &&
       !is32BitPlatform &&
       (target.arch == "x86_64" || target.arch == "aarch64")
+
+  /** `Continuations` and `Continuations.single`. */
+  @resolvedAtLinktime()
+  def isContinuationsSupported: Boolean = isMultiShotContinuationsSupported
 
   @resolvedAtLinktime()
   def isVirtualThreadsSupported: Boolean =

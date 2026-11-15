@@ -67,6 +67,10 @@ static inline int threadStackScanableRanges(void *stackTop, void *stackBottom,
                                             ThreadInfo *threadInfo,
                                             StackScanRange out[2]) {
     void *guard = threadInfo != NULL ? threadInfo->stackGuardPage : NULL;
+    // That guard region opens as a whole: a stack reaching into it is
+    // readable there.
+    if (threadInfo != NULL && threadInfo->stackGuardLow != NULL)
+        guard = NULL;
     if (guard != NULL && guard >= stackTop && guard < stackBottom) {
         void *afterGuard = (char *)guard + resolvePageSize();
         out[0].from = stackTop;
@@ -110,6 +114,25 @@ static inline bool isOnSignalHandlerStack(ThreadInfo *threadInfo, void *addr) {
                          threadInfo->signalHandlerStackSize);
 }
 #endif
+
+/* The bottom of the stack to scan for a thread stopped at `sp`. A thread can
+ * run on another stack than the one it started on (`initialBottom`);
+ * ThreadInfo then has the bounds of the running one. A thread stopped on its
+ * signal stack was interrupted on that stack too. */
+static inline void *threadStackScanBottom(ThreadInfo *threadInfo, void *sp,
+                                          void *initialBottom) {
+    if (threadInfo == NULL || threadInfo->stackTop == NULL ||
+        threadInfo->stackBottom == NULL)
+        return initialBottom;
+    if (isInRange(sp, threadInfo->stackTop, threadInfo->stackBottom)
+#ifdef SCALANATIVE_THREAD_ALT_STACK
+        || isOnSignalHandlerStack(threadInfo, sp)
+#endif
+    )
+        return threadInfo->stackBottom;
+    return initialBottom;
+}
+
 static inline bool inStackPageBound(void *pageAddr, void *addr) {
     void *upperBound = (char *)pageAddr + resolvePageSize() * stackGuardPages();
     return isInRange(addr, pageAddr, upperBound);

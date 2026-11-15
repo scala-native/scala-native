@@ -1024,8 +1024,11 @@ private[scalanative] object Lower {
         nonBlocking.contains(sig) || {
           sig.unmangled match {
             case nir.Sig.Extern(name) =>
+              // The continuation runtime relies on running without
+              // safepoints.
               val isNonBlocking =
                 name.startsWith("scalanative_atomic_") ||
+                  name.startsWith("scalanative_continuation_") ||
                   name.startsWith("llvm.")
               if (isNonBlocking) nonBlocking += sig
               isNonBlocking

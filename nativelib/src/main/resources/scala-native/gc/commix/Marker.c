@@ -1,4 +1,5 @@
 #if defined(SCALANATIVE_GC_COMMIX)
+#include "immix_commix/ObjectTracer.h"
 #include "shared/GCTypes.h"
 #include <stdint.h>
 #include <stdio.h>
@@ -282,6 +283,23 @@ NO_SANITIZE int Marker_markRange(Heap *heap, Stats *stats,
     return objectsTraced;
 }
 
+// What the callbacks of shared/GCHooks.h scan into.
+typedef struct ScanContext {
+    Heap *heap;
+    Stats *stats;
+    GreyPacket **outHolder;
+    GreyPacket **outWeakRefHolder;
+    int objectsTraced;
+} ScanContext;
+
+static void Marker_scanRange(void *ctx, void *low, void *high) {
+    ScanContext *context = ctx;
+    size_t words = ((uintptr_t)high - (uintptr_t)low) / sizeof(word_t);
+    context->objectsTraced += Marker_markRange(
+        context->heap, context->stats, context->outHolder,
+        context->outWeakRefHolder, (word_t **)low, words, sizeof(word_t));
+}
+
 int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
                              GreyPacket **outHolder,
                              GreyPacket **outWeakRefHolder, Bytemap *bytemap) {
@@ -305,6 +323,13 @@ int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
                                     rawPtr);
             objectsTraced += 1;
         }
+    } else if (UNLIKELY((void *)object->rtti ==
+                        atomic_load_explicit(&ObjectTracer_rtti,
+                                             memory_order_relaxed))) {
+        ScanContext context = {heap, stats, outHolder, outWeakRefHolder, 0};
+        atomic_load (&ObjectTracer_trace)((void **)object->fields,
+                                          Marker_scanRange, &context);
+        objectsTraced += context.objectsTraced;
     }
     return objectsTraced;
 }
@@ -558,6 +583,8 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
         stackTop = MutatorThread_getStackTop(thread, false);
     } while (stackTop == NULL);
 
+    stackBottom = (word_t **)threadStackScanBottom(thread->threadInfo, stackTop,
+                                                   stackBottom);
 #ifdef SCALANATIVE_THREAD_ALT_STACK
     // Keep the captured SP until stack bounds are known.
     if (thread->threadInfo != NULL && thread->threadInfo->stackTop != NULL &&
@@ -640,6 +667,8 @@ void Marker_MarkRoots(Heap *heap, Stats *stats) {
     }
     Marker_markModules(heap, stats, &out, &weakRefOut);
     Marker_markCustomRoots(heap, stats, &out, &weakRefOut, customRoots);
+    ScanContext context = {heap, stats, &out, &weakRefOut, 0};
+    GCHooks_scanDynamicRoots(Marker_scanRange, &context);
     if (out != NULL) {
         if (GreyPacket_IsEmpty(out)) {
             Marker_giveEmptyPacket(heap, stats, out);

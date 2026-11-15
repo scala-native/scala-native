@@ -12,8 +12,8 @@ void scalanative_externalGC_admit(void);
 }
 #include <cstdio>
 
-#if defined(__SCALANATIVE_DELIMCC)
-#include "delimcc.h"
+#if defined(__SCALANATIVE_DELIMCC_MULTISHOT)
+#include "delimcc_multishot.h"
 #include "string_constants.h"
 #include <cstdio>
 #endif
@@ -68,7 +68,7 @@ class ExceptionWrapper : public std::exception {
 } // namespace scalanative
 
 extern "C" {
-#if defined(__SCALANATIVE_DELIMCC)
+#if defined(__SCALANATIVE_DELIMCC_MULTISHOT)
 /*
  * Continuation exception escape (C++): when a resumed body throws
  * scalanative::ExceptionWrapper and no handler in the continuation catches it,

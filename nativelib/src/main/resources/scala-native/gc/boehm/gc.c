@@ -5,6 +5,8 @@
 #include <gc/gc.h>
 #include <gc/gc_mark.h>
 #include "shared/ScalaNativeGC.h"
+#include "shared/GCHooks.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "shared/Parsing.h"
@@ -31,11 +33,120 @@ typedef struct Root {
 static Root *customRoots = NULL;
 static GC_push_other_roots_proc defaultPushOtherRoots = NULL;
 
+static void pushRange(void *ctx, void *low, void *high) {
+    (void)ctx;
+    GC_push_all_eager(low, high);
+}
+
 static void GC_CALLBACK pushCustomRoots(void) {
     if (defaultPushOtherRoots != NULL)
         defaultPushOtherRoots();
     for (Root *it = customRoots; it != NULL; it = it->next)
         GC_push_all_eager(it->low, it->high);
+    GCHooks_scanDynamicRoots(pushRange, NULL);
+}
+
+// =============================
+// shared/GCHooks.h
+
+void scalanative_GC_pause_collections(void) { GC_disable(); }
+void scalanative_GC_resume_collections(void) { GC_enable(); }
+
+#if GC_VERSION_MAJOR > 8 || (GC_VERSION_MAJOR == 8 && GC_VERSION_MINOR >= 2)
+void *scalanative_GC_current_stack_bottom(void) {
+    struct GC_stack_base base;
+    GC_get_my_stackbottom(&base);
+    return base.mem_base;
+}
+
+static void *GC_CALLBACK setStackBottom(void *bottom) {
+    struct GC_stack_base base = {.mem_base = bottom};
+    GC_set_stackbottom(NULL, &base);
+    return NULL;
+}
+
+void scalanative_GC_set_running_stack(void *low, void *bottom) {
+    (void)low;
+    GC_call_with_alloc_lock(setStackBottom, bottom);
+}
+#elif !defined(_WIN32)
+// Before 8.2 the stack bottom of a thread cannot be moved. A thread found on
+// its registered alternate stack is scanned from its stack pointer to the
+// end of that stack instead, which is what a running coroutine needs.
+void *scalanative_GC_current_stack_bottom(void) { return NULL; }
+
+void scalanative_GC_set_running_stack(void *low, void *bottom) {
+    if (low == NULL)
+        GC_register_altstack(NULL, 0, NULL, 0);
+    else
+        GC_register_altstack(NULL, 0, low,
+                             (GC_word)((char *)bottom - (char *)low));
+}
+#else
+void *scalanative_GC_current_stack_bottom(void) { return NULL; }
+
+void scalanative_GC_set_running_stack(void *low, void *bottom) {
+    (void)low;
+    (void)bottom;
+    fprintf(stderr, "Running on another stack needs Boehm GC 8.2 or newer\n");
+    abort();
+}
+#endif
+
+// Boehm does not know the class of what it marks: owners are traced through
+// an anchor, an object of its own kind whose mark procedure calls the
+// tracer. Free objects are cleared except for their first word.
+static unsigned tracedAnchorKind;
+static _Atomic(GC_ObjectTracerFn *) anchorTracer;
+
+typedef struct MarkStack {
+    struct GC_ms_entry *top;
+    struct GC_ms_entry *limit;
+} MarkStack;
+
+static void markRange(void *ctx, void *low, void *high) {
+    MarkStack *stack = ctx;
+    for (void **word = low; word < (void **)high; word++) {
+        stack->top = GC_MARK_AND_PUSH(*word, stack->top, stack->limit, word);
+    }
+}
+
+static struct GC_ms_entry *GC_CALLBACK
+markTracedAnchor(GC_word *anchor, struct GC_ms_entry *markStack,
+                 struct GC_ms_entry *markStackLimit, GC_word env) {
+    (void)env;
+    void **fields = (void **)anchor;
+    GC_ObjectTracerFn *tracer = atomic_load(&anchorTracer);
+    if (fields[1] == NULL || tracer == NULL)
+        return markStack;
+    MarkStack stack = {markStack, markStackLimit};
+    tracer(fields, markRange, &stack);
+    return stack.top;
+}
+
+void **scalanative_GC_trace_owned(void *owner, GC_ObjectTracerFn *ownerTracer,
+                                  GC_ObjectTracerFn *tracer) {
+    (void)owner;
+    (void)ownerTracer;
+    GC_ObjectTracerFn *current = NULL;
+    if (!atomic_compare_exchange_strong(&anchorTracer, &current, tracer) &&
+        current != tracer) {
+        fprintf(stderr, "Only one kind of memory can be traced by the GC\n");
+        abort();
+    }
+    void **anchor =
+        GC_generic_malloc(2 * sizeof(void *), (int)tracedAnchorKind);
+    if (anchor == NULL) {
+        fprintf(stderr, "Out of memory for an object traced by the GC\n");
+        abort();
+    }
+    return anchor;
+}
+
+static void initTracedAnchorKind(void) {
+    unsigned proc = GC_new_proc(markTracedAnchor);
+    tracedAnchorKind =
+        GC_new_kind(GC_new_free_list(), GC_MAKE_PROC(proc, 0), 0, 1);
 }
 
 static void *GC_CALLBACK addRoot(void *root) {
@@ -63,6 +174,7 @@ void scalanative_GC_init() {
     GC_INIT();
     defaultPushOtherRoots = GC_get_push_other_roots();
     GC_set_push_other_roots(pushCustomRoots);
+    initTracedAnchorKind();
     GC_allow_register_threads();
     // Keep this hook enabled at all times to collect Boehm GC statistics.
     GC_set_on_collection_event(handleOnCollectionEvent);
@@ -173,6 +285,14 @@ static void GC_CALLBACK handleOnCollectionEvent(GC_EventType event) {
     switch (event) {
     case GC_EVENT_START:
         gcCollectionStart_ns = (size_t)Time_current_nanos();
+        break;
+
+    case GC_EVENT_MARK_START:
+        GCHooks_markStarted();
+        break;
+
+    case GC_EVENT_MARK_END:
+        GCHooks_markCompleted();
         break;
 
     case GC_EVENT_END: {

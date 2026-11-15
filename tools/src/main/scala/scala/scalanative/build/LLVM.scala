@@ -439,9 +439,8 @@ private[scalanative] object LLVM {
     def isVendoredUnwind = compiledFile.exists(
       _.contains(s"${File.separator}libunwind${File.separator}")
     )
-    def usesContinuations = analysis.preprocessorDefinitions.contains(
-      nir.Attr.Define("__SCALANATIVE_DELIMCC")
-    )
+    def usesContinuations = analysis.preprocessorDefinitions
+      .exists(_.name.startsWith("__SCALANATIVE_DELIMCC_"))
     config.compilerConfig.lto match {
       case LTO.None => Seq.empty
       // Inlined C/C++ could reuse a TLS address across a continuation suspend,

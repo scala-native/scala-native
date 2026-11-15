@@ -1,5 +1,8 @@
-#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_DELIMCC)
-#include "delimcc.h"
+// Multi-shot delimited continuations: captured stack fragments are copied
+// out on suspend and copied back, possibly to another address, on resume.
+#if defined(SCALANATIVE_COMPILE_ALWAYS) ||                                     \
+    defined(__SCALANATIVE_DELIMCC_MULTISHOT)
+#include "delimcc_multishot.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <assert.h>
@@ -293,15 +296,16 @@ int scalanative_continuation_exception_escape(Exception exception) {
 // =============================
 
 // Assigned allocation function. Should not be modified after `init`.
-static void *(*continuation_alloc_fn)(unsigned long, void *);
+static ContinuationAllocFn *continuation_alloc_fn;
 
 #if defined(SCALANATIVE_USING_CPP_EXCEPTIONS)
 extern void scalanative_continuation_exception_terminate_handler_install(void);
 #endif
 
-void scalanative_continuation_init(void *(*alloc_f)(unsigned long, void *)) {
+void scalanative_continuation_multishot_init(ContinuationAllocFn *alloc_f) {
     if (alloc_f == NULL)
-        DELIMCC_ERROR_ABORT("scalanative_continuation_init: alloc_f is NULL\n");
+        DELIMCC_ERROR_ABORT(
+            "scalanative_continuation_multishot_init: alloc_f is NULL\n");
 
     continuation_alloc_fn = alloc_f;
     atomic_init(&label_count, 0);
@@ -310,7 +314,9 @@ void scalanative_continuation_init(void *(*alloc_f)(unsigned long, void *)) {
 #endif
 }
 
-void scalanative_continuation_handlers_reset(void) { handlers_store(NULL); }
+void scalanative_continuation_multishot_handlers_reset(void) {
+    handlers_store(NULL);
+}
 
 NO_SANITIZE
 __returnstwice void *
@@ -339,7 +345,8 @@ __continuation_boundary_impl(void **btm, ContinuationBody *body, void *arg) {
 
 // boundary : BoundaryFn -> Result
 // Result MUST BE HEAP ALLOCATED
-void *scalanative_continuation_boundary(ContinuationBody *body, void *arg)
+void *scalanative_continuation_multishot_boundary(ContinuationBody *body,
+                                                  void *arg)
     __attribute__((disable_tail_calls)) {
     volatile void *boundary_arg = arg;
     return _lh_boundary_entry(body, (void *)boundary_arg);
@@ -430,10 +437,62 @@ static inline void *clamp_ptr_to_fragment(void *p, void *frag_lo,
     return p;
 }
 
+// False when the boundary of `label` was entered on another stack than the
+// running one, so the frames up to it are not contiguous: a one-shot boundary
+// was entered in between, or the caller was resumed onto a heap fragment and
+// the boundary belongs to its resumer.
+bool scalanative_continuation_multishot_on_current_stack(
+    ContinuationBoundaryLabel label) {
+    // A resume handler has no stack_btm; the boundaries above it belong to
+    // the continuation being resumed, the ones below to whoever resumed it.
+    bool belowResume = false;
+    Handler *it = handlers_load();
+    while (it != NULL && it->id != label) {
+        belowResume |= it->stack_btm == NULL;
+        it = it->next;
+    }
+    // A missing label is reported by suspend.
+    if (it == NULL || it->stack_btm == NULL)
+        return true;
+    uintptr_t top = (uintptr_t)currentThreadInfo.stackTop;
+    uintptr_t bottom = (uintptr_t)currentThreadInfo.stackBottom;
+    uintptr_t boundary = (uintptr_t)it->stack_btm;
+    uintptr_t sp = (uintptr_t)_lh_get_sp();
+    if (top == 0 || bottom == 0)
+        return true;
+    // Resumed onto a heap fragment, which the bounds do not describe: only
+    // its own boundaries are contiguous with the running frames.
+    if (sp < top || sp > bottom)
+        return !belowResume;
+    return top <= boundary && boundary <= bottom;
+}
+
+// Whether a boundary or a resume of this thread is in progress on the stack
+// [low, high]. A handler is a local of the frame that pushed it, so a resume
+// onto a heap fragment is found through the frame that called it.
+static bool handler_in(void *low, void *high) {
+    uintptr_t lo = (uintptr_t)low, hi = (uintptr_t)high;
+    for (Handler *it = handlers_load(); it != NULL; it = it->next) {
+        uintptr_t self = (uintptr_t)it;
+        uintptr_t boundary = (uintptr_t)it->stack_btm;
+        if ((lo <= self && self <= hi) || (lo <= boundary && boundary <= hi))
+            return true;
+    }
+    return false;
+}
+
+// For the one-shot runtime, which is not always linked together with this
+// one: lets it refuse to suspend a stack that holds a multi-shot boundary,
+// whose handler would stay behind on this thread.
+void *scalanative_continuation_multishot_boundary_probe(void) {
+    return (void *)handler_in;
+}
+
 // suspend[T, R] : BoundaryLabel[T] -> T -> R
 NO_SANITIZE
-void *scalanative_continuation_suspend(ContinuationBoundaryLabel b,
-                                       SuspendFn *f, void *arg, void *alloc_arg)
+void *scalanative_continuation_multishot_suspend(ContinuationBoundaryLabel b,
+                                                 SuspendFn *f, void *arg,
+                                                 void *alloc_arg)
     __attribute__((disable_tail_calls)) {
     volatile void *suspend_arg = arg;
     volatile void *suspend_alloc_arg = alloc_arg;
@@ -758,7 +817,8 @@ void __continuation_resume_impl(void *tail, Continuation *continuation,
 #undef jmpbuf_fix
 }
 
-void *scalanative_continuation_resume(Continuation *continuation, void *out) {
+void *scalanative_continuation_multishot_resume(Continuation *continuation,
+                                                void *out) {
     /*
      * Why we need a setjmp/longjmp.
      *
