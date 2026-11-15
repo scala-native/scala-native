@@ -125,9 +125,12 @@ private[net] class UnixPlainSocketImpl extends AbstractPlainSocketImpl {
             throw new ConnectException(
               s"connect failed: ${LibcExt.strError(soError)}"
             )
-          else if ((revents & POLLOUT) == 0) {
+          else if ((revents & POLLOUT) == 0 && !isPeerConnected(sockFd)) {
             // Writable with no pending error means connected, even if the
             // peer has already sent data (POLLIN) or closed (POLLHUP).
+            // Some systems (macOS) never report POLLOUT together with
+            // POLLHUP, so a connection that was established and already shut
+            // down by the peer is detected by having a peer address.
             if ((revents & POLLERR) != 0)
               throw new ConnectException(
                 s"connect failed, poll POLLERR: ${revents}"
@@ -139,6 +142,17 @@ private[net] class UnixPlainSocketImpl extends AbstractPlainSocketImpl {
     }
 
     loop(if (hasTimeout) timeout else -1)
+  }
+
+  private def isPeerConnected(sockFd: FileDescriptor): Boolean = {
+    val addr = stackalloc[socket.sockaddr_storage]()
+    val len = stackalloc[socket.socklen_t]()
+    !len = sizeof[socket.sockaddr_storage].toUInt
+    socket.getpeername(
+      sockFd.fd,
+      addr.asInstanceOf[Ptr[socket.sockaddr]],
+      len
+    ) == 0
   }
 
   private def pendingSocketError(sockFd: FileDescriptor): CInt = {
