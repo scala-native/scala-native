@@ -48,8 +48,10 @@ private[interflow] trait Eval { self: Interflow =>
           unreachable
         case let @ nir.Inst.Let(local, op, unwind) =>
           lastScopeId = scopeMapping(let.scopeId)
-          if (unwind ne nir.Next.None) {
-            throw BailOut("try-catch")
+          // Whatever is emitted for this instruction unwinds to its handler
+          state.handler = unwind match {
+            case unwind: nir.Next.Unwind => unwind
+            case _                       => null
           }
           val value = eval(op)
           if (preserveDebugInfo) {
@@ -63,7 +65,7 @@ private[interflow] trait Eval { self: Interflow =>
             }
           }
           if (value.ty == nir.Type.Nothing) {
-            return nir.Inst.Unreachable(unwind)(inst.pos)
+            return nir.Inst.Unreachable(nir.Next.None)(inst.pos)
           } else {
             val ty = value match {
               case InstanceRef(ty) => ty
@@ -121,15 +123,27 @@ private[interflow] trait Eval { self: Interflow =>
             case scrut =>
               return nir.Inst.Switch(materialize(scrut), defaultNext, cases)
           }
-        case nir.Inst.Throw(v, unwind) =>
-          if (unwind ne nir.Next.None) {
-            throw BailOut("try-catch")
-          }
+        case nir.Inst.Throw(v, nir.Next.None) =>
           return nir.Inst.Throw(eval(v), nir.Next.None)
-        case nir.Inst.Unreachable(unwind) =>
-          if (unwind ne nir.Next.None) {
-            throw BailOut("try-catch")
+        case nir.Inst.Throw(
+              v,
+              unwind @ nir.Next.Unwind(exc, nir.Next.Label(handler, args))
+            ) =>
+          val value = eval(v)
+          if (isNonNull(value)) {
+            // The handler is known: the exception is passed to it as is,
+            // and it does not have to be allocated if the handler does not
+            // let it escape
+            state.storeLocal(exc.id, value)
+            return nir.Inst.Jump(nir.Next.Label(handler, args.map(eval)))
+          } else {
+            // Throwing null throws a NullPointerException instead
+            state.handler = unwind
+            val thrown = materialize(value)
+            val site = state.newUnwindSite(thrown = null)
+            return nir.Inst.Throw(thrown, site.unwind)
           }
+        case _: nir.Inst.Unreachable =>
           return nir.Inst.Unreachable(nir.Next.None)
         case _ =>
           bailOut
@@ -1036,6 +1050,17 @@ private[interflow] trait Eval { self: Interflow =>
 
   private def inBounds(values: Array[nir.Val], offset: Int): Boolean = {
     inBounds(values.length, offset)
+  }
+
+  def isNonNull(value: nir.Val)(implicit state: State): Boolean = {
+    val ty = value match {
+      case InstanceRef(ty) => ty
+      case _               => value.ty
+    }
+    ty match {
+      case ty: nir.Type.RefKind => !ty.isNullable
+      case _                    => false
+    }
   }
 
   private def inBounds(length: Int, offset: Int): Boolean = {

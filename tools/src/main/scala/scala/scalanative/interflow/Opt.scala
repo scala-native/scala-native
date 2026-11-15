@@ -13,7 +13,9 @@ private[interflow] trait Opt { self: Interflow =>
     val defn =
       getOriginal(originalName(name))
 
-    defn.attrs.opt != nir.Attr.NoOpt && !defn.hasUnwind
+    // Debug builds leave methods with exception handlers as they are
+    defn.attrs.opt != nir.Attr.NoOpt &&
+      (!defn.hasUnwind || mode != build.Mode.Debug)
   }
 
   def opt(name: nir.Global.Member): nir.Defn.Define =
@@ -30,7 +32,9 @@ private[interflow] trait Opt { self: Interflow =>
           rawInsts: Seq[nir.Inst],
           debugInfo: DebugInfo
       ) = {
-        val insts = nir.ControlFlow.removeDeadBlocks(rawInsts)
+        val insts = UnwindSite.bypassTrampolines(
+          nir.ControlFlow.removeDeadBlocks(rawInsts)
+        )
         val newDebugInfo = if (preserveDebugInfo) {
           // TODO: filter-out unreachable scopes
           val scopes = debugInfo.lexicalScopes.sorted
@@ -91,10 +95,13 @@ private[interflow] trait Opt { self: Interflow =>
             currentLexicalScopes := mutable.UnrolledBuffer.empty
           )
         ) {
+          // This method may be optimized while another one is, on demand
+          val outerHandlerScopes = handlerScopes
           // Run a merge processor starting from the entry basic block.
           val blocks =
             try {
               pushBlockFresh(fresh)
+              handlerScopes = if (origdefn.hasUnwind) 1 else 0
               process(
                 origdefn.insts.toArray,
                 debugInfo = origdefn.debugInfo,
@@ -102,9 +109,11 @@ private[interflow] trait Opt { self: Interflow =>
                 state = state,
                 doInline = false,
                 retTy = origRetTy,
-                parentScopeId = nir.ScopeId.TopLevel
+                parentScopeId = nir.ScopeId.TopLevel,
+                inOuterRegion = false
               )
             } finally {
+              handlerScopes = outerHandlerScopes
               popBlockFresh()
             }
 
@@ -161,7 +170,8 @@ private[interflow] trait Opt { self: Interflow =>
       state: State,
       doInline: Boolean,
       retTy: nir.Type,
-      parentScopeId: nir.ScopeId
+      parentScopeId: nir.ScopeId,
+      inOuterRegion: Boolean
   ): Seq[MergeBlock] = {
     val processor =
       MergeProcessor.fromEntry(
@@ -172,7 +182,8 @@ private[interflow] trait Opt { self: Interflow =>
         doInline = doInline,
         blockFresh = blockFresh,
         eval = this,
-        parentScopeId = parentScopeId
+        parentScopeId = parentScopeId,
+        inOuterRegion = inOuterRegion
       )
 
     try {

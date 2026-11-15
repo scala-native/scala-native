@@ -107,6 +107,10 @@ object Defn {
       case nir.Inst.Unreachable(unwind) => unwind ne nir.Next.None
       case _                            => false
     }
+    private[scalanative] lazy val hasStackalloc = insts.exists {
+      case nir.Inst.Let(_, _: nir.Op.Stackalloc, _) => true
+      case _                                        => false
+    }
   }
 
   object Define {

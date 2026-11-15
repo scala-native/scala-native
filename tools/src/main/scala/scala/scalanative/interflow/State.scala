@@ -24,6 +24,20 @@ private[interflow] final class State(val blockId: nir.Local)(
   // re-emit a getClass call (and subsequent icmp eq's can be CSE'd by LLVM).
   var getClassCache = mutable.AnyRefMap.empty[nir.Val, nir.Val]
 
+  /* Exception handling context, see [[UnwindSite]].
+   *
+   * `handler` is the handler of the instruction being evaluated, if it has
+   * one. `inOuterRegion` tells that this is a state of a callee inlined at
+   * an instruction with a handler, either in its direct caller or further
+   * up. In both cases an instruction that may throw is emitted with an
+   * unwind edge, and `sites` collects those edges.
+   */
+  var handler: nir.Next.Unwind = null
+  var inOuterRegion: Boolean = false
+  var blockFresh: nir.Fresh = null
+  var sites = mutable.UnrolledBuffer.empty[UnwindSite]
+  def inTryRegion: Boolean = (handler ne null) || inOuterRegion
+
   // Delayed init
   var localNames: mutable.OpenHashMap[nir.Local, String] = _
   var virtualNames: mutable.LongMap[String] = _
@@ -99,28 +113,62 @@ private[interflow] final class State(val blockId: nir.Local)(
       }
     )
   }
-  def emit(op: nir.Op, idempotent: Boolean = false)(implicit
+  def emit(
+      op: nir.Op,
+      idempotent: Boolean = false,
+      mayThrow: Boolean = true
+  )(implicit
       srcPosition: nir.SourcePosition,
       scopeId: nir.ScopeId
   ): nir.Val.Local = {
+    def let(): nir.Val.Local =
+      if (mayThrow && inTryRegion && UnwindSite.mayThrow(op)) {
+        val site = newUnwindSite(thrown = null)
+        emit.let(op, site.unwind)
+      } else emit.let(op, nir.Next.None)
+
     if (op.isIdempotent || idempotent) {
       if (emitted.contains(op)) {
         emitted(op)
       } else {
-        val value = emit.let(op, nir.Next.None)
+        val value = let()
         emitted(op) = value
         value
       }
-    } else emit.let(op, nir.Next.None)
+    } else let()
   }
 
+  /** Records an unwind edge leaving this state at the current point. The
+   *  handler will see the state as it is now.
+   */
+  def newUnwindSite(thrown: nir.Val): UnwindSite = {
+    val tramp = nir.Local(blockFresh().id * MergeProcessor.MergeBlockOffset)
+    val snapshot = fullClone(tramp)
+    snapshot.handler = null
+    val site = new UnwindSite(
+      tramp = tramp,
+      exc = nir.Val.Local(fresh(), nir.Rt.Throwable),
+      thrown = thrown,
+      frames = snapshot :: Nil,
+      links = Nil,
+      handler = handler
+    )
+    sites += site
+    site
+  }
+
+  /** Emits a part of the allocation of a virtual instance. An allocation that
+   *  has been delayed is not attributed to the try region it was written in,
+   *  unlike a delayed operation.
+   */
   def emitVirtual(
       addr: Addr
   )(op: nir.Op, idempotent: Boolean = false): nir.Val.Local = {
     val instance = heap(addr)
     import instance.{srcPosition, scopeId}
 
-    val value = emit(op, idempotent)
+    val value =
+      emit(op, idempotent, mayThrow = instance.isInstanceOf[DelayedInstance])
     // there might be cases when virtualName for given address might be assigned to two different instances
     // It can happen when we deal with partially-evaluated instances, e.g. arrayalloc + arraystore
     // Don't emit local names for ops returning unit value
@@ -291,6 +339,9 @@ private[interflow] final class State(val blockId: nir.Local)(
     newstate.delayed = delayed.clone()
     newstate.emitted = emitted.clone()
     newstate.getClassCache = getClassCache.clone()
+    newstate.handler = handler
+    newstate.inOuterRegion = inOuterRegion
+    newstate.blockFresh = blockFresh
 
     if (preserveDebugInfo) {
       newstate.virtualNames = virtualNames.mapValuesNow(identity)
