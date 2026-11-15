@@ -73,7 +73,15 @@ private[net] class WindowsPlainSocketImpl extends AbstractPlainSocketImpl {
             throw new ConnectException(
               s"connect failed, invalid poll request: ${revents}"
             )
-          } else if ((revents & (POLLERR | POLLHUP)) != 0) {
+          }
+          val soError = pendingSocketError(sockFd)
+          if (soError == WSAECONNREFUSED)
+            throw new ConnectException("Connection refused")
+          else if (soError != 0)
+            throw new ConnectException(s"connect failed, errno: ${soError}")
+          else if ((revents & POLLOUT) == 0) {
+            // Writable with no pending error means connected, even if the
+            // peer has already sent data (POLLIN) and closed (POLLHUP).
             throw new ConnectException(
               s"connect failed, POLLERR or POLLHUP set: ${revents}"
             )
@@ -82,6 +90,20 @@ private[net] class WindowsPlainSocketImpl extends AbstractPlainSocketImpl {
     }
 
     loop(timeout)
+  }
+
+  private def pendingSocketError(sockFd: FileDescriptor): CInt = {
+    val soError = stackalloc[CInt]()
+    val len = stackalloc[unixSocket.socklen_t]()
+    !len = sizeof[CInt].toUInt
+    val res = unixSocket.getsockopt(
+      sockFd.fd,
+      unixSocket.SOL_SOCKET,
+      unixSocket.SO_ERROR,
+      soError.asInstanceOf[Ptr[Byte]],
+      len
+    )
+    if (res != 0) WSAGetLastError() else !soError
   }
 
   protected def tryPollOnAccept(): Unit = {
