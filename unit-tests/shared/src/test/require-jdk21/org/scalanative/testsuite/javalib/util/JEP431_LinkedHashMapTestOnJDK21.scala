@@ -550,4 +550,62 @@ class JEP431_LinkedHashMapAccessOrderTestOnJDK21
   val classUnderTest = "LinkedHashMapAccessOrder"
 
   val accessOrder = true
+
+  @Test def linkedHashMap_putFirst_eldestEviction(): Unit = {
+    /* Test a condition CodeRabbitAi described using eviction rule
+     * 'size() > 2'. Value 'C' should get evicted, not existing 'A'.
+     */
+
+    type K = String
+    type V = Int
+    val seqMap =
+      new ju.LinkedHashMap[K, V](
+        populationSize,
+        loadFactor,
+        accessOrder
+      ) {
+        override def removeEldestEntry(eldest: ju.Map.Entry[K, V]): Boolean = {
+          size() > 2
+        }
+      }
+
+    val expectedFirstKey = "A"
+    val expectedFirstValue = 1
+
+    val expectedLastKey = "B"
+    val expectedLastValue = 2
+
+    seqMap.put(expectedFirstKey, expectedFirstValue)
+    seqMap.put(expectedLastKey, expectedLastValue)
+
+    seqMap.putFirst("C", 3)
+
+    val fe = seqMap.firstEntry()
+
+    assertEquals(
+      s"${classUnderTest}#putFirst, first key",
+      expectedFirstKey,
+      fe.getKey()
+    )
+
+    assertEquals(
+      s"${classUnderTest}#putFirst, first value",
+      expectedFirstValue,
+      fe.getValue()
+    )
+
+    val le = seqMap.lastEntry()
+
+    assertEquals(
+      s"${classUnderTest}#putFirst, last key",
+      expectedLastKey,
+      le.getKey()
+    )
+
+    assertEquals(
+      s"${classUnderTest}#putFirst, last value",
+      expectedLastValue,
+      le.getValue()
+    )
+  }
 }

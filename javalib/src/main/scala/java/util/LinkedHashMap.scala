@@ -65,8 +65,22 @@ class LinkedHashMap[K, V](
     }
   }
 
+  /* A global modal variable is both an eyesore and a _huge_ code smell.
+   * Here it is the least worst of discovered alternatives. It avoids creating
+   * the maintenance nightmare of duplicating a lot of tricky 'putX' code
+   * in HashMap.scala. Providing a better implementation is left as an
+   * excercise for the reader.
+   */
+  var nodeWasAddedAppends = true
+
   override private[util] def nodeWasAdded(node: HashMap.Node[K, V]): Unit = {
-    appendToOrderedList(asMyNode(node))
+    val lhmNode = asMyNode(node)
+
+    if (nodeWasAddedAppends)
+      appendToOrderedList(lhmNode)
+    else
+      prependToOrderedList(lhmNode)
+
     if (removeEldestEntry(eldest))
       removeNode(eldest)
   }
@@ -197,22 +211,34 @@ class LinkedHashMap[K, V](
       if (hmNode == null) null.asInstanceOf[V]
       else hmNode.value
 
-    val newNode =
-      if (hmNode != null) {
-        hmNode.value = value
-        hmNode
-      } else if (removeEldestEntry(eldest)) {
-        null.asInstanceOf[Node[K, V]]
-      } else {
-        put(key, value)
-        findNode(key)
-      }
+    if (hmNode != null) {
+      hmNode.value = value
 
-    if (newNode != null) {
-      val lhmNode = asMyNode(newNode)
+      val lhmNode = asMyNode(hmNode)
       if (lhmNode ne eldest) {
         removeFromOrderedList(lhmNode)
         prependToOrderedList(lhmNode)
+      }
+    } else {
+      try {
+        /* Creating a new node via this.newNode() requires determining
+         * the proper hashMap Node values for the 'previous' & 'next'
+         * arguments. That is not a trivial task.
+         *
+         * Use the HashMap 'put' method and introduce some ugliness
+         * to avoid having to almost duplicate code in HashMap, either
+         * there or here.
+         *
+         * No locking is necessary. The JDK (27) description explicitly
+         * states that external synchronization is necessary if more than
+         * one thread is accessing the LinkedHashMap concurrently.
+         *
+         * Better solutions are welcome.
+         */
+        nodeWasAddedAppends = false
+        put(key, value)
+      } finally {
+        nodeWasAddedAppends = true
       }
     }
 
@@ -224,7 +250,6 @@ class LinkedHashMap[K, V](
 
     if (hmNode == null) {
       put(key, value)
-//        null.asInstanceOf[V]
     } else {
       val previousValue = hmNode.value
       hmNode.value = value
@@ -237,7 +262,6 @@ class LinkedHashMap[K, V](
 
       previousValue
     }
-
   }
 
   override def reversed(): SequencedMap[K, V] =
@@ -269,25 +293,19 @@ class LinkedHashMap[K, V](
   }
 
   override def pollFirstEntry(): Map.Entry[K, V] = {
-    val fe = firstEntry()
-
-    if (fe != null)
+    if (this.isEmpty()) null
+    else {
+      val fe = firstEntry()
       removeNode(eldest)
-
-    fe
+      fe
+    }
   }
 
   override def pollLastEntry(): Map.Entry[K, V] = {
     if (this.isEmpty()) null
     else {
       val le = lastEntry()
-
-      if (le != null) {
-        val entry = youngest
-        removeFromOrderedList(youngest)
-        remove(entry.key)
-      }
-
+      removeNode(youngest)
       le
     }
   }
