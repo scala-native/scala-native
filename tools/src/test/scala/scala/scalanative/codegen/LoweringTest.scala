@@ -7,6 +7,7 @@ import org.junit.Assume._
 import org.junit.Test
 
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo
+import scala.scalanative.{build, nir}
 
 class LoweringTest extends CodeGenSpec {
 
@@ -122,4 +123,57 @@ class LoweringTest extends CodeGenSpec {
       case (_, args) => fail(s"unexpected Blocker.end arguments: $args")
     }
   }
+
+  // Issue #122
+  @Test def safepointPollDoesNotBreakTailCalls(): Unit =
+    for (gc <- Seq(build.GC.immix, build.GC.commix))
+      lowered(
+        entry = "Main",
+        sources = Map(
+          "Main.scala" ->
+            """|object Main {
+               |  @noinline def isEven(n: Int): Boolean = if (n == 0) true else isOdd(n - 1)
+               |  @noinline def isOdd(n: Int): Boolean = if (n == 0) false else isEven(n - 1)
+               |  def main(args: Array[String]): Unit = println(isEven(args.length))
+               |}""".stripMargin
+        ),
+        setupConfig = _.withGC(gc).withMultithreading(true)
+      ) { defns =>
+        def isCallTo(inst: nir.Inst)(p: nir.Global.Member => Boolean) =
+          inst match {
+            case nir.Inst.Let(
+                  _,
+                  nir.Op.Call(_, nir.Val.Global(name: nir.Global.Member, _), _),
+                  _
+                ) =>
+              p(name)
+            case _ => false
+          }
+        def isPoll(inst: nir.Inst) = isCallTo(inst)(_ == Lower.GCYieldName)
+        def isMethod(id: String)(name: nir.Global.Member) =
+          name.owner == nir.Global.Top("Main$") && (name.sig.unmangled match {
+            case nir.Sig.Method(`id`, _, _) => true
+            case _                          => false
+          })
+
+        for ((caller, callee) <- Seq(
+              "isEven" -> "isOdd",
+              "isOdd" -> "isEven"
+            )) {
+          val insts = defns.collectFirst {
+            case defn: nir.Defn.Define if isMethod(caller)(defn.name) =>
+              defn.insts
+          }.get
+          val call = insts.indexWhere(isCallTo(_)(isMethod(callee)))
+          assertTrue(s"$caller does not call $callee", call >= 0)
+          val polls = insts.zipWithIndex.collect {
+            case (inst, idx) if isPoll(inst) => idx
+          }
+          assertTrue(s"$caller does not poll for GC", polls.nonEmpty)
+          assertTrue(
+            s"$caller polls for GC after the call to $callee",
+            polls.forall(_ < call)
+          )
+        }
+      }
 }

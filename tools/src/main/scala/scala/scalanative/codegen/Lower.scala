@@ -219,6 +219,9 @@ private[scalanative] object Lower {
         }
       }
 
+      // Polling before `ret` would keep calls out of tail position
+      genGCYieldpoint(buf)(defn.pos, nir.ScopeId.TopLevel)
+
       insts.foreach {
         case inst @ nir.Inst.Let(n, nir.Op.Var(ty), unwind) =>
           buf.let(n, nir.Op.Stackalloc(ty, one), unwind)(inst.pos, inst.scopeId)
@@ -276,7 +279,6 @@ private[scalanative] object Lower {
                 buf.fence(nir.MemoryOrder.Release)
               case _ => () // no-op
             }
-          genGCYieldpoint(buf)
           val retVal =
             if (v.ty == nir.Type.Unit) optionallyBoxedUnit(v)
             else genVal(buf, v)
