@@ -95,41 +95,16 @@ private[runtime] final class _Class[A] {
   def isAssignableFrom(that: Class[_]): scala.Boolean =
     is(that.asInstanceOf[_Class[_]], this)
 
+  // The class of an object is never an interface: no check on its side
   def isInstance(obj: Object): scala.Boolean =
-    is(obj.getClass.asInstanceOf[_Class[_]], this)
+    obj != null && _Class.classIs(obj.getClass.asInstanceOf[_Class[_]], this)
 
-  @alwaysinline private def is(cls: Class[_]): Boolean =
-    this eq cls.asInstanceOf[_Class[A]]
-
-  private def is(left: _Class[_], right: _Class[_]): Boolean = {
-    // This replicates the logic of the compiler-generated instance check
-    // that you would normally get if you do (obj: L).isInstanceOf[R],
-    // where rtti for L and R are `left` and `right`.
-    if (left eq right) return true
-
+  private def is(left: _Class[_], right: _Class[_]): Boolean =
     if (left.isInterface()) {
       // unlikely, only possible when operating on Class[_] instances
-      if (right.isInterface()) _Class.checkHasTrait(left, right)
-      else false
-    } else if (right.isInterface()) _Class.checkImplements(left, right)
-    else if (right.superclassCount < _Class.LineageSize) {
-      // `right` is in the lineage of `left` at index superclassCount(right)
-      val lineage = Intrinsics.classFieldRawPtr(left, "lineage")
-      val ancestor = Intrinsics.loadObject(
-        Intrinsics.elemRawPtr(lineage, _Class.PtrSize * right.superclassCount)
-      )
-      ancestor eq right
-    } else {
-      var ancestor: _Class[_] = left
-      var count = left.superclassCount
-      val rightCount = right.superclassCount
-      while (count > rightCount) {
-        ancestor = ancestor.superClass.asInstanceOf[_Class[_]]
-        count -= 1
-      }
-      count == rightCount && (ancestor eq right)
-    }
-  }
+      (left eq right) ||
+      (right.isInterface() && _Class.checkHasTrait(left, right))
+    } else _Class.classIs(left, right)
 
   @inline override def equals(other: Any): scala.Boolean =
     other match {
@@ -236,6 +211,31 @@ private[runtime] object _Class {
   private final val LineageSize = 8
   @alwaysinline private[runtime] def PtrSize =
     Intrinsics.castRawSizeToInt(Intrinsics.sizeOf[RawPtr])
+
+  /* Whether instances of class `cls` are instances of `right`, a class or a
+   * trait, the way generated instance tests decide it.
+   */
+  private[runtime] def classIs(cls: _Class[_], right: _Class[_]): Boolean =
+    if (cls eq right) true
+    else if (right.isInterface()) checkImplements(cls, right)
+    else {
+      val rightCount = right.superclassCount
+      if (rightCount < LineageSize) {
+        // `right` is in the lineage of `cls` at index superclassCount(right)
+        val lineage = Intrinsics.classFieldRawPtr(cls, "lineage")
+        Intrinsics.loadObject(
+          Intrinsics.elemRawPtr(lineage, PtrSize * rightCount)
+        ) eq right
+      } else {
+        var ancestor: _Class[_] = cls
+        var count = cls.superclassCount
+        while (count > rightCount) {
+          ancestor = ancestor.superClass.asInstanceOf[_Class[_]]
+          count -= 1
+        }
+        count == rightCount && (ancestor eq right)
+      }
+    }
 
   /* Looks `trt` up in the itable of class `left` the way generated code
    * does, see codegen.ITable: linear probing from the slot selected by the

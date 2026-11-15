@@ -226,6 +226,12 @@ class TypeTestsTest {
     assertFalse(classOf[NeverImplemented].isAssignableFrom(classOf[D12]))
     assertTrue(classOf[Base0].isInterface())
     assertFalse(classOf[D12].isInterface())
+    assertFalse("null is no instance", classOf[Object].isInstance(null))
+    assertFalse("null is no instance", classOf[Base0].isInstance(null))
+    assertTrue(classOf[Base3].isInstance(chain(12)))
+    assertFalse(classOf[NeverImplemented].isInstance(chain(12)))
+    assertFalse(classOf[Int].isInstance(Integer.valueOf(1)))
+    assertTrue(classOf[Object].isInstance(Array(1)))
   }
 
   @Test def forNameFindsClassesAndTraits(): Unit = {
