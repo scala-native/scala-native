@@ -114,7 +114,7 @@ private[interflow] object UnwindSite {
       case nir.Inst.Unreachable(unwind) => keep(unwind)
       case _                            => ()
     }
-    forwarders.filterInPlace((id, _) => unwoundTo.contains(id))
+    forwarders --= forwarders.keys.filterNot(unwoundTo.contains).toList
 
     // The handler may use the exception of its only trampoline directly,
     // instead of taking it as an argument
@@ -136,9 +136,9 @@ private[interflow] object UnwindSite {
         case inst =>
           uses.onInst(inst)
       }
-      forwarders.filterInPlace((_, forwarder) =>
-        !used.contains(forwarder._1.id)
-      )
+      forwarders --= forwarders.collect {
+        case (id, (param, _)) if used.contains(param.id) => id
+      }.toList
     }
 
     if (forwarders.isEmpty) insts
