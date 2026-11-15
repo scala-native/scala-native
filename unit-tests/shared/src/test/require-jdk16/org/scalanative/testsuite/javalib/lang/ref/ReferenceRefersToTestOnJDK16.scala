@@ -16,7 +16,10 @@ class ReferenceRefersToTestOnJDK16 {
     assertFalse(s"$kind refers to another object", ref.refersTo(new Object))
     assertFalse(s"$kind refers to null", ref.refersTo(null))
     ref.clear()
-    assertFalse(s"$kind refers to its referent after clear", ref.refersTo(referent))
+    assertFalse(
+      s"$kind refers to its referent after clear",
+      ref.refersTo(referent)
+    )
     assertTrue(s"$kind refers to null after clear", ref.refersTo(null))
   }
 

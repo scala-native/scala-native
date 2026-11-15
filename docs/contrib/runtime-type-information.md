@@ -59,7 +59,7 @@ to clear a referent:
 - weak and phantom references never keep their referent alive. After marking,
   the collector clears every referent that nothing else marked, and the
   javalib enqueues the reference on its queue;
-- soft references keep their referent like any other field, except in the
+- soft references keep their referent alive, except in the
   collection that runs right before an allocation would fail with an
   `OutOfMemoryError`. That collection runs only when the previous one found a
   soft reference, clears unmarked soft referents like weak ones, and the
@@ -79,9 +79,10 @@ example to an array element, and be the only thing keeping it alive.
 
 The referent of `java.lang.ref.Reference` is its only field, so it directly
 follows the object header in every reference object, like the fields of
-`String` and `Class`; the toolchain fails the build otherwise. Weak references
-leave it out of their reference map: the GC does not mark it, and clears it
-once nothing else keeps it alive. Soft and phantom references keep it marked.
+`String` and `Class`; the toolchain fails the build otherwise. References leave
+it out of their reference map: the GC marks the referent of a soft reference
+itself, unless it clears soft references, and clears any referent once nothing
+else keeps it alive.
 
 Arrays have no fields to scan, the GC uses the element scan kind from the flags
 instead. In array RTTI the same slot holds the RTTI of the element type, read
