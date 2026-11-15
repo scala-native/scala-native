@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include "Allocator.h"
 #include "State.h"
+#include "immix_commix/References.h"
 #include <stdio.h>
 #include <memory.h>
 #include <assert.h>
@@ -273,6 +274,7 @@ bool Allocator_newBlock(Allocator *allocator) {
 
 NOINLINE word_t *Allocator_allocSlow(Allocator *allocator, Heap *heap,
                                      uint32_t size) {
+    bool clearSoft = false;
     do {
         uint64_t generation = atomic_load_explicit(&heap->collectionGeneration,
                                                    memory_order_acquire);
@@ -292,8 +294,12 @@ NOINLINE word_t *Allocator_allocSlow(Allocator *allocator, Heap *heap,
         // Asking counts as allocating: a thread waiting on another thread's
         // recovery collection must still receive recycled blocks.
         allocator->blocksTaken++;
-        if (!Heap_RecoverAllocation(heap, size, generation))
-            Heap_ThrowOutOfMemory(heap);
+        if (!Heap_RecoverAllocation(heap, size, generation, clearSoft)) {
+            if (!References_ShouldRetryClearingSoft(clearSoft))
+                Heap_ThrowOutOfMemory(heap);
+            // One more collection, clearing soft references
+            clearSoft = true;
+        }
     } while (true);
     return NULL; // unreachable
 }

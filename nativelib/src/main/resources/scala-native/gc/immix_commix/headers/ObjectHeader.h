@@ -193,16 +193,19 @@ static inline size_t Object_Size(const Object *object) {
     }
 }
 
-static inline bool Object_IsWeakReference(const Object *object) {
-    // Only weak references clear their referent, soft and phantom references
-    // keep the referent like any other field
-    return (object->rtti->rt.flags & RTTI_REFERENCE_KIND_MASK) ==
-           RTTI_REFERENCE_KIND_WEAK;
+static inline int32_t Rtti_ReferenceKind(const Rtti *rtti) {
+    return rtti->rt.flags & RTTI_REFERENCE_KIND_MASK;
 }
 
-// The referent of a weak reference, which the GC does not mark
-static inline Field_t *WeakReference_ReferentField(const Object *object) {
-    assert(Object_IsWeakReference(object));
+/* RTTI_REFERENCE_KIND_* of a java.lang.ref.Reference, 0 for other objects */
+static inline int32_t Object_ReferenceKind(const Object *object) {
+    return Rtti_ReferenceKind(object->rtti);
+}
+
+/* The referent of a reference, which the GC does not mark: it is left for
+ * immix_commix/References.h to keep or clear */
+static inline Field_t *Reference_ReferentField(const Object *object) {
+    assert(Object_ReferenceKind(object) != 0);
     return (Field_t *)&((ReferenceObject *)object)->referent;
 }
 

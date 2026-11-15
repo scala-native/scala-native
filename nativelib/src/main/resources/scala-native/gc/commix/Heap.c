@@ -22,6 +22,7 @@
 #include <time.h>
 #include <inttypes.h>
 #include "WeakReferences.h"
+#include "immix_commix/References.h"
 #include "immix_commix/Synchronizer.h"
 
 #ifdef ENABLE_GC_STATS
@@ -232,7 +233,7 @@ bool Heap_BeginEmergencyAllocation(Heap *heap) {
     return true;
 }
 
-bool Heap_Collect(Heap *heap, bool allowHeapGrowth) {
+bool Heap_Collect(Heap *heap, bool allowHeapGrowth, bool clearSoftReferences) {
     SpillCalleeSavedRegisters();
     MutatorThread *mutatorThread = currentMutatorThread;
     // Stopping the other mutators and finishing the previous sweep are part
@@ -277,6 +278,7 @@ bool Heap_Collect(Heap *heap, bool allowHeapGrowth) {
     Sweeper_ClearIsSwept(heap);
     Sweeper_AssertIsConsistent(heap);
 #endif
+    References_StartCollection(clearSoftReferences);
     GCHooks_markStarted();
     Phase_StartMark(heap);
     Marker_MarkRoots(heap, stats);
@@ -286,6 +288,7 @@ bool Heap_Collect(Heap *heap, bool allowHeapGrowth) {
     Stats_RecordEvent(stats, event_mark, heap->mark.currentStart_ns,
                       heap->mark.currentEnd_ns);
     Phase_Nullify(heap, stats);
+    References_EndCollection();
     Phase_StartSweep(heap);
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     Synchronizer_release();

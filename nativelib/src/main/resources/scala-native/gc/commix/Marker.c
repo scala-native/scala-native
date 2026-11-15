@@ -8,6 +8,7 @@
 #include <setjmp.h>
 #include "Marker.h"
 #include "WeakReferences.h"
+#include "immix_commix/References.h"
 #include "immix_commix/Object.h"
 #include "State.h"
 #include "immix_commix/headers/ObjectHeader.h"
@@ -176,7 +177,11 @@ void Marker_markObject(Heap *heap, Stats *stats, GreyPacket **outHolder,
     Marker_markLockWords(heap, stats, outHolder, outWeakRefHolder, object);
 
     Object_Mark(heap, object, objectMeta);
-    if (Object_IsWeakReference(object)) {
+    int32_t referenceKind = Object_ReferenceKind(object);
+    if (UNLIKELY(referenceKind == RTTI_REFERENCE_KIND_SOFT))
+        References_noteSoft();
+    // Its referent is cleared after marking unless something marks it
+    if (UNLIKELY(References_deferReferent(referenceKind))) {
         GreyPacket *weakRefOut = *outWeakRefHolder;
         if (weakRefOut == NULL || !GreyPacket_Push(weakRefOut, object)) {
             if (weakRefOut != NULL) {
@@ -316,6 +321,15 @@ int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
                                     rawPtr);
             objectsTraced += 1;
         }
+    }
+    // Soft references keep their referent unless they are cleared
+    int32_t referenceKind = Rtti_ReferenceKind(object->rtti);
+    if (UNLIKELY(referenceKind != 0) &&
+        !References_deferReferent(referenceKind)) {
+        Field_t *referent = Reference_ReferentField(object);
+        if (referent != NULL)
+            objectsTraced += Marker_markField(heap, stats, outHolder,
+                                              outWeakRefHolder, *referent);
     }
     if (UNLIKELY(Rtti_HasFlag(object->rtti, RTTI_FLAG_HAS_OBJECT_TRACER))) {
         // Not set before the first owner registers it

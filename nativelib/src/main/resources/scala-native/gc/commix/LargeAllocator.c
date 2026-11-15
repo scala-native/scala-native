@@ -10,6 +10,7 @@
 #include "Sweeper.h"
 #include "shared/Log.h"
 #include "immix_commix/headers/ObjectHeader.h"
+#include "immix_commix/References.h"
 #include "shared/ThreadUtil.h"
 
 inline static int LargeAllocator_sizeToLinkedListIndex(size_t size) {
@@ -244,12 +245,13 @@ word_t *LargeAllocator_Alloc(Heap *heap, size_t size) {
     if (size > heap->maxHeapSize) {
         LargeAllocator_waitForSweep(heap);
         if (heap->emergencyBlockStart == NULL) {
-            Heap_Collect(heap, true);
+            Heap_Collect(heap, true, false);
             LargeAllocator_waitForSweep(heap);
         }
         Heap_ThrowOutOfMemory(heap);
     }
     LargeAllocator *largeAllocator = &currentMutatorThread->largeAllocator;
+    bool clearSoft = false;
     // Retry the full recovery sequence (lazy sweep, collect, lazy sweep, grow)
     // until an allocation succeeds or Heap_Grow exits with OOM. A single
     // tryAlloc after Heap_Grow can race with another mutator stealing the
@@ -271,7 +273,7 @@ word_t *LargeAllocator_Alloc(Heap *heap, size_t size) {
         }
 
         // Another thread collects instead. Retry before growing the heap.
-        if (!Heap_Collect(heap, true))
+        if (!Heap_Collect(heap, true, clearSoft))
             continue;
 
         object = LargeAllocator_tryAlloc(largeAllocator, size);
@@ -293,7 +295,10 @@ word_t *LargeAllocator_Alloc(Heap *heap, size_t size) {
         uint32_t pow2increment = 1U << MathUtils_Log2Ceil(increment);
         if (!Heap_TryGrow(heap, pow2increment) &&
             !Heap_TryGrow(heap, (uint32_t)increment)) {
-            Heap_ThrowOutOfMemory(heap);
+            if (!References_ShouldRetryClearingSoft(clearSoft))
+                Heap_ThrowOutOfMemory(heap);
+            // One more collection, clearing soft references
+            clearSoft = true;
         }
     } while (true);
     return NULL; // unreachable

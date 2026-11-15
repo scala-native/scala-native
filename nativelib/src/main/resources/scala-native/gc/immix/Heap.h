@@ -45,7 +45,11 @@ typedef struct {
 void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize);
 
 void Heap_Collect(Heap *heap, Stack *stack);
-bool Heap_RecoverAllocation(Heap *heap, size_t size, uint64_t generation);
+// Collects for an allocation of `size` that failed in `generation`. Returns
+// false when the allocation should fail with an OutOfMemoryError. The last
+// collection before that error clears soft references.
+bool Heap_RecoverAllocation(Heap *heap, size_t size, uint64_t generation,
+                            bool clearSoftReferences);
 void Heap_Recycle(Heap *heap);
 bool Heap_TryGrow(Heap *heap, uint32_t increment);
 bool Heap_BeginEmergencyAllocation(Heap *heap);
