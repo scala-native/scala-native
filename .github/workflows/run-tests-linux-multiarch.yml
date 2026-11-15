@@ -36,7 +36,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: /tmp/docker-registry
-          key: docker-registry-${{ matrix.arch }}-${{ hashFiles('ci-docker/Dockerfile', format('ci-docker/env/{0}', matrix.arch)) }}
+          key: docker-registry-${{ matrix.arch }}-${{ hashFiles('ci-docker/Dockerfile', 'ci-docker/install-llvm.sh', format('ci-docker/env/{0}', matrix.arch)) }}
 
       - name: Prepare native config
         shell: bash
