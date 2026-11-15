@@ -1,6 +1,9 @@
-// Ported from Scala.js commit: a6c1451 dated: 2021-10-16
-//
-// 'equalsOnlyOtherSets' Test added for Scala Native.
+/* Ported from Scala.js commit: a6c1451 dated: 2021-10-16
+ *
+ * Added for Scala Native:
+ *   'equalsOnlyOtherSets' Test
+ *   'hashCodeWhenNullElementsAreAllowedShouldNotThrowNPE' Test
+ */
 
 package org.scalanative.testsuite.javalib.util
 
@@ -225,6 +228,16 @@ trait SetTest extends CollectionTest {
       "should not match other content-equal not-Set Collection",
       hsUut.equals(coll)
     )
+  }
+
+  @Test def hashCodeWhenNullElementsAreAllowedShouldNotThrowNPE(): Unit = {
+    if (factory.allowsNullElement) {
+      val set = factory.empty[String]
+      set.add(null)
+
+      assertEquals("set size", 1, set.size())
+      assertEquals("set hashCode", 0, set.hashCode()) // No NPE
+    }
   }
 }
 

@@ -19,7 +19,9 @@ abstract class AbstractSet[E] protected ()
   }
 
   override def hashCode(): Int =
-    iterator().scalaOps.foldLeft(0)((prev, item) => item.hashCode + prev)
+    iterator().scalaOps.foldLeft(0)((prev, item) =>
+      prev + Objects.hashCode(item)
+    )
 
   override def removeAll(c: Collection[_]): Boolean = {
     if (size() > c.size())
