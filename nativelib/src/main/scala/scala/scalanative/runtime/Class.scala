@@ -36,7 +36,9 @@ private[runtime] final class _Class[A] {
   var itablesMask: Int = _
   var itablesShift: Int = _
   var itables: RawPtr = _ // Ptr[{trait: _Class[_], vtable: Ptr[_]}]
-  var superClass: Class[_ >: A] = _
+  // Classes with LineageSize or more superclasses: all superclasses from the
+  // root, then the class itself; null otherwise
+  var deepLineage: RawPtr = _
   // First entry of the inline lineage: superclasses from the root, then the
   // class itself, see codegen.RuntimeTypeInformation
   var lineage: RawPtr = _
@@ -131,8 +133,9 @@ private[runtime] final class _Class[A] {
     array.asInstanceOf[scala.Array[Class[_]]]
   }
   def getSuperclass(): Class[_ >: A] =
-    if (isInterface()) null
-    else superClass
+    if (isInterface() || superclassCount == 0) null
+    else
+      _Class.ancestorAt(this, superclassCount - 1).asInstanceOf[Class[_ >: A]]
 
   // def getField(name: String): Field =
   //   ???
@@ -219,23 +222,34 @@ private[runtime] object _Class {
     if (cls eq right) true
     else if (right.isInterface()) checkImplements(cls, right)
     else {
+      // `right` is in the lineage of `cls` at index superclassCount(right)
       val rightCount = right.superclassCount
-      if (rightCount < LineageSize) {
-        // `right` is in the lineage of `cls` at index superclassCount(right)
-        val lineage = Intrinsics.classFieldRawPtr(cls, "lineage")
-        Intrinsics.loadObject(
-          Intrinsics.elemRawPtr(lineage, PtrSize * rightCount)
-        ) eq right
-      } else {
-        var ancestor: _Class[_] = cls
-        var count = cls.superclassCount
-        while (count > rightCount) {
-          ancestor = ancestor.superClass.asInstanceOf[_Class[_]]
-          count -= 1
-        }
-        count == rightCount && (ancestor eq right)
-      }
+      if (rightCount < LineageSize) inlineAncestor(cls, rightCount) eq right
+      else
+        cls.superclassCount >= rightCount &&
+          (ancestorAt(cls, rightCount) eq right)
     }
+
+  @alwaysinline private def inlineAncestor(
+      cls: _Class[_],
+      depth: Int
+  ): _Class[_] =
+    Intrinsics
+      .loadObject(
+        Intrinsics.elemRawPtr(
+          Intrinsics.classFieldRawPtr(cls, "lineage"),
+          PtrSize * depth
+        )
+      )
+      .asInstanceOf[_Class[_]]
+
+  // The superclass of class `cls` with `depth` <= superclassCount(cls)
+  private[runtime] def ancestorAt(cls: _Class[_], depth: Int): _Class[_] =
+    if (cls.superclassCount < LineageSize) inlineAncestor(cls, depth)
+    else
+      Intrinsics
+        .loadObject(Intrinsics.elemRawPtr(cls.deepLineage, PtrSize * depth))
+        .asInstanceOf[_Class[_]]
 
   /* Looks `trt` up in the itable of class `left` the way generated code
    * does, see codegen.ITable: linear probing from the slot selected by the

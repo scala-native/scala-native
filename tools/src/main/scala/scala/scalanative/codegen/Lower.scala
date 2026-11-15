@@ -1376,27 +1376,20 @@ private[scalanative] object Lower {
             val ancestor = let(nir.Op.Load(nir.Type.Ptr, ancestorPtr), unwind)
             let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, ancestor, rtti(cls).const), unwind)
           } else {
-            // Beyond the inline lineage: walk superClass down to superclassCount(cls)
-            val walkL, upL, compareL, resultL = fresh()
+            // Beyond the inline lineage: a class with at least superclassCount(cls)
+            // superclasses is deep and points to all of them
+            val deepL, resultL = fresh()
             val countPtr = let(nir.Op.Elem(ClassRtti.layout, typeptr, Seq(zero, nir.Val.Int(ClassRtti.SuperclassCountIdx))), unwind)
             val objCount = let(nir.Op.Load(nir.Type.Int, countPtr), unwind)
             val tooFew = let(nir.Op.Comp(nir.Comp.Slt, nir.Type.Int, objCount, nir.Val.Int(superclassCount)), unwind)
-            branch(tooFew, nir.Next.Label(resultL, Seq(nir.Val.False)), nir.Next.Label(walkL, Seq(typeptr, objCount)))
+            branch(tooFew, nir.Next.Label(resultL, Seq(nir.Val.False)), nir.Next(deepL))
 
-            val current = nir.Val.Local(fresh(), nir.Type.Ptr)
-            val currentCount = nir.Val.Local(fresh(), nir.Type.Int)
-            label(walkL, Seq(current, currentCount))
-            val atClass = let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Int, currentCount, nir.Val.Int(superclassCount)), unwind)
-            branch(atClass, nir.Next(compareL), nir.Next(upL))
-
-            label(upL)
-            val superPtr = let(nir.Op.Elem(ClassRtti.layout, current, Seq(zero, nir.Val.Int(ClassRtti.SuperClassIdx))), unwind)
-            val superClass = let(nir.Op.Load(nir.Type.Ptr, superPtr), unwind)
-            val superCount = let(nir.Op.Bin(nir.Bin.Isub, nir.Type.Int, currentCount, one), unwind)
-            jump(walkL, Seq(superClass, superCount))
-
-            label(compareL)
-            val isClass = let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, current, rtti(cls).const), unwind)
+            label(deepL)
+            val deepPtr = let(nir.Op.Elem(ClassRtti.layout, typeptr, Seq(zero, nir.Val.Int(ClassRtti.DeepLineageIdx))), unwind)
+            val deep = let(nir.Op.Load(nir.Type.Ptr, deepPtr), unwind)
+            val ancestorPtr = let(nir.Op.Elem(nir.Type.Ptr, deep, Seq(nir.Val.Int(superclassCount))), unwind)
+            val ancestor = let(nir.Op.Load(nir.Type.Ptr, ancestorPtr), unwind)
+            val isClass = let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, ancestor, rtti(cls).const), unwind)
             jump(resultL, Seq(isClass))
 
             val result = nir.Val.Local(fresh(), nir.Type.Bool)

@@ -32,7 +32,7 @@ Fields of classes only:
 | `itableMask`      | `int`         | itable size minus one                             |
 | `itableShift`     | `int`         | selects the trait key bits that index the itable  |
 | `itables`         | pointer       | itable entries, see below                         |
-| `superClass`      | pointer       | RTTI of the parent class, or null                 |
+| `deepLineage`     | pointer       | classes with 8 or more superclasses: all of them  |
 | `lineage`         | pointer[8]    | superclasses from the root, the class, then nulls |
 | `vtable`          | pointer[]     | virtual method table                              |
 
@@ -94,8 +94,11 @@ obj->rtti->lineage[superclassCount(C)] == &C$G4type
 ```
 
 `superclassCount(C)` and the address of `C`'s RTTI are compile-time constants.
-Tests against classes with more superclasses check `superclassCount` and walk
-`superClass` instead. Tests against a class without subclasses compare the RTTI
+Classes with 8 or more superclasses also point to their whole lineage from
+`deepLineage`, null for other classes. Tests against such deep classes check
+that the class of the object has at least `superclassCount(C)` superclasses,
+so that it is deep too, and compare `deepLineage[superclassCount(C)]`.
+`getSuperclass` reads the lineage as well. Tests against a class without subclasses compare the RTTI
 pointer directly. The technique is known as a Cohen display.
 
 ## Traits

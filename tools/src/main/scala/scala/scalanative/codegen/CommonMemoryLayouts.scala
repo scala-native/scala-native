@@ -4,8 +4,8 @@ package codegen
 private[codegen] object CommonMemoryLayouts {
 
   /** Length of the lineage stored inline in class RTTI. Type tests against
-   *  classes with more superclasses walk the superclass chain. Keep in sync
-   *  with SCALANATIVE_RTTI_LINEAGE_SIZE in ObjectHeader.h.
+   *  classes with more superclasses read the deep lineage of the tested class.
+   *  Keep in sync with SCALANATIVE_RTTI_LINEAGE_SIZE in ObjectHeader.h.
    */
   final val LineageSize = 8
 }
@@ -61,7 +61,9 @@ private[codegen] class CommonMemoryLayouts(implicit meta: Metadata) {
         nir.Type.Int :: // itable mask
         nir.Type.Int :: // itable shift
         nir.Type.Ptr :: // itables
-        nir.Type.Ptr :: // superClass
+        // classes with LineageSize or more superclasses: all superclasses
+        // from the root, then the class itself; null otherwise
+        nir.Type.Ptr :: // deep lineage
         // superclasses from the root, then the class itself, then nulls
         nir.Type.ArrayValue(nir.Type.Ptr, LineageSize) :: // lineage
         Nil
@@ -81,8 +83,8 @@ private[codegen] class CommonMemoryLayouts(implicit meta: Metadata) {
     final val ITableMaskIdx = ReferenceOffsetsIdx + 1
     final val ITableShiftIdx = ITableMaskIdx + 1
     final val ItablesIdx = ITableShiftIdx + 1
-    final val SuperClassIdx = ItablesIdx + 1
-    final val LineageIdx = SuperClassIdx + 1
+    final val DeepLineageIdx = ItablesIdx + 1
+    final val LineageIdx = DeepLineageIdx + 1
     final val VtableIdx = LineageIdx + 1
   }
 

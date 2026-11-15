@@ -88,8 +88,6 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
     info match {
       case cls: Class =>
         val itable = meta.itable(cls)
-        val superClass =
-          cls.parent.map(meta.rtti(_).const).getOrElse(nir.Val.Null)
         nir.Val.StructValue(
           base ::
             nir.Val.Int(typeSize) :: // size
@@ -98,7 +96,7 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
             nir.Val.Int(itable.mask) ::
             nir.Val.Int(itable.shift) ::
             itable.value ::
-            superClass ::
+            deepLineage(cls) ::
             lineage(cls) ::
             meta.vtable(cls).value ::
             Nil
@@ -123,6 +121,21 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
             .map(info => meta.rtti(info).const)
             .getOrElse(nir.Val.Null)
       }
+
+  /* Classes with more superclasses than the inline lineage holds point to
+   * all of them, from the root, then the class itself: tests against such
+   * deep classes read it at index superclassCount(C).
+   */
+  private def deepLineage(cls: Class): nir.Val =
+    if (meta.superclassCount(cls) < CommonMemoryLayouts.LineageSize)
+      nir.Val.Null
+    else
+      nir.Val.Const(
+        nir.Val.ArrayValue(
+          nir.Type.Ptr,
+          meta.lineage(cls).map(meta.rtti(_).const)
+        )
+      )
 
   /* Superclasses from the root, then the class itself, padded with nulls.
    * lineage(C)(superclassCount(C)) is C, so an object is an instance of C
