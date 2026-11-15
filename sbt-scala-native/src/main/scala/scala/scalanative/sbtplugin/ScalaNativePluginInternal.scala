@@ -192,7 +192,8 @@ object ScalaNativePluginInternal {
       Def.uncached {
         for {
           name <- GarbageCollectorConfig.Settings.all.flatMap(_.envVar)
-          value <- sys.env.get(name)
+          // Looked up as the build tools do, ignoring the case on Windows
+          value <- Option(System.getenv(name))
         } yield s"$name=$value"
       }
     }
