@@ -14,7 +14,6 @@ import scala.scalanative.codegen.llvm.compat.os.OsCompat
 import scala.scalanative.codegen.{
   GlobalSections, Lower, Metadata => CodeGenMetadata
 }
-import scala.scalanative.interflow.Interflow.LLVMIntrinsics
 import scala.scalanative.io.VirtualDirectory
 import scala.scalanative.nir.ControlFlow.{Block, Graph => CFG}
 import scala.scalanative.nir.Defn.Define.DebugInfo
@@ -47,14 +46,6 @@ private[codegen] abstract class AbstractCodeGen(
   private var currentBlockSplit: Int = _
 
   private val copies = mutable.Map.empty[nir.Local, nir.Val]
-  // Stack allocations of the current function emitted in its entry block
-  // instead of at their original position, see `findHoistedStackallocs`
-  private var hoistedStackallocs: Seq[nir.Inst.Let] = Nil
-  private val hoistedStackallocIds = mutable.Set.empty[nir.Local]
-  // The current function has no dynamic stack allocations left, there is no
-  // stack state to restore. The stack pointer saved by `llvm.stacksave` is an
-  // absolute address, restoring it in a relocated frame would be fatal.
-  private var skipStackRestores = false
   private val deps = mutable.Set.empty[nir.Global.Member]
   deps.sizeHint(1024)
   private val generated = mutable.Set.empty[String]
@@ -357,10 +348,6 @@ private[codegen] abstract class AbstractCodeGen(
         }
         implicit val cfg: CFG = CFG(insts)
         implicit val _fresh: nir.Fresh = fresh
-        val (hoisted, hasOnlyStaticStackallocs) = findHoistedStackallocs(cfg)
-        hoistedStackallocs = hoisted
-        hoisted.foreach(hoistedStackallocIds += _.id)
-        skipStackRestores = hasOnlyStaticStackallocs
         implicit val _debugInfo: DebugInfo = debugInfo
         str(" ")
         str(os.gxxPersonality)
@@ -380,148 +367,7 @@ private[codegen] abstract class AbstractCodeGen(
         else genBody()
 
         copies.clear()
-        hoistedStackallocs = Nil
-        hoistedStackallocIds.clear()
-        skipStackRestores = false
       case _ => unreachable
-    }
-  }
-
-  /** Fixed-size stack allocations placed outside of the entry block, which are
-   *  emitted as static allocas in the entry block instead.
-   *
-   *  LLVM treats an alloca outside of the entry block as a dynamic one: it
-   *  forces the frame to be addressed (and the stack pointer to be restored)
-   *  through the frame pointer, and it is never promoted to registers. Besides
-   *  the missed optimizations, such frames do not survive the relocation of the
-   *  stack done when resuming a continuation (see delimcc.c): the frame
-   *  pointers saved by the callees and the stack pointers saved by
-   *  `llvm.stacksave` are not rebased.
-   *
-   *  An allocation is hoisted when a single slot is enough for all of its
-   *  executions:
-   *    - it is not a part of a CFG cycle, so it is executed at most once, or
-   *    - every two of its executions are separated by a `llvm.stackrestore`
-   *      releasing the memory of the previous one. Interflow emits such stack
-   *      guards around the loops which allocate memory not escaping a single
-   *      iteration (see interflow.MergePostProcessor)
-   *
-   *  Only the allocation is hoisted, zeroing of the memory is emitted by
-   *  `Lower` as separate instructions and stays at the original position.
-   *
-   *  @return
-   *    hoisted allocations and information if the function is left without any
-   *    dynamic stack allocation
-   */
-  private def findHoistedStackallocs(
-      cfg: CFG
-  ): (Seq[nir.Inst.Let], Boolean) = {
-    def isFixedSize(size: nir.Val): Boolean = size match {
-      case _: nir.Val.Size | _: nir.Val.Int | _: nir.Val.Long |
-          _: nir.Val.Short | _: nir.Val.Byte =>
-        true
-      case _ => false
-    }
-    def isDynamic(block: Block, inst: nir.Inst): Boolean = inst match {
-      case nir.Inst.Let(_, _: nir.Op.Stackalloc, _) => !block.isEntry
-      case _                                        => false
-    }
-    if (!cfg.all.exists(b => b.insts.exists(isDynamic(b, _)))) (Nil, true)
-    else {
-      // Stack guards: saved stack state -> block and position of the save
-      val stackSaves = mutable.Map.empty[nir.Local, (Block, Int)]
-      // Stack guards: saved stack state -> blocks restoring it
-      val stackRestores = mutable.Map.empty[nir.Local, List[Block]]
-      cfg.all.foreach { block =>
-        block.insts.zipWithIndex.foreach {
-          case (nir.Inst.Let(id, StackSaveCall(), _), idx) =>
-            stackSaves(id) = (block, idx)
-          case (nir.Inst.Let(_, StackRestoreCall(state), _), _) =>
-            stackRestores(state) = block :: stackRestores.getOrElse(state, Nil)
-          case _ => ()
-        }
-      }
-
-      // Blocks reachable from the given one, not following the edges going
-      // out of the barrier blocks
-      def reachableFrom(block: Block, barriers: List[Block]): Set[Block] = {
-        val visited = mutable.Set.empty[Block]
-        var todo = block.succ.toList
-        while (todo.nonEmpty) {
-          val next = todo.head
-          todo = todo.tail
-          if (visited.add(next) && !barriers.exists(_ eq next))
-            todo = next.succ.toList ::: todo
-        }
-        visited.toSet
-      }
-
-      def isReleasedBeforeNextExecution(block: Block, allocIdx: Int) =
-        stackRestores.exists {
-          case (state, restoringBlocks) =>
-            stackSaves.get(state).exists {
-              case (savingBlock, saveIdx) =>
-                val isRestoring = restoringBlocks.exists(_ eq block)
-                val reachable = reachableFrom(block, restoringBlocks)
-                // Stack restore is always executed before the next allocation
-                def alwaysRestores = isRestoring || !reachable.contains(block)
-                // Saved state always excludes the allocation
-                def savedBeforeAlloc =
-                  if (savingBlock eq block) !isRestoring && saveIdx < allocIdx
-                  else !reachable.contains(savingBlock)
-                alwaysRestores && savedBeforeAlloc
-            }
-        }
-
-      val hoisted = cfg.all.flatMap { block =>
-        if (block.isEntry) Nil
-        else {
-          val candidates = block.insts.zipWithIndex.collect {
-            case (inst @ nir.Inst.Let(_, nir.Op.Stackalloc(_, size), _), idx)
-                if isFixedSize(size) =>
-              (inst, idx)
-          }
-          if (candidates.isEmpty) Nil
-          else {
-            lazy val isInCycle = reachableFrom(block, Nil).contains(block)
-            candidates.collect {
-              case (inst, idx)
-                  if !isInCycle || isReleasedBeforeNextExecution(block, idx) =>
-                inst
-            }
-          }
-        }
-      }
-      val hoistedIds = hoisted.map(_.id).toSet
-      val hasDynamicStackallocs = cfg.all.exists { block =>
-        block.insts.exists {
-          case inst: nir.Inst.Let =>
-            isDynamic(block, inst) && !hoistedIds.contains(inst.id)
-          case _ => false
-        }
-      }
-      (hoisted, !hasDynamicStackallocs)
-    }
-  }
-
-  private object StackSaveCall {
-    def unapply(op: nir.Op): Boolean = op match {
-      case nir.Op.Call(_, nir.Val.Global(name, _), Seq()) =>
-        name == LLVMIntrinsics.StackSave.name
-      case _ => false
-    }
-  }
-  private object StackRestoreCall {
-    def unapply(op: nir.Op): Option[nir.Local] = op match {
-      case nir.Op.Call(_, nir.Val.Global(name, _), Seq(state))
-          if name == LLVMIntrinsics.StackRestore.name =>
-        def resolve(v: nir.Val): Option[nir.Local] = v match {
-          case nir.Val.Local(id, _) =>
-            copies.get(id).flatMap(resolve).orElse(Some(id))
-          case _ => None
-        }
-        resolve(state)
-      case _ => None
     }
   }
 
@@ -585,7 +431,6 @@ private[codegen] abstract class AbstractCodeGen(
     genBlockHeader()
     indent()
     os.genBlockAlloca(block)
-    if (isEntry) hoistedStackallocs.foreach(genStackalloc)
     genBlockPrologue(block)
     rep(insts)(genInst)
     unindent()
@@ -979,48 +824,6 @@ private[codegen] abstract class AbstractCodeGen(
     }
   }
 
-  private def genStackalloc(inst: nir.Inst.Let)(implicit
-      fresh: nir.Fresh,
-      sb: ShowBuilder,
-      debugInfo: DebugInfo,
-      defnScopes: DefnScopes,
-      metaCtx: MetadataCodeGen.Context
-  ): Unit = {
-    import sb._
-    val nir.Op.Stackalloc(ty, n) = inst.op: @unchecked
-    def genBind() = {
-      str("%")
-      genLocal(inst.id)
-      str(" = ")
-    }
-    val pointee = fresh()
-
-    newline()
-    if (useOpaquePointers) genBind()
-    else {
-      str("%")
-      genLocal(pointee)
-      str(" = ")
-    }
-    str("alloca ")
-    genType(ty)
-    str(", ")
-    genVal(n)
-    str(", align ")
-    str(platform.sizeOfPtr)
-
-    if (!useOpaquePointers) {
-      newline()
-      genBind()
-      str("bitcast ")
-      genType(ty)
-      str("* %")
-      genLocal(pointee)
-      str(" to i8*")
-    }
-    dbgLocalVariable(inst.id, ty)(inst.pos, inst.scopeId)
-  }
-
   private[codegen] def genLet(inst: nir.Inst.Let)(implicit
       fresh: nir.Fresh,
       sb: ShowBuilder,
@@ -1047,9 +850,6 @@ private[codegen] abstract class AbstractCodeGen(
 
     op match {
       case _: nir.Op.Copy =>
-        ()
-
-      case StackRestoreCall(_) if skipStackRestores =>
         ()
 
       case call: nir.Op.Call =>
@@ -1210,8 +1010,33 @@ private[codegen] abstract class AbstractCodeGen(
         }
         dbgLocalValue(id, nir.Type.Ptr)(inst.pos, inst.scopeId)
 
-      case _: nir.Op.Stackalloc =>
-        if (!hoistedStackallocIds.contains(id)) genStackalloc(inst)
+      case nir.Op.Stackalloc(ty, n) =>
+        val pointee = fresh()
+
+        newline()
+        if (useOpaquePointers) genBind()
+        else {
+          str("%")
+          genLocal(pointee)
+          str(" = ")
+        }
+        str("alloca ")
+        genType(ty)
+        str(", ")
+        genVal(n)
+        str(", align ")
+        str(platform.sizeOfPtr)
+
+        if (!useOpaquePointers) {
+          newline()
+          genBind()
+          str("bitcast ")
+          genType(ty)
+          str("* %")
+          genLocal(pointee)
+          str(" to i8*")
+        }
+        dbgLocalVariable(inst.id, ty)(inst.pos, inst.scopeId)
 
       case _ =>
         newline()

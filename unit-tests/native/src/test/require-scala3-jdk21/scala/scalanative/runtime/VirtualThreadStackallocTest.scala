@@ -50,7 +50,7 @@ class VirtualThreadStackallocTest {
   import VirtualThreadStackallocTest._
 
   private val Timeout = 10000L
-  private def parkNanos = 5 * 1000 * 1000L
+  private val parkNanos = 5 * 1000 * 1000L
 
   private def runInVirtualThread(body: () => String): Unit = {
     AssumesHelper.assumeSupportsVirtualThreads()
