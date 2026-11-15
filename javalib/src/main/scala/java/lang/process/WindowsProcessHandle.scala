@@ -87,11 +87,10 @@ object WindowsProcessHandle {
         val capped = remainingMillis > MaxWaitMillis
         val millis = Math.min(remainingMillis, MaxWaitMillis)
         waitOnce(millis.toUInt) match {
-          case Some(res)      => res
-          case None if capped =>
+          case Some(res) => res
+          case None      =>
             if (Thread.interrupted()) throw new InterruptedException()
-            waitUntil(deadline)
-          case None => false
+            capped && waitUntil(deadline)
         }
       }
 
