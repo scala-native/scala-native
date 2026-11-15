@@ -173,7 +173,7 @@ trait SequencedMap[K /* <: AnyRef */, V /* <: AnyRef */ ] extends Map[K, V] {
       }
 
       override def removeLast(): V = {
-        val le = originMap.lastEntry()
+        val le = originMap.pollLastEntry()
 
         if (le == null)
           throw new NoSuchElementException()

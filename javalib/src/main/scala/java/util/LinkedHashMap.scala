@@ -271,11 +271,8 @@ class LinkedHashMap[K, V](
   override def pollFirstEntry(): Map.Entry[K, V] = {
     val fe = firstEntry()
 
-    if (fe != null) {
-      val savedEldest = eldest
-      removeFromOrderedList(eldest)
-      remove(savedEldest.key)
-    }
+    if (fe != null)
+      removeNode(eldest)
 
     fe
   }
