@@ -175,7 +175,6 @@ private[codegen] object RuntimeTypeInformation {
 
     private val ObjectArray =
       nir.Global.Top("scala.scalanative.runtime.ObjectArray")
-    private val WeakReference = nir.Global.Top("java.lang.ref.WeakReference")
     private val SoftReference = nir.Global.Top("java.lang.ref.SoftReference")
     private val PhantomReference =
       nir.Global.Top("java.lang.ref.PhantomReference")
@@ -199,7 +198,7 @@ private[codegen] object RuntimeTypeInformation {
               else ArrayScanNone
             }
         val referenceKind =
-          if (names.contains(WeakReference)) WeakReferenceKind
+          if (names.contains(FieldLayout.WeakReference)) WeakReferenceKind
           else if (names.contains(SoftReference)) SoftReferenceKind
           else if (names.contains(PhantomReference)) PhantomReferenceKind
           else 0

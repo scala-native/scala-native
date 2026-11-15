@@ -33,7 +33,6 @@ private[codegen] object Generate {
       entry.fold(genLibraryInit())(genMain(_))
       genTypeMetadata()
       genModuleAccessors()
-      genWeakRefUtils()
 
       buf.toSeq
     }
@@ -386,50 +385,6 @@ private[codegen] object Generate {
       }
     }
 
-    def genWeakRefUtils(): Unit = {
-      def addToBuf(name: nir.Global.Member, value: Int) =
-        buf +=
-          nir.Defn.Const(
-            nir.Attrs.None,
-            name,
-            nir.Type.Int,
-            nir.Val.Int(value)
-          )
-
-      val WeakReferenceClass = nir.Global.Top("java.lang.ref.WeakReference")
-      val WeakReferenceGCReferent = WeakReferenceClass.member(
-        nir.Sig.Field("_gc_modified_referent")
-      )
-      // Not only when WeakReference itself is allocated: the RTTI flags mark
-      // every subclass as a weak reference, and the GC reads the referent of
-      // each one at this offset
-      def weakRefClsInfo = reachabilityAnalysis.infos
-        .get(WeakReferenceClass)
-        .collect { case cls: Class => cls }
-      def weakRefReferentField =
-        reachabilityAnalysis.infos
-          .get(WeakReferenceGCReferent)
-          .collect { case field: Field => field }
-
-      val modifiedFieldOffset =
-        weakRefClsInfo
-          .zip(weakRefReferentField)
-          .headOption
-          .fold(-1) {
-            case (weakRef, weakRefReferantField) =>
-              // if WeakReferences are being compiled and therefore supported
-              val layout = meta.layout(weakRef)
-              val gcModifiedFieldReferentIdx = layout
-                .index(weakRefReferantField)
-                .ensuring(
-                  _ > 0,
-                  "Runtime implementation error, no \"_gc_modified_referent\" field in java.lang.ref.WeakReference"
-                )
-              layout.layout.tys(gcModifiedFieldReferentIdx).offset.toInt
-          }
-      addToBuf(weakRefFieldOffsetName, modifiedFieldOffset)
-    }
-
     private def validateMainEntry(entry: nir.Global.Top): Unit = {
       def fail(reason: String): Nothing =
         util.unsupported(s"Entry ${entry.id} $reason")
@@ -512,7 +467,6 @@ private[codegen] object Generate {
     )
     val RegisterReflectiveProxies = nir.Val.Global(RegisterReflectiveProxiesDecl.name, nir.Type.Ptr)
 
-    val weakRefFieldOffsetName = Extern("__weak_ref_field_offset")
   }
 
   def depends(implicit platform: PlatformInfo): Seq[nir.Global] = {

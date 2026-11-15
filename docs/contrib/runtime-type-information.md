@@ -64,6 +64,9 @@ of an object, of its reference fields, terminated with -1, followed by the
 offsets of raw pointer fields to scan conservatively, terminated with -1. Only
 `unsafe.Ptr` has such a field: a boxed pointer can point into the heap, for
 example to an array element, and be the only thing keeping it alive.
+Subclasses of `java.lang.ref.WeakReference` then list the offset of their
+referent, terminated with -1. The GC does not mark the referent and clears it
+once nothing else keeps it alive.
 
 Arrays have no fields to scan, the GC uses the element scan kind from the flags
 instead. In array RTTI the same slot holds the RTTI of the element type, read

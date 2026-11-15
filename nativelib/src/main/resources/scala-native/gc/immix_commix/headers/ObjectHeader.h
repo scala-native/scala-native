@@ -13,8 +13,6 @@
 #include "limits.h"
 #include "assert.h"
 
-extern const int __weak_ref_field_offset;
-
 /* Bits of BaseRtti.flags, keep in sync with
  * codegen.RuntimeTypeInformation.Flags */
 #define RTTI_FLAG_IS_INTERFACE (1 << 0)
@@ -38,6 +36,9 @@ extern const int __weak_ref_field_offset;
 #define RTTI_ARRAY_DIMENSIONS_SHIFT 8
 /* Classes, bits 16-31: hash of the class name, see codegen.StableHash */
 #define RTTI_CLASS_KEY_SHIFT 16
+
+/* Terminates each section of a class reference map, see Rtti.refFieldOffsets */
+#define LAST_FIELD_OFFSET -1
 
 /* Length of the lineage stored inline in class RTTI, keep in sync with
  * codegen.CommonMemoryLayouts.LineageSize */
@@ -80,7 +81,8 @@ typedef struct Rtti {
     int32_t superclassCount; // 0 for java.lang.Object and primitives
     union {
         // Classes: offsets in bytes, from the object start, of reference
-        // fields, -1, then of raw pointer fields scanned conservatively, -1
+        // fields, -1, then of raw pointer fields scanned conservatively, -1.
+        // Weak references then hold the offset of their referent, -1.
         int32_t *refFieldOffsets;
         // Arrays: RTTI of the element type
         struct Rtti *componentType;
@@ -185,10 +187,20 @@ static inline bool Object_IsWeakReference(const Object *object) {
            RTTI_REFERENCE_KIND_WEAK;
 }
 
-static inline bool Object_IsReferantOfWeakReference(const Object *object,
-                                                    int fieldOffset) {
-    return Object_IsWeakReference(object) &&
-           fieldOffset == __weak_ref_field_offset;
+/* The referent field of a weak reference, which is not among the reference
+ * fields the GC marks: its offset follows the second section of the
+ * reference map. NULL when the class has no such field. */
+static inline Field_t *WeakReference_ReferentField(const Object *object) {
+    assert(Object_IsWeakReference(object));
+    const int32_t *offsets = object->rtti->refFieldOffsets;
+    for (int section = 0; section < 2; section++) {
+        while (*offsets != LAST_FIELD_OFFSET)
+            offsets++;
+        offsets++;
+    }
+    if (*offsets == LAST_FIELD_OFFSET)
+        return NULL;
+    return (Field_t *)((int8_t *)object + *offsets);
 }
 
 #ifdef USES_LOCKWORD

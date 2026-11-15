@@ -20,7 +20,9 @@ void WeakReferences_Nullify(void) {
     while (!Stack_IsEmpty(&weakRefStack)) {
         Object *object = Stack_Pop(&weakRefStack);
         Object **weakRefReferantField =
-            (Object **)((int8_t *)object + __weak_ref_field_offset);
+            (Object **)WeakReference_ReferentField(object);
+        if (weakRefReferantField == NULL)
+            continue;
         word_t *weakRefReferant = (word_t *)*weakRefReferantField;
         if (Heap_IsWordInHeap(&heap, weakRefReferant)) {
             ObjectMeta *objectMeta = Bytemap_Get(bytemap, weakRefReferant);

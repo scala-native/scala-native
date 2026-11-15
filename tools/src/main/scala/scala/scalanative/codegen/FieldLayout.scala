@@ -40,13 +40,31 @@ private[codegen] class FieldLayout(cls: Class)(implicit meta: Metadata) {
    * offsets of raw pointer fields to scan conservatively, -1. Only boxed
    * pointers (unsafe.Ptr) scan raw pointers: one can point into the heap, for
    * example to an array element, and be the only thing keeping it alive.
+   * Weak references then list the offset of their referent, which the GC
+   * does not mark but clears once nothing else keeps it alive, and -1.
    */
   val referenceOffsetsValue = {
     val conservative =
       if (cls.name == nir.Rt.BoxedPtr.name) layout.rawPointerFieldsOffsets
       else Nil
-    val offsets = layout.referenceFieldsOffsets ++ (-1 +: conservative) :+ -1
+    val referent = entries
+      .find(_.name == FieldLayout.WeakReferent)
+      .map(fld => layout.tys(index(fld)).offset.toInt)
+      .toList
+    val weak =
+      if (meta.ancestors(cls).exists(_.name == FieldLayout.WeakReference))
+        referent :+ -1
+      else Nil
+    val strong = layout.referenceFieldsOffsets.filterNot(referent.contains)
+    val offsets = (strong :+ -1) ++ (conservative :+ -1) ++ weak
     nir.Val.Const(nir.Val.ArrayValue(nir.Type.Int, offsets.map(nir.Val.Int(_))))
   }
 
+}
+
+private[codegen] object FieldLayout {
+  val WeakReference = nir.Global.Top("java.lang.ref.WeakReference")
+  // The referent the GC clears, see java.lang.ref.WeakReference
+  val WeakReferent: nir.Global.Member =
+    WeakReference.member(nir.Sig.Field("_gc_modified_referent"))
 }

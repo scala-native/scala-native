@@ -17,8 +17,6 @@
 #include "SyncGreyLists.h"
 #include "stackOverflowGuards.h"
 
-#define LAST_FIELD_OFFSET -1
-
 // Marking uses multiple threads in parallel. Note that there is no need to
 // synchronize on any of the mark bytes in BlockMeta, LineMeta or ObjectMeta,
 // because marking is idempotent. If we mark an object that has been already
@@ -307,9 +305,6 @@ int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
         size_t fieldOffset = (size_t)refFieldOffsets[i];
         Field_t *fieldRef = (Field_t *)((int8_t *)object + fieldOffset);
         Field_t fieldReferant = *fieldRef;
-        if (Object_IsReferantOfWeakReference(object, fieldOffset)) {
-            continue;
-        }
         objectsTraced += Marker_markField(heap, stats, outHolder,
                                           outWeakRefHolder, fieldReferant);
     }

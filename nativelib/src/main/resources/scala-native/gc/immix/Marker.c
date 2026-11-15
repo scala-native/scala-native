@@ -14,8 +14,6 @@
 #include "shared/ThreadUtil.h"
 #include "stackOverflowGuards.h"
 
-#define LAST_FIELD_OFFSET -1
-
 static inline void Marker_markLockWords(Heap *heap, Stack *stack,
                                         Object *object);
 static void Marker_markRange(Heap *heap, Stack *stack, word_t **from,
@@ -124,8 +122,6 @@ void Marker_Mark(Heap *heap, Stack *stack) {
             for (; refFieldOffsets[i] != LAST_FIELD_OFFSET; i++) {
                 size_t fieldOffset = (size_t)refFieldOffsets[i];
                 Field_t *fieldRef = (Field_t *)((int8_t *)object + fieldOffset);
-                if (Object_IsReferantOfWeakReference(object, fieldOffset))
-                    continue;
                 Marker_markField(heap, stack, *fieldRef);
             }
             // Raw pointer fields that may point into the heap
