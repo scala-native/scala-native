@@ -310,9 +310,11 @@ static Coroutine *mapCoroutine(void) {
     size_t page = pageSize();
     size_t size = STACK_SIZE + page;
     int flags = MAP_PRIVATE | MAP_ANON;
-#ifdef MAP_STACK
-    flags |= MAP_STACK; // required for stack memory on OpenBSD
+#ifdef __OpenBSD__
+    flags |= MAP_STACK; // required for stack memory there
 #endif
+    // Not elsewhere: on FreeBSD MAP_STACK maps a region the kernel grows on
+    // demand, which does not keep the guard set below.
     char *low = mmap(NULL, size, PROT_READ | PROT_WRITE, flags, -1, 0);
     if (low == MAP_FAILED)
         return NULL;
