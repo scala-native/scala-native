@@ -234,7 +234,7 @@ private[runtime] object _Class {
 
   // Keep in sync with codegen.CommonMemoryLayouts.LineageSize
   private final val LineageSize = 8
-  @alwaysinline private def PtrSize =
+  @alwaysinline private[runtime] def PtrSize =
     Intrinsics.castRawSizeToInt(Intrinsics.sizeOf[RawPtr])
 
   /* Looks `trt` up in the itable of class `left` the way generated code
@@ -268,10 +268,9 @@ private[runtime] object _Class {
   // `interfaces` lists every trait implemented by `left`
   private def checkHasTrait(left: _Class[_], right: _Class[_]): Boolean = {
     val interfaces = left.interfaces
-    val ptrSize = Intrinsics.castRawSizeToInt(Intrinsics.sizeOf[Ptr[_]])
     var idx = 0
     while (idx < left.interfacesCount) {
-      val interfacePtr = Intrinsics.elemRawPtr(interfaces, ptrSize * idx)
+      val interfacePtr = Intrinsics.elemRawPtr(interfaces, PtrSize * idx)
       if (Intrinsics.loadObject(interfacePtr) eq right) return true
       idx += 1
     }
@@ -325,7 +324,7 @@ private object LinkedClasses {
   // The class list section holds a pointer to the RTTI of every class and
   // trait, the RTTI of a type is its java.lang.Class instance
   private def find(className: String): Class[_] = {
-    val ptrSize = castRawSizeToInt(sizeOf[RawPtr])
+    val ptrSize = _Class.PtrSize
     val section = StaticRoots.classListSection()
     val start = loadRawPtr(section)
     val end = loadRawPtr(elemRawPtr(section, ptrSize))

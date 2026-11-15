@@ -226,7 +226,7 @@ void *scalanative_GC_alloc_large(Rtti *info, size_t size) {
 void *scalanative_GC_alloc_array(Rtti *info, size_t length, size_t stride) {
     size_t size = info->size + length * stride;
     ArrayHeader *alloc;
-    if ((info->rt.flags & RTTI_ARRAY_SCAN_MASK) != RTTI_ARRAY_SCAN_NONE)
+    if (Rtti_ArrayScan(info) != RTTI_ARRAY_SCAN_NONE)
         alloc = (ArrayHeader *)GC_malloc(size);
     else
         alloc = (ArrayHeader *)GC_malloc_atomic(size);
