@@ -53,8 +53,21 @@ The layout is defined by `codegen.CommonMemoryLayouts` and mirrored by
 | 8-31 | traits: low 24 bits of the itable key                          |
 
 The garbage collectors and `java.lang.Class` read these bits instead of
-comparing class ids. Only weak references clear their referent today; soft and
-phantom references are marked for future support.
+comparing class ids. Immix and Commix use the reference kind to decide when
+to clear a referent:
+
+- weak and phantom references never keep their referent alive. After marking,
+  the collector clears every referent that nothing else marked, and the
+  javalib enqueues the reference on its queue;
+- soft references keep their referent like any other field, except in the
+  collection that runs right before an allocation would fail with an
+  `OutOfMemoryError`. That collection runs only when the previous one found a
+  soft reference, clears unmarked soft referents like weak ones, and the
+  allocation is then retried.
+
+There are no finalizers, so a phantom reference is cleared and enqueued in the
+same collection as a weak reference to the same object. Boehm treats phantom
+references like weak ones and soft references as strong.
 
 ## Reference map and arrays
 
