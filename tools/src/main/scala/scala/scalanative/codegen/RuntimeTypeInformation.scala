@@ -109,17 +109,20 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
   }
 
   /* Reference map of instances, or for array classes the RTTI of the
-   * element type: the GC scans arrays according to flags instead.
+   * element type: the GC scans arrays according to flags instead. The
+   * abstract runtime.Array has no element type.
    */
   private def referenceMapOrComponentType(cls: Class): nir.Val =
-    if (!nir.Type.isArray(cls.name) && cls.name != nir.Rt.GenericArray.name)
-      meta.layout(cls).referenceOffsetsValue
+    if (cls.name == nir.Rt.GenericArray.name) nir.Val.Null
     else
-      arrayComponentTypes
-        .get(cls.name.top)
-        .flatMap(name => meta.analysis.infos.get(name))
-        .map(info => meta.rtti(info).const)
-        .getOrElse(nir.Val.Null)
+      nir.Type.fromArrayClass(cls.name) match {
+        case None         => meta.layout(cls).referenceOffsetsValue
+        case Some(elemTy) =>
+          meta.analysis.infos
+            .get(nir.Type.typeToName(elemTy))
+            .map(info => meta.rtti(info).const)
+            .getOrElse(nir.Val.Null)
+      }
 
   /* Superclasses from the root, then the class itself, padded with nulls.
    * lineage(C)(superclassCount(C)) is C, so an object is an instance of C
@@ -205,26 +208,6 @@ private[codegen] object RuntimeTypeInformation {
           referenceKind |
           StableHash.classKey(cls) << ClassKeyShift
     }
-  }
-
-  /** Element type of the array classes: its RTTI is stored in place of the
-   *  reference field offsets, which arrays do not use. The abstract
-   *  runtime.Array has none.
-   */
-  private val arrayComponentTypes: Map[nir.Global.Top, nir.Global.Top] = {
-    def rt(name: String) = nir.Global.Top("scala.scalanative.runtime." + name)
-    Map(
-      rt("BooleanArray") -> rt("PrimitiveBoolean"),
-      rt("CharArray") -> rt("PrimitiveChar"),
-      rt("ByteArray") -> rt("PrimitiveByte"),
-      rt("ShortArray") -> rt("PrimitiveShort"),
-      rt("IntArray") -> rt("PrimitiveInt"),
-      rt("LongArray") -> rt("PrimitiveLong"),
-      rt("FloatArray") -> rt("PrimitiveFloat"),
-      rt("DoubleArray") -> rt("PrimitiveDouble"),
-      rt("BlobArray") -> rt("PrimitiveByte"),
-      rt("ObjectArray") -> nir.Rt.Object.name
-    )
   }
 
   private val classConst =
