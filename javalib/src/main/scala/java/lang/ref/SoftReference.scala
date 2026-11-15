@@ -1,11 +1,12 @@
 package java.lang.ref
 
-class SoftReference[T >: Null <: AnyRef](
-    referent: T,
-    queue: ReferenceQueue[_ >: T]
-) extends Reference[T](referent) {
+// The garbage collector keeps the referent of a soft reference alive, except
+// in the last collection before it would throw an OutOfMemoryError: there it
+// clears it like the referent of a weak reference. See Reference.
+class SoftReference[T](referent: T, queue: ReferenceQueue[_ >: T])
+    extends Reference[T](referent, queue) {
 
   def this(referent: T) = this(referent, null)
 
-  override def get(): T = super.get()
+  override private[ref] def isSoft: Boolean = true
 }

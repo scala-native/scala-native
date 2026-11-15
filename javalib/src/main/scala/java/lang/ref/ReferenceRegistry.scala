@@ -15,59 +15,56 @@ import scala.scalanative.runtime.javalib.Proxy
 import scala.scalanative.runtime.{RawPtr, fromRawPtr}
 import scala.scalanative.unsafe._
 
-/* Should always be treated as a module by the compiler.
- * _gc_modified_postGCControlField is explicitly acccessed
- * by the internals of the immix and commix GC.
+/* References with a queue, whatever their kind, in a lock-free list linked by
+ * Reference.nextReference. After a collection that cleared referents, the GC
+ * calls back, and the references whose referent was cleared leave the list
+ * and are enqueued.
  */
-private[java] object WeakReferenceRegistry {
-  @volatile private var weakRefsHead: WeakReference[_] = _
+private[java] object ReferenceRegistry {
+  @volatile private var refsHead: Reference[_] = _
 
-  @alwaysinline private def weakRefsHeadPtr = fromRawPtr[WeakReference[_]](
-    classFieldRawPtr(this, "weakRefsHead")
+  @alwaysinline private def refsHeadPtr = fromRawPtr[Reference[_]](
+    classFieldRawPtr(this, "refsHead")
   )
 
   // Raw memory, a Tag would call ClassTag.apply, which creates a WeakReference
-  @alwaysinline private def loadHead(slot: RawPtr): WeakReference[_] =
-    loadObject(slot).asInstanceOf[WeakReference[_]]
+  @alwaysinline private def loadHead(slot: RawPtr): Reference[_] =
+    loadObject(slot).asInstanceOf[Reference[_]]
 
   @tailrec private def enqueueCollectedReferences(
-      head: WeakReference[_],
-      current: WeakReference[_],
-      prev: WeakReference[_]
-  ): (WeakReference[AnyRef], WeakReference[AnyRef]) =
+      head: Reference[_],
+      current: Reference[_],
+      prev: Reference[_]
+  ): (Reference[_], Reference[_]) =
     if (current == null) {
       val last = if (prev != null) prev else head
-      (
-        head.asInstanceOf[WeakReference[AnyRef]],
-        last.asInstanceOf[WeakReference[AnyRef]]
-      )
+      (head, last)
     } else {
       val next = current.nextReference
-      val headNew =
-        if (null != current.get()) head
+      if (!current.handleCleared())
+        enqueueCollectedReferences(head, next, current)
+      else {
+        current.nextReference = null
+        if (prev == null) enqueueCollectedReferences(next, next, null)
         else {
-          current.enqueue()
-          if (prev == null) next
-          else {
-            prev.nextReference = next
-            head
-          }
+          prev.nextReference = next
+          enqueueCollectedReferences(head, next, prev)
         }
-      enqueueCollectedReferences(headNew, next, current)
+      }
     }
 
   private def handleCollectedReferences(): Unit = {
     // This method is designed for calls from C and therefore should not include
     // non statically reachable fields or methods.
-    // Detach current weak refs linked-list to allow for unsynchronized updated
+    // Detach current refs linked-list to allow for unsynchronized updated
     val detachedHeadSlot = rawStackalloc[RawPtr]()
-    def replaceHead(head: WeakReference[_])(reset: => Unit): Unit = {
-      storeObject(detachedHeadSlot, weakRefsHead)
+    def replaceHead(head: Reference[_])(reset: => Unit): Unit = {
+      storeObject(detachedHeadSlot, refsHead)
       while ({
         reset
         !atomic_compare_exchange_strong(
-          weakRefsHeadPtr,
-          fromRawPtr[WeakReference[_]](detachedHeadSlot),
+          refsHeadPtr,
+          fromRawPtr[Reference[_]](detachedHeadSlot),
           head
         )
       }) {}
@@ -79,7 +76,7 @@ private[java] object WeakReferenceRegistry {
     val (newHead, newLast) =
       enqueueCollectedReferences(detachedHead, detachedHead, null)
 
-    // Reattach the weak refs list to the possibly updated head
+    // Reattach the refs list to the possibly updated head
     if (newHead ne null) {
       assert(newLast ne null)
       replaceHead(newHead) {
@@ -103,7 +100,7 @@ private[java] object WeakReferenceRegistry {
     .ofPlatform()
     .daemon()
     .group(ThreadGroup.System)
-    .name("GC-WeakReferenceHandler")
+    .name("GC-ReferenceHandler")
     .startInternal(() =>
       while (true) {
         handleCollectedReferences()
@@ -130,18 +127,18 @@ private[java] object WeakReferenceRegistry {
     }
   }
 
-  private[ref] def add(weakRef: WeakReference[_]): Unit =
+  private[ref] def add(ref: Reference[_]): Unit =
     if (LinktimeInfo.isWeakReferenceSupported) {
       if (LinktimeInfo.isMultithreadingEnabled) startRequestedHandler()
-      assert(weakRef.nextReference == null)
+      assert(ref.nextReference == null)
       val prevHeadSlot = rawStackalloc[RawPtr]()
       storeObject(prevHeadSlot, null)
       while (!atomic_compare_exchange_weak(
-            weakRefsHeadPtr,
-            fromRawPtr[WeakReference[_]](prevHeadSlot),
-            weakRef
+            refsHeadPtr,
+            fromRawPtr[Reference[_]](prevHeadSlot),
+            ref
           )) {
-        weakRef.nextReference = loadHead(prevHeadSlot)
+        ref.nextReference = loadHead(prevHeadSlot)
       }
     }
 

@@ -1,18 +1,26 @@
 package java.lang.ref
 
 class ReferenceQueue[T] {
+  import Reference._
+
   private type Ref = Reference[_ <: T]
   private val underlying = new java.util.ArrayDeque[Ref](64)
 
-  private[ref] def enqueue(reference: Ref): Unit =
+  /* Returns false when the reference was enqueued before. */
+  private[ref] def enqueue(reference: Reference[_]): Boolean =
     synchronized {
-      underlying.addLast(reference)
-      notifyAll()
+      if (reference.state != Active) false
+      else {
+        reference.state = Enqueued
+        underlying.addLast(reference.asInstanceOf[Ref])
+        notifyAll()
+        true
+      }
     }
 
   private def dequeue(): Ref = {
     val entry = underlying.removeFirst()
-    entry.markDequeued()
+    entry.state = Dequeued
     entry
   }
 
