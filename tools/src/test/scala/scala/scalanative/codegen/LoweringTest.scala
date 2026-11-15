@@ -197,7 +197,8 @@ class LoweringTest extends CodeGenSpec {
         )
       val source = outfiles
         .find { path =>
-          new String(Files.readAllBytes(path)).linesIterator
+          new String(Files.readAllBytes(path))
+            .split("\n")
             .exists(defines(_, "isEven"))
         }
         .getOrElse(throw new AssertionError("Missing definition of isEven"))
@@ -215,7 +216,7 @@ class LoweringTest extends CodeGenSpec {
         )
         assertEquals(0, new ProcessBuilder(command: _*).start().waitFor())
         val optimized =
-          new String(Files.readAllBytes(output)).linesIterator.toIndexedSeq
+          new String(Files.readAllBytes(output)).split("\n").toIndexedSeq
         for ((caller, callee) <- Seq(
               "isEven" -> "isOdd",
               "isOdd" -> "isEven"
@@ -224,12 +225,13 @@ class LoweringTest extends CodeGenSpec {
             .dropWhile(!defines(_, caller))
             .takeWhile(_ != "}")
             .map(_.trim)
-            .filter(_.nonEmpty)
+            .filter(!_.isEmpty)
           // Instructions executed from the given position until the function returns
           def untilReturn(from: Int): Seq[String] = body(from) match {
             case inst if inst.startsWith("ret ")       => Nil
             case inst if inst.startsWith("br label %") =>
-              val label = inst.stripPrefix("br label %").split(",").head + ":"
+              val label =
+                inst.substring("br label %".length).split(",")(0) + ":"
               untilReturn(body.indexWhere(_.startsWith(label)) + 1)
             case inst => inst +: untilReturn(from + 1)
           }
