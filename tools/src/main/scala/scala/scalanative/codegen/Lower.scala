@@ -973,7 +973,8 @@ private[scalanative] object Lower {
     }
 
     /* The itable mask, the itable and the slot where the lookup for `trt`
-     * starts: (key >>> shift) & mask, with the class's shift and mask.
+     * starts: (key >>> shift) & mask, with the class's shift and mask. When no
+     * class shifts the keys of `trt`, key & mask: a whole-program fact.
      */
     def genItableStart(buf: nir.InstructionBuilder, rttiPtr: nir.Val, trt: Trait)(implicit
         srcPosition: nir.SourcePosition,
@@ -982,11 +983,16 @@ private[scalanative] object Lower {
       import buf._
       val maskPtr = let(nir.Op.Elem(ClassRtti.layout, rttiPtr, ClassRttiITableMaskPath), unwind)
       val mask = let(nir.Op.Load(nir.Type.Int, maskPtr), unwind)
-      val shiftPtr = let(nir.Op.Elem(ClassRtti.layout, rttiPtr, ClassRttiITableShiftPath), unwind)
-      val shift = let(nir.Op.Load(nir.Type.Int, shiftPtr), unwind)
       val itablesPtr = let(nir.Op.Elem(ClassRtti.layout, rttiPtr, ClassRttiItablesPath), unwind)
       val itables = let(nir.Op.Load(nir.Type.Ptr, itablesPtr), unwind)
-      val shifted = let(nir.Op.Bin(nir.Bin.Lshr, nir.Type.Int, nir.Val.Int(meta.traitKey(trt)), shift), unwind)
+      val key = nir.Val.Int(meta.traitKey(trt))
+      val shifted =
+        if (meta.neverShifted(trt)) key
+        else {
+          val shiftPtr = let(nir.Op.Elem(ClassRtti.layout, rttiPtr, ClassRttiITableShiftPath), unwind)
+          val shift = let(nir.Op.Load(nir.Type.Int, shiftPtr), unwind)
+          let(nir.Op.Bin(nir.Bin.Lshr, nir.Type.Int, key, shift), unwind)
+        }
       val start = let(nir.Op.Bin(nir.Bin.And, nir.Type.Int, shifted, mask), unwind)
       (mask, itables, start)
     }

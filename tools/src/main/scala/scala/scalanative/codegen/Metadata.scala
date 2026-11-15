@@ -42,6 +42,12 @@ private[scalanative] class Metadata(
   // starts. Computed before lowering, which reads it from several threads.
   private val displacedTraits: Set[Trait] =
     itable.valuesIterator.flatMap(_.displaced).toSet
+  // Traits implemented by some class whose itable shifts the trait keys
+  private val shiftedTraits: Set[Trait] =
+    classes.iterator
+      .filter(itable(_).shift != 0)
+      .flatMap(interfaces(_))
+      .toSet
 
   /** Proxies of reflectively called methods, registered at startup */
   lazy val reflectiveProxies: nir.Defn.Const =
@@ -72,6 +78,11 @@ private[scalanative] class Metadata(
    *  used by generated code and recorded in the trait's RTTI flags.
    */
   def alwaysAtHomeSlot(trt: Trait): Boolean = !displacedTraits.contains(trt)
+
+  /** No class of the program shifts the key of `trt` in its itable, so lookups
+   *  start at key & mask. A whole-program fact used by generated code.
+   */
+  def neverShifted(trt: Trait): Boolean = !shiftedTraits.contains(trt)
 
   /** Key of a trait in itables, see StableHash.traitKey */
   def traitKey(trt: Trait): Int = traitKeys(trt)
