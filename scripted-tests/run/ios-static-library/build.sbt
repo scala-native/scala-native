@@ -48,6 +48,8 @@ nativeConfig ~= { config =>
   if (missingRequirement.isDefined) config
   else
     config
+      // The host program calls the library from its own threads
+      .withMultithreading(true)
       .withBuildTarget(scalanative.build.BuildTarget.libraryStatic)
       .withTargetTriple(simulatorTriple)
       .withCompileOptions(_ ++ simulatorSysroot)
