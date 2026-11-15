@@ -21,6 +21,7 @@
 #include <errno.h>
 
 atomic_bool Synchronizer_stopThreads = false;
+atomic_int Synchronizer_lifecycleWaiters = 0;
 static mutex_t synchronizerLock;
 
 // =============================================================================
@@ -365,6 +366,8 @@ static void Synchronizer_afterForkChild(void) {
 #endif
     atomic_store_explicit(&Synchronizer_stopThreads, false,
                           memory_order_relaxed);
+    atomic_store_explicit(&Synchronizer_lifecycleWaiters, 0,
+                          memory_order_relaxed);
     MutatorThreads_afterForkChild();
     mutex_init(&heap.lock);
     mutex_init(&blockAllocator.allocationLock);
@@ -468,6 +471,8 @@ void Synchronizer_yield(void) {
     MutatorThread_switchState(self, GC_MutatorThreadState_Unmanaged);
     atomic_thread_fence(memory_order_seq_cst);
 
+    atomic_fetch_add_explicit(&Synchronizer_lifecycleWaiters, 1,
+                              memory_order_relaxed);
     atomic_store_explicit(&self->isWaiting, true, memory_order_release);
     // Pairs with the fence in Synchronizer_ResumeThreads.
     atomic_thread_fence(memory_order_seq_cst);
@@ -480,7 +485,22 @@ void Synchronizer_yield(void) {
     /* A subsequent collection can begin after the resume notification. Admit
      * under the lifecycle lock before executing managed code again. */
     MutatorThread_admit(self);
+    atomic_fetch_sub_explicit(&Synchronizer_lifecycleWaiters, 1,
+                              memory_order_release);
     atomic_thread_fence(memory_order_seq_cst);
+}
+
+/* Let mutators resumed by the previous collection, or waiting to register or
+ * be admitted, take the thread list lock first. Otherwise a thread collecting
+ * in a loop retakes it every time and starves them. Bounded, so a mutator that
+ * is slow to get scheduled cannot hold up collection. */
+static void Synchronizer_awaitLifecycleWaiters(void) {
+    uint64_t start = Time_current_millis();
+    while (atomic_load_explicit(&Synchronizer_lifecycleWaiters,
+                                memory_order_acquire) > 0 &&
+           Time_current_millis() - start < 100) {
+        thread_yield();
+    }
 }
 
 static bool Synchronizer_acquireGeneration(atomic_uint_fast64_t *completed,
@@ -496,6 +516,7 @@ static bool Synchronizer_acquireGeneration(atomic_uint_fast64_t *completed,
         mutex_unlock(&synchronizerLock);
         return false;
     }
+    Synchronizer_awaitLifecycleWaiters();
 #ifndef _WIN32
     sigprocmask(SIG_BLOCK, &signalsBlockedDuringGC, NULL);
 #endif

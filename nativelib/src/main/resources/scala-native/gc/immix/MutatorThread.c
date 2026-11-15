@@ -2,6 +2,7 @@
 
 #include "MutatorThread.h"
 #include "State.h"
+#include "immix_commix/Synchronizer.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdatomic.h>
@@ -82,8 +83,22 @@ void MutatorThreads_remove(MutatorThread *node) {
     MutatorThreads_unlock();
 }
 
-void MutatorThreads_lock() { mutex_lock(&threadListsModificationLock); }
+void MutatorThreads_lock() {
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+    atomic_fetch_add_explicit(&Synchronizer_lifecycleWaiters, 1,
+                              memory_order_relaxed);
+#endif
+    mutex_lock(&threadListsModificationLock);
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+    atomic_fetch_sub_explicit(&Synchronizer_lifecycleWaiters, 1,
+                              memory_order_release);
+#endif
+}
 
 void MutatorThreads_unlock() { mutex_unlock(&threadListsModificationLock); }
+
+void MutatorThreads_lockRead() { mutex_lock(&threadListsModificationLock); }
+
+void MutatorThreads_unlockRead() { mutex_unlock(&threadListsModificationLock); }
 
 #endif
