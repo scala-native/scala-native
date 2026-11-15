@@ -10,6 +10,8 @@ import org.junit.Test
 
 import org.scalanative.testsuite.utils.Platform._
 
+import scala.scalanative.junit.utils.AssumesHelper.assumeSupportsSubprocesses
+
 class RuntimeTest {
   import ProcessUtils._
   private val EOL = System.lineSeparator()
@@ -51,6 +53,7 @@ class RuntimeTest {
       "Not possible in Windows, would use dir keyword anyway",
       isWindows
     )
+    assumeSupportsSubprocesses()
 
     // The command is looked up in the parent's PATH, as on the JVM, so the
     // fake 'ls' in resourceDir is not used.
