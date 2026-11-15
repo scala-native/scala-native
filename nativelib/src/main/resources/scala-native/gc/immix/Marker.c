@@ -137,9 +137,7 @@ void Marker_Mark(Heap *heap, Stack *stack) {
             // Soft references keep their referent unless they are cleared
             if (UNLIKELY(Rtti_ReferenceKind(rtti) != 0) &&
                 !References_deferReferent(Rtti_ReferenceKind(rtti))) {
-                Field_t *referent = Reference_ReferentField(object);
-                if (referent != NULL)
-                    Marker_markField(heap, stack, *referent);
+                Marker_markField(heap, stack, *Reference_ReferentField(object));
             }
             if (UNLIKELY(Rtti_HasFlag(rtti, RTTI_FLAG_HAS_OBJECT_TRACER))) {
                 // Not set before the first owner registers it

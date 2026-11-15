@@ -326,10 +326,9 @@ int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
     int32_t referenceKind = Rtti_ReferenceKind(object->rtti);
     if (UNLIKELY(referenceKind != 0) &&
         !References_deferReferent(referenceKind)) {
-        Field_t *referent = Reference_ReferentField(object);
-        if (referent != NULL)
-            objectsTraced += Marker_markField(heap, stats, outHolder,
-                                              outWeakRefHolder, *referent);
+        objectsTraced +=
+            Marker_markField(heap, stats, outHolder, outWeakRefHolder,
+                             *Reference_ReferentField(object));
     }
     if (UNLIKELY(Rtti_HasFlag(object->rtti, RTTI_FLAG_HAS_OBJECT_TRACER))) {
         // Not set before the first owner registers it
