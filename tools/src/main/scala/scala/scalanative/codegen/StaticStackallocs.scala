@@ -61,8 +61,9 @@ private[codegen] object StaticStackallocs {
     else {
       val guards = new StackGuards(cfg)
       val hoisted = dynamic.collect {
+        // Canonical size is an integer literal, the allocation has a fixed size
         case (block, idx, inst @ nir.Inst.Let(_, nir.Op.Stackalloc(_, size), _))
-            if isFixedSize(size) && idx >= guards.releasedFrom(block) =>
+            if size.isCanonical && idx >= guards.releasedFrom(block) =>
           inst
       }.toSeq
       new StaticStackallocs(
@@ -70,13 +71,6 @@ private[codegen] object StaticStackallocs {
         dropStackRestores = hoisted.size == dynamic.size
       )
     }
-  }
-
-  private def isFixedSize(size: nir.Val): Boolean = size match {
-    case _: nir.Val.Size | _: nir.Val.Int | _: nir.Val.Long | _: nir.Val.Short |
-        _: nir.Val.Byte =>
-      true
-    case _ => false
   }
 
   private class StackGuards(cfg: Graph) {
