@@ -31,8 +31,7 @@ private[codegen] object Generate {
       genDefnsExcludingGenerated()
       genInjects()
       entry.fold(genLibraryInit())(genMain(_))
-      genClassMetadata()
-      genTraitMetadata()
+      genTypeMetadata()
       genModuleAccessors()
       genWeakRefUtils()
 
@@ -52,11 +51,12 @@ private[codegen] object Generate {
       buf ++= Lower.injects
     }
 
-    def genClassMetadata(): Unit = {
+    // RTTI of every class and trait, and its class list entry
+    def genTypeMetadata(): Unit = {
       buf += ITable.emptyDefn
-      meta.classes.foreach { cls =>
-        val rtti = meta.rtti(cls)
-        val pos = cls.position
+      (meta.classes ++ meta.traits).foreach { info =>
+        val rtti = meta.rtti(info)
+        val pos = info.position
         buf += meta.globalSections.define(
           GlobalSections.ClassInfo,
           nir.Defn.Var(nir.Attrs.None, rtti.name, rtti.struct, rtti.value)(pos)
@@ -76,18 +76,6 @@ private[codegen] object Generate {
           rtti.const
         )
       )
-
-    def genTraitMetadata(): Unit = {
-      meta.traits.foreach { trt =>
-        val rtti = meta.rtti(trt)
-        val pos = trt.position
-        buf += meta.globalSections.define(
-          GlobalSections.ClassInfo,
-          nir.Defn.Var(nir.Attrs.None, rtti.name, rtti.struct, rtti.value)(pos)
-        )
-        buf += classListEntry(rtti)(pos)
-      }
-    }
 
     /* Generate set of instructions using common exception handling, generate method
      * would return 0 if would execute successfully exception and 1 in otherwise */
