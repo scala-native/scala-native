@@ -20,10 +20,10 @@ private[codegen] object ReflectiveProxyTable {
       .member(nir.Sig.Generated("reflective_proxies"))
 
   // Keep in sync with dyndispatch.c
-  private def entryType = nir.Type.StructValue(
+  private val entryType = nir.Type.StructValue(
     nir.Type.Ptr :: nir.Type.Int :: nir.Type.Ptr :: Nil
   )
-  private def emptyEntry =
+  private val emptyEntry =
     nir.Val.StructValue(nir.Val.Null :: nir.Val.Int(0) :: nir.Val.Null :: Nil)
 
   /** Start of the lookup, keep in sync with dyndispatch.c */
@@ -56,30 +56,22 @@ private[codegen] object ReflectiveProxyTable {
       proxy <- proxiesOf(cls)
     } yield (cls, StableHash.dynsigKey(proxy.sig), proxy)
 
-    val size = nextPowerOfTwo(math.max(entries.size * 2, 1))
+    val size = OpenAddressing.nextPowerOfTwo(entries.size * 2)
     val mask = size - 1
-    val slots = Array.fill[nir.Val](size)(emptyEntry)
-    val occupied = Array.fill(size)(false)
-    entries.foreach {
+    val (slots, _) = OpenAddressing.place(size, emptyEntry)(entries.map {
       case (cls, key, proxy) =>
-        var pos = hash(StableHash.classKey(cls), key) & mask
-        while (occupied(pos)) pos = (pos + 1) & mask
-        occupied(pos) = true
-        slots(pos) = nir.Val.StructValue(
+        (hash(StableHash.classKey(cls), key) & mask) -> nir.Val.StructValue(
           meta.rtti(cls).const :: nir.Val.Int(key) ::
             nir.Val.Global(proxy, nir.Type.Ptr) :: Nil
         )
-    }
+    })
 
     val table = nir.Val.StructValue(
       nir.Val.Int(mask) ::
-        nir.Val.Const(nir.Val.ArrayValue(entryType, slots.toIndexedSeq)) :: Nil
+        nir.Val.Const(nir.Val.ArrayValue(entryType, slots)) :: Nil
     )
     nir.Defn.Const(nir.Attrs.None, name, table.ty, table)(
       nir.SourcePosition.NoPosition
     )
   }
-
-  private def nextPowerOfTwo(n: Int): Int =
-    if (n <= 1) 1 else Integer.highestOneBit(n - 1) << 1
 }

@@ -23,17 +23,23 @@ private[scalanative] class Metadata(
   val vtable = mutable.Map.empty[linker.Class, VirtualTable]
   val itable = mutable.Map.empty[linker.Class, ITable]
   val layout = mutable.Map.empty[linker.Class, FieldLayout]
-  private val atHomeSlotCache = mutable.Map.empty[Trait, Boolean]
 
   val classes: Seq[Class] = initClasses()
   val traits: Seq[Trait] = analysis.infos.valuesIterator
     .collect { case info: Trait => info }
     .toIndexedSeq
     .sortBy(_.name.mangle)
+  private val traitKeys: Map[Trait, Int] =
+    traits.map(trt => trt -> StableHash.traitKey(trt)).toMap
 
   checkDynsigKeys()
   initTraitMetadata()
   initClassMetadata()
+
+  // Traits some class does not store in the itable slot where their lookup
+  // starts. Computed before lowering, which reads it from several threads.
+  private val displacedTraits: Set[Trait] =
+    itable.valuesIterator.flatMap(_.displaced).toSet
 
   /** Proxies of reflectively called methods, registered at startup */
   lazy val reflectiveProxies: nir.Defn.Const =
@@ -51,13 +57,10 @@ private[scalanative] class Metadata(
    *  lookup starts, so a single probe decides any lookup. A whole-program fact,
    *  used by generated code and recorded in the trait's RTTI flags.
    */
-  def alwaysAtHomeSlot(trt: Trait): Boolean =
-    atHomeSlotCache.getOrElseUpdate(
-      trt,
-      trt.implementors.forall(cls =>
-        itable.get(cls).forall(_.atHomeSlot.contains(trt))
-      )
-    )
+  def alwaysAtHomeSlot(trt: Trait): Boolean = !displacedTraits.contains(trt)
+
+  /** Key of a trait in itables, see StableHash.traitKey */
+  def traitKey(trt: Trait): Int = traitKeys(trt)
 
   /** Traits implemented by the class or trait, ordered by name */
   def interfaces(info: ScopeInfo): Seq[Trait] =

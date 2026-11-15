@@ -16,11 +16,9 @@ private[codegen] case class ITable(
     // Selects which bits of the trait keys index the table
     shift: Int,
     value: nir.Val,
-    // Traits stored in the slot where their lookup starts
-    atHomeSlot: Set[linker.Trait]
-) {
-  def size: Int = mask + 1
-}
+    // Traits not stored in the slot where their lookup starts
+    displaced: Seq[linker.Trait]
+)
 
 private[codegen] object ITable {
 
@@ -34,7 +32,7 @@ private[codegen] object ITable {
    */
   private final val KeyBits = 24
 
-  private def emptyEntry =
+  private val emptyEntry =
     nir.Val.StructValue(nir.Val.Null :: nir.Val.Null :: Nil)
 
   /** Shared by classes that implement no traits: lookups read one empty slot.
@@ -58,11 +56,11 @@ private[codegen] object ITable {
         mask = 0,
         shift = 0,
         nir.Val.Global(emptyName, nir.Type.Ptr),
-        Set.empty
+        Nil
       )
     else {
-      val keys = traits.map(StableHash.traitKey)
-      val minSize = nextPowerOfTwo(traits.size * 2)
+      val keys = traits.map(meta.traitKey)
+      val minSize = OpenAddressing.nextPowerOfTwo(traits.size * 2)
       def start(key: Int, size: Int, shift: Int) = (key >>> shift) & (size - 1)
       def collisionFree(size: Int, shift: Int) =
         keys.map(start(_, size, shift)).distinct.size == keys.size
@@ -79,28 +77,19 @@ private[codegen] object ITable {
         candidates
           .find { case (size, shift) => collisionFree(size, shift) }
           .getOrElse((minSize, 0))
-      val mask = size - 1
-
-      val slots = Array.fill[nir.Val](size)(emptyEntry)
-      val occupied = Array.fill(size)(false)
-      val atHomeSlot = Set.newBuilder[linker.Trait]
-      traits.zip(keys).foreach {
-        case (trt, key) =>
-          var pos = start(key, size, shift)
-          if (!occupied(pos)) atHomeSlot += trt
-          while (occupied(pos)) pos = (pos + 1) & mask
-          occupied(pos) = true
-          slots(pos) = nir.Val.StructValue(
-            meta.rtti(trt).const :: methods(cls, trt) :: Nil
-          )
-      }
+      val (slots, inStartSlot) = OpenAddressing.place(size, emptyEntry)(
+        traits.zip(keys).map {
+          case (trt, key) =>
+            start(key, size, shift) -> nir.Val.StructValue(
+              meta.rtti(trt).const :: methods(cls, trt) :: Nil
+            )
+        }
+      )
       ITable(
-        mask,
+        mask = size - 1,
         shift,
-        nir.Val.Const(
-          nir.Val.ArrayValue(meta.layouts.ITable.layout, slots.toIndexedSeq)
-        ),
-        atHomeSlot.result()
+        nir.Val.Const(nir.Val.ArrayValue(meta.layouts.ITable.layout, slots)),
+        traits.zip(inStartSlot).collect { case (trt, false) => trt }
       )
     }
   }
@@ -119,7 +108,4 @@ private[codegen] object ITable {
           }
         )
       )
-
-  private def nextPowerOfTwo(n: Int): Int =
-    if (n <= 1) 1 else Integer.highestOneBit(n - 1) << 1
 }

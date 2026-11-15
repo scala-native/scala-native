@@ -948,8 +948,7 @@ private[scalanative] object Lower {
 
       val pos = nir.Val.Local(fresh(), nir.Type.Int)
       label(probeL, Seq(pos))
-      val entryTraitPtr = let(nir.Op.Elem(ITable.layout, itables, Seq(pos, nir.Val.Int(ITable.TraitIdx))), unwind)
-      val entryTrait = let(nir.Op.Load(nir.Type.Ptr, entryTraitPtr), unwind)
+      val entryTrait = genLoadEntryTrait(buf, itables, pos)
       val isFound = let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, entryTrait, traitRtti), unwind)
       branch(isFound, nir.Next.Label(found, Seq(itables, pos)), nir.Next(checkEmptyL))
 
@@ -963,18 +962,14 @@ private[scalanative] object Lower {
       jump(probeL, Seq(next))
     }
 
-    /* Every class of the program stores `trt` in the slot where its lookup
-     * starts, so lookups need a single probe. Depends on the whole program.
-     */
-    def alwaysAtHomeSlot(trt: Trait): Boolean = meta.alwaysAtHomeSlot(trt)
-
-    // The itable and the index of the slot where the lookup for `trt` starts
-    def genItableHomeSlot(buf: nir.InstructionBuilder, rttiPtr: nir.Val, trt: Trait)(implicit
+    // The trait RTTI stored in slot `pos` of `itables`, null for an empty slot
+    def genLoadEntryTrait(buf: nir.InstructionBuilder, itables: nir.Val, pos: nir.Val)(implicit
         srcPosition: nir.SourcePosition,
         scopeId: nir.ScopeId
-    ): (nir.Val, nir.Val) = {
-      val (_, itables, start) = genItableStart(buf, rttiPtr, trt)
-      (itables, start)
+    ): nir.Val = {
+      import buf._
+      val entryTraitPtr = let(nir.Op.Elem(ITable.layout, itables, Seq(pos, nir.Val.Int(ITable.TraitIdx))), unwind)
+      let(nir.Op.Load(nir.Type.Ptr, entryTraitPtr), unwind)
     }
 
     /* The itable mask, the itable and the slot where the lookup for `trt`
@@ -991,7 +986,7 @@ private[scalanative] object Lower {
       val shift = let(nir.Op.Load(nir.Type.Int, shiftPtr), unwind)
       val itablesPtr = let(nir.Op.Elem(ClassRtti.layout, rttiPtr, ClassRttiItablesPath), unwind)
       val itables = let(nir.Op.Load(nir.Type.Ptr, itablesPtr), unwind)
-      val shifted = let(nir.Op.Bin(nir.Bin.Lshr, nir.Type.Int, nir.Val.Int(StableHash.traitKey(trt)), shift), unwind)
+      val shifted = let(nir.Op.Bin(nir.Bin.Lshr, nir.Type.Int, nir.Val.Int(meta.traitKey(trt)), shift), unwind)
       val start = let(nir.Op.Bin(nir.Bin.And, nir.Type.Int, shifted, mask), unwind)
       (mask, itables, start)
     }
@@ -1190,8 +1185,10 @@ private[scalanative] object Lower {
           let(nir.Op.Load(nir.Type.Ptr, methodPtr), unwind)
         }
 
-        if (alwaysAtHomeSlot(trt)) {
-          val (itables, pos) = genItableHomeSlot(buf, rttiPtr, trt)
+        // Every class of the program stores `trt` in the slot where its
+        // lookup starts, a single probe finds it
+        if (meta.alwaysAtHomeSlot(trt)) {
+          val (_, itables, pos) = genItableStart(buf, rttiPtr, trt)
           let(n, nir.Op.Copy(genLoadMethod(itables, pos)), unwind)
         } else {
           val foundL, missingL, merge = fresh()
@@ -1404,13 +1401,12 @@ private[scalanative] object Lower {
             result
           }
 
-        case TraitRef(trt) if alwaysAtHomeSlot(trt) =>
+        case TraitRef(trt) if meta.alwaysAtHomeSlot(trt) =>
           // A class implementing `trt` holds it in the slot where its lookup
           // starts, any other trait there means the class does not implement it
           val rttiPtr = let(nir.Op.Load(nir.Type.Ptr, obj), unwind)
-          val (itables, pos) = genItableHomeSlot(buf, rttiPtr, trt)
-          val entryTraitPtr = let(nir.Op.Elem(ITable.layout, itables, Seq(pos, nir.Val.Int(ITable.TraitIdx))), unwind)
-          val entryTrait = let(nir.Op.Load(nir.Type.Ptr, entryTraitPtr), unwind)
+          val (_, itables, pos) = genItableStart(buf, rttiPtr, trt)
+          val entryTrait = genLoadEntryTrait(buf, itables, pos)
           let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, entryTrait, rtti(trt).const), unwind)
 
         case TraitRef(trt) =>

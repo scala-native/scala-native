@@ -182,7 +182,7 @@ private[codegen] object RuntimeTypeInformation {
       case trt: Trait =>
         IsInterface |
           (if (meta.alwaysAtHomeSlot(trt)) IsAtHomeSlot else 0) |
-          (StableHash.traitKey(trt) & TraitKeyMask) << TraitKeyShift
+          (meta.traitKey(trt) & TraitKeyMask) << TraitKeyShift
       case cls: Class =>
         val names = meta.ancestors(cls).map(_.name)
         def flag(cond: Boolean, bits: Int) = if (cond) bits else 0
