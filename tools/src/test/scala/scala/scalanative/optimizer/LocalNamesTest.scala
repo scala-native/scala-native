@@ -249,6 +249,7 @@ class LocalNamesTest extends OptimizerSpec {
                 "fromPtr",
                 "size",
                 "expected",
+                "x1",
                 "x11",
                 "current",
                 "threadId",
