@@ -91,6 +91,16 @@ class StringTestOnJDK16 {
     assertEquals(-1, cmp.compare(b, c))
     assertEquals(0x10428 - 0xfb00, cmp.compare(a, c))
     assertEquals(0xfb00 - 0x10428, cmp.compare(b, a))
+
+    // a pair starting in one string matched with a pair ending in the other
+    val d = "\ud801" + DeseretUpperI
+    val e = DeseretLowerI + "x"
+    assertEquals(0, cmp.compare(d, e))
+    assertEquals(0, cmp.compare(e, d))
+    assertTrue(d.equalsIgnoreCase(e))
+    assertTrue(e.equalsIgnoreCase(d))
+    assertTrue(d.regionMatches(true, 0, e, 0, 3))
+    assertTrue(e.regionMatches(true, 0, d, 0, 3))
   }
 
   @Test def regionMatchesIgnoreCaseSupplementary(): Unit = {

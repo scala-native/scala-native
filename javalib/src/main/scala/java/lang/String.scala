@@ -329,7 +329,9 @@ final class _String()
           val cp2 = codePointInRegion(v2, o2, i, thatLimit)
           val cmp = caseFold(cp1) - caseFold(cp2)
           if (cmp != 0) return cmp
-          if (Character.isHighSurrogate(c1) && cp1 > Character.MAX_VALUE)
+          // skip the low surrogate of a pair starting here in either string
+          if (Character.isHighSurrogate(c1) && cp1 > Character.MAX_VALUE ||
+              Character.isHighSurrogate(c2) && cp2 > Character.MAX_VALUE)
             i += 1
         }
       }
