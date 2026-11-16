@@ -19,7 +19,8 @@ bool Stats_Init(Stats *stats, const char *statsFile) {
         return false;
     }
     fprintf(stats->outFile,
-            "mark_time_ns,nullify_time_ns,sweep_time_ns,sync_time_ns,kind\n");
+            "mark_time_ns,nullify_time_ns,sweep_time_ns,sync_time_ns,kind,"
+            "evac_time_ns\n");
     stats->collections = 0;
     return true;
 }
@@ -27,11 +28,12 @@ bool Stats_Init(Stats *stats, const char *statsFile) {
 void Stats_RecordCollection(Stats *stats, uint64_t request_ns,
                             uint64_t start_ns, uint64_t nullify_start_ns,
                             uint64_t sweep_start_ns, uint64_t end_ns,
-                            StatsCollectionKind kind) {
+                            uint64_t evac_ns, StatsCollectionKind kind) {
     uint64_t index = stats->collections % STATS_MEASUREMENTS;
     stats->sync_time_ns[index] = start_ns - request_ns;
     stats->mark_time_ns[index] = nullify_start_ns - start_ns;
-    stats->nullify_time_ns[index] = sweep_start_ns - nullify_start_ns;
+    stats->nullify_time_ns[index] = sweep_start_ns - nullify_start_ns - evac_ns;
+    stats->evac_time_ns[index] = evac_ns;
     stats->sweep_time_ns[index] = end_ns - sweep_start_ns;
     stats->kind[index] = (uint8_t)kind;
     stats->collections += 1;
@@ -49,10 +51,12 @@ void Stats_writeToFile(Stats *stats) {
     static const char *kinds[] = {"full", "minor", "minor+full"};
     FILE *outFile = stats->outFile;
     for (uint64_t i = 0; i < remainder; i++) {
-        fprintf(outFile, "%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%s\n",
+        fprintf(outFile,
+                "%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%s,%" PRIu64
+                "\n",
                 stats->mark_time_ns[i], stats->nullify_time_ns[i],
                 stats->sweep_time_ns[i], stats->sync_time_ns[i],
-                kinds[stats->kind[i]]);
+                kinds[stats->kind[i]], stats->evac_time_ns[i]);
     }
     fflush(outFile);
 }

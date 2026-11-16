@@ -221,6 +221,13 @@ sealed trait Config {
     (compilerConfig.compileOptions ++ compilerConfig.cOptions)
       .contains("-DSCALANATIVE_GC_WRITE_BARRIER")
 
+  /** Experimental: the generational Immix may move young objects, so `GC.pin`
+   *  keeps an object whose address is used as a value in place, see
+   *  GarbageCollectorConfig.generational.
+   */
+  private[scalanative] lazy val useGCPinning =
+    compilerConfig.gc == GC.Immix && gcSettings.generational.contains(true)
+
   /** Trap-based safepoints coordinate STW across mutators; they require
    *  multithreaded linking and must stay off when `multithreadingSupport` is
    *  false so nativelib and LLVM agree with [[codegen.Lower.depends]].

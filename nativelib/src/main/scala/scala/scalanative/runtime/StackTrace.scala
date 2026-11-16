@@ -307,6 +307,9 @@ private[runtime] object StackTrace {
       val cache: mutable.LongMap[StackTraceElement],
       val data: ByteArray
   ) {
+    // The unwind cursor kept in `data` points into `data` itself.
+    GC.pin(Intrinsics.castObjectToRawPtr(data))
+
     def freshAt(offset: Int, size: Int): Ptr[Byte] = {
       ffi.memset(
         data.atRawUnsafe(offset),

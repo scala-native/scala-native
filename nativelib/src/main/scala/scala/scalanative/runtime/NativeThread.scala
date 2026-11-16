@@ -73,7 +73,7 @@ trait NativeThread {
   }
 
   if (isMainThread) {
-    TLS.assignCurrentThread(thread, this)
+    assignCurrentThread(thread, this)
     state = State.Running
   } else if (isMultithreadingEnabled) {
     if (!isExternalThread) Registry.add(this)
@@ -206,7 +206,7 @@ object NativeThread {
 
   @alwaysinline def currentThread: Thread = TLS.currentThread
   @alwaysinline def setCurrentThread(thread: Thread): Unit = {
-    TLS.assignCurrentThread(thread, currentNativeThread)
+    assignCurrentThread(thread, currentNativeThread)
   }
   @alwaysinline def currentNativeThread: NativeThread = TLS.currentNativeThread
 
@@ -219,7 +219,7 @@ object NativeThread {
   // Adoption is called only after the C attachment layer has admitted the
   // current OS thread. It creates no OS worker and installs no stack guards.
   def bindExternalThread(nativeThread: NativeThread): Unit = {
-    TLS.assignCurrentThread(nativeThread.thread, nativeThread)
+    assignCurrentThread(nativeThread.thread, nativeThread)
     nativeThread.state = State.Running
     if (isMultithreadingEnabled) Registry.add(nativeThread)
   }
@@ -232,10 +232,10 @@ object NativeThread {
    *  before [[bindExternalThread]].
    */
   def bindProvisionalExternalThread(thread: Thread): Unit =
-    TLS.assignCurrentThread(thread, null)
+    assignCurrentThread(thread, null)
 
   def clearProvisionalExternalThread(): Unit =
-    TLS.assignCurrentThread(null, null)
+    assignCurrentThread(null, null)
 
   @nowarn("msg=Catching Throwable")
   def releaseExternalThread(nativeThread: NativeThread): Int =
@@ -257,7 +257,21 @@ object NativeThread {
     getMonitor(obj.asInstanceOf[_Object]).isLockedBy(currentThread)
   } else false
 
-  def threadRoutineArgs(thread: NativeThread): ThreadRoutineArg = thread
+  def threadRoutineArgs(thread: NativeThread): ThreadRoutineArg = {
+    // The new thread receives it through native memory.
+    GC.pin(Intrinsics.castObjectToRawPtr(thread))
+    thread
+  }
+
+  /** The C thread locals hold these objects where the GC does not look. */
+  private[runtime] def assignCurrentThread(
+      thread: Thread,
+      nativeThread: NativeThread
+  ): Unit = {
+    GC.pin(Intrinsics.castObjectToRawPtr(thread))
+    GC.pin(Intrinsics.castObjectToRawPtr(nativeThread))
+    TLS.assignCurrentThread(thread, nativeThread)
+  }
 
   object Registry {
     // Replace with ConcurrentHashMap when thread-safe
@@ -309,7 +323,7 @@ object NativeThread {
   private[runtime] def threadEntryPoint(nativeThread: NativeThread): RawPtr = {
     import nativeThread.thread
     val stackBottom = Intrinsics.stackalloc[Int]()
-    TLS.assignCurrentThread(thread, nativeThread)
+    assignCurrentThread(thread, nativeThread)
     TLS.setupCurrentThreadInfo(
       stackBottom = stackBottom,
       stackSize = nativeThread.stackSize,

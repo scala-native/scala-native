@@ -165,6 +165,19 @@ object GC {
   @name("scalanative_GC_write_barrier")
   def writeBarrier(obj: Object): Unit = extern
 
+  /** Keeps `obj` at its current address from now on, for a GC that may move
+   *  objects: call it before the address of `obj` is used as a value (an
+   *  identity hash, a thread id) or kept where the GC does not look (native
+   *  memory, C thread locals). Code generation inlines it for such a GC, and
+   *  drops it otherwise.
+   */
+  @name("scalanative_GC_pin")
+  def pin(obj: RawPtr): Unit = extern
+
+  /** Pins a young object; called by the code that replaces `pin`. */
+  @name("scalanative_GC_pin_slow")
+  private[runtime] def pinSlow(obj: RawPtr): Unit = extern
+
   /** Notify the Garbage Collector about the range of memory which should be
    *  scanned when marking the objects. The range should contain only memory NOT
    *  allocated using the GC, e.g. using malloc. Otherwise it might lead to the

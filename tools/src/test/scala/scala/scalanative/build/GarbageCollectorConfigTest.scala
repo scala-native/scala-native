@@ -452,29 +452,38 @@ class GarbageCollectorConfigTest {
     val default = resolve(GC.immix)(identity)
     assertValid(default)
     assertEquals(Some(false), default.values.generational)
+    assertEquals(None, default.values.evacuation)
     assertEquals(None, default.values.oldGenerationGrowth)
     assertFalse(default.defines.exists(_.contains("WRITE_BARRIER")))
     assertFalse(default.defines.exists(_.contains("STICKY")))
+    assertFalse(default.defines.exists(_.contains("EVACUATION")))
     assertFalse(config(GC.immix)(identity).useGCWriteBarrier)
+    assertFalse(config(GC.immix)(identity).useGCPinning)
 
     // Enables the write barrier and the defaults of its own settings
     val enabled = resolve(GC.immix)(_.withGenerational(true))
     assertValid(enabled)
+    assertEquals(Some(true), enabled.values.evacuation)
     assertEquals(Some(2.0), enabled.values.oldGenerationGrowth)
     for (define <- Seq(
           "SCALANATIVE_GC_WRITE_BARRIER",
           "SCALANATIVE_GC_STICKY",
+          "SCALANATIVE_GC_CONFIG_EVACUATION=1",
           "SCALANATIVE_GC_CONFIG_OLD_GENERATION_GROWTH=2.0"
         )) assertTrue(define, enabled.defines.contains(define))
     assertTrue(config(GC.immix)(_.withGenerational(true)).useGCWriteBarrier)
+    assertTrue(config(GC.immix)(_.withGenerational(true)).useGCPinning)
 
     val tuned = resolve(GC.immix)(
-      _.withGenerational(true).withOldGenerationGrowth(1.5)
+      _.withGenerational(true)
+        .withEvacuation(false)
+        .withOldGenerationGrowth(1.5)
     )
     assertValid(tuned)
-    assertTrue(
-      tuned.defines.contains("SCALANATIVE_GC_CONFIG_OLD_GENERATION_GROWTH=1.5")
-    )
+    for (define <- Seq(
+          "SCALANATIVE_GC_CONFIG_EVACUATION=0",
+          "SCALANATIVE_GC_CONFIG_OLD_GENERATION_GROWTH=1.5"
+        )) assertTrue(define, tuned.defines.contains(define))
 
     // Requires Immix
     assertIssue(
@@ -484,6 +493,10 @@ class GarbageCollectorConfigTest {
 
     // Settings of the generational collection require it
     assertIssue(
+      resolve(GC.immix)(_.withEvacuation(false)),
+      "evacuation requires generational to be enabled"
+    )
+    assertIssue(
       resolve(GC.immix)(_.withOldGenerationGrowth(3.0)),
       "oldGenerationGrowth requires generational to be enabled"
     )
@@ -492,33 +505,30 @@ class GarbageCollectorConfigTest {
       "oldGenerationGrowth has to be a number greater than 1"
     )
     // Their environment variables are ignored without it
-    assertValid(
-      resolve(GC.immix, env = Map("GC_OLD_GENERATION_GROWTH" -> "3"))(identity)
-    )
+    assertValid(resolve(GC.immix, env = Map("GC_EVACUATION" -> "0"))(identity))
 
     // The write barrier alone, to measure its cost
     val barrier = Seq("-DSCALANATIVE_GC_WRITE_BARRIER")
-    for (gc <- Seq(GC.immix, GC.commix))
+    for (gc <- Seq(GC.immix, GC.commix)) {
       assertTrue(config(gc, barrier)(identity).useGCWriteBarrier)
+      assertFalse(config(gc, barrier)(identity).useGCPinning)
+    }
     assertFalse(config(GC.boehm, barrier)(identity).useGCWriteBarrier)
 
     // Environment of the build and the defines used before
     val fromEnv = resolve(
       GC.immix,
-      env = Map(
-        "SCALANATIVE_GC_GENERATIONAL" -> "1",
-        "GC_OLD_GENERATION_GROWTH" -> "3"
-      )
+      env = Map("SCALANATIVE_GC_GENERATIONAL" -> "1", "GC_EVACUATION" -> "0")
     )(identity)
     assertValid(fromEnv)
     assertEquals(Some(true), fromEnv.values.generational)
-    assertEquals(Some(3.0), fromEnv.values.oldGenerationGrowth)
+    assertEquals(Some(false), fromEnv.values.evacuation)
     val legacy = Seq("-DSCALANATIVE_GC_STICKY")
     assertEquals(
       Some(true),
       resolve(GC.immix, compileOptions = legacy)(identity).values.generational
     )
-    assertTrue(config(GC.immix, legacy)(identity).useGCWriteBarrier)
+    assertTrue(config(GC.immix, legacy)(identity).useGCPinning)
   }
 
   @Test def allIssuesAreReported(): Unit = {

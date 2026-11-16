@@ -256,6 +256,21 @@ Supported by: Immix
 
 Default: false
 
+#### `evacuation`
+
+Moves the young objects that survive a collection next to each other, which
+keeps the memory of long-lived objects compact. Objects referenced from
+thread stacks and registers, and the ones whose identity hash code was
+taken, stay in place. Disable it in programs that keep addresses of managed
+objects (`Array.at`, `Intrinsics.castObjectToRawPtr`) in memory the garbage
+collector does not scan, such as memory allocated with `malloc`.
+
+Environment variable: `GC_EVACUATION` (`1` or `0`)
+
+Supported by: Immix, with `generational`
+
+Default: true
+
 #### `oldGenerationGrowth`
 
 How many times the memory used after a collection of the whole heap can grow

@@ -392,6 +392,7 @@ object NativeConfigJsonFormats {
       final val StatsEnabled = "statsEnabled"
       final val TrapBasedYieldPoints = "trapBasedYieldPoints"
       final val Generational = "generational"
+      final val Evacuation = "evacuation"
       final val OldGenerationGrowth = "oldGenerationGrowth"
     }
 
@@ -412,6 +413,7 @@ object NativeConfigJsonFormats {
       builder.addField(Field.StatsEnabled, obj.statsEnabled)
       builder.addField(Field.TrapBasedYieldPoints, obj.trapBasedYieldPoints)
       builder.addField(Field.Generational, obj.generational)
+      builder.addField(Field.Evacuation, obj.evacuation)
       builder.addField(Field.OldGenerationGrowth, obj.oldGenerationGrowth)
       builder.endObject()
     }
@@ -439,6 +441,7 @@ object NativeConfigJsonFormats {
           field[Boolean](Field.StatsEnabled)(_.withStatsEnabled(_)),
           field[Boolean](Field.TrapBasedYieldPoints)(_.withTrapBasedYieldPoints(_)),
           field[Boolean](Field.Generational)(_.withGenerational(_)),
+          field[Boolean](Field.Evacuation)(_.withEvacuation(_)),
           field[Double](Field.OldGenerationGrowth)(_.withOldGenerationGrowth(_))
         ).foldLeft(GarbageCollectorConfig.default)((config, update) => update(config))
       } finally unbuilder.endObject()

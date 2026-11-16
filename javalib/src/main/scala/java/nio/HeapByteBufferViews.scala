@@ -12,7 +12,7 @@ private[nio] final class HeapByteBufferCharView private (
     _initialLimit: Int,
     _readOnly: Boolean,
     override private[nio] val isBigEndian: Boolean
-) extends CharBuffer(_capacity, _byteArray.atUnsafe(_offset)) {
+) extends CharBuffer(_capacity, Buffer.pinned(_byteArray).atUnsafe(_offset)) {
 
   position(_initialPosition)
   limit(_initialLimit)
@@ -120,7 +120,7 @@ private[nio] final class HeapByteBufferShortView private (
     _initialLimit: Int,
     _readOnly: Boolean,
     override private[nio] val isBigEndian: Boolean
-) extends ShortBuffer(_capacity, _byteArray.atUnsafe(_offset)) {
+) extends ShortBuffer(_capacity, Buffer.pinned(_byteArray).atUnsafe(_offset)) {
 
   position(_initialPosition)
   limit(_initialLimit)
@@ -215,7 +215,7 @@ private[nio] final class HeapByteBufferIntView private (
     _initialLimit: Int,
     _readOnly: Boolean,
     override private[nio] val isBigEndian: Boolean
-) extends IntBuffer(_capacity, _byteArray.atUnsafe(_offset)) {
+) extends IntBuffer(_capacity, Buffer.pinned(_byteArray).atUnsafe(_offset)) {
 
   position(_initialPosition)
   limit(_initialLimit)
@@ -310,7 +310,7 @@ private[nio] final class HeapByteBufferLongView private (
     _initialLimit: Int,
     _readOnly: Boolean,
     override private[nio] val isBigEndian: Boolean
-) extends LongBuffer(_capacity, _byteArray.atUnsafe(_offset)) {
+) extends LongBuffer(_capacity, Buffer.pinned(_byteArray).atUnsafe(_offset)) {
 
   position(_initialPosition)
   limit(_initialLimit)
@@ -405,7 +405,7 @@ private[nio] final class HeapByteBufferFloatView private (
     _initialLimit: Int,
     _readOnly: Boolean,
     override private[nio] val isBigEndian: Boolean
-) extends FloatBuffer(_capacity, _byteArray.atUnsafe(_offset)) {
+) extends FloatBuffer(_capacity, Buffer.pinned(_byteArray).atUnsafe(_offset)) {
 
   position(_initialPosition)
   limit(_initialLimit)
@@ -500,7 +500,7 @@ private[nio] final class HeapByteBufferDoubleView private (
     _initialLimit: Int,
     _readOnly: Boolean,
     override private[nio] val isBigEndian: Boolean
-) extends DoubleBuffer(_capacity, _byteArray.atUnsafe(_offset)) {
+) extends DoubleBuffer(_capacity, Buffer.pinned(_byteArray).atUnsafe(_offset)) {
 
   position(_initialPosition)
   limit(_initialLimit)

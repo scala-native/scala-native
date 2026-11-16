@@ -16,6 +16,9 @@ typedef struct {
     // From the collection request until all other mutators are stopped.
     uint64_t sync_time_ns[STATS_MEASUREMENTS];
     uint8_t kind[STATS_MEASUREMENTS];
+    // Sticky Immix: copying young survivors and updating references to
+    // them, between weak reference nullification and the sweep.
+    uint64_t evac_time_ns[STATS_MEASUREMENTS];
 } Stats;
 
 // What a collection traced. Without Sticky Immix every collection is full.
@@ -32,7 +35,7 @@ bool Stats_Init(Stats *stats, const char *statsFile);
 void Stats_RecordCollection(Stats *stats, uint64_t request_ns,
                             uint64_t start_ns, uint64_t nullify_start_ns,
                             uint64_t sweep_start_ns, uint64_t end_ns,
-                            StatsCollectionKind kind);
+                            uint64_t evac_ns, StatsCollectionKind kind);
 void Stats_OnExit(Stats *stats);
 
 #endif // IMMIX_STATS_H
