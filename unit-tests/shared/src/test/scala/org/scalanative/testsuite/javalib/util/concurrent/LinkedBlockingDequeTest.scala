@@ -1852,4 +1852,16 @@ class LinkedBlockingDequeTest extends JSR166Test {
         (Spliterator.DISTINCT | Spliterator.IMMUTABLE | Spliterator.SORTED)
     )
   }
+
+  /** spliterator traverses all elements */
+  @Test def testSpliteratorTraversal(): Unit = {
+    val q = populatedDeque(SIZE)
+    val seen = new ArrayList[Item]()
+    q.spliterator().forEachRemaining((e: Item) => seen.add(e))
+    assertEquals(new ArrayList[Item](q), seen)
+    val s = q.spliterator()
+    var n = 0
+    while (s.tryAdvance((_: Item) => n += 1)) ()
+    assertEquals(SIZE, n)
+  }
 }
