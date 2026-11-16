@@ -225,16 +225,9 @@ final class _String()
   }
 
   def compareToIgnoreCase(str: _String): Int = {
-    val end = Math.min(count, str.count)
-    var i = 0
-    while (i < end) {
-      val cmp = caseFold(this.charAt(i)) - caseFold(str.charAt(i))
-      if (cmp != 0) {
-        return cmp
-      }
-      i += 1
-    }
-    count - str.count
+    val cmp = compareRegionIgnoreCase(0, str, 0, Math.min(count, str.count))
+    if (cmp != 0) cmp
+    else count - str.count
   }
 
   def concat(string: _String): _String = {
@@ -290,33 +283,82 @@ final class _String()
       false
   }
 
-  // Ported from Scala.js commit: 37df9c2ea dated: 2025-06-30
-  @inline
   def equalsIgnoreCase(anotherString: String): scala.Boolean = {
     val len = length()
-    if (anotherString == null || anotherString.length() != len) {
-      false
-    } else {
-      var i = 0
-      while (i != len) {
-        if (caseFold(this.charAt(i)) != caseFold(anotherString.charAt(i)))
-          return false
-        i += 1
-      }
-      true
-    }
+    anotherString != null && anotherString.length() == len &&
+      compareRegionIgnoreCase(0, anotherString, 0, len) == 0
   }
 
-  /** Performs case folding of a single character for use by `equalsIgnoreCase`
-   *  and `compareToIgnoreCase`.
+  /** Compares `len` chars of this string starting at `thisStart` with `that`
+   *  starting at `thatStart`, ignoring case differences by code point (JDK
+   *  16+). Surrogate pairs are only formed within the compared regions.
    *
-   *  This implementation respects the specification of those two methods,
-   *  although that behavior does not generally conform to Unicode Case Folding.
+   *  Returns the difference of the first pair of case folded code points that
+   *  differ, or 0 if the regions are equal ignoring case.
+   */
+  private def compareRegionIgnoreCase(
+      thisStart: Int,
+      that: _String,
+      thatStart: Int,
+      len: Int
+  ): Int = {
+    val v1 = this.value
+    val o1 = this.offset + thisStart
+    val v2 = that.value
+    val o2 = that.offset + thatStart
+    var i = 0
+    while (i < len) {
+      val c1 = v1(o1 + i)
+      val c2 = v2(o2 + i)
+      if (c1 != c2) {
+        if (!Character.isSurrogate(c1) && !Character.isSurrogate(c2)) {
+          val cmp = caseFold(c1) - caseFold(c2)
+          if (cmp != 0) return cmp
+        } else {
+          val cp1 = codePointInRegion(v1, o1, i, len)
+          val cmp = caseFold(cp1) - caseFold(codePointInRegion(v2, o2, i, len))
+          if (cmp != 0) return cmp
+          if (Character.isHighSurrogate(c1) && cp1 > Character.MAX_VALUE)
+            i += 1
+        }
+      }
+      i += 1
+    }
+    0
+  }
+
+  /** Code point containing the char at `i` of the region `[0, len)` starting at
+   *  `offset` in `chars`.
+   */
+  private def codePointInRegion(
+      chars: Array[Char],
+      offset: Int,
+      i: Int,
+      len: Int
+  ): Int = {
+    val c = chars(offset + i)
+    if (Character.isHighSurrogate(c) && i + 1 < len) {
+      val next = chars(offset + i + 1)
+      if (Character.isLowSurrogate(next)) Character.toCodePoint(c, next)
+      else c
+    } else if (Character.isLowSurrogate(c) && i > 0) {
+      val prev = chars(offset + i - 1)
+      if (Character.isHighSurrogate(prev)) Character.toCodePoint(prev, c)
+      else c
+    } else c
+  }
+
+  /** Performs case folding of a single code point for use by
+   *  `equalsIgnoreCase`, `compareToIgnoreCase` and `regionMatches`.
+   *
+   *  This implementation respects the specification of those methods, although
+   *  that behavior does not generally conform to Unicode Case Folding. Folding
+   *  preserves whether a code point is supplementary.
    *
    *  Ported from Scala.js commit: 37df9c2ea dated: 2025-06-30
    */
-  @inline private def caseFold(c: Char): Char =
-    Character.toLowerCase(Character.toUpperCase(c))
+  @inline private def caseFold(cp: Int): Int =
+    Character.toLowerCase(Character.toUpperCase(cp))
 
   /** @since Java 12 */
   def formatted(args: Array[AnyRef]): String = {
@@ -803,9 +845,7 @@ final class _String()
     } else if (len <= 0) {
       true
     } else if (ignoreCase) {
-      val left = this.substring(toffset, toffset + len)
-      val right = other.substring(ooffset, ooffset + len)
-      left.equalsIgnoreCase(right)
+      compareRegionIgnoreCase(toffset, other, ooffset, len) == 0
     } else {
       /* Avoid actually instantiating substrings.
        *
