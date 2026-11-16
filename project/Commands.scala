@@ -225,7 +225,7 @@ object Commands {
       case (state, args) =>
         val arg = args.headOption
         val version = arg
-          // Try translating 2.12, 2.13, 3, 3-next to full version string such as 3.3.1
+          // Try translating 2.12, 2.13, 3 to full version string such as 3.3.1
           .flatMap(MultiScalaProject.scalaVersions.get)
           // Verify the argument full version string is supported by libCrossScalaVersions
           .orElse(

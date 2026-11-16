@@ -63,7 +63,6 @@
                   ];
 
                   env = {
-                    ENABLE_EXPERIMENTAL_COMPILER = "false";
                     SCALANATIVE_MODE = "debug";
                     SCALANATIVE_GC = "immix";
                     SCALANATIVE_LTO = "none";

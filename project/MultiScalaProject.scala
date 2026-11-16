@@ -6,7 +6,7 @@ import scala.language.implicitConversions
 
 import Def.SettingsDefinition
 import Keys._
-import MyScalaNativePlugin.{enableExperimentalCompiler, ideScalaVersion}
+import MyScalaNativePlugin.ideScalaVersion
 
 final case class MultiScalaProject private (
     name: String,
@@ -27,19 +27,11 @@ final case class MultiScalaProject private (
   lazy val v2_12: Project = project("2.12")
   lazy val v2_13: Project = project("2.13")
   lazy val v3: Project = project("3")
-  lazy val v3Next: Project = project("3-next")
-    .settings(
-      Settings.experimentalScalaSources,
-      publish / skip := true,
-      publishLocal / skip := false
-    )
 
   override def componentProjects: Seq[Project] = binCrossVersions match {
     case Some(versions) => versions.map(project(_))
     case None           =>
-      Seq(v2_12, v2_13, v3) ++ {
-        if (enableExperimentalCompiler) Some(v3Next) else None
-      }
+      Seq(v2_12, v2_13, v3)
   }
 
   def mapBinaryVersions(
@@ -189,25 +181,20 @@ object MultiScalaProject {
   final val scalaCrossVersions = Map[String, Seq[String]](
     "2.12" -> ScalaVersions.crossScala212,
     "2.13" -> ScalaVersions.crossScala213,
-    "3" -> ScalaVersions.crossScala3,
-    "3-next" -> Seq(ScalaVersions.scala3Nightly)
+    "3" -> ScalaVersions.crossScala3
   )
 
   final val scalaVersions = Map[String, String](
     "2.12" -> ScalaVersions.scala212,
     "2.13" -> ScalaVersions.scala213,
-    "3" -> ScalaVersions.scala3,
-    "3-next" -> ScalaVersions.scala3Nightly
+    "3" -> ScalaVersions.scala3
   )
 
   private def projectID(id: String, major: String) =
-    major match {
-      case "3-next" => id + "3_next"
-      case _        => id + major.replace('.', '_')
-    }
+    id + major.replace('.', '_')
 
   /** @param additionalIDEScalaVersions
-   *    Allowed values: 3, 3-next, 2.13, 2.12.
+   *    Allowed values: 3, 2.13, 2.12.
    */
   def apply(
       name: String,
@@ -274,10 +261,13 @@ object MultiScalaProject {
       val dirs =
         bases.map(x => srcDir((ThisBuild / baseDirectory).value, x) / subdir)
       val vers = CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, 12)) => Seq("2", "2.12")
-        case Some((2, 13)) => Seq("2", "2.13", "2.13+")
-        case Some((3, _))  => Seq("3", "2.13+")
-        case _ => sys.error(s"Unsupported Scala version: ${scalaVersion.value}")
+        case Some((2, 12)) => Seq("2", "2.12", "pre-3.9")
+        case Some((2, 13)) => Seq("2", "2.13", "2.13+", "pre-3.9")
+        // Sources using capture checking (e.g. SafeZone) require Scala 3.9+
+        case Some((3, minor)) if minor >= 9 => Seq("3", "2.13+", "3.9+")
+        case Some((3, _))                   => Seq("3", "2.13+", "pre-3.9")
+        case _                              =>
+          sys.error(s"Unsupported Scala version: ${scalaVersion.value}")
       }
       ("scala" +: vers.map("scala-" + _)).flatMap(v => dirs.map(_ / v))
     }

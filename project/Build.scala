@@ -261,8 +261,7 @@ object Build {
     .dependsOn(utilJVM)
 
   private val scalalibProjectSelect: Map[String, Map[String, String]] = Map(
-    "3" -> Map("scalalib" -> "scala3lib"),
-    "3-next" -> Map("scalalib" -> "scala3lib")
+    "3" -> Map("scalalib" -> "scala3lib")
   )
 
   lazy val tools = MultiScalaProject("tools", platform = MultiScalaProject.Native, idNoSuffix = true)
@@ -612,7 +611,7 @@ object Build {
               }
             }
           )
-        case "3" | "3-next" =>
+        case "3" =>
           _.settings(
             Compile / sources := {
               if (usesSelfContainedStdlib(scalaVersion.value)) (Compile / sources).value
@@ -732,7 +731,7 @@ object Build {
             noPublishSettings
           )
 
-        case version @ ("3" | "3-next") =>
+        case version @ "3" =>
           _.settings(
             commonScalalibSettings("scala3-library_3"),
             scalacOptions ++= Seq(
@@ -1260,7 +1259,7 @@ object Build {
     def withScalaStandardLibrary: MultiScalaProject = {
       project.mapBinaryVersions {
         case v @ ("2.12" | "2.13") => _.dependsOn(scalalib.forBinaryVersion(v))
-        case v @ ("3" | "3-next")  => _.dependsOn(scala3lib.forBinaryVersion(v))
+        case v @ "3"               => _.dependsOn(scala3lib.forBinaryVersion(v))
       }
     }
 

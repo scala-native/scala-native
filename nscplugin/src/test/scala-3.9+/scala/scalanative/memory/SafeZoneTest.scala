@@ -63,7 +63,7 @@ class SafeZoneTest {
     assertTrue(
       "Got:" + err.getMessage,
       err.getMessage.contains(
-        "local reference sz1 leaks into outer capture set of type parameter T of method apply"
+        "Capability `sz1` outlives its scope"
       )
     )
   }
@@ -121,8 +121,12 @@ class SafeZoneTest {
           )
         )
     )
+    // Order of captured references differs between compiler versions
     assertTrue(
-      err.getMessage().contains("Found:    B{val a: A^{aInHeap}}^{aInHeap, sz}")
+      "Got:" + err.getMessage(),
+      raw"Found:\s+B\{val a: A\^\{aInHeap\}\}\^\{(aInHeap, sz|sz, aInHeap)\}".r
+        .findFirstIn(err.getMessage())
+        .isDefined
     )
   }
 }

@@ -1,7 +1,5 @@
 package build
 
-import MyScalaNativePlugin.enableExperimentalCompiler
-
 /* Note to Contributors:
  *   Scala Native supports a number of Scala versions. These can be
  *   described as Major.Minor.Path.
@@ -42,10 +40,6 @@ object ScalaVersions {
   // List maintains only upcoming releases, removed from the list after reaching stable status
   lazy val scala3RCVersions = List("3.10.1-RC1")
 
-  // List of nightly versions can be found here: https://repo.scala-lang.org/ui/native/maven-nightlies/org/scala-lang/scala3-compiler_3
-  // or check outputs of `scala -O --version -S 3.nightly`
-  val scala3Nightly = "3.10.2-RC1-bin-20261021-a98b104-NIGHTLY"
-
   // Scala versions used for publishing libraries
   val scala212: String = crossScala212.last
   val scala213: String = crossScala213.last
@@ -66,8 +60,7 @@ object ScalaVersions {
   val libCrossScalaVersions: Seq[String] = Seq(
     crossScala212,
     crossScala213,
-    crossScala3,
-    Option(scala3Nightly).filter(_ => enableExperimentalCompiler).toSeq
+    crossScala3
   ).flatten.distinct
 
   // Scala 2.13 cannot be used with Scala 3.8 (see, scala3/cross-version-compat)

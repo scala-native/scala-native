@@ -11,7 +11,10 @@ import language.experimental.captureChecking
  *  package scalanative for unit tests.
  */
 object SafeZoneAllocator {
-  def allocate[T](sz: SafeZone^, obj: T): T^{sz} = intrinsic
+  /* The result captures both the zone and everything captured by `obj`, so
+   * that references from zone allocated objects cannot be used to hide
+   * captured capabilities. */
+  def allocate[T](sz: SafeZone^, obj: T^): T^{sz, obj} = intrinsic
 
   @extern @define("__SCALANATIVE_MEMORY_SAFEZONE") object Impl {
     @name("scalanative_zone_open")
