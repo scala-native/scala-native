@@ -1,7 +1,6 @@
 package org.scalanative.testsuite.javalib.lang
 
 import org.junit.Assert._
-import org.junit.Assume._
 import org.junit.Test
 
 import scala.scalanative.meta.LinktimeInfo.isWindows
@@ -43,8 +42,7 @@ class RuntimeSignalHandlerTest {
     }
   }
 
-  @Test def keepsApplicationSignalHandlers(): Unit = {
-    assumeFalse("POSIX only", isWindows)
+  @Test def keepsApplicationSignalHandlers(): Unit = if (!isWindows) {
     for (sig <- Seq(SIGINT, SIGTERM)) withDisposition(sig, handler) {
       assertEquals(CFuncPtr.toPtr(handler), currentHandler(sig))
       received = 0
@@ -53,15 +51,13 @@ class RuntimeSignalHandlerTest {
     }
   }
 
-  @Test def keepsIgnoredSignals(): Unit = {
-    assumeFalse("POSIX only", isWindows)
+  @Test def keepsIgnoredSignals(): Unit = if (!isWindows) {
     for (sig <- Seq(SIGINT, SIGTERM)) withDisposition(sig, SIG_IGN) {
       assertEquals(CFuncPtr.toPtr(SIG_IGN), currentHandler(sig))
     }
   }
 
-  @Test def installsHandlerOverDefaultDisposition(): Unit = {
-    assumeFalse("POSIX only", isWindows)
+  @Test def installsHandlerOverDefaultDisposition(): Unit = if (!isWindows) {
     for (sig <- Seq(SIGINT, SIGTERM)) withDisposition(sig, SIG_DFL) {
       val installed = currentHandler(sig)
       assertNotEquals(CFuncPtr.toPtr(SIG_DFL), installed)
@@ -69,24 +65,24 @@ class RuntimeSignalHandlerTest {
     }
   }
 
-  @Test def installsHandlerAfterOneShotSiginfoHandler(): Unit = {
-    assumeFalse("POSIX only", isWindows)
-    val act = stackalloc[sigaction]()
-    val oact = stackalloc[sigaction]()
-    act.sa_sigaction = infoHandler
-    act.sa_flags = SA_SIGINFO | SA_RESETHAND
-    assertEquals(0, sigaction(SIGTERM, act, oact))
-    val hook = new Thread(() => ())
-    try {
-      received = 0
-      assertEquals(0, raise(SIGTERM))
-      assertEquals(SIGTERM, received)
-      Runtime.getRuntime().addShutdownHook(hook)
-      val installed = currentHandler(SIGTERM)
-      assertNotNull(installed)
-    } finally {
-      Runtime.getRuntime().removeShutdownHook(hook)
-      assertEquals(0, sigaction(SIGTERM, oact, null))
+  @Test def installsHandlerAfterOneShotSiginfoHandler(): Unit =
+    if (!isWindows) {
+      val act = stackalloc[sigaction]()
+      val oact = stackalloc[sigaction]()
+      act.sa_sigaction = infoHandler
+      act.sa_flags = SA_SIGINFO | SA_RESETHAND
+      assertEquals(0, sigaction(SIGTERM, act, oact))
+      val hook = new Thread(() => ())
+      try {
+        received = 0
+        assertEquals(0, raise(SIGTERM))
+        assertEquals(SIGTERM, received)
+        Runtime.getRuntime().addShutdownHook(hook)
+        val installed = currentHandler(SIGTERM)
+        assertNotNull(installed)
+      } finally {
+        Runtime.getRuntime().removeShutdownHook(hook)
+        assertEquals(0, sigaction(SIGTERM, oact, null))
+      }
     }
-  }
 }
