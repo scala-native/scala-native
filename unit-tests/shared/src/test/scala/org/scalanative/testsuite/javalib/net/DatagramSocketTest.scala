@@ -328,6 +328,39 @@ class DatagramSocketTest {
     }
   }
 
+  // #3630: wildcard sockets receive from IPv4 peers on dual-stack systems too
+  @Test def wildcardReceivesFromIPv4(): Unit = {
+    val ipv4Loopback = InetAddress.getByName("127.0.0.1")
+    val sender = new DatagramSocket(new InetSocketAddress(ipv4Loopback, 0))
+    val receiver = new DatagramSocket(0)
+    try {
+      val bytes = "Test Data".getBytes()
+      sender.send(
+        new DatagramPacket(
+          bytes,
+          bytes.length,
+          ipv4Loopback,
+          receiver.getLocalPort()
+        )
+      )
+
+      val result =
+        new DatagramPacket(new Array[Byte](bytes.length), bytes.length)
+      receiver.setSoTimeout(500)
+      receiver.receive(result)
+
+      assertTrue(ju.Arrays.equals(bytes, result.getData()))
+      assertArrayEquals(
+        ipv4Loopback.getAddress(),
+        result.getAddress().getAddress()
+      )
+      assertEquals(sender.getLocalPort(), result.getPort())
+    } finally {
+      sender.close()
+      receiver.close()
+    }
+  }
+
   @Test def connect(): Unit = {
     val ds1 = new DatagramSocket(new InetSocketAddress(loopback, 0))
     val ds2 = new DatagramSocket(new InetSocketAddress(loopback, 0))

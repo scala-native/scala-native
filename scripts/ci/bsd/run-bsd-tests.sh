@@ -26,6 +26,13 @@ git config --global --add safe.directory "$PWD"
 # The VM hostname is not necessarily published in DNS or its base hosts file.
 printf '127.0.0.1 %s\n' "$(hostname)" >> /etc/hosts
 
+# Configure IPv6 so that java.net uses dual-stack sockets, which the default
+# net.inet6.ip6.v6only=1 would otherwise break (#3630).
+IF6=$(ifconfig -l | tr ' ' '\n' | grep -v '^lo' | head -1)
+ifconfig "$IF6" inet6 fd00:3630::1 prefixlen 64 alias
+route add -inet6 default fd00:3630::2
+sysctl net.inet6.ip6.v6only
+
 uname -a
 java -version
 clang --version

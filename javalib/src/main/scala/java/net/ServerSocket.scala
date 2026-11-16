@@ -100,10 +100,6 @@ class ServerSocket(
      * The tricky part is that they display (toString()) the local
      * InetAddress as IPv4 (0.0.0.0).
      *   "LocalSocketAddress: |0.0.0.0/0.0.0.0:8090|"
-     *
-     * This section and SocketHelpers.getWildcardAddressForBind()
-     * will need to be revisited for robust FreeBSD support.
-     * See also notes in getWildcardAddressForBind().
      */
 
     val trickyAddr =

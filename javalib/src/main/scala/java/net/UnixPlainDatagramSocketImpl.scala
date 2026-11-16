@@ -26,6 +26,12 @@ private[net] class UnixPlainDatagramSocketImpl
         s"Could not create a socket in address family: ${af}"
       )
 
+    if (af == posix.sys.socket.AF_INET6 && !SocketHelpers.setDualStack(sock)) {
+      val err = errno
+      unistd.close(sock)
+      throw new IOException(s"Could not clear IPV6_V6ONLY on socket: $err")
+    }
+
     // enable broadcast by default
     val broadcastPrt = stackalloc[CInt]()
     !broadcastPrt = 1

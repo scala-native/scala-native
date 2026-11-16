@@ -197,6 +197,12 @@ IPv6 will be used if any network interface on a system/node/host, other
 than the loopback interface, is configured to enable IPv6. Otherwise,
 IPv4 is used as before. Java has been using this approach for decades.
 
+IPv6 sockets are dual-stack: Scala Native clears the `IPV6_V6ONLY` socket
+option, so they also serve IPv4 peers through IPv4-mapped IPv6 addresses.
+This matters on FreeBSD and NetBSD, where `net.inet6.ip6.v6only=1` is the
+default. Systems which do not support dual-stack sockets at all, such as
+OpenBSD, use IPv4.
+
 Most people will not be able to determine if IPv6 or IPv4 is in use.
 Networks experts will, by using specialist tools.
 
