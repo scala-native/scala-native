@@ -513,6 +513,14 @@ class PatternTest {
     assertFalse(m.find())
   }
 
+  @Test def predefinedCharClassWhitespace(): Unit = {
+    val ws = "\t\n\u000b\f\r "
+    assertEquals(ws, matchingBmpChars("\\s"))
+    assertEquals(ws, matchingBmpChars("[\\s]"))
+    assertEquals(bmpCharsExcept(ws), matchingBmpChars("\\S"))
+    assertEquals(bmpCharsExcept(ws), matchingBmpChars("[^\\s]"))
+  }
+
   @Test def predefinedCharClassVerticalWhitespace(): Unit = {
     val v = "\n\u000b\f\r\u0085\u2028\u2029"
     assertEquals(v, matchingBmpChars("\\v"))
