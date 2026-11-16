@@ -167,7 +167,7 @@ object TypeTestsTest {
   trait Kojibc { def kojibc: Int = 3 }
   class Tripled extends Kacebj with Kbnofp with Kojibc
   class Paired extends Kacebj with Kbnofp
-  class Single extends Kojibc
+  class Single extends Kojibc { override def kojibc: Int = 30 }
   def equalKeyTraits(x: AnyRef): Seq[Boolean] = Seq(
     x.isInstanceOf[Kacebj],
     x.isInstanceOf[Kbnofp],
@@ -392,7 +392,9 @@ class TypeTestsTest {
     assertEquals(Seq(true, true, false), equalKeyTraits(new Paired))
     val single = new Single
     assertEquals(Seq(false, false, true), equalKeyTraits(single))
-    assertEquals(3, (single: Kojibc).kojibc)
+    // Two implementations, receivers known only at run time: calls go
+    // through the itable
+    assertEquals(Seq(3, 30), Seq[Kojibc](tripled, single).map(_.kojibc))
     assertEquals(Seq(false, false, false), equalKeyTraits(new D12))
     assertTrue(classOf[Kojibc].isInstance(tripled))
     assertFalse(classOf[Kojibc].isInstance(new Paired))
