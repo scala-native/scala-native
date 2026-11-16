@@ -274,17 +274,18 @@ private[java] final class FileChannelImpl(
   }
 
   override def position(): Long =
-    if (openForAppending) size()
-    else if (isWindows) {
+    if (isWindows) {
+      // FILE_END, unlike GetFileSizeEx, needs no read-attributes access.
       val filePointer = stackalloc[LargeInteger]()
       FileApi.SetFilePointerEx(
         fd.handle,
         0,
         filePointer,
-        FILE_CURRENT
+        if (openForAppending) FILE_END else FILE_CURRENT
       )
       !filePointer
-    } else {
+    } else if (openForAppending) size()
+    else {
       val pos = unistd.lseek(fd.fd, 0, stdio.SEEK_CUR).toLong
       if (pos < 0)
         throwPosixException("lseek")
@@ -932,8 +933,16 @@ private[java] object FileChannelImpl {
     val creating = options.create || options.createNew
     val mode = if (creating) Files.creationMode(attrs, default = 0x1b6) else 0
     val pathString = path.toString()
-    if (isWindows) openWindows(pathString, options)
-    else openUnix(pathString, options, mode)
+    if (isWindows) {
+      // Checked before CreateFileW, which follows links and may truncate.
+      if (options.noFollowLinks && Files.isSymbolicLink(path))
+        throw new FileSystemException(
+          pathString,
+          null,
+          "Is a symbolic link (NOFOLLOW_LINKS specified)"
+        )
+      openWindows(pathString, options)
+    } else openUnix(pathString, options, mode)
   }
 
   private def openUnix(
