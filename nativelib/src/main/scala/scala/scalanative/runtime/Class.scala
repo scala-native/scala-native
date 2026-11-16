@@ -205,7 +205,6 @@ private[runtime] object _Class {
     final val IsInterface = 0x1 // 1 << 0
     final val IsPrimitive = 0x2 // 1 << 1
     final val IsArray = 0x4 // 1 << 2
-    final val IsAtHomeSlot = 0x80 // 1 << 7
     final val TraitKeyShift = 8
   }
 
@@ -254,12 +253,9 @@ private[runtime] object _Class {
         loadRawPtr(fieldOf(cls, right, classFieldRawPtr(right, "itables")))
       val pos = ((rightFlags >>> Flags.TraitKeyShift) >>> shift) & mask
       val entry = loadRawPtr(elemRawPtr(itables, 2 * PtrSize * pos))
-      // Implementors hold an at-home trait in this slot, see
-      // Metadata.alwaysAtHomeSlot
+      // Another trait in this slot: the lookup continues out of line
       same(entry, right) ||
-        (castRawPtrToLong(entry) != 0L &&
-        (rightFlags & Flags.IsAtHomeSlot) == 0 &&
-        implementsDisplaced(cls, right, pos))
+        (castRawPtrToLong(entry) != 0L && implementsDisplaced(cls, right, pos))
     } else {
       // `right` is in the lineage of `cls` at index superclassCount(right)
       val rightCount = right.superclassCount

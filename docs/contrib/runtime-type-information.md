@@ -47,7 +47,6 @@ The layout is defined by `codegen.CommonMemoryLayouts` and mirrored by
 | 2    | `runtime.Array` or one of its subclasses                       |
 | 3-4  | arrays: element scan, 0 none, 1 references, 2 conservative     |
 | 5-6  | reference kind: 0 none, 1 weak, 2 soft, 3 phantom              |
-| 7    | traits: every implementor holds it in its home itable slot     |
 | 7    | classes: the GC calls the object tracer for marked instances   |
 | 8-15 | arrays: number of dimensions                                   |
 | 16-31 | classes: hash of the class name, for reflective calls         |
@@ -129,8 +128,10 @@ Generated code relies on three facts about the whole program:
 - When no class shifts the key of a trait, lookups skip loading the shift.
 
 For any other trait, a lookup that finds another trait in the first slot
-continues in `scalanative_itable_find`. `java.lang.Class` runs the same lookup,
-taking the key from the trait's flags: the first slot inline, then out of line.
+continues in `scalanative_itable_find`. These facts only shape generated code:
+RTTI does not record them. `java.lang.Class` takes the key from the trait's
+flags, probes the first slot inline and continues out of line past any other
+trait.
 
 ## Modules
 

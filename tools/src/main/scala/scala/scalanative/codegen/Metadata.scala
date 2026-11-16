@@ -79,8 +79,8 @@ private[scalanative] class Metadata(
     else lineage(cls).lift(2).map(_.name)
 
   /** Every class of the program stores `trt` in the itable slot where its
-   *  lookup starts, so a single probe decides any lookup. A whole-program fact,
-   *  used by generated code and recorded in the trait's RTTI flags.
+   *  lookup starts, so a single probe decides any lookup. A whole-program fact
+   *  used by generated code only: RTTI does not record it.
    */
   def alwaysAtHomeSlot(trt: Trait): Boolean = !displacedTraits.contains(trt)
 

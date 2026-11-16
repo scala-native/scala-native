@@ -28,9 +28,7 @@
 #define RTTI_REFERENCE_KIND_WEAK (1 << 5)
 #define RTTI_REFERENCE_KIND_SOFT (2 << 5)
 #define RTTI_REFERENCE_KIND_PHANTOM (3 << 5)
-/* Traits only: implementors hold the trait in its home itable slot (bit 7),
- * low 24 bits of the itable key (bits 8-31) */
-#define RTTI_FLAG_IS_AT_HOME_SLOT (1 << 7)
+/* Traits only, bits 8-31: low 24 bits of the itable key */
 #define RTTI_TRAIT_KEY_SHIFT 8
 /* Classes only, bit 7: the GC calls the object tracer for every marked
  * instance, see shared/GCHooks.h */

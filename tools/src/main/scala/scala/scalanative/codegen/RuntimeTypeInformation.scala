@@ -164,9 +164,6 @@ private[codegen] object RuntimeTypeInformation {
     final val SoftReferenceKind = 2 << ReferenceKindShift
     final val PhantomReferenceKind = 3 << ReferenceKindShift
 
-    // Traits only: every class holds the trait in the slot where its lookup
-    // starts, see Metadata.alwaysAtHomeSlot
-    final val IsAtHomeSlot = 1 << 7
     // Classes only: the GC calls the object tracer for every marked
     // instance, see gc/shared/GCHooks.h
     final val HasObjectTracer = 1 << 7
@@ -189,9 +186,7 @@ private[codegen] object RuntimeTypeInformation {
     /** Computed from the type and its ancestors only. */
     def apply(info: ScopeInfo)(implicit meta: Metadata): Int = info match {
       case trt: Trait =>
-        IsInterface |
-          (if (meta.alwaysAtHomeSlot(trt)) IsAtHomeSlot else 0) |
-          (meta.traitKey(trt) & TraitKeyMask) << TraitKeyShift
+        IsInterface | (meta.traitKey(trt) & TraitKeyMask) << TraitKeyShift
       case cls: Class =>
         def flag(cond: Boolean, bits: Int) = if (cond) bits else 0
         // runtime.Array is a direct subclass of Object
