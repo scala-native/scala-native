@@ -55,7 +55,6 @@ Some notes on the implementation:
     -   Character classes:
         -   Unions: `[a-d[m-p]]`
         -   Intersections: `[a-z&&[^aeiou]]`
-    -   Predefined character classes: `\v`, `\V`
     -   Java character function classes:
         -   `\p{javaLowerCase}`
         -   `\p{javaUpperCase}`

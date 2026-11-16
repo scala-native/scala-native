@@ -26,6 +26,8 @@ object CharGroup {
     0x9, 0x9, 0x20, 0x20, 0xa0, 0xa0, 0x1680, 0x1680, 0x180e, 0x180e, 0x2000,
     0x200a, 0x202f, 0x202f, 0x205f, 0x205f, 0x3000, 0x3000
   ) // \h
+  private val code18 =
+    Array(0xa, 0xd, 0x85, 0x85, 0x2028, 0x2029) // \v
 
   val PERL_GROUPS = Map(
     "\\d" -> new CharGroup(+1, code1),
@@ -35,7 +37,9 @@ object CharGroup {
     "\\w" -> new CharGroup(+1, code3),
     "\\W" -> new CharGroup(-1, code3),
     "\\h" -> new CharGroup(+1, code17),
-    "\\H" -> new CharGroup(-1, code17)
+    "\\H" -> new CharGroup(-1, code17),
+    "\\v" -> new CharGroup(+1, code18),
+    "\\V" -> new CharGroup(-1, code18)
   )
 
   val POSIX_GROUPS = Map(

@@ -513,10 +513,14 @@ class PatternTest {
     assertFalse(m.find())
   }
 
-  @Ignore("#620")
-  @Test def notSupportedPredefinedCharClassesVertical(): Unit = {
-    pass("\\v", "\n")
-    pass("\\V", "a")
+  @Test def predefinedCharClassVerticalWhitespace(): Unit = {
+    val v = "\n\u000b\f\r\u0085\u2028\u2029"
+    assertEquals(v, matchingBmpChars("\\v"))
+    assertEquals(v, matchingBmpChars("[\\v]"))
+    assertEquals(v, matchingBmpChars("\\v", Pattern.CASE_INSENSITIVE))
+    assertEquals(bmpCharsExcept(v), matchingBmpChars("\\V"))
+    assertEquals(bmpCharsExcept(v), matchingBmpChars("[^\\v]"))
+    assertEquals("a|b|c", "a\r\nb\u2028c".replaceAll("\\v+", "|"))
   }
 
   @Ignore("#620")

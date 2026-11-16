@@ -258,10 +258,11 @@ class PatternTest {
     fail("\\h", "\n")
   }
 
-  @Ignore("not supported")
   @Test def predefinedCharacterClassesVertical(): Unit = {
     pass("\\v", "\n")
+    pass("\\v", "\u2028")
     pass("\\V", "a")
+    fail("\\V", "\r")
   }
 
   @Ignore("not supported")
