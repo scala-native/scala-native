@@ -1021,6 +1021,15 @@ class LinkedTransferQueueTest extends JSR166Test {
       assertTrue(x == itemFor(one) || x == itemFor(two))
     }
   }
+
+  /** remove(x) on an empty queue returns false */
+  @Test def testRemoveElementFromEmpty(): Unit = {
+    val q = new LinkedTransferQueue[Item]()
+    assertFalse(q.remove(itemFor(1)))
+    q.add(itemFor(1))
+    q.poll()
+    assertFalse(q.remove(itemFor(1)))
+  }
 }
 
 object LinkedTransferQueueTest {

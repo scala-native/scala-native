@@ -1185,7 +1185,7 @@ import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
         var skipRest = false
         if (item != null) {
           if (p.isData) {
-            if (item.equals(o) && p.tryMatch(item, null)) {
+            if (o.equals(item) && p.tryMatch(item, null)) {
               skipDeadNodes(pred, p, p, q)
               return true
             }
@@ -1209,9 +1209,8 @@ import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
                 innerBreak = true
                 cBreak = true
                 restartFromHead = true
-              }
+              } else q = p.next
             }
-            q = p.next
           }
         }
       }
