@@ -120,6 +120,63 @@ class NIRCompilerTest {
     NIRCompiler(_.compile(code))
   }
 
+  @Test def externAggregateVarCanBeRead(): Unit = {
+    val code =
+      """|import scala.scalanative.unsafe._
+         |
+         |@extern object Dummy {
+         |  var arr: CArray[CInt, Nat._4] = extern
+         |  var struct: CStruct2[CInt, CLong] = extern
+         |}
+         |object Test {
+         |  def read(): CInt = Dummy.arr(0) + Dummy.struct._1
+         |}
+         |""".stripMargin
+    NIRCompiler(_.compile(code))
+  }
+
+  @Test def assignToExternCArrayVar(): Unit = {
+    val code =
+      """|import scala.scalanative.unsafe._
+         |
+         |@extern object Dummy {
+         |  var arr: CArray[CInt, Nat._4] = extern
+         |}
+         |object Test {
+         |  def assign(other: CArray[CInt, Nat._4]): Unit = Dummy.arr = other
+         |}
+         |""".stripMargin
+    val err = assertThrows(
+      classOf[CompilationFailedException],
+      () => NIRCompiler(_.compile(code))
+    )
+    assertTrue(
+      err.getMessage(),
+      err.getMessage().contains("Cannot assign to extern variable arr")
+    )
+  }
+
+  @Test def assignToExternCStructVar(): Unit = {
+    val code =
+      """|import scala.scalanative.unsafe._
+         |
+         |@extern object Dummy {
+         |  var struct: CStruct2[CInt, CLong] = extern
+         |}
+         |object Test {
+         |  def assign(other: CStruct2[CInt, CLong]): Unit = Dummy.struct = other
+         |}
+         |""".stripMargin
+    val err = assertThrows(
+      classOf[CompilationFailedException],
+      () => NIRCompiler(_.compile(code))
+    )
+    assertTrue(
+      err.getMessage(),
+      err.getMessage().contains("Cannot assign to extern variable struct")
+    )
+  }
+
   @Test def externMemberReferencingExtern(): Unit = {
     val code =
       """|import scala.scalanative.unsafe.extern

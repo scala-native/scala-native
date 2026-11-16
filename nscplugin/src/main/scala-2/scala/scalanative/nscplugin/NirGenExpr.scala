@@ -774,8 +774,11 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           val rhs = genExpr(rhsp)
           val name = genFieldName(sym)
           if (sym.isExtern) {
-            val externTy = genExternType(sym.tpe)
-            genStoreExtern(externTy, sym, rhs)
+            if (!checkExternAssignable(sym, sym.tpe, tree.pos)) nir.Val.Unit
+            else {
+              val externTy = genExternType(sym.tpe)
+              genStoreExtern(externTy, sym, rhs)
+            }
           } else {
             val ty = genType(sym.tpe)
             val qual = genExpr(qualp)
@@ -2976,8 +2979,12 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           val externTy = genExternMethodSig(sym).ret
           genLoadExtern(ty, externTy, sym)
         case Seq(valuep) =>
-          val externTy = genExternType(sym.tpe.paramss.flatten.last.tpe)
-          genStoreExtern(externTy, sym, genExpr(valuep))
+          val valueTpe = sym.tpe.paramss.flatten.last.tpe
+          if (!checkExternAssignable(sym, valueTpe, valuep.pos)) nir.Val.Unit
+          else {
+            val externTy = genExternType(valueTpe)
+            genStoreExtern(externTy, sym, genExpr(valuep))
+          }
       }
     }
 
@@ -2987,14 +2994,45 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       assert(sym.isExtern, "loadExtern was not extern")
 
       val name = nir.Val.Global(genName(sym), nir.Type.Ptr)
-      val memoryOrder =
-        if (!sym.isVolatile) None
-        else Some(nir.MemoryOrder.Acquire)
+      val valueTpe = sym.tpe.finalResultType
+      if (isExternAddressType(valueTpe)) {
+        val cls = valueTpe.typeSymbol
+        genApplyNew(cls, cls.primaryConstructor, List(ValTree(name)()))
+      } else {
+        val memoryOrder =
+          if (!sym.isVolatile) None
+          else Some(nir.MemoryOrder.Acquire)
 
-      fromExtern(
-        ty,
-        buf.load(externTy, name, unwind, memoryOrder)
-      )
+        fromExtern(
+          ty,
+          buf.load(externTy, name, unwind, memoryOrder)
+        )
+      }
+    }
+
+    /** Extern globals of these types denote the C object itself, so reading
+     *  them yields its address instead of loading its contents.
+     */
+    private def isExternAddressType(tpe: Type): Boolean = {
+      val sym = tpe.dealiasWiden.typeSymbol
+      sym.isFixedSizeArray || sym.isAnonymousStruct
+    }
+
+    private def checkExternAssignable(
+        sym: Symbol,
+        tpe: Type,
+        pos: global.Position
+    ): Boolean = {
+      val assignable = !isExternAddressType(tpe)
+      if (!assignable) {
+        val name = sym.name.decoded.stripSuffix("_=")
+        reporter.error(
+          pos,
+          s"Cannot assign to extern variable $name of type $tpe, it is bound to the C object itself. " +
+            "Modify its elements or fields instead."
+        )
+      }
+      assignable
     }
 
     def genStoreExtern(externTy: nir.Type, sym: Symbol, value: nir.Val)(implicit
