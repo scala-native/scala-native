@@ -77,9 +77,7 @@ class IntegerTest {
     assertEquals(signedMaxValue, decode(signedMaxValueText))
     assertEquals(signedMinValue, decode(signedMinValueText))
 
-    assertThrowsAndMessage(classOf[NumberFormatException], decode(null))(
-      "java.lang.NumberFormatException: null"
-    )
+    assertThrows(classOf[NullPointerException], decode(null))
     assertThrowsAndMessage(classOf[NumberFormatException], decode("+"))(
       """java.lang.NumberFormatException: For input string: "+""""
     )

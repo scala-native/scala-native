@@ -197,8 +197,6 @@ object Integer {
     throw new NumberFormatException(s"""For input string: "$s"""")
 
   def decode(nm: String): Integer = {
-    if (nm == null)
-      throw new NumberFormatException("null")
     val length = nm.length()
     if (length == 0) fail(nm)
 
