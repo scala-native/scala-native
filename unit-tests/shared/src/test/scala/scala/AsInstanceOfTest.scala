@@ -5,6 +5,7 @@ import org.junit.Assume._
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.Platform.executingInJVM
 
 import scala.scalanative.buildinfo.ScalaNativeBuildInfo.scalaVersion
 
@@ -34,6 +35,8 @@ class AsInstanceOfTest {
   }
 
   @Test def nullAsInstanceOfNothing(): Unit = {
+    // Scala 2 on the JVM erases the cast so null passes; Scala Native throws
+    assumeFalse(executingInJVM && !isScala3)
     val expected =
       if (isScala3) classOf[ClassCastException]
       else classOf[NullPointerException]
