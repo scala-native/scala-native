@@ -1333,7 +1333,8 @@ class Parser(wholeRegexp: String, _flags: Int) {
           continue = true
         } else {
           // Look for Perl character class symbols (extension).
-          if (parsePerlClassEscape(t, cc)) {
+          // Java reads \v as U+000B when it is followed by '-'.
+          if (!t.lookingAt("\\v-") && parsePerlClassEscape(t, cc)) {
             continue = true
           } else {
             t.rewindTo(beforePos)

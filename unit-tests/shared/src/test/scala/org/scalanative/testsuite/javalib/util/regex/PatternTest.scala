@@ -529,6 +529,8 @@ class PatternTest {
     assertEquals(bmpCharsExcept(v), matchingBmpChars("\\V"))
     assertEquals(bmpCharsExcept(v), matchingBmpChars("[^\\v]"))
     assertEquals("a|b|c", "a\r\nb\u2028c".replaceAll("\\v+", "|"))
+    assertEquals("\u000b\f\r", matchingBmpChars("[\\v-\\r]"))
+    assertEquals("\u000b-", matchingBmpChars("[\\v-]"))
   }
 
   @Ignore("#620")
