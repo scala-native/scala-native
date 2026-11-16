@@ -1553,10 +1553,6 @@ trait NirGenExpr(using Context) {
 
     private def binaryOperationType(lty: nir.Type, rty: nir.Type) =
       (lty, rty) match {
-        // Bug compatibility with scala/bug/issues/11253
-        case (nir.Type.Long, nir.Type.Float) =>
-          nir.Type.Double
-
         case (nir.Type.Ptr, _: nir.Type.RefKind) =>
           lty
 

@@ -10,7 +10,5 @@ scala/ObjectCloneTest.scala
 scala/ExecutionContextTest.scala
 
 
-# Tests that fail for scala 2.13 on JVM
-scala/bugcompat/LongFloatPrimitiveTest.scala
 
 # Tests that work on java 8, but fail on java 16
