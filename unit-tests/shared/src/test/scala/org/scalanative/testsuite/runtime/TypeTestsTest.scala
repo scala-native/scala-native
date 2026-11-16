@@ -156,6 +156,23 @@ object TypeTestsTest {
       with Qhmla
       with Qhjdm
   class Sparse extends Qkemd with Qkphm
+
+  /* The itable keys of these traits are equal in the bits itables use, so
+   * Tripled holds them in three consecutive slots, in name order: lookups of
+   * Kojibc find it two slots after their start, past the slots generated
+   * code probes inline, in scalanative_itable_find.
+   */
+  trait Kacebj { def kacebj: Int = 1 }
+  trait Kbnofp { def kbnofp: Int = 2 }
+  trait Kojibc { def kojibc: Int = 3 }
+  class Tripled extends Kacebj with Kbnofp with Kojibc
+  class Paired extends Kacebj with Kbnofp
+  class Single extends Kojibc
+  def equalKeyTraits(x: AnyRef): Seq[Boolean] = Seq(
+    x.isInstanceOf[Kacebj],
+    x.isInstanceOf[Kbnofp],
+    x.isInstanceOf[Kojibc]
+  )
   def crowdedTraits(x: AnyRef): Seq[Boolean] = Seq(
     x.isInstanceOf[Qkemd],
     x.isInstanceOf[Qpadk],
@@ -358,6 +375,30 @@ class TypeTestsTest {
     assertTrue(classOf[Qkphm].isInstance(crowded))
     assertTrue(classOf[Qpgfp].isAssignableFrom(classOf[Crowded]))
     assertFalse(classOf[Qpgfp].isAssignableFrom(classOf[Sparse]))
+  }
+
+  @Test def traitsWithEqualKeys(): Unit = {
+    val tripled = new Tripled
+    assertEquals(Seq(true, true, true), equalKeyTraits(tripled))
+    assertEquals(
+      Seq(1, 2, 3),
+      Seq(
+        (tripled: Kacebj).kacebj,
+        (tripled: Kbnofp).kbnofp,
+        (tripled: Kojibc).kojibc
+      )
+    )
+    // Kojibc is searched past the two traits sharing its key, up to an empty slot
+    assertEquals(Seq(true, true, false), equalKeyTraits(new Paired))
+    val single = new Single
+    assertEquals(Seq(false, false, true), equalKeyTraits(single))
+    assertEquals(3, (single: Kojibc).kojibc)
+    assertEquals(Seq(false, false, false), equalKeyTraits(new D12))
+    assertTrue(classOf[Kojibc].isInstance(tripled))
+    assertFalse(classOf[Kojibc].isInstance(new Paired))
+    assertTrue(classOf[Kojibc].isAssignableFrom(classOf[Tripled]))
+    assertFalse(classOf[Kojibc].isAssignableFrom(classOf[Paired]))
+    assertTrue(classOf[Kbnofp].isAssignableFrom(classOf[Tripled]))
   }
 
   @Test def forNameFindsClassesAndTraits(): Unit = {
