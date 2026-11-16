@@ -22,13 +22,38 @@ class Runtime private () {
   }
 
   // https://docs.oracle.com/en/java/javase/21/docs/specs/man/java.html
-  // Currently, we use C lib signals so SIGHUP is not covered for POSIX platforms.
-  lazy val setupSignalHandler = {
-    // Executing handler during GC might lead to deadlock
-    // Make sure include any additional signals in `Synchronizer_init` and `sigset_t signalsBlockedDuringGC` in both Immix/Commix GC
-    // Warning: We cannot safetly adapt Boehm GC - it can deadlock for the same reasons as above
-    signal.signal(signal.SIGINT, handleSignal(_))
-    signal.signal(signal.SIGTERM, handleSignal(_))
+  // SIGHUP is not covered for POSIX platforms.
+  // Executing handler during GC might lead to deadlock
+  // Make sure include any additional signals in `Synchronizer_init` and `sigset_t signalsBlockedDuringGC` in both Immix/Commix GC
+  // Warning: We cannot safetly adapt Boehm GC - it can deadlock for the same reasons as above
+  private def setupSignalHandlers(): Unit = {
+    installSignalHandler(signal.SIGINT)
+    installSignalHandler(signal.SIGTERM)
+  }
+
+  // Signals handled or ignored by the application are left untouched
+  private def installSignalHandler(sig: CInt): Unit = {
+    val handler: CFuncPtr1[CInt, Unit] = handleSignal(_)
+    def isDefault(fn: CFuncPtr1[CInt, Unit]): scala.Boolean =
+      fn == null || CFuncPtr.toPtr(fn) == CFuncPtr.toPtr(signal.SIG_DFL)
+    if (LinktimeInfo.isWindows) {
+      val previous = signal.signal(sig, handler)
+      if (!isDefault(previous) &&
+          CFuncPtr.toPtr(previous) != CFuncPtr.toPtr(signal.SIG_ERR))
+        signal.signal(sig, previous)
+    } else {
+      import scala.scalanative.posix.{signal => psignal}
+      import scala.scalanative.posix.signalOps.sigaction_ops
+      val current = stackalloc[psignal.sigaction]()
+      if (psignal.sigaction(sig, null, current) == 0 &&
+          (current.sa_flags & psignal.SA_SIGINFO) == 0 &&
+          isDefault(current.sa_handler)) {
+        val action = stackalloc[psignal.sigaction]()
+        action.sa_handler = handler
+        action.sa_flags = psignal.SA_RESTART
+        psignal.sigaction(sig, action, null)
+      }
+    }
   }
 
   private def ensureCanModify(hook: Thread): Unit = if (shutdownStarted) {
@@ -41,7 +66,7 @@ class Runtime private () {
     ensureCanModify(thread)
     hooks.add(thread)
     setupAtExitHandler
-    setupSignalHandler
+    setupSignalHandlers()
   }
 
   def removeShutdownHook(thread: Thread): scala.Boolean = hooks.synchronized {
