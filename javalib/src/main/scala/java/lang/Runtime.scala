@@ -21,17 +21,13 @@ class Runtime private () {
     stdlib.atexit(() => Runtime.getRuntime().runHooks())
   }
 
-  // https://docs.oracle.com/en/java/javase/21/docs/specs/man/java.html
-  // SIGHUP is not covered for POSIX platforms.
-  // Executing handler during GC might lead to deadlock
-  // Make sure include any additional signals in `Synchronizer_init` and `sigset_t signalsBlockedDuringGC` in both Immix/Commix GC
-  // Warning: We cannot safetly adapt Boehm GC - it can deadlock for the same reasons as above
+  // New signals must also be blocked during GC, see `signalsBlockedDuringGC`
   private def setupSignalHandlers(): Unit = {
     installSignalHandler(signal.SIGINT)
     installSignalHandler(signal.SIGTERM)
   }
 
-  // Signals handled or ignored by the application are left untouched
+  // Only replaces SIG_DFL, keeps handlers and SIG_IGN set by the application
   private def installSignalHandler(sig: CInt): Unit = {
     val handler: CFuncPtr1[CInt, Unit] = handleSignal(_)
     def isDefault(fn: CFuncPtr1[CInt, Unit]): scala.Boolean =
