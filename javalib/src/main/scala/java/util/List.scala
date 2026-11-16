@@ -108,6 +108,9 @@ trait List[E] extends SequencedCollection[E] {
 
   def subList(fromIndex: Int, toIndex: Int): List[E]
 
+  override def spliterator(): Spliterator[E] =
+    Spliterators.spliterator[E](this, Spliterator.ORDERED)
+
 }
 
 object List {
