@@ -11,6 +11,10 @@ typedef enum {
     om_placeholder = 0x1,
     om_allocated = 0x2,
     om_marked = 0x4,
+    // Write barrier states, see immix_commix/WriteBarrier.h. No collector
+    // produces them yet.
+    om_old_unlogged = 0x8,
+    om_old_logged = 0x9,
 } Flag;
 
 typedef ubyte_t ObjectMeta;
@@ -29,6 +33,14 @@ static inline bool ObjectMeta_IsAllocated(ObjectMeta *metadata) {
 
 static inline bool ObjectMeta_IsMarked(ObjectMeta *metadata) {
     return *metadata == om_marked;
+}
+
+static inline bool ObjectMeta_IsOldUnlogged(ObjectMeta *metadata) {
+    return *metadata == om_old_unlogged;
+}
+
+static inline void ObjectMeta_SetOldLogged(ObjectMeta *metadata) {
+    *metadata = om_old_logged;
 }
 
 static inline void ObjectMeta_SetFree(ObjectMeta *metadata) {

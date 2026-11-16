@@ -129,6 +129,35 @@ object GC {
   @name("scalanative_GC_yieldpoint_trap")
   private[runtime] var yieldPointTrap: RawPtr = extern
 
+  /** State read by the inline write barrier, which code generation emits before
+   *  reference stores when the GC is built with
+   *  `-DSCALANATIVE_GC_WRITE_BARRIER` (Immix and Commix only). See
+   *  `gc/immix_commix/WriteBarrier.h`.
+   */
+  @name("scalanative_GC_barrier_heap_start")
+  private[runtime] var barrierHeapStart: RawPtr = extern
+  @name("scalanative_GC_barrier_heap_size")
+  private[runtime] var barrierHeapSize: RawSize = extern
+  @name("scalanative_GC_barrier_bytemap")
+  private[runtime] var barrierBytemap: RawPtr = extern
+
+  /** Remembers an old object before a reference is stored into it. */
+  @name("scalanative_GC_write_barrier_slow")
+  private[runtime] def writeBarrierSlow(obj: RawPtr): Unit = extern
+
+  /** Remembers an old heap object whose reference slots are about to be written
+   *  through raw pointers.
+   */
+  @name("scalanative_GC_write_barrier_slot")
+  private[runtime] def writeBarrierSlot(slot: RawPtr): Unit = extern
+
+  /** Write barrier for reference stores that code generation cannot see, such
+   *  as a `memmove` into an object array. Code generation inlines it, or drops
+   *  it when the GC is built without the write barrier.
+   */
+  @name("scalanative_GC_write_barrier")
+  def writeBarrier(obj: Object): Unit = extern
+
   /** Notify the Garbage Collector about the range of memory which should be
    *  scanned when marking the objects. The range should contain only memory NOT
    *  allocated using the GC, e.g. using malloc. Otherwise it might lead to the
