@@ -1511,7 +1511,7 @@ for (cp <- 0 to Character.MAX_CODE_POINT) {
     if (index < 1 || index > count) {
       throw new StringIndexOutOfBoundsException()
     } else {
-      Character.codePointBefore(value, index + offset)
+      Character.codePointBefore(value, index + offset, offset)
     }
 
   def codePointCount(beginIndex: Int, endIndex: Int): Int =

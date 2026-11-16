@@ -229,8 +229,15 @@ object Character {
   @inline def charCount(codePoint: Int): Int =
     if (codePoint >= MIN_SUPPLEMENTARY_CODE_POINT) 2 else 1
 
-  def codePointAt(seq: Array[scala.Char], _index: scala.Int): scala.Int = {
-    codePointAt(seq, _index, seq.length)
+  def codePointAt(seq: Array[scala.Char], index: scala.Int): scala.Int = {
+    val high = seq(index)
+    val nextIndex = index + 1
+    if (nextIndex >= seq.length) high
+    else {
+      val low = seq(nextIndex)
+      if (isSurrogatePair(high, low)) toCodePoint(high, low)
+      else high
+    }
   }
 
   def codePointAt(
@@ -238,22 +245,16 @@ object Character {
       index: scala.Int,
       limit: scala.Int
   ): scala.Int = {
-
-    if (index < 0 || index >= limit || limit < 0 || limit > seq.length) {
-      throw new StringIndexOutOfBoundsException()
-    }
+    if (index < 0 || index >= limit || limit < 0 || limit > seq.length)
+      throw new IndexOutOfBoundsException()
 
     val high = seq(index)
     val nextIndex = index + 1
-
-    if (nextIndex >= limit) {
-      high
-    } else {
+    if (nextIndex >= limit) high
+    else {
       val low = seq(nextIndex)
-      if (isSurrogatePair(high, low))
-        toCodePoint(high, low)
-      else
-        high
+      if (isSurrogatePair(high, low)) toCodePoint(high, low)
+      else high
     }
   }
 
@@ -270,32 +271,32 @@ object Character {
   }
 
   def codePointBefore(seq: Array[scala.Char], index: scala.Int): scala.Int = {
-    codePointBefore(seq, index, seq.length)
+    val low = seq(index - 1)
+    val prevIndex = index - 2
+    if (prevIndex < 0) low
+    else {
+      val high = seq(prevIndex)
+      if (isSurrogatePair(high, low)) toCodePoint(high, low)
+      else low
+    }
   }
 
   def codePointBefore(
       seq: Array[scala.Char],
       index: scala.Int,
-      limit: scala.Int
+      start: scala.Int
   ): scala.Int = {
-    val len = limit
-    if (index < 1 || index > len) {
-      throw new StringIndexOutOfBoundsException(index)
-    }
+    val length = seq.length
+    if (index <= start || index > length || start < 0 || start >= length)
+      throw new IndexOutOfBoundsException()
 
-    val indexMinus1 = index - 1
-    val indexMinus2 = index - 2
-
-    val low = seq(indexMinus1)
-
-    if (indexMinus2 < 0) {
-      low
-    } else {
-      val high = seq(indexMinus2)
-      if (isSurrogatePair(high, low))
-        toCodePoint(high, low)
-      else
-        low
+    val low = seq(index - 1)
+    val prevIndex = index - 2
+    if (prevIndex < start) low
+    else {
+      val high = seq(prevIndex)
+      if (isSurrogatePair(high, low)) toCodePoint(high, low)
+      else low
     }
   }
 
@@ -319,8 +320,8 @@ object Character {
   ): scala.Int = {
     val len = seq.length
     val endIndex = offset + count
-    if (offset < 0 || count < 0 || endIndex > len) {
-      throw new StringIndexOutOfBoundsException()
+    if (offset < 0 || count < 0 || count > len - offset) {
+      throw new IndexOutOfBoundsException()
     }
 
     var result = 0
@@ -405,7 +406,7 @@ object Character {
     val end = start + count
     if (start < 0 || count < 0 || end > seq.length || index < start
         || index > end) {
-      throw new StringIndexOutOfBoundsException()
+      throw new IndexOutOfBoundsException()
     }
 
     if (codePointOffset == 0) {
@@ -416,7 +417,7 @@ object Character {
       while (codePoints > 0) {
         codePoints -= 1
         if (i >= end) {
-          throw new StringIndexOutOfBoundsException()
+          throw new IndexOutOfBoundsException()
         }
         if (isHighSurrogate(seq(i))) {
           val next = i + 1
@@ -434,7 +435,7 @@ object Character {
         codePoints -= 1
         i -= 1
         if (i < start) {
-          throw new StringIndexOutOfBoundsException()
+          throw new IndexOutOfBoundsException()
         }
         if (isLowSurrogate(seq(i))) {
           val prev = i - 1
