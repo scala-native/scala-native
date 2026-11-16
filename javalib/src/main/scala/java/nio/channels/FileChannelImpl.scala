@@ -1,7 +1,11 @@
 package java.nio.channels
 
 import java.io.{File, FileDescriptor, IOException}
-import java.nio.file.{Files, WindowsException}
+import java.nio.file.attribute.FileAttribute
+import java.nio.file.{
+  AccessDeniedException, FileAlreadyExistsException, FileSystemException, Files,
+  NoSuchFileException, Path, WindowsException
+}
 import java.nio.{ByteBuffer, MappedByteBuffer, MappedByteBufferImpl}
 import java.util.Objects
 
@@ -9,6 +13,7 @@ import scala.scalanative.libc.errno.errno
 import scala.scalanative.libc.{LibcExt, stdio}
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.nio.fs.unix.UnixException
+import scala.scalanative.posix.errno.{EACCES, EEXIST, ELOOP, ENOENT, EPERM}
 import scala.scalanative.posix.fcntl._
 import scala.scalanative.posix.fcntlOps._
 import scala.scalanative.posix.sys.statOps._
@@ -37,8 +42,10 @@ private[java] final class FileChannelImpl(
    *   Use with only one thread accessing the channel, even for READS.
    */
 
-  if (openForAppending)
-    seekEOF() // so a position() before first APPEND write() matches JVM.
+  // Unix uses O_APPEND, Windows emulates it.
+  if (isWindows) {
+    if (openForAppending) seekEOF()
+  }
 
   private def ensureOpen(): Unit =
     if (!isOpen()) throw new ClosedChannelException()
@@ -48,6 +55,17 @@ private[java] final class FileChannelImpl(
     if (!openForWriting)
       throw new NonWritableChannelException()
   }
+
+  private def ensureOpenForRead(): Unit = {
+    ensureOpen()
+    if (!openForReading)
+      throw new NonReadableChannelException()
+  }
+
+  @inline private def seekEOFBeforeRelativeWrite(): Unit =
+    if (isWindows) {
+      if (openForAppending) seekEOF()
+    }
 
   private def seekEOF(): Unit = {
     if (isWindows) {
@@ -256,7 +274,8 @@ private[java] final class FileChannelImpl(
   }
 
   override def position(): Long =
-    if (isWindows) {
+    if (openForAppending) size()
+    else if (isWindows) {
       val filePointer = stackalloc[LargeInteger]()
       FileApi.SetFilePointerEx(
         fd.handle,
@@ -280,7 +299,7 @@ private[java] final class FileChannelImpl(
     Objects.requireNonNull(buffers, "dsts")
     Objects.checkFromIndexSize(start, number, buffers.length)
 
-    ensureOpen()
+    ensureOpenForRead()
 
     var i = 0
     var partialReadSeen = false
@@ -332,7 +351,7 @@ private[java] final class FileChannelImpl(
     if (pos < 0)
       throw new IllegalArgumentException("Negative position")
 
-    ensureOpen()
+    ensureOpenForRead()
 
     if (isWindows) {
       val stashPosition = position()
@@ -345,7 +364,7 @@ private[java] final class FileChannelImpl(
   }
 
   override def read(buffer: ByteBuffer): Int = {
-    ensureOpen()
+    ensureOpenForRead()
     readIntoBuffer(buffer)(read(_, _, _))
   }
 
@@ -526,6 +545,9 @@ private[java] final class FileChannelImpl(
     if (count < 0L)
       throw new IllegalArgumentException("Negative count")
 
+    if (!openForReading)
+      throw new NonReadableChannelException()
+
     if (_position > this.size()) {
       0L
     } else {
@@ -701,6 +723,7 @@ private[java] final class FileChannelImpl(
     if ((offset < 0) || (count < 0) || (count > buffer.length - offset))
       throw new IndexOutOfBoundsException
 
+    seekEOFBeforeRelativeWrite()
     writeArray(buffer, offset, count)
   }
 
@@ -752,6 +775,7 @@ private[java] final class FileChannelImpl(
       val src = srcs(offset + i)
       val len = src.remaining()
 
+      seekEOFBeforeRelativeWrite()
       val n = writeByteBuffer(src)
 
       totalWritten += n
@@ -774,6 +798,8 @@ private[java] final class FileChannelImpl(
    * When APPEND mode changes the position it reports as "current" to the
    * new EOF rather than stashed position, according to JVM it is not
    * really changing the "current position".
+   *
+   * With APPEND, Linux appends and macOS writes at `pos`, as on the JVM.
    */
   override def write(src: ByteBuffer, pos: Long): Int = {
     if (pos < 0)
@@ -791,8 +817,9 @@ private[java] final class FileChannelImpl(
         writeByteBuffer(src, pwriteArray(_, _, _, pos))
       }
 
-    if (openForAppending)
-      seekEOF()
+    if (isWindows) {
+      if (openForAppending) seekEOF()
+    }
 
     nBytesWritten
   }
@@ -815,6 +842,7 @@ private[java] final class FileChannelImpl(
   // Write relative to current position (SEEK_CUR) or, for APPEND, SEEK_END.
   override def write(src: ByteBuffer): Int = {
     ensureOpenForWrite()
+    seekEOFBeforeRelativeWrite()
     writeByteBuffer(src)
   }
 
@@ -879,5 +907,112 @@ private[java] final class FileChannelImpl(
     } else {
       Math.clamp((size() - position()), 0, Int.MaxValue)
     }
+  }
+}
+
+private[java] object FileChannelImpl {
+
+  private[java] final class OpenOptions(
+      val read: Boolean,
+      val write: Boolean,
+      val append: Boolean,
+      val truncate: Boolean,
+      val create: Boolean,
+      val createNew: Boolean,
+      val sync: Boolean,
+      val dsync: Boolean,
+      val noFollowLinks: Boolean
+  )
+
+  private[java] def openFileDescriptor(
+      path: Path,
+      options: OpenOptions,
+      attrs: Array[FileAttribute[_]]
+  ): FileDescriptor = {
+    val creating = options.create || options.createNew
+    val mode = if (creating) Files.creationMode(attrs, default = 0x1b6) else 0
+    val pathString = path.toString()
+    if (isWindows) openWindows(pathString, options)
+    else openUnix(pathString, options, mode)
+  }
+
+  private def openUnix(
+      path: String,
+      options: OpenOptions,
+      mode: Int
+  ): FileDescriptor = Zone.acquire { implicit z =>
+    var flags =
+      if (options.read && options.write) O_RDWR
+      else if (options.write) O_WRONLY
+      else O_RDONLY
+    flags |= O_CLOEXEC
+    if (options.append) flags |= O_APPEND
+    if (options.truncate) flags |= O_TRUNC
+    if (options.createNew) flags |= O_CREAT | O_EXCL
+    else if (options.create) flags |= O_CREAT
+    if (options.sync) flags |= O_SYNC
+    else if (options.dsync) flags |= O_DSYNC
+    if (options.noFollowLinks) flags |= O_NOFOLLOW
+
+    val fd = open(toCString(path), flags, mode.toUInt)
+    if (fd == -1) {
+      val err = errno
+      throw {
+        if (err == EACCES || err == EPERM) new AccessDeniedException(path)
+        else if (err == ENOENT) new NoSuchFileException(path)
+        else if (err == EEXIST) new FileAlreadyExistsException(path)
+        else if (err == ELOOP && options.noFollowLinks)
+          new FileSystemException(
+            path,
+            null,
+            s"${LibcExt.strError(err)} (NOFOLLOW_LINKS specified)"
+          )
+        else new FileSystemException(path, null, LibcExt.strError(err))
+      }
+    }
+    new FileDescriptor(fd, readOnly = !options.write)
+  }
+
+  private def openWindows(
+      path: String,
+      options: OpenOptions
+  ): FileDescriptor = Zone.acquire { implicit z =>
+    import scala.scalanative.windows.winnt.AccessRights._
+
+    // APPEND keeps write access so that truncate() works.
+    var access = 0.toUInt
+    if (options.read) access |= FILE_GENERIC_READ
+    if (options.write) access |= FILE_GENERIC_WRITE
+
+    val disposition =
+      if (options.createNew) CREATE_NEW
+      else if (options.create && options.truncate) CREATE_ALWAYS
+      else if (options.create) OPEN_ALWAYS
+      else if (options.truncate) FileApiExt.TRUNCATE_EXISTING.toUInt
+      else OPEN_EXISTING
+
+    var flagsAndAttributes = FILE_ATTRIBUTE_NORMAL
+    if (options.sync || options.dsync)
+      flagsAndAttributes |= FILE_FLAG_WRITE_THROUGH
+
+    val handle = CreateFileW(
+      toCWideStringUTF16LE(path),
+      desiredAccess = access,
+      shareMode = FILE_SHARE_READ | FILE_SHARE_WRITE,
+      securityAttributes = null,
+      creationDisposition = disposition,
+      flagsAndAttributes = flagsAndAttributes,
+      templateFile = null
+    )
+    if (handle == HandleApiExt.INVALID_HANDLE_VALUE) {
+      val err = ErrorHandlingApi.GetLastError()
+      throw {
+        if (err == ErrorCodes.ERROR_FILE_EXISTS ||
+            err == ErrorCodes.ERROR_ALREADY_EXISTS)
+          new FileAlreadyExistsException(path)
+        else WindowsException.onPathWithLastEror(path, err)
+      }
+    }
+    new FileDescriptor(handle, readOnly = !options.write)
   }
 }

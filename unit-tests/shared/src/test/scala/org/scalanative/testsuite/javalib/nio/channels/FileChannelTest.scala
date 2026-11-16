@@ -3,9 +3,13 @@ package org.scalanative.testsuite.javalib.nio.channels
 import java.io.{File, FileInputStream, FileOutputStream, RandomAccessFile}
 import java.nio.ByteBuffer
 import java.nio.channels._
+import java.nio.charset.StandardCharsets
+import java.nio.file.attribute.PosixFilePermissions
 import java.nio.file.{
-  AccessDeniedException, Files, Path, Paths, StandardOpenOption
+  AccessDeniedException, FileAlreadyExistsException, Files, NoSuchFileException,
+  Path, Paths, StandardOpenOption
 }
+import java.util.concurrent.TimeUnit
 import java.{lang => jl}
 
 import org.junit.Assert._
@@ -1364,6 +1368,256 @@ class FileChannelTest {
         assertEquals("mismatched reads", 0, failures.get())
         assertEquals("channel position", 17L, channel.position())
       } finally channel.close()
+    }
+  }
+
+  // Issue #5260
+  @Test def appendChannelsOnOneFileDoNotOverwriteEachOther(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      Files.createFile(f)
+
+      val ch1 = FileChannel.open(f, StandardOpenOption.APPEND)
+      try {
+        val ch2 = FileChannel.open(f, StandardOpenOption.APPEND)
+        try {
+          ch1.write(ByteBuffer.wrap("AAAA".getBytes("UTF-8")))
+          ch2.write(ByteBuffer.wrap("BBBB".getBytes("UTF-8")))
+          ch1.write(ByteBuffer.wrap("CCCC".getBytes("UTF-8")))
+          assertEquals("ch1 position", 12L, ch1.position())
+          assertEquals("ch2 position", 12L, ch2.position())
+        } finally ch2.close()
+      } finally ch1.close()
+
+      val content = new String(Files.readAllBytes(f), "UTF-8")
+      assertEquals("content", "AAAABBBBCCCC", content)
+    }
+  }
+
+  @Test def fileOutputStreamAppendChannelIsPositionedAtEndOfFile(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      Files.write(f, "0123456789".getBytes("UTF-8"))
+
+      val fos = new FileOutputStream(f.toFile(), true)
+      try {
+        val channel = fos.getChannel()
+        assertEquals("position at open", 10L, channel.position())
+
+        channel.position(2L) // no-op in append mode
+        assertEquals("position after reposition", 10L, channel.position())
+
+        fos.write("AB".getBytes("UTF-8"))
+        assertEquals("position after write", 12L, channel.position())
+      } finally fos.close()
+
+      val content = new String(Files.readAllBytes(f), "UTF-8")
+      assertEquals("content", "0123456789AB", content)
+    }
+  }
+
+  @Test def writeOnlyChannelIsNotReadable(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      Files.write(f, "hello".getBytes("UTF-8"))
+
+      val channel = FileChannel.open(f, StandardOpenOption.WRITE)
+      try {
+        val dst = ByteBuffer.allocate(4)
+        assertThrows(classOf[NonReadableChannelException], channel.read(dst))
+        assertThrows(
+          classOf[NonReadableChannelException],
+          channel.read(dst, 0L)
+        )
+        assertThrows(
+          classOf[NonReadableChannelException],
+          channel.read(Array(dst))
+        )
+        val sink = Channels.newChannel(new java.io.ByteArrayOutputStream())
+        assertThrows(
+          classOf[NonReadableChannelException],
+          channel.transferTo(0L, 4L, sink)
+        )
+      } finally channel.close()
+    }
+  }
+
+  @Test def createIsIgnoredWhenNotWriting(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      assertThrows(
+        classOf[NoSuchFileException],
+        FileChannel.open(f, StandardOpenOption.READ, StandardOpenOption.CREATE)
+      )
+      assertThrows(
+        classOf[NoSuchFileException],
+        FileChannel.open(
+          f,
+          StandardOpenOption.READ,
+          StandardOpenOption.CREATE_NEW
+        )
+      )
+      assertFalse("file was created", Files.exists(f))
+    }
+  }
+
+  @Test def truncateExistingIsIgnoredWhenNotWriting(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      Files.write(f, "0123456789".getBytes("UTF-8"))
+
+      val channel = FileChannel.open(
+        f,
+        StandardOpenOption.READ,
+        StandardOpenOption.TRUNCATE_EXISTING
+      )
+      try assertEquals("size", 10L, channel.size())
+      finally channel.close()
+    }
+  }
+
+  @Test def openMissingFileWithoutCreateThrowsNoSuchFile(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      assertThrows(
+        classOf[NoSuchFileException],
+        FileChannel.open(f, StandardOpenOption.WRITE)
+      )
+      assertThrows(
+        classOf[NoSuchFileException],
+        FileChannel.open(
+          dir.resolve("missing").resolve("f"),
+          StandardOpenOption.WRITE,
+          StandardOpenOption.CREATE
+        )
+      )
+    }
+  }
+
+  @Test def createNewFailsOnExistingFile(): Unit = {
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      Files.write(f, "hello".getBytes("UTF-8"))
+      assertThrows(
+        classOf[FileAlreadyExistsException],
+        FileChannel.open(
+          f,
+          StandardOpenOption.WRITE,
+          StandardOpenOption.CREATE_NEW
+        )
+      )
+      assertEquals("content", "hello", new String(Files.readAllBytes(f)))
+    }
+  }
+
+  @Test def createAppliesPermissionAttributes(): Unit = {
+    assumeFalse("POSIX permissions", Platform.isWindows)
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      val perms = PosixFilePermissions.fromString("rw-------")
+      val options = new java.util.HashSet[StandardOpenOption]()
+      options.add(StandardOpenOption.WRITE)
+      options.add(StandardOpenOption.CREATE_NEW)
+      FileChannel
+        .open(f, options, PosixFilePermissions.asFileAttribute(perms))
+        .close()
+      assertEquals("permissions", perms, Files.getPosixFilePermissions(f))
+    }
+  }
+
+  // Issue #5260
+  @Test def canWriteToFileWithoutReadPermission(): Unit = {
+    assumeFalse("POSIX permissions", Platform.isWindows)
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      Files.write(f, "x".getBytes("UTF-8"))
+      Files.setPosixFilePermissions(
+        f,
+        PosixFilePermissions.fromString("-w-------")
+      )
+      try {
+        assumeFalse("file is still readable", Files.isReadable(f))
+
+        Files.write(f, "nio".getBytes("UTF-8"))
+        Files.write(f, "!".getBytes("UTF-8"), StandardOpenOption.APPEND)
+        val writer = Files.newBufferedWriter(f, StandardOpenOption.APPEND)
+        try writer.write("?")
+        finally writer.close()
+      } finally
+        Files.setPosixFilePermissions(
+          f,
+          PosixFilePermissions.fromString("rw-------")
+        )
+
+      assertEquals("content", "nio!?", new String(Files.readAllBytes(f)))
+    }
+  }
+
+  private def readWrittenToFifo(dir: Path)(write: Path => Unit): String = {
+    val fifo = dir.resolve("fifo")
+    if (!Files.exists(fifo)) {
+      val mkfifo = new ProcessBuilder("mkfifo", fifo.toString()).start()
+      assertTrue("mkfifo timed out", mkfifo.waitFor(10, TimeUnit.SECONDS))
+      assertEquals("mkfifo exit code", 0, mkfifo.exitValue())
+    }
+
+    val reader = new ProcessBuilder("cat", fifo.toString()).start()
+    try {
+      write(fifo)
+      assertTrue("reader timed out", reader.waitFor(10, TimeUnit.SECONDS))
+      val in = reader.getInputStream()
+      val out = new java.io.ByteArrayOutputStream()
+      val buf = new Array[Byte](64)
+      var n = in.read(buf)
+      while (n != -1) {
+        out.write(buf, 0, n)
+        n = in.read(buf)
+      }
+      new String(out.toByteArray(), StandardCharsets.UTF_8)
+    } finally reader.destroyForcibly()
+  }
+
+  // Issue #5260
+  @Test def canWriteToFifoThroughFiles(): Unit = {
+    assumeFalse("FIFOs", Platform.isWindows)
+    withTemporaryDirectory { dir =>
+      assertEquals(
+        "Files.write",
+        "w1",
+        readWrittenToFifo(dir)(Files.write(_, "w1".getBytes("UTF-8")))
+      )
+      assertEquals(
+        "Files.write APPEND",
+        "w2",
+        readWrittenToFifo(dir)(
+          Files.write(
+            _,
+            "w2".getBytes("UTF-8"),
+            StandardOpenOption.CREATE,
+            StandardOpenOption.APPEND
+          )
+        )
+      )
+      assertEquals(
+        "Files.newBufferedWriter",
+        "w3",
+        readWrittenToFifo(dir) { fifo =>
+          val writer = Files.newBufferedWriter(fifo)
+          try writer.write("w3")
+          finally writer.close()
+        }
+      )
+      assertEquals(
+        "FileChannel APPEND position",
+        "w4",
+        readWrittenToFifo(dir) { fifo =>
+          val channel = FileChannel.open(fifo, StandardOpenOption.APPEND)
+          try {
+            assertEquals("position", 0L, channel.position())
+            channel.write(ByteBuffer.wrap("w4".getBytes("UTF-8")))
+          } finally channel.close()
+        }
+      )
     }
   }
 }

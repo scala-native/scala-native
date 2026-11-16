@@ -11,11 +11,15 @@ import scala.scalanative.windows.FileApiExt._
 import scala.scalanative.windows.HandleApiExt._
 import scala.scalanative.windows.winnt.AccessRights._
 
-class FileOutputStream(fd: FileDescriptor, file: Option[File])
-    extends OutputStream {
+class FileOutputStream private[java] (
+    fd: FileDescriptor,
+    file: Option[File],
+    append: Boolean
+) extends OutputStream {
+  def this(fd: FileDescriptor, file: Option[File]) = this(fd, file, false)
   def this(fd: FileDescriptor) = this(fd, None)
   def this(file: File, append: Boolean) =
-    this(FileOutputStream.fileDescriptor(file, append), Some(file))
+    this(FileOutputStream.fileDescriptor(file, append), Some(file), append)
   def this(file: File) = this(file, false)
   def this(name: String, append: Boolean) = this(new File(name), append)
   def this(name: String) = this(new File(name))
@@ -26,7 +30,8 @@ class FileOutputStream(fd: FileDescriptor, file: Option[File])
       file,
       deleteFileOnClose = false,
       openForReading = false,
-      openForWriting = true
+      openForWriting = true,
+      openForAppending = append
     )
 
   override def close(): Unit =
