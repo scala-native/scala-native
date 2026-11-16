@@ -107,28 +107,26 @@ class DirectoryStreamTest {
    * directory was considered but judged to be more fragile.
    */
   @Test def normalizesAcceptCandidatePathExpectMatch(): Unit = {
+    val suffix = ".dirstreamtest"
+    val passGlob = "*" + suffix
+    val fixture = Files.createTempFile(Paths.get("."), "fixture", suffix)
 
-    val passGlob = "*.sbt" // passes in JVM
+    def hasMatch(dir: String): Boolean = {
+      val stream = Files.newDirectoryStream(Paths.get(dir), passGlob)
+      try stream.iterator().hasNext()
+      finally stream.close()
+    }
 
-    // Path of current working directory, from empty string.
-    val emptyPathStream = Files.newDirectoryStream(Paths.get(""), passGlob)
-    val emptyPathPassed = emptyPathStream.iterator().hasNext() // count >= 1
-    emptyPathStream.close()
-
-    assertTrue(
-      s"current working directory stream has no match for '${passGlob}'",
-      emptyPathPassed
-    )
-
-    // Path of current working directory, from dot string.
-    val dotPathStream = Files.newDirectoryStream(Paths.get("."), passGlob)
-    val dotPathPassed = dotPathStream.iterator().hasNext() // count >= 1
-    dotPathStream.close()
-
-    assertTrue(
-      s"dot directory stream has no match for '${passGlob}'",
-      dotPathPassed
-    )
+    try {
+      assertTrue(
+        s"current working directory stream has no match for '${passGlob}'",
+        hasMatch("")
+      )
+      assertTrue(
+        s"dot directory stream has no match for '${passGlob}'",
+        hasMatch(".")
+      )
+    } finally Files.delete(fixture)
   }
 
   @Test def normalizesAcceptCandidatePathExpectNoMatch(): Unit = {

@@ -5,7 +5,6 @@
 
 
 org/scalanative/testsuite/javalib/nio/file/FileSystemExceptionTest.scala
-org/scalanative/testsuite/javalib/nio/file/DirectoryStreamTest.scala
 
 scala/ObjectCloneTest.scala
 scala/ExecutionContextTest.scala
