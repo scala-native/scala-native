@@ -32,6 +32,9 @@
  * low 24 bits of the itable key (bits 8-31) */
 #define RTTI_FLAG_IS_AT_HOME_SLOT (1 << 7)
 #define RTTI_TRAIT_KEY_SHIFT 8
+/* Classes only, bit 7: the GC calls the object tracer for every marked
+ * instance, see shared/GCHooks.h */
+#define RTTI_FLAG_HAS_OBJECT_TRACER (1 << 7)
 /* Arrays only, bits 8-15: number of dimensions */
 #define RTTI_ARRAY_DIMENSIONS_SHIFT 8
 /* Classes, bits 16-31: hash of the class name, see codegen.StableHash */

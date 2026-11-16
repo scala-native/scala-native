@@ -34,8 +34,9 @@ typedef void GC_ObjectTracerFn(void **fields, GC_ScanRangeFn *scan, void *ctx);
 
 /* Has the memory owned by `owner` traced, in the way the collector supports:
  *
- * - Returns NULL: `ownerTracer` runs for every marked instance of the exact
- *   class of `owner`, with `fields` at its first field.
+ * - Returns NULL: `ownerTracer` runs for every marked instance of the class
+ *   of `owner`, with `fields` at its first field. The toolchain has to flag
+ *   that class in its type descriptor, see codegen.RuntimeTypeInformation.
  * - Returns an anchor: two zero words to fill in and keep reachable from
  *   `owner`. `anchorTracer` runs when the anchor is marked and its second
  *   word is not zero, with `fields` at these words. Such a collector is

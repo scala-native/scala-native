@@ -177,6 +177,9 @@ private[codegen] object RuntimeTypeInformation {
     // Traits only: every class holds the trait in the slot where its lookup
     // starts, see Metadata.alwaysAtHomeSlot
     final val IsAtHomeSlot = 1 << 7
+    // Classes only: the GC calls the object tracer for every marked
+    // instance, see gc/shared/GCHooks.h
+    final val HasObjectTracer = 1 << 7
     // Traits only, bits 8-31: low 24 bits of the itable key, enough for
     // java.lang.Class to start lookups in itables up to 2^24 slots
     final val TraitKeyShift = 8
@@ -188,6 +191,10 @@ private[codegen] object RuntimeTypeInformation {
 
     private val ObjectArray =
       nir.Global.Top("scala.scalanative.runtime.ObjectArray")
+    // The only class with an object tracer: it owns the stacks of a
+    // suspended continuation
+    private val SuspendedStacks =
+      nir.Global.Top("scala.scalanative.runtime.SuspendedStacks")
 
     /** Computed from the type and its ancestors only. */
     def apply(info: ScopeInfo)(implicit meta: Metadata): Int = info match {
@@ -216,6 +223,7 @@ private[codegen] object RuntimeTypeInformation {
         flag(nir.Rt.PrimitiveTypes.contains(cls.name), IsPrimitive) |
           arrayFlags |
           referenceKind |
+          flag(cls.name == SuspendedStacks, HasObjectTracer) |
           StableHash.classKey(cls) << ClassKeyShift
     }
   }

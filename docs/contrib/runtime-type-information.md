@@ -49,6 +49,7 @@ The layout is defined by `codegen.CommonMemoryLayouts` and mirrored by
 | 3-4  | arrays: element scan, 0 none, 1 references, 2 conservative     |
 | 5-6  | reference kind: 0 none, 1 weak, 2 soft, 3 phantom              |
 | 7    | traits: every implementor holds it in its home itable slot     |
+| 7    | classes: the GC calls the object tracer for marked instances   |
 | 8-15 | arrays: number of dimensions                                   |
 | 16-31 | classes: hash of the class name, for reflective calls         |
 | 8-31 | traits: low 24 bits of the itable key                          |

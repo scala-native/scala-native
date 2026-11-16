@@ -317,13 +317,14 @@ int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
             objectsTraced += 1;
         }
     }
-    if (UNLIKELY(
-            (void *)object->rtti ==
-            atomic_load_explicit(&ObjectTracer_rtti, memory_order_relaxed))) {
-        ScanContext context = {heap, stats, outHolder, outWeakRefHolder, 0};
-        atomic_load (&ObjectTracer_trace)((void **)object->fields,
-                                          Marker_scanRange, &context);
-        objectsTraced += context.objectsTraced;
+    if (UNLIKELY(Rtti_HasFlag(object->rtti, RTTI_FLAG_HAS_OBJECT_TRACER))) {
+        // Not set before the first owner registers it
+        GC_ObjectTracerFn *trace = atomic_load(&ObjectTracer_trace);
+        if (trace != NULL) {
+            ScanContext context = {heap, stats, outHolder, outWeakRefHolder, 0};
+            trace((void **)object->fields, Marker_scanRange, &context);
+            objectsTraced += context.objectsTraced;
+        }
     }
     return objectsTraced;
 }

@@ -3,8 +3,10 @@ package scala.scalanative.runtime
 /** The stacks of a suspended one-shot continuation.
  *
  *  The GC has them scanned when it marks this object, see
- *  `gc/shared/GCHooks.h`. `stacks` must stay the only field: the tracer reads
- *  the first one, and fields are not laid out in declaration order.
+ *  `gc/shared/GCHooks.h`: the toolchain flags this class, by name, in its RTTI,
+ *  see `codegen.RuntimeTypeInformation`. `stacks` must stay the only field: the
+ *  tracer reads the first one, and fields are not laid out in declaration
+ *  order.
  */
 private[runtime] final class SuspendedStacks(var stacks: RawPtr) {
 
