@@ -94,19 +94,19 @@ private[runtime] final class _Class[A] {
 
   def isArray(): scala.Boolean = (flags & _Class.Flags.IsArray) != 0
 
-  def isAssignableFrom(that: Class[_]): scala.Boolean =
-    is(that.asInstanceOf[_Class[_]], this)
+  @inline def isAssignableFrom(that: Class[_]): scala.Boolean = {
+    val left = that.asInstanceOf[_Class[_]]
+    // unlikely, only possible when operating on Class[_] instances
+    if (left.isInterface()) _Class.interfaceIs(left, this)
+    else _Class.classIs(Intrinsics.castObjectToRawPtr(left), this)
+  }
 
   // The class of an object is never an interface: no check on its side
-  def isInstance(obj: Object): scala.Boolean =
-    obj != null && _Class.classIs(obj.getClass.asInstanceOf[_Class[_]], this)
-
-  private def is(left: _Class[_], right: _Class[_]): Boolean =
-    if (left.isInterface()) {
-      // unlikely, only possible when operating on Class[_] instances
-      (left eq right) ||
-      (right.isInterface() && _Class.checkHasTrait(left, right))
-    } else _Class.classIs(left, right)
+  @inline def isInstance(obj: Object): scala.Boolean =
+    obj != null && _Class.classIs(
+      Intrinsics.loadRawPtr(Intrinsics.castObjectToRawPtr(obj)),
+      this
+    )
 
   @inline override def equals(other: Any): scala.Boolean =
     other match {
@@ -215,20 +215,79 @@ private[runtime] object _Class {
   @alwaysinline private[runtime] def PtrSize =
     Intrinsics.castRawSizeToInt(Intrinsics.sizeOf[RawPtr])
 
-  /* Whether instances of class `cls` are instances of `right`, a class or a
-   * trait, the way generated instance tests decide it.
+  /* Address in class `cls` of the field found at `field` in `like`. Classes
+   * read from memory are kept as raw pointers: typing them as _Class would
+   * check their type on every load.
    */
-  private[runtime] def classIs(cls: _Class[_], right: _Class[_]): Boolean =
-    if (cls eq right) true
-    else if (right.isInterface()) checkImplements(cls, right)
-    else {
+  @alwaysinline private def fieldOf(
+      cls: RawPtr,
+      like: _Class[_],
+      field: RawPtr
+  ): RawPtr =
+    Intrinsics.elemRawPtr(
+      cls,
+      Intrinsics.castLongToRawSize(
+        Intrinsics.castRawPtrToLong(field) -
+          Intrinsics.castRawPtrToLong(Intrinsics.castObjectToRawPtr(like))
+      )
+    )
+
+  @alwaysinline private def same(ptr: RawPtr, cls: _Class[_]): Boolean =
+    Intrinsics.castRawPtrToLong(ptr) ==
+      Intrinsics.castRawPtrToLong(Intrinsics.castObjectToRawPtr(cls))
+
+  /* Whether instances of class `cls` are instances of `right`, a class or a
+   * trait, the way generated instance tests decide it. Inlined: the lineage
+   * entry or the itable slot where the lookup starts decide most tests.
+   */
+  @inline private[runtime] def classIs(
+      cls: RawPtr,
+      right: _Class[_]
+  ): Boolean = {
+    import Intrinsics._
+    val rightFlags = right.flags
+    if ((rightFlags & Flags.IsInterface) != 0) {
+      val mask =
+        loadInt(fieldOf(cls, right, classFieldRawPtr(right, "itablesMask")))
+      val shift =
+        loadInt(fieldOf(cls, right, classFieldRawPtr(right, "itablesShift")))
+      val itables =
+        loadRawPtr(fieldOf(cls, right, classFieldRawPtr(right, "itables")))
+      val pos = ((rightFlags >>> Flags.TraitKeyShift) >>> shift) & mask
+      val entry = loadRawPtr(elemRawPtr(itables, 2 * PtrSize * pos))
+      // Implementors hold an at-home trait in this slot, see
+      // Metadata.alwaysAtHomeSlot
+      same(entry, right) ||
+        (castRawPtrToLong(entry) != 0L &&
+        (rightFlags & Flags.IsAtHomeSlot) == 0 &&
+        implementsDisplaced(cls, right, pos))
+    } else {
       // `right` is in the lineage of `cls` at index superclassCount(right)
       val rightCount = right.superclassCount
-      if (rightCount < LineageSize) inlineAncestor(cls, rightCount) eq right
-      else
-        cls.superclassCount >= rightCount &&
-          (ancestorAt(cls, rightCount) eq right)
+      if (rightCount < LineageSize) {
+        val lineage = fieldOf(cls, right, classFieldRawPtr(right, "lineage"))
+        same(loadRawPtr(elemRawPtr(lineage, PtrSize * rightCount)), right)
+      } else deepClassIs(cls, right, rightCount)
     }
+  }
+
+  @noinline private def deepClassIs(
+      cls: RawPtr,
+      right: _Class[_],
+      rightCount: Int
+  ): Boolean = {
+    val left = Intrinsics.castRawPtrToObject(cls).asInstanceOf[_Class[_]]
+    left.superclassCount >= rightCount && (ancestorAt(
+      left,
+      rightCount
+    ) eq right)
+  }
+
+  @noinline private[runtime] def interfaceIs(
+      left: _Class[_],
+      right: _Class[_]
+  ): Boolean =
+    (left eq right) || (right.isInterface() && checkHasTrait(left, right))
 
   @alwaysinline private def inlineAncestor(
       cls: _Class[_],
@@ -251,29 +310,27 @@ private[runtime] object _Class {
         .loadObject(Intrinsics.elemRawPtr(cls.deepLineage, PtrSize * depth))
         .asInstanceOf[_Class[_]]
 
-  /* Looks `trt` up in the itable of class `left` the way generated code
-   * does, see codegen.ITable: linear probing from the slot selected by the
-   * trait key, until the trait or an empty slot.
+  /* Continues the lookup of `trt` in the itable of class `left` after slot
+   * `start`, which holds another trait, see codegen.ITable: linear probing
+   * until the trait or an empty slot.
    */
-  private def checkImplements(left: _Class[_], trt: _Class[_]): Boolean = {
+  @noinline private def implementsDisplaced(
+      cls: RawPtr,
+      trt: _Class[_],
+      start: Int
+  ): Boolean = {
+    val left = Intrinsics.castRawPtrToObject(cls).asInstanceOf[_Class[_]]
     val mask = left.itablesMask
     val entrySize = 2 * PtrSize
-    var pos = ((trt.flags >>> Flags.TraitKeyShift) >>> left.itablesShift) & mask
-    if ((trt.flags & Flags.IsAtHomeSlot) != 0) {
-      // Implementors hold the trait in this slot, see Metadata.alwaysAtHomeSlot
-      val entry = Intrinsics.loadObject(
-        Intrinsics.elemRawPtr(left.itables, entrySize * pos)
-      )
-      return entry eq trt
-    }
+    var pos = start
     var probes = 0
-    while (probes <= mask) {
+    while (probes < mask) {
+      pos = (pos + 1) & mask
       val entry = Intrinsics.loadObject(
         Intrinsics.elemRawPtr(left.itables, entrySize * pos)
       )
       if (entry eq trt) return true
       if (entry eq null) return false
-      pos = (pos + 1) & mask
       probes += 1
     }
     false
