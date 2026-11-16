@@ -47,7 +47,7 @@ final class Matcher private[regex] (
   def appendTail(sb: jl.StringBuilder): jl.StringBuilder =
     underlying.appendTail(sb)
 
-  def end(): Int = end(0)
+  def end(): Int = underlying.end()
 
   def end(group: Int): Int = underlying.end(group)
 
@@ -111,7 +111,7 @@ final class Matcher private[regex] (
     this
   }
 
-  def start(): Int = start(0)
+  def start(): Int = underlying.start()
 
   def start(group: Int): Int = underlying.start(group)
 

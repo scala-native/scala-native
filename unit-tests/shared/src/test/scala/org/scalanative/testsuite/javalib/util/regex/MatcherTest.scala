@@ -57,6 +57,77 @@ class MatcherTest {
     )
   }
 
+  private def assertNoMatch(m: Matcher): Unit = {
+    assertThrows(classOf[IllegalStateException], m.start())
+    assertThrows(classOf[IllegalStateException], m.end())
+    assertThrows(classOf[IllegalStateException], m.group())
+    assertTrue(m.toString, m.toString.endsWith("lastmatch=]"))
+  }
+
+  // Issue #4207
+  @Test def regionClearsLastMatch(): Unit = {
+    val haystack = "abcTTTdefTTTx"
+    val m = matcher("TTT", haystack)
+
+    assertTrue(m.find())
+    assertEquals(3, m.start())
+    m.region(6, haystack.length)
+    assertNoMatch(m)
+
+    assertTrue(m.find())
+    assertEquals(9, m.start())
+    m.region(0, haystack.length)
+    assertNoMatch(m)
+
+    assertTrue(m.find())
+    assertEquals(3, m.start())
+  }
+
+  @Test def resetClearsLastMatch(): Unit = {
+    val m = matcher("TTT", "abcTTTdefTTTx")
+
+    assertTrue(m.find())
+    m.reset()
+    assertNoMatch(m)
+
+    assertTrue(m.find())
+    m.reset("xTTT")
+    assertNoMatch(m)
+    assertTrue(m.find())
+    assertEquals(1, m.start())
+  }
+
+  @Test def usePatternLosesGroupsOfLastMatch(): Unit = {
+    val m = matcher("(T)TT", "abcTTTdefTTTx")
+
+    assertTrue(m.find())
+    m.usePattern(Pattern.compile("d(e)f"))
+
+    assertEquals(3, m.start())
+    assertEquals(6, m.end())
+    assertEquals(-1, m.start(0))
+    assertEquals(-1, m.end(0))
+    assertNull(m.group())
+    assertNull(m.group(1))
+    assertEquals(-1, m.start(1))
+    assertEquals(-1, m.end(1))
+
+    assertTrue(m.find())
+    assertEquals("def", m.group())
+    assertEquals("e", m.group(1))
+
+    val grown = matcher("T", "abcTTTdefTTTx")
+    assertTrue(grown.find())
+    grown.usePattern(Pattern.compile("(T)(T)"))
+    assertEquals(3, grown.start())
+    assertNull(grown.group(1))
+    assertEquals(-1, grown.start(2))
+
+    val unmatched = matcher("TTT", "abcTTTdefTTTx")
+    unmatched.usePattern(Pattern.compile("x"))
+    assertNoMatch(unmatched)
+  }
+
   @Test def testFind(): Unit = {
     locally { // Expect success
       val needle = "Cutty"

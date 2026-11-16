@@ -636,6 +636,7 @@ final class Matcher private (private var _pattern: Pattern) {
     } else {
       _groups = createGroups(_groupCount)
     }
+    _hasGroups = true
 
     this
   }
