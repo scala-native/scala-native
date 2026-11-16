@@ -151,6 +151,13 @@ object GC {
   @name("scalanative_GC_write_barrier_slot")
   private[runtime] def writeBarrierSlot(slot: RawPtr): Unit = extern
 
+  /** Remembers an old object before a reference is stored into its slot at
+   *  `slot`; the GC may remember only that part of a large array.
+   */
+  @name("scalanative_GC_write_barrier_elem")
+  private[runtime] def writeBarrierElem(obj: RawPtr, slot: RawPtr): Unit =
+    extern
+
   /** Write barrier for reference stores that code generation cannot see, such
    *  as a `memmove` into an object array. Code generation inlines it, or drops
    *  it when the GC is built without the write barrier.

@@ -50,8 +50,41 @@ typedef struct {
 
 WRITE_BARRIER_SLOW_PATH void scalanative_GC_write_barrier_slow(word_t *object);
 WRITE_BARRIER_SLOW_PATH void scalanative_GC_write_barrier_slot(word_t *slot);
+// Like scalanative_GC_write_barrier_slow, for a store into `slot` of `object`.
+WRITE_BARRIER_SLOW_PATH void scalanative_GC_write_barrier_elem(word_t *object,
+                                                               word_t *slot);
+
+#ifdef SCALANATIVE_GC_STICKY
+// Sticky Immix remembers stores into a large object array by card: it keeps
+// the array unlogged, so that every store into it takes the slow path, which
+// marks the card of the written slot dirty, and remembers the array, tagged,
+// once per collection. A minor collection then scans only its dirty cards.
+#define WRITE_BARRIER_CARD_SHIFT 9
+#define WRITE_BARRIER_CARD_ARRAY_MIN_LENGTH 2048
+#define WRITE_BARRIER_CARD_DIRTY 1
+// Set on the card of the array's header while the array is remembered.
+#define WRITE_BARRIER_CARD_QUEUED 2
+// Low bit of a remembered set entry that is such an array.
+#define WRITE_BARRIER_CARDED_TAG ((word_t)1)
+
+extern uint8_t *WriteBarrier_cards;
+
+static inline size_t WriteBarrier_CardIndex(void *address) {
+    return ((word_t)address - (word_t)scalanative_GC_barrier_heap_start) >>
+           WRITE_BARRIER_CARD_SHIFT;
+}
+
+static inline word_t *WriteBarrier_CardStart(size_t card) {
+    return (word_t *)((ubyte_t *)scalanative_GC_barrier_heap_start +
+                      (card << WRITE_BARRIER_CARD_SHIFT));
+}
+
+// Forgets all dirty cards of the heap's first `heapBytes` bytes.
+void WriteBarrier_ClearCards(size_t heapBytes);
+#endif
 
 void WriteBarrier_Init(word_t *heapStart, size_t heapSize, ObjectMeta *data);
+void RememberedSet_Push(RememberedSet *set, word_t *object);
 void RememberedSet_Clear(RememberedSet *set);
 
 // SCALANATIVE_GC_WRITE_BARRIER_VERIFY (Immix only) checks the barrier
@@ -63,7 +96,9 @@ void RememberedSet_Clear(RememberedSet *set);
 #error "SCALANATIVE_GC_WRITE_BARRIER_VERIFY is supported only by Immix"
 #endif
 void WriteBarrier_VerifyBeforeCollection(void);
-void WriteBarrier_AgeSurvivors(void);
+// With SCALANATIVE_GC_STICKY, also checks that no survivor references an
+// object the collection freed.
+void WriteBarrier_VerifyAfterCollection(void);
 #endif
 
 #endif // SCALANATIVE_GC_WRITE_BARRIER

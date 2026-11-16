@@ -8,6 +8,9 @@
 #include "shared/ThreadUtil.h"
 #include "shared/Log.h"
 #include <assert.h>
+#ifdef SCALANATIVE_GC_STICKY
+#include "immix/Generations.h"
+#endif
 
 #ifndef _WIN32
 #include <errno.h>
@@ -158,6 +161,10 @@ bool MutatorThread_rebind(word_t **stackBottom, ThreadInfo *info) {
 #endif
 
 void MutatorThread_delete(MutatorThread *self) {
+#ifdef SCALANATIVE_GC_STICKY
+    // While still managed, so that no collection runs meanwhile.
+    Generations_AdoptRememberedSet(&self->rememberedSet);
+#endif
     // An unmanaged thread's published snapshot may be under scan already.
     if (atomic_load_explicit(&self->state, memory_order_relaxed) !=
         GC_MutatorThreadState_Unmanaged)

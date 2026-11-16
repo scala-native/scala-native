@@ -1086,7 +1086,9 @@ private[codegen] abstract class AbstractCodeGen(
 
   private def usesPreserveMost(name: nir.Global): Boolean =
     writeBarrierPreservesMost &&
-      (name == Lower.GCWriteBarrierSlow.name || name == Lower.GCWriteBarrierSlot.name)
+      (name == Lower.GCWriteBarrierSlow.name ||
+      name == Lower.GCWriteBarrierSlot.name ||
+      name == Lower.GCWriteBarrierElem.name)
 
   private[codegen] def genCall(
       genBind: () => Unit,

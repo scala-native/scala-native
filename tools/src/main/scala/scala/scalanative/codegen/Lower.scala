@@ -830,7 +830,7 @@ private[scalanative] object Lower {
     /** Remembers `obj`, already known to be non-null, when the GC considers it old and has not remembered it since the last collection. See
      *  gc/immix_commix/WriteBarrier.h for the protocol.
      */
-    private def genWriteBarrier(buf: nir.InstructionBuilder, obj: nir.Val)(implicit
+    private def genWriteBarrier(buf: nir.InstructionBuilder, obj: nir.Val, slot: Option[nir.Val] = None)(implicit
         srcPosition: nir.SourcePosition,
         scopeId: nir.ScopeId
     ): Unit = {
@@ -867,7 +867,10 @@ private[scalanative] object Lower {
       branch(isOldUnlogged, nir.Next(slowL), nir.Next(doneL))
 
       label(slowL)
-      call(GCWriteBarrierSlowSig, GCWriteBarrierSlow, Seq(obj), unwind)
+      slot match {
+        case Some(slot) => call(GCWriteBarrierElemSig, GCWriteBarrierElem, Seq(obj, slot), unwind)
+        case None       => call(GCWriteBarrierSlowSig, GCWriteBarrierSlow, Seq(obj), unwind)
+      }
       jump(nir.Next(doneL))
       label(doneL)
     }
@@ -894,7 +897,7 @@ private[scalanative] object Lower {
     ): Unit = ptr match {
       case nir.Val.Local(id, _) if rawPtrBases.contains(id) =>
         val obj = rawPtrBases(id)
-        if (needsWriteBarrier(nir.Rt.Object, obj, value)) genWriteBarrier(buf, genVal(buf, obj))
+        if (needsWriteBarrier(nir.Rt.Object, obj, value)) genWriteBarrier(buf, genVal(buf, obj), Some(genVal(buf, ptr)))
       case _ =>
         genSlotWriteBarrier(buf, genVal(buf, ptr))
     }
@@ -2200,7 +2203,7 @@ private[scalanative] object Lower {
 
       val arrTy = arrayMemoryLayout(ty)
       val elemPtr = buf.elem(arrTy, arr, arrayValuePath(idx), unwind)
-      if (needsWriteBarrier(ty, arr, value)) genWriteBarrier(buf, genVal(buf, arr))
+      if (needsWriteBarrier(ty, arr, value)) genWriteBarrier(buf, genVal(buf, arr), Some(elemPtr))
       genStoreOp(buf, n, nir.Op.Store(ty, elemPtr, value, Some(nir.MemoryOrder.Unordered)))
     }
 
@@ -2740,6 +2743,14 @@ private[scalanative] object Lower {
     GC.member(nir.Sig.Extern("scalanative_GC_write_barrier_slot")),
     nir.Type.Ptr
   )
+  val GCWriteBarrierElemSig =
+    nir.Type.Function(Seq(nir.Type.Ptr, nir.Type.Ptr), nir.Type.Unit)
+  // Slow path that also gets the address of the written slot, so that the GC
+  // can remember only a part of a large array.
+  val GCWriteBarrierElem = nir.Val.Global(
+    GC.member(nir.Sig.Extern("scalanative_GC_write_barrier_elem")),
+    nir.Type.Ptr
+  )
   // Calls to it are replaced by the inline write barrier.
   val GCWriteBarrierName = "scalanative_GC_write_barrier"
   // Atomic operations that may store a reference given as the argument at
@@ -2858,6 +2869,7 @@ private[scalanative] object Lower {
       buf += GCBarrierBytemap.name
       buf += GCWriteBarrierSlow.name
       buf += GCWriteBarrierSlot.name
+      buf += GCWriteBarrierElem.name
     }
     buf.toSeq
   }
