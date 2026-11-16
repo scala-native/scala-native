@@ -310,16 +310,14 @@ trait JEP431_SequencedMapTestTraitOnJDK21 {
     populateStringIntMap(seqMap)
 
     val seqEntrySet = seqMap.sequencedEntrySet()
-
-    // Really only need to check ORDERED 0x00000010 but might as well check all
-
-    val expectedCharacteristics = 0x4051 // Decimal 16465
     val characteristics = seqEntrySet.spliterator().characteristics()
 
-    assertEquals(
-      s"${classUnderTest}#sequencedEntrySet spliterator characteristics",
-      expectedCharacteristics,
-      characteristics
+    /* Check only the ORDERED bit (0x00000010). Other bits vary across
+     * the operating systems supported in SN CI.
+     */
+    assertTrue(
+      s"${classUnderTest}#sequencedEntrySet spliterator ORDERED bit not set",
+      (characteristics & ju.Spliterator.ORDERED) == ju.Spliterator.ORDERED
     )
   }
 
@@ -387,15 +385,14 @@ trait JEP431_SequencedMapTestTraitOnJDK21 {
     populateStringIntMap(seqMap)
 
     val seqKeySet = seqMap.sequencedKeySet()
-
-    // Really only need to check ORDERED 0x00000010 but might as well check all
-    val expectedCharacteristics = 0x4051 // Decimal 16465
     val characteristics = seqKeySet.spliterator().characteristics()
 
-    assertEquals(
-      s"${classUnderTest}#sequencedValues spliterator characteristics",
-      expectedCharacteristics,
-      characteristics
+    /* Check only the ORDERED bit (0x00000010). Other bits vary across
+     * the operating systems supported in SN CI.
+     */
+    assertTrue(
+      s"${classUnderTest}#sequencedKeySet spliterator ORDERED bit not set",
+      (characteristics & ju.Spliterator.ORDERED) == ju.Spliterator.ORDERED
     )
   }
 
@@ -463,16 +460,16 @@ trait JEP431_SequencedMapTestTraitOnJDK21 {
     populateStringIntMap(seqMap)
 
     val seqValues = seqMap.sequencedValues()
-
-    // Really only need to check ORDERED 0x00000010 but might as well check all
-    val expectedCharacteristics = 0x4050 // Decimal 16464
     val characteristics = seqValues.spliterator().characteristics()
 
-    assertEquals(
-      s"${classUnderTest}#sequencedValues spliterator characteristics",
-      expectedCharacteristics,
-      characteristics
+    /* Check only the ORDERED bit (0x00000010). Other bits vary across
+     * the operating systems supported in SN CI.
+     */
+    assertTrue(
+      s"${classUnderTest}#sequencedValues spliterator ORDERED bit not set",
+      (characteristics & ju.Spliterator.ORDERED) == ju.Spliterator.ORDERED
     )
+
   }
 
   @Test def sequencedValues(): Unit = {
