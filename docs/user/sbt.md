@@ -249,6 +249,21 @@ Scala Native supports three distinct linking modes:
     Useful for short-running command-line applications or applications
     where garbage collections pauses are not acceptable.
 
+The selected garbage collector is tuned with
+`nativeConfig.withGarbageCollectorConfig`, which sets heap sizes, the
+number of GC threads, logging and more, and fails the build on settings
+the collector does not support:
+
+``` scala
+nativeConfig ~= {
+  _.withGC(GC.commix)
+    .withGarbageCollectorConfig(_.withMaxHeapSize(2.gb).withThreads(4))
+}
+```
+
+All the settings, their defaults and environment variables are listed in
+[runtime settings](./runtime.md).
+
 ## Link-Time Optimization (LTO)
 
 Scala Native relies on link-time optimization to maximize runtime

@@ -3,6 +3,8 @@ package sbtplugin
 
 import sbt._
 
+import scala.language.implicitConversions
+
 import sjsonnew.JsonFormat
 
 object ScalaNativePlugin extends AutoPlugin {
@@ -35,6 +37,18 @@ object ScalaNativePlugin extends AutoPlugin {
       /** This tag is applied to the [[nativeLink]] task. */
       val Link = Tags.Tag("native-link")
     }
+
+    /** Adds `bytes`, `kb`, `mb` and `gb` to integers, for the sizes of
+     *  [[build.GarbageCollectorConfig]], e.g. `withMaxHeapSize(1.gb)`
+     */
+    implicit def intToMemorySizeOps(
+        value: Int
+    ): build.MemorySize.MemorySizeOps =
+      build.MemorySize.syntax.intToMemorySizeOps(value)
+    implicit def longToMemorySizeOps(
+        value: Long
+    ): build.MemorySize.MemorySizeOps =
+      build.MemorySize.syntax.longToMemorySizeOps(value)
 
     val nativeConfig =
       taskKey[build.NativeConfig](

@@ -65,7 +65,7 @@ To mitigate this issue set the environment variable `SCALANATIVE_TEST_PREFETCH_D
 
 ### Debugging with multithreading
 To achive (almost) no-overhead for stopping threads during garbage collection, Scala Native uses specialized signal handlers which can trigger controlled segmentation fault during StopTheWorld event. These might lead to poor experience when iterating through the execution of the code in the debugger.
-To mittigate this issue you can replace default yield points mechanism with a conservative, but slower mechanism checking for a global flag to be set using `SCALANATIVE_GC_TRAP_BASED_YIELDPOINTS=0` env variable when building.
+To mittigate this issue you can replace default yield points mechanism with a conservative, but slower mechanism checking for a global flag to be set using `SCALANATIVE_GC_TRAP_BASED_YIELDPOINTS=0` env variable when building or `nativeConfig ~= { _.withGarbageCollectorConfig(_.withTrapBasedYieldPoints(false)) }` in the build.
 Trap based yieldpoint mechanism is used by default in release modes, while the debug mode uses conventional approach.
 
 ## Debugging signals

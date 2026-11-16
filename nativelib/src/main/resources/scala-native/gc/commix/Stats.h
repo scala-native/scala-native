@@ -2,10 +2,12 @@
 #define IMMIX_STATS_H
 
 #include "Constants.h"
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <time.h>
 #include "shared/Time.h"
+#include "shared/GCConfig.h"
 
 #define MUTATOR_THREAD_ID -1
 
@@ -13,7 +15,7 @@
 #define ENABLE_GC_STATS_BATCHES
 #endif
 
-#if defined(ENABLE_GC_STATS_BATCHES) || defined(GC_ENABLE_STATS)
+#if defined(ENABLE_GC_STATS_BATCHES) || SCALANATIVE_GC_CONFIG_STATS_ENABLED
 #define ENABLE_GC_STATS
 #endif
 
@@ -58,7 +60,8 @@ typedef struct {
     uint64_t packet_waiting_end_ns;
 } Stats;
 
-void Stats_Init(Stats *stats, const char *statsFile, int8_t gc_thread);
+// False if the file could not be opened, the stats must not be used then.
+bool Stats_Init(Stats *stats, const char *statsFile, int8_t gc_thread);
 void Stats_RecordEvent(Stats *stats, eventType eType, uint64_t start_ns,
                        uint64_t end_ns);
 void Stats_OnExit(Stats *stats);

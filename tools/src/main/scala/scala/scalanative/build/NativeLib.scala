@@ -172,7 +172,11 @@ private[scalanative] object NativeLib {
           else Some("-DSCALANATIVE_GC_STOPS_THREADS_ANYWHERE"),
           if (!config.useTrapBasedGCYieldPoints) None
           else Some("-DSCALANATIVE_GC_USE_YIELDPOINT_TRAPS")
-        ).flatten
+        ).flatten ++
+          GarbageCollectorConfig.Settings
+            .resolve(config.compilerConfig)
+            .defines
+            .map("-D" + _)
       }
 
     linkDefines ++ defines ++ gcMaybeDefines ++ includePaths

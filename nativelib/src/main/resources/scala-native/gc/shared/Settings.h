@@ -12,13 +12,6 @@
     "SCALANATIVE_GC_SYNC_WARNING_INTERVAL_MS"
 
 // =============================================================================
-// Default Values for GC Synchronization Timeout
-// =============================================================================
-// These can be overridden via environment variables
-#define GC_SYNC_TIMEOUT_MS_DEFAULT 60000          // 60 seconds
-#define GC_SYNC_WARNING_INTERVAL_MS_DEFAULT 10000 // 10 seconds
-
-// =============================================================================
 // GC Synchronization Timeout Settings API
 // =============================================================================
 

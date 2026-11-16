@@ -371,6 +371,74 @@ object NativeConfigJsonFormats {
     }
   }
 
+  // --- Garbage collector settings --------------------------------------------------------------
+
+  implicit object GarbageCollectorConfigJsonFormat extends JsonFormat[GarbageCollectorConfig] {
+    import scala.concurrent.duration.*
+
+    private object Field {
+      final val InitialHeapSize = "initialHeapSize"
+      final val MaxHeapSize = "maxHeapSize"
+      final val ThreadHeapBlockSize = "threadHeapBlockSize"
+      final val Threads = "threads"
+      final val TimeRatio = "timeRatio"
+      final val FreeRatio = "freeRatio"
+      final val MaxFreeRatio = "maxFreeRatio"
+      final val SyncTimeoutNanos = "syncTimeoutNanos"
+      final val SyncWarningIntervalNanos = "syncWarningIntervalNanos"
+      final val LogLevel = "logLevel"
+      final val LogFile = "logFile"
+      final val StatsFile = "statsFile"
+      final val StatsEnabled = "statsEnabled"
+      final val TrapBasedYieldPoints = "trapBasedYieldPoints"
+    }
+
+    def write[J](obj: GarbageCollectorConfig, builder: Builder[J]): Unit = {
+      builder.beginObject()
+      builder.addField(Field.InitialHeapSize, obj.initialHeapSize.map(_.bytes))
+      builder.addField(Field.MaxHeapSize, obj.maxHeapSize.map(_.bytes))
+      builder.addField(Field.ThreadHeapBlockSize, obj.threadHeapBlockSize.map(_.bytes))
+      builder.addField(Field.Threads, obj.threads)
+      builder.addField(Field.TimeRatio, obj.timeRatio)
+      builder.addField(Field.FreeRatio, obj.freeRatio)
+      builder.addField(Field.MaxFreeRatio, obj.maxFreeRatio)
+      builder.addField(Field.SyncTimeoutNanos, obj.syncTimeout.map(_.toNanos))
+      builder.addField(Field.SyncWarningIntervalNanos, obj.syncWarningInterval.map(_.toNanos))
+      builder.addField(Field.LogLevel, obj.logLevel.map(_.name))
+      builder.addField(Field.LogFile, obj.logFile.map(_.toString))
+      builder.addField(Field.StatsFile, obj.statsFile.map(_.toString))
+      builder.addField(Field.StatsEnabled, obj.statsEnabled)
+      builder.addField(Field.TrapBasedYieldPoints, obj.trapBasedYieldPoints)
+      builder.endObject()
+    }
+
+    def read[J](jsOpt: Option[J], unbuilder: Unbuilder[J]): GarbageCollectorConfig = {
+      val js = jsOpt.getOrElse(deserializationError("GarbageCollectorConfig: missing JSON"))
+      unbuilder.beginObject(js)
+      try {
+        type Update = GarbageCollectorConfig => GarbageCollectorConfig
+        def field[T: JsonFormat](name: String)(set: (GarbageCollectorConfig, T) => GarbageCollectorConfig): Update =
+          config => unbuilder.readField[Option[T]](name).fold(config)(set(config, _))
+        Seq[Update](
+          field[Long](Field.InitialHeapSize)((c, v) => c.withInitialHeapSize(MemorySize.bytes(v))),
+          field[Long](Field.MaxHeapSize)((c, v) => c.withMaxHeapSize(MemorySize.bytes(v))),
+          field[Long](Field.ThreadHeapBlockSize)((c, v) => c.withThreadHeapBlockSize(MemorySize.bytes(v))),
+          field[Int](Field.Threads)(_.withThreads(_)),
+          field[Double](Field.TimeRatio)(_.withTimeRatio(_)),
+          field[Double](Field.FreeRatio)(_.withFreeRatio(_)),
+          field[Double](Field.MaxFreeRatio)(_.withMaxFreeRatio(_)),
+          field[Long](Field.SyncTimeoutNanos)((c, v) => c.withSyncTimeout(v.nanos)),
+          field[Long](Field.SyncWarningIntervalNanos)((c, v) => c.withSyncWarningInterval(v.nanos)),
+          field[String](Field.LogLevel)((c, v) => c.withLogLevel(GarbageCollectorConfig.LogLevel(v))),
+          field[String](Field.LogFile)((c, v) => c.withLogFile(Paths.get(v))),
+          field[String](Field.StatsFile)((c, v) => c.withStatsFile(Paths.get(v))),
+          field[Boolean](Field.StatsEnabled)(_.withStatsEnabled(_)),
+          field[Boolean](Field.TrapBasedYieldPoints)(_.withTrapBasedYieldPoints(_))
+        ).foldLeft(GarbageCollectorConfig.default)((config, update) => update(config))
+      } finally unbuilder.endObject()
+    }
+  }
+
   // --- Link-time properties (Map[String, Any]) ------------------------------------------------
 
   implicit object LinktimePropertiesJsonFormat extends JsonFormat[NativeConfig.LinktimeProperites] {
@@ -492,6 +560,7 @@ object NativeConfigJsonFormats {
       final val CppOptions = "cppOptions"
       final val TargetTriple = "targetTriple"
       final val Gc = "gc"
+      final val GarbageCollectorConfig = "garbageCollectorConfig"
       final val Lto = "lto"
       final val Mode = "mode"
       final val BuildTarget = "buildTarget"
@@ -525,6 +594,7 @@ object NativeConfigJsonFormats {
       builder.addField(Field.CppOptions, obj.cppOptions)
       builder.addField(Field.TargetTriple, obj.targetTriple)
       builder.addField(Field.Gc, obj.gc)
+      builder.addField(Field.GarbageCollectorConfig, obj.garbageCollectorConfig)
       builder.addField(Field.Lto, obj.lto)
       builder.addField(Field.Mode, obj.mode)
       builder.addField(Field.BuildTarget, obj.buildTarget)
@@ -562,6 +632,7 @@ object NativeConfigJsonFormats {
           .withCppOptions(_ => unbuilder.readField[Seq[String]](Field.CppOptions))
           .withTargetTriple(unbuilder.readField[Option[String]](Field.TargetTriple))
           .withGC(unbuilder.readField[GC](Field.Gc))
+          .withGarbageCollectorConfig(_ => unbuilder.readField[GarbageCollectorConfig](Field.GarbageCollectorConfig))
           .withLTO(unbuilder.readField[LTO](Field.Lto))
           .withMode(unbuilder.readField[Mode](Field.Mode))
           .withBuildTarget(unbuilder.readField[BuildTarget](Field.BuildTarget))

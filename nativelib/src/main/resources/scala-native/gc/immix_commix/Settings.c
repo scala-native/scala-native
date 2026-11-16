@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "immix_commix/Settings.h"
+#include "shared/GCConfig.h"
 #include "shared/Parsing.h"
 #include "shared/Settings.h"
 #include "immix_commix/Constants.h"
@@ -17,14 +18,33 @@
 // Heap Settings
 // =============================================================================
 size_t Settings_MinHeapSize(void) {
-    return Parse_Env_Or_Default("GC_INITIAL_HEAP_SIZE", DEFAULT_MIN_HEAP_SIZE);
+    return Parse_Env_Or_Default(
+        "GC_INITIAL_HEAP_SIZE",
+        GC_CONFIG_INITIAL_HEAP_SIZE_OR(DEFAULT_MIN_HEAP_SIZE));
 }
 
 size_t Settings_MaxHeapSize(void) {
-    return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE", UNLIMITED_HEAP_SIZE);
+    return Parse_Env_Or_Default(
+        "GC_MAXIMUM_HEAP_SIZE",
+        GC_CONFIG_MAX_HEAP_SIZE_OR(UNLIMITED_HEAP_SIZE));
 }
 
-char *Settings_StatsFileName(void) { return getenv(GC_STATS_FILE_SETTING); }
+#ifdef SCALANATIVE_GC_CONFIG_STATS_FILE
+static char builtinStatsFile[] = SCALANATIVE_GC_CONFIG_STATS_FILE;
+#else
+static char *builtinStatsFile = NULL;
+#endif
+
+char *Settings_StatsFileName(void) {
+    // Statistics are opt-in, see statsEnabled of GarbageCollectorConfig
+    if (!SCALANATIVE_GC_CONFIG_STATS_ENABLED)
+        return NULL;
+    char *env = getenv(GC_STATS_FILE_SETTING);
+    if (env == NULL)
+        return builtinStatsFile;
+    // An empty variable disables the statistics set in the build
+    return env[0] != '\0' ? env : NULL;
+}
 
 double Settings_Ratio(const char *name, double defaultRatio) {
     char *str = getenv(name);

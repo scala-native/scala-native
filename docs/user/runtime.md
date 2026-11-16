@@ -4,167 +4,269 @@ Scala Native comes with some ability to change the runtime characteristics.
 
 ## Garbage Collector (GC) Settings
 
-Scala Native supports the [Boehm-Demers-Weiser Garbage Collector](https://www.hboehm.info/gc/). The environment variables defined in Boehm are shared as much as possible by all the Garbage Collectors supported in Scala Native so they are consistent and easier to use. Refer to the Boehm section below for the list. The variables supported are listed below for each GC.
-
-## All Garbage Collectors
-
-The following **environment** variables will be used for all GCs. They can go from 1 MB to the system memory maximum or up to about 512 GB or less than 4 GB for 32 bit systems. The size can be specified in bytes, kilobytes(k or K), megabytes(m or M), or gigabytes(g or G).
-
-*Examples: 1048576, 1024k, 1M, or 1G etc.*
-
-- GC_INITIAL_HEAP_SIZE changes the minimum heap size.
-- GC_MAXIMUM_HEAP_SIZE changes the maximum heap size.
-- GC_LOG_FILE redirects GC log output to a file instead of stderr. If not set or empty, logs are written to stderr. If set to a file path, logs are appended to that file. This variable name matches the one defined in [Boehm GC](https://github.com/ivmai/bdwgc/blob/master/docs/environment.md) to provide a consistent API across all supported garbage collectors.
-
-The GC_INITIAL_HEAP_SIZE and GC_MAXIMUM_HEAP_SIZE are ignored by None GC when multi-threading is enabled and GC_THREAD_HEAP_BLOCK_SIZE is used instead. See the None GC section below for details.
-
-## Compile Time Memory Settings
-
-The GC_INITIAL_HEAP_SIZE, GC_MAXIMUM_HEAP_SIZE, for None GC the GC_THREAD_HEAP_BLOCK_SIZE and for Commix the GC_NPROCS can be set at **compile time** by using **defines** in the build. Refer to the None GC section below for details about GC_THREAD_HEAP_BLOCK_SIZE, and to the Commix GC section for GC_NPROCS.
-
-The following examples shows how to set compile time memory values which is useful for the developer to provide a good user experience. A key feature is that the values can be overridden with environment variables by the user if supported on the platform. We also support the define DEBUG_PRINT to see the values passed to the GC as shown below in the first example build setup.
-
-*Note: Currently, Boehm only supports values in bytes for **defines** as shown in the third example.*
+The garbage collector is selected with `nativeConfig.withGC` and tuned with
+a `GarbageCollectorConfig`, the one place that defines every setting and its
+default:
 
 ``` scala
+import scala.concurrent.duration._
 import scala.scalanative.build._
 
-// Compile time GC defines (default Immix GC)
-nativeConfig ~= { c =>
-  c.withCompileOptions(
-    _ ++ Seq(
-      "-DGC_INITIAL_HEAP_SIZE=5m",
-      "-DGC_MAXIMUM_HEAP_SIZE=5m",
-      "-DDEBUG_PRINT"
+nativeConfig ~= {
+  _.withGC(GC.commix)
+    .withGarbageCollectorConfig(
+      _.withInitialHeapSize(128.mb)
+        .withMaxHeapSize(1.gb)
+        .withThreads(4)
+        .withSyncTimeout(30.seconds)
+        .withLogLevel(GarbageCollectorConfig.LogLevel.Info)
     )
-  )
-}
-
-// None GC with Multi-threading
-nativeConfig ~= { c =>
-  c.withCompileOptions(
-    _ ++ Seq(
-      "-DGC_THREAD_HEAP_BLOCK_SIZE=32m"
-    )
-  ).withGC(GC.none)
-    .withMultithreading(true)
-}
-
-// Boehm GC (use number of bytes) - 5m shown
-nativeConfig ~= { c =>
-  c.withCompileOptions(
-    _ ++ Seq(
-      "-DGC_INITIAL_HEAP_SIZE=5242880",
-      "-DGC_MAXIMUM_HEAP_SIZE=5242880"
-    )
-  ).withGC(GC.boehm)
 }
 ```
 
-More GC settings may be added in the future using the Boehm
-setting names where applicable.
+The sizes are `MemorySize` values. In sbt builds the `bytes`, `kb`, `mb` and
+`gb` extensions of integers are imported with the plugin, other build tools
+can `import scala.scalanative.build.MemorySize.syntax._` or use
+`MemorySize.mb(128)` and `MemorySize.parse("128m")`. Units are binary, 1 kb
+is 1024 bytes.
 
-## Boehm GC
+### How a value is chosen
 
-The Boehm GC uses the three variables shown above. The following is
-available for Boehm and Commix.
+Every setting has an environment variable. The value used by the program
+is the first one defined in:
 
--   GC_NPROCS
+1. the environment variable when the **program starts**,
+2. `GarbageCollectorConfig` in the build,
+3. the same environment variable when the program is **built**,
+4. a legacy `-D` compile option (see below),
+5. the default.
 
-The following document shows all the variables available for Boehm:
+The value found when building (2 to 5) is compiled into the program, so the
+build defines the defaults and the environment of the program can still
+override them. An environment variable with a value that cannot be used is
+ignored with a warning, both when building and when the program starts.
+
+### Validation
+
+The build fails when a setting defined in `GarbageCollectorConfig`:
+
+-   is not supported by the selected garbage collector,
+-   has an invalid value, e.g. a ratio outside of 0 to 1 or less than 1
+    thread,
+-   contradicts another setting, e.g. `initialHeapSize` greater than
+    `maxHeapSize`, or `statsFile` without `statsEnabled`.
+
+Values taken from the environment of the build or from legacy compile
+options never fail the build: these not supported by the selected garbage
+collector are skipped, invalid ones are ignored with a warning.
+
+### Settings
+
+Sizes in environment variables are given in bytes, kilobytes (`k` or `K`),
+megabytes (`m` or `M`) or gigabytes (`g` or `G`), e.g. `1048576`, `1024k`,
+`1M` or `1G`.
+
+#### `initialHeapSize`
+
+Initial size of the heap.
+
+Environment variable: `GC_INITIAL_HEAP_SIZE`
+
+Supported by: Immix, Commix, Boehm, None without multithreading
+
+Default: chosen by the garbage collector
+
+#### `maxHeapSize`
+
+Maximal size of the heap. Immix and Commix need at least 1 MB.
+
+Environment variable: `GC_MAXIMUM_HEAP_SIZE`
+
+Supported by: Immix, Commix, Boehm, None without multithreading
+
+Default: the size of the physical memory
+
+#### `threadHeapBlockSize`
+
+Size of the memory blocks each thread allocates from. A thread maps a new
+block when the current one is full, so the size has to be greater than the
+largest object or array the program allocates: a larger allocation never
+fits and ends with an `OutOfMemoryError`. Larger blocks reserve more
+virtual memory per thread. Sizes above the physical memory are reduced to
+it when the program starts.
+
+Environment variable: `GC_THREAD_HEAP_BLOCK_SIZE`
+
+Supported by: None with multithreading
+
+Default: 64 MB
+
+#### `threads`
+
+Number of garbage collector threads. The value built into the program is
+capped at the number of processors - 1 when the program starts, the one
+from the environment variable is used exactly. The number in use is logged
+at the `info` log level.
+
+Environment variable: `GC_NPROCS`
+
+Supported by: Commix
+
+Default: number of processors - 1, at most 8
+
+#### `timeRatio`
+
+The heap grows when a collection, from its request until it ends, took this
+fraction of the time since the previous collection ended. Explicit
+`System.gc()` calls do not count.
+
+Environment variable: `GC_TIME_RATIO`
+
+Supported by: Immix, Commix
+
+Default: 0.05
+
+#### `freeRatio`
+
+Fraction of the heap that should be free after a collection.
+
+Environment variable: `GC_FREE_RATIO`
+
+Supported by: Commix
+
+Default: 0.5
+
+#### `maxFreeRatio`
+
+Growth for `timeRatio` only happens while less than this fraction of the
+heap is free after a collection. Immix applies it to heaps above 128 MB.
+
+Environment variable: `GC_MAX_FREE_RATIO`
+
+Supported by: Immix, Commix
+
+Default: 0.8
+
+#### `syncTimeout`
+
+When multithreading is enabled, the GC needs to stop all threads before
+collecting garbage. If a thread is stuck, e.g. due to undefined behaviour,
+or executing foreign blocking code without the `@blocking` annotation, the
+GC would wait indefinitely. After this timeout the GC aborts the process
+with diagnostic information. `Duration.Zero`, or 0 in the environment
+variable, disables the timeout.
+
+Environment variable: `SCALANATIVE_GC_SYNC_TIMEOUT_MS` (milliseconds)
+
+Supported by: Immix, Commix
+
+Default: 60 seconds
+
+#### `syncWarningInterval`
+
+Interval of the warnings printed while waiting for threads to reach a
+safepoint, with information about the threads which are stuck.
+
+Environment variable: `SCALANATIVE_GC_SYNC_WARNING_INTERVAL_MS` (milliseconds)
+
+Supported by: Immix, Commix
+
+Default: 10 seconds
+
+#### `logLevel`
+
+Verbosity of the GC log messages:
+
+-   `LogLevel.Debug`, `debug` - all messages (internal operations, allocation tracking)
+-   `LogLevel.Info`, `info` - info, warnings and errors (parsed options, stats)
+-   `LogLevel.Warn`, `warn` - warnings and errors
+-   `LogLevel.Error`, `error` - only errors
+-   `LogLevel.Off`, `none` - no GC logging
+
+Log messages include timestamps in `[HH:MM:SS.mmm]` format with
+millisecond precision. With Boehm the level applies only to the messages
+of the Scala Native runtime, not to these of the collector itself.
+
+Environment variable: `SCALANATIVE_GC_LOG_LEVEL`
+
+Supported by: Immix, Commix, Boehm, None
+
+Default: `warn`
+
+#### `logFile`
+
+File the GC log is appended to instead of the standard error stream. A
+relative path is resolved against the working directory of the running
+program. An empty environment variable selects the standard error stream
+also when a file was set in the build. Recommended with the `debug` log
+level. Boehm reads the environment variable of the same name on its own,
+it cannot be set in the build.
+
+Environment variable: `GC_LOG_FILE`
+
+Supported by: Immix, Commix, None
+
+Default: the standard error stream
+
+#### `statsFile`
+
+File the statistics of each collection are written to. A relative path is
+resolved against the working directory of the running program. An empty
+environment variable disables the statistics set in the build.
+
+Environment variable: `GC_STATS_FILE`
+
+Supported by: Immix, Commix, with `statsEnabled`
+
+Default: no statistics
+
+#### `statsEnabled`
+
+Compiles the support for `statsFile` into the garbage collector. Without it
+`GC_STATS_FILE` is ignored, also by Immix which used to honour it always.
+
+Environment variable: none, it cannot be changed when the program starts
+
+Supported by: Immix, Commix
+
+Default: false
+
+#### `trapBasedYieldPoints`
+
+How threads are stopped for a collection. With traps a thread reads a
+memory page which the GC protects to stop it, which is faster than checking
+a flag but is reported by debuggers as a memory access fault, see
+[testing](./testing.md).
+
+Environment variable: `SCALANATIVE_GC_TRAP_BASED_YIELDPOINTS` (`1` or `0`), only when building
+
+Supported by: Immix, Commix, with multithreading
+
+Default: true in release modes, false in the debug mode
+
+### Boehm GC
+
+Scala Native supports the [Boehm-Demers-Weiser Garbage Collector](https://www.hboehm.info/gc/),
+the names of the environment variables shared by the garbage collectors
+follow it where possible. Boehm reads its environment variables on its own,
+all of them are listed in
 [environment.md](https://github.com/ivmai/bdwgc/blob/master/docs/environment.md).
+Only `initialHeapSize`, `maxHeapSize` and `logLevel` can be set in the
+build.
 
-## None GC
+### Legacy compile options
 
-The None GC uses the three variables shown above **or** the following one when multi-threading is selected (instead of GC_INITIAL_HEAP_SIZE and GC_MAXIMUM_HEAP_SIZE).
-
--   GC_THREAD_HEAP_BLOCK_SIZE (defaults to 64 MB)
-
- When using this pseudo-GC implementation, GC_THREAD_HEAP_BLOCK_SIZE env variable can be set to control the granuality of allocated heap memory blocks for each of the threads. This env variable is ignored in single-threaded execution.
-
-## Immix and Commix GC Shared Settings
-
-The following environment variables are shared between Immix and Commix GCs.
-
-### GC Synchronization Timeout
-
-When multithreading is enabled, the GC needs to stop all threads before collecting garbage. If a thread is stuck, e.g. due to undefined behaviour, or executing foreign blocking code without the `@blocking` annotation, the GC may wait indefinitely. These settings control timeout behavior:
-
--   SCALANATIVE_GC_SYNC_TIMEOUT_MS (default is 60000, i.e. 60 seconds)
-    
-    Timeout in milliseconds for waiting for threads to reach a safepoint. If threads don't reach safepoint within this time, the GC will abort the process with diagnostic information. Set to 0 to disable timeout (wait indefinitely).
-
--   SCALANATIVE_GC_SYNC_WARNING_INTERVAL_MS (default is 10000, i.e. 10 seconds)
-    
-    Interval in milliseconds for printing warnings while waiting for threads. When threads take longer than expected to reach safepoint, warnings will be printed at this interval with information about which threads are stuck.
-
-### GC Logging
-
--   SCALANATIVE_GC_LOG_LEVEL (default is "warn")
-    
-    Controls the verbosity of GC log messages. Valid values are:
-    - `debug` - Show all messages (internal operations, allocation tracking)
-    - `info` - Show info, warnings and errors (parsed options, stats)
-    - `warn` - Show warnings and errors (default)
-    - `error` - Show only errors
-    - `none` - Disable all GC logging
-
--   GC_LOG_FILE - see description in `All Garbage Collectors` section above. Recommended when using `SCALANATIVE_GC_LOG_LEVEL=debug`.
-
-Log messages include timestamps in `[HH:MM:SS.mmm]` format with millisecond precision.
-
-## Immix GC
-
-The Immix GC uses the three variables shown above as well as the following
-variables.
-
--   GC_STATS_FILE (set to the file name)
--   GC_TIME_RATIO (default is .05): the heap grows when a collection, from
-    its request until it ends, took this fraction of the time since the
-    previous collection ended. Explicit `System.gc()` calls do not count.
--   GC_MAX_FREE_RATIO (default is .8): above 128 MB, growth for
-    GC_TIME_RATIO only happens while less than this fraction of the heap is
-    free after a collection.
-
-## Commix GC
-
-In addition to the variables described above for Immix, Commix has the
-following variable shared with Boehm.
-
--   GC_NPROCS (default is processor count - 1 up to 8 maximum)
-
-    A build can change the default with the define of the same name, for
-    example `-DGC_NPROCS=4` among its compile options, as for the heap sizes
-    above: the default is then that number, but no more than the processor
-    count - 1 (and at least 1). The environment variable still sets the
-    number exactly, and a value that is not a number is ignored with a
-    warning. The number in use is logged at `SCALANATIVE_GC_LOG_LEVEL=info`.
-
-    ``` scala
-    nativeConfig ~= { c =>
-      c.withGC(GC.commix)
-        .withCompileOptions(_ :+ "-DGC_NPROCS=4")
-    }
-    ```
-
-    The define does not apply to Boehm, which reads only the environment
-    variable.
-
-Commix also adds a few more variables which do not match the Boehm
-settings yet.
-
--   GC_TIME_RATIO (default is .05)
--   GC_FREE_RATIO (default is .5)
--   GC_MAX_FREE_RATIO (default is .8): growth for GC_TIME_RATIO only happens
-    while less than this fraction of the heap is free after a collection.
-
-Note: GC_STATS_FILE shared with Immix is only honored if the compiler
-defines -DGC_ENABLE_STATS for Commix.
+Builds that defined `-DGC_INITIAL_HEAP_SIZE=5m`, `-DGC_MAXIMUM_HEAP_SIZE=5m`,
+`-DGC_THREAD_HEAP_BLOCK_SIZE=32m`, `-DGC_NPROCS=4` or `-DGC_ENABLE_STATS`
+with `nativeConfig.withCompileOptions` keep working: the define is used
+unless the setting is defined in `GarbageCollectorConfig` or in the
+environment of the build. Prefer `GarbageCollectorConfig`, which is
+validated. GC assertions are still enabled with `-DGC_ASSERTIONS`.
 
 ## Examples
 
 If you are developing in the Scala Native *sandbox*, the following are
-examples showing some error conditions using Immix, the default GC. These errors will also occur if using **defines** as described above or mixing **defines** with environment variables. Adjust the path to your executable as needed (Scala 2.13 shown).
+examples showing some error conditions using Immix, the default GC. They are reported when the program starts, the same combination set in `GarbageCollectorConfig` fails the build instead. Adjust the path to your executable as needed (Scala 2.13 shown).
 
 *Example 1:*
 ``` shell

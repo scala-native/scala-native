@@ -16,20 +16,21 @@
 #include "Settings.h"
 #include "immix_commix/Settings.h"
 #include "Constants.h"
-#include "shared/Parsing.h"
+#include "shared/GCConfig.h"
 #include "shared/Log.h"
 #include "shared/Settings.h"
 
 double Settings_MaxMarkTimeRatio(void) {
-    return Settings_Ratio("GC_TIME_RATIO", DEFAULT_MARK_TIME_RATIO);
+    return Settings_Ratio("GC_TIME_RATIO", SCALANATIVE_GC_CONFIG_TIME_RATIO);
 }
 
 double Settings_MinFreeRatio(void) {
-    return Settings_Ratio("GC_FREE_RATIO", DEFAULT_FREE_RATIO);
+    return Settings_Ratio("GC_FREE_RATIO", SCALANATIVE_GC_CONFIG_FREE_RATIO);
 }
 
 double Settings_MaxFreeRatio(void) {
-    return Settings_Ratio("GC_MAX_FREE_RATIO", DEFAULT_MAX_FREE_RATIO);
+    return Settings_Ratio("GC_MAX_FREE_RATIO",
+                          SCALANATIVE_GC_CONFIG_MAX_FREE_RATIO);
 }
 
 // False if str is NULL or not a number. Counts below 1 become 1.
@@ -57,8 +58,9 @@ static int Settings_otherProcessors(void) {
     return processorCount > 1 ? processorCount - 1 : 1;
 }
 
-// GC_NPROCS from the environment, else -DGC_NPROCS capped at the processor
-// count - 1, else the processor count - 1 capped at 8. At least 1.
+// GC_NPROCS from the environment, else the count set in the build capped at
+// the processor count - 1, else the processor count - 1 capped at 8. At
+// least 1.
 int Settings_GCThreadCount(void) {
     int count;
     const char *env = getenv("GC_NPROCS");
@@ -67,17 +69,18 @@ int Settings_GCThreadCount(void) {
         return count;
     }
     int others = Settings_otherProcessors();
-    const char *defined = get_defined("GC_NPROCS");
-    if (Settings_parseThreadCount("-DGC_NPROCS", defined, &count)) {
-        if (count > others)
-            count = others;
-        GC_LOG_INFO("GC_NPROCS not set, using %d GC threads (built with "
-                    "GC_NPROCS=%s)",
-                    count, defined);
-        return count;
-    }
+#ifdef SCALANATIVE_GC_CONFIG_THREADS
+    count = SCALANATIVE_GC_CONFIG_THREADS;
+    if (count > others)
+        count = others;
+    if (count < 1)
+        count = 1;
+    GC_LOG_INFO("GC_NPROCS not set, using %d GC threads (built with %d)", count,
+                SCALANATIVE_GC_CONFIG_THREADS);
+#else
     count = others > 8 ? 8 : others;
     GC_LOG_INFO("GC_NPROCS not set, using %d GC threads", count);
+#endif
     return count;
 }
 

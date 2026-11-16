@@ -10,16 +10,18 @@
 // GC Logging Utility
 // =============================================================================
 // Log levels: DEBUG < INFO < WARN < ERROR
-// Controlled by environment variable SCALANATIVE_GC_LOG_LEVEL:
+// Controlled by environment variable SCALANATIVE_GC_LOG_LEVEL, the default
+// is set in the build (see shared/GCConfig.h):
 //   - "debug" or "DEBUG" - show all messages (internal operations, allocations)
 //   - "info" or "INFO"   - show info, warnings and errors (parsed options,
 //   stats)
-//   - "warn" or "WARN"   - show warnings and errors (default)
+//   - "warn" or "WARN"   - show warnings and errors
 //   - "error" or "ERROR" - show only errors
 //   - "none" or "NONE"   - suppress all messages
 //
 // Log output destination controlled by GC_LOG_FILE:
-//   - If not set or empty: logs go to stderr (default)
+//   - If not set: logs go to the file set in the build, else to stderr
+//   - If empty: logs go to stderr
 //   - If set to a file path: logs are appended to that file
 //
 // Timestamps are included by default in [HH:MM:SS.mmm] format.

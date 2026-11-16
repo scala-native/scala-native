@@ -7,10 +7,6 @@
 #include <windows.h>
 #endif
 
-// Idiomatic 'stringify' macros for compile time memory
-#define VAL_STR(x) STR(x)
-#define STR(x) #x
-
 #include <errno.h>
 #include <stdbool.h>
 #include <string.h>
@@ -71,60 +67,15 @@ size_t Parse_Size_Or_Default(const char *str, size_t defaultSizeInBytes) {
     return Parse_Size(str, &size) ? size : defaultSizeInBytes;
 }
 
-const char *get_defined_or_env(const char *envName) {
-    if (envName == NULL)
-        return NULL;
-
-    const char *env = getenv(envName);
-    if (env != NULL)
-        return env; // environment overrides compile time
-
-    return get_defined(envName);
-}
-
-const char *get_defined(const char *envName) {
-    if (envName == NULL)
-        return NULL;
-
-// check for compile time defined values
-#if defined(GC_INITIAL_HEAP_SIZE)
-    if (strcmp(envName, "GC_INITIAL_HEAP_SIZE") == 0) {
-        return VAL_STR(GC_INITIAL_HEAP_SIZE);
-    }
-#endif
-
-#if defined(GC_MAXIMUM_HEAP_SIZE)
-    if (strcmp(envName, "GC_MAXIMUM_HEAP_SIZE") == 0) {
-        return VAL_STR(GC_MAXIMUM_HEAP_SIZE);
-    }
-#endif
-
-#if defined(GC_THREAD_HEAP_BLOCK_SIZE)
-    if (strcmp(envName, "GC_THREAD_HEAP_BLOCK_SIZE") == 0) {
-        return VAL_STR(GC_THREAD_HEAP_BLOCK_SIZE);
-    }
-#endif
-
-#if defined(GC_NPROCS)
-    if (strcmp(envName, "GC_NPROCS") == 0) {
-        return VAL_STR(GC_NPROCS);
-    }
-#endif
-
-    return NULL; // no compile time value
-}
-
 size_t Parse_Env_Or_Default(const char *envName, size_t defaultSizeInBytes) {
-    const char *res = get_defined_or_env(envName);
+    const char *res = getenv(envName);
     size_t result;
     if (res == NULL) {
-        GC_LOG_INFO("%s not set, using default %zu", envName,
-                    defaultSizeInBytes);
+        GC_LOG_INFO("%s not set, using %zu", envName, defaultSizeInBytes);
         return defaultSizeInBytes;
     }
     if (!Parse_Size(res, &result)) {
-        GC_LOG_WARN("Ignoring %s=%s, which is not a valid size, using default "
-                    "%zu",
+        GC_LOG_WARN("Ignoring %s=%s, which is not a valid size, using %zu",
                     envName, res, defaultSizeInBytes);
         return defaultSizeInBytes;
     }
@@ -132,13 +83,9 @@ size_t Parse_Env_Or_Default(const char *envName, size_t defaultSizeInBytes) {
     return result;
 }
 
-size_t Parse_Env_Or_Default_String(const char *envName,
-                                   const char *defaultSizeString) {
-    size_t defaultSizeInBytes = Parse_Size_Or_Default(defaultSizeString, 0L);
-    if (envName == NULL)
-        return defaultSizeInBytes;
-    else
-        return Parse_Env_Or_Default(envName, defaultSizeInBytes);
+bool Parse_Env_Is_Size(const char *envName) {
+    size_t ignored;
+    return Parse_Size(getenv(envName), &ignored);
 }
 
 // =============================================================================
