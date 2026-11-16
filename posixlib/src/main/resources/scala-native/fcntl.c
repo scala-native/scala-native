@@ -47,6 +47,12 @@ int scalanative_o_nonblock() { return O_NONBLOCK; }
 
 int scalanative_o_sync() { return O_SYNC; }
 
+#ifdef O_DSYNC
+int scalanative_o_dsync() { return O_DSYNC; }
+#endif
+
+int scalanative_o_nofollow() { return O_NOFOLLOW; }
+
 int scalanative_o_accmode() { return O_ACCMODE; }
 
 int scalanative_o_rdonly() { return O_RDONLY; }
