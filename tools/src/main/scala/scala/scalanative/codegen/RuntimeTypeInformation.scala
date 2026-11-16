@@ -70,11 +70,9 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
     case _ => meta.layouts.Rtti.layout
   }
   lazy val value: nir.Val.StructValue = {
-    val typeId = nir.Val.Int(meta.ids(info))
+    val flags = nir.Val.Int(Flags(info))
     val typeStr = nir.Val.String(typeName)
-    val traits = info.linearized
-      .collect { case cls: Trait if cls != info => cls }
-      .sortBy(meta.ids(_))
+    val traits = meta.interfaces(info)
     val interfacesCount = nir.Val.Int(traits.size)
     val interfaces = nir.Val.Const(
       nir.Val.ArrayValue(nir.Type.Ptr, traits.map(meta.rtti(_).const))
@@ -82,36 +80,23 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
 
     val base = nir.Val.StructValue(
       classConst :: meta.lockWordVals :::
-        typeId ::
+        flags ::
         interfacesCount ::
         interfaces ::
         typeStr :: Nil
     )
     info match {
       case cls: Class =>
-        val dynmap =
-          if (!meta.layouts.ClassRtti.usesDynMap) Nil
-          else List(meta.dynmap(cls).value)
-        val range = meta.ranges(cls)
         val itable = meta.itable(cls)
-        val itablesSize = {
-          // we want to have compile-time computed mask for fast selction
-          // negative size to mark requirement of using slow-path binary search
-          if (itable.useFastITables) (itable.size - 1).max(0)
-          else -itable.size
-        }
-        val superClass =
-          cls.parent.map(meta.rtti(_).const).getOrElse(nir.Val.Null)
         nir.Val.StructValue(
           base ::
             nir.Val.Int(typeSize) :: // size
-            nir.Val.Int(range.last) :: // idRangeUntil
-            meta.layout(cls).referenceOffsetsValue :: // refFieldOffsets
-            // Free slot for additional Int32 to be used in the future
-            nir.Val.Int(itablesSize) ::
-            itable.const ::
-            superClass ::
-            dynmap :::
+            nir.Val.Int(meta.superclassCount(cls)) ::
+            referenceMapOrComponentType(cls) ::
+            nir.Val.Int(itable.mask) ::
+            nir.Val.Int(itable.shift) ::
+            itable.value ::
+            lineage(cls) ::
             meta.vtable(cls).value ::
             Nil
         )
@@ -120,13 +105,113 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
     }
   }
 
-  lazy val canUseFastITables: Boolean = info match {
-    case cls: Class => meta.itable(cls).useFastITables
-    case cls: Trait => cls.implementors.forall(meta.rtti(_).canUseFastITables)
+  /* Reference map of instances, or for array classes the RTTI of the
+   * element type: the GC scans arrays according to flags instead. The
+   * abstract runtime.Array has no element type.
+   */
+  private def referenceMapOrComponentType(cls: Class): nir.Val =
+    if (cls.name == nir.Rt.GenericArray.name) nir.Val.Null
+    else
+      nir.Type.fromArrayClass(cls.name) match {
+        case None         => meta.layout(cls).referenceOffsetsValue
+        case Some(elemTy) =>
+          meta.analysis.infos
+            .get(nir.Type.typeToName(elemTy))
+            .map(info => meta.rtti(info).const)
+            .getOrElse(nir.Val.Null)
+      }
+
+  /* Superclasses from the root, then the class itself, in chunks of
+   * LineageSize entries padded with nulls. The last slot of a chunk points
+   * to the next one, null after the last. lineage(C)(superclassCount(C)) is
+   * C, so an object is an instance of C exactly when entry superclassCount(C)
+   * of its class is C; the first chunk is stored in the RTTI.
+   */
+  private def lineage(cls: Class): nir.Val = {
+    val size = CommonMemoryLayouts.LineageSize
+    def chunk(rest: Seq[nir.Val]): nir.Val.ArrayValue = {
+      val next =
+        if (rest.size <= size) nir.Val.Null
+        else nir.Val.Const(chunk(rest.drop(size)))
+      nir.Val.ArrayValue(
+        nir.Type.Ptr,
+        rest.take(size).padTo(size, nir.Val.Null) :+ next
+      )
+    }
+    chunk(meta.lineage(cls).map(meta.rtti(_).const))
   }
 }
 
 private[codegen] object RuntimeTypeInformation {
+
+  /** Bits of the RTTI flags word. Keep in sync with ObjectHeader.h and
+   *  scala.scalanative.runtime.Class.
+   */
+  object Flags {
+    final val IsInterface = 1 << 0
+    final val IsPrimitive = 1 << 1
+    final val IsArray = 1 << 2
+
+    // Arrays only, bits 3-4: how the GC scans the elements
+    final val ArrayScanShift = 3
+    final val ArrayScanNone = 0 << ArrayScanShift // primitive values
+    final val ArrayScanReferences = 1 << ArrayScanShift // references
+    final val ArrayScanConservative = 2 << ArrayScanShift // raw bytes
+
+    // Bits 5-6: java.lang.ref.Reference subclasses
+    final val ReferenceKindShift = 5
+    final val WeakReferenceKind = 1 << ReferenceKindShift
+    final val SoftReferenceKind = 2 << ReferenceKindShift
+    final val PhantomReferenceKind = 3 << ReferenceKindShift
+
+    // Classes only: the GC calls the object tracer for every marked
+    // instance, see gc/shared/GCHooks.h
+    final val HasObjectTracer = 1 << 7
+    // Traits only, bits 8-31: low 24 bits of the itable key, enough for
+    // java.lang.Class to start lookups in itables up to 2^24 slots
+    final val TraitKeyShift = 8
+    final val TraitKeyMask = 0xffffff
+    // Arrays only, bits 8-15: number of dimensions
+    final val ArrayDimensionsShift = 8
+    // Classes, bits 16-31: StableHash.classKey, for reflective proxy lookups
+    final val ClassKeyShift = 16
+
+    private val ObjectArray =
+      nir.Global.Top("scala.scalanative.runtime.ObjectArray")
+    // The only class with an object tracer: it owns the stacks of a
+    // suspended continuation
+    private val SuspendedStacks =
+      nir.Global.Top("scala.scalanative.runtime.SuspendedStacks")
+
+    /** Computed from the type and its ancestors only. */
+    def apply(info: ScopeInfo)(implicit meta: Metadata): Int = info match {
+      case trt: Trait =>
+        IsInterface | (meta.traitKey(trt) & TraitKeyMask) << TraitKeyShift
+      case cls: Class =>
+        def flag(cond: Boolean, bits: Int) = if (cond) bits else 0
+        // runtime.Array is a direct subclass of Object
+        val isArray = meta.isAt(cls, 1, nir.Rt.GenericArray.name)
+        val arrayFlags =
+          if (!isArray) 0
+          else
+            IsArray | (1 << ArrayDimensionsShift) | {
+              if (cls.name == ObjectArray) ArrayScanReferences
+              else if (cls.name == nir.Rt.BlobArray.name) ArrayScanConservative
+              else ArrayScanNone
+            }
+        val referenceKind = meta.referenceKind(cls) match {
+          case Some(FieldLayout.WeakReference)    => WeakReferenceKind
+          case Some(FieldLayout.SoftReference)    => SoftReferenceKind
+          case Some(FieldLayout.PhantomReference) => PhantomReferenceKind
+          case _                                  => 0
+        }
+        flag(nir.Rt.PrimitiveTypes.contains(cls.name), IsPrimitive) |
+          arrayFlags |
+          referenceKind |
+          flag(cls.name == SuspendedStacks, HasObjectTracer) |
+          StableHash.classKey(cls) << ClassKeyShift
+    }
+  }
 
   private val classConst =
     nir.Val.Global(

@@ -17,11 +17,6 @@
 #include "SyncGreyLists.h"
 #include "stackOverflowGuards.h"
 
-extern word_t *__modules;
-extern int __modules_size;
-
-#define LAST_FIELD_OFFSET -1
-
 // Marking uses multiple threads in parallel. Note that there is no need to
 // synchronize on any of the mark bytes in BlockMeta, LineMeta or ObjectMeta,
 // because marking is idempotent. If we mark an object that has been already
@@ -305,31 +300,31 @@ int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
                              GreyPacket **outWeakRefHolder, Bytemap *bytemap) {
     int objectsTraced = 0;
     int32_t *refFieldOffsets = object->rtti->refFieldOffsets;
-    for (int i = 0; refFieldOffsets[i] != LAST_FIELD_OFFSET; i++) {
+    int i = 0;
+    for (; refFieldOffsets[i] != LAST_FIELD_OFFSET; i++) {
         size_t fieldOffset = (size_t)refFieldOffsets[i];
         Field_t *fieldRef = (Field_t *)((int8_t *)object + fieldOffset);
         Field_t fieldReferant = *fieldRef;
-        if (Object_IsReferantOfWeakReference(object, fieldOffset)) {
-            continue;
-        }
         objectsTraced += Marker_markField(heap, stats, outHolder,
                                           outWeakRefHolder, fieldReferant);
     }
-    if (object->rtti->rt.id == __boxed_ptr_id) {
-        // Boxed ptr always has a single field
-        word_t *rawPtr = object->fields[0];
+    // Raw pointer fields that may point into the heap
+    for (i++; refFieldOffsets[i] != LAST_FIELD_OFFSET; i++) {
+        word_t *rawPtr = *(word_t **)((int8_t *)object + refFieldOffsets[i]);
         if (Heap_IsWordInHeap(heap, rawPtr)) {
             Marker_markConservative(heap, stats, outHolder, outWeakRefHolder,
                                     rawPtr);
             objectsTraced += 1;
         }
-    } else if (UNLIKELY((void *)object->rtti ==
-                        atomic_load_explicit(&ObjectTracer_rtti,
-                                             memory_order_relaxed))) {
-        ScanContext context = {heap, stats, outHolder, outWeakRefHolder, 0};
-        atomic_load (&ObjectTracer_trace)((void **)object->fields,
-                                          Marker_scanRange, &context);
-        objectsTraced += context.objectsTraced;
+    }
+    if (UNLIKELY(Rtti_HasFlag(object->rtti, RTTI_FLAG_HAS_OBJECT_TRACER))) {
+        // Not set before the first owner registers it
+        GC_ObjectTracerFn *trace = atomic_load(&ObjectTracer_trace);
+        if (trace != NULL) {
+            ScanContext context = {heap, stats, outHolder, outWeakRefHolder, 0};
+            trace((void **)object->fields, Marker_scanRange, &context);
+            objectsTraced += context.objectsTraced;
+        }
     }
     return objectsTraced;
 }
@@ -442,11 +437,11 @@ void Marker_markPacket(Heap *heap, Stats *stats, GreyPacket *in,
     while (!GreyPacket_IsEmpty(in)) {
         Object *object = GreyPacket_Pop(in);
         if (Object_IsArray(object)) {
-            const int arrayId = object->rtti->rt.id;
-            if (arrayId == __object_array_id) {
+            const Rtti *rtti = object->rtti;
+            if (Rtti_ArrayScan(rtti) == RTTI_ARRAY_SCAN_REFERENCES) {
                 objectsTraced += Marker_markObjectArray(
                     heap, stats, object, outHolder, outWeakRefHolder);
-            } else if (arrayId == __blob_array_id) {
+            } else if (Rtti_ArrayScan(rtti) == RTTI_ARRAY_SCAN_CONSERVATIVE) {
                 objectsTraced += Marker_markBlobArray(
                     heap, stats, object, outHolder, outWeakRefHolder);
             }
@@ -633,17 +628,6 @@ NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
                      registerBufferStride);
 }
 
-void Marker_markModules(Heap *heap, Stats *stats, GreyPacket **outHolder,
-                        GreyPacket **outWeakRefHolder) {
-    word_t **modules = &__modules;
-    int nb_modules = __modules_size;
-    Bytemap *bytemap = heap->bytemap;
-    word_t **limit = modules + nb_modules;
-    for (word_t **current = modules; current < limit; current++) {
-        Marker_markField(heap, stats, outHolder, outWeakRefHolder, *current);
-    }
-}
-
 void Marker_markCustomRoots(Heap *heap, Stats *stats, GreyPacket **outHolder,
                             GreyPacket **outWeakRefHolder, GC_Roots *roots) {
     mutex_lock(&roots->modificationLock);
@@ -665,7 +649,6 @@ void Marker_MarkRoots(Heap *heap, Stats *stats) {
         MutatorThread *thread = node->value;
         Marker_markProgramStack(thread, heap, stats, &out, &weakRefOut);
     }
-    Marker_markModules(heap, stats, &out, &weakRefOut);
     Marker_markCustomRoots(heap, stats, &out, &weakRefOut, customRoots);
     ScanContext context = {heap, stats, &out, &weakRefOut, 0};
     GCHooks_scanDynamicRoots(Marker_scanRange, &context);

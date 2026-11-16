@@ -1,0 +1,27 @@
+#ifndef SCALANATIVE_STATIC_ROOTS_H
+#define SCALANATIVE_STATIC_ROOTS_H
+
+#include "staticSections.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* Registers the global objects section, and the inflated lock words of
+ * static objects, as GC roots. Called after GC initialization, before Scala
+ * initializers.
+ */
+SN_SECTION_LOCAL void scalanative_register_static_roots(void);
+
+/* Called when a monitor is inflated on `object`. A static object in the class
+ * or string sections then references the heap only through its lock word,
+ * which becomes a GC root. Other objects are ignored. Objects have no lock
+ * word without multithreading.
+ */
+SN_SECTION_LOCAL void scalanative_register_object_roots(void *object);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

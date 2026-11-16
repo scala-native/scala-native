@@ -4,24 +4,12 @@ import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.runtime.javalib.Proxy
 import scala.scalanative.runtime.{Intrinsics, RawPtr}
 
-// Class strongly connected to GC.
-// _gc_modified_ modifier is used by codegen
-// to register which fields shall not be marked by GC.
-// _gc_unmarked_ works like this only in the context of
-// the WeakReference class.
+// The garbage collector does not mark the referent of a weak reference, the
+// first field of Reference, and clears it once nothing else keeps it alive.
 class WeakReference[T <: AnyRef](
-    @volatile private var _gc_modified_referent: T,
+    referent: T,
     queue: ReferenceQueue[T]
-) extends Reference[T](null.asInstanceOf[T]) {
-  // Since compiler generates _gc_modified_referent and referent
-  // (of the Reference class) as two separate fields and GC only
-  // controls _gc_modified_ referent field, we pass null to the
-  // superclass to avoid adding additional control to the GC.
-  // This should not be a problem as all Reference class methods were
-  // overriden.
-  // If we were to pass referent to Reference class without changes
-  // to the GC, WeakReference class would hold a strong reference
-  // therefore not fulfilling its purpose
+) extends Reference[T](referent) {
 
   def this(referent: T) = this(referent, null)
 

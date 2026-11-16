@@ -31,14 +31,8 @@ private[codegen] object Generate {
       genDefnsExcludingGenerated()
       genInjects()
       entry.fold(genLibraryInit())(genMain(_))
-      genClassMetadata()
-      genTraitMetadata()
+      genTypeMetadata()
       genModuleAccessors()
-      genModuleArray()
-      genModuleArraySize()
-      genScanableTypesIds()
-      genWeakRefUtils()
-      genArrayIds()
 
       buf.toSeq
     }
@@ -50,31 +44,37 @@ private[codegen] object Generate {
     def genInjects(): Unit = {
       buf += InitDecl
       buf += RegisterStaticRootsDecl
+      buf += RegisterReflectiveProxiesDecl
+      buf += meta.reflectiveProxies
       buf ++= ThreadBootstrapDecls
       buf ++= Lower.injects
     }
 
-    def genClassMetadata(): Unit = {
-      meta.classes.foreach { cls =>
-        val rtti = meta.rtti(cls)
-        val pos = cls.position
+    // RTTI of every class and trait, and its class list entry
+    def genTypeMetadata(): Unit = {
+      buf += ITable.emptyDefn
+      (meta.classes ++ meta.traits).foreach { info =>
+        val rtti = meta.rtti(info)
+        val pos = info.position
         buf += meta.globalSections.define(
           GlobalSections.ClassInfo,
           nir.Defn.Var(nir.Attrs.None, rtti.name, rtti.struct, rtti.value)(pos)
         )
+        buf += classListEntry(rtti)(pos)
       }
     }
 
-    def genTraitMetadata(): Unit = {
-      meta.traits.foreach { trt =>
-        val rtti = meta.rtti(trt)
-        val pos = trt.position
-        buf += meta.globalSections.define(
-          GlobalSections.ClassInfo,
-          nir.Defn.Var(nir.Attrs.None, rtti.name, rtti.struct, rtti.value)(pos)
+    // Lists the RTTI in the class list section iterated by Class.forName
+    private def classListEntry(rtti: RuntimeTypeInformation)(implicit pos: nir.SourcePosition): nir.Defn.Var =
+      meta.globalSections.define(
+        GlobalSections.ClassList,
+        nir.Defn.Var(
+          nir.Attrs.None,
+          rtti.name.owner.member(nir.Sig.Generated("classlist")),
+          nir.Type.Ptr,
+          rtti.const
         )
-      }
-    }
+      )
 
     /* Generate set of instructions using common exception handling, generate method
      * would return 0 if would execute successfully exception and 1 in otherwise */
@@ -142,7 +142,17 @@ private[codegen] object Generate {
       val gcInit = nir.Inst.Let(nir.Op.Call(InitSig, Init, Seq.empty), unwind)
       // Runtime-owned static storage must be rooted before Scala initializers
       // can inflate monitors or trigger a collection.
-      Seq(gcInit, nir.Inst.Let(nir.Op.Call(InitSig, RegisterStaticRoots, Seq.empty), unwind))
+      val registerRoots = nir.Inst.Let(nir.Op.Call(InitSig, RegisterStaticRoots, Seq.empty), unwind)
+      // Reflective calls look proxies up in the program's table
+      val registerProxies = nir.Inst.Let(
+        nir.Op.Call(
+          RegisterReflectiveProxiesSig,
+          RegisterReflectiveProxies,
+          Seq(nir.Val.Global(ReflectiveProxyTable.name, nir.Type.Ptr))
+        ),
+        unwind
+      )
+      Seq(gcInit, registerRoots, registerProxies)
     }
 
     private def genThreadBootstrap(library: Boolean, complete: Boolean)(implicit fresh: nir.Fresh): Seq[nir.Inst] = {
@@ -283,19 +293,22 @@ private[codegen] object Generate {
             val loadName = name.member(nir.Sig.Generated("load"))
             val loadSig = nir.Type.Function(Seq.empty, clsTy)
 
-            val selectSlot = nir.Op.Elem(
-              nir.Type.Ptr,
-              nir.Val.Global(moduleArrayName, nir.Type.Ptr),
-              Seq(nir.Val.Int(meta.moduleArray.index(cls)))
+            // The module instance, null until initialized. Stored with other
+            // global objects, which the GC scans as roots.
+            val slotName = name.member(nir.Sig.Generated("slot"))
+            buf += meta.globalSections.define(
+              GlobalSections.GlobalObjects,
+              nir.Defn.Var(nir.Attrs.None, slotName, nir.Type.Ptr, nir.Val.Null)
             )
+            val selectSlot = nir.Op.Copy(nir.Val.Global(slotName, nir.Type.Ptr))
 
             /*  singlethreaded module load
              *  Uses simplified algorithm with lower overhead
-             *  val instance = module[moduleId]
+             *  val instance = module$slot
              *  if (instance != null) instance
              *  else {
              *    val instance = alloc
-             *    module[moduleId] = instance
+             *    module$slot = instance
              *    moduleCtor(instance)
              *    instance
              *  }
@@ -326,7 +339,7 @@ private[codegen] object Generate {
             }
 
             /*  // Multithreading-safe module load
-             *  val slot = modules.at(moduleId)
+             *  val slot = &module$slot
              *  return __scalanative_loadModule(slot, rtti, size, ctor)
              *
              *  Underlying C function implements the main logic of module initialization and synchronization.
@@ -370,135 +383,6 @@ private[codegen] object Generate {
           }
         }
       }
-    }
-
-    def genModuleArray(): Unit =
-      buf +=
-        nir.Defn.Var(
-          nir.Attrs.None,
-          moduleArrayName,
-          meta.moduleArray.value.ty,
-          meta.moduleArray.value
-        )
-
-    def genModuleArraySize(): Unit =
-      buf +=
-        nir.Defn.Const(
-          nir.Attrs.None,
-          moduleArraySizeName,
-          nir.Type.Int,
-          nir.Val.Int(meta.moduleArray.size)
-        )
-
-    private def tpe2arrayId(tpe: String): Int = {
-      val clazz =
-        reachabilityAnalysis
-          .infos(nir.Global.Top(s"scala.scalanative.runtime.${tpe}Array"))
-          .asInstanceOf[Class]
-
-      meta.ids(clazz)
-    }
-
-    def genScanableTypesIds(): Unit = {
-      // Ids of array types that can contain pointers
-      for ((symbol, tpeName) <- Seq(
-            (objectArrayIdName, "Object"),
-            (blobArrayIdName, "Blob")
-          )) {
-        buf += nir.Defn.Const(
-          nir.Attrs.None,
-          symbol,
-          nir.Type.Int,
-          nir.Val.Int(tpe2arrayId(tpeName))
-        )
-      }
-      // Boxed pointer can conain erased reference to objects
-      val boxedPtrClass = reachabilityAnalysis.infos(nir.Rt.BoxedPtr.name).asInstanceOf[Class]
-      buf += nir.Defn.Const(
-        nir.Attrs.None,
-        boxedPtrIdName,
-        nir.Type.Int,
-        nir.Val.Int(meta.ids(boxedPtrClass))
-      )
-    }
-
-    def genWeakRefUtils(): Unit = {
-      def addToBuf(name: nir.Global.Member, value: Int) =
-        buf +=
-          nir.Defn.Const(
-            nir.Attrs.None,
-            name,
-            nir.Type.Int,
-            nir.Val.Int(value)
-          )
-
-      val WeakReferenceClass = nir.Global.Top("java.lang.ref.WeakReference")
-      val WeakReferenceGCReferent = WeakReferenceClass.member(
-        nir.Sig.Field("_gc_modified_referent")
-      )
-      def weakRefClsInfo = reachabilityAnalysis.infos
-        .get(WeakReferenceClass)
-        .collect { case cls: Class if cls.allocated => cls }
-      def weakRefReferentField =
-        reachabilityAnalysis.infos
-          .get(WeakReferenceGCReferent)
-          .collect { case field: Field => field }
-
-      val (weakRefIdsMin, weakRefIdsMax, modifiedFieldOffset) =
-        weakRefClsInfo
-          .zip(weakRefReferentField)
-          .headOption
-          .fold((-1, -1, -1)) {
-            case (weakRef, weakRefReferantField) =>
-              // if WeakReferences are being compiled and therefore supported
-              val layout = meta.layout(weakRef)
-              val gcModifiedFieldReferentIdx = layout
-                .index(weakRefReferantField)
-                .ensuring(
-                  _ > 0,
-                  "Runtime implementation error, no \"_gc_modified_referent\" field in java.lang.ref.WeakReference"
-                )
-              val gcModifiedFieldReferentOffset = layout.layout
-                .tys(gcModifiedFieldReferentIdx)
-                .offset
-
-              (
-                meta.ranges(weakRef).start,
-                meta.ranges(weakRef).end,
-                gcModifiedFieldReferentOffset.toInt
-              )
-          }
-      addToBuf(weakRefIdsMaxName, weakRefIdsMax)
-      addToBuf(weakRefIdsMinName, weakRefIdsMin)
-      addToBuf(weakRefFieldOffsetName, modifiedFieldOffset)
-    }
-
-    def genArrayIds(): Unit = {
-      val tpes = Seq(
-        "Boolean",
-        "Char",
-        "Byte",
-        "Short",
-        "Int",
-        "Long",
-        "Float",
-        "Double",
-        "Object",
-        "Blob"
-      )
-      val ids = tpes.map(tpe2arrayId).sorted
-
-      // all the arrays have a common superclass, therefore their ids are consecutive
-      val min = ids.head
-      val max = ids.last
-      if (ids != (min to max)) {
-        throw new Exception(
-          s"Ids for all known arrays ($tpes) are not consecutive!"
-        )
-      }
-
-      buf += nir.Defn.Const(nir.Attrs.None, arrayIdsMinName, nir.Type.Int, nir.Val.Int(min))
-      buf += nir.Defn.Const(nir.Attrs.None, arrayIdsMaxName, nir.Type.Int, nir.Val.Int(max))
     }
 
     private def validateMainEntry(entry: nir.Global.Top): Unit = {
@@ -575,18 +459,14 @@ private[codegen] object Generate {
       nir.Defn.Declare(nir.Attrs.None, Extern("scalanative_register_static_roots"), InitSig)
     val RegisterStaticRoots = nir.Val.Global(RegisterStaticRootsDecl.name, nir.Type.Ptr)
 
-    val moduleArrayName = Extern("__modules")
-    val moduleArraySizeName = Extern("__modules_size")
-    val objectArrayIdName = Extern("__object_array_id")
-    val blobArrayIdName = Extern("__blob_array_id")
-    val boxedPtrIdName = Extern("__boxed_ptr_id")
-    val weakRefIdsMaxName = Extern("__weak_ref_ids_max")
-    val weakRefIdsMinName = Extern("__weak_ref_ids_min")
-    val weakRefFieldOffsetName = Extern("__weak_ref_field_offset")
-    val registryOffsetName = Extern("__weak_ref_registry_module_offset")
-    val registryFieldOffsetName = Extern("__weak_ref_registry_field_offset")
-    val arrayIdsMinName = Extern("__array_ids_min")
-    val arrayIdsMaxName = Extern("__array_ids_max")
+    val RegisterReflectiveProxiesSig = nir.Type.Function(Seq(nir.Type.Ptr), nir.Type.Unit)
+    val RegisterReflectiveProxiesDecl = nir.Defn.Declare(
+      nir.Attrs.None,
+      Extern("scalanative_register_reflective_proxies"),
+      RegisterReflectiveProxiesSig
+    )
+    val RegisterReflectiveProxies = nir.Val.Global(RegisterReflectiveProxiesDecl.name, nir.Type.Ptr)
+
   }
 
   def depends(implicit platform: PlatformInfo): Seq[nir.Global] = {

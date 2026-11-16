@@ -10,7 +10,10 @@ private[codegen] object GlobalSections {
       name: String,
       machOName: String,
       coffName: String,
-      used: Boolean = false
+      used: Boolean = false,
+      // Entries are only reached through the section, never by name: keeps
+      // them out of the symbol table
+      anonymous: Boolean = false
   ) {
     require(
       machOName.length <= 16,
@@ -31,8 +34,15 @@ private[codegen] object GlobalSections {
   val ClassInfo = Section(
     name = "sn_classinfo",
     machOName = "__sn_classinfo",
-    coffName = ".sncls",
-    used = true // Class.forName scans this section
+    coffName = ".sncls"
+  )
+  // A pointer to the RTTI of every class and trait
+  val ClassList = Section(
+    name = "sn_classlist",
+    machOName = "__sn_classlist",
+    coffName = ".sncll",
+    used = true, // Class.forName iterates this section
+    anonymous = true
   )
   val GlobalObjects = Section(
     name = "sn_global_objects",

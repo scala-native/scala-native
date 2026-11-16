@@ -3,7 +3,7 @@ package codegen
 
 import scala.collection.mutable
 
-import scalanative.linker.{Class, ReachabilityAnalysis, Trait}
+import scalanative.linker.{Class, ReachabilityAnalysis, ScopeInfo, Trait}
 
 private[scalanative] class Metadata(
     val analysis: ReachabilityAnalysis.Result,
@@ -23,80 +23,130 @@ private[scalanative] class Metadata(
   val vtable = mutable.Map.empty[linker.Class, VirtualTable]
   val itable = mutable.Map.empty[linker.Class, ITable]
   val layout = mutable.Map.empty[linker.Class, FieldLayout]
-  val dynmap = mutable.Map.empty[linker.Class, DynamicHashMap]
-  val ids = mutable.Map.empty[linker.ScopeInfo, Int]
-  val ranges = mutable.Map.empty[linker.Class, Range]
 
-  val classes = initClassIdsAndRanges()
-  val (traits, traitIdsContext) = initTraitIds()
-  val moduleArray = new ModuleArray(this)
+  // Superclasses from the root, then the class itself, see lineage
+  private val lineages = mutable.Map.empty[Class, Vector[Class]]
+  val classes: Seq[Class] = initClasses()
+  val traits: Seq[Trait] = analysis.infos.valuesIterator
+    .collect { case info: Trait => info }
+    .toIndexedSeq
+    .sortBy(_.name.mangle)
+  private val traitKeys: Map[Trait, Int] =
+    traits.map(trt => trt -> StableHash.traitKey(trt)).toMap
 
+  checkDynsigKeys()
   initTraitMetadata()
   initClassMetadata()
 
-  val canAlwaysUseFastITables = rtti.valuesIterator.forall(_.canUseFastITables)
+  // Traits some class does not store in the itable slot where their lookup
+  // starts, with the largest number of slots between. Computed before
+  // lowering, which reads it from several threads.
+  private val displacedTraits: Map[Trait, Int] =
+    itable.valuesIterator
+      .flatMap(_.displaced)
+      .toSeq
+      .groupBy(_._1)
+      .map { case (trt, all) => trt -> all.map(_._2).max }
+  // Traits implemented by some class whose itable shifts the trait keys
+  private val shiftedTraits: Set[Trait] =
+    classes.iterator
+      .filter(itable(_).shift != 0)
+      .flatMap(interfaces(_))
+      .toSet
 
-  def initTraitIds(): (Seq[Trait], TraitsUniverse.TraitId.Context) = {
-    // Sorted: trait ids must not follow hash order of infos
-    val traits = analysis.infos.valuesIterator
-      .collect { case info: Trait => info }
-      .toIndexedSeq
-      .sortBy[nir.Global](_.name)
-    val universe = new TraitsUniverse(traits)
-    val ctx = universe.assignIds(ids)
-    (traits, ctx)
-  }
+  /** Proxies of reflectively called methods, registered at startup */
+  lazy val reflectiveProxies: nir.Defn.Const =
+    ReflectiveProxyTable.defn(proxies)
 
-  def initClassIdsAndRanges(): Seq[Class] = {
+  /** Superclasses of the class from the root, then the class itself */
+  def lineage(cls: Class): Vector[Class] = lineages(cls)
+
+  /** Number of superclasses: 0 for java.lang.Object and primitives */
+  def superclassCount(cls: Class): Int = lineage(cls).size - 1
+
+  /** Whether `cls` is `ancestor` or one of its subclasses: `ancestor` has
+   *  `depth` superclasses.
+   */
+  def isAt(cls: Class, depth: Int, ancestor: nir.Global.Top): Boolean =
+    lineage(cls).lift(depth).exists(_.name == ancestor)
+
+  /** WeakReference, SoftReference or PhantomReference for reference objects:
+   *  java.lang.ref.Reference, a direct subclass of Object, is extended only by
+   *  them.
+   */
+  def referenceKind(cls: Class): Option[nir.Global.Top] =
+    if (!isAt(cls, 1, FieldLayout.Reference)) None
+    else lineage(cls).lift(2).map(_.name)
+
+  /** Every class of the program stores `trt` in the itable slot where its
+   *  lookup starts, so a single probe decides any lookup. A whole-program fact
+   *  used by generated code only: RTTI does not record it.
+   */
+  def alwaysAtHomeSlot(trt: Trait): Boolean = !displacedTraits.contains(trt)
+
+  /** Largest number of slots, in any class of the program, between the slot
+   *  where the lookup of `trt` starts and the one holding it. A whole-program
+   *  fact used by generated code.
+   */
+  def maxDisplacement(trt: Trait): Int = displacedTraits.getOrElse(trt, 0)
+
+  /** No class of the program shifts the key of `trt` in its itable, so lookups
+   *  start at key & mask. A whole-program fact used by generated code.
+   */
+  def neverShifted(trt: Trait): Boolean = !shiftedTraits.contains(trt)
+
+  /** Key of a trait in itables, see StableHash.traitKey */
+  def traitKey(trt: Trait): Int = traitKeys(trt)
+
+  /** Traits implemented by the class or trait, ordered by name */
+  def interfaces(info: ScopeInfo): Seq[Trait] =
+    info.linearized
+      .collect { case trt: Trait if trt != info => trt }
+      .distinct
+      .sortBy(_.name.mangle)
+
+  // Classes in pre-order of the class hierarchy, primitive types first
+  private def initClasses(): Seq[Class] = {
     val out = mutable.UnrolledBuffer.empty[Class]
-    var id = 0
 
-    def loop(
-        node: Class,
-        topLevelSubclassOrdering: Array[Class] => Array[Class]
-    ): Unit = {
+    def loop(node: Class, parentLineage: Vector[Class]): Unit = {
       out += node
-      val start = id
-      id += 1
-      topLevelSubclassOrdering(
-        node.subclasses
-          .filter(_.parent.contains(node))
-          .toArray
-      ).foreach(loop(_, identity))
-      val end = id - 1
-      ids(node) = start
-      ranges(node) = start to end
+      val lineage = parentLineage :+ node
+      lineages(node) = lineage
+      node.subclasses
+        .filter(_.parent.contains(node))
+        .toSeq
+        .sortBy(_.name.mangle)
+        .foreach(loop(_, lineage))
     }
 
-    def fromRootClass(
-        symbol: nir.Global.Top,
-        ordering: Array[Class] => Array[Class] = identity
-    ) =
-      loop(
-        node = analysis.infos(symbol).asInstanceOf[Class],
-        topLevelSubclassOrdering = ordering
-      )
-
-    nir.Rt.PrimitiveTypes.foreach(fromRootClass(_))
-    fromRootClass(
-      nir.Rt.Object.name,
-      ordering = subclasses => {
-        val (arrays, other) =
-          subclasses.partition(_.name == nir.Rt.GenericArray.name)
-        arrays ++ other
-      }
-    )
-
+    nir.Rt.PrimitiveTypes.foreach { name =>
+      loop(analysis.infos(name).asInstanceOf[Class], Vector.empty)
+    }
+    loop(analysis.infos(nir.Rt.Object.name).asInstanceOf[Class], Vector.empty)
     out.toSeq
+  }
+
+  /* Reflective calls look methods up by a hash of their signature, so two
+   * signatures with the same key could dispatch to a wrong method.
+   */
+  private def checkDynsigKeys(): Unit = {
+    val sigs = (analysis.dynsigs ++ proxies.map(_.name).collect {
+      case name: nir.Global.Member => name.sig
+    }).distinct
+    sigs.groupBy(StableHash.dynsigKey).foreach {
+      case (key, colliding) if colliding.size > 1 =>
+        throw new build.BuildException(
+          s"Reflective method signatures ${colliding.map(_.show).mkString(", ")} share the dispatch key $key"
+        )
+      case _ => ()
+    }
   }
 
   def initClassMetadata(): Unit = {
     classes.foreach { node =>
       vtable(node) = new VirtualTable(node)
       layout(node) = new FieldLayout(node)
-      if (layouts.ClassRtti.usesDynMap) {
-        dynmap(node) = new DynamicHashMap(node, proxies)
-      }
       itable(node) = ITable.build(node)
       rtti(node) = new RuntimeTypeInformation(node)
     }

@@ -28,10 +28,9 @@ private[scalanative] object Lower {
 
     private val zero = nir.Val.Int(0)
     private val one = nir.Val.Int(1)
-    val RttiClassIdPath = Seq(zero, nir.Val.Int(Rtti.ClassIdIdx))
-    val ClassRttiDynmapPath = Seq(zero, nir.Val.Int(ClassRtti.DynmapIdx))
     val ClassRttiVtablePath = Seq(zero, nir.Val.Int(ClassRtti.VtableIdx))
-    val ClassRttiITableSizePath = Seq(zero, nir.Val.Int(ClassRtti.ITableSizeIdx))
+    val ClassRttiITableMaskPath = Seq(zero, nir.Val.Int(ClassRtti.ITableMaskIdx))
+    val ClassRttiITableShiftPath = Seq(zero, nir.Val.Int(ClassRtti.ITableShiftIdx))
     val ClassRttiItablesPath = Seq(zero, nir.Val.Int(ClassRtti.ItablesIdx))
     val ArrayHeaderLengthPath = Seq(zero, nir.Val.Int(ArrayHeader.LengthIdx))
 
@@ -931,55 +930,82 @@ private[scalanative] object Lower {
       }
     }
 
-    // Fastpath lookup for itable entry calculated based on input traitId
-    // Returns a pointer to ITableEntry struct - {id: int, methods: void**}
-    def genItableFastLookup(trt: Trait, buf: nir.InstructionBuilder)(rtti: nir.Val, traitId: nir.Val.Int, itableSize: nir.Val)(implicit
+    /* Itable lookup for `trt`, see codegen.ITable. Jumps to `found` with the
+     * itable pointer and slot index as arguments, or to `missing`. Probes the
+     * slot where the lookup starts inline: most classes store `trt` there.
+     * When every class of the program holds `trt` there or in the next slot,
+     * the next slot decides: receivers that implement `trt` need no second
+     * check. Otherwise a slot holding another trait continues the lookup out
+     * of line, in scalanative_itable_find.
+     */
+    def genItableProbe(buf: nir.InstructionBuilder, rttiPtr: nir.Val, trt: Trait, implemented: Boolean)(found: nir.Local, missing: nir.Local)(implicit
+        srcPosition: nir.SourcePosition,
+        scopeId: nir.ScopeId
+    ): Unit = {
+      import buf._
+      val traitRtti = rtti(trt).const
+      val (mask, itables, start) = genItableStart(buf, rttiPtr, trt)
+      val nextL = fresh()
+
+      val entryTrait = genLoadEntryTrait(buf, itables, start)
+      val isFound = let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, entryTrait, traitRtti), unwind)
+      branch(isFound, nir.Next.Label(found, Seq(itables, start)), nir.Next(nextL))
+
+      label(nextL)
+      if (meta.maxDisplacement(trt) <= 1) {
+        val after = let(nir.Op.Bin(nir.Bin.Iadd, nir.Type.Int, start, one), unwind)
+        val next = let(nir.Op.Bin(nir.Bin.And, nir.Type.Int, after, mask), unwind)
+        if (implemented) jump(found, Seq(itables, next))
+        else {
+          val nextTrait = genLoadEntryTrait(buf, itables, next)
+          val isNext = let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, nextTrait, traitRtti), unwind)
+          branch(isNext, nir.Next.Label(found, Seq(itables, next)), nir.Next(missing))
+        }
+      } else {
+        val searchL = fresh()
+        val isEmpty = let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, entryTrait, nir.Val.Null), unwind)
+        branch(isEmpty, nir.Next(missing), nir.Next(searchL))
+
+        label(searchL)
+        val pos = call(ItableFindSig, ItableFind, Seq(rttiPtr, traitRtti, start), unwind)
+        val isMissing = let(nir.Op.Comp(nir.Comp.Slt, nir.Type.Int, pos, zero), unwind)
+        branch(isMissing, nir.Next(missing), nir.Next.Label(found, Seq(itables, pos)))
+      }
+    }
+
+    // The trait RTTI stored in slot `pos` of `itables`, null for an empty slot
+    def genLoadEntryTrait(buf: nir.InstructionBuilder, itables: nir.Val, pos: nir.Val)(implicit
         srcPosition: nir.SourcePosition,
         scopeId: nir.ScopeId
     ): nir.Val = {
       import buf._
-      val itablesPtr = let(nir.Op.Elem(ClassRtti.layout, rtti, ClassRttiItablesPath), unwind)
-      val itables = let(nir.Op.Load(nir.Type.Ptr, itablesPtr), unwind)
-      val itableIdx = let(nir.Op.Bin(nir.Bin.And, nir.Type.Int, traitId, itableSize), unwind)
-      let(nir.Op.Elem(nir.Type.StructValue(nir.Type.Int :: nir.Type.Ptr :: Nil), itables, Seq(itableIdx)), unwind)
+      val entryTraitPtr = let(nir.Op.Elem(ITable.layout, itables, Seq(pos, nir.Val.Int(ITable.TraitIdx))), unwind)
+      let(nir.Op.Load(nir.Type.Ptr, entryTraitPtr), unwind)
     }
 
-    type ITableLookupGenerator = (
-        nir.InstructionBuilder, // buf
-        nir.Val.Int, // traitId
-        nir.Val, // itableSize
-        nir.Local // toLabel
-    ) => nir.Val.Local
-    def genItableLookup(trt: Trait, buf: nir.InstructionBuilder, mayBeNotFound: Boolean)(resultLabel: Option[nir.Local], rtti: nir.Val, resultType: nir.Type)(
-        genFastPath: ITableLookupGenerator,
-        genSlowPath: ITableLookupGenerator
-    )(implicit
+    /* The itable mask, the itable and the slot where the lookup for `trt`
+     * starts: (key >>> shift) & mask, with the class's shift and mask. When no
+     * class shifts the keys of `trt`, key & mask: a whole-program fact.
+     */
+    def genItableStart(buf: nir.InstructionBuilder, rttiPtr: nir.Val, trt: Trait)(implicit
         srcPosition: nir.SourcePosition,
         scopeId: nir.ScopeId
-    ): nir.Val.Local = {
+    ): (nir.Val, nir.Val, nir.Val) = {
       import buf._
-      val traitId = nir.Val.Int(meta.ids(trt))
-      val itableSizePtr = let(nir.Op.Elem(ClassRtti.layout, rtti, ClassRttiITableSizePath), unwind)
-      val itableSize = let(nir.Op.Load(nir.Type.Int, itableSizePtr), unwind)
-
-      val canEmitOnlyFastPath = meta.canAlwaysUseFastITables || (!mayBeNotFound && meta.rtti(trt).canUseFastITables)
-      if (canEmitOnlyFastPath) genFastPath(buf, traitId, itableSize, resultLabel.getOrElse(fresh()))
-      else {
-        val onFastPath, onSlowPath, merge = fresh()
-        val resultV = nir.Val.Local(resultLabel.getOrElse(fresh()), resultType)
-
-        val useFastPath = let(nir.Op.Comp(nir.Comp.Sge, nir.Type.Int, itableSize, zero), unwind)
-        branch(useFastPath, nir.Next.Label(onFastPath, Nil), nir.Next.Label(onSlowPath, Nil))
-
-        label(onFastPath, Nil)
-        jump(merge, genFastPath(buf, traitId, itableSize, fresh()) :: Nil)
-
-        label(onSlowPath, Nil)
-        jump(merge, genSlowPath(buf, traitId, itableSize, fresh()) :: Nil)
-
-        label(merge, resultV :: Nil)
-        resultV
-      }
+      val maskPtr = let(nir.Op.Elem(ClassRtti.layout, rttiPtr, ClassRttiITableMaskPath), unwind)
+      val mask = let(nir.Op.Load(nir.Type.Int, maskPtr), unwind)
+      val itablesPtr = let(nir.Op.Elem(ClassRtti.layout, rttiPtr, ClassRttiItablesPath), unwind)
+      val itables = let(nir.Op.Load(nir.Type.Ptr, itablesPtr), unwind)
+      val key = nir.Val.Int(meta.traitKey(trt))
+      val shifted =
+        if (meta.neverShifted(trt)) key
+        else {
+          val shiftPtr = let(nir.Op.Elem(ClassRtti.layout, rttiPtr, ClassRttiITableShiftPath), unwind)
+          val shift = let(nir.Op.Load(nir.Type.Int, shiftPtr), unwind)
+          let(nir.Op.Bin(nir.Bin.Lshr, nir.Type.Int, key, shift), unwind)
+        }
+      val start = let(nir.Op.Bin(nir.Bin.And, nir.Type.Int, shifted, mask), unwind)
+      (mask, itables, start)
     }
 
     def genIntrinsicCallOp(
@@ -1167,21 +1193,35 @@ private[scalanative] object Lower {
             .indexOf(sig)
             .ensuring(_ >= 0, s"Not found ${sig.show} entry in ${trt.name.id} methods")
         )
-        val rtti = let(nir.Op.Load(nir.Type.Ptr, obj), unwind)
-        genItableLookup(trt, buf, mayBeNotFound = false)(Some(n), rtti, nir.Type.Ptr)(
-          genFastPath = (buf, traitId, itableSize, resultLabel) => {
-            val itablesPtr = let(nir.Op.Elem(ClassRtti.layout, rtti, ClassRttiItablesPath), unwind)
-            val itables = let(nir.Op.Load(nir.Type.Ptr, itablesPtr), unwind)
-            val itableIdx = let(nir.Op.Bin(nir.Bin.And, nir.Type.Int, traitId, itableSize), unwind)
-            val itablePtr = let(nir.Op.Elem(nir.Type.StructValue(nir.Type.Int :: nir.Type.Ptr :: Nil), itables, Seq(itableIdx, one)), unwind)
-            val itable = let(nir.Op.Load(nir.Type.Ptr, itablePtr), unwind)
-            val methodPtr = let(nir.Op.Elem(nir.Type.Ptr, itable, Seq(methodIdx)), unwind)
-            let(resultLabel, nir.Op.Load(nir.Type.Ptr, methodPtr), unwind)
-          },
-          genSlowPath = (buf, traitId, itableSize, _) => {
-            call(TraitDispatchSlowpathSig, TraitDispatchSlowpath, Seq(rtti, traitId, methodIdx), unwind)
-          }
-        )
+        val rttiPtr = let(nir.Op.Load(nir.Type.Ptr, obj), unwind)
+
+        def genLoadMethod(itables: nir.Val, pos: nir.Val): nir.Val = {
+          val methodsPtr = let(nir.Op.Elem(ITable.layout, itables, Seq(pos, nir.Val.Int(ITable.MethodsIdx))), unwind)
+          val methods = let(nir.Op.Load(nir.Type.Ptr, methodsPtr), unwind)
+          val methodPtr = let(nir.Op.Elem(nir.Type.Ptr, methods, Seq(methodIdx)), unwind)
+          let(nir.Op.Load(nir.Type.Ptr, methodPtr), unwind)
+        }
+
+        // Every class of the program stores `trt` in the slot where its
+        // lookup starts, a single probe finds it
+        if (meta.alwaysAtHomeSlot(trt)) {
+          val (_, itables, pos) = genItableStart(buf, rttiPtr, trt)
+          let(n, nir.Op.Copy(genLoadMethod(itables, pos)), unwind)
+        } else {
+          val foundL, missingL, merge = fresh()
+          genItableProbe(buf, rttiPtr, trt, implemented = true)(found = foundL, missing = missingL)
+
+          val itables = nir.Val.Local(fresh(), nir.Type.Ptr)
+          val pos = nir.Val.Local(fresh(), nir.Type.Int)
+          label(foundL, Seq(itables, pos))
+          jump(merge, Seq(genLoadMethod(itables, pos)))
+
+          // Unreachable for well-typed code: the receiver implements the trait
+          label(missingL)
+          jump(merge, Seq(nir.Val.Null))
+
+          label(merge, Seq(nir.Val.Local(n, nir.Type.Ptr)))
+        }
       }
 
       def genMethodLookup(scope: ScopeInfo): Unit = {
@@ -1269,26 +1309,17 @@ private[scalanative] object Lower {
       }
 
       def genReflectiveLookup(): nir.Val = {
-        val methodIndex =
-          meta.analysis.dynsigs.zipWithIndex.find(_._1 == sig).get._2
-
-        // Load the type information pointer
+        // The program's reflective proxy table, see ReflectiveProxyTable
         val typeptr = load(nir.Type.Ptr, obj, unwind)
-        // Load the dynamic hash map for given type, make sure it's not null
-        val mapelem = elem(classRttiType, typeptr, ClassRttiDynmapPath, unwind)
-        val mapptr = load(nir.Type.Ptr, mapelem, unwind)
-        // If hash map is not null, it has to contain at least one entry
-        throwIfNull(mapptr)
-        // Perform dynamic dispatch via dyndispatch helper
-        val methptrptr = call(
+        val proxy = call(
           dyndispatchSig,
           dyndispatch,
-          Seq(mapptr, nir.Val.Int(methodIndex)),
+          Seq(typeptr, nir.Val.Int(StableHash.dynsigKey(sig))),
           unwind
         )
-        // Hash map lookup can still not contain given signature
-        throwIfNull(methptrptr)
-        let(n, nir.Op.Load(nir.Type.Ptr, methptrptr), unwind)
+        // The class has no proxy for the signature
+        throwIfNull(proxy)
+        let(n, nir.Op.Copy(proxy), unwind)
       }
 
       genGuardNotNull(buf, obj)
@@ -1343,39 +1374,75 @@ private[scalanative] object Lower {
       val obj = genVal(buf, v)
 
       ty match {
-        case ClassRef(cls) if meta.ranges(cls).length == 1 =>
+        case ClassRef(cls) if cls.subclasses.isEmpty =>
           val typeptr = let(nir.Op.Load(nir.Type.Ptr, obj), unwind)
           let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, typeptr, rtti(cls).const), unwind)
 
         case ClassRef(cls) =>
-          val range = meta.ranges(cls)
+          // In the lineage of an instance of `cls`, `cls` is at index superclassCount(cls)
+          val superclassCount = meta.superclassCount(cls)
           val typeptr = let(nir.Op.Load(nir.Type.Ptr, obj), unwind)
-          val idptr = let(nir.Op.Elem(Rtti.layout, typeptr, RttiClassIdPath), unwind)
-          val id = let(nir.Op.Load(nir.Type.Int, idptr), unwind)
-          val ge = let(nir.Op.Comp(nir.Comp.Sle, nir.Type.Int, nir.Val.Int(range.start), id), unwind)
-          val le = let(nir.Op.Comp(nir.Comp.Sle, nir.Type.Int, id, nir.Val.Int(range.end)), unwind)
-          let(nir.Op.Bin(nir.Bin.And, nir.Type.Bool, ge, le), unwind)
+          if (superclassCount < CommonMemoryLayouts.LineageSize) {
+            val ancestorPtr = let(
+              nir.Op.Elem(ClassRtti.layout, typeptr, Seq(zero, nir.Val.Int(ClassRtti.LineageIdx), nir.Val.Int(superclassCount))),
+              unwind
+            )
+            val ancestor = let(nir.Op.Load(nir.Type.Ptr, ancestorPtr), unwind)
+            let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, ancestor, rtti(cls).const), unwind)
+          } else {
+            // Beyond the first chunk of the lineage: the last slot of each
+            // chunk points to the next one, null for classes without more
+            // superclasses
+            val size = CommonMemoryLayouts.LineageSize
+            val resultL = fresh()
+            val linkPtr = let(
+              nir.Op.Elem(ClassRtti.layout, typeptr, Seq(zero, nir.Val.Int(ClassRtti.LineageIdx), nir.Val.Int(size))),
+              unwind
+            )
+            val first = let(nir.Op.Load(nir.Type.Ptr, linkPtr), unwind)
+            val chunk = (1 to superclassCount / size).foldLeft(first) { (chunk, level) =>
+              val presentL = fresh()
+              val isLast = let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, chunk, nir.Val.Null), unwind)
+              branch(isLast, nir.Next.Label(resultL, Seq(nir.Val.False)), nir.Next(presentL))
+              label(presentL)
+              if (level == superclassCount / size) chunk
+              else {
+                val nextPtr = let(nir.Op.Elem(nir.Type.Ptr, chunk, Seq(nir.Val.Int(size))), unwind)
+                let(nir.Op.Load(nir.Type.Ptr, nextPtr), unwind)
+              }
+            }
+            val ancestorPtr = let(nir.Op.Elem(nir.Type.Ptr, chunk, Seq(nir.Val.Int(superclassCount % size))), unwind)
+            val ancestor = let(nir.Op.Load(nir.Type.Ptr, ancestorPtr), unwind)
+            val isClass = let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, ancestor, rtti(cls).const), unwind)
+            jump(resultL, Seq(isClass))
+
+            val result = nir.Val.Local(fresh(), nir.Type.Bool)
+            label(resultL, Seq(result))
+            result
+          }
+
+        case TraitRef(trt) if meta.alwaysAtHomeSlot(trt) =>
+          // A class implementing `trt` holds it in the slot where its lookup
+          // starts, any other trait there means the class does not implement it
+          val rttiPtr = let(nir.Op.Load(nir.Type.Ptr, obj), unwind)
+          val (_, itables, pos) = genItableStart(buf, rttiPtr, trt)
+          val entryTrait = genLoadEntryTrait(buf, itables, pos)
+          let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, entryTrait, rtti(trt).const), unwind)
 
         case TraitRef(trt) =>
-          v.ty match {
-            case ClassRef(cls) =>
-            case _             =>
-          }
-          val traitId = nir.Val.Int(meta.ids(trt))
-          val rtti = let(nir.Op.Load(nir.Type.Ptr, obj), unwind)
-          genItableLookup(trt, buf, mayBeNotFound = true)(None, rtti, nir.Type.Bool)(
-            genFastPath = (buf, traitId, itableSize, _) => {
-              val itablesPtr = let(nir.Op.Elem(ClassRtti.layout, rtti, ClassRttiItablesPath), unwind)
-              val itables = let(nir.Op.Load(nir.Type.Ptr, itablesPtr), unwind)
-              val itableIdx = let(nir.Op.Bin(nir.Bin.And, nir.Type.Int, traitId, itableSize), unwind)
-              val itableIdPtr = let(nir.Op.Elem(nir.Type.StructValue(nir.Type.Int :: nir.Type.Ptr :: Nil), itables, Seq(itableIdx, zero)), unwind)
-              val itableId = let(nir.Op.Load(nir.Type.Int, itableIdPtr), unwind)
-              let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Int, traitId, itableId), unwind)
-            },
-            genSlowPath = (buf, traitId, itableSize, _) => {
-              call(ClassHasTraitSlowpathSig, ClassHasTraitSlowpath, Seq(rtti, traitId), unwind)
-            }
-          )
+          val rttiPtr = let(nir.Op.Load(nir.Type.Ptr, obj), unwind)
+          val foundL, missingL, resultL = fresh()
+          genItableProbe(buf, rttiPtr, trt, implemented = false)(found = foundL, missing = missingL)
+
+          label(foundL, Seq(nir.Val.Local(fresh(), nir.Type.Ptr), nir.Val.Local(fresh(), nir.Type.Int)))
+          jump(resultL, Seq(nir.Val.True))
+
+          label(missingL)
+          jump(resultL, Seq(nir.Val.False))
+
+          val result = nir.Val.Local(fresh(), nir.Type.Bool)
+          label(resultL, Seq(result))
+          result
 
         case _ =>
           util.unsupported(s"is[$ty] $obj")
@@ -2168,7 +2235,11 @@ private[scalanative] object Lower {
     nir.Sig.Method("allocImpl", Seq(nir.Type.Ptr, nir.Type.Size, nir.Type.Ptr))
   )
 
-  val dyndispatchName = Extern("scalanative_dyndispatch")
+  val ItableFindName = Extern("scalanative_itable_find")
+  val ItableFindSig = nir.Type.Function(Seq(nir.Type.Ptr, nir.Type.Ptr, nir.Type.Int), nir.Type.Int)
+  val ItableFind = nir.Val.Global(ItableFindName, nir.Type.Ptr)
+
+  val dyndispatchName = Extern("scalanative_dynmethod")
   val dyndispatchSig =
     nir.Type.Function(Seq(nir.Type.Ptr, nir.Type.Int), nir.Type.Ptr)
   val dyndispatch = nir.Val.Global(dyndispatchName, dyndispatchSig)
@@ -2419,14 +2490,6 @@ private[scalanative] object Lower {
   val throwNoSuchMethodVal =
     nir.Val.Global(throwNoSuchMethod, nir.Type.Ptr)
 
-  val TraitDispatchSlowpathName = Extern("__scalanative_trait_dispatch_slowpath")
-  val TraitDispatchSlowpathSig = nir.Type.Function(Seq(nir.Type.Ptr, nir.Type.Int, nir.Type.Int), nir.Type.Ptr)
-  val TraitDispatchSlowpath = nir.Val.Global(TraitDispatchSlowpathName, nir.Type.Ptr)
-
-  val ClassHasTraitSlowpathName = Extern("__scalanative_class_has_trait_slowpath")
-  val ClassHasTraitSlowpathSig = nir.Type.Function(Seq(nir.Type.Ptr, nir.Type.Int), nir.Type.Bool)
-  val ClassHasTraitSlowpath = nir.Val.Global(ClassHasTraitSlowpathName, nir.Type.Ptr)
-
   val GC = nir.Global.Top("scala.scalanative.runtime.GC$")
   val GCYieldName =
     GC.member(nir.Sig.Extern("scalanative_GC_yield"))
@@ -2482,15 +2545,14 @@ private[scalanative] object Lower {
     buf += externDecl(allocSmallName, allocSig)
     buf += externDecl(largeAllocName, allocSig)
     buf += externDecl(dyndispatchName, dyndispatchSig)
+    buf += externDecl(ItableFindName, ItableFindSig)
     buf += externDecl(throwName, throwSig)
     buf += externDecl(memsetName, memsetSig)
     buf += externDecl(ExceptionOnCatchName, ExceptionOnCatchSig)
-    buf += externDecl(TraitDispatchSlowpathName, TraitDispatchSlowpathSig)
     buf += externDecl(CheckStackOverflowGuardsName, CheckStackOverflowGuardsSig)
     buf += externDecl(EnterManagedName, EnterManagedSig)
     buf += externDecl(LeaveManagedName, LeaveManagedSig)
     buf += externDecl(LeaveManagedAndThrowName, LeaveManagedAndThrowSig)
-    buf += externDecl(ClassHasTraitSlowpathName, ClassHasTraitSlowpathSig)
     buf.toSeq
   }
 

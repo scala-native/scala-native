@@ -3,10 +3,9 @@
 
 #include "shared/GCHooks.h"
 
-// The one class traced through `scalanative_GC_trace_owned`: its type
-// descriptor (`object->rtti`) and tracer, NULL until set. The marker compares
-// every object it visits with it.
-extern _Atomic(void *) ObjectTracer_rtti;
+// The tracer registered through `scalanative_GC_trace_owned`, NULL until
+// then. The markers call it for every object of a class flagged with
+// RTTI_FLAG_HAS_OBJECT_TRACER.
 extern _Atomic(GC_ObjectTracerFn *) ObjectTracer_trace;
 
 #endif

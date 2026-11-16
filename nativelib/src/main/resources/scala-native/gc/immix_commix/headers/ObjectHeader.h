@@ -13,14 +13,37 @@
 #include "limits.h"
 #include "assert.h"
 
-extern const int __object_array_id;
-extern const int __blob_array_id;
-extern const int __weak_ref_ids_min;
-extern const int __weak_ref_ids_max;
-extern const int __weak_ref_field_offset;
-extern const int __array_ids_min;
-extern const int __array_ids_max;
-extern const int __boxed_ptr_id;
+/* Bits of BaseRtti.flags, keep in sync with
+ * codegen.RuntimeTypeInformation.Flags */
+#define RTTI_FLAG_IS_INTERFACE (1 << 0)
+#define RTTI_FLAG_IS_PRIMITIVE (1 << 1)
+#define RTTI_FLAG_IS_ARRAY (1 << 2)
+/* Arrays only, bits 3-4: how the GC scans the elements */
+#define RTTI_ARRAY_SCAN_MASK (3 << 3)
+#define RTTI_ARRAY_SCAN_NONE (0 << 3)         // primitive values
+#define RTTI_ARRAY_SCAN_REFERENCES (1 << 3)   // references
+#define RTTI_ARRAY_SCAN_CONSERVATIVE (2 << 3) // raw bytes, up to a limit
+/* Bits 5-6: subclasses of java.lang.ref.Reference */
+#define RTTI_REFERENCE_KIND_MASK (3 << 5)
+#define RTTI_REFERENCE_KIND_WEAK (1 << 5)
+#define RTTI_REFERENCE_KIND_SOFT (2 << 5)
+#define RTTI_REFERENCE_KIND_PHANTOM (3 << 5)
+/* Traits only, bits 8-31: low 24 bits of the itable key */
+#define RTTI_TRAIT_KEY_SHIFT 8
+/* Classes only, bit 7: the GC calls the object tracer for every marked
+ * instance, see shared/GCHooks.h */
+#define RTTI_FLAG_HAS_OBJECT_TRACER (1 << 7)
+/* Arrays only, bits 8-15: number of dimensions */
+#define RTTI_ARRAY_DIMENSIONS_SHIFT 8
+/* Classes, bits 16-31: hash of the class name, see codegen.StableHash */
+#define RTTI_CLASS_KEY_SHIFT 16
+
+/* Terminates each section of a class reference map, see Rtti.refFieldOffsets */
+#define LAST_FIELD_OFFSET -1
+
+/* Length of the lineage stored inline in class RTTI, keep in sync with
+ * codegen.CommonMemoryLayouts.LineageSize */
+#define SCALANATIVE_RTTI_LINEAGE_SIZE 8
 
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
 #define USES_LOCKWORD 1
@@ -33,8 +56,12 @@ extern const int __boxed_ptr_id;
 
 typedef struct StringObject StringObject;
 
+struct BaseRtti;
+
+/* Slot of an open-addressing table of implemented traits, see codegen.ITable.
+ * A NULL trait marks an empty slot. */
 typedef struct ITableEntry {
-    int32_t interfaceId;
+    struct BaseRtti *trait;
     void **vtable;
 } ITableEntry;
 
@@ -45,19 +72,30 @@ typedef struct Rtti {
 #ifdef USES_LOCKWORD
         word_t *lockWord;
 #endif
-        int32_t id;
+        int32_t flags; // RTTI_FLAG_*
         int32_t interfacesCount;
-        struct BaseRtti *interfaces;
+        struct BaseRtti **interfaces; // all implemented traits
         StringObject *name;
     } rt;
     // Fields defined only for instantiable types (classes)
     int32_t size;
-    int32_t idRangeUntil;
-    int32_t *refFieldOffsets; // Array of field offsets (in bytes) from object
-                              // start, terminated with -1
-    int32_t itableCount;
-    ITableEntry *itable; // ITableEntry[itableCount]
-    struct Rtti *superclass;
+    int32_t superclassCount; // 0 for java.lang.Object and primitives
+    union {
+        // Classes: offsets in bytes, from the object start, of reference
+        // fields, -1, then of raw pointer fields scanned conservatively, -1
+        int32_t *refFieldOffsets;
+        // Arrays: RTTI of the element type
+        struct Rtti *componentType;
+    };
+    int32_t itableMask;  // itable size - 1, size is a power of two
+    int32_t itableShift; // lookups start at (key >> shift) & mask
+    ITableEntry *itable; // ITableEntry[itableMask + 1]
+    // Superclasses from the root, then the class itself, then NULLs:
+    // lineage[superclassCount] is the class itself
+    struct Rtti *lineage[SCALANATIVE_RTTI_LINEAGE_SIZE];
+    // Classes with more superclasses: the next entries of the lineage, laid
+    // out like `lineage` and this link; NULL otherwise
+    void **nextLineage;
 } Rtti;
 
 typedef word_t *Field_t;
@@ -98,6 +136,17 @@ typedef struct StringObject {
     int32_t cached_hash_code;
 } StringObject;
 
+/* java.lang.ref.Reference: codegen.FieldLayout pins the referent right after
+ * the header in every reference object */
+typedef struct {
+    // ObjectHeader
+    Rtti *rtti;
+#ifdef USES_LOCKWORD
+    word_t *lockWord;
+#endif
+    Object *referent;
+} ReferenceObject;
+
 typedef struct Chunk Chunk;
 
 struct Chunk {
@@ -106,9 +155,16 @@ struct Chunk {
     Chunk *next;
 };
 
+static inline bool Rtti_HasFlag(const Rtti *rtti, int32_t flag) {
+    return (rtti->rt.flags & flag) != 0;
+}
+
 static inline bool Object_IsArray(const Object *object) {
-    int32_t id = object->rtti->rt.id;
-    return __array_ids_min <= id && id <= __array_ids_max;
+    return Rtti_HasFlag(object->rtti, RTTI_FLAG_IS_ARRAY);
+}
+
+static inline int32_t Rtti_ArrayScan(const Rtti *rtti) {
+    return rtti->rt.flags & RTTI_ARRAY_SCAN_MASK;
 }
 
 static inline size_t Array_Stride(const ArrayHeader *header) {
@@ -119,7 +175,7 @@ static inline size_t Array_Stride(const ArrayHeader *header) {
 }
 
 static inline size_t BlobArray_ScannableLimit(const ArrayHeader *header) {
-    assert(header->rtti->rt.id == __blob_array_id);
+    assert(Rtti_ArrayScan(header->rtti) == RTTI_ARRAY_SCAN_CONSERVATIVE);
     size_t length = (size_t)header->length;
     size_t limit = (size_t)-header->stride; // limit is stored as negative
     return (limit < length) ? limit : length;
@@ -138,14 +194,16 @@ static inline size_t Object_Size(const Object *object) {
 }
 
 static inline bool Object_IsWeakReference(const Object *object) {
-    int32_t id = object->rtti->rt.id;
-    return __weak_ref_ids_min <= id && id <= __weak_ref_ids_max;
+    // Only weak references clear their referent, soft and phantom references
+    // keep the referent like any other field
+    return (object->rtti->rt.flags & RTTI_REFERENCE_KIND_MASK) ==
+           RTTI_REFERENCE_KIND_WEAK;
 }
 
-static inline bool Object_IsReferantOfWeakReference(const Object *object,
-                                                    int fieldOffset) {
-    return Object_IsWeakReference(object) &&
-           fieldOffset == __weak_ref_field_offset;
+// The referent of a weak reference, which the GC does not mark
+static inline Field_t *WeakReference_ReferentField(const Object *object) {
+    assert(Object_IsWeakReference(object));
+    return (Field_t *)&((ReferenceObject *)object)->referent;
 }
 
 #ifdef USES_LOCKWORD

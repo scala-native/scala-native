@@ -11,6 +11,7 @@ Contributor's Guide
   build
   compiler
   nir
+  runtime-type-information
   mangling
   build-setup
   ides

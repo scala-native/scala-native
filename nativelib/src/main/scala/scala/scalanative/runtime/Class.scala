@@ -21,37 +21,35 @@ private[runtime] final class _Class[A] {
 
   // var rtti: _Class[_Class[?]] = _ // implicitly
   // var lockWord: Object | Long = _ // implicitly, optional
-  var id: Int = _
-  var interfacesCount: Int = _ // can be used in the future
-  var interfaces: RawPtr = _
+  // Layout defined by codegen.CommonMemoryLayouts.{Rtti, ClassRtti}
+  var flags: Int = _ // see _Class.Flags
+  var interfacesCount: Int = _
+  var interfaces: RawPtr = _ // Ptr[_Class[_]], all implemented traits
   var name: String = _
 
   // Warning! Fields below are populated if !isInterface()
   var size: Int = _
-  var idRangeUntil: Int = _
-  var refFieldOffsets: RawPtr = _ // Ptr[Int]
-  var itablesCount: Int = _ // actually size - 1 - stores ready to use mask
-  var itables: RawPtr = _ // Ptr[CArray[ITableEntry, up to 32]]
-  var superClass: Class[_ >: A] = _
-
-  type ITableEntry = CStruct2[Int, Ptr[_]] // {id: Int, vtable: void*}
+  var superclassCount: Int = _
+  // Classes: Ptr[Int], the reference map used by the GC
+  // Arrays: the _Class of the element type, see getComponentType
+  var refFieldOffsets: RawPtr = _
+  var itablesMask: Int = _
+  var itablesShift: Int = _
+  var itables: RawPtr = _ // Ptr[{trait: _Class[_], vtable: Ptr[_]}]
+  // First entry of the lineage: superclasses from the root, then the class
+  // itself, in chunks of LineageSize entries followed by a pointer to the
+  // next chunk, see codegen.RuntimeTypeInformation. Has to stay the last
+  // field: the first chunk is stored here.
+  var lineage: RawPtr = _
 
   def cast(obj: Object): A =
     obj.asInstanceOf[A]
 
-  def getComponentType(): _Class[_] = if (isArray()) {
-    if (is(classOf[ObjectArray])) classOf[java.lang.Object] // hot path
-    else if (is(classOf[ByteArray])) classOf[scala.Byte]
-    else if (is(classOf[CharArray])) classOf[scala.Char]
-    else if (is(classOf[IntArray])) classOf[scala.Int]
-    else if (is(classOf[LongArray])) classOf[scala.Long]
-    else if (is(classOf[FloatArray])) classOf[scala.Float]
-    else if (is(classOf[DoubleArray])) classOf[scala.Double]
-    else if (is(classOf[BooleanArray])) classOf[scala.Boolean]
-    else if (is(classOf[ShortArray])) classOf[scala.Short]
-    else if (is(classOf[BlobArray])) classOf[scala.Byte]
+  def getComponentType(): _Class[_] =
+    if (isArray())
+      // Array RTTI stores the element type in place of the reference map
+      Intrinsics.castRawPtrToObject(refFieldOffsets).asInstanceOf[_Class[_]]
     else null // JVM compliance
-  } else null // JVM compliance
 
   def getName(): String = name
 
@@ -89,54 +87,25 @@ private[runtime] final class _Class[A] {
     }
   }
 
-  // Based on fixed ordering in scala.scalanative.codegen.Metadata.initClassIdsAndRanges
-  def isInterface(): scala.Boolean = id < 0
-  // The exact ids would match order defined in nir.Rt.PrimitiveTypes
-  def isPrimitive(): scala.Boolean = id >= 0 && id <= 10
-  // id == 11 is java.lang.Object
-  // id == 12 runtime.Array
-  // ids 13-22 runtime.Array implementations
-  def isArray(): scala.Boolean = id >= 12 && id <= 22
+  def isInterface(): scala.Boolean = (flags & _Class.Flags.IsInterface) != 0
 
-  def isAssignableFrom(that: Class[_]): scala.Boolean =
-    is(that.asInstanceOf[_Class[_]], this)
+  def isPrimitive(): scala.Boolean = (flags & _Class.Flags.IsPrimitive) != 0
 
-  def isInstance(obj: Object): scala.Boolean =
-    is(obj.getClass.asInstanceOf[_Class[_]], this)
+  def isArray(): scala.Boolean = (flags & _Class.Flags.IsArray) != 0
 
-  @alwaysinline private def is(cls: Class[_]): Boolean =
-    this eq cls.asInstanceOf[_Class[A]]
-
-  private def is(left: _Class[_], right: _Class[_]): Boolean = {
-    // This replicates the logic of the compiler-generated instance check
-    // that you would normally get if you do (obj: L).isInstanceOf[R],
-    // where rtti for L and R are `left` and `right`.
-    if (left eq right) return true
-
-    if (left.isInterface()) {
-      // unlikely, only possible when operating on Class[_] instances
-      if (right.isInterface()) _Class.checkHasTrait(left, right)
-      else false
-    } else if (right.isInterface()) {
-      // likely - in most cases we check if class is class or class is trait
-      val size = left.itablesCount
-      if (size >= 0) {
-        // fast-path
-        val slot = right.id & size
-        val itablePtr = Intrinsics.elemRawPtr(
-          left.itables,
-          Intrinsics.castRawSizeToInt(Intrinsics.sizeOf[ITableEntry]) * slot
-        )
-        val itableId = Intrinsics.loadInt(itablePtr)
-        itableId == right.id
-      } else _Class.checkHasTrait(left, right)
-    } else {
-      val rightFrom = right.id
-      val rightTo = right.idRangeUntil
-      val leftId = left.id
-      leftId >= rightFrom && leftId <= rightTo
-    }
+  @inline def isAssignableFrom(that: Class[_]): scala.Boolean = {
+    val left = that.asInstanceOf[_Class[_]]
+    // unlikely, only possible when operating on Class[_] instances
+    if (left.isInterface()) _Class.interfaceIs(left, this)
+    else _Class.classIs(Intrinsics.castObjectToRawPtr(left), this)
   }
+
+  // The class of an object is never an interface: no check on its side
+  @inline def isInstance(obj: Object): scala.Boolean =
+    obj != null && _Class.classIs(
+      Intrinsics.loadRawPtr(Intrinsics.castObjectToRawPtr(obj)),
+      this
+    )
 
   @inline override def equals(other: Any): scala.Boolean =
     other match {
@@ -163,8 +132,9 @@ private[runtime] final class _Class[A] {
     array.asInstanceOf[scala.Array[Class[_]]]
   }
   def getSuperclass(): Class[_ >: A] =
-    if (isInterface()) null
-    else superClass
+    if (isInterface() || superclassCount == 0) null
+    else
+      _Class.ancestorAt(this, superclassCount - 1).asInstanceOf[Class[_ >: A]]
 
   // def getField(name: String): Field =
   //   ???
@@ -227,24 +197,148 @@ private[runtime] object _Class {
   ): _Class[A] =
     cls.asInstanceOf[_Class[A]]
 
-  private def checkHasTrait(left: _Class[_], right: _Class[_]): Boolean = {
-    var low = 0
-    var high = left.interfacesCount - 1
-    if (high == -1) return false
-    val interfaces = left.interfaces
-    val rightId = right.id
-    while (low <= high) {
-      val idx = (low + high) / 2
-      val interfacePtr = Intrinsics.elemRawPtr(
-        interfaces,
-        Intrinsics.castRawSizeToInt(Intrinsics.sizeOf[Ptr[_]]) * idx
+  /** Bits of _Class.flags, keep in sync with
+   *  codegen.RuntimeTypeInformation.Flags
+   */
+  private[runtime] object Flags {
+    // Literal constants, inlined at use sites without loading the module
+    final val IsInterface = 0x1 // 1 << 0
+    final val IsPrimitive = 0x2 // 1 << 1
+    final val IsArray = 0x4 // 1 << 2
+    final val TraitKeyShift = 8
+  }
+
+  // Keep in sync with codegen.CommonMemoryLayouts.LineageSize
+  private final val LineageSize = 8
+  @alwaysinline private[runtime] def PtrSize =
+    Intrinsics.castRawSizeToInt(Intrinsics.sizeOf[RawPtr])
+
+  /* Address in class `cls` of the field found at `field` in `like`. Classes
+   * read from memory are kept as raw pointers: typing them as _Class would
+   * check their type on every load.
+   */
+  @alwaysinline private def fieldOf(
+      cls: RawPtr,
+      like: _Class[_],
+      field: RawPtr
+  ): RawPtr =
+    Intrinsics.elemRawPtr(
+      cls,
+      Intrinsics.castLongToRawSize(
+        Intrinsics.castRawPtrToLong(field) -
+          Intrinsics.castRawPtrToLong(Intrinsics.castObjectToRawPtr(like))
       )
-      val interface =
-        Intrinsics.loadObject(interfacePtr).asInstanceOf[_Class[_]]
-      val interfaceId = interface.id
-      if (interfaceId == rightId) return true
-      if (interfaceId < rightId) low = idx + 1
-      else high = idx - 1
+    )
+
+  @alwaysinline private def same(ptr: RawPtr, cls: _Class[_]): Boolean =
+    Intrinsics.castRawPtrToLong(ptr) ==
+      Intrinsics.castRawPtrToLong(Intrinsics.castObjectToRawPtr(cls))
+
+  /* Whether instances of class `cls` are instances of `right`, a class or a
+   * trait, the way generated instance tests decide it. Inlined: the lineage
+   * entry or the itable slot where the lookup starts decide most tests.
+   */
+  @inline private[runtime] def classIs(
+      cls: RawPtr,
+      right: _Class[_]
+  ): Boolean = {
+    import Intrinsics._
+    val rightFlags = right.flags
+    if ((rightFlags & Flags.IsInterface) != 0) {
+      val mask =
+        loadInt(fieldOf(cls, right, classFieldRawPtr(right, "itablesMask")))
+      val shift =
+        loadInt(fieldOf(cls, right, classFieldRawPtr(right, "itablesShift")))
+      val itables =
+        loadRawPtr(fieldOf(cls, right, classFieldRawPtr(right, "itables")))
+      val pos = ((rightFlags >>> Flags.TraitKeyShift) >>> shift) & mask
+      val entry = loadRawPtr(elemRawPtr(itables, 2 * PtrSize * pos))
+      // Another trait in this slot: the lookup continues out of line
+      same(entry, right) ||
+        (castRawPtrToLong(entry) != 0L && implementsDisplaced(cls, right, pos))
+    } else {
+      // `right` is in the lineage of `cls` at index superclassCount(right)
+      val rightCount = right.superclassCount
+      if (rightCount < LineageSize) {
+        val lineage = fieldOf(cls, right, classFieldRawPtr(right, "lineage"))
+        same(loadRawPtr(elemRawPtr(lineage, PtrSize * rightCount)), right)
+      } else deepClassIs(cls, right, rightCount)
+    }
+  }
+
+  @noinline private def deepClassIs(
+      cls: RawPtr,
+      right: _Class[_],
+      rightCount: Int
+  ): Boolean = {
+    val left = Intrinsics.castRawPtrToObject(cls).asInstanceOf[_Class[_]]
+    ancestorAt(left, rightCount) eq right
+  }
+
+  // An interface is a subtype of itself, of the traits it extends and of
+  // java.lang.Object
+  @noinline private[runtime] def interfaceIs(
+      left: _Class[_],
+      right: _Class[_]
+  ): Boolean =
+    (left eq right) || {
+      if (right.isInterface()) checkHasTrait(left, right)
+      else (right: AnyRef) eq classOf[Object]
+    }
+
+  /* The superclass of class `cls` with `depth` superclasses, `cls` itself
+   * for its own count, null for a larger one. Past the chunk stored in the
+   * class, the last slot of each chunk points to the next one.
+   */
+  private[runtime] def ancestorAt(cls: _Class[_], depth: Int): _Class[_] = {
+    var chunk = Intrinsics.classFieldRawPtr(cls, "lineage")
+    var index = depth
+    while (index >= LineageSize) {
+      chunk = Intrinsics.loadRawPtr(
+        Intrinsics.elemRawPtr(chunk, PtrSize * LineageSize)
+      )
+      if (Intrinsics.castRawPtrToLong(chunk) == 0L) return null
+      index -= LineageSize
+    }
+    Intrinsics
+      .loadObject(Intrinsics.elemRawPtr(chunk, PtrSize * index))
+      .asInstanceOf[_Class[_]]
+  }
+
+  /* Continues the lookup of `trt` in the itable of class `left` after slot
+   * `start`, which holds another trait, see codegen.ITable: linear probing
+   * until the trait or an empty slot.
+   */
+  @noinline private def implementsDisplaced(
+      cls: RawPtr,
+      trt: _Class[_],
+      start: Int
+  ): Boolean = {
+    val left = Intrinsics.castRawPtrToObject(cls).asInstanceOf[_Class[_]]
+    val mask = left.itablesMask
+    val entrySize = 2 * PtrSize
+    var pos = start
+    var probes = 0
+    while (probes < mask) {
+      pos = (pos + 1) & mask
+      val entry = Intrinsics.loadObject(
+        Intrinsics.elemRawPtr(left.itables, entrySize * pos)
+      )
+      if (entry eq trt) return true
+      if (entry eq null) return false
+      probes += 1
+    }
+    false
+  }
+
+  // `interfaces` lists every trait implemented by `left`
+  private def checkHasTrait(left: _Class[_], right: _Class[_]): Boolean = {
+    val interfaces = left.interfaces
+    var idx = 0
+    while (idx < left.interfacesCount) {
+      val interfacePtr = Intrinsics.elemRawPtr(interfaces, PtrSize * idx)
+      if (Intrinsics.loadObject(interfacePtr) eq right) return true
+      idx += 1
     }
     false
   }
@@ -293,19 +387,19 @@ private object LinkedClasses {
       case _             => throw new ClassNotFoundException(className)
     }
 
-  // Every class instance starts with a pointer to classOf[Class]
+  // The class list section holds a pointer to the RTTI of every class and
+  // trait, the RTTI of a type is its java.lang.Class instance
   private def find(className: String): Class[_] = {
-    val ptrSize = castRawSizeToInt(sizeOf[RawPtr])
-    val section = StaticRoots.classInfoSection()
+    val ptrSize = _Class.PtrSize
+    val section = StaticRoots.classListSection()
     val start = loadRawPtr(section)
     val end = loadRawPtr(elemRawPtr(section, ptrSize))
     val size = castRawPtrToLong(end) - castRawPtrToLong(start)
-    val classOfClass = castObjectToRawPtr(classOf[_Class[_]])
     var offset = 0L
     while (offset < size) {
-      val ptr = elemRawPtr(start, castLongToRawSize(offset))
-      if (loadRawPtr(ptr) == classOfClass) {
-        val cls = castRawPtrToObject(ptr).asInstanceOf[_Class[_]]
+      val rtti = loadRawPtr(elemRawPtr(start, castLongToRawSize(offset)))
+      if (castRawPtrToLong(rtti) != 0L) {
+        val cls = castRawPtrToObject(rtti).asInstanceOf[_Class[_]]
         if (cls.name == className) return cls
       }
       offset += ptrSize

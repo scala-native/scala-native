@@ -9,6 +9,7 @@ private[runtime] object StaticRoots {
   @name("scalanative_register_object_roots")
   def registerObject(obj: RawPtr): Unit = extern
 
-  @name("scalanative_static_classinfo_section")
-  def classInfoSection(): RawPtr = extern
+  // Pointers to the RTTI of every class and trait
+  @name("scalanative_static_classlist_section")
+  def classListSection(): RawPtr = extern
 }

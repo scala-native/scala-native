@@ -36,8 +36,49 @@ private[codegen] class FieldLayout(cls: Class)(implicit meta: Metadata) {
 
   val struct = nir.Type.StructValue(layout.tys.map(_.ty))
   val size = layout.size
-  val referenceOffsetsValue = nir.Val.Const(
-    nir.Val.ArrayValue(nir.Type.Int, layout.referenceFieldsOffsets)
-  )
+  /* Reference map used by the GC: offsets of reference fields, -1, then
+   * offsets of raw pointer fields to scan conservatively, -1. Only boxed
+   * pointers (unsafe.Ptr) scan raw pointers: one can point into the heap, for
+   * example to an array element, and be the only thing keeping it alive.
+   * Weak references leave out their referent, which the GC does not mark but
+   * clears once nothing else keeps it alive.
+   */
+  val referenceOffsetsValue = {
+    val conservative =
+      if (cls.name == nir.Rt.BoxedPtr.name) layout.rawPointerFieldsOffsets
+      else Nil
+    val referent = referentOffset
+    val weakReferent =
+      if (meta.referenceKind(cls).contains(FieldLayout.WeakReference))
+        referent
+      else None
+    val strong = layout.referenceFieldsOffsets.filterNot(weakReferent.contains)
+    val offsets = (strong :+ -1) ++ (conservative :+ -1)
+    nir.Val.Const(nir.Val.ArrayValue(nir.Type.Int, offsets.map(nir.Val.Int(_))))
+  }
 
+  /* Offset of the referent of java.lang.ref.Reference. The GC finds it right
+   * after the object header, like the fields of String and Class.
+   */
+  private def referentOffset: Option[Int] =
+    entries.find(_.name == FieldLayout.Referent).map { fld =>
+      val offset = layout.tys(index(fld)).offset.toInt
+      val expected = MemoryLayout.sizeOf(ObjectHeader.layout).toInt
+      if (offset != expected)
+        throw new build.BuildException(
+          s"The referent of ${cls.name.id} must follow the object header at offset $expected, found at $offset"
+        )
+      offset
+    }
+
+}
+
+private[codegen] object FieldLayout {
+  val Reference = nir.Global.Top("java.lang.ref.Reference")
+  val WeakReference = nir.Global.Top("java.lang.ref.WeakReference")
+  val SoftReference = nir.Global.Top("java.lang.ref.SoftReference")
+  val PhantomReference = nir.Global.Top("java.lang.ref.PhantomReference")
+  // The first field of every reference object, see java.lang.ref.Reference
+  val Referent: nir.Global.Member =
+    Reference.member(nir.Sig.Field("_gc_modified_referent"))
 }

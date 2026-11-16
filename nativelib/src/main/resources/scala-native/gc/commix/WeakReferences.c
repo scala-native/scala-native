@@ -64,7 +64,7 @@ static void WeakReferences_nullifyObject(Heap *heap, Object *object) {
     assert(Object_IsWeakReference(object));
 
     Object **weakRefReferantField =
-        (Object **)((int8_t *)object + __weak_ref_field_offset);
+        (Object **)WeakReference_ReferentField(object);
     word_t *weakRefReferant = (word_t *)*weakRefReferantField;
     if (Heap_IsWordInHeap(heap, weakRefReferant)) {
         ObjectMeta *objectMeta = Bytemap_Get(heap->bytemap, weakRefReferant);

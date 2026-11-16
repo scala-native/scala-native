@@ -78,7 +78,7 @@ class FieldLayoutOrderTest extends CodeGenSpec {
       optimizedFields = holder(optimized).fields.map(_.name),
       layoutEntries = layout.entries.map(_.name),
       size = layout.size,
-      referenceOffsets = layout.layout.referenceFieldsOffsets.map(_.value)
+      referenceOffsets = layout.layout.referenceFieldsOffsets
     )
   }
 

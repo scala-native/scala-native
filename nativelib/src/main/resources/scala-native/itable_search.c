@@ -1,41 +1,20 @@
 #include "gc/immix_commix/headers/ObjectHeader.h"
-#include <stdbool.h>
+#include <stdint.h>
 
-void *__scalanative_trait_dispatch_slowpath(Rtti *rtti, int traitId,
-                                            int methodIdx) {
-    int low = 0;
-    int high = -rtti->itableCount;
-    // if (high == 0)
-    //     return NULL; // unreachable
-    while (low <= high) {
-        int idx = (low + high) / 2;
-        ITableEntry *itable = &rtti->itable[idx];
-        int itableId = itable->interfaceId;
-        if (itableId == traitId)
-            return itable->vtable[methodIdx];
-        if (itableId < traitId)
-            low = idx + 1;
-        else
-            high = idx - 1;
+/* Continues an itable lookup for `trait` after slot `pos`, which holds
+ * another trait, see codegen.ITable: probes the following slots until the
+ * trait or an empty slot. Returns the slot of the trait, or -1. Generated
+ * code probes the first slot inline. */
+int32_t scalanative_itable_find(const Rtti *rtti, const void *trait,
+                                int32_t pos) {
+    int32_t mask = rtti->itableMask;
+    for (int32_t probes = 0; probes < mask; probes++) {
+        pos = (pos + 1) & mask;
+        const void *entry = rtti->itable[pos].trait;
+        if (entry == trait)
+            return pos;
+        if (entry == NULL)
+            return -1;
     }
-    return NULL; // unreachable
-}
-
-bool __scalanative_class_has_trait_slowpath(Rtti *rtti, int traitId) {
-    int low = 0;
-    int high = -rtti->itableCount;
-    if (high == 0)
-        return false;
-    while (low <= high) {
-        int idx = (low + high) / 2;
-        ITableEntry *itable = &rtti->itable[idx];
-        int itableId = itable->interfaceId;
-        if (itableId == traitId)
-            return true;
-        if (itableId < traitId)
-            low = idx + 1;
-        else
-            high = idx - 1;
-    }
-    return false;
+    return -1;
 }
