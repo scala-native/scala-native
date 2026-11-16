@@ -277,12 +277,13 @@ private[java] final class FileChannelImpl(
     if (isWindows) {
       // FILE_END, unlike GetFileSizeEx, needs no read-attributes access.
       val filePointer = stackalloc[LargeInteger]()
-      FileApi.SetFilePointerEx(
-        fd.handle,
-        0,
-        filePointer,
-        if (openForAppending) FILE_END else FILE_CURRENT
-      )
+      if (!FileApi.SetFilePointerEx(
+            fd.handle,
+            0,
+            filePointer,
+            if (openForAppending) FILE_END else FILE_CURRENT
+          ))
+        throw WindowsException.onPath(getFileName())
       !filePointer
     } else if (openForAppending) size()
     else {
