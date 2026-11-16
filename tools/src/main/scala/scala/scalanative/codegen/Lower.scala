@@ -5,6 +5,7 @@ package codegen
 import scala.annotation.tailrec
 import scala.collection.mutable
 
+import scalanative.interflow.Interflow.LLVMIntrinsics
 import scalanative.interflow.UseDef.eliminateDeadCode
 import scalanative.linker._
 import scalanative.nir.ControlFlow.{Block, Graph}
@@ -49,6 +50,7 @@ private[scalanative] object Lower {
     private val fresh = new util.ScopedVar[nir.Fresh]
     private val unwindHandler = new util.ScopedVar[Option[nir.Local]]
     private val currentDefnGraph = new util.ScopedVar[Graph]
+    private val staticStackallocs = new util.ScopedVar[StaticStackallocs]
     private implicit val currentDefn: util.ScopedVar[nir.Defn.Define] = new util.ScopedVar()
     private implicit val intrinsicMethods: util.ScopedVar[mutable.Map[nir.Local, IntrinsicCall]] = new util.ScopedVar()
     private val blockInfo = mutable.Map.empty[Block, BlockInfo]
@@ -122,10 +124,12 @@ private[scalanative] object Lower {
     override def onDefn(defn: nir.Defn): nir.Defn = defn match {
       case defn: nir.Defn.Define =>
         val nir.Type.Function(_, ty) = defn.ty
+        val graph = Graph(defn.insts)
         ScopedVar.scoped(
           fresh := nir.Fresh(defn.insts),
           currentDefn := defn,
-          currentDefnGraph := Graph(defn.insts),
+          currentDefnGraph := graph,
+          staticStackallocs := StaticStackallocs(graph),
           intrinsicMethods := mutable.Map.empty
         ) {
           try super.onDefn(defn)
@@ -225,6 +229,10 @@ private[scalanative] object Lower {
         case inst @ nir.Inst.Let(n, nir.Op.Var(ty), unwind) =>
           buf.let(n, nir.Op.Stackalloc(ty, one), unwind)(inst.pos, inst.scopeId)
         case _ => ()
+      }
+      // Zeroed at the original position, see genStackallocOp
+      staticStackallocs.get.hoisted.foreach { inst =>
+        buf.let(inst.id, inst.op, nir.Next.None)(inst.pos, inst.scopeId)
       }
 
       val nir.Inst.Label(firstLabel, _) = insts.head: @unchecked
@@ -598,7 +606,9 @@ private[scalanative] object Lower {
         case op: nir.Op.Call =>
           op match {
             case IntrinsicCall(kind) => genIntrinsicCallOp(kind, buf, n, op)
-            case _                   => genCallOp(buf, n, op)
+            // The saved stack pointer is an absolute address, it cannot be restored in a frame relocated by a continuation
+            case nir.Op.Call(_, LLVMIntrinsics.StackRestore, _) if staticStackallocs.get.dropStackRestores => ()
+            case _                                                                                         => genCallOp(buf, n, op)
           }
         case op: nir.Op.Comp =>
           genCompOp(buf, n, op)
@@ -2016,7 +2026,9 @@ private[scalanative] object Lower {
     )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
       val nir.Op.Stackalloc(ty, size) = op
       val initValue = nir.Val.Zero(ty).canonicalize
-      val pointee = buf.let(n, op, unwind)
+      val pointee =
+        if (staticStackallocs.get.isHoisted(n)) nir.Val.Local(n, nir.Type.Ptr)
+        else buf.let(n, op, unwind)
       size match {
         case nir.Val.Size(1) if initValue.isCanonical =>
           buf.let(
