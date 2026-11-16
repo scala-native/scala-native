@@ -11,8 +11,9 @@ typedef enum {
     om_placeholder = 0x1,
     om_allocated = 0x2,
     om_marked = 0x4,
-    // Write barrier states, see immix_commix/WriteBarrier.h. No collector
-    // produces them yet.
+    // Write barrier states, see immix_commix/WriteBarrier.h. Only the sticky
+    // Immix collector (SCALANATIVE_GC_STICKY) and the barrier verifier produce
+    // them: an object that survived a collection is old.
     om_old_unlogged = 0x8,
     om_old_logged = 0x9,
 } Flag;
@@ -37,6 +38,20 @@ static inline bool ObjectMeta_IsMarked(ObjectMeta *metadata) {
 
 static inline bool ObjectMeta_IsOldUnlogged(ObjectMeta *metadata) {
     return *metadata == om_old_unlogged;
+}
+
+static inline bool ObjectMeta_IsOld(ObjectMeta *metadata) {
+    return *metadata == om_old_unlogged || *metadata == om_old_logged;
+}
+
+// Survives the current collection: marked in it, or old and so not traced by
+// a minor collection.
+static inline bool ObjectMeta_IsLive(ObjectMeta *metadata) {
+    return ObjectMeta_IsMarked(metadata) || ObjectMeta_IsOld(metadata);
+}
+
+static inline void ObjectMeta_SetOldUnlogged(ObjectMeta *metadata) {
+    *metadata = om_old_unlogged;
 }
 
 static inline void ObjectMeta_SetOldLogged(ObjectMeta *metadata) {
@@ -72,10 +87,19 @@ static inline void ObjectMeta_ClearBlockAt(ObjectMeta *cursor) {
 }
 
 static inline void ObjectMeta_Sweep(ObjectMeta *cursor) {
+#ifdef SCALANATIVE_GC_STICKY
+    // Survivors become old, and remembered objects are forgotten: the
+    // collection traced what they referenced.
+    if (ObjectMeta_IsLive(cursor))
+        ObjectMeta_SetOldUnlogged(cursor);
+    else
+        ObjectMeta_SetFree(cursor);
+#else
     if (ObjectMeta_IsMarked(cursor))
         ObjectMeta_SetAllocated(cursor);
     else
         ObjectMeta_SetFree(cursor);
+#endif
 }
 
 static inline void ObjectMeta_SweepLineAt(ObjectMeta *data) {

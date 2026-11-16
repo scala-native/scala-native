@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <wchar.h>
+#include <string.h>
 #include "shared/Log.h"
 #include "immix_commix/WriteBarrier.h"
 #include "immix_commix/CollectorState.h"
@@ -13,13 +14,43 @@ word_t *scalanative_GC_barrier_heap_start;
 size_t scalanative_GC_barrier_heap_size;
 ObjectMeta *scalanative_GC_barrier_bytemap;
 
+#ifdef SCALANATIVE_GC_STICKY
+uint8_t *WriteBarrier_cards;
+#endif
+
 void WriteBarrier_Init(word_t *heapStart, size_t heapSize, ObjectMeta *data) {
     scalanative_GC_barrier_heap_start = heapStart;
     scalanative_GC_barrier_heap_size = heapSize;
     scalanative_GC_barrier_bytemap = data;
+#ifdef SCALANATIVE_GC_STICKY
+    WriteBarrier_cards = calloc((heapSize >> WRITE_BARRIER_CARD_SHIFT) + 1, 1);
+    if (WriteBarrier_cards == NULL)
+        Heap_exitWithOutOfMemory("for the write barrier card table");
+#endif
 }
 
-static void RememberedSet_Push(RememberedSet *set, word_t *object) {
+#ifdef SCALANATIVE_GC_STICKY
+void WriteBarrier_ClearCards(size_t heapBytes) {
+    memset(WriteBarrier_cards, 0, (heapBytes >> WRITE_BARRIER_CARD_SHIFT) + 1);
+}
+
+// Such arrays are large objects, which start at MIN_BLOCK_SIZE boundaries, so
+// no other object shares their cards.
+static_assert(WRITE_BARRIER_CARD_ARRAY_MIN_LENGTH * sizeof(word_t) >=
+                  LARGE_BLOCK_SIZE,
+              "card marked arrays must be large objects");
+static_assert(MIN_BLOCK_SIZE % (1 << WRITE_BARRIER_CARD_SHIFT) == 0,
+              "large objects must start at card boundaries");
+
+static inline bool WriteBarrier_isCardedArray(Object *object) {
+    return Object_IsArray(object) &&
+           Rtti_ArrayScan(object->rtti) == RTTI_ARRAY_SCAN_REFERENCES &&
+           ((ArrayHeader *)object)->length >=
+               WRITE_BARRIER_CARD_ARRAY_MIN_LENGTH;
+}
+#endif
+
+void RememberedSet_Push(RememberedSet *set, word_t *object) {
     if (set->size == set->capacity) {
         size_t capacity = set->capacity == 0 ? 256 : set->capacity * 2;
         word_t **items = realloc(set->items, capacity * sizeof(word_t *));
@@ -48,6 +79,35 @@ WRITE_BARRIER_SLOW_PATH void scalanative_GC_write_barrier_slow(word_t *object) {
         return;
     ObjectMeta_SetOldLogged(meta);
     RememberedSet_Push(&currentMutatorThread->rememberedSet, object);
+}
+
+// Called by generated code for an old object that is not remembered yet,
+// when the address of the written slot is known.
+WRITE_BARRIER_SLOW_PATH void scalanative_GC_write_barrier_elem(word_t *object,
+                                                               word_t *slot) {
+#ifdef SCALANATIVE_GC_STICKY
+#ifdef SCALANATIVE_GC_BARRIER_WINDOW_BITS
+    if ((size_t)((word_t)object - (word_t)scalanative_GC_barrier_heap_start) >=
+        scalanative_GC_barrier_heap_size)
+        return;
+#endif
+    if (ObjectMeta_IsOldUnlogged(Bytemap_Get(heap.bytemap, object)) &&
+        WriteBarrier_isCardedArray((Object *)object)) {
+        uint8_t *card = &WriteBarrier_cards[WriteBarrier_CardIndex(slot)];
+        if (__atomic_load_n(card, __ATOMIC_RELAXED) & WRITE_BARRIER_CARD_DIRTY)
+            return;
+        __atomic_fetch_or(card, WRITE_BARRIER_CARD_DIRTY, __ATOMIC_RELAXED);
+        uint8_t *header = &WriteBarrier_cards[WriteBarrier_CardIndex(object)];
+        if (!(__atomic_fetch_or(header, WRITE_BARRIER_CARD_QUEUED,
+                                __ATOMIC_RELAXED) &
+              WRITE_BARRIER_CARD_QUEUED))
+            RememberedSet_Push(
+                &currentMutatorThread->rememberedSet,
+                (word_t *)((word_t)object | WRITE_BARRIER_CARDED_TAG));
+        return;
+    }
+#endif
+    scalanative_GC_write_barrier_slow(object);
 }
 
 // Finds the object containing `slot`, a heap address, or NULL if no object
@@ -121,6 +181,12 @@ static size_t WriteBarrier_youngReferences(Object *object,
             ArrayHeader *array = (ArrayHeader *)object;
             word_t **elements = (word_t **)(array + 1);
             for (size_t i = 0; i < array->length; i++) {
+#ifdef SCALANATIVE_GC_STICKY
+                if (WriteBarrier_isCardedArray(object) &&
+                    (WriteBarrier_cards[WriteBarrier_CardIndex(&elements[i])] &
+                     WRITE_BARRIER_CARD_DIRTY))
+                    continue;
+#endif
                 if (WriteBarrier_isYoung(elements[i]) && found++ == 0)
                     *firstOffset = (int8_t *)&elements[i] - (int8_t *)object;
             }
@@ -173,8 +239,9 @@ void WriteBarrier_VerifyBeforeCollection(void) {
                 missedObjects, missedReferences);
         abort();
     }
+#ifndef SCALANATIVE_GC_STICKY
     // Only after all objects are checked: the collector itself does not know
-    // old objects yet.
+    // old objects.
     for (ObjectMeta *meta = start; meta < end; meta++) {
         if (*meta == om_old_logged || *meta == om_old_unlogged)
             ObjectMeta_SetAllocated(meta);
@@ -182,10 +249,101 @@ void WriteBarrier_VerifyBeforeCollection(void) {
     MutatorThreads_foreach(mutatorThreads, node) {
         RememberedSet_Clear(&node->value->rememberedSet);
     }
+#endif
     GC_LOG_DEBUG("Write barrier verified, %zu objects remembered", remembered);
 }
 
-void WriteBarrier_AgeSurvivors(void) {
+#ifdef SCALANATIVE_GC_STICKY
+// A reference from a survivor to an object the collection freed.
+static bool WriteBarrier_isDangling(word_t *field) {
+    return Heap_IsWordInHeap(&heap, field) && Bytemap_isPtrAligned(field) &&
+           !ObjectMeta_IsOld(Bytemap_Get(heap.bytemap, field));
+}
+
+// Counts references from `object` to objects that are not live. Blob arrays
+// and boxed pointers hold raw addresses, which need not be object starts.
+static size_t WriteBarrier_danglingReferences(Object *object,
+                                              size_t *firstOffset) {
+    size_t found = 0;
+    *firstOffset = 0;
+#ifdef USES_LOCKWORD
+    Field_t lock = object->lockWord;
+    if (Field_isInflatedLock(lock) &&
+        WriteBarrier_isDangling(Field_allignedLockRef(lock))) {
+        *firstOffset = (int8_t *)&object->lockWord - (int8_t *)object;
+        found++;
+    }
+#endif
+    if (Object_IsArray(object)) {
+        if (Rtti_ArrayScan(object->rtti) == RTTI_ARRAY_SCAN_REFERENCES) {
+            ArrayHeader *array = (ArrayHeader *)object;
+            word_t **elements = (word_t **)(array + 1);
+            for (size_t i = 0; i < array->length; i++) {
+                if (WriteBarrier_isDangling(elements[i]) && found++ == 0)
+                    *firstOffset = (int8_t *)&elements[i] - (int8_t *)object;
+            }
+        }
+    } else {
+        int32_t *offsets = object->rtti->refFieldOffsets;
+        for (int i = 0; offsets[i] != -1; i++) {
+            size_t offset = (size_t)offsets[i];
+            Field_t field = *(Field_t *)((int8_t *)object + offset);
+            if (WriteBarrier_isDangling(field) && found++ == 0)
+                *firstOffset = offset;
+        }
+    }
+    return found;
+}
+
+// Every survivor is old after a sticky collection; none may reference an
+// object it freed.
+void WriteBarrier_VerifyAfterCollection(void) {
+    ObjectMeta *start = Bytemap_Get(heap.bytemap, heap.heapStart);
+    ObjectMeta *end =
+        start + (heap.heapEnd - heap.heapStart) / ALLOCATION_ALIGNMENT_WORDS;
+    size_t survivors = 0, badObjects = 0, badReferences = 0;
+    word_t *current = heap.heapStart;
+    for (ObjectMeta *meta = start; meta < end;
+         meta++, current += ALLOCATION_ALIGNMENT_WORDS) {
+        if (ObjectMeta_IsAllocated(meta) || ObjectMeta_IsMarked(meta)) {
+            fprintf(stderr,
+                    "GC sticky collector: object at %p has state %d after the "
+                    "sweep\n",
+                    (void *)current, (int)*meta);
+            abort();
+        }
+        if (!ObjectMeta_IsOld(meta))
+            continue;
+        survivors++;
+        Object *object = (Object *)current;
+        size_t offset;
+        size_t bad = WriteBarrier_danglingReferences(object, &offset);
+        if (bad > 0) {
+            if (badObjects < 16) {
+                wchar_t *name = Object_nameWString(object);
+                fprintf(stderr,
+                        "GC sticky collector: %ls at %p references %zu freed "
+                        "objects, first at offset %zu\n",
+                        name, (void *)object, bad, offset);
+                free(name);
+            }
+            badObjects++;
+            badReferences += bad;
+        }
+    }
+    if (badObjects > 0) {
+        fprintf(stderr,
+                "GC sticky collector: %zu survivors with %zu references to "
+                "freed objects\n",
+                badObjects, badReferences);
+        abort();
+    }
+    GC_LOG_DEBUG("Sticky collection verified, %zu survivors", survivors);
+}
+#else
+// Ages the survivors, so that the next verification sees which objects were
+// allocated in between.
+void WriteBarrier_VerifyAfterCollection(void) {
     ObjectMeta *meta = Bytemap_Get(heap.bytemap, heap.heapStart);
     ObjectMeta *end =
         meta + (heap.heapEnd - heap.heapStart) / ALLOCATION_ALIGNMENT_WORDS;
@@ -194,6 +352,7 @@ void WriteBarrier_AgeSurvivors(void) {
             *meta = om_old_unlogged;
     }
 }
+#endif
 
 #endif // SCALANATIVE_GC_WRITE_BARRIER_VERIFY
 
