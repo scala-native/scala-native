@@ -112,11 +112,15 @@ A lookup for trait `T` starts at `(key(T) >>> itableShift) & itableMask`, where
 linearly until it finds `T` or an empty slot. Entries are compared by RTTI address, so traits
 with equal keys only make a lookup longer.
 
-Tables are at most half full, so every lookup ends at an empty slot. The
-toolchain picks for each class the smallest table, up to four times that size,
-and the smallest shift, in which every trait is found on the first probe.
-Failing that, the table grows, up to 64 times the number of traits, until every
-trait is in the slot where its lookup starts or in the next one.
+Tables are at most half full, so every lookup ends at an empty slot: the
+smallest table of a class with `n` traits has the first power of two of at
+least `2n` slots. The toolchain picks for each class the smallest table, up to
+4 times that size, and the smallest shift, in which every trait is found on
+the first probe. Failing that, it picks the smallest table, up to 64 times that
+size, and shift that keep every trait in the slot where its lookup starts or in
+the next one. No table does for three traits whose keys are equal in the bits
+itables use: the class then gets the smallest table, without a shift, and
+traits can end up further from the slot where their lookup starts.
 
 Generated code relies on three facts about the whole program:
 

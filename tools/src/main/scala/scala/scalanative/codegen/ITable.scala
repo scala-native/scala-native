@@ -23,13 +23,15 @@ private[codegen] case class ITable(
 
 private[codegen] object ITable {
 
-  /** Tables grow up to this factor above the number of traits to find a
-   *  placement in which every trait is found on the first probe.
+  /** Tables grow up to this factor above the smallest one, which is half full,
+   *  to find a placement in which every trait is found on the first probe.
    */
   private final val MaxGrowth = 4
 
-  /** Failing that, tables grow up to this factor to keep every trait in the
-   *  slot where its lookup starts or the next one, see Lower.genItableProbe.
+  /** Failing that, tables grow up to this factor above the smallest one to keep
+   *  every trait in the slot where its lookup starts or the next one, see
+   *  Lower.genItableProbe. When no table does, the class gets the smallest one,
+   *  without a shift.
    */
   private final val MaxBoundedGrowth = 64
 
