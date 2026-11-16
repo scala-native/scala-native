@@ -6,11 +6,11 @@ import java.io.InputStream
 import java.util.zip._
 
 import org.junit.Assert._
+import org.junit.Assume.assumeFalse
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-
-import scala.scalanative.junit.utils.AssumesHelper._
+import org.scalanative.testsuite.utils.Platform.executingInJVMOnJDK8OrLower
 
 import ZipBytes._
 
@@ -58,11 +58,10 @@ class ZipFileTest {
 
     val enumeration = zip.entries()
     zip.close()
-    assumeNotJVMCompliant()
-    // Behaviour of hasMoreElements might differ across version.
-    // In Java 8 it would throw IllegalStateException,
-    // In Java 15 it would not throw any exception
-    assertThrows(classOf[IllegalStateException], enumeration.hasMoreElements())
+    assertThrows(classOf[IllegalStateException], enumeration.nextElement())
+    // JDK 8 also throws from hasMoreElements after close; JDK 17+ does not
+    assumeFalse(executingInJVMOnJDK8OrLower)
+    assertTrue(enumeration.hasMoreElements())
   }
 
   @Test def getEntryString(): Unit = {
