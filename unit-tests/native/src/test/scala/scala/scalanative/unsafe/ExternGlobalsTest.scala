@@ -13,6 +13,9 @@ object ExternGlobalsTest {
   object ExternGlobals {
     @name("scalanative_test_extern_chars")
     var chars: CArray[CChar, CharsLength] = extern
+    @address
+    @name("scalanative_test_extern_unsized")
+    var unsized: CString = extern
     @name("scalanative_test_extern_ints")
     var ints: CArray[CInt, _4] = extern
     @name("scalanative_test_extern_struct")
@@ -20,6 +23,8 @@ object ExternGlobalsTest {
 
     @name("scalanative_test_extern_chars_address")
     def charsAddress(): CVoidPtr = extern
+    @name("scalanative_test_extern_unsized_address")
+    def unsizedAddress(): CVoidPtr = extern
     @name("scalanative_test_extern_ints_address")
     def intsAddress(): CVoidPtr = extern
     @name("scalanative_test_extern_struct_address")
@@ -33,6 +38,11 @@ class ExternGlobalsTest {
   @Test def charArrayGlobalIsBoundToItsAddress(): Unit = {
     assertEquals(charsAddress(), chars.at(0))
     assertEquals("fourty-two", fromCString(chars.at(0)))
+  }
+
+  @Test def addressAnnotatedGlobalIsBoundToItsAddress(): Unit = {
+    assertEquals(unsizedAddress(), unsized)
+    assertEquals("unsized", fromCString(unsized))
   }
 
   @Test def intArrayGlobalIsBoundToItsAddress(): Unit = {

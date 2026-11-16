@@ -177,6 +177,109 @@ class NIRCompilerTest {
     )
   }
 
+  private def assertCompileError(code: String, expected: String): Unit = {
+    val err = assertThrows(
+      classOf[CompilationFailedException],
+      () => NIRCompiler(_.compile(code))
+    )
+    assertTrue(err.getMessage(), err.getMessage().contains(expected))
+  }
+
+  @Test def addressAnnotatedExternVar(): Unit = {
+    val code =
+      """|import scala.scalanative.unsafe._
+         |
+         |@extern object Dummy {
+         |  @address var foo: CString = extern
+         |  @address var bar: Ptr[CInt] = extern
+         |}
+         |object Test {
+         |  def read(): CString = Dummy.foo
+         |}
+         |""".stripMargin
+    NIRCompiler(_.compile(code))
+  }
+
+  @Test def addressAnnotationOnNonPointerExternVar(): Unit = assertCompileError(
+    """|import scala.scalanative.unsafe._
+       |
+       |@extern object Dummy {
+       |  @address var foo: CInt = extern
+       |}
+       |""".stripMargin,
+    "`@address` can only be used on extern variables of a pointer type"
+  )
+
+  @Test def addressAnnotationOnExternDef(): Unit = assertCompileError(
+    """|import scala.scalanative.unsafe._
+       |
+       |@extern object Dummy {
+       |  @address def foo: CString = extern
+       |}
+       |""".stripMargin,
+    "`@address` can only be used on variables of extern objects"
+  )
+
+  @Test def addressAnnotationOnNonExternVar(): Unit = assertCompileError(
+    """|import scala.scalanative.unsafe._
+       |
+       |object Dummy {
+       |  @address var foo: CString = null
+       |}
+       |""".stripMargin,
+    "`@address` can only be used on variables of extern objects"
+  )
+
+  @Test def assignToAddressAnnotatedExternVar(): Unit = assertCompileError(
+    """|import scala.scalanative.unsafe._
+       |
+       |@extern object Dummy {
+       |  @address var foo: CString = extern
+       |}
+       |object Test {
+       |  def assign(other: CString): Unit = Dummy.foo = other
+       |}
+       |""".stripMargin,
+    "Cannot assign to extern variable foo annotated with @address"
+  )
+
+  @Test def addressAnnotationIsVisibleAcrossCompilationUnits(): Unit = {
+    val libOut = Files.createTempDirectory("native-test-lib")
+    NIRCompiler(libOut)(
+      _.compile(
+        """|import scala.scalanative.unsafe._
+           |
+           |@extern object Lib {
+           |  @address var foo: CString = extern
+           |}
+           |""".stripMargin
+      )
+    )
+    val classpath = Seq(sys.props("scalanative.nativeruntime.cp"), libOut)
+      .mkString(java.io.File.pathSeparator)
+    val err = assertThrows(
+      classOf[CompilationFailedException],
+      () =>
+        NIRCompiler(
+          _.compile(
+            """|object Test {
+               |  def assign(): Unit = Lib.foo = Lib.foo
+               |}
+               |""".stripMargin,
+            Array("-cp", classpath)
+          )
+        )
+    )
+    assertTrue(
+      err.getMessage(),
+      err
+        .getMessage()
+        .contains(
+          "Cannot assign to extern variable foo annotated with @address"
+        )
+    )
+  }
+
   @Test def externMemberReferencingExtern(): Unit = {
     val code =
       """|import scala.scalanative.unsafe.extern

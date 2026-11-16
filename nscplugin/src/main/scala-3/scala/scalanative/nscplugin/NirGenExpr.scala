@@ -2787,6 +2787,7 @@ trait NirGenExpr(using Context) {
           args = List(ValTree(name)()),
           zone = None
         )
+      else if isExternAddress(sym) then fromExtern(ty, name)
       else
         val memoryOrder = Option.when(sym.isVolatile)(
           nir.MemoryOrder.Acquire
@@ -2805,20 +2806,30 @@ trait NirGenExpr(using Context) {
       sym.isFixedSizeArray || sym.isAnonymousStruct
     }
 
+    def isExternAddress(sym: Symbol): Boolean =
+      sym.hasAnnotation(defnNir.AddressClass) ||
+        (sym.isSetter && sym.getter.hasAnnotation(defnNir.AddressClass))
+
     private def checkExternAssignable(
         sym: Symbol,
         tpe: Type,
         pos: SrcPos
     ): Boolean = {
-      val assignable = !isExternAddressType(tpe)
-      if !assignable then
-        val name = sym.name.show.stripSuffix("_=")
+      val name = sym.name.show.stripSuffix("_=")
+      if isExternAddressType(tpe) then
         report.error(
           s"Cannot assign to extern variable $name of type ${tpe.show}, it is bound to the C object itself. " +
             "Modify its elements or fields instead.",
           pos
         )
-      assignable
+        false
+      else if isExternAddress(sym) then
+        report.error(
+          s"Cannot assign to extern variable $name annotated with @address, it is bound to the address of the C object.",
+          pos
+        )
+        false
+      else true
     }
 
     def genStoreExtern(externTy: nir.Type, sym: Symbol, value: nir.Val)(using

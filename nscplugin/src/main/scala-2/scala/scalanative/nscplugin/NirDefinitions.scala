@@ -55,6 +55,8 @@ trait NirDefinitions {
       getDecl(AtomicReferenceFieldUpdaterModule, TermName("newUpdater"))
 
     lazy val NameClass = getRequiredClass("scala.scalanative.unsafe.name")
+    lazy val AddressClass =
+      getRequiredClass("scala.scalanative.unsafe.address")
     lazy val LinkClass = getRequiredClass("scala.scalanative.unsafe.link")
     lazy val LinkCppRuntimeClass = getRequiredClass(
       "scala.scalanative.unsafe.linkCppRuntime"

@@ -226,6 +226,25 @@ is a compilation error.
 
 The `CArray` length should match the size of the native array.
 
+Arrays declared without a size, such as `extern const char version[];`,
+can be bound as a pointer to their first element by annotating the
+variable with `@address`:
+
+``` scala
+import scala.scalanative.unsafe._
+
+@extern
+object lib {
+  @address var version: CString = extern
+}
+```
+
+Reading an `@address` variable gives the address of the native symbol
+instead of the value stored in it, like the array-to-pointer conversion
+in C. The annotation can only be used on extern variables of a pointer
+type, such as `Ptr[T]` or `CString`, and such variables cannot be
+assigned.
+
 (exported_methods)=
 ## Exported methods
 
