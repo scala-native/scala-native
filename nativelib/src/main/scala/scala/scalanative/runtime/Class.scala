@@ -275,11 +275,16 @@ private[runtime] object _Class {
     ancestorAt(left, rightCount) eq right
   }
 
+  // An interface is a subtype of itself, of the traits it extends and of
+  // java.lang.Object
   @noinline private[runtime] def interfaceIs(
       left: _Class[_],
       right: _Class[_]
   ): Boolean =
-    (left eq right) || (right.isInterface() && checkHasTrait(left, right))
+    (left eq right) || {
+      if (right.isInterface()) checkHasTrait(left, right)
+      else (right: AnyRef) eq classOf[Object]
+    }
 
   /* The superclass of class `cls` with `depth` superclasses, `cls` itself
    * for its own count, null for a larger one. Past the chunk stored in the

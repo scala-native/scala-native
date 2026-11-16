@@ -368,6 +368,11 @@ class TypeTestsTest {
     }
     assertTrue(classOf[Base0].isAssignableFrom(classOf[Base3]))
     assertFalse(classOf[Base3].isAssignableFrom(classOf[Base0]))
+    // Object is a supertype of interfaces, no other class is
+    assertTrue(classOf[Object].isAssignableFrom(classOf[Base0]))
+    assertFalse(classOf[D0].isAssignableFrom(classOf[Base0]))
+    assertFalse(classOf[Int].isAssignableFrom(classOf[Base0]))
+    assertFalse(classOf[Array[Object]].isAssignableFrom(classOf[Base0]))
     assertTrue(classOf[Base3].isAssignableFrom(classOf[D12]))
     assertFalse(classOf[NeverImplemented].isAssignableFrom(classOf[D12]))
     assertTrue(classOf[Base0].isInterface())
