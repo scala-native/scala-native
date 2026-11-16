@@ -102,9 +102,9 @@ object TypeTestsTest {
   trait M37 { def m37: Int = 37 }
   trait M38 { def m38: Int = 38 }
   trait M39 { def m39: Int = 39 }
-  /* Keys of these traits collide in every itable placement of Crowded the
-   * toolchain tries: Qkemd, Qkphm, Qpadk and Qpgfp end up outside the slot
-   * where their lookup starts, so lookups continue in scalanative_itable_find.
+  /* No itable placement of Crowded the toolchain tries holds all of these
+   * traits in the slot where their lookup starts: some end up in the next
+   * slot, so lookups probe both.
    */
   trait Qkemd { def qkemd: Int = 0 }
   trait Qpadk { def qpadk: Int = 1 }
