@@ -10,7 +10,10 @@ private[codegen] object GlobalSections {
       name: String,
       machOName: String,
       coffName: String,
-      used: Boolean = false
+      used: Boolean = false,
+      // Entries are only reached through the section, never by name: keeps
+      // them out of the symbol table
+      anonymous: Boolean = false
   ) {
     require(
       machOName.length <= 16,
@@ -38,7 +41,8 @@ private[codegen] object GlobalSections {
     name = "sn_classlist",
     machOName = "__sn_classlist",
     coffName = ".sncll",
-    used = true // Class.forName iterates this section
+    used = true, // Class.forName iterates this section
+    anonymous = true
   )
   val GlobalObjects = Section(
     name = "sn_global_objects",

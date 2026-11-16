@@ -258,14 +258,20 @@ private[codegen] abstract class AbstractCodeGen(
     str("@")
     genGlobal(name)
     str(" = ")
-    str(if (attrs.isExtern) "external " else "hidden ")
+    val section =
+      if (attrs.isExtern) None else meta.globalSections.forGlobal(name)
+    str(
+      if (attrs.isExtern) "external "
+      else if (section.exists(_.anonymous)) "private "
+      else "hidden "
+    )
     str(if (isConst) "constant" else "global")
     str(" ")
     if (attrs.isExtern) {
       genType(ty)
     } else {
       genVal(rhs)
-      meta.globalSections.forGlobal(name).foreach { section =>
+      section.foreach { section =>
         genStaticObjectSection(section)
         if (section.used) usedGlobals += name
       }
