@@ -42,7 +42,6 @@ class Runtime private () {
       import scala.scalanative.posix.signalOps.sigaction_ops
       val current = stackalloc[psignal.sigaction]()
       if (psignal.sigaction(sig, null, current) == 0 &&
-          (current.sa_flags & psignal.SA_SIGINFO) == 0 &&
           isDefault(current.sa_handler)) {
         val action = stackalloc[psignal.sigaction]()
         action.sa_handler = handler

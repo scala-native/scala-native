@@ -12,6 +12,8 @@ import scala.scalanative.unsafe._
 object RuntimeSignalHandlerTest {
   @volatile var received: CInt = 0
   val handler: CFuncPtr1[CInt, Unit] = (sig: CInt) => received = sig
+  val infoHandler: CFuncPtr3[CInt, Ptr[siginfo_t], CVoidPtr, Unit] =
+    (sig: CInt, _: Ptr[siginfo_t], _: CVoidPtr) => received = sig
 }
 
 // Issue #5288
@@ -64,6 +66,27 @@ class RuntimeSignalHandlerTest {
       val installed = currentHandler(sig)
       assertNotEquals(CFuncPtr.toPtr(SIG_DFL), installed)
       assertNotEquals(CFuncPtr.toPtr(SIG_IGN), installed)
+    }
+  }
+
+  @Test def installsHandlerAfterOneShotSiginfoHandler(): Unit = {
+    assumeFalse("POSIX only", isWindows)
+    val act = stackalloc[sigaction]()
+    val oact = stackalloc[sigaction]()
+    act.sa_sigaction = infoHandler
+    act.sa_flags = SA_SIGINFO | SA_RESETHAND
+    assertEquals(0, sigaction(SIGTERM, act, oact))
+    val hook = new Thread(() => ())
+    try {
+      received = 0
+      assertEquals(0, raise(SIGTERM))
+      assertEquals(SIGTERM, received)
+      Runtime.getRuntime().addShutdownHook(hook)
+      val installed = currentHandler(SIGTERM)
+      assertNotNull(installed)
+    } finally {
+      Runtime.getRuntime().removeShutdownHook(hook)
+      assertEquals(0, sigaction(SIGTERM, oact, null))
     }
   }
 }
