@@ -18,8 +18,6 @@ jobs:
     name: Compile & test tools
     if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
     runs-on: ubuntu-22.04
-    env:
-      ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
       fail-fast: false
       matrix:
@@ -51,12 +49,10 @@ jobs:
     
   test-scala-cross-build:
     runs-on: ubuntu-22.04
-    env:
-      ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
       fail-fast: false
       matrix:
-        scala: [2.12, 2.13, 3, 3-next]
+        scala: [2.12, 2.13, 3]
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/linux-setup-env
@@ -73,12 +69,10 @@ jobs:
     if: github.event_name == 'pull_request' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
     runs-on: ubuntu-22.04
     needs: tests-tools
-    env:
-      ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
       fail-fast: false
       matrix:
-        scala: [3, 2.13, 2.12, 3-next]
+        scala: [3, 2.13, 2.12]
         build-mode: [debug]
         include:
           - scala: 3
@@ -103,8 +97,6 @@ jobs:
     if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
     runs-on: ubuntu-22.04
     needs: [tests-tools, test-runtime]
-    env:
-      ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
       fail-fast: false
       matrix:
@@ -160,8 +152,6 @@ jobs:
     if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
     runs-on: ubuntu-22.04
     needs: tests-tools
-    env:
-      ENABLE_EXPERIMENTAL_COMPILER: true
     strategy:
       fail-fast: false
       matrix:

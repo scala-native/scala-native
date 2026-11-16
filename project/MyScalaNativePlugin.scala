@@ -23,20 +23,8 @@ object MyScalaNativePlugin extends AutoPlugin {
   final val isGeneratingForIDE =
     env.getOrElse("METALS_ENABLED", "false").toBoolean
 
-  final val enableExperimentalCompiler = {
-    val ExperimentalCompilerEnv = "ENABLE_EXPERIMENTAL_COMPILER"
-    val enabled = env.get(ExperimentalCompilerEnv).exists(_ != "false")
-    println(
-      if (enabled)
-        s"Found `$ExperimentalCompilerEnv` env var: enabled sub-projects using Scala experimental version ${ScalaVersions.scala3Nightly}, using suffix `3_next`."
-      else
-        s"Not found `$ExperimentalCompilerEnv` env var: sub-projects using Scala experimental version would not be available."
-    )
-    enabled
-  }
-
-  // Allowed values: 3, 3-next, 2.13, 2.12
-  final val ideScalaVersion = if (enableExperimentalCompiler) "3-next" else "3"
+  // Allowed values: 3, 2.13, 2.12
+  final val ideScalaVersion = "3"
 
   // Would be visible in Metals logs
   if (isGeneratingForIDE)

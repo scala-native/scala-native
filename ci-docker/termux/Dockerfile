@@ -26,7 +26,6 @@ RUN sed -i "1s|.*|#!$PREFIX/bin/bash|" /data/data/com.termux/files/home/run-test
 WORKDIR /workspace
 ENV GITHUB_WORKSPACE=/workspace
 ENV CI=true
-ENV ENABLE_EXPERIMENTAL_COMPILER=true
 ENV SCALANATIVE_MODE=debug
 ENV SCALANATIVE_GC=immix
 # GC regressions allocate arrays larger than 256 MB and need contiguous space.

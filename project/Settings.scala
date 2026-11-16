@@ -140,7 +140,6 @@ object Settings {
     mimaSettings,
     docsSettings,
     scalacOptions ++= ignoredScalaDeprecations(scalaVersion.value),
-    resolvers += Resolver.scalaNightlyRepository,
     publishLocal := publishLocal.tag(Tags.Publish).value
   )
 
@@ -612,49 +611,6 @@ object Settings {
     Def.settings(
       setSourceDirectory(Compile, "main"),
       setSourceDirectory(Test, "test")
-    )
-  }
-
-  lazy val experimentalScalaSources: Seq[Setting[_]] = {
-    val baseDir = "scala-next"
-    def setSourceDirectory(scope: Configuration) = Def.settings(
-      // scope / unmanagedSourceDirectories += (scope / sourceDirectory).value / baseDir,
-      scope / unmanagedSources := {
-        val log = streams.value.log
-        val previous = (scope / unmanagedSources).value
-        val sourcesDir = (scope / sourceDirectory).value
-        val experimentalSources = allScalaFromDir(sourcesDir / baseDir).toMap
-
-        val updatedSources = previous.map { f =>
-          val replacement = for {
-            relPath <- f.relativeTo(sourcesDir)
-            sourceDir = relPath.toPath().getName(0).toString()
-            normalizedPath <- f.relativeTo(sourcesDir / sourceDir)
-            experimentalSource <- experimentalSources.get(
-              normalizedPath.toString().replace(File.separatorChar, '/')
-            )
-            _ = log.info(
-              s"Replacing source $relPath with experimental $baseDir/$normalizedPath in module ${thisProject.value.id}"
-            )
-          } yield experimentalSource
-          replacement.getOrElse(f)
-        }
-        val newSources = experimentalSources.values.toList.diff(updatedSources)
-        updatedSources ++ newSources
-      },
-      // Adjustment for bloopInstall which tries to add whole source directory leading to double definitions
-      scope / sourceDirectories --= {
-        val sourcesDir = (scope / sourceDirectory).value
-        lazy val experimentalSources = allScalaFromDir(sourcesDir / baseDir)
-        if (isGeneratingForIDE && experimentalSources.nonEmpty)
-          Seq((scope / scalaSource).value)
-        else Nil
-      }
-    )
-
-    Def.settings(
-      setSourceDirectory(Compile),
-      setSourceDirectory(Test)
     )
   }
 

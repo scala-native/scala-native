@@ -2,9 +2,9 @@ package scala.scalanative.memory
 
 import scala.scalanative.runtime.{RawPtr, RawSize, intrinsic}
 
-/** Placeholder for SafeZone. It's used to avoid linking error when using scala
- *  versions other than scala-next, since the type `SafeZone` is used in the
- *  lowering phase.
+/** Placeholder for SafeZone. It's used to avoid linking error when using Scala
+ *  versions older than 3.9 (without capture checking support), since the type
+ *  `SafeZone` is used in the lowering phase.
  */
 private[scalanative] trait SafeZone {
 

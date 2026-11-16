@@ -4,7 +4,6 @@ set -e
 
 nativelib=nativelib/src/main
 scala=scala
-scalaNext=scala-next
 unsafe=scala/scalanative/unsafe
 unsigned=scala/scalanative/unsigned
 runtime=scala/scalanative/runtime

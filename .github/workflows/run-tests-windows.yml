@@ -16,7 +16,6 @@ jobs:
     if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || ((github.event_name == 'schedule' || github.event_name == 'workflow_call') && github.repository == 'scala-native/scala-native')
     runs-on: ${{ matrix.os }}
     env:
-      ENABLE_EXPERIMENTAL_COMPILER: true
       VCPKG_DEFAULT_HOST_TRIPLET: ${{ matrix.os == 'windows-11-arm' && 'arm64-windows' || 'x64-windows' }}
     strategy:
       fail-fast: false
@@ -110,8 +109,6 @@ jobs:
     name: Test runtime extension
     if: ((github.event_name == 'schedule' || github.event_name == 'workflow_call')  && github.repository == 'scala-native/scala-native') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.body, '[skip ci]') && contains(github.event.pull_request.body, '[test-extended]'))
     runs-on: windows-2022
-    env:
-      ENABLE_EXPERIMENTAL_COMPILER: true
     needs: [test-runtime]
     strategy:
       fail-fast: false

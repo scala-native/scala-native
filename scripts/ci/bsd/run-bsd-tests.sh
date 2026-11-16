@@ -1,7 +1,6 @@
 #!/bin/sh
 set -eu
 
-export ENABLE_EXPERIMENTAL_COMPILER=true
 export SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1
 export SCALANATIVE_TEST_DEBUG_SIGNALS=1
 # The test adapter starts one native test process per sbt test thread, and
