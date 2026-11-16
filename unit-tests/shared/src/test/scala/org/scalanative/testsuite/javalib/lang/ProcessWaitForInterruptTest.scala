@@ -4,7 +4,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
 import org.junit.Assert._
-import org.junit.Test
+import org.junit.{BeforeClass, Test}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform._
@@ -13,6 +13,9 @@ import scala.scalanative.junit.utils.AssumesHelper._
 
 object ProcessWaitForInterruptTest {
   import ProcessUtils._
+
+  @BeforeClass
+  def checkRuntime(): Unit = assumeSupportsSubprocesses()
 
   type Wait = Process => Any
 
