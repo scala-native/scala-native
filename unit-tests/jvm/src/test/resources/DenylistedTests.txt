@@ -3,8 +3,6 @@
 # and tests need to be changed
 
 
-org/scalanative/testsuite/javalib/util/DefaultFormatterTest.scala
-org/scalanative/testsuite/javalib/util/FormatterTest.scala
 org/scalanative/testsuite/javalib/util/Base64Test.scala
 
 org/scalanative/testsuite/javalib/nio/file/FileSystemExceptionTest.scala

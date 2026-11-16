@@ -196,12 +196,10 @@ private[util] abstract class FormatterImpl protected (
           lastArgIndex
         } else {
           val i = token.argIndex
-          if (i == FormatToken.Unset || i == 0) {
-            // Either there is no explicit index, or the explicit index is 0
+          if (i == FormatToken.Unset) {
             lastImplicitArgIndex += 1
             lastImplicitArgIndex
-          } else if (i < 0) {
-            // Cannot be parsed, same as useLastIndex
+          } else if (i == FormatToken.LastArgumentIndex) {
             lastArgIndex
           } else {
             // Could be parsed, this is the index
@@ -1385,6 +1383,10 @@ object FormatterImpl extends FormatterCompanionImpl {
                 }
 
                 val newState = if ('$' == nextChar) {
+                  if (number == FormatToken.ParsedValueTooLarge)
+                    throw new IllegalFormatArgumentIndexException(Int.MinValue)
+                  if (number == 0)
+                    throw new IllegalFormatArgumentIndexException(0)
                   token.argIndex = number
                   ApplyFlags
                 } else {
@@ -1396,7 +1398,7 @@ object FormatterImpl extends FormatterCompanionImpl {
                     // the digital sequence stands for the width.
                     // do not get the next char.
                     format.position(format.position() - 1)
-                    token.width = if (number < 0) -1 else number
+                    token.width = checkedWidth(number)
                     AfterWidth
                   }
                 }
@@ -1417,8 +1419,7 @@ object FormatterImpl extends FormatterCompanionImpl {
             loop {
               if (token.setFlag(currentChar)) state
               else if (isAsciiDigit(currentChar)) {
-                val width = getPositiveInt(format)
-                token.width = if (width < 0) -1 else width
+                token.width = checkedWidth(getPositiveInt(format))
                 AfterWidth
               } else if ('.' == currentChar) {
                 ApplyPrecision
@@ -1441,7 +1442,9 @@ object FormatterImpl extends FormatterCompanionImpl {
           case ParserStateMachine.ApplyPrecision =>
             if (isAsciiDigit(currentChar)) {
               val precision = getPositiveInt(format)
-              token.precision = if (precision < 0) -1 else precision
+              if (precision == FormatToken.ParsedValueTooLarge)
+                throw new IllegalFormatPrecisionException(Int.MinValue)
+              token.precision = precision
             } else {
               // the precision is required but not given by the format string.
               parseError()
@@ -1484,6 +1487,12 @@ object FormatterImpl extends FormatterCompanionImpl {
       formatString
     }
 
+    private def checkedWidth(width: Int): Int = {
+      if (width == FormatToken.ParsedValueTooLarge)
+        throw new IllegalFormatWidthException(Int.MinValue)
+      width
+    }
+
     private def getPositiveInt(buffer: CharBuffer): Int = {
       def loop(): Int = {
         if (buffer.hasRemaining() && isAsciiDigit(buffer.get())) {
@@ -1502,7 +1511,7 @@ object FormatterImpl extends FormatterCompanionImpl {
         else FormatToken.ParsedValueTooLarge
       } catch {
         case _: NumberFormatException =>
-          FormatToken.Unset
+          FormatToken.ParsedValueTooLarge
       }
     }
 

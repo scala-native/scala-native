@@ -5,6 +5,7 @@ import java.math.{BigDecimal, BigInteger}
 import java.util._
 
 import org.junit.Assert._
+import org.junit.Assume._
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
@@ -1845,20 +1846,41 @@ class FormatterTest {
     }
   }
 
-  @Test def indexTooLargeUsesLastIndex(): Unit = {
+  // JDK 16+ rejects argument indices, widths and precisions that overflow an Int
+  @Test def indexTooLargeOrZeroThrows(): Unit = {
+    assumeFalse(executingInJVMOnLowerThanJDK(16))
+    for (format <- Seq("%9876543210$d", "%d %9876543210$d", "%0$d")) {
+      val e = expectFormatterThrows(
+        classOf[IllegalFormatException],
+        format,
+        56,
+        78
+      )
+      assertEquals(
+        "java.util.IllegalFormatArgumentIndexException",
+        e.getClass().getName()
+      )
+    }
+  }
+
+  @Test def widthOrPrecisionTooLargeThrows(): Unit = {
+    assumeFalse(executingInJVMOnLowerThanJDK(16))
     expectFormatterThrows(
-      classOf[MissingFormatArgumentException],
-      "%9876543210$d",
+      classOf[IllegalFormatWidthException],
+      "%d %9876543210d",
       56,
       78
     )
-
-    assertF("56 56", "%d %9876543210$d", 56, 78)
-  }
-
-  @Test def widthOrPrecisionTooLargeIsIgnored(): Unit = {
-    assertF("56 78", "%d %9876543210d", 56, 78)
-    assertF("56 78", "%d %.9876543210d", 56, 78)
+    expectFormatterThrows(
+      classOf[IllegalFormatPrecisionException],
+      "%d %.9876543210d",
+      56,
+      78
+    )
+    expectFormatterThrows(
+      classOf[IllegalFormatWidthException],
+      "%99999999999999999999n"
+    )
   }
 
   @Test def closeThenUseThrows(): Unit = {
