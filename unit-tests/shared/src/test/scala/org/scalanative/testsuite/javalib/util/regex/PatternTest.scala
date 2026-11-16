@@ -239,14 +239,6 @@ class PatternTest {
     pass("\\P{InLatin}", "α") // not in block
   }
 
-  @Ignore("#620")
-  @Test def notSupportedCharacterClasses(): Unit = {
-    pass("\\0100", "\u0040") // 100 octal = 40 hex
-    pass("\\uBEEF", "\uBEEF")
-    pass("\\e", "\u001B") // escape
-    pass("\\cZ", s"\\x1A") // Control-Z
-  }
-
   @Test def characterClasses(): Unit = {
     pass("[abc]", "a")
     fail("[^abc]", "c")
