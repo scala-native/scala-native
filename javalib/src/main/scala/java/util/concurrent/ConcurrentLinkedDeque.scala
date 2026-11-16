@@ -207,7 +207,7 @@ object ConcurrentLinkedDeque {
       var p: Node[E] = null
       if (action == null) throw new NullPointerException
       val q = this.queue
-      if (!exhausted && ({ p = current; p } != null) || ({
+      if (!exhausted && ({ p = current; p } != null || {
             p = q.first; p
           } != null)) {
         exhausted = true
@@ -223,7 +223,7 @@ object ConcurrentLinkedDeque {
       var p: Node[E] = null
       if (action == null) throw new NullPointerException
       val q = this.queue
-      if (!exhausted && ({ p = current; p } != null) || ({
+      if (!exhausted && ({ p = current; p } != null || {
             p = q.first; p
           } != null)) {
         var e: E = null.asInstanceOf[E]
