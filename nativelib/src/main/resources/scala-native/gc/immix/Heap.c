@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "Heap.h"
+#include "immix_commix/WriteBarrier.h"
 #include "Block.h"
 #include "shared/Log.h"
 #include "Allocator.h"
@@ -56,6 +57,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     if (maxHeapSize == UNLIMITED_HEAP_SIZE) {
         maxHeapSize = memoryLimit;
     }
+    maxHeapSize = Heap_limitMaxHeapSize(maxHeapSize);
 
     uint32_t maxNumberOfBlocks = maxHeapSize / SPACE_USED_PER_BLOCK;
     assert(maxNumberOfBlocks > 1);
@@ -87,13 +89,14 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
 
     // reserve space for bytemap
     size_t bytemapSpaceSize =
-        maxHeapSize / ALLOCATION_ALIGNMENT + sizeof(Bytemap);
+        Heap_bytemapCoverage(maxHeapSize) / ALLOCATION_ALIGNMENT +
+        sizeof(Bytemap);
     Bytemap *bytemap =
         (Bytemap *)Heap_mapAndAlign(bytemapSpaceSize, ALLOCATION_ALIGNMENT);
     heap->bytemap = bytemap;
 
     // Init heap for small objects
-    word_t *heapStart = Heap_mapAndAlign(maxHeapSize, BLOCK_TOTAL_SIZE);
+    word_t *heapStart = Heap_mapHeapSpace(maxHeapSize);
     if (!heapStart) {
         GC_LOG_ERROR("Failed to allocate heap space, "
                      "requested size=%.2fMB, available memory=%.2fMB. "
@@ -125,6 +128,9 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
 
     BlockAllocator_Init(&blockAllocator, blockMetaStart, initialBlockCount);
     Bytemap_Init(bytemap, heapStart, maxHeapSize);
+#ifdef SCALANATIVE_GC_WRITE_BARRIER
+    WriteBarrier_Init(heapStart, maxHeapSize, bytemap->data);
+#endif
     Heap_RefillEmergencyBlock(heap);
     char *statsFile = Settings_StatsFileName();
     if (statsFile != NULL) {
@@ -248,6 +254,9 @@ static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
     Stats *stats = heap->stats;
     GC_LOG_INFO("GC collection started");
     start_ns = Time_current_nanos();
+#ifdef SCALANATIVE_GC_WRITE_BARRIER_VERIFY
+    WriteBarrier_VerifyBeforeCollection();
+#endif
     GCHooks_markStarted();
     Marker_MarkRoots(heap, stack);
     GCHooks_markCompleted();
@@ -261,6 +270,9 @@ static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
     heap->collectionRequestNs = request_ns;
     heap->explicitCollection = allocationSize == 0;
     Heap_Recycle(heap);
+#ifdef SCALANATIVE_GC_WRITE_BARRIER_VERIFY
+    WriteBarrier_AgeSurvivors();
+#endif
     bool available = true;
     // An explicit collection is not an allocation that could not proceed: it
     // ends any run of qualifying recovery collections, so that space it frees

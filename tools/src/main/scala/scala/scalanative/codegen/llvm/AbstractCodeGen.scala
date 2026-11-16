@@ -247,6 +247,16 @@ private[codegen] abstract class AbstractCodeGen(
       unsupported(defn)
   }
 
+  // The GC sets the write barrier's heap range and bytemap once, before any
+  // Scala code runs. Declaring them constant lets LLVM load them once per
+  // function instead of after every store.
+  private def isWriteBarrierConstant(name: nir.Global): Boolean =
+    platform.useGCWriteBarrier && (
+      name == Lower.GCBarrierHeapStart.name ||
+      name == Lower.GCBarrierHeapSize.name ||
+      name == Lower.GCBarrierBytemap.name
+    )
+
   private[codegen] def genGlobalDefn(
       attrs: nir.Attrs,
       name: nir.Global,
@@ -265,7 +275,11 @@ private[codegen] abstract class AbstractCodeGen(
       else if (section.exists(_.anonymous)) "private "
       else "hidden "
     )
-    str(if (isConst) "constant" else "global")
+    str(
+      if (isConst || (attrs.isExtern && isWriteBarrierConstant(name)))
+        "constant"
+      else "global"
+    )
     str(" ")
     if (attrs.isExtern) {
       genType(ty)
@@ -315,6 +329,7 @@ private[codegen] abstract class AbstractCodeGen(
 
     newline()
     str(if (isDecl) "declare " else "define ")
+    if (usesPreserveMost(name)) str("preserve_mostcc ")
     if (targetsWindows && !isDecl && attrs.isExtern) {
       // Generate export modifier only for extern (C-ABI compliant) signatures
       val nir.Global.Member(_, sig) = name: @unchecked
@@ -335,6 +350,8 @@ private[codegen] abstract class AbstractCodeGen(
       }
     }
     str(")")
+    // Taken only for old objects not remembered yet: keep it off the hot path.
+    if (isDecl && name == Lower.GCWriteBarrierSlow.name) str(" cold")
     if (attrs.opt eq nir.Attr.NoOpt) {
       str(" optnone noinline")
     } else {
@@ -1054,6 +1071,23 @@ private[codegen] abstract class AbstractCodeGen(
 
   }
 
+  // The write barrier's slow paths are rarely taken, and keep the caller's
+  // registers so that the fast path does not make values live across it spill.
+  // Must match WRITE_BARRIER_SLOW_PATH in gc/immix_commix/WriteBarrier.h.
+  private lazy val writeBarrierPreservesMost: Boolean =
+    !meta.buildConfig.targetsWindows && {
+      meta.buildConfig.compilerConfig.configuredOrDetectedTriple.arch match {
+        case scala.scalanative.build.TargetTriple.Arch.aarch64 |
+            scala.scalanative.build.TargetTriple.Arch.x86_64 =>
+          true
+        case _ => false
+      }
+    }
+
+  private def usesPreserveMost(name: nir.Global): Boolean =
+    writeBarrierPreservesMost &&
+      (name == Lower.GCWriteBarrierSlow.name || name == Lower.GCWriteBarrierSlot.name)
+
   private[codegen] def genCall(
       genBind: () => Unit,
       call: nir.Op.Call,
@@ -1127,6 +1161,7 @@ private[codegen] abstract class AbstractCodeGen(
         newline()
         genBind()
         str(if (unwind ne nir.Next.None) "invoke " else "call ")
+        if (usesPreserveMost(pointee)) str("preserve_mostcc ")
         genCallFunctionType(ty)
         str(" @")
         genGlobal(pointee)

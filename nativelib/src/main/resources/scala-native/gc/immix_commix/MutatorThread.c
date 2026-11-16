@@ -50,6 +50,9 @@ static void MutatorThread_dispose(MutatorThread *self) {
     }
 #endif
 #endif
+#ifdef SCALANATIVE_GC_WRITE_BARRIER
+    free(self->rememberedSet.items);
+#endif
     free(self);
 }
 
