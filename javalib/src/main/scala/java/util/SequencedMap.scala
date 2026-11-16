@@ -343,16 +343,19 @@ private[util] object SequencedMap {
       Objects.requireNonNull(entry)
       new CopyOfEntry(
         key = entry.getKey(),
-        value = entry.getValue()
+        value = entry.getValue(),
+        entryHashCode = entry.hashCode()
       )
     }
   }
+
   private[util] class CopyOfEntry[
       K /* <: AnyRef */,
       V /* <: AnyRef */
   ] private (
       key: K,
-      value: V
+      value: V,
+      entryHashCode: Int
   ) extends Map.Entry[K, V] {
     override def getKey(): K = key
     override def getValue(): V = value
@@ -365,10 +368,9 @@ private[util] object SequencedMap {
           Objects.equals(value, entry.getValue())
       case _ => false
     }
-    override def hashCode(): Int = {
-      def hash(obj: Any) = if (obj == null) 0 else obj.##
-      hash(key) ^ hash(value)
-    }
+
+    override def hashCode(): Int = entryHashCode
+
     override def toString(): String = s"$key=$value"
   }
 }
