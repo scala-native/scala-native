@@ -298,35 +298,31 @@ class ConcurrentLinkedDeque[E <: AnyRef]
   private def linkFirst(e: E): Unit = {
     val newNode = new Node[E](Objects.requireNonNull(e))
 
-    while (true) {
+    while (true) { // restartFromHead
+      var h = head
+      var p = h
+      var q: Node[E] = null
       var restart = false
       while (!restart) {
-        restart = false
-
-        var h = head
-        var p = h
-        var q: Node[E] = null
-        // Check for head updates every other hop.
-        while (true)
-          if ({ q = p.prev; q } != null && { p = q; q = p.prev; q } != null)
-            // If p == q, we are sure to follow head instead.
-            p =
-              if (h ne { h = head; h }) h
-              else q
-          else if (p.next eq p) // PREV_TERMINATOR
-            restart = true
-          else {
-            // p is first node
-            newNode.lazySetNext(p) // CAS piggyback
-            if (p.casPrev(null, newNode)) {
-              // Successful CAS is the linearization point
-              // for e to become an element of this deque,
-              // and for newNode to become "live".
-              if (p ne h)
-                casHead(h, newNode) // Failure is OK.// hop two nodes at a time
-              return
-            }
+        if ({ q = p.prev; q } != null && { p = q; q = p.prev; q } != null)
+          // Check for head updates every other hop.
+          // If p == q, we are sure to follow head instead.
+          p = if (h ne { h = head; h }) h else q
+        else if (p.next eq p) // PREV_TERMINATOR
+          restart = true
+        else {
+          // p is first node
+          newNode.lazySetNext(p) // CAS piggyback
+          if (p.casPrev(null, newNode)) {
+            // Successful CAS is the linearization point
+            // for e to become an element of this deque,
+            // and for newNode to become "live".
+            if (p ne h) // hop two nodes at a time; failure is OK
+              casHead(h, newNode)
+            return
           }
+          // Lost CAS race to another thread; re-read prev
+        }
       }
     }
   }
@@ -334,42 +330,32 @@ class ConcurrentLinkedDeque[E <: AnyRef]
   /** Links e as last element.
    */
   private def linkLast(e: E): Unit = {
+    val newNode = new Node[E](Objects.requireNonNull(e))
 
-    val newNode = new ConcurrentLinkedDeque.Node[E](Objects.requireNonNull(e))
-
-    var restartFromTail = false
-    while (!restartFromTail) {
-      restartFromTail = false
-
-      while (true) {
-        var t = tail
-        var p = t
-        var q: ConcurrentLinkedDeque.Node[E] = null
-        while (true) {
+    while (true) { // restartFromTail
+      var t = tail
+      var p = t
+      var q: Node[E] = null
+      var restart = false
+      while (!restart) {
+        if ({ q = p.next; q } != null && { p = q; q = p.next; q } != null)
           // Check for tail updates every other hop.
-          if (({ q = p.next; q } != null) && ({ p = q; q = p.next; q } != null))
-            // If p == q, we are sure to follow tail instead.
-            p =
-              if (t ne { t = tail; t }) t
-              else q
-          else if (p.prev eq p) // NEXT_TERMINATOR
-            restartFromTail = true
-          else {
-            // p is last node
-            newNode.lazySetPrev(p) // CAS piggyback
-
-            if (p.casNext(null, newNode)) {
-              // Successful CAS is the linearization point
-              // for e to become an element of this deque,
-              // and for newNode to become "live".
-
-              // hop two nodes at a time
-              if (p ne t)
-                casTail(t, newNode) // Failure is OK.
-
-              return
-            }
+          // If p == q, we are sure to follow tail instead.
+          p = if (t ne { t = tail; t }) t else q
+        else if (p.prev eq p) // NEXT_TERMINATOR
+          restart = true
+        else {
+          // p is last node
+          newNode.lazySetPrev(p) // CAS piggyback
+          if (p.casNext(null, newNode)) {
+            // Successful CAS is the linearization point
+            // for e to become an element of this deque,
+            // and for newNode to become "live".
+            if (p ne t) // hop two nodes at a time; failure is OK
+              casTail(t, newNode)
+            return
           }
+          // Lost CAS race to another thread; re-read next
         }
       }
     }
@@ -585,27 +571,17 @@ class ConcurrentLinkedDeque[E <: AnyRef]
   private final def updateHead(): Unit = {
     // Either head already points to an active node, or we keep
     // trying to cas it to the first node until it does.
-
-    var h, p, q = null.asInstanceOf[Node[E]]
-
-    var restartFromHead = true
-
-    while (restartFromHead) {
-      restartFromHead = false
-
-      while ({ h = head; h }.item == null && { p = h.prev; p } != null) {
-        while (!restartFromHead) {
-          if ({ q = p.prev; q } == null || { p = q; q = p.prev; q } == null) {
-            // It is possible that p is PREV_TERMINATOR,
-            // but if so, the CAS is guaranteed to fail.
-            if (casHead(h, p)) return
-            else restartFromHead = true
-          } else if (h ne head) {
-            restartFromHead = true
-          } else {
-            p = q
-          }
-        }
+    var h, p, q: Node[E] = null
+    while ({ h = head; h }.item == null && { p = h.prev; p } != null) {
+      var restart = false
+      while (!restart) {
+        if ({ q = p.prev; q } == null || { p = q; q = p.prev; q } == null) {
+          // It is possible that p is PREV_TERMINATOR,
+          // but if so, the CAS is guaranteed to fail.
+          if (casHead(h, p)) return
+          else restart = true
+        } else if (h ne head) restart = true
+        else p = q
       }
     }
   }
@@ -613,155 +589,71 @@ class ConcurrentLinkedDeque[E <: AnyRef]
   private final def updateTail(): Unit = {
     // Either tail already points to an active node, or we keep
     // trying to cas it to the last node until it does.
-
-    var t, p, q = null.asInstanceOf[Node[E]]
-
-    var restartFromTail = true
-
-    while (restartFromTail) {
-      restartFromTail = false
-
-      while ({ t = tail; t }.item == null && { p = t.next; p } != null)
-        while (true)
-          if ({ q = p.next; q } == null || { p = q; q = p.next; q } == null) {
-            // It is possible that p is NEXT_TERMINATOR,
-            // but if so, the CAS is guaranteed to fail.
-            if (casTail(t, p)) return
-            else restartFromTail = true
-          } else if (t ne tail) restartFromTail = true
-          else p = q
+    var t, p, q: Node[E] = null
+    while ({ t = tail; t }.item == null && { p = t.next; p } != null) {
+      var restart = false
+      while (!restart) {
+        if ({ q = p.next; q } == null || { p = q; q = p.next; q } == null) {
+          // It is possible that p is NEXT_TERMINATOR,
+          // but if so, the CAS is guaranteed to fail.
+          if (casTail(t, p)) return
+          else restart = true
+        } else if (t ne tail) restart = true
+        else p = q
+      }
     }
-  }
-
-  private object SkipDeletedStates {
-    final val State_BEGIN = 1
-    final val State_WHILE_ACTIVE = 2
-    final val State_FIND_ACTIVE = 3
-
-    final val State_WHILE_ACTIVE_TEST = 98
-    final val State_DONE = 99
   }
 
   private def skipDeletedPredecessors(x: Node[E]): Unit = {
-    import SkipDeletedStates._
-
-    // A Finite State Machine (FSM) to closely follow Java break/continue logic
-    var state = State_BEGIN
-    while (state != State_DONE) {
-      var prev = x.prev
-      var p = prev // Dummy value, will get overwritten.
-
-      state match {
-        case State_BEGIN =>
-          val prev = x.prev
-          // assert next != null;
-          // assert x != NEXT_TERMINATOR;
-          // assert x != PREV_TERMINATOR;
-
-          p = prev
-          state = State_FIND_ACTIVE
-
-        case State_FIND_ACTIVE =>
-          var findActive = true
-
-          while (findActive) {
-            findActive = true
-            if (p.item != null) {
-              findActive = false // state stays State_FIND_ACTIVE
-            } else {
-              val q = p.prev
-              if (q == null) {
-                findActive = false
-
-                if (p.next eq p)
-                  state = State_WHILE_ACTIVE
-              } else if (p eq q) {
-                findActive = false
-                state = State_WHILE_ACTIVE
-              } else {
-                p = q
-              }
-
-              // found active CAS target
-              if (state != State_WHILE_ACTIVE) {
-                if (prev == p || x.casPrev(prev, p))
-                  return
-              }
-
-              state = State_WHILE_ACTIVE_TEST
-            }
-          }
-
-        case State_WHILE_ACTIVE_TEST =>
-          state =
-            if ((x.item != null || x.next == null)) State_WHILE_ACTIVE_TEST
-            else State_DONE
-
-        case unknown =>
-          state = State_DONE
+    while ({
+      val prev = x.prev
+      // assert prev != null;
+      // assert x != NEXT_TERMINATOR;
+      // assert x != PREV_TERMINATOR;
+      var p = prev
+      var found = false
+      var restart = false
+      while (!found && !restart) {
+        if (p.item != null) found = true
+        else {
+          val q = p.prev
+          if (q == null) {
+            if (p.next eq p) restart = true
+            else found = true
+          } else if (p eq q) restart = true
+          else p = q
+        }
       }
-    }
+      // found active CAS target
+      if (found && ((prev eq p) || x.casPrev(prev, p))) return
+      x.item != null || x.next == null
+    }) ()
   }
 
   private def skipDeletedSuccessors(x: Node[E]): Unit = {
-    import SkipDeletedStates._
-
-    // A Finite State Machine (FSM) to closely follow Java break/continue logic
-    var state = State_BEGIN
-    while (state != State_DONE) {
-      var next = x.next
-      var p = next // Dummy value, will get overwritten. Avoid Scala 2/3 quirks
-
-      state match {
-        case State_BEGIN =>
-          val next = x.next
-          // assert next != null;
-          // assert x != NEXT_TERMINATOR;
-          // assert x != PREV_TERMINATOR;
-
-          p = next
-          state = State_FIND_ACTIVE
-
-        case State_FIND_ACTIVE =>
-          var findActive = true
-
-          while (findActive) {
-            findActive = true
-            if (p.item != null) {
-              findActive = false // state stays State_FIND_ACTIVE
-            } else {
-              val q = p.next
-              if (q == null) {
-                findActive = false
-
-                if (p.next eq p)
-                  state = State_WHILE_ACTIVE
-              } else if (p eq q) {
-                findActive = false
-                state = State_WHILE_ACTIVE
-              } else {
-                p = q
-              }
-
-              // found active CAS target
-              if (state != State_WHILE_ACTIVE) {
-                if (next == p || x.casNext(next, p))
-                  return
-              }
-
-              state = State_WHILE_ACTIVE_TEST
-            }
-          }
-
-        case State_WHILE_ACTIVE_TEST =>
-          state =
-            if ((x.item != null || x.prev == null)) State_WHILE_ACTIVE_TEST
-            else State_DONE
-
-        case unknown =>
-          state = State_DONE
+    while ({
+      val next = x.next
+      // assert next != null;
+      // assert x != NEXT_TERMINATOR;
+      // assert x != PREV_TERMINATOR;
+      var p = next
+      var found = false
+      var restart = false
+      while (!found && !restart) {
+        if (p.item != null) found = true
+        else {
+          val q = p.next
+          if (q == null) {
+            if (p.prev eq p) restart = true
+            else found = true
+          } else if (p eq q) restart = true
+          else p = q
+        }
       }
-    }
+      // found active CAS target
+      if (found && ((next eq p) || x.casNext(next, p))) return
+      x.item != null || x.prev == null
+    }) ()
   }
 
   /** Returns the successor of p, or the first node if p.next has been linked to
@@ -791,30 +683,25 @@ class ConcurrentLinkedDeque[E <: AnyRef]
    */
 
   private[concurrent] def first: Node[E] = {
-    while (true) {
-      var restartFromHead = true
-
-      while (restartFromHead) {
-        restartFromHead = false
-
-        var h = head
-        var p = h
-        var q: ConcurrentLinkedDeque.Node[E] = null
-
-        while (true) {
+    while (true) { // restartFromHead
+      var h = head
+      var p = h
+      var q: Node[E] = null
+      var restart = false
+      while (!restart) {
+        if ({ q = p.prev; q } != null && { p = q; q = p.prev; q } != null)
           // Check for head updates every other hop.
-          if (({ q = p.prev; q } != null) && ({ p = q; q = p.prev; q } != null))
-            // If p == q, we are sure to follow head instead.
-            p =
-              if (h ne { h = head; h }) h
-              else q
-          else if ((p eq h) || casHead(h, p)) return p
-          else restartFromHead = true
-        }
+          // If p == q, we are sure to follow head instead.
+          p = if (h ne { h = head; h }) h else q
+        else if ((p eq h) ||
+            // It is possible that p is PREV_TERMINATOR,
+            // but if so, the CAS is guaranteed to fail.
+            casHead(h, p))
+          return p
+        else restart = true
       }
     }
-    // unreachable
-    null
+    null // unreachable
   }
 
   /** Returns the last node, the unique node p for which: p.next == null &&
@@ -822,29 +709,25 @@ class ConcurrentLinkedDeque[E <: AnyRef]
    *  Guarantees that tail is set to the returned node.
    */
   private[concurrent] def last: Node[E] = {
-
-    while (true) {
+    while (true) { // restartFromTail
+      var t = tail
+      var p = t
+      var q: Node[E] = null
       var restart = false
-
       while (!restart) {
-        var t = tail
-        var p = t
-        var q: Node[E] = null
-        // Check for tail updates every other hop.
-
-        while (true)
-          if ({ q = p.next; q } != null && { p = q; q = p.next; q } != null)
-            // If p == q, we are sure to follow tail instead.
-            p =
-              if (t ne { t = tail; t }) t
-              else q
-          else if ((p eq t) || casTail(t, p)) return p
-          else restart = true
+        if ({ q = p.next; q } != null && { p = q; q = p.next; q } != null)
+          // Check for tail updates every other hop.
+          // If p == q, we are sure to follow tail instead.
+          p = if (t ne { t = tail; t }) t else q
+        else if ((p eq t) ||
+            // It is possible that p is NEXT_TERMINATOR,
+            // but if so, the CAS is guaranteed to fail.
+            casTail(t, p))
+          return p
+        else restart = true
       }
     }
-
-    // unreachable
-    null
+    null // unreachable
   }
 
   /** Returns element unless it is null, in which case throws
@@ -1235,20 +1118,16 @@ class ConcurrentLinkedDeque[E <: AnyRef]
     }
     if (beginningOfTheEnd == null) return false
     // Atomically append the chain at the tail of this collection
-    var restart = false
-    while (!restart) {
-      restart = false
-
+    while (true) { // restartFromTail
       var t = tail
       var p = t
       var q: Node[E] = null
-      // Check for tail updates every other hop.
-      while (true)
+      var restart = false
+      while (!restart) {
         if ({ q = p.next; q } != null && { p = q; q = p.next; q } != null)
+          // Check for tail updates every other hop.
           // If p == q, we are sure to follow tail instead.
-          p =
-            if (t ne { t = tail; t }) t
-            else q
+          p = if (t ne { t = tail; t }) t else q
         else if (p.prev eq p) // NEXT_TERMINATOR
           restart = true
         else {
@@ -1265,7 +1144,9 @@ class ConcurrentLinkedDeque[E <: AnyRef]
             }
             return true
           }
+          // Lost CAS race to another thread; re-read next
         }
+      }
     }
 
     // unreachable
