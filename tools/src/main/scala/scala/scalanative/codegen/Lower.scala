@@ -932,31 +932,45 @@ private[scalanative] object Lower {
 
     /* Itable lookup for `trt`, see codegen.ITable. Jumps to `found` with the
      * itable pointer and slot index as arguments, or to `missing`. Probes the
-     * slot where the lookup starts inline: most classes store `trt` there. A
-     * slot holding another trait continues the lookup out of line, in
-     * scalanative_itable_find.
+     * slot where the lookup starts inline: most classes store `trt` there.
+     * When every class of the program holds `trt` there or in the next slot,
+     * the next slot decides: receivers that implement `trt` need no second
+     * check. Otherwise a slot holding another trait continues the lookup out
+     * of line, in scalanative_itable_find.
      */
-    def genItableProbe(buf: nir.InstructionBuilder, rttiPtr: nir.Val, trt: Trait)(found: nir.Local, missing: nir.Local)(implicit
+    def genItableProbe(buf: nir.InstructionBuilder, rttiPtr: nir.Val, trt: Trait, implemented: Boolean)(found: nir.Local, missing: nir.Local)(implicit
         srcPosition: nir.SourcePosition,
         scopeId: nir.ScopeId
     ): Unit = {
       import buf._
       val traitRtti = rtti(trt).const
-      val (_, itables, start) = genItableStart(buf, rttiPtr, trt)
-      val checkEmptyL, searchL = fresh()
+      val (mask, itables, start) = genItableStart(buf, rttiPtr, trt)
+      val nextL = fresh()
 
       val entryTrait = genLoadEntryTrait(buf, itables, start)
       val isFound = let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, entryTrait, traitRtti), unwind)
-      branch(isFound, nir.Next.Label(found, Seq(itables, start)), nir.Next(checkEmptyL))
+      branch(isFound, nir.Next.Label(found, Seq(itables, start)), nir.Next(nextL))
 
-      label(checkEmptyL)
-      val isEmpty = let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, entryTrait, nir.Val.Null), unwind)
-      branch(isEmpty, nir.Next(missing), nir.Next(searchL))
+      label(nextL)
+      if (meta.maxDisplacement(trt) <= 1) {
+        val after = let(nir.Op.Bin(nir.Bin.Iadd, nir.Type.Int, start, one), unwind)
+        val next = let(nir.Op.Bin(nir.Bin.And, nir.Type.Int, after, mask), unwind)
+        if (implemented) jump(found, Seq(itables, next))
+        else {
+          val nextTrait = genLoadEntryTrait(buf, itables, next)
+          val isNext = let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, nextTrait, traitRtti), unwind)
+          branch(isNext, nir.Next.Label(found, Seq(itables, next)), nir.Next(missing))
+        }
+      } else {
+        val searchL = fresh()
+        val isEmpty = let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, entryTrait, nir.Val.Null), unwind)
+        branch(isEmpty, nir.Next(missing), nir.Next(searchL))
 
-      label(searchL)
-      val pos = call(ItableFindSig, ItableFind, Seq(rttiPtr, traitRtti, start), unwind)
-      val isMissing = let(nir.Op.Comp(nir.Comp.Slt, nir.Type.Int, pos, zero), unwind)
-      branch(isMissing, nir.Next(missing), nir.Next.Label(found, Seq(itables, pos)))
+        label(searchL)
+        val pos = call(ItableFindSig, ItableFind, Seq(rttiPtr, traitRtti, start), unwind)
+        val isMissing = let(nir.Op.Comp(nir.Comp.Slt, nir.Type.Int, pos, zero), unwind)
+        branch(isMissing, nir.Next(missing), nir.Next.Label(found, Seq(itables, pos)))
+      }
     }
 
     // The trait RTTI stored in slot `pos` of `itables`, null for an empty slot
@@ -1195,7 +1209,7 @@ private[scalanative] object Lower {
           let(n, nir.Op.Copy(genLoadMethod(itables, pos)), unwind)
         } else {
           val foundL, missingL, merge = fresh()
-          genItableProbe(buf, rttiPtr, trt)(found = foundL, missing = missingL)
+          genItableProbe(buf, rttiPtr, trt, implemented = true)(found = foundL, missing = missingL)
 
           val itables = nir.Val.Local(fresh(), nir.Type.Ptr)
           val pos = nir.Val.Local(fresh(), nir.Type.Int)
@@ -1408,7 +1422,7 @@ private[scalanative] object Lower {
         case TraitRef(trt) =>
           val rttiPtr = let(nir.Op.Load(nir.Type.Ptr, obj), unwind)
           val foundL, missingL, resultL = fresh()
-          genItableProbe(buf, rttiPtr, trt)(found = foundL, missing = missingL)
+          genItableProbe(buf, rttiPtr, trt, implemented = false)(found = foundL, missing = missingL)
 
           label(foundL, Seq(nir.Val.Local(fresh(), nir.Type.Ptr), nir.Val.Local(fresh(), nir.Type.Int)))
           jump(resultL, Seq(nir.Val.True))

@@ -39,9 +39,14 @@ private[scalanative] class Metadata(
   initClassMetadata()
 
   // Traits some class does not store in the itable slot where their lookup
-  // starts. Computed before lowering, which reads it from several threads.
-  private val displacedTraits: Set[Trait] =
-    itable.valuesIterator.flatMap(_.displaced).toSet
+  // starts, with the largest number of slots between. Computed before
+  // lowering, which reads it from several threads.
+  private val displacedTraits: Map[Trait, Int] =
+    itable.valuesIterator
+      .flatMap(_.displaced)
+      .toSeq
+      .groupBy(_._1)
+      .map { case (trt, all) => trt -> all.map(_._2).max }
   // Traits implemented by some class whose itable shifts the trait keys
   private val shiftedTraits: Set[Trait] =
     classes.iterator
@@ -78,6 +83,12 @@ private[scalanative] class Metadata(
    *  used by generated code and recorded in the trait's RTTI flags.
    */
   def alwaysAtHomeSlot(trt: Trait): Boolean = !displacedTraits.contains(trt)
+
+  /** Largest number of slots, in any class of the program, between the slot
+   *  where the lookup of `trt` starts and the one holding it. A whole-program
+   *  fact used by generated code.
+   */
+  def maxDisplacement(trt: Trait): Int = displacedTraits.getOrElse(trt, 0)
 
   /** No class of the program shifts the key of `trt` in its itable, so lookups
    *  start at key & mask. A whole-program fact used by generated code.

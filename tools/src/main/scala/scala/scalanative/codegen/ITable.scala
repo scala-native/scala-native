@@ -16,8 +16,9 @@ private[codegen] case class ITable(
     // Selects which bits of the trait keys index the table
     shift: Int,
     value: nir.Val,
-    // Traits not stored in the slot where their lookup starts
-    displaced: Seq[linker.Trait]
+    // Traits not stored in the slot where their lookup starts, with the
+    // number of slots between
+    displaced: Seq[(linker.Trait, Int)]
 )
 
 private[codegen] object ITable {
@@ -26,6 +27,11 @@ private[codegen] object ITable {
    *  placement in which every trait is found on the first probe.
    */
   private final val MaxGrowth = 4
+
+  /** Failing that, tables grow up to this factor to keep every trait in the
+   *  slot where its lookup starts or the next one, see Lower.genItableProbe.
+   */
+  private final val MaxBoundedGrowth = 64
 
   /** java.lang.Class reads the low KeyBits bits of trait keys from RTTI flags,
    *  so shift + log2(size) must not exceed it.
@@ -73,11 +79,33 @@ private[codegen] object ITable {
         bits = Integer.numberOfTrailingZeros(size)
         shift <- Iterator.range(0, KeyBits - bits + 1)
       } yield (size, shift)
+      // Otherwise the smallest table and shift keeping every trait in the
+      // slot where its lookup starts or the next one
+      def maxDisplacement(size: Int, shift: Int): Int = {
+        val used = new Array[Boolean](size)
+        keys.foldLeft(0) { (max, key) =>
+          var pos = start(key, size, shift)
+          var distance = 0
+          while (used(pos)) { pos = (pos + 1) & (size - 1); distance += 1 }
+          used(pos) = true
+          max.max(distance)
+        }
+      }
+      def bounded = for {
+        size <- Iterator
+          .iterate(minSize)(_ * 2)
+          .takeWhile(_ <= minSize * MaxBoundedGrowth)
+        bits = Integer.numberOfTrailingZeros(size)
+        shift <- Iterator.range(0, KeyBits - bits + 1)
+      } yield (size, shift)
       val (size, shift) =
         candidates
           .find { case (size, shift) => collisionFree(size, shift) }
+          .orElse(bounded.find {
+            case (size, shift) => maxDisplacement(size, shift) <= 1
+          })
           .getOrElse((minSize, 0))
-      val (slots, inStartSlot) = OpenAddressing.place(size, emptyEntry)(
+      val (slots, displacement) = OpenAddressing.place(size, emptyEntry)(
         traits.zip(keys).map {
           case (trt, key) =>
             start(key, size, shift) -> nir.Val.StructValue(
@@ -89,7 +117,7 @@ private[codegen] object ITable {
         mask = size - 1,
         shift,
         nir.Val.Const(nir.Val.ArrayValue(meta.layouts.ITable.layout, slots)),
-        traits.zip(inStartSlot).collect { case (trt, false) => trt }
+        traits.zip(displacement).filter(_._2 != 0)
       )
     }
   }
