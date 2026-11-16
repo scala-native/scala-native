@@ -29,6 +29,11 @@ object TypeTestsTest {
   class D10 extends D9
   class D11 extends D10
   class D12 extends D11
+  class D13 extends D12
+  class D14 extends D13
+  class D15 extends D14
+  class D16 extends D15
+  class D17 extends D16
   final class Sibling extends D4
 
   def chain: Array[D0] = Array(
@@ -44,7 +49,12 @@ object TypeTestsTest {
     new D9,
     new D10,
     new D11,
-    new D12
+    new D12,
+    new D13,
+    new D14,
+    new D15,
+    new D16,
+    new D17
   )
   def chainClasses: Array[Class[_]] = Array(
     classOf[D0],
@@ -59,7 +69,12 @@ object TypeTestsTest {
     classOf[D9],
     classOf[D10],
     classOf[D11],
-    classOf[D12]
+    classOf[D12],
+    classOf[D13],
+    classOf[D14],
+    classOf[D15],
+    classOf[D16],
+    classOf[D17]
   )
 
   trait M0 { def m0: Int = 0 }
@@ -304,6 +319,11 @@ class TypeTestsTest {
       assertEquals(s"D9 at $depth", depth >= 9, obj.isInstanceOf[D9])
       assertEquals(s"D11 at $depth", depth >= 11, obj.isInstanceOf[D11])
       assertEquals(s"D12 at $depth", depth >= 12, obj.isInstanceOf[D12])
+      // The lineage continues in a second chunk from D7, in a third from D15
+      assertEquals(s"D14 at $depth", depth >= 14, obj.isInstanceOf[D14])
+      assertEquals(s"D15 at $depth", depth >= 15, obj.isInstanceOf[D15])
+      assertEquals(s"D16 at $depth", depth >= 16, obj.isInstanceOf[D16])
+      assertEquals(s"D17 at $depth", depth >= 17, obj.isInstanceOf[D17])
       assertFalse(obj.isInstanceOf[Sibling])
     }
     val sibling: D0 = new Sibling
@@ -326,6 +346,8 @@ class TypeTestsTest {
     assertSame(objs(12), objs(12).asInstanceOf[D9])
     assertSame(objs(12), objs(12).asInstanceOf[Base3])
     assertThrows(classOf[ClassCastException], objs(8).asInstanceOf[D9])
+    assertSame(objs(17), objs(17).asInstanceOf[D16])
+    assertThrows(classOf[ClassCastException], objs(14).asInstanceOf[D15])
     assertThrows(classOf[ClassCastException], objs(2).asInstanceOf[Base2])
   }
 
@@ -350,6 +372,9 @@ class TypeTestsTest {
     assertFalse(classOf[NeverImplemented].isAssignableFrom(classOf[D12]))
     assertTrue(classOf[Base0].isInterface())
     assertFalse(classOf[D12].isInterface())
+    assertSame(classOf[D16], classOf[D17].getSuperclass())
+    assertSame(classOf[D15], classOf[D16].getSuperclass())
+    assertSame(classOf[D14], classOf[D15].getSuperclass())
     assertSame(classOf[D11], classOf[D12].getSuperclass())
     assertSame(classOf[D7], classOf[D8].getSuperclass())
     assertSame(classOf[D0], classOf[D1].getSuperclass())

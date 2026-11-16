@@ -48,7 +48,6 @@ private[scalanative] object Rt {
     ClassName.member(Sig.Field("itablesMask")),
     ClassName.member(Sig.Field("itablesShift")),
     ClassName.member(Sig.Field("itables")),
-    ClassName.member(Sig.Field("deepLineage")),
     ClassName.member(Sig.Field("lineage"))
   )
 

@@ -36,11 +36,10 @@ private[runtime] final class _Class[A] {
   var itablesMask: Int = _
   var itablesShift: Int = _
   var itables: RawPtr = _ // Ptr[{trait: _Class[_], vtable: Ptr[_]}]
-  // Classes with LineageSize or more superclasses: all superclasses from the
-  // root, then the class itself; null otherwise
-  var deepLineage: RawPtr = _
-  // First entry of the inline lineage: superclasses from the root, then the
-  // class itself, see codegen.RuntimeTypeInformation
+  // First entry of the lineage: superclasses from the root, then the class
+  // itself, in chunks of LineageSize entries followed by a pointer to the
+  // next chunk, see codegen.RuntimeTypeInformation. Has to stay the last
+  // field: the first chunk is stored here.
   var lineage: RawPtr = _
 
   def cast(obj: Object): A =
@@ -277,10 +276,7 @@ private[runtime] object _Class {
       rightCount: Int
   ): Boolean = {
     val left = Intrinsics.castRawPtrToObject(cls).asInstanceOf[_Class[_]]
-    left.superclassCount >= rightCount && (ancestorAt(
-      left,
-      rightCount
-    ) eq right)
+    ancestorAt(left, rightCount) eq right
   }
 
   @noinline private[runtime] def interfaceIs(
@@ -289,26 +285,24 @@ private[runtime] object _Class {
   ): Boolean =
     (left eq right) || (right.isInterface() && checkHasTrait(left, right))
 
-  @alwaysinline private def inlineAncestor(
-      cls: _Class[_],
-      depth: Int
-  ): _Class[_] =
-    Intrinsics
-      .loadObject(
-        Intrinsics.elemRawPtr(
-          Intrinsics.classFieldRawPtr(cls, "lineage"),
-          PtrSize * depth
-        )
+  /* The superclass of class `cls` with `depth` superclasses, `cls` itself
+   * for its own count, null for a larger one. Past the chunk stored in the
+   * class, the last slot of each chunk points to the next one.
+   */
+  private[runtime] def ancestorAt(cls: _Class[_], depth: Int): _Class[_] = {
+    var chunk = Intrinsics.classFieldRawPtr(cls, "lineage")
+    var index = depth
+    while (index >= LineageSize) {
+      chunk = Intrinsics.loadRawPtr(
+        Intrinsics.elemRawPtr(chunk, PtrSize * LineageSize)
       )
+      if (Intrinsics.castRawPtrToLong(chunk) == 0L) return null
+      index -= LineageSize
+    }
+    Intrinsics
+      .loadObject(Intrinsics.elemRawPtr(chunk, PtrSize * index))
       .asInstanceOf[_Class[_]]
-
-  // The superclass of class `cls` with `depth` <= superclassCount(cls)
-  private[runtime] def ancestorAt(cls: _Class[_], depth: Int): _Class[_] =
-    if (cls.superclassCount < LineageSize) inlineAncestor(cls, depth)
-    else
-      Intrinsics
-        .loadObject(Intrinsics.elemRawPtr(cls.deepLineage, PtrSize * depth))
-        .asInstanceOf[_Class[_]]
+  }
 
   /* Continues the lookup of `trt` in the itable of class `left` after slot
    * `start`, which holds another trait, see codegen.ITable: linear probing

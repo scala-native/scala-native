@@ -32,8 +32,7 @@ Fields of classes only:
 | `itableMask`      | `int`         | itable size minus one                             |
 | `itableShift`     | `int`         | selects the trait key bits that index the itable  |
 | `itables`         | pointer       | itable entries, see below                         |
-| `deepLineage`     | pointer       | classes with 8 or more superclasses: all of them  |
-| `lineage`         | pointer[8]    | superclasses from the root, the class, then nulls |
+| `lineage`         | pointer[9]    | superclasses from the root, the class, then nulls; last: next chunk |
 | `vtable`          | pointer[]     | virtual method table                              |
 
 The layout is defined by `codegen.CommonMemoryLayouts` and mirrored by
@@ -95,12 +94,15 @@ obj->rtti->lineage[superclassCount(C)] == &C$G4type
 ```
 
 `superclassCount(C)` and the address of `C`'s RTTI are compile-time constants.
-Classes with 8 or more superclasses also point to their whole lineage from
-`deepLineage`, null for other classes. Tests against such deep classes check
-that the class of the object has at least `superclassCount(C)` superclasses,
-so that it is deep too, and compare `deepLineage[superclassCount(C)]`.
-`getSuperclass` reads the lineage as well. Tests against a class without subclasses compare the RTTI
-pointer directly. The technique is known as a Cohen display.
+Tests against a class without subclasses compare the RTTI pointer directly. The
+technique is known as a Cohen display.
+
+The ninth slot of `lineage` continues the lineage of classes with 8 or more
+superclasses: it points to a chunk of the same shape, 8 entries padded with
+nulls and a pointer to the next chunk, and is null for other classes. A test
+against such a deep class follows `superclassCount(C) / 8` of these pointers,
+answering false at a null one, and compares entry `superclassCount(C) % 8` of
+the chunk it reaches. `getSuperclass` reads the lineage the same way.
 
 ## Traits
 

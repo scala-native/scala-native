@@ -92,12 +92,12 @@ typedef struct Rtti {
     int32_t itableMask;  // itable size - 1, size is a power of two
     int32_t itableShift; // lookups start at (key >> shift) & mask
     ITableEntry *itable; // ITableEntry[itableMask + 1]
-    // Classes with SCALANATIVE_RTTI_LINEAGE_SIZE or more superclasses: all
-    // superclasses from the root, then the class itself; NULL otherwise
-    struct Rtti **deepLineage;
     // Superclasses from the root, then the class itself, then NULLs:
     // lineage[superclassCount] is the class itself
     struct Rtti *lineage[SCALANATIVE_RTTI_LINEAGE_SIZE];
+    // Classes with more superclasses: the next entries of the lineage, laid
+    // out like `lineage` and this link; NULL otherwise
+    void **nextLineage;
 } Rtti;
 
 typedef word_t *Field_t;

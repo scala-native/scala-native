@@ -96,7 +96,6 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
             nir.Val.Int(itable.mask) ::
             nir.Val.Int(itable.shift) ::
             itable.value ::
-            deepLineage(cls) ::
             lineage(cls) ::
             meta.vtable(cls).value ::
             Nil
@@ -122,33 +121,24 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
             .getOrElse(nir.Val.Null)
       }
 
-  /* Classes with more superclasses than the inline lineage holds point to
-   * all of them, from the root, then the class itself: tests against such
-   * deep classes read it at index superclassCount(C).
-   */
-  private def deepLineage(cls: Class): nir.Val =
-    if (meta.superclassCount(cls) < CommonMemoryLayouts.LineageSize)
-      nir.Val.Null
-    else
-      nir.Val.Const(
-        nir.Val.ArrayValue(
-          nir.Type.Ptr,
-          meta.lineage(cls).map(meta.rtti(_).const)
-        )
-      )
-
-  /* Superclasses from the root, then the class itself, padded with nulls.
-   * lineage(C)(superclassCount(C)) is C, so an object is an instance of C
-   * exactly when lineage(superclassCount(C)) of its class is C.
+  /* Superclasses from the root, then the class itself, in chunks of
+   * LineageSize entries padded with nulls. The last slot of a chunk points
+   * to the next one, null after the last. lineage(C)(superclassCount(C)) is
+   * C, so an object is an instance of C exactly when entry superclassCount(C)
+   * of its class is C; the first chunk is stored in the RTTI.
    */
   private def lineage(cls: Class): nir.Val = {
-    val rootFirst = meta.lineage(cls).map(meta.rtti(_).const)
-    nir.Val.ArrayValue(
-      nir.Type.Ptr,
-      rootFirst
-        .take(CommonMemoryLayouts.LineageSize)
-        .padTo(CommonMemoryLayouts.LineageSize, nir.Val.Null)
-    )
+    val size = CommonMemoryLayouts.LineageSize
+    def chunk(rest: Seq[nir.Val]): nir.Val.ArrayValue = {
+      val next =
+        if (rest.size <= size) nir.Val.Null
+        else nir.Val.Const(chunk(rest.drop(size)))
+      nir.Val.ArrayValue(
+        nir.Type.Ptr,
+        rest.take(size).padTo(size, nir.Val.Null) :+ next
+      )
+    }
+    chunk(meta.lineage(cls).map(meta.rtti(_).const))
   }
 }
 
