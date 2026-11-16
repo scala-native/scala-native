@@ -82,6 +82,15 @@ class StringTestOnJDK16 {
     assertEquals(0, cmp.compare(DeseretUpperI, DeseretLowerI))
     assertEquals(0, cmp.compare(WarangCitiRestUpper, WarangCitiFirstLower))
     assertTrue(cmp.compare(DeseretLowerI, DeseretUpperE) < 0)
+
+    // pairs are formed up to the end of each string, keeping it transitive
+    val a = DeseretUpperI
+    val b = "ﬀ"
+    val c = "ﬀa"
+    assertEquals(0x10428 - 0xfb00, cmp.compare(a, b))
+    assertEquals(-1, cmp.compare(b, c))
+    assertEquals(0x10428 - 0xfb00, cmp.compare(a, c))
+    assertEquals(0xfb00 - 0x10428, cmp.compare(b, a))
   }
 
   @Test def regionMatchesIgnoreCaseSupplementary(): Unit = {

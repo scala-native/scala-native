@@ -225,7 +225,14 @@ final class _String()
   }
 
   def compareToIgnoreCase(str: _String): Int = {
-    val cmp = compareRegionIgnoreCase(0, str, 0, Math.min(count, str.count))
+    val cmp = compareRegionIgnoreCase(
+      0,
+      count,
+      str,
+      0,
+      str.count,
+      Math.min(count, str.count)
+    )
     if (cmp != 0) cmp
     else count - str.count
   }
@@ -286,20 +293,23 @@ final class _String()
   def equalsIgnoreCase(anotherString: String): scala.Boolean = {
     val len = length()
     anotherString != null && anotherString.length() == len &&
-      compareRegionIgnoreCase(0, anotherString, 0, len) == 0
+      compareRegionIgnoreCase(0, len, anotherString, 0, len, len) == 0
   }
 
   /** Compares `len` chars of this string starting at `thisStart` with `that`
    *  starting at `thatStart`, ignoring case differences by code point (JDK
-   *  16+). Surrogate pairs are only formed within the compared regions.
+   *  16+). Surrogate pairs are formed only after the start of each region and
+   *  before `thisLimit` and `thatLimit` chars from it, respectively.
    *
    *  Returns the difference of the first pair of case folded code points that
    *  differ, or 0 if the regions are equal ignoring case.
    */
   private def compareRegionIgnoreCase(
       thisStart: Int,
+      thisLimit: Int,
       that: _String,
       thatStart: Int,
+      thatLimit: Int,
       len: Int
   ): Int = {
     val v1 = this.value
@@ -315,8 +325,9 @@ final class _String()
           val cmp = caseFold(c1) - caseFold(c2)
           if (cmp != 0) return cmp
         } else {
-          val cp1 = codePointInRegion(v1, o1, i, len)
-          val cmp = caseFold(cp1) - caseFold(codePointInRegion(v2, o2, i, len))
+          val cp1 = codePointInRegion(v1, o1, i, thisLimit)
+          val cp2 = codePointInRegion(v2, o2, i, thatLimit)
+          val cmp = caseFold(cp1) - caseFold(cp2)
           if (cmp != 0) return cmp
           if (Character.isHighSurrogate(c1) && cp1 > Character.MAX_VALUE)
             i += 1
@@ -327,17 +338,17 @@ final class _String()
     0
   }
 
-  /** Code point containing the char at `i` of the region `[0, len)` starting at
-   *  `offset` in `chars`.
+  /** Code point containing the char at `i` of the region `[0, limit)` starting
+   *  at `offset` in `chars`.
    */
   private def codePointInRegion(
       chars: Array[Char],
       offset: Int,
       i: Int,
-      len: Int
+      limit: Int
   ): Int = {
     val c = chars(offset + i)
-    if (Character.isHighSurrogate(c) && i + 1 < len) {
+    if (Character.isHighSurrogate(c) && i + 1 < limit) {
       val next = chars(offset + i + 1)
       if (Character.isLowSurrogate(next)) Character.toCodePoint(c, next)
       else c
@@ -845,7 +856,7 @@ final class _String()
     } else if (len <= 0) {
       true
     } else if (ignoreCase) {
-      compareRegionIgnoreCase(toffset, other, ooffset, len) == 0
+      compareRegionIgnoreCase(toffset, len, other, ooffset, len, len) == 0
     } else {
       /* Avoid actually instantiating substrings.
        *
