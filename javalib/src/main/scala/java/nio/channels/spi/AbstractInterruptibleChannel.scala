@@ -6,7 +6,7 @@ abstract class AbstractInterruptibleChannel protected ()
     extends Channel
     with InterruptibleChannel {
 
-  private var closed: Boolean = false
+  @volatile private var closed: Boolean = false
 
   protected final def begin(): Unit =
     ()
