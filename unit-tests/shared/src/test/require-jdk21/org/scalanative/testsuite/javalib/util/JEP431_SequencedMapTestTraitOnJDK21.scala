@@ -261,20 +261,67 @@ trait JEP431_SequencedMapTestTraitOnJDK21 {
 // ---------------------------------------------------------------------------
 
   /* Tests for sequencedEntrySet(), sequencedKeySet(), and sequencedValues()
-   * Rely upon the JEP 431 assurance that an iterator on the result of
-   * a call to one of entrySet(), keySet(), or values() for a
-   * SequencedMap will have the same order as the corresponding
-   * sequenced method
+   * are minimal. They test only expected size, contents, order, and
+   * spliterator characteristics.
    *
-   * Spooky action, but documented.
-   */
-
-  /* Tests for sequencedEntrySet(), sequencedKeySet(), and sequencedValues()
-   * are minimal. They test only expected size, contents, and order.
    * The JDK 27 documentation for 'sequenced*()' describes some
    * pretty strict requirements. Eventually each of those requirements should
    * have a test clause.
    */
+
+  @Test def sequencedEntrySet_emptyMap(): Unit = {
+    val seqMap = sequencedMapFactory[String, Int]()
+
+    val seqEntrySet = seqMap.sequencedEntrySet()
+
+    assertEquals(
+      s"${classUnderTest}#sequencedEntrySet size()",
+      0,
+      seqEntrySet.size()
+    )
+
+    assertThrows(
+      "getFirst",
+      classOf[NoSuchElementException],
+      seqEntrySet.getFirst()
+    )
+
+    assertThrows(
+      "getLast",
+      classOf[NoSuchElementException],
+      seqEntrySet.getLast()
+    )
+
+    assertThrows(
+      "removeFirst",
+      classOf[NoSuchElementException],
+      seqEntrySet.removeFirst()
+    )
+
+    assertThrows(
+      "removeLast",
+      classOf[NoSuchElementException],
+      seqEntrySet.removeLast()
+    )
+  }
+
+  @Test def sequencedEntrySet_SpliteratorHasOrderedCharacteristic(): Unit = {
+    val seqMap = sequencedMapFactory[String, Int]()
+    populateStringIntMap(seqMap)
+
+    val seqEntrySet = seqMap.sequencedEntrySet()
+
+    // Really only need to check ORDERED 0x00000010 but might as well check all
+
+    val expectedCharacteristics = 0x4051 // Decimal 16465
+    val characteristics = seqEntrySet.spliterator().characteristics()
+
+    assertEquals(
+      s"${classUnderTest}#sequencedEntrySet spliterator characteristics",
+      expectedCharacteristics,
+      characteristics
+    )
+  }
 
   @Test def sequencedEntrySet(): Unit = {
     val seqMap = sequencedMapFactory[String, Int]()
@@ -302,30 +349,53 @@ trait JEP431_SequencedMapTestTraitOnJDK21 {
   @Test def sequencedKeySet_emptyMap(): Unit = {
     val seqMap = sequencedMapFactory[String, Int]()
 
-    val ks = seqMap.sequencedKeySet()
+    val seqKeySet = seqMap.sequencedKeySet()
+
+    assertEquals(
+      s"${classUnderTest}#sequencedKeySet size()",
+      0,
+      seqKeySet.size()
+    )
 
     assertThrows(
       "getFirst",
       classOf[NoSuchElementException],
-      ks.getFirst()
+      seqKeySet.getFirst()
     )
 
     assertThrows(
       "getLast",
       classOf[NoSuchElementException],
-      ks.getLast()
+      seqKeySet.getLast()
     )
 
     assertThrows(
       "removeFirst",
       classOf[NoSuchElementException],
-      ks.removeFirst()
+      seqKeySet.removeFirst()
     )
 
     assertThrows(
-      "getFirst",
+      "removeLast",
       classOf[NoSuchElementException],
-      ks.removeLast()
+      seqKeySet.removeLast()
+    )
+  }
+
+  @Test def sequencedKeySet_SpliteratorHasOrderedCharacteristic(): Unit = {
+    val seqMap = sequencedMapFactory[String, Int]()
+    populateStringIntMap(seqMap)
+
+    val seqKeySet = seqMap.sequencedKeySet()
+
+    // Really only need to check ORDERED 0x00000010 but might as well check all
+    val expectedCharacteristics = 0x4051 // Decimal 16465
+    val characteristics = seqKeySet.spliterator().characteristics()
+
+    assertEquals(
+      s"${classUnderTest}#sequencedValues spliterator characteristics",
+      expectedCharacteristics,
+      characteristics
     )
   }
 
@@ -355,30 +425,53 @@ trait JEP431_SequencedMapTestTraitOnJDK21 {
   @Test def sequencedValues_emptyMap(): Unit = {
     val seqMap = sequencedMapFactory[String, Int]()
 
-    val vc = seqMap.sequencedValues()
+    val seqValues = seqMap.sequencedValues()
+
+    assertEquals(
+      s"${classUnderTest}#sequencedValues size()",
+      0,
+      seqValues.size()
+    )
 
     assertThrows(
       "getFirst",
       classOf[NoSuchElementException],
-      vc.getFirst()
+      seqValues.getFirst()
     )
 
     assertThrows(
       "getLast",
       classOf[NoSuchElementException],
-      vc.getLast()
+      seqValues.getLast()
     )
 
     assertThrows(
       "removeFirst",
       classOf[NoSuchElementException],
-      vc.removeFirst()
+      seqValues.removeFirst()
     )
 
     assertThrows(
-      "getFirst",
+      "removeLast",
       classOf[NoSuchElementException],
-      vc.removeLast()
+      seqValues.removeLast()
+    )
+  }
+
+  @Test def sequencedValues_SpliteratorHasOrderedCharacteristic(): Unit = {
+    val seqMap = sequencedMapFactory[String, Int]()
+    populateStringIntMap(seqMap)
+
+    val seqValues = seqMap.sequencedValues()
+
+    // Really only need to check ORDERED 0x00000010 but might as well check all
+    val expectedCharacteristics = 0x4050 // Decimal 16464
+    val characteristics = seqValues.spliterator().characteristics()
+
+    assertEquals(
+      s"${classUnderTest}#sequencedValues spliterator characteristics",
+      expectedCharacteristics,
+      characteristics
     )
   }
 

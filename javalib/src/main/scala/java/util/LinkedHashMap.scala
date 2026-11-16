@@ -278,9 +278,8 @@ class LinkedHashMap[K, V](
 
   override def firstEntry(): Map.Entry[K, V] = {
     // JVM firstEntry() using accessOrder does not cause 'nodeWasAccessed()'
-    val entry = eldest
-    if (entry == null) null
-    else SequencedMap.CopyOfEntry(entry)
+    if (this.isEmpty()) null
+    else SequencedMap.CopyOfEntry(eldest)
   }
 
   override def lastEntry(): Map.Entry[K, V] = {
