@@ -1048,7 +1048,11 @@ class Collection8Test extends JSR166Test {
               }
             }))
           }
-          threadsStarted.arriveAndDeregister()
+          threadsStarted.awaitAdvanceInterruptibly(
+            threadsStarted.arrive(),
+            LONG_DELAY_MS,
+            TimeUnit.MILLISECONDS
+          )
           Thread.sleep(timeoutMillis())
         } finally {
           done.set(true)
