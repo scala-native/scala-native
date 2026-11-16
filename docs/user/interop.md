@@ -188,6 +188,44 @@ myprintf(c"2 + 3 = %d, 4 + 5 = %d", 2 + 3, 4 + 5)
 printf(c"2 + 3 = %d, 4 + 5 = %d", 2 + 3, 4 + 5)
 ```
 
+### Extern variables
+
+Global variables defined in native code can be bound using `var`
+definitions inside an extern object:
+
+``` C
+int counter = 0;
+const char *greeting = "hello";
+const char message[11] = "fourty-two";
+int values[4] = {1, 2, 3, 4};
+struct point { int x; long long y; } origin = {0, 0};
+```
+
+``` scala
+import scala.scalanative.unsafe._
+
+@extern
+object globals {
+  var counter: CInt = extern
+  var greeting: CString = extern
+  var message: CArray[CChar, Nat.Digit2[Nat._1, Nat._1]] = extern
+  var values: CArray[CInt, Nat._4] = extern
+  var origin: CStruct2[CInt, CLongLong] = extern
+}
+```
+
+Reading a variable of a primitive, pointer or function pointer type
+loads its current value, and assigning to it stores a new value.
+
+Variables of `CArray` and `CStructN` types are bound to the native
+object itself: reading them gives a `CArray` or `CStructN` that points
+to the global's memory, without copying it. Modify such globals through
+their elements or fields, e.g. `globals.values(0) = 42` or
+`globals.origin._1 = 1`. Assigning a new value to the variable itself
+is a compilation error.
+
+The `CArray` length should match the size of the native array.
+
 (exported_methods)=
 ## Exported methods
 
