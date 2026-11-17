@@ -53,13 +53,12 @@ class PatternTest {
     pass("\\a", "\u0007") // alert (bell)
   }
 
-  @Ignore("not supported")
   @Test def characterClasses2(): Unit = {
     pass("\\0100", "\u0040") // 100 octal = 40 hex
     pass("\\xFF", "\u00FF")
     pass("\\uBEEF", "\uBEEF")
     pass("\\e", "\u001B") // escape
-    // control char \cx
+    pass("\\cZ", "\u001A") // control char
   }
 
   @Test def characterClasses(): Unit = {

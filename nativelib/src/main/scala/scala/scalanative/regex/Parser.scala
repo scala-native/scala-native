@@ -1779,19 +1779,16 @@ object Parser {
           }
           r
         }
-      // Consume up to three octal digits already have one.
+      // Java octal escape: \0n, \0nn or \0mnn with m in 0-3.
       case '0' =>
-        var r = c - '0'
-        var i = 1
-        var breakInner = false
-        while (i < 3 && !breakInner) {
-          if (!t.more() || t.peek() < '0' || t.peek() > '7') {
-            breakInner = true
-          } else {
-            r = r * 8 + t.peek() - '0'
-            t.skip(1) // digit
-            i += 1
-          }
+        def isOctal: Boolean = t.more() && t.peek() >= '0' && t.peek() <= '7'
+        if (!isOctal) invalidEscape
+        val maxDigits = if (t.peek() <= '3') 3 else 2
+        var r = 0
+        var i = 0
+        while (i < maxDigits && isOctal) {
+          r = r * 8 + t.pop() - '0'
+          i += 1
         }
         r
 
@@ -1836,13 +1833,37 @@ object Parser {
         } else {
           // Easy case: two hex digits.
           val x = Utils.unhex(c)
-          c = t.pop()
-          val y = Utils.unhex(c)
-          if (x < 0 || y < 0) {
+          if (x < 0 || !t.more()) {
+            invalidEscape
+          }
+          val y = Utils.unhex(t.pop())
+          if (y < 0) {
             invalidEscape
           }
           x * 16 + y
         }
+
+      // Java UTF-16 escape, a surrogate pair may be given as two escapes.
+      case 'u' =>
+        val r = parseUtf16Escape(t)
+        if (Character.isHighSurrogate(r.toChar) && t.lookingAt("\\u")) {
+          val savedPos = t.pos()
+          t.skip(2)
+          val low = parseUtf16Escape(t)
+          if (Character.isLowSurrogate(low.toChar))
+            Character.toCodePoint(r.toChar, low.toChar)
+          else {
+            t.rewindTo(savedPos)
+            r
+          }
+        } else r
+
+      // Java control character escape.
+      case 'c' =>
+        if (!t.more()) {
+          invalidEscape
+        }
+        t.pop() ^ 64
 
       // C escapes.  There is no case 'b', to avoid misparsing
       // the Perl word-boundary \b as the C backspace \b
@@ -1851,7 +1872,9 @@ object Parser {
       // If you want a backspace, embed a literal backspace
       // character or use \x08.
       case 'a' =>
-        7 // No \a in Java
+        7
+      case 'e' =>
+        0x1b
       case 'f' =>
         '\f'
       case 'n' =>
@@ -1875,6 +1898,25 @@ object Parser {
           invalidEscape
         }
     }
+  }
+
+  // Parses the four hex digits of a UTF-16 escape, t is after the u.
+  private def parseUtf16Escape(t: StringIterator): Int = {
+    var r = 0
+    var i = 0
+    while (i < 4) {
+      val v = if (t.more()) Utils.unhex(t.pop()) else -1
+      if (v < 0) {
+        throw new PatternSyntaxException(
+          ERR_INVALID_ESCAPE,
+          t.str,
+          t.pos() - 1
+        )
+      }
+      r = r * 16 + v
+      i += 1
+    }
+    r
   }
 
   // parseClassChar parses a character class character and returns it.
