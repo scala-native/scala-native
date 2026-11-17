@@ -395,7 +395,7 @@ class DoubleTest {
     val x = 0.0
     assertTrue("Negated value is equal to zero", 0.0 == -0.0)
     assertFalse("Can distinguish negated zero", 0.0.equals(-0.0))
-    assertTrue("negate zero", -0.0.equals(-x))
+    assertTrue("negate zero", (-0.0).equals(-x))
     assertTrue("negate minus zero", 0.0.equals(-(-x)))
 
     assertEquals(

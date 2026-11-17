@@ -421,7 +421,7 @@ class FloatTest {
     val x = 0.0f
     assertTrue("Negated value is equal to zero", 0.0f == -0.0f)
     assertFalse("Can distinguish negated zero", 0.0f.equals(-0.0f))
-    assertTrue("negate zero", -0.0f.equals(-x))
+    assertTrue("negate zero", (-0.0f).equals(-x))
     assertTrue("negate minus zero", 0.0f.equals(-(-x)))
 
     assertEquals(

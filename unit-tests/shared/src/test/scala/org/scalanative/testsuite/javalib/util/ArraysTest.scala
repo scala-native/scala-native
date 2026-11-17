@@ -207,7 +207,7 @@ class ArraysTest {
     Arrays.fill(bytes, 42.toByte)
     assertArrayEquals(Array[Byte](42, 42, 42, 42, 42, 42), bytes)
 
-    Arrays.fill(bytes, -1.toByte)
+    Arrays.fill(bytes, (-1).toByte)
     assertArrayEquals(Array[Byte](-1, -1, -1, -1, -1, -1), bytes)
   }
 
@@ -216,7 +216,7 @@ class ArraysTest {
     Arrays.fill(bytes, 1, 4, 42.toByte)
     assertArrayEquals(Array[Byte](0, 42, 42, 42, 0, 0), bytes)
 
-    Arrays.fill(bytes, 2, 5, -1.toByte)
+    Arrays.fill(bytes, 2, 5, (-1).toByte)
     assertArrayEquals(Array[Byte](0, 42, -1, -1, -1, 0), bytes)
   }
 
@@ -225,7 +225,7 @@ class ArraysTest {
     Arrays.fill(shorts, 42.toShort)
     assertArrayEquals(Array[Short](42, 42, 42, 42, 42, 42), shorts)
 
-    Arrays.fill(shorts, -1.toShort)
+    Arrays.fill(shorts, (-1).toShort)
     assertArrayEquals(Array[Short](-1, -1, -1, -1, -1, -1), shorts)
   }
 
@@ -234,7 +234,7 @@ class ArraysTest {
     Arrays.fill(shorts, 1, 4, 42.toShort)
     assertArrayEquals(Array[Short](0, 42, 42, 42, 0, 0), shorts)
 
-    Arrays.fill(shorts, 2, 5, -1.toShort)
+    Arrays.fill(shorts, 2, 5, (-1).toShort)
     assertArrayEquals(Array[Short](0, 42, -1, -1, -1, 0), shorts)
   }
 

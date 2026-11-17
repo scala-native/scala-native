@@ -241,7 +241,7 @@ class StringTestOnJDK15 {
     assertEquals("fffffffd", "%x".formatted(new Integer(-3)))
 
     // See note in String.scala about SN & JVM "fc" vs Scala.js "fffffffc"
-    assertEquals("fc", "%x".formatted(new java.lang.Byte(-4.toByte)))
+    assertEquals("fc", "%x".formatted(new java.lang.Byte((-4).toByte)))
   }
 
 }

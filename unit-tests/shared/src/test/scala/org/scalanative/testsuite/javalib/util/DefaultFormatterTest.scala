@@ -1016,7 +1016,7 @@ class DefaultFormatterTest {
       val f = new Formatter()
       assertThrows(
         classOf[IllegalFormatCodePointException],
-        f.format("%c", -0x0001.toByte.asInstanceOf[Object])
+        f.format("%c", (-0x0001).toByte.asInstanceOf[Object])
       )
     }
 
@@ -1024,7 +1024,7 @@ class DefaultFormatterTest {
       val f = new Formatter()
       assertThrows(
         classOf[IllegalFormatCodePointException],
-        f.format("%c", -0x0001.toShort.asInstanceOf[Object])
+        f.format("%c", (-0x0001).toShort.asInstanceOf[Object])
       )
     }
 
@@ -1032,7 +1032,7 @@ class DefaultFormatterTest {
       val f = new Formatter()
       assertThrows(
         classOf[IllegalFormatCodePointException],
-        f.format("%c", -0x0001.asInstanceOf[Object])
+        f.format("%c", (-0x0001).asInstanceOf[Object])
       )
     }
   }
