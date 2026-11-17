@@ -178,14 +178,27 @@ object Base64 {
       iterate()
 
       // end or padding
+      val padded = src.position > 0 && src.array(src.position - 1) == '='
+      if (padded) {
+        val units = srcBuffer.position
+        val validPadding = units match {
+          case 0 => false
+          case 2 => src.hasRemaining && src.get() == '='
+          case _ => true
+        }
+        if (!validPadding)
+          throw new IllegalArgumentException(
+            "Input byte array has wrong 4-byte ending unit"
+          )
+      }
       srcBuffer.flip()
       inputData()
       while (src.hasRemaining) {
-        val int = src.get() & 0xff
-        val value = table(int)
-        if (value != -2 && (!ignoreInvalid || value > 0)) {
+        val pos = src.position
+        val value = table(src.get() & 0xff)
+        if (!ignoreInvalid || value >= 0) {
           throw new IllegalArgumentException(
-            s"Input byte array has incorrect ending byte at $int"
+            s"Input byte array has incorrect ending byte at $pos"
           )
         }
       }
@@ -342,8 +355,13 @@ object Base64 {
         eof = true
         val s = shift
         if (s == DecodeState18 || s == DecodeState12 ||
-            (s == DecodeState14 && in.read() != '=' && !ignoreInvalid)) {
-          throw new IOException("Illegal base64 ending sequence")
+            (s == DecodeState14 && in.read() != '=')) {
+          val bits = s match {
+            case DecodeState18 => 24
+            case DecodeState12 => 18
+            case _             => 12
+          }
+          throw new IOException("Illegal base64 ending sequence:" + bits)
         }
         writeValue(Int.MaxValue)
       }
@@ -594,7 +612,11 @@ object Base64 {
    *
    *  This is modeled after `java.nio.ByteBuffer`, but is more lightweight.
    */
-  private class Wrapper(array: Array[Byte], var position: Int, var limit: Int) {
+  private class Wrapper(
+      val array: Array[Byte],
+      var position: Int,
+      var limit: Int
+  ) {
 
     def this(array: Array[Byte]) = this(array, 0, array.length)
 

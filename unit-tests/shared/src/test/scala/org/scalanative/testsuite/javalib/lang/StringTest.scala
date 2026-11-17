@@ -160,6 +160,11 @@ class StringTest {
     )
   }
 
+  @Test def codePointBeforeDoesNotLookBeforeSubstringStart(): Unit = {
+    val sub = "x\uD800\uDFFFd".substring(2)
+    assertEquals(0xdfff, sub.codePointBefore(1))
+  }
+
   @Test def codePointCountBeginIndexEndIndexWithInvalidBeginOrEndIndex()
       : Unit = {
     val data = "it becomes necessary"

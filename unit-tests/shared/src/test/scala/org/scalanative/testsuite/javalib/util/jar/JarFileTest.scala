@@ -8,9 +8,11 @@ import java.util.jar._
 import java.util.zip.ZipEntry
 
 import org.junit.Assert._
+import org.junit.Assume.assumeFalse
 import org.junit.{Ignore, Test}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.Platform.executingInJVMOnJDK8OrLower
 
 import JarBytes._
 
@@ -47,15 +49,13 @@ class JarFileTest {
   }
 
   @Test def entriesIterator(): Unit = {
-    var jarFile = getJAR1()
-    var enumeration = jarFile.entries()
-    jarFile.close()
-    assertThrows(classOf[IllegalStateException], enumeration.hasMoreElements())
-
-    jarFile = getJAR1()
-    enumeration = jarFile.entries()
+    val jarFile = getJAR1()
+    val enumeration = jarFile.entries()
     jarFile.close()
     assertThrows(classOf[IllegalStateException], enumeration.nextElement())
+    // JDK 8 also throws from hasMoreElements after close; JDK 17+ does not
+    assumeFalse(executingInJVMOnJDK8OrLower)
+    assertTrue(enumeration.hasMoreElements())
   }
 
   @Test def getEntryString(): Unit = {

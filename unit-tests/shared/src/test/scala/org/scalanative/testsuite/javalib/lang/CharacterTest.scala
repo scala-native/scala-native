@@ -36,7 +36,7 @@ class CharacterTest {
     )
 
     assertThrows(
-      classOf[java.lang.StringIndexOutOfBoundsException],
+      classOf[java.lang.ArrayIndexOutOfBoundsException],
       Character.codePointAt(arr1, -1)
     )
 
@@ -46,7 +46,7 @@ class CharacterTest {
     )
 
     assertThrows(
-      classOf[java.lang.StringIndexOutOfBoundsException],
+      classOf[java.lang.IndexOutOfBoundsException],
       Character.codePointAt(arr1, 2, arr1.length + 1)
     )
   }
@@ -194,7 +194,7 @@ class CharacterTest {
     )
 
     assertThrows(
-      classOf[java.lang.StringIndexOutOfBoundsException],
+      classOf[java.lang.ArrayIndexOutOfBoundsException],
       Character.codePointBefore(arr1, -1)
     )
 
@@ -204,7 +204,7 @@ class CharacterTest {
     )
 
     assertThrows(
-      classOf[java.lang.StringIndexOutOfBoundsException],
+      classOf[java.lang.ArrayIndexOutOfBoundsException],
       Character.codePointBefore(arr1, 0)
     )
 
@@ -213,6 +213,57 @@ class CharacterTest {
       Character.codePointBefore(str1, 0)
     )
 
+  }
+
+  @Test def codePointBeforeArrayCharWithStart(): Unit = {
+    val arr = "abc\uD800\uDFFFd".toCharArray
+
+    assertEquals(0x103ff, Character.codePointBefore(arr, 5, 0))
+    assertEquals(0x103ff, Character.codePointBefore(arr, 5, 3))
+    assertEquals(0xdfff, Character.codePointBefore(arr, 5, 4))
+    assertEquals('d'.toInt, Character.codePointBefore(arr, 6, 5))
+
+    for ((index, start) <- Seq((5, 5), (5, 6), (5, -1), (7, 0), (6, 6), (0, 0)))
+      assertThrows(
+        classOf[IndexOutOfBoundsException],
+        Character.codePointBefore(arr, index, start)
+      )
+  }
+
+  @Test def codePointAtArrayCharWithLimit(): Unit = {
+    val arr = "abc\uD800\uDFFFd".toCharArray
+
+    assertEquals(0x103ff, Character.codePointAt(arr, 3, 5))
+    assertEquals(0xd800, Character.codePointAt(arr, 3, 4))
+
+    for ((index, limit) <- Seq((-1, 6), (2, 2), (2, -1), (2, 7), (6, 6)))
+      assertThrows(
+        classOf[IndexOutOfBoundsException],
+        Character.codePointAt(arr, index, limit)
+      )
+  }
+
+  @Test def codePointCountAndOffsetByCodePointsArrayCharInvalidRanges()
+      : Unit = {
+    val arr = "abc\uD800\uDFFFd".toCharArray
+
+    for ((offset, count) <- Seq((-1, 1), (0, 7), (1, -1), (1, Int.MaxValue)))
+      assertThrows(
+        classOf[IndexOutOfBoundsException],
+        Character.codePointCount(arr, offset, count)
+      )
+
+    for ((start, count, index, offset) <- Seq(
+          (0, 6, 7, 0),
+          (-1, 6, 0, 0),
+          (0, 7, 0, 0),
+          (0, 6, 0, 10),
+          (0, 6, 6, -10)
+        ))
+      assertThrows(
+        classOf[IndexOutOfBoundsException],
+        Character.offsetByCodePoints(arr, start, count, index, offset)
+      )
   }
 
   @Test def codePointBeforeArrayChar(): Unit = {
@@ -293,7 +344,7 @@ class CharacterTest {
     val str1 = "Denali\uD800\uDFFF"
     val index = str1.length
 
-    val resultCA = Character.codePointBefore(str1.toArray, index, str1.length)
+    val resultCA = Character.codePointBefore(str1.toArray, index, 0)
     val resultCS = Character.codePointBefore(str1, index)
     val expected = 0x103ff // surrogate pair, decimal 66559
 
@@ -610,27 +661,27 @@ class CharacterTest {
     )
 
     assertThrows(
-      classOf[java.lang.StringIndexOutOfBoundsException],
+      classOf[java.lang.IndexOutOfBoundsException],
       Character.offsetByCodePoints(arr1, -1, arr1.length, 0, 0)
     )
 
     assertThrows(
-      classOf[java.lang.StringIndexOutOfBoundsException],
+      classOf[java.lang.IndexOutOfBoundsException],
       Character.offsetByCodePoints(arr1, 0, -1, 0, 0)
     )
 
     assertThrows(
-      classOf[java.lang.StringIndexOutOfBoundsException],
+      classOf[java.lang.IndexOutOfBoundsException],
       Character.offsetByCodePoints(arr1, 1, arr1.length, 2, 0)
     )
 
     assertThrows(
-      classOf[java.lang.StringIndexOutOfBoundsException],
+      classOf[java.lang.IndexOutOfBoundsException],
       Character.offsetByCodePoints(arr1, 2, arr1.length, 1, 0)
     )
 
     assertThrows(
-      classOf[java.lang.StringIndexOutOfBoundsException],
+      classOf[java.lang.IndexOutOfBoundsException],
       Character.offsetByCodePoints(arr1, 2, arr1.length, arr1.length + 1, 0)
     )
 

@@ -3,7 +3,9 @@ package java.net
 // Ported from Harmony
 
 import java.io.UnsupportedEncodingException
-import java.nio.charset.{Charset, UnsupportedCharsetException}
+import java.nio.charset.{
+  Charset, IllegalCharsetNameException, UnsupportedCharsetException
+}
 import java.{lang => jl}
 
 import scala.annotation.tailrec
@@ -12,13 +14,12 @@ object URLEncoder {
   private val digits = "0123456789ABCDEF".toCharArray
 
   def encode(s: String, enc: String): String = {
-    if (s == null || enc == null) {
-      throw new NullPointerException
-    }
+    if (enc == null)
+      throw new NullPointerException("charsetName")
     val charset =
       try Charset.forName(enc)
       catch {
-        case _: UnsupportedCharsetException =>
+        case _: UnsupportedCharsetException | _: IllegalCharsetNameException =>
           throw new UnsupportedEncodingException(enc)
       }
     encode(s, charset)

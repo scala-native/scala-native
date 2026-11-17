@@ -5,9 +5,11 @@ package scala
 import scala.language.reflectiveCalls
 
 import org.junit.Assert._
+import org.junit.Assume.assumeFalse
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.Platform.executingInJVM
 
 class AnyValWithAnyRefPrimitiveMethods(val x: Int) extends AnyVal {
   def eq(that: AnyRef): Boolean = (x + 1) == that
@@ -109,6 +111,8 @@ class ReflectiveProxyTest {
   }
 
   @Test def shouldWorkWithEqualityOperatorsOnPrimitiveTypes(): Unit = {
+    // The JVM dispatches reflective == to equals, without numeric widening
+    assumeFalse(executingInJVM)
     def fNum(obj: Any { def ==(x: Int): Boolean }): Boolean = obj == 5
     assertTrue(fNum(5.toByte))
     assertFalse(fNum(6.toByte))

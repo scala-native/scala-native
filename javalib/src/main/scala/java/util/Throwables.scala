@@ -75,6 +75,16 @@ class IllegalFormatFlagsException private () extends IllegalFormatException {
   override def getMessage(): String = "Flags = '" + flags + "'"
 }
 
+private[util] final class IllegalFormatArgumentIndexException(
+    private val index: Int
+) extends IllegalFormatException {
+  private[util] def getIndex(): Int = index
+  override def getMessage(): String =
+    if (index == Int.MinValue)
+      "Format argument index: (not representable as int)"
+    else "Illegal format argument index = " + index
+}
+
 class IllegalFormatPrecisionException(private val p: Int)
     extends IllegalFormatException {
   def getPrecision(): Int = p

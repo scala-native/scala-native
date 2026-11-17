@@ -863,7 +863,7 @@ object Build {
       .settings(
         noPublishSettings,
         testsCommonSettings,
-        sharedTestSource(withDenylist = true),
+        sharedTestSource(withDenylist = false),
         javaVersionSharedTestSources,
         VarHandleTestSources.settings,
         Test / fork := true,

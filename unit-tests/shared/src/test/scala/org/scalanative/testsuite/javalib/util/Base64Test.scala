@@ -207,10 +207,39 @@ class Base64Test {
       Base64.getUrlDecoder.decode(encoded)
     )
 
-    assertEquals(
-      "M",
-      new String(Base64.getMimeDecoder.decode(encoded), ISO_8859_1)
+    assertThrows(
+      classOf[IllegalArgumentException],
+      Base64.getMimeDecoder.decode(encoded)
     )
+  }
+
+  @Test def decodePaddingAndTrailingBytes(): Unit = {
+    def decodeOrFail(decoder: Decoder, input: String): String =
+      try new String(decoder.decode(input), ISO_8859_1)
+      catch { case _: IllegalArgumentException => "<fail>" }
+
+    // (input, basic, mime)
+    val cases = Seq(
+      ("TQ==", "M", "M"),
+      ("TU0=", "MM", "MM"),
+      ("TQ", "M", "M"),
+      ("TQ=", "<fail>", "<fail>"),
+      ("TQ=a", "<fail>", "<fail>"),
+      ("TQ= =", "<fail>", "<fail>"),
+      ("TQ=\n=", "<fail>", "<fail>"),
+      ("T=", "<fail>", "<fail>"),
+      ("TWFu=", "<fail>", "<fail>"),
+      ("TWFu==", "<fail>", "<fail>"),
+      ("TQ===", "<fail>", "M"),
+      ("TQ==*", "<fail>", "M"),
+      ("TQ==\n", "<fail>", "M"),
+      ("TQ==a", "<fail>", "<fail>"),
+      ("TU0=*", "<fail>", "MM")
+    )
+    for ((input, basicExpected, mimeExpected) <- cases) {
+      assertEquals(s"basic: $input", basicExpected, decodeOrFail(basic, input))
+      assertEquals(s"mime: $input", mimeExpected, decodeOrFail(mime, input))
+    }
   }
 
   @Test def decodeInputStream(): Unit = {
@@ -242,8 +271,10 @@ class Base64Test {
   }
 
   @Test def decodeIllegalsInputStreamIllegalPadding(): Unit = {
-    val encoded = "TQ=*"
-    assertEquals("M", decodeInputStream(mime, encoded))
+    for (decoder <- Seq(basic, mime); encoded <- Seq("TQ=*", "TQ=", "=", "T="))
+      assertThrows(classOf[IOException], decodeInputStream(decoder, encoded))
+    for (decoder <- Seq(basic, mime))
+      assertEquals("MM", decodeInputStream(decoder, "TU0="))
   }
 
   @Test def decodeBufferWithJustPaddingNonMime(): Unit = {
@@ -261,9 +292,13 @@ class Base64Test {
   }
 
   @Test def decodeBufferWithJustPaddingMime(): Unit = {
-    for (input <- Seq("", "=", "==")) {
-      val bb = Base64.getMimeDecoder.decode(ByteBuffer.wrap(input.getBytes))
-      assertEquals(0, bb.limit())
+    val bb = Base64.getMimeDecoder.decode(ByteBuffer.allocate(0))
+    assertEquals(0, bb.limit())
+    for (input <- Seq("=", "==")) {
+      assertThrows(
+        classOf[IllegalArgumentException],
+        Base64.getMimeDecoder.decode(ByteBuffer.wrap(input.getBytes))
+      )
     }
   }
 

@@ -73,9 +73,7 @@ class ShortTest {
     assertEquals(signedMaxValue.toShort, decode(signedMaxValueText))
     assertEquals(signedMinValue.toShort, decode(signedMinValueText))
 
-    assertThrowsAndMessage(classOf[NumberFormatException], decode(null))(
-      "java.lang.NumberFormatException: null"
-    )
+    assertThrows(classOf[NullPointerException], decode(null))
     assertThrowsAndMessage(classOf[NumberFormatException], decode("+"))(
       """java.lang.NumberFormatException: For input string: "+""""
     )

@@ -99,10 +99,7 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
     val iterator = mEntries.values().iterator()
 
     new Enumeration[ZipEntry] {
-      override def hasMoreElements(): Boolean = {
-        checkNotClosed()
-        iterator.hasNext()
-      }
+      override def hasMoreElements(): Boolean = iterator.hasNext()
 
       override def nextElement(): ZipEntry = {
         checkNotClosed()

@@ -11,7 +11,9 @@ import org.junit.Assert._
 import org.junit.{After, Before, Ignore, Test}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
-import org.scalanative.testsuite.utils.Platform.executingInJVM
+import org.scalanative.testsuite.utils.Platform.{
+  executingInJVM, executingInJVMOnLowerThanJDK
+}
 
 class DefaultFormatterTest {
   private var root: Boolean = false
@@ -344,10 +346,16 @@ class DefaultFormatterTest {
       assertEquals("1234567891110", f.toString())
     }
 
-    locally {
+    if (!executingInJVMOnLowerThanJDK(16)) {
       val f = new Formatter()
-      f.format("%0$s", "hello")
-      assertEquals("hello", f.toString())
+      val e = assertThrows(
+        classOf[IllegalFormatException],
+        f.format("%0$s", "hello")
+      )
+      assertEquals(
+        "java.util.IllegalFormatArgumentIndexException",
+        e.getClass().getName()
+      )
     }
 
     locally {
@@ -426,11 +434,17 @@ class DefaultFormatterTest {
 
     locally {
       val f = new Formatter()
-      // 2147483648 is the value of Integer.MAX_VALUE + 1
-      assertThrows(
-        classOf[MissingFormatArgumentException],
-        f.format("%2147483648$s", "hello")
-      )
+      if (!executingInJVMOnLowerThanJDK(16)) {
+        // 2147483648 is the value of Integer.MAX_VALUE + 1
+        val e = assertThrows(
+          classOf[IllegalFormatException],
+          f.format("%2147483648$s", "hello")
+        )
+        assertEquals(
+          "java.util.IllegalFormatArgumentIndexException",
+          e.getClass().getName()
+        )
+      }
       // 2147483647 is the value of Integer.MAX_VALUE
       assertThrows(
         classOf[MissingFormatArgumentException],
@@ -472,11 +486,13 @@ class DefaultFormatterTest {
       assertEquals("%", f.toString())
     }
 
-    locally {
+    if (!executingInJVMOnLowerThanJDK(16)) {
       val f = new Formatter()
       // 2147483648 is the value of Integer.MAX_VALUE + 1
-      f.format("%2147483648s", "string")
-      assertEquals("string", f.toString())
+      assertThrows(
+        classOf[IllegalFormatWidthException],
+        f.format("%2147483648s", "string")
+      )
     }
   }
 
@@ -487,11 +503,13 @@ class DefaultFormatterTest {
       assertEquals("12345", f.toString())
     }
 
-    locally {
+    if (!executingInJVMOnLowerThanJDK(16)) {
       val f = new Formatter()
       // 2147483648 is the value of Integer.MAX_VALUE + 1
-      f.format("%.2147483648s", "...")
-      assertEquals("...", f.toString())
+      assertThrows(
+        classOf[IllegalFormatPrecisionException],
+        f.format("%.2147483648s", "...")
+      )
     }
 
     locally {
@@ -1731,10 +1749,10 @@ class DefaultFormatterTest {
       )
     }
 
-    locally {
+    if (!executingInJVMOnLowerThanJDK(16)) {
       val f = new Formatter()
       assertThrows(
-        classOf[MissingFormatWidthException],
+        classOf[IllegalFormatWidthException],
         f.format("%010000000000000000000000000000000001d", new BigInteger("1"))
       )
     }
