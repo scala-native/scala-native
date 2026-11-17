@@ -71,7 +71,7 @@ class LinkedHashMap[K, V](
    * in HashMap.scala. Providing a better implementation is left as an
    * excercise for the reader.
    */
-  var nodeWasAddedAppends = true
+  private var nodeWasAddedAppends = true
 
   override private[util] def nodeWasAdded(node: HashMap.Node[K, V]): Unit = {
     val lhmNode = asMyNode(node)
