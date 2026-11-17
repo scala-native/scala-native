@@ -544,7 +544,8 @@ private[java] final class FileChannelImpl(
         if ((nRemaining) < bufSize)
           buf.limit(nRemaining.toInt) // Enable next partial buf short read
 
-        if (src.read(buf) == -1) {
+        // Stop at end of stream, or when a nonblocking source has no data.
+        if (src.read(buf) <= 0) {
           done = true
         } else {
           buf.flip()
@@ -724,6 +725,8 @@ private[java] final class FileChannelImpl(
                 ))
               throw WindowsException.onPath(getFileName("<file descriptor>"))
             written += (!n).toInt
+            // A full nonblocking pipe accepts nothing; wait for the reader.
+            if (!n == 0.toUInt) Thread.sleep(1)
           }
         } else {
           while (written < count) {
