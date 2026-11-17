@@ -496,7 +496,7 @@ object Files {
    * process umask still applies. Only POSIX permissions can be set
    * atomically at creation, any other attribute is rejected up front.
    */
-  private def creationMode(
+  private[java] def creationMode(
       attrs: Array[FileAttribute[_]],
       default: Int
   ): Int = {
