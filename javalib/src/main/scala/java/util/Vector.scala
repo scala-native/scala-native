@@ -19,6 +19,7 @@ package java.util
 
 import java.io._
 import java.util._
+import java.util.function.{Consumer, UnaryOperator}
 import java.{lang => jl}
 
 @SerialVersionUID(-2767605614048989439L)
@@ -60,6 +61,7 @@ class Vector[E <: AnyRef](
     insertElementAt(obj, location)
 
   override def add(obj: E): Boolean = synchronized {
+    modCount += 1
     if (elementCount == elementData.length) growByOne()
     elementData(elementCount) = obj
     elementCount += 1
@@ -67,13 +69,17 @@ class Vector[E <: AnyRef](
   }
 
   override def addAll(
-      _location: Int,
+      location: Int,
       collection: Collection[_ <: E]
   ): Boolean = synchronized {
-    var location = _location
-    if (0 <= location && location <= elementCount) {
-      val size = collection.size()
-      if (size == 0) return false
+    if (location < 0 || location > elementCount)
+      throw new ArrayIndexOutOfBoundsException(location)
+    // Copy first: `collection` may be this vector or one of its views
+    val added = collection.toArray()
+    val size = added.length
+    modCount += 1
+    if (size == 0) false
+    else {
       val required = size - (elementData.length - elementCount)
       if (required > 0) growBy(required)
       val count = elementCount - location
@@ -85,15 +91,10 @@ class Vector[E <: AnyRef](
           location + size,
           count
         )
-      val it = collection.iterator()
-      while (it.hasNext()) {
-        elementData(location) = it.next()
-        location += 1
-      }
+      System.arraycopy(added, 0, elementData, location, size)
       elementCount += size
-      return true
+      true
     }
-    throw new ArrayIndexOutOfBoundsException(location)
   }
 
   override def addAll(collection: Collection[_ <: E]): Boolean = synchronized {
@@ -101,6 +102,7 @@ class Vector[E <: AnyRef](
   }
 
   def addElement(obj: E): Unit = synchronized {
+    modCount += 1
     if (elementCount == elementData.length) growByOne()
     elementData(elementCount) = obj
     elementCount += 1
@@ -157,6 +159,7 @@ class Vector[E <: AnyRef](
   }
 
   def ensureCapacity(minimumCapacity: Int): Unit = synchronized {
+    if (minimumCapacity > 0) modCount += 1
     if (elementData.length < minimumCapacity) {
       val next = (if (capacityIncrement <= 0) elementData.length
                   else capacityIncrement) + elementData.length
@@ -252,6 +255,7 @@ class Vector[E <: AnyRef](
 
   def insertElementAt(obj: E, location: Int): Unit = synchronized {
     if (0 <= location && location <= elementCount) {
+      modCount += 1
       if (elementCount == elementData.length) growByOne()
       val count = elementCount - location
       if (count > 0)
@@ -292,6 +296,7 @@ class Vector[E <: AnyRef](
 
   override def remove(location: Int): E = synchronized {
     if (location < elementCount) {
+      modCount += 1
       val result = elementData(location).asInstanceOf[E]
       elementCount -= 1
       val size = elementCount - location
@@ -306,10 +311,45 @@ class Vector[E <: AnyRef](
   override def remove(obj: Any): Boolean = removeElement(obj)
 
   override def removeAll(collection: Collection[_]): Boolean = synchronized {
-    super.removeAll(collection)
+    batchRemove(collection, retain = false)
+  }
+
+  /* Decides about every element before changing the vector, so that
+   * `collection` may be a view of this vector.
+   */
+  private def batchRemove(c: Collection[_], retain: Boolean): Boolean = {
+    Objects.requireNonNull(c)
+    val data = elementData
+    val size = elementCount
+    var first = 0
+    while (first < size && c.contains(data(first)) == retain)
+      first += 1
+    if (first == size) false
+    else {
+      val keep = new Array[Boolean](size - first)
+      var i = first + 1
+      while (i < size) {
+        keep(i - first) = c.contains(data(i)) == retain
+        i += 1
+      }
+      var w = first
+      i = first + 1
+      while (i < size) {
+        if (keep(i - first)) {
+          data(w) = data(i)
+          w += 1
+        }
+        i += 1
+      }
+      Arrays.fill(data.asInstanceOf[Array[AnyRef]], w, size, null)
+      elementCount = w
+      modCount += 1
+      true
+    }
   }
 
   def removeAllElements(): Unit = synchronized {
+    modCount += 1
     for (i <- 0 until elementCount) {
       elementData(i) = null.asInstanceOf[E]
     }
@@ -327,6 +367,7 @@ class Vector[E <: AnyRef](
 
   def removeElementAt(location: Int): Unit = synchronized {
     if (0 <= location && location < elementCount) {
+      modCount += 1
       elementCount -= 1
       val size = elementCount - location
       if (size > 0)
@@ -337,6 +378,7 @@ class Vector[E <: AnyRef](
 
   override protected def removeRange(start: Int, end: Int): Unit = {
     if (start >= 0 && start <= end && end <= elementCount) {
+      modCount += 1
       if (start == end) ()
       else if (end != elementCount) {
         System.arraycopy(
@@ -367,7 +409,7 @@ class Vector[E <: AnyRef](
   }
 
   override def retainAll(collection: Collection[_]): Boolean = synchronized {
-    super.retainAll(collection)
+    batchRemove(collection, retain = true)
   }
 
   override def set(
@@ -388,6 +430,7 @@ class Vector[E <: AnyRef](
   }
 
   def setSize(length: Int): Unit = synchronized {
+    modCount += 1
     if (length == elementCount) return ensureCapacity(length)
     if (elementCount > length)
       Arrays.fill(
@@ -408,6 +451,122 @@ class Vector[E <: AnyRef](
   //     this
   //   )
   //  }
+
+  override def iterator(): Iterator[E] = new Itr(0)
+
+  override def listIterator(): ListIterator[E] = new Itr(0)
+
+  override def listIterator(index: Int): ListIterator[E] = {
+    if (index < 0 || index > elementCount)
+      throw new IndexOutOfBoundsException(index.toString)
+    new Itr(index)
+  }
+
+  private final class Itr(private var cursor: Int) extends ListIterator[E] {
+    private var lastRet = -1
+    private var expectedModCount = modCount
+
+    /* Lock through a field: Scala 3.10+ turns a method body of
+     * `Vector.this.synchronized { ... }` into a synchronized method that
+     * locks the iterator (see `elements`).
+     */
+    private val vector = Vector.this
+
+    @inline
+    private def checkForComodification(): Unit =
+      if (modCount != expectedModCount)
+        throw new ConcurrentModificationException()
+
+    def hasNext(): Boolean = cursor != elementCount
+
+    def next(): E = vector.synchronized {
+      checkForComodification()
+      val i = cursor
+      if (i >= elementCount)
+        throw new NoSuchElementException()
+      cursor = i + 1
+      lastRet = i
+      elementData(i)
+    }
+
+    def hasPrevious(): Boolean = cursor != 0
+
+    def previous(): E = vector.synchronized {
+      checkForComodification()
+      val i = cursor - 1
+      if (i < 0)
+        throw new NoSuchElementException()
+      cursor = i
+      lastRet = i
+      elementData(i)
+    }
+
+    def nextIndex(): Int = cursor
+
+    def previousIndex(): Int = cursor - 1
+
+    override def remove(): Unit = vector.synchronized {
+      if (lastRet < 0)
+        throw new IllegalStateException()
+      checkForComodification()
+      vector.remove(lastRet)
+      cursor = lastRet
+      lastRet = -1
+      expectedModCount = modCount
+    }
+
+    def set(e: E): Unit = vector.synchronized {
+      if (lastRet < 0)
+        throw new IllegalStateException()
+      checkForComodification()
+      vector.set(lastRet, e)
+    }
+
+    def add(e: E): Unit = vector.synchronized {
+      checkForComodification()
+      vector.add(cursor, e)
+      cursor += 1
+      lastRet = -1
+      expectedModCount = modCount
+    }
+  }
+
+  override def forEach(action: Consumer[_ >: E]): Unit = synchronized {
+    Objects.requireNonNull(action)
+    val expectedModCount = modCount
+    val data = elementData
+    val size = elementCount
+    var i = 0
+    while (modCount == expectedModCount && i < size) {
+      action.accept(data(i))
+      i += 1
+    }
+    if (modCount != expectedModCount)
+      throw new ConcurrentModificationException()
+  }
+
+  override def replaceAll(operator: UnaryOperator[E]): Unit = synchronized {
+    Objects.requireNonNull(operator)
+    val expectedModCount = modCount
+    val data = elementData
+    val size = elementCount
+    var i = 0
+    while (modCount == expectedModCount && i < size) {
+      data(i) = operator.apply(data(i))
+      i += 1
+    }
+    if (modCount != expectedModCount)
+      throw new ConcurrentModificationException()
+    modCount += 1
+  }
+
+  override def sort(c: Comparator[_ >: E]): Unit = synchronized {
+    val expectedModCount = modCount
+    Arrays.sort[E](elementData, 0, elementCount, c)
+    if (modCount != expectedModCount)
+      throw new ConcurrentModificationException()
+    modCount += 1
+  }
 
   override def toArray(): Array[AnyRef] = synchronized {
     val result = new Array[AnyRef](elementCount)
@@ -450,6 +609,7 @@ class Vector[E <: AnyRef](
   }
 
   def trimToSize(): Unit = synchronized {
+    modCount += 1
     if (elementData.length != elementCount) grow(elementCount)
   }
 
