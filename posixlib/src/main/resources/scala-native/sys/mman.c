@@ -33,5 +33,10 @@ int scalanative_ms_sync() { return MS_SYNC; }
 int scalanative_ms_async() { return MS_ASYNC; }
 int scalanative_ms_invalidate() { return MS_INVALIDATE; }
 
+// Keep header-selected ABI versions, notably NetBSD's __msync13.
+int scalanative_msync(void *addr, size_t length, int flags) {
+    return msync(addr, length, flags);
+}
+
 #endif // Unix or Mac OS
 #endif

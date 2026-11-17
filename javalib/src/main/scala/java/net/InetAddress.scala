@@ -21,7 +21,6 @@ import scala.scalanative.posix.netinet.in._
 import scala.scalanative.posix.netinet.inOps._
 import scala.scalanative.posix.string.memcpy
 import scala.scalanative.posix.sys.socket._
-import scala.scalanative.posix.time.{difftime, time, time_t}
 import scala.scalanative.posix.unistd
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
@@ -42,7 +41,7 @@ class InetAddress protected (ipAddress: Array[Byte], originalHost: String)
 
   private def this(ipAddress: Array[Byte]) = this(ipAddress, null)
 
-  private var hostLastUpdated: time_t = 0
+  private var hostLastUpdated: Long = 0L // System.nanoTime()
   private var cachedHost: String = null
   private var lastLookupFailed = true
 
@@ -71,12 +70,12 @@ class InetAddress protected (ipAddress: Array[Byte], originalHost: String)
   def getCanonicalHostName(): String = {
     // reverse name lookup with cache
 
-    def hostTimeoutExpired(timeNow: time_t): Boolean = {
+    def hostTimeoutExpired(timeNow: Long): Boolean = {
       val timeout = if (lastLookupFailed) NegativeHostTimeout else HostTimeout
-      difftime(timeNow, hostLastUpdated) > timeout
+      timeNow - hostLastUpdated > timeout * 1000000000L
     }
 
-    val timeNow = time(null)
+    val timeNow = System.nanoTime()
     if (cachedHost == null || hostTimeoutExpired(timeNow)) {
       hostLastUpdated = timeNow
 
