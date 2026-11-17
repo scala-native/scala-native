@@ -985,6 +985,8 @@ private[java] object FileChannelImpl {
     var access = 0.toUInt
     if (options.read) access |= FILE_GENERIC_READ
     if (options.write) access |= FILE_GENERIC_WRITE
+    // The symbolic link check reads file attributes.
+    if (options.noFollowLinks) access |= FILE_READ_ATTRIBUTES
 
     /* Truncation happens after opening: CREATE_ALWAYS fails on hidden and
      * system files, and a NOFOLLOW_LINKS check must come first.

@@ -85,12 +85,19 @@ int scalanative_read_symbolic_link(HANDLE handle, WCHAR *buffer,
 
 // 1 if the handle is a symbolic link, 0 if not, -1 on error.
 int scalanative_is_symbolic_link(HANDLE handle) {
-    FILE_ATTRIBUTE_TAG_INFO info;
-    if (!GetFileInformationByHandleEx(handle, FileAttributeTagInfo, &info,
-                                      sizeof(info))) {
+    // Tag queries fail on FAT, so check for a reparse point first.
+    FILE_BASIC_INFO basic;
+    if (!GetFileInformationByHandleEx(handle, FileBasicInfo, &basic,
+                                      sizeof(basic))) {
         return -1;
     }
-    return (info.FileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) &&
-           info.ReparseTag == IO_REPARSE_TAG_SYMLINK;
+    if (!(basic.FileAttributes & FILE_ATTRIBUTE_REPARSE_POINT))
+        return 0;
+    FILE_ATTRIBUTE_TAG_INFO tag;
+    if (!GetFileInformationByHandleEx(handle, FileAttributeTagInfo, &tag,
+                                      sizeof(tag))) {
+        return -1;
+    }
+    return tag.ReparseTag == IO_REPARSE_TAG_SYMLINK;
 }
 #endif
