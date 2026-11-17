@@ -50,6 +50,11 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
 
   private var contentSize: Int = 0
 
+  /** Number of structural modifications, checked by the fail-fast iterators.
+   */
+  @transient
+  private[util] var modCount: Int = 0
+
   /* Internal API for LinkedHashMap: these methods are overridden in
    * LinkedHashMap to implement its insertion- or access-order.
    */
@@ -114,6 +119,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
   override def clear(): Unit = {
     ju.Arrays.fill(table.asInstanceOf[Array[AnyRef]], null)
     contentSize = 0
+    modCount += 1
   }
 
   override def containsValue(value: Any): Boolean =
@@ -190,7 +196,9 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
     if (oldValue != null) {
       oldValue
     } else {
+      val expectedModCount = modCount
       val newValue = mappingFunction.apply(key)
+      checkForComodification(expectedModCount)
       if (newValue != null)
         put0(key, newValue, hash, node)
       newValue
@@ -205,7 +213,9 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
     if (oldValue == null) {
       oldValue
     } else {
+      val expectedModCount = modCount
       val newValue = remappingFunction.apply(key, oldValue)
+      checkForComodification(expectedModCount)
       putOrRemove0(key, hash, idx, node, newValue)
     }
   }
@@ -215,7 +225,9 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
       remappingFunction: BiFunction[_ >: K, _ >: V, _ <: V]
   ): V = {
     val (node, hash, idx, oldValue) = getNode0(key)
+    val expectedModCount = modCount
     val newValue = remappingFunction.apply(key, oldValue)
+    checkForComodification(expectedModCount)
     putOrRemove0(key, hash, idx, node, newValue)
   }
 
@@ -229,22 +241,55 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
     val (node, hash, idx, oldValue) = getNode0(key)
     val newValue =
       if (oldValue == null) value
-      else remappingFunction.apply(oldValue, value)
+      else {
+        val expectedModCount = modCount
+        val result = remappingFunction.apply(oldValue, value)
+        checkForComodification(expectedModCount)
+        result
+      }
     putOrRemove0(key, hash, idx, node, newValue)
   }
 
   override def forEach(action: BiConsumer[_ >: K, _ >: V]): Unit = {
-    val len = table.length
+    Objects.requireNonNull(action)
+    val expectedModCount = modCount
+    val tab = table
+    val len = tab.length
     var i = 0
     while (i != len) {
-      var node = table(i)
+      var node = tab(i)
       while (node ne null) {
         action.accept(node.key, node.value)
+        checkForComodification(expectedModCount)
         node = node.next
       }
       i += 1
     }
   }
+
+  override def replaceAll(
+      function: BiFunction[_ >: K, _ >: V, _ <: V]
+  ): Unit = {
+    Objects.requireNonNull(function)
+    val expectedModCount = modCount
+    val tab = table
+    val len = tab.length
+    var i = 0
+    while (i != len) {
+      var node = tab(i)
+      while (node ne null) {
+        node.setValue(function.apply(node.key, node.value))
+        checkForComodification(expectedModCount)
+        node = node.next
+      }
+      i += 1
+    }
+  }
+
+  @inline
+  private[util] final def checkForComodification(expectedModCount: Int): Unit =
+    if (modCount != expectedModCount)
+      throw new ConcurrentModificationException()
 
   override def clone(): AnyRef =
     new HashMap[K, V](this)
@@ -387,6 +432,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
         newNode
     }
     contentSize = newContentSize
+    modCount += 1
     nodeWasAdded(newNode)
     null.asInstanceOf[V]
     // scalastyle:on return
@@ -449,6 +495,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
           newNode
       }
       contentSize = newContentSize
+      modCount += 1
       nodeWasAdded(newNode)
     }
   }
@@ -480,6 +527,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
     if (next ne null)
       next.previous = previous
     contentSize -= 1
+    modCount += 1
     nodeWasRemoved(node)
   }
 
@@ -569,6 +617,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
     private var nextIdx: Int = _ // 0
     private var nextNode: Node[K, V] = _ // null
     private var lastNode: Node[K, V] = _ // null
+    private var expectedModCount = modCount
 
     protected def extract(node: Node[K, V]): A
 
@@ -598,6 +647,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
     }
 
     def next(): A = {
+      checkForComodification(expectedModCount)
       if (!hasNext())
         throw new NoSuchElementException("next on empty iterator")
       val node = nextNode
@@ -612,8 +662,10 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
         throw new IllegalStateException(
           "next must be called at least once before remove"
         )
+      checkForComodification(expectedModCount)
       removeNode(last)
       lastNode = null
+      expectedModCount = modCount
     }
   }
 
