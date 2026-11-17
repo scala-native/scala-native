@@ -19,7 +19,11 @@ class WindowsPath private[windows] (
   import WindowsPath._
 
   private def this(segments: List[String])(implicit fs: WindowsFileSystem) = {
-    this(WindowsPath.PathType.Relative, None, segments)
+    this(
+      WindowsPath.PathType.Relative,
+      None,
+      if (segments.isEmpty) WindowsPath.emptyPathSegments else segments
+    )
   }
 
   private def this(path: String)(implicit fs: WindowsFileSystem) = {
@@ -87,8 +91,13 @@ class WindowsPath private[windows] (
     case n    => new WindowsPath(n)
   }
 
-  override def subpath(beginIndex: Int, endIndex: Int): Path =
+  override def subpath(beginIndex: Int, endIndex: Int): Path = {
+    val nameCount = getNameCount()
+    if (beginIndex < 0 || beginIndex >= nameCount || endIndex > nameCount ||
+        endIndex <= beginIndex)
+      throw new IllegalArgumentException
     new WindowsPath(segments.slice(beginIndex, endIndex))
+  }
 
   override def startsWith(other: Path): Boolean =
     if (fs.provider() == other.getFileSystem().provider()) {
@@ -170,7 +179,9 @@ class WindowsPath private[windows] (
       if (normThis.toString.isEmpty()) {
         other
       } else if (other.startsWith(normThis)) {
-        other.subpath(getNameCount(), other.getNameCount())
+        val prefixCount = normThis.getNameCount()
+        if (prefixCount >= other.getNameCount()) new WindowsPath(Nil)
+        else other.subpath(prefixCount, other.getNameCount())
       } else if (normThis.getParent() == null) {
         WindowsPathParser("../" + other.toString())
       } else {
@@ -276,6 +287,8 @@ private[windows] object WindowsPath {
     case object DriveRelative extends PathType
     case object UNC extends PathType
   }
+
+  private[windows] val emptyPathSegments: List[String] = "" :: Nil
 
   def normalized(path: WindowsPath): String = {
     if (path.path.length < 2) return path.path
