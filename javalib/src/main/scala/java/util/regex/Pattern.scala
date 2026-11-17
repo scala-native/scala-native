@@ -37,8 +37,7 @@ object Pattern {
       (CANON_EQ, "CANON_EQ(canonical equivalences)"),
       (COMMENTS, "COMMENTS"),
       (UNICODE_CASE, "UNICODE_CASE"),
-      (UNICODE_CHARACTER_CLASS, "UNICODE_CHARACTER_CLASS"),
-      (UNIX_LINES, "UNIX_LINES")
+      (UNICODE_CHARACTER_CLASS, "UNICODE_CHARACTER_CLASS")
     )
 
     for (i <- 0 until unsupportedOptions.length) {
@@ -46,7 +45,8 @@ object Pattern {
     }
 
     // Any bit set other than given set throws.
-    if ((flags & ~(CASE_INSENSITIVE | DOTALL | LITERAL | MULTILINE)) != 0) {
+    if ((flags & ~(CASE_INSENSITIVE | DOTALL | LITERAL | MULTILINE |
+          UNIX_LINES)) != 0) {
       throw new IllegalArgumentException(s"Unknown flag ${flags}")
     }
   }
@@ -60,19 +60,20 @@ object Pattern {
     // it to throw, so clear them also.
     //
     // snRegex supports only CASE_INSENSITIVE | DOTALL | MULTILINE |
-    //                    DISABLE_UNICODE_GROUPS))
+    //                    UNIX_LINES | DISABLE_UNICODE_GROUPS
     //
-    // DISABLE_UNICODE_GROUPS causes rejectUnsupportedOptions()
-    // to be thrown, so only CASE_INSENSITIVE, DOTALL, and MULTILINE are
-    // left when execution reaches this point.
+    // DISABLE_UNICODE_GROUPS is never passed, so only CASE_INSENSITIVE,
+    // DOTALL, MULTILINE and UNIX_LINES are left when execution reaches
+    // this point.
     //
-    // The constants for these three definitely differ between j.u.regex
+    // The constants for these definitely differ between j.u.regex
     // and snRegex and must be translated.
 
     val optionTranslations = Array[(Int, Int)](
       (CASE_INSENSITIVE, snRegex.Pattern.CASE_INSENSITIVE),
       (DOTALL, snRegex.Pattern.DOTALL),
-      (MULTILINE, snRegex.Pattern.MULTILINE)
+      (MULTILINE, snRegex.Pattern.MULTILINE),
+      (UNIX_LINES, snRegex.Pattern.UNIX_LINES)
     )
 
     var re2Flags = 0

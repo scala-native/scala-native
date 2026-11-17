@@ -62,11 +62,6 @@ class PatternTest {
       classOf[UnsupportedOperationException],
       Pattern.compile("p", Pattern.UNICODE_CHARACTER_CLASS)
     )
-
-    assertThrows(
-      classOf[UnsupportedOperationException],
-      Pattern.compile("q", Pattern.UNIX_LINES)
-    )
   }
 
   @Test def exerciseMatcherMethodsBeforeUsingThem(): Unit = {

@@ -770,7 +770,8 @@ class Parser(wholeRegexp: String, _flags: Int) {
           case '.' =>
             if ((flags & RE2.DOT_NL) != 0) {
               op(ROP.ANY_CHAR)
-            } else if ((flags & RE2.JAVA_LINES) != 0) {
+            } else if ((flags & (RE2.JAVA_LINES | RE2.UNIX_LINES)) ==
+                  RE2.JAVA_LINES) {
               val re = newRegexp(ROP.CHAR_CLASS)
               re.flags = flags
               re.runes = Parser.anyRuneNotLineTerminator()
@@ -1004,6 +1005,9 @@ class Parser(wholeRegexp: String, _flags: Int) {
             sawFlag = true
           case 's' =>
             flags |= RE2.DOT_NL
+            sawFlag = true
+          case 'd' =>
+            flags |= RE2.UNIX_LINES
             sawFlag = true
           case 'U' =>
             flags |= RE2.NON_GREEDY

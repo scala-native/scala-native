@@ -184,6 +184,9 @@ object Utils {
   final val EMPTY_BEGIN_LINE_JAVA = 0x40
   final val EMPTY_END_LINE_JAVA = 0x80
   final val EMPTY_END_TEXT_JAVA = 0x100
+  // Java UNIX_LINES variants; $ in MULTILINE uses EMPTY_END_LINE.
+  final val EMPTY_BEGIN_LINE_UNIX = 0x200
+  final val EMPTY_END_TEXT_UNIX = 0x400
   final val EMPTY_ALL = -1 // (impossible)
 
   final def isLineTerminator(r: Int): Boolean =
@@ -216,9 +219,10 @@ object Utils {
     }
     if (r2 < 0) {
       op |= EMPTY_END_TEXT | EMPTY_END_LINE | EMPTY_END_LINE_JAVA |
-        EMPTY_END_TEXT_JAVA
-    } else if (r1 < 0) {
-      op |= EMPTY_BEGIN_LINE_JAVA
+        EMPTY_END_TEXT_JAVA | EMPTY_END_TEXT_UNIX
+    } else if (r1 < 0 || r1 == '\n') {
+      op |= EMPTY_BEGIN_LINE_UNIX
+      if (r1 < 0) op |= EMPTY_BEGIN_LINE_JAVA
     }
     if (r2 == '\n') {
       op |= EMPTY_END_LINE

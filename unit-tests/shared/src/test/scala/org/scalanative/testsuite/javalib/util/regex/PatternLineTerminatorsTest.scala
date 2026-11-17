@@ -252,4 +252,93 @@ class PatternLineTerminatorsTest {
     val parts = Pattern.compile("(?m)$(?:\\r\\n|\\n)^").split("a\r\nb\nc")
     assertEquals(List("a", "b", "c"), parts.toList)
   }
+
+  @Test def unixLines(): Unit = {
+    val in = "a\r\u0085\u2028\nb"
+    assertEquals("0-1 1-2 2-3 3-4 5-6", findAll(".", in, Pattern.UNIX_LINES))
+    assertEquals("0-1 1-2 2-3 3-4 5-6", findAll("(?d).", in))
+    assertEquals("", findAll("(?d:.)(?-d:.)", "\r\r"))
+    assertEquals("", findAll("(?d-d).", "\r"))
+    assertEquals("0-1", findAll("(?ds).", "\r"))
+    assertEquals("0-0 2-2 4-4", findAll("(?d)(?m)^", "\r\na\nb\n"))
+    assertEquals("2-2 3-3", findAll("$", "a\r\n", Pattern.UNIX_LINES))
+    assertEquals("1-1 3-3", findAll("(?-d)$", "a\r\n", Pattern.UNIX_LINES))
+  }
+
+  @Test def unixLinesAnchors(): Unit = {
+    val dollar = Seq(
+      "4-4",
+      "3-3",
+      "3-3",
+      "3-3",
+      "3-3",
+      "3-3",
+      "1-1 2-2",
+      "2-2 3-3",
+      "2-2",
+      "2-2 3-3",
+      "4-4 5-5",
+      "2-2",
+      "1-1 2-2",
+      "2-2",
+      "3-3",
+      "0-0",
+      "1-1"
+    )
+    checkAll("(?d)$", dollar)
+    checkAll("(?d)\\Z", dollar)
+    checkAll("(?d)^", anchorInputs.map(_ => "0-0"))
+    checkAll(
+      "(?dm)$",
+      Seq(
+        "2-2 4-4",
+        "1-1 3-3",
+        "3-3",
+        "3-3",
+        "3-3",
+        "3-3",
+        "1-1 2-2",
+        "2-2 3-3",
+        "2-2",
+        "1-1 2-2 3-3",
+        "2-2 4-4 5-5",
+        "2-2",
+        "1-1 2-2",
+        "0-0 2-2",
+        "1-1 3-3",
+        "0-0",
+        "1-1"
+      )
+    )
+    checkAll(
+      "(?dm)^",
+      Seq(
+        "0-0 3-3",
+        "0-0 2-2",
+        "0-0",
+        "0-0",
+        "0-0",
+        "0-0",
+        "0-0",
+        "0-0",
+        "0-0",
+        "0-0 2-2",
+        "0-0 3-3",
+        "0-0",
+        "0-0",
+        "0-0 1-1",
+        "0-0 2-2",
+        "",
+        "0-0"
+      )
+    )
+  }
+
+  @Test def unixLinesScopedInAlternation(): Unit = {
+    assertEquals(
+      "1-2 5-6",
+      findAll("(?d:^a)|(?-d:^b)", "\rb\ra\na", Pattern.MULTILINE)
+    )
+    assertEquals("1-2", findAll("(?m)(?d:^a)|^a", "\ra"))
+  }
 }

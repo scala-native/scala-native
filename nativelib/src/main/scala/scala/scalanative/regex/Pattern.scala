@@ -126,6 +126,9 @@ object Pattern {
   // Flag: Unicode groups (e.g. {@code \p\{Greek\}}) will be syntax errors.
   final val DISABLE_UNICODE_GROUPS = 8
 
+  // Flag: only {@code \n} is a line terminator.
+  final val UNIX_LINES = 16
+
   // Creates and returns a new {@code Pattern} corresponding to
   // compiling {@code regex} with the default flags (0).
   //
@@ -153,10 +156,13 @@ object Pattern {
     if ((flags & MULTILINE) != 0) {
       flregex = "(?m)" + flregex
     }
-    if ((flags & ~(MULTILINE | DOTALL | CASE_INSENSITIVE | DISABLE_UNICODE_GROUPS)) != 0) {
+    if ((flags & UNIX_LINES) != 0) {
+      flregex = "(?d)" + flregex
+    }
+    if ((flags & ~(MULTILINE | DOTALL | CASE_INSENSITIVE | DISABLE_UNICODE_GROUPS | UNIX_LINES)) != 0) {
       throw new IllegalArgumentException(
-        "Flags should only be a combination " +
-          "of MULTILINE, DOTALL, CASE_INSENSITIVE, DISABLE_UNICODE_GROUPS"
+        "Flags should only be a combination of MULTILINE, DOTALL, " +
+          "CASE_INSENSITIVE, DISABLE_UNICODE_GROUPS, UNIX_LINES"
       )
     }
     compile(flregex, regex, flags)
