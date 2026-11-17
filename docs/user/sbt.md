@@ -325,7 +325,13 @@ fat binaries for Linux.
 
 ### Cross compilation to iOS, tvOS and watchOS
 
-These targets need the headers and libraries of a dedicated Xcode SDK
+Select the platform using the target triple, for example:
+
+``` scala
+nativeConfig ~= { _.withTargetTriple("arm64-apple-ios16.0-simulator") }
+```
+
+These targets also need the headers and libraries of a dedicated Xcode SDK
 instead of the ones of the host. The SDK is not discovered automatically,
 set it explicitly using either the `SDKROOT` environment variable
 

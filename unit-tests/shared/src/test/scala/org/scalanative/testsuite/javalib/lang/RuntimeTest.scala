@@ -43,6 +43,7 @@ class RuntimeTest {
     }
 
   @Test def execCommand(): Unit = {
+    assumeSupportsSubprocesses()
     val proc = Runtime.getRuntime.exec(lsCommand :+ resourceDir)
     val out = readInputStream(proc.getInputStream)
     assertTrue(proc.waitFor(30, TimeUnit.SECONDS))
@@ -64,6 +65,7 @@ class RuntimeTest {
     assertEquals(Scripts.values.map(_.filename), out.split(EOL).toSet)
   }
   @Test def execDir(): Unit = {
+    assumeSupportsSubprocesses()
     val proc =
       Runtime.getRuntime.exec(lsCommand, null, new File(resourceDir))
     val out = readInputStream(proc.getInputStream)
