@@ -979,7 +979,6 @@ private[java] object FileChannelImpl {
       path: String,
       options: OpenOptions
   ): FileDescriptor = Zone.acquire { implicit z =>
-    import scala.scalanative.windows.FileApiOps._
     import scala.scalanative.windows.winnt.AccessRights._
 
     // APPEND keeps write access so that truncate() works.
@@ -1025,10 +1024,10 @@ private[java] object FileChannelImpl {
       throw e
     }
     if (options.noFollowLinks) {
-      val info = stackalloc[ByHandleFileInformation]()
-      if (!GetFileInformationByHandle(handle, info))
-        fail(WindowsException.onPath(path))
-      if ((info.fileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) != 0.toUInt)
+      // Only symbolic links; other reparse points are regular files.
+      val isLink = FileApi.isSymbolicLink(handle)
+      if (isLink < 0) fail(WindowsException.onPath(path))
+      if (isLink == 1)
         fail(
           new FileSystemException(
             path,

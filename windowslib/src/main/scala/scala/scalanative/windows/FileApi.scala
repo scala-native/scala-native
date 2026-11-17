@@ -11,6 +11,11 @@ import WinBaseApi.SecurityAttributes
 
 @extern
 object FileApi {
+
+  /** 1 if the handle is a symbolic link, 0 if not, -1 on error. */
+  @name("scalanative_is_symbolic_link")
+  def isSymbolicLink(handle: Handle): CInt = extern
+
   @name("scalanative_read_symbolic_link")
   def readSymbolicLink(
       handle: Handle,
