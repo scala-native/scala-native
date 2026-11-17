@@ -56,8 +56,9 @@ as expected.
 -   `test-scripted <scala-binary-version>`, e.g. `test-scripted 2.12` - run all
     [scripted tests](https://www.scala-sbt.org/1.x/docs/Testing-sbt-plugins.html)
     of the sbt plugin. This takes a while: before running the tests it
-    calls `publishLocal` for Scala 2.12, 2.13 and 3, because the
-    scripted builds resolve Scala Native from `~/.ivy2/local`.
+    calls `publishLocal` for Scala 2.12, 2.13 and 3 (with `2.12`), or
+    for Scala 2.13 and 3 (with `3`), because the scripted builds
+    resolve Scala Native from `~/.ivy2/local`.
     Scala 2.12 tests the plugin with sbt 1.x, Scala 3 with sbt 2.x.
     Other versions are not supported.
 
