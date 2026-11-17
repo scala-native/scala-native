@@ -2,13 +2,7 @@ package java.io
 
 import java.nio.channels.{FileChannel, FileChannelImpl}
 
-import scala.scalanative.libc.stdio._
-import scala.scalanative.meta.LinktimeInfo.isWindows
-import scala.scalanative.posix.unistd.lseek
-import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
-import scala.scalanative.windows.FileApi._
-import scala.scalanative.windows.FileApiExt._
 
 class FileInputStream(fd: FileDescriptor, file: Option[File])
     extends InputStream {
@@ -54,22 +48,13 @@ class FileInputStream(fd: FileDescriptor, file: Option[File])
   override def read(buffer: Array[Byte], offset: Int, count: Int): Int =
     channel.read(buffer, offset, count)
 
-  override def skip(n: Long): Long =
-    if (n < 0) {
-      throw new IOException()
-    } else {
-      val bytesToSkip = Math.min(n, available())
-      if (isWindows) {
-        SetFilePointerEx(
-          fd.handle,
-          distanceToMove = bytesToSkip,
-          newFilePointer = null,
-          moveMethod = FILE_CURRENT
-        )
-      } else
-        lseek(fd.fd, bytesToSkip.toSize, SEEK_CUR)
-      bytesToSkip
-    }
+  // Like the JVM, seeks past the end of file and reads non-seekable files.
+  override def skip(n: Long): Long = {
+    val skipped = channel.skip(n)
+    if (skipped >= 0) skipped
+    else if (n < 0) throw new IOException("Illegal seek")
+    else super.skip(n)
+  }
 
   def getChannel: FileChannel = channel
 }

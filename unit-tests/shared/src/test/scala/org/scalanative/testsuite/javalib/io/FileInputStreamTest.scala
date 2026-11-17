@@ -92,4 +92,17 @@ class FileInputStreamTest {
     }
   }
 
+  @Test def skipCanMovePastEndOfFile(): Unit = {
+    withTemporaryDirectory { dir =>
+      val file = new File(dir, "f")
+      Files.write(file.toPath(), "0123456789".getBytes("UTF-8"))
+      val in = new FileInputStream(file)
+      try {
+        assertEquals("skip(3)", 3L, in.skip(3))
+        assertEquals("read after skip", '3'.toInt, in.read())
+        assertEquals("skip(100)", 100L, in.skip(100))
+        assertEquals("read past end", -1, in.read())
+      } finally in.close()
+    }
+  }
 }

@@ -29,11 +29,21 @@ class RandomAccessFile private (
     )
   def this(name: String, mode: String) = this(new File(name), mode)
 
-  private lazy val in =
-    new DataInputStream(new FileInputStream(fd, Some(file)))
-  private lazy val out =
-    new DataOutputStream(new FileOutputStream(fd, Some(file)))
-  private lazy val channel =
+  // All reads and writes go through the one channel and its position lock.
+  private lazy val in = new DataInputStream(new InputStream {
+    override def read(): Int = {
+      val b = new Array[Byte](1)
+      if (channel.read(b, 0, 1) <= 0) -1 else b(0) & 0xff
+    }
+    override def read(b: Array[Byte], off: Int, len: Int): Int =
+      channel.read(b, off, len)
+  })
+  private lazy val out = new DataOutputStream(new OutputStream {
+    override def write(b: Int): Unit = channel.write(Array(b.toByte), 0, 1)
+    override def write(b: Array[Byte], off: Int, len: Int): Unit =
+      channel.write(b, off, len)
+  })
+  private val channel =
     new FileChannelImpl(
       fd,
       Some(file),
@@ -155,11 +165,8 @@ class RandomAccessFile private (
     if (n <= 0) 0
     else {
       val currentPosition = getFilePointer()
-      val fileLength = length()
-      val toSkip =
-        if (currentPosition + n > fileLength) fileLength - currentPosition
-        else n.toLong
-      seek(toSkip)
+      val toSkip = Math.max(0L, Math.min(n.toLong, length() - currentPosition))
+      seek(currentPosition + toSkip)
       toSkip.toInt
     }
 
