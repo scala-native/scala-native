@@ -17,9 +17,14 @@
  */
 
 #include <mach/mach.h>
+#include <TargetConditionals.h>
 #include "YieldPointTrap.h"
 #include "shared/Log.h"
 
+#if TARGET_OS_TV || TARGET_OS_WATCH
+// tvOS and watchOS do not allow to modify the Mach exception ports.
+void YieldPointTrap_resetTaskMachBadAccessPorts(void) {}
+#else
 void YieldPointTrap_resetTaskMachBadAccessPorts(void) {
     /* LLDB and some frameworks install task-wide Mach exception handlers for
      * EXC_BAD_ACCESS. XNU delivers Mach exceptions to those handlers before
@@ -36,6 +41,7 @@ void YieldPointTrap_resetTaskMachBadAccessPorts(void) {
                     "(kern_return_t=%d)",
                     (int)kr);
 }
+#endif // TARGET_OS_TV || TARGET_OS_WATCH
 
 #endif // __APPLE__
 

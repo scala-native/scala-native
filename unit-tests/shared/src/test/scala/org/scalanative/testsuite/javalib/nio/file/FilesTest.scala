@@ -20,7 +20,9 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
 import org.scalanative.testsuite.utils.Platform.isWindows
 
-import scala.scalanative.junit.utils.AssumesHelper.assumeNotJVMCompliant
+import scala.scalanative.junit.utils.AssumesHelper.{
+  assumeNotJVMCompliant, assumeSupportsSubprocesses
+}
 import scala.scalanative.junit.utils.CollectionConverters._
 
 /* See also FilesCopyTest.scala. It provides additional Tests for
@@ -2594,6 +2596,7 @@ class FilesTest {
   // Issue #5238: size reported as 0, but the file has content.
   @Test def filesReadAllBytesFifoWithZeroReportedSize(): Unit = {
     assumeFalse("FIFO not available on Windows", isWindows)
+    assumeSupportsSubprocesses() // mkfifo
     withTemporaryDirectory { dirFile =>
       val fifo = dirFile.toPath().resolve("fifo")
       val mkfifo = new ProcessBuilder("mkfifo", fifo.toString()).start()

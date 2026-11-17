@@ -3,9 +3,14 @@ package org.scalanative.testsuite.javalib.lang
 import java.util.concurrent.atomic.AtomicReference
 
 import org.junit.Assert._
-import org.junit.Test
+import org.junit.{BeforeClass, Test}
 
 import scala.scalanative.junit.utils.AssumesHelper._
+
+object ProcessWaitForInterruptTestOnJDK21 {
+  @BeforeClass
+  def checkRuntime(): Unit = assumeSupportsSubprocesses()
+}
 
 class ProcessWaitForInterruptTestOnJDK21 {
   import ProcessWaitForInterruptTest._

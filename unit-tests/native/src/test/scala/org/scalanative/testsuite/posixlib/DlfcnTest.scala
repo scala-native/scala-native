@@ -5,7 +5,7 @@ import org.junit.Assume._
 import org.junit.Test
 
 import scala.scalanative.meta.LinktimeInfo
-import scala.scalanative.meta.LinktimeInfo.{isLinux, isMac}
+import scala.scalanative.meta.LinktimeInfo.{isApple, isLinux}
 import scala.scalanative.posix.dlfcn._
 import scala.scalanative.unsafe._
 
@@ -58,7 +58,7 @@ class DlfcnTest {
   }
 
   @Test def dlfcnOpensAndObtainsSymbolAddressMacOs(): Unit = {
-    if (isMac) Zone.acquire { implicit z =>
+    if (isApple) Zone.acquire { implicit z =>
       val soFile = "/usr/lib/libSystem.dylib"
 
       val handle = dlopen(toCString(soFile), RTLD_LAZY | RTLD_LOCAL)

@@ -87,8 +87,8 @@ class IssueTests {
   // macOS: a mutator with SIGBUS/SIGSEGV blocked (e.g. by libc tmpfile) wedged GC
   @Test def issue5051(): Unit = {
     AssumesHelper.assumeMultithreadingIsEnabled()
-    Assume.assumeTrue("macOS only", LinktimeInfo.isMac)
-    if (LinktimeInfo.isMac) {
+    Assume.assumeTrue("macOS only", LinktimeInfo.isApple)
+    if (LinktimeInfo.isApple) {
       val ready = new CountDownLatch(1)
       val stop = new AtomicBoolean(false)
       val worker = new Thread(() => {

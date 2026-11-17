@@ -205,7 +205,7 @@ private[runtime] object Backtrace {
     val dwarfInfo: Option[
       (scala.Array[DWARF.SubprogramDIE], DWARF.Strings, Boolean, Long)
     ] =
-      if (LinktimeInfo.isMac) {
+      if (LinktimeInfo.isApple) {
         if (magic == MACHO_MAGIC) {
           val macho = MachO.parse(bf)
           processMacho(macho)

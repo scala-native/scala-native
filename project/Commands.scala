@@ -39,11 +39,16 @@ object Commands {
       import scala.scalanative.build.GC
       val isWindows =
         System.getProperty("os.name").toLowerCase.contains("windows")
+      val targetsAppleEmbedded = sys.env
+        .get("SCALANATIVE_TARGET_TRIPLE")
+        .exists(t => Seq("-ios", "-tvos", "-watchos").exists(t.contains))
       val runs =
         for {
           gc <- List(GC.none, GC.immix, GC.commix, GC.boehm)
           // Exclude running Boehm GC on Windows for Scala 3 as deadlocks for unknown reasons
           if !(isWindows && gc == GC.boehm && version == "3")
+          // No Boehm GC library for iOS, tvOS and watchOS SDKs
+          if !(gc == GC.boehm && targetsAppleEmbedded)
           (project, command) <- Map(
             sandbox -> "run",
             testInterface -> "test",

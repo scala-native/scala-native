@@ -1,10 +1,14 @@
 #if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_POSIX_SIGNAL)
 #if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
+#include <errno.h>
 #include <signal.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#ifdef __APPLE__
+#include <TargetConditionals.h>
+#endif
 
 #ifdef __OpenBSD__
 
@@ -156,7 +160,15 @@ int scalanative_sigaltstack(struct scalanative_stack_t *sn_ss,
     if (sn_oss != NULL) {
         p_host_oss = &host_oss;
     }
+#if defined(__APPLE__) && (TARGET_OS_TV || TARGET_OS_WATCH)
+    // Not allowed on tvOS and watchOS
+    (void)p_host_ss;
+    (void)p_host_oss;
+    errno = ENOTSUP;
+    int rc = -1;
+#else
     int rc = sigaltstack(p_host_ss, p_host_oss);
+#endif
     if (sn_oss != NULL && rc == 0) {
         scalanative_stack_t_copy_to_sn(sn_oss, &host_oss);
     }

@@ -14,6 +14,7 @@
 
 #ifdef __APPLE__
 #include <sys/sysctl.h>
+#include <TargetConditionals.h>
 #endif
 
 bool scalanative_platform_is_freebsd() {
@@ -48,7 +49,17 @@ bool scalanative_platform_is_linux() {
 #endif
 }
 
+// macOS only, see scalanative_platform_is_apple
 bool scalanative_platform_is_mac() {
+#if defined(__APPLE__) && TARGET_OS_OSX
+    return true;
+#else
+    return false;
+#endif
+}
+
+// Any of Apple platforms: macOS, iOS, tvOS, watchOS, visionOS
+bool scalanative_platform_is_apple() {
 #ifdef __APPLE__
     return true;
 #else
@@ -123,7 +134,17 @@ void scalanative_set_os_props(void (*add_prop)(const char *, const char *)) {
 #ifdef _WIN32
     add_prop("os.name", "Windows (Unknown version)");
 #elif defined(__APPLE__)
+#if TARGET_OS_OSX
     add_prop("os.name", "Mac OS X");
+#elif TARGET_OS_TV
+    add_prop("os.name", "tvOS");
+#elif TARGET_OS_WATCH
+    add_prop("os.name", "watchOS");
+#elif defined(TARGET_OS_VISION) && TARGET_OS_VISION
+    add_prop("os.name", "visionOS");
+#else
+    add_prop("os.name", "iOS");
+#endif
     // Use kern.osproductversion to get the macOS product version (e.g. "15.4")
     // matching JVM behavior, instead of the Darwin kernel version from uname.
     {

@@ -1,0 +1,28 @@
+name: "iOS simulator setup"
+description: "Boots an iOS simulator and configures the build to target it"
+inputs:
+  ios-min-version:
+    description: "Minimal version of iOS used in the target triple"
+    default: "16.0"
+runs:
+  using: "composite"
+  steps:
+    - name: Boot simulator
+      shell: bash
+      run: |
+        xcodebuild -version
+        xcrun --sdk iphonesimulator --show-sdk-version
+        # Newest available iOS runtime, first iPhone device
+        UDID=$(xcrun simctl list devices available --json | jq -r '
+          [ .devices | to_entries[]
+            | select(.key | test("SimRuntime\\.iOS-"))
+            | { version: (.key | capture("iOS-(?<v>[0-9-]+)$").v | split("-") | map(tonumber)), devices: .value }
+          ] | sort_by(.version) | last | .devices
+            | map(select(.name | startswith("iPhone"))) | first | .udid')
+        test -n "$UDID" && test "$UDID" != "null"
+        xcrun simctl boot "$UDID"
+        xcrun simctl bootstatus "$UDID" -b
+        xcrun simctl list devices booted
+        echo "IOS_SIMULATOR_UDID=$UDID" >> "$GITHUB_ENV"
+        echo "IOS_MIN_VERSION=${{ inputs.ios-min-version }}" >> "$GITHUB_ENV"
+        echo "SDKROOT=$(xcrun --sdk iphonesimulator --show-sdk-path)" >> "$GITHUB_ENV"

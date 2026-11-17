@@ -7,7 +7,7 @@ import org.junit.Assume._
 import org.junit.{AfterClass, BeforeClass, Test}
 
 import scala.scalanative.meta.LinktimeInfo.{
-  isLinux, isMac, isMusl, isNetBSD, isOpenBSD, isWindows
+  isApple, isLinux, isMusl, isNetBSD, isOpenBSD, isWindows
 }
 import scala.scalanative.posix.langinfo._
 import scala.scalanative.posix.locale.{LC_ALL, setlocale}
@@ -197,7 +197,7 @@ class LanginfoTest {
           LanginfoItem("YESEXPR", YESEXPR, "^[+1yY]"),
           LanginfoItem("NOEXPR", NOEXPR, "^[-0nN]")
         ).foreach(verify(_))
-      } else if (isMac) {
+      } else if (isApple) {
         Array(
           LanginfoItem("D_T_FMT", D_T_FMT, "%a %b %e %X %Y"),
           LanginfoItem("T_FMT", T_FMT, "%H:%M:%S")

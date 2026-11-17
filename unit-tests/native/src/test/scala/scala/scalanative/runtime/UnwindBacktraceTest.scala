@@ -7,7 +7,7 @@ import org.junit.Assume._
 import org.junit.Test
 
 import scala.scalanative.junit.utils.AssumesHelper
-import scala.scalanative.meta.LinktimeInfo.{isMac, isWindows, target}
+import scala.scalanative.meta.LinktimeInfo.{isApple, isWindows, target}
 import scala.scalanative.unsafe._
 
 @extern
@@ -95,7 +95,7 @@ class UnwindBacktraceTest {
 
     val vg = UnwindBacktraceTestFFI.scalanative_arm64_unwind_vg_probe()
     assertTrue(s"vector granule probe returned $vg", vg != 0L)
-    if (isMac)
+    if (isApple)
       assertEquals(1L, vg)
   }
 
@@ -126,7 +126,7 @@ class UnwindBacktraceTest {
       s"worker backtrace returned ${frames.get()} frames",
       frames.get() >= 2
     )
-    if (scala.scalanative.runtime.Platform.isMac())
+    if (scala.scalanative.runtime.Platform.isApple())
       assertTrue(
         "worker backtrace did not reach pthread thread_start",
         sawThreadStart.get() == 1

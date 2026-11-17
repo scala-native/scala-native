@@ -8,6 +8,14 @@
 #ifdef __NetBSD__
 #include <sys/param.h>
 #endif
+#ifdef __APPLE__
+#include <TargetConditionals.h>
+// posix_spawn_file_actions_addchdir{_np} are available only on macOS,
+// other Darwin platforms (iOS, tvOS, watchOS) use the fork fallback.
+#if !TARGET_OS_OSX
+#define SCALANATIVE_JAVALIB_NO_SPAWN_CHDIR 1
+#endif
+#endif
 
 #undef SCALANATIVE_JAVALIB_HAVE_POSIX_CHDIR
 
@@ -44,6 +52,9 @@ bool hasFileActionsAddChdir() {
     /* musl has the _np form in its git repository since 2019-08-30.
      * Enabling its use is left as an exercise for a musl devotee.
      */
+
+#elif defined(SCALANATIVE_JAVALIB_NO_SPAWN_CHDIR)
+    // False.
 
 #elif defined(__APPLE__)
 #include <Availability.h>
@@ -87,7 +98,8 @@ bool hasFileActionsAddChdir() {
 void fileActionsAddChdir(posix_spawn_file_actions_t *actions, char *newCwd) {
 // Do not reference unavailable symbols on older NetBSD or Bionic targets,
 // where hasFileActionsAddChdir() selects the fork fallback.
-#if defined(__LP64__) && (!defined(__ANDROID__) || __ANDROID_API__ >= 34) &&   \
+#if defined(__LP64__) && !defined(SCALANATIVE_JAVALIB_NO_SPAWN_CHDIR) &&       \
+    (!defined(__ANDROID__) || __ANDROID_API__ >= 34) &&                        \
     (!defined(__NetBSD__) || defined(SCALANATIVE_JAVALIB_HAVE_POSIX_CHDIR))
 
 #if defined(SCALANATIVE_JAVALIB_HAVE_POSIX_CHDIR)

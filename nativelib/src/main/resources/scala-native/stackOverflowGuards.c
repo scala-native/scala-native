@@ -23,6 +23,15 @@
 
 __attribute((noreturn)) extern void scalanative_throwStackOverflowError();
 
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+// sigaltstack is prohibited on tvOS and watchOS: handlers run on the thread
+// stack, so stack overflow is fatal there.
+#if TARGET_OS_TV || TARGET_OS_WATCH
+#define SCALANATIVE_NO_SIGALTSTACK 1
+#endif
+#endif
+
 size_t scalanative_StackOverflowGuards_size() {
     return stackGuardPages() * resolvePageSize();
 }
@@ -303,6 +312,10 @@ static size_t sigHandlerStackSize() {
     return size;
 }
 static void setupSignalHandlerAltstack() {
+#ifdef SCALANATIVE_NO_SIGALTSTACK
+    currentThreadInfo.signalHandlerStack = NULL;
+    currentThreadInfo.signalHandlerStackSize = 0;
+#else
     stack_t handlerStack = {};
     handlerStack.ss_size =
         (size_t)alignToNextPage((void *)sigHandlerStackSize());
@@ -319,11 +332,15 @@ static void setupSignalHandlerAltstack() {
     }
     currentThreadInfo.signalHandlerStack = handlerStack.ss_sp;
     currentThreadInfo.signalHandlerStackSize = handlerStack.ss_size;
+#endif
 }
 static void setupSignalHandler(int signal) {
     struct sigaction sa = {};
     sa.sa_sigaction = stackOverflowHandler;
-    sa.sa_flags = SA_SIGINFO | SA_RESTART | SA_ONSTACK;
+    sa.sa_flags = SA_SIGINFO | SA_RESTART;
+#ifndef SCALANATIVE_NO_SIGALTSTACK
+    sa.sa_flags |= SA_ONSTACK;
+#endif
     sigemptyset(&sa.sa_mask);
     if (sigaddset(&sa.sa_mask, signal) == -1) {
         perror(SN_ERROR_MSG("StackOverflowHandler failed to set signal mask"));
@@ -396,9 +413,20 @@ void scalanative_StackOverflowGuards_close() {
     currentThreadInfo.stackGuardOpen = false;
     currentThreadInfo.stackGuardPage = NULL;
     currentThreadInfo.stackGuardLow = NULL;
+#ifndef SCALANATIVE_NO_SIGALTSTACK
     if (currentThreadInfo.signalHandlerStack) {
+        // Unregister before freeing: a late signal (e.g. GC safepoint trap)
+        // would otherwise run on released memory.
+        stack_t disabled = {};
+        disabled.ss_flags = SS_DISABLE;
+        if (sigaltstack(&disabled, NULL) == -1) {
+            // Still registered, leaking it is the only safe option.
+            currentThreadInfo.signalHandlerStack = NULL;
+            return;
+        }
         free(currentThreadInfo.signalHandlerStack);
         currentThreadInfo.signalHandlerStack = NULL;
     }
+#endif
 #endif
 }

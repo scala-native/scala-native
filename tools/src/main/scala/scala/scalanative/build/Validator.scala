@@ -53,7 +53,7 @@ private[build] object Validator {
     if (config.baseName.trim().isEmpty())
       issues += s"Provided baseName is blank, provide a name of target artifact without extensions to allow for determinstic builds"
 
-    if (config.targetsMac && c.lto == LTO.thin)
+    if (config.targetsApple && c.lto == LTO.thin)
       warn(
         "LTO.thin is unstable on MacOS, it can lead to compilation errors. Consider using LTO.full (legacy, slower) or LTO.none (disabled)"
       )
@@ -61,6 +61,16 @@ private[build] object Validator {
     val gcConfig = GarbageCollectorConfig.Settings.resolve(c)
     gcConfig.warnings.foreach(warn)
     issues ++= gcConfig.issues.map("Garbage collector setting " + _)
+
+    for {
+      sdk <- config.appleSdkName
+      if !sys.env.get("SDKROOT").exists(_.nonEmpty)
+      if !c.compileOptions.exists(_.contains("-isysroot"))
+    } warn(
+      s"Target ${c.targetTriple.mkString} requires the $sdk SDK, but no sysroot is set. " +
+        "Add `-isysroot <path>` to compile and linking options or set SDKROOT environment variable, " +
+        s"the path can be found using `xcrun --sdk $sdk --show-sdk-path`"
+    )
 
     issues.result() match {
       case Nil    => config

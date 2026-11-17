@@ -26,6 +26,7 @@ import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport.{
   ScalaNativeCrossVersion => _, _
 }
 import scala.scalanative.sbtplugin.Utilities._
+import scala.scalanative.testinterface.TargetRunner
 import scala.scalanative.testinterface.adapter.TestAdapter
 import scala.scalanative.util.Scope
 
@@ -281,7 +282,8 @@ object ScalaNativePluginInternal {
       val env = (run / envVars).value.toSeq
       val logger = streams.value.log
       val binary = toFile(nativeLink.value).getAbsolutePath
-      val args = binary +: spaceDelimited("<arg>").parsed
+      val targetRunner = TargetRunner.fromEnv()
+      val args = targetRunner ++: binary +: spaceDelimited("<arg>").parsed
 
       @volatile var pipeOutputThreads: List[Thread] = Nil
 

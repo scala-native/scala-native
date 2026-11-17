@@ -30,8 +30,8 @@ PSEMNAMLEN characters. Else, we stick to POSIX compliance:
 The +1 accounts for the null char at the end of the name
 */
 #ifdef __APPLE__
-#include <sys/posix_sem.h>
-#define SEM_MAX_LENGTH PSEMNAMLEN + 1
+// PSEMNAMLEN from <sys/posix_sem.h>, the header is not a part of iOS SDK
+#define SEM_MAX_LENGTH 31 + 1
 #elif defined(_WIN32)
 #define SEM_MAX_LENGTH MAX_PATH + 1
 #define SEM_FAILED NULL

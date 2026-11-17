@@ -30,8 +30,8 @@ class WordexpTest {
 
   @Test def wordexpExpectBadcharError(): Unit = {
     assumeTrue(
-      "wordexp.scala is not implemented on Windows or OpenBSD",
-      !isWindows && !isOpenBSD
+      "wordexp.scala is not implemented on Windows, OpenBSD, iOS, tvOS or watchOS",
+      !isWindows && !isOpenBSD && (isMac || !isApple)
     )
     // musl and Termux's compatibility library accept ";" (return 0 with
     // the first word expanded only) where glibc returns WRDE_BADCHAR.
@@ -39,58 +39,60 @@ class WordexpTest {
       "musl and Termux wordexp do not return WRDE_BADCHAR for ';'",
       isMusl || LinktimeInfo.isAndroid
     )
-    if (!isWindows && !isOpenBSD) Zone.acquire { implicit z =>
-      val wrdeP = stackalloc[wordexp_t]()
+    if (!isWindows && !isOpenBSD && (isMac || !isApple)) Zone.acquire {
+      implicit z =>
+        val wrdeP = stackalloc[wordexp_t]()
 
-      /* wordexp is defined as using the sh shell. That shell does not
-       * allow an out-of-place semicolon on the command line. Show that we
-       * are indeed using sh.
-       */
-      val pattern = "prefix ; suffix"
-      val status = wordexp(toCString(pattern), wrdeP, 0)
+        /* wordexp is defined as using the sh shell. That shell does not
+         * allow an out-of-place semicolon on the command line. Show that we
+         * are indeed using sh.
+         */
+        val pattern = "prefix ; suffix"
+        val status = wordexp(toCString(pattern), wrdeP, 0)
 
-      try {
-        assertEquals("Expected WRDE_BADCHAR error", WRDE_BADCHAR, status)
-      } finally {
-        wordfree(wrdeP)
-      }
+        try {
+          assertEquals("Expected WRDE_BADCHAR error", WRDE_BADCHAR, status)
+        } finally {
+          wordfree(wrdeP)
+        }
     }
   }
 
   @Test def wordexpTildeExpansion: Unit = {
     assumeTrue(
-      "wordexp.scala is not implemented on Windows or OpenBSD",
-      !isWindows && !isOpenBSD
+      "wordexp.scala is not implemented on Windows, OpenBSD, iOS, tvOS or watchOS",
+      !isWindows && !isOpenBSD && (isMac || !isApple)
     )
 
-    if (!isWindows && !isOpenBSD) Zone.acquire { implicit z =>
-      val wrdeP = stackalloc[wordexp_t]()
+    if (!isWindows && !isOpenBSD && (isMac || !isApple)) Zone.acquire {
+      implicit z =>
+        val wrdeP = stackalloc[wordexp_t]()
 
-      val pattern = "~"
-      val status = wordexp(toCString(pattern), wrdeP, 0)
+        val pattern = "~"
+        val status = wordexp(toCString(pattern), wrdeP, 0)
 
-      try {
-        checkWordexpStatus(status, pattern)
+        try {
+          checkWordexpStatus(status, pattern)
 
-        assertEquals("Unexpected we_wordc", 1, wrdeP.we_wordc.toInt)
+          assertEquals("Unexpected we_wordc", 1, wrdeP.we_wordc.toInt)
 
-        val expected = System.getProperty("user.home", "Alabama")
+          val expected = System.getProperty("user.home", "Alabama")
 
-        assertEquals(
-          s"Unexpected expansion of '${pattern}'",
-          expected,
-          fromCString(wrdeP.we_wordv(0))
-        )
-      } finally {
-        wordfree(wrdeP)
-      }
-    } // !isWindows && !isOpenBSD
+          assertEquals(
+            s"Unexpected expansion of '${pattern}'",
+            expected,
+            fromCString(wrdeP.we_wordv(0))
+          )
+        } finally {
+          wordfree(wrdeP)
+        }
+    } // !isWindows && !isOpenBSD && (isMac || !isApple)
   }
 
   @Test def wordexpVariableSubstitution: Unit = {
     assumeTrue(
-      "wordexp.scala is not implemented on Windows or OpenBSD",
-      !isWindows && !isOpenBSD
+      "wordexp.scala is not implemented on Windows, OpenBSD, iOS, tvOS or watchOS",
+      !isWindows && !isOpenBSD && (isMac || !isApple)
     )
 
     /* The environment variable $HOME may not exist on all non-CI systems.
@@ -106,27 +108,28 @@ class WordexpTest {
       hasHomeEnvvar != null
     )
 
-    if (!isWindows && !isOpenBSD) Zone.acquire { implicit z =>
-      val wrdeP = stackalloc[wordexp_t]()
+    if (!isWindows && !isOpenBSD && (isMac || !isApple)) Zone.acquire {
+      implicit z =>
+        val wrdeP = stackalloc[wordexp_t]()
 
-      val pattern = "Phil $HOME Ochs"
-      val status = wordexp(toCString(pattern), wrdeP, 0)
+        val pattern = "Phil $HOME Ochs"
+        val status = wordexp(toCString(pattern), wrdeP, 0)
 
-      try {
-        checkWordexpStatus(status, pattern)
+        try {
+          checkWordexpStatus(status, pattern)
 
-        assertEquals("Unexpected we_wordc", 3, wrdeP.we_wordc.toInt)
+          assertEquals("Unexpected we_wordc", 3, wrdeP.we_wordc.toInt)
 
-        val expected = System.getProperty("user.home", "Mississippi")
+          val expected = System.getProperty("user.home", "Mississippi")
 
-        assertEquals(
-          s"Unexpected expansion of '${pattern}'",
-          expected,
-          fromCString(wrdeP.we_wordv(1))
-        )
-      } finally {
-        wordfree(wrdeP)
-      }
-    } // !isWindows && !isOpenBSD
+          assertEquals(
+            s"Unexpected expansion of '${pattern}'",
+            expected,
+            fromCString(wrdeP.we_wordv(1))
+          )
+        } finally {
+          wordfree(wrdeP)
+        }
+    } // !isWindows && !isOpenBSD && (isMac || !isApple)
   }
 }

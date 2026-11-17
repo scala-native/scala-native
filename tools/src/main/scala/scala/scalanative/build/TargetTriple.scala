@@ -343,6 +343,8 @@ private[scalanative] object TargetTriple {
       case os if os.startsWith("elfiamcu")    => ELFIAMCU
       case os if os.startsWith("tvos")        => TvOS
       case os if os.startsWith("watchos")     => WatchOS
+      case os if os.startsWith("xros")        => XROS
+      case os if os.startsWith("visionos")    => XROS
       case os if os.startsWith("driverkit")   => DriverKit
       case os if os.startsWith("mesa3d")      => Mesa3D
       case os if os.startsWith("contiki")     => Contiki
@@ -393,6 +395,7 @@ private[scalanative] object TargetTriple {
     final val WASI = "wasi"
     final val WatchOS = "watchos"
     final val Win32 = "windows"
+    final val XROS = "xros"
     final val ZOS = "zos"
     final val ShaderModel = "shadermodel"
     final val LiteOS = "liteos"

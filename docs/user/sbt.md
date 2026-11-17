@@ -323,6 +323,55 @@ platform.
 You may use [`FatELF](https://icculus.org/fatelf/) to build
 fat binaries for Linux.
 
+### Cross compilation to iOS, tvOS and watchOS
+
+Select the platform using the target triple, for example:
+
+``` scala
+nativeConfig ~= { _.withTargetTriple("arm64-apple-ios16.0-simulator") }
+```
+
+These targets also need the headers and libraries of a dedicated Xcode SDK
+instead of the ones of the host. The SDK is not discovered automatically,
+set it explicitly using either the `SDKROOT` environment variable
+
+``` sh
+SDKROOT="$(xcrun --sdk iphonesimulator --show-sdk-path)" sbt nativeLink
+```
+
+or the compile and linking options:
+
+``` scala
+nativeConfig ~= { c =>
+  val sysroot = Seq("-isysroot", "/path/to/iPhoneSimulator.sdk")
+  c.withTargetTriple("arm64-apple-ios16.0-simulator")
+    .withCompileOptions(_ ++ sysroot)
+    .withLinkingOptions(_ ++ sysroot)
+}
+```
+
+### Running binaries using a custom launcher
+
+The `run` and `test` tasks execute the built binary directly. Set the
+`SCALANATIVE_TARGET_RUNNER` environment variable to execute it using a
+different command instead. The command is delimited by whitespaces, the
+path of the binary and its arguments are appended to it:
+
+``` sh
+SCALANATIVE_TARGET_RUNNER="qemu-aarch64-static -L /usr/aarch64-linux-gnu" sbt test
+```
+
+It allows to:
+
+-   run binaries built for a different platform, e.g. using an emulator
+    or a launcher spawning the process in the iOS simulator,
+-   wrap the binary with additional tools, e.g. `valgrind`, a profiler
+    or a debugger running in batch mode.
+
+The command needs to preserve the standard streams and the exit code of
+the binary. Tests communicate with sbt using a local socket, the wrapped
+binary needs to be able to connect to the host.
+
 (sbt_build_target)=
 ## Build target
 

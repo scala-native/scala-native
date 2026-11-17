@@ -10,6 +10,8 @@ import org.junit.Test
 
 import org.scalanative.testsuite.utils.Platform._
 
+import scala.scalanative.junit.utils.AssumesHelper.assumeSupportsSubprocesses
+
 class RuntimeTest {
   import ProcessUtils._
   private val EOL = System.lineSeparator()
@@ -41,6 +43,7 @@ class RuntimeTest {
     }
 
   @Test def execCommand(): Unit = {
+    assumeSupportsSubprocesses()
     val proc = Runtime.getRuntime.exec(lsCommand :+ resourceDir)
     val out = readInputStream(proc.getInputStream)
     assertTrue(proc.waitFor(30, TimeUnit.SECONDS))
@@ -51,6 +54,7 @@ class RuntimeTest {
       "Not possible in Windows, would use dir keyword anyway",
       isWindows
     )
+    assumeSupportsSubprocesses()
 
     // The command is looked up in the parent's PATH, as on the JVM, so the
     // fake 'ls' in resourceDir is not used.
@@ -61,6 +65,7 @@ class RuntimeTest {
     assertEquals(Scripts.values.map(_.filename), out.split(EOL).toSet)
   }
   @Test def execDir(): Unit = {
+    assumeSupportsSubprocesses()
     val proc =
       Runtime.getRuntime.exec(lsCommand, null, new File(resourceDir))
     val out = readInputStream(proc.getInputStream)

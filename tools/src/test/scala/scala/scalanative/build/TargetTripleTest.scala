@@ -18,6 +18,12 @@ class TargetTripleTest {
       TargetTriple("x86_64", "apple", "darwin", "unknown"),
     "x86_64-apple-darwin22.4.0" ->
       TargetTriple("x86_64", "apple", "darwin", "unknown"),
+    "arm64-apple-ios16.0-simulator" ->
+      TargetTriple("aarch64", "apple", "ios", "simulator"),
+    "arm64-apple-xros2.0-simulator" ->
+      TargetTriple("aarch64", "apple", "xros", "simulator"),
+    "arm64-apple-visionos2.0" ->
+      TargetTriple("aarch64", "apple", "xros", "unknown"),
     "x86_64-pc-linux-gnu" ->
       TargetTriple("x86_64", "pc", "linux", "gnu"),
     "x86_64-pc-windows-msvc" ->

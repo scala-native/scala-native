@@ -6,7 +6,7 @@ import java.nio.file.{Files, Path, Paths, StandardCopyOption}
 
 import scala.concurrent._
 import scala.sys.process._
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 import scala.scalanative.build.IO.RichPath
 import scala.scalanative.linker.ReachabilityAnalysis
@@ -248,7 +248,7 @@ private[scalanative] object LLVM {
     // in a separate library there, so we use it only in other UNIX targets
     // (also Windows on msys and cgwin)
     val asNeededLinkerFlags =
-      if (config.targetsWindows || config.targetsMac) Nil
+      if (config.targetsWindows || config.targetsApple) Nil
       else List("-Wl,--as-needed")
     val linkopts =
       asNeededLinkerFlags ++ config.linkingOptions ++ links.map("-l" + _)
@@ -271,7 +271,7 @@ private[scalanative] object LLVM {
       if (config.compilerConfig.buildTarget == BuildTarget.LibraryDynamic)
         if (config.targetsLinux)
           List(s"-Wl,-soname,${config.artifactName}")
-        else if (config.targetsMac)
+        else if (config.targetsApple)
           List(s"-Wl,-install_name,@rpath/${config.artifactName}")
         else Nil
       else Nil
@@ -449,7 +449,7 @@ private[scalanative] object LLVM {
           if isNativeSource && config.compilerConfig.multithreadingSupport && usesContinuations =>
         Seq("-fno-lto")
       // Apple ld does not materialize unw_* symbols that exist only in bitcode.
-      case _ if config.targetsMac && isVendoredUnwind => Seq("-fno-lto")
+      case _ if config.targetsApple && isVendoredUnwind => Seq("-fno-lto")
       case lto => Seq(s"-flto=${lto.name}")
     }
   }
@@ -546,7 +546,7 @@ private[scalanative] object LLVM {
       case BuildTarget.LibraryStatic =>
         optionalPICflag ++ Seq("--emit-static-lib")
       case BuildTarget.LibraryDynamic =>
-        val libFlag = if (config.targetsMac) "-dynamiclib" else "-shared"
+        val libFlag = if (config.targetsApple) "-dynamiclib" else "-shared"
         Seq(libFlag) ++ optionalPICflag ++ optRdynamic
     }
   }

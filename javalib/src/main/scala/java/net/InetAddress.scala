@@ -13,7 +13,7 @@ import scala.annotation.tailrec
 
 import scala.scalanative.libc.LibcExt
 import scala.scalanative.meta.LinktimeInfo
-import scala.scalanative.meta.LinktimeInfo.{isLinux, isMac}
+import scala.scalanative.meta.LinktimeInfo.{isApple, isLinux}
 import scala.scalanative.posix.arpa.inet._
 import scala.scalanative.posix.netdb._
 import scala.scalanative.posix.netdbOps._
@@ -652,7 +652,7 @@ object InetAddress {
 
     // EAI_NODATA was removed from FreeBSD a decade or more ago.
     val EAI_NODATA =
-      if (LinktimeInfo.isAndroid || isMac) 7
+      if (LinktimeInfo.isAndroid || isApple) 7
       else if (isLinux) -5
       else Integer.MAX_VALUE // placeholder, will never match
 
