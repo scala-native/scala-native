@@ -247,7 +247,8 @@ class Regexp {
   override def hashCode(): Int = {
     var hashcode: Int = op.hashCode
     (op: @switch) match {
-      case Op.END_TEXT => hashcode += 31 * (flags & RE2.WAS_DOLLAR)
+      case Op.BEGIN_LINE | Op.END_LINE | Op.END_TEXT =>
+        hashcode += 31 * (flags & RE2.LINE_MODE_FLAGS)
       case Op.LITERAL | Op.CHAR_CLASS =>
         hashcode += 31 * Arrays.hashCode(runes)
       case Op.ALTERNATE | Op.CONCAT =>
@@ -284,9 +285,10 @@ class Regexp {
         false
       } else
         (x.op: @switch) match {
-          case Op.END_TEXT =>
-            // The parse flags remember whether this is \z or \Z.
-            (x.flags & RE2.WAS_DOLLAR) == (y.flags & RE2.WAS_DOLLAR)
+          case Op.BEGIN_LINE | Op.END_LINE | Op.END_TEXT =>
+            // The parse flags remember whether this is \z or \Z, and the
+            // line terminators in use.
+            (x.flags & RE2.LINE_MODE_FLAGS) == (y.flags & RE2.LINE_MODE_FLAGS)
 
           case Op.LITERAL | Op.CHAR_CLASS =>
             x.runes.sameElements(y.runes)

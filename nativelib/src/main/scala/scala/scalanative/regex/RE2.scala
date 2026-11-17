@@ -717,6 +717,9 @@ object RE2 {
   // U+0085, U+2028 and U+2029.
   final val JAVA_LINES = 0x200
 
+  // Flags that change the meaning of BEGIN_LINE, END_LINE and END_TEXT.
+  final val LINE_MODE_FLAGS = JAVA_LINES | WAS_DOLLAR
+
   final val MATCH_NL = CLASS_NL | DOT_NL
 
   // As close to Perl as possible.

@@ -182,13 +182,23 @@ class Compiler private () {
       case ROP.ANY_CHAR =>
         rune(ANY_RUNE, 0)
       case ROP.BEGIN_LINE =>
-        empty(Utils.EMPTY_BEGIN_LINE)
+        empty(
+          if ((re.flags & RE2.JAVA_LINES) != 0) Utils.EMPTY_BEGIN_LINE_JAVA
+          else Utils.EMPTY_BEGIN_LINE
+        )
       case ROP.END_LINE =>
-        empty(Utils.EMPTY_END_LINE)
+        empty(
+          if ((re.flags & RE2.JAVA_LINES) != 0) Utils.EMPTY_END_LINE_JAVA
+          else Utils.EMPTY_END_LINE
+        )
       case ROP.BEGIN_TEXT =>
         empty(Utils.EMPTY_BEGIN_TEXT)
       case ROP.END_TEXT =>
-        empty(Utils.EMPTY_END_TEXT)
+        val javaDollar = RE2.JAVA_LINES | RE2.WAS_DOLLAR
+        empty(
+          if ((re.flags & javaDollar) == javaDollar) Utils.EMPTY_END_TEXT_JAVA
+          else Utils.EMPTY_END_TEXT
+        )
       case ROP.WORD_BOUNDARY =>
         empty(Utils.EMPTY_WORD_BOUNDARY)
       case ROP.NO_WORD_BOUNDARY =>

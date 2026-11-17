@@ -172,6 +172,8 @@ class Machine(re2: RE2) {
       }
 
       flag = Utils.emptyOpContext(rune, rune1)
+      if (Utils.isLineTerminator(rune1))
+        flag |= in.finalLineTerminatorContext(pos + width, rune, rune1, width1)
 
       step(
         runq,
@@ -244,7 +246,8 @@ class Machine(re2: RE2) {
     // bitmask of EMPTY_* flags
     val flag =
       if (pos == 0)
-        Utils.emptyOpContext(-1, rune)
+        Utils.emptyOpContext(-1, rune) |
+          in.finalLineTerminatorContext(0, -1, rune, width)
       else
         in.context(pos)
 

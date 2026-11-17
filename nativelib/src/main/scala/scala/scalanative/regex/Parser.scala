@@ -845,6 +845,13 @@ class Parser(wholeRegexp: String, _flags: Int) {
                 case 'z' =>
                   op(ROP.END_TEXT)
                   breakBigswitch = true
+                case 'Z' =>
+                  if ((flags & RE2.JAVA_LINES) != 0) {
+                    op(ROP.END_TEXT).flags |= RE2.WAS_DOLLAR
+                    breakBigswitch = true
+                  } else {
+                    t.rewindTo(savedPos)
+                  }
                 case _ =>
                   t.rewindTo(savedPos)
               }
