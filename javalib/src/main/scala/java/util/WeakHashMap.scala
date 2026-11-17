@@ -26,8 +26,14 @@ class WeakHashMap[K, V] protected (inner: mutable.Map[Box[K], V])
     putAll(m)
   }
 
-  override def clear(): Unit =
+  /** Number of structural modifications, checked by the fail-fast iterators.
+   */
+  private var modCount: Int = 0
+
+  override def clear(): Unit = {
     inner.clear()
+    modCount += 1
+  }
 
   override def clone(): AnyRef = {
     new WeakHashMap(inner.clone())
@@ -52,12 +58,18 @@ class WeakHashMap[K, V] protected (inner: mutable.Map[Box[K], V])
     new KeySet
 
   override def put(key: K, value: V): V =
-    inner.put(Box(key), value).getOrElse(null.asInstanceOf[V])
+    inner.put(Box(key), value) match {
+      case Some(old) => old
+      case None      =>
+        modCount += 1
+        null.asInstanceOf[V]
+    }
 
   override def remove(key: Any): V = {
     val boxedKey = Box(key.asInstanceOf[K])
     inner.get(boxedKey).fold(null.asInstanceOf[V]) { value =>
       inner -= boxedKey
+      modCount += 1
       value
     }
   }
@@ -89,8 +101,10 @@ class WeakHashMap[K, V] protected (inner: mutable.Map[Box[K], V])
     override def remove(o: Any): Boolean = {
       val boxedKey = Box(o.asInstanceOf[K])
       val contains = inner.contains(boxedKey)
-      if (contains)
+      if (contains) {
         inner -= boxedKey
+        modCount += 1
+      }
       contains
     }
 
@@ -118,7 +132,7 @@ class WeakHashMap[K, V] protected (inner: mutable.Map[Box[K], V])
       inner.size
 
     override def clear(): Unit =
-      inner.clear()
+      self.clear()
   }
 
   private abstract class AbstractMapViewIterator[E] extends Iterator[E] {
@@ -126,9 +140,13 @@ class WeakHashMap[K, V] protected (inner: mutable.Map[Box[K], V])
 
     protected var lastKey: Option[Box[K]] = None
 
+    private var expectedModCount = modCount
+
     protected def getNextForm(key: Box[K]): E
 
     override final def next(): E = {
+      if (modCount != expectedModCount)
+        throw new ConcurrentModificationException()
       lastKey = Some(innerIterator.next())
       getNextForm(lastKey.get)
     }
@@ -139,7 +157,11 @@ class WeakHashMap[K, V] protected (inner: mutable.Map[Box[K], V])
     override final def remove(): Unit = {
       lastKey match {
         case Some(key) =>
+          if (modCount != expectedModCount)
+            throw new ConcurrentModificationException()
           inner.remove(key)
+          modCount += 1
+          expectedModCount = modCount
           lastKey = None
         case None =>
           throw new IllegalStateException
