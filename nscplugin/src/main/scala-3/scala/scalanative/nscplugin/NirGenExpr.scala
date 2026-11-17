@@ -1341,8 +1341,7 @@ trait NirGenExpr(using Context) {
           val externTy = genExternMethodSig(sym).ret
           genLoadExtern(ty, externTy, sym)
         case Seq(valuep) =>
-          if !checkExternAssignable(sym, valuep.srcPos) then
-            nir.Val.Unit
+          if !checkExternAssignable(sym, valuep.srcPos) then nir.Val.Unit
           else
             val externTy = genExternType(valuep.tpe)
             genStoreExtern(externTy, sym, genExpr(valuep))
