@@ -42,4 +42,37 @@ class ValidatorTest {
         )
       }
   }
+
+  private def withLlvmPrefix(test: (Path, Path) => Unit): Unit = {
+    val root = Files.createTempDirectory("scalanative-llvm")
+    try {
+      val bin = Files.createDirectories(root.resolve("bin"))
+      Files.createDirectories(root.resolve("include"))
+      Files.createFile(bin.resolve("llvm-config"))
+      test(root, Files.createFile(bin.resolve("clang")))
+    } finally {
+      Files
+        .walk(root)
+        .sorted(java.util.Comparator.reverseOrder[Path]())
+        .forEach(Files.delete(_))
+    }
+  }
+
+  @Test def llvmDirsOfConfiguredClangAreAccepted(): Unit = withLlvmPrefix {
+    (prefix, clang) =>
+      val options = Seq(s"-I${prefix.resolve("include")}", "-Qunused-arguments")
+      assertEquals(Nil, Validator.mismatchedLlvmDirs(clang, options))
+  }
+
+  @Test def llvmDirsOfOtherToolchainAreReported(): Unit = withLlvmPrefix {
+    (prefix, _) =>
+      withLlvmPrefix { (_, otherClang) =>
+        val include = s"-I${prefix.resolve("include")}"
+        val lib = s"-L${prefix.resolve("lib")}"
+        assertEquals(
+          Seq(include -> prefix, lib -> prefix),
+          Validator.mismatchedLlvmDirs(otherClang, Seq(include, lib, "-I/x"))
+        )
+      }
+  }
 }
