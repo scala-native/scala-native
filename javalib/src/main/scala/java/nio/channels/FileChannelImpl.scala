@@ -934,16 +934,8 @@ private[java] object FileChannelImpl {
     val creating = options.create || options.createNew
     val mode = if (creating) Files.creationMode(attrs, default = 0x1b6) else 0
     val pathString = path.toString()
-    if (isWindows) {
-      // Checked before CreateFileW, which follows links and may truncate.
-      if (options.noFollowLinks && Files.isSymbolicLink(path))
-        throw new FileSystemException(
-          pathString,
-          null,
-          "Is a symbolic link (NOFOLLOW_LINKS specified)"
-        )
-      openWindows(pathString, options)
-    } else openUnix(pathString, options, mode)
+    if (isWindows) openWindows(pathString, options)
+    else openUnix(pathString, options, mode)
   }
 
   private def openUnix(
@@ -987,6 +979,7 @@ private[java] object FileChannelImpl {
       path: String,
       options: OpenOptions
   ): FileDescriptor = Zone.acquire { implicit z =>
+    import scala.scalanative.windows.FileApiOps._
     import scala.scalanative.windows.winnt.AccessRights._
 
     // APPEND keeps write access so that truncate() works.
@@ -994,16 +987,19 @@ private[java] object FileChannelImpl {
     if (options.read) access |= FILE_GENERIC_READ
     if (options.write) access |= FILE_GENERIC_WRITE
 
+    /* Truncation happens after opening: CREATE_ALWAYS fails on hidden and
+     * system files, and a NOFOLLOW_LINKS check must come first.
+     */
     val disposition =
       if (options.createNew) CREATE_NEW
-      else if (options.create && options.truncate) CREATE_ALWAYS
       else if (options.create) OPEN_ALWAYS
-      else if (options.truncate) FileApiExt.TRUNCATE_EXISTING.toUInt
       else OPEN_EXISTING
 
     var flagsAndAttributes = FILE_ATTRIBUTE_NORMAL
     if (options.sync || options.dsync)
       flagsAndAttributes |= FILE_FLAG_WRITE_THROUGH
+    if (options.noFollowLinks)
+      flagsAndAttributes |= FILE_FLAG_OPEN_REPARSE_POINT
 
     val handle = CreateFileW(
       toCWideStringUTF16LE(path),
@@ -1023,6 +1019,27 @@ private[java] object FileChannelImpl {
         else WindowsException.onPathWithLastEror(path, err)
       }
     }
+
+    def fail(e: Exception): Nothing = {
+      HandleApi.CloseHandle(handle)
+      throw e
+    }
+    if (options.noFollowLinks) {
+      val info = stackalloc[ByHandleFileInformation]()
+      if (!GetFileInformationByHandle(handle, info))
+        fail(WindowsException.onPath(path))
+      if ((info.fileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) != 0.toUInt)
+        fail(
+          new FileSystemException(
+            path,
+            null,
+            "Is a symbolic link (NOFOLLOW_LINKS specified)"
+          )
+        )
+    }
+    if (options.truncate && !SetEndOfFile(handle))
+      fail(WindowsException.onPath(path))
+
     new FileDescriptor(handle, readOnly = !options.write)
   }
 }

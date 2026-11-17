@@ -6,8 +6,8 @@ import java.nio.channels._
 import java.nio.charset.StandardCharsets
 import java.nio.file.attribute.PosixFilePermissions
 import java.nio.file.{
-  AccessDeniedException, FileAlreadyExistsException, Files, NoSuchFileException,
-  Path, Paths, StandardOpenOption
+  AccessDeniedException, FileAlreadyExistsException, Files, LinkOption,
+  NoSuchFileException, Path, Paths, StandardOpenOption
 }
 import java.util.concurrent.TimeUnit
 import java.{lang => jl}
@@ -1618,6 +1618,50 @@ class FileChannelTest {
           } finally channel.close()
         }
       )
+    }
+  }
+
+  @Test def createTruncateOverwritesHiddenFileOnWindows(): Unit = {
+    assumeTrue("Windows hidden files", Platform.isWindows)
+    withTemporaryDirectory { dir =>
+      val path = dir.resolve("hidden")
+      Files.write(path, "0123456789".getBytes("UTF-8"))
+      Files.setAttribute(path, "dos:hidden", java.lang.Boolean.TRUE)
+      val channel = FileChannel.open(
+        path,
+        StandardOpenOption.CREATE,
+        StandardOpenOption.WRITE,
+        StandardOpenOption.TRUNCATE_EXISTING
+      )
+      try channel.write(ByteBuffer.wrap("ab".getBytes("UTF-8")))
+      finally channel.close()
+      assertEquals("ab", new String(Files.readAllBytes(path), "UTF-8"))
+    }
+  }
+
+  @Test def noFollowLinksDoesNotTruncateLinkTarget(): Unit = {
+    withTemporaryDirectory { dir =>
+      val target = dir.resolve("target")
+      val link = dir.resolve("link")
+      Files.write(target, "0123456789".getBytes("UTF-8"))
+      val linked =
+        try { Files.createSymbolicLink(link, target); true }
+        catch {
+          case _: java.io.IOException | _: UnsupportedOperationException =>
+            false
+        }
+      assumeTrue("symbolic links supported", linked)
+
+      assertThrows(
+        classOf[java.io.IOException],
+        FileChannel.open(
+          link,
+          StandardOpenOption.WRITE,
+          StandardOpenOption.TRUNCATE_EXISTING,
+          LinkOption.NOFOLLOW_LINKS
+        )
+      )
+      assertEquals("target size", 10L, Files.size(target))
     }
   }
 }
