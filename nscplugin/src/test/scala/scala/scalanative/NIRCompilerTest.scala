@@ -200,15 +200,16 @@ class NIRCompilerTest {
     NIRCompiler(_.compile(code))
   }
 
-  @Test def byAddressAnnotationOnNonPointerExternVar(): Unit = assertCompileError(
-    """|import scala.scalanative.unsafe._
-       |
-       |@extern object Dummy {
-       |  @byAddress var foo: CInt = extern
-       |}
-       |""".stripMargin,
-    "`@byAddress` can only be used on extern variables of a pointer type"
-  )
+  @Test def byAddressAnnotationOnNonPointerExternVar(): Unit =
+    assertCompileError(
+      """|import scala.scalanative.unsafe._
+         |
+         |@extern object Dummy {
+         |  @byAddress var foo: CInt = extern
+         |}
+         |""".stripMargin,
+      "`@byAddress` can only be used on extern variables of a pointer type"
+    )
 
   @Test def byAddressAnnotationOnExternDef(): Unit = assertCompileError(
     """|import scala.scalanative.unsafe._
