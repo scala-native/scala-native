@@ -34,7 +34,8 @@ class MapFailFastTest {
       (() => fill(new LinkedHashMap[Integer, Integer](16, 0.75f, true))),
     "IdentityHashMap" -> (() => fill(new IdentityHashMap[Integer, Integer]())),
     "WeakHashMap" -> (() => fill(new WeakHashMap[Integer, Integer]())),
-    "Hashtable" -> (() => fill(new Hashtable[Integer, Integer]()))
+    "Hashtable" -> (() => fill(new Hashtable[Integer, Integer]())),
+    "TreeMap" -> (() => fill(new TreeMap[Integer, Integer]()))
   )
 
   /* IdentityHashMap compares keys by reference: use the keys of the map
@@ -280,7 +281,11 @@ class MapFailFastTest {
       val it = m.keySet().iterator()
       while (it.hasNext()) it.next()
       m.put(int(99), int(1))
-      assertThrows(s"$name", classOf[CME], it.next())
+      // The JVM TreeMap iterator reports exhaustion first
+      val expected =
+        if (name == "TreeMap") classOf[NoSuchElementException]
+        else classOf[CME]
+      assertThrows(s"$name", expected, it.next())
     }
 
   @Test def bulkTraversalsThrowWhenCallbackAddsMapping(): Unit = forAllMaps {
@@ -538,13 +543,18 @@ class MapFailFastTest {
     }
   }
 
-  private val sets: Seq[(String, () => Set[Integer])] = Seq(
+  private val hashSets: Seq[(String, () => Set[Integer])] = Seq(
     "HashSet" -> (() =>
       new HashSet[Integer](Arrays.asList[Integer](0, 1, 2, 3, 4))
     ),
     "LinkedHashSet" ->
       (() => new LinkedHashSet[Integer](Arrays.asList[Integer](0, 1, 2, 3, 4)))
   )
+
+  private val sets: Seq[(String, () => Set[Integer])] = hashSets :+
+    ("TreeSet" -> (() =>
+      new TreeSet[Integer](Arrays.asList[Integer](0, 1, 2, 3, 4))
+    ))
 
   @Test def setIteratorsAreFailFast(): Unit = {
     for ((name, mk) <- sets) {
@@ -610,7 +620,7 @@ class MapFailFastTest {
   }
 
   @Test def hashSetCloneIsIndependent(): Unit = {
-    for ((name, mk) <- sets) {
+    for ((name, mk) <- hashSets) {
       val s = mk()
       val c =
         s.asInstanceOf[HashSet[Integer]].clone().asInstanceOf[Set[Integer]]
@@ -619,6 +629,111 @@ class MapFailFastTest {
       assertTrue(name, s.contains(int(1)))
       assertEquals(name, 4, c.size())
       assertEquals(name, 5, s.size())
+    }
+  }
+
+  private def treeMap(): TreeMap[Integer, Integer] =
+    fill(new TreeMap[Integer, Integer]())
+
+  private val navigableViews: Seq[
+    (String, TreeMap[Integer, Integer] => NavigableMap[Integer, Integer])
+  ] =
+    Seq(
+      "subMap" -> (_.subMap(int(1), true, int(4), true)),
+      "headMap" -> (_.headMap(int(3), true)),
+      "tailMap" -> (_.tailMap(int(1), true)),
+      "descendingMap" -> (_.descendingMap()),
+      "subMap.descendingMap" ->
+        (_.subMap(int(1), true, int(4), true).descendingMap()),
+      "descendingMap.headMap" -> (_.descendingMap().headMap(int(1), true))
+    )
+
+  @Test def treeMapViewIteratorsAreFailFast(): Unit = {
+    for ((name, view) <- navigableViews) {
+      val m1 = treeMap()
+      val it1 = view(m1).keySet().iterator()
+      it1.next()
+      m1.put(int(99), int(1)) // outside of the range of most views
+      assertThrows(s"$name: after parent put", classOf[CME], it1.next())
+
+      val m2 = treeMap()
+      val it2 = view(m2).entrySet().iterator()
+      it2.next()
+      m2.remove(int(0))
+      assertThrows(s"$name: after parent remove", classOf[CME], it2.next())
+
+      val m3 = treeMap()
+      val v3 = view(m3)
+      val it3 = v3.values().iterator()
+      it3.next()
+      v3.pollLastEntry()
+      assertThrows(s"$name: after view poll", classOf[CME], it3.next())
+
+      val m4 = treeMap()
+      val it4 = view(m4).navigableKeySet().descendingIterator()
+      it4.next()
+      m4.put(int(2), int(9))
+      it4.next() // replacing a value is not structural
+      it4.remove()
+      it4.next()
+
+      val m5 = treeMap()
+      val it5 = view(m5).keySet().iterator()
+      it5.next()
+      m5.clear()
+      assertThrows(s"$name: after parent clear", classOf[CME], it5.next())
+    }
+
+    val m = treeMap()
+    val it = m.descendingKeySet().iterator()
+    it.next()
+    m.pollFirstEntry()
+    assertThrows(classOf[CME], it.next())
+
+    val m2 = treeMap()
+    val it2 = m2.keySet().iterator()
+    it2.next()
+    m2.firstEntry()
+    m2.ceilingKey(int(2))
+    assertEquals(1, it2.next().intValue())
+  }
+
+  @Test def treeSetViewIteratorsAreFailFast(): Unit = {
+    def treeSet() = new TreeSet[Integer](Arrays.asList[Integer](0, 1, 2, 3, 4))
+    val views: Seq[(String, TreeSet[Integer] => Iterator[Integer])] = Seq(
+      "descendingIterator" -> (_.descendingIterator()),
+      "subSet" -> (_.subSet(int(1), true, int(4), true).iterator()),
+      "headSet" -> (_.headSet(int(3)).iterator()),
+      "tailSet.descendingSet" ->
+        (_.tailSet(int(1), true).descendingSet().iterator()),
+      "descendingSet" -> (_.descendingSet().iterator())
+    )
+    for ((name, view) <- views) {
+      val s1 = treeSet()
+      val it1 = view(s1)
+      it1.next()
+      s1.add(int(99))
+      assertThrows(s"$name: after add", classOf[CME], it1.next())
+
+      val s2 = treeSet()
+      val it2 = view(s2)
+      it2.next()
+      s2.add(int(2))
+      it2.next() // adding an existing element is not structural
+      it2.remove()
+      it2.next()
+
+      val s3 = treeSet()
+      val it3 = view(s3)
+      it3.next()
+      s3.pollFirst()
+      assertThrows(s"$name: after pollFirst", classOf[CME], it3.next())
+
+      val s4 = treeSet()
+      val it4 = view(s4)
+      it4.next()
+      s4.pollLast()
+      assertThrows(s"$name: after pollLast", classOf[CME], it4.next())
     }
   }
 }
