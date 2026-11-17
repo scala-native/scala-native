@@ -30,12 +30,15 @@ class Runtime private () {
   // Only replaces SIG_DFL, keeps handlers and SIG_IGN set by the application
   private def installSignalHandler(sig: CInt): Unit = {
     val handler: CFuncPtr1[CInt, Unit] = handleSignal(_)
+    // SIG_DFL is a null pointer, boxed by the extern call as a null CFuncPtr
+    def address(fn: CFuncPtr): CVoidPtr =
+      if (fn == null) null else CFuncPtr.toPtr(fn)
     def isDefault(fn: CFuncPtr1[CInt, Unit]): scala.Boolean =
-      fn == null || CFuncPtr.toPtr(fn) == CFuncPtr.toPtr(signal.SIG_DFL)
+      address(fn) == address(signal.SIG_DFL)
     if (LinktimeInfo.isWindows) {
       val previous = signal.signal(sig, handler)
       if (!isDefault(previous) &&
-          CFuncPtr.toPtr(previous) != CFuncPtr.toPtr(signal.SIG_ERR))
+          address(previous) != address(signal.SIG_ERR))
         signal.signal(sig, previous)
     } else {
       import scala.scalanative.posix.{signal => psignal}
