@@ -549,8 +549,11 @@ private[java] final class FileChannelImpl(
           done = true
         } else {
           buf.flip()
-          while (buf.hasRemaining())
-            totalWritten += this.write(buf)
+          while (!done && buf.hasRemaining()) {
+            val n = this.write(buf)
+            totalWritten += n
+            if (n == 0) done = true
+          }
           buf.clear()
         }
       }
@@ -711,7 +714,8 @@ private[java] final class FileChannelImpl(
         // intermediate buffer, and read straight from the array memory.
         val buf = array.at(offset)
 
-        // Blocking writes return only once all bytes are written.
+        // Blocking writes return once all bytes are written, or a write
+        // makes no progress.
         var written = 0
         if (isWindows) {
           val n = stackalloc[DWord]()
@@ -729,9 +733,11 @@ private[java] final class FileChannelImpl(
             if (!n == 0.toUInt) Thread.sleep(1)
           }
         } else {
-          while (written < count) {
+          var done = false
+          while (!done && written < count) {
             val n = unistd.write(fd.fd, buf + written, (count - written).toUInt)
-            if (n >= 0) written += n
+            if (n > 0) written += n
+            else if (n == 0) done = true
             else if (errno != EINTR) throw UnixException(getFileName(), errno)
           }
         }
@@ -753,7 +759,11 @@ private[java] final class FileChannelImpl(
       throw new IndexOutOfBoundsException
 
     seekEOFBeforeRelativeWrite()
-    writeArray(buffer, offset, count)
+    val written = writeArray(buffer, offset, count)
+    // Streams must write everything; channels may return a short count.
+    if (written < count)
+      throw new IOException(s"Wrote only $written of $count bytes")
+    written
   }
 
   private def writeByteBuffer(src: ByteBuffer): Int =
@@ -862,14 +872,16 @@ private[java] final class FileChannelImpl(
     if (count == 0) 0
     else {
       var written = 0
-      while (written < count) {
+      var done = false
+      while (!done && written < count) {
         val n = unistd.pwrite(
           fd.fd,
           array.at(offset + written),
           (count - written).toCSize,
           (pos + written).toSize
         )
-        if (n >= 0) written += n.toInt
+        if (n > 0) written += n.toInt
+        else if (n == 0) done = true
         else if (errno != EINTR) throw UnixException(getFileName(), errno)
       }
       written
