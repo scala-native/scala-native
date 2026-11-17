@@ -410,8 +410,8 @@ private[java] final class FileChannelImpl(
     else {
       var readCount = 0L
       while ({
-        readCount = unistd
-          .pread(fd.fd, buffer.at(offset), count.toCSize, pos.toSize)
+        readCount = FileChannelNative
+          .pread(fd.fd, buffer.at(offset), count.toCSize, pos)
           .toLong
         readCount < 0 && errno == EINTR
       }) ()
@@ -878,11 +878,11 @@ private[java] final class FileChannelImpl(
       var written = 0
       var done = false
       while (!done && written < count) {
-        val n = unistd.pwrite(
+        val n = FileChannelNative.pwrite(
           fd.fd,
           array.at(offset + written),
           (count - written).toCSize,
-          (pos + written).toSize
+          pos + written
         )
         if (n > 0) written += n.toInt
         else if (n == 0) done = true
