@@ -11,6 +11,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  test-sbt-plugin:
+    name: sbt plugin on Java ${{ matrix.java }}
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        java: [17, 21, 25]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: 3
+          java-version: ${{ matrix.java }}
+      - name: Compile both plugin lanes
+        run: sbt '++2.12.21; sbtScalaNative2_12/test; ++3.9.0; sbtScalaNative3/test'
+
   # Compile all sources for given Scala version
   # Cache external dependencies
   # Test tools, if any of them fails, further tests will not start.
