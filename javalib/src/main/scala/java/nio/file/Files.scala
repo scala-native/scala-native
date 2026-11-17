@@ -1094,6 +1094,89 @@ object Files {
     StreamSupport.stream(posixDir, 0, false).onClose(() => posixDir.close())
   }
 
+  private def windowsList(dir: Path, dirString: String): Stream[Path] = {
+    import scalanative.windows.FileApiOps._
+
+    /* Lazy counterpart of posixList(): one FindFirstFileW/FindNextFileW
+     * entry is read per tryAdvance(). The search handle is released on
+     * exhaustion or when the stream is closed.
+     */
+    final class WindowsDir
+        extends Spliterators.AbstractSpliterator[Path](
+          Long.MaxValue,
+          0
+        ) {
+      private var fileData: Ptr[FileApi.Win32FindDataW] =
+        stdlib
+          .malloc(sizeof[FileApi.Win32FindDataW])
+          .asInstanceOf[Ptr[FileApi.Win32FindDataW]]
+      if (fileData == null) throw new OutOfMemoryError()
+
+      private var searchHandle: HandleApi.Handle = Zone.acquire { implicit z =>
+        val handle =
+          FileApi.FindFirstFileW(toWindowsPath(raw"$dirString\*"), fileData)
+        if (handle == HandleApiExt.INVALID_HANDLE_VALUE) {
+          val err = GetLastError()
+          stdlib.free(fileData)
+          fileData = null
+          throw WindowsException.onPathWithLastEror(dirString, err)
+        }
+        handle
+      }
+
+      // FindFirstFileW has already filled fileData with the first entry.
+      private var hasPendingEntry = true
+
+      override def trySplit(): Spliterator[Path] = null
+
+      def tryAdvance(action: Consumer[_ >: Path]): Boolean = {
+        var found: Path = null
+        synchronized {
+          while (found == null && fileData != null) {
+            if (!hasPendingEntry) {
+              if (FileApi.FindNextFileW(searchHandle, fileData))
+                hasPendingEntry = true
+              else {
+                val err = GetLastError()
+                closeImpl()
+                if (err != ErrorCodes.ERROR_NO_MORE_FILES)
+                  throw new UncheckedIOException(
+                    WindowsException.onPathWithLastEror(dirString, err)
+                  )
+              }
+            }
+            if (hasPendingEntry) {
+              hasPendingEntry = false
+              val name =
+                fromCWideString(fileData.fileName, StandardCharsets.UTF_16LE)
+              if (name != "." && name != "..")
+                found = dir.resolve(name)
+            }
+          }
+        }
+        if (found == null) false
+        else {
+          action.accept(found)
+          true
+        }
+      }
+
+      private def closeImpl(): Unit = if (fileData != null) {
+        FileApi.FindClose(searchHandle)
+        searchHandle = HandleApiExt.INVALID_HANDLE_VALUE
+        stdlib.free(fileData)
+        fileData = null
+      }
+
+      def close(): Unit = synchronized { closeImpl() }
+    }
+
+    val windowsDir = new WindowsDir()
+    StreamSupport
+      .stream(windowsDir, false)
+      .onClose(() => windowsDir.close())
+  }
+
   def list(dir: Path): Stream[Path] = {
     /* Fix Issue 3165 - From Java "Path" documentation URL:
      * https://docs.oracle.com/javase/8/docs/api/java/nio/file/Path.html
@@ -1111,9 +1194,7 @@ object Files {
 
     if (!isWindows)
       posixList(dir, dirString) // see comment re: args at top of that method
-    else {
-      Arrays.stream[Path](FileHelpers.list(dirString, (n, _) => dir.resolve(n)))
-    }
+    else windowsList(dir, dirString)
   }
 
   private def mismatchCore(is1: InputStream, is2: InputStream): Long = {

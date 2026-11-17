@@ -31,5 +31,8 @@ class DirectoryStreamImpl[T](
       }
     }
 
-  override def close(): Unit = closed = true
+  override def close(): Unit = if (!closed) {
+    closed = true
+    stream.close()
+  }
 }

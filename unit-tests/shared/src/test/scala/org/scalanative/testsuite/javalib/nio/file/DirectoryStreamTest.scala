@@ -11,6 +11,28 @@ import FilesTest.withTemporaryDirectory
 
 class DirectoryStreamTest {
 
+  // Issue #3898
+  @Test def closeReleasesDirectory(): Unit = {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath().resolve("listed")
+      for (_ <- 1 to 2) {
+        Files.createDirectory(dir)
+        for (j <- 1 to 3) Files.createFile(dir.resolve(s"file$j"))
+
+        val stream = Files.newDirectoryStream(dir)
+        val it = stream.iterator()
+        assertTrue("hasNext", it.hasNext())
+        assertNotNull("next", it.next())
+        stream.close()
+        stream.close()
+
+        for (j <- 1 to 3) Files.delete(dir.resolve(s"file$j"))
+        Files.delete(dir)
+        assertFalse("dir deleted", Files.exists(dir))
+      }
+    }
+  }
+
   @Test def filesNewDirectoryStreamPath(): Unit = {
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath()

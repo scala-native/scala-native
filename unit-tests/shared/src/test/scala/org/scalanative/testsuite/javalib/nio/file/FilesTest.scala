@@ -1123,6 +1123,73 @@ class FilesTest {
     }
   }
 
+  // Issue #3898
+  @Test def filesListIsLazyOverLargeDirectory(): Unit = {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val nFiles = 300
+      for (j <- 0 until nFiles)
+        Files.createFile(dir.resolve(f"file$j%03d"))
+
+      val partial = Files.list(dir)
+      try assertEquals("limit", 5L, partial.limit(5).count())
+      finally partial.close()
+
+      val names = new java.util.HashSet[String]()
+      val all = Files.list(dir)
+      try all.forEach(p => names.add(p.getFileName().toString()))
+      finally all.close()
+
+      assertEquals("count", nFiles, names.size())
+      for (j <- 0 until nFiles)
+        assertTrue(s"file$j", names.contains(f"file$j%03d"))
+    }
+  }
+
+  // Issue #3898
+  @Test def filesListCloseReleasesDirectory(): Unit = {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath().resolve("listed")
+
+      def populate(): Unit = {
+        Files.createDirectory(dir)
+        for (j <- 1 to 3) Files.createFile(dir.resolve(s"file$j"))
+      }
+
+      def deleteAll(): Unit = {
+        for (j <- 1 to 3) Files.delete(dir.resolve(s"file$j"))
+        Files.delete(dir)
+        assertFalse("dir deleted", Files.exists(dir))
+      }
+
+      // Closed before the first element is read.
+      populate()
+      Files.list(dir).close()
+      deleteAll()
+
+      // Closed while partially consumed; close is idempotent.
+      populate()
+      val stream = Files.list(dir)
+      val it = stream.iterator()
+      assertTrue("hasNext", it.hasNext())
+      assertNotNull("next", it.next())
+      stream.close()
+      stream.close()
+      deleteAll()
+
+      // Fully consumed, then closed.
+      populate()
+      val stream2 = Files.list(dir)
+      try assertEquals("count", 3L, stream2.count())
+      finally stream2.close()
+      deleteAll()
+
+      // The directory name can be reused.
+      populate()
+      deleteAll()
+    }
+  }
+
   @Test def filesReadSymbolicLinkCanReadValidSymbolicLink(): Unit = {
     assumeShouldTestSymlinks()
 
