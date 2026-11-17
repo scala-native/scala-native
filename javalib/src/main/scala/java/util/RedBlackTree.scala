@@ -99,6 +99,11 @@ private[util] object RedBlackTree {
    */
 
   final class Tree[A, B](var root: Node[A, B], var size: Int) {
+
+    /** Number of structural modifications, checked by the fail-fast iterators.
+     */
+    var modCount: Int = 0
+
     def treeCopy(): Tree[A, B] = new Tree(copyTree(root), size)
   }
 
@@ -235,6 +240,7 @@ private[util] object RedBlackTree {
   def clear(tree: Tree[_, _]): Unit = {
     tree.root = null
     tree.size = 0
+    tree.modCount += 1
   }
 
   // ---- search ----
@@ -448,6 +454,7 @@ private[util] object RedBlackTree {
 
       fixAfterInsert(tree, newNode)
       tree.size += 1
+      tree.modCount += 1
 
       null.asInstanceOf[B]
     }
@@ -570,6 +577,7 @@ private[util] object RedBlackTree {
     }
 
     tree.size -= 1
+    tree.modCount += 1
   }
 
   /* `node` can be `null` (in which case it is black), so we have to pass
@@ -791,9 +799,15 @@ private[util] object RedBlackTree {
   ) extends Iterator[R] {
 
     private var lastNode: Node[A, B] = _ // null
+    private var expectedModCount = tree.modCount
 
     protected def advance(node: Node[A, B]): Node[A, B]
     protected def nextResult(node: Node[A, B]): R
+
+    @inline
+    private def checkForComodification(): Unit =
+      if (tree.modCount != expectedModCount)
+        throw new ConcurrentModificationException()
 
     def hasNext(): Boolean = nextNode ne null
 
@@ -801,6 +815,7 @@ private[util] object RedBlackTree {
       val node = nextNode
       if (node eq null)
         throw new NoSuchElementException("next on empty iterator")
+      checkForComodification()
       lastNode = node
       nextNode = advance(node)
       nextResult(node)
@@ -810,8 +825,10 @@ private[util] object RedBlackTree {
       val node = lastNode
       if (node eq null)
         throw new IllegalStateException()
+      checkForComodification()
       deleteNode(tree, node)
       lastNode = null
+      expectedModCount = tree.modCount
     }
   }
 

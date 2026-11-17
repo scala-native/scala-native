@@ -74,14 +74,15 @@ class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit
       mappingFunction: Function[_ >: K, _ <: V]
   ): V = {
     val node = RB.getNode(tree, key)
+    val mc = tree.modCount
 
     if (node eq null) {
-      val newValue = mappingFunction(key)
+      val newValue = afterCallback(mc, mappingFunction(key))
       if (newValue != null)
         put(key, newValue)
       newValue
     } else if (node.getValue() == null) {
-      val newValue = mappingFunction(key)
+      val newValue = afterCallback(mc, mappingFunction(key))
       if (newValue != null)
         updateNodeValue(node, newValue)
       newValue
@@ -95,8 +96,12 @@ class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit
       remappingFunction: BiFunction[_ >: K, _ >: V, _ <: V]
   ): V = {
     val node = RB.getNode(tree, key)
+    val mc = tree.modCount
     if ((node ne null) && node.getValue() != null)
-      updateNodeValue(node, remappingFunction(key, node.getValue()))
+      updateNodeValue(
+        node,
+        afterCallback(mc, remappingFunction(key, node.getValue()))
+      )
     else
       null.asInstanceOf[V]
   }
@@ -106,13 +111,18 @@ class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit
       remappingFunction: BiFunction[_ >: K, _ >: V, _ <: V]
   ): V = {
     val node = RB.getNode(tree, key)
+    val mc = tree.modCount
     if (node eq null) {
-      val newValue = remappingFunction(key, null.asInstanceOf[V])
+      val newValue =
+        afterCallback(mc, remappingFunction(key, null.asInstanceOf[V]))
       if (newValue != null)
         put(key, newValue)
       newValue
     } else {
-      updateNodeValue(node, remappingFunction(key, node.getValue()))
+      updateNodeValue(
+        node,
+        afterCallback(mc, remappingFunction(key, node.getValue()))
+      )
     }
   }
 
@@ -124,6 +134,7 @@ class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit
     Objects.requireNonNull(value)
 
     val node = RB.getNode(tree, key)
+    val mc = tree.modCount
     if (node eq null) {
       put(key, value)
       value
@@ -131,10 +142,16 @@ class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit
       val oldValue = node.getValue()
       val newValue =
         if (oldValue == null) value
-        else remappingFunction(oldValue, value)
+        else afterCallback(mc, remappingFunction(oldValue, value))
 
       updateNodeValue(node, newValue)
     }
+  }
+
+  private def afterCallback[T](expectedModCount: Int, result: T): T = {
+    if (tree.modCount != expectedModCount)
+      throw new ConcurrentModificationException()
+    result
   }
 
   /** Common code for functions above.
