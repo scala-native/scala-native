@@ -41,7 +41,7 @@ class InetAddress protected (ipAddress: Array[Byte], originalHost: String)
 
   private def this(ipAddress: Array[Byte]) = this(ipAddress, null)
 
-  private var hostLastUpdated: Long = 0L // System.nanoTime()
+  private var hostLastUpdated: Long = 0L // System.currentTimeMillis()
   private var cachedHost: String = null
   private var lastLookupFailed = true
 
@@ -72,10 +72,10 @@ class InetAddress protected (ipAddress: Array[Byte], originalHost: String)
 
     def hostTimeoutExpired(timeNow: Long): Boolean = {
       val timeout = if (lastLookupFailed) NegativeHostTimeout else HostTimeout
-      timeNow - hostLastUpdated > timeout * 1000000000L
+      timeNow - hostLastUpdated > timeout * 1000L
     }
 
-    val timeNow = System.nanoTime()
+    val timeNow = System.currentTimeMillis()
     if (cachedHost == null || hostTimeoutExpired(timeNow)) {
       hostLastUpdated = timeNow
 
