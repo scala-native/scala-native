@@ -60,21 +60,26 @@ Some notes on the implementation:
         -   `\p{javaUpperCase}`
         -   `\p{javaWhitespace}`
         -   `\p{javaMirrored}`
-    -   Boundary matchers: `\G`, `\R`, `\Z`
+    -   Boundary matchers: `\G`, `\R`
     -   Possessive quantifiers: `X?+`, `X*+`, `X++`, `X{n}+`, `X{n,}+`,
         `X{n,m}+`
-    -   Lookaheads: `(?=X)`, `(?!X)`, `(?<=X)`, `(?<!X)`, `(?>X)`
+    -   Lookahead and lookbehind: `(?=X)`, `(?!X)`, `(?<=X)`, `(?<!X)`
+    -   Atomic groups: `(?>X)`
+    -   Backreferences: `\n`, `\k<name>`
     -   Options
         -   CANON_EQ
         -   COMMENTS
-        -   LITERAL
         -   UNICODE_CASE
         -   UNICODE_CHARACTER_CLASS
-        -   UNIX_LINES
     -   Patterns to match a Unicode binary property, such as
         `\p{isAlphabetic}` for a codepoint with the \'alphabetic\'
         property, are not supported. Often another pattern `\p{isAlpha}`
         may be used instead, `\p{isAlpha}` in this case.
+
+    Possessive quantifiers, lookaround, atomic groups and backreferences
+    need backtracking, which RE2 avoids to guarantee linear-time
+    matching. Patterns using them fail with a `PatternSyntaxException`
+    naming the unsupported construct.
 
 3.  The reference Java 8 regex package does not support certain commonly
     used Perl expressions supported by this implementation of RE2. For

@@ -200,6 +200,15 @@ class Parser(wholeRegexp: String, _flags: Int) {
         flags ^= RE2.NON_GREEDY
       }
       if (lastRepeatPos != -1) {
+        val quantifier = t.from(lastRepeatPos)
+        val lazyThenPlus = quantifier.length > 2 && quantifier.endsWith("?+")
+        if (op == ROP.PLUS && !lazyThenPlus) {
+          unsupported(
+            s"Possessive quantifier $quantifier",
+            t,
+            lastRepeatPos
+          )
+        }
         // In Perl it is not allowed to stack repetition operators:
         // a** is a syntax error, not a doubled star, and a++ means
         // something else entirely, which we don't support!
@@ -945,6 +954,15 @@ class Parser(wholeRegexp: String, _flags: Int) {
     // so that's the one we implement.  One is enough.
 
     val s = t.rest()
+
+    val unsupportedGroup =
+      if (s.startsWith("(?=")) "Lookahead (?=X)"
+      else if (s.startsWith("(?!")) "Negative lookahead (?!X)"
+      else if (s.startsWith("(?<=")) "Lookbehind (?<=X)"
+      else if (s.startsWith("(?<!")) "Negative lookbehind (?<!X)"
+      else if (s.startsWith("(?>")) "Atomic group (?>X)"
+      else null
+    if (unsupportedGroup != null) unsupported(unsupportedGroup, t, startPos)
 
     val (isNamedCapture, namedCaptureStart, namedCaptureSkip) =
       if (s.startsWith("(?<")) { // Java style is most likely
@@ -1781,6 +1799,23 @@ object Parser {
   // parseEscape parses an escape sequence at the beginning of s
   // and returns the rune.
   // Pre: t at '\\'.  Post: after escape.
+  private def unsupportedBackreference(
+      t: StringIterator,
+      form: String
+  ): Nothing =
+    unsupported(s"Backreference $form", t, t.pos() - 2)
+
+  private def unsupported(
+      construct: String,
+      t: StringIterator,
+      index: Int
+  ): Nothing =
+    throw new PatternSyntaxException(
+      s"$construct is not supported in Scala Native",
+      t.str,
+      index
+    )
+
   private def parseEscape(t: StringIterator): Int = {
     def invalidEscape: Nothing = {
       throw new PatternSyntaxException(ERR_INVALID_ESCAPE, t.str, t.pos() - 1)
@@ -1792,11 +1827,16 @@ object Parser {
     var c = t.pop()
 
     (c: @scala.annotation.switch) match {
+      case '8' | '9' =>
+        unsupportedBackreference(t, "\\" + c.toChar)
+      case 'k' =>
+        if (t.lookingAt("<")) unsupportedBackreference(t, "\\k<name>")
+        else invalidEscape
       // Octal escapes.
       case '1' | '2' | '3' | '4' | '5' | '6' | '7' =>
         // Single non-zero digit is a backreference not supported
         if (!t.more() || t.peek() < '0' || t.peek() > '7') {
-          invalidEscape
+          unsupportedBackreference(t, "\\" + c.toChar)
         } else {
           // fallthrough
           var r = c - '0'
