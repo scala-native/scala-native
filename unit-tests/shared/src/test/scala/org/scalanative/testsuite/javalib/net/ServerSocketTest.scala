@@ -136,4 +136,24 @@ class ServerSocketTest {
       s1.close()
     }
   }
+
+  // #3630: wildcard sockets accept IPv4 peers on dual-stack systems too
+  @Test def wildcardAcceptsIPv4Client(): Unit = {
+    val server = new ServerSocket(0)
+    try {
+      val ipv4Loopback = InetAddress.getByName("127.0.0.1")
+      val client = new Socket(ipv4Loopback, server.getLocalPort)
+      try {
+        val accepted = server.accept()
+        try {
+          assertArrayEquals(
+            ipv4Loopback.getAddress,
+            accepted.getInetAddress.getAddress
+          )
+          client.getOutputStream.write(42)
+          assertEquals(42, accepted.getInputStream.read())
+        } finally accepted.close()
+      } finally client.close()
+    } finally server.close()
+  }
 }

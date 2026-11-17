@@ -33,6 +33,12 @@ private[net] class UnixPlainSocketImpl extends AbstractPlainSocketImpl {
           s" streaming: ${streaming}"
       )
 
+    if (af == socket.AF_INET6 && !SocketHelpers.setDualStack(sock)) {
+      val err = errno
+      unistd.close(sock)
+      throw new IOException(s"Could not clear IPV6_V6ONLY on socket: $err")
+    }
+
     fd = new FileDescriptor(sock)
   }
 
