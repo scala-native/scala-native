@@ -271,25 +271,35 @@ class ConcurrentLinkedQueue[E <: AnyRef]
   override def contains(_o: Any): Boolean = {
     if (_o == null) return false
     val o = _o.asInstanceOf[AnyRef]
-    var p = head
-    var pred: Node[E] = null
-    while (p != null) {
-      var q = p.next
-      val item: E = p.item
-      if (item != null) {
-        if (o.equals(item)) return true
-        pred = p
-        p = q
-      } else {
-        var c = p
-        var break = false
-        while (!break) {
-          if (q == null || q.item != null) {
-            pred = skipDeadNodes(pred, c, p, q)
-            p = q
-            break = true
+
+    var restartFromHead = true
+    while (restartFromHead) {
+      restartFromHead = false
+      var p = head
+      var pred: Node[E] = null
+      while (p != null && !restartFromHead) {
+        var q = p.next
+        val item: E = p.item
+        if (item != null) {
+          if (o.equals(item)) return true
+          pred = p
+          p = q
+        } else {
+          val c = p
+          var break = false
+          while (!break) {
+            if (q == null || q.item != null) {
+              pred = skipDeadNodes(pred, c, p, q)
+              p = q
+              break = true
+            } else if (p eq q) {
+              break = true
+              restartFromHead = true
+            } else {
+              p = q
+              q = p.next
+            }
           }
-          if (!break && (p eq { p = q; q })) break = true
         }
       }
     }
@@ -316,17 +326,19 @@ class ConcurrentLinkedQueue[E <: AnyRef]
           pred = p
           p = q
         } else {
-          var c = p
+          val c = p
           var break = false
           while (!break) {
             if (q == null || q.item != null) {
               pred = skipDeadNodes(pred, c, p, q)
               p = q
               break = true
-            }
-            if (!break && { p eq { p = q; q } }) {
+            } else if (p eq q) {
               break = true
               restartFromHead = true
+            } else {
+              p = q
+              q = p.next
             }
           }
         }

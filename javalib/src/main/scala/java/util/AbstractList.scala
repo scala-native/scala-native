@@ -138,7 +138,7 @@ abstract class AbstractList[E] protected ()
   }
 
   override def hashCode(): Int = {
-    var hash = 0
+    var hash = 1
     val iter = listIterator()
     while (iter.hasNext()) {
       val elem = iter.next()
@@ -233,14 +233,20 @@ private class BackedUpListIterator[E](
   def hasNext(): Boolean =
     i < end
 
-  def next(): E =
+  def next(): E = {
+    if (!hasNext())
+      throw new NoSuchElementException
     innerIterator.next()
+  }
 
   def hasPrevious(): Boolean =
     0 < i
 
-  def previous(): E =
+  def previous(): E = {
+    if (!hasPrevious())
+      throw new NoSuchElementException
     innerIterator.previous()
+  }
 
   def nextIndex(): Int = i
 

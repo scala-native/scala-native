@@ -977,4 +977,20 @@ class ConcurrentLinkedDequeTest extends JSR166Test {
     }
   }
 
+  /** spliterator stays exhausted after elements are added */
+  @Test def testSpliteratorStaysExhausted(): Unit = {
+    val q = new ConcurrentLinkedDeque[Item]()
+    val s1 = q.spliterator()
+    assertFalse(s1.tryAdvance((_: Item) => fail()))
+    val s2 = q.spliterator()
+    s2.forEachRemaining((_: Item) => fail())
+    q.add(itemFor(1))
+    assertFalse(s1.tryAdvance((_: Item) => fail()))
+    s2.forEachRemaining((_: Item) => fail())
+
+    val s3 = q.spliterator()
+    var n = 0
+    while (s3.tryAdvance((_: Item) => n += 1)) ()
+    assertEquals(1, n)
+  }
 }

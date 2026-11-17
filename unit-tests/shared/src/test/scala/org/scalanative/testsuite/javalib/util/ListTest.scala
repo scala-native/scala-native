@@ -277,6 +277,49 @@ trait ListTest extends CollectionTest with CollectionsTestBase {
     assertThrows(classOf[IndexOutOfBoundsException], al.add(al.size + 1, ""))
   }
 
+  @Test def addAtSizeAppends(): Unit = {
+    val al = factory.empty[String]
+    al.add(0, "one")
+    al.add(1, "two")
+    al.add(2, "three")
+    assertArrayEquals(Array[AnyRef]("one", "two", "three"), al.toArray())
+  }
+
+  @Test def hashCodeFollowsListContract(): Unit = {
+    val al = factory.empty[String]
+    assertEquals(1, al.hashCode())
+    al.add("a")
+    al.add("b")
+    assertEquals(31 * (31 + "a".hashCode()) + "b".hashCode(), al.hashCode())
+  }
+
+  @Test def subListIteratorStopsAtViewBounds(): Unit = {
+    val al = factory.empty[String]
+    al.add("a")
+    al.add("b")
+    al.add("c")
+    val sub = al.subList(1, 2)
+    val it = sub.iterator()
+    assertEquals("b", it.next())
+    assertFalse(it.hasNext())
+    assertThrows(classOf[ju.NoSuchElementException], it.next())
+    assertThrows(
+      classOf[ju.NoSuchElementException],
+      sub.listIterator().previous()
+    )
+    val empty = al.subList(3, 3)
+    assertThrows(classOf[ju.NoSuchElementException], empty.iterator().next())
+  }
+
+  @Test def spliteratorIsOrdered(): Unit = {
+    val al = factory.empty[String]
+    al.add("a")
+    assertTrue(al.spliterator().hasCharacteristics(ju.Spliterator.ORDERED))
+    assertTrue(
+      al.subList(0, 1).spliterator().hasCharacteristics(ju.Spliterator.ORDERED)
+    )
+  }
+
   @Test def indexOf(): Unit = {
     val al = factory.empty[String]
     al.add("one")

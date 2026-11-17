@@ -541,16 +541,22 @@ class PriorityBlockingQueue[E <: AnyRef] private (
   /** Immutable snapshot spliterator that binds to elements "late".
    */
   private[concurrent] final class PBQSpliterator private[concurrent] (
-      array: Array[AnyRef],
+      private var array: Array[AnyRef],
       var index: Int,
       var fence: Int
   ) extends Spliterator[E] {
-    private[concurrent] def this(array: Array[AnyRef]) =
-      this(array, 0, array.length)
-    private[concurrent] def this() = this(toArray())
+    private[concurrent] def this() = this(null, 0, -1)
+
+    private def getFence(): Int = {
+      if (fence < 0) {
+        array = toArray()
+        fence = array.length
+      }
+      fence
+    }
 
     override def trySplit(): PBQSpliterator = {
-      val hi = fence
+      val hi = getFence()
       val lo = index
       val mid = (lo + hi) >>> 1
       if (lo >= mid) null
@@ -561,7 +567,7 @@ class PriorityBlockingQueue[E <: AnyRef] private (
     }
     override def forEachRemaining(action: Consumer[_ >: E]): Unit = {
       Objects.requireNonNull(action)
-      val hi = fence
+      val hi = getFence()
       val lo = index
       val es = array
       index = hi // ensure exhaustion
@@ -571,7 +577,7 @@ class PriorityBlockingQueue[E <: AnyRef] private (
 
     override def tryAdvance(action: Consumer[_ >: E]): Boolean = {
       Objects.requireNonNull(action)
-      if (fence > index && index >= 0) {
+      if (getFence() > index && index >= 0) {
         val idx = index
         index += 1
         action.accept(array(idx).asInstanceOf[E])
@@ -579,7 +585,7 @@ class PriorityBlockingQueue[E <: AnyRef] private (
       }
       false
     }
-    override def estimateSize(): Long = fence - index
+    override def estimateSize(): Long = getFence() - index
     override def characteristics(): Int =
       Spliterator.NONNULL | Spliterator.SIZED | Spliterator.SUBSIZED
   }

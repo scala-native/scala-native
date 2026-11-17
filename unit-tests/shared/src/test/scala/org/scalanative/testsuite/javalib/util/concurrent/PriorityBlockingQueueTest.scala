@@ -626,4 +626,14 @@ class PriorityBlockingQueueTest extends JSR166Test {
       assertFalse(q.remove(null))
     }
   }
+
+  /** spliterator binds to the elements at first traversal */
+  @Test def testSpliteratorLateBinding(): Unit = {
+    val q = new PriorityBlockingQueue[Item]()
+    val s = q.spliterator()
+    q.add(itemFor(1))
+    assertEquals(1L, s.estimateSize())
+    assertTrue(s.tryAdvance((e: Item) => mustEqual(1, e)))
+    assertFalse(s.tryAdvance((_: Item) => fail()))
+  }
 }

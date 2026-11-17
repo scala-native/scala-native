@@ -1258,7 +1258,7 @@ class LinkedBlockingDeque[E <: AnyRef](
      */
     var batch = 0 // batch size for splits
 
-    var exhausted = true // true when no more nodes
+    var exhausted = false // true when no more nodes
 
     var est: Long = size() // size estimate
 
