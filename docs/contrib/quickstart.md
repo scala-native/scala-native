@@ -53,17 +53,30 @@ as expected.
 -   `toolsJVM3/test` - run the unit tests of the tools: ScalaNative
     backend
 
--   `test-scritped <scala-binary-version>`, eg `test-scripted 2.12` - run all [scripted
-    tests](https://www.scala-sbt.org/1.x/docs/Testing-sbt-plugins.html)
-    of the sbt plugin (this takes a while and requires local publish of artifacts).
-    Build against Scala 2.12 uses sbt 1.x, while Scala 3 uses sbt 2.x. Other versions are not supported.
+-   `test-scripted <scala-binary-version>`, e.g. `test-scripted 2.12` - run all
+    [scripted tests](https://www.scala-sbt.org/1.x/docs/Testing-sbt-plugins.html)
+    of the sbt plugin. This takes a while: before running the tests it
+    calls `publishLocal` for Scala 2.12, 2.13 and 3, because the
+    scripted builds resolve Scala Native from `~/.ivy2/local`.
+    Scala 2.12 tests the plugin with sbt 1.x, Scala 3 with sbt 2.x.
+    Other versions are not supported.
 
--  `test-scritped <scala-binary-version> <optional-test-filters>` - run specific scripted tests of the sbt plugin. e.g. `test-scripted 3 run/backtrace`:   
-        -   Scripted tests are used when you need to interact with the
-            file system, networking, or the build system that cannot be
-            done with a unit test.
-        -   `set ThisBuild / scriptedBufferLog := false` disables buffer
-            log in scripted test and get more verbose output
+-   `test-scripted <scala-binary-version> <test-filter>` - run selected
+    scripted tests, e.g. `test-scripted 2.12 run/hello-world` or
+    `test-scripted 3 run/backtrace`. Test names are
+    `<directory>/<name>` paths under `scripted-tests/`, and `*` can be
+    used as a wildcard, e.g. `run/*`.
+    -   Scripted tests are used when you need to interact with the
+        file system, networking, or the build system in a way that
+        cannot be done with a unit test.
+    -   `set ThisBuild / scriptedBufferLog := false` disables log
+        buffering in scripted tests and gives more verbose output.
+    -   Prefer `test-scripted` over calling `sbtScalaNative2_12/scripted`
+        or `sbtScalaNative3/scripted` directly. Those tasks republish
+        only the sbt plugin and the tools; the scripted builds then link
+        whatever runtime libraries (`nativelib`, `javalib`, ...) are
+        already in `~/.ivy2/local`. These may be missing or older than
+        your checkout, so tests can fail or pass for the wrong reason.
 
 **Other Test Commands**
 
