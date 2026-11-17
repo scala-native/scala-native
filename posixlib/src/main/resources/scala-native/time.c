@@ -192,13 +192,17 @@ double scalanative_difftime(time_t time_end, time_t time_beg) {
     return difftime(time_end, time_beg);
 }
 
-struct tm *scalanative_gmtime(const time_t *time) { return gmtime(time); }
+struct tm *scalanative_gmtime(const time_t *time) {
+    return gmtime(time);
+}
 
 struct tm *scalanative_gmtime_r(const time_t *time, struct tm *tm) {
     return gmtime_r(time, tm);
 }
 
-struct tm *scalanative_localtime(const time_t *time) { return localtime(time); }
+struct tm *scalanative_localtime(const time_t *time) {
+    return localtime(time);
+}
 
 struct tm *scalanative_localtime_r(const time_t *time, struct tm *tm) {
     return localtime_r(time, tm);
@@ -325,9 +329,13 @@ double scalanative_difftime(time_t time_end, time_t time_beg) {
     return difftime(time_end, time_beg);
 }
 
-struct tm *scalanative_gmtime(const time_t *time) { return gmtime(time); }
+struct tm *scalanative_gmtime(const time_t *time) {
+    return gmtime(time);
+}
 
-struct tm *scalanative_localtime(const time_t *time) { return localtime(time); }
+struct tm *scalanative_localtime(const time_t *time) {
+    return localtime(time);
+}
 
 time_t scalanative_mktime(struct tm *tm) { return mktime(tm); }
 
