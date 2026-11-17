@@ -330,6 +330,8 @@ class Machine(re2: RE2) {
                 add = true
               case IOP.RUNE_ANY_NOT_NL =>
                 add = c != '\n'
+              case IOP.RUNE_ANY_NOT_LT =>
+                add = !Utils.isLineTerminator(c)
               case _ =>
                 throw new IllegalStateException("bad inst")
             }
@@ -392,7 +394,7 @@ class Machine(re2: RE2) {
           t = this.add(q, inst.out, pos, cap, cond, t)
         }
       case IOP.MATCH | IOP.RUNE | IOP.RUNE1 | IOP.RUNE_ANY |
-          IOP.RUNE_ANY_NOT_NL =>
+          IOP.RUNE_ANY_NOT_NL | IOP.RUNE_ANY_NOT_LT =>
         if (t == null) {
           t = alloc(inst)
         } else {

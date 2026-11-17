@@ -770,6 +770,11 @@ class Parser(wholeRegexp: String, _flags: Int) {
           case '.' =>
             if ((flags & RE2.DOT_NL) != 0) {
               op(ROP.ANY_CHAR)
+            } else if ((flags & RE2.JAVA_LINES) != 0) {
+              val re = newRegexp(ROP.CHAR_CLASS)
+              re.flags = flags
+              re.runes = Parser.anyRuneNotLineTerminator()
+              push(re)
             } else {
               op(ROP.ANY_CHAR_NOT_NL)
             }
@@ -1379,6 +1384,23 @@ class Parser(wholeRegexp: String, _flags: Int) {
 }
 
 object Parser {
+
+  private[regex] val AnyRuneNotLineTerminator: Array[Int] =
+    Array(
+      0,
+      0x09,
+      0x0b,
+      0x0c,
+      0x0e,
+      0x84,
+      0x86,
+      0x2027,
+      0x202a,
+      Unicode.MAX_RUNE
+    )
+
+  private[regex] def anyRuneNotLineTerminator(): Array[Int] =
+    AnyRuneNotLineTerminator.clone()
 
   // SN re2s-to-regex porting note.  The goal is for the text here
   // to be identical with the JVM.

@@ -713,6 +713,10 @@ object RE2 {
   // Regexp END_TEXT was $, not \z.  Internal use only.
   final val WAS_DOLLAR = 0x100
 
+  // '.', '^', '$' and \Z use Java line terminators: LF, CR, CRLF,
+  // U+0085, U+2028 and U+2029.
+  final val JAVA_LINES = 0x200
+
   final val MATCH_NL = CLASS_NL | DOT_NL
 
   // As close to Perl as possible.

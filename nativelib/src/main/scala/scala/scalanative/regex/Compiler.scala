@@ -8,6 +8,8 @@
 package scala.scalanative
 package regex
 
+import java.util.Arrays
+
 import Inst.{Op => IOP}
 import Regexp.{Op => ROP}
 
@@ -146,6 +148,8 @@ class Compiler private () {
         runes(2) == '\n' + 1 &&
         runes(3) == Unicode.MAX_RUNE) {
       i.op = IOP.RUNE_ANY_NOT_NL
+    } else if (Arrays.equals(runes, Parser.AnyRuneNotLineTerminator)) {
+      i.op = IOP.RUNE_ANY_NOT_LT
     }
     f
   }

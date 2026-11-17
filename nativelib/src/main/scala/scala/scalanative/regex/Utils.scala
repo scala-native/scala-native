@@ -182,6 +182,10 @@ object Utils {
   final val EMPTY_NO_WORD_BOUNDARY = 0x20
   final val EMPTY_ALL = -1 // (impossible)
 
+  final def isLineTerminator(r: Int): Boolean =
+    if (r > '\r') r == 0x85 || (r >= 0x2028 && r <= 0x2029)
+    else r == '\n' || r == '\r'
+
   // emptyOpContext returns the zero-width assertions satisfied at the position
   // between the runes r1 and r2, a bitmask of EMPTY_* flags.
   // Passing r1 == -1 indicates that the position is at the beginning of the

@@ -165,7 +165,7 @@ object Pattern {
   // Helper: create new Pattern with given regex and flags.
   // Flregex is the regex with flags applied.
   private def compile(flregex: String, regex: String, flags: Int): Pattern = {
-    var re2Flags = RE2.PERL
+    var re2Flags = RE2.PERL | RE2.JAVA_LINES
     if ((flags & DISABLE_UNICODE_GROUPS) != 0) {
       re2Flags &= ~RE2.UNICODE_GROUPS
     }
