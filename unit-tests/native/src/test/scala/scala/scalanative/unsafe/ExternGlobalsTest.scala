@@ -13,7 +13,7 @@ object ExternGlobalsTest {
   object ExternGlobals {
     @name("scalanative_test_extern_chars")
     var chars: CArray[CChar, CharsLength] = extern
-    @address
+    @byAddress
     @name("scalanative_test_extern_unsized")
     var unsized: CString = extern
     @name("scalanative_test_extern_ints")
@@ -40,7 +40,7 @@ class ExternGlobalsTest {
     assertEquals("fourty-two", fromCString(chars.at(0)))
   }
 
-  @Test def addressAnnotatedGlobalIsBoundToItsAddress(): Unit = {
+  @Test def byAddressAnnotatedGlobalIsBoundToItsAddress(): Unit = {
     assertEquals(unsizedAddress(), unsized)
     assertEquals("unsized", fromCString(unsized))
   }

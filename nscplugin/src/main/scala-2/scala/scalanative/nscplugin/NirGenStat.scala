@@ -257,16 +257,16 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         if (f.isExtern && !f.isMutable) {
           reporter.error(f.pos, "`extern` cannot be used in val definition")
         }
-        if (f.hasAnnotation(AddressClass)) {
+        if (f.hasAnnotation(ByAddressClass)) {
           if (!f.isExtern)
             reporter.error(
               f.pos,
-              "`@address` can only be used on variables of extern objects"
+              "`@byAddress` can only be used on variables of extern objects"
             )
           else if (f.tpe.resultType.typeSymbol != PtrClass)
             reporter.error(
               f.pos,
-              s"`@address` can only be used on extern variables of a pointer type, such as Ptr[T] or CString, found ${f.tpe.resultType}"
+              s"`@byAddress` can only be used on extern variables of a pointer type, such as Ptr[T] or CString, found ${f.tpe.resultType}"
             )
         }
         val ty = genType(f.tpe)
@@ -714,10 +714,10 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         // implicit class is erased to method at this point
         val isExtern = sym.isExtern
         val isIntrinsic = dd.rhs.symbol == nirDefinitions.IntrinsicMarker
-        if (sym.hasAnnotation(AddressClass) && !sym.isAccessor)
+        if (sym.hasAnnotation(ByAddressClass) && !sym.isAccessor)
           reporter.error(
             sym.pos,
-            "`@address` can only be used on variables of extern objects"
+            "`@byAddress` can only be used on variables of extern objects"
           )
         val attrs = genMethodAttrs(sym, isExtern, isIntrinsic)
         val name = genMethodName(sym)

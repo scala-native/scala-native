@@ -11,13 +11,13 @@ import scala.annotation.meta.{field, getter, setter}
  *  {{{
  *  // extern const char version[];
  *  @extern object lib {
- *    @address var version: CString = extern
+ *    @byAddress var version: CString = extern
  *  }
  *  }}}
  *
- *  Variables annotated with `@address` cannot be assigned.
+ *  Variables annotated with `@byAddress` cannot be assigned.
  */
 @field
 @getter
 @setter
-final class address extends StaticAnnotation
+final class byAddress extends StaticAnnotation

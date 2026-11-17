@@ -30,7 +30,7 @@ final class NirDefinitions()(using ctx: Context) {
   @tu lazy val AlignClass = requiredClass("scala.scalanative.annotation.align")
   @tu lazy val SafePublishClass = requiredClass("scala.scalanative.annotation.safePublish")
   @tu lazy val NameClass = requiredClass("scala.scalanative.unsafe.name")
-  @tu lazy val AddressClass = requiredClass("scala.scalanative.unsafe.address")
+  @tu lazy val ByAddressClass = requiredClass("scala.scalanative.unsafe.byAddress")
   @tu lazy val LinkClass = requiredClass("scala.scalanative.unsafe.link")
   @tu lazy val LinkCppRuntimeClass = requiredClass("scala.scalanative.unsafe.linkCppRuntime")
   @tu lazy val DefineClass = requiredClass("scala.scalanative.unsafe.define")

@@ -2805,7 +2805,7 @@ trait NirGenExpr(using Context) {
     }
 
     def isExternAddress(sym: Symbol): Boolean =
-      externVariable(sym).hasAnnotation(defnNir.AddressClass)
+      externVariable(sym).hasAnnotation(defnNir.ByAddressClass)
 
     private def externVariable(sym: Symbol): Symbol =
       if sym.isSetter then sym.getter else sym
@@ -2822,7 +2822,7 @@ trait NirGenExpr(using Context) {
         false
       else if isExternAddress(variable) then
         report.error(
-          s"Cannot assign to extern variable ${variable.name} annotated with @address, it is bound to the address of the C object.",
+          s"Cannot assign to extern variable ${variable.name} annotated with @byAddress, it is bound to the address of the C object.",
           pos
         )
         false

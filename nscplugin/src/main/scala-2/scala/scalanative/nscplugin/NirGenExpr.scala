@@ -2998,7 +2998,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       if (isExternAddressType(valueTpe)) {
         val cls = valueTpe.typeSymbol
         genApplyNew(cls, cls.primaryConstructor, List(ValTree(name)()))
-      } else if (sym.hasAnnotation(AddressClass)) {
+      } else if (sym.hasAnnotation(ByAddressClass)) {
         fromExtern(ty, name)
       } else {
         val memoryOrder =
@@ -3037,10 +3037,10 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             "Modify its elements or fields instead."
         )
         false
-      } else if (variable.hasAnnotation(AddressClass)) {
+      } else if (variable.hasAnnotation(ByAddressClass)) {
         reporter.error(
           pos,
-          s"Cannot assign to extern variable $name annotated with @address, it is bound to the address of the C object."
+          s"Cannot assign to extern variable $name annotated with @byAddress, it is bound to the address of the C object."
         )
         false
       } else true
