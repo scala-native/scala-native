@@ -311,3 +311,28 @@ int scalanative_timer_abstime() {
 }
 
 #endif // Unix or Mac OS
+
+#if (defined(SCALANATIVE_COMPILE_ALWAYS) ||                                    \
+     defined(__SCALANATIVE_POSIX_TIME)) &&                                     \
+    defined(_WIN32)
+// The ISO C subset of time.scala is available on Windows too. Provide its glue
+// so that code which only checks the platform at runtime still links there.
+#include <time.h>
+
+char *scalanative_ctime(const time_t *time) { return ctime(time); }
+
+double scalanative_difftime(time_t time_end, time_t time_beg) {
+    return difftime(time_end, time_beg);
+}
+
+struct tm *scalanative_gmtime(const time_t *time) { return gmtime(time); }
+
+struct tm *scalanative_localtime(const time_t *time) { return localtime(time); }
+
+time_t scalanative_mktime(struct tm *tm) { return mktime(tm); }
+
+time_t scalanative_time(time_t *arg) { return time(arg); }
+
+void scalanative_tzset() { _tzset(); }
+
+#endif // _WIN32
