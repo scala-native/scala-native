@@ -774,7 +774,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           val rhs = genExpr(rhsp)
           val name = genFieldName(sym)
           if (sym.isExtern) {
-            if (!checkExternAssignable(sym, sym.tpe, tree.pos)) nir.Val.Unit
+            if (!checkExternAssignable(sym, tree.pos)) nir.Val.Unit
             else {
               val externTy = genExternType(sym.tpe)
               genStoreExtern(externTy, sym, rhs)
@@ -2980,7 +2980,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           genLoadExtern(ty, externTy, sym)
         case Seq(valuep) =>
           val valueTpe = sym.tpe.paramss.flatten.last.tpe
-          if (!checkExternAssignable(sym, valueTpe, valuep.pos)) nir.Val.Unit
+          if (!checkExternAssignable(sym, valuep.pos)) nir.Val.Unit
           else {
             val externTy = genExternType(valueTpe)
             genStoreExtern(externTy, sym, genExpr(valuep))
@@ -3020,12 +3020,16 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
       sym.isFixedSizeArray || sym.isAnonymousStruct
     }
 
+    private def externVariable(sym: Symbol): Symbol =
+      if (sym.isSetter) sym.getterIn(sym.owner) else sym
+
     private def checkExternAssignable(
         sym: Symbol,
-        tpe: Type,
         pos: global.Position
     ): Boolean = {
-      val name = sym.name.decoded.stripSuffix("_=")
+      val variable = externVariable(sym)
+      val tpe = variable.tpe.finalResultType
+      val name = variable.getterName.decoded
       if (isExternAddressType(tpe)) {
         reporter.error(
           pos,
@@ -3033,7 +3037,7 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             "Modify its elements or fields instead."
         )
         false
-      } else if (sym.hasAnnotation(AddressClass)) {
+      } else if (variable.hasAnnotation(AddressClass)) {
         reporter.error(
           pos,
           s"Cannot assign to extern variable $name annotated with @address, it is bound to the address of the C object."

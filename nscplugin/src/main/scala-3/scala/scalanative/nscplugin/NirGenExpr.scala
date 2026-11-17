@@ -168,7 +168,7 @@ trait NirGenExpr(using Context) {
               curMethodSym.get.isClassConstructor &&
                 rhsp.symbol == defnNir.UnsafePackage_extern
             if (shouldIgnoreAssign) nir.Val.Unit
-            else if (!checkExternAssignable(sym, sym.info, tree.srcPos))
+            else if (!checkExternAssignable(sym, tree.srcPos))
               nir.Val.Unit
             else {
               val externTy = genExternType(lhsp.tpe)
@@ -1341,8 +1341,7 @@ trait NirGenExpr(using Context) {
           val externTy = genExternMethodSig(sym).ret
           genLoadExtern(ty, externTy, sym)
         case Seq(valuep) =>
-          val valueTpe = sym.info.paramInfoss.flatten.head
-          if !checkExternAssignable(sym, valueTpe, valuep.srcPos) then
+          if !checkExternAssignable(sym, valuep.srcPos) then
             nir.Val.Unit
           else
             val externTy = genExternType(valuep.tpe)
@@ -2807,25 +2806,24 @@ trait NirGenExpr(using Context) {
     }
 
     def isExternAddress(sym: Symbol): Boolean =
-      sym.hasAnnotation(defnNir.AddressClass) ||
-        (sym.isSetter && sym.getter.hasAnnotation(defnNir.AddressClass))
+      externVariable(sym).hasAnnotation(defnNir.AddressClass)
 
-    private def checkExternAssignable(
-        sym: Symbol,
-        tpe: Type,
-        pos: SrcPos
-    ): Boolean = {
-      val name = sym.name.show.stripSuffix("_=")
+    private def externVariable(sym: Symbol): Symbol =
+      if sym.isSetter then sym.getter else sym
+
+    private def checkExternAssignable(sym: Symbol, pos: SrcPos): Boolean = {
+      val variable = externVariable(sym)
+      val tpe = variable.info.finalResultType
       if isExternAddressType(tpe) then
         report.error(
-          s"Cannot assign to extern variable $name of type ${tpe.show}, it is bound to the C object itself. " +
+          s"Cannot assign to extern variable ${variable.name} of type ${tpe.show}, it is bound to the C object itself. " +
             "Modify its elements or fields instead.",
           pos
         )
         false
-      else if isExternAddress(sym) then
+      else if isExternAddress(variable) then
         report.error(
-          s"Cannot assign to extern variable $name annotated with @address, it is bound to the address of the C object.",
+          s"Cannot assign to extern variable ${variable.name} annotated with @address, it is bound to the address of the C object.",
           pos
         )
         false
