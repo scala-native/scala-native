@@ -468,7 +468,10 @@ void Synchronizer_init(void) {
 void Synchronizer_yield(void) {
     SpillCalleeSavedRegisters();
     MutatorThread *self = currentMutatorThread;
-    MutatorThread_switchState(self, GC_MutatorThreadState_Unmanaged);
+    // An unmanaged thread's published snapshot may be under scan already.
+    if (atomic_load_explicit(&self->state, memory_order_relaxed) !=
+        GC_MutatorThreadState_Unmanaged)
+        MutatorThread_switchState(self, GC_MutatorThreadState_Unmanaged);
     atomic_thread_fence(memory_order_seq_cst);
 
     atomic_fetch_add_explicit(&Synchronizer_lifecycleWaiters, 1,

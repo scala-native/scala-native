@@ -37,11 +37,28 @@ void scalanative_threads_init_failed(void);
 #ifdef _WIN32
 static INIT_ONCE storageOnce = INIT_ONCE_STATIC_INIT;
 static DWORD storageKey = FLS_OUT_OF_INDEXES;
-static void CALLBACK onWindowsThreadExit(void *raw) { onThreadExit(raw); }
+typedef BOOLEAN(NTAPI *ShutdownInProgressFn)(void);
+static ShutdownInProgressFn shutdownInProgress;
+static atomic_bool processExiting;
+static void markProcessExiting(void) {
+    atomic_store_explicit(&processExiting, true, memory_order_release);
+}
+static void CALLBACK onWindowsThreadExit(void *raw) {
+    // Other threads, GC workers included, are gone during process exit.
+    if (atomic_load_explicit(&processExiting, memory_order_acquire) ||
+        (shutdownInProgress != NULL && shutdownInProgress()))
+        return;
+    onThreadExit(raw);
+}
 static BOOL CALLBACK createStorage(PINIT_ONCE once, PVOID arg, PVOID *context) {
     (void)once;
     (void)arg;
     (void)context;
+    HMODULE ntdll = GetModuleHandleW(L"ntdll.dll");
+    FARPROC probe =
+        ntdll ? GetProcAddress(ntdll, "RtlDllShutdownInProgress") : NULL;
+    shutdownInProgress = (ShutdownInProgressFn)(uintptr_t)probe;
+    atexit(markProcessExiting);
     storageKey = FlsAlloc(onWindowsThreadExit);
     return storageKey != FLS_OUT_OF_INDEXES;
 }
