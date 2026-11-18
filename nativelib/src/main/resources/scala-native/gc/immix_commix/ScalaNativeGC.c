@@ -141,8 +141,12 @@ static ThreadRoutineReturnType ProxyThreadStartRoutine(void *args) {
     RoutineArgs originalArgs = wrapped->args;
 
     free(args);
-    if (!MutatorThread_init((Field_t *)stackBottom))
+    if (!MutatorThread_register((Field_t *)stackBottom))
         abort();
+    // Memory above belongs to the thread library and can hold stale words
+    // copied from the creating thread.
+    currentMutatorThread->exactStackBottom = true;
+    MutatorThread_admit(currentMutatorThread);
 #ifdef _WIN32
     originalFn(originalArgs);
     MutatorThread_delete(currentMutatorThread);

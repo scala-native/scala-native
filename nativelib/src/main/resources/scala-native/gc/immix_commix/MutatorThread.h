@@ -31,6 +31,9 @@ typedef struct {
     RegistersBuffer registersBuffer;
     // immutable fields
     word_t **stackBottom;
+    // Set when stackBottom is the thread's entry into the runtime, not an
+    // approximation that the ThreadInfo bounds have to extend.
+    bool exactStackBottom;
     Allocator allocator;
     LargeAllocator largeAllocator;
 

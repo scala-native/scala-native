@@ -208,7 +208,8 @@ INLINE void MutatorThread_switchState(MutatorThread *self,
 
 word_t **MutatorThread_getStackBottom(MutatorThread *thread) {
     word_t **bottom = thread->stackBottom;
-    if (thread->threadInfo != NULL && thread->threadInfo->stackBottom != NULL &&
+    if (!thread->exactStackBottom && thread->threadInfo != NULL &&
+        thread->threadInfo->stackBottom != NULL &&
         (uintptr_t)thread->threadInfo->stackBottom > (uintptr_t)bottom) {
         bottom = (word_t **)thread->threadInfo->stackBottom;
     }
