@@ -66,28 +66,28 @@ object Discover {
 
   /** Find default clang compilation options. */
   def compileOptions(): Seq[String] = {
-    val includes = {
-      val llvmIncludeDir =
-        Try(Process(s"$llvmConfigCLI --includedir").lineStream_!.toSeq)
-          .getOrElse(Seq.empty)
-      // dirs: standard, macports, brew M1 arm
-      val includeDirs =
-        getenv("SCALANATIVE_INCLUDE_DIRS")
-          .map(_.split(File.pathSeparatorChar).toSeq)
-          .getOrElse(
-            filterExisting(
-              Seq(
-                "/usr/local/include",
-                "/opt/local/include",
-                "/opt/homebrew/include"
-              )
+    // dirs: standard, macports, brew M1 arm
+    val includeDirs =
+      getenv("SCALANATIVE_INCLUDE_DIRS")
+        .map(_.split(File.pathSeparatorChar).toSeq)
+        .getOrElse(
+          filterExisting(
+            Seq(
+              "/usr/local/include",
+              "/opt/local/include",
+              "/opt/homebrew/include"
             )
           )
-
-      (includeDirs ++ llvmIncludeDir).map(s => s"-I$s")
-    }
-    includes :+ "-Qunused-arguments"
+        )
+    defaultCompileOptions(includeDirs)
   }
+
+  // LLVM's own include dir is not added: it can shadow system headers such as
+  // unwind.h and may belong to a different toolchain than the configured clang.
+  private[scalanative] def defaultCompileOptions(
+      includeDirs: Seq[String]
+  ): Seq[String] =
+    includeDirs.map(s => s"-I$s") :+ "-Qunused-arguments"
 
   /** Find default options passed to the system's native linker. */
   def linkingOptions(): Seq[String] = {

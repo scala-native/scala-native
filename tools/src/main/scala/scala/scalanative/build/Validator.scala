@@ -1,6 +1,8 @@
 package scala.scalanative.build
 
-import java.nio.file.Files
+import java.nio.file.{Files, Path, Paths}
+
+import scala.util.Try
 
 /** Used to validate config objects */
 private[build] object Validator {
@@ -46,7 +48,16 @@ private[build] object Validator {
 
     if (!Files.exists(c.clang))
       issues += s"Provided clang path '${c.clang.toAbsolutePath()}' does not exist, specify a valid path to LLVM Toolchain distribution using config or LLVM_BIN environment variable"
-    else Discover.checkClangVersion(c.clang, config.logger)
+    else {
+      Discover.checkClangVersion(c.clang, config.logger)
+      mismatchedLlvmDirs(c.clang, c.compileOptions ++ c.linkingOptions)
+        .foreach {
+          case (option, llvmPrefix) =>
+            warn(
+              s"Option '$option' points to the LLVM installation at '$llvmPrefix', which does not provide the configured clang '${c.clang}'. Its headers or libraries may not match the compiler."
+            )
+        }
+    }
     if (!Files.exists(c.clangPP))
       issues += s"Provided clang++ path '${c.clangPP.toAbsolutePath()}' does not exist, specify a valid path to LLVM Toolchain distribution using config or LLVM_BIN environment variable"
     // config.baseName provides default value when config.compileConfig.baseName is empty
@@ -82,4 +93,29 @@ private[build] object Validator {
     }
   }
 
+  /** Finds `-I`/`-L` options pointing into an LLVM installation other than the
+   *  one providing `clang`. Returns pairs of option and LLVM prefix.
+   */
+  private[build] def mismatchedLlvmDirs(
+      clang: Path,
+      options: Seq[String]
+  ): Seq[(String, Path)] = {
+    def realPath(p: Path) = Try(p.toRealPath()).toOption
+    val configuredClang = realPath(clang)
+    def isLlvmPrefix(prefix: Path) =
+      Seq("llvm-config", "llvm-config.exe")
+        .exists(n => Files.isRegularFile(prefix.resolve("bin").resolve(n)))
+    def providesClang(prefix: Path) =
+      Seq("clang", "clang.exe").exists { n =>
+        val candidate = realPath(prefix.resolve("bin").resolve(n))
+        candidate.isDefined && candidate == configuredClang
+      }
+    for {
+      option <- options
+      if option.startsWith("-I") || option.startsWith("-L")
+      dir <- Try(Paths.get(option.drop(2))).toOption
+      prefix <- Option(dir.toAbsolutePath().getParent())
+      if isLlvmPrefix(prefix) && !providesClang(prefix)
+    } yield (option, prefix)
+  }
 }
