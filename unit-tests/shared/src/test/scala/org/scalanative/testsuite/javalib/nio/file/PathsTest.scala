@@ -85,4 +85,36 @@ class PathsTest {
   @Test def joiningEmptyIsEmpty() = {
     assertEquals(Paths.get(""), Paths.get("", ""))
   }
+
+  // issue #3212
+  @Test def emptyPathHasSingleEmptyName(): Unit = {
+    val empty = Paths.get("")
+    assertEquals("", empty.toString)
+    assertEquals(1, empty.getNameCount)
+    assertEquals(empty, empty.getName(0))
+    assertEquals(empty, empty.getFileName)
+    assertEquals(empty, empty.subpath(0, 1))
+    assertNull(empty.getParent)
+    assertNull(empty.getRoot)
+    assertFalse(empty.isAbsolute)
+    assertTrue(empty.iterator().hasNext)
+    assertEquals(empty, empty.iterator().next())
+    assertEquals(empty, empty.normalize)
+    assertEquals(empty, Paths.get("foo").relativize(Paths.get("foo")))
+    assertEquals(1, Paths.get("foo").relativize(Paths.get("foo")).getNameCount)
+    assertEquals(empty, Paths.get("foo/..").normalize)
+    assertEquals(1, Paths.get("foo/..").normalize.getNameCount)
+    assertTrue(empty.startsWith(empty))
+    assertTrue(empty.endsWith(empty))
+    assertEquals(Paths.get("foo"), empty.resolve("foo"))
+    assertEquals(Paths.get("foo"), Paths.get("foo").resolve(empty))
+    assertThrows(classOf[IllegalArgumentException], empty.subpath(0, 2))
+    assertThrows(classOf[IllegalArgumentException], empty.getName(1))
+  }
+
+  @Test def emptyPathToAbsolutePathIsCurrentDirectory(): Unit = {
+    val cwd = Paths.get(System.getProperty("user.dir"))
+    assertEquals(cwd, Paths.get("").toAbsolutePath)
+    assertEquals(cwd, Paths.get(".").toAbsolutePath.normalize)
+  }
 }
