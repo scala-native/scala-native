@@ -68,6 +68,26 @@ class DirectoryStreamTest {
     }
   }
 
+  @Test def filterExceptionsPropagateUnchanged(): Unit = {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      Files.createFile(dir.resolve("f0"))
+
+      val thrown = new java.io.UncheckedIOException(new java.io.IOException())
+      val filter = new DirectoryStream.Filter[Path] {
+        def accept(entry: Path): Boolean = throw thrown
+      }
+
+      val stream = Files.newDirectoryStream(dir, filter)
+      try {
+        val it = stream.iterator()
+        val e =
+          assertThrows(classOf[java.io.UncheckedIOException], it.hasNext())
+        assertSame(thrown, e)
+      } finally stream.close()
+    }
+  }
+
   @Test def filesNewDirectoryStreamPath(): Unit = {
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath()

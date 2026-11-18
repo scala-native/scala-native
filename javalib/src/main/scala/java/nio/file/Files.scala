@@ -1026,7 +1026,8 @@ object Files {
           val entry = { errno = 0; readdir(posixDir) }
 
           if (entry == null) {
-            if (errno != 0) throw PosixException(dirString, errno)
+            if (errno != 0)
+              throw new UncheckedIOException(PosixException(dirString, errno))
             closeImpl() // End of OS directory stream
           } else {
             /* Skip "." and "..", Java does not want to see them.
