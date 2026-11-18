@@ -21,7 +21,10 @@ import scalanative.unsigned._
 private[windows] final case class WindowsFileKey(
     volumeId: Long,
     fileIndex: Long
-)
+) {
+  override def toString(): String =
+    s"(volume=${java.lang.Long.toHexString(volumeId)},index=$fileIndex)"
+}
 
 final class WindowsDosFileAttributeView(path: Path, options: Array[LinkOption])
     extends DosFileAttributeView {
