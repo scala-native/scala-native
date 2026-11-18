@@ -33,6 +33,41 @@ class DirectoryStreamTest {
     }
   }
 
+  // Issue #3898: close() from another thread must not race native reads.
+  @Test def closeConcurrentWithIteration(): Unit = {
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val nFiles = 200
+      for (j <- 0 until nFiles) Files.createFile(dir.resolve(s"file$j"))
+
+      for (_ <- 1 to 50) {
+        val stream = Files.newDirectoryStream(dir)
+        val it = stream.iterator()
+        val started = new java.util.concurrent.CountDownLatch(1)
+        @volatile var seen = 0
+        @volatile var failure: Throwable = null
+
+        val reader = new Thread(() =>
+          try {
+            started.countDown()
+            while (it.hasNext()) {
+              assertNotNull(it.next())
+              seen += 1
+            }
+          } catch { case t: Throwable => failure = t }
+        )
+        reader.start()
+        started.await()
+        stream.close()
+        reader.join()
+
+        if (failure != null) throw failure
+        assertTrue(s"seen $seen", seen <= nFiles)
+        assertFalse("hasNext after close", it.hasNext())
+      }
+    }
+  }
+
   @Test def filesNewDirectoryStreamPath(): Unit = {
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath()

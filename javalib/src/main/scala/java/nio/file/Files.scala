@@ -977,26 +977,10 @@ object Files {
        * (circa 2024) operating systems supported by Scala Native describe
        * the same guarantee.
        *
-       * The calls to readdir() here are two uses of result of the same
-       * one opendir() call. Exactly the kind of access pattern which
-       * "must be externally synchronized".
-       *
-       * That "external synchronization" exists in this method but is
-       * not obvious on a quick reading.
-       *
-       * The __essential__ concept that the "trySplit()" method of the
-       * Spliterator for the returned stream is overriden to _never_ split.
-       * No split, no parallel execution of this stream, no conflict.
-       *
-       * The Stream "spliterator" and "iterator" methods are described in
-       * JVM as terminal operations. That is, one should not be able to
-       * obtain more than one. Subsequent attempts will fail.
-       * Both are also described as non-thread safe, only the returned
-       * stream needs to be thread-safe.
-       *
-       * Belt, suspenders, duct tape, and instant glue
-       * "external synchronization" by design rather than runtime
-       * "synchronized" blocks.
+       * readdir() and closedir() on the one DIR are serialized by
+       * synchronizing on this PosixDir, so close() from another thread
+       * waits for an in-flight readdir() and no readdir() starts after it.
+       * The Spliterator never splits, so there is no parallel iteration.
        */
 
       private var posixDirClosed = true
@@ -1015,16 +999,6 @@ object Files {
       def get(): Spliterator[T] = {
 
         new Spliterators.AbstractSpliterator[T](Long.MaxValue, 0) {
-          private def appendToStream(
-              cName: CString,
-              action: Consumer[_ >: T]
-          ): Boolean = {
-            val entryPath = dir.resolve(fromCString(cName))
-
-            action.accept(entryPath)
-            true
-          }
-
           /* See Design Note at top of method about serializing access
            * to C's readdir buffer.
            *
@@ -1033,61 +1007,60 @@ object Files {
           override def trySplit(): Spliterator[T] = null
 
           def tryAdvance(action: Consumer[_ >: T]): Boolean = {
-            if (posixDirClosed) false // Issue #4431
+            val entryPath = nextEntry()
+            if (entryPath == null) false
             else {
-              val entry = { errno = 0; readdir(posixDir) }
-
-              if (entry == null) {
-                if (errno != 0) {
-                  throw PosixException(dirString, errno)
-                } else { // End of OS directory stream
-                  closeImpl()
-                  false
-                }
-              } else {
-                /* Consume "." and "..", Java does not want to see them.
-                 *
-                 * Those two entries are usually the first two, but that
-                 * is not guaranteed. There are obscure scenarios where
-                 * at least '.' can come later.
-                 *
-                 * This is conceptually a 'stream.filter()' operation but
-                 * with less overhead.
-                 */
-
-                val entryName = entry.d_name // A CString, so byte comparisons
-
-                if (entryName(0) != dot)
-                  appendToStream(entryName, action)
-                else if (entryName(1) == nul)
-                  tryAdvance(action) // past "."
-                else if ((entryName(1) == dot) && (entryName(2) == nul))
-                  tryAdvance(action) // past ".."
-                else
-                  appendToStream(entryName, action) // ".git" or such
-              }
+              action.accept(entryPath)
+              true
             }
           }
         }
       }
 
-      /* Call only while holding dirLock.
+      /* Holds the lock across readdir() so that close() can not release
+       * the DIR while it is in use. Returns null at end of stream.
+       */
+      private def nextEntry(): T = synchronized {
+        var found: T = null
+        while (found == null && !posixDirClosed) { // Issue #4431
+          val entry = { errno = 0; readdir(posixDir) }
+
+          if (entry == null) {
+            if (errno != 0) throw PosixException(dirString, errno)
+            closeImpl() // End of OS directory stream
+          } else {
+            /* Skip "." and "..", Java does not want to see them.
+             * They are usually the first two entries, but that is not
+             * guaranteed.
+             */
+            val entryName = entry.d_name // A CString, so byte comparisons
+
+            val isDotOrDotDot =
+              entryName(0) == dot &&
+                (entryName(1) == nul ||
+                (entryName(1) == dot && entryName(2) == nul))
+
+            if (!isDotOrDotDot)
+              found = dir.resolve(fromCString(entryName))
+          }
+        }
+        found
+      }
+
+      /* Call only while holding this PosixDir's lock.
        * When closedir() is called more than once, some operating systems
        * set errno to EBADF. Others are not so robust and fail (signal? exit?).
        */
 
       private def closeImpl(): Unit = {
         if (!posixDirClosed) {
-          val err = closedir(posixDir)
-          if (err != 0)
-            throw PosixException(dirString, errno)
-
           posixDirClosed = true
+          if (closedir(posixDir) != 0)
+            throw PosixException(dirString, errno)
         }
       }
 
-      def close(): Unit =
-        closeImpl()
+      def close(): Unit = synchronized { closeImpl() }
     }
 
     val posixDir = new PosixDir(dir, dirString)

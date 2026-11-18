@@ -23,10 +23,11 @@ class DirectoryStreamImpl[T](
     else {
       iteratorCalled = true
       new Iterator[T] {
-        override def hasNext(): Boolean = !closed && underlying.hasNext()
-        override def next(): T =
-          if (!hasNext()) throw new NoSuchElementException()
-          else underlying.next()
+        /* After close the underlying directory reader reports end of
+         * stream; only an element already read ahead is still returned.
+         */
+        override def hasNext(): Boolean = underlying.hasNext()
+        override def next(): T = underlying.next()
         override def remove(): Unit = throw new UnsupportedOperationException()
       }
     }
