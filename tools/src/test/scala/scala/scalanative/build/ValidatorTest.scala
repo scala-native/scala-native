@@ -69,9 +69,10 @@ class ValidatorTest {
       withLlvmPrefix { (_, otherClang) =>
         val include = s"-I${prefix.resolve("include")}"
         val lib = s"-L${prefix.resolve("lib")}"
+        val unrelated = s"-I${prefix.resolve("non-llvm").resolve("include")}"
         assertEquals(
           Seq(include -> prefix, lib -> prefix),
-          Validator.mismatchedLlvmDirs(otherClang, Seq(include, lib, "-I/x"))
+          Validator.mismatchedLlvmDirs(otherClang, Seq(include, lib, unrelated))
         )
       }
   }
