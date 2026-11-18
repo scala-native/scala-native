@@ -15,7 +15,7 @@ import scala.scalanative.libc.{LibcExt, stdio}
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.nio.fs.unix.UnixException
 import scala.scalanative.posix.errno.{
-  EACCES, EEXIST, EINTR, ELOOP, ENOENT, EPERM, ESPIPE
+  EACCES, EEXIST, EINTR, ELOOP, ENOENT, EPERM
 }
 import scala.scalanative.posix.fcntl._
 import scala.scalanative.posix.fcntlOps._
@@ -967,7 +967,7 @@ private[java] final class FileChannelImpl(
   }
 
   /* FileInputStream.skip: moves the position by n, possibly past the end of
-   * file. Returns -1 when the file is not seekable.
+   * file. Returns NotSeekable for anything but a regular file.
    */
   private[java] def skip(n: Long): Long = {
     ensureOpen()
@@ -981,8 +981,13 @@ private[java] final class FileChannelImpl(
           n
         }
       } else {
-        if (unistd.lseek(fd.fd, n.toSize, stdio.SEEK_CUR) >= 0) n
-        else if (errno == ESPIPE) FileChannelImpl.NotSeekable
+        val isRegularFile = Zone.acquire { implicit z =>
+          val statBuf = alloc[stat.stat]()
+          if (stat.fstat(fd.fd, statBuf) != 0) throwPosixException("fstat")
+          stat.S_ISREG(statBuf.st_mode) != 0
+        }
+        if (!isRegularFile) FileChannelImpl.NotSeekable
+        else if (unistd.lseek(fd.fd, n.toSize, stdio.SEEK_CUR) >= 0) n
         else throw UnixException(getFileName(), errno)
       }
     }

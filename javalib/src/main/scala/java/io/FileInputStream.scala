@@ -48,11 +48,11 @@ class FileInputStream(fd: FileDescriptor, file: Option[File])
   override def read(buffer: Array[Byte], offset: Int, count: Int): Int =
     channel.read(buffer, offset, count)
 
-  // Like the JVM, seeks past the end of file and reads non-seekable files.
+  // Like JDK 25: seeks regular files, possibly past the end or backward;
+  // reads and discards anything else.
   override def skip(n: Long): Long = {
     val skipped = channel.skip(n)
     if (skipped != FileChannelImpl.NotSeekable) skipped
-    else if (n < 0) throw new IOException("Illegal seek")
     else super.skip(n)
   }
 
