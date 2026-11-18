@@ -973,7 +973,8 @@ private[java] final class FileChannelImpl(
     ensureOpen()
     withPositionLock {
       if (isWindows) {
-        if (GetFileType(fd.handle) != FILE_TYPE_DISK) -1L
+        if (GetFileType(fd.handle) != FILE_TYPE_DISK)
+          FileChannelImpl.NotSeekable
         else {
           if (!SetFilePointerEx(fd.handle, n, null, FILE_CURRENT))
             throw WindowsException.onPath(getFileName())
@@ -981,7 +982,7 @@ private[java] final class FileChannelImpl(
         }
       } else {
         if (unistd.lseek(fd.fd, n.toSize, stdio.SEEK_CUR) >= 0) n
-        else if (errno == ESPIPE) -1L
+        else if (errno == ESPIPE) FileChannelImpl.NotSeekable
         else throw UnixException(getFileName(), errno)
       }
     }
@@ -989,6 +990,9 @@ private[java] final class FileChannelImpl(
 }
 
 private[java] object FileChannelImpl {
+
+  // Returned by skip for non-seekable files; no seek can return it.
+  private[java] final val NotSeekable = Long.MinValue
 
   private[java] final class OpenOptions(
       val read: Boolean,

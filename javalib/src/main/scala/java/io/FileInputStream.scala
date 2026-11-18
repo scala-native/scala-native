@@ -51,7 +51,7 @@ class FileInputStream(fd: FileDescriptor, file: Option[File])
   // Like the JVM, seeks past the end of file and reads non-seekable files.
   override def skip(n: Long): Long = {
     val skipped = channel.skip(n)
-    if (skipped >= 0) skipped
+    if (skipped != FileChannelImpl.NotSeekable) skipped
     else if (n < 0) throw new IOException("Illegal seek")
     else super.skip(n)
   }
