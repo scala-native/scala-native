@@ -1,12 +1,10 @@
 package java.nio.channels
 
-import java.io.{FileNotFoundException, RandomAccessFile}
 import java.nio.channels.spi.AbstractInterruptibleChannel
 import java.nio.file._
 import java.nio.file.attribute.FileAttribute
 import java.nio.{ByteBuffer, MappedByteBuffer}
 import java.util.{HashSet, Set}
-import java.{lang => jl}
 
 abstract class FileChannel protected ()
     extends AbstractInterruptibleChannel
@@ -70,18 +68,6 @@ object FileChannel {
     final val READ_WRITE = new MapMode {}
   }
 
-  private def tryRandomAccessFile(
-      fileName: String,
-      mode: String
-  ): RandomAccessFile = {
-    try {
-      new RandomAccessFile(fileName, mode)
-    } catch {
-      case fnf: FileNotFoundException =>
-        throw new AccessDeniedException(fileName)
-    }
-  }
-
   def open(
       path: Path,
       options: Set[_ <: OpenOption],
@@ -91,6 +77,7 @@ object FileChannel {
 
     val appending = options.contains(APPEND)
     val writing = options.contains(WRITE) || appending
+    val reading = options.contains(READ) || !writing
 
     if (appending) {
       if (options.contains(TRUNCATE_EXISTING)) {
@@ -104,52 +91,28 @@ object FileChannel {
       }
     }
 
-    val mode = new jl.StringBuilder("r")
-    if (writing) mode.append("w")
+    val openOptions = new FileChannelImpl.OpenOptions(
+      read = reading,
+      write = writing,
+      append = appending,
+      truncate = writing && options.contains(TRUNCATE_EXISTING),
+      create = writing && options.contains(CREATE),
+      createNew = writing && options.contains(CREATE_NEW),
+      sync = writing && options.contains(SYNC),
+      dsync = writing && options.contains(DSYNC),
+      noFollowLinks = options.contains(LinkOption.NOFOLLOW_LINKS)
+    )
 
-    if (!Files.exists(path, Array.empty)) {
-      if (!options.contains(CREATE) && !options.contains(CREATE_NEW)) {
-        throw new NoSuchFileException(path.toString)
-      } else if (writing) {
-        Files.createFile(path, attrs)
-      }
-    } else if (options.contains(CREATE_NEW)) {
-      throw new FileAlreadyExistsException(path.toString)
-    }
+    val fd = FileChannelImpl.openFileDescriptor(path, openOptions, attrs)
 
-    if (writing && options.contains(DSYNC) && !options
-          .contains(SYNC)) {
-      mode.append("d")
-    }
-
-    if (writing && options.contains(SYNC)) {
-      mode.append("s")
-    }
-
-    val raf = tryRandomAccessFile(path.toString, mode.toString)
-
-    try {
-      if (writing && options.contains(TRUNCATE_EXISTING))
-        raf.setLength(0L)
-
-      new FileChannelImpl(
-        raf.getFD(),
-        Some(path.toFile()),
-        deleteFileOnClose =
-          options.contains(StandardOpenOption.DELETE_ON_CLOSE),
-        openForReading = true,
-        openForWriting = writing,
-        openForAppending = appending
-      )
-    } catch {
-      case e: Throwable =>
-        try {
-          raf.close()
-        } catch {
-          case _: Throwable => // caller interested in original e not this one.
-        }
-        throw e
-    }
+    new FileChannelImpl(
+      fd,
+      Some(path.toFile()),
+      deleteFileOnClose = options.contains(DELETE_ON_CLOSE),
+      openForReading = reading,
+      openForWriting = writing,
+      openForAppending = appending
+    )
   }
 
   def open(path: Path, options: Array[OpenOption]): FileChannel = {

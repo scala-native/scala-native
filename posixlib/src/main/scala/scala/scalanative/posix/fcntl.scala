@@ -95,6 +95,12 @@ object fcntl {
   @name("scalanative_o_sync")
   def O_SYNC: CInt = extern
 
+  @name("scalanative_o_dsync")
+  def O_DSYNC: CInt = extern
+
+  @name("scalanative_o_nofollow")
+  def O_NOFOLLOW: CInt = extern
+
   @name("scalanative_o_accmode")
   def O_ACCMODE: CInt = extern
 

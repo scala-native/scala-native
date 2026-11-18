@@ -252,12 +252,17 @@ class PatternTest {
     fail("[a-z&&[^m-p]]", "n")
   }
 
-  @Ignore("not supported")
-  @Test def predefinedCharacterClassesHorizontalAndVertical(): Unit = {
+  @Test def predefinedCharacterClassesHorizontal(): Unit = {
     pass("\\h", " ")
     pass("\\H", "a")
+    fail("\\h", "\n")
+  }
+
+  @Test def predefinedCharacterClassesVertical(): Unit = {
     pass("\\v", "\n")
+    pass("\\v", "\u2028")
     pass("\\V", "a")
+    fail("\\V", "\r")
   }
 
   @Ignore("not supported")

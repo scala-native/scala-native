@@ -474,12 +474,63 @@ class PatternTest {
     fail("[a-z&&[^m-p]]", "n")
   }
 
-  @Ignore("#620")
-  @Test def notSupportedPredefinedCharClassesHorizontalAndVertical(): Unit = {
-    pass("\\h", " ")
-    pass("\\H", "a")
-    pass("\\v", "\n")
-    pass("\\V", "a")
+  private def matchingBmpChars(regex: String, flags: Int = 0): String = {
+    val m = Pattern.compile(regex, flags).matcher("")
+    val sb = new java.lang.StringBuilder
+    for (c <- 0 to 0xffff if !Character.isSurrogate(c.toChar)) {
+      if (m.reset(c.toChar.toString).matches()) sb.append(c.toChar)
+    }
+    sb.toString
+  }
+
+  private def bmpCharsExcept(excluded: String): String = {
+    val sb = new java.lang.StringBuilder
+    for (c <- 0 to 0xffff if !Character.isSurrogate(c.toChar)) {
+      if (excluded.indexOf(c) < 0) sb.append(c.toChar)
+    }
+    sb.toString
+  }
+
+  @Test def predefinedCharClassHorizontalWhitespace(): Unit = {
+    val h = "\t \u00a0\u1680\u180e" +
+      "\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a" +
+      "\u202f\u205f\u3000"
+    assertEquals(h, matchingBmpChars("\\h"))
+    assertEquals(h, matchingBmpChars("[\\h]"))
+    assertEquals(h, matchingBmpChars("\\h", Pattern.CASE_INSENSITIVE))
+    assertEquals(bmpCharsExcept(h), matchingBmpChars("\\H"))
+    assertEquals(bmpCharsExcept(h), matchingBmpChars("[^\\h]"))
+
+    val m = Pattern
+      .compile("^(?:\\h*\\*)?(\\h*)([^\\h\n]*)\\h*$", Pattern.MULTILINE)
+      .matcher(" * foo\u00a0\n\t*\u3000bar \t")
+    assertTrue(m.find())
+    assertEquals(" ", m.group(1))
+    assertEquals("foo", m.group(2))
+    assertTrue(m.find())
+    assertEquals("\u3000", m.group(1))
+    assertEquals("bar", m.group(2))
+    assertFalse(m.find())
+  }
+
+  @Test def predefinedCharClassWhitespace(): Unit = {
+    val ws = "\t\n\u000b\f\r "
+    assertEquals(ws, matchingBmpChars("\\s"))
+    assertEquals(ws, matchingBmpChars("[\\s]"))
+    assertEquals(bmpCharsExcept(ws), matchingBmpChars("\\S"))
+    assertEquals(bmpCharsExcept(ws), matchingBmpChars("[^\\s]"))
+  }
+
+  @Test def predefinedCharClassVerticalWhitespace(): Unit = {
+    val v = "\n\u000b\f\r\u0085\u2028\u2029"
+    assertEquals(v, matchingBmpChars("\\v"))
+    assertEquals(v, matchingBmpChars("[\\v]"))
+    assertEquals(v, matchingBmpChars("\\v", Pattern.CASE_INSENSITIVE))
+    assertEquals(bmpCharsExcept(v), matchingBmpChars("\\V"))
+    assertEquals(bmpCharsExcept(v), matchingBmpChars("[^\\v]"))
+    assertEquals("a|b|c", "a\r\nb\u2028c".replaceAll("\\v+", "|"))
+    assertEquals("\u000b\f\r", matchingBmpChars("[\\v-\\r]"))
+    assertEquals("\u000b-", matchingBmpChars("[\\v-]"))
   }
 
   @Ignore("#620")

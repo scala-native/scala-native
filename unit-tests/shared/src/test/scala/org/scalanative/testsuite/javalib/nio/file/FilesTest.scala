@@ -639,6 +639,56 @@ class FilesTest {
     }
   }
 
+  @Test def filesFileKeyIdentifiesUnderlyingFile(): Unit = {
+    assumeFalse(
+      "The JVM reports null fileKeys on Windows",
+      isWindows && Platform.executingInJVM
+    )
+
+    withTemporaryDirectory { dirFile =>
+      val dir = dirFile.toPath()
+      val file = Files.createFile(dir.resolve("file"))
+      val other = Files.createFile(dir.resolve("other"))
+      val link = Files.createLink(dir.resolve("link"), file)
+
+      def key(p: Path): Object = {
+        val k = Files.readAttributes(p, classOf[BasicFileAttributes]).fileKey()
+        assertNotNull(s"fileKey($p)", k)
+        k
+      }
+
+      val fileKey = key(file)
+      assertEquals("same path", fileKey, key(file))
+      assertEquals(
+        "same path, hashCode",
+        fileKey.hashCode(),
+        key(file).hashCode()
+      )
+      assertEquals(
+        "alternative path",
+        fileKey,
+        key(dir.resolve(".").resolve("file"))
+      )
+      assertEquals("absolute path", fileKey, key(file.toAbsolutePath()))
+      assertEquals("hard link", fileKey, key(link))
+      assertEquals(
+        "hard link, hashCode",
+        fileKey.hashCode(),
+        key(link).hashCode()
+      )
+      assertEquals(
+        "fileKey attribute",
+        fileKey,
+        Files.getAttribute(link, "fileKey")
+      )
+
+      assertNotEquals("different file", fileKey, key(other))
+      assertNotEquals("directory", fileKey, key(dir))
+      assertNotEquals("null", fileKey, null)
+      assertNotNull("toString", fileKey.toString())
+    }
+  }
+
   @Test def filesCreateLinkThrowsIfTheFileAlreadyExists(): Unit = {
     withTemporaryDirectory { dirFile =>
       val dir = dirFile.toPath()
@@ -2179,11 +2229,8 @@ class FilesTest {
       assertFalse("a10", f0isSym)
       assertFalse("a11", f0isOth)
 
-      /* See Issue #3909
-       * fileKey seems to always be null on Windows, even though
-       * there is code which appears to return a useful dosFileKey.
-       */
-      if (!isWindows) {
+      // The JVM reports null fileKeys on Windows.
+      if (!(isWindows && Platform.executingInJVM)) {
         /* This fileKey section must change if/when SN ever implements a
          * FileSystem which returns null fileKeys.
          */
