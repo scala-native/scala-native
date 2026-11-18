@@ -49,6 +49,17 @@ class MapFailFastTest {
     result
   }
 
+  // Reads the stored value without get(), which reorders access-order maps.
+  private def value(m: JMap, i: Int): Integer = {
+    val it = m.entrySet().iterator()
+    var result: Integer = null
+    while (it.hasNext()) {
+      val e = it.next()
+      if (e.getKey().intValue() == i) result = e.getValue()
+    }
+    result
+  }
+
   private val views: Seq[(String, JMap => Iterator[_])] = Seq(
     "keySet" -> (_.keySet().iterator()),
     "values" -> (_.values().iterator()),
@@ -57,8 +68,8 @@ class MapFailFastTest {
 
   private val structuralChanges: Seq[(String, JMap => Unit)] = Seq(
     "put(new)" -> (_.put(int(99), int(1))),
-    "remove" -> (m => m.remove(key(m, 3))),
-    "remove(k, v)" -> (m => m.remove(key(m, 3), m.get(key(m, 3)))),
+    "remove" -> (m => assertNotNull(m.remove(key(m, 3)))),
+    "remove(k, v)" -> (m => assertTrue(m.remove(key(m, 3), value(m, 3)))),
     "clear" -> (_.clear()),
     "putAll(new)" -> (_.putAll(Collections.singletonMap(int(99), int(1)))),
     "computeIfAbsent(new)" -> (_.computeIfAbsent(
@@ -74,8 +85,8 @@ class MapFailFastTest {
         def apply(a: Integer, b: Integer): Integer = a
       }
     )),
-    "keySet.remove" -> (m => m.keySet().remove(key(m, 3))),
-    "values.remove" -> (m => m.values().remove(m.get(key(m, 3)))),
+    "keySet.remove" -> (m => assertTrue(m.keySet().remove(key(m, 3)))),
+    "values.remove" -> (m => assertTrue(m.values().remove(value(m, 3)))),
     "entrySet.removeIf" -> (_.entrySet().removeIf(
       new Predicate[Map.Entry[Integer, Integer]] {
         def test(e: Map.Entry[Integer, Integer]): Boolean =
@@ -153,6 +164,37 @@ class MapFailFastTest {
     assertEquals(1, it.next().intValue())
   }
 
+  @Test def accessOrderedComputeFunctionAccessIsAModification(): Unit = {
+    def lhm() = fill(new LinkedHashMap[Integer, Integer](16, 0.75f, true))
+    def readOther(m: JMap) = new BiFunction[Integer, Integer, Integer] {
+      def apply(a: Integer, b: Integer): Integer =
+        int(m.get(int(1)).intValue() + 1)
+    }
+
+    val m1 = lhm()
+    assertThrows(classOf[CME], m1.compute(int(0), readOther(m1)))
+
+    val m2 = lhm()
+    assertThrows(classOf[CME], m2.computeIfPresent(int(0), readOther(m2)))
+
+    val m3 = lhm()
+    assertThrows(classOf[CME], m3.merge(int(0), int(5), readOther(m3)))
+
+    // Without a reordering access in the function, the entry moves last.
+    val m4 = lhm()
+    m4.compute(
+      int(0),
+      new BiFunction[Integer, Integer, Integer] {
+        def apply(k: Integer, v: Integer): Integer = int(v.intValue() + 10)
+      }
+    )
+    assertEquals(
+      Arrays.asList[Integer](int(1), int(2), int(3), int(4), int(0)),
+      new ArrayList[Integer](m4.keySet())
+    )
+    assertEquals(10, m4.get(int(0)).intValue())
+  }
+
   @Test def iteratorRemoveKeepsIteratorValid(): Unit = forAllMaps {
     (name, mk) =>
       val m = mk()
@@ -182,8 +224,10 @@ class MapFailFastTest {
 
   @Test def bulkTraversalsThrowWhenCallbackAddsMapping(): Unit = forAllMaps {
     (name, mk) =>
+      // Change the map in the first callback: the iteration order of
+      // IdentityHashMap varies between runs.
       def adding(m: JMap, k: Integer): Unit =
-        if (k.intValue() == 1) m.put(int(99), int(1))
+        if (!m.containsKey(int(99))) m.put(int(99), int(1))
 
       val m1 = mk()
       assertThrows(
@@ -408,7 +452,7 @@ class MapFailFastTest {
         classOf[CME],
         s.forEach(new Consumer[Integer] {
           def accept(x: Integer): Unit =
-            if (x.intValue() == 1) s.add(int(99))
+            if (!s.contains(int(99))) s.add(int(99))
         })
       )
       assertThrows(
@@ -416,7 +460,7 @@ class MapFailFastTest {
         classOf[CME],
         s.removeIf(new Predicate[Integer] {
           def test(x: Integer): Boolean = {
-            if (x.intValue() == 1) s.add(int(98))
+            if (!s.contains(int(98))) s.add(int(98))
             false
           }
         })
