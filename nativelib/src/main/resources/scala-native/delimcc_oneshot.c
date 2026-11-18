@@ -462,9 +462,9 @@ static void destroy(ThreadState *thread, Coroutine *coroutine) {
  */
 #if defined(__aarch64__)
 #define SWITCH_FRAME 144
-// x18 is reserved by the platform on Apple; elsewhere it is an ordinary
-// register that the switch does not preserve.
-#if defined(__APPLE__)
+// x18 is reserved by the platform on Apple and Android (shadow call stack);
+// elsewhere it is an ordinary register that the switch does not preserve.
+#if defined(__APPLE__) || defined(__ANDROID__)
 #define PLATFORM_REGISTER
 #else
 #define PLATFORM_REGISTER "x18",

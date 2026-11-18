@@ -14,6 +14,9 @@
 #include <signal.h>
 #include <sys/time.h>
 #include <time.h>
+#ifdef __APPLE__
+#include <TargetConditionals.h>
+#endif
 
 struct scalanative_tm {
     int tm_sec;
@@ -168,6 +171,49 @@ int scalanative_clock_nanosleep(clockid_t clockid, int flags,
 #endif
 }
 
+int scalanative_clock_getres(clockid_t clockid, struct timespec *res) {
+    return clock_getres(clockid, res);
+}
+
+// clock_settime() is prohibited on iOS, tvOS and watchOS.
+#if !defined(__APPLE__) || TARGET_OS_OSX
+int scalanative_clock_settime(clockid_t clockid, const struct timespec *tp) {
+    return clock_settime(clockid, tp);
+}
+#endif
+
+char *scalanative_ctime(const time_t *time) { return ctime(time); }
+
+char *scalanative_ctime_r(const time_t *time, char *buf) {
+    return ctime_r(time, buf);
+}
+
+double scalanative_difftime(time_t time_end, time_t time_beg) {
+    return difftime(time_end, time_beg);
+}
+
+struct tm *scalanative_gmtime(const time_t *time) {
+    return gmtime(time);
+}
+
+struct tm *scalanative_gmtime_r(const time_t *time, struct tm *tm) {
+    return gmtime_r(time, tm);
+}
+
+struct tm *scalanative_localtime(const time_t *time) {
+    return localtime(time);
+}
+
+struct tm *scalanative_localtime_r(const time_t *time, struct tm *tm) {
+    return localtime_r(time, tm);
+}
+
+time_t scalanative_mktime(struct tm *tm) { return mktime(tm); }
+
+time_t scalanative_time(time_t *arg) { return time(arg); }
+
+void scalanative_tzset() { tzset(); }
+
 char **scalanative_tzname() { return tzname; }
 
 #if defined(__FreeBSD__)
@@ -269,3 +315,32 @@ int scalanative_timer_abstime() {
 }
 
 #endif // Unix or Mac OS
+
+#if (defined(SCALANATIVE_COMPILE_ALWAYS) ||                                    \
+     defined(__SCALANATIVE_POSIX_TIME)) &&                                     \
+    defined(_WIN32)
+// The ISO C subset of time.scala is available on Windows too. Provide its glue
+// so that code which only checks the platform at runtime still links there.
+#include <time.h>
+
+char *scalanative_ctime(const time_t *time) { return ctime(time); }
+
+double scalanative_difftime(time_t time_end, time_t time_beg) {
+    return difftime(time_end, time_beg);
+}
+
+struct tm *scalanative_gmtime(const time_t *time) {
+    return gmtime(time);
+}
+
+struct tm *scalanative_localtime(const time_t *time) {
+    return localtime(time);
+}
+
+time_t scalanative_mktime(struct tm *tm) { return mktime(tm); }
+
+time_t scalanative_time(time_t *arg) { return time(arg); }
+
+void scalanative_tzset() { _tzset(); }
+
+#endif // _WIN32

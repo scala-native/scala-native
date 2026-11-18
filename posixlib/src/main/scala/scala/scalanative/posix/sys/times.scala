@@ -39,7 +39,16 @@ object times {
     clock_t // tms_cstime System CPU time of terminated child processes.
   ]
 
+  @name("scalanative_times")
   def times(buf: Ptr[tms]): clock_t = extern
+
+  @deprecated(
+    "Binary compatibility: code compiled against 0.5.12 links to this extern name.",
+    "0.5.13"
+  )
+  @name("times")
+  private[posix] def _times(buf: Ptr[tms]): clock_t =
+    externRedirect(times(buf))
 }
 
 /** Allow using C names to access tms structure fields.

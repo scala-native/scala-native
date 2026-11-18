@@ -11,7 +11,9 @@ import org.scalanative.testsuite.utils.Platform
 
 // libc.string is hidden by posix.string
 import scala.scalanative.libc.{string => libcString}
-import scala.scalanative.meta.LinktimeInfo.{is32BitPlatform, isWindows}
+import scala.scalanative.meta.LinktimeInfo.{
+  is32BitPlatform, isApple, isMac, isWindows
+}
 import scala.scalanative.posix.timeOps.{timespecOps, tmOps}
 import scala.scalanative.posix.{errno => posixErrno, time}
 import scala.scalanative.runtime.PlatformExt
@@ -369,28 +371,30 @@ class TimeTest {
     }
   }
 
-  @Test def clockSettimeShouldExecute(): Unit = if (!isWindows) {
-    val timespecP = stackalloc[timespec]()
+  // clock_settime() is not available on iOS, tvOS and watchOS.
+  @Test def clockSettimeShouldExecute(): Unit =
+    if (!isWindows && (!isApple || isMac)) {
+      val timespecP = stackalloc[timespec]()
 
-    // CLOCK_MONOTONIC is defined as un-settable, use to cause error result.
-    val result = clock_settime(CLOCK_MONOTONIC, timespecP)
+      // CLOCK_MONOTONIC is defined as un-settable, use to cause error result.
+      val result = clock_settime(CLOCK_MONOTONIC, timespecP)
 
-    assertEquals(
-      s"clock_settime should have failed setting CLOCK_MONOTONIC",
-      -1,
-      result
-    )
+      assertEquals(
+        s"clock_settime should have failed setting CLOCK_MONOTONIC",
+        -1,
+        result
+      )
 
-    /* Testing for a specific errno tends to quickly run into OS differences.
-     * EINVAL is the "expected" result.
-     * aarch64-linux-gnu and probably others return EPERM.
-     */
+      /* Testing for a specific errno tends to quickly run into OS differences.
+       * EINVAL is the "expected" result.
+       * aarch64-linux-gnu and probably others return EPERM.
+       */
 
-    assertTrue(
-      s"clock_settime failed with errno: ${posixErrno.errno}",
-      posixErrno.errno == (EINVAL) || posixErrno.errno == (EPERM)
-    )
-  }
+      assertTrue(
+        s"clock_settime failed with errno: ${posixErrno.errno}",
+        posixErrno.errno == (EINVAL) || posixErrno.errno == (EPERM)
+      )
+    }
 
   // Issue 4454, Posix Issue 8 increased size of 'struct tm'
   @Test def structTmSize(): Unit = if (!isWindows) {

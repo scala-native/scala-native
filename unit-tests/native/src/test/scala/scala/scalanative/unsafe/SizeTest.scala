@@ -22,7 +22,7 @@ class SizeTest {
   }
 
   @Test def arithmeticShiftRight: Unit = {
-    assertTrue((-6.toSize >> 1).toInt == -3)
+    assertTrue(((-6).toSize >> 1).toInt == -3)
   }
 
   @Test def equality: Unit = {

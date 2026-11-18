@@ -135,7 +135,7 @@ class InterfaceAddressTest {
 
         val expected =
           if (len == 4) 8.toShort // IPv4
-          else if (len != 16) -1.toShort // fail but print prefixLen
+          else if (len != 16) (-1).toShort // fail but print prefixLen
           else if (ia(0) == 0) 128.toShort // Linux & macOS ::1 form
           else osIPv6PrefixLength.toShort // macOs ff80::1 form
 

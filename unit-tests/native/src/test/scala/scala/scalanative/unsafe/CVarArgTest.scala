@@ -27,7 +27,7 @@ class CVarArgTest {
   @Test def byteValue1(): Unit =
     vatest(c"%d", "1")(stdio.sprintf(_, _, 1.toByte))
   @Test def byteValueMinus1(): Unit =
-    vatest(c"%d", "-1")(stdio.sprintf(_, _, -1.toByte))
+    vatest(c"%d", "-1")(stdio.sprintf(_, _, (-1).toByte))
   @Test def byteValueMin(): Unit =
     vatest(c"%d", "-128")(stdio.sprintf(_, _, java.lang.Byte.MIN_VALUE))
   @Test def byteValueMax(): Unit =
@@ -118,7 +118,7 @@ class CVarArgTest {
   @Test def shortValue1(): Unit =
     vatest(c"%d", "1")(stdio.sprintf(_, _, 1.toShort))
   @Test def shortValueMinus1(): Unit =
-    vatest(c"%d", "-1")(stdio.sprintf(_, _, -1.toShort))
+    vatest(c"%d", "-1")(stdio.sprintf(_, _, (-1).toShort))
   @Test def shortValueMin(): Unit =
     vatest(c"%d", "-32768")(stdio.sprintf(_, _, java.lang.Short.MIN_VALUE))
   @Test def shortValueMax(): Unit =

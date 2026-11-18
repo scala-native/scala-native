@@ -69,18 +69,39 @@ trait time extends libc.time {
    *
    * _Static_assert code now in time.c checks the match of scalanative
    * structures such as timespec and tm with the operating system definition.
-   * "clock_*" & "timer_*" use this assurance to avoid "glue".
+   * "timer_*" use this assurance to avoid "glue".
+   *
+   * Methods taking or returning time_t, directly or through timespec, go
+   * through "glue" anyway: NetBSD headers rename them to their 64-bit
+   * time_t versions (e.g. time -> __time50). Calling the plain symbol from
+   * Scala would bind to the compatibility version using 32-bit time_t.
    */
 
   def asctime(time_ptr: Ptr[tm]): CString = extern
   def asctime_r(time_ptr: Ptr[tm], buf: Ptr[CChar]): CString = extern
 
   def clock(): clock_t = extern
+  @name("scalanative_clock_getres")
   def clock_getres(clockid: clockid_t, res: Ptr[timespec]): CInt = extern
+
+  @deprecated(
+    "Binary compatibility: code compiled against 0.5.12 links to this extern name.",
+    "0.5.13"
+  )
+  @name("clock_getres")
+  private[posix] def _clock_getres(
+      clockid: clockid_t,
+      res: Ptr[timespec]
+  ): CInt =
+    externRedirect(clock_getres(clockid, res))
+
   @name("scalanative_clock_gettime")
   def clock_gettime(clockid: clockid_t, tp: Ptr[timespec]): CInt = extern
 
-  // Binary compatibility: code compiled against 0.5.12 links to this extern name.
+  @deprecated(
+    "Binary compatibility: code compiled against 0.5.12 links to this extern name.",
+    "0.5.13"
+  )
   @name("clock_gettime")
   private[posix] def _clock_gettime(
       clockid: clockid_t,
@@ -97,19 +118,107 @@ trait time extends libc.time {
       remain: Ptr[timespec]
   ): CInt = extern
 
+  @name("scalanative_clock_settime")
   def clock_settime(clockid: clockid_t, tp: Ptr[timespec]): CInt = extern
+
+  @deprecated(
+    "Binary compatibility: code compiled against 0.5.12 links to this extern name.",
+    "0.5.13"
+  )
+  @name("clock_settime")
+  private[posix] def _clock_settime(
+      clockid: clockid_t,
+      tp: Ptr[timespec]
+  ): CInt =
+    externRedirect(clock_settime(clockid, tp))
+
+  @name("scalanative_ctime")
   def ctime(time: Ptr[time_t]): CString = extern
+
+  @deprecated(
+    "Binary compatibility: code compiled against 0.5.12 links to this extern name.",
+    "0.5.13"
+  )
+  @name("ctime")
+  private[posix] def _ctime(time: Ptr[time_t]): CString =
+    externRedirect(ctime(time))
+
+  @name("scalanative_ctime_r")
   def ctime_r(time: Ptr[time_t], buf: Ptr[CChar]): CString = extern
 
+  @deprecated(
+    "Binary compatibility: code compiled against 0.5.12 links to this extern name.",
+    "0.5.13"
+  )
+  @name("ctime_r")
+  private[posix] def _ctime_r(time: Ptr[time_t], buf: Ptr[CChar]): CString =
+    externRedirect(ctime_r(time, buf))
+
+  @name("scalanative_difftime")
   def difftime(time_end: CLong, time_beg: CLong): CDouble = extern
 
+  @deprecated(
+    "Binary compatibility: code compiled against 0.5.12 links to this extern name.",
+    "0.5.13"
+  )
+  @name("difftime")
+  private[posix] def _difftime(time_end: CLong, time_beg: CLong): CDouble =
+    externRedirect(difftime(time_end, time_beg))
+
+  @name("scalanative_gmtime")
   def gmtime(time: Ptr[time_t]): Ptr[tm] = extern
+
+  @deprecated(
+    "Binary compatibility: code compiled against 0.5.12 links to this extern name.",
+    "0.5.13"
+  )
+  @name("gmtime")
+  private[posix] def _gmtime(time: Ptr[time_t]): Ptr[tm] =
+    externRedirect(gmtime(time))
+
+  @name("scalanative_gmtime_r")
   def gmtime_r(time: Ptr[time_t], tm: Ptr[tm]): Ptr[tm] = extern
 
+  @deprecated(
+    "Binary compatibility: code compiled against 0.5.12 links to this extern name.",
+    "0.5.13"
+  )
+  @name("gmtime_r")
+  private[posix] def _gmtime_r(time: Ptr[time_t], tm: Ptr[tm]): Ptr[tm] =
+    externRedirect(gmtime_r(time, tm))
+
+  @name("scalanative_localtime")
   def localtime(time: Ptr[time_t]): Ptr[tm] = extern
+
+  @deprecated(
+    "Binary compatibility: code compiled against 0.5.12 links to this extern name.",
+    "0.5.13"
+  )
+  @name("localtime")
+  private[posix] def _localtime(time: Ptr[time_t]): Ptr[tm] =
+    externRedirect(localtime(time))
+
+  @name("scalanative_localtime_r")
   def localtime_r(time: Ptr[time_t], tm: Ptr[tm]): Ptr[tm] = extern
 
+  @deprecated(
+    "Binary compatibility: code compiled against 0.5.12 links to this extern name.",
+    "0.5.13"
+  )
+  @name("localtime_r")
+  private[posix] def _localtime_r(time: Ptr[time_t], tm: Ptr[tm]): Ptr[tm] =
+    externRedirect(localtime_r(time, tm))
+
+  @name("scalanative_mktime")
   def mktime(time: Ptr[tm]): time_t = extern
+
+  @deprecated(
+    "Binary compatibility: code compiled against 0.5.12 links to this extern name.",
+    "0.5.13"
+  )
+  @name("mktime")
+  private[posix] def _mktime(time: Ptr[tm]): time_t =
+    externRedirect(mktime(time))
 
   @name("scalanative_nanosleep")
   @blocking
@@ -118,7 +227,10 @@ trait time extends libc.time {
       remaining: Ptr[timespec]
   ): CInt = extern
 
-  // Binary compatibility: code compiled against 0.5.12 links to this extern name.
+  @deprecated(
+    "Binary compatibility: code compiled against 0.5.12 links to this extern name.",
+    "0.5.13"
+  )
   @name("nanosleep")
   private[posix] def _nanosleep(
       requested: Ptr[timespec],
@@ -138,11 +250,29 @@ trait time extends libc.time {
   def strptime(str: Ptr[CChar], format: CString, time: Ptr[tm]): CString =
     extern
 
+  @name("scalanative_time")
   def time(arg: Ptr[time_t]): time_t = extern
+
+  @deprecated(
+    "Binary compatibility: code compiled against 0.5.12 links to this extern name.",
+    "0.5.13"
+  )
+  @name("time")
+  private[posix] def _time(arg: Ptr[time_t]): time_t =
+    externRedirect(time(arg))
 
   // See separate timer object below for timer_*() methods.
 
+  @name("scalanative_tzset")
   def tzset(): Unit = extern
+
+  @deprecated(
+    "Binary compatibility: code compiled against 0.5.12 links to this extern name.",
+    "0.5.13"
+  )
+  @name("tzset")
+  private[posix] def _tzset(): Unit =
+    externRedirect(tzset())
 
 // POSIX variables (vals, not vars)
 

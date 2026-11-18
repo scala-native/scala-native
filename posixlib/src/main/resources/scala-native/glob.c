@@ -1,4 +1,4 @@
-#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_POSIX_FNMATCH)
+#if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_POSIX_GLOB)
 #if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
 
@@ -65,6 +65,19 @@ int scalanative_glob_aborted() { return GLOB_ABORTED; };
 int scalanative_glob_nomatch() { return GLOB_NOMATCH; };
 
 int scalanative_glob_nospace() { return GLOB_NOSPACE; };
+
+// Keep header-selected ABI versions, notably NetBSD's __glob30.
+int scalanative_glob(const char *pattern, int flags,
+                     int (*errfunc)(const char *, int), glob_t *pglob) {
+    return glob(pattern, flags, errfunc, pglob);
+}
+
+// globfree() returns void; glob.scala declares CInt (kept for binary
+// compatibility), so return a defined value instead of a garbage register.
+int scalanative_globfree(glob_t *pglob) {
+    globfree(pglob);
+    return 0;
+}
 
 #endif // Unix or Mac OS
 #endif

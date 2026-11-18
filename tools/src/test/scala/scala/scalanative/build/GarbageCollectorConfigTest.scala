@@ -315,7 +315,7 @@ class GarbageCollectorConfigTest {
   @Test def durations(): Unit = {
     assertValid(resolve(GC.immix)(_.withSyncTimeout(Duration.Zero)))
     assertIssue(
-      resolve(GC.immix)(_.withSyncTimeout(-1.second)),
+      resolve(GC.immix)(_.withSyncTimeout((-1).second)),
       "syncTimeout cannot be negative"
     )
     assertIssue(

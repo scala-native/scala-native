@@ -1,4 +1,6 @@
-// Ported from Scala.js commit def516f dated: 2023-01-22
+/* Ported from Scala.js commit def516f dated: 2023-01-22
+ * 'overrides' for JEP 431 Sequenced Map method added for Scala Native.
+ */
 
 package java.util
 
@@ -158,18 +160,18 @@ class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit
 
   override def clone(): Object = new TreeMap(tree.treeCopy())(comp)
 
-  def firstEntry(): Map.Entry[K, V] = RB.minNode(tree)
+  override def firstEntry(): Map.Entry[K, V] = RB.minNode(tree)
 
-  def lastEntry(): Map.Entry[K, V] = RB.maxNode(tree)
+  override def lastEntry(): Map.Entry[K, V] = RB.maxNode(tree)
 
-  def pollFirstEntry(): Map.Entry[K, V] = {
+  override def pollFirstEntry(): Map.Entry[K, V] = {
     val node = RB.minNode(tree)
     if (node ne null)
       RB.deleteNode(tree, node)
     node
   }
 
-  def pollLastEntry(): Map.Entry[K, V] = {
+  override def pollLastEntry(): Map.Entry[K, V] = {
     val node = RB.maxNode(tree)
     if (node ne null)
       RB.deleteNode(tree, node)
@@ -622,18 +624,18 @@ private object TreeMap {
     def comparator(): Comparator[_ >: K] =
       NaturalComparator.unselect(comp)
 
-    def firstEntry(): Map.Entry[K, V] =
+    override def firstEntry(): Map.Entry[K, V] =
       nextNode(fromKey, fromBoundKind)
 
-    def lastEntry(): Map.Entry[K, V] =
+    override def lastEntry(): Map.Entry[K, V] =
       previousNode(toKey, toBoundKind)
 
     @noinline
-    def pollFirstEntry(): Map.Entry[K, V] =
+    override def pollFirstEntry(): Map.Entry[K, V] =
       pollLowerEntry()
 
     @noinline
-    def pollLastEntry(): Map.Entry[K, V] =
+    override def pollLastEntry(): Map.Entry[K, V] =
       pollUpperEntry()
 
     def navigableKeySet(): NavigableSet[K] = {
@@ -661,6 +663,7 @@ private object TreeMap {
     def descendingMap(): NavigableMap[K, V] = {
       new DescendingProjection(tree, toKey, toBoundKind, fromKey, fromBoundKind)
     }
+
   }
 
   private final class DescendingProjection[K, V](
@@ -729,18 +732,18 @@ private object TreeMap {
     def comparator(): Comparator[_ >: K] =
       Collections.reverseOrder(NaturalComparator.unselect(comp))
 
-    def firstEntry(): Map.Entry[K, V] =
+    override def firstEntry(): Map.Entry[K, V] =
       nextNode(fromKey, fromBoundKind)
 
-    def lastEntry(): Map.Entry[K, V] =
+    override def lastEntry(): Map.Entry[K, V] =
       previousNode(toKey, toBoundKind)
 
     @noinline
-    def pollFirstEntry(): Map.Entry[K, V] =
+    override def pollFirstEntry(): Map.Entry[K, V] =
       pollUpperEntry()
 
     @noinline
-    def pollLastEntry(): Map.Entry[K, V] =
+    override def pollLastEntry(): Map.Entry[K, V] =
       pollLowerEntry()
 
     def navigableKeySet(): NavigableSet[K] = {

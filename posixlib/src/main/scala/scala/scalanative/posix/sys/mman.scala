@@ -34,8 +34,17 @@ object mman {
 
   /** XSI|SIO
    */
+  @name("scalanative_msync")
   @blocking
   def msync(addr: CVoidPtr, length: size_t, flags: CInt): CInt = extern
+
+  @deprecated(
+    "Binary compatibility: code compiled against 0.5.12 links to this extern name.",
+    "0.5.13"
+  )
+  @name("msync")
+  private[posix] def _msync(addr: CVoidPtr, length: size_t, flags: CInt): CInt =
+    externRedirect(msync(addr, length, flags))
 
   // Return value
   @name("scalanative_map_failed")

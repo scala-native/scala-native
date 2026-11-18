@@ -255,7 +255,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
     hash & (table.length - 1)
 
   @inline
-  private def findNode(key: Any): Node[K, V] = {
+  private[util] def findNode(key: Any): Node[K, V] = {
     val hash = computeHash(key)
     findNode0(key, hash, index(hash))
   }

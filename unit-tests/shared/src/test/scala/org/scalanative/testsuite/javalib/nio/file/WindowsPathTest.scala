@@ -32,8 +32,7 @@ class WindowsPathTest {
   @Test def pathGetNameCount(): Unit = {
     assertTrue(Paths.get("/").getNameCount == 0)
     assertTrue(Paths.get("x:/").getNameCount == 0)
-    // TODO: In JVM empty path has count 1
-    // assertTrue(Paths.get("").getNameCount == 1)
+    assertTrue(Paths.get("").getNameCount == 1)
     assertTrue(Paths.get("foo").getNameCount == 1)
     assertTrue(Paths.get("foo//bar").getNameCount == 2)
     assertTrue(Paths.get("foo/bar/baz").getNameCount == 3)
@@ -45,8 +44,7 @@ class WindowsPathTest {
   }
 
   @Test def pathGetName(): Unit = {
-    // TODO:
-    // assertEquals("", Paths.get("").getName(0).toString)
+    assertEquals("", Paths.get("").getName(0).toString)
     assertEquals("foo", Paths.get("foo").getName(0).toString)
     assertEquals("foo", Paths.get("foo//bar").getName(0).toString)
     assertEquals("bar", Paths.get("foo//bar").getName(1).toString)
@@ -98,8 +96,7 @@ class WindowsPathTest {
   }
 
   @Test def pathGetFileName(): Unit = {
-    // TODO: on JVM empty path has a name ""
-    // assertEquals("", Paths.get("").getFileName.toString)
+    assertEquals("", Paths.get("").getFileName.toString)
     assertEquals("foo", Paths.get("foo").getFileName.toString)
     assertEquals("foo", Paths.get("/foo").getFileName.toString)
     assertEquals("foo", Paths.get("x:/foo").getFileName.toString)
@@ -115,8 +112,10 @@ class WindowsPathTest {
 
   @Test def pathSubpath(): Unit = {
     assertEquals("", Paths.get("").subpath(0, 1).toString)
-    // TODO
-    // assertThrows(classOf[IllegalArgumentException], Paths.get("").subpath(0, 2))
+    assertThrows(
+      classOf[IllegalArgumentException],
+      Paths.get("").subpath(0, 2)
+    )
 
     assertEquals("foo", Paths.get("foo/bar/baz").subpath(0, 1).toString)
     assertEquals("foo\\bar", Paths.get("foo/bar/baz").subpath(0, 2).toString)
@@ -200,8 +199,7 @@ class WindowsPathTest {
       buf.toSeq
     }
 
-    // TODO
-    // assertEquals(Seq(""), Paths.get("").iterator.map(_.toString))
+    assertEquals(Seq(""), Paths.get("").iterator.map(_.toString))
     assertEquals(Seq("foo"), Paths.get("foo").iterator.map(_.toString))
     assertEquals(
       Seq("foo", "bar"),
@@ -282,14 +280,13 @@ class WindowsPathTest {
   }
 
   @Test def pathStartsWith(): Unit = {
-    // assertTrue(Paths.get("").startsWith(Paths.get("")))
+    assertTrue(Paths.get("").startsWith(Paths.get("")))
     assertTrue(Paths.get("foo").startsWith(Paths.get("foo")))
     assertTrue(Paths.get("foo/bar").startsWith(Paths.get("foo")))
     assertTrue(Paths.get("foo/bar/baz").startsWith(Paths.get("foo/bar")))
     assertFalse(Paths.get("foo").startsWith(Paths.get("bar")))
     assertFalse(Paths.get("foo/bar").startsWith(Paths.get("bar")))
-    // TODO
-    // assertFalse(Paths.get("/").startsWith(Paths.get("")))
+    assertFalse(Paths.get("/").startsWith(Paths.get("")))
     assertFalse(Paths.get("x:/").startsWith(Paths.get("")))
     // TODO
     // assertFalse(Paths.get("").startsWith(Paths.get("/")))

@@ -1580,7 +1580,7 @@ class FileChannelTest {
   // Issue #5260
   @Test def canWriteToFifoThroughFiles(): Unit = {
     assumeFalse("FIFOs", Platform.isWindows)
-    assumeSupportsSubprocesses()
+    assumeSupportsSubprocesses() // mkfifo
     withTemporaryDirectory { dir =>
       assertEquals(
         "Files.write",

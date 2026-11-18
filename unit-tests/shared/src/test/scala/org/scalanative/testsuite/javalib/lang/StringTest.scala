@@ -1173,7 +1173,7 @@ class StringTest {
     assertEquals("fffffffd", String.format("%x", new Integer(-3)))
 
     // SN matches JVM (8 to 23) "fc", Scala.js original expected "fffffffc"
-    assertEquals("fc", String.format("%x", new java.lang.Byte(-4.toByte)))
+    assertEquals("fc", String.format("%x", new java.lang.Byte((-4).toByte)))
   }
 
   @Test def joinVarargs(): Unit = {

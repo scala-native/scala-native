@@ -37,7 +37,10 @@ object WindowsPathParser {
       .map(r => rawPath.substring(r.length))
       .getOrElse(rawPath)
 
-    val segments = pathSegments(relativePath)
+    val segments = pathSegments(relativePath) match {
+      case Nil if root.isEmpty => WindowsPath.emptyPathSegments
+      case segments            => segments
+    }
 
     new WindowsPath(tpe, root.map(fixSlashes), segments)
   }
