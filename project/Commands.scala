@@ -106,8 +106,9 @@ object Commands {
         .map(_.forBinaryVersion(version).id)
         .map(id => s"$id/test")
       val prepareForMiMa = version match {
-        // Ensure all projects are using compatible Scala 3 version (sbt might use older version then used by default in this project which would result in binary incompatibility)
-        case "3" => s"++${ScalaVersions.sbt2ScalaVersion}" :: Nil
+        // Check the existing library API, not compiler-specific additions such
+        // as SafeZone in Scala 3.9+. The sbt plugin keeps its own Scala version.
+        case "3" => s"++${ScalaVersions.mimaScala3Version}" :: Nil
         case _   => Nil
       }
       tests :::

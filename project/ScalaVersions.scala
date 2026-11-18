@@ -48,6 +48,10 @@ object ScalaVersions {
   // The latest version of minimal Scala 3 minor version used to publish artifacts
   val scala3PublishVersion = "3.1.3"
 
+  // Keep the pre-3.9 library API comparison independent of the sbt plugin compiler.
+  // Unlike the publication compiler, this compiler also runs on the CI JDK 25.
+  val mimaScala3Version: String = "3.8.4"
+
   val sbt10Version: String = "1.12.14"
   val sbt10ScalaVersion: String = "2.12.21"
 
