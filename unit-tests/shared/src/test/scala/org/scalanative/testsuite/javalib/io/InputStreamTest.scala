@@ -46,6 +46,17 @@ class InputStreamTest {
     }
   }
 
+  @Test def skipContinuesAfterShortReads(): Unit = {
+    // Returns at most one byte per bulk read
+    val in = new MockInputStreamForSkipping(new Array[Byte](2000)) {
+      override def read(b: Array[Byte], off: Int, len: Int): Int =
+        super.read(b, off, Math.min(len, 1))
+    }
+    assertEquals("skip(1000)", 1000L, in.skip(1000))
+    assertEquals("skip(-1)", 0L, in.skip(-1))
+    assertEquals("skip at end", 1000L, in.skip(5000))
+  }
+
   @Test def skipLargeN(): Unit = {
 
     val shouldBeSkippedFragmentSize = 3
