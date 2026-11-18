@@ -397,7 +397,40 @@ class ListFailFastTest {
       parentIt.next()
       s.add(Integer.valueOf(6))
       assertThrows(classOf[CME], parentIt.next())
+
+      val nested = l.subList(1, 4).subList(0, 2)
+      l.add(Integer.valueOf(1))
+      assertThrows(classOf[CME], nested.size())
+      assertThrows(classOf[CME], nested.get(0))
     }
+  }
+
+  @Test def subListOfStaleSubListIsStale(): Unit = {
+    val l = fill(new ArrayList[Integer]())
+    val parent = l.subList(1, 3)
+    l.clear()
+    val child = parent.subList(0, 1)
+    assertThrows(classOf[CME], child.size())
+    assertThrows(classOf[CME], child.get(0))
+  }
+
+  @Test def arrayListSpliteratorBindsOnEstimateSize(): Unit = {
+    val l = fill(new ArrayList[Integer]())
+    val sized = l.spliterator()
+    assertEquals(5L, sized.estimateSize())
+    l.add(Integer.valueOf(5))
+    assertEquals(5L, sized.estimateSize())
+    assertThrows(
+      classOf[CME],
+      sized.forEachRemaining(new Consumer[Integer] {
+        def accept(x: Integer): Unit = ()
+      })
+    )
+
+    val split = fill(new ArrayList[Integer]()).spliterator()
+    val prefix = split.trySplit()
+    assertEquals(2L, prefix.estimateSize())
+    assertEquals(3L, split.estimateSize())
   }
 
   @Test def customAbstractListUsesModCount(): Unit = {

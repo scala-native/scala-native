@@ -242,15 +242,28 @@ private[util] class SubList[E](
     private var _size: Int
 ) extends AbstractList[E] {
 
-  private var expectedParentModCount = parent.modCount
+  /* Every structural change, made through any view, reaches the root list.
+   * Tracking its modCount detects changes made through an ancestor or a
+   * sibling of this view, not only through the parent.
+   */
+  private val root: AbstractList[E] = parent match {
+    case p: SubList[E @unchecked] => p.root
+    case _                        => parent
+  }
+
+  // A view made from a stale parent is stale too.
+  private var expectedRootModCount: Int = parent match {
+    case p: SubList[E @unchecked] => p.expectedRootModCount
+    case _                        => root.modCount
+  }
 
   @inline
   protected final def checkForComodification(): Unit =
-    if (parent.modCount != expectedParentModCount)
+    if (root.modCount != expectedRootModCount)
       throw new ConcurrentModificationException()
 
   private def updateSizeAndModCount(delta: Int): Unit = {
-    expectedParentModCount = parent.modCount
+    expectedRootModCount = root.modCount
     _size += delta
     modCount += 1
   }

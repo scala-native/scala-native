@@ -397,50 +397,68 @@ class ArrayList[E] private (
     }
   }
 
-  override def spliterator(): Spliterator[E] = {
-    new Spliterators.AbstractSpliterator[E](
-      _size,
-      Spliterator.SIZED | Spliterator.SUBSIZED | Spliterator.ORDERED
-    ) {
-      private var cursor = 0
-      private var fence = -1 // bound on first traversal
-      private var expectedModCount = 0
+  override def spliterator(): Spliterator[E] =
+    new ArrayListSpliterator(0, -1, 0)
 
-      private def getFence(): Int = {
-        if (fence < 0) {
-          expectedModCount = modCount
-          fence = _size
-        }
-        fence
+  /* Late-binding: the fence and the expected modCount are bound on the
+   * first traversal, split or size estimate.
+   */
+  private final class ArrayListSpliterator(
+      private var index: Int,
+      private var fence: Int,
+      private var expectedModCount: Int
+  ) extends Spliterator[E] {
+
+    private def getFence(): Int = {
+      if (fence < 0) {
+        expectedModCount = modCount
+        fence = _size
       }
+      fence
+    }
 
-      def tryAdvance(action: Consumer[_ >: E]): Boolean = {
-        Objects.requireNonNull(action)
-        val hi = getFence()
-        val i = cursor
-        if (i >= hi) false
-        else {
-          cursor = i + 1
-          action.accept(inner(i).asInstanceOf[E])
-          if (modCount != expectedModCount)
-            throw new ConcurrentModificationException()
-          true
-        }
-      }
-
-      override def forEachRemaining(action: Consumer[_ >: E]): Unit = {
-        Objects.requireNonNull(action)
-        val hi = getFence()
-        val elems = inner
-        var i = cursor
-        cursor = hi
-        while (i < hi && modCount == expectedModCount) {
-          action.accept(elems(i).asInstanceOf[E])
-          i += 1
-        }
-        if (modCount != expectedModCount)
-          throw new ConcurrentModificationException()
+    def trySplit(): Spliterator[E] = {
+      val hi = getFence()
+      val lo = index
+      val mid = (lo + hi) >>> 1
+      if (lo >= mid) null
+      else {
+        index = mid
+        new ArrayListSpliterator(lo, mid, expectedModCount)
       }
     }
+
+    def tryAdvance(action: Consumer[_ >: E]): Boolean = {
+      Objects.requireNonNull(action)
+      val hi = getFence()
+      val i = index
+      if (i >= hi) false
+      else {
+        index = i + 1
+        action.accept(inner(i).asInstanceOf[E])
+        if (modCount != expectedModCount)
+          throw new ConcurrentModificationException()
+        true
+      }
+    }
+
+    override def forEachRemaining(action: Consumer[_ >: E]): Unit = {
+      Objects.requireNonNull(action)
+      val hi = getFence()
+      val elems = inner
+      var i = index
+      index = hi
+      while (i < hi && modCount == expectedModCount) {
+        action.accept(elems(i).asInstanceOf[E])
+        i += 1
+      }
+      if (modCount != expectedModCount)
+        throw new ConcurrentModificationException()
+    }
+
+    def estimateSize(): Long = (getFence() - index).toLong
+
+    def characteristics(): Int =
+      Spliterator.ORDERED | Spliterator.SIZED | Spliterator.SUBSIZED
   }
 }
