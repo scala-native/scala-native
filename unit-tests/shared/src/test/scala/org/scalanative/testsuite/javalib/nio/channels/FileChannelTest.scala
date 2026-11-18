@@ -1671,8 +1671,8 @@ class FileChannelTest {
       val path = dir.resolve("f")
       Files.write(path, "0123456789".getBytes("UTF-8"))
       val other = FileChannel.open(path, StandardOpenOption.READ)
-      val channel = FileChannel.open(path, StandardOpenOption.READ)
       try {
+        val channel = FileChannel.open(path, StandardOpenOption.READ)
         channel.close()
         assertThrows(classOf[ClosedChannelException], channel.position())
         assertThrows(classOf[ClosedChannelException], channel.position(-1L))
@@ -1725,16 +1725,15 @@ class FileChannelTest {
       val path = dir.resolve("f")
       Files.write(path, "0123456789".getBytes("UTF-8"))
       val src = FileChannel.open(path, StandardOpenOption.READ)
-      val ro = FileChannel.open(path, StandardOpenOption.READ)
-      try
-        assertThrows(
-          classOf[NonWritableChannelException],
-          ro.transferFrom(src, 0L, 5L)
-        )
-      finally {
-        ro.close()
-        src.close()
-      }
+      try {
+        val ro = FileChannel.open(path, StandardOpenOption.READ)
+        try
+          assertThrows(
+            classOf[NonWritableChannelException],
+            ro.transferFrom(src, 0L, 5L)
+          )
+        finally ro.close()
+      } finally src.close()
     }
   }
 }
