@@ -53,7 +53,7 @@ static void MutatorThread_dispose(MutatorThread *self) {
     free(self);
 }
 
-bool MutatorThread_register(Field_t *stackbottom) {
+bool MutatorThread_register(Field_t *stackbottom, bool exactStackBottom) {
     if (currentMutatorThread != NULL)
         return false;
     MutatorThread *self = (MutatorThread *)calloc(1, sizeof(MutatorThread));
@@ -63,6 +63,7 @@ bool MutatorThread_register(Field_t *stackbottom) {
     self->threadInfo = &currentThreadInfo;
 
     self->stackBottom = stackbottom;
+    self->exactStackBottom = exactStackBottom;
     // Store thread handle for liveness checking and signal delivery
 #ifdef _WIN32
     // Duplicate the current thread handle so it remains valid even if
@@ -120,7 +121,7 @@ failure:
 }
 
 bool MutatorThread_init(Field_t *stackbottom) {
-    if (!MutatorThread_register(stackbottom))
+    if (!MutatorThread_register(stackbottom, false))
         return false;
     MutatorThread_admit(currentMutatorThread);
     return true;

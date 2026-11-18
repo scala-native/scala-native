@@ -75,7 +75,7 @@ typedef MutatorThreadNode *MutatorThreads;
 // =============================================================================
 bool MutatorThread_init(word_t **stackBottom);
 /* Register without admitting Scala execution. Used by external attachment. */
-bool MutatorThread_register(word_t **stackBottom);
+bool MutatorThread_register(word_t **stackBottom, bool exactStackBottom);
 /* Admit an unmanaged mutator under the collector lifecycle lock. */
 void MutatorThread_admit(MutatorThread *self);
 #ifndef SCALANATIVE_MULTITHREADING_ENABLED
