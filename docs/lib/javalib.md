@@ -79,7 +79,10 @@ Some notes on the implementation:
     Possessive quantifiers, lookaround, atomic groups and backreferences
     need backtracking, which RE2 avoids to guarantee linear-time
     matching. Patterns using them fail with a `PatternSyntaxException`
-    naming the unsupported construct.
+    naming the unsupported construct. One exception: a backslash followed
+    by two or more octal digits, such as `\12`, is read as an octal
+    escape, so a pattern like `(a)\12` compiles but does not match what
+    it matches on the JVM, where `\12` is a backreference.
 
 3.  The reference Java 8 regex package does not support certain commonly
     used Perl expressions supported by this implementation of RE2. For
