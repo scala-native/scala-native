@@ -24,7 +24,7 @@ class BigDecimalConvertTest {
 
   @Test def testByteValue(): Unit = {
     assertEquals(1.toByte, BigDecimal.ONE.byteValue())
-    assertEquals(BigDecimal.valueOf(255).byteValue(), -1.toByte)
+    assertEquals(BigDecimal.valueOf(255).byteValue(), (-1).toByte)
     assertEquals(BigDecimal.ONE.byteValueExact(), 1.toByte)
     assertThrows(
       classOf[ArithmeticException],

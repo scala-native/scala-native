@@ -438,10 +438,10 @@ class FormatterTest {
     assertF(" 664", "% (o", new BigInteger("436"))
     assertF("(664)", "% (o", new BigInteger("-436"))
 
-    assertF("           366", "%14o", -10.toByte)
-    assertF("00366", "%05o", -10.toByte)
-    assertF("177766", "%5o", -10.toShort)
-    assertF("000000000177766", "%015o", -10.toShort)
+    assertF("           366", "%14o", (-10).toByte)
+    assertF("00366", "%05o", (-10).toByte)
+    assertF("177766", "%5o", (-10).toShort)
+    assertF("000000000177766", "%015o", (-10).toShort)
 
     testWithNull('o', "#+ 0(", acceptPrecision = false, acceptUpperCase = false)
 
@@ -491,16 +491,16 @@ class FormatterTest {
     assertF("0x0003ade68b1", "%0#13x", new BigInteger("987654321"))
     assertF("-0x003ade68b1", "%0#13x", new BigInteger("-987654321"))
 
-    assertF("fc", "%x", -4.toByte)
+    assertF("fc", "%x", (-4).toByte)
     assertF("0x005", "%0#5x", 5.toByte)
     assertF("  0x5", "%#5x", 5.toByte)
     assertF("  0X5", "%#5X", 5.toByte)
-    assertF("fd", "%x", -3.toByte)
+    assertF("fd", "%x", (-3).toByte)
 
     assertF("0x005", "%0#5x", 5.toShort)
     assertF("  0x5", "%#5x", 5.toShort)
     assertF("  0X5", "%#5X", 5.toShort)
-    assertF("fffd", "%x", -3.toShort)
+    assertF("fffd", "%x", (-3).toShort)
 
     assertF("ffffffffffff2bcf", "%x", -54321L)
     assertF("28EEA4CB1", "%X", 10987654321L)
@@ -614,7 +614,7 @@ class FormatterTest {
     assertF("1.23456003380946520000e+30", "%.20e", 1.23456e30f)
     assertF("1.23456003380946520000e+30", "%.20e", 1.23456e30f.toDouble)
     assertF("-1.23456003380946520000e+30", "%.20e", -1.23456e30f)
-    assertF("-1.23456003380946520000e+30", "%.20e", -1.23456e30f.toDouble)
+    assertF("-1.23456003380946520000e+30", "%.20e", (-1.23456e30f).toDouble)
 
     // Special cases
 
@@ -967,7 +967,7 @@ class FormatterTest {
     assertF("1.2345600338094652000e+30", "%.20g", 1.23456e30f)
     assertF("1.2345600338094652000e+30", "%.20g", 1.23456e30f.toDouble)
     assertF("-1.2345600338094652000e+30", "%.20g", -1.23456e30f)
-    assertF("-1.2345600338094652000e+30", "%.20g", -1.23456e30f.toDouble)
+    assertF("-1.2345600338094652000e+30", "%.20g", (-1.23456e30f).toDouble)
 
     // Special cases
 
@@ -1312,7 +1312,7 @@ class FormatterTest {
     assertF("1.23456001281738280000", "%.20f", 1.23456f)
     assertF("1.23456001281738280000", "%.20f", 1.23456f.toDouble)
     assertF("-1.23456001281738280000", "%.20f", -1.23456f)
-    assertF("-1.23456001281738280000", "%.20f", -1.23456f.toDouble)
+    assertF("-1.23456001281738280000", "%.20f", (-1.23456f).toDouble)
     assertF("30000001024.000000", "%f", 3e10f)
     assertF("30000001024.000000", "%f", 3e10f.toDouble)
 

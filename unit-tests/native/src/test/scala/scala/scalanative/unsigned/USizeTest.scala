@@ -72,15 +72,15 @@ class USizeTest {
 
   @Test def division: Unit = {
     assertTrue((123.toUSize / 2.toUSize).toInt == 61)
-    assertTrue((-1L.toUSize / 2.toUSize).toLong == (if (!is32BitPlatform) {
-                                                      ~(1L << 63)
-                                                    } else {
-                                                      (~(1 << 31)).toLong
-                                                    }))
+    assertTrue(((-1L).toUSize / 2.toUSize).toLong == (if (!is32BitPlatform) {
+                                                        ~(1L << 63)
+                                                      } else {
+                                                        (~(1 << 31)).toLong
+                                                      }))
   }
 
   @Test def modulo: Unit = {
     assertTrue((123.toUSize % 13.toUSize).toInt == 6)
-    assertTrue((-1L.toUSize % 10.toUSize).toInt == 5)
+    assertTrue(((-1L).toUSize % 10.toUSize).toInt == 5)
   }
 }

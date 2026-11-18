@@ -13,7 +13,7 @@ import scalanative.unsafe._
  */
 
 @extern
-@define("__SCALANATIVE_POSIX_FNMATCH")
+@define("__SCALANATIVE_POSIX_GLOB")
 object glob {
 
   type size_t = types.size_t
@@ -81,6 +81,7 @@ object glob {
 
   /// Methods
 
+  @name("scalanative_glob")
   def glob(
       pattern: CString,
       flags: CInt,
@@ -88,7 +89,28 @@ object glob {
       pglob: Ptr[glob_t]
   ): CInt = extern
 
+  @deprecated(
+    "Binary compatibility: code compiled against 0.5.12 links to this extern name.",
+    "0.5.13"
+  )
+  @name("glob")
+  private[posix] def _glob(
+      pattern: CString,
+      flags: CInt,
+      errfunc: CFuncPtr2[CString, CInt, CInt],
+      pglob: Ptr[glob_t]
+  ): CInt = externRedirect(glob(pattern, flags, errfunc, pglob))
+
+  @name("scalanative_globfree")
   def globfree(pglob: Ptr[glob_t]): CInt = extern
+
+  @deprecated(
+    "Binary compatibility: code compiled against 0.5.12 links to this extern name.",
+    "0.5.13"
+  )
+  @name("globfree")
+  private[posix] def _globfree(pglob: Ptr[glob_t]): CInt =
+    externRedirect(globfree(pglob))
 }
 
 object globOps {

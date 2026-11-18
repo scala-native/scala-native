@@ -72,7 +72,7 @@ class FloatTestOnJDK20 {
       val pzResult = JFloat.float16ToFloat(0.toShort) // +0.0f
       assertEquals("positive zero", 0.0f, pzResult, epsilon)
 
-      val nzResult = JFloat.float16ToFloat(-32768.toShort) // -0.0f
+      val nzResult = JFloat.float16ToFloat((-32768).toShort) // -0.0f
       assertEquals("negative zero", -0.0f, nzResult, epsilon)
 
       /* Scala Native tends to have problems/defects with IEEE754 negative
@@ -100,7 +100,7 @@ class FloatTestOnJDK20 {
 
     locally {
       val expected = -1.7783203f
-      val f16Uut = -16611.toShort
+      val f16Uut = (-16611).toShort
 
       assertEquals("negative", expected, JFloat.float16ToFloat(f16Uut), epsilon)
     }
@@ -158,7 +158,7 @@ class FloatTestOnJDK20 {
 
       assertEquals(
         "negative infinity",
-        -1024.toShort,
+        (-1024).toShort,
         JFloat.floatToFloat16(JFloat.NEGATIVE_INFINITY)
       )
     }
@@ -168,7 +168,7 @@ class FloatTestOnJDK20 {
       assertEquals("positive zero", 0.toShort, pzResult)
 
       val nzResult = JFloat.floatToFloat16(-0.0f)
-      assertEquals("negative zero", -32768.toShort, nzResult)
+      assertEquals("negative zero", (-32768).toShort, nzResult)
     }
   }
 
@@ -183,7 +183,7 @@ class FloatTestOnJDK20 {
     }
 
     locally {
-      val expected = -15955.toShort
+      val expected = (-15955).toShort
       val f32Uut = -2.837f
 
       assertEquals(expected, JFloat.floatToFloat16(f32Uut))
@@ -213,7 +213,7 @@ class FloatTestOnJDK20 {
     }
 
     locally {
-      val expected = -32767.toShort
+      val expected = (-32767).toShort
       val f32Uut = -0.000000059604645f // closest to 0.0 negative F16 subnormal
 
       assertEquals(expected, JFloat.floatToFloat16(f32Uut))

@@ -27,7 +27,7 @@ class CVarArgListTest {
   @Test def byteValue1(): Unit =
     vatest(c"%d", Seq(1.toByte), "1")
   @Test def byteValueMinus1(): Unit =
-    vatest(c"%d", Seq(-1.toByte), "-1")
+    vatest(c"%d", Seq((-1).toByte), "-1")
   @Test def byteValueMin(): Unit =
     vatest(c"%d", Seq(java.lang.Byte.MIN_VALUE), "-128")
   @Test def byteValueMax(): Unit =
@@ -99,7 +99,7 @@ class CVarArgListTest {
   @Test def shortValue1(): Unit =
     vatest(c"%d", Seq(1.toShort), "1")
   @Test def shortValueMinus1(): Unit =
-    vatest(c"%d", Seq(-1.toShort), "-1")
+    vatest(c"%d", Seq((-1).toShort), "-1")
   @Test def shortValueMin(): Unit =
     vatest(c"%d", Seq(java.lang.Short.MIN_VALUE), "-32768")
   @Test def shortValueMax(): Unit =

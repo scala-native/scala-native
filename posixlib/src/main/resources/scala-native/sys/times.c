@@ -54,4 +54,9 @@ _Static_assert(offsetof(struct scalanative_tms, tms_cstime) ==
                    offsetof(struct tms, tms_cstime),
                "offset mismatch: tms tms_cstime");
 #endif // POSIX
+
+#include <sys/times.h>
+
+// Keep header-selected ABI versions, notably NetBSD's __times13.
+clock_t scalanative_times(struct tms *buf) { return times(buf); }
 #endif // ! _WIN32
