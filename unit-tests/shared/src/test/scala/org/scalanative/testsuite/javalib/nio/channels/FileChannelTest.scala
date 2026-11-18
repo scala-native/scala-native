@@ -1752,6 +1752,7 @@ class FileChannelTest {
             body(i)
           } catch { case e: Throwable => failures.add(e) }
       })
+      t.setDaemon(true)
       t.start()
       t
     }
@@ -1765,7 +1766,9 @@ class FileChannelTest {
         )
       )
     }
-    assertFalse("threads timed out", threads.exists(_.isAlive()))
+    val timedOut = threads.filter(_.isAlive())
+    timedOut.foreach(_.interrupt())
+    assertTrue("threads timed out", timedOut.isEmpty)
     if (!failures.isEmpty()) throw failures.peek()
   }
 
