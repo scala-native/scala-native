@@ -25,6 +25,10 @@ class RuntimeSignalHandlerTest {
     !current.at1.asInstanceOf[Ptr[CVoidPtr]]
   }
 
+  // SIG_DFL is a null pointer, the extern call boxes it as a null CFuncPtr
+  private def address(fn: CFuncPtr): CVoidPtr =
+    if (fn == null) null else CFuncPtr.toPtr(fn)
+
   private def withDisposition(sig: CInt, fn: CFuncPtr1[CInt, Unit])(
       body: => Unit
   ): Unit = {
@@ -53,15 +57,15 @@ class RuntimeSignalHandlerTest {
 
   @Test def keepsIgnoredSignals(): Unit = if (!isWindows) {
     for (sig <- Seq(SIGINT, SIGTERM)) withDisposition(sig, SIG_IGN) {
-      assertEquals(CFuncPtr.toPtr(SIG_IGN), currentHandler(sig))
+      assertEquals(address(SIG_IGN), currentHandler(sig))
     }
   }
 
   @Test def installsHandlerOverDefaultDisposition(): Unit = if (!isWindows) {
     for (sig <- Seq(SIGINT, SIGTERM)) withDisposition(sig, SIG_DFL) {
       val installed = currentHandler(sig)
-      assertNotEquals(CFuncPtr.toPtr(SIG_DFL), installed)
-      assertNotEquals(CFuncPtr.toPtr(SIG_IGN), installed)
+      assertNotEquals(address(SIG_DFL), installed)
+      assertNotEquals(address(SIG_IGN), installed)
     }
   }
 
