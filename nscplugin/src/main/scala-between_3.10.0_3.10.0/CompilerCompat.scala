@@ -54,4 +54,12 @@ object CompilerCompat {
     override def isPrimitive(sym: Symbol): Boolean =
       nirPrimitiveCode(sym).isDefined || super.isPrimitive(sym)
   }
+
+  /** The alternatives of a catch case `case e: (A | B)`, which stays a catch
+   *  case since Scala 3.10.2 (scala/scala3#27294); before, the pattern matcher
+   *  handles such cases, so there are none.
+   */
+  def multiCatchTypes(cdef: dotty.tools.dotc.ast.tpd.CaseDef)(using
+      dotty.tools.dotc.core.Contexts.Context
+  ): Option[List[dotty.tools.dotc.core.Types.Type]] = None
 }

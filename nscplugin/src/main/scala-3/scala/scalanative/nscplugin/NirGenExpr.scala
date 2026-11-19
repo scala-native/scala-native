@@ -891,12 +891,18 @@ trait NirGenExpr(using Context) {
         case cd @ CaseDef(pat, _, body) =>
           val (excty, symopt) = pat match {
             case Typed(Ident(nme.WILDCARD), tpt) =>
-              genType(tpt.tpe) -> None
+              (genType(tpt.tpe), None)
             case Ident(nme.WILDCARD) =>
-              genType(defn.ThrowableClass.info.resultType) -> None
+              (genType(defn.ThrowableClass.info.resultType), None)
             case Bind(_, _) =>
-              genType(pat.tpe) -> Some(pat.symbol)
+              (genType(pat.tpe), Some(pat.symbol))
           }
+          // A case `e: (A | B)` tests each alternative: its type is erased
+          // to their common superclass, which would accept more
+          val testTypes = CompilerCompat
+            .multiCatchTypes(cd)
+            .map(_.map(genType(_)))
+            .getOrElse(List(excty))
           val f = ContTree(body) { (buf: ExprBuffer) =>
             withFreshBlockScope(body.span) { _ =>
               symopt.foreach { sym =>
@@ -909,18 +915,25 @@ trait NirGenExpr(using Context) {
             }
             nir.Val.Unit
           }
-          (excty, f, exprPos)
+          (testTypes, f, exprPos)
       }
 
       def wrap(
-          cases: Seq[(nir.Type, ContTree, nir.SourcePosition)]
+          cases: Seq[(List[nir.Type], ContTree, nir.SourcePosition)]
       ): nir.Val =
         cases match {
           case Seq() =>
             buf.raise(exc, unwind)
             nir.Val.Unit
-          case (excty, f, pos) +: rest =>
-            val cond = buf.is(excty, exc, unwind)(using pos, getScopeId)
+          case (testTypes, f, pos) +: rest =>
+            val cond = testTypes
+              .map(buf.is(_, exc, unwind)(using pos, getScopeId))
+              .reduceLeft(
+                buf.bin(nir.Bin.Or, nir.Type.Bool, _, _, unwind)(using
+                  pos,
+                  getScopeId
+                )
+              )
             genIf(
               retty,
               ValTree(f)(cond),
