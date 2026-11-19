@@ -12,7 +12,7 @@ bool scalanative_externalGC_isRegistered(void) {
 }
 
 bool scalanative_externalGC_register(void) {
-    return MutatorThread_register(currentThreadInfo.stackBottom, false);
+    return MutatorThread_register(currentThreadInfo.stackBottom);
 }
 
 bool scalanative_externalGC_rebind(void) {

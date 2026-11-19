@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include "shared/ThreadUtil.h"
 #include "shared/Log.h"
+#include "stackOverflowGuards.h"
 #include <assert.h>
 
 #ifndef _WIN32
@@ -53,7 +54,7 @@ static void MutatorThread_dispose(MutatorThread *self) {
     free(self);
 }
 
-bool MutatorThread_register(Field_t *stackbottom, bool exactStackBottom) {
+bool MutatorThread_register(Field_t *stackbottom) {
     if (currentMutatorThread != NULL)
         return false;
     MutatorThread *self = (MutatorThread *)calloc(1, sizeof(MutatorThread));
@@ -63,7 +64,6 @@ bool MutatorThread_register(Field_t *stackbottom, bool exactStackBottom) {
     self->threadInfo = &currentThreadInfo;
 
     self->stackBottom = stackbottom;
-    self->exactStackBottom = exactStackBottom;
     // Store thread handle for liveness checking and signal delivery
 #ifdef _WIN32
     // Duplicate the current thread handle so it remains valid even if
@@ -121,10 +121,18 @@ failure:
 }
 
 bool MutatorThread_init(Field_t *stackbottom) {
-    if (!MutatorThread_register(stackbottom, false))
+    if (!MutatorThread_register(stackbottom))
         return false;
     MutatorThread_admit(currentMutatorThread);
     return true;
+}
+
+bool MutatorThread_initWholeStack(Field_t *approximateBottom) {
+    ThreadInfo stack;
+    Field_t *bottom = scalanative_detectExternalThreadStack(&stack)
+                          ? (Field_t *)stack.stackBottom
+                          : (Field_t *)alignToNextPage(approximateBottom);
+    return MutatorThread_init(bottom);
 }
 
 #ifndef SCALANATIVE_MULTITHREADING_ENABLED
@@ -205,16 +213,6 @@ INLINE void MutatorThread_switchState(MutatorThread *self,
         break;
     }
     self->state = newState;
-}
-
-word_t **MutatorThread_getStackBottom(MutatorThread *thread) {
-    word_t **bottom = thread->stackBottom;
-    if (!thread->exactStackBottom && thread->threadInfo != NULL &&
-        thread->threadInfo->stackBottom != NULL &&
-        (uintptr_t)thread->threadInfo->stackBottom > (uintptr_t)bottom) {
-        bottom = (word_t **)thread->threadInfo->stackBottom;
-    }
-    return bottom;
 }
 
 word_t **MutatorThread_getStackTop(MutatorThread *thread, bool allowEstimated) {

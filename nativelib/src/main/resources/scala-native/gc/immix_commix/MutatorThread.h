@@ -31,9 +31,6 @@ typedef struct {
     RegistersBuffer registersBuffer;
     // immutable fields
     word_t **stackBottom;
-    // Set when stackBottom is the thread's entry into the runtime, not an
-    // approximation that the ThreadInfo bounds have to extend.
-    bool exactStackBottom;
     Allocator allocator;
     LargeAllocator largeAllocator;
 
@@ -74,8 +71,11 @@ typedef MutatorThreadNode *MutatorThreads;
 // MutatorThread Lifecycle API
 // =============================================================================
 bool MutatorThread_init(word_t **stackBottom);
+/* For the initializing thread, whose frames above `approximateBottom` can hold
+ * roots: register the end of its whole stack. */
+bool MutatorThread_initWholeStack(word_t **approximateBottom);
 /* Register without admitting Scala execution. Used by external attachment. */
-bool MutatorThread_register(word_t **stackBottom, bool exactStackBottom);
+bool MutatorThread_register(word_t **stackBottom);
 /* Admit an unmanaged mutator under the collector lifecycle lock. */
 void MutatorThread_admit(MutatorThread *self);
 #ifndef SCALANATIVE_MULTITHREADING_ENABLED
@@ -97,7 +97,6 @@ void MutatorThread_enterUnmanaged(MutatorThread *self);
 // =============================================================================
 
 // Stack bounds accessors
-word_t **MutatorThread_getStackBottom(MutatorThread *thread);
 // allowEstimated: if true, may return estimated stack top from threadInfo when
 // not at safepoint May return NULL if not at safepoint and allowEstimated is
 // false

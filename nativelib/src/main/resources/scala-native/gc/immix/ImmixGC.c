@@ -35,7 +35,7 @@ NOINLINE void scalanative_GC_init() {
     Synchronizer_init();
 #endif
     MutatorThreads_init();
-    if (!MutatorThread_init((word_t **)dummy)) // approximate stack bottom
+    if (!MutatorThread_initWholeStack((word_t **)dummy))
         abort();
     customRoots = GC_Roots_Init();
     if (customRoots == NULL)
