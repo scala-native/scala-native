@@ -198,6 +198,17 @@ trait NirGenStat(using Context) {
       if (isExtern && !mutable) {
         report.error("`extern` cannot be used in val definition")
       }
+      if f.hasAnnotation(defnNir.ByAddressClass) then
+        if !isExtern then
+          report.error(
+            "`@byAddress` can only be used on variables of extern objects",
+            f.srcPos
+          )
+        else if f.info.resultType.typeSymbol != defnNir.PtrClass then
+          report.error(
+            s"`@byAddress` can only be used on extern variables of a pointer type, such as Ptr[T] or CString, found ${f.info.resultType.show}",
+            f.srcPos
+          )
       // That what JVM backend does
       // https://github.com/lampepfl/dotty/blob/786ad3ff248cca39e2da80c3a15b27b38eec2ff6/compiler/src/dotty/tools/backend/jvm/BTypesFromSymbols.scala#L340-L347
       val isFinal = !f.is(Mutable)
@@ -284,6 +295,11 @@ trait NirGenStat(using Context) {
 
       val isExtern = sym.isExtern
       val isIntrinsic = dd.rhs.symbol == defnNir.IntrinsicMarker
+      if sym.hasAnnotation(defnNir.ByAddressClass) && !sym.is(Accessor) then
+        report.error(
+          "`@byAddress` can only be used on variables of extern objects",
+          sym.srcPos
+        )
 
       val attrs = genMethodAttrs(sym, isExtern, isIntrinsic)
       val name = genMethodName(sym)
