@@ -53,6 +53,7 @@ class LinkedList[E]()
       last = null
 
     _size -= 1
+    modCount += 1
     oldHead.value
   }
 
@@ -69,6 +70,7 @@ class LinkedList[E]()
       head = null
 
     _size -= 1
+    modCount += 1
     oldLast.value
   }
 
@@ -78,6 +80,7 @@ class LinkedList[E]()
     head = new Node(e, next = oldHead)
 
     _size += 1
+    modCount += 1
 
     if (oldHead ne null)
       oldHead.prev = head
@@ -91,6 +94,7 @@ class LinkedList[E]()
     last = new Node(e, prev = oldLast)
 
     _size += 1
+    modCount += 1
 
     if (oldLast ne null)
       oldLast.next = last
@@ -113,17 +117,33 @@ class LinkedList[E]()
     _removeOccurrence(listIterator(), o)
 
   override def addAll(c: Collection[_ <: E]): Boolean = {
-    val iter = c.iterator()
-    val changed = iter.hasNext()
-    while (iter.hasNext()) addLast(iter.next())
+    // Copy first: `c` may be this list or one of its views
+    val added = c.toArray()
+    var i = 0
+    while (i < added.length) {
+      addLast(added(i).asInstanceOf[E])
+      i += 1
+    }
+    added.length != 0
+  }
 
-    changed
+  override def addAll(index: Int, c: Collection[_ <: E]): Boolean = {
+    checkIndexOnBounds(index)
+    val added = c.toArray()
+    val iter = listIterator(index)
+    var i = 0
+    while (i < added.length) {
+      iter.add(added(i).asInstanceOf[E])
+      i += 1
+    }
+    added.length != 0
   }
 
   override def clear(): Unit = {
     head = null
     last = null
     _size = 0
+    modCount += 1
   }
 
   private def getNodeAt(index: Int): Node[E] = {
@@ -164,6 +184,7 @@ class LinkedList[E]()
       nextNode.prev = node
 
       _size += 1
+      modCount += 1
     }
   }
 
@@ -181,6 +202,7 @@ class LinkedList[E]()
       node.next.prev = node.prev
 
       _size -= 1
+      modCount += 1
 
       node.value
     }
@@ -262,6 +284,12 @@ class LinkedList[E]()
 
       private var last: Long = -1
       private var i: Long = index
+      private var expectedModCount = modCount
+
+      @inline
+      private def checkForComodification(): Unit =
+        if (modCount != expectedModCount)
+          throw new ConcurrentModificationException()
 
       private var currentNode: Node[E] =
         if (index == size()) null
@@ -277,6 +305,7 @@ class LinkedList[E]()
         i < size()
 
       def next(): E = {
+        checkForComodification()
         if (i >= size())
           throw new NoSuchElementException()
 
@@ -293,6 +322,7 @@ class LinkedList[E]()
         i > 0
 
       def previous(): E = {
+        checkForComodification()
         if (!hasPrevious())
           throw new NoSuchElementException()
 
@@ -315,6 +345,7 @@ class LinkedList[E]()
 
       override def remove(): Unit = {
         checkThatHasLast()
+        checkForComodification()
 
         if (currentNode eq null) {
           removeLast()
@@ -328,14 +359,17 @@ class LinkedList[E]()
         }
 
         last = -1
+        expectedModCount = modCount
       }
 
       def set(e: E): Unit = {
         checkThatHasLast()
+        checkForComodification()
         lastNode.value = e
       }
 
       def add(e: E): Unit = {
+        checkForComodification()
         if (currentNode eq null) {
           addLast(e)
           lastNode = LinkedList.this.last
@@ -345,6 +379,7 @@ class LinkedList[E]()
 
         i += 1
         last = -1
+        expectedModCount = modCount
       }
 
       private def checkThatHasLast(): Unit = {
@@ -359,11 +394,18 @@ class LinkedList[E]()
 
       private var removeEnabled = false
       private var nextNode: Node[E] = LinkedList.this.last
+      private var expectedModCount = modCount
+
+      @inline
+      private def checkForComodification(): Unit =
+        if (modCount != expectedModCount)
+          throw new ConcurrentModificationException()
 
       def hasNext(): Boolean =
         nextNode ne null
 
       def next(): E = {
+        checkForComodification()
         if (!hasNext())
           throw new NoSuchElementException()
 
@@ -377,11 +419,13 @@ class LinkedList[E]()
         if (!removeEnabled)
           throw new IllegalStateException()
 
+        checkForComodification()
         removeEnabled = false
         if (nextNode eq null)
           removeFirst()
         else
           removeNode(nextNode.next)
+        expectedModCount = modCount
       }
     }
   }

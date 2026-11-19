@@ -6,6 +6,9 @@ abstract class AbstractList[E] protected ()
     extends AbstractCollection[E]
     with List[E] { self =>
 
+  @transient
+  protected[util] var modCount: Int = 0
+
   override def add(element: E): Boolean = {
     add(size(), element)
     true
@@ -67,53 +70,16 @@ abstract class AbstractList[E] protected ()
 
   def listIterator(index: Int): ListIterator[E] = {
     checkIndexOnBounds(index)
-    // By default we use RandomAccessListIterator because we only have access to
-    // the get(index) operation in the API. Subclasses override this if needed
-    // using their knowledge of the structure instead.
-    new RandomAccessListIterator(self, index, 0, size())
+    new AbstractListIterator(self, index)
   }
 
   def subList(fromIndex: Int, toIndex: Int): List[E] = {
-    if (fromIndex < 0)
-      throw new IndexOutOfBoundsException(fromIndex.toString)
-    else if (toIndex > size())
-      throw new IndexOutOfBoundsException(toIndex.toString)
-    else if (fromIndex > toIndex)
-      throw new IllegalArgumentException
-
+    AbstractList.checkSubListRange(fromIndex, toIndex, size())
     self match {
       case _: RandomAccess =>
-        new AbstractListView(self, fromIndex, toIndex) with RandomAccess {
-          selfView =>
-          override def listIterator(index: Int): ListIterator[E] = {
-            checkIndexOnBounds(index)
-            // Iterator that accesses the original list directly
-            new RandomAccessListIterator(
-              self,
-              fromIndex + index,
-              fromIndex,
-              selfView.toIndex
-            ) {
-              override protected def onSizeChanged(delta: Int): Unit =
-                changeViewSize(delta)
-            }
-          }
-        }
+        new RandomAccessSubList(self, fromIndex, toIndex - fromIndex)
       case _ =>
-        new AbstractListView(self, fromIndex, toIndex) { selfView =>
-          override def listIterator(index: Int): ListIterator[E] = {
-            checkIndexOnBounds(index)
-            // Iterator that accesses the original list using its iterator
-            new BackedUpListIterator(
-              list.listIterator(fromIndex + index),
-              fromIndex,
-              selfView.toIndex - fromIndex
-            ) {
-              override protected def onSizeChanged(delta: Int): Unit =
-                changeViewSize(delta)
-            }
-          }
-        }
+        new SubList(self, fromIndex, toIndex - fromIndex)
     }
   }
 
@@ -159,6 +125,12 @@ abstract class AbstractList[E] protected ()
     }
   }
 
+  private[util] final def removeRangeFromSubList(
+      fromIndex: Int,
+      toIndex: Int
+  ): Unit =
+    removeRange(fromIndex, toIndex)
+
   protected def checkIndexInBounds(index: Int): Unit = {
     if (index < 0 || index >= size())
       throw new IndexOutOfBoundsException(index.toString)
@@ -170,124 +142,256 @@ abstract class AbstractList[E] protected ()
   }
 }
 
-private abstract class AbstractListView[E](
-    protected val list: List[E],
-    fromIndex: Int,
-    protected var toIndex: Int
-) extends AbstractList[E] {
-
-  override def add(index: Int, e: E): Unit = {
-    checkIndexOnBounds(index)
-    list.add(fromIndex + index, e)
-    changeViewSize(1)
+private[util] object AbstractList {
+  def checkSubListRange(fromIndex: Int, toIndex: Int, size: Int): Unit = {
+    if (fromIndex < 0)
+      throw new IndexOutOfBoundsException(fromIndex.toString)
+    else if (toIndex > size)
+      throw new IndexOutOfBoundsException(toIndex.toString)
+    else if (fromIndex > toIndex)
+      throw new IllegalArgumentException
   }
+}
 
-  override def addAll(index: Int, c: Collection[_ <: E]): Boolean = {
-    checkIndexOnBounds(index)
-    list.addAll(fromIndex + index, c)
-    val elementsAdded = c.size()
-    toIndex += elementsAdded
-    elementsAdded != 0
-  }
+/* Fail-fast ListIterator based on the random access operations of the list.
+ * Structural modifications made outside of this iterator are detected by
+ * comparing the modCount of the list with the value it had when this
+ * iterator last changed the list.
+ */
+private[util] class AbstractListIterator[E](
+    list: AbstractList[E],
+    private var cursor: Int
+) extends ListIterator[E] {
 
-  override def addAll(c: Collection[_ <: E]): Boolean =
-    addAll(size(), c)
+  private var lastRet = -1
+  private var expectedModCount = list.modCount
 
-  def get(index: Int): E = {
-    checkIndexInBounds(index)
-    list.get(fromIndex + index)
-  }
+  protected def currentSize(): Int = list.size()
 
-  override def remove(index: Int): E = {
-    checkIndexInBounds(index)
-    val elem = list.remove(fromIndex + index)
-    changeViewSize(-1)
+  protected def elementAt(index: Int): E = list.get(index)
+
+  @inline
+  private def checkForComodification(): Unit =
+    if (list.modCount != expectedModCount)
+      throw new ConcurrentModificationException()
+
+  def hasNext(): Boolean = cursor != currentSize()
+
+  def next(): E = {
+    checkForComodification()
+    val i = cursor
+    if (i >= currentSize())
+      throw new NoSuchElementException()
+    val elem = elementAt(i)
+    lastRet = i
+    cursor = i + 1
     elem
   }
 
-  override def set(index: Int, e: E): E = {
-    checkIndexInBounds(index)
-    list.set(fromIndex + index, e)
-  }
-
-  def size(): Int =
-    toIndex - fromIndex
-
-  @inline
-  protected def changeViewSize(delta: Int): Unit =
-    toIndex += delta
-}
-
-/* BackedUpListIterator implementation assumes that the underling list is not
- * necessarily on a RandomAccess list. Hence it wraps the underling list
- * iterator and assumes that this one is more efficient than accessing
- * elements by index.
- */
-private class BackedUpListIterator[E](
-    innerIterator: ListIterator[E],
-    fromIndex: Int,
-    protected var end: Int
-) extends ListIterator[E]
-    with SizeChangeEvent {
-
-  def hasNext(): Boolean =
-    i < end
-
-  def next(): E = {
-    if (!hasNext())
-      throw new NoSuchElementException
-    innerIterator.next()
-  }
-
-  def hasPrevious(): Boolean =
-    0 < i
+  def hasPrevious(): Boolean = cursor != 0
 
   def previous(): E = {
-    if (!hasPrevious())
-      throw new NoSuchElementException
-    innerIterator.previous()
+    checkForComodification()
+    val i = cursor - 1
+    if (i < 0 || i >= currentSize())
+      throw new NoSuchElementException()
+    val elem = elementAt(i)
+    lastRet = i
+    cursor = i
+    elem
   }
 
-  def nextIndex(): Int = i
+  def nextIndex(): Int = cursor
 
-  def previousIndex(): Int = i - 1
+  def previousIndex(): Int = cursor - 1
 
   override def remove(): Unit = {
-    innerIterator.remove()
-    changeSize(-1)
+    if (lastRet < 0)
+      throw new IllegalStateException()
+    checkForComodification()
+    list.remove(lastRet)
+    if (lastRet < cursor)
+      cursor -= 1
+    lastRet = -1
+    expectedModCount = list.modCount
   }
 
-  def set(e: E): Unit =
-    innerIterator.set(e)
+  def set(e: E): Unit = {
+    if (lastRet < 0)
+      throw new IllegalStateException()
+    checkForComodification()
+    list.set(lastRet, e)
+    expectedModCount = list.modCount
+  }
 
   def add(e: E): Unit = {
-    innerIterator.add(e)
-    changeSize(1)
+    checkForComodification()
+    list.add(cursor, e)
+    lastRet = -1
+    cursor += 1
+    expectedModCount = list.modCount
   }
-
-  private def i: Int =
-    innerIterator.nextIndex() - fromIndex
 }
 
-/* RandomAccessListIterator implementation assumes that the has an efficient
- * .get(index) implementation.
+/* View returned by AbstractList.subList. Every operation first checks that
+ * the parent was not structurally modified other than through this view.
  */
-private class RandomAccessListIterator[E](
-    list: List[E],
-    i: Int,
-    start: Int,
-    end: Int
-) extends AbstractRandomAccessListIterator[E](i, start, end) {
+private[util] class SubList[E](
+    protected val parent: AbstractList[E],
+    protected val offset: Int,
+    private var _size: Int
+) extends AbstractList[E] {
 
-  protected def get(index: Int): E =
-    list.get(index)
+  /* Every structural change, made through any view, reaches the root list.
+   * Tracking its modCount detects changes made through an ancestor or a
+   * sibling of this view, not only through the parent.
+   */
+  private val root: AbstractList[E] = parent match {
+    case p: SubList[E @unchecked] => p.root
+    case _                        => parent
+  }
 
-  protected def set(index: Int, e: E): Unit =
-    list.set(index, e)
+  // A view made from a stale parent is stale too.
+  private var expectedRootModCount: Int = parent match {
+    case p: SubList[E @unchecked] => p.expectedRootModCount
+    case _                        => root.modCount
+  }
 
-  protected def remove(index: Int): Unit =
-    list.remove(index)
+  @inline
+  protected final def checkForComodification(): Unit =
+    if (root.modCount != expectedRootModCount)
+      throw new ConcurrentModificationException()
 
-  protected def add(index: Int, e: E): Unit =
-    list.add(index, e)
+  private def updateSizeAndModCount(delta: Int): Unit = {
+    expectedRootModCount = root.modCount
+    _size += delta
+    modCount += 1
+  }
+
+  private[util] final def uncheckedSize(): Int = _size
+
+  def size(): Int = {
+    checkForComodification()
+    _size
+  }
+
+  def get(index: Int): E = {
+    Objects.checkIndex(index, _size)
+    checkForComodification()
+    parent.get(offset + index)
+  }
+
+  override def set(index: Int, element: E): E = {
+    Objects.checkIndex(index, _size)
+    checkForComodification()
+    parent.set(offset + index, element)
+  }
+
+  override def add(index: Int, element: E): Unit = {
+    checkIndexForAdd(index)
+    checkForComodification()
+    parent.add(offset + index, element)
+    updateSizeAndModCount(1)
+  }
+
+  override def remove(index: Int): E = {
+    Objects.checkIndex(index, _size)
+    checkForComodification()
+    val elem = parent.remove(offset + index)
+    updateSizeAndModCount(-1)
+    elem
+  }
+
+  override protected def removeRange(fromIndex: Int, toIndex: Int): Unit = {
+    checkForComodification()
+    parent.removeRangeFromSubList(offset + fromIndex, offset + toIndex)
+    updateSizeAndModCount(fromIndex - toIndex)
+  }
+
+  override def addAll(c: Collection[_ <: E]): Boolean =
+    addAll(_size, c)
+
+  override def addAll(index: Int, c: Collection[_ <: E]): Boolean = {
+    checkIndexForAdd(index)
+    val count = c.size()
+    if (count == 0) false
+    else {
+      checkForComodification()
+      parent.addAll(offset + index, c)
+      updateSizeAndModCount(count)
+      true
+    }
+  }
+
+  override def listIterator(index: Int): ListIterator[E] = {
+    checkForComodification()
+    checkIndexForAdd(index)
+    val view = this
+    val it = parent.listIterator(offset + index)
+    new ListIterator[E] {
+      def hasNext(): Boolean = nextIndex() < view._size
+
+      def next(): E =
+        if (hasNext()) it.next()
+        else throw new NoSuchElementException()
+
+      def hasPrevious(): Boolean = previousIndex() >= 0
+
+      def previous(): E =
+        if (hasPrevious()) it.previous()
+        else throw new NoSuchElementException()
+
+      def nextIndex(): Int = it.nextIndex() - offset
+
+      def previousIndex(): Int = it.previousIndex() - offset
+
+      override def remove(): Unit = {
+        it.remove()
+        view.updateSizeAndModCount(-1)
+      }
+
+      def set(e: E): Unit = it.set(e)
+
+      def add(e: E): Unit = {
+        it.add(e)
+        view.updateSizeAndModCount(1)
+      }
+    }
+  }
+
+  override def subList(fromIndex: Int, toIndex: Int): List[E] = {
+    AbstractList.checkSubListRange(fromIndex, toIndex, _size)
+    this match {
+      case _: RandomAccess =>
+        new RandomAccessSubList(this, fromIndex, toIndex - fromIndex)
+      case _ =>
+        new SubList(this, fromIndex, toIndex - fromIndex)
+    }
+  }
+
+  private def checkIndexForAdd(index: Int): Unit =
+    if (index < 0 || index > _size)
+      throw new IndexOutOfBoundsException(index.toString)
+}
+
+private[util] class RandomAccessSubList[E](
+    parentList: AbstractList[E],
+    fromIndex: Int,
+    initialSize: Int
+) extends SubList[E](parentList, fromIndex, initialSize)
+    with RandomAccess {
+
+  override def listIterator(index: Int): ListIterator[E] = {
+    checkForComodification()
+    if (index < 0 || index > uncheckedSize())
+      throw new IndexOutOfBoundsException(index.toString)
+    new AbstractListIterator(this, index) {
+      override protected def currentSize(): Int = uncheckedSize()
+
+      override protected def elementAt(index: Int): E = {
+        checkForComodification()
+        parent.get(offset + index)
+      }
+    }
+  }
 }

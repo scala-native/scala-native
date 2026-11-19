@@ -249,15 +249,6 @@ class Collection8Test extends JSR166Test {
 
   private val implementations = allImplementations
 
-  // scala-native#4850: these iterators are not fail-fast yet
-  private val notFailFast: Set[String] = Set(
-    "ArrayList",
-    "ArrayList.subList",
-    "Vector",
-    "Vector.subList",
-    "LinkedList.subList"
-  )
-
   private def forAllImplementations(testName: String)(
       body: CollectionImplementation => Unit
   ): Unit = {
@@ -737,9 +728,8 @@ class Collection8Test extends JSR166Test {
       "testForEachRemainingConsistentWithDefaultImplementation"
     ) { impl =>
       val c = impl.emptyCollection()
-      if (testImplementationDetails && c
-            .getClass() != classOf[ju.LinkedList[_]] &&
-          !(Platform.executingInScalaNative && notFailFast(impl.name))) {
+      if (testImplementationDetails &&
+          c.getClass() != classOf[ju.LinkedList[_]]) {
         val rnd = juc.ThreadLocalRandom.current()
         val n = 1 + rnd.nextInt(3)
         var i = 0
