@@ -42,10 +42,13 @@ private[java] final class FileChannelImpl(
   // Held by operations that use or move the position, or change the size.
   private val positionLock = new ReentrantLock()
 
+  // Rechecks after locking, as close() may run while we wait.
   @inline private def withPositionLock[T](body: => T): T = {
     positionLock.lock()
-    try body
-    finally positionLock.unlock()
+    try {
+      ensureOpen()
+      body
+    } finally positionLock.unlock()
   }
 
   // Unix uses O_APPEND, Windows emulates it.
