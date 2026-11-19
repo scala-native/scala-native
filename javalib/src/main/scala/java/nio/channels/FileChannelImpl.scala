@@ -13,7 +13,9 @@ import scala.scalanative.libc.errno.errno
 import scala.scalanative.libc.{LibcExt, stdio}
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.nio.fs.unix.UnixException
-import scala.scalanative.posix.errno.{EACCES, EEXIST, ELOOP, ENOENT, EPERM}
+import scala.scalanative.posix.errno.{
+  EACCES, EEXIST, EINTR, ELOOP, ENOENT, EPERM
+}
 import scala.scalanative.posix.fcntl._
 import scala.scalanative.posix.fcntlOps._
 import scala.scalanative.posix.sys.statOps._
@@ -89,8 +91,19 @@ private[java] final class FileChannelImpl(
     }
   }
 
-  override def force(metadata: Boolean): Unit =
-    fd.sync()
+  override def force(metadata: Boolean): Unit = {
+    ensureOpen()
+    if (isWindows) {
+      // FlushFileBuffers needs write access.
+      if (openForWriting && !FlushFileBuffers(fd.handle))
+        throw WindowsException.onPath(getFileName())
+    } else {
+      val res =
+        if (metadata) unistd.fsync(fd.fd)
+        else unistd.fdatasync(fd.fd)
+      if (res != 0) throw UnixException(getFileName(), errno)
+    }
+  }
 
   @inline private def assertIfCanLock(): Unit =
     ensureOpenForWrite()
@@ -267,13 +280,17 @@ private[java] final class FileChannelImpl(
   }
 
   override def position(offset: Long): FileChannel = {
+    ensureOpen()
+    if (offset < 0)
+      throw new IllegalArgumentException("Negative position")
     if (!openForAppending)
       compelPosition(offset)
 
     this
   }
 
-  override def position(): Long =
+  override def position(): Long = {
+    ensureOpen()
     if (isWindows) {
       // FILE_END, unlike GetFileSizeEx, needs no read-attributes access.
       val filePointer = stackalloc[LargeInteger]()
@@ -292,6 +309,7 @@ private[java] final class FileChannelImpl(
         throwPosixException("lseek")
       pos
     }
+  }
 
   override def read(
       buffers: Array[ByteBuffer],
@@ -378,8 +396,13 @@ private[java] final class FileChannelImpl(
   ): Int = {
     if (count == 0) 0
     else {
-      val readCount =
-        unistd.pread(fd.fd, buffer.at(offset), count.toCSize, pos.toSize)
+      var readCount = 0L
+      while ({
+        readCount = unistd
+          .pread(fd.fd, buffer.at(offset), count.toCSize, pos.toSize)
+          .toLong
+        readCount < 0 && errno == EINTR
+      }) ()
       if (readCount == 0) -1 // end of file
       else if (readCount < 0) throw UnixException(getFileName(), errno)
       else readCount.toInt
@@ -431,7 +454,11 @@ private[java] final class FileChannelImpl(
         }
       }
     } else {
-      val readCount = unistd.read(fd.fd, buffer.at(offset), count.toUInt)
+      var readCount = 0
+      while ({
+        readCount = unistd.read(fd.fd, buffer.at(offset), count.toUInt)
+        readCount < 0 && errno == EINTR
+      }) ()
       if (readCount == 0) {
         -1 // end of file
       } else if (readCount < 0) {
@@ -445,10 +472,12 @@ private[java] final class FileChannelImpl(
   }
 
   override def size(): Long = {
+    ensureOpen()
     if (isWindows) {
       val size = stackalloc[windows.LargeInteger]()
-      if (GetFileSizeEx(fd.handle, size)) (!size).toLong
-      else 0L
+      if (!GetFileSizeEx(fd.handle, size))
+        throw WindowsException.onPath(getFileName())
+      (!size).toLong
     } else
       Zone.acquire { implicit z =>
         /* statbuf is too large to be thread stack friendly.
@@ -480,58 +509,59 @@ private[java] final class FileChannelImpl(
       _position: Long,
       count: Long
   ): Long = {
+    ensureOpenForWrite()
+
     if (_position < 0L)
       throw new IllegalArgumentException("Negative position")
 
     if (count < 0L)
       throw new IllegalArgumentException("Negative count")
 
-    if (_position > this.size()) {
-      0L
-    } else {
-      ensureOpen()
+    // Like the JVM, a position past the end of file grows the file.
+    val maxBufSize = 8 * 1024 // value used by JVM
+    val bufSize =
+      if (count > Integer.MAX_VALUE) maxBufSize
+      else Math.min(count.toInt, maxBufSize)
 
-      val maxBufSize = 8 * 1024 // value used by JVM
-      val bufSize =
-        if (count > Integer.MAX_VALUE) maxBufSize
-        else Math.min(count.toInt, maxBufSize)
+    val buf = ByteBuffer.allocate(bufSize)
 
-      val buf = ByteBuffer.allocate(bufSize)
+    /* The writing is known to be sequential, reduce wasted seek()ing
+     * by using relative I/O with save/restore of original position
+     * rather than attractive but expensive absolute I/O plus math.
+     */
+    val savedPosition = position()
+    if (savedPosition != _position)
+      position(_position)
 
-      /* The writing is known to be sequential, reduce wasted seek()ing
-       * by using relative I/O with save/restore of original position
-       * rather than attractive but expensive absolute I/O plus math.
-       */
-      val savedPosition = position()
-      if (savedPosition != _position)
-        position(_position)
+    var totalWritten = 0L
 
-      var totalWritten = 0L
+    try {
+      var done = false
 
-      try {
-        var done = false
+      while ((!done) && (totalWritten < count)) {
+        // Bounding the limit is key to not reading/writing too many bytes.
+        val nRemaining = count - totalWritten
+        if ((nRemaining) < bufSize)
+          buf.limit(nRemaining.toInt) // Enable next partial buf short read
 
-        while ((!done) && (totalWritten < count)) {
-          // Bounding the limit is key to not reading/writing too many bytes.
-          val nRemaining = count - totalWritten
-          if ((nRemaining) < bufSize)
-            buf.limit(nRemaining.toInt) // Enable next partial buf short read
-
-          if (src.read(buf) == -1) {
-            done = true
-          } else {
-            buf.flip()
-            while (buf.hasRemaining())
-              totalWritten += this.write(buf)
-            buf.flip()
+        // Stop at end of stream, or when a nonblocking source has no data.
+        if (src.read(buf) <= 0) {
+          done = true
+        } else {
+          buf.flip()
+          while (!done && buf.hasRemaining()) {
+            val n = this.write(buf)
+            totalWritten += n
+            if (n == 0) done = true
           }
+          buf.clear()
         }
-      } finally {
-        position(savedPosition)
       }
-
-      totalWritten
+    } finally {
+      position(savedPosition)
     }
+
+    totalWritten
   }
 
   // See comment about lack of common code before transferFrom()
@@ -541,20 +571,17 @@ private[java] final class FileChannelImpl(
       count: Long,
       target: WritableByteChannel
   ): Long = {
+    ensureOpenForRead()
+
     if (_position < 0L)
       throw new IllegalArgumentException("Negative position")
 
     if (count < 0L)
       throw new IllegalArgumentException("Negative count")
 
-    if (!openForReading)
-      throw new NonReadableChannelException()
-
     if (_position > this.size()) {
       0L
     } else {
-      ensureOpen()
-
       val maxBufSize = 8 * 1024 // value used by JVM
       val bufSize =
         if (count > Integer.MAX_VALUE) maxBufSize
@@ -640,13 +667,10 @@ private[java] final class FileChannelImpl(
   }
 
   override def truncate(newSize: Long): FileChannel = {
+    ensureOpenForWrite()
+
     if (newSize < 0)
       throw new IllegalArgumentException("Negative size")
-
-    ensureOpen()
-
-    if (!openForWriting)
-      throw new NonWritableChannelException()
 
     val currentPosition = position()
 
@@ -690,25 +714,34 @@ private[java] final class FileChannelImpl(
         // intermediate buffer, and read straight from the array memory.
         val buf = array.at(offset)
 
+        // Blocking writes return once all bytes are written, or a write
+        // makes no progress.
+        var written = 0
         if (isWindows) {
-          val hasSucceded =
-            WriteFile(fd.handle, buf, count.toUInt, null, null)
-          if (!hasSucceded) {
-            throw WindowsException.onPath(getFileName("<file descriptor>"))
+          val n = stackalloc[DWord]()
+          while (written < count) {
+            if (!WriteFile(
+                  fd.handle,
+                  buf + written,
+                  (count - written).toUInt,
+                  n,
+                  null
+                ))
+              throw WindowsException.onPath(getFileName("<file descriptor>"))
+            written += (!n).toInt
+            // A full nonblocking pipe accepts nothing; wait for the reader.
+            if (!n == 0.toUInt) Thread.sleep(1)
           }
-
-          count // Windows will fail on partial write, so nWritten == count
         } else {
-          // unix-like may do partial writes, so be robust to them.
-          val writeCount = unistd.write(fd.fd, buf, count.toUInt)
-
-          if (writeCount < 0) {
-            // negative value (typically -1) indicates that write failed
-            throw UnixException(getFileName(), errno)
+          var done = false
+          while (!done && written < count) {
+            val n = unistd.write(fd.fd, buf + written, (count - written).toUInt)
+            if (n > 0) written += n
+            else if (n == 0) done = true
+            else if (errno != EINTR) throw UnixException(getFileName(), errno)
           }
-
-          writeCount // may be < requested count
         }
+        written
       }
 
     nWritten
@@ -726,7 +759,11 @@ private[java] final class FileChannelImpl(
       throw new IndexOutOfBoundsException
 
     seekEOFBeforeRelativeWrite()
-    writeArray(buffer, offset, count)
+    val written = writeArray(buffer, offset, count)
+    // Streams must write everything; channels may return a short count.
+    if (written < count)
+      throw new IOException(s"Wrote only $written of $count bytes")
+    written
   }
 
   private def writeByteBuffer(src: ByteBuffer): Int =
@@ -772,7 +809,7 @@ private[java] final class FileChannelImpl(
 
     var i = 0
     var partialWriteSeen = false
-    var totalWritten = 0
+    var totalWritten = 0L
     while (i < length && !partialWriteSeen) {
       val src = srcs(offset + i)
       val len = src.remaining()
@@ -834,10 +871,20 @@ private[java] final class FileChannelImpl(
   ): Int = {
     if (count == 0) 0
     else {
-      val writeCount =
-        unistd.pwrite(fd.fd, array.at(offset), count.toCSize, pos.toSize)
-      if (writeCount < 0) throw UnixException(getFileName(), errno)
-      writeCount.toInt
+      var written = 0
+      var done = false
+      while (!done && written < count) {
+        val n = unistd.pwrite(
+          fd.fd,
+          array.at(offset + written),
+          (count - written).toCSize,
+          (pos + written).toSize
+        )
+        if (n > 0) written += n.toInt
+        else if (n == 0) done = true
+        else if (errno != EINTR) throw UnixException(getFileName(), errno)
+      }
+      written
     }
   }
 

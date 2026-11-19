@@ -1665,4 +1665,75 @@ class FileChannelTest {
       assertEquals("target size", 10L, Files.size(target))
     }
   }
+
+  @Test def closedChannelThrowsClosedChannelException(): Unit = {
+    withTemporaryDirectory { dir =>
+      val path = dir.resolve("f")
+      Files.write(path, "0123456789".getBytes("UTF-8"))
+      val other = FileChannel.open(path, StandardOpenOption.READ)
+      try {
+        val channel = FileChannel.open(path, StandardOpenOption.READ)
+        channel.close()
+        assertThrows(classOf[ClosedChannelException], channel.position())
+        assertThrows(classOf[ClosedChannelException], channel.position(-1L))
+        assertThrows(classOf[ClosedChannelException], channel.size())
+        assertThrows(classOf[ClosedChannelException], channel.force(true))
+        assertThrows(classOf[ClosedChannelException], channel.truncate(-1L))
+        assertThrows(
+          classOf[ClosedChannelException],
+          channel.transferTo(100L, 5L, other)
+        )
+        assertThrows(
+          classOf[ClosedChannelException],
+          channel.transferFrom(other, 100L, 5L)
+        )
+      } finally other.close()
+    }
+  }
+
+  @Test def positionRejectsNegativeValue(): Unit = {
+    withTemporaryDirectory { dir =>
+      val path = dir.resolve("f")
+      Files.write(path, "0123456789".getBytes("UTF-8"))
+      val channel = FileChannel.open(path, StandardOpenOption.READ)
+      try
+        assertThrows(classOf[IllegalArgumentException], channel.position(-1L))
+      finally channel.close()
+    }
+  }
+
+  @Test def forceWorksOnReadAndWriteChannels(): Unit = {
+    withTemporaryDirectory { dir =>
+      val path = dir.resolve("f")
+      Files.write(path, "0123456789".getBytes("UTF-8"))
+      val ro = FileChannel.open(path, StandardOpenOption.READ)
+      try {
+        ro.force(true)
+        ro.force(false)
+      } finally ro.close()
+      val wo = FileChannel.open(path, StandardOpenOption.WRITE)
+      try {
+        wo.write(ByteBuffer.wrap("ab".getBytes("UTF-8")))
+        wo.force(true)
+        wo.force(false)
+      } finally wo.close()
+    }
+  }
+
+  @Test def transferFromRequiresWritableChannel(): Unit = {
+    withTemporaryDirectory { dir =>
+      val path = dir.resolve("f")
+      Files.write(path, "0123456789".getBytes("UTF-8"))
+      val src = FileChannel.open(path, StandardOpenOption.READ)
+      try {
+        val ro = FileChannel.open(path, StandardOpenOption.READ)
+        try
+          assertThrows(
+            classOf[NonWritableChannelException],
+            ro.transferFrom(src, 0L, 5L)
+          )
+        finally ro.close()
+      } finally src.close()
+    }
+  }
 }
