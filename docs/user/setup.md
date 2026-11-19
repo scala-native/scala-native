@@ -226,6 +226,8 @@ Using the install path above, you would add the following:
 C:\Users\<login>\AppData\Local\LLVM\bin
 ```
 
+If you use `java.util.zip`, see [zlib on Windows](#zlib-on-windows).
+
 ### Windows on ARM64 (WoA)
 
 Use native ARM64 versions of the JDK, LLVM and native dependencies:
@@ -249,10 +251,23 @@ Use native ARM64 versions of the JDK, LLVM and native dependencies:
 
 Set `SCALANATIVE_INCLUDE_DIRS` and `SCALANATIVE_LIB_DIRS` to the `include` and
 `lib` directories under `<vcpkg>/installed/arm64-windows-static`.
-If vcpkg produces `zs.lib`, copy it to `zlib.lib` in the same directory so
-Scala Native can find zlib.
 
 For repository builds and setup helpers, see
 [Windows on ARM64 contributor setup](../contrib/build-setup.md#windows-on-arm64).
+
+### zlib on Windows
+
+Scala Native does not link zlib automatically on Windows, because its library
+name depends on how zlib was built. If your program uses `java.util.zip`, pass
+the matching library to the linker. For the vcpkg `*-windows-static` triplets
+it is `libzs.lib` (zlib 1.4+), `zs.lib` (zlib 1.3.2) or `zlib.lib` (older):
+
+``` scala
+nativeConfig ~= { _.withLinkingOptions(_ :+ "-llibzs") }
+```
+
+Alternatively, set the `SCALANATIVE_LINKING_OPTIONS` environment variable
+(e.g. to `-llibzs`); its flags, separated by whitespace or semicolons, are
+added to the default linking options.
 
 Continue to [sbt](./sbt.md).

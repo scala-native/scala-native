@@ -6,15 +6,16 @@ import scala.scalanative.runtime.{Intrinsics, fromRawUSize}
 import scala.scalanative.unsafe._
 
 private[ffi] object zlibPlatformCompat {
-  @extern @link("zlib")
-  private object zlibWin64 extends zlib
+  @extern
+  private object zlibWindows extends zlib
 
   @extern @link("z")
   private object zlibDefault extends zlib
 
-  // create instance just to enforce that object containing one of @link annotations would be reachable
+  // Link-time branch keeps @link("z") off Windows, where the zlib library name
+  // varies by build and users pass the matching -l<name> themselves.
   val instance: zlib =
-    if (isWindows) zlibWin64
+    if (isWindows) zlibWindows
     else zlibDefault
 }
 
