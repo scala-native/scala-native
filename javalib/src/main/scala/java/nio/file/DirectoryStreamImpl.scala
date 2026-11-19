@@ -1,8 +1,8 @@
 package java.nio.file
 
-import java.util.Iterator
-import java.util.function.Predicate
+import java.io.UncheckedIOException
 import java.util.stream.Stream
+import java.util.{Iterator, NoSuchElementException}
 
 class DirectoryStreamImpl[T](
     stream: Stream[T],
@@ -10,12 +10,7 @@ class DirectoryStreamImpl[T](
 ) extends DirectoryStream[T] {
   private var iteratorCalled: Boolean = false
   private var closed: Boolean = false
-  private val underlying = {
-    val predicate = new Predicate[T] {
-      override def test(t: T): Boolean = filter.accept(t)
-    }
-    stream.filter(predicate).iterator()
-  }
+  private val listing = stream.iterator()
 
   override def iterator(): Iterator[T] =
     if (closed || iteratorCalled)
@@ -23,13 +18,53 @@ class DirectoryStreamImpl[T](
     else {
       iteratorCalled = true
       new Iterator[T] {
-        override def hasNext(): Boolean = !closed && underlying.hasNext()
+        private var pending: T = _
+        private var hasPending = false
+
+        /* After close the underlying directory reader reports end of
+         * stream; only an element already read ahead is still returned.
+         * Exceptions from the filter propagate unchanged.
+         */
+        override def hasNext(): Boolean = {
+          while (!hasPending && listingHasNext()) {
+            val entry = listingNext()
+            if (filter.accept(entry)) {
+              pending = entry
+              hasPending = true
+            }
+          }
+          hasPending
+        }
+
         override def next(): T =
           if (!hasNext()) throw new NoSuchElementException()
-          else underlying.next()
+          else {
+            hasPending = false
+            val entry = pending
+            pending = null.asInstanceOf[T]
+            entry
+          }
+
         override def remove(): Unit = throw new UnsupportedOperationException()
       }
     }
 
-  override def close(): Unit = closed = true
+  private def listingHasNext(): Boolean =
+    try listing.hasNext()
+    catch {
+      case e: UncheckedIOException =>
+        throw new DirectoryIteratorException(e.getCause())
+    }
+
+  private def listingNext(): T =
+    try listing.next()
+    catch {
+      case e: UncheckedIOException =>
+        throw new DirectoryIteratorException(e.getCause())
+    }
+
+  override def close(): Unit = if (!closed) {
+    closed = true
+    stream.close()
+  }
 }
