@@ -8,6 +8,8 @@
 package scala.scalanative
 package regex
 
+import java.util.Arrays
+
 import Inst.{Op => IOP}
 import Regexp.{Op => ROP}
 
@@ -146,6 +148,8 @@ class Compiler private () {
         runes(2) == '\n' + 1 &&
         runes(3) == Unicode.MAX_RUNE) {
       i.op = IOP.RUNE_ANY_NOT_NL
+    } else if (Arrays.equals(runes, Parser.AnyRuneNotLineTerminator)) {
+      i.op = IOP.RUNE_ANY_NOT_LT
     }
     f
   }
@@ -178,13 +182,26 @@ class Compiler private () {
       case ROP.ANY_CHAR =>
         rune(ANY_RUNE, 0)
       case ROP.BEGIN_LINE =>
-        empty(Utils.EMPTY_BEGIN_LINE)
+        empty(
+          if ((re.flags & RE2.JAVA_LINES) == 0) Utils.EMPTY_BEGIN_LINE
+          else if ((re.flags & RE2.UNIX_LINES) != 0) Utils.EMPTY_BEGIN_LINE_UNIX
+          else Utils.EMPTY_BEGIN_LINE_JAVA
+        )
       case ROP.END_LINE =>
-        empty(Utils.EMPTY_END_LINE)
+        val javaLines = re.flags & (RE2.JAVA_LINES | RE2.UNIX_LINES)
+        empty(
+          if (javaLines == RE2.JAVA_LINES) Utils.EMPTY_END_LINE_JAVA
+          else Utils.EMPTY_END_LINE
+        )
       case ROP.BEGIN_TEXT =>
         empty(Utils.EMPTY_BEGIN_TEXT)
       case ROP.END_TEXT =>
-        empty(Utils.EMPTY_END_TEXT)
+        val javaDollar = RE2.JAVA_LINES | RE2.WAS_DOLLAR
+        empty(
+          if ((re.flags & javaDollar) != javaDollar) Utils.EMPTY_END_TEXT
+          else if ((re.flags & RE2.UNIX_LINES) != 0) Utils.EMPTY_END_TEXT_UNIX
+          else Utils.EMPTY_END_TEXT_JAVA
+        )
       case ROP.WORD_BOUNDARY =>
         empty(Utils.EMPTY_WORD_BOUNDARY)
       case ROP.NO_WORD_BOUNDARY =>

@@ -3,6 +3,8 @@
 package scala.scalanative
 package regex
 
+import java.util.regex.PatternSyntaxException
+
 // A compiled representation of an RE2 regular expression, mimicking the
 // {@code java.util.regex.Pattern} API.
 //
@@ -126,6 +128,9 @@ object Pattern {
   // Flag: Unicode groups (e.g. {@code \p\{Greek\}}) will be syntax errors.
   final val DISABLE_UNICODE_GROUPS = 8
 
+  // Flag: only {@code \n} is a line terminator.
+  final val UNIX_LINES = 16
+
   // Creates and returns a new {@code Pattern} corresponding to
   // compiling {@code regex} with the default flags (0).
   //
@@ -153,10 +158,13 @@ object Pattern {
     if ((flags & MULTILINE) != 0) {
       flregex = "(?m)" + flregex
     }
-    if ((flags & ~(MULTILINE | DOTALL | CASE_INSENSITIVE | DISABLE_UNICODE_GROUPS)) != 0) {
+    if ((flags & UNIX_LINES) != 0) {
+      flregex = "(?d)" + flregex
+    }
+    if ((flags & ~(MULTILINE | DOTALL | CASE_INSENSITIVE | DISABLE_UNICODE_GROUPS | UNIX_LINES)) != 0) {
       throw new IllegalArgumentException(
-        "Flags should only be a combination " +
-          "of MULTILINE, DOTALL, CASE_INSENSITIVE, DISABLE_UNICODE_GROUPS"
+        "Flags should only be a combination of MULTILINE, DOTALL, " +
+          "CASE_INSENSITIVE, DISABLE_UNICODE_GROUPS, UNIX_LINES"
       )
     }
     compile(flregex, regex, flags)
@@ -165,15 +173,24 @@ object Pattern {
   // Helper: create new Pattern with given regex and flags.
   // Flregex is the regex with flags applied.
   private def compile(flregex: String, regex: String, flags: Int): Pattern = {
-    var re2Flags = RE2.PERL
+    var re2Flags = RE2.PERL | RE2.JAVA_LINES
     if ((flags & DISABLE_UNICODE_GROUPS) != 0) {
       re2Flags &= ~RE2.UNICODE_GROUPS
     }
-    new Pattern(
-      regex,
-      flags,
-      RE2.compileImpl(flregex, re2Flags, /*longest=*/ false)
-    )
+    val re2 =
+      try RE2.compileImpl(flregex, re2Flags, /*longest=*/ false)
+      catch {
+        case e: PatternSyntaxException
+            if (flregex ne regex) && e.getPattern == flregex =>
+          val prefix = flregex.length - regex.length
+          val index = if (e.getIndex < 0) e.getIndex else e.getIndex - prefix
+          throw new PatternSyntaxException(
+            e.getDescription,
+            regex,
+            math.max(index, -1)
+          )
+      }
+    new Pattern(regex, flags, re2)
   }
 
   // Matches a string against a regular expression.

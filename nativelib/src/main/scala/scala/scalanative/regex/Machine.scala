@@ -172,6 +172,8 @@ class Machine(re2: RE2) {
       }
 
       flag = Utils.emptyOpContext(rune, rune1)
+      if (Utils.isLineTerminator(rune1))
+        flag |= in.finalLineTerminatorContext(pos + width, rune, rune1, width1)
 
       step(
         runq,
@@ -244,7 +246,8 @@ class Machine(re2: RE2) {
     // bitmask of EMPTY_* flags
     val flag =
       if (pos == 0)
-        Utils.emptyOpContext(-1, rune)
+        Utils.emptyOpContext(-1, rune) |
+          in.finalLineTerminatorContext(0, -1, rune, width)
       else
         in.context(pos)
 
@@ -330,6 +333,8 @@ class Machine(re2: RE2) {
                 add = true
               case IOP.RUNE_ANY_NOT_NL =>
                 add = c != '\n'
+              case IOP.RUNE_ANY_NOT_LT =>
+                add = !Utils.isLineTerminator(c)
               case _ =>
                 throw new IllegalStateException("bad inst")
             }
@@ -392,7 +397,7 @@ class Machine(re2: RE2) {
           t = this.add(q, inst.out, pos, cap, cond, t)
         }
       case IOP.MATCH | IOP.RUNE | IOP.RUNE1 | IOP.RUNE_ANY |
-          IOP.RUNE_ANY_NOT_NL =>
+          IOP.RUNE_ANY_NOT_NL | IOP.RUNE_ANY_NOT_LT =>
         if (t == null) {
           t = alloc(inst)
         } else {

@@ -25,7 +25,7 @@ class Inst(var op: Inst.Op) {
   // Beware "op" is a public field.
   def runeOp(): Op = {
     (op: @scala.annotation.switch) match {
-      case RUNE1 | RUNE_ANY | RUNE_ANY_NOT_NL =>
+      case RUNE1 | RUNE_ANY | RUNE_ANY_NOT_NL | RUNE_ANY_NOT_LT =>
         Op.RUNE
       case _ =>
         op
@@ -115,6 +115,8 @@ class Inst(var op: Inst.Op) {
         "any -> " + out
       case RUNE_ANY_NOT_NL =>
         "anynotnl -> " + out
+      case RUNE_ANY_NOT_LT =>
+        "anynotlt -> " + out
       case _ =>
         throw new IllegalStateException("unhandled case in Inst.toString")
     }
@@ -135,6 +137,8 @@ object Inst {
     final val RUNE1 = 8
     final val RUNE_ANY = 9
     final val RUNE_ANY_NOT_NL = 10
+    // Any rune except a Java line terminator.
+    final val RUNE_ANY_NOT_LT = 11
   }
 
   // Returns an RE2 expression matching exactly |runes|.

@@ -200,6 +200,15 @@ class Parser(wholeRegexp: String, _flags: Int) {
         flags ^= RE2.NON_GREEDY
       }
       if (lastRepeatPos != -1) {
+        val quantifier = t.from(lastRepeatPos)
+        val lazyThenPlus = quantifier.length > 2 && quantifier.endsWith("?+")
+        if (op == ROP.PLUS && !lazyThenPlus) {
+          unsupported(
+            s"Possessive quantifier $quantifier",
+            t,
+            lastRepeatPos
+          )
+        }
         // In Perl it is not allowed to stack repetition operators:
         // a** is a syntax error, not a doubled star, and a++ means
         // something else entirely, which we don't support!
@@ -770,6 +779,12 @@ class Parser(wholeRegexp: String, _flags: Int) {
           case '.' =>
             if ((flags & RE2.DOT_NL) != 0) {
               op(ROP.ANY_CHAR)
+            } else if ((flags & (RE2.JAVA_LINES | RE2.UNIX_LINES)) ==
+                  RE2.JAVA_LINES) {
+              val re = newRegexp(ROP.CHAR_CLASS)
+              re.flags = flags
+              re.runes = Parser.anyRuneNotLineTerminator()
+              push(re)
             } else {
               op(ROP.ANY_CHAR_NOT_NL)
             }
@@ -840,6 +855,13 @@ class Parser(wholeRegexp: String, _flags: Int) {
                 case 'z' =>
                   op(ROP.END_TEXT)
                   breakBigswitch = true
+                case 'Z' =>
+                  if ((flags & RE2.JAVA_LINES) != 0) {
+                    op(ROP.END_TEXT).flags |= RE2.WAS_DOLLAR
+                    breakBigswitch = true
+                  } else {
+                    t.rewindTo(savedPos)
+                  }
                 case _ =>
                   t.rewindTo(savedPos)
               }
@@ -933,6 +955,15 @@ class Parser(wholeRegexp: String, _flags: Int) {
 
     val s = t.rest()
 
+    val unsupportedGroup =
+      if (s.startsWith("(?=")) "Lookahead (?=X)"
+      else if (s.startsWith("(?!")) "Negative lookahead (?!X)"
+      else if (s.startsWith("(?<=")) "Lookbehind (?<=X)"
+      else if (s.startsWith("(?<!")) "Negative lookbehind (?<!X)"
+      else if (s.startsWith("(?>")) "Atomic group (?>X)"
+      else null
+    if (unsupportedGroup != null) unsupported(unsupportedGroup, t, startPos)
+
     val (isNamedCapture, namedCaptureStart, namedCaptureSkip) =
       if (s.startsWith("(?<")) { // Java style is most likely
         (true, 3, 4)
@@ -992,6 +1023,9 @@ class Parser(wholeRegexp: String, _flags: Int) {
             sawFlag = true
           case 's' =>
             flags |= RE2.DOT_NL
+            sawFlag = true
+          case 'd' =>
+            flags |= RE2.UNIX_LINES
             sawFlag = true
           case 'U' =>
             flags |= RE2.NON_GREEDY
@@ -1380,6 +1414,23 @@ class Parser(wholeRegexp: String, _flags: Int) {
 
 object Parser {
 
+  private[regex] val AnyRuneNotLineTerminator: Array[Int] =
+    Array(
+      0,
+      0x09,
+      0x0b,
+      0x0c,
+      0x0e,
+      0x84,
+      0x86,
+      0x2027,
+      0x202a,
+      Unicode.MAX_RUNE
+    )
+
+  private[regex] def anyRuneNotLineTerminator(): Array[Int] =
+    AnyRuneNotLineTerminator.clone()
+
   // SN re2s-to-regex porting note.  The goal is for the text here
   // to be identical with the JVM.
 
@@ -1748,6 +1799,23 @@ object Parser {
   // parseEscape parses an escape sequence at the beginning of s
   // and returns the rune.
   // Pre: t at '\\'.  Post: after escape.
+  private def unsupportedBackreference(
+      t: StringIterator,
+      form: String
+  ): Nothing =
+    unsupported(s"Backreference $form", t, t.pos() - 2)
+
+  private def unsupported(
+      construct: String,
+      t: StringIterator,
+      index: Int
+  ): Nothing =
+    throw new PatternSyntaxException(
+      s"$construct is not supported in Scala Native",
+      t.str,
+      index
+    )
+
   private def parseEscape(t: StringIterator): Int = {
     def invalidEscape: Nothing = {
       throw new PatternSyntaxException(ERR_INVALID_ESCAPE, t.str, t.pos() - 1)
@@ -1759,11 +1827,16 @@ object Parser {
     var c = t.pop()
 
     (c: @scala.annotation.switch) match {
+      case '8' | '9' =>
+        unsupportedBackreference(t, "\\" + c.toChar)
+      case 'k' =>
+        if (t.lookingAt("<")) unsupportedBackreference(t, "\\k<name>")
+        else invalidEscape
       // Octal escapes.
       case '1' | '2' | '3' | '4' | '5' | '6' | '7' =>
         // Single non-zero digit is a backreference not supported
         if (!t.more() || t.peek() < '0' || t.peek() > '7') {
-          invalidEscape
+          unsupportedBackreference(t, "\\" + c.toChar)
         } else {
           // fallthrough
           var r = c - '0'

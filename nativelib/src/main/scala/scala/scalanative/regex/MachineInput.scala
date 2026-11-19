@@ -32,6 +32,26 @@ abstract class MachineInput {
 
   // Returns the end position in the same units as step().
   def endPos(): Int
+
+  // Returns EMPTY_END_TEXT_JAVA/_UNIX if r2 (width w2, at pos, preceded by r1) is
+  // the final line terminator of the input, otherwise 0.
+  final def finalLineTerminatorContext(
+      pos: Int,
+      r1: Int,
+      r2: Int,
+      w2: Int
+  ): Int =
+    if (!Utils.isLineTerminator(r2)) 0
+    else {
+      val r3 = step(pos + w2) >> 3
+      if (r3 < 0) {
+        val unix = if (r2 == '\n') Utils.EMPTY_END_TEXT_UNIX else 0
+        if (r1 == '\r' && r2 == '\n') unix
+        else unix | Utils.EMPTY_END_TEXT_JAVA
+      } else if (r2 == '\r' && r3 == '\n' && (step(pos + w2 + 1) >> 3) < 0) {
+        Utils.EMPTY_END_TEXT_JAVA
+      } else 0
+    }
 }
 
 object MachineInput {
@@ -143,8 +163,10 @@ object MachineInput {
           r1 = step(start) >> 3
         }
       }
-      val r2 = if (pos < this.end) step(pos) >> 3 else -1
-      return Utils.emptyOpContext(r1, r2)
+      val s2 = step(_pos)
+      val r2 = s2 >> 3
+      Utils.emptyOpContext(r1, r2) |
+        finalLineTerminatorContext(_pos, r1, r2, s2 & 7)
     }
 
     override def endPos(): Int = end
@@ -182,8 +204,10 @@ object MachineInput {
       val r1 =
         if (pos > start && pos <= end) Character.codePointBefore(str, pos)
         else -1
-      val r2 = if (pos < end) Character.codePointAt(str, pos) else -1
-      return Utils.emptyOpContext(r1, r2)
+      val s2 = step(_pos)
+      val r2 = s2 >> 3
+      Utils.emptyOpContext(r1, r2) |
+        finalLineTerminatorContext(_pos, r1, r2, s2 & 7)
     }
 
     override def endPos(): Int = end

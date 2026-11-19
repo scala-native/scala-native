@@ -445,6 +445,23 @@ class PatternTest {
     syntax("foo(foo)bar)baz", "Unmatched closing ')'", 10)
   }
 
+  @Test def syntaxExceptionsIgnoreFlagPrefix(): Unit = {
+    val flags = Pattern.MULTILINE | Pattern.DOTALL | Pattern.UNIX_LINES
+    val e = assertThrows(
+      classOf[PatternSyntaxException],
+      Pattern.compile("ab[c", flags)
+    )
+    assertEquals("Unclosed character class", e.getDescription)
+    assertEquals("ab[c", e.getPattern)
+    assertEquals(3, e.getIndex)
+    val e2 = assertThrows(
+      classOf[PatternSyntaxException],
+      Pattern.compile("a++", Pattern.UNIX_LINES)
+    )
+    assertEquals("a++", e2.getPattern)
+    assertEquals(1, e2.getIndex)
+  }
+
   private def syntax(pattern: String, description: String, index: Int): Unit = {
     try {
       Pattern.compile(pattern)

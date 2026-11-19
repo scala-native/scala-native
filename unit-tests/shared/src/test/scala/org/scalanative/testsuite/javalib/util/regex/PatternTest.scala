@@ -62,11 +62,6 @@ class PatternTest {
       classOf[UnsupportedOperationException],
       Pattern.compile("p", Pattern.UNICODE_CHARACTER_CLASS)
     )
-
-    assertThrows(
-      classOf[UnsupportedOperationException],
-      Pattern.compile("q", Pattern.UNIX_LINES)
-    )
   }
 
   @Test def exerciseMatcherMethodsBeforeUsingThem(): Unit = {
@@ -718,6 +713,41 @@ class PatternTest {
     syntax("foo(bar(foo)baz", "Unclosed group", 15)
     syntax("(?q)", "Unknown inline modifier", 2) // bad perl operator
     syntax("foo(foo)bar)baz", "Unmatched closing ')'", 10)
+  }
+
+  @Test def unsupportedConstructsHaveClearMessages(): Unit = {
+    assumeFalse("Supported by the JVM", executingInJVM)
+
+    def unsupported(pattern: String, construct: String, index: Int): Unit = {
+      val e = assertThrows(
+        classOf[PatternSyntaxException],
+        Pattern.compile(pattern)
+      )
+      assertEquals(
+        s"$construct is not supported in Scala Native",
+        e.getDescription
+      )
+      assertEquals(pattern, e.getPattern)
+      assertEquals(index, e.getIndex)
+    }
+
+    unsupported("\\h*+$", "Possessive quantifier *+", 2)
+    unsupported("a++b", "Possessive quantifier ++", 1)
+    unsupported("a?+", "Possessive quantifier ?+", 1)
+    unsupported("a{2,3}+", "Possessive quantifier {2,3}+", 1)
+    assertThrows(classOf[PatternSyntaxException], Pattern.compile("a*?+"))
+    unsupported("x(?=y)", "Lookahead (?=X)", 1)
+    unsupported("x(?!y)", "Negative lookahead (?!X)", 1)
+    unsupported("(?<=\\n)x", "Lookbehind (?<=X)", 0)
+    unsupported("(?<!a)x", "Negative lookbehind (?<!X)", 0)
+    unsupported("(?>a|ab)c", "Atomic group (?>X)", 0)
+    unsupported("(a)\\1", "Backreference \\1", 3)
+    unsupported("(a)\\9", "Backreference \\9", 3)
+    unsupported("(?<n>a)\\k<n>", "Backreference \\k<name>", 7)
+
+    // Still valid: lazy quantifiers and named groups.
+    assertTrue(Pattern.matches("a+?b", "aab"))
+    assertTrue(Pattern.matches("(?<lt>a)", "a"))
   }
 
   private def syntax(pattern: String, description: String, index: Int): Unit = {

@@ -180,14 +180,36 @@ object Utils {
   final val EMPTY_END_TEXT = 0x08
   final val EMPTY_WORD_BOUNDARY = 0x10
   final val EMPTY_NO_WORD_BOUNDARY = 0x20
+  // Java variants of ^, $ and \Z, see RE2.JAVA_LINES.
+  final val EMPTY_BEGIN_LINE_JAVA = 0x40
+  final val EMPTY_END_LINE_JAVA = 0x80
+  final val EMPTY_END_TEXT_JAVA = 0x100
+  // Java UNIX_LINES variants; $ in MULTILINE uses EMPTY_END_LINE.
+  final val EMPTY_BEGIN_LINE_UNIX = 0x200
+  final val EMPTY_END_TEXT_UNIX = 0x400
   final val EMPTY_ALL = -1 // (impossible)
+
+  final def isLineTerminator(r: Int): Boolean =
+    if (r > '\r') r == 0x85 || (r >= 0x2028 && r <= 0x2029)
+    else r == '\n' || r == '\r'
 
   // emptyOpContext returns the zero-width assertions satisfied at the position
   // between the runes r1 and r2, a bitmask of EMPTY_* flags.
   // Passing r1 == -1 indicates that the position is at the beginning of the
   // text.
   // Passing r2 == -1 indicates that the position is at the end of the text.
+  // EMPTY_END_TEXT_JAVA before a final line terminator is not included, see
+  // MachineInput.finalLineTerminatorContext.
   final def emptyOpContext(r1: Int, r2: Int): Int = {
+    val op =
+      if (isWordRune(r1) != isWordRune(r2)) EMPTY_WORD_BOUNDARY
+      else EMPTY_NO_WORD_BOUNDARY
+    if (r1 > '\r' && r2 > '\r' && !isLineTerminator(r1) &&
+        !isLineTerminator(r2)) op
+    else op | lineContext(r1, r2)
+  }
+
+  private def lineContext(r1: Int, r2: Int): Int = {
     var op = 0
     if (r1 < 0) {
       op |= EMPTY_BEGIN_TEXT | EMPTY_BEGIN_LINE
@@ -196,15 +218,18 @@ object Utils {
       op |= EMPTY_BEGIN_LINE
     }
     if (r2 < 0) {
-      op |= EMPTY_END_TEXT | EMPTY_END_LINE
+      op |= EMPTY_END_TEXT | EMPTY_END_LINE | EMPTY_END_LINE_JAVA |
+        EMPTY_END_TEXT_JAVA | EMPTY_END_TEXT_UNIX
+    } else if (r1 < 0 || r1 == '\n') {
+      op |= EMPTY_BEGIN_LINE_UNIX
+      if (r1 < 0) op |= EMPTY_BEGIN_LINE_JAVA
     }
     if (r2 == '\n') {
       op |= EMPTY_END_LINE
     }
-    if (isWordRune(r1) != isWordRune(r2)) {
-      op |= EMPTY_WORD_BOUNDARY
-    } else {
-      op |= EMPTY_NO_WORD_BOUNDARY
+    if (!(r1 == '\r' && r2 == '\n')) {
+      if (r2 >= 0 && isLineTerminator(r1)) op |= EMPTY_BEGIN_LINE_JAVA
+      if (isLineTerminator(r2)) op |= EMPTY_END_LINE_JAVA
     }
     op
   }

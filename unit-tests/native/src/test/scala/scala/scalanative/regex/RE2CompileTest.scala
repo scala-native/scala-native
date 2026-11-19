@@ -43,7 +43,10 @@ class RE2CompileTest {
     Array("[z-a]", "Illegal character range near index 3\n[z-a]\n   ^"),
     Array("abc\\", "Trailing Backslash near index 4\nabc\\\n    ^"),
     Array("a**", "Invalid nested repetition operator near index 0\n**\n^"),
-    Array("a*+", "Invalid nested repetition operator near index 0\n*+\n^"),
+    Array(
+      "a*+",
+      "Possessive quantifier *+ is not supported in Scala Native near index 1\na*+\n ^"
+    ),
     Array("\\x", "Illegal/unsupported escape sequence near index 1\n\\x\n ^"),
     Array("\\p", "Unknown character property name near index 2\n\\p\n  ^"),
     Array("\\p{", "Unknown character property name near index 3\n\\p{\n   ^")
