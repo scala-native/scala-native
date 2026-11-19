@@ -81,30 +81,10 @@ runs:
         VCPKG_DEFAULT_HOST_TRIPLET: arm64-windows
       run: vcpkg install bdwgc zlib --triplet=arm64-windows-static
 
-    - name: Normalize vcpkg zlib.lib name for linking
+    # javalib does not link zlib on Windows; pass vcpkg's library explicitly.
+    - name: Link vcpkg zlib
       shell: pwsh
       run: |
-        $libDir = Join-Path '${{ steps.resolve-env.outputs.VcpkgLibs }}' 'lib'
-        $zs = Join-Path $libDir 'zs.lib'
-        $zlib = Join-Path $libDir 'zlib.lib'
-        if (-not (Test-Path -LiteralPath $zlib) -and (Test-Path -LiteralPath $zs)) {
-          Copy-Item -LiteralPath $zs -Destination $zlib
-          Write-Host "Installed zlib.lib (copy of zs.lib) for @link(zlib)"
-        } elseif (Test-Path -LiteralPath $zlib) {
-          Write-Host "zlib.lib already present"
-        } else {
-          Write-Error "Neither zlib.lib nor zs.lib in $libDir"
-          exit 1
-        }
-
-    - name: Verify vcpkg static libs
-      shell: pwsh
-      run: |
-        $zlib = Join-Path '${{ steps.resolve-env.outputs.VcpkgLibs }}' 'lib\zlib.lib'
-        if (-not (Test-Path -LiteralPath $zlib)) {
-          Write-Error "Missing '$zlib' (javalib links zlib.lib). VcpkgLibs='${{ steps.resolve-env.outputs.VcpkgLibs }}'"
-          exit 1
-        }
-        Write-Host "OK: $zlib"
+        & "${{ github.workspace }}/scripts/ci/windows/export-vcpkg-zlib-link-option.ps1" -LibDir '${{ steps.resolve-env.outputs.VcpkgLibs }}\lib'
 
     - uses: ./.github/actions/sbt-warmup

@@ -64,7 +64,12 @@ object Discover {
   private def filterExisting(paths: Seq[String]): Seq[String] =
     paths.filter(new File(_).exists())
 
-  /** Find default clang compilation options. */
+  /** Find default clang compilation options.
+   *
+   *  Include dirs come from `SCALANATIVE_INCLUDE_DIRS`; extra flags separated
+   *  by whitespace or semicolons are appended from
+   *  `SCALANATIVE_COMPILE_OPTIONS`.
+   */
   def compileOptions(): Seq[String] = {
     // dirs: standard, macports, brew M1 arm
     val includeDirs =
@@ -79,17 +84,27 @@ object Discover {
             )
           )
         )
-    defaultCompileOptions(includeDirs)
+    defaultCompileOptions(
+      includeDirs = includeDirs,
+      extraOptions = getenv("SCALANATIVE_COMPILE_OPTIONS").getOrElse("")
+    )
   }
 
   // LLVM's own include dir is not added: it can shadow system headers such as
   // unwind.h and may belong to a different toolchain than the configured clang.
   private[scalanative] def defaultCompileOptions(
-      includeDirs: Seq[String]
+      includeDirs: Seq[String],
+      extraOptions: String = ""
   ): Seq[String] =
-    includeDirs.map(s => s"-I$s") :+ "-Qunused-arguments"
+    (includeDirs.map(s => s"-I$s") :+ "-Qunused-arguments") ++
+      splitOptions(extraOptions)
 
-  /** Find default options passed to the system's native linker. */
+  /** Find default options passed to the system's native linker.
+   *
+   *  Library dirs come from `SCALANATIVE_LIB_DIRS`; extra flags separated by
+   *  whitespace or semicolons, e.g. `-l<name>`, are appended from
+   *  `SCALANATIVE_LINKING_OPTIONS`.
+   */
   def linkingOptions(): Seq[String] = {
     val llvmLibDirs =
       Try(Process(s"$llvmConfigCLI --libdir").lineStream_!.toSeq)
@@ -107,20 +122,25 @@ object Discover {
     defaultLinkingOptions(
       libDirs = libDirs,
       llvmLibDirs = llvmLibDirs,
-      targetsMac = Platform.isMac
+      targetsMac = Platform.isMac,
+      extraOptions = getenv("SCALANATIVE_LINKING_OPTIONS").getOrElse("")
     )
   }
 
   private[scalanative] def defaultLinkingOptions(
       libDirs: Seq[String],
       llvmLibDirs: Seq[String],
-      targetsMac: Boolean
+      targetsMac: Boolean,
+      extraOptions: String = ""
   ): Seq[String] = {
     // On Darwin, adding LLVM's own libdir pollutes application links with
     // Homebrew runtime libraries such as libunwind and produces linker noise.
     val extraLibDirs = if (targetsMac) Nil else llvmLibDirs
-    (libDirs ++ extraLibDirs).map(s => s"-L$s")
+    (libDirs ++ extraLibDirs).map(s => s"-L$s") ++ splitOptions(extraOptions)
   }
+
+  private def splitOptions(options: String): Seq[String] =
+    options.split("[\\s;]+").filter(_.nonEmpty).toSeq
 
   private case class ClangInfo(
       majorVersion: Int,

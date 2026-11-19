@@ -56,6 +56,11 @@ The path to used include and library dirs is controlled via environment
 variables the `SCALANATIVE_INCLUDE_DIRS` and
 `SCALANATIVE_LIB_DIRS`.
 
+Extra compiler and linker flags, separated by whitespace or semicolons, are
+appended to the defaults from `SCALANATIVE_COMPILE_OPTIONS` and
+`SCALANATIVE_LINKING_OPTIONS`. Windows CI uses the latter to link zlib, see
+[zlib on Windows](../user/setup.md#zlib-on-windows).
+
 The settings of the selected garbage collector, e.g. `GC_MAXIMUM_HEAP_SIZE`
 or `SCALANATIVE_GC_LOG_LEVEL`, are also read from the environment when
 building, unless they are defined in the `GarbageCollectorConfig` of
