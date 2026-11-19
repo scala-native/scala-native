@@ -3,7 +3,8 @@ package java.nio.channels
 import scala.scalanative.posix.sys.types.{size_t, ssize_t}
 import scala.scalanative.unsafe._
 
-// File offsets are 64 bits, also on 32-bit targets.
+// File offsets are 64 bits, also on 32-bit targets, where posixlib's off_t
+// (CLong) is 32 bits.
 @define("__SCALANATIVE_JAVALIB_NIO_FILE_CHANNEL")
 @extern
 private[channels] object FileChannelNative {

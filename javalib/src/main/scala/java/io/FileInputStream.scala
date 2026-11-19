@@ -50,11 +50,9 @@ class FileInputStream(fd: FileDescriptor, file: Option[File])
 
   // Like JDK 25: seeks regular files, possibly past the end or backward;
   // reads and discards anything else.
-  override def skip(n: Long): Long = {
-    val skipped = channel.skip(n)
-    if (skipped != FileChannelImpl.NotSeekable) skipped
+  override def skip(n: Long): Long =
+    if (channel.isRegularFile) channel.skip(n)
     else super.skip(n)
-  }
 
   def getChannel: FileChannel = channel
 }

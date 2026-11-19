@@ -1768,6 +1768,7 @@ class FileChannelTest {
   private def runConcurrently(nThreads: Int)(body: Int => Unit): Unit = {
     assumeMultithreadingIsEnabled()
     val start = new CountDownLatch(1)
+    val done = new CountDownLatch(nThreads)
     val failures = new ConcurrentLinkedQueue[Throwable]()
     val threads = Array.tabulate(nThreads) { i =>
       val t = new Thread(new Runnable {
@@ -1776,24 +1777,17 @@ class FileChannelTest {
             start.await()
             body(i)
           } catch { case e: Throwable => failures.add(e) }
+          finally done.countDown()
       })
       t.setDaemon(true)
       t.start()
       t
     }
     start.countDown()
-    val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(60)
-    threads.foreach { t =>
-      t.join(
-        Math.max(
-          1L,
-          TimeUnit.NANOSECONDS.toMillis(deadline - System.nanoTime())
-        )
-      )
+    if (!done.await(60, TimeUnit.SECONDS)) {
+      threads.foreach(_.interrupt())
+      fail("threads timed out")
     }
-    val timedOut = threads.filter(_.isAlive())
-    timedOut.foreach(_.interrupt())
-    assertTrue("threads timed out", timedOut.isEmpty)
     if (!failures.isEmpty()) throw failures.peek()
   }
 

@@ -43,7 +43,7 @@ private[java] final class FileChannelImpl(
   private val positionLock = new ReentrantLock()
 
   // Rechecks after locking, as close() may run while we wait.
-  @inline private def withPositionLock[T](body: => T): T = {
+  private def withPositionLock[T](body: => T): T = {
     positionLock.lock()
     try {
       ensureOpen()
@@ -297,10 +297,7 @@ private[java] final class FileChannelImpl(
     this
   }
 
-  override def position(): Long = {
-    ensureOpen()
-    withPositionLock(currentPosition())
-  }
+  override def position(): Long = withPositionLock(currentPosition())
 
   private def currentPosition(): Long =
     if (isWindows) {
@@ -341,7 +338,7 @@ private[java] final class FileChannelImpl(
         val len = dst.remaining()
 
         val bs = new Array[Byte](len)
-        val n = read(bs, 0, len)
+        val n = readUnlocked(bs, 0, len)
 
         if (n > 0) {
           dst.put(bs, 0, n)
@@ -386,21 +383,24 @@ private[java] final class FileChannelImpl(
 
     ensureOpenForRead()
 
-    if (isWindows) withPositionLock {
-      // Synchronous handles move the file pointer, so restore it.
-      val stashPosition = currentPosition()
-      compelPosition(pos)
-      try readIntoBuffer(buffer)(read(_, _, _))
-      finally compelPosition(stashPosition)
-    }
-    else {
-      readIntoBuffer(buffer)(preadArray(_, _, _, pos))
-    }
+    if (isWindows) atPosition(pos)(readIntoBuffer(buffer)(readUnlocked))
+    else readIntoBuffer(buffer)(preadArray(_, _, _, pos))
   }
 
   override def read(buffer: ByteBuffer): Int = {
     ensureOpenForRead()
-    withPositionLock(readIntoBuffer(buffer)(read(_, _, _)))
+    withPositionLock(readIntoBuffer(buffer)(readUnlocked))
+  }
+
+  // Windows has no positional I/O on synchronous handles: seek, then restore.
+  private def atPosition[T](pos: Long)(body: => T): T = withPositionLock {
+    val stashPosition = currentPosition()
+    compelPosition(pos)
+    try body
+    finally {
+      if (openForAppending) seekEOF()
+      else compelPosition(stashPosition)
+    }
   }
 
   private def preadArray(
@@ -437,6 +437,11 @@ private[java] final class FileChannelImpl(
     if (count == 0) 0
     else withPositionLock(readArray(buffer, offset, count))
   }
+
+  // Caller holds the position lock.
+  private def readUnlocked(buffer: Array[Byte], offset: Int, count: Int): Int =
+    if (count == 0) 0
+    else readArray(buffer, offset, count)
 
   private def readArray(buffer: Array[Byte], offset: Int, count: Int): Int = {
     // we use the runtime knowledge of the array layout to avoid
@@ -494,23 +499,17 @@ private[java] final class FileChannelImpl(
       if (!GetFileSizeEx(fd.handle, size))
         throw WindowsException.onPath(getFileName())
       (!size).toLong
-    } else
-      Zone.acquire { implicit z =>
-        /* statbuf is too large to be thread stack friendly.
-         * Even a Zone and an alloc() per size() call should be cheaper than
-         * the required three (yes 3 to get it right and not move current
-         * position) lseek() calls. Room for performance improvements remain.
-         */
-
-        val statBuf = alloc[stat.stat]()
-
-        val err = stat.fstat(fd.fd, statBuf)
-        if (err != 0)
-          throwPosixException("fstat")
-
-        statBuf.st_size.toLong
-      }
+    } else withStat(_.st_size.toLong)
   }
+
+  // stat is too large for the stack.
+  private def withStat[T](f: Ptr[stat.stat] => T): T =
+    Zone.acquire { implicit z =>
+      val statBuf = alloc[stat.stat]()
+      if (stat.fstat(fd.fd, statBuf) != 0)
+        throwPosixException("fstat")
+      f(statBuf)
+    }
 
   /* The pair transferFrom() and transferTo() and quite similar and
    * beg calling into a common implementation.
@@ -690,18 +689,15 @@ private[java] final class FileChannelImpl(
               FileApi.SetEndOfFile(fd.handle)
           if (!hasSucceded)
             throw new IOException("Failed to truncate file")
-          // SetEndOfFile needs the file pointer at newSize; restore it.
-          if (position < newSize) compelPosition(position)
         } else {
           val err = FileChannelNative.ftruncate(fd.fd, newSize)
           if (err != 0)
             throwPosixException("ftruncate")
         }
-
       }
 
-      if (position > newSize)
-        compelPosition(newSize)
+      // Windows moved the file pointer to newSize.
+      compelPosition(Math.min(position, newSize))
     }
 
     this
@@ -857,16 +853,7 @@ private[java] final class FileChannelImpl(
 
     ensureOpenForWrite()
 
-    if (isWindows) withPositionLock {
-      // Synchronous handles move the file pointer, so restore it.
-      val stashPosition = currentPosition()
-      compelPosition(pos)
-      try writeByteBuffer(src)
-      finally {
-        if (openForAppending) seekEOF()
-        else compelPosition(stashPosition)
-      }
-    }
+    if (isWindows) atPosition(pos)(writeByteBuffer(src))
     else writeByteBuffer(src, pwriteArray(_, _, _, pos))
   }
 
@@ -969,38 +956,23 @@ private[java] final class FileChannelImpl(
     }
   }
 
-  /* FileInputStream.skip: moves the position by n, possibly past the end of
-   * file. Returns NotSeekable for anything but a regular file.
-   */
-  private[java] def skip(n: Long): Long = {
-    ensureOpen()
-    withPositionLock {
-      if (isWindows) {
-        if (GetFileType(fd.handle) != FILE_TYPE_DISK)
-          FileChannelImpl.NotSeekable
-        else {
-          if (!SetFilePointerEx(fd.handle, n, null, FILE_CURRENT))
-            throw WindowsException.onPath(getFileName())
-          n
-        }
-      } else {
-        val isRegularFile = Zone.acquire { implicit z =>
-          val statBuf = alloc[stat.stat]()
-          if (stat.fstat(fd.fd, statBuf) != 0) throwPosixException("fstat")
-          stat.S_ISREG(statBuf.st_mode) != 0
-        }
-        if (!isRegularFile) FileChannelImpl.NotSeekable
-        else if (FileChannelNative.lseek(fd.fd, n, stdio.SEEK_CUR) >= 0) n
-        else throw UnixException(getFileName(), errno)
-      }
-    }
+  // FileInputStream.skip seeks only regular files, like JDK 25.
+  private[java] lazy val isRegularFile: Boolean =
+    if (isWindows) GetFileType(fd.handle) == FILE_TYPE_DISK
+    else withStat(st => stat.S_ISREG(st.st_mode) != 0)
+
+  // Moves the position by n, possibly past the end of file or backward.
+  private[java] def skip(n: Long): Long = withPositionLock {
+    if (isWindows) {
+      if (!SetFilePointerEx(fd.handle, n, null, FILE_CURRENT))
+        throw WindowsException.onPath(getFileName())
+    } else if (FileChannelNative.lseek(fd.fd, n, stdio.SEEK_CUR) < 0)
+      throw UnixException(getFileName(), errno)
+    n
   }
 }
 
 private[java] object FileChannelImpl {
-
-  // Returned by skip for non-seekable files; no seek can return it.
-  private[java] final val NotSeekable = Long.MinValue
 
   private[java] final class OpenOptions(
       val read: Boolean,
