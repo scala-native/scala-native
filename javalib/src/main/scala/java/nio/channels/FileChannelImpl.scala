@@ -85,7 +85,7 @@ private[java] final class FileChannelImpl(
         moveMethod = FILE_END
       )
     } else {
-      val pos = unistd.lseek(fd.fd, 0, stdio.SEEK_END);
+      val pos = FileChannelNative.lseek(fd.fd, 0, stdio.SEEK_END);
       if (pos < 0)
         throwPosixException("lseek")
     }
@@ -279,7 +279,7 @@ private[java] final class FileChannelImpl(
         FILE_BEGIN
       )
     else {
-      val pos = unistd.lseek(fd.fd, offset.toSize, stdio.SEEK_SET)
+      val pos = FileChannelNative.lseek(fd.fd, offset, stdio.SEEK_SET)
       if (pos < 0)
         throwPosixException("lseek")
     }
@@ -316,7 +316,7 @@ private[java] final class FileChannelImpl(
       !filePointer
     } else if (openForAppending) size()
     else {
-      val pos = unistd.lseek(fd.fd, 0, stdio.SEEK_CUR).toLong
+      val pos = FileChannelNative.lseek(fd.fd, 0, stdio.SEEK_CUR)
       if (pos < 0)
         throwPosixException("lseek")
       pos
@@ -622,7 +622,7 @@ private[java] final class FileChannelImpl(
      *   - "this" channel is open
      */
     if (!isWindows) {
-      val status = unistd.ftruncate(fd.fd, newFileSize.toSize)
+      val status = FileChannelNative.ftruncate(fd.fd, newFileSize)
       if (status < 0)
         throwPosixException("ftruncate")
     } else {
@@ -693,7 +693,7 @@ private[java] final class FileChannelImpl(
           // SetEndOfFile needs the file pointer at newSize; restore it.
           if (position < newSize) compelPosition(position)
         } else {
-          val err = unistd.ftruncate(fd.fd, newSize.toSize)
+          val err = FileChannelNative.ftruncate(fd.fd, newSize)
           if (err != 0)
             throwPosixException("ftruncate")
         }
@@ -990,7 +990,7 @@ private[java] final class FileChannelImpl(
           stat.S_ISREG(statBuf.st_mode) != 0
         }
         if (!isRegularFile) FileChannelImpl.NotSeekable
-        else if (unistd.lseek(fd.fd, n.toSize, stdio.SEEK_CUR) >= 0) n
+        else if (FileChannelNative.lseek(fd.fd, n, stdio.SEEK_CUR) >= 0) n
         else throw UnixException(getFileName(), errno)
       }
     }

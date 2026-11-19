@@ -1702,6 +1702,31 @@ class FileChannelTest {
     }
   }
 
+  // 32-bit targets must not truncate offsets to 32 bits.
+  @Test def offsetsPastFourGiB(): Unit = {
+    // Needs a sparse file.
+    assumeFalse("Windows does not create sparse files", Platform.isWindows)
+    withTemporaryDirectory { dir =>
+      val path = dir.resolve("f")
+      val channel = FileChannel.open(
+        path,
+        StandardOpenOption.CREATE,
+        StandardOpenOption.READ,
+        StandardOpenOption.WRITE
+      )
+      try {
+        val far = 5L << 30
+        channel.position(far)
+        assertEquals("position", far, channel.position())
+        channel.write(ByteBuffer.wrap(Array[Byte](1)))
+        assertEquals("size after write", far + 1, channel.size())
+        channel.truncate(far - 1)
+        assertEquals("size after truncate", far - 1, channel.size())
+        assertEquals("position after truncate", far - 1, channel.position())
+      } finally channel.close()
+    }
+  }
+
   @Test def forceWorksOnReadAndWriteChannels(): Unit = {
     withTemporaryDirectory { dir =>
       val path = dir.resolve("f")

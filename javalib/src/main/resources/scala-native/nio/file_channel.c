@@ -20,4 +20,12 @@ ssize_t scalanative_javalib_pwrite(int fd, const void *buf, size_t count,
     return pwrite(fd, buf, count, (off_t)offset);
 }
 
+int64_t scalanative_javalib_lseek(int fd, int64_t offset, int whence) {
+    return lseek(fd, (off_t)offset, whence);
+}
+
+int scalanative_javalib_ftruncate(int fd, int64_t length) {
+    return ftruncate(fd, (off_t)length);
+}
+
 #endif

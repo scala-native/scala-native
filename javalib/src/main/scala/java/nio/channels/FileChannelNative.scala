@@ -3,7 +3,7 @@ package java.nio.channels
 import scala.scalanative.posix.sys.types.{size_t, ssize_t}
 import scala.scalanative.unsafe._
 
-// pread/pwrite with 64-bit offsets, also on 32-bit targets.
+// File offsets are 64 bits, also on 32-bit targets.
 @define("__SCALANATIVE_JAVALIB_NIO_FILE_CHANNEL")
 @extern
 private[channels] object FileChannelNative {
@@ -24,4 +24,10 @@ private[channels] object FileChannelNative {
       count: size_t,
       offset: CLongLong
   ): ssize_t = extern
+
+  @name("scalanative_javalib_lseek")
+  def lseek(fd: CInt, offset: CLongLong, whence: CInt): CLongLong = extern
+
+  @name("scalanative_javalib_ftruncate")
+  def ftruncate(fd: CInt, length: CLongLong): CInt = extern
 }

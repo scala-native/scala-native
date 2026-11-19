@@ -106,6 +106,20 @@ class FileInputStreamTest {
     }
   }
 
+  @Test def skipPastFourGiB(): Unit = {
+    withTemporaryDirectory { dir =>
+      val file = new File(dir, "f")
+      Files.write(file.toPath(), "0123456789".getBytes("UTF-8"))
+      val in = new FileInputStream(file)
+      try {
+        val far = 5L << 30
+        assertEquals("skip", far, in.skip(far))
+        assertEquals("position", far, in.getChannel().position())
+        assertEquals("read past end", -1, in.read())
+      } finally in.close()
+    }
+  }
+
   @Test def skipCanMoveBackward(): Unit = {
     withTemporaryDirectory { dir =>
       val file = new File(dir, "f")
