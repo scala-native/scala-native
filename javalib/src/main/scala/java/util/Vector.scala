@@ -376,7 +376,8 @@ class Vector[E <: AnyRef](
     } else throw new ArrayIndexOutOfBoundsException(location)
   }
 
-  override protected def removeRange(start: Int, end: Int): Unit = {
+  override protected def removeRange(start: Int, end: Int): Unit =
+    synchronized {
     if (start >= 0 && start <= end && end <= elementCount) {
       modCount += 1
       if (start == end) ()
