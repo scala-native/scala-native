@@ -232,6 +232,8 @@ class ArrayList[E] private (
     } else false
   }
 
+  override private[util] def subListsDecideBeforeRemoving: Boolean = true
+
   override def removeRange(fromIndex: Int, toIndex: Int): Unit = {
     modCount += 1
 

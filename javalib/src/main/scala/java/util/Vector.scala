@@ -378,36 +378,36 @@ class Vector[E <: AnyRef](
 
   override protected def removeRange(start: Int, end: Int): Unit =
     synchronized {
-    if (start >= 0 && start <= end && end <= elementCount) {
-      modCount += 1
-      if (start == end) ()
-      else if (end != elementCount) {
-        System.arraycopy(
-          elementData,
-          end,
-          elementData,
-          start,
-          elementCount - end
-        )
-        val newCount = elementCount - (end - start)
-        Arrays.fill(
-          elementData.asInstanceOf[Array[AnyRef]],
-          newCount,
-          elementCount,
-          null
-        )
-        elementCount = newCount
-      } else {
-        Arrays.fill(
-          elementData.asInstanceOf[Array[AnyRef]],
-          start,
-          elementCount,
-          null
-        )
-        elementCount = start
-      }
-    } else throw new IndexOutOfBoundsException
-  }
+      if (start >= 0 && start <= end && end <= elementCount) {
+        modCount += 1
+        if (start == end) ()
+        else if (end != elementCount) {
+          System.arraycopy(
+            elementData,
+            end,
+            elementData,
+            start,
+            elementCount - end
+          )
+          val newCount = elementCount - (end - start)
+          Arrays.fill(
+            elementData.asInstanceOf[Array[AnyRef]],
+            newCount,
+            elementCount,
+            null
+          )
+          elementCount = newCount
+        } else {
+          Arrays.fill(
+            elementData.asInstanceOf[Array[AnyRef]],
+            start,
+            elementCount,
+            null
+          )
+          elementCount = start
+        }
+      } else throw new IndexOutOfBoundsException
+    }
 
   override def retainAll(collection: Collection[_]): Boolean = synchronized {
     batchRemove(collection, retain = true)

@@ -1,5 +1,7 @@
 package java.util
 
+import java.util.function.Predicate
+
 import scala.annotation.tailrec
 
 abstract class AbstractList[E] protected ()
@@ -130,6 +132,12 @@ abstract class AbstractList[E] protected ()
       toIndex: Int
   ): Unit =
     removeRange(fromIndex, toIndex)
+
+  /* Whether bulk removals on sublists of this list decide about every
+   * element before removing any, so that the argument may be another view
+   * of this list.
+   */
+  private[util] def subListsDecideBeforeRemoving: Boolean = false
 
   protected def checkIndexInBounds(index: Int): Unit = {
     if (index < 0 || index >= size())
@@ -263,9 +271,11 @@ private[util] class SubList[E](
       throw new ConcurrentModificationException()
 
   private def updateSizeAndModCount(delta: Int): Unit = {
+    val rootChanged = root.modCount != expectedRootModCount
     expectedRootModCount = root.modCount
     _size += delta
-    modCount += 1
+    if (delta != 0 || rootChanged)
+      modCount += 1
   }
 
   private[util] final def uncheckedSize(): Int = _size
@@ -310,6 +320,55 @@ private[util] class SubList[E](
 
   override def addAll(c: Collection[_ <: E]): Boolean =
     addAll(_size, c)
+
+  override def removeAll(c: Collection[_]): Boolean =
+    if (root.subListsDecideBeforeRemoving) {
+      Objects.requireNonNull(c)
+      removeDecided(c.contains(_))
+    } else super.removeAll(c)
+
+  override def retainAll(c: Collection[_]): Boolean =
+    if (root.subListsDecideBeforeRemoving) {
+      Objects.requireNonNull(c)
+      removeDecided(!c.contains(_))
+    } else super.retainAll(c)
+
+  override def removeIf(filter: Predicate[_ >: E]): Boolean =
+    if (root.subListsDecideBeforeRemoving) {
+      Objects.requireNonNull(filter)
+      removeDecided(filter.test(_))
+    } else super.removeIf(filter)
+
+  private def removeDecided(shouldRemove: E => Boolean): Boolean = {
+    checkForComodification()
+    val expectedModCount = modCount
+    val n = _size
+    val remove = new Array[Boolean](n)
+    var any = false
+    var i = 0
+    while (i < n) {
+      if (shouldRemove(get(i))) {
+        remove(i) = true
+        any = true
+      }
+      i += 1
+    }
+    checkForComodification()
+    if (modCount != expectedModCount)
+      throw new ConcurrentModificationException()
+    // Remove runs from the end, so that the indices of earlier ones hold.
+    var to = n
+    while (to > 0) {
+      if (!remove(to - 1)) to -= 1
+      else {
+        var from = to - 1
+        while (from > 0 && remove(from - 1)) from -= 1
+        removeRange(from, to)
+        to = from
+      }
+    }
+    any
+  }
 
   override def addAll(index: Int, c: Collection[_ <: E]): Boolean = {
     checkIndexForAdd(index)
