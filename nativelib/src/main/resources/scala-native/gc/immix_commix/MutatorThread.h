@@ -71,9 +71,6 @@ typedef MutatorThreadNode *MutatorThreads;
 // MutatorThread Lifecycle API
 // =============================================================================
 bool MutatorThread_init(word_t **stackBottom);
-/* For the initializing thread, whose frames above `approximateBottom` can hold
- * roots: register the end of its whole stack. */
-bool MutatorThread_initWholeStack(word_t **approximateBottom);
 /* Register without admitting Scala execution. Used by external attachment. */
 bool MutatorThread_register(word_t **stackBottom);
 /* Admit an unmanaged mutator under the collector lifecycle lock. */

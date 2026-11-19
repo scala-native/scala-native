@@ -17,6 +17,7 @@
 #include "immix_commix/Synchronizer.h"
 #endif
 #include "MutatorThread.h"
+#include "stackOverflowGuards.h"
 #include <stdatomic.h>
 #include "nativeThreadTLS.h"
 #include <assert.h>
@@ -24,8 +25,6 @@
 void scalanative_afterexit() { Stats_OnExit(heap.stats); }
 
 NOINLINE void scalanative_GC_init() {
-    volatile word_t dummy = 0;
-    dummy = (word_t)&dummy;
     GC_Log_Init();
     Settings_Init();
     Heap_Init(&heap, Settings_MinHeapSize(), Settings_MaxHeapSize());
@@ -35,7 +34,10 @@ NOINLINE void scalanative_GC_init() {
     Synchronizer_init();
 #endif
     MutatorThreads_init();
-    if (!MutatorThread_initWholeStack((word_t **)dummy))
+    ThreadInfo threadStack;
+    if (!scalanative_detectExternalThreadStack(&threadStack))
+        threadStack.stackBottom = alignToNextPage(&threadStack);
+    if (!MutatorThread_init((word_t **)threadStack.stackBottom))
         abort();
     customRoots = GC_Roots_Init();
     if (customRoots == NULL)

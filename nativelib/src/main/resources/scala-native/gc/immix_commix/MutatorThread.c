@@ -7,7 +7,6 @@
 #include <stdint.h>
 #include "shared/ThreadUtil.h"
 #include "shared/Log.h"
-#include "stackOverflowGuards.h"
 #include <assert.h>
 
 #ifndef _WIN32
@@ -125,14 +124,6 @@ bool MutatorThread_init(Field_t *stackbottom) {
         return false;
     MutatorThread_admit(currentMutatorThread);
     return true;
-}
-
-bool MutatorThread_initWholeStack(Field_t *approximateBottom) {
-    ThreadInfo stack;
-    Field_t *bottom = scalanative_detectExternalThreadStack(&stack)
-                          ? (Field_t *)stack.stackBottom
-                          : (Field_t *)alignToNextPage(approximateBottom);
-    return MutatorThread_init(bottom);
 }
 
 #ifndef SCALANATIVE_MULTITHREADING_ENABLED
