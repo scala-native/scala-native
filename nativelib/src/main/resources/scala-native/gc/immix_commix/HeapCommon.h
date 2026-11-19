@@ -29,5 +29,8 @@ void Heap_exitWithOutOfMemory(const char *details);
 size_t Heap_getMemoryLimit();
 size_t Heap_getMemoryUsed(Heap *heap);
 word_t *Heap_mapAndAlign(size_t memoryLimit, size_t alignmentSize);
+size_t Heap_limitMaxHeapSize(size_t maxHeapSize);
+size_t Heap_bytemapCoverage(size_t maxHeapSize);
+word_t *Heap_mapHeapSpace(size_t maxHeapSize);
 
 #endif // IMMIX_COMMIX_HEAP_COMMON_H

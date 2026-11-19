@@ -15,6 +15,7 @@
 #include "immix_commix/RegistersCapture.h"
 #include "nativeThreadTLS.h"
 #include <stdint.h>
+#include "immix_commix/WriteBarrier.h"
 #ifndef _WIN32
 #include <sys/types.h>
 #endif
@@ -54,6 +55,11 @@ typedef struct {
 #endif
 #endif
     ThreadInfo *threadInfo;
+#ifdef SCALANATIVE_GC_WRITE_BARRIER
+    // Old objects this thread stored references into since the last
+    // collection.
+    RememberedSet rememberedSet;
+#endif
 #ifdef SCALANATIVE_GC_USE_YIELDPOINT_TRAPS
     /* Faulting PC when using deferred safepoint trampoline (POSIX). */
     uintptr_t safepointResumePc;

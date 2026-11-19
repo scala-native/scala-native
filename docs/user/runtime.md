@@ -244,6 +244,29 @@ Supported by: Immix, Commix, with multithreading
 
 Default: true in release modes, false in the debug mode
 
+#### `generational`
+
+Experimental. Most collections trace only the objects allocated since the
+previous one and keep the older ones; the whole heap is collected when that
+does not free enough memory, and on `System.gc()`.
+
+Environment variable: `SCALANATIVE_GC_GENERATIONAL` (`1` or `0`), only when building
+
+Supported by: Immix
+
+Default: false
+
+#### `oldGenerationGrowth`
+
+How many times the memory used after a collection of the whole heap can grow
+before the whole heap is collected again. Has to be greater than 1.
+
+Environment variable: `GC_OLD_GENERATION_GROWTH`
+
+Supported by: Immix, with `generational`
+
+Default: 2.0
+
 ### Boehm GC
 
 Scala Native supports the [Boehm-Demers-Weiser Garbage Collector](https://www.hboehm.info/gc/),

@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "Heap.h"
+#include "immix_commix/WriteBarrier.h"
 #include "Block.h"
 #include "shared/Log.h"
 #include "Allocator.h"
@@ -18,6 +19,7 @@
 #include <time.h>
 #include "WeakReferences.h"
 #include "immix_commix/Synchronizer.h"
+#include "Generations.h"
 
 /**
  * Allocates the heap struct and initializes it
@@ -56,6 +58,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     if (maxHeapSize == UNLIMITED_HEAP_SIZE) {
         maxHeapSize = memoryLimit;
     }
+    maxHeapSize = Heap_limitMaxHeapSize(maxHeapSize);
 
     uint32_t maxNumberOfBlocks = maxHeapSize / SPACE_USED_PER_BLOCK;
     assert(maxNumberOfBlocks > 1);
@@ -87,13 +90,14 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
 
     // reserve space for bytemap
     size_t bytemapSpaceSize =
-        maxHeapSize / ALLOCATION_ALIGNMENT + sizeof(Bytemap);
+        Heap_bytemapCoverage(maxHeapSize) / ALLOCATION_ALIGNMENT +
+        sizeof(Bytemap);
     Bytemap *bytemap =
         (Bytemap *)Heap_mapAndAlign(bytemapSpaceSize, ALLOCATION_ALIGNMENT);
     heap->bytemap = bytemap;
 
     // Init heap for small objects
-    word_t *heapStart = Heap_mapAndAlign(maxHeapSize, BLOCK_TOTAL_SIZE);
+    word_t *heapStart = Heap_mapHeapSpace(maxHeapSize);
     if (!heapStart) {
         GC_LOG_ERROR("Failed to allocate heap space, "
                      "requested size=%.2fMB, available memory=%.2fMB. "
@@ -125,7 +129,13 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
 
     BlockAllocator_Init(&blockAllocator, blockMetaStart, initialBlockCount);
     Bytemap_Init(bytemap, heapStart, maxHeapSize);
+#ifdef SCALANATIVE_GC_WRITE_BARRIER
+    WriteBarrier_Init(heapStart, maxHeapSize, bytemap->data);
+#endif
     Heap_RefillEmergencyBlock(heap);
+#ifdef SCALANATIVE_GC_STICKY
+    Generations_Init();
+#endif
     char *statsFile = Settings_StatsFileName();
     if (statsFile != NULL) {
         heap->stats = malloc(sizeof(Stats));
@@ -151,6 +161,10 @@ bool Heap_BeginEmergencyAllocation(Heap *heap) {
     heap->emergencyBlockMeta = NULL;
     BlockMeta_SetFlag(blockMeta, block_simple);
     BlockMeta_SetFirstFreeLine(blockMeta, LAST_HOLE);
+#ifdef SCALANATIVE_GC_STICKY
+    // Allocated into, so the next minor collection must sweep it.
+    BlockMeta_SetTouched(blockMeta, true);
+#endif
     ObjectMeta_ClearBlockAt(Bytemap_Get(heap->bytemap, blockStart));
 
     Allocator *allocator = &currentMutatorThread->allocator;
@@ -228,6 +242,42 @@ static bool Heap_overheadLimitReached(Heap *heap, uint64_t start_ns,
     return true;
 }
 
+/**
+ * Marks and sweeps. A full collection traces the whole heap; a minor one
+ * (Sticky Immix only) traces and frees only young objects. Records when the
+ * weak reference and sweep phases start, if asked.
+ */
+static void Heap_traceAndSweep(Heap *heap, Stack *stack, bool full,
+                               uint64_t *nullifyStartNs,
+                               uint64_t *sweepStartNs) {
+#ifdef SCALANATIVE_GC_WRITE_BARRIER_VERIFY
+    WriteBarrier_VerifyBeforeCollection();
+#endif
+#ifdef SCALANATIVE_GC_STICKY
+    if (full)
+        Generations_PrepareFull(heap);
+#endif
+    // Mark cycles tell which objects were not reached: only a full collection
+    // reaches the old ones, a minor one marks within the current cycle.
+    if (full)
+        GCHooks_markStarted();
+    Marker_MarkRoots(heap, stack, !full);
+    if (full)
+        GCHooks_markCompleted();
+    if (nullifyStartNs != NULL)
+        *nullifyStartNs = Time_current_nanos();
+    WeakReferences_Nullify();
+    if (sweepStartNs != NULL)
+        *sweepStartNs = Time_current_nanos();
+    Heap_Recycle(heap, full);
+#ifdef SCALANATIVE_GC_STICKY
+    Generations_EndCollection(heap, full);
+#endif
+#ifdef SCALANATIVE_GC_WRITE_BARRIER_VERIFY
+    WriteBarrier_VerifyAfterCollection();
+#endif
+}
+
 static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
                          uint64_t generation) {
     SpillCalleeSavedRegisters();
@@ -244,23 +294,21 @@ static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
     MutatorThread_switchState(currentMutatorThread,
                               GC_MutatorThreadState_Unmanaged);
 #endif
-    uint64_t start_ns, nullify_start_ns, sweep_start_ns, end_ns;
+    uint64_t start_ns, nullify_start_ns = 0, sweep_start_ns = 0, end_ns;
     Stats *stats = heap->stats;
-    GC_LOG_INFO("GC collection started");
+    bool full = true;
+#ifdef SCALANATIVE_GC_STICKY
+    full = Generations_ShouldCollectFull(heap, allocationSize == 0);
+#endif
+    StatsCollectionKind kind =
+        full ? STATS_COLLECTION_FULL : STATS_COLLECTION_MINOR;
+    GC_LOG_INFO("GC %s collection started", full ? "full" : "minor");
     start_ns = Time_current_nanos();
-    GCHooks_markStarted();
-    Marker_MarkRoots(heap, stack);
-    GCHooks_markCompleted();
-    if (stats != NULL) {
-        nullify_start_ns = Time_current_nanos();
-    }
-    WeakReferences_Nullify();
-    if (stats != NULL) {
-        sweep_start_ns = Time_current_nanos();
-    }
     heap->collectionRequestNs = request_ns;
     heap->explicitCollection = allocationSize == 0;
-    Heap_Recycle(heap);
+    Heap_traceAndSweep(heap, stack, full,
+                       stats != NULL ? &nullify_start_ns : NULL,
+                       stats != NULL ? &sweep_start_ns : NULL);
     bool available = true;
     // An explicit collection is not an allocation that could not proceed: it
     // ends any run of qualifying recovery collections, so that space it frees
@@ -272,8 +320,22 @@ static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
         // below takes a whole superblock out of the free count for a large
         // object, and counting that would make a productive collection look
         // low-yield.
-        bool lowYield = Heap_lowYield(heap);
+        bool lowYield = full && Heap_lowYield(heap);
         available = Heap_reserveAllocation(allocationSize);
+#ifdef SCALANATIVE_GC_STICKY
+        if (!available && !full) {
+            // Only young objects were freed; old garbage may hold the space.
+            // Growing is decided after a full collection.
+            GC_LOG_DEBUG("Minor collection did not free %zu bytes, "
+                         "collecting the whole heap",
+                         allocationSize);
+            full = true;
+            kind = STATS_COLLECTION_MINOR_THEN_FULL;
+            Heap_traceAndSweep(heap, stack, true, NULL, NULL);
+            lowYield = Heap_lowYield(heap);
+            available = Heap_reserveAllocation(allocationSize);
+        }
+#endif
         if (!available) {
             uint32_t blocks =
                 (allocationSize + BLOCK_TOTAL_SIZE - 1ULL) / BLOCK_TOTAL_SIZE;
@@ -300,7 +362,7 @@ static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
     jmx_stats_record_collection(start_ns, end_ns);
     if (stats != NULL) {
         Stats_RecordCollection(stats, request_ns, start_ns, nullify_start_ns,
-                               sweep_start_ns, end_ns);
+                               sweep_start_ns, end_ns, kind);
     }
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     Synchronizer_release();
@@ -323,6 +385,20 @@ bool Heap_RecoverAllocation(Heap *heap, size_t size, uint64_t generation) {
     return Heap_collect(heap, &stack, size, generation);
 }
 
+// Collections took too much of the time since the previous one ended:
+// growing makes them rarer. A heap that stays mostly free grows for this only
+// while small, or a program keeping many small objects alive would grow it
+// without bound (#2436). System.gc() does not count (#5052).
+static bool Heap_gcTooFrequent(Heap *heap, uint64_t freeLines) {
+    uint64_t now = Time_current_nanos();
+    uint64_t totalLines = (uint64_t)heap->blockCount * LINE_COUNT;
+    return !heap->explicitCollection && heap->lastCollectionEndNs != 0 &&
+           now - heap->collectionRequestNs >=
+               heap->maxGcTimeRatio * (now - heap->lastCollectionEndNs) &&
+           (heap->heapSize < EARLY_GROWTH_THRESHOLD ||
+            freeLines < heap->maxFreeRatio * totalLines);
+}
+
 bool Heap_shouldGrow(Heap *heap) {
     uint32_t freeBlockCount = (uint32_t)blockAllocator.freeBlockCount;
     uint32_t blockCount = heap->blockCount;
@@ -342,17 +418,8 @@ bool Heap_shouldGrow(Heap *heap) {
                  usedLines, (uint64_t)blockCount * LINE_COUNT,
                  (usedLines * LINE_SIZE) >> 20);
 
-    // Collections took too much of the time since the previous one ended:
-    // growing makes them rarer. A heap that stays mostly free grows for this
-    // only while small, or a program keeping many small objects alive would
-    // grow it without bound (#2436). System.gc() does not count (#5052).
-    uint64_t now = Time_current_nanos();
     bool gcTooFrequent =
-        !heap->explicitCollection && heap->lastCollectionEndNs != 0 &&
-        now - heap->collectionRequestNs >=
-            heap->maxGcTimeRatio * (now - heap->lastCollectionEndNs) &&
-        (heap->heapSize < EARLY_GROWTH_THRESHOLD ||
-         freeBlockCount < heap->maxFreeRatio * blockCount);
+        Heap_gcTooFrequent(heap, (uint64_t)freeBlockCount * LINE_COUNT);
 
     return gcTooFrequent || freeBlockCount * 2 < blockCount ||
            (4 * unavailableBlockCount > blockCount &&
@@ -407,7 +474,7 @@ static size_t Heap_collectRecycleTargets(void) {
 }
 #endif
 
-void Heap_Recycle(Heap *heap) {
+void Heap_Recycle(Heap *heap, bool full) {
     Block_recycledFreeLines = 0;
     LargeAllocator_sweptFreeBytes = 0;
     MutatorThreads_foreach(mutatorThreads, node) {
@@ -443,7 +510,7 @@ void Heap_Recycle(Heap *heap) {
         } else if (BlockMeta_IsSimpleBlock(current)) {
             MutatorThread *recycleBlocksTo = NextMutatorThread();
             Block_Recycle(&recycleBlocksTo->allocator, current,
-                          currentBlockStart, lineMetas);
+                          currentBlockStart, lineMetas, full);
         } else if (BlockMeta_IsSuperblockStart(current)) {
             size = BlockMeta_SuperblockSize(current);
             MutatorThread *recycleBlocksTo = NextMutatorThread();
@@ -468,7 +535,19 @@ void Heap_Recycle(Heap *heap) {
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     atomic_thread_fence(memory_order_seq_cst);
 #endif
-    if (Heap_shouldGrow(heap)) {
+    // Old garbage survives a minor collection, so after one the heap grows
+    // only when collections take too much of the time, judged by all the
+    // free lines: free blocks are scarce between full collections.
+    bool grow;
+    if (full) {
+        grow = Heap_shouldGrow(heap);
+    } else {
+        uint64_t freeLines =
+            (uint64_t)blockAllocator.freeBlockCount * LINE_COUNT +
+            Block_recycledFreeLines;
+        grow = Heap_gcTooFrequent(heap, freeLines);
+    }
+    if (grow) {
         double growth;
         if (heap->heapSize < EARLY_GROWTH_THRESHOLD) {
             growth = EARLY_GROWTH_RATE;

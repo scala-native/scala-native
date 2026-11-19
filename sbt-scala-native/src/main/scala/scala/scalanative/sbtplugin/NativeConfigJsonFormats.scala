@@ -391,6 +391,8 @@ object NativeConfigJsonFormats {
       final val StatsFile = "statsFile"
       final val StatsEnabled = "statsEnabled"
       final val TrapBasedYieldPoints = "trapBasedYieldPoints"
+      final val Generational = "generational"
+      final val OldGenerationGrowth = "oldGenerationGrowth"
     }
 
     def write[J](obj: GarbageCollectorConfig, builder: Builder[J]): Unit = {
@@ -409,6 +411,8 @@ object NativeConfigJsonFormats {
       builder.addField(Field.StatsFile, obj.statsFile.map(_.toString))
       builder.addField(Field.StatsEnabled, obj.statsEnabled)
       builder.addField(Field.TrapBasedYieldPoints, obj.trapBasedYieldPoints)
+      builder.addField(Field.Generational, obj.generational)
+      builder.addField(Field.OldGenerationGrowth, obj.oldGenerationGrowth)
       builder.endObject()
     }
 
@@ -433,7 +437,9 @@ object NativeConfigJsonFormats {
           field[String](Field.LogFile)((c, v) => c.withLogFile(Paths.get(v))),
           field[String](Field.StatsFile)((c, v) => c.withStatsFile(Paths.get(v))),
           field[Boolean](Field.StatsEnabled)(_.withStatsEnabled(_)),
-          field[Boolean](Field.TrapBasedYieldPoints)(_.withTrapBasedYieldPoints(_))
+          field[Boolean](Field.TrapBasedYieldPoints)(_.withTrapBasedYieldPoints(_)),
+          field[Boolean](Field.Generational)(_.withGenerational(_)),
+          field[Double](Field.OldGenerationGrowth)(_.withOldGenerationGrowth(_))
         ).foldLeft(GarbageCollectorConfig.default)((config, update) => update(config))
       } finally unbuilder.endObject()
     }

@@ -224,6 +224,29 @@ sealed trait Config {
   // see https://no-color.org/
   private[scalanative] lazy val noColor: Boolean = sys.env.contains("NO_COLOR")
 
+  /** Settings of the garbage collector, including the ones taken from the
+   *  environment of the build and the defaults.
+   */
+  private[scalanative] lazy val gcSettings: GarbageCollectorConfig =
+    GarbageCollectorConfig.Settings.resolve(compilerConfig).values
+
+  /** Experimental: generated code calls the write barrier of Immix and Commix
+   *  before storing references into heap objects. Enabled by the generational
+   *  collection, see GarbageCollectorConfig.generational, or on its own by the
+   *  define that compiles the barrier into the GC.
+   */
+  private[scalanative] lazy val useGCWriteBarrier =
+    compilerConfig.gc match {
+      case GC.Immix =>
+        gcSettings.generational.contains(true) || hasWriteBarrierDefine
+      case GC.Commix => hasWriteBarrierDefine
+      case _         => false
+    }
+
+  private def hasWriteBarrierDefine =
+    (compilerConfig.compileOptions ++ compilerConfig.cOptions)
+      .contains("-DSCALANATIVE_GC_WRITE_BARRIER")
+
   /** Trap-based safepoints coordinate STW across mutators; they require
    *  multithreaded linking and must stay off when `multithreadingSupport` is
    *  false so nativelib and LLVM agree with [[codegen.Lower.depends]].

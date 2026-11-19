@@ -55,6 +55,11 @@ private[scalanative] object Lower {
     private implicit val intrinsicMethods: util.ScopedVar[mutable.Map[nir.Local, IntrinsicCall]] = new util.ScopedVar()
     private val blockInfo = mutable.Map.empty[Block, BlockInfo]
     private var currentBlock: Block = _
+    // Objects allocated since the last point where a collection could have
+    // run. They are young, so stores into them need no write barrier.
+    private val youngObjects = mutable.Set.empty[nir.Local]
+    // Raw pointers into objects, by the object they point into.
+    private val rawPtrBases = mutable.Map.empty[nir.Local, nir.Val]
     private def getCurrentBlockInfo: BlockInfo = {
       assert(currentBlock != null)
       blockInfo.getOrElseUpdate(currentBlock, new BlockInfo())
@@ -169,6 +174,8 @@ private[scalanative] object Lower {
 
     override def onInsts(insts: Seq[nir.Inst]): Seq[nir.Inst] = {
       val defn = currentDefn.get
+      youngObjects.clear()
+      rawPtrBases.clear()
       val buf = new nir.InstructionBuilder()(fresh)
       val handlers = new nir.InstructionBuilder()(fresh)
 
@@ -257,6 +264,10 @@ private[scalanative] object Lower {
           ) {
             lastScopeId = inst.scopeId
             genLet(buf, n, op)(inst.pos, lastScopeId)
+            if (platform.useGCWriteBarrier) {
+              trackYoungObjects(n, op)
+              trackRawPtrBase(n, op)
+            }
           }
 
         case inst @ nir.Inst.Throw(v, unwind) =>
@@ -303,6 +314,7 @@ private[scalanative] object Lower {
           buf += nir.Inst.Jump(genNext(buf, next))
 
         case inst @ nir.Inst.Label(id, params) =>
+          youngObjects.clear()
           currentBlockPosition = labelPositions(id)
           currentBlock = currentDefnGraph.get.find
             .get(id)
@@ -586,6 +598,7 @@ private[scalanative] object Lower {
         case op: nir.Op.Load =>
           genLoadOp(buf, n, op)
         case op: nir.Op.Store =>
+          if (isReferenceStore(op.ty, op.value)) genRawStoreWriteBarrier(buf, op.ptr, op.value)
           genStoreOp(buf, n, op)
         case op: nir.Op.Method =>
           genMethodOp(buf, n, op)
@@ -756,9 +769,160 @@ private[scalanative] object Lower {
       val memoryOrder =
         if (field.attrs.isVolatile) nir.MemoryOrder.SeqCst
         else nir.MemoryOrder.Unordered
-      val elem = genFieldElemOp(buf, genVal(buf, obj), name)
+      val objVal = genVal(buf, obj)
+      val elem = genFieldElemOp(buf, objVal, name)
+      if (needsWriteBarrier(ty, obj, value)) genWriteBarrier(buf, objVal)
       genStoreOp(buf, n, nir.Op.Store(ty, elem, value, Some(memoryOrder)))
     }
+
+    private def needsWriteBarrier(
+        ty: nir.Type,
+        obj: nir.Val,
+        value: nir.Val
+    ): Boolean =
+      platform.useGCWriteBarrier && (ty match {
+        case _: nir.Type.RefKind =>
+          value != nir.Val.Null && (obj match {
+            case nir.Val.Local(id, _) => !youngObjects.contains(id)
+            case _                    => true
+          })
+        case _ => false
+      })
+
+    /** Only operations that cannot allocate or reach a safepoint keep the objects allocated before them young.
+     */
+    private def trackYoungObjects(n: nir.Local, op: nir.Op): Unit = op match {
+      case _: nir.Op.Classalloc =>
+        youngObjects.clear()
+        youngObjects += n
+      case nir.Op.Copy(nir.Val.Local(id, _)) if youngObjects.contains(id) =>
+        youngObjects += n
+      case _: nir.Op.Fieldload | _: nir.Op.Fieldstore | _: nir.Op.Field | _: nir.Op.Load | _: nir.Op.Store | _: nir.Op.Elem | _: nir.Op.Copy | _: nir.Op.Conv |
+          _: nir.Op.Bin | _: nir.Op.Comp | _: nir.Op.Arrayload | _: nir.Op.Arraystore | _: nir.Op.Arraylength =>
+        ()
+      case _ =>
+        youngObjects.clear()
+    }
+
+    /** Remembers `obj`, already known to be non-null, when the GC considers it old and has not remembered it since the last collection. See
+     *  gc/immix_commix/WriteBarrier.h for the protocol.
+     */
+    private def genWriteBarrier(buf: nir.InstructionBuilder, obj: nir.Val, slot: Option[nir.Val] = None)(implicit
+        srcPosition: nir.SourcePosition,
+        scopeId: nir.ScopeId
+    ): Unit = {
+      import buf._
+      val sizeTy = nir.Type.Size
+      val slowL, doneL = fresh()
+
+      // One ObjectMeta byte per allocation granule of two words.
+      val granuleShift = if (platform.is32Bit) 3 else 4
+      val index =
+        if (platform.is32Bit || platform.targetsWindows) {
+          val offset = genHeapRangeCheck(buf, obj, doneL)
+          bin(nir.Bin.Lshr, sizeTy, offset, nir.Val.Size(granuleShift), unwind)
+        } else {
+          // The heap is aligned to the barrier window and the bytemap covers
+          // all of it (see WriteBarrier.h), so the masked address indexes it
+          // for any object. An object outside the heap reads an unrelated
+          // byte; the slow path checks the range.
+          val addr = conv(nir.Conv.Ptrtoint, sizeTy, obj, unwind)
+          val granule =
+            bin(nir.Bin.Lshr, sizeTy, addr, nir.Val.Size(granuleShift), unwind)
+          bin(nir.Bin.And, sizeTy, granule, nir.Val.Size((1L << (GCBarrierWindowBits - granuleShift)) - 1), unwind)
+        }
+      val bytemap = load(nir.Type.Ptr, GCBarrierBytemap, unwind)
+      val metaPtr = elem(nir.Type.Byte, bytemap, Seq(index), unwind)
+      val meta = load(nir.Type.Byte, metaPtr, unwind)
+      val isOldUnlogged = comp(
+        nir.Comp.Ieq,
+        nir.Type.Byte,
+        meta,
+        nir.Val.Byte(GCBarrierOldUnlogged),
+        unwind
+      )
+      branch(isOldUnlogged, nir.Next(slowL), nir.Next(doneL))
+
+      label(slowL)
+      slot match {
+        case Some(slot) => call(GCWriteBarrierElemSig, GCWriteBarrierElem, Seq(obj, slot), unwind)
+        case None       => call(GCWriteBarrierSlowSig, GCWriteBarrierSlow, Seq(obj), unwind)
+      }
+      jump(nir.Next(doneL))
+      label(doneL)
+    }
+
+    /** Records the object a raw pointer was derived from, so that stores through it can use the object barrier. Locals are in SSA form, so the relation holds
+     *  in every block of the method.
+     */
+    private def trackRawPtrBase(n: nir.Local, op: nir.Op): Unit = op match {
+      case nir.Op.Conv(nir.Conv.Bitcast, nir.Type.Ptr, obj) if obj.ty.isInstanceOf[nir.Type.RefKind] =>
+        rawPtrBases(n) = obj
+      case nir.Op.Field(obj, _) =>
+        rawPtrBases(n) = obj
+      case nir.Op.Elem(_, nir.Val.Local(ptr, _), _) =>
+        rawPtrBases.get(ptr).foreach(rawPtrBases(n) = _)
+      case nir.Op.Copy(nir.Val.Local(ptr, _)) =>
+        rawPtrBases.get(ptr).foreach(rawPtrBases(n) = _)
+      case _ => ()
+    }
+
+    /** Write barrier for a reference `value` stored through the raw pointer `ptr`. */
+    private def genRawStoreWriteBarrier(buf: nir.InstructionBuilder, ptr: nir.Val, value: nir.Val)(implicit
+        srcPosition: nir.SourcePosition,
+        scopeId: nir.ScopeId
+    ): Unit = ptr match {
+      case nir.Val.Local(id, _) if rawPtrBases.contains(id) =>
+        val obj = rawPtrBases(id)
+        if (needsWriteBarrier(nir.Rt.Object, obj, value)) genWriteBarrier(buf, genVal(buf, obj), Some(genVal(buf, ptr)))
+      case _ =>
+        genSlotWriteBarrier(buf, genVal(buf, ptr))
+    }
+
+    /** Remembers the object containing `slot` before a reference is stored through it, when the object itself is not known. */
+    private def genSlotWriteBarrier(buf: nir.InstructionBuilder, slot: nir.Val)(implicit
+        srcPosition: nir.SourcePosition,
+        scopeId: nir.ScopeId
+    ): Unit = {
+      import buf._
+      val doneL = fresh()
+      genHeapRangeCheck(buf, slot, doneL)
+      call(GCWriteBarrierSlowSig, GCWriteBarrierSlot, Seq(slot), unwind)
+      jump(nir.Next(doneL))
+      label(doneL)
+    }
+
+    /** Continues in a new block when `ptr` lies in the reserved heap range, jumping to `outsideL` otherwise. Returns the offset of `ptr` from the heap start.
+     *  The unsigned comparison excludes statics, zone allocations and stack memory with a single branch.
+     */
+    private def genHeapRangeCheck(buf: nir.InstructionBuilder, ptr: nir.Val, outsideL: nir.Local)(implicit
+        srcPosition: nir.SourcePosition,
+        scopeId: nir.ScopeId
+    ): nir.Val = {
+      import buf._
+      val sizeTy = nir.Type.Size
+      val insideL = fresh()
+      val addr = conv(nir.Conv.Ptrtoint, sizeTy, ptr, unwind)
+      val heapStart = load(nir.Type.Ptr, GCBarrierHeapStart, unwind)
+      val heapStartAddr = conv(nir.Conv.Ptrtoint, sizeTy, heapStart, unwind)
+      val offset = bin(nir.Bin.Isub, sizeTy, addr, heapStartAddr, unwind)
+      val heapSize = load(sizeTy, GCBarrierHeapSize, unwind)
+      val inHeap = comp(nir.Comp.Ult, sizeTy, offset, heapSize, unwind)
+      branch(inHeap, nir.Next(insideL), nir.Next(outsideL))
+      label(insideL)
+      offset
+    }
+
+    /** Whether storing `value` stores a reference, including an object cast to a raw pointer. */
+    private def isReferenceStore(ty: nir.Type, value: nir.Val): Boolean =
+      platform.useGCWriteBarrier && value != nir.Val.Null && (ty match {
+        case _: nir.Type.RefKind => true
+        case _                   =>
+          value match {
+            case nir.Val.Local(id, _) => rawPtrBases.contains(id)
+            case _                    => false
+          }
+      })
 
     def genFieldOp(
         buf: nir.InstructionBuilder,
@@ -1125,8 +1289,25 @@ private[scalanative] object Lower {
         if (unwindHandler.isInitialized) unwind else nir.Next.None
       )
 
+      def externName(global: nir.Global.Member): Option[String] =
+        global.sig.unmangled match {
+          case nir.Sig.Extern(name) => Some(name)
+          case _                    => None
+        }
+
       ptr match {
+        case nir.Val.Global(global: nir.Global.Member, _) if externName(global).contains(GCWriteBarrierName) =>
+          // Returns Unit, so genLet defines the result.
+          if (platform.useGCWriteBarrier) genWriteBarrier(buf, genVal(buf, args.head))
+
         case nir.Val.Global(global: nir.Global.Member, _) =>
+          if (platform.useGCWriteBarrier) {
+            for {
+              name <- externName(global)
+              valueIdx <- referenceStoringAtomics.get(name)
+              if isReferenceStore(args(valueIdx).ty, args(valueIdx))
+            } genRawStoreWriteBarrier(buf, args.head, args(valueIdx))
+          }
           // Notify GC about entering blocking external call
           def maybeSwitchThreadState(body: => Unit): Unit = {
             if (shouldSwitchThreadState(global)) {
@@ -1999,6 +2180,7 @@ private[scalanative] object Lower {
 
       val arrTy = arrayMemoryLayout(ty)
       val elemPtr = buf.elem(arrTy, arr, arrayValuePath(idx), unwind)
+      if (needsWriteBarrier(ty, arr, value)) genWriteBarrier(buf, genVal(buf, arr), Some(elemPtr))
       genStoreOp(buf, n, nir.Op.Store(ty, elemPtr, value, Some(nir.MemoryOrder.Unordered)))
     }
 
@@ -2512,6 +2694,56 @@ private[scalanative] object Lower {
     GC.member(nir.Sig.Extern("scalanative_GC_yieldpoint_trap"))
   val GCYieldPointTrap = nir.Val.Global(GCYieldPointTrapName, nir.Type.Ptr)
 
+  val GCBarrierHeapStart = nir.Val.Global(
+    GC.member(nir.Sig.Extern("scalanative_GC_barrier_heap_start")),
+    nir.Type.Ptr
+  )
+  val GCBarrierHeapSize = nir.Val.Global(
+    GC.member(nir.Sig.Extern("scalanative_GC_barrier_heap_size")),
+    nir.Type.Ptr
+  )
+  // Must match SCALANATIVE_GC_BARRIER_WINDOW_BITS in gc/immix_commix/WriteBarrier.h
+  val GCBarrierWindowBits = 40
+  val GCBarrierBytemap = nir.Val.Global(
+    GC.member(nir.Sig.Extern("scalanative_GC_barrier_bytemap")),
+    nir.Type.Ptr
+  )
+  // om_old_unlogged in gc/immix_commix/metadata/ObjectMeta.h
+  val GCBarrierOldUnlogged: Byte = 0x8
+  val GCWriteBarrierSlowSig =
+    nir.Type.Function(Seq(nir.Type.Ptr), nir.Type.Unit)
+  val GCWriteBarrierSlow = nir.Val.Global(
+    GC.member(nir.Sig.Extern("scalanative_GC_write_barrier_slow")),
+    nir.Type.Ptr
+  )
+  val GCWriteBarrierSlot = nir.Val.Global(
+    GC.member(nir.Sig.Extern("scalanative_GC_write_barrier_slot")),
+    nir.Type.Ptr
+  )
+  val GCWriteBarrierElemSig =
+    nir.Type.Function(Seq(nir.Type.Ptr, nir.Type.Ptr), nir.Type.Unit)
+  // Slow path that also gets the address of the written slot, so that the GC
+  // can remember only a part of a large array.
+  val GCWriteBarrierElem = nir.Val.Global(
+    GC.member(nir.Sig.Extern("scalanative_GC_write_barrier_elem")),
+    nir.Type.Ptr
+  )
+  // Calls to it are replaced by the inline write barrier.
+  val GCWriteBarrierName = "scalanative_GC_write_barrier"
+  // Atomic operations that may store a reference given as the argument at
+  // the index into the location given as the first argument.
+  val referenceStoringAtomics: Map[String, Int] = Map(
+    "scalanative_atomic_init_intptr" -> 1,
+    "scalanative_atomic_store_intptr" -> 1,
+    "scalanative_atomic_store_explicit_intptr" -> 1,
+    "scalanative_atomic_exchange_intptr" -> 1,
+    "scalanative_atomic_exchange_explicit_intptr" -> 1,
+    "scalanative_atomic_compare_exchange_strong_intptr" -> 2,
+    "scalanative_atomic_compare_exchange_strong_explicit_intptr" -> 2,
+    "scalanative_atomic_compare_exchange_weak_intptr" -> 2,
+    "scalanative_atomic_compare_exchange_weak_explicit_intptr" -> 2
+  )
+
   val GCSetMutatorThreadStateSig =
     nir.Type.Function(Seq(nir.Type.Int), nir.Type.Unit)
   val GCSetMutatorThreadState = nir.Val.Global(
@@ -2603,6 +2835,14 @@ private[scalanative] object Lower {
       buf += GCSetMutatorThreadState.name
       buf += RuntimeBlockerBeginName
       buf += RuntimeBlockerEndName
+    }
+    if (platform.useGCWriteBarrier) {
+      buf += GCBarrierHeapStart.name
+      buf += GCBarrierHeapSize.name
+      buf += GCBarrierBytemap.name
+      buf += GCWriteBarrierSlow.name
+      buf += GCWriteBarrierSlot.name
+      buf += GCWriteBarrierElem.name
     }
     buf.toSeq
   }
