@@ -130,9 +130,9 @@ static inline void *threadStackScanBottom(ThreadInfo *threadInfo, void *sp,
         || isOnSignalHandlerStack(threadInfo, sp)
 #endif
     ) {
-        if ((char *)sp < (char *)initialBottom &&
-            isInRange(initialBottom, threadInfo->stackTop,
-                      threadInfo->stackBottom))
+        if (isInRange(initialBottom, threadInfo->stackTop,
+                      threadInfo->stackBottom) &&
+            !isInRange(sp, initialBottom, threadInfo->stackBottom))
             return initialBottom;
         return threadInfo->stackBottom;
     }
