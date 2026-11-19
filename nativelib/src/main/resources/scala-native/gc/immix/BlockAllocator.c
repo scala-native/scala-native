@@ -104,6 +104,8 @@ BlockAllocator_getFreeBlockSlow(BlockAllocator *blockAllocator) {
     return superblock;
 }
 
+uint32_t BlockAllocator_copyReserve = 0;
+
 static BlockMeta *BlockAllocator_getFreeBlock(BlockAllocator *blockAllocator,
                                               bool canUseReserve) {
     BlockMeta *block;
@@ -114,6 +116,7 @@ static BlockMeta *BlockAllocator_getFreeBlock(BlockAllocator *blockAllocator,
             reserve = 2;
         if (reserve > 128)
             reserve = 128;
+        reserve += BlockAllocator_copyReserve;
         if (atomic_load_explicit(&blockAllocator->freeBlockCount,
                                  memory_order_relaxed) <= reserve) {
             BlockAllocator_Release(blockAllocator);

@@ -153,6 +153,9 @@ class Inflater(noHeader: Boolean) extends AutoCloseable {
       if (buf.length == 0) {
         stream.nextIn = Inflater.empty.at(off)
       } else {
+        // zlib keeps this address until a later call consumes the input.
+        scala.scalanative.runtime.GC
+          .pin(scala.scalanative.runtime.Intrinsics.castObjectToRawPtr(buf))
         stream.nextIn = buf.at(off)
       }
       stream.availableIn = nbytes.toUInt
@@ -210,6 +213,9 @@ class Inflater(noHeader: Boolean) extends AutoCloseable {
 private object Inflater {
   // Used when we try to read to a zero-sized array.
   val empty = new Array[Byte](1)
+  // zlib keeps its address between calls.
+  scala.scalanative.runtime.GC
+    .pin(scala.scalanative.runtime.Intrinsics.castObjectToRawPtr(empty))
 
   def createStream(noHeader: Boolean): zlib#z_streamp = {
     val stream = stdlib

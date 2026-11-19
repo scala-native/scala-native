@@ -7,6 +7,7 @@
 package java.util.concurrent
 import java.util.concurrent.locks.LockSupport
 
+import scala.scalanative.annotation.alwaysinline
 import scalanative.libc.stdatomic.memory_order._
 import scalanative.libc.stdatomic.{AtomicInt, AtomicRef}
 import scalanative.runtime.{Intrinsics, fromRawPtr}
@@ -39,13 +40,13 @@ class FutureTask[V <: AnyRef](private var callable: Callable[V])
 
   private var outcome: AnyRef = _
 
-  private val atomicState = new AtomicInt(
+  @alwaysinline private def atomicState = new AtomicInt(
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "_state"))
   )
-  private val atomicRunner = new AtomicRef[Thread](
+  @alwaysinline private def atomicRunner = new AtomicRef[Thread](
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "runner"))
   )
-  private val atomicWaiters = new AtomicRef[WaitNode](
+  @alwaysinline private def atomicWaiters = new AtomicRef[WaitNode](
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "waiters"))
   )
 

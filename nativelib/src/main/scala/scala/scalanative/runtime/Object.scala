@@ -11,7 +11,9 @@ private[runtime] class _Object {
     this eq that
 
   @inline def __hashCode(): scala.Int = {
-    val addr = castRawPtrToLong(castObjectToRawPtr(this))
+    val ptr = castObjectToRawPtr(this)
+    GC.pin(ptr)
+    val addr = castRawPtrToLong(ptr)
     addr.toInt ^ (addr >> 32).toInt
   }
 

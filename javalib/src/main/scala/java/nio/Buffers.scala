@@ -90,7 +90,7 @@ abstract class ByteBuffer private[nio] (
 
   private def genBuffer = GenBuffer[ByteBuffer](this)
 
-  private[nio] def this(_capacity: Int, _array: Array[Byte], _offset: Int) = this(_capacity, _array, _offset, _array.atUnsafe(_offset))
+  private[nio] def this(_capacity: Int, _array: Array[Byte], _offset: Int) = this(_capacity, _array, _offset, Buffer.pinned(_array).atUnsafe(_offset))
   private[nio] def this(_capacity: Int, address: unsafe.CVoidPtr) = this(_capacity, null: Array[Byte], -1, address)
 
   def slice(): ByteBuffer
@@ -483,7 +483,7 @@ abstract class CharBuffer private[nio] (
 
   private def genBuffer = GenBuffer[CharBuffer](this)
 
-  private[nio] def this(_capacity: Int, _array: Array[Char], _offset: Int) = this(_capacity, _array, _offset, _array.atUnsafe(_offset))
+  private[nio] def this(_capacity: Int, _array: Array[Char], _offset: Int) = this(_capacity, _array, _offset, Buffer.pinned(_array).atUnsafe(_offset))
   private[nio] def this(_capacity: Int, address: unsafe.CVoidPtr) = this(_capacity, null: Array[Char], -1, address)
 
   def slice(): CharBuffer
@@ -777,7 +777,7 @@ abstract class ShortBuffer private[nio] (
 
   private def genBuffer = GenBuffer[ShortBuffer](this)
 
-  private[nio] def this(_capacity: Int, _array: Array[Short], _offset: Int) = this(_capacity, _array, _offset, _array.atUnsafe(_offset))
+  private[nio] def this(_capacity: Int, _array: Array[Short], _offset: Int) = this(_capacity, _array, _offset, Buffer.pinned(_array).atUnsafe(_offset))
   private[nio] def this(_capacity: Int, address: unsafe.CVoidPtr) = this(_capacity, null: Array[Short], -1, address)
 
   def slice(): ShortBuffer
@@ -1006,7 +1006,7 @@ abstract class IntBuffer private[nio] (
 
   private def genBuffer = GenBuffer[IntBuffer](this)
 
-  private[nio] def this(_capacity: Int, _array: Array[Int], _offset: Int) = this(_capacity, _array, _offset, _array.atUnsafe(_offset))
+  private[nio] def this(_capacity: Int, _array: Array[Int], _offset: Int) = this(_capacity, _array, _offset, Buffer.pinned(_array).atUnsafe(_offset))
   private[nio] def this(_capacity: Int, address: unsafe.CVoidPtr) = this(_capacity, null: Array[Int], -1, address)
 
   def slice(): IntBuffer
@@ -1235,7 +1235,7 @@ abstract class LongBuffer private[nio] (
 
   private def genBuffer = GenBuffer[LongBuffer](this)
 
-  private[nio] def this(_capacity: Int, _array: Array[Long], _offset: Int) = this(_capacity, _array, _offset, _array.atUnsafe(_offset))
+  private[nio] def this(_capacity: Int, _array: Array[Long], _offset: Int) = this(_capacity, _array, _offset, Buffer.pinned(_array).atUnsafe(_offset))
   private[nio] def this(_capacity: Int, address: unsafe.CVoidPtr) = this(_capacity, null: Array[Long], -1, address)
 
   def slice(): LongBuffer
@@ -1464,7 +1464,7 @@ abstract class FloatBuffer private[nio] (
 
   private def genBuffer = GenBuffer[FloatBuffer](this)
 
-  private[nio] def this(_capacity: Int, _array: Array[Float], _offset: Int) = this(_capacity, _array, _offset, _array.atUnsafe(_offset))
+  private[nio] def this(_capacity: Int, _array: Array[Float], _offset: Int) = this(_capacity, _array, _offset, Buffer.pinned(_array).atUnsafe(_offset))
   private[nio] def this(_capacity: Int, address: unsafe.CVoidPtr) = this(_capacity, null: Array[Float], -1, address)
 
   def slice(): FloatBuffer
@@ -1693,7 +1693,7 @@ abstract class DoubleBuffer private[nio] (
 
   private def genBuffer = GenBuffer[DoubleBuffer](this)
 
-  private[nio] def this(_capacity: Int, _array: Array[Double], _offset: Int) = this(_capacity, _array, _offset, _array.atUnsafe(_offset))
+  private[nio] def this(_capacity: Int, _array: Array[Double], _offset: Int) = this(_capacity, _array, _offset, Buffer.pinned(_array).atUnsafe(_offset))
   private[nio] def this(_capacity: Int, address: unsafe.CVoidPtr) = this(_capacity, null: Array[Double], -1, address)
 
   def slice(): DoubleBuffer

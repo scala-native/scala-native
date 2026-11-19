@@ -19,7 +19,7 @@ private[nio] final class HeapByteBuffer${T}View private (
     _initialLimit: Int,
     _readOnly: Boolean,
     override private[nio] val isBigEndian: Boolean
-) extends ${T}Buffer(_capacity, _byteArray.atUnsafe(_offset)) {
+) extends ${T}Buffer(_capacity, Buffer.pinned(_byteArray).atUnsafe(_offset)) {
 
   position(_initialPosition)
   limit(_initialLimit)

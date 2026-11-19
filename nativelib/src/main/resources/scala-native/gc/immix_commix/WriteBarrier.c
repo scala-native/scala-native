@@ -153,6 +153,20 @@ WRITE_BARRIER_SLOW_PATH void scalanative_GC_write_barrier_slot(word_t *slot) {
         scalanative_GC_write_barrier_slow(object);
 }
 
+#ifdef SCALANATIVE_GC_STICKY
+// Called by generated code (GC.pin) before the address of an object is used
+// as a value, such as its identity hash, when its ObjectMeta byte may be
+// om_allocated: a young object is pinned so that its address never changes.
+// Old objects never move.
+void scalanative_GC_pin_slow(word_t *object) {
+    if (!Heap_IsWordInHeap(&heap, object))
+        return;
+    ObjectMeta *meta = Bytemap_Get(heap.bytemap, object);
+    if (*meta == om_allocated)
+        *meta = om_allocated_pinned;
+}
+#endif
+
 #ifdef SCALANATIVE_GC_WRITE_BARRIER_VERIFY
 
 // Objects allocated since the previous collection keep om_allocated, all
@@ -207,11 +221,13 @@ void WriteBarrier_VerifyBeforeCollection(void) {
     ObjectMeta *start = Bytemap_Get(heap.bytemap, heap.heapStart);
     ObjectMeta *end =
         start + (heap.heapEnd - heap.heapStart) / ALLOCATION_ALIGNMENT_WORDS;
-    size_t remembered = 0, missedObjects = 0, missedReferences = 0;
+    size_t remembered = 0, pinned = 0, missedObjects = 0, missedReferences = 0;
     word_t *current = heap.heapStart;
     for (ObjectMeta *meta = start; meta < end;
          meta++, current += ALLOCATION_ALIGNMENT_WORDS) {
-        if (*meta == om_old_logged) {
+        if (*meta == om_allocated_pinned) {
+            pinned++;
+        } else if (*meta == om_old_logged) {
             remembered++;
         } else if (*meta == om_old_unlogged) {
             Object *object = (Object *)current;
@@ -250,7 +266,9 @@ void WriteBarrier_VerifyBeforeCollection(void) {
         RememberedSet_Clear(&node->value->rememberedSet);
     }
 #endif
-    GC_LOG_DEBUG("Write barrier verified, %zu objects remembered", remembered);
+    GC_LOG_DEBUG("Write barrier verified, %zu objects remembered, %zu young "
+                 "objects pinned",
+                 remembered, pinned);
 }
 
 #ifdef SCALANATIVE_GC_STICKY

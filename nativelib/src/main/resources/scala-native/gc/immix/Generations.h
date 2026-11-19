@@ -38,6 +38,18 @@ void Generations_PrepareFull(Heap *heap);
 // the write barrier does not see.
 void Generations_MarkMinorRoots(Heap *heap, Stack *stack);
 
+// Whether the collection about to start copies young survivors.
+bool Generations_ShouldEvacuate(bool full);
+
+// The marker marked a young object, while evacuating.
+void Generations_NoteSurvivor(Object *object);
+
+// After marking and weak reference processing of a minor collection that
+// evacuates: copies unpinned young survivors out of small object blocks into
+// free blocks, marks the lines of everything that survives, and updates the
+// references the collection traced to the copies.
+void Generations_Evacuate(Heap *heap);
+
 // The marker found a young object that refers to others in a way the write
 // barrier does not see: a blob array, or an object with an object tracer
 // (shared/GCHooks.h). Once old, it is a root of every minor collection.

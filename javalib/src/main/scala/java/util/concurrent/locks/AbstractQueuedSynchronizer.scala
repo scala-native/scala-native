@@ -11,6 +11,7 @@ import java.util.{ArrayList, Collection, Date}
 
 import scala.annotation.tailrec
 
+import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.libc.stdatomic.memory_order._
 import scala.scalanative.libc.stdatomic.{AtomicInt, AtomicRef}
 import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
@@ -107,13 +108,13 @@ abstract class AbstractQueuedSynchronizer protected ()
   @volatile private var state: Int = 0
 
   // Support for atomic ops
-  private val headAtomic = new AtomicRef[Node](
+  @alwaysinline private def headAtomic = new AtomicRef[Node](
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "head"))
   )
-  private val tailAtomic = new AtomicRef[Node](
+  @alwaysinline private def tailAtomic = new AtomicRef[Node](
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "tail"))
   )
-  private val stateAtomic = new AtomicInt(
+  @alwaysinline private def stateAtomic = new AtomicInt(
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "state"))
   )
 

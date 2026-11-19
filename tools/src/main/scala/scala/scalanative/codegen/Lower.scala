@@ -810,6 +810,29 @@ private[scalanative] object Lower {
     private def genWriteBarrier(buf: nir.InstructionBuilder, obj: nir.Val, slot: Option[nir.Val] = None)(implicit
         srcPosition: nir.SourcePosition,
         scopeId: nir.ScopeId
+    ): Unit =
+      genObjectMetaCheck(buf, obj, GCBarrierOldUnlogged) {
+        slot match {
+          case Some(slot) => buf.call(GCWriteBarrierElemSig, GCWriteBarrierElem, Seq(obj, slot), unwind)
+          case None       => buf.call(GCWriteBarrierSlowSig, GCWriteBarrierSlow, Seq(obj), unwind)
+        }
+      }
+
+    /** Pins a young object at its address (see GC.pin): only the first pin of an object calls the GC. */
+    private def genPin(buf: nir.InstructionBuilder, obj: nir.Val)(implicit
+        srcPosition: nir.SourcePosition,
+        scopeId: nir.ScopeId
+    ): Unit =
+      genObjectMetaCheck(buf, obj, GCObjectMetaAllocated) {
+        buf.call(GCPinSig, GCPin, Seq(obj), unwind)
+      }
+
+    /** Runs `slow` when the ObjectMeta byte of `obj` equals `expected`. On 64-bit targets other than Windows, `obj` outside the heap reads an unrelated byte,
+     *  so `slow` must check the range itself.
+     */
+    private def genObjectMetaCheck(buf: nir.InstructionBuilder, obj: nir.Val, expected: Byte)(slow: => Unit)(implicit
+        srcPosition: nir.SourcePosition,
+        scopeId: nir.ScopeId
     ): Unit = {
       import buf._
       val sizeTy = nir.Type.Size
@@ -834,20 +857,11 @@ private[scalanative] object Lower {
       val bytemap = load(nir.Type.Ptr, GCBarrierBytemap, unwind)
       val metaPtr = elem(nir.Type.Byte, bytemap, Seq(index), unwind)
       val meta = load(nir.Type.Byte, metaPtr, unwind)
-      val isOldUnlogged = comp(
-        nir.Comp.Ieq,
-        nir.Type.Byte,
-        meta,
-        nir.Val.Byte(GCBarrierOldUnlogged),
-        unwind
-      )
-      branch(isOldUnlogged, nir.Next(slowL), nir.Next(doneL))
+      val matches = comp(nir.Comp.Ieq, nir.Type.Byte, meta, nir.Val.Byte(expected), unwind)
+      branch(matches, nir.Next(slowL), nir.Next(doneL))
 
       label(slowL)
-      slot match {
-        case Some(slot) => call(GCWriteBarrierElemSig, GCWriteBarrierElem, Seq(obj, slot), unwind)
-        case None       => call(GCWriteBarrierSlowSig, GCWriteBarrierSlow, Seq(obj), unwind)
-      }
+      slow
       jump(nir.Next(doneL))
       label(doneL)
     }
@@ -1299,6 +1313,9 @@ private[scalanative] object Lower {
         case nir.Val.Global(global: nir.Global.Member, _) if externName(global).contains(GCWriteBarrierName) =>
           // Returns Unit, so genLet defines the result.
           if (platform.useGCWriteBarrier) genWriteBarrier(buf, genVal(buf, args.head))
+
+        case nir.Val.Global(global: nir.Global.Member, _) if externName(global).contains(GCPinName) =>
+          if (platform.useGCPinning) genPin(buf, genVal(buf, args.head))
 
         case nir.Val.Global(global: nir.Global.Member, _) =>
           if (platform.useGCWriteBarrier) {
@@ -2730,6 +2747,16 @@ private[scalanative] object Lower {
   )
   // Calls to it are replaced by the inline write barrier.
   val GCWriteBarrierName = "scalanative_GC_write_barrier"
+  // om_allocated, see immix_commix/metadata/ObjectMeta.h
+  val GCObjectMetaAllocated: Byte = 0x2
+  // Calls to it are replaced by an inline check that calls GCPin for a
+  // young object not pinned yet, or dropped without hash pinning.
+  val GCPinName = "scalanative_GC_pin"
+  val GCPinSig = nir.Type.Function(Seq(nir.Type.Ptr), nir.Type.Unit)
+  val GCPin = nir.Val.Global(
+    GC.member(nir.Sig.Extern("scalanative_GC_pin_slow")),
+    nir.Type.Ptr
+  )
   // Atomic operations that may store a reference given as the argument at
   // the index into the location given as the first argument.
   val referenceStoringAtomics: Map[String, Int] = Map(
@@ -2844,6 +2871,7 @@ private[scalanative] object Lower {
       buf += GCWriteBarrierSlot.name
       buf += GCWriteBarrierElem.name
     }
+    if (platform.useGCPinning) buf += GCPin.name
     buf.toSeq
   }
 
