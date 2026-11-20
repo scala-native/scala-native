@@ -2,7 +2,7 @@
 
 package java.util
 
-import java.util.function.{BiConsumer, BiFunction, Function}
+import java.util.function.{BiConsumer, BiFunction, Consumer, Function}
 import java.{util => ju}
 
 import scala.annotation.tailrec
@@ -49,6 +49,11 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
   private var threshold: Int = newThreshold(table.length)
 
   private var contentSize: Int = 0
+
+  /** Number of structural modifications, checked by the fail-fast iterators.
+   */
+  @transient
+  private[util] var modCount: Int = 0
 
   /* Internal API for LinkedHashMap: these methods are overridden in
    * LinkedHashMap to implement its insertion- or access-order.
@@ -114,6 +119,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
   override def clear(): Unit = {
     ju.Arrays.fill(table.asInstanceOf[Array[AnyRef]], null)
     contentSize = 0
+    modCount += 1
   }
 
   override def containsValue(value: Any): Boolean =
@@ -188,11 +194,16 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
   ): V = {
     val (node, hash, idx, oldValue) = getNode0(key)
     if (oldValue != null) {
+      nodeWasAccessed(node)
       oldValue
     } else {
+      val expectedModCount = modCount
       val newValue = mappingFunction.apply(key)
-      if (newValue != null)
+      checkForComodification(expectedModCount)
+      if (newValue != null) {
         put0(key, newValue, hash, node)
+        accessedIfKept(node, newValue)
+      }
       newValue
     }
   }
@@ -205,8 +216,12 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
     if (oldValue == null) {
       oldValue
     } else {
+      val expectedModCount = modCount
       val newValue = remappingFunction.apply(key, oldValue)
+      checkForComodification(expectedModCount)
       putOrRemove0(key, hash, idx, node, newValue)
+      accessedIfKept(node, newValue)
+      newValue
     }
   }
 
@@ -215,8 +230,12 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
       remappingFunction: BiFunction[_ >: K, _ >: V, _ <: V]
   ): V = {
     val (node, hash, idx, oldValue) = getNode0(key)
+    val expectedModCount = modCount
     val newValue = remappingFunction.apply(key, oldValue)
+    checkForComodification(expectedModCount)
     putOrRemove0(key, hash, idx, node, newValue)
+    accessedIfKept(node, newValue)
+    newValue
   }
 
   override def merge(
@@ -229,22 +248,72 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
     val (node, hash, idx, oldValue) = getNode0(key)
     val newValue =
       if (oldValue == null) value
-      else remappingFunction.apply(oldValue, value)
+      else {
+        val expectedModCount = modCount
+        val result = remappingFunction.apply(oldValue, value)
+        checkForComodification(expectedModCount)
+        result
+      }
     putOrRemove0(key, hash, idx, node, newValue)
+    accessedIfKept(node, newValue)
+    newValue
   }
 
   override def forEach(action: BiConsumer[_ >: K, _ >: V]): Unit = {
-    val len = table.length
+    Objects.requireNonNull(action)
+    val expectedModCount = modCount
+    val tab = table
+    val len = tab.length
     var i = 0
     while (i != len) {
-      var node = table(i)
+      var node = tab(i)
       while (node ne null) {
         action.accept(node.key, node.value)
+        checkForComodification(expectedModCount)
         node = node.next
       }
       i += 1
     }
   }
+
+  override def replaceAll(
+      function: BiFunction[_ >: K, _ >: V, _ <: V]
+  ): Unit = {
+    Objects.requireNonNull(function)
+    val expectedModCount = modCount
+    val tab = table
+    val len = tab.length
+    var i = 0
+    while (i != len) {
+      var node = tab(i)
+      while (node ne null) {
+        node.setValue(function.apply(node.key, node.value))
+        checkForComodification(expectedModCount)
+        node = node.next
+      }
+      i += 1
+    }
+  }
+
+  /* Iterable.forEach stops on hasNext(), which does not check for changes
+   * made by the last call of the action.
+   */
+  private[util] final def forEachChecked[A](
+      it: ju.Iterator[A],
+      action: Consumer[_ >: A]
+  ): Unit = {
+    Objects.requireNonNull(action)
+    val expectedModCount = modCount
+    while (it.hasNext()) {
+      action.accept(it.next())
+      checkForComodification(expectedModCount)
+    }
+  }
+
+  @inline
+  private[util] final def checkForComodification(expectedModCount: Int): Unit =
+    if (modCount != expectedModCount)
+      throw new ConcurrentModificationException()
 
   override def clone(): AnyRef =
     new HashMap[K, V](this)
@@ -282,19 +351,25 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
 
   // Helpers for compute-like methods
 
+  /* The lookup does not call `nodeWasAccessed`: an access-ordered map moves
+   * the entry only after the function, so that the function may read the
+   * youngest entry without that counting as a modification.
+   */
   @inline
   private def getNode0(key: Any): (Node[K, V], Int, Int, V) = {
     val hash = computeHash(key)
     val idx = index(hash)
     val node = findNode0(key, hash, idx)
-    val value = if (node eq null) {
-      null.asInstanceOf[V]
-    } else {
-      nodeWasAccessed(node)
-      node.value
-    }
+    val value =
+      if (node eq null) null.asInstanceOf[V]
+      else node.value
     (node, hash, idx, value)
   }
+
+  @inline
+  private def accessedIfKept(node: Node[K, V], newValue: V): Unit =
+    if ((node ne null) && newValue != null)
+      nodeWasAccessed(node)
 
   private def putOrRemove0(
       key: K,
@@ -355,7 +430,11 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
   private def put0(key: K, value: V, hash: Int, ifAbsent: Boolean): V = {
     // scalastyle:off return
     val newContentSize = contentSize + 1
-    if (newContentSize >= threshold)
+    /* Growing rewires the buckets, so it must not happen for an existing key:
+     * that update does not count as a modification.
+     */
+    if (newContentSize >= threshold &&
+        (findNode0(key, hash, index(hash)) eq null))
       growTable()
     val idx = index(hash)
     val newNode = table(idx) match {
@@ -387,6 +466,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
         newNode
     }
     contentSize = newContentSize
+    modCount += 1
     nodeWasAdded(newNode)
     null.asInstanceOf[V]
     // scalastyle:on return
@@ -399,8 +479,8 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
    *  null, this method assumes that there is no entry for the given key in the
    *  map.
    *
-   *  `nodeWasAccessed` is NOT called by this method, since it must already have
-   *  been called by the prerequisite lookup.
+   *  `nodeWasAccessed` is NOT called by this method; the compute-like callers
+   *  call it once the new value is stored.
    *
    *  If no entry existed for the given key, a new entry is created with the
    *  given value, and `nodeWasAdded` is called.
@@ -449,6 +529,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
           newNode
       }
       contentSize = newContentSize
+      modCount += 1
       nodeWasAdded(newNode)
     }
   }
@@ -480,6 +561,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
     if (next ne null)
       next.previous = previous
     contentSize -= 1
+    modCount += 1
     nodeWasRemoved(node)
   }
 
@@ -569,6 +651,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
     private var nextIdx: Int = _ // 0
     private var nextNode: Node[K, V] = _ // null
     private var lastNode: Node[K, V] = _ // null
+    private var expectedModCount = modCount
 
     protected def extract(node: Node[K, V]): A
 
@@ -598,6 +681,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
     }
 
     def next(): A = {
+      checkForComodification(expectedModCount)
       if (!hasNext())
         throw new NoSuchElementException("next on empty iterator")
       val node = nextNode
@@ -612,8 +696,10 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
         throw new IllegalStateException(
           "next must be called at least once before remove"
         )
+      checkForComodification(expectedModCount)
       removeNode(last)
       lastNode = null
+      expectedModCount = modCount
     }
   }
 
@@ -622,6 +708,9 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
   private final class KeySet extends AbstractSet[K] {
     def iterator(): Iterator[K] =
       keyIterator()
+
+    override def forEach(action: Consumer[_ >: K]): Unit =
+      forEachChecked[K](keyIterator(), action)
 
     def size(): Int =
       self.size()
@@ -640,6 +729,9 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
     def iterator(): ju.Iterator[V] =
       valueIterator()
 
+    override def forEach(action: Consumer[_ >: V]): Unit =
+      forEachChecked[V](valueIterator(), action)
+
     def size(): Int =
       self.size()
 
@@ -653,6 +745,9 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
   private final class EntrySet extends AbstractSet[Map.Entry[K, V]] {
     def iterator(): Iterator[Map.Entry[K, V]] =
       entrySetIterator()
+
+    override def forEach(action: Consumer[_ >: Map.Entry[K, V]]): Unit =
+      forEachChecked[Map.Entry[K, V]](entrySetIterator(), action)
 
     def size(): Int =
       self.size()
