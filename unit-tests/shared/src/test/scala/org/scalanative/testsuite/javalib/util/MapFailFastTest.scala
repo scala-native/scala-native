@@ -840,28 +840,56 @@ class MapFailFastTest {
     // Outside the range, the key is absent from the view
     val m = treeMap()
     val sub = m.subMap(int(1), int(4))
-    val toNull = new BiFunction[Integer, Integer, Integer] {
-      def apply(a: Integer, b: Integer): Integer = null
+    val notCalled = new BiFunction[Integer, Integer, Integer] {
+      def apply(a: Integer, b: Integer): Integer =
+        throw new AssertionError("function called")
     }
-    val to30 = new BiFunction[Integer, Integer, Integer] {
-      def apply(a: Integer, b: Integer): Integer = int(30)
+    // Records the arguments of each call.
+    val calls = new ArrayList[String]()
+    def recording(result: Integer) = new BiFunction[Integer, Integer, Integer] {
+      def apply(k: Integer, v: Integer): Integer = {
+        calls.add(s"$k=$v")
+        result
+      }
     }
-    assertNull(sub.computeIfPresent(int(0), to30))
-    assertNull(sub.compute(int(0), toNull))
-    assertThrows(classOf[IllegalArgumentException], sub.compute(int(0), to30))
+    def recordingAbsent(result: Integer) = new Function[Integer, Integer] {
+      def apply(k: Integer): Integer = {
+        calls.add(s"$k")
+        result
+      }
+    }
+
+    assertNull(sub.computeIfPresent(int(0), notCalled))
+    assertNull(sub.computeIfPresent(int(0), null))
     assertThrows(
       classOf[IllegalArgumentException],
-      sub.merge(int(9), int(7), to30)
+      sub.merge(int(9), int(7), notCalled)
     )
     assertThrows(
       classOf[IllegalArgumentException],
-      sub.computeIfAbsent(
-        int(9),
-        new Function[Integer, Integer] {
-          def apply(k: Integer): Integer = int(30)
-        }
-      )
+      sub.merge(int(9), int(7), null)
     )
+
+    // The parent maps 0, yet the function sees no old value.
+    assertNull(sub.compute(int(0), recording(null)))
+    assertEquals(Arrays.asList("0=null"), calls)
+    calls.clear()
+    assertThrows(
+      classOf[IllegalArgumentException],
+      sub.compute(int(0), recording(int(30)))
+    )
+    assertEquals(Arrays.asList("0=null"), calls)
+    calls.clear()
+
+    assertNull(sub.computeIfAbsent(int(9), recordingAbsent(null)))
+    assertEquals(Arrays.asList("9"), calls)
+    calls.clear()
+    assertThrows(
+      classOf[IllegalArgumentException],
+      sub.computeIfAbsent(int(9), recordingAbsent(int(30)))
+    )
+    assertEquals(Arrays.asList("9"), calls)
+
     assertEquals(5, m.size())
     assertEquals(int(0), m.get(int(0)))
   }
