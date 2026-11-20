@@ -196,6 +196,66 @@ class MapFailFastTest {
     assertEquals(10, m4.get(int(0)).intValue())
   }
 
+  @Test def accessOrderedComputeMovesTheEntryAfterTheFunction(): Unit = {
+    def lhm() = fill(new LinkedHashMap[Integer, Integer](16, 0.75f, true))
+    def keys(m: JMap) = new ArrayList[Integer](m.keySet())
+    val movedLast =
+      Arrays.asList[Integer](int(1), int(2), int(3), int(4), int(0))
+    // Reading the youngest entry does not reorder the map.
+    def readYoungest(m: JMap) = new BiFunction[Integer, Integer, Integer] {
+      def apply(a: Integer, b: Integer): Integer = m.get(int(4))
+    }
+
+    val m1 = lhm()
+    assertEquals(4, m1.compute(int(0), readYoungest(m1)).intValue())
+    assertEquals(movedLast, keys(m1))
+
+    val m2 = lhm()
+    assertEquals(4, m2.computeIfPresent(int(0), readYoungest(m2)).intValue())
+    assertEquals(movedLast, keys(m2))
+
+    val m3 = lhm()
+    assertEquals(4, m3.merge(int(0), int(5), readYoungest(m3)).intValue())
+    assertEquals(movedLast, keys(m3))
+
+    val m4 = lhm()
+    m4.computeIfAbsent(
+      int(0),
+      new Function[Integer, Integer] {
+        def apply(k: Integer): Integer = throw new AssertionError("called")
+      }
+    )
+    assertEquals(movedLast, keys(m4))
+
+    // An entry removed by the function result is not accessed.
+    val m5 = lhm()
+    assertNull(
+      m5.compute(
+        int(0),
+        new BiFunction[Integer, Integer, Integer] {
+          def apply(a: Integer, b: Integer): Integer = null
+        }
+      )
+    )
+    assertEquals(
+      Arrays.asList[Integer](int(1), int(2), int(3), int(4)),
+      keys(m5)
+    )
+  }
+
+  @Test def identityHashMapViewRemoveAllOfItself(): Unit = {
+    def ihm() = fill(new IdentityHashMap[Integer, Integer]())
+    val m1 = ihm()
+    assertTrue(m1.values().removeAll(m1.values()))
+    assertTrue(m1.isEmpty())
+    val m2 = ihm()
+    assertTrue(m2.keySet().removeAll(m2.keySet()))
+    assertTrue(m2.isEmpty())
+    val m3 = ihm()
+    assertTrue(m3.entrySet().removeAll(m3.entrySet()))
+    assertTrue(m3.isEmpty())
+  }
+
   @Test def iteratorRemoveKeepsIteratorValid(): Unit = forAllMaps {
     (name, mk) =>
       val m = mk()

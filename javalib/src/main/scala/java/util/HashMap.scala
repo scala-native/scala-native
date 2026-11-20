@@ -194,13 +194,16 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
   ): V = {
     val (node, hash, idx, oldValue) = getNode0(key)
     if (oldValue != null) {
+      nodeWasAccessed(node)
       oldValue
     } else {
       val expectedModCount = modCount
       val newValue = mappingFunction.apply(key)
       checkForComodification(expectedModCount)
-      if (newValue != null)
+      if (newValue != null) {
         put0(key, newValue, hash, node)
+        accessedIfKept(node, newValue)
+      }
       newValue
     }
   }
@@ -217,6 +220,8 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
       val newValue = remappingFunction.apply(key, oldValue)
       checkForComodification(expectedModCount)
       putOrRemove0(key, hash, idx, node, newValue)
+      accessedIfKept(node, newValue)
+      newValue
     }
   }
 
@@ -229,6 +234,8 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
     val newValue = remappingFunction.apply(key, oldValue)
     checkForComodification(expectedModCount)
     putOrRemove0(key, hash, idx, node, newValue)
+    accessedIfKept(node, newValue)
+    newValue
   }
 
   override def merge(
@@ -248,6 +255,8 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
         result
       }
     putOrRemove0(key, hash, idx, node, newValue)
+    accessedIfKept(node, newValue)
+    newValue
   }
 
   override def forEach(action: BiConsumer[_ >: K, _ >: V]): Unit = {
@@ -342,19 +351,25 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
 
   // Helpers for compute-like methods
 
+  /* The lookup does not call `nodeWasAccessed`: an access-ordered map moves
+   * the entry only after the function, so that the function may read the
+   * youngest entry without that counting as a modification.
+   */
   @inline
   private def getNode0(key: Any): (Node[K, V], Int, Int, V) = {
     val hash = computeHash(key)
     val idx = index(hash)
     val node = findNode0(key, hash, idx)
-    val value = if (node eq null) {
-      null.asInstanceOf[V]
-    } else {
-      nodeWasAccessed(node)
-      node.value
-    }
+    val value =
+      if (node eq null) null.asInstanceOf[V]
+      else node.value
     (node, hash, idx, value)
   }
+
+  @inline
+  private def accessedIfKept(node: Node[K, V], newValue: V): Unit =
+    if ((node ne null) && newValue != null)
+      nodeWasAccessed(node)
 
   private def putOrRemove0(
       key: K,
@@ -464,8 +479,8 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
    *  null, this method assumes that there is no entry for the given key in the
    *  map.
    *
-   *  `nodeWasAccessed` is NOT called by this method, since it must already have
-   *  been called by the prerequisite lookup.
+   *  `nodeWasAccessed` is NOT called by this method; the compute-like callers
+   *  call it once the new value is stored.
    *
    *  If no entry existed for the given key, a new entry is created with the
    *  given value, and `nodeWasAdded` is called.

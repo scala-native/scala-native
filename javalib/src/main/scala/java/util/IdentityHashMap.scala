@@ -107,8 +107,18 @@ class IdentityHashMap[K, V] private (
       findAndRemove(iterator())
     }
 
-    override def removeAll(c: Collection[_]): Boolean =
-      c.scalaOps.foldLeft(false)((prev, elem) => this.remove(elem) || prev)
+    // Removes through our own iterator, so that `c` may be this view.
+    override def removeAll(c: Collection[_]): Boolean = {
+      val iter = iterator()
+      var changed = false
+      while (iter.hasNext()) {
+        if (findSame(iter.next(), c)) {
+          iter.remove()
+          changed = true
+        }
+      }
+      changed
+    }
 
     override def retainAll(c: Collection[_]): Boolean = {
       val iter = iterator()
