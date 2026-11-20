@@ -73,26 +73,26 @@ class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit
       key: K,
       mappingFunction: Function[_ >: K, _ <: V]
   ): V =
-    TreeMap.computeIfAbsent(tree, key, mappingFunction)
+    TreeMap.computeIfAbsent[K, V](tree, key, mappingFunction)
 
   override def computeIfPresent(
       key: K,
       remappingFunction: BiFunction[_ >: K, _ >: V, _ <: V]
   ): V =
-    TreeMap.computeIfPresent(tree, key, remappingFunction)
+    TreeMap.computeIfPresent[K, V](tree, key, remappingFunction)
 
   override def compute(
       key: K,
       remappingFunction: BiFunction[_ >: K, _ >: V, _ <: V]
   ): V =
-    TreeMap.compute(tree, key, remappingFunction)
+    TreeMap.compute[K, V](tree, key, remappingFunction)
 
   override def merge(
       key: K,
       value: V,
       remappingFunction: BiFunction[_ >: V, _ >: V, _ <: V]
   ): V =
-    TreeMap.merge(tree, key, value, remappingFunction)
+    TreeMap.merge[K, V](tree, key, value, remappingFunction)
 
   // The JVM also checks after the last call of the function.
 
@@ -505,7 +505,7 @@ private object TreeMap {
     ): V = {
       Objects.requireNonNull(mappingFunction)
       if (isWithinBounds(key))
-        TreeMap.computeIfAbsent(tree, key, mappingFunction)
+        TreeMap.computeIfAbsent[K, V](tree, key, mappingFunction)
       else if (mappingFunction(key) == null)
         null.asInstanceOf[V]
       else
@@ -518,7 +518,7 @@ private object TreeMap {
     ): V = {
       Objects.requireNonNull(remappingFunction)
       if (!isWithinBounds(key)) null.asInstanceOf[V]
-      else TreeMap.computeIfPresent(tree, key, remappingFunction)
+      else TreeMap.computeIfPresent[K, V](tree, key, remappingFunction)
     }
 
     override def compute(
@@ -527,7 +527,7 @@ private object TreeMap {
     ): V = {
       Objects.requireNonNull(remappingFunction)
       if (isWithinBounds(key))
-        TreeMap.compute(tree, key, remappingFunction)
+        TreeMap.compute[K, V](tree, key, remappingFunction)
       else if (remappingFunction(key, null.asInstanceOf[V]) == null)
         null.asInstanceOf[V]
       else
@@ -542,7 +542,7 @@ private object TreeMap {
       Objects.requireNonNull(remappingFunction)
       if (!isWithinBounds(key))
         throw new IllegalArgumentException
-      TreeMap.merge(tree, key, value, remappingFunction)
+      TreeMap.merge[K, V](tree, key, value, remappingFunction)
     }
 
     protected def isDescending: Boolean
