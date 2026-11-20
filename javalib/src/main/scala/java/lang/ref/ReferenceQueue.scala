@@ -29,15 +29,14 @@ class ReferenceQueue[T] {
 
   private def remove(timeout: Option[Long]): Ref =
     synchronized {
-      def now() = System.currentTimeMillis()
-      val deadlineOpt = timeout.map(now() + _)
+      val deadlineOpt = timeout.map(System.nanoTime() + _ * 1000000L)
 
       while (underlying.isEmpty()) {
         deadlineOpt match {
           case Some(deadline) =>
-            val remaining = deadline - now()
-            if (remaining < 0) return null // timed out
-            wait(remaining)
+            val remaining = deadline - System.nanoTime()
+            if (remaining <= 0) return null // timed out
+            wait((remaining + 999999L) / 1000000L)
           case None =>
             wait()
         }
