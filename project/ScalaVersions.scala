@@ -20,25 +20,31 @@ object ScalaVersions {
   // Versions of Scala used for publishing compiler plugins
   val crossScala212 = crossScalaVersions("2.12", 17 to 21)
   val crossScala213 = crossScalaVersions("2.13", 9 to 18)
-  val crossScala3 = List(
-    extraCrossScalaVersion("3.").toList,
-    scala3RCVersions,
-    // windowslib fails to compile with 3.1.{0-1}
-    crossScalaVersions("3.1", 2 to 3),
-    crossScalaVersions("3.2", 0 to 2),
-    crossScalaVersions("3.3", 0 to 8), // LTS
-    crossScalaVersions("3.4", 0 to 3),
-    crossScalaVersions("3.5", 0 to 2),
-    crossScalaVersions("3.6", 2 to 4), // 3.6.0 is broken, 3.6.1 is hotfix
-    crossScalaVersions("3.7", 0 to 4),
-    crossScalaVersions("3.8", 0 to 4),
-    crossScalaVersions("3.9", 0 to 0), // LTS
-    crossScalaVersions("3.10", 0 to 0) // RC
-  ).flatten.distinct
+  // Extras and release candidates stay ahead of the stable line, so `scala3`
+  // remains the newest stable patch. An extra that is already stable is not
+  // prepended: `distinct` would keep that early copy and drop the stable one.
+  val crossScala3 = {
+    val released = List(
+      // windowslib fails to compile with 3.1.{0-1}
+      patchVersions("3.1", 2 to 3),
+      patchVersions("3.2", 0 to 2),
+      patchVersions("3.3", 0 to 8), // LTS
+      patchVersions("3.4", 0 to 3),
+      patchVersions("3.5", 0 to 2),
+      patchVersions("3.6", 2 to 4), // 3.6.0 is broken, 3.6.1 is hotfix
+      patchVersions("3.7", 0 to 4),
+      patchVersions("3.8", 0 to 4),
+      patchVersions("3.9", 0 to 0), // LTS
+      patchVersions("3.10", 0 to 1)
+    ).flatten
+    extraCrossScalaVersion("3.").filterNot(released.contains).toList ++
+      scala3RCVersions ++
+      released
+  }.distinct
 
   // Tested in scheduled nightly CI to check compiler plugins
   // List maintains only upcoming releases, removed from the list after reaching stable status
-  lazy val scala3RCVersions = List("3.10.1-RC1")
+  lazy val scala3RCVersions: List[String] = Nil
 
   // Scala versions used for publishing libraries
   val scala212: String = crossScala212.last
@@ -71,13 +77,26 @@ object ScalaVersions {
 
   private def extraCrossScalaVersion(binVersionPrefix: String) = sys.env
     .get("EXTRA_CROSS_SCALA_VERSION")
-    .filter(_.startsWith(binVersionPrefix))
+    .filter(matchesBinaryPrefix(binVersionPrefix))
+
+  // A shorter minor prefix must not match a later minor. Match at a dot boundary.
+  private def matchesBinaryPrefix(binVersionPrefix: String)(version: String) =
+    val boundary =
+      if binVersionPrefix.endsWith(".") then binVersionPrefix
+      else s"$binVersionPrefix."
+    version.startsWith(boundary)
+
+  private def patchVersions(
+      baseVersion: String,
+      patches: Range.Inclusive
+  ): List[String] =
+    patches.map(v => s"$baseVersion.$v").toList
 
   private def crossScalaVersions(
       baseVersion: String,
       patches: Range.Inclusive
   ): List[String] = {
-    patches.map(v => s"$baseVersion.$v") ++
-      extraCrossScalaVersion(baseVersion)
-  }.distinct.toList
+    val released = patchVersions(baseVersion, patches)
+    released ++ extraCrossScalaVersion(baseVersion).filterNot(released.contains)
+  }
 }
