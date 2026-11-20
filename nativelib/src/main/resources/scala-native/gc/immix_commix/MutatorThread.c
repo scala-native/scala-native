@@ -206,15 +206,6 @@ INLINE void MutatorThread_switchState(MutatorThread *self,
     self->state = newState;
 }
 
-word_t **MutatorThread_getStackBottom(MutatorThread *thread) {
-    word_t **bottom = thread->stackBottom;
-    if (thread->threadInfo != NULL && thread->threadInfo->stackBottom != NULL &&
-        (uintptr_t)thread->threadInfo->stackBottom > (uintptr_t)bottom) {
-        bottom = (word_t **)thread->threadInfo->stackBottom;
-    }
-    return bottom;
-}
-
 word_t **MutatorThread_getStackTop(MutatorThread *thread, bool allowEstimated) {
     intptr_t sp = atomic_load_explicit(&thread->stackTop, memory_order_acquire);
     if (sp != 0)

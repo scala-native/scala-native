@@ -571,7 +571,7 @@ void Marker_MarkUntilDone(Heap *heap, Stats *stats) {
 NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
                                          Stats *stats, GreyPacket **outHolder,
                                          GreyPacket **outWeakRefHolder) {
-    word_t **stackBottom = MutatorThread_getStackBottom(thread);
+    word_t **stackBottom = thread->stackBottom;
     word_t **stackTop = NULL;
     do {
         // Can spuriously fail, very rare, yet deadly
