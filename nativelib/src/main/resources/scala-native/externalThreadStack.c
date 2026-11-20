@@ -39,7 +39,7 @@ bool scalanative_detectExternalThreadStack(ThreadInfo *info) {
     low = (void *)lower;
     high = (void *)upper;
     size = upper - lower;
-#elif defined(__linux__) || defined(__FreeBSD__)
+#elif defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__)
     pthread_attr_t attr;
 #if defined(__linux__)
     if (pthread_getattr_np(pthread_self(), &attr) != 0)
