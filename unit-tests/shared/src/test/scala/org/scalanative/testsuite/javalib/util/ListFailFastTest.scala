@@ -87,7 +87,7 @@ class ListFailFastTest {
           val it = l.iterator()
           it.next()
           change(l)
-          if (!it.hasNext()) {
+          if (name.contains("subList") && !it.hasNext()) {
             // The JVM AbstractList.subList iterator checks the bounds first
             try {
               it.next()
@@ -412,6 +412,79 @@ class ListFailFastTest {
     val child = parent.subList(0, 1)
     assertThrows(classOf[CME], child.size())
     assertThrows(classOf[CME], child.get(0))
+  }
+
+  @Test def arrayListSubListRemoveIfThrowsWhenPredicateClearsTheView(): Unit = {
+    val l = new ArrayList[Integer](Arrays.asList[Integer](9, 0, 1, 2, 9))
+    val view = l.subList(1, 4)
+    assertThrows(
+      classOf[CME],
+      view.removeIf(new Predicate[Integer] {
+        def test(x: Integer): Boolean = {
+          view.clear()
+          false
+        }
+      })
+    )
+    assertEquals(Arrays.asList[Integer](9, 9), l)
+  }
+
+  @Test def arrayListSubListBulkRemovalAcceptsSiblingView(): Unit = {
+    def mk() = new ArrayList[Integer](Arrays.asList[Integer](0, 1, 0, 1, 2))
+    def expect(expected: Int*)(l: List[Integer]) =
+      assertEquals(expected.mkString("[", ", ", "]"), l.toString())
+
+    val l1 = mk()
+    assertTrue(l1.subList(2, 5).removeAll(l1.subList(0, 2)))
+    expect(0, 1, 2)(l1)
+
+    val l2 = mk()
+    assertTrue(l2.subList(2, 5).retainAll(l2.subList(0, 2)))
+    expect(0, 1, 0, 1)(l2)
+
+    val l3 = mk()
+    val sibling = l3.subList(0, 2)
+    assertTrue(
+      l3.subList(2, 5)
+        .removeIf(new Predicate[Integer] {
+          def test(e: Integer): Boolean = sibling.contains(e)
+        })
+    )
+    expect(0, 1, 2)(l3)
+
+    val l4 = mk()
+    val view = l4.subList(1, 5)
+    assertFalse(view.removeAll(Collections.singleton(Integer.valueOf(9))))
+    assertEquals(4, view.size())
+  }
+
+  @Test def emptyClearThroughViewInvalidatesOnlyIfListCountsIt(): Unit = {
+    class Custom extends AbstractList[Integer] {
+      private val inner = fill(new ArrayList[Integer]())
+      def get(i: Int): Integer = inner.get(i)
+      def size(): Int = inner.size()
+      override def add(i: Int, e: Integer): Unit = {
+        inner.add(i, e); modCount += 1
+      }
+      override def remove(i: Int): Integer = { modCount += 1; inner.remove(i) }
+    }
+    class RandomCustom extends Custom with RandomAccess
+
+    def check(name: String, l: List[Integer], expectCME: Boolean): Unit = {
+      val view = l.subList(0, 5)
+      val it = view.iterator()
+      it.next()
+      view.subList(0, 0).clear()
+      if (expectCME) assertThrows(name, classOf[CME], it.next())
+      else assertEquals(name, 1, it.next().intValue())
+    }
+
+    // ArrayList and Vector count an empty range removal, as on the JVM
+    check("ArrayList", fill(new ArrayList[Integer]()), expectCME = true)
+    check("Vector", fill(new Vector[Integer]()), expectCME = true)
+    check("LinkedList", fill(new LinkedList[Integer]()), expectCME = false)
+    check("custom", new Custom, expectCME = false)
+    check("custom RandomAccess", new RandomCustom, expectCME = false)
   }
 
   @Test def arrayListSpliteratorBindsOnEstimateSize(): Unit = {
