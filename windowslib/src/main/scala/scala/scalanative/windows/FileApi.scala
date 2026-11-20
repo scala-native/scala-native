@@ -240,6 +240,7 @@ object FileApi {
 object FileApiExt {
   final val MAX_PATH = 260.toUInt
 
+  final val FILE_TYPE_DISK = 1.toUInt
   final val FILE_TYPE_CHAR = 2.toUInt
 
   // File Pointer Move Methods
