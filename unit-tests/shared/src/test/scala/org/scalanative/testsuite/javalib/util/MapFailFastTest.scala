@@ -673,8 +673,9 @@ class MapFailFastTest {
       val it4 = view(m4).navigableKeySet().descendingIterator()
       it4.next()
       m4.put(int(2), int(9))
-      it4.next() // replacing a value is not structural
+      val removed4 = it4.next() // replacing a value is not structural
       it4.remove()
+      assertFalse(s"$name: removed key", m4.containsKey(removed4))
       it4.next()
 
       val m5 = treeMap()
@@ -719,8 +720,9 @@ class MapFailFastTest {
       val it2 = view(s2)
       it2.next()
       s2.add(int(2))
-      it2.next() // adding an existing element is not structural
+      val removed2 = it2.next() // adding an existing element is not structural
       it2.remove()
+      assertFalse(s"$name: removed element", s2.contains(removed2))
       it2.next()
 
       val s3 = treeSet()
@@ -735,5 +737,132 @@ class MapFailFastTest {
       s4.pollLast()
       assertThrows(s"$name: after pollLast", classOf[CME], it4.next())
     }
+  }
+
+  @Test def treeMapBulkCallbacksDetectChangeByLastCall(): Unit = {
+    def one() = {
+      val m = new TreeMap[Integer, Integer]()
+      m.put(int(1), int(1))
+      m
+    }
+    val m1 = one()
+    assertThrows(
+      classOf[CME],
+      m1.forEach(new BiConsumer[Integer, Integer] {
+        def accept(k: Integer, v: Integer): Unit = m1.put(int(2), int(2))
+      })
+    )
+    val m2 = one()
+    assertThrows(
+      classOf[CME],
+      m2.replaceAll(new BiFunction[Integer, Integer, Integer] {
+        def apply(k: Integer, v: Integer): Integer = {
+          m2.put(int(2), int(2))
+          int(5)
+        }
+      })
+    )
+    // The replacement is stored before the check, as on the JVM
+    assertEquals(int(5), m2.get(int(1)))
+  }
+
+  @Test def treeMapViewComputeDetectsChangesByTheFunction(): Unit = {
+    def treeMap() = {
+      val m = new TreeMap[Integer, Integer]()
+      for (i <- 0 until 5) m.put(int(i), int(i))
+      m
+    }
+    val views: Seq[(String, TreeMap[Integer, Integer] => JMap)] = Seq(
+      "subMap" -> (_.subMap(int(1), int(4))),
+      "headMap" -> (_.headMap(int(4))),
+      "tailMap" -> (_.tailMap(int(1))),
+      "descendingMap" -> (_.descendingMap())
+    )
+    for ((name, view) <- views) {
+      def clearing(m: JMap) = new BiFunction[Integer, Integer, Integer] {
+        def apply(a: Integer, b: Integer): Integer = {
+          m.clear()
+          int(30)
+        }
+      }
+      val m1 = treeMap()
+      assertThrows(
+        s"$name: computeIfPresent",
+        classOf[CME],
+        view(m1).computeIfPresent(int(2), clearing(m1))
+      )
+      assertTrue(s"$name: computeIfPresent", m1.isEmpty())
+
+      val m2 = treeMap()
+      assertThrows(
+        s"$name: compute",
+        classOf[CME],
+        view(m2).compute(int(2), clearing(m2))
+      )
+
+      val m3 = treeMap()
+      assertThrows(
+        s"$name: merge",
+        classOf[CME],
+        view(m3).merge(int(2), int(7), clearing(m3))
+      )
+
+      val m4 = treeMap()
+      m4.remove(int(2))
+      assertThrows(
+        s"$name: computeIfAbsent",
+        classOf[CME],
+        view(m4).computeIfAbsent(
+          int(2),
+          new Function[Integer, Integer] {
+            def apply(k: Integer): Integer = {
+              m4.put(int(10), int(0))
+              int(30)
+            }
+          }
+        )
+      )
+
+      val m5 = treeMap()
+      val v5 = view(m5)
+      assertEquals(
+        int(12),
+        v5.compute(
+          int(2),
+          new BiFunction[Integer, Integer, Integer] {
+            def apply(k: Integer, v: Integer): Integer = int(v.intValue() + 10)
+          }
+        )
+      )
+      assertEquals(int(12), m5.get(int(2)))
+    }
+
+    // Outside the range, the key is absent from the view
+    val m = treeMap()
+    val sub = m.subMap(int(1), int(4))
+    val toNull = new BiFunction[Integer, Integer, Integer] {
+      def apply(a: Integer, b: Integer): Integer = null
+    }
+    val to30 = new BiFunction[Integer, Integer, Integer] {
+      def apply(a: Integer, b: Integer): Integer = int(30)
+    }
+    assertNull(sub.computeIfPresent(int(0), to30))
+    assertNull(sub.compute(int(0), toNull))
+    assertThrows(classOf[IllegalArgumentException], sub.compute(int(0), to30))
+    assertThrows(
+      classOf[IllegalArgumentException],
+      sub.merge(int(9), int(7), to30)
+    )
+    assertThrows(
+      classOf[IllegalArgumentException],
+      sub.computeIfAbsent(
+        int(9),
+        new Function[Integer, Integer] {
+          def apply(k: Integer): Integer = int(30)
+        }
+      )
+    )
+    assertEquals(5, m.size())
+    assertEquals(int(0), m.get(int(0)))
   }
 }
