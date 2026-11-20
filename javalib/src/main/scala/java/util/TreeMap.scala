@@ -516,9 +516,12 @@ private object TreeMap {
         key: K,
         remappingFunction: BiFunction[_ >: K, _ >: V, _ <: V]
     ): V = {
-      Objects.requireNonNull(remappingFunction)
+      // Outside the range the key is absent, whatever the function.
       if (!isWithinBounds(key)) null.asInstanceOf[V]
-      else TreeMap.computeIfPresent[K, V](tree, key, remappingFunction)
+      else {
+        Objects.requireNonNull(remappingFunction)
+        TreeMap.computeIfPresent[K, V](tree, key, remappingFunction)
+      }
     }
 
     override def compute(
@@ -539,9 +542,9 @@ private object TreeMap {
         value: V,
         remappingFunction: BiFunction[_ >: V, _ >: V, _ <: V]
     ): V = {
-      Objects.requireNonNull(remappingFunction)
       if (!isWithinBounds(key))
         throw new IllegalArgumentException
+      Objects.requireNonNull(remappingFunction)
       TreeMap.merge[K, V](tree, key, value, remappingFunction)
     }
 
