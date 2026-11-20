@@ -5,7 +5,7 @@
 package java.util
 
 import java.lang.Cloneable
-import java.util.function.{BiFunction, Function}
+import java.util.function.{BiConsumer, BiFunction, Function}
 import java.util.{RedBlackTree => RB}
 
 class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit
@@ -72,102 +72,52 @@ class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit
   override def computeIfAbsent(
       key: K,
       mappingFunction: Function[_ >: K, _ <: V]
-  ): V = {
-    val node = RB.getNode(tree, key)
-    val mc = tree.modCount
-
-    if (node eq null) {
-      val newValue = afterCallback(mc, mappingFunction(key))
-      if (newValue != null)
-        put(key, newValue)
-      newValue
-    } else if (node.getValue() == null) {
-      val newValue = afterCallback(mc, mappingFunction(key))
-      if (newValue != null)
-        updateNodeValue(node, newValue)
-      newValue
-    } else {
-      node.getValue()
-    }
-  }
+  ): V =
+    TreeMap.computeIfAbsent(tree, key, mappingFunction)
 
   override def computeIfPresent(
       key: K,
       remappingFunction: BiFunction[_ >: K, _ >: V, _ <: V]
-  ): V = {
-    val node = RB.getNode(tree, key)
-    val mc = tree.modCount
-    if ((node ne null) && node.getValue() != null)
-      updateNodeValue(
-        node,
-        afterCallback(mc, remappingFunction(key, node.getValue()))
-      )
-    else
-      null.asInstanceOf[V]
-  }
+  ): V =
+    TreeMap.computeIfPresent(tree, key, remappingFunction)
 
   override def compute(
       key: K,
       remappingFunction: BiFunction[_ >: K, _ >: V, _ <: V]
-  ): V = {
-    val node = RB.getNode(tree, key)
-    val mc = tree.modCount
-    if (node eq null) {
-      val newValue =
-        afterCallback(mc, remappingFunction(key, null.asInstanceOf[V]))
-      if (newValue != null)
-        put(key, newValue)
-      newValue
-    } else {
-      updateNodeValue(
-        node,
-        afterCallback(mc, remappingFunction(key, node.getValue()))
-      )
-    }
-  }
+  ): V =
+    TreeMap.compute(tree, key, remappingFunction)
 
   override def merge(
       key: K,
       value: V,
       remappingFunction: BiFunction[_ >: V, _ >: V, _ <: V]
-  ): V = {
-    Objects.requireNonNull(value)
+  ): V =
+    TreeMap.merge(tree, key, value, remappingFunction)
 
-    val node = RB.getNode(tree, key)
+  // The JVM also checks after the last call of the function.
+
+  override def forEach(action: BiConsumer[_ >: K, _ >: V]): Unit = {
+    Objects.requireNonNull(action)
     val mc = tree.modCount
-    if (node eq null) {
-      put(key, value)
-      value
-    } else {
-      val oldValue = node.getValue()
-      val newValue =
-        if (oldValue == null) value
-        else afterCallback(mc, remappingFunction(oldValue, value))
-
-      updateNodeValue(node, newValue)
+    val it = RB.iterator(tree)
+    while (it.hasNext()) {
+      val e = it.next()
+      action.accept(e.getKey(), e.getValue())
+      TreeMap.checkModCount(tree, mc)
     }
   }
 
-  private def afterCallback[T](expectedModCount: Int, result: T): T = {
-    if (tree.modCount != expectedModCount)
-      throw new ConcurrentModificationException()
-    result
-  }
-
-  /** Common code for functions above.
-   *
-   *    - Sets value to newValue if it is non-null
-   *    - deletes the node if newValue is null.
-   *
-   *  @returns
-   *    newValue
-   */
-  private def updateNodeValue(node: RB.Node[K, V], newValue: V): V = {
-    if (newValue == null)
-      RB.deleteNode(tree, node)
-    else
-      node.setValue(newValue)
-    newValue
+  override def replaceAll(
+      function: BiFunction[_ >: K, _ >: V, _ <: V]
+  ): Unit = {
+    Objects.requireNonNull(function)
+    val mc = tree.modCount
+    val it = RB.iterator(tree)
+    while (it.hasNext()) {
+      val e = it.next()
+      e.setValue(function.apply(e.getKey(), e.getValue()))
+      TreeMap.checkModCount(tree, mc)
+    }
   }
 
   override def remove(key: Any): V =
@@ -320,6 +270,120 @@ class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit
 }
 
 private object TreeMap {
+
+  @inline
+  def checkModCount(tree: RB.Tree[_, _], expectedModCount: Int): Unit =
+    if (tree.modCount != expectedModCount)
+      throw new ConcurrentModificationException()
+
+  private def afterCallback[T](
+      tree: RB.Tree[_, _],
+      expectedModCount: Int,
+      result: T
+  ): T = {
+    checkModCount(tree, expectedModCount)
+    result
+  }
+
+  /* Sets the value to newValue if it is non-null, deletes the node otherwise.
+   * Returns newValue.
+   */
+  private def updateNodeValue[K, V](
+      tree: RB.Tree[K, V],
+      node: RB.Node[K, V],
+      newValue: V
+  ): V = {
+    if (newValue == null)
+      RB.deleteNode(tree, node)
+    else
+      node.setValue(newValue)
+    newValue
+  }
+
+  def computeIfAbsent[K, V](
+      tree: RB.Tree[K, V],
+      key: K,
+      mappingFunction: Function[_ >: K, _ <: V]
+  )(implicit comp: Comparator[_ >: K]): V = {
+    val node = RB.getNode(tree, key)
+    val mc = tree.modCount
+
+    if (node eq null) {
+      val newValue = afterCallback(tree, mc, mappingFunction(key))
+      if (newValue != null)
+        RB.insert(tree, key, newValue)
+      newValue
+    } else if (node.getValue() == null) {
+      val newValue = afterCallback(tree, mc, mappingFunction(key))
+      if (newValue != null)
+        updateNodeValue(tree, node, newValue)
+      newValue
+    } else {
+      node.getValue()
+    }
+  }
+
+  def computeIfPresent[K, V](
+      tree: RB.Tree[K, V],
+      key: K,
+      remappingFunction: BiFunction[_ >: K, _ >: V, _ <: V]
+  )(implicit comp: Comparator[_ >: K]): V = {
+    val node = RB.getNode(tree, key)
+    val mc = tree.modCount
+    if ((node ne null) && node.getValue() != null)
+      updateNodeValue(
+        tree,
+        node,
+        afterCallback(tree, mc, remappingFunction(key, node.getValue()))
+      )
+    else
+      null.asInstanceOf[V]
+  }
+
+  def compute[K, V](
+      tree: RB.Tree[K, V],
+      key: K,
+      remappingFunction: BiFunction[_ >: K, _ >: V, _ <: V]
+  )(implicit comp: Comparator[_ >: K]): V = {
+    val node = RB.getNode(tree, key)
+    val mc = tree.modCount
+    if (node eq null) {
+      val newValue =
+        afterCallback(tree, mc, remappingFunction(key, null.asInstanceOf[V]))
+      if (newValue != null)
+        RB.insert(tree, key, newValue)
+      newValue
+    } else {
+      updateNodeValue(
+        tree,
+        node,
+        afterCallback(tree, mc, remappingFunction(key, node.getValue()))
+      )
+    }
+  }
+
+  def merge[K, V](
+      tree: RB.Tree[K, V],
+      key: K,
+      value: V,
+      remappingFunction: BiFunction[_ >: V, _ >: V, _ <: V]
+  )(implicit comp: Comparator[_ >: K]): V = {
+    Objects.requireNonNull(value)
+
+    val node = RB.getNode(tree, key)
+    val mc = tree.modCount
+    if (node eq null) {
+      RB.insert(tree, key, value)
+      value
+    } else {
+      val oldValue = node.getValue()
+      val newValue =
+        if (oldValue == null) value
+        else afterCallback(tree, mc, remappingFunction(oldValue, value))
+
+      updateNodeValue(tree, node, newValue)
+    }
+  }
   private class ProjectedEntrySet[K, V](
       tree: RB.Tree[K, V],
       lowerBound: K,
@@ -428,6 +492,57 @@ private object TreeMap {
         if (isWithinBounds(key)) RB.delete(tree, key)
         else null
       RB.nullableNodeValue(oldNode)
+    }
+
+    /* As TreeMap, so that changes made by the function are detected. Outside
+     * the range the key is absent from the view: storing a value there is an
+     * IllegalArgumentException.
+     */
+
+    override def computeIfAbsent(
+        key: K,
+        mappingFunction: Function[_ >: K, _ <: V]
+    ): V = {
+      Objects.requireNonNull(mappingFunction)
+      if (isWithinBounds(key))
+        TreeMap.computeIfAbsent(tree, key, mappingFunction)
+      else if (mappingFunction(key) == null)
+        null.asInstanceOf[V]
+      else
+        throw new IllegalArgumentException
+    }
+
+    override def computeIfPresent(
+        key: K,
+        remappingFunction: BiFunction[_ >: K, _ >: V, _ <: V]
+    ): V = {
+      Objects.requireNonNull(remappingFunction)
+      if (!isWithinBounds(key)) null.asInstanceOf[V]
+      else TreeMap.computeIfPresent(tree, key, remappingFunction)
+    }
+
+    override def compute(
+        key: K,
+        remappingFunction: BiFunction[_ >: K, _ >: V, _ <: V]
+    ): V = {
+      Objects.requireNonNull(remappingFunction)
+      if (isWithinBounds(key))
+        TreeMap.compute(tree, key, remappingFunction)
+      else if (remappingFunction(key, null.asInstanceOf[V]) == null)
+        null.asInstanceOf[V]
+      else
+        throw new IllegalArgumentException
+    }
+
+    override def merge(
+        key: K,
+        value: V,
+        remappingFunction: BiFunction[_ >: V, _ >: V, _ <: V]
+    ): V = {
+      Objects.requireNonNull(remappingFunction)
+      if (!isWithinBounds(key))
+        throw new IllegalArgumentException
+      TreeMap.merge(tree, key, value, remappingFunction)
     }
 
     protected def isDescending: Boolean
