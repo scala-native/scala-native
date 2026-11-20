@@ -414,6 +414,21 @@ class ListFailFastTest {
     assertThrows(classOf[CME], child.get(0))
   }
 
+  @Test def arrayListSubListRemoveIfThrowsWhenPredicateClearsTheView(): Unit = {
+    val l = new ArrayList[Integer](Arrays.asList[Integer](9, 0, 1, 2, 9))
+    val view = l.subList(1, 4)
+    assertThrows(
+      classOf[CME],
+      view.removeIf(new Predicate[Integer] {
+        def test(x: Integer): Boolean = {
+          view.clear()
+          false
+        }
+      })
+    )
+    assertEquals(Arrays.asList[Integer](9, 9), l)
+  }
+
   @Test def arrayListSubListBulkRemovalAcceptsSiblingView(): Unit = {
     def mk() = new ArrayList[Integer](Arrays.asList[Integer](0, 1, 0, 1, 2))
     def expect(expected: Int*)(l: List[Integer]) =

@@ -346,7 +346,8 @@ private[util] class SubList[E](
     val remove = new Array[Boolean](n)
     var any = false
     var i = 0
-    while (i < n) {
+    // Stop once the decision changed this view: its elements have moved.
+    while (i < n && modCount == expectedModCount) {
       if (shouldRemove(get(i))) {
         remove(i) = true
         any = true
