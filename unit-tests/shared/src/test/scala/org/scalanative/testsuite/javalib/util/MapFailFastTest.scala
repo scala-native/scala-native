@@ -393,6 +393,8 @@ class MapFailFastTest {
 
   @Test def hashtableViewsWriteThrough(): Unit = {
     val h = fill(new Hashtable[Integer, Integer]())
+    val keys = h.keySet()
+    val entries = h.entrySet()
     assertTrue(h.keySet().remove(int(1)))
     assertFalse(h.containsKey(int(1)))
     assertTrue(h.values().remove(int(2)))
@@ -402,8 +404,70 @@ class MapFailFastTest {
     assertEquals(int(42), h.get(e.getKey()))
     assertThrows(classOf[NullPointerException], e.setValue(null))
     h.put(int(7), int(7))
-    assertTrue(h.keySet().contains(int(7)))
-    assertEquals(4, h.entrySet().size())
+    assertTrue(keys.contains(int(7)))
+    assertEquals(4, keys.size())
+    assertEquals(4, entries.size())
+  }
+
+  @Test def updatingAnExistingKeyAtTheResizeThresholdKeepsIteration(): Unit = {
+    // 11 mappings: the next new key would grow the default table
+    val m = new HashMap[Integer, Integer]()
+    for (i <- 0 until 11) m.put(int(i), int(i))
+    val it = m.keySet().iterator()
+    it.next()
+    m.put(int(3), int(33))
+    m.putIfAbsent(int(4), int(44))
+    var seen = 1
+    while (it.hasNext()) {
+      it.next()
+      seen += 1
+    }
+    assertEquals(11, seen)
+  }
+
+  @Test def viewForEachDetectsChangeByLastCallback(): Unit = {
+    val oneEntryMaps: Seq[(String, () => JMap)] = Seq(
+      "HashMap" -> (() => new HashMap[Integer, Integer]()),
+      "LinkedHashMap" -> (() => new LinkedHashMap[Integer, Integer]()),
+      "LinkedHashMap(accessOrder)" ->
+        (() => new LinkedHashMap[Integer, Integer](16, 0.75f, true)),
+      "IdentityHashMap" -> (() => new IdentityHashMap[Integer, Integer]())
+    )
+    for ((name, mk) <- oneEntryMaps) {
+      def one(): JMap = {
+        val m = mk()
+        m.put(int(1), int(1))
+        m
+      }
+      val m1 = one()
+      assertThrows(
+        s"$name: keySet",
+        classOf[CME],
+        m1.keySet()
+          .forEach(new Consumer[Integer] {
+            def accept(k: Integer): Unit = m1.put(int(2), int(2))
+          })
+      )
+      val m2 = one()
+      assertThrows(
+        s"$name: values",
+        classOf[CME],
+        m2.values()
+          .forEach(new Consumer[Integer] {
+            def accept(v: Integer): Unit = m2.put(int(2), int(2))
+          })
+      )
+      val m3 = one()
+      assertThrows(
+        s"$name: entrySet",
+        classOf[CME],
+        m3.entrySet()
+          .forEach(new Consumer[Map.Entry[Integer, Integer]] {
+            def accept(e: Map.Entry[Integer, Integer]): Unit =
+              m3.put(int(2), int(2))
+          })
+      )
+    }
   }
 
   private val sets: Seq[(String, () => Set[Integer])] = Seq(

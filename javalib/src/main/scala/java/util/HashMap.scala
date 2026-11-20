@@ -2,7 +2,7 @@
 
 package java.util
 
-import java.util.function.{BiConsumer, BiFunction, Function}
+import java.util.function.{BiConsumer, BiFunction, Consumer, Function}
 import java.{util => ju}
 
 import scala.annotation.tailrec
@@ -286,6 +286,21 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
     }
   }
 
+  /* Iterable.forEach stops on hasNext(), which does not check for changes
+   * made by the last call of the action.
+   */
+  private[util] final def forEachChecked[A](
+      it: ju.Iterator[A],
+      action: Consumer[_ >: A]
+  ): Unit = {
+    Objects.requireNonNull(action)
+    val expectedModCount = modCount
+    while (it.hasNext()) {
+      action.accept(it.next())
+      checkForComodification(expectedModCount)
+    }
+  }
+
   @inline
   private[util] final def checkForComodification(expectedModCount: Int): Unit =
     if (modCount != expectedModCount)
@@ -400,7 +415,11 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
   private def put0(key: K, value: V, hash: Int, ifAbsent: Boolean): V = {
     // scalastyle:off return
     val newContentSize = contentSize + 1
-    if (newContentSize >= threshold)
+    /* Growing rewires the buckets, so it must not happen for an existing key:
+     * that update does not count as a modification.
+     */
+    if (newContentSize >= threshold &&
+        (findNode0(key, hash, index(hash)) eq null))
       growTable()
     val idx = index(hash)
     val newNode = table(idx) match {
@@ -675,6 +694,9 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
     def iterator(): Iterator[K] =
       keyIterator()
 
+    override def forEach(action: Consumer[_ >: K]): Unit =
+      forEachChecked(keyIterator(), action)
+
     def size(): Int =
       self.size()
 
@@ -692,6 +714,9 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
     def iterator(): ju.Iterator[V] =
       valueIterator()
 
+    override def forEach(action: Consumer[_ >: V]): Unit =
+      forEachChecked(valueIterator(), action)
+
     def size(): Int =
       self.size()
 
@@ -705,6 +730,9 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
   private final class EntrySet extends AbstractSet[Map.Entry[K, V]] {
     def iterator(): Iterator[Map.Entry[K, V]] =
       entrySetIterator()
+
+    override def forEach(action: Consumer[_ >: Map.Entry[K, V]]): Unit =
+      forEachChecked(entrySetIterator(), action)
 
     def size(): Int =
       self.size()

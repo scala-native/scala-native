@@ -2,6 +2,7 @@
 
 package java.util
 
+import java.util.function.Consumer
 import java.{util => ju}
 
 import scala.annotation.tailrec
@@ -80,6 +81,9 @@ class IdentityHashMap[K, V] private (
     def iterator(): ju.Iterator[V] =
       inner.valueIterator()
 
+    override def forEach(action: Consumer[_ >: V]): Unit =
+      inner.forEachChecked(iterator(), action)
+
     def size(): Int =
       self.size()
 
@@ -124,6 +128,9 @@ class IdentityHashMap[K, V] private (
   }
 
   private final class KeySet extends AbstractSet[K] {
+    override def forEach(action: Consumer[_ >: K]): Unit =
+      inner.forEachChecked(iterator(), action)
+
     def iterator(): Iterator[K] = {
       new ju.Iterator[K] {
         private val iter = inner.keyIterator()
@@ -191,6 +198,9 @@ class IdentityHashMap[K, V] private (
   }
 
   private final class EntrySet extends AbstractSet[Map.Entry[K, V]] {
+    override def forEach(action: Consumer[_ >: Map.Entry[K, V]]): Unit =
+      inner.forEachChecked(iterator(), action)
+
     def iterator(): Iterator[Map.Entry[K, V]] = {
       new ju.Iterator[Map.Entry[K, V]] {
         private val iter = inner.entrySetIterator()
