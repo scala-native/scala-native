@@ -82,7 +82,7 @@ class IdentityHashMap[K, V] private (
       inner.valueIterator()
 
     override def forEach(action: Consumer[_ >: V]): Unit =
-      inner.forEachChecked(iterator(), action)
+      inner.forEachChecked[V](iterator(), action)
 
     def size(): Int =
       self.size()
@@ -129,7 +129,7 @@ class IdentityHashMap[K, V] private (
 
   private final class KeySet extends AbstractSet[K] {
     override def forEach(action: Consumer[_ >: K]): Unit =
-      inner.forEachChecked(iterator(), action)
+      inner.forEachChecked[K](iterator(), action)
 
     def iterator(): Iterator[K] = {
       new ju.Iterator[K] {
@@ -199,7 +199,7 @@ class IdentityHashMap[K, V] private (
 
   private final class EntrySet extends AbstractSet[Map.Entry[K, V]] {
     override def forEach(action: Consumer[_ >: Map.Entry[K, V]]): Unit =
-      inner.forEachChecked(iterator(), action)
+      inner.forEachChecked[Map.Entry[K, V]](iterator(), action)
 
     def iterator(): Iterator[Map.Entry[K, V]] = {
       new ju.Iterator[Map.Entry[K, V]] {

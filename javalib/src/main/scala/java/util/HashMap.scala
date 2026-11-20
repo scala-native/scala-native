@@ -695,7 +695,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
       keyIterator()
 
     override def forEach(action: Consumer[_ >: K]): Unit =
-      forEachChecked(keyIterator(), action)
+      forEachChecked[K](keyIterator(), action)
 
     def size(): Int =
       self.size()
@@ -715,7 +715,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
       valueIterator()
 
     override def forEach(action: Consumer[_ >: V]): Unit =
-      forEachChecked(valueIterator(), action)
+      forEachChecked[V](valueIterator(), action)
 
     def size(): Int =
       self.size()
@@ -732,7 +732,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Float)
       entrySetIterator()
 
     override def forEach(action: Consumer[_ >: Map.Entry[K, V]]): Unit =
-      forEachChecked(entrySetIterator(), action)
+      forEachChecked[Map.Entry[K, V]](entrySetIterator(), action)
 
     def size(): Int =
       self.size()

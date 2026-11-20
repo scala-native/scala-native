@@ -9,6 +9,7 @@ import org.junit.Assert._
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.Platform
 
 class MapFailFastTest {
 
@@ -426,13 +427,20 @@ class MapFailFastTest {
   }
 
   @Test def viewForEachDetectsChangeByLastCallback(): Unit = {
-    val oneEntryMaps: Seq[(String, () => JMap)] = Seq(
+    val hashMaps: Seq[(String, () => JMap)] = Seq(
       "HashMap" -> (() => new HashMap[Integer, Integer]()),
       "LinkedHashMap" -> (() => new LinkedHashMap[Integer, Integer]()),
       "LinkedHashMap(accessOrder)" ->
-        (() => new LinkedHashMap[Integer, Integer](16, 0.75f, true)),
-      "IdentityHashMap" -> (() => new IdentityHashMap[Integer, Integer]())
+        (() => new LinkedHashMap[Integer, Integer](16, 0.75f, true))
     )
+    /* On the JVM an IdentityHashMap view notices the new key only if it lands
+     * after the visited one in the table, which depends on identity hashes.
+     */
+    val oneEntryMaps: Seq[(String, () => JMap)] =
+      if (Platform.executingInJVM) hashMaps
+      else
+        hashMaps :+
+          ("IdentityHashMap" -> (() => new IdentityHashMap[Integer, Integer]()))
     for ((name, mk) <- oneEntryMaps) {
       def one(): JMap = {
         val m = mk()
