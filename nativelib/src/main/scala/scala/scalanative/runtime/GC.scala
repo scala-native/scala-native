@@ -161,14 +161,15 @@ object GC {
   @name("scalanative_GC_remove_roots")
   def removeRoots(addressLow: CVoidPtr, addressHigh: CVoidPtr): Unit = extern
 
+  /** Weak and phantom referents under Boehm, see java.lang.ref.Reference */
   @extern object Boehm {
-    @name("scalanative_GC_weak_ref_slot_create")
-    private[runtime] def weakRefSlotCreate(referent: RawPtr): RawPtr = extern
+    @name("scalanative_GC_weak_ref_init")
+    private[runtime] def weakRefInit(field: RawPtr): Unit = extern
 
-    @name("scalanative_GC_weak_ref_slot_get")
-    private[runtime] def weakRefSlotGet(slot: RawPtr): RawPtr = extern
+    @name("scalanative_GC_weak_ref_get")
+    private[runtime] def weakRefGet(field: RawPtr): RawPtr = extern
 
-    @name("scalanative_GC_weak_ref_slot_clear")
-    private[runtime] def weakRefSlotClear(slot: RawPtr): Unit = extern
+    @name("scalanative_GC_weak_ref_clear")
+    private[runtime] def weakRefClear(field: RawPtr): Unit = extern
   }
 }

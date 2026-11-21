@@ -1,23 +1,17 @@
 package java.lang.ref
 
 import scala.scalanative.meta.LinktimeInfo
-import scala.scalanative.runtime.RawPtr
+import scala.scalanative.runtime.Intrinsics.classFieldRawPtr
 import scala.scalanative.runtime.javalib.Proxy
 
-/* Subclassed only by the reference types of this package, as on the JVM.
+/* The referent must stay the first field: the GC finds it right after the
+ * object header (codegen.FieldLayout, ReferenceObject in ObjectHeader.h).
+ * Immix and Commix clear weak and phantom referents once unreachable, and soft
+ * ones only before an OutOfMemoryError. Boehm keeps weak and phantom referents
+ * as hidden pointers and treats soft ones as strong.
  *
- * The garbage collector reads and clears the referent in place: it must stay
- * the first field of Reference, so that it follows the object header in every
- * reference object. See codegen.FieldLayout and ReferenceObject in
- * ObjectHeader.h. Immix and Commix never mark it through the reference: weak
- * and phantom referents are cleared once nothing else keeps them alive, soft
- * ones only before an OutOfMemoryError.
- *
- * Boehm keeps weak and phantom referents in a disappearing link instead, and
- * soft referents in the field, as strong references.
- *
- * References with a queue are kept in ReferenceRegistry, which enqueues them
- * once the GC cleared their referent.
+ * References with a queue are tracked by ReferenceRegistry, which enqueues
+ * them after the GC cleared their referent.
  */
 abstract class Reference[T] private[ref] (
     @volatile private[ref] var _gc_modified_referent: T,
@@ -25,49 +19,35 @@ abstract class Reference[T] private[ref] (
 ) {
   import Reference._
 
-  @volatile private var boehmReferentSlot: RawPtr = _
   // Guarded by the queue
   private[ref] var state: Int = Active
-  // Set once the program cleared or enqueued this reference: the GC no
-  // longer enqueues it
+  // Cleared or enqueued by the program, never enqueued by the GC
   @volatile private var inactive = false
-  // The next reference in the list of ReferenceRegistry
+  // Next reference tracked by ReferenceRegistry
   @volatile private[ref] var nextReference: Reference[_] = _
 
-  if (LinktimeInfo.gc.isBoehm) {
-    if (_gc_modified_referent != null && !isSoft) {
-      boehmReferentSlot = Proxy.GC_Boehm_weakRefSlotCreate(
-        _gc_modified_referent.asInstanceOf[AnyRef]
-      )
-      // Keep this field null under Boehm; otherwise it is a strong reference.
-      _gc_modified_referent = null.asInstanceOf[T]
-    }
-  }
-
-  // Boehm never clears soft referents
-  if (queue != null && referent != null) {
+  if (_gc_modified_referent != null) {
     if (LinktimeInfo.gc.isBoehm) {
-      if (!isSoft) ReferenceRegistry.add(this)
-    } else ReferenceRegistry.add(this)
+      // Boehm never clears soft referents
+      if (!isSoft) {
+        Proxy.GC_Boehm_weakRefInit(referentField)
+        if (queue != null) ReferenceRegistry.add(this)
+      }
+    } else if (queue != null) ReferenceRegistry.add(this)
   }
 
-  // Soft references are cleared only when memory runs out
-  private[ref] def isSoft: Boolean = false
+  private def isSoft: Boolean = this.isInstanceOf[SoftReference[_]]
+
+  private def referentField = classFieldRawPtr(this, "_gc_modified_referent")
 
   private def referent: T =
-    if (LinktimeInfo.gc.isBoehm) boehmReferent
-    else _gc_modified_referent
+    if (LinktimeInfo.gc.isBoehm) {
+      if (isSoft) _gc_modified_referent
+      else Proxy.GC_Boehm_weakRefGet(referentField).asInstanceOf[T]
+    } else _gc_modified_referent
 
-  // Soft referents stay in the field under Boehm
-  private def boehmReferent: T = {
-    val slot = boehmReferentSlot
-    if (slot == null) _gc_modified_referent
-    else Proxy.GC_Boehm_weakRefSlotGet[AnyRef](slot).asInstanceOf[T]
-  }
-
-  /** Called by ReferenceRegistry after a collection. Returns false while the
-   *  referent is alive. Otherwise enqueues the reference, unless the program
-   *  already cleared or enqueued it, and returns true.
+  /** After a collection: false while the referent is alive, otherwise enqueues
+   *  this reference unless the program cleared or enqueued it.
    */
   private[ref] def handleCleared(): Boolean =
     referent == null && {
@@ -82,20 +62,10 @@ abstract class Reference[T] private[ref] (
 
   def clear(): Unit = {
     inactive = true
-    clearReferent()
-  }
-
-  private def clearReferent(): Unit = {
-    if (LinktimeInfo.gc.isBoehm) clearBoehmSlot()
-    _gc_modified_referent = null.asInstanceOf[T]
-  }
-
-  private def clearBoehmSlot(): Unit = {
-    val slot = boehmReferentSlot
-    if (slot != null) {
-      Proxy.GC_Boehm_weakRefSlotClear(slot)
-      boehmReferentSlot = null
-    }
+    if (LinktimeInfo.gc.isBoehm) {
+      if (isSoft) _gc_modified_referent = null.asInstanceOf[T]
+      else Proxy.GC_Boehm_weakRefClear(referentField)
+    } else _gc_modified_referent = null.asInstanceOf[T]
   }
 
   def isEnqueued(): Boolean =
@@ -106,9 +76,7 @@ abstract class Reference[T] private[ref] (
     enqueueCleared()
   }
 
-  /** Adds this reference, with its referent already cleared, to its queue
-   *  unless it was enqueued before.
-   */
+  // At most once per reference
   private[ref] def enqueueCleared(): Boolean =
     queue != null && queue.enqueue(this)
 }

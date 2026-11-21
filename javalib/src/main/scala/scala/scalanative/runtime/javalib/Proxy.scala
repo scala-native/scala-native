@@ -25,15 +25,10 @@ object Proxy {
       callback: GCWeakReferencesCollectedCallback
   ): Unit = GC.setWeakReferencesCollectedCallback(callback)
 
-  def GC_Boehm_weakRefSlotCreate(referent: AnyRef): RawPtr =
-    GC.Boehm.weakRefSlotCreate(Intrinsics.castObjectToRawPtr(referent))
-  def GC_Boehm_weakRefSlotGet[T <: AnyRef](slot: RawPtr): T = {
-    Intrinsics
-      .castRawPtrToObject(GC.Boehm.weakRefSlotGet(slot))
-      .asInstanceOf[T]
-  }
-  def GC_Boehm_weakRefSlotClear(slot: RawPtr): Unit =
-    GC.Boehm.weakRefSlotClear(slot)
+  def GC_Boehm_weakRefInit(field: RawPtr): Unit = GC.Boehm.weakRefInit(field)
+  def GC_Boehm_weakRefGet(field: RawPtr): AnyRef =
+    Intrinsics.castRawPtrToObject(GC.Boehm.weakRefGet(field))
+  def GC_Boehm_weakRefClear(field: RawPtr): Unit = GC.Boehm.weakRefClear(field)
 
   def disableGracefullShutdown(): Unit =
     MainThreadShutdownContext.gracefully = false
