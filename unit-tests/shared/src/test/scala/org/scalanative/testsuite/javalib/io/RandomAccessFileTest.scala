@@ -159,4 +159,24 @@ class RandomAccessFileTest {
       assertTrue("Could not delete read-only temporary file", roFile.delete())
     }
   }
+
+  @Test def skipBytesAdvancesFromCurrentPointer(): Unit = {
+    raf.write("0123456789".getBytes("UTF-8"))
+    raf.seek(2)
+    assertEquals("skipped", 3, raf.skipBytes(3))
+    assertEquals("pointer", 5L, raf.getFilePointer())
+    assertEquals("next byte", '5'.toInt, raf.read())
+    assertEquals("skip past end", 4, raf.skipBytes(100))
+    assertEquals("pointer at end", 10L, raf.getFilePointer())
+  }
+
+  @Test def streamsAndChannelShareOnePosition(): Unit = {
+    raf.write("0123456789".getBytes("UTF-8"))
+    val channel = raf.getChannel()
+    channel.position(4)
+    assertEquals("read after channel.position", '4'.toInt, raf.read())
+    raf.seek(1)
+    raf.write('X')
+    assertEquals("channel position after write", 2L, channel.position())
+  }
 }

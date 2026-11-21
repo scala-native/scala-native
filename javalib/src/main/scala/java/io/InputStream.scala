@@ -194,11 +194,11 @@ abstract class InputStream extends Closeable {
       } else {
         val mMin = Math.min(m, buffer.length).toInt
         val skipped = read(buffer, 0, mMin) // buffer contents are discarded
-        if (skipped < 0) {
+        if (skipped <= 0) {
           lastSkipped
         } else {
           val totalSkipped = lastSkipped + skipped
-          loop(m - mMin, totalSkipped)
+          loop(m - skipped, totalSkipped)
         }
       }
     }

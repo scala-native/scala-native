@@ -92,4 +92,47 @@ class FileInputStreamTest {
     }
   }
 
+  @Test def skipCanMovePastEndOfFile(): Unit = {
+    withTemporaryDirectory { dir =>
+      val file = new File(dir, "f")
+      Files.write(file.toPath(), "0123456789".getBytes("UTF-8"))
+      val in = new FileInputStream(file)
+      try {
+        assertEquals("skip(3)", 3L, in.skip(3))
+        assertEquals("read after skip", '3'.toInt, in.read())
+        assertEquals("skip(100)", 100L, in.skip(100))
+        assertEquals("read past end", -1, in.read())
+      } finally in.close()
+    }
+  }
+
+  @Test def skipPastFourGiB(): Unit = {
+    withTemporaryDirectory { dir =>
+      val file = new File(dir, "f")
+      Files.write(file.toPath(), "0123456789".getBytes("UTF-8"))
+      val in = new FileInputStream(file)
+      try {
+        val far = 5L << 30
+        assertEquals("skip", far, in.skip(far))
+        assertEquals("position", far, in.getChannel().position())
+        assertEquals("read past end", -1, in.read())
+      } finally in.close()
+    }
+  }
+
+  @Test def skipCanMoveBackward(): Unit = {
+    withTemporaryDirectory { dir =>
+      val file = new File(dir, "f")
+      Files.write(file.toPath(), "0123456789".getBytes("UTF-8"))
+      val in = new FileInputStream(file)
+      try {
+        assertEquals("skip(5)", 5L, in.skip(5))
+        assertEquals("skip(-1)", -1L, in.skip(-1))
+        assertEquals("read after skip(-1)", '4'.toInt, in.read())
+        assertEquals("skip(-3)", -3L, in.skip(-3))
+        assertEquals("read after skip(-3)", '2'.toInt, in.read())
+        assertThrows(classOf[IOException], in.skip(-10))
+      } finally in.close()
+    }
+  }
 }
