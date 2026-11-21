@@ -60,7 +60,10 @@ abstract class Reference[T] private[ref] (
   final def refersTo(obj: T): Boolean =
     referent.asInstanceOf[AnyRef] eq obj.asInstanceOf[AnyRef]
 
-  def clear(): Unit = {
+  def clear(): Unit = clearReferent()
+
+  // Not overridable, enqueue() clears even if a subclass overrides clear()
+  private def clearReferent(): Unit = {
     inactive = true
     if (LinktimeInfo.gc.isBoehm) {
       if (isSoft) _gc_modified_referent = null.asInstanceOf[T]
@@ -72,7 +75,7 @@ abstract class Reference[T] private[ref] (
     queue != null && queue.synchronized(state == Enqueued)
 
   def enqueue(): Boolean = {
-    clear()
+    clearReferent()
     enqueueCleared()
   }
 

@@ -111,6 +111,8 @@ private[java] object ReferenceRegistry {
     if (handlerState.compareAndSet(Requested, Starting)) {
       referenceHandlerThread
       handlerState.set(Started)
+      // Callbacks while Starting handled references inline, rescan
+      LockSupport.unpark(referenceHandlerThread)
     }
 
   if (LinktimeInfo.isWeakReferenceSupported) {

@@ -11,8 +11,9 @@ class ReferenceQueue[T] {
     synchronized {
       if (reference.state != Active) false
       else {
-        reference.state = Enqueued
+        // Still Active if the deque cannot grow
         underlying.addLast(reference.asInstanceOf[Ref])
+        reference.state = Enqueued
         notifyAll()
         true
       }

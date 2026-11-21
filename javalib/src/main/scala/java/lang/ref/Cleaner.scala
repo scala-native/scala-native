@@ -71,7 +71,9 @@ object Cleaner {
   // Runs the action instead of enqueueing
   private object CleaningQueue extends ReferenceQueue[AnyRef] {
     override private[ref] def enqueue(reference: Reference[_]): Boolean = {
-      reference.asInstanceOf[CleanableReference].cleanable.clean()
+      // A failing action must not stop the other references from being handled
+      try reference.asInstanceOf[CleanableReference].cleanable.clean()
+      catch { case _: Throwable => () }
       true
     }
   }

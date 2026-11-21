@@ -69,8 +69,8 @@ class PhantomReferenceTestOnJDK9 {
     val ref = new PhantomReference[AnyRef](referent, queue)
     for (_ <- 0 until 3) collect()
     assertNull("reachable referent enqueued", queue.poll())
-    assertNotNull(ref)
-    assertNotNull(referent)
+    Reference.reachabilityFence(referent)
+    Reference.reachabilityFence(ref)
   }
 }
 
