@@ -57,7 +57,7 @@ object ScalaNativePluginInternal {
   val nativeWarnOldJVM =
     taskKey[Unit]("Report if using unsupported or deprecated JVM version")
 
-  lazy val scalaNativeDependencySettings: Seq[Setting[_]] = {
+  lazy val scalaNativeDependencySettings: Seq[Setting[?]] = {
     val nativeStandardLibraries =
       Seq("nativelib", "clib", "posixlib", "windowslib", "javalib", "auxlib")
 
@@ -105,7 +105,7 @@ object ScalaNativePluginInternal {
     )
   }
 
-  lazy val scalaNativeBaseSettings: Seq[Setting[_]] =
+  lazy val scalaNativeBaseSettings: Seq[Setting[?]] =
     PluginCompat.sbtVersionBaseSettings
 
   /** Called by overridden method in plugin
@@ -117,7 +117,7 @@ object ScalaNativePluginInternal {
    *  @see
    *    [[ScalaNativePlugin#globalSettings]]
    */
-  lazy val scalaNativeGlobalSettings: Seq[Setting[_]] = Seq(
+  lazy val scalaNativeGlobalSettings: Seq[Setting[?]] = Seq(
     onLoad := {
       checkJVMVersion(sLog.value)
       onLoad.value
@@ -239,7 +239,7 @@ object ScalaNativePluginInternal {
    *  for test and app configurations. The total with 3 Scala versions equals 6
    *  times per project.
    */
-  def scalaNativeConfigSettings(testConfig: Boolean): Seq[Setting[_]] = Seq(
+  def scalaNativeConfigSettings(testConfig: Boolean): Seq[Setting[?]] = Seq(
     auxiliaryClassFiles := Def.uncached {
       auxiliaryClassFiles.value :+ NirAuxiliaryClassFiles
     },
@@ -293,7 +293,7 @@ object ScalaNativePluginInternal {
       val message = try {
         val exitCode = {
           val proc =
-            new ProcessBuilder(args: _*)
+            new ProcessBuilder(args*)
 
           env.foreach { case (k, v) => proc.environment().put(k, v) }
 
@@ -336,11 +336,11 @@ object ScalaNativePluginInternal {
     }
   )
 
-  lazy val scalaNativeCompileSettings: Seq[Setting[_]] = {
+  lazy val scalaNativeCompileSettings: Seq[Setting[?]] = {
     scalaNativeConfigSettings(false)
   }
 
-  lazy val scalaNativeTestSettings: Seq[Setting[_]] =
+  lazy val scalaNativeTestSettings: Seq[Setting[?]] =
     scalaNativeConfigSettings(true) ++
       Seq(
         mainClass := Some("scala.scalanative.testinterface.TestMain"),
@@ -395,7 +395,7 @@ object ScalaNativePluginInternal {
    *  @see
    *    [[ScalaNativePlugin#projectSettings]]
    */
-  lazy val scalaNativeProjectSettings: Seq[Setting[_]] =
+  lazy val scalaNativeProjectSettings: Seq[Setting[?]] =
     scalaNativeDependencySettings ++
       scalaNativeBaseSettings ++
       inConfig(Compile)(scalaNativeCompileSettings) ++

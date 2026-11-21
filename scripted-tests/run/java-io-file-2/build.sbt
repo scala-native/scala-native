@@ -25,7 +25,11 @@ Compile / nativeConfig ~= {
   _.withLinkStubs(true) // DateFormatSymbols
 }
 
-lazy val setupTests = taskKey[Unit]("")
+@transient lazy val setupTests = taskKey[Unit]("")
+
+@transient lazy val cleanupTests = taskKey[Unit]("")
+
+cleanupTests := PermissionCleanup.restore()
 
 setupTests := {
 
@@ -365,4 +369,5 @@ setupTests := {
   assert(!nonexistentFile.exists())
   assert(!nonexistentDirectory.exists())
 
+  PermissionCleanup.save()
 }

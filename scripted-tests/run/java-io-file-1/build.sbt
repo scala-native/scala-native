@@ -21,7 +21,11 @@ Compile / unmanagedSources ++= {
   Seq(p / "Files.scala", p / "Utils.scala")
 }
 
-lazy val setupTests = taskKey[Unit]("")
+@transient lazy val setupTests = taskKey[Unit]("")
+
+@transient lazy val cleanupTests = taskKey[Unit]("")
+
+cleanupTests := PermissionCleanup.restore()
 
 setupTests := {
 
@@ -361,4 +365,5 @@ setupTests := {
   assert(!nonexistentFile.exists())
   assert(!nonexistentDirectory.exists())
 
+  PermissionCleanup.save()
 }

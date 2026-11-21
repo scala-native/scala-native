@@ -17,7 +17,7 @@ jobs:
   test-freebsd:
     name: Test runtime (FreeBSD x86_64, Scala 3)
     env:
-      SBT_VERSION: "2.0.9"
+      SBT_VERSION: "2.1.0"
     if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || github.repository == 'scala-native/scala-native'
     runs-on: ubuntu-latest
     timeout-minutes: 120
@@ -46,7 +46,7 @@ jobs:
   test-netbsd:
     name: Test runtime (NetBSD x86_64, Scala 3)
     env:
-      SBT_VERSION: "2.0.9"
+      SBT_VERSION: "2.1.0"
     if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || github.repository == 'scala-native/scala-native'
     runs-on: ubuntu-latest
     timeout-minutes: 120
