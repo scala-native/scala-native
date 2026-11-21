@@ -67,10 +67,7 @@ class PhantomReferenceTestOnJDK9 {
     val queue = new ReferenceQueue[AnyRef]()
     val referent = new Object
     val ref = new PhantomReference[AnyRef](referent, queue)
-    for (_ <- 0 until 3) {
-      System.gc()
-      Thread.sleep(50)
-    }
+    for (_ <- 0 until 3) collect()
     assertNull("reachable referent enqueued", queue.poll())
     assertNotNull(ref)
     assertNotNull(referent)
@@ -88,6 +85,14 @@ object PhantomReferenceTestOnJDK9 {
   @noinline def clobberStack(n: Int): Int =
     if (n > 0) clobberStack(n - 1) + 1 else 0
 
+  // Allocates some garbage and collects
+  def collect(): Unit = {
+    locally {
+      val _ = Seq.fill(1000)(new Object {})
+    }
+    System.gc()
+  }
+
   /** Collects until `count` references were enqueued on `queue`, fails after a
    *  minute.
    */
@@ -100,10 +105,7 @@ object PhantomReferenceTestOnJDK9 {
     while (enqueued.size < count) {
       if (System.currentTimeMillis() >= deadline)
         fail(s"only ${enqueued.size} of $count references enqueued")
-      locally {
-        val _ = Seq.fill(1000)(new Object {})
-      }
-      System.gc()
+      collect()
       val ref = queue.remove(200)
       if (ref != null) enqueued ::= ref
     }

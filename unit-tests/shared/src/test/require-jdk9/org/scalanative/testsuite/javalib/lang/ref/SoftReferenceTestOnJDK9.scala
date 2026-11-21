@@ -8,10 +8,9 @@ import org.junit.Test
 
 import org.scalanative.testsuite.utils.Platform
 
-// Clearing soft references under memory pressure is tested with a small
-// maximal heap in scripted-tests/run/gc-soft-references.
+// Clearing under memory pressure: scripted-tests/run/gc-out-of-memory-error
 class SoftReferenceTestOnJDK9 {
-  import PhantomReferenceTestOnJDK9.clobberStack
+  import PhantomReferenceTestOnJDK9.{clobberStack, collect}
 
   @noinline def allocSoftRefs(
       queue: ReferenceQueue[AnyRef],
@@ -27,13 +26,7 @@ class SoftReferenceTestOnJDK9 {
     val queue = new ReferenceQueue[AnyRef]()
     val refs = allocSoftRefs(queue, 3)
     clobberStack(10000)
-    for (_ <- 0 until 3) {
-      locally {
-        val _ = Seq.fill(1000)(new Object {})
-      }
-      System.gc()
-      Thread.sleep(50)
-    }
+    for (_ <- 0 until 3) collect()
     refs.foreach { ref =>
       assertNotNull("softly reachable referent cleared", ref.get())
     }

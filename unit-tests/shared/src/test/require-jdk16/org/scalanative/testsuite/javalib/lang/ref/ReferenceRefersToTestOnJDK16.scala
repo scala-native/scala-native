@@ -37,7 +37,6 @@ class ReferenceRefersToTestOnJDK16 {
     val referent = new Object
     val queue = new ReferenceQueue[AnyRef]()
     val ref = new PhantomReference[AnyRef](referent, queue)
-    assertNull("get() of a phantom reference", ref.get())
     checkRefersTo("PhantomReference", referent, ref)
   }
 

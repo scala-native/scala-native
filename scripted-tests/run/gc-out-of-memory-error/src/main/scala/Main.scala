@@ -1,3 +1,4 @@
+import java.lang.ref.{ReferenceQueue, SoftReference}
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 object Main {
@@ -54,11 +55,12 @@ object Main {
 
   /* Keeps allocating until the managed heap runs out. The stack trace of the
    * reported error is deliberately not inspected: symbolicating it needs more
-   * memory than the exhausted heap can hand out.
+   * memory than the exhausted heap can hand out. Returns the number of
+   * chunks allocated.
    */
-  private def exhaustHeap(retained: Array[AnyRef]): Unit =
+  private def exhaustHeap(retained: Array[AnyRef]): Int = {
+    var index = 0
     try {
-      var index = 0
       while (index < retained.length) {
         retained(index) = new Array[Byte](ChunkSize)
         index += 1
@@ -67,8 +69,9 @@ object Main {
         s"heap was not exhausted after $RetainedSlots allocations"
       )
     } catch {
-      case _: OutOfMemoryError => ()
+      case _: OutOfMemoryError => index
     }
+  }
 
   private def release(retained: Array[AnyRef]): Unit = {
     var index = 0
@@ -106,7 +109,48 @@ object Main {
     }
   }
 
+  // Soft referents take 40 of the 64 MiB heap
+  private final val SoftCount = 40
+  private final val SoftSize = 1024 * 1024
+
+  @noinline private def allocSoftRefs(
+      queue: ReferenceQueue[AnyRef]
+  ): Array[SoftReference[AnyRef]] =
+    Array.fill(SoftCount)(new SoftReference(new Array[Byte](SoftSize), queue))
+
+  @noinline private def clobberStack(n: Int): Int =
+    if (n > 0) clobberStack(n - 1) + 1 else 0
+
+  /* Soft referents survive collections while memory is available, and are
+   * cleared and enqueued before an OutOfMemoryError.
+   */
+  private def softReferencesClearedBeforeError(): Unit = {
+    val queue = new ReferenceQueue[AnyRef]()
+    val refs = allocSoftRefs(queue)
+    clobberStack(10000)
+    for (_ <- 0 until RetainedSlots) sink = new Array[Byte](ChunkSize)
+    sink = null
+    System.gc()
+    check(refs.forall(_.get() != null), "soft referent cleared too early")
+
+    val retained = new Array[AnyRef](RetainedSlots)
+    val allocated = exhaustHeap(retained)
+    check(refs.forall(_.get() == null), "soft referent kept until the error")
+    // More than fits beside the soft referents in the 64 MiB heap
+    val besideSoft = 64L * 1024 * 1024 - SoftCount.toLong * SoftSize
+    check(allocated.toLong * ChunkSize > besideSoft, "heap not reused")
+    release(retained)
+
+    val deadline = System.currentTimeMillis() + 30000L
+    var enqueued = Set.empty[AnyRef]
+    while (enqueued.size < SoftCount && System.currentTimeMillis() < deadline)
+      Option(queue.remove(500)).foreach(enqueued += _)
+    check(enqueued == refs.toSet[AnyRef], "soft references not enqueued")
+  }
+
   def main(args: Array[String]): Unit = {
+    softReferencesClearedBeforeError()
+
     // A failed allocation reports an OutOfMemoryError instead of aborting the
     // process, and the reserve kept by the GC leaves enough room to record the
     // stack of the allocation that failed.
