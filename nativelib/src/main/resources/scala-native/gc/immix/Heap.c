@@ -320,12 +320,18 @@ void Heap_Collect(Heap *heap, Stack *stack) {
     Heap_collect(heap, stack, 0, 0, false);
 }
 
-bool Heap_RecoverAllocation(Heap *heap, size_t size, uint64_t generation,
-                            bool clearSoftReferences) {
+bool Heap_RecoverAllocation(Heap *heap, size_t size, uint64_t generation) {
     if (atomic_load_explicit(&heap->collectionGeneration,
                              memory_order_acquire) != generation)
         return true;
-    return Heap_collect(heap, &stack, size, generation, clearSoftReferences);
+    if (Heap_collect(heap, &stack, size, generation, false))
+        return true;
+    if (!References_SoftFound())
+        return false;
+    // Before an OutOfMemoryError, collect once more with soft referents cleared
+    uint64_t next =
+        atomic_load_explicit(&heap->collectionGeneration, memory_order_acquire);
+    return Heap_collect(heap, &stack, size, next, true);
 }
 
 bool Heap_shouldGrow(Heap *heap) {

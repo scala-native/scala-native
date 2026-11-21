@@ -46,8 +46,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize);
 
 void Heap_Collect(Heap *heap, Stack *stack);
 // False when the allocation should fail with an OutOfMemoryError
-bool Heap_RecoverAllocation(Heap *heap, size_t size, uint64_t generation,
-                            bool clearSoftReferences);
+bool Heap_RecoverAllocation(Heap *heap, size_t size, uint64_t generation);
 void Heap_Recycle(Heap *heap);
 bool Heap_TryGrow(Heap *heap, uint32_t increment);
 bool Heap_BeginEmergencyAllocation(Heap *heap);

@@ -130,7 +130,7 @@ void Marker_Mark(Heap *heap, Stack *stack) {
                 }
             }
             if (UNLIKELY(References_markSoftReferent(Rtti_ReferenceKind(rtti))))
-                Marker_markField(heap, stack, *Reference_ReferentField(object));
+                Marker_markField(heap, stack, References_softReferent(object));
             if (UNLIKELY(Rtti_HasFlag(rtti, RTTI_FLAG_HAS_OBJECT_TRACER))) {
                 // Not set before the first owner registers it
                 GC_ObjectTracerFn *trace = atomic_load(&ObjectTracer_trace);

@@ -8,7 +8,6 @@
 #include "immix_commix/Object.h"
 #include "immix/State.h"
 #include "immix_commix/headers/ObjectHeader.h"
-#include "immix_commix/References.h"
 
 inline static int LargeAllocator_sizeToLinkedListIndex(size_t size) {
     assert(size >= MIN_BLOCK_SIZE);
@@ -278,7 +277,6 @@ word_t *LargeAllocator_Alloc(Heap *heap, size_t size) {
         Heap_ThrowOutOfMemory(heap);
     }
     LargeAllocator *largeAllocator = &currentMutatorThread->largeAllocator;
-    bool clearSoft = false;
     do {
         uint64_t generation = atomic_load_explicit(&heap->collectionGeneration,
                                                    memory_order_acquire);
@@ -290,8 +288,7 @@ word_t *LargeAllocator_Alloc(Heap *heap, size_t size) {
         }
         // Asking counts as allocating, as in Allocator_allocSlow.
         largeAllocator->blocksTaken++;
-        if (!Heap_RecoverAllocation(heap, size, generation, clearSoft) &&
-            !References_RetryClearingSoft(&clearSoft))
+        if (!Heap_RecoverAllocation(heap, size, generation))
             Heap_ThrowOutOfMemory(heap);
     } while (true);
     return NULL; // unreachable

@@ -322,7 +322,7 @@ int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
     if (UNLIKELY(References_markSoftReferent(Rtti_ReferenceKind(object->rtti))))
         objectsTraced +=
             Marker_markField(heap, stats, outHolder, outWeakRefHolder,
-                             *Reference_ReferentField(object));
+                             References_softReferent(object));
     if (UNLIKELY(Rtti_HasFlag(object->rtti, RTTI_FLAG_HAS_OBJECT_TRACER))) {
         // Not set before the first owner registers it
         GC_ObjectTracerFn *trace = atomic_load(&ObjectTracer_trace);
