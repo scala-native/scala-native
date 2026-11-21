@@ -53,21 +53,12 @@ The layout is defined by `codegen.CommonMemoryLayouts` and mirrored by
 | 8-31 | traits: low 24 bits of the itable key                          |
 
 The garbage collectors and `java.lang.Class` read these bits instead of
-comparing class ids. Immix and Commix use the reference kind to decide when
-to clear a referent:
-
-- weak and phantom references never keep their referent alive. After marking,
-  the collector clears every referent that nothing else marked, and the
-  javalib enqueues the reference on its queue;
-- soft references keep their referent alive, except in the
-  collection that runs right before an allocation would fail with an
-  `OutOfMemoryError`. That collection runs only when the previous one found a
-  soft reference, clears unmarked soft referents like weak ones, and the
-  allocation is then retried.
-
-There are no finalizers, so a phantom reference is cleared and enqueued in the
-same collection as a weak reference to the same object. Boehm treats phantom
-references like weak ones and soft references as strong.
+comparing class ids. Immix and Commix clear weak and phantom referents once
+nothing else marks them. Soft referents stay alive, except when an allocation
+fails after a collection that found soft references: the collector then runs
+once more with soft referents cleared like weak ones, and retries the
+allocation. The javalib enqueues cleared references on their queue. Boehm
+keeps weak and phantom referents as hidden pointers and soft ones as strong.
 
 ## Reference map and arrays
 
@@ -77,12 +68,10 @@ offsets of raw pointer fields to scan conservatively, terminated with -1. Only
 `unsafe.Ptr` has such a field: a boxed pointer can point into the heap, for
 example to an array element, and be the only thing keeping it alive.
 
-The referent of `java.lang.ref.Reference` is its only field, so it directly
+The referent of `java.lang.ref.Reference` is its first field, so it directly
 follows the object header in every reference object, like the fields of
-`String` and `Class`; the toolchain fails the build otherwise. References leave
-it out of their reference map: the GC marks the referent of a soft reference
-itself, unless it clears soft references, and clears any referent once nothing
-else keeps it alive.
+`String` and `Class`; the toolchain fails the build otherwise. It is left out
+of the reference map; the collectors mark soft referents themselves.
 
 Arrays have no fields to scan, the GC uses the element scan kind from the flags
 instead. In array RTTI the same slot holds the RTTI of the element type, read

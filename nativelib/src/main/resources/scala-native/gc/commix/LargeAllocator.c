@@ -294,12 +294,9 @@ word_t *LargeAllocator_Alloc(Heap *heap, size_t size) {
         size_t increment = MathUtils_DivAndRoundUp(size, BLOCK_TOTAL_SIZE);
         uint32_t pow2increment = 1U << MathUtils_Log2Ceil(increment);
         if (!Heap_TryGrow(heap, pow2increment) &&
-            !Heap_TryGrow(heap, (uint32_t)increment)) {
-            if (!References_ShouldRetryClearingSoft(clearSoft))
-                Heap_ThrowOutOfMemory(heap);
-            // One more collection, clearing soft references
-            clearSoft = true;
-        }
+            !Heap_TryGrow(heap, (uint32_t)increment) &&
+            !References_RetryClearingSoft(&clearSoft))
+            Heap_ThrowOutOfMemory(heap);
     } while (true);
     return NULL; // unreachable
 }

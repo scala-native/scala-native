@@ -15,10 +15,8 @@ import scala.scalanative.runtime.javalib.Proxy
 import scala.scalanative.runtime.{RawPtr, fromRawPtr}
 import scala.scalanative.unsafe._
 
-/* References with a queue, whatever their kind, in a lock-free list linked by
- * Reference.nextReference. After a collection that cleared referents, the GC
- * calls back, and the references whose referent was cleared leave the list
- * and are enqueued.
+/* Lock-free list of the references with a queue. After a collection that
+ * cleared referents, the GC callback enqueues the cleared references.
  */
 private[java] object ReferenceRegistry {
   @volatile private var refsHead: Reference[_] = _

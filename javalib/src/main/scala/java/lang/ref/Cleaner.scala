@@ -61,16 +61,14 @@ object Cleaner {
 
   private def register(ref: AnyRef, action: Runnable, executor: Executor) = {
     val cleanable = new CleanableImpl(action, executor)
-    // registers itself in ReferenceRegistry
     new CleanableReference(ref, cleanable)
     cleanable
   }
 
-  // Runs the action once the object is phantom reachable
   private class CleanableReference(ref: AnyRef, val cleanable: Cleanable)
       extends PhantomReference[AnyRef](ref, CleaningQueue)
 
-  // Cleans instead of enqueueing, see Reference.enqueueCleared
+  // Runs the action instead of enqueueing
   private object CleaningQueue extends ReferenceQueue[AnyRef] {
     override private[ref] def enqueue(reference: Reference[_]): Boolean = {
       reference.asInstanceOf[CleanableReference].cleanable.clean()

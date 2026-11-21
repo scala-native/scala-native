@@ -40,9 +40,7 @@ private[codegen] class FieldLayout(cls: Class)(implicit meta: Metadata) {
    * offsets of raw pointer fields to scan conservatively, -1. Only boxed
    * pointers (unsafe.Ptr) scan raw pointers: one can point into the heap, for
    * example to an array element, and be the only thing keeping it alive.
-   * References leave out their referent: the GC marks it only for soft
-   * references it does not clear, and clears it once nothing else keeps it
-   * alive.
+   * References leave out their referent, the collectors handle it.
    */
   val referenceOffsetsValue = {
     val conservative =

@@ -197,13 +197,12 @@ static inline int32_t Rtti_ReferenceKind(const Rtti *rtti) {
     return rtti->rt.flags & RTTI_REFERENCE_KIND_MASK;
 }
 
-/* RTTI_REFERENCE_KIND_* of a java.lang.ref.Reference, 0 for other objects */
+/* RTTI_REFERENCE_KIND_*, 0 for objects other than references */
 static inline int32_t Object_ReferenceKind(const Object *object) {
     return Rtti_ReferenceKind(object->rtti);
 }
 
-/* The referent of a reference, which the GC does not mark: it is left for
- * immix_commix/References.h to keep or clear */
+/* Not in the reference map, see immix_commix/References.h */
 static inline Field_t *Reference_ReferentField(const Object *object) {
     assert(Object_ReferenceKind(object) != 0);
     return (Field_t *)&((ReferenceObject *)object)->referent;

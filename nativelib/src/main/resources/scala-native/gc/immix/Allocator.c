@@ -294,12 +294,9 @@ NOINLINE word_t *Allocator_allocSlow(Allocator *allocator, Heap *heap,
         // Asking counts as allocating: a thread waiting on another thread's
         // recovery collection must still receive recycled blocks.
         allocator->blocksTaken++;
-        if (!Heap_RecoverAllocation(heap, size, generation, clearSoft)) {
-            if (!References_ShouldRetryClearingSoft(clearSoft))
-                Heap_ThrowOutOfMemory(heap);
-            // One more collection, clearing soft references
-            clearSoft = true;
-        }
+        if (!Heap_RecoverAllocation(heap, size, generation, clearSoft) &&
+            !References_RetryClearingSoft(&clearSoft))
+            Heap_ThrowOutOfMemory(heap);
     } while (true);
     return NULL; // unreachable
 }

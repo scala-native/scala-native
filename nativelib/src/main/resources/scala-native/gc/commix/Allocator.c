@@ -440,12 +440,9 @@ NOINLINE word_t *Allocator_allocSlow(Allocator *allocator, Heap *heap,
         // A small object can always fit in a single free block
         // because it is no larger than 8K while the block is 32K.
         if (!Heap_TryGrow(heap, 1) &&
-            !Allocator_collectionFreedSpace(allocator, heap, size)) {
-            if (!References_ShouldRetryClearingSoft(clearSoft))
-                Heap_ThrowOutOfMemory(heap);
-            // One more collection, clearing soft references
-            clearSoft = true;
-        }
+            !Allocator_collectionFreedSpace(allocator, heap, size) &&
+            !References_RetryClearingSoft(&clearSoft))
+            Heap_ThrowOutOfMemory(heap);
     } while (true);
     return NULL; // unreachable
 }

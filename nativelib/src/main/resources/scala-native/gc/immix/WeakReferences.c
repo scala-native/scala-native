@@ -11,10 +11,8 @@
 static bool collectedWeakReferences = false;
 static void (*gcFinishedCallback)() = NULL;
 
-// weakRefStack holds the references found while marking whose referent the
-// marker did not mark: weak and phantom references, and soft references in a
-// collection that clears them (see immix_commix/References.h). Referents that
-// nothing else marked are set to NULL here.
+// weakRefStack holds the references whose referent the marker left unmarked
+// (see immix_commix/References.h); unmarked referents are set to NULL here.
 
 void WeakReferences_Nullify(void) {
     Bytemap *bytemap = heap.bytemap;

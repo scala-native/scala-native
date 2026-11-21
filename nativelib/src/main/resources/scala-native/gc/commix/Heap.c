@@ -288,7 +288,6 @@ bool Heap_Collect(Heap *heap, bool allowHeapGrowth, bool clearSoftReferences) {
     Stats_RecordEvent(stats, event_mark, heap->mark.currentStart_ns,
                       heap->mark.currentEnd_ns);
     Phase_Nullify(heap, stats);
-    References_EndCollection();
     Phase_StartSweep(heap);
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     Synchronizer_release();

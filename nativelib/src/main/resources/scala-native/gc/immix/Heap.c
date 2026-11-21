@@ -257,7 +257,6 @@ static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
         nullify_start_ns = Time_current_nanos();
     }
     WeakReferences_Nullify();
-    References_EndCollection();
     if (stats != NULL) {
         sweep_start_ns = Time_current_nanos();
     }

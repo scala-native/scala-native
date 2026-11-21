@@ -26,14 +26,9 @@ void Marker_markObject(Heap *heap, Stack *stack, Bytemap *bytemap,
     assert(object->rtti != NULL);
 
     Marker_markLockWords(heap, stack, object);
-    int32_t referenceKind = Object_ReferenceKind(object);
-    if (UNLIKELY(referenceKind != 0)) {
-        if (referenceKind == RTTI_REFERENCE_KIND_SOFT)
-            References_noteSoft();
-        // Its referent is cleared after marking unless something marks it
-        if (References_deferReferent(referenceKind))
-            Stack_Push(&weakRefStack, object);
-    }
+    // Cleared after marking unless something else marks the referent
+    if (UNLIKELY(References_deferReferent(Object_ReferenceKind(object))))
+        Stack_Push(&weakRefStack, object);
 
     assert(Object_Size(object) != 0);
     Object_Mark(heap, object, objectMeta);
@@ -134,11 +129,8 @@ void Marker_Mark(Heap *heap, Stack *stack) {
                     Marker_markConservative(heap, stack, rawPtr);
                 }
             }
-            // Soft references keep their referent unless they are cleared
-            if (UNLIKELY(Rtti_ReferenceKind(rtti) != 0) &&
-                !References_deferReferent(Rtti_ReferenceKind(rtti))) {
+            if (UNLIKELY(References_markSoftReferent(Rtti_ReferenceKind(rtti))))
                 Marker_markField(heap, stack, *Reference_ReferentField(object));
-            }
             if (UNLIKELY(Rtti_HasFlag(rtti, RTTI_FLAG_HAS_OBJECT_TRACER))) {
                 // Not set before the first owner registers it
                 GC_ObjectTracerFn *trace = atomic_load(&ObjectTracer_trace);

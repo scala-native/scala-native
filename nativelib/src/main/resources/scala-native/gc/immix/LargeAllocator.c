@@ -290,12 +290,9 @@ word_t *LargeAllocator_Alloc(Heap *heap, size_t size) {
         }
         // Asking counts as allocating, as in Allocator_allocSlow.
         largeAllocator->blocksTaken++;
-        if (!Heap_RecoverAllocation(heap, size, generation, clearSoft)) {
-            if (!References_ShouldRetryClearingSoft(clearSoft))
-                Heap_ThrowOutOfMemory(heap);
-            // One more collection, clearing soft references
-            clearSoft = true;
-        }
+        if (!Heap_RecoverAllocation(heap, size, generation, clearSoft) &&
+            !References_RetryClearingSoft(&clearSoft))
+            Heap_ThrowOutOfMemory(heap);
     } while (true);
     return NULL; // unreachable
 }

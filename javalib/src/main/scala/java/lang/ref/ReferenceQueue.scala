@@ -6,7 +6,7 @@ class ReferenceQueue[T] {
   private type Ref = Reference[_ <: T]
   private val underlying = new java.util.ArrayDeque[Ref](64)
 
-  /* Returns false when the reference was enqueued before. */
+  // False if the reference was enqueued before
   private[ref] def enqueue(reference: Reference[_]): Boolean =
     synchronized {
       if (reference.state != Active) false
