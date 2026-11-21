@@ -9,7 +9,7 @@
 
 package java.util
 
-import java.util.function.BiConsumer
+import java.util.function.{BiConsumer, BiFunction}
 import java.{util => ju}
 
 class LinkedHashMap[K, V](
@@ -61,6 +61,7 @@ class LinkedHashMap[K, V](
       if (myNode.younger ne null) {
         removeFromOrderedList(myNode)
         appendToOrderedList(myNode)
+        modCount += 1
       }
     }
   }
@@ -137,9 +138,25 @@ class LinkedHashMap[K, V](
   protected def removeEldestEntry(eldest: Map.Entry[K, V]): Boolean = false
 
   override def forEach(action: BiConsumer[_ >: K, _ >: V]): Unit = {
+    Objects.requireNonNull(action)
+    val expectedModCount = modCount
     var node = eldest
     while (node ne null) {
       action.accept(node.key, node.value)
+      checkForComodification(expectedModCount)
+      node = node.younger
+    }
+  }
+
+  override def replaceAll(
+      function: BiFunction[_ >: K, _ >: V, _ <: V]
+  ): Unit = {
+    Objects.requireNonNull(function)
+    val expectedModCount = modCount
+    var node = eldest
+    while (node ne null) {
+      node.setValue(function.apply(node.key, node.value))
+      checkForComodification(expectedModCount)
       node = node.younger
     }
   }
@@ -170,6 +187,7 @@ class LinkedHashMap[K, V](
       extends ju.Iterator[A] {
     private var nextNode: Node[K, V] = eldest
     private var lastNode: Node[K, V] = _
+    private var expectedModCount = modCount
 
     protected def extract(node: Node[K, V]): A
 
@@ -177,6 +195,7 @@ class LinkedHashMap[K, V](
       nextNode ne null
 
     def next(): A = {
+      checkForComodification(expectedModCount)
       if (!hasNext())
         throw new NoSuchElementException("next on empty iterator")
       val node = nextNode
@@ -191,8 +210,10 @@ class LinkedHashMap[K, V](
         throw new IllegalStateException(
           "next must be called at least once before remove"
         )
+      checkForComodification(expectedModCount)
       removeNode(last)
       lastNode = null
+      expectedModCount = modCount
     }
   }
 
@@ -218,6 +239,7 @@ class LinkedHashMap[K, V](
       if (lhmNode ne eldest) {
         removeFromOrderedList(lhmNode)
         prependToOrderedList(lhmNode)
+        modCount += 1
       }
     } else {
       try {
@@ -255,9 +277,10 @@ class LinkedHashMap[K, V](
       hmNode.value = value
       val lhmNode = asMyNode(hmNode)
 
-      if (lhmNode.younger ne eldest) {
+      if (lhmNode ne youngest) {
         removeFromOrderedList(lhmNode)
         appendToOrderedList(lhmNode)
+        modCount += 1
       }
 
       previousValue

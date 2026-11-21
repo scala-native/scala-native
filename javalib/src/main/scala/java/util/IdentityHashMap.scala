@@ -2,6 +2,7 @@
 
 package java.util
 
+import java.util.function.Consumer
 import java.{util => ju}
 
 import scala.annotation.tailrec
@@ -80,6 +81,9 @@ class IdentityHashMap[K, V] private (
     def iterator(): ju.Iterator[V] =
       inner.valueIterator()
 
+    override def forEach(action: Consumer[_ >: V]): Unit =
+      inner.forEachChecked[V](iterator(), action)
+
     def size(): Int =
       self.size()
 
@@ -103,8 +107,18 @@ class IdentityHashMap[K, V] private (
       findAndRemove(iterator())
     }
 
-    override def removeAll(c: Collection[_]): Boolean =
-      c.scalaOps.foldLeft(false)((prev, elem) => this.remove(elem) || prev)
+    // Removes through our own iterator, so that `c` may be this view.
+    override def removeAll(c: Collection[_]): Boolean = {
+      val iter = iterator()
+      var changed = false
+      while (iter.hasNext()) {
+        if (findSame(iter.next(), c)) {
+          iter.remove()
+          changed = true
+        }
+      }
+      changed
+    }
 
     override def retainAll(c: Collection[_]): Boolean = {
       val iter = iterator()
@@ -124,6 +138,9 @@ class IdentityHashMap[K, V] private (
   }
 
   private final class KeySet extends AbstractSet[K] {
+    override def forEach(action: Consumer[_ >: K]): Unit =
+      inner.forEachChecked[K](iterator(), action)
+
     def iterator(): Iterator[K] = {
       new ju.Iterator[K] {
         private val iter = inner.keyIterator()
@@ -191,6 +208,9 @@ class IdentityHashMap[K, V] private (
   }
 
   private final class EntrySet extends AbstractSet[Map.Entry[K, V]] {
+    override def forEach(action: Consumer[_ >: Map.Entry[K, V]]): Unit =
+      inner.forEachChecked[Map.Entry[K, V]](iterator(), action)
+
     def iterator(): Iterator[Map.Entry[K, V]] = {
       new ju.Iterator[Map.Entry[K, V]] {
         private val iter = inner.entrySetIterator()
