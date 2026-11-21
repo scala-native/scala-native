@@ -130,7 +130,6 @@ private[java] object ReferenceRegistry {
 
   private[ref] def add(ref: Reference[_]): Unit =
     if (LinktimeInfo.isWeakReferenceSupported) {
-      if (LinktimeInfo.isMultithreadingEnabled) startRequestedHandler()
       assert(ref.nextReference == null)
       val prevHeadSlot = rawStackalloc[RawPtr]()
       storeObject(prevHeadSlot, null)
@@ -141,6 +140,8 @@ private[java] object ReferenceRegistry {
           )) {
         ref.nextReference = loadHead(prevHeadSlot)
       }
+      // After publishing, so a collection while starting the handler sees ref
+      if (LinktimeInfo.isMultithreadingEnabled) startRequestedHandler()
     }
 
 }
