@@ -71,8 +71,9 @@ private[java] object ReferenceRegistry {
     replaceHead(null) {}
 
     val detachedHead = loadHead(detachedHeadSlot)
-    val (newHead, newLast) =
-      enqueueCollectedReferences(detachedHead, detachedHead, null)
+    val remaining = enqueueCollectedReferences(detachedHead, detachedHead, null)
+    val newHead = remaining._1
+    val newLast = remaining._2
 
     // Reattach the refs list to the possibly updated head
     if (newHead ne null) {
