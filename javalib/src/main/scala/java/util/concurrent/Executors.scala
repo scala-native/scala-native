@@ -6,11 +6,12 @@
 
 package java.util.concurrent
 import java.lang.Thread
+import java.lang.ref.Reference.reachabilityFence
 import java.security.{PrivilegedAction, PrivilegedExceptionAction}
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.{Collection, Collections, List}
 
-import scala.scalanative.annotation.{alwaysinline, safePublish}
+import scala.scalanative.annotation.safePublish
 
 object Executors {
   def newWorkStealingPool(parallelism: Int): ExecutorService =
@@ -347,10 +348,6 @@ object Executors {
   private class DelegatedExecutorService(
       @safePublish val executor: ExecutorService
   ) extends ExecutorService {
-
-    // Stub used in place of JVM intrinsic
-    @alwaysinline
-    private def reachabilityFence(target: Any): Unit = ()
 
     override def execute(command: Runnable): Unit = {
       try executor.execute(command)

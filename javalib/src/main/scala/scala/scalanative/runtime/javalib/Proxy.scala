@@ -25,6 +25,7 @@ object Proxy {
       callback: GCWeakReferencesCollectedCallback
   ): Unit = GC.setWeakReferencesCollectedCallback(callback)
 
+  def reachabilityFence(ref: AnyRef): Unit = GC.reachabilityFence(ref)
   def GC_Boehm_weakRefInit(field: RawPtr): Unit = GC.Boehm.weakRefInit(field)
   def GC_Boehm_weakRefGet(field: RawPtr): AnyRef =
     Intrinsics.castRawPtrToObject(GC.Boehm.weakRefGet(field))

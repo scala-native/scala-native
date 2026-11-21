@@ -161,6 +161,12 @@ object GC {
   @name("scalanative_GC_remove_roots")
   def removeRoots(addressLow: CVoidPtr, addressHigh: CVoidPtr): Unit = extern
 
+  /** Keeps `obj` reachable up to this call, see
+   *  java.lang.ref.Reference.reachabilityFence
+   */
+  @name("scalanative_reachability_fence")
+  private[scalanative] def reachabilityFence(obj: AnyRef): Unit = extern
+
   /** Weak and phantom referents under Boehm, see java.lang.ref.Reference */
   @extern object Boehm {
     @name("scalanative_GC_weak_ref_init")

@@ -137,8 +137,6 @@ private[java] final class VirtualThread(
       || s == State.Blocking || s == State.Blocked
       || s == State.TimedBlocked
 
-  @noinline private[java] def reachabilityFence(target: Any): Unit = ()
-
   // ---------------------------------------------------------------------------
   // LockSupport-style parking (park permit)
   // Cleared in park(); set by unpark(). Run loop may reconcile permit vs Parked state.
@@ -1022,7 +1020,7 @@ object VirtualThread {
                   throw new IllegalStateException("Missing continuation to resume")
                 }
                 try continue()
-                finally vt.reachabilityFence(continue)
+                finally java.lang.ref.Reference.reachabilityFence(continue)
               }
             } catch {
               case ex: Throwable =>

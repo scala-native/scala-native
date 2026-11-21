@@ -81,8 +81,12 @@ abstract class Reference[T] private[ref] (
     queue != null && queue.enqueue(this)
 }
 
-private[ref] object Reference {
-  final val Active = 0
-  final val Enqueued = 1
-  final val Dequeued = 2
+object Reference {
+  def reachabilityFence(ref: Any): Unit =
+    Proxy.reachabilityFence(ref.asInstanceOf[AnyRef])
+
+  // States of a reference, see ReferenceQueue
+  private[ref] final val Active = 0
+  private[ref] final val Enqueued = 1
+  private[ref] final val Dequeued = 2
 }

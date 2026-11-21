@@ -232,7 +232,7 @@ object Continuations {
       if !compareAndSet(false, true) then
         throw new IllegalStateException("Continuation was already resumed")
       try single.FFI.resume[R, T](stacks.stacksAddress, value).get
-      finally reachabilityFence(this)
+      finally GC.reachabilityFence(this)
   }
 
   // ==========================================================================
@@ -276,7 +276,7 @@ object Continuations {
         continuation.native = native
         onSuspend(continuation)
       try FFI.suspend[R](label, runOnSuspend, call, continuation)
-      finally reachabilityFence(continuation)
+      finally GC.reachabilityFence(continuation)
 
     protected def leave[T](label: this.BoundaryLabel[T], value: T): Nothing =
       capture[Nothing, T](label, _ => value)
@@ -296,7 +296,7 @@ object Continuations {
 
       def apply(value: R): T =
         try FFI.resume[R, T](native, value).get
-        finally reachabilityFence(this)
+        finally GC.reachabilityFence(this)
     }
 
     /** delimcc_multishot.c */
@@ -359,8 +359,6 @@ object Continuations {
   private inline def catching(inline body: Any): Try[Any] =
     try Success(body)
     catch case ex: Throwable => Failure(ex)
-
-  @noinline private def reachabilityFence(target: Any): Unit = ()
 
   // ==========================================================================
   // Default interface: `Continuations.boundary` is `single.boundary`
@@ -436,7 +434,8 @@ object Continuations {
   @deprecated(legacyExpansion, since = "0.5.13")
   private[runtime] def inline$Impl: Impl.type = Impl
   @deprecated(legacyExpansion, since = "0.5.13")
-  private[runtime] def inline$reachabilityFence(target: Any): Unit = ()
+  private[runtime] def inline$reachabilityFence(target: Any): Unit =
+    GC.reachabilityFence(target.asInstanceOf[AnyRef])
   @deprecated(legacyExpansion, since = "0.5.13")
   private[runtime] def inline$inner$i1[T, R](
       continuation: Continuation[R, T]
