@@ -11,7 +11,8 @@ class ReferenceQueue[T] {
     synchronized {
       if (reference.state != Active) false
       else {
-        // Still Active if the deque cannot grow
+        // Grow first: addLast stores the entry before growing
+        underlying.ensureCapacity(underlying.size() + 1)
         underlying.addLast(reference.asInstanceOf[Ref])
         reference.state = Enqueued
         notifyAll()
