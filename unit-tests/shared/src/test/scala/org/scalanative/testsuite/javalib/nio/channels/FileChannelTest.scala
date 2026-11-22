@@ -1718,7 +1718,13 @@ class FileChannelTest {
         val far = 5L << 30
         channel.position(far)
         assertEquals("position", far, channel.position())
-        channel.write(ByteBuffer.wrap(Array[Byte](1)))
+        try channel.write(ByteBuffer.wrap(Array[Byte](1)))
+        catch {
+          // e.g. NetBSD tmpfs counts sparse files at full size
+          case e: java.io.IOException
+              if String.valueOf(e.getMessage).contains("No space left") =>
+            assumeTrue("no space for a 5 GiB sparse file", false)
+        }
         assertEquals("size after write", far + 1, channel.size())
         channel.truncate(far - 1)
         assertEquals("size after truncate", far - 1, channel.size())
