@@ -9,7 +9,7 @@ import java.nio.file.{
   AccessDeniedException, FileAlreadyExistsException, Files, LinkOption,
   NoSuchFileException, Path, Paths, StandardOpenOption
 }
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{ConcurrentLinkedQueue, CountDownLatch, TimeUnit}
 import java.{lang => jl}
 
 import org.junit.Assert._
@@ -1702,6 +1702,31 @@ class FileChannelTest {
     }
   }
 
+  // 32-bit targets must not truncate offsets to 32 bits.
+  @Test def offsetsPastFourGiB(): Unit = {
+    // Needs a sparse file.
+    assumeFalse("Windows does not create sparse files", Platform.isWindows)
+    withTemporaryDirectory { dir =>
+      val path = dir.resolve("f")
+      val channel = FileChannel.open(
+        path,
+        StandardOpenOption.CREATE,
+        StandardOpenOption.READ,
+        StandardOpenOption.WRITE
+      )
+      try {
+        val far = 5L << 30
+        channel.position(far)
+        assertEquals("position", far, channel.position())
+        channel.write(ByteBuffer.wrap(Array[Byte](1)))
+        assertEquals("size after write", far + 1, channel.size())
+        channel.truncate(far - 1)
+        assertEquals("size after truncate", far - 1, channel.size())
+        assertEquals("position after truncate", far - 1, channel.position())
+      } finally channel.close()
+    }
+  }
+
   @Test def forceWorksOnReadAndWriteChannels(): Unit = {
     withTemporaryDirectory { dir =>
       val path = dir.resolve("f")
@@ -1734,6 +1759,159 @@ class FileChannelTest {
           )
         finally ro.close()
       } finally src.close()
+    }
+  }
+
+  /* Runs body(i) on nThreads threads started together, waiting at most
+   * 60 seconds, and rethrows the first failure.
+   */
+  private def runConcurrently(nThreads: Int)(body: Int => Unit): Unit = {
+    assumeMultithreadingIsEnabled()
+    val start = new CountDownLatch(1)
+    val done = new CountDownLatch(nThreads)
+    val failures = new ConcurrentLinkedQueue[Throwable]()
+    val threads = Array.tabulate(nThreads) { i =>
+      val t = new Thread(new Runnable {
+        def run(): Unit =
+          try {
+            start.await()
+            body(i)
+          } catch { case e: Throwable => failures.add(e) }
+          finally done.countDown()
+      })
+      t.setDaemon(true)
+      t.start()
+      t
+    }
+    start.countDown()
+    if (!done.await(60, TimeUnit.SECONDS)) {
+      threads.foreach(_.interrupt())
+      fail("threads timed out")
+    }
+    if (!failures.isEmpty()) throw failures.peek()
+  }
+
+  @Test def concurrentRelativeWritesDoNotOverlap(): Unit = {
+    withTemporaryDirectory { dir =>
+      val path = dir.resolve("f")
+      val nThreads = 8
+      val nRecords = 200
+      val channel = FileChannel.open(
+        path,
+        StandardOpenOption.CREATE,
+        StandardOpenOption.WRITE
+      )
+      try
+        runConcurrently(nThreads) { t =>
+          for (r <- 0 until nRecords) {
+            val record = f"T$t%02dR$r%04d\n".getBytes("UTF-8")
+            channel.write(ByteBuffer.wrap(record))
+          }
+        }
+      finally channel.close()
+
+      val records = new String(Files.readAllBytes(path), "UTF-8").split("\n")
+      assertEquals("record count", nThreads * nRecords, records.length)
+      assertEquals(
+        "distinct records",
+        nThreads * nRecords,
+        records.toSet.size
+      )
+      records.foreach { r =>
+        assertTrue(s"malformed record: $r", r.matches("T\\d{2}R\\d{4}"))
+      }
+    }
+  }
+
+  @Test def concurrentRelativeReadsReadEachRecordOnce(): Unit = {
+    withTemporaryDirectory { dir =>
+      val path = dir.resolve("f")
+      val nRecords = 4000
+      val data = ByteBuffer.allocate(nRecords * 8)
+      for (i <- 0 until nRecords) data.putLong(i.toLong)
+      Files.write(path, data.array())
+
+      val seen = new ConcurrentLinkedQueue[java.lang.Long]()
+      val channel = FileChannel.open(path, StandardOpenOption.READ)
+      try
+        runConcurrently(8) { _ =>
+          val buf = ByteBuffer.allocate(8)
+          var n = channel.read(buf)
+          while (n != -1) {
+            assertEquals("bytes read", 8, n)
+            buf.flip()
+            seen.add(buf.getLong())
+            buf.clear()
+            n = channel.read(buf)
+          }
+        }
+      finally channel.close()
+
+      assertEquals("records read", nRecords, seen.size())
+      val values = new java.util.HashSet[java.lang.Long](seen)
+      assertEquals("distinct records read", nRecords, values.size())
+    }
+  }
+
+  @Test def truncateWhileWritingLeavesNoHoles(): Unit = {
+    withTemporaryDirectory { dir =>
+      val path = dir.resolve("f")
+      val channel = FileChannel.open(
+        path,
+        StandardOpenOption.CREATE,
+        StandardOpenOption.WRITE
+      )
+      val record = Array.fill[Byte](16)('x'.toByte)
+      try
+        runConcurrently(4) { t =>
+          for (_ <- 0 until 300) {
+            if (t == 0) channel.truncate(0)
+            else channel.write(ByteBuffer.wrap(record))
+          }
+        }
+      finally channel.close()
+
+      val bytes = Files.readAllBytes(path)
+      assertEquals("whole records", 0, bytes.length % 16)
+      assertFalse("zero-filled hole", bytes.contains(0.toByte))
+    }
+  }
+
+  @Test def transferFromDoesNotMovePosition(): Unit = {
+    withTemporaryDirectory { dir =>
+      val path = dir.resolve("f")
+      Files.write(path, "0123456789".getBytes("UTF-8"))
+      val channel = FileChannel.open(
+        path,
+        StandardOpenOption.READ,
+        StandardOpenOption.WRITE
+      )
+      try {
+        channel.position(5)
+        // Records the channel position seen while the transfer runs.
+        var positionsSeen = List.empty[Long]
+        val src = new ReadableByteChannel {
+          private var remaining = 3
+          def read(dst: ByteBuffer): Int =
+            if (remaining == 0) -1
+            else {
+              positionsSeen ::= channel.position()
+              dst.put('x'.toByte)
+              remaining -= 1
+              1
+            }
+          def isOpen(): Boolean = true
+          def close(): Unit = ()
+        }
+        assertEquals("transferred", 3L, channel.transferFrom(src, 1L, 3L))
+        assertEquals(
+          "positions during transfer",
+          List(5L, 5L, 5L),
+          positionsSeen
+        )
+        assertEquals("position after transfer", 5L, channel.position())
+      } finally channel.close()
+      assertEquals("0xxx456789", new String(Files.readAllBytes(path), "UTF-8"))
     }
   }
 }

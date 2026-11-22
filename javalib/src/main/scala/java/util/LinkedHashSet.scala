@@ -1,25 +1,23 @@
 package java.util
 
-import scala.collection.mutable
-
-class LinkedHashSet[E]
-    extends HashSet[E]
+class LinkedHashSet[E](initialCapacity: Int, loadFactor: Float)
+    extends HashSet[E](
+      new LinkedHashMap[E, AnyRef](initialCapacity, loadFactor)
+    )
     with SequencedSet[E]
     with Cloneable
     with Serializable {
-  def this(initialCapacity: Int, loadFactor: Float) =
-    this()
 
   def this(initialCapacity: Int) =
-    this()
+    this(initialCapacity, HashMap.DEFAULT_LOAD_FACTOR)
+
+  def this() =
+    this(HashMap.DEFAULT_INITIAL_CAPACITY)
 
   def this(c: java.util.Collection[_ <: E]) = {
-    this()
+    this(Math.max(2 * c.size(), 11))
     addAll(c)
   }
-
-  override protected val inner: mutable.Set[Box[E]] =
-    new mutable.LinkedHashSet[Box[E]]()
 
   /* JEP 431 Design Note:
    *
@@ -34,8 +32,8 @@ class LinkedHashSet[E]
    *   "If this set already contains the element, it is
    *   relocated if necessary so that it is first in encounter order."
    *
-   * The reason for the minimal is that the current SN implementation
-   * relies on scala.collection.mutable. There has been a long-standing
+   * The reason for the minimal is that the SN implementation used to
+   * rely on scala.collection.mutable. There has been a long-standing
    * effort in javalib to remove possibly circular scala collection
    * dependencies.
    *
@@ -47,16 +45,15 @@ class LinkedHashSet[E]
    * away.
    */
 
-  /* scala.collection.mutable.LinkedHashSet[Box[E]]() seems to not
-   * have the concept of "add-to-front", so hard-fail until this class
-   * can be re-written. Inherit SequencedCollection#addFirst() which
+  /* LinkedHashMap does not have the concept of "add-to-front" yet, so
+   * hard-fail until it does. Inherit SequencedCollection#addFirst() which
    * will throw.
    *
    *  def addFirst(e: E): Unit
    */
 
   override def addLast(e: E): Unit =
-    inner.add(Box(e))
+    add(e)
 
   /** @since JDK 21 */
   def reversed(): SequencedSet[E] =

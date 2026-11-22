@@ -29,15 +29,17 @@ class ReferenceQueue[T] {
 
   private def remove(timeout: Option[Long]): Ref =
     synchronized {
-      def now() = System.currentTimeMillis()
-      val deadlineOpt = timeout.map(now() + _)
+      // Clamp so ms -> ns (here and in wait) cannot overflow; ~292 years.
+      val deadlineOpt = timeout.map { ms =>
+        System.nanoTime() + Math.min(ms, Long.MaxValue / 1000000L) * 1000000L
+      }
 
       while (underlying.isEmpty()) {
         deadlineOpt match {
           case Some(deadline) =>
-            val remaining = deadline - now()
-            if (remaining < 0) return null // timed out
-            wait(remaining)
+            val remaining = deadline - System.nanoTime()
+            if (remaining <= 0) return null // timed out
+            wait((remaining - 1L) / 1000000L + 1L)
           case None =>
             wait()
         }

@@ -94,7 +94,6 @@ void MutatorThread_enterUnmanaged(MutatorThread *self);
 // =============================================================================
 
 // Stack bounds accessors
-word_t **MutatorThread_getStackBottom(MutatorThread *thread);
 // allowEstimated: if true, may return estimated stack top from threadInfo when
 // not at safepoint May return NULL if not at safepoint and allowEstimated is
 // false

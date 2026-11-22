@@ -118,7 +118,8 @@ static inline bool isOnSignalHandlerStack(ThreadInfo *threadInfo, void *addr) {
 /* The bottom of the stack to scan for a thread stopped at `sp`. A thread can
  * run on another stack than the one it started on (`initialBottom`);
  * ThreadInfo then has the bounds of the running one. A thread stopped on its
- * signal stack was interrupted on that stack too. */
+ * signal stack was interrupted on that stack too.
+ * On the stack it started on, nothing above `initialBottom` is scanned. */
 static inline void *threadStackScanBottom(ThreadInfo *threadInfo, void *sp,
                                           void *initialBottom) {
     if (threadInfo == NULL || threadInfo->stackTop == NULL ||
@@ -128,8 +129,13 @@ static inline void *threadStackScanBottom(ThreadInfo *threadInfo, void *sp,
 #ifdef SCALANATIVE_THREAD_ALT_STACK
         || isOnSignalHandlerStack(threadInfo, sp)
 #endif
-    )
+    ) {
+        if (isInRange(initialBottom, threadInfo->stackTop,
+                      threadInfo->stackBottom) &&
+            !isInRange(sp, initialBottom, threadInfo->stackBottom))
+            return initialBottom;
         return threadInfo->stackBottom;
+    }
     return initialBottom;
 }
 
