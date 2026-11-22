@@ -64,6 +64,7 @@ abstract class Reference[T] private[ref] (
 
   // Not overridable, enqueue() clears even if a subclass overrides clear()
   private def clearReferent(): Unit = {
+    if (!inactive && queue != null) ReferenceRegistry.retire()
     inactive = true
     if (LinktimeInfo.gc.isBoehm) {
       if (isSoft) _gc_modified_referent = null.asInstanceOf[T]

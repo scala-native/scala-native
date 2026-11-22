@@ -16,10 +16,21 @@ import scala.scalanative.runtime.{RawPtr, fromRawPtr}
 import scala.scalanative.unsafe._
 
 /* Lock-free list of the references with a queue. After a collection that
- * cleared referents, the GC callback enqueues the cleared references.
+ * cleared referents, the GC callback enqueues the cleared references. A scan
+ * also drops the references the program cleared or enqueued; enough of them
+ * trigger one from `add`.
  */
 private[java] object ReferenceRegistry {
   @volatile private var refsHead: Reference[_] = _
+
+  // Heuristics only: listed references, and those cleared by the program
+  // since the last scan
+  private val listed = new AtomicInteger(0)
+  private val retired = new AtomicInteger(0)
+  private final val MinRetiredToScan = 64
+
+  // Scans requested and not yet run, a single thread scans at a time
+  private val scanRequests = new AtomicInteger(0)
 
   @alwaysinline private def refsHeadPtr = fromRawPtr[Reference[_]](
     classFieldRawPtr(this, "refsHead")
@@ -43,6 +54,7 @@ private[java] object ReferenceRegistry {
         enqueueCollectedReferences(head, next, current)
       else {
         current.nextReference = null
+        listed.decrementAndGet()
         if (prev == null) enqueueCollectedReferences(next, next, null)
         else {
           prev.nextReference = next
@@ -51,7 +63,21 @@ private[java] object ReferenceRegistry {
       }
     }
 
-  private def handleCollectedReferences(): Unit = {
+  /* A request made while a scan runs, also by a collection nested in it, is
+   * handled by another pass of that scan: a referent cleared after the scan
+   * visited its reference is not missed.
+   */
+  private def handleCollectedReferences(): Unit =
+    if (scanRequests.getAndIncrement() == 0) {
+      var requests = 1
+      while (requests != 0) {
+        retired.set(0)
+        scanReferences()
+        requests = scanRequests.addAndGet(-requests)
+      }
+    }
+
+  private def scanReferences(): Unit = {
     // This method is designed for calls from C and therefore should not include
     // non statically reachable fields or methods.
     // Detach current refs linked-list to allow for unsynchronized updated
@@ -107,6 +133,15 @@ private[java] object ReferenceRegistry {
       }
     )
 
+  // Scans the references outside of a collection
+  private def requestScan(): Unit =
+    if (LinktimeInfo.isMultithreadingEnabled) {
+      handlerState.compareAndSet(Idle, Requested)
+      startRequestedHandler()
+      if (handlerState.get() == Started)
+        LockSupport.unpark(referenceHandlerThread)
+    } else handleCollectedReferences()
+
   private def startRequestedHandler(): Unit =
     if (handlerState.compareAndSet(Requested, Starting)) {
       referenceHandlerThread
@@ -140,8 +175,15 @@ private[java] object ReferenceRegistry {
           )) {
         ref.nextReference = loadHead(prevHeadSlot)
       }
+      val count = listed.incrementAndGet()
+      val cleared = retired.get()
+      if (cleared >= MinRetiredToScan && cleared >= count / 2) requestScan()
       // After publishing, so a collection while starting the handler sees ref
-      if (LinktimeInfo.isMultithreadingEnabled) startRequestedHandler()
+      else if (LinktimeInfo.isMultithreadingEnabled) startRequestedHandler()
     }
+
+  // A listed reference was cleared or enqueued by the program
+  private[ref] def retire(): Unit =
+    if (LinktimeInfo.isWeakReferenceSupported) retired.incrementAndGet()
 
 }

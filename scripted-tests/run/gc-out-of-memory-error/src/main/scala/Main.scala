@@ -1,4 +1,4 @@
-import java.lang.ref.{ReferenceQueue, SoftReference}
+import java.lang.ref.{ReferenceQueue, SoftReference, WeakReference}
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 object Main {
@@ -156,6 +156,21 @@ object Main {
     check(refs.forall(_.get() == null), "soft referent kept, oversized")
   }
 
+  /* References cleared or enqueued by the program are dropped by the
+   * registry without a collection clearing referents; otherwise these fill
+   * the 64 MiB heap.
+   */
+  private def retiredReferencesReleased(): Unit = {
+    val queue = new ReferenceQueue[AnyRef]()
+    val referent = new Object
+    for (i <- 0 until 4000000) {
+      val ref = new WeakReference[AnyRef](referent, queue)
+      if (i % 2 == 0) ref.clear()
+      else check(ref.enqueue() && (queue.poll() eq ref), "enqueue failed")
+    }
+    check(referent != null, "referent")
+  }
+
   def main(args: Array[String]): Unit = {
     softReferencesClearedBeforeError()
     softReferencesClearedBeforeOversizedError()
@@ -199,6 +214,8 @@ object Main {
         "concurrent OOM reported an unrelated stack"
       )
     }
+
+    retiredReferencesReleased()
 
     println("gc-out-of-memory-error: OK")
   }
