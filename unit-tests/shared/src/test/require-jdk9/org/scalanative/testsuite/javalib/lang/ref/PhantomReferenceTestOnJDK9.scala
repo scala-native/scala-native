@@ -51,7 +51,7 @@ class PhantomReferenceTestOnJDK9 {
     )
     val queue = new ReferenceQueue[AnyRef]()
     val refs = allocPhantomRefs(queue, 3)
-    clobberStack(10000)
+    clobberStack()
 
     val enqueued = collectUntilEnqueued(queue, refs.size)
     assertEquals("enqueued references", refs.toSet, enqueued.toSet)
@@ -81,8 +81,10 @@ object PhantomReferenceTestOnJDK9 {
   ): List[PhantomReference[AnyRef]] =
     List.fill(count)(new PhantomReference[AnyRef](new Object, queue))
 
-  // Overwrites stale stack slots that could keep referents alive
-  @noinline def clobberStack(n: Int): Int =
+  /* Overwrites stale stack slots that could keep referents alive, shallow
+   * enough for the larger frames of debug builds
+   */
+  @noinline def clobberStack(n: Int = 1000): Int =
     if (n > 0) clobberStack(n - 1) + 1 else 0
 
   // Allocates some garbage and collects

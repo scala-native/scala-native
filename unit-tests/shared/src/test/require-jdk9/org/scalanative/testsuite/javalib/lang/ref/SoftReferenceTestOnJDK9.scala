@@ -25,7 +25,7 @@ class SoftReferenceTestOnJDK9 {
     )
     val queue = new ReferenceQueue[AnyRef]()
     val refs = allocSoftRefs(queue, 3)
-    clobberStack(10000)
+    clobberStack()
     for (_ <- 0 until 3) collect()
     refs.foreach { ref =>
       assertNotNull("softly reachable referent cleared", ref.get())

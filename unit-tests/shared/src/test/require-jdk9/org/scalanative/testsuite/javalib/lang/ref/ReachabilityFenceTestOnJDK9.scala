@@ -32,7 +32,7 @@ class ReachabilityFenceTestOnJDK9 {
     val control = allocWeakRef(controlQueue)
     val referent = new Object
     val ref = new WeakReference[AnyRef](referent, queue)
-    clobberStack(10000)
+    clobberStack()
     assertEquals(
       "control collected",
       List(control),
@@ -55,7 +55,7 @@ class ReachabilityFenceTestOnJDK9 {
     )
     val queue = new ReferenceQueue[AnyRef]()
     val ref = fencedReferent(queue)
-    clobberStack(10000)
+    clobberStack()
     assertEquals(
       "enqueued after the fence",
       List(ref),
