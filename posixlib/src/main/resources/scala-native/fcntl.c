@@ -1,6 +1,10 @@
 #if defined(SCALANATIVE_COMPILE_ALWAYS) || defined(__SCALANATIVE_POSIX_FCNTL)
 #if defined(__unix__) || defined(__unix) || defined(unix) ||                   \
     (defined(__APPLE__) && defined(__MACH__))
+// Exposes O_LARGEFILE on glibc
+#ifndef _LARGEFILE64_SOURCE
+#define _LARGEFILE64_SOURCE
+#endif
 #include <fcntl.h>
 
 int scalanative_f_dupfd() { return F_DUPFD; }
@@ -93,6 +97,10 @@ int scalanative_fcntl_i(int fd, int cmd, int flags) {
 
 // On MacOS Arm64 is's defined as macro taking varargs delagating to _open
 int scalanative_open_m(const char *pathname, int flags, mode_t mode) {
+#ifdef O_LARGEFILE
+    // Files over 2 GiB on 32-bit targets, otherwise write fails with EFBIG
+    flags |= O_LARGEFILE;
+#endif
     return open(pathname, flags, mode);
 }
 
