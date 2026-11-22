@@ -156,6 +156,57 @@ class MissingSymbolsTest extends LinkerSpec {
     }
   }
 
+  // Issue #5325: getYear exists only in the JDK's java.util.Date
+  private val dateSubclass =
+    """|class D extends java.util.Date {
+       |  override def getYear(): Int = 1
+       |}
+       |""".stripMargin
+
+  @Test def methodMissingInAllocatedBaseClass(): Unit = {
+    doesNotLink(
+      entry = mainClass,
+      Map(
+        sourceFile ->
+          s"""|$dateSubclass
+              |object $mainClass{
+              |  def main(args: Array[String]): Unit = {
+              |    println(new D().getYear())
+              |    println(new java.util.Date(0L).getYear())
+              |  }
+              |}
+              |""".stripMargin
+      )
+    ) {
+      case (config, result) =>
+        result.unreachable
+          .find(_.symbol.name == "java.util.Date.getYear")
+          .map { symbol =>
+            assertTrue("no-backtrace", symbol.backtrace.nonEmpty)
+          }
+          .getOrElse(fail("Not found required unreachable symbol"))
+    }
+  }
+
+  @Test def methodMissingOnlyInUncalledBaseClass(): Unit = {
+    link(
+      entry = mainClass,
+      Map(
+        sourceFile ->
+          s"""|$dateSubclass
+              |object $mainClass{
+              |  def main(args: Array[String]): Unit = {
+              |    println(new D().getYear())
+              |    println(new java.util.Date(0L).getTime())
+              |  }
+              |}
+              |""".stripMargin
+      )
+    ) { (_, result) =>
+      assertTrue(result.isSuccessful)
+    }
+  }
+
   @Test def unsupportedFeature(): Unit = {
     doesNotLink(
       entry = mainClass,
