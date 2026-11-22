@@ -40,17 +40,26 @@ private[java] object ReferenceRegistry {
   @alwaysinline private def loadHead(slot: RawPtr): Reference[_] =
     loadObject(slot).asInstanceOf[Reference[_]]
 
+  // Last reference kept by the scan, written by the single scanning thread
+  private var scanLast: Reference[_] = _
+
+  // A reference that failed to be enqueued, for lack of memory, stays listed
+  private def handleCleared(ref: Reference[_]): Boolean =
+    try ref.handleCleared()
+    catch { case _: Throwable => false }
+
+  // Returns the first reference kept, without allocating
   @tailrec private def enqueueCollectedReferences(
       head: Reference[_],
       current: Reference[_],
       prev: Reference[_]
-  ): (Reference[_], Reference[_]) =
+  ): Reference[_] =
     if (current == null) {
-      val last = if (prev != null) prev else head
-      (head, last)
+      scanLast = if (prev != null) prev else head
+      head
     } else {
       val next = current.nextReference
-      if (!current.handleCleared())
+      if (!handleCleared(current))
         enqueueCollectedReferences(head, next, current)
       else {
         current.nextReference = null
@@ -70,43 +79,45 @@ private[java] object ReferenceRegistry {
   private def handleCollectedReferences(): Unit =
     if (scanRequests.getAndIncrement() == 0) {
       var requests = 1
-      while (requests != 0) {
-        retired.set(0)
-        scanReferences()
-        requests = scanRequests.addAndGet(-requests)
+      try
+        while (requests != 0) {
+          retired.set(0)
+          scanReferences()
+          requests = scanRequests.addAndGet(-requests)
+        }
+      catch {
+        case ex: Throwable =>
+          scanRequests.set(0) // Let a later request scan
+          throw ex
       }
     }
 
   private def scanReferences(): Unit = {
     // This method is designed for calls from C and therefore should not include
     // non statically reachable fields or methods.
-    // Detach current refs linked-list to allow for unsynchronized updated
+    // Allocates only before detaching the list, which an OutOfMemoryError
+    // must not lose.
     val detachedHeadSlot = rawStackalloc[RawPtr]()
-    def replaceHead(head: Reference[_])(reset: => Unit): Unit = {
-      storeObject(detachedHeadSlot, refsHead)
-      while ({
-        reset
-        !atomic_compare_exchange_strong(
-          refsHeadPtr,
-          fromRawPtr[Reference[_]](detachedHeadSlot),
-          head
-        )
-      }) {}
-    }
+    val detachedHeadPtr = fromRawPtr[Reference[_]](detachedHeadSlot)
+    val headPtr = refsHeadPtr
 
-    replaceHead(null) {}
+    // Detach current refs linked-list to allow for unsynchronized updated
+    storeObject(detachedHeadSlot, refsHead)
+    while (!atomic_compare_exchange_strong(headPtr, detachedHeadPtr, null)) {}
 
     val detachedHead = loadHead(detachedHeadSlot)
-    val remaining = enqueueCollectedReferences(detachedHead, detachedHead, null)
-    val newHead = remaining._1
-    val newLast = remaining._2
+    val newHead = enqueueCollectedReferences(detachedHead, detachedHead, null)
+    val newLast = scanLast
+    scanLast = null
 
     // Reattach the refs list to the possibly updated head
     if (newHead ne null) {
       assert(newLast ne null)
-      replaceHead(newHead) {
+      storeObject(detachedHeadSlot, refsHead)
+      while ({
         newLast.nextReference = loadHead(detachedHeadSlot)
-      }
+        !atomic_compare_exchange_strong(headPtr, detachedHeadPtr, newHead)
+      }) {}
     }
   }
 
