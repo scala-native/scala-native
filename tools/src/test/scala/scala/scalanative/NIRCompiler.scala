@@ -140,7 +140,9 @@ class NIRCompiler(outDir: Path) {
 
   def compile(base: Path): Array[Path] = {
     val files = getFiles(base.toFile(), _ => true)
-    val (sources, resources) = files.partition(_.getName().endsWith(".scala"))
+    val (sources, resources) = files.partition { f =>
+      f.getName().endsWith(".scala") || f.getName().endsWith(".java")
+    }
     val resourceFiles = resources
       .filter(_.isFile())
       .map { file =>

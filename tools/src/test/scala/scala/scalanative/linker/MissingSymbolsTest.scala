@@ -1,6 +1,8 @@
 package scala.scalanative
 package linker
 
+import java.io.File
+import java.nio.file.{Files, Paths}
 import java.sql.Time
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -10,9 +12,12 @@ import scala.concurrent.duration._
 import org.junit.Assert._
 import org.junit.Test
 
-import scala.scalanative.LinkerSpec
+import scala.scalanative.build.{Config, Discover, IO, Logger, ScalaNative}
+import scala.scalanative.buildinfo.ScalaNativeBuildInfo
 import scala.scalanative.checker.Check
 import scala.scalanative.optimizer.assertContainsAll
+import scala.scalanative.util.Scope
+import scala.scalanative.{LinkerSpec, NIRCompiler}
 
 class MissingSymbolsTest extends LinkerSpec {
 
@@ -153,6 +158,85 @@ class MissingSymbolsTest extends LinkerSpec {
             assertTrue("no-backtrace", symbol.backtrace.nonEmpty)
           }
           .getOrElse(fail("Not found required unreachable symbol"))
+    }
+  }
+
+  // Compiles `linked` and `sources` in separate runs: `linked` provides the
+  // NIR, while `sources` are compiled against their own (Java) API stubs
+  private def linkSeparately(
+      linked: Map[String, String],
+      sources: Map[String, String]
+  ): ReachabilityAnalysis = {
+    val outDir = Files.createTempDirectory("native-test-out")
+    try
+      Scope { implicit in =>
+        Seq(linked, sources).foreach { srcs =>
+          NIRCompiler.withSourceDir(srcs)(
+            NIRCompiler.getCompiler(outDir).compile
+          )
+        }
+        val classpath = ScalaNativeBuildInfo.nativeRuntimeClasspath
+          .split(File.pathSeparator)
+          .map(Paths.get(_)) :+ outDir
+        val config = Config.empty
+          .withBaseDir(outDir)
+          .withClassPath(classpath.toSeq)
+          .withMainClass(Some(mainClass))
+          .withCompilerConfig(
+            _.withTargetTriple("x86_64-unknown-unknown")
+              .withClang(Discover.clang())
+              .withClangPP(Discover.clangpp())
+          )
+          .withLogger(Logger.nullLogger)
+        Link(config, ScalaNative.entries(config))
+      }
+    finally IO.deleteRecursive(outDir)
+  }
+
+  // Issue #5324: Baz is allocated only via its subclass, the caller is
+  // compiled against the Java API declaring a method missing in Baz's NIR
+  @Test def unreachableMethodOfClassAllocatedOnlyViaSubclass(): Unit = {
+    val result = linkSeparately(
+      linked = Map(
+        "Baz.scala" ->
+          """|package foo.bar
+             |class Baz
+             |object Baz extends Baz {
+             |  def get(): Baz = this
+             |}
+             |""".stripMargin
+      ),
+      sources = Map(
+        "Baz.java" ->
+          """|package foo.bar;
+             |public class Baz {
+             |  public static Baz get() { return null; }
+             |  public native long missing();
+             |}
+             |""".stripMargin,
+        sourceFile ->
+          s"""|
+              |object $mainClass{
+              |  def main(args: Array[String]): Unit = {
+              |    println(foo.bar.Baz.get().missing())
+              |  }
+              |}
+              |""".stripMargin
+      )
+    )
+    result match {
+      case result: ReachabilityAnalysis.Failure =>
+        result.unreachable
+          .find(_.symbol.name == "foo.bar.Baz.missing")
+          .map { symbol =>
+            assertEquals("method", symbol.symbol.kind)
+            val from = symbol.backtrace.head
+            assertEquals("Test$.main", from.symbol.name)
+            assertEquals(sourceFile, from.filename)
+            assertEquals(4, from.line)
+          }
+          .getOrElse(fail("Not found required unreachable symbol"))
+      case _ => fail("Expected code to not link")
     }
   }
 

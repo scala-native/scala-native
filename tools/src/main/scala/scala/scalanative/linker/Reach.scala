@@ -219,10 +219,7 @@ private[linker] class Reach(
         case DelayedMethod(top, sig, position) =>
           def addMissing() = this.addMissing(top.member(sig))
           scopeInfo(top)(position).fold(addMissing()) { info =>
-            val wasAllocated = info match {
-              case value: Trait => value.implementors.exists(_.allocated)
-              case clazz: Class => clazz.allocated
-            }
+            val wasAllocated = info.implementors.exists(_.allocated)
             val targets = info.targets(sig)
             if (targets.isEmpty && wasAllocated) {
               addMissing()
