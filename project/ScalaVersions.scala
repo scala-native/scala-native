@@ -71,13 +71,26 @@ object ScalaVersions {
 
   private def extraCrossScalaVersion(binVersionPrefix: String) = sys.env
     .get("EXTRA_CROSS_SCALA_VERSION")
-    .filter(_.startsWith(binVersionPrefix))
+    .filter(matchesBinaryPrefix(binVersionPrefix))
+
+  // A shorter minor prefix must not match a later minor. Match at a dot boundary.
+  private def matchesBinaryPrefix(binVersionPrefix: String)(version: String) =
+    val boundary =
+      if binVersionPrefix.endsWith(".") then binVersionPrefix
+      else s"$binVersionPrefix."
+    version.startsWith(boundary)
+
+  private def patchVersions(
+      baseVersion: String,
+      patches: Range.Inclusive
+  ): List[String] =
+    patches.map(v => s"$baseVersion.$v").toList
 
   private def crossScalaVersions(
       baseVersion: String,
       patches: Range.Inclusive
   ): List[String] = {
-    patches.map(v => s"$baseVersion.$v") ++
-      extraCrossScalaVersion(baseVersion)
-  }.distinct.toList
+    val released = patchVersions(baseVersion, patches)
+    released ++ extraCrossScalaVersion(baseVersion).filterNot(released.contains)
+  }
 }
