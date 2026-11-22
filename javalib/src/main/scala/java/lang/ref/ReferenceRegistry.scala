@@ -139,7 +139,9 @@ private[java] object ReferenceRegistry {
     .name("GC-ReferenceHandler")
     .startInternal(() =>
       while (true) {
-        handleCollectedReferences()
+        // A failed scan, e.g. out of memory, is retried on the next request
+        try handleCollectedReferences()
+        catch { case _: Throwable => () }
         LockSupport.park()
       }
     )
