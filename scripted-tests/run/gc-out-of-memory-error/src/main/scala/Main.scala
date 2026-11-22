@@ -127,7 +127,7 @@ object Main {
   private def softReferencesClearedBeforeError(): Unit = {
     val queue = new ReferenceQueue[AnyRef]()
     val refs = allocSoftRefs(queue)
-    clobberStack(10000)
+    clobberStack(1000)
     for (_ <- 0 until RetainedSlots) sink = new Array[Byte](ChunkSize)
     sink = null
     System.gc()
@@ -148,8 +148,17 @@ object Main {
     check(enqueued == refs.toSet[AnyRef], "soft references not enqueued")
   }
 
+  // Also before an error for an allocation larger than the whole heap
+  private def softReferencesClearedBeforeOversizedError(): Unit = {
+    val refs = allocSoftRefs(null)
+    clobberStack(1000)
+    allocateOversized()
+    check(refs.forall(_.get() == null), "soft referent kept, oversized")
+  }
+
   def main(args: Array[String]): Unit = {
     softReferencesClearedBeforeError()
+    softReferencesClearedBeforeOversizedError()
 
     // A failed allocation reports an OutOfMemoryError instead of aborting the
     // process, and the reserve kept by the GC leaves enough room to record the

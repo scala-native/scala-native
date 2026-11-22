@@ -316,8 +316,8 @@ static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
     return available;
 }
 
-void Heap_Collect(Heap *heap, Stack *stack) {
-    Heap_collect(heap, stack, 0, 0, false);
+void Heap_Collect(Heap *heap, Stack *stack, bool clearSoftReferences) {
+    Heap_collect(heap, stack, 0, 0, clearSoftReferences);
 }
 
 bool Heap_RecoverAllocation(Heap *heap, size_t size, uint64_t generation) {
