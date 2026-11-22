@@ -8,12 +8,15 @@
 
 #include <stdbool.h>
 #include <stdatomic.h>
+#include <stdint.h>
 #include "immix_commix/headers/ObjectHeader.h"
 
 // Written only while the world is stopped
 extern bool References_clearSoft;
 // The last collection found a soft reference
 extern atomic_bool References_softFound;
+// Number of collections that cleared soft referents
+extern atomic_uint_fast64_t References_softClearings;
 
 // The referent is left unmarked, to be cleared if nothing else marks it
 static inline bool References_deferReferent(int32_t kind) {
@@ -41,8 +44,16 @@ static inline bool References_SoftFound(void) {
     return atomic_load_explicit(&References_softFound, memory_order_relaxed);
 }
 
+static inline uint64_t References_SoftClearings(void) {
+    return atomic_load_explicit(&References_softClearings,
+                                memory_order_acquire);
+}
+
 static inline void References_StartCollection(bool clearSoft) {
     References_clearSoft = clearSoft;
+    if (clearSoft)
+        atomic_fetch_add_explicit(&References_softClearings, 1,
+                                  memory_order_release);
     atomic_store_explicit(&References_softFound, false, memory_order_relaxed);
 }
 

@@ -8,6 +8,7 @@
 #include "immix_commix/Object.h"
 #include "immix/State.h"
 #include "immix_commix/headers/ObjectHeader.h"
+#include "immix_commix/References.h"
 
 inline static int LargeAllocator_sizeToLinkedListIndex(size_t size) {
     assert(size >= MIN_BLOCK_SIZE);
@@ -273,7 +274,11 @@ word_t *LargeAllocator_Alloc(Heap *heap, size_t size) {
     // took it, otherwise the error would be the preallocated fallback, without
     // a stack trace of its own.
     if (size > heap->maxHeapSize) {
-        Heap_Collect(heap, &stack, true);
+        // Retried: a call that loses the race to an ordinary collection by
+        // another thread only waits for it
+        uint64_t clearings = References_SoftClearings();
+        while (References_SoftClearings() == clearings)
+            Heap_Collect(heap, &stack, true);
         Heap_ThrowOutOfMemory(heap);
     }
     LargeAllocator *largeAllocator = &currentMutatorThread->largeAllocator;

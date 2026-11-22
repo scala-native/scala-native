@@ -243,7 +243,11 @@ word_t *LargeAllocator_Alloc(Heap *heap, size_t size) {
     // a stack trace of its own. The block is refilled when the concurrent
     // sweep that follows the collection ends, so that sweep is waited for.
     if (size > heap->maxHeapSize) {
-        Heap_Collect(heap, true, true);
+        // Retried: a call that loses the race to an ordinary collection by
+        // another thread only waits for it
+        uint64_t clearings = References_SoftClearings();
+        while (References_SoftClearings() == clearings)
+            Heap_Collect(heap, true, true);
         LargeAllocator_waitForSweep(heap);
         Heap_ThrowOutOfMemory(heap);
     }

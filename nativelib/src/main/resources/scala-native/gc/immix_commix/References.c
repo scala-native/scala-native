@@ -4,5 +4,6 @@
 
 bool References_clearSoft = false;
 atomic_bool References_softFound = false;
+atomic_uint_fast64_t References_softClearings = 0;
 
 #endif
