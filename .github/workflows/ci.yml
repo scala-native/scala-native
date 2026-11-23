@@ -180,7 +180,8 @@ jobs:
       - name: Test runtime and test interface
         timeout-minutes: 60
         shell: cmd
-        run: sbt "test-runtime 3" "testInterface3/test"
+        # The thin client stopped relaying output and the job hung
+        run: sbt --server "test-runtime 3" "testInterface3/test"
 
   toolchain:
     name: Toolchain
