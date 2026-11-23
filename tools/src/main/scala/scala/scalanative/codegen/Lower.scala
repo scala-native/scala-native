@@ -239,18 +239,22 @@ private[scalanative] object Lower {
         val pos = defn.pos
         val scopeId = nir.ScopeId.TopLevel
         ScopedVar.scoped(unwindHandler := getUnwindHandler(nir.Next.None)(pos)) {
-          val pendingCount = buf.let(
-            nir.Op.Load(nir.Type.Int, StackOverflowPendingCount, Some(nir.MemoryOrder.Monotonic)),
-            nir.Next.None
-          )(pos, scopeId)
-          val isPending = buf.comp(nir.Comp.Ine, nir.Type.Int, pendingCount, nir.Val.Int(0), nir.Next.None)(pos, scopeId)
-          val pendingL = fresh()
-          val continueL = fresh()
-          buf.branch(isPending, nir.Next(pendingL), nir.Next(continueL))(pos)
-          buf.label(pendingL)(pos)
-          buf.call(CheckStackOverflowGuardsSig, CheckStackOverflowGuards, Nil, unwind)(pos, scopeId)
-          buf.jump(nir.Next(continueL))(pos)
-          buf.label(continueL)(pos)
+          if (!platform.isMultithreadingEnabled)
+            buf.call(CheckStackOverflowGuardsSig, CheckStackOverflowGuards, Nil, unwind)(pos, scopeId)
+          else {
+            val pendingCount = buf.let(
+              nir.Op.Load(nir.Type.Int, StackOverflowPendingCount, Some(nir.MemoryOrder.Monotonic)),
+              nir.Next.None
+            )(pos, scopeId)
+            val isPending = buf.comp(nir.Comp.Ine, nir.Type.Int, pendingCount, nir.Val.Int(0), nir.Next.None)(pos, scopeId)
+            val pendingL = fresh()
+            val continueL = fresh()
+            buf.branch(isPending, nir.Next(pendingL), nir.Next(continueL))(pos)
+            buf.label(pendingL)(pos)
+            buf.call(CheckStackOverflowGuardsSig, CheckStackOverflowGuards, Nil, unwind)(pos, scopeId)
+            buf.jump(nir.Next(continueL))(pos)
+            buf.label(continueL)(pos)
+          }
         }
       }
 
