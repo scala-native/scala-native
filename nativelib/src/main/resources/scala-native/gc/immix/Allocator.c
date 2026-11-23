@@ -36,6 +36,14 @@ void Allocator_Clear(Allocator *allocator) {
     allocator->largeLimit = NULL;
 }
 
+// Sticky Immix sweeps in a minor collection only the blocks allocated into
+// since the last sweep.
+static inline void Allocator_touch(BlockMeta *block) {
+#ifdef SCALANATIVE_GC_STICKY
+    BlockMeta_SetTouched(block, true);
+#endif
+}
+
 bool Allocator_newOverflowBlock(Allocator *allocator) {
     BlockMeta *largeBlock = BlockAllocator_GetFreeBlockForSmallAllocation(
         allocator->blockAllocator, allocator->canUseReserve);
@@ -43,6 +51,7 @@ bool Allocator_newOverflowBlock(Allocator *allocator) {
         return false;
     }
     allocator->blocksTaken++;
+    Allocator_touch(largeBlock);
     allocator->largeBlock = largeBlock;
     word_t *largeBlockStart = BlockMeta_GetBlockStart(
         allocator->blockMetaStart, allocator->heapStart, largeBlock);
@@ -127,6 +136,7 @@ static bool Allocator_reserveHole(Allocator *allocator, BlockMeta *block,
     for (int line = BlockMeta_FirstFreeLine(block); line != LAST_HOLE;) {
         FreeLineMeta *hole = (FreeLineMeta *)Block_GetLineAddress(start, line);
         if ((size_t)hole->size * LINE_SIZE >= size) {
+            Allocator_touch(block);
             if (previous != NULL)
                 previous->next = hole->next;
             else
@@ -265,6 +275,7 @@ bool Allocator_newBlock(Allocator *allocator) {
         BlockMeta_SetFirstFreeLine(block, LAST_HOLE);
     }
 
+    Allocator_touch(block);
     allocator->block = block;
     allocator->blockStart = blockStart;
 
