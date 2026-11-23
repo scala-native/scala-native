@@ -25,6 +25,9 @@ bool scalanative_externalGC_rebind(void);
 /* Stop tracking the calling thread's stack for collection. */
 void scalanative_externalGC_unregister(void);
 
+/* Stop scanning the unmanaged caller's stack until it is admitted. */
+void scalanative_externalGC_returnToHost(void);
+
 /* Safely enter managed execution; requires registration. */
 void scalanative_externalGC_admit(void);
 

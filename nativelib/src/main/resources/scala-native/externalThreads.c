@@ -216,8 +216,9 @@ static void unbind(ExternalThread *record) {
     /* Both callers have already captured their stack and become unmanaged. */
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     (void)record;
-#endif
-#ifndef SCALANATIVE_MULTITHREADING_ENABLED
+    // Host frames are not roots
+    scalanative_externalGC_returnToHost();
+#else
     /* Boehm's registration belongs to the OS thread. Immix/Commix keep the
      * singleton allocator while ownership moves; none has no tracing state. */
     scalanative_externalGC_unregister();

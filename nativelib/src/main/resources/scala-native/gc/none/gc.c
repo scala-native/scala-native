@@ -261,6 +261,7 @@ void scalanative_externalGC_unregister(void) {
     externalRegistered = false;
 #endif
 }
+void scalanative_externalGC_returnToHost(void) {}
 void scalanative_externalGC_admit(void) {
     executionState = GC_MutatorThreadState_Managed;
 }

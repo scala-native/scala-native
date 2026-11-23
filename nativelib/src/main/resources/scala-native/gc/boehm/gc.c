@@ -391,6 +391,7 @@ bool scalanative_externalGC_restoreContext(void *context) {
     return scalanative_externalGC_isRegistered() ||
            scalanative_externalGC_register();
 }
+void scalanative_externalGC_returnToHost(void) {}
 void scalanative_externalGC_admit(void) {
     executionState = GC_MutatorThreadState_Managed;
 }
