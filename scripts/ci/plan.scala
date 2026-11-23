@@ -205,10 +205,12 @@ def changedFiles(repo: String, pr: String): Seq[String] =
       f("filename").str +: f.obj.get("previous_filename").map(_.str).toSeq
     )
 
+/** Commit of the latest completed nightly, if that run passed */
 def lastNightlySha(): Option[String] =
-  val query = "--workflow ci.yml --event schedule --status success --limit 1"
+  val query = "--workflow ci.yml --event schedule --status completed --limit 1"
   try
-    ghJson(s"run list $query --json headSha").arr.headOption
+    ghJson(s"run list $query --json headSha,conclusion").arr.headOption
+      .filter(_("conclusion").str == "success")
       .map(_("headSha").str)
   catch
     case e: os.SubprocessException =>
