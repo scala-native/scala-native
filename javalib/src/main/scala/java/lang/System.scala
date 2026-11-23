@@ -38,9 +38,11 @@ object System {
   def exit(status: Int): Unit =
     Runtime.getRuntime().exit(status)
 
-  def identityHashCode(x: Object): scala.Int =
-    java.lang.Long
-      .hashCode(Intrinsics.castRawPtrToLong(Intrinsics.castObjectToRawPtr(x)))
+  def identityHashCode(x: Object): scala.Int = {
+    val ptr = Intrinsics.castObjectToRawPtr(x)
+    scala.scalanative.runtime.GC.pin(ptr)
+    java.lang.Long.hashCode(Intrinsics.castRawPtrToLong(ptr))
+  }
 
   def lineSeparator(): String = {
     if (isWindows) "\r\n"

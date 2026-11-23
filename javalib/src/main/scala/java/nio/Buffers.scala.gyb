@@ -119,7 +119,7 @@ abstract class ${T}Buffer private[nio] (
 
   private def genBuffer = GenBuffer[${T}Buffer](this)
 
-  private[nio] def this(_capacity: Int, _array: Array[${T}], _offset: Int) = this(_capacity, _array, _offset, _array.atUnsafe(_offset))
+  private[nio] def this(_capacity: Int, _array: Array[${T}], _offset: Int) = this(_capacity, _array, _offset, Buffer.pinned(_array).atUnsafe(_offset))
   private[nio] def this(_capacity: Int, address: unsafe.CVoidPtr) = this(_capacity, null: Array[${T}], -1, address)
 
   def slice(): ${T}Buffer

@@ -10,7 +10,7 @@ import java.util
 import java.util._
 import java.util.concurrent.locks._
 
-import scala.scalanative.annotation.safePublish
+import scala.scalanative.annotation.{alwaysinline, safePublish}
 import scala.scalanative.libc.stdatomic.AtomicRef
 import scala.scalanative.libc.stdatomic.memory_order._
 import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
@@ -81,13 +81,13 @@ object SynchronousQueue {
       @volatile var `match`: SNode = _ // the node matched to this
       @volatile var waiter: Thread = _ // to control park/unpark
 
-      val atomicMatch = new AtomicRef[SNode](
+      @alwaysinline def atomicMatch = new AtomicRef[SNode](
         fromRawPtr(Intrinsics.classFieldRawPtr(this, "match"))
       )
-      val atomicNext = new AtomicRef[SNode](
+      @alwaysinline def atomicNext = new AtomicRef[SNode](
         fromRawPtr(Intrinsics.classFieldRawPtr(this, "next"))
       )
-      val atomicWaiter = new AtomicRef[Thread](
+      @alwaysinline def atomicWaiter = new AtomicRef[Thread](
         fromRawPtr(Intrinsics.classFieldRawPtr(this, "waiter"))
       )
 
@@ -145,7 +145,7 @@ object SynchronousQueue {
     import TransferStack._
 
     @volatile private[concurrent] var head: SNode = _
-    private val atomicHead = new AtomicRef[SNode](
+    @alwaysinline private def atomicHead = new AtomicRef[SNode](
       fromRawPtr(Intrinsics.classFieldRawPtr(this, "head"))
     )
 
@@ -315,13 +315,13 @@ object SynchronousQueue {
       @volatile private[concurrent] var next: QNode = _ // next node in queue
       @volatile private[concurrent] var waiter: Thread = _
 
-      private val atomicItem = new AtomicRef[Object](
+      @alwaysinline private def atomicItem = new AtomicRef[Object](
         fromRawPtr(Intrinsics.classFieldRawPtr(this, "item"))
       )
-      private val atomicNext = new AtomicRef[QNode](
+      @alwaysinline private def atomicNext = new AtomicRef[QNode](
         fromRawPtr(Intrinsics.classFieldRawPtr(this, "next"))
       )
-      private val atomicWaiter = new AtomicRef[Thread](
+      @alwaysinline private def atomicWaiter = new AtomicRef[Thread](
         fromRawPtr(Intrinsics.classFieldRawPtr(this, "waiter"))
       )
 
@@ -367,13 +367,13 @@ object SynchronousQueue {
 
     @volatile private[concurrent] var cleanMe: QNode = _
 
-    private val atomicHead = new AtomicRef[QNode](
+    @alwaysinline private def atomicHead = new AtomicRef[QNode](
       fromRawPtr(Intrinsics.classFieldRawPtr(this, "head"))
     )
-    private val atomicTail = new AtomicRef[QNode](
+    @alwaysinline private def atomicTail = new AtomicRef[QNode](
       fromRawPtr(Intrinsics.classFieldRawPtr(this, "tail"))
     )
-    private val atomicCleanMe = new AtomicRef[QNode](
+    @alwaysinline private def atomicCleanMe = new AtomicRef[QNode](
       fromRawPtr(Intrinsics.classFieldRawPtr(this, "cleanMe"))
     )
 

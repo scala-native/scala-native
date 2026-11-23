@@ -5,6 +5,13 @@
 #include "immix_commix/datastructures/Stack.h"
 #include "immix_commix/headers/ObjectHeader.h"
 
+#ifdef SCALANATIVE_GC_STICKY
+// Set for a minor collection that may copy young survivors: marking records
+// them and pins the conservatively referenced ones, and leaves line marks to
+// Generations_Evacuate.
+extern bool Marker_evacuating;
+#endif
+
 // A minor collection also traces from remembered objects (Sticky Immix).
 void Marker_MarkRoots(Heap *heap, Stack *stack, bool minor);
 void Marker_Mark(Heap *heap, Stack *stack);

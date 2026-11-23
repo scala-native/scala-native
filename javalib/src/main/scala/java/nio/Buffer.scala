@@ -236,3 +236,15 @@ abstract class Buffer private[nio] (
       s"Access at index $index overflows buffer of length ${limit()}"
     )
 }
+
+private[nio] object Buffer {
+
+  /** Pins `array`, whose address a heap buffer keeps in `_rawAddress`: a
+   *  collector that moves young objects does not update raw pointers.
+   */
+  @inline def pinned[A <: AnyRef](array: A): A = {
+    scala.scalanative.runtime.GC
+      .pin(scala.scalanative.runtime.Intrinsics.castObjectToRawPtr(array))
+    array
+  }
+}

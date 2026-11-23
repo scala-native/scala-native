@@ -26,6 +26,9 @@ typedef struct {
 void BlockAllocator_Init(BlockAllocator *blockAllocator, word_t *blockMetaStart,
                          uint32_t blockCount);
 BlockMeta *BlockAllocator_GetFreeBlock(BlockAllocator *blockAllocator);
+// Free blocks kept from mutators, besides their emergency reserve, for Sticky
+// Immix to copy young survivors into.
+extern uint32_t BlockAllocator_copyReserve;
 BlockMeta *
 BlockAllocator_GetFreeBlockForSmallAllocation(BlockAllocator *blockAllocator,
                                               bool canUseReserve);

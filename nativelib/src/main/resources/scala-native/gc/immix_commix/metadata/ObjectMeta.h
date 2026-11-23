@@ -10,7 +10,18 @@ typedef enum {
     om_free = 0x0,
     om_placeholder = 0x1,
     om_allocated = 0x2,
+    // A young object whose address is used as a value (GC.pin), such as its
+    // identity hash: Sticky Immix must not move it. Survivors become old
+    // regardless.
+    om_allocated_pinned = 0x3,
     om_marked = 0x4,
+    // Sticky Immix evacuation: a young object marked by the current minor
+    // collection that must stay where it is (pinned, or referenced from a
+    // conservatively scanned location).
+    om_marked_pinned = 0x5,
+    // Sticky Immix evacuation: the object was copied; its first word holds
+    // the address of the copy until the end of the collection.
+    om_forwarded = 0x6,
     // Write barrier states, see immix_commix/WriteBarrier.h. Only the sticky
     // Immix collector (SCALANATIVE_GC_STICKY) and the barrier verifier produce
     // them: an object that survived a collection is old.
@@ -28,12 +39,23 @@ static inline bool ObjectMeta_IsPlaceholder(ObjectMeta *metadata) {
     return *metadata == om_placeholder;
 }
 
+// Young: allocated since the last collection, pinned or not.
 static inline bool ObjectMeta_IsAllocated(ObjectMeta *metadata) {
-    return *metadata == om_allocated;
+    return (*metadata | 1) == om_allocated_pinned;
+}
+static inline bool ObjectMeta_IsPinned(ObjectMeta *metadata) {
+    return *metadata == om_allocated_pinned;
 }
 
+// Marked by the current collection, pinned or not.
 static inline bool ObjectMeta_IsMarked(ObjectMeta *metadata) {
-    return *metadata == om_marked;
+    return (*metadata | 1) == om_marked_pinned;
+}
+static inline bool ObjectMeta_IsMarkedPinned(ObjectMeta *metadata) {
+    return *metadata == om_marked_pinned;
+}
+static inline bool ObjectMeta_IsForwarded(ObjectMeta *metadata) {
+    return *metadata == om_forwarded;
 }
 
 static inline bool ObjectMeta_IsOldUnlogged(ObjectMeta *metadata) {
@@ -72,6 +94,12 @@ static inline void ObjectMeta_SetAllocated(ObjectMeta *metadata) {
 
 static inline void ObjectMeta_SetMarked(ObjectMeta *metadata) {
     *metadata = om_marked;
+}
+static inline void ObjectMeta_SetMarkedPinned(ObjectMeta *metadata) {
+    *metadata = om_marked_pinned;
+}
+static inline void ObjectMeta_SetForwarded(ObjectMeta *metadata) {
+    *metadata = om_forwarded;
 }
 
 static inline void ObjectMeta_ClearLineAt(ObjectMeta *cursor) {

@@ -189,6 +189,20 @@ sealed trait GarbageCollectorConfig {
    */
   def generational: Option[Boolean]
 
+  /** Moves the young objects that survive a collection next to each other.
+   *  Objects referenced from thread stacks, and the ones whose identity hash
+   *  code was taken, stay in place. Has to be disabled in programs keeping
+   *  addresses of managed objects in memory that is not scanned by the garbage
+   *  collector.
+   *
+   *  Environment variable: `GC_EVACUATION` (`1` or `0`)
+   *
+   *  Supported by: Immix, with [[generational]]
+   *
+   *  Default: true
+   */
+  def evacuation: Option[Boolean]
+
   /** How many times the memory used after a collection of the whole heap can
    *  grow before the whole heap is collected again, greater than 1.
    *
@@ -215,6 +229,7 @@ sealed trait GarbageCollectorConfig {
   def withStatsEnabled(value: Boolean): GarbageCollectorConfig
   def withTrapBasedYieldPoints(value: Boolean): GarbageCollectorConfig
   def withGenerational(value: Boolean): GarbageCollectorConfig
+  def withEvacuation(value: Boolean): GarbageCollectorConfig
   def withOldGenerationGrowth(value: Double): GarbageCollectorConfig
 
   private[scalanative] def show(indent: String): String
@@ -271,6 +286,7 @@ object GarbageCollectorConfig {
       statsEnabled: Option[Boolean] = None,
       trapBasedYieldPoints: Option[Boolean] = None,
       generational: Option[Boolean] = None,
+      evacuation: Option[Boolean] = None,
       oldGenerationGrowth: Option[Double] = None
   ) extends GarbageCollectorConfig {
     // format: off
@@ -289,6 +305,7 @@ object GarbageCollectorConfig {
     def withStatsEnabled(value: Boolean): GarbageCollectorConfig = copy(statsEnabled = Some(value))
     def withTrapBasedYieldPoints(value: Boolean): GarbageCollectorConfig = copy(trapBasedYieldPoints = Some(value))
     def withGenerational(value: Boolean): GarbageCollectorConfig = copy(generational = Some(value))
+    def withEvacuation(value: Boolean): GarbageCollectorConfig = copy(evacuation = Some(value))
     def withOldGenerationGrowth(value: Double): GarbageCollectorConfig = copy(oldGenerationGrowth = Some(value))
     // format: on
 
@@ -876,7 +893,21 @@ object GarbageCollectorConfig {
       encode = encodeBoolean
     )
 
-    // Depends on the setting above, which is picked first.
+    // The settings below depend on the one above, which is picked first.
+    val evacuation = new Setting[Boolean](
+      name = "evacuation",
+      envVar = Some("GC_EVACUATION"),
+      define = Some("EVACUATION"),
+      supportedBy = Set(GC.immix),
+      default = Some(true),
+      get = _.evacuation,
+      set = (c, v) => edit(c)(_.copy(evacuation = v)),
+      parse = parseBoolean,
+      encode = encodeBoolean,
+      applicable =
+        requires("generational", ctx => enabled(ctx.values.generational))
+    )
+
     val oldGenerationGrowth = new Setting[Double](
       name = "oldGenerationGrowth",
       envVar = Some("GC_OLD_GENERATION_GROWTH"),
@@ -910,6 +941,7 @@ object GarbageCollectorConfig {
       statsEnabled,
       trapBasedYieldPoints,
       generational,
+      evacuation,
       oldGenerationGrowth
     )
   }

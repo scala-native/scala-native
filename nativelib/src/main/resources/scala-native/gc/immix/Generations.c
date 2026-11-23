@@ -1,7 +1,10 @@
 #if defined(SCALANATIVE_GC_IMMIX) && defined(SCALANATIVE_GC_STICKY)
 
 #include <stdlib.h>
+#include <string.h>
 #include "Generations.h"
+#include "BlockAllocator.h"
+#include "immix_commix/Object.h"
 #include "Block.h"
 #include "LargeAllocator.h"
 #include "Marker.h"
@@ -37,6 +40,19 @@ static void ObjectList_Push(ObjectList *list, Object *object) {
 // them once it ends.
 static ObjectList oldBlobArrays = {};
 static ObjectList youngBlobArrays = {};
+
+// Evacuation (see Generations_Evacuate): the young objects the current minor
+// collection marked, and the old objects and card ranges it traced, whose
+// references the evacuation updates.
+static ObjectList survivors = {};
+static ObjectList tracedOld = {};
+static ObjectList tracedCardRanges = {}; // pairs of slot addresses
+#ifdef SCALANATIVE_GC_WRITE_BARRIER_VERIFY
+// The evacuated originals, poisoned once references are updated, so that a
+// reference the evacuation missed fails fast.
+static ObjectList evacuatedFrom = {};
+#define GENERATIONS_POISON 0xAB
+#endif
 
 // Remembered objects of threads that exited since the last collection.
 static RememberedSet orphanRemembered = {};
@@ -138,8 +154,13 @@ static void Generations_markCards(Heap *heap, Stack *stack,
         cards[card] &= ~WRITE_BARRIER_CARD_DIRTY;
         word_t **from = (word_t **)WriteBarrier_CardStart(card);
         word_t **to = (word_t **)WriteBarrier_CardStart(card + 1);
-        Marker_MarkSlots(heap, stack, from < elements ? elements : from,
-                         to > end ? end : to);
+        from = from < elements ? elements : from;
+        to = to > end ? end : to;
+        Marker_MarkSlots(heap, stack, from, to);
+        if (Marker_evacuating) {
+            ObjectList_Push(&tracedCardRanges, (Object *)from);
+            ObjectList_Push(&tracedCardRanges, (Object *)to);
+        }
     }
 }
 
@@ -161,6 +182,8 @@ static void Generations_markRemembered(Heap *heap, Stack *stack,
         if (ObjectMeta_IsOld(meta))
             ObjectMeta_SetOldUnlogged(meta);
         Marker_MarkRemembered(heap, stack, object);
+        if (Marker_evacuating)
+            ObjectList_Push(&tracedOld, object);
     }
     RememberedSet_Clear(set);
 }
@@ -179,11 +202,205 @@ void Generations_MarkMinorRoots(Heap *heap, Stack *stack) {
                  remembered, oldBlobArrays.size);
 }
 
+void Generations_NoteSurvivor(Object *object) {
+    ObjectList_Push(&survivors, object);
+}
+
+// Copying can be disabled in the build (GarbageCollectorConfig.evacuation) or
+// with GC_EVACUATION=0: a program that keeps addresses of heap objects in
+// native memory needs that.
+bool Generations_ShouldEvacuate(bool full) {
+    static int enabled = -1;
+    if (enabled < 0) {
+        enabled = SCALANATIVE_GC_CONFIG_EVACUATION;
+        const char *env = getenv("GC_EVACUATION");
+        if (env != NULL) {
+            if (env[0] == '0' || env[0] == 'f' || env[0] == 'F')
+                enabled = 0;
+            else if (env[0] == '1' || env[0] == 't' || env[0] == 'T')
+                enabled = 1;
+        }
+    }
+    return !full && enabled;
+}
+
+// Free blocks the evacuation copies survivors into, bump allocated. In
+// practice these are the copy reserve, held back from the mutators.
+typedef struct {
+    word_t *cursor;
+    word_t *limit;
+} CopySpace;
+
+// The copy reserve covers the survivors of the last minor collection with a
+// margin, between these bounds.
+#define GENERATIONS_MIN_COPY_RESERVE 4
+#define GENERATIONS_MAX_COPY_RESERVE_DIVISOR 8
+#define GENERATIONS_COPY_RESERVE_DECAY_DIVISOR 8
+
+static word_t *Generations_copySpaceAlloc(Heap *heap, CopySpace *space,
+                                          size_t size) {
+    if (space->cursor == NULL ||
+        (ubyte_t *)space->cursor + size > (ubyte_t *)space->limit) {
+        BlockMeta *block = BlockAllocator_GetFreeBlockForSmallAllocation(
+            &blockAllocator, true);
+        if (block == NULL)
+            return NULL;
+        // Swept by this collection like a block a mutator allocated into.
+        BlockMeta_SetFirstFreeLine(block, LAST_HOLE);
+        BlockMeta_SetTouched(block, true);
+        word_t *blockStart = BlockMeta_GetBlockStart(heap->blockMetaStart,
+                                                     heap->heapStart, block);
+        LineMeta *lines = Heap_LineMetaForWord(heap, blockStart);
+        memset(lines, 0, LINE_COUNT * sizeof(LineMeta));
+        space->cursor = blockStart;
+        space->limit = Block_GetBlockEnd(blockStart);
+    }
+    word_t *start = space->cursor;
+    space->cursor = (word_t *)((ubyte_t *)start + size);
+    return start;
+}
+
+static inline void Generations_fixSlot(Heap *heap, word_t **slot) {
+    word_t *target = *slot;
+    if (Heap_IsWordInHeap(heap, target) &&
+        ObjectMeta_IsForwarded(Bytemap_Get(heap->bytemap, target)))
+        *slot = *(word_t **)target;
+}
+
+static void Generations_fixSlots(Heap *heap, word_t **from, word_t **to) {
+    for (word_t **slot = from; slot < to; slot++)
+        Generations_fixSlot(heap, slot);
+}
+
+// Updates the references of `object` to evacuated objects. Blob arrays and
+// boxed pointers hold raw addresses, whose targets were pinned.
+static void Generations_fixObject(Heap *heap, Object *object) {
+#ifdef USES_LOCKWORD
+    word_t lock = (word_t)object->lockWord;
+    if (Field_isInflatedLock((Field_t)lock)) {
+        word_t *monitor = Field_allignedLockRef((Field_t)lock);
+        if (Heap_IsWordInHeap(heap, monitor) &&
+            ObjectMeta_IsForwarded(Bytemap_Get(heap->bytemap, monitor)))
+            object->lockWord = (word_t *)((word_t) * (word_t **)monitor |
+                                          (lock & MONITOR_INFLATION_MARK_MASK));
+    }
+#endif
+    if (Object_IsArray(object)) {
+        if (Rtti_ArrayScan(object->rtti) == RTTI_ARRAY_SCAN_REFERENCES) {
+            ArrayHeader *array = (ArrayHeader *)object;
+            word_t **elements = (word_t **)(array + 1);
+            Generations_fixSlots(heap, elements, elements + array->length);
+        }
+    } else {
+        // The referent is not among the reference fields; it survived, or
+        // the slot was cleared already.
+        if (Object_IsWeakReference(object))
+            Generations_fixSlot(heap,
+                                (word_t **)WeakReference_ReferentField(object));
+        int32_t *offsets = object->rtti->refFieldOffsets;
+        for (int i = 0; offsets[i] != -1; i++)
+            Generations_fixSlot(heap,
+                                (word_t **)((int8_t *)object + offsets[i]));
+    }
+}
+
+static void Generations_sizeCopyReserve(size_t survivorBytes) {
+    uint64_t blocks = ((uint64_t)survivorBytes * 5 / 4 + BLOCK_TOTAL_SIZE - 1) /
+                          BLOCK_TOTAL_SIZE +
+                      1;
+    // A collection starts when the mutators run out of free blocks, so the
+    // reserve is all the evacuation can copy into. Survivor volumes swing
+    // from one collection to the next: shrink the reserve slowly, or a small
+    // collection leaves the next large one without room.
+    uint64_t decayed =
+        BlockAllocator_copyReserve -
+        BlockAllocator_copyReserve / GENERATIONS_COPY_RESERVE_DECAY_DIVISOR;
+    if (blocks < decayed)
+        blocks = decayed;
+    uint64_t max = heap.blockCount / GENERATIONS_MAX_COPY_RESERVE_DIVISOR;
+    if (blocks > max)
+        blocks = max;
+    if (blocks < GENERATIONS_MIN_COPY_RESERVE)
+        blocks = GENERATIONS_MIN_COPY_RESERVE;
+    BlockAllocator_copyReserve = (uint32_t)blocks;
+}
+
+void Generations_Evacuate(Heap *heap) {
+    Bytemap *bytemap = heap->bytemap;
+    CopySpace space = {NULL, NULL};
+    size_t copied = 0, copiedBytes = 0, kept = 0, keptBytes = 0;
+    bool spaceLeft = true;
+    for (size_t i = 0; i < survivors.size; i++) {
+        Object *object = survivors.items[i];
+        ObjectMeta *meta = Bytemap_Get(bytemap, (word_t *)object);
+        BlockMeta *block = Block_GetBlockMeta(
+            heap->blockMetaStart, heap->heapStart, (word_t *)object);
+        word_t *copy = NULL;
+        size_t size = 0;
+        if (spaceLeft && !ObjectMeta_IsMarkedPinned(meta) &&
+            !BlockMeta_ContainsLargeObjects(block)) {
+            size = Object_Size(object);
+            copy = Generations_copySpaceAlloc(heap, &space, size);
+            spaceLeft = copy != NULL;
+        }
+        if (copy == NULL) {
+            Object_MarkLines(heap, object);
+            kept++;
+            if (!BlockMeta_ContainsLargeObjects(block))
+                keptBytes += Object_Size(object);
+            continue;
+        }
+        memcpy(copy, object, size);
+        ObjectMeta_SetMarked(Bytemap_Get(bytemap, copy));
+        Object_MarkLines(heap, (Object *)copy);
+        *(word_t **)object = copy;
+        ObjectMeta_SetForwarded(meta);
+#ifdef SCALANATIVE_GC_WRITE_BARRIER_VERIFY
+        ObjectList_Push(&evacuatedFrom, object);
+#endif
+        survivors.items[i] = (Object *)copy;
+        copied++;
+        copiedBytes += size;
+    }
+
+    if (copied > 0) {
+        for (size_t i = 0; i < survivors.size; i++)
+            Generations_fixObject(heap, survivors.items[i]);
+        for (size_t i = 0; i < tracedOld.size; i++)
+            Generations_fixObject(heap, tracedOld.items[i]);
+        for (size_t i = 0; i + 1 < tracedCardRanges.size; i += 2)
+            Generations_fixSlots(heap, (word_t **)tracedCardRanges.items[i],
+                                 (word_t **)tracedCardRanges.items[i + 1]);
+    }
+#ifdef SCALANATIVE_GC_WRITE_BARRIER_VERIFY
+    for (size_t i = 0; i < evacuatedFrom.size; i++) {
+        Object *original = evacuatedFrom.items[i];
+        Object *copy = *(Object **)original;
+        memset(original, GENERATIONS_POISON, Object_Size(copy));
+    }
+    evacuatedFrom.size = 0;
+#endif
+    Generations_sizeCopyReserve(copiedBytes + keptBytes);
+    GC_LOG_DEBUG("Evacuation copied %zu objects (%zu bytes), kept %zu in "
+                 "place (%zu bytes)%s, copy reserve now %u blocks",
+                 copied, copiedBytes, kept, keptBytes,
+                 spaceLeft ? "" : ", ran out of free blocks",
+                 BlockAllocator_copyReserve);
+    survivors.size = 0;
+    tracedOld.size = 0;
+    tracedCardRanges.size = 0;
+}
+
 void Generations_NoteUnbarriered(Object *object) {
     ObjectList_Push(&youngBlobArrays, object);
 }
 
 void Generations_EndCollection(Heap *heap, bool full) {
+    // Before the first minor collection: an eighth of the heap.
+    if (BlockAllocator_copyReserve == 0 && Generations_ShouldEvacuate(false))
+        Generations_sizeCopyReserve((size_t)heap->blockCount *
+                                    BLOCK_TOTAL_SIZE /
+                                    GENERATIONS_MAX_COPY_RESERVE_DIVISOR);
     for (size_t i = 0; i < youngBlobArrays.size; i++)
         ObjectList_Push(&oldBlobArrays, youngBlobArrays.items[i]);
     youngBlobArrays.size = 0;

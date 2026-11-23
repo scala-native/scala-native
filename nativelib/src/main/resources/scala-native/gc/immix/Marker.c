@@ -15,6 +15,10 @@
 #include "stackOverflowGuards.h"
 #include "Generations.h"
 
+#ifdef SCALANATIVE_GC_STICKY
+bool Marker_evacuating = false;
+#endif
+
 static inline void Marker_markLockWords(Heap *heap, Stack *stack,
                                         Object *object);
 static void Marker_markRange(Heap *heap, Stack *stack, word_t **from,
@@ -32,9 +36,34 @@ void Marker_markObject(Heap *heap, Stack *stack, Bytemap *bytemap,
     }
 
     assert(Object_Size(object) != 0);
+#ifdef SCALANATIVE_GC_STICKY
+    if (Marker_evacuating) {
+        // Lines are marked once the evacuation decided where it lives.
+        if (ObjectMeta_IsPinned(objectMeta))
+            ObjectMeta_SetMarkedPinned(objectMeta);
+        else
+            ObjectMeta_SetMarked(objectMeta);
+        Generations_NoteSurvivor(object);
+        Stack_Push(stack, object);
+        return;
+    }
+#endif
     Object_Mark(heap, object, objectMeta);
     Stack_Push(stack, object);
 }
+
+#ifdef SCALANATIVE_GC_STICKY
+// Marks a young object that must keep its address in this collection: a
+// conservatively scanned word or a slot the evacuation does not update may
+// refer to it. It may be marked already, through a precise reference.
+static void Marker_markPinned(Heap *heap, Stack *stack, Object *object) {
+    ObjectMeta *objectMeta = Bytemap_Get(heap->bytemap, (word_t *)object);
+    if (ObjectMeta_IsAllocated(objectMeta))
+        Marker_markObject(heap, stack, heap->bytemap, object, objectMeta);
+    if (ObjectMeta_IsMarked(objectMeta))
+        ObjectMeta_SetMarkedPinned(objectMeta);
+}
+#endif
 
 static inline void Marker_markField(Heap *heap, Stack *stack, Field_t field) {
     if (Heap_IsWordInHeap(heap, field)) {
@@ -55,7 +84,15 @@ static inline void Marker_markLockWords(Heap *heap, Stack *stack,
     if (object != NULL) {
         Field_t rttiLock = object->rtti->rt.lockWord;
         if (Field_isInflatedLock(rttiLock)) {
-            Marker_markField(heap, stack, Field_allignedLockRef(rttiLock));
+            Field_t monitor = Field_allignedLockRef(rttiLock);
+#ifdef SCALANATIVE_GC_STICKY
+            // Nothing lists the class records, so this slot is not updated.
+            if (Marker_evacuating) {
+                if (Heap_IsWordInHeap(heap, monitor))
+                    Marker_markPinned(heap, stack, (Object *)monitor);
+            } else
+#endif
+                Marker_markField(heap, stack, monitor);
         }
 
         Field_t objectLock = object->lockWord;
@@ -69,6 +106,14 @@ static inline void Marker_markLockWords(Heap *heap, Stack *stack,
 
 void Marker_markConservative(Heap *heap, Stack *stack, word_t *address) {
     assert(Heap_IsWordInHeap(heap, address));
+#ifdef SCALANATIVE_GC_STICKY
+    if (Marker_evacuating) {
+        Object *young = Object_GetYoungObject(heap, address);
+        if (young != NULL)
+            Marker_markPinned(heap, stack, young);
+        return;
+    }
+#endif
     Object *object = Object_GetUnmarkedObject(heap, address);
     Bytemap *bytemap = heap->bytemap;
     if (object != NULL) {
@@ -106,8 +151,13 @@ void Marker_Mark(Heap *heap, Stack *stack) {
                 }
             } else if (Rtti_ArrayScan(rtti) == RTTI_ARRAY_SCAN_CONSERVATIVE) {
 #ifdef SCALANATIVE_GC_STICKY
-                if (ObjectMeta_IsMarked(Bytemap_Get(bytemap, (word_t *)object)))
+                ObjectMeta *blobMeta = Bytemap_Get(bytemap, (word_t *)object);
+                if (ObjectMeta_IsMarked(blobMeta)) {
                     Generations_NoteUnbarriered(object);
+                    // Listed by address, and holds raw stack words.
+                    if (Marker_evacuating)
+                        ObjectMeta_SetMarkedPinned(blobMeta);
+                }
 #endif
                 int8_t *start = (int8_t *)(arrayHeader + 1);
                 size_t bytesLength = BlobArray_ScannableLimit(arrayHeader);
@@ -137,8 +187,13 @@ void Marker_Mark(Heap *heap, Stack *stack) {
             if (UNLIKELY(Rtti_HasFlag(rtti, RTTI_FLAG_HAS_OBJECT_TRACER))) {
 #ifdef SCALANATIVE_GC_STICKY
                 // What the tracer scans changes without the write barrier
-                if (ObjectMeta_IsMarked(Bytemap_Get(bytemap, (word_t *)object)))
+                ObjectMeta *tracedMeta = Bytemap_Get(bytemap, (word_t *)object);
+                if (ObjectMeta_IsMarked(tracedMeta)) {
                     Generations_NoteUnbarriered(object);
+                    // Listed by address, which the tracer's owner also keeps.
+                    if (Marker_evacuating)
+                        ObjectMeta_SetMarkedPinned(tracedMeta);
+                }
 #endif
                 // Not set before the first owner registers it
                 GC_ObjectTracerFn *trace = atomic_load(&ObjectTracer_trace);

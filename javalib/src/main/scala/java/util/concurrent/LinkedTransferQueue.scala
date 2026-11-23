@@ -13,6 +13,7 @@ import java.util.{
   Spliterator, Spliterators, function
 }
 
+import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.libc.stdatomic.AtomicRef
 import scala.scalanative.libc.stdatomic.memory_order.{
   memory_order_relaxed, memory_order_release
@@ -323,10 +324,10 @@ import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
   /** The number of apparent failures to unsplice cancelled nodes */
   @volatile private[concurrent] var needSweep: Boolean = _
 
-  private val tailAtomic = new AtomicRef[Node](
+  @alwaysinline private def tailAtomic = new AtomicRef[Node](
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "tail"))
   )
-  private val headAtomic = new AtomicRef[Node](
+  @alwaysinline private def headAtomic = new AtomicRef[Node](
     fromRawPtr(Intrinsics.classFieldRawPtr(this, "head"))
   )
 
@@ -1421,13 +1422,13 @@ import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
     @volatile var next: Node = null
     @volatile var waiter: Thread = _ // null when not waiting for a match
 
-    val nextAtomic = new AtomicRef[Node](
+    @alwaysinline def nextAtomic = new AtomicRef[Node](
       fromRawPtr(Intrinsics.classFieldRawPtr(this, "next"))
     )
-    val itemAtomic = new AtomicRef[Object](
+    @alwaysinline def itemAtomic = new AtomicRef[Object](
       fromRawPtr(Intrinsics.classFieldRawPtr(this, "item"))
     )
-    val waiterAtomic = new AtomicRef[Object](
+    @alwaysinline def waiterAtomic = new AtomicRef[Object](
       fromRawPtr(Intrinsics.classFieldRawPtr(this, "waiter"))
     )
 

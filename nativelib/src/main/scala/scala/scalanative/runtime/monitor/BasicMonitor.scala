@@ -157,6 +157,8 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
 
   @alwaysinline private def getThreadId(thread: Thread): ThreadId = {
     val addr = castObjectToRawPtr(thread)
+    // Thin locks record the owner by this address.
+    GC.pin(addr)
     if (is32bit) castIntToRawPtr(castRawPtrToInt(addr) & LockWord32.ThreadIdMax)
     else castLongToRawPtr(castRawPtrToLong(addr) & LockWord.ThreadIdMax)
   }

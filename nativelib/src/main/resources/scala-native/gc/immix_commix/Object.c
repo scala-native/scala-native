@@ -12,8 +12,11 @@ word_t *Object_LastWord(Object *object) {
     return last;
 }
 
-Object *Object_getInnerPointer(Heap *heap, BlockMeta *blockMeta, word_t *word,
-                               ObjectMeta *wordMeta) {
+// The object starting at or before `word` in its block, if its state passes
+// `accept` and it covers `word`.
+static Object *Object_findCovering(Heap *heap, BlockMeta *blockMeta,
+                                   word_t *word, ObjectMeta *wordMeta,
+                                   bool (*accept)(ObjectMeta *)) {
     int stride;
     word_t *blockStart;
     if (BlockMeta_ContainsLargeObjects(blockMeta)) {
@@ -34,12 +37,38 @@ Object *Object_getInnerPointer(Heap *heap, BlockMeta *blockMeta, word_t *word,
         currentMeta -= stride;
     }
     Object *object = (Object *)current;
-    if (ObjectMeta_IsAllocated(currentMeta) &&
+    if (current >= blockStart && accept(currentMeta) &&
         (ubyte_t *)word < (ubyte_t *)current + Object_Size(object)) {
         return object;
     } else {
         return NULL;
     }
+}
+
+Object *Object_getInnerPointer(Heap *heap, BlockMeta *blockMeta, word_t *word,
+                               ObjectMeta *wordMeta) {
+    return Object_findCovering(heap, blockMeta, word, wordMeta,
+                               ObjectMeta_IsAllocated);
+}
+
+static bool Object_isYoung(ObjectMeta *meta) {
+    return ObjectMeta_IsAllocated(meta) || ObjectMeta_IsMarked(meta);
+}
+
+Object *Object_GetYoungObject(Heap *heap, word_t *word) {
+    BlockMeta *blockMeta =
+        Block_GetBlockMeta(heap->blockMetaStart, heap->heapStart, word);
+    if (BlockMeta_ContainsLargeObjects(blockMeta)) {
+        word = (word_t *)((word_t)word & LARGE_BLOCK_MASK);
+    } else {
+        word = (word_t *)((word_t)word & ALLOCATION_ALIGNMENT_INVERSE_MASK);
+    }
+    ObjectMeta *wordMeta = Bytemap_Get(heap->bytemap, word);
+    if (Object_isYoung(wordMeta))
+        return (Object *)word;
+    if (!ObjectMeta_IsFree(wordMeta))
+        return NULL;
+    return Object_findCovering(heap, blockMeta, word, wordMeta, Object_isYoung);
 }
 
 Object *Object_GetUnmarkedObject(Heap *heap, word_t *word) {
@@ -65,7 +94,10 @@ Object *Object_GetUnmarkedObject(Heap *heap, word_t *word) {
 void Object_Mark(Heap *heap, Object *object, ObjectMeta *objectMeta) {
     // Mark the object itself
     ObjectMeta_SetMarked(objectMeta);
+    Object_MarkLines(heap, object);
+}
 
+void Object_MarkLines(Heap *heap, Object *object) {
     BlockMeta *blockMeta = Block_GetBlockMeta(
         heap->blockMetaStart, heap->heapStart, (word_t *)object);
     if (!BlockMeta_ContainsLargeObjects(blockMeta)) {

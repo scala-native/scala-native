@@ -169,6 +169,9 @@ class Deflater(private var compressLevel: Int, noHeader: Boolean)
       if (buf.length == 0) {
         stream.nextIn = Deflater.empty.at(off)
       } else {
+        // zlib keeps this address until a later call consumes the input.
+        scala.scalanative.runtime.GC
+          .pin(scala.scalanative.runtime.Intrinsics.castObjectToRawPtr(buf))
         stream.nextIn = buf.at(off)
       }
       stream.availableIn = nbytes.toUInt
@@ -222,6 +225,9 @@ object Deflater {
   final val SYNC_FLUSH: Int = zlib.Z_SYNC_FLUSH
 
   private final val empty: Array[Byte] = new Array[Byte](1)
+  // zlib keeps its address between calls.
+  scala.scalanative.runtime.GC
+    .pin(scala.scalanative.runtime.Intrinsics.castObjectToRawPtr(empty))
 
   private final val STUB_INPUT_BUFFER: Array[Byte] = new Array[Byte](0)
 

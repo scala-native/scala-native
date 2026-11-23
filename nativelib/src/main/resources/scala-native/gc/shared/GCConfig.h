@@ -22,6 +22,7 @@
 //   LOG_FILE                  GC_LOG_FILE                   char[], optional
 //   STATS_FILE                GC_STATS_FILE                 char[], optional
 //   STATS_ENABLED             (none)                        0 or 1
+//   EVACUATION                GC_EVACUATION                 0 or 1
 //   OLD_GENERATION_GROWTH     GC_OLD_GENERATION_GROWTH      double
 //
 // Settings that also change the generated code are passed as plain defines:
@@ -59,9 +60,10 @@
 #endif
 
 #if defined(SCALANATIVE_GC_STICKY) &&                                          \
-    !defined(SCALANATIVE_GC_CONFIG_OLD_GENERATION_GROWTH)
+    (!defined(SCALANATIVE_GC_CONFIG_EVACUATION) ||                             \
+     !defined(SCALANATIVE_GC_CONFIG_OLD_GENERATION_GROWTH))
 #error                                                                         \
-    "SCALANATIVE_GC_CONFIG_OLD_GENERATION_GROWTH has to be defined by the Scala Native build tools"
+    "SCALANATIVE_GC_CONFIG_{EVACUATION,OLD_GENERATION_GROWTH} have to be defined by the Scala Native build tools"
 #endif
 
 #if defined(SCALANATIVE_GC_NONE) &&                                            \
