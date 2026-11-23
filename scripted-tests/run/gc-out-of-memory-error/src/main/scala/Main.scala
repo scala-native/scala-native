@@ -153,7 +153,10 @@ object Main {
     val refs = allocSoftRefs(null)
     clobberStack(1000)
     allocateOversized()
-    check(refs.forall(_.get() == null), "soft referent kept, oversized")
+    // A stale pointer left in a register or on the stack (seen on Windows)
+    // keeps a referent strongly reachable; without clearing all are kept
+    val kept = refs.count(_.get() != null)
+    check(kept < SoftCount / 2, s"$kept soft referents kept, oversized")
   }
 
   /* References cleared or enqueued by the program are dropped by the
