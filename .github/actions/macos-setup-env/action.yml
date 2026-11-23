@@ -52,7 +52,7 @@ runs:
       run: |
         version="${{ inputs.llvm-version }}"
         if [[ -z "$version" ]]; then
-          version=$(ls -d "$(brew --prefix)"/opt/llvm@* 2>/dev/null | sed 's/.*@//' | sort -V | tail -1)
+          version=$( (ls -d "$(brew --prefix)"/opt/llvm@* 2>/dev/null || true) | sed 's/.*@//' | sort -V | tail -1)
         fi
         if [[ -z "$version" || "$version" == "latest" ]]; then
           LLVM_TOOLCHAIN="$(brew --prefix llvm)/bin"
