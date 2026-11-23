@@ -2,6 +2,7 @@
 #define SN_STACKOVERFLOW_GUARDS_H
 
 #include "nativeThreadTLS.h"
+#include <stdatomic.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -20,6 +21,38 @@ void scalanative_StackOverflowGuards_setup(bool isMainThread);
 void scalanative_StackOverflowGuards_reset();
 void scalanative_StackOverflowGuards_close();
 void scalanative_StackOverflowGuards_check();
+
+/* Number of flags raised among the running stacks: one for each
+ * ThreadInfo.pendingStackOverflowException and one for each
+ * ThreadInfo.stackGuardOpen that is set. scalanative_StackOverflowGuards_check
+ * has work to do only when one of them is set for the current thread, so
+ * generated code (codegen/Lower.scala) polls this global at the entry of
+ * self-recursive methods and calls the check only when it is non-zero.
+ * Reading the thread-local flags directly costs a call on Darwin
+ * (_tlv_get_addr). A thread observes its own updates (it raises the flags in
+ * its own signal handler), so a non-zero count caused by another thread only
+ * sends this one through the slow path. Every write of the two flags must go
+ * through the setters below to keep the count exact.
+ */
+extern _Atomic int32_t scalanative_StackOverflowGuards_pendingCount;
+
+static inline void stackOverflowGuards_setFlag(bool *flag, bool value) {
+    if (*flag != value) {
+        *flag = value;
+        atomic_fetch_add_explicit(&scalanative_StackOverflowGuards_pendingCount,
+                                  value ? 1 : -1, memory_order_relaxed);
+    }
+}
+
+static inline void scalanative_StackOverflowGuards_setPending(ThreadInfo *info,
+                                                              bool pending) {
+    stackOverflowGuards_setFlag(&info->pendingStackOverflowException, pending);
+}
+
+static inline void
+scalanative_StackOverflowGuards_setGuardOpen(ThreadInfo *info, bool open) {
+    stackOverflowGuards_setFlag(&info->stackGuardOpen, open);
+}
 
 extern size_t scalanative_page_size();
 static inline size_t resolvePageSize() { return scalanative_page_size(); }
