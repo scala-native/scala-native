@@ -441,10 +441,10 @@ object Build {
         // Scripted runs each fixture in isolation, so shared sources must be copied in.
         copy(
           (javalib.v2_12 / Compile / scalaSource).value / "java/net/SocketHelpers.scala",
-          sourceTests / "run/java-net-socket/SocketHelpers.scala"
+          sourceTests / "platform-specific/java-net-socket/SocketHelpers.scala"
         )
-        val externalThreads = sourceTests / "external-threads"
-        val runtimeSources = externalThreads / "runtime/src"
+        val externalThreads = sourceTests / "platform-specific"
+        val runtimeSources = externalThreads / "external-threads-runtime/src"
         copy(
           (nativelib.v2_12 / Compile / resourceDirectory).value / "scala-native/externalThreads.h",
           runtimeSources / "main/resources/scala-native/externalThreads.h"
@@ -458,7 +458,7 @@ object Build {
         copy(externalThreads / "external-thread-host.h", runtimeSources / "main/native/external-thread-host.h")
 
         Seq("runtime", "shared-library").foreach { name =>
-          val fixture = externalThreads / name
+          val fixture = externalThreads / s"external-threads-$name"
           (externalThreads * "ExternalThread*.scala").get().foreach { source =>
             copy(source, fixture / "project" / source.getName)
           }
@@ -471,7 +471,7 @@ object Build {
           }
         }
         locally {
-          val crossVersionCompatDir = sourceTests / "scala3" / "cross-version-compat"
+          val crossVersionCompatDir = sourceTests / "build" / "scala3-cross-version-compat"
           val buildTemplate = crossVersionCompatDir / "build.sbt.template"
           val buildSbt = crossVersionCompatDir / "build.sbt"
           copy(buildTemplate, buildSbt)
