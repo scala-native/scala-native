@@ -924,6 +924,26 @@ private[linker] class Reach(
         ()
     }
 
+  // Every allocated class a virtual call may dispatch to must respond to it
+  final def checkIncompleteTargets(): Unit = {
+    infos.valuesIterator.foreach {
+      case scope: ScopeInfo if scope.calls.nonEmpty =>
+        val calls = scope match {
+          case cls: Class => scope.calls.filter(cls.resolve(_).isEmpty)
+          case trt: Trait => scope.calls.filterNot(trt.responds.contains)
+        }
+        calls.foreach { sig =>
+          val candidates = scope match {
+            case cls: Class => Iterator.single(cls) ++ cls.subclasses
+            case _          => scope.implementors.iterator
+          }
+          if (candidates.exists(c => c.allocated && c.resolve(sig).isEmpty))
+            addMissing(scope.name.member(sig))
+        }
+      case _ => ()
+    }
+  }
+
   def reachMethodTargets(ty: nir.Type, sig: nir.Sig)(implicit
       srcPosition: nir.SourcePosition
   ): Unit =
@@ -934,12 +954,12 @@ private[linker] class Reach(
         scopeInfo(name).foreach { scope =>
           if (!scope.calls.contains(sig)) {
             scope.calls += sig
+            track(name.member(sig))
             val targets = scope.targets(sig)
             if (targets.nonEmpty) targets.foreach(reachGlobal)
             else {
               // At this stage we cannot tell if method target is not defined or not yet reached
               // We're delaying resolving targets to the end of Reach phase to check if this method is never defined in NIR
-              track(name.member(sig))
               delayedMethods += DelayedMethod(name, sig, srcPosition)
             }
           }
@@ -1227,6 +1247,7 @@ private[scalanative] object Reach {
     val reachability = new Reach(config, entries, loader)
     reachability.process()
     reachability.processDelayed()
+    reachability.checkIncompleteTargets()
     reachability.result()
   }
 
