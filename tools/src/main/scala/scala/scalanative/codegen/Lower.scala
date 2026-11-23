@@ -213,15 +213,6 @@ private[scalanative] object Lower {
         }
       )
 
-      // Stack checks can throw too; use the entry cleanup handler when present.
-      // On Windows the VEH only sets a pending flag; this poll throws so
-      // synchronized/finally cleanup runs outside the vectored-handler context.
-      if (shouldGenerateStackOverflowChecks(defn)) {
-        ScopedVar.scoped(unwindHandler := getUnwindHandler(nir.Next.None)(defn.pos)) {
-          buf.call(CheckStackOverflowGuardsSig, CheckStackOverflowGuards, Nil, unwind)(defn.pos, nir.ScopeId.TopLevel)
-        }
-      }
-
       // Polling before `ret` would keep calls out of tail position
       genGCYieldpoint(buf)(defn.pos, nir.ScopeId.TopLevel)
 
@@ -233,6 +224,32 @@ private[scalanative] object Lower {
       // Zeroed at the original position, see genStackallocOp
       staticStackallocs.get.hoisted.foreach { inst =>
         buf.let(inst.id, inst.op, nir.Next.None)(inst.pos, inst.scopeId)
+      }
+
+      // Stack checks can throw too; use the entry cleanup handler when present.
+      // On Windows the VEH only sets a pending flag; this poll throws so
+      // synchronized/finally cleanup runs outside the vectored-handler context.
+      // The check reads C thread-local state (a call on Darwin), so first poll
+      // a global count of the threads that have a pending overflow or a guard
+      // to protect again, and call into C only when it is non-zero. Emitted
+      // after the stack slots so that their allocas stay in the entry block.
+      if (shouldGenerateStackOverflowChecks(defn)) {
+        implicit val pos: nir.SourcePosition = defn.pos
+        implicit val scopeId: nir.ScopeId = nir.ScopeId.TopLevel
+        ScopedVar.scoped(unwindHandler := getUnwindHandler(nir.Next.None)(defn.pos)) {
+          val pendingCount = buf.let(
+            nir.Op.Load(nir.Type.Int, StackOverflowPendingCount, Some(nir.MemoryOrder.Monotonic)),
+            nir.Next.None
+          )
+          val isPending = buf.comp(nir.Comp.Ine, nir.Type.Int, pendingCount, nir.Val.Int(0), nir.Next.None)
+          val pendingL = fresh()
+          val continueL = fresh()
+          buf.branch(isPending, nir.Next(pendingL), nir.Next(continueL))
+          buf.label(pendingL)
+          buf.call(CheckStackOverflowGuardsSig, CheckStackOverflowGuards, Nil, unwind)
+          buf.jump(nir.Next(continueL))
+          buf.label(continueL)
+        }
       }
 
       val nir.Inst.Label(firstLabel, _) = insts.head: @unchecked
@@ -2549,6 +2566,9 @@ private[scalanative] object Lower {
   val CheckStackOverflowGuardsName = Extern("scalanative_StackOverflowGuards_check")
   val CheckStackOverflowGuards = nir.Val.Global(CheckStackOverflowGuardsName, nir.Type.Ptr)
   val CheckStackOverflowGuardsSig = nir.Type.Function(Nil, nir.Type.Unit)
+  // Non-zero when some thread has work for the check, see stackOverflowGuards.h
+  val StackOverflowPendingCountName = Extern("scalanative_StackOverflowGuards_pendingCount")
+  val StackOverflowPendingCount = nir.Val.Global(StackOverflowPendingCountName, nir.Type.Ptr)
 
   val injects: Seq[nir.Defn] = {
     implicit val pos = nir.SourcePosition.NoPosition
@@ -2562,6 +2582,7 @@ private[scalanative] object Lower {
     buf += externDecl(memsetName, memsetSig)
     buf += externDecl(ExceptionOnCatchName, ExceptionOnCatchSig)
     buf += externDecl(CheckStackOverflowGuardsName, CheckStackOverflowGuardsSig)
+    buf += nir.Defn.Var(nir.Attrs.None.withIsExtern(true), StackOverflowPendingCountName, nir.Type.Int, nir.Val.Int(0))
     buf += externDecl(EnterManagedName, EnterManagedSig)
     buf += externDecl(LeaveManagedName, LeaveManagedSig)
     buf += externDecl(LeaveManagedAndThrowName, LeaveManagedAndThrowSig)

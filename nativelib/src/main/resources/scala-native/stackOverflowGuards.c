@@ -32,6 +32,12 @@ __attribute((noreturn)) extern void scalanative_throwStackOverflowError();
 #endif
 #endif
 
+_Atomic int32_t scalanative_StackOverflowGuards_pendingCount = 0;
+
+static inline void setPendingStackOverflow(bool pending) {
+    scalanative_StackOverflowGuards_setPending(&currentThreadInfo, pending);
+}
+
 size_t scalanative_StackOverflowGuards_size() {
     return stackGuardPages() * resolvePageSize();
 }
@@ -45,7 +51,7 @@ static LONG WINAPI stackOverflowHandler(PEXCEPTION_POINTERS ex) {
          * has already committed the guarantee pages, so CONTINUE_EXECUTION
          * lets the faulting access succeed; StackOverflowGuards_check throws
          * on the next polled method entry with a normal call stack. */
-        currentThreadInfo.pendingStackOverflowException = true;
+        setPendingStackOverflow(true);
         return EXCEPTION_CONTINUE_EXECUTION;
     default:
         return EXCEPTION_CONTINUE_SEARCH;
@@ -61,7 +67,7 @@ void scalanative_StackOverflowGuards_setup(bool isMainThread) {
     currentThreadInfo.stackGuardPage =
         (void *)((uintptr_t)currentThreadInfo.stackTop +
                  stackOverflowStackSize);
-    currentThreadInfo.pendingStackOverflowException = false;
+    setPendingStackOverflow(false);
 
     if (!SetThreadStackGuarantee(&stackOverflowStackSize)) {
         fprintf(stderr,
@@ -75,7 +81,7 @@ void scalanative_StackOverflowGuards_reset() {
     int dummy;
     void *curStackTop = &dummy;
     ThreadInfo info = currentThreadInfo;
-    currentThreadInfo.pendingStackOverflowException = false;
+    setPendingStackOverflow(false);
     if (inStackPageBound(info.stackGuardPage, curStackTop))
         return; // still unwinding
     _resetstkoflw();
@@ -121,7 +127,7 @@ static void protectStackGuardPage() {
         // _exit rather than exit: reachable from the signal handler.
         _exit(EXIT_FAILURE);
     }
-    currentThreadInfo.stackGuardOpen = false;
+    scalanative_StackOverflowGuards_setGuardOpen(&currentThreadInfo, false);
 }
 static void unprotectStackGuardPage() {
     if (currentThreadInfo.stackGuardPage == NULL)
@@ -133,7 +139,7 @@ static void unprotectStackGuardPage() {
         // _exit rather than exit: reachable from the signal handler.
         _exit(EXIT_FAILURE);
     }
-    currentThreadInfo.stackGuardOpen = true;
+    scalanative_StackOverflowGuards_setGuardOpen(&currentThreadInfo, true);
 }
 
 static bool tryGrowStack() {
@@ -243,7 +249,7 @@ static void stackOverflowHandler(int sig, siginfo_t *info, void *context) {
                 }
             }
             // Let the exception be thrown after polling
-            currentThreadInfo.pendingStackOverflowException = true;
+            setPendingStackOverflow(true);
             return;
         } else if (isInRange(faultAddr, threadInfo.stackGuardPage,
                              (void *)(char *)threadInfo.stackTop -
@@ -375,7 +381,7 @@ void scalanative_StackOverflowGuards_reset() {
     int dummy;
     void *curStackTop = &dummy;
     ThreadInfo info = currentThreadInfo;
-    currentThreadInfo.pendingStackOverflowException = false;
+    setPendingStackOverflow(false);
     if (inStackGuard(&info, curStackTop))
         return; // still unwinding
     protectStackGuardPage();
@@ -385,7 +391,7 @@ void scalanative_StackOverflowGuards_reset() {
 
 void scalanative_StackOverflowGuards_check() {
     if (currentThreadInfo.pendingStackOverflowException) {
-        currentThreadInfo.pendingStackOverflowException = false;
+        setPendingStackOverflow(false);
         scalanative_throwStackOverflowError();
     }
 #ifndef _WIN32
@@ -405,12 +411,15 @@ void scalanative_StackOverflowGuards_check() {
 }
 
 void scalanative_StackOverflowGuards_close() {
+    // A thread exiting with a pending overflow or an open guard must not leave
+    // the count raised.
+    setPendingStackOverflow(false);
 #ifdef _WIN32
 // noop
 #else
     unprotectStackGuardPage();
     // No guard left to protect again.
-    currentThreadInfo.stackGuardOpen = false;
+    scalanative_StackOverflowGuards_setGuardOpen(&currentThreadInfo, false);
     currentThreadInfo.stackGuardPage = NULL;
     currentThreadInfo.stackGuardLow = NULL;
 #ifndef SCALANATIVE_NO_SIGALTSTACK

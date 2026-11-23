@@ -645,8 +645,9 @@ static ThreadState *arrive(Coroutine *self) {
     ThreadState *thread = currentThread();
     thread->current = self;
     applyBounds(thread, self);
-    thread->info->pendingStackOverflowException = self->pendingOverflow;
-    thread->info->stackGuardOpen = self->guardOpen;
+    scalanative_StackOverflowGuards_setPending(thread->info,
+                                               self->pendingOverflow);
+    scalanative_StackOverflowGuards_setGuardOpen(thread->info, self->guardOpen);
     if (self->state == THREAD)
         scalanative_GC_set_running_stack(NULL, self->threadBottom);
     else
