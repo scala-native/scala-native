@@ -121,6 +121,18 @@ object Main {
   @noinline private def clobberStack(n: Int): Int =
     if (n > 0) clobberStack(n - 1) + 1 else 0
 
+  /* A stale pointer left in a register or on the stack, e.g. in release
+   * builds where clobberStack becomes a loop, keeps a referent reachable;
+   * without clearing all are kept.
+   */
+  private def checkMostlyCleared(
+      refs: Array[SoftReference[AnyRef]],
+      when: String
+  ): Unit = {
+    val kept = refs.count(_.get() != null)
+    check(kept < SoftCount / 2, s"$kept soft referents kept $when")
+  }
+
   /* Soft referents survive collections while memory is available, and are
    * cleared and enqueued before an OutOfMemoryError.
    */
@@ -132,20 +144,23 @@ object Main {
     sink = null
     System.gc()
     check(refs.forall(_.get() != null), "soft referent cleared too early")
+    clobberStack(1000)
 
     val retained = new Array[AnyRef](RetainedSlots)
     val allocated = exhaustHeap(retained)
-    check(refs.forall(_.get() == null), "soft referent kept until the error")
+    checkMostlyCleared(refs, "until the error")
     // More than fits beside the soft referents in the 64 MiB heap
     val besideSoft = 64L * 1024 * 1024 - SoftCount.toLong * SoftSize
     check(allocated.toLong * ChunkSize > besideSoft, "heap not reused")
     release(retained)
 
+    val cleared = refs.filter(_.get() == null).toSet[AnyRef]
     val deadline = System.currentTimeMillis() + 30000L
+    def inTime = System.currentTimeMillis() < deadline
     var enqueued = Set.empty[AnyRef]
-    while (enqueued.size < SoftCount && System.currentTimeMillis() < deadline)
+    while (enqueued.size < cleared.size && inTime)
       Option(queue.remove(500)).foreach(enqueued += _)
-    check(enqueued == refs.toSet[AnyRef], "soft references not enqueued")
+    check(enqueued == cleared, "soft references not enqueued")
   }
 
   // Also before an error for an allocation larger than the whole heap
@@ -153,11 +168,7 @@ object Main {
     val refs = allocSoftRefs(null)
     clobberStack(1000)
     allocateOversized()
-    // A stale pointer left in a register or on the stack, e.g. in release
-    // builds where clobberStack becomes a loop,
-    // keeps a referent reachable; without clearing all are kept
-    val kept = refs.count(_.get() != null)
-    check(kept < SoftCount / 2, s"$kept soft referents kept, oversized")
+    checkMostlyCleared(refs, "before the oversized error")
   }
 
   /* References cleared or enqueued by the program are dropped by the
