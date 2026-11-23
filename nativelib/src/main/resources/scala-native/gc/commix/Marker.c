@@ -577,6 +577,8 @@ void Marker_MarkUntilDone(Heap *heap, Stats *stats) {
 NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
                                          Stats *stats, GreyPacket **outHolder,
                                          GreyPacket **outWeakRefHolder) {
+    if (atomic_load_explicit(&thread->inHost, memory_order_acquire))
+        return;
     word_t **stackBottom = thread->stackBottom;
     word_t **stackTop = NULL;
     do {

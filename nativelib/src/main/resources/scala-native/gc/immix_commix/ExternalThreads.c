@@ -35,6 +35,10 @@ void scalanative_externalGC_unregister(void) {
     /* A single-threaded context owns allocator cursors across OS owners. */
 }
 
+void scalanative_externalGC_returnToHost(void) {
+    MutatorThread_returnToHost(currentMutatorThread);
+}
+
 void scalanative_externalGC_admit(void) {
     MutatorThread_admit(currentMutatorThread);
 }

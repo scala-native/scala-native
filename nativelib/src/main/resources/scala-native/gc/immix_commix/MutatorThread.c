@@ -190,6 +190,12 @@ void MutatorThread_enterUnmanaged(MutatorThread *self) {
     self->state = GC_MutatorThreadState_Unmanaged;
 }
 
+void MutatorThread_returnToHost(MutatorThread *self) {
+    assert(self != NULL);
+    assert(self->state == GC_MutatorThreadState_Unmanaged);
+    atomic_store_explicit(&self->inHost, true, memory_order_release);
+}
+
 INLINE void MutatorThread_switchState(MutatorThread *self,
                                       GC_MutatorThreadState newState) {
     assert(self != NULL);
@@ -200,6 +206,7 @@ INLINE void MutatorThread_switchState(MutatorThread *self,
         break;
 
     case GC_MutatorThreadState_Managed:
+        atomic_store_explicit(&self->inHost, false, memory_order_relaxed);
         atomic_store_explicit(&self->stackTop, 0, memory_order_release);
         break;
     }

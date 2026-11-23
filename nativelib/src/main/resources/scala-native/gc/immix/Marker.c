@@ -171,6 +171,8 @@ NO_SANITIZE static void Marker_markRange(Heap *heap, Stack *stack,
 
 NO_SANITIZE void Marker_markProgramStack(MutatorThread *thread, Heap *heap,
                                          Stack *stack) {
+    if (atomic_load_explicit(&thread->inHost, memory_order_acquire))
+        return;
     word_t **stackBottom = thread->stackBottom;
     word_t **stackTop = NULL;
     do {
