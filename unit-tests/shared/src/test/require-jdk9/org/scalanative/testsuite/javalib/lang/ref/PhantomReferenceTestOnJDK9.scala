@@ -46,7 +46,8 @@ class PhantomReferenceTestOnJDK9 {
     val ref = new PhantomReference[AnyRef](referent, queue)
     ref.clear()
     // Enough cleared references to make the registry drop them
-    for (_ <- 0 until 1000) new PhantomReference[AnyRef](referent, queue).clear()
+    for (_ <- 0 until 1000)
+      new PhantomReference[AnyRef](referent, queue).clear()
     assertNull("not enqueued by clear()", queue.poll())
     assertTrue("enqueue() after clear()", ref.enqueue())
     assertSame("queue holds the reference", ref, queue.poll())
