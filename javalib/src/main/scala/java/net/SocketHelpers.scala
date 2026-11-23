@@ -25,7 +25,7 @@ object SocketHelpers {
     WinSocketApiOps.init()
   }
 
-  // scripted-tests/run/java-net-socket.scala uses this method.
+  // scripted-tests/platform-specific/java-net-socket uses this method.
   def isReachableByEcho(ip: String, timeout: Int, port: Int): Boolean = {
     val s = new java.net.Socket()
     val isReachable =

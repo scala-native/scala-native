@@ -7,8 +7,8 @@ for declarations and [build targets](sbt.md) for library configuration.
 
 Automatic entry from foreign threads is currently in development. Use a Scala
 Native version containing this support. For working integrations, see the
-[static-library runtime tests](https://github.com/scala-native/scala-native/tree/main/scripted-tests/external-threads/runtime)
-and [shared-library tests](https://github.com/scala-native/scala-native/tree/main/scripted-tests/external-threads/shared-library).
+[static-library runtime tests](https://github.com/scala-native/scala-native/tree/main/scripted-tests/platform-specific/external-threads-runtime)
+and [shared-library tests](https://github.com/scala-native/scala-native/tree/main/scripted-tests/platform-specific/external-threads-shared-library).
 These build Scala libraries and call their exports from C/C++ hosts. See the
 [test instructions](https://github.com/scala-native/scala-native/blob/main/scripted-tests/external-threads/README.md) to run them.
 
