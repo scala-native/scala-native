@@ -193,13 +193,20 @@ val fullPrPaths = globs(
 
 val docsPaths = globs("docs/**", "*.md", "**/*.md")
 
+// The files endpoint lists at most 3000 files
+val MaxListedFiles = 3000
+
+/** Changed files, empty when GitHub could not list all of them */
 def changedFiles(repo: String, pr: String): Seq[String] =
-  ghApiPages(s"repos/$repo/pulls/$pr/files").flatMap(f =>
-    f("filename").str +: f.obj.get("previous_filename").map(_.str).toSeq
-  )
+  val files = ghApiPages(s"repos/$repo/pulls/$pr/files")
+  if files.size >= MaxListedFiles then Nil
+  else
+    files.flatMap(f =>
+      f("filename").str +: f.obj.get("previous_filename").map(_.str).toSeq
+    )
 
 def lastNightlySha(): Option[String] =
-  val query = "--workflow ci.yml --event schedule --status completed --limit 1"
+  val query = "--workflow ci.yml --event schedule --status success --limit 1"
   try
     ghJson(s"run list $query --json headSha").arr.headOption
       .map(_("headSha").str)
@@ -248,7 +255,7 @@ def plan(): Plan =
       val previous = lastNightlySha()
       if previous.contains(env("SHA")) then
         println(
-          s"Nothing committed since the last nightly (${previous.get}), skipping"
+          s"Nothing committed since the last passing nightly (${previous.get}), skipping"
         )
         Plan.all(Tier.Skip, Level.Off)
       else Plan.nightly
@@ -276,8 +283,9 @@ def plan(): Plan =
       if Trigger.Requested("ci:full", "[test-extended]").matches(pr) then
         Plan.nightly
       else if env("PR_DRAFT") == "true" then Plan.all(Tier.Draft, Level.Off)
-      else if pr.files.nonEmpty && pr.files.forall(docsPaths.matchAny) then
-        Plan.all(Tier.Docs, Level.Off)
+      else if pr.files.nonEmpty && pr.files.forall(docsPaths.matchAny) &&
+          !Workflow.values.exists(_.extended.matches(pr))
+      then Plan.all(Tier.Docs, Level.Off)
       else Plan.pullRequest(pr)
 
     case other =>

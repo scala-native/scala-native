@@ -7,7 +7,7 @@ on:
   push:
     tags: ["v0.5.*"]
   schedule:
-    # Skipped when nothing was committed since the last run
+    # Skipped when nothing was committed since the last passing run
     - cron: "0 2 * * *"
   workflow_dispatch:
     inputs:
@@ -185,7 +185,7 @@ jobs:
 
   toolchain:
     name: Toolchain
-    needs: &gates [plan, gate, gate-sbt-plugin, gate-macos, gate-windows]
+    needs: &gates [plan, checks, gate, gate-sbt-plugin, gate-macos, gate-windows]
     if: needs.plan.outputs.toolchain != 'off'
     uses: ./.github/workflows/run-tests-toolchain.yml
     with:

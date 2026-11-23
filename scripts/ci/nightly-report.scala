@@ -12,8 +12,8 @@
 
 val Label = "ci-nightly"
 val TitlePrefix = "Nightly CI failure: "
-// Jobs not tied to the code under test
-val IgnoredJobs = Set("Plan", "CI OK")
+// Fails with any other job
+val IgnoredJobs = Set("CI OK")
 val FailedConclusions = Set("failure", "timed_out", "cancelled")
 
 case class Job(name: String, conclusion: Option[String])
@@ -31,14 +31,14 @@ def jobs(repo: String, runId: String): Seq[Job] =
   val executed = jobs(repo, runId)
     .filterNot(job => IgnoredJobs(job.name))
     .filter(_.conclusion.exists(_ != "skipped"))
-  if executed.isEmpty then
-    println("Nightly was skipped (no new commits), nothing to report")
-    return
-
   val failed = executed
     .filter(_.conclusion.exists(FailedConclusions))
     .map(_.name)
     .sorted
+  if failed.isEmpty && executed.forall(_.name == "Plan") then
+    println("Nightly was skipped (no new commits), nothing to report")
+    return
+
   val passed =
     executed.filter(_.conclusion.contains("success")).map(_.name).toSet
   println(s"Attempt $attempt: ${executed.size} jobs, ${failed.size} failed")

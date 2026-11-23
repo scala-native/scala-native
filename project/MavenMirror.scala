@@ -9,6 +9,7 @@ import sbt._
  *  fallback. lm-coursier ignores the coursier.mirrors setting.
  */
 object MavenMirror extends AutoPlugin {
+  override def requires = plugins.JvmPlugin
   override def trigger = allRequirements
 
   override def projectSettings: Seq[Setting[?]] =

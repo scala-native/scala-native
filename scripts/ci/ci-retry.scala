@@ -5,7 +5,7 @@
 /** Re-runs a CI run when GitHub cancelled some of its jobs because no hosted
  *  runner picked them up, e.g. macOS arm64 runners at capacity.
  *
- *  Environment: GH_TOKEN, GH_REPO, RUN_ID, RUN_ATTEMPT, MAX_ATTEMPTS
+ *  Environment: GH_TOKEN, GH_REPO, RUN_ID, MAX_ATTEMPTS
  */
 
 val NotAcquired = "was not acquired by Runner"
@@ -13,7 +13,9 @@ val NotAcquired = "was not acquired by Runner"
 @main def run(): Unit =
   val repo = env("GH_REPO")
   val runId = env("RUN_ID")
-  val attempt = env("RUN_ATTEMPT").toInt
+  // The run may have been re-run since this event, the rerun acts on its latest attempt
+  val attempt =
+    ghJson(s"api repos/$repo/actions/runs/$runId")("run_attempt").num.toInt
   val maxAttempts = env("MAX_ATTEMPTS").toInt
 
   val cancelled =
