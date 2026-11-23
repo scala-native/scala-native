@@ -47,7 +47,7 @@ jobs:
           set SCALANATIVE_MODE=${{ matrix.mode }}&
           set SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1&
           set SCALANATIVE &
-          sbt "test-runtime-native ${{ matrix.scala }}"
+          sbt --server "test-runtime-native ${{ matrix.scala }}"
         shell: cmd
 
   runtime-extended:
@@ -120,7 +120,7 @@ jobs:
           set SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1&
           set SCALANATIVE_CI_NO_DEBUG_SYMBOLS=true&
           set SCALANATIVE &
-          sbt "test-runtime-native ${{ matrix.scala }}"
+          sbt --server "test-runtime-native ${{ matrix.scala }}"
         shell: cmd
 
   llvm-versions:
@@ -147,4 +147,4 @@ jobs:
         timeout-minutes: 60
         run: >
           set SCALANATIVE &
-          sbt "show tests3/nativeConfig" "test-runtime-native 3"
+          sbt --server "show tests3/nativeConfig" "test-runtime-native 3"

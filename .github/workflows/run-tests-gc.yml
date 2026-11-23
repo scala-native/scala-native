@@ -83,7 +83,7 @@ jobs:
         env:
           SCALANATIVE_MODE: ${{ matrix.mode }}
           SCALANATIVE_LTO: ${{ matrix.lto }}
-        run: sbt "test-gc 3"
+        run: sbt --server "test-gc 3"
         shell: cmd
 
   # Boehm GC is not available for iOS
