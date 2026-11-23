@@ -12,8 +12,9 @@
 #include <stdatomic.h>
 
 // WeakReferences is a structure used for the gc_nullify phase.
-// It collects WeakReference objects visited during marking phase.
-// Later, during nullify phase, every WeakReference is checked if
+// It collects the references whose referent the marker left unmarked (see
+// immix_commix/References.h). Later, during nullify phase, every such
+// reference is checked if
 // it is pointing to a marked object. If not, the referent field
 // is set to NULL.
 //
@@ -61,10 +62,7 @@ void WeakReferences_AddOverflow(Object *object) {
 bool WeakReferences_HasOverflow() { return overflow.size > 0; }
 
 static void WeakReferences_nullifyObject(Heap *heap, Object *object) {
-    assert(Object_IsWeakReference(object));
-
-    Object **weakRefReferantField =
-        (Object **)WeakReference_ReferentField(object);
+    Object **weakRefReferantField = (Object **)Reference_ReferentField(object);
     word_t *weakRefReferant = (word_t *)*weakRefReferantField;
     if (Heap_IsWordInHeap(heap, weakRefReferant)) {
         ObjectMeta *objectMeta = Bytemap_Get(heap->bytemap, weakRefReferant);

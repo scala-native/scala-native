@@ -61,16 +61,20 @@ object Cleaner {
 
   private def register(ref: AnyRef, action: Runnable, executor: Executor) = {
     val cleanable = new CleanableImpl(action, executor)
-    // registers itself in WeakReferenceRegistry
     new CleanableReference(ref, cleanable)
     cleanable
   }
 
-  private class CleanableReference(ref: AnyRef, cleanable: Cleanable)
-      extends WeakReference[AnyRef](ref) {
-    override def clear(): Unit = {
-      super.clear()
-      cleanable.clean()
+  private class CleanableReference(ref: AnyRef, val cleanable: Cleanable)
+      extends PhantomReference[AnyRef](ref, CleaningQueue)
+
+  // Runs the action instead of enqueueing
+  private object CleaningQueue extends ReferenceQueue[AnyRef] {
+    override private[ref] def enqueue(reference: Reference[_]): Boolean = {
+      // A failing action must not stop the other references from being handled
+      try reference.asInstanceOf[CleanableReference].cleanable.clean()
+      catch { case _: Throwable => () }
+      true
     }
   }
 

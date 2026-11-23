@@ -1,9 +1,8 @@
 package java.lang.ref
 
-class PhantomReference[T >: Null <: AnyRef](
-    referent: T,
-    queue: ReferenceQueue[_ >: T]
-) extends Reference[T](null) {
+// Cleared like a weak reference, its referent is never returned
+class PhantomReference[T](referent: T, queue: ReferenceQueue[_ >: T])
+    extends Reference[T](referent, queue) {
 
-  override def get(): T = null
+  override def get(): T = null.asInstanceOf[T]
 }

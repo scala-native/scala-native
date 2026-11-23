@@ -53,8 +53,12 @@ The layout is defined by `codegen.CommonMemoryLayouts` and mirrored by
 | 8-31 | traits: low 24 bits of the itable key                          |
 
 The garbage collectors and `java.lang.Class` read these bits instead of
-comparing class ids. Only weak references clear their referent today; soft and
-phantom references are marked for future support.
+comparing class ids. Immix and Commix clear weak and phantom referents once
+nothing else marks them. Soft referents stay alive, except when an allocation
+fails after a collection that found soft references: the collector then runs
+once more with soft referents cleared like weak ones, and retries the
+allocation. The javalib enqueues cleared references on their queue. Boehm
+keeps weak and phantom referents as hidden pointers and soft ones as strong.
 
 ## Reference map and arrays
 
@@ -64,11 +68,10 @@ offsets of raw pointer fields to scan conservatively, terminated with -1. Only
 `unsafe.Ptr` has such a field: a boxed pointer can point into the heap, for
 example to an array element, and be the only thing keeping it alive.
 
-The referent of `java.lang.ref.Reference` is its only field, so it directly
+The referent of `java.lang.ref.Reference` is its first field, so it directly
 follows the object header in every reference object, like the fields of
-`String` and `Class`; the toolchain fails the build otherwise. Weak references
-leave it out of their reference map: the GC does not mark it, and clears it
-once nothing else keeps it alive. Soft and phantom references keep it marked.
+`String` and `Class`; the toolchain fails the build otherwise. It is left out
+of the reference map; the collectors mark soft referents themselves.
 
 Arrays have no fields to scan, the GC uses the element scan kind from the flags
 instead. In array RTTI the same slot holds the RTTI of the element type, read

@@ -275,33 +275,30 @@ void scalanative_GC_set_weak_references_collected_callback(
     weakReferencesCollectedCallback = callback;
 }
 
-void *scalanative_GC_weak_ref_slot_create(void *referent) {
-    void **slot = (void **)GC_malloc_atomic(sizeof(void *));
-    if (slot == NULL)
-        return NULL;
-
-    *slot = referent;
-
-    if (referent != NULL) {
-        GC_general_register_disappearing_link(slot, referent);
-        GC_register_finalizer_no_order(referent, weakRefFinalizer, NULL, NULL,
-                                       NULL);
-    }
-    return (void *)slot;
-}
-
-void *scalanative_GC_weak_ref_slot_get(void *slot) {
-    if (slot == NULL)
-        return NULL;
-    return *((void **)slot);
-}
-
-void scalanative_GC_weak_ref_slot_clear(void *slot) {
-    if (slot == NULL)
+// Weak and phantom referents are hidden pointers, cleared once collected
+void scalanative_GC_weak_ref_init(void **field) {
+    void *referent = *field;
+    if (referent == NULL)
         return;
+    *field = (void *)GC_HIDE_POINTER(referent);
+    GC_general_register_disappearing_link(field, referent);
+    GC_register_finalizer_no_order(referent, weakRefFinalizer, NULL, NULL,
+                                   NULL);
+}
 
-    GC_unregister_disappearing_link((void **)slot);
-    *((void **)slot) = NULL;
+static void *GC_CALLBACK revealReferent(void *field) {
+    GC_hidden_pointer hidden = *(GC_hidden_pointer *)field;
+    return hidden == 0 ? NULL : GC_REVEAL_POINTER(hidden);
+}
+
+void *scalanative_GC_weak_ref_get(void **field) {
+    // Under the lock, so that the referent is not collected while revealed
+    return GC_call_with_alloc_lock(revealReferent, field);
+}
+
+void scalanative_GC_weak_ref_clear(void **field) {
+    GC_unregister_disappearing_link(field);
+    *field = NULL;
 }
 
 static void GC_CALLBACK handleOnCollectionEvent(GC_EventType event) {

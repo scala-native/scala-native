@@ -8,6 +8,7 @@
 #include <setjmp.h>
 #include "Marker.h"
 #include "WeakReferences.h"
+#include "immix_commix/References.h"
 #include "immix_commix/Object.h"
 #include "State.h"
 #include "immix_commix/headers/ObjectHeader.h"
@@ -176,7 +177,8 @@ void Marker_markObject(Heap *heap, Stats *stats, GreyPacket **outHolder,
     Marker_markLockWords(heap, stats, outHolder, outWeakRefHolder, object);
 
     Object_Mark(heap, object, objectMeta);
-    if (Object_IsWeakReference(object)) {
+    // Cleared after marking unless something else marks the referent
+    if (UNLIKELY(References_deferReferent(Object_ReferenceKind(object)))) {
         GreyPacket *weakRefOut = *outWeakRefHolder;
         if (weakRefOut == NULL || !GreyPacket_Push(weakRefOut, object)) {
             if (weakRefOut != NULL) {
@@ -317,6 +319,10 @@ int Marker_markRegularObject(Heap *heap, Stats *stats, Object *object,
             objectsTraced += 1;
         }
     }
+    if (UNLIKELY(References_markSoftReferent(Rtti_ReferenceKind(object->rtti))))
+        objectsTraced +=
+            Marker_markField(heap, stats, outHolder, outWeakRefHolder,
+                             References_softReferent(object));
     if (UNLIKELY(Rtti_HasFlag(object->rtti, RTTI_FLAG_HAS_OBJECT_TRACER))) {
         // Not set before the first owner registers it
         GC_ObjectTracerFn *trace = atomic_load(&ObjectTracer_trace);

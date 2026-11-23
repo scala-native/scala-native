@@ -72,7 +72,7 @@ private[codegen] object ExternalThreadEntry {
       // context. A collector notification must never attempt GC admission.
       val runtimeHook =
         defn.name.top.id.startsWith("scala.scalanative.runtime.") ||
-          defn.name.top.id.startsWith("java.lang.ref.WeakReferenceRegistry$")
+          defn.name.top.id.startsWith("java.lang.ref.ReferenceRegistry$")
       !bootstrap && !runtimeHook
     }
 }

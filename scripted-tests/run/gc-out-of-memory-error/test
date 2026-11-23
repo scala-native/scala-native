@@ -4,7 +4,8 @@
 # Runs allocation failures against a heap with a hard upper bound to check that
 # they are reported as OutOfMemoryError instead of aborting the process, that
 # the GC reserve leaves room to record the stack of the failed allocation, and
-# that concurrent failures share the preallocated fallback error.
+# that concurrent failures share the preallocated fallback error. Soft
+# references are cleared before the heap runs out.
 
 # -----------------------------------------------------------------------------
 # Phase 1: Run with Immix GC

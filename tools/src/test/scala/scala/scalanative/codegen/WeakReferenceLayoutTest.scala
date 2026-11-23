@@ -7,7 +7,7 @@ import org.junit.Test
 import scala.scalanative.linker.Class
 
 /* The GC finds the referent of every reference object right after the object
- * header, and marks it only for references other than weak ones.
+ * header, and never marks it through the reference map.
  */
 class WeakReferenceLayoutTest extends CodeGenSpec {
 
@@ -25,7 +25,10 @@ class WeakReferenceLayoutTest extends CodeGenSpec {
          |    h.a = args
          |    val ref = new Ref(h, args)
          |    val soft = new java.lang.ref.SoftReference[AnyRef](h)
+         |    val queue = new java.lang.ref.ReferenceQueue[AnyRef]()
+         |    val phantom = new java.lang.ref.PhantomReference[AnyRef](h, queue)
          |    println(ref.get().## + ref.extra.## + h.a.## + soft.get().##)
+         |    println(phantom.refersTo(h))
          |  }
          |}
          |""".stripMargin
@@ -57,7 +60,12 @@ class WeakReferenceLayoutTest extends CodeGenSpec {
 
         val headerSize =
           MemoryLayout.sizeOf(meta.layouts.ObjectHeader.layout)(platform)
-        for (name <- Seq("Ref", "java.lang.ref.SoftReference"))
+        val references = Seq(
+          "Ref",
+          "java.lang.ref.SoftReference",
+          "java.lang.ref.PhantomReference"
+        )
+        for (name <- references)
           assertEquals(
             s"referent of $name follows the header",
             headerSize,
@@ -73,10 +81,11 @@ class WeakReferenceLayoutTest extends CodeGenSpec {
         val ref = marked("Ref")
         assertFalse("weak referent is not marked", ref.contains(offset))
         assertTrue("other reference fields are marked", ref.nonEmpty)
-        assertTrue(
-          "soft referent is marked",
-          marked("java.lang.ref.SoftReference").contains(offset)
-        )
+        for (name <- references.tail)
+          assertFalse(
+            s"referent of $name is not marked",
+            marked(name).contains(offset)
+          )
         assertEquals(
           "plain classes keep two sections",
           Seq(-1, -1),

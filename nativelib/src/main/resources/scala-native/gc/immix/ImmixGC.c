@@ -54,6 +54,6 @@ INLINE void *scalanative_GC_alloc_small(Rtti *info, size_t size) {
     return (void *)alloc;
 }
 
-INLINE void scalanative_GC_collect() { Heap_Collect(&heap, &stack); }
+INLINE void scalanative_GC_collect() { Heap_Collect(&heap, &stack, false); }
 
 #endif

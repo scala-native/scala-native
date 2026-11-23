@@ -79,7 +79,8 @@ typedef struct {
 
 void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize);
 
-bool Heap_Collect(Heap *heap, bool allowHeapGrowth);
+// False when another thread collects instead
+bool Heap_Collect(Heap *heap, bool allowHeapGrowth, bool clearSoftReferences);
 void Heap_GrowIfNeeded(Heap *heap);
 bool Heap_TryGrow(Heap *heap, uint32_t increment);
 bool Heap_BeginEmergencyAllocation(Heap *heap);

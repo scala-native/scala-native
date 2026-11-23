@@ -8,6 +8,7 @@
 #include <memory.h>
 #include "shared/ThreadUtil.h"
 #include "shared/Log.h"
+#include "immix_commix/References.h"
 #include <assert.h>
 
 bool Allocator_getNextLine(Allocator *allocator);
@@ -383,6 +384,7 @@ static bool Allocator_collectionFreedSpace(Allocator *allocator, Heap *heap,
 
 NOINLINE word_t *Allocator_allocSlow(Allocator *allocator, Heap *heap,
                                      uint32_t size) {
+    bool clearSoft = false;
     do {
         word_t *object = Allocator_tryAlloc(allocator, size);
 
@@ -407,7 +409,7 @@ NOINLINE word_t *Allocator_allocSlow(Allocator *allocator, Heap *heap,
         }
 
         // Another thread collects instead. Retry before growing the heap.
-        if (!Heap_Collect(heap, true))
+        if (!Heap_Collect(heap, true, clearSoft))
             continue;
         size_t collection = heap->gcCollectionStart_ns;
         object = Allocator_tryAlloc(allocator, size);
@@ -438,7 +440,8 @@ NOINLINE word_t *Allocator_allocSlow(Allocator *allocator, Heap *heap,
         // A small object can always fit in a single free block
         // because it is no larger than 8K while the block is 32K.
         if (!Heap_TryGrow(heap, 1) &&
-            !Allocator_collectionFreedSpace(allocator, heap, size))
+            !Allocator_collectionFreedSpace(allocator, heap, size) &&
+            !References_RetryClearingSoft(&clearSoft))
             Heap_ThrowOutOfMemory(heap);
     } while (true);
     return NULL; // unreachable

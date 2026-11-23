@@ -8,6 +8,7 @@
 #include "State.h"
 #include "immix_commix/datastructures/Stack.h"
 #include "immix_commix/headers/ObjectHeader.h"
+#include "immix_commix/References.h"
 #include "Block.h"
 #include "shared/GCTypes.h"
 #include <stdatomic.h>
@@ -25,10 +26,9 @@ void Marker_markObject(Heap *heap, Stack *stack, Bytemap *bytemap,
     assert(object->rtti != NULL);
 
     Marker_markLockWords(heap, stack, object);
-    if (Object_IsWeakReference(object)) {
-        // Added to the WeakReference stack for additional later visit
+    // Cleared after marking unless something else marks the referent
+    if (UNLIKELY(References_deferReferent(Object_ReferenceKind(object))))
         Stack_Push(&weakRefStack, object);
-    }
 
     assert(Object_Size(object) != 0);
     Object_Mark(heap, object, objectMeta);
@@ -129,6 +129,8 @@ void Marker_Mark(Heap *heap, Stack *stack) {
                     Marker_markConservative(heap, stack, rawPtr);
                 }
             }
+            if (UNLIKELY(References_markSoftReferent(Rtti_ReferenceKind(rtti))))
+                Marker_markField(heap, stack, References_softReferent(object));
             if (UNLIKELY(Rtti_HasFlag(rtti, RTTI_FLAG_HAS_OBJECT_TRACER))) {
                 // Not set before the first owner registers it
                 GC_ObjectTracerFn *trace = atomic_load(&ObjectTracer_trace);

@@ -8,6 +8,7 @@
 #include "immix_commix/Object.h"
 #include "immix/State.h"
 #include "immix_commix/headers/ObjectHeader.h"
+#include "immix_commix/References.h"
 
 inline static int LargeAllocator_sizeToLinkedListIndex(size_t size) {
     assert(size >= MIN_BLOCK_SIZE);
@@ -268,12 +269,16 @@ word_t *LargeAllocator_Alloc(Heap *heap, size_t size) {
     assert(size >= MIN_BLOCK_SIZE);
     // Larger than the heap can grow, and its block count may not even fit in
     // 32 bits: only an OutOfMemoryError remains, allocated in the emergency
-    // block. A collection is needed only to refill that block, after an
-    // earlier error took it; without it, the error would be the preallocated
-    // fallback, without a stack trace of its own.
+    // block. Soft referents are cleared before it, as before any such error;
+    // the collection also refills the emergency block after an earlier error
+    // took it, otherwise the error would be the preallocated fallback, without
+    // a stack trace of its own.
     if (size > heap->maxHeapSize) {
-        if (heap->emergencyBlockStart == NULL)
-            Heap_Collect(heap, &stack);
+        // Retried: a call that loses the race to an ordinary collection by
+        // another thread only waits for it
+        uint64_t clearings = References_SoftClearings();
+        while (References_SoftClearings() == clearings)
+            Heap_Collect(heap, &stack, true);
         Heap_ThrowOutOfMemory(heap);
     }
     LargeAllocator *largeAllocator = &currentMutatorThread->largeAllocator;

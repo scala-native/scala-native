@@ -11,16 +11,15 @@
 static bool collectedWeakReferences = false;
 static void (*gcFinishedCallback)() = NULL;
 
-// A collection of marked WeakReferences.
-// Used to correctly set "NULL" values in place of cleaned objects
-// and to call other handler functions with WeakRefStack_CallHandlers.
+// weakRefStack holds the references whose referent the marker left unmarked
+// (see immix_commix/References.h); unmarked referents are set to NULL here.
 
 void WeakReferences_Nullify(void) {
     Bytemap *bytemap = heap.bytemap;
     while (!Stack_IsEmpty(&weakRefStack)) {
         Object *object = Stack_Pop(&weakRefStack);
         Object **weakRefReferantField =
-            (Object **)WeakReference_ReferentField(object);
+            (Object **)Reference_ReferentField(object);
         word_t *weakRefReferant = (word_t *)*weakRefReferantField;
         if (Heap_IsWordInHeap(&heap, weakRefReferant)) {
             ObjectMeta *objectMeta = Bytemap_Get(bytemap, weakRefReferant);

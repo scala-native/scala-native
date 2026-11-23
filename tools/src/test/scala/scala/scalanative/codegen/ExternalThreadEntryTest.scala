@@ -137,7 +137,7 @@ class ExternalThreadEntryTest extends CodeGenSpec {
               if defn.attrs.isExtern &&
                 (defn.name.top.id.startsWith("scala.scalanative.runtime.") ||
                 defn.name.top.id.startsWith(
-                  "java.lang.ref.WeakReferenceRegistry$"
+                  "java.lang.ref.ReferenceRegistry$"
                 )) =>
             defn
         }
@@ -205,7 +205,7 @@ class ExternalThreadEntryTest extends CodeGenSpec {
     )
     assertFalse(
       shouldGuard(
-        definition("java.lang.ref.WeakReferenceRegistry$", "hook")
+        definition("java.lang.ref.ReferenceRegistry$", "hook")
       )
     )
     assertTrue(shouldGuard(definition("User$", "user_callback")))
