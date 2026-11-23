@@ -282,9 +282,9 @@ def plan(): Plan =
         body = body
       )
       println(s"${pr.files.size} changed files")
-      if Trigger.Requested("ci:full", "[test-extended]").matches(pr) then
+      if env("PR_DRAFT") == "true" then Plan.all(Tier.Draft, Level.Off)
+      else if Trigger.Requested("ci:full", "[test-extended]").matches(pr) then
         Plan.nightly
-      else if env("PR_DRAFT") == "true" then Plan.all(Tier.Draft, Level.Off)
       else if pr.files.nonEmpty && pr.files.forall(docsPaths.matchAny) &&
           !Workflow.values.exists(_.extended.matches(pr))
       then Plan.all(Tier.Docs, Level.Off)
