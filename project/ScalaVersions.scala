@@ -57,13 +57,21 @@ object ScalaVersions {
   val crossSbtVersions = Seq(sbt10Version, sbt2Version)
   val crossSbtScalaVersions = Seq(sbt10ScalaVersion, sbt2ScalaVersion)
 
+  /** Scala version of sbt targeted by the sbt plugin built for given Scala
+   *  binary version
+   */
+  val sbtScalaVersions: Map[String, String] = Map(
+    "2.12" -> sbt10ScalaVersion,
+    "3" -> sbt2ScalaVersion
+  )
+
   val libCrossScalaVersions: Seq[String] = Seq(
     crossScala212,
     crossScala213,
     crossScala3
   ).flatten.distinct
 
-  // Scala 2.13 cannot be used with Scala 3.8 (see, scala3/cross-version-compat)
+  // Scala 2.13 cannot be used with Scala 3.8 (see, build/scala3-cross-version-compat)
   val scriptedTestsScala3Version: String = "3.7.4".ensuring(
     !crossScala213.contains("2.13.19"),
     "Update scriptedTestsScala3Version when new Scala 3 version is released"

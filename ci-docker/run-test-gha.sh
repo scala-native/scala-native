@@ -45,18 +45,23 @@ if ! docker pull $FULL_IMAGE_NAME; then
     docker push ${FULL_IMAGE_NAME}
 fi
 
-# Make sure the binded directories are present
+# Share the Coursier cache and sbt content store with the host,
+# the container runs as root
 CacheDir=$HOME/.cache
-IvyDir=$HOME/.ivy
+IvyDir=$HOME/.ivy2
 SbtDir=$HOME/.sbt
 mkdir -p $CacheDir $IvyDir $SbtDir
+# Coursier caches failed downloads, clear them before each attempt,
+# files written by the container are owned by root
+sudo find "$CacheDir/coursier" -name '*.error' -delete 2>/dev/null || true
 
 docker run --rm \
-  --mount type=bind,source=$CacheDir,target=/home/scala-native/.cache \
-  --mount type=bind,source=$SbtDir,target=/home/scala-native/.sbt \
-  --mount type=bind,source=$IvyDir,target=/home/scala-native/.ivy \
+  --mount type=bind,source=$CacheDir,target=/root/.cache \
+  --mount type=bind,source=$SbtDir,target=/root/.sbt \
+  --mount type=bind,source=$IvyDir,target=/root/.ivy2 \
   --mount type=bind,source=$PWD,target=/home/scala-native/scala-native \
   -e TEST_COMMAND="$TEST_COMMAND" \
+  -e COURSIER_REPOSITORIES \
   -e SCALANATIVE_MODE="$SCALANATIVE_MODE" \
   -e SCALANATIVE_GC="$SCALANATIVE_GC" \
   -e SCALANATIVE_LTO="${SCALANATIVE_LTO:-none}" \

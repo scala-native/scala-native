@@ -1,4 +1,5 @@
-# Flow dedicated to publishing compiler plugins for Scala 3 RC versions
+# Publishes compiler plugins and scalalib of a release for a new Scala version.
+# For 0.4.x use the workflow of the 0.4.x branch.
 name: Publish for Scala release
 on:
   workflow_dispatch:
@@ -11,10 +12,16 @@ on:
         type: string
         description: "Tag of Scala Native release which should be used for release"
 
+permissions:
+  contents: read
+
+env:
+  EXTRA_CROSS_SCALA_VERSION: "${{ inputs.scala-version }}"
+
 jobs:
   publish:
-    name: Publish
-    runs-on: ubuntu-22.04
+    name: Test and publish for Scala ${{ inputs.scala-version }}
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
         with:
@@ -23,56 +30,23 @@ jobs:
         with:
           scala-version: ${{ inputs.scala-version }}
           java-version: 17
-
+      - name: Test runtime
+        run: sbt "++${{ inputs.scala-version }} -v" "test-runtime ${{ inputs.scala-version }}"
       - name: Setup PGP Key
         run: |
           echo -n "$PGP_SECRET" | base64 --decode | gpg --batch --import
         env:
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
-
-      - name: Publish release 0.4.x
-        if: ${{ startsWith(inputs.scala-native-version, 'v0.4.') }}
+      - name: Publish release
         env:
           SONATYPE_USER: "${{ secrets.SONATYPE_USER }}"
           SONATYPE_PASSWORD: "${{ secrets.SONATYPE_PASSWORD }}"
           PGP_PASSPHRASE: "${{ secrets.PGP_PASSWORD }}"
         run: >
-          binaryVersion=$(echo "${{ inputs.scala-version }}" | awk -F. '{print $1"."$2}');
-          if [[ ${binaryVersion} == 3.* ]]; then
-            binaryVersion=3;
-          fi;
           sbt '
-            set crossScalaVersions += "${binaryVersion}";
-            set nscPlugin.forBinaryVersion("${binaryVersion}")/crossScalaVersions += "${{ inputs.scala-version }}";
-            set junitPlugin.forBinaryVersion("${binaryVersion}")/crossScalaVersions += "${{ inputs.scala-version }}";
-            ++${{ inputs.scala-version }} -v; 
-            nscplugin${{ env.project-version }}/test;
-            nscplugin${{ env.project-version }}/publishSigned;
-            junitPlugin${{ env.project-version }}/publishSigned;
-          '
-
-      - name: Publish release 0.5.x
-        if: ${{ startsWith(inputs.scala-native-version, 'v0.5.') }}
-        env:
-          SONATYPE_USER: "${{ secrets.SONATYPE_USER }}"
-          SONATYPE_PASSWORD: "${{ secrets.SONATYPE_PASSWORD }}"
-          PGP_PASSPHRASE: "${{ secrets.PGP_PASSWORD }}"
-          EXTRA_CROSS_SCALA_VERSION: "${{ inputs.scala-version }}"
-        run: >
-          sbt '
-            ++${{ inputs.scala-version }} -v; 
+            ++${{ inputs.scala-version }} -v;
             nscplugin${{ env.project-version }}/publishSigned;
             junitPlugin${{ env.project-version }}/publishSigned;
             scalalib${{ env.project-version }}/publishSigned;
             sonaUpload;
-          '
-
-      - name: Test runtime
-        if: ${{ startsWith(inputs.scala-native-version, 'v0.5.') }}
-        env:
-          EXTRA_CROSS_SCALA_VERSION: "${{ inputs.scala-version }}"
-        run: >
-          sbt '
-            ++${{ inputs.scala-version }} -v; 
-            test-runtime ${{ inputs.scala-version }};
           '

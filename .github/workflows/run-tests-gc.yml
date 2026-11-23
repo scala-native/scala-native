@@ -1,0 +1,111 @@
+name: Run tests GC
+# test-gc: sandbox, test interface and JUnit outputs with every GC
+# Called from ci.yml, see scripts/ci/plan.scala
+on:
+  workflow_call:
+    inputs:
+      extended: { type: boolean, default: false }
+
+permissions:
+  contents: read
+
+env:
+  CI_SHARE_BUILD_OUTPUTS: ${{ vars.CI_SHARE_BUILD_OUTPUTS }}
+
+jobs:
+  linux:
+    name: Test GC Linux (${{ matrix.mode }}, lto=${{ matrix.lto }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { mode: release-fast, lto: thin }
+          - { mode: debug, lto: none }
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: "3"
+      - uses: ./.github/actions/restore-build-outputs
+        with:
+          scala-version: "3"
+      - name: Test GC
+        timeout-minutes: 45
+        env:
+          SCALANATIVE_MODE: ${{ matrix.mode }}
+          SCALANATIVE_LTO: ${{ matrix.lto }}
+        run: sbt "test-gc 3"
+
+  macos:
+    name: Test GC macOS (${{ matrix.mode }}, lto=${{ matrix.lto }})
+    if: inputs.extended
+    runs-on: macos-26
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { mode: release-fast, lto: thin }
+          - { mode: debug, lto: none }
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/macos-setup-env
+        with:
+          scala-version: "3"
+          gc: boehm
+      - name: Test GC
+        timeout-minutes: 45
+        env:
+          SCALANATIVE_MODE: ${{ matrix.mode }}
+          SCALANATIVE_LTO: ${{ matrix.lto }}
+        run: sbt "test-gc 3"
+
+  windows:
+    name: Test GC Windows x64 (${{ matrix.mode }}, lto=${{ matrix.lto }})
+    if: inputs.extended
+    runs-on: windows-2025
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { mode: release-fast, lto: thin }
+          - { mode: debug, lto: none }
+    steps:
+      # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
+      - name: Setup git config
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/windows-setup-env
+        with:
+          scala-version: "3"
+      - name: Test GC
+        timeout-minutes: 45
+        env:
+          SCALANATIVE_MODE: ${{ matrix.mode }}
+          SCALANATIVE_LTO: ${{ matrix.lto }}
+        run: sbt "test-gc 3"
+        shell: cmd
+
+  # Boehm GC is not available for iOS
+  ios-simulator:
+    name: Test GC iOS simulator (${{ matrix.mode }}, lto=${{ matrix.lto }})
+    if: inputs.extended
+    runs-on: macos-26
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { mode: release-fast, lto: thin }
+          - { mode: debug, lto: none }
+    env:
+      SCALANATIVE_MODE: ${{ matrix.mode }}
+      SCALANATIVE_LTO: ${{ matrix.lto }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/macos-setup-env
+        with:
+          scala-version: "3"
+      - uses: ./.github/actions/ios-simulator-setup
+      - name: Test GC
+        timeout-minutes: 45
+        run: sbt "test-gc 3"

@@ -37,11 +37,11 @@ uname -a
 java -version
 clang --version
 # --server avoids the native thin client, which is not available for BSD.
-sbt --server --batch $SBT_MEM_OPTS --sbt-version "$SBT_VERSION" \
+sbt --server --batch $SBT_MEM_OPTS \
   'set sandbox.forBinaryVersion("3") / nativeConfig ~= (_.withMultithreading(true))' \
   "test-gc 3"
 # test-runtime also includes testsExt; keep the BSD runtime matrix explicit.
-sbt --server --batch $SBT_MEM_OPTS --sbt-version "$SBT_VERSION" \
+sbt --server --batch $SBT_MEM_OPTS \
   "testsJVM3/test" \
   "tests3/test" "junitTestOutputsNative3/test" \
   "scalaPartestJunitTests3/test"

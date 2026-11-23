@@ -1,0 +1,15 @@
+name: "CI script"
+description: "Run a scala-cli script from scripts/ci"
+inputs:
+  script:
+    description: "Script file name"
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - uses: coursier/cache-action@v8
+    - uses: VirtusLab/scala-cli-setup@v1.19
+    - shell: bash
+      env:
+        COURSIER_REPOSITORIES: "ivy2Local|https://maven-central.storage-download.googleapis.com/maven2"
+      run: scala-cli run --server=false "scripts/ci/${{ inputs.script }}"

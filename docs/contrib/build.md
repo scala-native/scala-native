@@ -211,6 +211,22 @@ directories exists it will fail. It is also possible to define
 explicitly overrides directory to use by passing it as the third
 argument to the script.
 
+## Continuous integration
+
+All tests start from the `CI` workflow (`.github/workflows/ci.yml`). Pull
+requests first run a quick gate: compilation for Scala 2.12, 2.13 and 3, the
+runtime tests in the default configuration and MiMa checks. Platform tests
+start once the gate passes and are selected from the modified paths, see
+`scripts/ci/plan.scala`. Draft pull requests run only the gate.
+
+Add `[test-extended]` to the pull request description (or the `ci:full`
+label) to run all tests, `[test-partest]` (or `ci:partest`) to run all
+partests. The full set of tests also runs every night on `main`.
+
+`CI OK` is the only required check. Each CI job runs an sbt command that can
+be used locally, e.g. `test-runtime 3`, `test-gc 3`, `test-tools 3`,
+`test-mima 3` or `test-scripted 3 runtime/*`.
+
 The next section has more build and development information for those
 wanting to work on [compiler](./compiler.md).
 

@@ -1,8 +1,47 @@
 name: "sbt warm-up"
-description: "Bootstrap sbt and load the build with retries to survive transient artifact download failures"
+description: "Load the sbt build with retries and cache its compiled definition"
 runs:
   using: "composite"
   steps:
+    # Coursier caches failed lookups, don't let a restored cache keep them
+    - name: Drop cached Coursier errors
+      shell: bash
+      run: |
+        for dir in "$HOME/.cache/coursier" "$HOME/Library/Caches/Coursier" "${LOCALAPPDATA:+$(cygpath -u "$LOCALAPPDATA" 2>/dev/null)/Coursier}"; do
+          if [[ -d "$dir" ]]; then
+            echo "$dir: $(find "$dir" -name '*.error' | wc -l) cached errors"
+            find "$dir" -name '*.error' -delete
+          fi
+        done
+
+    # Maven Central rate limits CI: sbt, see project/MavenMirror.scala, coursier and scala-cli
+    - name: Use Maven Central mirror
+      shell: bash
+      run: |
+        mirror=https://maven-central.storage-download.googleapis.com/maven2
+        echo "MAVEN_CENTRAL_MIRROR=$mirror/" >> "$GITHUB_ENV"
+        echo "COURSIER_REPOSITORIES=ivy2Local|$mirror" >> "$GITHUB_ENV"
+
+    # The build definition includes toolchain sources, see project/build.sbt
+    - name: Restore compiled build definition
+      id: restore
+      uses: actions/cache/restore@v5
+      with:
+        path: ${{ runner.temp }}/sbt-meta-build
+        key: sbt-meta-build-${{ runner.os }}-${{ hashFiles('project/**', 'build.sbt', '.sbtopts', 'util/**', 'nir/**', 'tools/**', 'sbt-scala-native/**', 'test-interface-common/**', 'test-runner/**') }}
+
+    - name: Unpack compiled build definition
+      if: steps.restore.outputs.cache-hit == 'true'
+      continue-on-error: true
+      shell: bash
+      run: |
+        # GNU tar on Windows would treat 'D:' in the archive path as a remote host
+        flags=""
+        if [[ "$RUNNER_OS" == "Windows" ]]; then flags="--force-local"; fi
+        tar $flags -xzf "$RUNNER_TEMP/sbt-meta-build/meta-build.tgz"
+        # Copies of sbt's read-only content store
+        chmod -R u+w target/out/jvm/scala-*/*-build project/target/config-classes
+
     # The sbt launcher ignores the coursier mirror/retry settings from .sbtopts.
     # --server avoids leaving a background server with this step's environment.
     - name: Warm up sbt
@@ -13,3 +52,26 @@ runs:
         retry_wait_seconds: 30
         shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
         command: sbt --server exit
+
+    - name: Pack compiled build definition
+      id: pack
+      if: steps.restore.outputs.cache-hit != 'true'
+      continue-on-error: true
+      shell: bash
+      # Dereference symlinks into sbt's content store
+      run: |
+        flags=""
+        if [[ "$RUNNER_OS" == "Windows" ]]; then flags="--force-local"; fi
+        mkdir -p "$RUNNER_TEMP/sbt-meta-build"
+        tar $flags -czhf "$RUNNER_TEMP/sbt-meta-build/meta-build.tgz" \
+          --exclude='streams' --exclude='update' target/out/jvm/scala-*/*-build project/target/config-classes
+        ls -lh "$RUNNER_TEMP/sbt-meta-build/meta-build.tgz"
+
+    # Concurrent jobs may race to save the same key
+    - name: Save compiled build definition
+      if: steps.restore.outputs.cache-hit != 'true' && steps.pack.outcome == 'success'
+      continue-on-error: true
+      uses: actions/cache/save@v5
+      with:
+        path: ${{ runner.temp }}/sbt-meta-build
+        key: ${{ steps.restore.outputs.cache-primary-key }}

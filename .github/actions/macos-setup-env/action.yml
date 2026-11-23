@@ -8,22 +8,18 @@ inputs:
     description: "Java version to use in tests"
     default: "25"
   llvm-version:
-    description: "Custom version of LLVM to use"
-    default: "16"
-  lld-version:
-    description: "Version of the separate Homebrew LLD formula to use"
+    description: "LLVM version installed from Homebrew, the runner's preinstalled LLVM when empty"
     default: ""
   gc: 
     description: "Garbage collector used, might require installing dependencies"
-outputs:
-  lld-path:
-    description: "Absolute path to ld64.lld"
-    value: ${{ steps.expose-llvm.outputs.lld-path }}
 runs:
   using: "composite"
   steps:
     - uses: coursier/cache-action@v8
     - uses: coursier/setup-action@v3
+      # Installs sbt from the mirror, repo1 rate-limits parallel jobs
+      env:
+        COURSIER_REPOSITORIES: "https://maven-central.storage-download.googleapis.com/maven2"
       with:
         jvm: ${{inputs.java-version}}
         apps: sbt
@@ -47,36 +43,34 @@ runs:
       if: ${{ inputs.llvm-version != '' }}
       uses: gerlero/brew-install@f21af2da1f07ad75501992d36996ddb7afe0cedb # v1.1.6
       with:
-        # Homebrew ships LLD separately for newer versioned LLVM formulae.
-        # A caller that needs LLD for ThinLTO can request an exact compatible
-        # version instead of falling back to the unversioned (latest) formula.
-        packages: ${{ inputs.llvm-version == 'latest' && 'lld llvm' || inputs.lld-version != '' && format('lld@{0} llvm@{1}', inputs.lld-version, inputs.llvm-version) || format('lld llvm@{0}', inputs.llvm-version) }}
+        # Homebrew ships LLD separately from LLVM
+        packages: ${{ inputs.llvm-version == 'latest' && 'lld llvm' || format('lld llvm@{0}', inputs.llvm-version) }}
 
+    # The runner's preinstalled llvm@<version> (without LLD) unless a version is requested
     - name: Expose LLVM toolchain
-      id: expose-llvm
       shell: bash
-      if: ${{ inputs.llvm-version != '' }}
       run: |
-        if [[ "${{ inputs.llvm-version }}" == "latest" ]]; then
+        version="${{ inputs.llvm-version }}"
+        if [[ -z "$version" ]]; then
+          version=$(ls -d "$(brew --prefix)"/opt/llvm@* 2>/dev/null | sed 's/.*@//' | sort -n | tail -1)
+        fi
+        if [[ "$version" == "latest" ]]; then
           LLVM_TOOLCHAIN="$(brew --prefix llvm)/bin"
         else
-          LLVM_TOOLCHAIN="$(brew --prefix llvm@${{ inputs.llvm-version }})/bin"
-        fi
-        if [[ -n "${{ inputs.lld-version }}" ]]; then
-          LLD_TOOLCHAIN="$(brew --prefix lld@${{ inputs.lld-version }})/bin"
-        else
-          LLD_TOOLCHAIN="$(brew --prefix lld)/bin"
+          LLVM_TOOLCHAIN="$(brew --prefix llvm@$version)/bin"
         fi
         # Prefer Homebrew LLVM over Xcode clang (Discover uses LLVM_BIN / PATH).
-        if [[ -d "$LLVM_TOOLCHAIN" ]]; then
-          echo "LLVM_BIN=$LLVM_TOOLCHAIN" >> "$GITHUB_ENV"
-          echo "$LLVM_TOOLCHAIN" >> "$GITHUB_PATH"
-          echo "Using toolchain: $("$LLVM_TOOLCHAIN/clang" --version | head -1)"
-          test -x "$LLD_TOOLCHAIN/ld64.lld"
-          echo "lld-path=$LLD_TOOLCHAIN/ld64.lld" >> "$GITHUB_OUTPUT"
-          echo "Using linker: $("$LLD_TOOLCHAIN/ld64.lld" --version | head -1)"
-        else
+        if [[ ! -d "$LLVM_TOOLCHAIN" ]]; then
           echo "::warning::No directory $LLVM_TOOLCHAIN; set LLVM_BIN on the step if needed."
+          exit 0
+        fi
+        echo "LLVM_BIN=$LLVM_TOOLCHAIN" >> "$GITHUB_ENV"
+        echo "$LLVM_TOOLCHAIN" >> "$GITHUB_PATH"
+        echo "Using toolchain: $("$LLVM_TOOLCHAIN/clang" --version | head -1)"
+        if [[ -n "${{ inputs.llvm-version }}" ]]; then
+          LLD_TOOLCHAIN="$(brew --prefix lld)/bin"
+          test -x "$LLD_TOOLCHAIN/ld64.lld"
+          echo "Using linker: $("$LLD_TOOLCHAIN/ld64.lld" --version | head -1)"
         fi
 
     - uses: ./.github/actions/sbt-warmup

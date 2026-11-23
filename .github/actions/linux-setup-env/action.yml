@@ -8,13 +8,19 @@ inputs:
     description: "Java version to use in tests"
     default: "25"
   llvm-version:
-    description: "LLVM toolchain version"
-    default: "16"
+    description: "LLVM toolchain version installed from apt.llvm.org, the runner's preinstalled LLVM when empty"
+    default: ""
+  native-toolchain:
+    description: "Install LLVM and native libraries, not needed only to compile or publish"
+    default: "true"
 runs:
   using: "composite"
   steps:
     - uses: coursier/cache-action@v8
     - uses: coursier/setup-action@v3
+      # Installs sbt from the mirror, repo1 rate-limits parallel jobs
+      env:
+        COURSIER_REPOSITORIES: "https://maven-central.storage-download.googleapis.com/maven2"
       with:
         jvm: ${{inputs.java-version}}
         apps: sbt
@@ -30,29 +36,44 @@ runs:
         fi
 
     - name: Install dependencies
+      if: ${{ inputs.native-toolchain == 'true' }}
       uses: nick-fields/retry@v4
       with:
         timeout_minutes: 10
         max_attempts: 10
         retry_on: error
         shell: bash
+        # lld is needed for LTO. apt-get has its own time limit, the retry
+        # action cannot kill a hung process started with sudo.
         command: |
-          sudo apt-get update
-          sudo apt-get install libgc-dev
+          apt="sudo timeout 240 apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30"
+          $apt update
+          $apt install -y libgc-dev ${{ inputs.llvm-version == '' && 'lld-18' || '' }}
 
-    - name: Install explicit LLVM toolchain
+    - name: Install LLVM toolchain
       shell: bash
-      if: ${{ inputs.llvm-version != '' }}
+      if: ${{ inputs.native-toolchain == 'true' && inputs.llvm-version != '' }}
+      run: sudo ./ci-docker/install-llvm.sh ${{ inputs.llvm-version }}
+
+    # Discover uses LLVM_BIN / PATH, the preinstalled LLVM 18 unless a version is requested
+    - name: Expose LLVM toolchain
+      if: ${{ inputs.native-toolchain == 'true' }}
+      shell: bash
       run: |
-        sudo ./ci-docker/install-llvm.sh ${{ inputs.llvm-version }}
-        # Prefer apt.llvm.org install over /usr/bin/clang (Discover uses LLVM_BIN / PATH).
-        LLVM_TOOLCHAIN="/usr/lib/llvm-${{ inputs.llvm-version }}/bin"
+        LLVM_TOOLCHAIN="/usr/lib/llvm-${{ inputs.llvm-version || '18' }}/bin"
         if [[ -d "$LLVM_TOOLCHAIN" ]]; then
           echo "LLVM_BIN=$LLVM_TOOLCHAIN" >> "$GITHUB_ENV"
           echo "$LLVM_TOOLCHAIN" >> "$GITHUB_PATH"
           echo "Using toolchain: $("$LLVM_TOOLCHAIN/clang" --version | head -1)"
         else
-          echo "::warning::No directory $LLVM_TOOLCHAIN (e.g. llvm-version=latest); set LLVM_BIN on the step if needed."
+          echo "::warning::No directory $LLVM_TOOLCHAIN; set LLVM_BIN on the step if needed."
         fi
+
+    # systemd-coredump handles dumps of aborting tests slowly enough to hit their timeouts
+    - name: Disable core dumps
+      shell: bash
+      run: |
+        echo "core_pattern: $(cat /proc/sys/kernel/core_pattern), ulimit -c: $(ulimit -c)"
+        sudo sysctl -w kernel.core_pattern=core
 
     - uses: ./.github/actions/sbt-warmup

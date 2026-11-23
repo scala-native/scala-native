@@ -1,0 +1,38 @@
+name: CI retry
+# Re-runs CI when jobs were cancelled because no runner picked them up
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  retry:
+    name: Re-run jobs without a runner
+    # Nightly runs are re-run by nightly-report.yml when it is enabled
+    if: >
+      github.event.workflow_run.conclusion != 'success' &&
+      (github.event.workflow_run.event != 'schedule' || vars.NIGHTLY_CREATE_ISSUES != 'true')
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+      actions: write
+      checks: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            scripts/ci
+            .github/actions/ci-script
+      - name: Re-run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+          MAX_ATTEMPTS: 3
+        uses: ./.github/actions/ci-script
+        with:
+          script: ci-retry.scala

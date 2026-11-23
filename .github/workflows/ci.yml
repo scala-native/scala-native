@@ -1,0 +1,308 @@
+name: CI
+# Entry point for all tests and publishing. The plan job (scripts/ci/plan.scala)
+# runs each workflow off, base or extended. `ci-ok` is the only required check.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    tags: ["v0.5.*"]
+  schedule:
+    # Skipped when nothing was committed since the last run
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+    inputs:
+      tier:
+        description: "Set of jobs to run"
+        type: choice
+        default: nightly
+        options: [nightly, pr]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CI_SHARE_BUILD_OUTPUTS: ${{ vars.CI_SHARE_BUILD_OUTPUTS }}
+  # Maven Central rate limits CI, used by coursier and scala-cli in jobs without sbt-warmup
+  COURSIER_REPOSITORIES: "ivy2Local|https://maven-central.storage-download.googleapis.com/maven2"
+
+jobs:
+  plan:
+    name: Plan
+    if: github.event_name != 'schedule' || github.repository == 'scala-native/scala-native'
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+    outputs:
+      tier: ${{ steps.plan.outputs.tier }}
+      publish: ${{ steps.plan.outputs.publish }}
+      toolchain: ${{ steps.plan.outputs.toolchain }}
+      linux: ${{ steps.plan.outputs.linux }}
+      gc: ${{ steps.plan.outputs.gc }}
+      macos: ${{ steps.plan.outputs.macos }}
+      windows: ${{ steps.plan.outputs.windows }}
+      apple: ${{ steps.plan.outputs.apple }}
+      linux-multiarch: ${{ steps.plan.outputs.linux-multiarch }}
+      bsd: ${{ steps.plan.outputs.bsd }}
+      termux: ${{ steps.plan.outputs.termux }}
+      sbt-plugin: ${{ steps.plan.outputs.sbt-plugin }}
+      partests: ${{ steps.plan.outputs.partests }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: scripts/ci
+      - uses: coursier/cache-action@v8
+      - uses: VirtusLab/scala-cli-setup@v1.19
+      - name: Select jobs
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          GH_REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          REF: ${{ github.ref }}
+          REF_TYPE: ${{ github.ref_type }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_DRAFT: ${{ github.event.pull_request.draft }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          DISPATCH_TIER: ${{ inputs.tier }}
+        run: scala-cli run --server=false scripts/ci/plan.scala
+
+  # Lint and documentation
+  checks:
+    name: Lint and docs
+    needs: plan
+    if: needs.plan.outputs.tier != 'skip'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # docs use git history for last-updated dates
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - uses: coursier/cache-action@v8
+      - uses: coursier/setup-action@v3
+      # Formatting requires clang-format 14
+      - name: Install clang-format
+        run: pip install clang-format==14.0.6
+      - name: Lint
+        run: CLANG_FORMAT_PATH="$(command -v clang-format)" ./scripts/check-lint.sh
+      - name: Build docs
+        run: |
+          pip install -r docs/requirements.txt
+          cd docs && SPHINXOPTS="-W" make html
+
+  # Compiles all sources, runs the sandbox and the runtime tests in the default
+  # configuration, everything below depends on it
+  gate:
+    name: Gate Linux (${{ matrix.scala }})
+    needs: plan
+    if: needs.plan.outputs.tier != 'skip' && needs.plan.outputs.tier != 'docs'
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: ["2.12", "2.13", "3"]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: ${{ matrix.scala }}
+      - name: Compile all sources
+        timeout-minutes: 60
+        run: sbt "compile-all ${{ matrix.scala }}" "testInterface${{ env.project-version }}/test"
+      # Scala 2 outputs are used only by the extended Linux and toolchain tests
+      - if: matrix.scala == '3' || needs.plan.outputs.linux == 'extended' || needs.plan.outputs.toolchain == 'extended'
+        uses: ./.github/actions/save-build-outputs
+        with:
+          scala-version: ${{ matrix.scala }}
+      - name: Test runtime
+        timeout-minutes: 60
+        run: sbt "test-runtime ${{ matrix.scala }}"
+      - name: Check binary compatibility
+        timeout-minutes: 30
+        run: sbt "test-mima ${{ matrix.scala }}"
+
+  # sbt plugins, compiled with their sbt Scala version
+  # The sbt 2.x plugin is compiled by every job, it is part of the build definition
+  gate-sbt-plugin:
+    name: Gate sbt 1.x plugin
+    needs: plan
+    if: needs.plan.outputs.tier != 'skip' && needs.plan.outputs.tier != 'docs'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: "2.12"
+          native-toolchain: false
+      - name: Compile sbt plugin
+        timeout-minutes: 30
+        run: sbt "compile-sbt-plugin 2.12"
+
+  # Scala 3 runtime tests on other OSes
+  gate-macos:
+    name: Gate macOS
+    needs: plan
+    if: needs.plan.outputs.tier != 'skip' && needs.plan.outputs.tier != 'docs'
+    # Intel runners are more available, other macOS tests run on arm64
+    runs-on: macos-26-intel
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/macos-setup-env
+        with:
+          scala-version: "3"
+      # Slow runners, only the core native tests
+      - name: Test interface and native tests
+        timeout-minutes: 60
+        run: sbt "testInterface3/test" "tests3/test"
+
+  gate-windows:
+    name: Gate Windows
+    needs: plan
+    if: needs.plan.outputs.tier != 'skip' && needs.plan.outputs.tier != 'docs'
+    runs-on: windows-2025
+    steps:
+      # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
+      - name: Setup git config
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/windows-setup-env
+        with:
+          scala-version: "3"
+      - name: Test runtime and test interface
+        timeout-minutes: 60
+        shell: cmd
+        run: sbt "test-runtime 3" "testInterface3/test"
+
+  toolchain:
+    name: Toolchain
+    needs: &gates [plan, gate, gate-sbt-plugin, gate-macos, gate-windows]
+    if: needs.plan.outputs.toolchain != 'off'
+    uses: ./.github/workflows/run-tests-toolchain.yml
+    with:
+      extended: ${{ needs.plan.outputs.toolchain == 'extended' }}
+
+  linux:
+    name: Linux
+    needs: *gates
+    if: needs.plan.outputs.linux != 'off'
+    uses: ./.github/workflows/run-tests-linux.yml
+    with:
+      extended: ${{ needs.plan.outputs.linux == 'extended' }}
+
+  gc:
+    name: GC
+    needs: *gates
+    if: needs.plan.outputs.gc != 'off'
+    uses: ./.github/workflows/run-tests-gc.yml
+    with:
+      extended: ${{ needs.plan.outputs.gc == 'extended' }}
+
+  macos:
+    name: macOS
+    needs: *gates
+    if: needs.plan.outputs.macos != 'off'
+    uses: ./.github/workflows/run-tests-macos.yml
+    with:
+      extended: ${{ needs.plan.outputs.macos == 'extended' }}
+
+  windows:
+    name: Windows
+    needs: *gates
+    if: needs.plan.outputs.windows != 'off'
+    uses: ./.github/workflows/run-tests-windows.yml
+    with:
+      extended: ${{ needs.plan.outputs.windows == 'extended' }}
+
+  apple:
+    name: Apple
+    needs: *gates
+    if: needs.plan.outputs.apple != 'off'
+    uses: ./.github/workflows/run-tests-apple.yml
+    with:
+      extended: ${{ needs.plan.outputs.apple == 'extended' }}
+
+  linux-multiarch:
+    name: Linux Multiarch
+    needs: *gates
+    if: needs.plan.outputs.linux-multiarch != 'off'
+    uses: ./.github/workflows/run-tests-linux-multiarch.yml
+
+  bsd:
+    name: BSD
+    needs: *gates
+    if: needs.plan.outputs.bsd != 'off'
+    uses: ./.github/workflows/run-tests-bsd.yml
+    with:
+      extended: ${{ needs.plan.outputs.bsd == 'extended' }}
+
+  termux:
+    name: Termux
+    needs: *gates
+    if: needs.plan.outputs.termux != 'off'
+    uses: ./.github/workflows/run-tests-termux.yml
+
+  sbt-plugin:
+    name: sbt plugin
+    needs: *gates
+    if: needs.plan.outputs.sbt-plugin != 'off'
+    uses: ./.github/workflows/run-tests-sbt-plugin.yml
+    with:
+      extended: ${{ needs.plan.outputs.sbt-plugin == 'extended' }}
+
+  partests:
+    name: Partests
+    needs: *gates
+    if: needs.plan.outputs.partests != 'off'
+    uses: ./.github/workflows/run-tests-partests.yml
+    with:
+      extended: ${{ needs.plan.outputs.partests == 'extended' }}
+
+  # Nightly snapshot, requires the gates
+  publish-snapshot:
+    name: Publish snapshot
+    needs: *gates
+    if: needs.plan.outputs.publish == 'snapshot'
+    permissions:
+      contents: write
+    uses: ./.github/workflows/publish.yml
+    secrets: inherit
+    with:
+      snapshot: true
+
+  # Release from a tag, requires the release plan to pass
+  publish-release:
+    name: Publish release
+    needs: [plan, ci-ok]
+    if: needs.plan.outputs.publish == 'release'
+    permissions:
+      contents: write
+    uses: ./.github/workflows/publish.yml
+    secrets: inherit
+    with:
+      snapshot: false
+
+  # Skipped jobs count as passed
+  ci-ok:
+    name: CI OK
+    if: always()
+    needs: [plan, checks, gate, gate-sbt-plugin, gate-macos, gate-windows, toolchain, linux, gc, macos, windows, apple, linux-multiarch, bsd, termux, sbt-plugin, partests]
+    runs-on: ubuntu-slim
+    steps:
+      - name: Check results
+        env:
+          RESULTS: ${{ toJSON(needs.*.result) }}
+        run: |
+          echo "$RESULTS"
+          if echo "$RESULTS" | grep -Eq '"(failure|cancelled)"'; then
+            echo "::error::Some of the required jobs failed or were cancelled"
+            exit 1
+          fi
