@@ -461,10 +461,22 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           nested.jumpExcludeUnitValue(retty)(mergen, res)
         }
       }
-      withFreshBlockScope(pos) { _ =>
-        nested.label(handler, Seq(excv))
-        val res = nested.genTryCatch(retty, excv, mergen, catches)
-        nested.jumpExcludeUnitValue(retty)(mergen, res)
+      // Exceptions thrown by the catch cases must still run the finalizer
+      val catchesHandler =
+        if (catches.isEmpty || finallyp.isEmpty) None else Some(fresh())
+      scoped(
+        curUnwindHandler := catchesHandler.orElse(curUnwindHandler.get)
+      ) {
+        withFreshBlockScope(pos) { _ =>
+          nested.label(handler, Seq(excv))
+          val res = nested.genTryCatch(retty, excv, mergen, catches)
+          nested.jumpExcludeUnitValue(retty)(mergen, res)
+        }
+      }
+      catchesHandler.foreach { finallyHandler =>
+        val exc = nir.Val.Local(fresh(), nir.Rt.Throwable)
+        nested.label(finallyHandler, Seq(exc))
+        nested.raise(exc, unwind)
       }
 
       // Append finally to the try/catch instructions and merge them back.
