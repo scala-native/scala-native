@@ -340,21 +340,82 @@ private[codegen] object Generate {
 
             /*  // Multithreading-safe module load
              *  val slot = &module$slot
-             *  return __scalanative_loadModule(slot, rtti, size, ctor)
+             *  val instance = atomic_load(slot, acquire)
+             *  if (instance != null && (instance & 1) == 0 && instance.rtti == rtti) instance
+             *  else __scalanative_loadModule(slot, rtti, size, ctor)
              *
              *  Underlying C function implements the main logic of module initialization and synchronization.
-             *  Safety of safe multithreaded initialization comes with the increased complexity and overhead.
+             *  Its fast path (`__scalanative_loadModule` in module_load.c) is duplicated here: without LTO
+             *  the C function is never inlined, so every module access would pay an out-of-line call.
+             *  The tag bit rejects an in-progress InitializationContext, the rtti check rejects
+             *  anything else that is not the initialized instance, exactly like the C fast path.
              *  For single-threaded usage we use the old implementation
              */
             def loadMultithreadingSafeImpl: Seq[nir.Inst] = {
               val size = meta.layout(cls).size
               val rtti = meta.rtti(cls).const
 
+              val checkTag = fresh()
+              val checkRtti = fresh()
+              val slow = fresh()
+              val notNull = nir.Val.Local(fresh(), nir.Type.Bool)
+              val asLong = nir.Val.Local(fresh(), nir.Type.Long)
+              val tagBit = nir.Val.Local(fresh(), nir.Type.Long)
+              val untagged = nir.Val.Local(fresh(), nir.Type.Bool)
+              val selfPtr = nir.Val.Local(fresh(), nir.Type.Ptr)
+              val selfRtti = nir.Val.Local(fresh(), nir.Type.Ptr)
+              val rttiOk = nir.Val.Local(fresh(), nir.Type.Bool)
+              val loaded = nir.Val.Local(fresh(), clsTy)
+
               Seq(
                 nir.Inst.Label(entry, Seq.empty),
                 nir.Inst.Let(slot.id, selectSlot, nir.Next.None),
                 nir.Inst.Let(
                   self.id,
+                  nir.Op.Load(clsTy, slot, Some(nir.MemoryOrder.Acquire)),
+                  nir.Next.None
+                ),
+                nir.Inst.Let(
+                  notNull.id,
+                  nir.Op.Comp(nir.Comp.Ine, nir.Rt.Object, self, nir.Val.Null),
+                  nir.Next.None
+                ),
+                nir.Inst.If(notNull, nir.Next(checkTag), nir.Next(slow)),
+                nir.Inst.Label(checkTag, Seq.empty),
+                nir.Inst.Let(
+                  asLong.id,
+                  nir.Op.Conv(nir.Conv.Ptrtoint, nir.Type.Long, self),
+                  nir.Next.None
+                ),
+                nir.Inst.Let(
+                  tagBit.id,
+                  nir.Op.Bin(nir.Bin.And, nir.Type.Long, asLong, nir.Val.Long(1L)),
+                  nir.Next.None
+                ),
+                nir.Inst.Let(
+                  untagged.id,
+                  nir.Op.Comp(nir.Comp.Ieq, nir.Type.Long, tagBit, nir.Val.Long(0L)),
+                  nir.Next.None
+                ),
+                nir.Inst.If(untagged, nir.Next(checkRtti), nir.Next(slow)),
+                nir.Inst.Label(checkRtti, Seq.empty),
+                nir.Inst.Let(
+                  selfPtr.id,
+                  nir.Op.Conv(nir.Conv.Bitcast, nir.Type.Ptr, self),
+                  nir.Next.None
+                ),
+                nir.Inst.Let(selfRtti.id, nir.Op.Load(nir.Type.Ptr, selfPtr), nir.Next.None),
+                nir.Inst.Let(
+                  rttiOk.id,
+                  nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, selfRtti, rtti),
+                  nir.Next.None
+                ),
+                nir.Inst.If(rttiOk, nir.Next(existing), nir.Next(slow)),
+                nir.Inst.Label(existing, Seq.empty),
+                nir.Inst.Ret(self),
+                nir.Inst.Label(slow, Seq.empty),
+                nir.Inst.Let(
+                  loaded.id,
                   nir.Op.Call(
                     LoadModuleSig,
                     LoadModule,
@@ -362,7 +423,7 @@ private[codegen] object Generate {
                   ),
                   nir.Next.None
                 ),
-                nir.Inst.Ret(self)
+                nir.Inst.Ret(loaded)
               )
             }
 
