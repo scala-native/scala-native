@@ -234,21 +234,23 @@ private[scalanative] object Lower {
       // to protect again, and call into C only when it is non-zero. Emitted
       // after the stack slots so that their allocas stay in the entry block.
       if (shouldGenerateStackOverflowChecks(defn)) {
-        implicit val pos: nir.SourcePosition = defn.pos
-        implicit val scopeId: nir.ScopeId = nir.ScopeId.TopLevel
-        ScopedVar.scoped(unwindHandler := getUnwindHandler(nir.Next.None)(defn.pos)) {
+        // Explicit position and scope: an implicit ScopeId here would be
+        // ambiguous with `lastScopeId` below on Scala 2.
+        val pos = defn.pos
+        val scopeId = nir.ScopeId.TopLevel
+        ScopedVar.scoped(unwindHandler := getUnwindHandler(nir.Next.None)(pos)) {
           val pendingCount = buf.let(
             nir.Op.Load(nir.Type.Int, StackOverflowPendingCount, Some(nir.MemoryOrder.Monotonic)),
             nir.Next.None
-          )
-          val isPending = buf.comp(nir.Comp.Ine, nir.Type.Int, pendingCount, nir.Val.Int(0), nir.Next.None)
+          )(pos, scopeId)
+          val isPending = buf.comp(nir.Comp.Ine, nir.Type.Int, pendingCount, nir.Val.Int(0), nir.Next.None)(pos, scopeId)
           val pendingL = fresh()
           val continueL = fresh()
-          buf.branch(isPending, nir.Next(pendingL), nir.Next(continueL))
-          buf.label(pendingL)
-          buf.call(CheckStackOverflowGuardsSig, CheckStackOverflowGuards, Nil, unwind)
-          buf.jump(nir.Next(continueL))
-          buf.label(continueL)
+          buf.branch(isPending, nir.Next(pendingL), nir.Next(continueL))(pos)
+          buf.label(pendingL)(pos)
+          buf.call(CheckStackOverflowGuardsSig, CheckStackOverflowGuards, Nil, unwind)(pos, scopeId)
+          buf.jump(nir.Next(continueL))(pos)
+          buf.label(continueL)(pos)
         }
       }
 
