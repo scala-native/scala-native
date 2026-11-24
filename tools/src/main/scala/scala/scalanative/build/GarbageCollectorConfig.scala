@@ -869,7 +869,6 @@ object GarbageCollectorConfig {
       define = None,
       supportedBy = Set(GC.immix),
       default = Some(false),
-      legacyDefine = Some("SCALANATIVE_GC_STICKY"),
       get = _.generational,
       set = (c, v) => edit(c)(_.copy(generational = v)),
       parse = parseBoolean,

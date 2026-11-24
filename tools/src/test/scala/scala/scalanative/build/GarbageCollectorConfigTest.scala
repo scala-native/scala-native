@@ -455,7 +455,9 @@ class GarbageCollectorConfigTest {
     assertEquals(None, default.values.oldGenerationGrowth)
     assertFalse(default.defines.exists(_.contains("WRITE_BARRIER")))
     assertFalse(default.defines.exists(_.contains("STICKY")))
-    assertFalse(config(GC.immix)(identity).useGCWriteBarrier)
+    // Config reads the environment of the build, unlike resolve
+    if (!sys.env.contains("SCALANATIVE_GC_GENERATIONAL"))
+      assertFalse(config(GC.immix)(identity).useGCWriteBarrier)
 
     // Enables the write barrier and the defaults of its own settings
     val enabled = resolve(GC.immix)(_.withGenerational(true))
@@ -502,7 +504,7 @@ class GarbageCollectorConfigTest {
       assertTrue(config(gc, barrier)(identity).useGCWriteBarrier)
     assertFalse(config(GC.boehm, barrier)(identity).useGCWriteBarrier)
 
-    // Environment of the build and the defines used before
+    // Environment of the build
     val fromEnv = resolve(
       GC.immix,
       env = Map(
@@ -513,12 +515,6 @@ class GarbageCollectorConfigTest {
     assertValid(fromEnv)
     assertEquals(Some(true), fromEnv.values.generational)
     assertEquals(Some(3.0), fromEnv.values.oldGenerationGrowth)
-    val legacy = Seq("-DSCALANATIVE_GC_STICKY")
-    assertEquals(
-      Some(true),
-      resolve(GC.immix, compileOptions = legacy)(identity).values.generational
-    )
-    assertTrue(config(GC.immix, legacy)(identity).useGCWriteBarrier)
   }
 
   @Test def allIssuesAreReported(): Unit = {
