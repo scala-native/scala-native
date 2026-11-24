@@ -17,7 +17,7 @@ import scala.scalanative.windows.HandleApi._
 import scala.scalanative.windows.HandleApiExt._
 import scala.scalanative.windows.winnt.AccessRights._
 import scala.scalanative.windows.{
-  ConsoleApiExt, IoApi, ProcessThreadsApi, ProcessThreadsApiExt, SynchApi
+  ConsoleApiExt, IoApiSet, ProcessThreadsApi, ProcessThreadsApiExt, SynchApi
 }
 
 final class FileDescriptor private[java] (
@@ -39,10 +39,8 @@ final class FileDescriptor private[java] (
   private[java] def this(fh: ObjectHandle, readOnly: Boolean) =
     this(AtomicObjectHandle(fh), readOnly)
 
-  /* In-flight syscalls (low bits) plus the Closing bit. The OS handle is
-   * closed once Closing is set and the count drops to zero, so no syscall
-   * ever runs on a released fd number.
-   */
+  // Syscalls in flight (low bits) and the Closing bit; the OS handle closes
+  // once Closing is set and nothing is in flight.
   private val leases = new AtomicInteger(0)
   @volatile private var afterClose: () => Unit = null
 
@@ -122,7 +120,7 @@ final class FileDescriptor private[java] (
     var prev = leases.get()
     var won = false
     while (!won && (prev & Closing) == 0) {
-      afterClose = after // only the first close() runs its action
+      afterClose = after // before the CAS: a release() may close right after it
       won = leases.compareAndSet(prev, prev | Closing)
       if (!won) prev = leases.get()
     }
@@ -219,7 +217,7 @@ final class FileDescriptor private[java] (
   }
 
   /** Windows: marks the current thread as blocked in channel I/O. */
-  private[java] def registerBlocked(): Unit = synchronized {
+  private[java] def registerBlocked(): Unit = if (isWindows) synchronized {
     if (blockedThreads == null) blockedThreads = new Array[Int](4)
     else if (blockedCount == blockedThreads.length)
       blockedThreads = java.util.Arrays.copyOf(blockedThreads, blockedCount * 2)
@@ -227,7 +225,7 @@ final class FileDescriptor private[java] (
     blockedCount += 1
   }
 
-  private[java] def deregisterBlocked(): Unit = synchronized {
+  private[java] def deregisterBlocked(): Unit = if (isWindows) synchronized {
     val id = currentThreadId()
     var i = 0
     while (i < blockedCount && blockedThreads(i) != id) i += 1
@@ -245,37 +243,34 @@ final class FileDescriptor private[java] (
       if (wakeWrite >= 0) signalWakeFd()
     }
     else if (isMultithreadingEnabled) {
-      /* A thread may be just about to start its call, so cancelling once
-       * can be too early. Repeat until all have left, within a bound.
-       * Sleep, unlike wait(), ignores the closing thread's interrupt status.
+      /* A registered thread may not have entered its call yet, so keep
+       * cancelling until all have left, within CancelTimeoutNanos.
+       * Sleep, unlike wait(), ignores our interrupt status.
        */
       val deadline = System.nanoTime() + CancelTimeoutNanos
       while (cancelBlocked() && System.nanoTime() < deadline)
         SynchApi.Sleep(1.toUInt)
     }
 
-  // Windows: cancels the I/O of registered threads; false if there are none.
-  private def cancelBlocked(): Boolean = {
-    val ids = synchronized {
-      if (blockedCount == 0) null
-      else java.util.Arrays.copyOf(blockedThreads, blockedCount)
-    }
-    if (ids != null) {
-      var i = 0
-      while (i < ids.length) {
-        val thread = ProcessThreadsApi.OpenThread(
-          ProcessThreadsApiExt.THREAD_TERMINATE,
-          false,
-          ids(i).toUInt
-        )
-        if (thread != null) {
-          IoApi.CancelSynchronousIo(thread)
-          CloseHandle(thread)
-        }
-        i += 1
+  /* Windows: cancels the I/O of registered threads; false if there are none.
+   * Under the lock, so a cancel only reaches a thread still registered.
+   */
+  private def cancelBlocked(): Boolean = synchronized {
+    var i = 0
+    while (i < blockedCount) {
+      // CancelSynchronousIo needs THREAD_TERMINATE.
+      val thread = ProcessThreadsApi.OpenThread(
+        ProcessThreadsApiExt.THREAD_TERMINATE,
+        false,
+        blockedThreads(i).toUInt
+      )
+      if (thread != null) {
+        IoApiSet.CancelSynchronousIo(thread)
+        CloseHandle(thread)
       }
+      i += 1
     }
-    ids != null
+    blockedCount > 0
   }
 }
 
@@ -283,7 +278,7 @@ object FileDescriptor {
   private final val Closing = 1 << 30
   private final val CancelTimeoutNanos = 2000000000L
 
-  private[java] final val KindUnknown = 0
+  private final val KindUnknown = 0
   // Regular or disk file: I/O finishes on its own, no waking needed.
   private[java] final val KindRegular = 1
   // Unix, private description: O_NONBLOCK and poll with the wake pipe.

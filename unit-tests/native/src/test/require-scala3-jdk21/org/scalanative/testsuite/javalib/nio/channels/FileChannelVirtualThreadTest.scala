@@ -10,9 +10,7 @@ import org.junit.Test
 
 import scala.scalanative.junit.utils.AssumesHelper.assumeSupportsVirtualThreads
 
-/* Issue #5260 on virtual threads. The JDK does not wake a virtual thread
- * blocked in FileChannel I/O, so these run on Scala Native only.
- */
+// Issue #5260 on virtual threads; native only, as the JDK does not wake them.
 class FileChannelVirtualThreadTest {
   import FileChannelInterruptTest._
 
@@ -27,10 +25,7 @@ class FileChannelVirtualThreadTest {
       val out = new Outcome
       val t = virtual { () =>
         Thread.currentThread().interrupt()
-        try out.result = ch.read(ByteBuffer.allocate(1))
-        catch { case e: Throwable => out.error = e }
-        out.interrupted = Thread.currentThread().isInterrupted()
-        out.finished = true
+        out.capture(ch.read(ByteBuffer.allocate(1)))
       }
       t.join(JoinMillis)
       assertThrew(classOf[ClosedByInterruptException], out)
@@ -41,59 +36,16 @@ class FileChannelVirtualThreadTest {
 
   @Test def closeWakesBlockedRead(): Unit = {
     assumeSupportsVirtualThreads()
-    assumeFifos()
-    withTemporaryDirectory { dir =>
-      val fifo = mkfifo(dir)
-      val ch = FileChannel.open(fifo, READ, WRITE)
-      val out = blocked(
-        ch.read(ByteBuffer.allocate(1)),
-        _ => ch.close(),
-        () => feed(fifo),
-        virtual
-      )
-      assertPrompt(out)
-      assertThrew(classOf[AsynchronousCloseException], out)
-    }
+    checkCloseWakesRead(virtual)
   }
 
   @Test def interruptWakesBlockedRead(): Unit = {
     assumeSupportsVirtualThreads()
-    assumeFifos()
-    withTemporaryDirectory { dir =>
-      val fifo = mkfifo(dir)
-      val ch = FileChannel.open(fifo, READ, WRITE)
-      try {
-        val out = blocked(
-          ch.read(ByteBuffer.allocate(1)),
-          _.interrupt(),
-          () => feed(fifo),
-          virtual
-        )
-        assertPrompt(out)
-        assertThrew(classOf[ClosedByInterruptException], out)
-        assertTrue("interrupt status kept", out.interrupted)
-        assertFalse("channel closed", ch.isOpen())
-      } finally ch.close()
-    }
+    checkInterruptWakesRead(virtual)
   }
 
   @Test def interruptWakesBlockedWrite(): Unit = {
     assumeSupportsVirtualThreads()
-    assumeFifos()
-    withTemporaryDirectory { dir =>
-      val fifo = mkfifo(dir)
-      val ch = FileChannel.open(fifo, READ, WRITE)
-      try {
-        val out = blocked(
-          ch.write(ByteBuffer.allocate(1 << 20)),
-          _.interrupt(),
-          () => drain(fifo),
-          virtual
-        )
-        assertPrompt(out)
-        assertThrew(classOf[ClosedByInterruptException], out)
-        assertTrue("interrupt status kept", out.interrupted)
-      } finally ch.close()
-    }
+    checkInterruptWakesWrite(virtual)
   }
 }

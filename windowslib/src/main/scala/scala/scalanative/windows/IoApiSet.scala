@@ -4,9 +4,8 @@ import scala.scalanative.unsafe._
 
 import HandleApi.Handle
 
-// ioapiset.h
 @link("kernel32")
 @extern()
-object IoApi {
+object IoApiSet {
   def CancelSynchronousIo(thread: Handle): Boolean = extern
 }

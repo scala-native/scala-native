@@ -12,6 +12,7 @@ import org.junit.Assert._
 import org.junit.Assume._
 import org.junit.Test
 
+import org.scalanative.testsuite.javalib.io.IoTestHelpers
 import org.scalanative.testsuite.utils.Platform
 
 import scala.scalanative.junit.utils.AssumesHelper._
@@ -21,15 +22,8 @@ object FileChannelInterruptTest {
   final val BlockMillis = 300L
   final val JoinMillis = 5000L
 
-  def withTemporaryDirectory(fn: Path => Unit): Unit = {
-    val dir = Files.createTempDirectory("FileChannelInterruptTest")
-    try fn(dir)
-    finally {
-      val it = Files.list(dir).iterator()
-      while (it.hasNext()) Files.deleteIfExists(it.next())
-      Files.deleteIfExists(dir)
-    }
-  }
+  def withTemporaryDirectory(fn: Path => Unit): Unit =
+    IoTestHelpers.withTemporaryDirectory(dir => fn(dir.toPath()))
 
   def daemon(r: Runnable): Thread = {
     val t = new Thread(r)
@@ -74,6 +68,14 @@ object FileChannelInterruptTest {
     @volatile var interrupted = false
     @volatile var actionMillis = -1L
     @volatile var finished = false
+
+    def capture(op: => Any): Unit = {
+      try result = op
+      catch { case e: Throwable => error = e }
+      interrupted = Thread.currentThread().isInterrupted()
+      finished = true
+    }
+
     override def toString(): String =
       if (!finished) "still blocked"
       else if (error != null) s"threw $error; interrupted=$interrupted"
@@ -94,10 +96,7 @@ object FileChannelInterruptTest {
     val started = new CountDownLatch(1)
     val t = startThread { () =>
       started.countDown()
-      try out.result = op
-      catch { case e: Throwable => out.error = e }
-      out.interrupted = Thread.currentThread().isInterrupted()
-      out.finished = true
+      out.capture(op)
     }
     assertTrue(
       "thread started",
@@ -128,12 +127,12 @@ object FileChannelInterruptTest {
       expected: Class[T],
       out: Outcome
   ): Unit = {
-    assertTrue(s"operation still blocked", out.finished)
+    assertTrue("operation still blocked", out.finished)
     assertTrue(
       s"expected ${expected.getSimpleName()}: $out",
       out.error != null && expected.isInstance(out.error)
     )
-    // The more specific subclass must not be confused with the general one.
+    // ClosedByInterruptException extends AsynchronousCloseException.
     if (expected == classOf[AsynchronousCloseException])
       assertFalse(
         s"unexpected ClosedByInterruptException: $out",
@@ -146,6 +145,72 @@ object FileChannelInterruptTest {
     assumeMultithreadingIsEnabled()
     // mkfifo, printf and cat run as subprocesses.
     assumeSupportsSubprocesses()
+  }
+
+  def assumeFifoTransferSource(): Unit = {
+    assumeFifos()
+    assumeFalse(
+      "JDK < 21 rejects a FIFO source: Illegal seek",
+      Platform.executingInJVMOnLowerThanJDK(21)
+    )
+  }
+
+  // Also run on virtual threads by FileChannelVirtualThreadTest.
+  def checkCloseWakesRead(start: Runnable => Thread): Unit = {
+    assumeFifos()
+    withTemporaryDirectory { dir =>
+      val fifo = mkfifo(dir)
+      val ch = FileChannel.open(fifo, READ, WRITE)
+      val out = blocked(
+        ch.read(ByteBuffer.allocate(1)),
+        _ => ch.close(),
+        () => feed(fifo),
+        start
+      )
+      assertPrompt(out)
+      assertThrew(classOf[AsynchronousCloseException], out)
+      assertFalse("interrupted", out.interrupted)
+    }
+  }
+
+  def checkInterruptWakesRead(start: Runnable => Thread): Unit = {
+    assumeFifos()
+    withTemporaryDirectory { dir =>
+      val fifo = mkfifo(dir)
+      val ch = FileChannel.open(fifo, READ, WRITE)
+      try {
+        val out = blocked(
+          ch.read(ByteBuffer.allocate(1)),
+          _.interrupt(),
+          () => feed(fifo),
+          start
+        )
+        assertPrompt(out)
+        assertThrew(classOf[ClosedByInterruptException], out)
+        assertTrue("interrupt status kept", out.interrupted)
+        assertFalse("channel closed", ch.isOpen())
+      } finally ch.close()
+    }
+  }
+
+  def checkInterruptWakesWrite(start: Runnable => Thread): Unit = {
+    assumeFifos()
+    withTemporaryDirectory { dir =>
+      val fifo = mkfifo(dir)
+      val ch = FileChannel.open(fifo, READ, WRITE)
+      try {
+        val out = blocked(
+          ch.write(ByteBuffer.allocate(1 << 20)),
+          _.interrupt(),
+          () => drain(fifo),
+          start
+        )
+        assertPrompt(out)
+        assertThrew(classOf[ClosedByInterruptException], out)
+        assertTrue("interrupt status kept", out.interrupted)
+        assertFalse("channel closed", ch.isOpen())
+      } finally ch.close()
+    }
   }
 }
 
@@ -179,7 +244,6 @@ class FileChannelInterruptTest {
     ("map", _.map(FileChannel.MapMode.READ_ONLY, 0L, 4L))
   )
 
-  // A pending interrupt closes the channel.
   @Test def interruptFlagSetBeforeCallClosesChannel(): Unit =
     withTemporaryDirectory { dir =>
       val f = dir.resolve("f")
@@ -255,7 +319,6 @@ class FileChannelInterruptTest {
       }
     }
 
-  // Streams ignore interrupts.
   @Test def streamsIgnoreInterruptFlag(): Unit =
     withTemporaryDirectory { dir =>
       val f = dir.resolve("f")
@@ -318,41 +381,10 @@ class FileChannelInterruptTest {
       }
     }
 
-  // Blocked channel operations are woken.
-  @Test def closeWakesBlockedRead(): Unit = {
-    assumeFifos()
-    withTemporaryDirectory { dir =>
-      val fifo = mkfifo(dir)
-      val ch = FileChannel.open(fifo, READ, WRITE)
-      val out = blocked(
-        ch.read(ByteBuffer.allocate(1)),
-        _ => ch.close(),
-        () => feed(fifo)
-      )
-      assertPrompt(out)
-      assertThrew(classOf[AsynchronousCloseException], out)
-      assertFalse("interrupted", out.interrupted)
-    }
-  }
+  @Test def closeWakesBlockedRead(): Unit = checkCloseWakesRead(daemon(_))
 
-  @Test def interruptWakesBlockedRead(): Unit = {
-    assumeFifos()
-    withTemporaryDirectory { dir =>
-      val fifo = mkfifo(dir)
-      val ch = FileChannel.open(fifo, READ, WRITE)
-      try {
-        val out = blocked(
-          ch.read(ByteBuffer.allocate(1)),
-          _.interrupt(),
-          () => feed(fifo)
-        )
-        assertPrompt(out)
-        assertThrew(classOf[ClosedByInterruptException], out)
-        assertTrue("interrupt status kept", out.interrupted)
-        assertFalse("channel closed", ch.isOpen())
-      } finally ch.close()
-    }
-  }
+  @Test def interruptWakesBlockedRead(): Unit =
+    checkInterruptWakesRead(daemon(_))
 
   @Test def closeWakesBlockedWrite(): Unit = {
     assumeFifos()
@@ -366,7 +398,7 @@ class FileChannelInterruptTest {
         () => drain(fifo)
       )
       assertPrompt(out)
-      assertTrue(s"still blocked", out.finished)
+      assertTrue("still blocked", out.finished)
       // A short count or AsynchronousCloseException; both are allowed.
       if (out.error != null)
         assertThrew(classOf[AsynchronousCloseException], out)
@@ -375,31 +407,11 @@ class FileChannelInterruptTest {
     }
   }
 
-  @Test def interruptWakesBlockedWrite(): Unit = {
-    assumeFifos()
-    withTemporaryDirectory { dir =>
-      val fifo = mkfifo(dir)
-      val ch = FileChannel.open(fifo, READ, WRITE)
-      try {
-        val out = blocked(
-          ch.write(ByteBuffer.allocate(1 << 20)),
-          _.interrupt(),
-          () => drain(fifo)
-        )
-        assertPrompt(out)
-        assertThrew(classOf[ClosedByInterruptException], out)
-        assertTrue("interrupt status kept", out.interrupted)
-        assertFalse("channel closed", ch.isOpen())
-      } finally ch.close()
-    }
-  }
+  @Test def interruptWakesBlockedWrite(): Unit =
+    checkInterruptWakesWrite(daemon(_))
 
   @Test def closeWakesTransferFromBlockedSource(): Unit = {
-    assumeFifos()
-    assumeFalse(
-      "JDK 17 rejects a FIFO source: Illegal seek",
-      Platform.executingInJVMOnLowerThanJDK(21)
-    )
+    assumeFifoTransferSource()
     withTemporaryDirectory { dir =>
       val fifo = mkfifo(dir)
       val f = dir.resolve("f")
@@ -419,11 +431,7 @@ class FileChannelInterruptTest {
   }
 
   @Test def interruptWakesTransferFromBlockedSource(): Unit = {
-    assumeFifos()
-    assumeFalse(
-      "JDK 17 rejects a FIFO source: Illegal seek",
-      Platform.executingInJVMOnLowerThanJDK(21)
-    )
+    assumeFifoTransferSource()
     withTemporaryDirectory { dir =>
       val fifo = mkfifo(dir)
       val f = dir.resolve("f")
@@ -480,11 +488,7 @@ class FileChannelInterruptTest {
       val fifo = mkfifo(dir)
       val ch = FileChannel.open(fifo, READ, WRITE)
       val second = new Outcome
-      val t2 = daemon { () =>
-        try second.result = ch.read(ByteBuffer.allocate(1))
-        catch { case e: Throwable => second.error = e }
-        second.finished = true
-      }
+      val t2 = daemon(() => second.capture(ch.read(ByteBuffer.allocate(1))))
       val out = blocked(
         ch.read(ByteBuffer.allocate(1)),
         _ => ch.close(),
@@ -538,7 +542,6 @@ class FileChannelInterruptTest {
     }
   }
 
-  // Closing a stream defers the OS close until its blocked read is done.
   @Test def closeDuringBlockedStreamReadDefersClose(): Unit = {
     assumeFifos()
     withTemporaryDirectory { dir =>
@@ -581,10 +584,7 @@ class FileChannelInterruptTest {
         val out = new Outcome
         val t = daemon { () =>
           val b = ByteBuffer.allocate(4096)
-          try {
-            while ({ b.clear(); ch.read(b, 0L) >= 0 }) ()
-          } catch { case e: Throwable => out.error = e }
-          out.finished = true
+          out.capture(while ({ b.clear(); ch.read(b, 0L) >= 0 }) ())
         }
         Thread.sleep(1)
         ch.close()

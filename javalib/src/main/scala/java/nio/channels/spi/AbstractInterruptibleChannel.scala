@@ -18,9 +18,8 @@ abstract class AbstractInterruptibleChannel protected ()
   // The thread whose interrupt closed this channel.
   @volatile private var interruptedThread: Thread = _
 
-  /* Marks the start of an operation that may block. Thread.interrupt()
-   * closes the channel while the operation runs, and so does an interrupt
-   * that is already pending. Operations do not nest.
+  /* Until end(), Thread.interrupt() closes this channel; a pending interrupt
+   * closes it now. Calls do not nest.
    */
   protected final def begin(): Unit = {
     val thread = Thread.currentThread()
@@ -55,12 +54,12 @@ abstract class AbstractInterruptibleChannel protected ()
     if (!completed && closed) throw new AsynchronousCloseException()
   }
 
-  // Called by Thread.interrupt() while `thread` is between begin() and end().
+  // Closes this channel for an interrupted thread; its end() then throws
+  // ClosedByInterruptException.
   private[java] final def interruptBy(thread: Thread): Unit = synchronized {
     if (!closed) {
       interruptedThread = thread
-      closed = true
-      try implCloseChannel()
+      try close()
       catch { case _: IOException => () }
     }
   }

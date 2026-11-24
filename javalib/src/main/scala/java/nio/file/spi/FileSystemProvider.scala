@@ -37,7 +37,6 @@ abstract class FileSystemProvider protected () {
       if (_options.isEmpty) Array[OpenOption](StandardOpenOption.READ)
       else _options
     Files.newByteChannel(path, options) match {
-      // Streams ignore interrupts.
       case channel: FileChannelImpl => FileChannelImpl.newInputStream(channel)
       case channel                  => Channels.newInputStream(channel)
     }
