@@ -5,6 +5,7 @@ import sbt._
 
 import scala.sys.env
 
+import scala.scalanative.build.{GC, NativeConfig}
 import scala.scalanative.sbtplugin.ScalaNativePlugin
 import scala.scalanative.sbtplugin.ScalaNativePlugin.autoImport._
 import scala.scalanative.sbtplugin.Utilities._
@@ -155,8 +156,25 @@ object MyScalaNativePlugin extends AutoPlugin {
       nativeLinkProfiling := nativeLinkProfilingImpl
         .tag(NativeTags.Link)
         .evaluated
+    },
+    Seq(Compile, Test).flatMap { config =>
+      Seq(nativeLink, nativeLinkReleaseFast, nativeLinkReleaseFull).map {
+        linkKey => config / linkKey / nativeConfig ~= generationalByDefault
+      }
     }
   )
+
+  /* This build uses the experimental generational mode of Immix, to exercise
+   * it. Applied to the config of the link tasks, after the settings of the
+   * projects and of `set`, as the mode exists only for Immix. Opt out with
+   * `withGenerational(false)` or SCALANATIVE_GC_GENERATIONAL=0.
+   */
+  private def generationalByDefault(nc: NativeConfig): NativeConfig =
+    if (nc.gc == GC.immix &&
+        nc.garbageCollectorConfig.generational.isEmpty &&
+        !env.contains("SCALANATIVE_GC_GENERATIONAL"))
+      nc.withGarbageCollectorConfig(_.withGenerational(true))
+    else nc
 }
 
 sealed abstract class OutputType(val name: String) {
