@@ -17,7 +17,7 @@ import scala.scalanative.windows.HandleApi._
 import scala.scalanative.windows.HandleApiExt._
 import scala.scalanative.windows.winnt.AccessRights._
 import scala.scalanative.windows.{
-  ConsoleApiExt, IoApi, ProcessThreadsApi, ProcessThreadsApiExt
+  ConsoleApiExt, IoApi, ProcessThreadsApi, ProcessThreadsApiExt, SynchApi
 }
 
 final class FileDescriptor private[java] (
@@ -222,7 +222,6 @@ final class FileDescriptor private[java] (
       blockedCount -= 1
       blockedThreads(i) = blockedThreads(blockedCount)
     }
-    if (isMultithreadingEnabled) notifyAll()
   }
 
   private def currentThreadId(): Int =
@@ -232,29 +231,35 @@ final class FileDescriptor private[java] (
     if (!isWindows) synchronized {
       if (wakeWrite >= 0) signalWakeFd()
     }
-    else if (isMultithreadingEnabled) synchronized {
+    else if (isMultithreadingEnabled) {
       /* A thread may be just about to start its call, so cancelling once
        * can be too early. Repeat until all have left, within a bound.
+       * Sleep, unlike wait(), ignores the closing thread's interrupt status.
        */
       var rounds = 0
-      while (blockedCount > 0 && rounds < MaxCancelRounds) {
-        var i = 0
-        while (i < blockedCount) {
-          val thread = ProcessThreadsApi.OpenThread(
-            ProcessThreadsApiExt.THREAD_TERMINATE,
-            false,
-            blockedThreads(i).toUInt
-          )
-          if (thread != null) {
-            IoApi.CancelSynchronousIo(thread)
-            CloseHandle(thread)
-          }
-          i += 1
-        }
-        wait(1L)
+      while (cancelBlocked() && rounds < MaxCancelRounds) {
+        SynchApi.Sleep(1.toUInt)
         rounds += 1
       }
     }
+
+  // Windows: cancels the I/O of registered threads; false if there are none.
+  private def cancelBlocked(): Boolean = synchronized {
+    var i = 0
+    while (i < blockedCount) {
+      val thread = ProcessThreadsApi.OpenThread(
+        ProcessThreadsApiExt.THREAD_TERMINATE,
+        false,
+        blockedThreads(i).toUInt
+      )
+      if (thread != null) {
+        IoApi.CancelSynchronousIo(thread)
+        CloseHandle(thread)
+      }
+      i += 1
+    }
+    blockedCount > 0
+  }
 }
 
 object FileDescriptor {

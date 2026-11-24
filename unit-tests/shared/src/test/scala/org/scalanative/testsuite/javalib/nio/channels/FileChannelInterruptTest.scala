@@ -5,8 +5,8 @@ import java.nio.ByteBuffer
 import java.nio.channels._
 import java.nio.file.StandardOpenOption._
 import java.nio.file.{Files, Path, StandardOpenOption}
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 import org.junit.Assert._
 import org.junit.Assume._
@@ -89,12 +89,18 @@ object FileChannelInterruptTest {
       }
   ): Outcome = {
     val out = new Outcome
+    val started = new CountDownLatch(1)
     val t = startThread { () =>
+      started.countDown()
       try out.result = op
       catch { case e: Throwable => out.error = e }
       out.interrupted = Thread.currentThread().isInterrupted()
       out.finished = true
     }
+    assertTrue(
+      "thread started",
+      started.await(JoinMillis, TimeUnit.MILLISECONDS)
+    )
     Thread.sleep(BlockMillis)
     assertFalse(s"operation did not block: $out", out.finished)
     val start = System.nanoTime()
@@ -438,6 +444,33 @@ class FileChannelInterruptTest {
         assertThrew(classOf[ClosedByInterruptException], out)
         assertTrue("interrupt status kept", out.interrupted)
         assertFalse("source closed", src.isOpen())
+        assertFalse("destination closed", dst.isOpen())
+      } finally {
+        dst.close()
+        src.close()
+      }
+    }
+  }
+
+  @Test def interruptWakesTransferToBlockedTarget(): Unit = {
+    assumeFifos()
+    withTemporaryDirectory { dir =>
+      val fifo = mkfifo(dir)
+      val f = dir.resolve("f")
+      Files.write(f, new Array[Byte](1 << 16))
+      val src = FileChannel.open(f, READ)
+      val dst = FileChannel.open(fifo, READ, WRITE)
+      try {
+        val out = blocked(
+          (0 until 64).foreach(_ => src.transferTo(0L, 1L << 16, dst)),
+          _.interrupt(),
+          () => drain(fifo)
+        )
+        assertPrompt(out)
+        assertThrew(classOf[ClosedByInterruptException], out)
+        assertTrue("interrupt status kept", out.interrupted)
+        assertFalse("source closed", src.isOpen())
+        assertFalse("destination closed", dst.isOpen())
       } finally {
         dst.close()
         src.close()

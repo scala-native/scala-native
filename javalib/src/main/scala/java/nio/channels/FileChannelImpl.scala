@@ -674,8 +674,18 @@ private[java] final class FileChannelImpl(
 
   /* transferFrom() and transferTo() lease this channel's fd, and run inside
    * begin()/end(), only for their own steps: waiting on the other channel
-   * must not delay this channel's close().
+   * must not delay this channel's close(). An interrupt that closes the other
+   * channel closes this one too.
    */
+
+  // Runs a step of the other channel in a transfer.
+  private def closeIfInterrupted[T](step: => T): T =
+    try step
+    catch {
+      case e: ClosedByInterruptException =>
+        interruptBy(Thread.currentThread())
+        throw e
+    }
 
   override def transferFrom(
       src: ReadableByteChannel,
@@ -712,7 +722,7 @@ private[java] final class FileChannelImpl(
         buf.limit(nRemaining.toInt)
 
       // Stop at end of stream, or when a nonblocking source has no data.
-      if (src.read(buf) <= 0) {
+      if (closeIfInterrupted(src.read(buf)) <= 0) {
         done = true
       } else {
         buf.flip()
@@ -767,7 +777,7 @@ private[java] final class FileChannelImpl(
         } else {
           buf.flip()
           while (buf.hasRemaining())
-            totalWritten += target.write(buf)
+            totalWritten += closeIfInterrupted(target.write(buf))
         }
       }
 
