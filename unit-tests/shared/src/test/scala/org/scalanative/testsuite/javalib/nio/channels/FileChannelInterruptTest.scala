@@ -394,6 +394,10 @@ class FileChannelInterruptTest {
 
   @Test def closeWakesTransferFromBlockedSource(): Unit = {
     assumeFifos()
+    assumeFalse(
+      "JDK 17 rejects a FIFO source: Illegal seek",
+      Platform.executingInJVMOnLowerThanJDK(21)
+    )
     withTemporaryDirectory { dir =>
       val fifo = mkfifo(dir)
       val f = dir.resolve("f")
@@ -414,6 +418,10 @@ class FileChannelInterruptTest {
 
   @Test def interruptWakesTransferFromBlockedSource(): Unit = {
     assumeFifos()
+    assumeFalse(
+      "JDK 17 rejects a FIFO source: Illegal seek",
+      Platform.executingInJVMOnLowerThanJDK(21)
+    )
     withTemporaryDirectory { dir =>
       val fifo = mkfifo(dir)
       val f = dir.resolve("f")
