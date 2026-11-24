@@ -20,6 +20,9 @@ private[scalanative] object PluginCompat {
   def toFileRef(file: File)(implicit conv: FileConverter): FileRef =
     file
 
+  def toScalacOptionPath(path: NioPath)(implicit conv: FileConverter): String =
+    path.toAbsolutePath().toString()
+
   val sbtVersionBaseSettings = Seq[Setting[_]](
     Keys.crossVersion := ScalaNativeCrossVersion.binary,
     platformDepsCrossVersion := ScalaNativeCrossVersion.binary
