@@ -13,7 +13,7 @@ object ScalaNativeJUnitPlugin extends AutoPlugin {
 
   val ScalaNativeTestPlugin = config("scala-native-test-plugin").hide
 
-  override def projectSettings: Seq[Setting[_]] = Seq(
+  override def projectSettings: Seq[Setting[?]] = Seq(
     /* The `scala-native-test-plugin` configuration adds a plugin only to the `test`
      * configuration. It is a refinement of the `plugin` configuration which adds
      * it to both `compile` and `test`.

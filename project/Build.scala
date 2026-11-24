@@ -445,6 +445,11 @@ object Build {
           (javalib.v2_12 / Compile / scalaSource).value / "java/net/SocketHelpers.scala",
           sourceTests / "platform-specific/java-net-socket/SocketHelpers.scala"
         )
+        Seq("java-io-file-1", "java-io-file-2").foreach { fixture =>
+          val name = "JavaIoFilePermissionCleanup.scala"
+          val platformTests = sourceTests / "platform-specific"
+          copy(platformTests / name, platformTests / fixture / "project" / name)
+        }
         val externalThreads = sourceTests / "platform-specific"
         val runtimeSources = externalThreads / "external-threads-runtime/src"
         copy(

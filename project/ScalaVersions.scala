@@ -51,8 +51,8 @@ object ScalaVersions {
   val sbt10Version: String = "1.12.14"
   val sbt10ScalaVersion: String = scala212
 
-  val sbt2Version: String = "2.0.8"
-  val sbt2ScalaVersion: String = "3.8.4"
+  val sbt2Version: String = "2.1.0"
+  val sbt2ScalaVersion: String = "3.9.0"
 
   val crossSbtVersions = Seq(sbt10Version, sbt2Version)
   val crossSbtScalaVersions = Seq(sbt10ScalaVersion, sbt2ScalaVersion)
