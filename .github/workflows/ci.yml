@@ -25,7 +25,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  CI_SHARE_BUILD_OUTPUTS: ${{ vars.CI_SHARE_BUILD_OUTPUTS }}
+  CI_SHARE_BUILD_OUTPUTS: ${{ vars.CI_SHARE_BUILD_OUTPUTS != 'false' }}
   # Maven Central rate limits CI, used by coursier and scala-cli in jobs without sbt-warmup
   COURSIER_REPOSITORIES: "ivy2Local|https://maven-central.storage-download.googleapis.com/maven2"
 
@@ -118,8 +118,11 @@ jobs:
       - name: Compile all sources
         timeout-minutes: 60
         run: sbt "compile-all ${{ matrix.scala }}" "testInterface${{ env.project-version }}/test"
-      # Scala 2 outputs are used only by the extended Linux and toolchain tests
-      - if: matrix.scala == '3' || needs.plan.outputs.linux == 'extended' || needs.plan.outputs.toolchain == 'extended'
+      # Scala 2 outputs are used only by extended tests
+      - if: >-
+          matrix.scala == '3' || needs.plan.outputs.linux == 'extended' ||
+          needs.plan.outputs.toolchain == 'extended' || needs.plan.outputs.macos == 'extended' ||
+          needs.plan.outputs.windows == 'extended'
         uses: ./.github/actions/save-build-outputs
         with:
           scala-version: ${{ matrix.scala }}

@@ -10,6 +10,7 @@ permissions:
   contents: read
 
 env:
+  CI_SHARE_BUILD_OUTPUTS: ${{ vars.CI_SHARE_BUILD_OUTPUTS != 'false' }}
   SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
 
 jobs:
@@ -25,6 +26,10 @@ jobs:
       - uses: actions/checkout@v7
       - &setup-env
         uses: ./.github/actions/macos-setup-env
+        with:
+          scala-version: "3"
+      - &restore-outputs
+        uses: ./.github/actions/restore-build-outputs
         with:
           scala-version: "3"
       - uses: ./.github/actions/ios-simulator-setup
@@ -54,6 +59,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - *setup-env
+      - *restore-outputs
       - name: Set target
         run: |
           echo "SCALANATIVE_TARGET_TRIPLE=${{ matrix.target }}" >> "$GITHUB_ENV"

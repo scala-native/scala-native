@@ -1,5 +1,5 @@
 name: "Save build outputs"
-description: "Enabled by repository variable CI_SHARE_BUILD_OUTPUTS=true. Upload sbt compilation outputs (JVM classes, NIR) of the gate for reuse in downstream jobs of the same run"
+description: "Enabled unless repository variable CI_SHARE_BUILD_OUTPUTS=false. Upload sbt compilation outputs (JVM classes, NIR) of the gate for reuse in downstream jobs of the same run"
 inputs:
   scala-version:
     description: "Scala binary version of the outputs"

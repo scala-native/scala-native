@@ -10,6 +10,7 @@ permissions:
   contents: read
 
 env:
+  CI_SHARE_BUILD_OUTPUTS: ${{ vars.CI_SHARE_BUILD_OUTPUTS != 'false' }}
   SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
 
 jobs:
@@ -25,6 +26,9 @@ jobs:
     steps: &runtime-steps
       - uses: actions/checkout@v7
       - uses: ./.github/actions/macos-setup-env
+        with:
+          scala-version: ${{ matrix.scala }}
+      - uses: ./.github/actions/restore-build-outputs
         with:
           scala-version: ${{ matrix.scala }}
       - name: Run tests
@@ -77,6 +81,9 @@ jobs:
         with:
           scala-version: ${{ matrix.scala }}
           gc: ${{ matrix.gc }}
+      - uses: ./.github/actions/restore-build-outputs
+        with:
+          scala-version: ${{ matrix.scala }}
       - name: Run tests
         timeout-minutes: 60
         env:
@@ -107,6 +114,9 @@ jobs:
         with:
           scala-version: "3"
           llvm-version: ${{ matrix.llvm }}
+      - uses: ./.github/actions/restore-build-outputs
+        with:
+          scala-version: "3"
       - name: Run tests
         timeout-minutes: 60
         run: sbt "test-runtime-native 3"

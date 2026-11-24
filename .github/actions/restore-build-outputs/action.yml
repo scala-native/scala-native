@@ -1,5 +1,5 @@
 name: "Restore build outputs"
-description: "Enabled by repository variable CI_SHARE_BUILD_OUTPUTS=true. Download sbt compilation outputs produced by the Linux gate job of the same run, used only on Linux. Best effort: sbt compiles anything missing."
+description: "Enabled unless repository variable CI_SHARE_BUILD_OUTPUTS=false. Download sbt compilation outputs produced by the Linux gate job of the same run. Best effort: sbt compiles anything missing."
 inputs:
   scala-version:
     description: "Scala binary version of the outputs"
@@ -7,8 +7,8 @@ inputs:
 runs:
   using: "composite"
   steps:
-    # scalacOptions contain the absolute workspace path, so Zinc recompiles
-    # everything where it differs from the Linux gate's
+    # Outputs are machine independent: NIR does not depend on the target and
+    # sbt stores paths relative to the build root
     - name: Download build outputs
       id: download
       if: env.CI_SHARE_BUILD_OUTPUTS == 'true'
@@ -21,8 +21,9 @@ runs:
       if: steps.download.outcome == 'success'
       continue-on-error: true
       shell: bash
+      # Piped, tar -I differs between GNU tar and bsdtar
       run: |
-        tar -I zstd -xf "$RUNNER_TEMP/sbt-out/sbt-out.tar.zst"
+        zstd -dc "$RUNNER_TEMP/sbt-out/sbt-out.tar.zst" | tar -xf -
         # sbt rewrites generated sources
         chmod -R u+w target/out
         du -sh target/out/*
