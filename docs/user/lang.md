@@ -18,7 +18,9 @@ Scala Native supports parallel multi-threaded programming and assumes
 multi-threaded execution by default. Upon the absence of system threads
 in the linked program, Scala Native can automatically switch to
 single-threaded mode, allowing to get rid of redundant synchronization,
-as the state is never shared between threads.
+as the state is never shared between threads. Threads created by native
+libraries are not detected, see
+[callbacks on native threads](interop.md#callbacks-on-native-threads).
 
 Scala Native tries to follow the Java Memory Model, but by default uses
 more relaxed semantics in some areas. Due to the majority of immutable

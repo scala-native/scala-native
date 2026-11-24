@@ -167,6 +167,14 @@ static int acquireOwnership(ExternalThread *record) {
 #ifndef SCALANATIVE_MULTITHREADING_ENABLED
     lockOwnership();
     while (owner != NULL && owner != record) {
+        /* An executable's main thread owns the runtime until the process
+         * exits, also while it blocks in native code. Waiting would never
+         * end. */
+        if (owner->internal)
+            fatal("a foreign thread, such as a libdispatch worker, called "
+                  "into a single-threaded executable, whose main thread "
+                  "never yields the runtime. Enable multithreading: "
+                  "nativeConfig ~= { _.withMultithreading(true) }");
         if (!waitOwnership()) {
             unlockOwnership();
             return SCALANATIVE_THREAD_RESOURCE_FAILURE;
@@ -437,6 +445,16 @@ static void onThreadExit(void *raw) {
     if (record->depth != 0)
         fatal("abandoned managed scopes");
     if (record->internal || !record->rooted) {
+#ifndef SCALANATIVE_MULTITHREADING_ENABLED
+        /* The record of an executable's main thread identifies the owner of
+         * the runtime for the rest of the process, also once that thread
+         * has exited. */
+        lockOwnership();
+        bool owns = owner == record;
+        unlockOwnership();
+        if (owns)
+            return;
+#endif
         freeRecord(record);
         return;
     }

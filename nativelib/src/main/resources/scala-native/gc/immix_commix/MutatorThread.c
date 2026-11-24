@@ -155,7 +155,10 @@ bool MutatorThread_rebind(word_t **stackBottom, ThreadInfo *info) {
 #endif
 
 void MutatorThread_delete(MutatorThread *self) {
-    MutatorThread_switchState(self, GC_MutatorThreadState_Unmanaged);
+    // An unmanaged thread's published snapshot may be under scan already.
+    if (atomic_load_explicit(&self->state, memory_order_relaxed) !=
+        GC_MutatorThreadState_Unmanaged)
+        MutatorThread_switchState(self, GC_MutatorThreadState_Unmanaged);
     MutatorThreads_remove(self);
 
     assert(currentMutatorThread == self);
