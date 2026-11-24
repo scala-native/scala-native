@@ -1,20 +1,14 @@
 name: Run tests Termux
+# Called from ci.yml, see scripts/ci/plan.scala
 on:
   workflow_call:
-  pull_request:
-  schedule:
-    - cron: "0 2 * * *"
-  workflow_dispatch:
+
 permissions:
   contents: read
-concurrency:
-  group: termux-${{ github.head_ref || github.ref }}-${{ github.event_name }}
-  cancel-in-progress: true
 
 jobs:
   test-runtime:
     name: Test runtime (Termux ARM64, Scala 3)
-    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || github.repository == 'scala-native/scala-native'
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 90
     steps:

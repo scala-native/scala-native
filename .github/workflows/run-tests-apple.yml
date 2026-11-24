@@ -1,0 +1,63 @@
+name: Run tests Apple
+# Apple embedded targets: iOS simulator, tvOS, watchOS.
+# Called from ci.yml, see scripts/ci/plan.scala
+on:
+  workflow_call:
+    inputs:
+      extended: { type: boolean, default: false }
+
+permissions:
+  contents: read
+
+env:
+  SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
+
+jobs:
+  # Builds and runs the tests inside of the iOS simulator.
+  # GC tests: run-tests-gc.yml, static library: sbt plugin Scripted macOS
+  ios-simulator:
+    name: iOS simulator (3, release-fast, commix)
+    runs-on: macos-26
+    env:
+      SCALANATIVE_MODE: release-fast
+      SCALANATIVE_GC: commix
+    steps:
+      - uses: actions/checkout@v7
+      - &setup-env
+        uses: ./.github/actions/macos-setup-env
+        with:
+          scala-version: "3"
+      - uses: ./.github/actions/ios-simulator-setup
+      - name: Run unit tests
+        timeout-minutes: 60
+        run: sbt "tests3/test"
+
+  # There is no way to execute binaries built for physical devices in the CI,
+  # tvOS and watchOS have no simulator launcher yet. Ensure at least that the
+  # runtime and tests can be compiled and linked for these targets.
+  build-apple-platforms:
+    name: Build ${{ matrix.target }}
+    if: inputs.extended
+    runs-on: macos-26
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: arm64-apple-ios16.0
+            sdk: iphoneos
+          - target: arm64-apple-tvos16.0
+            sdk: appletvos
+          - target: arm64-apple-tvos16.0-simulator
+            sdk: appletvsimulator
+          - target: arm64-apple-watchos9.0-simulator
+            sdk: watchsimulator
+    steps:
+      - uses: actions/checkout@v7
+      - *setup-env
+      - name: Set target
+        run: |
+          echo "SCALANATIVE_TARGET_TRIPLE=${{ matrix.target }}" >> "$GITHUB_ENV"
+          echo "SDKROOT=$(xcrun --sdk ${{ matrix.sdk }} --show-sdk-path)" >> "$GITHUB_ENV"
+      - name: Link sandbox and unit tests
+        timeout-minutes: 60
+        run: sbt "sandbox3/nativeLink; tests3/Test/nativeLink"

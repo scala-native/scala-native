@@ -8,12 +8,8 @@ inputs:
     description: "Java version to use in tests"
     default: "25"
   llvm-version:
-    description: "Native ARM64 LLVM release to install."
-    default: "22.1.8"
-outputs:
-  vcpkg-dir:
-    description: "Directory containing installed libraries (arm64-windows-static triplet)"
-    value: ${{ steps.resolve-env.outputs.VcpkgLibs }}
+    description: "LLVM release installed from llvm-project, the runner's preinstalled LLVM when empty"
+    default: ""
 runs:
   using: "composite"
   steps:
@@ -81,10 +77,9 @@ runs:
         VCPKG_DEFAULT_HOST_TRIPLET: arm64-windows
       run: vcpkg install bdwgc zlib --triplet=arm64-windows-static
 
-    # javalib does not link zlib on Windows; pass vcpkg's library explicitly.
-    - name: Link vcpkg zlib
+    - name: Expose libraries to Scala Native builds
       shell: pwsh
       run: |
-        & "${{ github.workspace }}/scripts/ci/windows/export-vcpkg-zlib-link-option.ps1" -LibDir '${{ steps.resolve-env.outputs.VcpkgLibs }}\lib'
+        & "${{ github.workspace }}/scripts/ci/windows/expose-vcpkg-libs.ps1" -VcpkgLibs '${{ steps.resolve-env.outputs.VcpkgLibs }}'
 
     - uses: ./.github/actions/sbt-warmup

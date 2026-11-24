@@ -1,0 +1,144 @@
+name: Run tests sbt plugin
+# sbt plugin scripted tests. Called from ci.yml, see scripts/ci/plan.scala
+on:
+  workflow_call:
+    inputs:
+      extended: { type: boolean, default: false }
+
+permissions:
+  contents: read
+
+jobs:
+  # Artifacts used by the platform-specific scripted tests, the same on every OS
+  publish:
+    name: Publish for scripted (${{ matrix.scala }})
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        scala: ["3"]
+    steps: &publish-steps
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: ${{ matrix.scala }}
+          native-toolchain: false
+      - name: Publish locally
+        timeout-minutes: 45
+        run: sbt "publish-scripted ${{ matrix.scala }} platform-specific/*"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: scripted-ivy-local-${{ matrix.scala }}
+          path: ~/.ivy2/local/org.scala-native
+          if-no-files-found: error
+          retention-days: 3
+
+  publish-extended:
+    name: Publish for scripted (${{ matrix.scala }})
+    if: inputs.extended
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        scala: ["2.12"]
+    steps: *publish-steps
+
+  # Scala 3 tests the sbt 2.x plugin
+  scripted:
+    name: Scripted platform-specific ${{ matrix.os }} (${{ matrix.scala }})
+    needs: publish
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: Linux, runner: ubuntu-24.04, scala: "3" }
+          - { os: macOS, runner: macos-26, scala: "3" }
+          - { os: Windows, runner: windows-2025, scala: "3" }
+    steps: &scripted-steps
+      # Disable autocrlf setting, otherwise scalalib patches might not be possible to apply
+      - name: Setup git config
+        if: runner.os == 'Windows'
+        run: git config --global core.autocrlf false
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/linux-setup-env
+        if: runner.os == 'Linux'
+        with:
+          scala-version: ${{ matrix.scala }}
+      - uses: ./.github/actions/macos-setup-env
+        if: runner.os == 'macOS'
+        with:
+          scala-version: ${{ matrix.scala }}
+          gc: boehm
+          # platform-specific/lld-support needs LLD, ThreadSanitizer crashes with LLVM 20
+          llvm-version: latest
+      # For platform-specific/ios-static-library
+      - uses: ./.github/actions/ios-simulator-setup
+        if: runner.os == 'macOS'
+        with:
+          target-simulator: false
+      - uses: ./.github/actions/windows-setup-env
+        if: runner.os == 'Windows'
+        with:
+          scala-version: ${{ matrix.scala }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: scripted-ivy-local-${{ matrix.scala }}
+          path: ~/.ivy2/local/org.scala-native
+      - name: Test scripted
+        if: runner.os == 'Linux'
+        timeout-minutes: 45
+        env: &linux-scripted-env
+          SCALANATIVE_MODE: release-fast
+          SCALANATIVE_GC: immix
+        run: sbt "run-scripted ${{ matrix.scala }} platform-specific/*"
+      - name: Test scripted
+        if: runner.os == 'macOS'
+        # Debug mode on slower runners
+        timeout-minutes: 75
+        run: sbt "run-scripted ${{ matrix.scala }} platform-specific/*"
+      - name: Test scripted
+        if: runner.os == 'Windows'
+        timeout-minutes: 75
+        # Avoids the boot server's Windows named pipe
+        run: sbt --server "run-scripted ${{ matrix.scala }} platform-specific/*"
+        shell: cmd
+
+  # Scala 2.12 tests the sbt 1.x plugin
+  scripted-extended:
+    name: Scripted platform-specific ${{ matrix.os }} (${{ matrix.scala }})
+    if: inputs.extended
+    needs: publish-extended
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: Linux, runner: ubuntu-24.04, scala: "2.12" }
+          - { os: macOS, runner: macos-26, scala: "2.12" }
+          - { os: Windows, runner: windows-2025, scala: "2.12" }
+    steps: *scripted-steps
+
+  # Tests independent of the OS, publishes the runtime for all Scala versions they use
+  scripted-linux:
+    name: Scripted runtime and build Linux (${{ matrix.scala }})
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        scala: ["3"]
+    steps: &scripted-linux-steps
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: ${{ matrix.scala }}
+      - name: Test scripted
+        timeout-minutes: 90
+        env: *linux-scripted-env
+        run: sbt "test-scripted ${{ matrix.scala }} runtime/* build/*"
+
+  scripted-linux-extended:
+    name: Scripted runtime and build Linux (${{ matrix.scala }})
+    if: inputs.extended
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        scala: ["2.12"]
+    steps: *scripted-linux-steps

@@ -1,0 +1,61 @@
+name: Run tests Toolchain
+# Toolchain tests on the JVM and cross compilation
+# Called from ci.yml, see scripts/ci/plan.scala
+on:
+  workflow_call:
+    inputs:
+      extended: { type: boolean, default: false }
+
+permissions:
+  contents: read
+
+env:
+  CI_SHARE_BUILD_OUTPUTS: ${{ vars.CI_SHARE_BUILD_OUTPUTS }}
+
+jobs:
+  tools-tests:
+    name: Tools tests (${{ matrix.scala }})
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        scala: ["3"]
+    steps: &tools-tests-steps
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: ${{ matrix.scala }}
+      - uses: ./.github/actions/restore-build-outputs
+        with:
+          scala-version: ${{ matrix.scala }}
+      - name: Test tools
+        timeout-minutes: 45
+        run: sbt "test-tools ${{ matrix.scala }}" "toolsBenchmarks${{ env.project-version }}/Jmh/compile"
+
+  tools-tests-scala2:
+    name: Tools tests (${{ matrix.scala }})
+    if: inputs.extended
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: ["2.13", "2.12"]
+    steps: *tools-tests-steps
+
+  cross-compile:
+    name: Cross compile (${{ matrix.scala }})
+    if: inputs.extended
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        scala: ["2.12", "2.13", "3"]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: ${{ matrix.scala }}
+          java-version: 17
+          native-toolchain: false
+      - name: Cross compile compiler plugins and Scala standard library
+        timeout-minutes: 120
+        run: sbt "test-cross-compile ${{ matrix.scala }}"

@@ -7,18 +7,18 @@ inputs:
   java-version:
     description: "Java version to use in tests"
     default: "25"
+  # The image's MSVC STL may require a newer Clang than the preinstalled LLVM
   llvm-version:
-    description: "LLVM version to use"
-    default: "20.1.4"
-outputs:
-  vcpkg-dir:
-    description: "Directory containing installed libraries"
-    value: ${{steps.resolve-env.outputs.VcpkgLibs}}
+    description: "LLVM release installed from llvm-project, the runner's preinstalled LLVM when empty"
+    default: "22.1.8"
 runs:
   using: "composite"
   steps:
     - uses: coursier/cache-action@v8
     - uses: coursier/setup-action@v3
+      # Installs sbt from the mirror, repo1 rate-limits parallel jobs
+      env:
+        COURSIER_REPOSITORIES: "https://maven-central.storage-download.googleapis.com/maven2"
       with:
         jvm: ${{inputs.java-version}}
         apps: sbt
@@ -89,10 +89,9 @@ runs:
       shell: pwsh
       run: vcpkg install bdwgc zlib --triplet=x64-windows-static
 
-    # javalib does not link zlib on Windows; pass vcpkg's library explicitly.
-    - name: Link vcpkg zlib
+    - name: Expose libraries to Scala Native builds
       shell: pwsh
       run: |
-        & "${{ github.workspace }}/scripts/ci/windows/export-vcpkg-zlib-link-option.ps1" -LibDir '${{ steps.resolve-env.outputs.VcpkgLibs }}\lib'
+        & "${{ github.workspace }}/scripts/ci/windows/expose-vcpkg-libs.ps1" -VcpkgLibs '${{ steps.resolve-env.outputs.VcpkgLibs }}'
 
     - uses: ./.github/actions/sbt-warmup

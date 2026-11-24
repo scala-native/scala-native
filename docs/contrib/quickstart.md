@@ -56,17 +56,23 @@ as expected.
 -   `test-scripted <scala-binary-version>`, e.g. `test-scripted 2.12` - run all
     [scripted tests](https://www.scala-sbt.org/1.x/docs/Testing-sbt-plugins.html)
     of the sbt plugin. This takes a while: before running the tests it
-    calls `publishLocal` for Scala 2.12, 2.13 and 3 (with `2.12`), or
-    for Scala 2.13 and 3 (with `3`), because the scripted builds
-    resolve Scala Native from `~/.ivy2/local`.
+    publishes the runtime libraries locally, because the scripted builds
+    resolve Scala Native from `~/.ivy2/local`. It runs `publish-scripted`,
+    then `run-scripted` with the same arguments. Tests are grouped in
+    `scripted-tests/`:
+    -   `platform-specific` - depend on the OS, run on every OS in CI.
+    -   `runtime` - runtime behaviour independent of the OS.
+    -   `build` - sbt plugin and build logic. These also use the runtime
+        for Scala 2.13 and an older Scala 3, which is published only when
+        `build` tests are selected.
     Scala 2.12 tests the plugin with sbt 1.x, Scala 3 with sbt 2.x.
     Other versions are not supported.
 
 -   `test-scripted <scala-binary-version> <test-filter>` - run selected
-    scripted tests, e.g. `test-scripted 2.12 run/hello-world` or
-    `test-scripted 3 run/backtrace`. Test names are
-    `<directory>/<name>` paths under `scripted-tests/`, and `*` can be
-    used as a wildcard, e.g. `run/*`.
+    scripted tests, e.g. `test-scripted 2.12 platform-specific/hello-world` or
+    `test-scripted 3 platform-specific/backtrace`. Test names are
+    `<group>/<name>` paths under `scripted-tests/`, and `*` can be
+    used as a wildcard, e.g. `runtime/*`.
     -   Scripted tests are used when you need to interact with the
         file system, networking, or the build system in a way that
         cannot be done with a unit test.

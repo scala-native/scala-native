@@ -1,9 +1,9 @@
 name: Windows LLVM setup
-description: Install, cache and expose a verified native Windows LLVM toolchain
+description: Install, cache and expose a verified native Windows LLVM toolchain, or expose the runner's preinstalled one
 inputs:
   version:
-    description: LLVM release version, with a pinned checksum in install-llvm.ps1
-    required: true
+    description: LLVM release version, with a pinned checksum in install-llvm.ps1. The runner's preinstalled LLVM when empty
+    default: ""
   architecture:
     description: Native compiler architecture (x64 or arm64)
     default: x64
@@ -20,18 +20,20 @@ runs:
     # action can't resolve step outputs, so it would never save the cache.
     - name: Restore LLVM
       id: cache
+      if: inputs.version != ''
       uses: actions/cache/restore@v5
       with:
         path: ${{ steps.directory.outputs.root }}
         key: llvm-windows-${{ inputs.architecture }}-${{ inputs.version }}-${{ hashFiles('scripts/ci/windows/install-llvm.ps1') }}
 
     - name: Install LLVM
+      if: inputs.version != ''
       shell: pwsh
       run: |
         & "${{ github.workspace }}/scripts/ci/windows/install-llvm.ps1" -Version '${{ inputs.version }}' -Architecture '${{ inputs.architecture }}'
 
     - name: Save LLVM
-      if: steps.cache.outputs.cache-hit != 'true'
+      if: inputs.version != '' && steps.cache.outputs.cache-hit != 'true'
       uses: actions/cache/save@v5
       with:
         path: ${{ steps.directory.outputs.root }}
@@ -41,5 +43,10 @@ runs:
       shell: pwsh
       run: |
         $llvmBin = Join-Path '${{ steps.directory.outputs.root }}' 'bin'
+        $clang = Join-Path $llvmBin 'clang.exe'
+        if (-not (Test-Path -LiteralPath $clang)) {
+          Write-Error "No LLVM in $llvmBin, set the version input to install one"
+        }
         Add-Content -Path $env:GITHUB_ENV -Value "LLVM_BIN=$llvmBin"
         $llvmBin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        & $clang --version

@@ -1,0 +1,39 @@
+name: Nightly report
+# Reports nightly failures as issues, enabled by NIGHTLY_CREATE_ISSUES=true
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    name: Report nightly results
+    if: >
+      github.event.workflow_run.event == 'schedule' &&
+      github.repository == 'scala-native/scala-native' &&
+      vars.NIGHTLY_CREATE_ISSUES == 'true'
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+      actions: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            scripts/ci
+            .github/actions/ci-script
+      - name: Report
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+        uses: ./.github/actions/ci-script
+        with:
+          script: nightly-report.scala

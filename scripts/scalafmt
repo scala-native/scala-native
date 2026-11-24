@@ -8,7 +8,10 @@ COURSIER="$HERE/.coursier"
 SCALAFMT="$HERE/.scalafmt-$VERSION"
 CHECK_MODIFIED_ONLY=${CHECK_MODIFIED_ONLY:-false}
 
-if [ ! -f $COURSIER ]; then
+# Prefer an installed coursier, it honours COURSIER_REPOSITORIES
+if command -v cs >/dev/null; then
+  COURSIER="$(command -v cs)"
+elif [ ! -f $COURSIER ]; then
   curl -L -o $COURSIER https://git.io/coursier-cli
   chmod +x $COURSIER
 fi

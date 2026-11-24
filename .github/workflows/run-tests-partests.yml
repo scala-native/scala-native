@@ -1,0 +1,51 @@
+name: Run tests partests
+# Scala 2 partests. Called from ci.yml, see scripts/ci/plan.scala
+on:
+  workflow_call:
+    inputs:
+      extended: { type: boolean, default: false }
+
+permissions:
+  contents: read
+
+jobs:
+  # Disabled tests list and a single test of each kind
+  smoketest:
+    name: Partests infrastructure (2.13)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: "2.13"
+      # Make sure that Scala partest denylisted tests contain only valid test names
+      - uses: VirtusLab/scala-cli-setup@v1.19
+      - name: Check partest disabled tests list
+        run: |
+          sbt "scalaPartest2_13/fetchScalaSource"
+          scala-cli scripts/partest-check-files.scala
+      # scala-cli-setup can override default java version
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: "2.13"
+      - name: Test partests infrastructure
+        # Covered by the partests job
+        if: ${{ !inputs.extended }}
+        timeout-minutes: 45
+        run: >
+          sbt "-J-Xmx3G"
+          "scalaPartestTests2_13/testOnly -- --showDiff neg/abstract.scala pos/abstract.scala run/Course-2002-01.scala"
+
+  # Running all partests takes ~4h
+  partests:
+    name: Partests (2.13)
+    if: inputs.extended
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/linux-setup-env
+        with:
+          scala-version: "2.13"
+      - name: Run all of partests
+        timeout-minutes: 300
+        run: sbt "-J-Xmx3G" "scalaPartestTests2_13/testOnly -- --showDiff"

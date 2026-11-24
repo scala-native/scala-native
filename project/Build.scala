@@ -32,14 +32,19 @@ object Build {
   lazy val compilerPlugins: List[MultiScalaProject] =  List(nscPlugin, junitPlugin)
   lazy val sbtPlugins: List[MultiScalaProject] = List(sbtScalaNative)
   lazy val noCrossProjects: List[Project] = List(javalibintf)
-  lazy val publishedMultiScalaProjects = compilerPlugins ++ sbtPlugins ++ List(
-    nir, util, tools,
-    nirJVM, utilJVM, toolsJVM,
+  // Libraries used by Scala Native applications
+  lazy val runtimeMultiScalaProjects = List(
     nativelib, clib, posixlib, windowslib,
     auxlib, javalib, scalalib, scala3lib,
-    testInterface, testInterfaceSbtDefs, testRunner,
+    testInterface, testInterfaceSbtDefs,
     junitRuntime
   )
+  lazy val publishedMultiScalaProjects =
+    compilerPlugins ++ sbtPlugins ++ runtimeMultiScalaProjects ++ List(
+      nir, util, tools,
+      nirJVM, utilJVM, toolsJVM,
+      testRunner
+    )
   lazy val testMultiScalaProjects = List(
       javalibExtDummies,
       testingCompiler,
@@ -408,10 +413,7 @@ object Build {
     "sbtScalaNative",
     base = Some(file("sbt-scala-native")),
     crossVersions = Some(
-      Map(
-        "2.12" -> Seq(ScalaVersions.sbt10ScalaVersion),
-        "3" -> Seq(ScalaVersions.sbt2ScalaVersion)
-      )
+      ScalaVersions.sbtScalaVersions.map { case (k, v) => k -> Seq(v) }
     )
   )
     .enablePlugins(ScriptedPlugin)
@@ -1319,9 +1321,10 @@ object Build {
                 buildInfoOptions += BuildInfoOption.PackagePrivate
               )
             case Test =>
+              // Keys may depend on the native libraries, compiling the main sources must not evaluate them
               Def.settings(
-                (Test / managedSources) ++= (Compile / buildInfo).value,
-                (Compile / managedSources) --= (Compile / buildInfo).value
+                BuildInfoPlugin.buildInfoScopedSettings(Test),
+                Compile / buildInfo := Def.uncached(Seq.empty[File])
               )
           }
         )
