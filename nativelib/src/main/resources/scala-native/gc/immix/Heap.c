@@ -245,12 +245,12 @@ static bool Heap_overheadLimitReached(Heap *heap, uint64_t start_ns,
 
 /**
  * Marks and sweeps. A full collection traces the whole heap; a minor one
- * (Sticky Immix only) traces and frees only young objects. Records when the
- * weak reference and sweep phases start, if asked.
+ * (Sticky Immix only) traces and frees only young objects. Adds the time
+ * spent marking and processing references to the totals, if asked.
  */
 static void Heap_traceAndSweep(Heap *heap, Stack *stack, bool full,
-                               uint64_t *nullifyStartNs,
-                               uint64_t *sweepStartNs) {
+                               uint64_t *markNs, uint64_t *nullifyNs) {
+    uint64_t startNs = markNs != NULL ? Time_current_nanos() : 0;
 #ifdef SCALANATIVE_GC_WRITE_BARRIER_VERIFY
     WriteBarrier_VerifyBeforeCollection();
 #endif
@@ -265,11 +265,12 @@ static void Heap_traceAndSweep(Heap *heap, Stack *stack, bool full,
     Marker_MarkRoots(heap, stack, !full);
     if (full)
         GCHooks_markCompleted();
-    if (nullifyStartNs != NULL)
-        *nullifyStartNs = Time_current_nanos();
+    uint64_t nullifyStartNs = markNs != NULL ? Time_current_nanos() : 0;
     WeakReferences_Nullify();
-    if (sweepStartNs != NULL)
-        *sweepStartNs = Time_current_nanos();
+    if (markNs != NULL) {
+        *markNs += nullifyStartNs - startNs;
+        *nullifyNs += Time_current_nanos() - nullifyStartNs;
+    }
     Heap_Recycle(heap, full);
 #ifdef SCALANATIVE_GC_STICKY
     Generations_EndCollection(heap, full);
@@ -295,7 +296,7 @@ static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
     MutatorThread_switchState(currentMutatorThread,
                               GC_MutatorThreadState_Unmanaged);
 #endif
-    uint64_t start_ns, nullify_start_ns = 0, sweep_start_ns = 0, end_ns;
+    uint64_t start_ns, mark_ns = 0, nullify_ns = 0, end_ns;
     Stats *stats = heap->stats;
     bool full = true;
 #ifdef SCALANATIVE_GC_STICKY
@@ -311,9 +312,8 @@ static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
     References_StartCollection(clearSoftReferences);
     heap->collectionRequestNs = request_ns;
     heap->explicitCollection = allocationSize == 0;
-    Heap_traceAndSweep(heap, stack, full,
-                       stats != NULL ? &nullify_start_ns : NULL,
-                       stats != NULL ? &sweep_start_ns : NULL);
+    Heap_traceAndSweep(heap, stack, full, stats != NULL ? &mark_ns : NULL,
+                       &nullify_ns);
     bool available = true;
     // An explicit collection is not an allocation that could not proceed: it
     // ends any run of qualifying recovery collections, so that space it frees
@@ -336,7 +336,8 @@ static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
                          allocationSize);
             full = true;
             kind = STATS_COLLECTION_MINOR_THEN_FULL;
-            Heap_traceAndSweep(heap, stack, true, NULL, NULL);
+            Heap_traceAndSweep(heap, stack, true,
+                               stats != NULL ? &mark_ns : NULL, &nullify_ns);
             lowYield = Heap_lowYield(heap);
             available = Heap_reserveAllocation(allocationSize);
         }
@@ -366,8 +367,10 @@ static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
     heap->lastCollectionEndNs = end_ns;
     jmx_stats_record_collection(start_ns, end_ns);
     if (stats != NULL) {
-        Stats_RecordCollection(stats, request_ns, start_ns, nullify_start_ns,
-                               sweep_start_ns, end_ns, kind);
+        // The phases of a minor collection followed by a full one add up;
+        // the rest of the pause counts as sweeping.
+        Stats_RecordCollection(stats, request_ns, start_ns, start_ns + mark_ns,
+                               start_ns + mark_ns + nullify_ns, end_ns, kind);
     }
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
     Synchronizer_release();
