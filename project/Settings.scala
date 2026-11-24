@@ -863,12 +863,16 @@ object Settings {
       ),
       // Create nir.SourceFile relative to Scala sources dir instead of root dir
       // It should use -sourcepath for both, but it fails to compile under Scala 2
+      // Placeholder paths keep the options, and so compilation outputs, machine independent
       scalacOptions ++= Def.uncached {
-        val sourcesPath =
-          fileConverter.value.toPath((fetchScalaSource / artifactPath).value)
-        scalaNativeCompilerOptions(
-          s"positionRelativizationPaths:${crossTarget.value / "patched"};${sourcesPath}"
-        )
+        val patched =
+          fileConverter.value.toVirtualFile(
+            (crossTarget.value / "patched").toPath
+          )
+        Seq(patched.id, (fetchScalaSource / artifactPath).value.id)
+          .flatMap(path =>
+            scalaNativeCompilerOptions(s"positionRelativizationPaths:$path")
+          )
       },
       // Foreign sources, ignore all warnings and don't try to use custom -source version
       scalacOptions --= Seq(
