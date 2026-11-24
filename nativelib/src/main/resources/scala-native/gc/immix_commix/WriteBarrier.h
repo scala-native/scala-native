@@ -10,6 +10,7 @@
 // the fast path. The fast path reads the three variables below; objects
 // outside the heap range (statics, zones, stacks) never take it.
 
+#include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
 #include "shared/GCTypes.h"
@@ -28,6 +29,10 @@
 #define SCALANATIVE_GC_BARRIER_WINDOW                                          \
     ((size_t)1 << SCALANATIVE_GC_BARRIER_WINDOW_BITS)
 #endif
+
+// Generated code compares the ObjectMeta byte with this value.
+static_assert(om_old_unlogged == 0x8,
+              "must match GCBarrierOldUnlogged in Lower");
 
 extern word_t *scalanative_GC_barrier_heap_start;
 // Size in bytes of the reserved heap range, which the bytemap covers.

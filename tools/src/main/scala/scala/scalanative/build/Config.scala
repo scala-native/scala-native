@@ -237,15 +237,20 @@ sealed trait Config {
    */
   private[scalanative] lazy val useGCWriteBarrier =
     compilerConfig.gc match {
-      case GC.Immix =>
-        gcSettings.generational.contains(true) || hasWriteBarrierDefine
+      case GC.Immix  => useGenerationalGC || hasWriteBarrierDefine
       case GC.Commix => hasWriteBarrierDefine
       case _         => false
     }
 
-  private def hasWriteBarrierDefine =
+  /** Experimental: GarbageCollectorConfig.generational, Immix only. */
+  private[scalanative] lazy val useGenerationalGC =
+    compilerConfig.gc == GC.Immix && gcSettings.generational.contains(true)
+
+  private def hasWriteBarrierDefine = {
+    val define = "-DSCALANATIVE_GC_WRITE_BARRIER"
     (compilerConfig.compileOptions ++ compilerConfig.cOptions)
-      .contains("-DSCALANATIVE_GC_WRITE_BARRIER")
+      .exists(option => option == define || option.startsWith(define + "="))
+  }
 
   /** Trap-based safepoints coordinate STW across mutators; they require
    *  multithreaded linking and must stay off when `multithreadingSupport` is
@@ -258,10 +263,7 @@ sealed trait Config {
           /* GarbageCollectorConfig.trapBasedYieldPoints, else the
            * SCALANATIVE_GC_TRAP_BASED_YIELDPOINTS environment variable.
            */
-          GarbageCollectorConfig.Settings
-            .resolve(compilerConfig)
-            .values
-            .trapBasedYieldPoints
+          gcSettings.trapBasedYieldPoints
             .getOrElse(compilerConfig.mode.isInstanceOf[Mode.Release])
         }
       case _ => false

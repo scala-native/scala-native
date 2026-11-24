@@ -25,7 +25,7 @@
 void Generations_Init(void);
 
 // Whether the collection about to start traces the whole heap.
-bool Generations_ShouldCollectFull(Heap *heap, bool explicitCollection);
+bool Generations_ShouldCollectFull(bool explicitCollection);
 
 // Before a full collection: old objects become plain allocated objects
 // again, block and line marks are cleared, and remembered objects are
@@ -34,8 +34,8 @@ bool Generations_ShouldCollectFull(Heap *heap, bool explicitCollection);
 void Generations_PrepareFull(Heap *heap);
 
 // Roots of a minor collection besides stacks, modules and custom roots: the
-// remembered objects of all threads, and the old blob arrays, whose stores
-// the write barrier does not see.
+// remembered objects of all threads, and the old objects that are written
+// without the write barrier.
 void Generations_MarkMinorRoots(Heap *heap, Stack *stack);
 
 // The marker found a young object that refers to others in a way the write

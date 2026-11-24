@@ -91,6 +91,16 @@ static void Marker_scanRange(void *ctx, void *low, void *high) {
                      (word_t **)high, sizeof(word_t));
 }
 
+// A blob array or an object with an object tracer: what it refers to changes
+// without the write barrier, so the generational collection has to know the
+// ones that turn old. Objects marked in this collection were young.
+static inline void Marker_noteUnbarriered(Bytemap *bytemap, Object *object) {
+#ifdef SCALANATIVE_GC_STICKY
+    if (ObjectMeta_IsMarked(Bytemap_Get(bytemap, (word_t *)object)))
+        Generations_NoteUnbarriered(object);
+#endif
+}
+
 void Marker_Mark(Heap *heap, Stack *stack) {
     Bytemap *bytemap = heap->bytemap;
     while (!Stack_IsEmpty(stack)) {
@@ -105,10 +115,7 @@ void Marker_Mark(Heap *heap, Stack *stack) {
                     Marker_markField(heap, stack, fields[i]);
                 }
             } else if (Rtti_ArrayScan(rtti) == RTTI_ARRAY_SCAN_CONSERVATIVE) {
-#ifdef SCALANATIVE_GC_STICKY
-                if (ObjectMeta_IsMarked(Bytemap_Get(bytemap, (word_t *)object)))
-                    Generations_NoteUnbarriered(object);
-#endif
+                Marker_noteUnbarriered(bytemap, object);
                 int8_t *start = (int8_t *)(arrayHeader + 1);
                 size_t bytesLength = BlobArray_ScannableLimit(arrayHeader);
                 size_t wordsLength =
@@ -137,11 +144,7 @@ void Marker_Mark(Heap *heap, Stack *stack) {
             if (UNLIKELY(References_markSoftReferent(Rtti_ReferenceKind(rtti))))
                 Marker_markField(heap, stack, References_softReferent(object));
             if (UNLIKELY(Rtti_HasFlag(rtti, RTTI_FLAG_HAS_OBJECT_TRACER))) {
-#ifdef SCALANATIVE_GC_STICKY
-                // What the tracer scans changes without the write barrier
-                if (ObjectMeta_IsMarked(Bytemap_Get(bytemap, (word_t *)object)))
-                    Generations_NoteUnbarriered(object);
-#endif
+                Marker_noteUnbarriered(bytemap, object);
                 // Not set before the first owner registers it
                 GC_ObjectTracerFn *trace = atomic_load(&ObjectTracer_trace);
                 if (trace != NULL) {

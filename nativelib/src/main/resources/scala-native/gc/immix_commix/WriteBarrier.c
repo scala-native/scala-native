@@ -64,34 +64,37 @@ void RememberedSet_Push(RememberedSet *set, word_t *object) {
 
 void RememberedSet_Clear(RememberedSet *set) { set->size = 0; }
 
-// Called by generated code for an old object that is not remembered yet.
-// Racing stores from two threads may both remember the object; the
-// collector tolerates duplicates.
-WRITE_BARRIER_SLOW_PATH void scalanative_GC_write_barrier_slow(word_t *object) {
-#ifdef SCALANATIVE_GC_BARRIER_WINDOW_BITS
-    // The fast path also sends objects outside the heap here.
-    if ((size_t)((word_t)object - (word_t)scalanative_GC_barrier_heap_start) >=
-        scalanative_GC_barrier_heap_size)
-        return;
-#endif
-    ObjectMeta *meta = Bytemap_Get(heap.bytemap, object);
+// Remembers a heap object that is old and not remembered yet. Racing stores
+// from two threads may both remember the object; the collector tolerates
+// duplicates.
+static inline void WriteBarrier_remember(word_t *object, ObjectMeta *meta) {
     if (!ObjectMeta_IsOldUnlogged(meta))
         return;
     ObjectMeta_SetOldLogged(meta);
     RememberedSet_Push(&currentMutatorThread->rememberedSet, object);
 }
 
+// Called by generated code for an old object that is not remembered yet.
+WRITE_BARRIER_SLOW_PATH void scalanative_GC_write_barrier_slow(word_t *object) {
+#ifdef SCALANATIVE_GC_BARRIER_WINDOW_BITS
+    // The fast path also sends objects outside the heap here.
+    if (!Heap_IsWordInHeap(&heap, object))
+        return;
+#endif
+    WriteBarrier_remember(object, Bytemap_Get(heap.bytemap, object));
+}
+
 // Called by generated code for an old object that is not remembered yet,
 // when the address of the written slot is known.
 WRITE_BARRIER_SLOW_PATH void scalanative_GC_write_barrier_elem(word_t *object,
                                                                word_t *slot) {
-#ifdef SCALANATIVE_GC_STICKY
 #ifdef SCALANATIVE_GC_BARRIER_WINDOW_BITS
-    if ((size_t)((word_t)object - (word_t)scalanative_GC_barrier_heap_start) >=
-        scalanative_GC_barrier_heap_size)
+    if (!Heap_IsWordInHeap(&heap, object))
         return;
 #endif
-    if (ObjectMeta_IsOldUnlogged(Bytemap_Get(heap.bytemap, object)) &&
+    ObjectMeta *meta = Bytemap_Get(heap.bytemap, object);
+#ifdef SCALANATIVE_GC_STICKY
+    if (ObjectMeta_IsOldUnlogged(meta) &&
         WriteBarrier_isCardedArray((Object *)object)) {
         uint8_t *card = &WriteBarrier_cards[WriteBarrier_CardIndex(slot)];
         if (__atomic_load_n(card, __ATOMIC_RELAXED) & WRITE_BARRIER_CARD_DIRTY)
@@ -107,13 +110,14 @@ WRITE_BARRIER_SLOW_PATH void scalanative_GC_write_barrier_elem(word_t *object,
         return;
     }
 #endif
-    scalanative_GC_write_barrier_slow(object);
+    WriteBarrier_remember(object, meta);
 }
 
-// Finds the object containing `slot`, a heap address, or NULL if no object
-// covers it. Only the first allocation granule of an object has a non-free
-// ObjectMeta byte, and a large object starts at a block boundary.
-static word_t *WriteBarrier_containingObject(word_t *slot) {
+// Finds the last object that starts at or before `slot`, a heap address, or
+// NULL if there is none in its block. Only the first allocation granule of an
+// object has a non-free ObjectMeta byte, and a large object starts at a block
+// boundary.
+static word_t *WriteBarrier_objectBefore(word_t *slot) {
     BlockMeta *blockMeta =
         Block_GetBlockMeta(heap.blockMetaStart, heap.heapStart, slot);
     int stride;
@@ -138,9 +142,6 @@ static word_t *WriteBarrier_containingObject(word_t *slot) {
             return NULL;
         meta -= stride;
     }
-    if (ObjectMeta_IsPlaceholder(meta) ||
-        (ubyte_t *)slot >= (ubyte_t *)current + Object_Size((Object *)current))
-        return NULL;
     return current;
 }
 
@@ -148,9 +149,15 @@ static word_t *WriteBarrier_containingObject(word_t *slot) {
 // pointer into the heap range, when the containing object is not known:
 // atomic operations on fields and array elements, and stores through Ptr.
 WRITE_BARRIER_SLOW_PATH void scalanative_GC_write_barrier_slot(word_t *slot) {
-    word_t *object = WriteBarrier_containingObject(slot);
-    if (object != NULL)
-        scalanative_GC_write_barrier_slow(object);
+    word_t *object = WriteBarrier_objectBefore(slot);
+    if (object == NULL)
+        return;
+    // Most stores are into objects that need no remembering: check that
+    // before the size, which tells whether the object covers the slot.
+    ObjectMeta *meta = Bytemap_Get(heap.bytemap, object);
+    if (ObjectMeta_IsOldUnlogged(meta) &&
+        (ubyte_t *)slot < (ubyte_t *)object + Object_Size((Object *)object))
+        WriteBarrier_remember(object, meta);
 }
 
 #ifdef SCALANATIVE_GC_WRITE_BARRIER_VERIFY
@@ -162,16 +169,18 @@ static bool WriteBarrier_isYoung(word_t *field) {
            ObjectMeta_IsAllocated(Bytemap_Get(heap.bytemap, field));
 }
 
-// Counts references from `object` to young objects. Conservatively scanned
-// blob arrays and boxed pointers are not covered by the barrier yet.
-static size_t WriteBarrier_youngReferences(Object *object,
-                                           size_t *firstOffset) {
+// Counts the references of `object` that match, and gives the offset of the
+// first one. Blob arrays and boxed pointers hold raw addresses, which need
+// not be object starts, and are not covered. Elements of a large array on a
+// dirty card are left out if asked: the collector traces those.
+static size_t WriteBarrier_countReferences(Object *object, size_t *firstOffset,
+                                           bool (*matches)(word_t *),
+                                           bool skipDirtyCards) {
     size_t found = 0;
     *firstOffset = 0;
 #ifdef USES_LOCKWORD
     Field_t lock = object->lockWord;
-    if (Field_isInflatedLock(lock) &&
-        WriteBarrier_isYoung(Field_allignedLockRef(lock))) {
+    if (Field_isInflatedLock(lock) && matches(Field_allignedLockRef(lock))) {
         *firstOffset = (int8_t *)&object->lockWord - (int8_t *)object;
         found++;
     }
@@ -182,21 +191,21 @@ static size_t WriteBarrier_youngReferences(Object *object,
             word_t **elements = (word_t **)(array + 1);
             for (size_t i = 0; i < array->length; i++) {
 #ifdef SCALANATIVE_GC_STICKY
-                if (WriteBarrier_isCardedArray(object) &&
+                if (skipDirtyCards && WriteBarrier_isCardedArray(object) &&
                     (WriteBarrier_cards[WriteBarrier_CardIndex(&elements[i])] &
                      WRITE_BARRIER_CARD_DIRTY))
                     continue;
 #endif
-                if (WriteBarrier_isYoung(elements[i]) && found++ == 0)
+                if (matches(elements[i]) && found++ == 0)
                     *firstOffset = (int8_t *)&elements[i] - (int8_t *)object;
             }
         }
     } else {
         int32_t *offsets = object->rtti->refFieldOffsets;
-        for (int i = 0; offsets[i] != -1; i++) {
+        for (int i = 0; offsets[i] != LAST_FIELD_OFFSET; i++) {
             size_t offset = (size_t)offsets[i];
             Field_t field = *(Field_t *)((int8_t *)object + offset);
-            if (WriteBarrier_isYoung(field) && found++ == 0)
+            if (matches(field) && found++ == 0)
                 *firstOffset = offset;
         }
     }
@@ -211,12 +220,13 @@ void WriteBarrier_VerifyBeforeCollection(void) {
     word_t *current = heap.heapStart;
     for (ObjectMeta *meta = start; meta < end;
          meta++, current += ALLOCATION_ALIGNMENT_WORDS) {
-        if (*meta == om_old_logged) {
+        if (ObjectMeta_IsOldLogged(meta)) {
             remembered++;
-        } else if (*meta == om_old_unlogged) {
+        } else if (ObjectMeta_IsOldUnlogged(meta)) {
             Object *object = (Object *)current;
             size_t offset;
-            size_t missed = WriteBarrier_youngReferences(object, &offset);
+            size_t missed = WriteBarrier_countReferences(
+                object, &offset, WriteBarrier_isYoung, true);
             if (missed > 0) {
                 if (missedObjects < 16) {
                     wchar_t *name = Object_nameWString(object);
@@ -243,7 +253,7 @@ void WriteBarrier_VerifyBeforeCollection(void) {
     // Only after all objects are checked: the collector itself does not know
     // old objects.
     for (ObjectMeta *meta = start; meta < end; meta++) {
-        if (*meta == om_old_logged || *meta == om_old_unlogged)
+        if (ObjectMeta_IsOld(meta))
             ObjectMeta_SetAllocated(meta);
     }
     MutatorThreads_foreach(mutatorThreads, node) {
@@ -258,41 +268,6 @@ void WriteBarrier_VerifyBeforeCollection(void) {
 static bool WriteBarrier_isDangling(word_t *field) {
     return Heap_IsWordInHeap(&heap, field) && Bytemap_isPtrAligned(field) &&
            !ObjectMeta_IsOld(Bytemap_Get(heap.bytemap, field));
-}
-
-// Counts references from `object` to objects that are not live. Blob arrays
-// and boxed pointers hold raw addresses, which need not be object starts.
-static size_t WriteBarrier_danglingReferences(Object *object,
-                                              size_t *firstOffset) {
-    size_t found = 0;
-    *firstOffset = 0;
-#ifdef USES_LOCKWORD
-    Field_t lock = object->lockWord;
-    if (Field_isInflatedLock(lock) &&
-        WriteBarrier_isDangling(Field_allignedLockRef(lock))) {
-        *firstOffset = (int8_t *)&object->lockWord - (int8_t *)object;
-        found++;
-    }
-#endif
-    if (Object_IsArray(object)) {
-        if (Rtti_ArrayScan(object->rtti) == RTTI_ARRAY_SCAN_REFERENCES) {
-            ArrayHeader *array = (ArrayHeader *)object;
-            word_t **elements = (word_t **)(array + 1);
-            for (size_t i = 0; i < array->length; i++) {
-                if (WriteBarrier_isDangling(elements[i]) && found++ == 0)
-                    *firstOffset = (int8_t *)&elements[i] - (int8_t *)object;
-            }
-        }
-    } else {
-        int32_t *offsets = object->rtti->refFieldOffsets;
-        for (int i = 0; offsets[i] != -1; i++) {
-            size_t offset = (size_t)offsets[i];
-            Field_t field = *(Field_t *)((int8_t *)object + offset);
-            if (WriteBarrier_isDangling(field) && found++ == 0)
-                *firstOffset = offset;
-        }
-    }
-    return found;
 }
 
 // Every survivor is old after a sticky collection; none may reference an
@@ -317,7 +292,8 @@ void WriteBarrier_VerifyAfterCollection(void) {
         survivors++;
         Object *object = (Object *)current;
         size_t offset;
-        size_t bad = WriteBarrier_danglingReferences(object, &offset);
+        size_t bad = WriteBarrier_countReferences(
+            object, &offset, WriteBarrier_isDangling, false);
         if (bad > 0) {
             if (badObjects < 16) {
                 wchar_t *name = Object_nameWString(object);
@@ -349,7 +325,7 @@ void WriteBarrier_VerifyAfterCollection(void) {
         meta + (heap.heapEnd - heap.heapStart) / ALLOCATION_ALIGNMENT_WORDS;
     for (; meta < end; meta++) {
         if (ObjectMeta_IsAllocated(meta))
-            *meta = om_old_unlogged;
+            ObjectMeta_SetOldUnlogged(meta);
     }
 }
 #endif

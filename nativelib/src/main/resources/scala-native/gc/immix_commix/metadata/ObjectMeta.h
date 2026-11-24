@@ -40,6 +40,10 @@ static inline bool ObjectMeta_IsOldUnlogged(ObjectMeta *metadata) {
     return *metadata == om_old_unlogged;
 }
 
+static inline bool ObjectMeta_IsOldLogged(ObjectMeta *metadata) {
+    return *metadata == om_old_logged;
+}
+
 static inline bool ObjectMeta_IsOld(ObjectMeta *metadata) {
     return *metadata == om_old_unlogged || *metadata == om_old_logged;
 }

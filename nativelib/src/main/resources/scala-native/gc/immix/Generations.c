@@ -24,19 +24,19 @@ static void ObjectList_Push(ObjectList *list, Object *object) {
         size_t capacity = list->capacity == 0 ? 64 : list->capacity * 2;
         Object **items = realloc(list->items, capacity * sizeof(Object *));
         if (items == NULL)
-            Heap_exitWithOutOfMemory("for the old blob arrays");
+            Heap_exitWithOutOfMemory("for the generational collection");
         list->items = items;
         list->capacity = capacity;
     }
     list->items[list->size++] = object;
 }
 
-// Blob arrays are scanned conservatively and their contents are written
-// without the barrier (continuation stack fragments), so every minor
-// collection rescans the old ones. Those found young in a collection join
-// them once it ends.
-static ObjectList oldBlobArrays = {};
-static ObjectList youngBlobArrays = {};
+// Blob arrays and objects with an object tracer refer to other objects in
+// ways the write barrier does not see (raw words, the stacks of suspended
+// continuations), so every minor collection rescans the old ones. Those found
+// young in a collection join them once it ends.
+static ObjectList oldUnbarriered = {};
+static ObjectList youngUnbarriered = {};
 
 // Remembered objects of threads that exited since the last collection.
 static RememberedSet orphanRemembered = {};
@@ -52,8 +52,8 @@ static double oldGrowth = 0.0;
 static uint64_t usedLinesAfterFull = 0;
 
 static bool nextCollectionFull = false;
-// Set once by GC_STICKY_ALWAYS_FULL, for testing the full collection path.
-static int alwaysFull = -1;
+// Set by GC_STICKY_ALWAYS_FULL, for testing the full collection path.
+static bool alwaysFull = false;
 
 void Generations_Init(void) {
     mutex_init(&orphanRememberedLock);
@@ -61,11 +61,10 @@ void Generations_Init(void) {
     oldGrowth = growth != NULL ? atof(growth) : 0.0;
     if (!(oldGrowth > 1.0))
         oldGrowth = SCALANATIVE_GC_CONFIG_OLD_GENERATION_GROWTH;
+    alwaysFull = getenv("GC_STICKY_ALWAYS_FULL") != NULL;
 }
 
-bool Generations_ShouldCollectFull(Heap *heap, bool explicitCollection) {
-    if (alwaysFull < 0)
-        alwaysFull = getenv("GC_STICKY_ALWAYS_FULL") != NULL;
+bool Generations_ShouldCollectFull(bool explicitCollection) {
     return explicitCollection || nextCollectionFull || alwaysFull;
 }
 
@@ -121,7 +120,7 @@ void Generations_PrepareFull(Heap *heap) {
     RememberedSet_Clear(&orphanRemembered);
     WriteBarrier_ClearCards(
         (size_t)((ubyte_t *)heap->heapEnd - (ubyte_t *)heap->heapStart));
-    oldBlobArrays.size = 0;
+    oldUnbarriered.size = 0;
 }
 
 // Traces the dirty cards of a large array the barrier remembered by card.
@@ -172,21 +171,21 @@ void Generations_MarkMinorRoots(Heap *heap, Stack *stack) {
         remembered += node->value->rememberedSet.size;
         Generations_markRemembered(heap, stack, &node->value->rememberedSet);
     }
-    for (size_t i = 0; i < oldBlobArrays.size; i++)
-        Marker_MarkRemembered(heap, stack, oldBlobArrays.items[i]);
+    for (size_t i = 0; i < oldUnbarriered.size; i++)
+        Marker_MarkRemembered(heap, stack, oldUnbarriered.items[i]);
     GC_LOG_DEBUG("Minor collection roots: %zu remembered objects, %zu old "
-                 "blob arrays",
-                 remembered, oldBlobArrays.size);
+                 "objects written without the barrier",
+                 remembered, oldUnbarriered.size);
 }
 
 void Generations_NoteUnbarriered(Object *object) {
-    ObjectList_Push(&youngBlobArrays, object);
+    ObjectList_Push(&youngUnbarriered, object);
 }
 
 void Generations_EndCollection(Heap *heap, bool full) {
-    for (size_t i = 0; i < youngBlobArrays.size; i++)
-        ObjectList_Push(&oldBlobArrays, youngBlobArrays.items[i]);
-    youngBlobArrays.size = 0;
+    for (size_t i = 0; i < youngUnbarriered.size; i++)
+        ObjectList_Push(&oldUnbarriered, youngUnbarriered.items[i]);
+    youngUnbarriered.size = 0;
 
     uint64_t freeLines =
         (uint64_t)atomic_load(&blockAllocator.freeBlockCount) * LINE_COUNT +

@@ -302,7 +302,7 @@ static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
     // Soft referents are cleared to avoid an OutOfMemoryError: the old ones
     // are freed only by a full collection.
     full = clearSoftReferences ||
-           Generations_ShouldCollectFull(heap, allocationSize == 0);
+           Generations_ShouldCollectFull(allocationSize == 0);
 #endif
     StatsCollectionKind kind =
         full ? STATS_COLLECTION_FULL : STATS_COLLECTION_MINOR;

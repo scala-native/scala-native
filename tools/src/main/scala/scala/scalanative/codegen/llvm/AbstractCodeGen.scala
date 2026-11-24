@@ -8,7 +8,7 @@ import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
 
-import scala.scalanative.build.{BuildTarget, Discover}
+import scala.scalanative.build.{BuildTarget, Discover, TargetTriple}
 import scala.scalanative.codegen.llvm.Metadata.conversions._
 import scala.scalanative.codegen.llvm.compat.os.OsCompat
 import scala.scalanative.codegen.{
@@ -251,11 +251,7 @@ private[codegen] abstract class AbstractCodeGen(
   // Scala code runs. Declaring them constant lets LLVM load them once per
   // function instead of after every store.
   private def isWriteBarrierConstant(name: nir.Global): Boolean =
-    platform.useGCWriteBarrier && (
-      name == Lower.GCBarrierHeapStart.name ||
-      name == Lower.GCBarrierHeapSize.name ||
-      name == Lower.GCBarrierBytemap.name
-    )
+    useGCWriteBarrier && Lower.GCBarrierConstants.contains(name)
 
   private[codegen] def genGlobalDefn(
       attrs: nir.Attrs,
@@ -1075,20 +1071,15 @@ private[codegen] abstract class AbstractCodeGen(
   // registers so that the fast path does not make values live across it spill.
   // Must match WRITE_BARRIER_SLOW_PATH in gc/immix_commix/WriteBarrier.h.
   private lazy val writeBarrierPreservesMost: Boolean =
-    !meta.buildConfig.targetsWindows && {
+    useGCWriteBarrier && !targetsWindows && {
       meta.buildConfig.compilerConfig.configuredOrDetectedTriple.arch match {
-        case scala.scalanative.build.TargetTriple.Arch.aarch64 |
-            scala.scalanative.build.TargetTriple.Arch.x86_64 =>
-          true
-        case _ => false
+        case TargetTriple.Arch.aarch64 | TargetTriple.Arch.x86_64 => true
+        case _                                                    => false
       }
     }
 
   private def usesPreserveMost(name: nir.Global): Boolean =
-    writeBarrierPreservesMost &&
-      (name == Lower.GCWriteBarrierSlow.name ||
-      name == Lower.GCWriteBarrierSlot.name ||
-      name == Lower.GCWriteBarrierElem.name)
+    writeBarrierPreservesMost && Lower.GCWriteBarrierSlowPaths.contains(name)
 
   private[codegen] def genCall(
       genBind: () => Unit,

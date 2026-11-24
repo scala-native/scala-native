@@ -895,9 +895,13 @@ private[scalanative] object Lower {
         srcPosition: nir.SourcePosition,
         scopeId: nir.ScopeId
     ): Unit = ptr match {
-      case nir.Val.Local(id, _) if rawPtrBases.contains(id) =>
-        val obj = rawPtrBases(id)
-        if (needsWriteBarrier(nir.Rt.Object, obj, value)) genWriteBarrier(buf, genVal(buf, obj), Some(genVal(buf, ptr)))
+      case nir.Val.Local(id, _) =>
+        rawPtrBases.get(id) match {
+          case Some(obj) =>
+            if (needsWriteBarrier(nir.Rt.Object, obj, value)) genWriteBarrier(buf, genVal(buf, obj), Some(genVal(buf, ptr)))
+          case None =>
+            genSlotWriteBarrier(buf, genVal(buf, ptr))
+        }
       case _ =>
         genSlotWriteBarrier(buf, genVal(buf, ptr))
     }
@@ -1319,7 +1323,7 @@ private[scalanative] object Lower {
         }
 
       ptr match {
-        case nir.Val.Global(global: nir.Global.Member, _) if externName(global).contains(GCWriteBarrierName) =>
+        case nir.Val.Global(GCWriteBarrier.name, _) =>
           // Returns Unit, so genLet defines the result.
           if (platform.useGCWriteBarrier) genWriteBarrier(buf, genVal(buf, args.head))
 
@@ -2751,8 +2755,16 @@ private[scalanative] object Lower {
     GC.member(nir.Sig.Extern("scalanative_GC_write_barrier_elem")),
     nir.Type.Ptr
   )
-  // Calls to it are replaced by the inline write barrier.
-  val GCWriteBarrierName = "scalanative_GC_write_barrier"
+  // GC.writeBarrier: calls to it are replaced by the inline write barrier.
+  val GCWriteBarrier = nir.Val.Global(
+    GC.member(nir.Sig.Extern("scalanative_GC_write_barrier")),
+    nir.Type.Ptr
+  )
+  // Set by the GC once, before any Scala code runs.
+  val GCBarrierConstants: Seq[nir.Global] =
+    Seq(GCBarrierHeapStart.name, GCBarrierHeapSize.name, GCBarrierBytemap.name)
+  val GCWriteBarrierSlowPaths: Seq[nir.Global] =
+    Seq(GCWriteBarrierSlow.name, GCWriteBarrierSlot.name, GCWriteBarrierElem.name)
   // Atomic operations that may store a reference given as the argument at
   // the index into the location given as the first argument.
   val referenceStoringAtomics: Map[String, Int] = Map(
@@ -2864,12 +2876,8 @@ private[scalanative] object Lower {
       buf += RuntimeBlockerEndName
     }
     if (platform.useGCWriteBarrier) {
-      buf += GCBarrierHeapStart.name
-      buf += GCBarrierHeapSize.name
-      buf += GCBarrierBytemap.name
-      buf += GCWriteBarrierSlow.name
-      buf += GCWriteBarrierSlot.name
-      buf += GCWriteBarrierElem.name
+      buf ++= GCBarrierConstants
+      buf ++= GCWriteBarrierSlowPaths
     }
     buf.toSeq
   }
