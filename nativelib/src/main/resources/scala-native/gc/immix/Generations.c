@@ -39,8 +39,8 @@ static ObjectList oldUnbarriered = {};
 static ObjectList youngUnbarriered = {};
 
 // Remembered objects of threads that exited since the last collection.
+// Guarded by the lock of the mutator thread list, which a collection holds.
 static RememberedSet orphanRemembered = {};
-static mutex_t orphanRememberedLock;
 
 // Old objects are freed only by full collections, and young survivors pin the
 // lines they are scattered over, so the occupied part of the heap grows with
@@ -56,7 +56,6 @@ static bool nextCollectionFull = false;
 static bool alwaysFull = false;
 
 void Generations_Init(void) {
-    mutex_init(&orphanRememberedLock);
     char *growth = getenv("GC_OLD_GENERATION_GROWTH");
     oldGrowth = growth != NULL ? atof(growth) : 0.0;
     if (!(oldGrowth > 1.0))
@@ -217,15 +216,11 @@ void Generations_EndCollection(Heap *heap, bool full) {
 }
 
 void Generations_AdoptRememberedSet(RememberedSet *set) {
-    if (set->size == 0)
-        return;
-    // The exiting thread is still managed, so no collection reads the set
-    // meanwhile; the lock orders threads exiting together.
-    mutex_lock(&orphanRememberedLock);
     for (size_t i = 0; i < set->size; i++)
         RememberedSet_Push(&orphanRemembered, set->items[i]);
-    mutex_unlock(&orphanRememberedLock);
     RememberedSet_Clear(set);
 }
+
+void Generations_AfterForkChild(void) { nextCollectionFull = true; }
 
 #endif

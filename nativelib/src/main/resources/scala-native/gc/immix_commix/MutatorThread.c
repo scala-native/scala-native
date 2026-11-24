@@ -161,14 +161,17 @@ bool MutatorThread_rebind(word_t **stackBottom, ThreadInfo *info) {
 #endif
 
 void MutatorThread_delete(MutatorThread *self) {
-#ifdef SCALANATIVE_GC_STICKY
-    // While still managed, so that no collection runs meanwhile.
-    Generations_AdoptRememberedSet(&self->rememberedSet);
-#endif
     // An unmanaged thread's published snapshot may be under scan already.
     if (atomic_load_explicit(&self->state, memory_order_relaxed) !=
         GC_MutatorThreadState_Unmanaged)
         MutatorThread_switchState(self, GC_MutatorThreadState_Unmanaged);
+#ifdef SCALANATIVE_GC_STICKY
+    // A collection holds this lock: it either read the set already, or
+    // finds the entries among the adopted ones.
+    MutatorThreads_lock();
+    Generations_AdoptRememberedSet(&self->rememberedSet);
+    MutatorThreads_unlock();
+#endif
     MutatorThreads_remove(self);
 
     assert(currentMutatorThread == self);
@@ -271,7 +274,11 @@ bool MutatorThread_hasTerminated(MutatorThread *thread) {
 void MutatorThread_reap(MutatorThread *thread) {
     if (thread == NULL)
         return;
-    // Do not capture the caller's stack or hold the Commix list read lock.
+        // Do not capture the caller's stack or hold the Commix list read lock.
+#ifdef SCALANATIVE_GC_STICKY
+    // The collector calls this with the list locked, before it marks.
+    Generations_AdoptRememberedSet(&thread->rememberedSet);
+#endif
     MutatorThreads_remove(thread);
     MutatorThread_dispose(thread);
 }
@@ -298,6 +305,9 @@ void MutatorThreads_afterForkChild(void) {
 #endif
     }
     mutatorThreads = kept;
+#ifdef SCALANATIVE_GC_STICKY
+    Generations_AfterForkChild();
+#endif
 #ifdef SCALANATIVE_GC_COMMIX
     atomic_store_explicit(&mutatorThreadsCount, kept != NULL ? 1 : 0,
                           memory_order_relaxed);
