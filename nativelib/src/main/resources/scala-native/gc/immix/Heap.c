@@ -558,7 +558,7 @@ void Heap_Recycle(Heap *heap, bool full) {
     } else {
         uint64_t freeLines =
             (uint64_t)blockAllocator.freeBlockCount * LINE_COUNT +
-            Block_recycledFreeLines;
+            Block_recycledFreeLines + LargeAllocator_sweptFreeBytes / LINE_SIZE;
         grow = Heap_gcTooFrequent(heap, freeLines);
     }
     if (grow) {
