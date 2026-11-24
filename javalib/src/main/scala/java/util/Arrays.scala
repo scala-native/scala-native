@@ -1099,16 +1099,19 @@ object Arrays extends ArraysJDK9Methods {
     if (a == null) {
       "null"
     } else {
-      var result = "["
       val len = a.length
+      val sb = new java.lang.StringBuilder(
+        Math.min(len.toLong * 3 + 2, 1L << 16).toInt
+      )
+      sb.append('[')
       var i = 0
       while (i != len) {
         if (i != 0)
-          result += ", "
-        result += a(i)
+          sb.append(", ")
+        sb.append(a(i).asInstanceOf[AnyRef])
         i += 1
       }
-      result + "]"
+      sb.append(']').toString()
     }
   }
 
