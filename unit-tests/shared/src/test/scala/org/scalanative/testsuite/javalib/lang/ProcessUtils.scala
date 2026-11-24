@@ -69,13 +69,22 @@ object ProcessUtils {
   }
 
   def processSleep(seconds: Double): ProcessBuilder = {
-    if (isWindows)
-      // Use Powershell Start-Sleep, cmd timeout can cause problems and
-      // does support only integer seconds arguments
+    if (isWindows) {
+      /* `cmd /c timeout` fails with redirected stdin, and `powershell` can
+       * take ~25s just to start on Windows arm64 CI runners. Native
+       * `ping` sends one echo per second, so n echoes take ~(n - 1)s;
+       * sub-second sleeps round to a near-immediate exit.
+       */
+      val echoes = 1L + Math.max(0L, Math.round(seconds))
       new ProcessBuilder(
-        Seq("powershell", "Start-Sleep", "-Seconds", seconds.toString()): _*
+        "ping",
+        "-n",
+        echoes.toString(),
+        "-w",
+        "1000",
+        "127.0.0.1"
       )
-    else processForCommand("sleep", seconds.toString())
+    } else processForCommand("sleep", seconds.toString())
   }
 
   def processForScript(script: Scripts.Entry, args: String*): ProcessBuilder =
