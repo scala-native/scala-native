@@ -940,15 +940,18 @@ private[scalanative] object Lower {
       offset
     }
 
-    /** Whether storing `value` stores a reference, including an object cast to a raw pointer. */
+    /** Whether storing `value` may store a reference. A raw pointer computed at run time may be an object cast to one, in this method or, for a parameter or a
+     *  loaded value, anywhere else; constants are not.
+     */
     private def isReferenceStore(ty: nir.Type, value: nir.Val): Boolean =
-      platform.useGCWriteBarrier && value != nir.Val.Null && (ty match {
-        case _: nir.Type.RefKind => true
-        case _                   =>
-          value match {
-            case nir.Val.Local(id, _) => rawPtrBases.contains(id)
-            case _                    => false
+      platform.useGCWriteBarrier && (value match {
+        case nir.Val.Local(id, _) =>
+          ty match {
+            case _: nir.Type.RefKind | nir.Type.Ptr => true
+            case _                                  => rawPtrBases.contains(id)
           }
+        case nir.Val.Null => false
+        case _            => ty.isInstanceOf[nir.Type.RefKind]
       })
 
     def genFieldOp(
