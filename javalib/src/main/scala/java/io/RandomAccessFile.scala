@@ -62,7 +62,7 @@ class RandomAccessFile private (
     fd
 
   def getFilePointer(): Long =
-    channel.position()
+    channel.streamPosition()
 
   def length(): Long =
     file.length()
@@ -156,10 +156,10 @@ class RandomAccessFile private (
     in.readUTF()
 
   def seek(pos: Long): Unit =
-    channel.position(pos)
+    channel.streamSeek(pos)
 
   def setLength(newLength: Long): Unit =
-    channel.truncate(newLength)
+    channel.streamTruncate(newLength)
 
   override def skipBytes(n: Int): Int =
     if (n <= 0) 0

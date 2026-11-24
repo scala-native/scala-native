@@ -3,6 +3,7 @@ package java.lang
 import java.lang.Thread._
 import java.lang.impl._
 import java.lang.invoke.{MethodHandles, VarHandle}
+import java.nio.channels.spi.AbstractInterruptibleChannel
 import java.time.Duration
 import java.util.concurrent.locks.LockSupport
 import java.util.concurrent.{ThreadFactory, TimeUnit}
@@ -31,6 +32,8 @@ class Thread private[lang] (
   @volatile protected var interruptedState = false
   // Argument of blocker set by LockSupport.park* methods
   @volatile private[java] var parkBlocker: Object = _
+  // Channel operation in progress, see AbstractInterruptibleChannel.begin
+  @volatile private[java] var nioBlocker: AbstractInterruptibleChannel = _
 
   private var unhandledExceptionHandler: Thread.UncaughtExceptionHandler = _
 
@@ -254,6 +257,15 @@ class Thread private[lang] (
     interruptedState = true
     if (isAlive())
       platformCtx.nativeThread.interrupt()
+    interruptNioBlocker()
+  }
+
+  // Closes the channel this thread is blocked on. Call after setting the flag.
+  private[java] final def interruptNioBlocker(): Unit = {
+    // Pairs with the fence in AbstractInterruptibleChannel.begin.
+    atomic_thread_fence(memory_order_seq_cst)
+    val blocker = nioBlocker
+    if (blocker != null) blocker.interruptBy(this)
   }
   private[java] def setInterrupt(): Unit = {
     if (!interruptedState) {

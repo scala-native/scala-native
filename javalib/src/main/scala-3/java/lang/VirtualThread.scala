@@ -431,7 +431,6 @@ private[java] final class VirtualThread(
     if (Thread.currentThread() ne this) {
       interruptLock.synchronized {
         interruptedState = true
-        // Interruptible I/O could forward interrupt to the current blocker (not implemented yet).
         carrierThread match {
           case null    => ()
           case carrier => carrier.setInterrupt()
@@ -452,6 +451,8 @@ private[java] final class VirtualThread(
       carrierThread.setInterrupt()
       setParkPermit(true) // consume parking permit
     }
+    // Outside interruptLock: closing the channel may block briefly.
+    interruptNioBlocker()
   }
 
   // ---------------------------------------------------------------------------

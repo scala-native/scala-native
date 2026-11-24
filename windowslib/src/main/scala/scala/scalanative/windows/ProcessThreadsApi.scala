@@ -54,6 +54,7 @@ object ProcessThreadsApi {
   def GetCurrentProcess(): Handle = extern
   def GetCurrentProcessToken(): Handle = extern
   def GetCurrentThread(): Handle = extern
+  def GetCurrentThreadId(): DWord = extern
   def GetExitCodeProcess(handle: Handle, exitCodePtr: Ptr[DWord]): Boolean =
     extern
 
@@ -69,6 +70,12 @@ object ProcessThreadsApi {
       kernelTime: Ptr[FileTimeStruct],
       userTime: Ptr[FileTimeStruct]
   ): Boolean = extern
+
+  def OpenThread(
+      desiredAccess: DWord,
+      inheritHandle: Boolean,
+      threadId: DWord
+  ): Handle = extern
 
   def OpenThreadToken(
       thread: Handle,
@@ -132,6 +139,9 @@ object ProcessThreadsApiExt {
   final val DETACHED_PROCESS = 0x00000008.toUInt
   final val EXTENDED_STARTUPINFO_PRESENT = 0x00080000.toUInt
   final val INHERIT_PARENT_AFFINITY = 0x00010000.toUInt
+
+  // Thread access rights
+  final val THREAD_TERMINATE = 0x0001.toUInt
 
   // Thread creation flags
   // final val CREATE_SUSPENDED = 0x00000004.toUInt // duplicated with process flag
