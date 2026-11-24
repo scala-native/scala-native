@@ -263,7 +263,7 @@ class Thread private[lang] (
   // Closes the channel this thread is blocked on. Call after setting the flag.
   private[java] final def interruptNioBlocker(): Unit = {
     // Pairs with the fence in AbstractInterruptibleChannel.begin.
-    atomic_thread_fence(memory_order_seq_cst)
+    if (isMultithreadingEnabled) atomic_thread_fence(memory_order_seq_cst)
     val blocker = nioBlocker
     if (blocker != null) blocker.interruptBy(this)
   }

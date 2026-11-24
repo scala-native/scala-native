@@ -14,6 +14,8 @@ import org.junit.Test
 
 import org.scalanative.testsuite.utils.Platform
 
+import scala.scalanative.junit.utils.AssumesHelper._
+
 // Issue #5260: interruptible and asynchronously closeable FileChannel.
 object FileChannelInterruptTest {
   final val BlockMillis = 300L
@@ -29,15 +31,20 @@ object FileChannelInterruptTest {
     }
   }
 
+  def daemon(r: Runnable): Thread = {
+    val t = new Thread(r)
+    t.setDaemon(true)
+    t.start()
+    t
+  }
+
   // Runs body on a fresh thread, so the test thread's interrupt flag stays clear.
   def inThread(body: => Unit): Unit = {
     val failure = new AtomicReference[Throwable]()
-    val t = new Thread(() =>
+    val t = daemon(() =>
       try body
       catch { case e: Throwable => failure.set(e) }
     )
-    t.setDaemon(true)
-    t.start()
     t.join(4 * JoinMillis)
     assertFalse("test body timed out", t.isAlive())
     if (failure.get() != null) throw failure.get()
@@ -81,12 +88,7 @@ object FileChannelInterruptTest {
       op: => Any,
       action: Thread => Unit,
       unblock: () => Process,
-      startThread: Runnable => Thread = { r =>
-        val t = new Thread(r)
-        t.setDaemon(true)
-        t.start()
-        t
-      }
+      startThread: Runnable => Thread = daemon(_)
   ): Outcome = {
     val out = new Outcome
     val started = new CountDownLatch(1)
@@ -104,9 +106,7 @@ object FileChannelInterruptTest {
     Thread.sleep(BlockMillis)
     assertFalse(s"operation did not block: $out", out.finished)
     val start = System.nanoTime()
-    val actor = new Thread(() => action(t))
-    actor.setDaemon(true)
-    actor.start()
+    val actor = daemon(() => action(t))
     actor.join(JoinMillis)
     if (!actor.isAlive())
       out.actionMillis = (System.nanoTime() - start) / 1000000L
@@ -143,58 +143,54 @@ object FileChannelInterruptTest {
 
   def assumeFifos(): Unit = {
     assumeFalse("FIFOs are not available on Windows", Platform.isWindows)
-    assumeTrue("needs threads", Platform.isMultithreadingEnabled)
+    assumeMultithreadingIsEnabled()
+    // mkfifo, printf and cat run as subprocesses.
+    assumeSupportsSubprocesses()
   }
 }
 
 class FileChannelInterruptTest {
   import FileChannelInterruptTest._
 
-  private def opsOnRegularFile(
-      ch: FileChannel
-  ): List[(String, () => Any)] = List(
-    "read(buf)" -> (() => ch.read(ByteBuffer.allocate(4))),
-    "read(buf,pos)" -> (() => ch.read(ByteBuffer.allocate(4), 0L)),
-    "read(bufs)" -> (() => ch.read(Array(ByteBuffer.allocate(4)))),
-    "write(buf)" -> (() => ch.write(ByteBuffer.allocate(4))),
-    "write(buf,pos)" -> (() => ch.write(ByteBuffer.allocate(4), 0L)),
-    "write(bufs)" -> (() => ch.write(Array(ByteBuffer.allocate(4)))),
-    "position()" -> (() => ch.position()),
-    "position(5)" -> (() => ch.position(5L)),
-    "size()" -> (() => ch.size()),
-    "force(true)" -> (() => ch.force(true)),
-    "truncate(50)" -> (() => ch.truncate(50L)),
-    "transferTo" -> (() =>
-      ch.transferTo(
-        0L,
-        4L,
-        Channels.newChannel(new ByteArrayOutputStream())
-      )
+  private val opsOnRegularFile: List[(String, FileChannel => Any)] = List(
+    ("read(buf)", _.read(ByteBuffer.allocate(4))),
+    ("read(buf,pos)", _.read(ByteBuffer.allocate(4), 0L)),
+    ("read(bufs)", _.read(Array(ByteBuffer.allocate(4)))),
+    ("write(buf)", _.write(ByteBuffer.allocate(4))),
+    ("write(buf,pos)", _.write(ByteBuffer.allocate(4), 0L)),
+    ("write(bufs)", _.write(Array(ByteBuffer.allocate(4)))),
+    ("position()", _.position()),
+    ("position(5)", _.position(5L)),
+    ("size()", _.size()),
+    ("force(true)", _.force(true)),
+    ("truncate(50)", _.truncate(50L)),
+    (
+      "transferTo",
+      _.transferTo(0L, 4L, Channels.newChannel(new ByteArrayOutputStream()))
     ),
-    "transferFrom" -> (() =>
-      ch.transferFrom(
+    (
+      "transferFrom",
+      _.transferFrom(
         Channels.newChannel(new ByteArrayInputStream(new Array[Byte](4))),
         0L,
         4L
       )
     ),
-    "map" -> (() => ch.map(FileChannel.MapMode.READ_ONLY, 0L, 4L))
+    ("map", _.map(FileChannel.MapMode.READ_ONLY, 0L, 4L))
   )
 
-  // D1
+  // A pending interrupt closes the channel.
   @Test def interruptFlagSetBeforeCallClosesChannel(): Unit =
     withTemporaryDirectory { dir =>
       val f = dir.resolve("f")
       inThread {
-        val names = opsOnRegularFile(null).map(_._1)
-        for (name <- names) {
+        for ((name, op) <- opsOnRegularFile) {
           Files.write(f, new Array[Byte](100))
           val ch = FileChannel.open(f, READ, WRITE)
           try {
-            val op = opsOnRegularFile(ch).find(_._1 == name).get._2
             Thread.currentThread().interrupt()
             val res =
-              try s"returned ${op()}"
+              try s"returned ${op(ch)}"
               catch { case e: Throwable => s"threw $e" }
             val flag = Thread.interrupted()
             assertTrue(
@@ -204,7 +200,7 @@ class FileChannelInterruptTest {
             assertTrue(s"$name: interrupt status kept", flag)
             assertFalse(s"$name: channel closed", ch.isOpen())
             val again =
-              try { op(); "returned" }
+              try { op(ch); "returned" }
               catch { case e: Throwable => e.getClass().getSimpleName() }
             assertEquals(s"$name: next call", "ClosedChannelException", again)
           } finally {
@@ -259,7 +255,7 @@ class FileChannelInterruptTest {
       }
     }
 
-  // D4
+  // Streams ignore interrupts.
   @Test def streamsIgnoreInterruptFlag(): Unit =
     withTemporaryDirectory { dir =>
       val f = dir.resolve("f")
@@ -322,7 +318,7 @@ class FileChannelInterruptTest {
       }
     }
 
-  // D2
+  // Blocked channel operations are woken.
   @Test def closeWakesBlockedRead(): Unit = {
     assumeFifos()
     withTemporaryDirectory { dir =>
@@ -484,13 +480,11 @@ class FileChannelInterruptTest {
       val fifo = mkfifo(dir)
       val ch = FileChannel.open(fifo, READ, WRITE)
       val second = new Outcome
-      val t2 = new Thread(() => {
+      val t2 = daemon { () =>
         try second.result = ch.read(ByteBuffer.allocate(1))
         catch { case e: Throwable => second.error = e }
         second.finished = true
-      })
-      t2.setDaemon(true)
-      t2.start()
+      }
       val out = blocked(
         ch.read(ByteBuffer.allocate(1)),
         _ => ch.close(),
@@ -528,7 +522,7 @@ class FileChannelInterruptTest {
     }
   }
 
-  // D4: interrupting a stream read neither wakes nor closes it.
+  // Interrupting a stream read neither wakes nor closes it.
   @Test def interruptDoesNotWakeBlockedStreamRead(): Unit = {
     assumeFifos()
     withTemporaryDirectory { dir =>
@@ -544,7 +538,7 @@ class FileChannelInterruptTest {
     }
   }
 
-  // D4b
+  // Closing a stream defers the OS close until its blocked read is done.
   @Test def closeDuringBlockedStreamReadDefersClose(): Unit = {
     assumeFifos()
     withTemporaryDirectory { dir =>
@@ -576,24 +570,22 @@ class FileChannelInterruptTest {
     }
   }
 
-  // D2/D3: no IOException may leak from a race with close().
+  // No IOException may leak from a race with close().
   @Test def closeDuringPositionalReadsOnRegularFile(): Unit = {
-    assumeTrue("needs threads", Platform.isMultithreadingEnabled)
+    assumeMultithreadingIsEnabled()
     withTemporaryDirectory { dir =>
       val f = dir.resolve("big")
       Files.write(f, new Array[Byte](1 << 20))
       for (_ <- 0 until 50) {
         val ch = FileChannel.open(f, READ)
         val out = new Outcome
-        val t = new Thread(() => {
+        val t = daemon { () =>
           val b = ByteBuffer.allocate(4096)
           try {
             while ({ b.clear(); ch.read(b, 0L) >= 0 }) ()
           } catch { case e: Throwable => out.error = e }
           out.finished = true
-        })
-        t.setDaemon(true)
-        t.start()
+        }
         Thread.sleep(1)
         ch.close()
         t.join(JoinMillis)

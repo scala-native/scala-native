@@ -49,10 +49,11 @@ final class FileDescriptor private[java] (
   // Set by FileChannel.open: an O_CLOEXEC fd that no one else shares.
   @volatile private var privateDescription = false
   @volatile private var kindCache = KindUnknown
+  @volatile private var pipeBufCache = 0
   @volatile private var nonBlocking = false
 
   // Unix: pipe that wakes channel operations polling this fd. Guarded by this.
-  private var wakeRead = -1
+  @volatile private var wakeRead = -1
   private var wakeWrite = -1
 
   // Windows: ids of threads in channel I/O on this handle. Guarded by this.
@@ -117,15 +118,15 @@ final class FileDescriptor private[java] (
    *  Channel operations in flight are woken. Stream calls are not; the OS close
    *  waits for them. `after` runs once the OS handle is closed.
    */
-  private[java] def close(after: () => Unit = null): Unit = {
+  private[java] def close(after: () => Unit): Unit = {
     var prev = leases.get()
-    var done = false
-    while (!done && (prev & Closing) == 0) {
-      afterClose = after
-      done = leases.compareAndSet(prev, prev | Closing)
-      if (!done) prev = leases.get()
+    var won = false
+    while (!won && (prev & Closing) == 0) {
+      afterClose = after // only the first close() runs its action
+      won = leases.compareAndSet(prev, prev | Closing)
+      if (!won) prev = leases.get()
     }
-    if (done) {
+    if (won) {
       if (prev == 0) closeNow(deferred = false)
       else wakeBlocked()
     }
@@ -143,12 +144,10 @@ final class FileDescriptor private[java] (
     fileHandle.close()
     val action = afterClose
     afterClose = null
-    if (action != null) {
-      if (!deferred) action()
-      else
-        try action()
-        catch { case _: Exception => () }
-    }
+    // A deferred close has no caller to report to.
+    if (action != null)
+      try action()
+      catch { case _: Exception if deferred => () }
   }
 
   /** Kind of file, see KindRegular. Call with a lease held. */
@@ -171,6 +170,15 @@ final class FileDescriptor private[java] (
       else KindPollFirst
     }
 
+  /** Unix: PIPE_BUF for this fd. Call with a lease held. */
+  private[java] def pipeBuf: Int = {
+    if (pipeBufCache == 0) {
+      val n = unistd.fpathconf(fd, unistd._PC_PIPE_BUF)
+      pipeBufCache = if (n > 0) n.toInt else 512
+    }
+    pipeBufCache
+  }
+
   /** Sets O_NONBLOCK, once. Only for KindNonBlocking. */
   private[java] def enableNonBlocking(): Unit =
     if (!nonBlocking) synchronized {
@@ -184,7 +192,12 @@ final class FileDescriptor private[java] (
     }
 
   /** Unix: read end of the wake pipe, readable once closing has started. */
-  private[java] def wakeFd(): Int = synchronized {
+  private[java] def wakeFd(): Int = {
+    val w = wakeRead
+    if (w >= 0) w else createWakeFd()
+  }
+
+  private def createWakeFd(): Int = synchronized {
     if (wakeRead < 0) {
       val fds = stackalloc[CInt](2)
       if (unistd.pipe(fds) != 0)
@@ -236,35 +249,39 @@ final class FileDescriptor private[java] (
        * can be too early. Repeat until all have left, within a bound.
        * Sleep, unlike wait(), ignores the closing thread's interrupt status.
        */
-      var rounds = 0
-      while (cancelBlocked() && rounds < MaxCancelRounds) {
+      val deadline = System.nanoTime() + CancelTimeoutNanos
+      while (cancelBlocked() && System.nanoTime() < deadline)
         SynchApi.Sleep(1.toUInt)
-        rounds += 1
-      }
     }
 
   // Windows: cancels the I/O of registered threads; false if there are none.
-  private def cancelBlocked(): Boolean = synchronized {
-    var i = 0
-    while (i < blockedCount) {
-      val thread = ProcessThreadsApi.OpenThread(
-        ProcessThreadsApiExt.THREAD_TERMINATE,
-        false,
-        blockedThreads(i).toUInt
-      )
-      if (thread != null) {
-        IoApi.CancelSynchronousIo(thread)
-        CloseHandle(thread)
-      }
-      i += 1
+  private def cancelBlocked(): Boolean = {
+    val ids = synchronized {
+      if (blockedCount == 0) null
+      else java.util.Arrays.copyOf(blockedThreads, blockedCount)
     }
-    blockedCount > 0
+    if (ids != null) {
+      var i = 0
+      while (i < ids.length) {
+        val thread = ProcessThreadsApi.OpenThread(
+          ProcessThreadsApiExt.THREAD_TERMINATE,
+          false,
+          ids(i).toUInt
+        )
+        if (thread != null) {
+          IoApi.CancelSynchronousIo(thread)
+          CloseHandle(thread)
+        }
+        i += 1
+      }
+    }
+    ids != null
   }
 }
 
 object FileDescriptor {
   private final val Closing = 1 << 30
-  private final val MaxCancelRounds = 2000
+  private final val CancelTimeoutNanos = 2000000000L
 
   private[java] final val KindUnknown = 0
   // Regular or disk file: I/O finishes on its own, no waking needed.

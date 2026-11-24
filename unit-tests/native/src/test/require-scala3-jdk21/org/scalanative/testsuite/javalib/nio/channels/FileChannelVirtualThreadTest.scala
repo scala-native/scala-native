@@ -6,10 +6,9 @@ import java.nio.file.Files
 import java.nio.file.StandardOpenOption._
 
 import org.junit.Assert._
-import org.junit.Assume._
 import org.junit.Test
 
-import org.scalanative.testsuite.utils.Platform
+import scala.scalanative.junit.utils.AssumesHelper.assumeSupportsVirtualThreads
 
 /* Issue #5260 on virtual threads. The JDK does not wake a virtual thread
  * blocked in FileChannel I/O, so these run on Scala Native only.
@@ -17,13 +16,10 @@ import org.scalanative.testsuite.utils.Platform
 class FileChannelVirtualThreadTest {
   import FileChannelInterruptTest._
 
-  private def assumeVirtualThreads(): Unit =
-    assumeTrue("virtual threads", Platform.supportsVirtualThreads)
-
   private val virtual: Runnable => Thread = Thread.ofVirtual().start(_)
 
   @Test def interruptFlagSetBeforeCallClosesChannel(): Unit = {
-    assumeVirtualThreads()
+    assumeSupportsVirtualThreads()
     withTemporaryDirectory { dir =>
       val f = dir.resolve("f")
       Files.write(f, new Array[Byte](10))
@@ -44,7 +40,7 @@ class FileChannelVirtualThreadTest {
   }
 
   @Test def closeWakesBlockedRead(): Unit = {
-    assumeVirtualThreads()
+    assumeSupportsVirtualThreads()
     assumeFifos()
     withTemporaryDirectory { dir =>
       val fifo = mkfifo(dir)
@@ -61,7 +57,7 @@ class FileChannelVirtualThreadTest {
   }
 
   @Test def interruptWakesBlockedRead(): Unit = {
-    assumeVirtualThreads()
+    assumeSupportsVirtualThreads()
     assumeFifos()
     withTemporaryDirectory { dir =>
       val fifo = mkfifo(dir)
@@ -82,7 +78,7 @@ class FileChannelVirtualThreadTest {
   }
 
   @Test def interruptWakesBlockedWrite(): Unit = {
-    assumeVirtualThreads()
+    assumeSupportsVirtualThreads()
     assumeFifos()
     withTemporaryDirectory { dir =>
       val fifo = mkfifo(dir)

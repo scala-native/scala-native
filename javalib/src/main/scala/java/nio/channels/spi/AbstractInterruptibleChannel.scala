@@ -8,6 +8,7 @@ import java.nio.channels.{
 
 import scala.scalanative.libc.stdatomic.atomic_thread_fence
 import scala.scalanative.libc.stdatomic.memory_order.memory_order_seq_cst
+import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
 
 abstract class AbstractInterruptibleChannel protected ()
     extends Channel
@@ -25,7 +26,7 @@ abstract class AbstractInterruptibleChannel protected ()
     val thread = Thread.currentThread()
     thread.nioBlocker = this
     // Pairs with the fence in Thread.interruptNioBlocker.
-    atomic_thread_fence(memory_order_seq_cst)
+    if (isMultithreadingEnabled) atomic_thread_fence(memory_order_seq_cst)
     if (thread.isInterrupted()) interruptBy(thread)
   }
 
@@ -47,7 +48,10 @@ abstract class AbstractInterruptibleChannel protected ()
   protected final def end(completed: Boolean): Unit = {
     val thread = Thread.currentThread()
     thread.nioBlocker = null
-    if (interruptedThread eq thread) throw new ClosedByInterruptException()
+    if (interruptedThread eq thread) {
+      interruptedThread = null
+      throw new ClosedByInterruptException()
+    }
     if (!completed && closed) throw new AsynchronousCloseException()
   }
 

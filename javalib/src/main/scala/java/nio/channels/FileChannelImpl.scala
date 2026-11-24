@@ -49,7 +49,9 @@ private[java] final class FileChannelImpl(
     openForWriting: Boolean,
     openForAppending: Boolean = false
 ) extends FileChannel {
-  import FileDescriptor.{KindCancellable, KindNonBlocking, KindPollFirst}
+  import FileDescriptor.{
+    KindCancellable, KindNonBlocking, KindPollFirst, KindRegular
+  }
 
   // Held by operations that use or move the position, or change the size.
   private val positionLock = new ReentrantLock()
@@ -80,15 +82,14 @@ private[java] final class FileChannelImpl(
   @inline private def leased[T](intr: Boolean)(body: => T): T = {
     if (!fd.acquire())
       throw (if (intr) new ClosedChannelException() else streamClosed())
-    try {
-      if (isWindows) {
-        if (intr && fd.kind == KindCancellable) {
-          fd.registerBlocked()
-          try body
-          finally fd.deregisterBlocked()
-        } else body
-      } else body
-    } finally fd.release()
+    // Windows-only calls stay behind isWindows, so Unix links no kernel32.
+    val register = if (isWindows) intr && fd.kind == KindCancellable else false
+    if (isWindows) { if (register) fd.registerBlocked() }
+    try body
+    finally {
+      if (isWindows) { if (register) fd.deregisterBlocked() }
+      fd.release()
+    }
   }
 
   private def streamClosed(): IOException = new IOException("Stream Closed")
@@ -303,11 +304,22 @@ private[java] final class FileChannelImpl(
   }
 
   override def position(offset: Long): FileChannel = {
+    checkPosition(offset)
+    interruptibly(setPosition(offset, intr = true))
+    this
+  }
+
+  // Before begin(): a channel closed earlier is not an asynchronous close.
+  private def checkPosition(offset: Long): Unit = {
     ensureOpen()
     if (offset < 0)
       throw new IllegalArgumentException("Negative position")
-    interruptibly(setPosition(offset, intr = true))
-    this
+  }
+
+  private def checkSize(newSize: Long): Unit = {
+    ensureOpenForWrite()
+    if (newSize < 0)
+      throw new IllegalArgumentException("Negative size")
   }
 
   private def setPosition(offset: Long, intr: Boolean): Unit =
@@ -329,16 +341,12 @@ private[java] final class FileChannelImpl(
   }
 
   private[java] def streamSeek(offset: Long): Unit = {
-    ensureOpen()
-    if (offset < 0)
-      throw new IllegalArgumentException("Negative position")
+    checkPosition(offset)
     setPosition(offset, intr = false)
   }
 
   private[java] def streamTruncate(newSize: Long): Unit = {
-    ensureOpenForWrite()
-    if (newSize < 0)
-      throw new IllegalArgumentException("Negative size")
+    checkSize(newSize)
     truncateNow(newSize, intr = false)
   }
 
@@ -442,11 +450,12 @@ private[java] final class FileChannelImpl(
       val stashPosition = currentPosition()
       compelPosition(pos)
       try body
-      finally {
-        if (openForAppending) seekEOF()
-        else compelPosition(stashPosition)
-      }
+      finally restorePosition(stashPosition)
     })
+
+  private def restorePosition(stashPosition: Long): Unit =
+    if (openForAppending) seekEOF()
+    else compelPosition(stashPosition)
 
   override def read(buffer: ByteBuffer): Int = {
     ensureOpenForRead()
@@ -542,25 +551,13 @@ private[java] final class FileChannelImpl(
       intr: Boolean
   ): Int = {
     val fdNum = fd.fd
-    val pollFirst = prepareBlockingCall(intr)
-    var result = -2
-    while (result == -2) {
-      if (closing(intr) ||
-          (pollFirst && !awaitReady(fdNum, POLLIN, intr)))
-        throw new AsynchronousCloseException()
-      val n =
-        if (pos < 0) unistd.read(fdNum, buf, count.toUInt).toLong
-        else FileChannelNative.pread(fdNum, buf, count.toCSize, pos).toLong
-      if (n >= 0) result = n.toInt
-      else {
-        val e = errno
-        if (e == EAGAIN || e == EWOULDBLOCK) {
-          if (!awaitReady(fdNum, POLLIN, intr))
-            throw new AsynchronousCloseException()
-        } else if (e != EINTR) throw UnixException(getFileName(), e)
-      }
+    val n = blockingCall(fdNum, POLLIN, prepareBlockingCall(intr), intr) {
+      if (pos < 0) unistd.read(fdNum, buf, count.toUInt).toLong
+      else FileChannelNative.pread(fdNum, buf, count.toCSize, pos).toLong
     }
-    if (result == 0) -1 else result
+    if (n < 0) throw new AsynchronousCloseException()
+    else if (n == 0) -1
+    else n.toInt
   }
 
   /* Unix write or, for pos >= 0, pwrite. Returns the bytes written: all of
@@ -576,39 +573,48 @@ private[java] final class FileChannelImpl(
     val fdNum = fd.fd
     val pollFirst = prepareBlockingCall(intr)
     // After POLLOUT, a write of up to PIPE_BUF bytes does not block.
-    val chunk =
-      if (!pollFirst) count
-      else {
-        val pipeBuf = unistd.fpathconf(fdNum, unistd._PC_PIPE_BUF)
-        if (pipeBuf > 0) pipeBuf.toInt else 512
-      }
+    val chunk = if (pollFirst) fd.pipeBuf else count
     var written = 0
-    var closed = false
-    var done = false
-    while (!done && written < count) {
-      if (closing(intr) || (pollFirst && !awaitReady(fdNum, POLLOUT, intr)))
-        closed = true
+    var n = 1L
+    while (n > 0 && written < count) {
+      val from = buf + written
+      val at = pos + written
+      val len = Math.min(count - written, chunk)
+      n = blockingCall(fdNum, POLLOUT, pollFirst, intr) {
+        if (pos < 0) unistd.write(fdNum, from, len.toUInt).toLong
+        else FileChannelNative.pwrite(fdNum, from, len.toCSize, at).toLong
+      }
+      if (n > 0) written += n.toInt
+    }
+    if (n < 0 && written == 0) throw new AsynchronousCloseException()
+    written
+  }
+
+  /* Runs a syscall that may block, retrying on EINTR and, after poll(), on
+   * EAGAIN. Returns its result, or -1 once close() stops a channel operation.
+   */
+  private def blockingCall(
+      fdNum: Int,
+      events: Int,
+      pollFirst: Boolean,
+      intr: Boolean
+  )(call: => Long): Long = {
+    var result = -2L
+    while (result == -2L) {
+      if (closing(intr) || (pollFirst && !awaitReady(fdNum, events, intr)))
+        result = -1L
       else {
-        val len = Math.min(count - written, chunk)
-        val n =
-          if (pos < 0) unistd.write(fdNum, buf + written, len.toUInt).toLong
-          else
-            FileChannelNative
-              .pwrite(fdNum, buf + written, len.toCSize, pos + written)
-              .toLong
-        if (n > 0) written += n.toInt
-        else if (n == 0) done = true
+        val n = call
+        if (n >= 0) result = n
         else {
           val e = errno
           if (e == EAGAIN || e == EWOULDBLOCK) {
-            if (!awaitReady(fdNum, POLLOUT, intr)) closed = true
+            if (!awaitReady(fdNum, events, intr)) result = -1L
           } else if (e != EINTR) throw UnixException(getFileName(), e)
         }
       }
-      if (closed) done = true
     }
-    if (closed && written == 0) throw new AsynchronousCloseException()
-    written
+    result
   }
 
   /* Prepares a syscall that may block. True if the caller must poll before
@@ -820,9 +826,7 @@ private[java] final class FileChannelImpl(
        */
       compelPosition(newFileSize - 1)
       writeArray(Array[Byte](0.toByte), 0, 1, intr = false)
-
-      if (openForAppending) seekEOF()
-      else compelPosition(currentPos)
+      restorePosition(currentPos)
     }
 
     /* This next step may not be strictly necessary; it is included for the
@@ -842,11 +846,7 @@ private[java] final class FileChannelImpl(
   }
 
   override def truncate(newSize: Long): FileChannel = {
-    ensureOpenForWrite()
-
-    if (newSize < 0)
-      throw new IllegalArgumentException("Negative size")
-
+    checkSize(newSize)
     interruptibly(truncateNow(newSize, intr = true))
     this
   }
@@ -1086,11 +1086,9 @@ private[java] final class FileChannelImpl(
   private[java] def available(): Int = {
     ensureOpen()
     // Files on Windows compute it from the position.
-    if (isWindows) {
-      if (file.isDefined)
-        withPositionLock(leased(intr = false)(availableNow()))
-      else leased(intr = false)(availableNow())
-    } else leased(intr = false)(availableNow())
+    val locked = if (isWindows) file.isDefined else false
+    if (locked) withPositionLock(leased(intr = false)(availableNow()))
+    else leased(intr = false)(availableNow())
   }
 
   // Precondition: the fd is leased; for files on Windows, the position lock.
@@ -1118,7 +1116,7 @@ private[java] final class FileChannelImpl(
 
   // FileInputStream.skip seeks only regular files, like JDK 25.
   private[java] def isRegularFile: Boolean =
-    leased(intr = false)(fd.kind == FileDescriptor.KindRegular)
+    leased(intr = false)(fd.kind == KindRegular)
 
   // Moves the position by n, possibly past the end of file or backward.
   private[java] def skip(n: Long): Long =
@@ -1134,7 +1132,7 @@ private[java] final class FileChannelImpl(
 
 private[java] object FileChannelImpl {
 
-  // Files.newInputStream and newOutputStream: streams ignore interrupts.
+  // Streams over a channel (Files, RandomAccessFile) ignore interrupts.
   private[java] def newInputStream(channel: FileChannelImpl): InputStream =
     new InputStream {
       override def read(): Int = {
