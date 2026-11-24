@@ -88,9 +88,13 @@ word_t *Heap_mapHeapSpace(size_t maxHeapSize) {
     size_t head = start - (word_t)reserved;
     if (head > 0)
         memoryUnmap(reserved, head);
-    size_t tail = window - head;
-    if (tail > 0)
-        memoryUnmap((void *)(start + maxHeapSize), tail);
+    // From a page boundary: the heap size need not be a multiple of the
+    // page size, and munmap rejects other addresses.
+    word_t page = getPageSize();
+    word_t tailStart = (start + maxHeapSize + page - 1) & ~(page - 1);
+    word_t tailEnd = (word_t)reserved + maxHeapSize + window;
+    if (tailStart < tailEnd)
+        memoryUnmap((void *)tailStart, tailEnd - tailStart);
     return (word_t *)start;
 #else
     return Heap_mapAndAlign(maxHeapSize, BLOCK_TOTAL_SIZE);
