@@ -118,7 +118,11 @@ class DateTest {
     assertTrue(d.equals(new Date(42L)))
     assertTrue(new Date(42L).equals(d))
     assertEquals(42, d.hashCode())
-    assertEquals(new Date(42L).toString(), d.toString())
+  }
+
+  @Test def subclassToStringUsesStoredTime(): Unit = {
+    val d = new TimeOverridingDate(afterUt)
+    assertEquals(new Date(0L).toString(), d.toString())
   }
 
   @Test def cloneKeepsSubclass(): Unit = {

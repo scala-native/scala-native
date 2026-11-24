@@ -44,9 +44,8 @@ class Date(var milliseconds: Long)
   def toInstant(): Instant = Instant.ofEpochMilli(getTime())
 
   override def toString(): String = {
-    val millis = getTime()
-    val seconds = millis / 1000L
-    def default = s"Date($millis)"
+    val seconds = milliseconds / 1000L
+    def default = s"Date($milliseconds)"
     Date.secondsToString(seconds, default)
   }
 }
