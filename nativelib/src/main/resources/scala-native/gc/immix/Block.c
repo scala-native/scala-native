@@ -64,7 +64,9 @@ static void Block_verifyUntouched(Allocator *allocator, BlockMeta *blockMeta,
         }
         line = hole->next;
     }
+    int freeLines = 0;
     for (int k = 0; k < LINE_COUNT; k++) {
+        freeLines += !Line_IsMarked(&lineMetas[k]);
         if (!linked[k] && !Line_IsMarked(&lineMetas[k])) {
             fprintf(stderr,
                     "GC sticky collector: skipped block %p does not link its "
@@ -72,6 +74,14 @@ static void Block_verifyUntouched(Allocator *allocator, BlockMeta *blockMeta,
                     (void *)blockStart, k);
             abort();
         }
+    }
+    if (freeLines != BlockMeta_FreeLines(blockMeta)) {
+        fprintf(stderr,
+                "GC sticky collector: skipped block %p has %d free lines, "
+                "recorded %d\n",
+                (void *)blockStart, freeLines,
+                (int)BlockMeta_FreeLines(blockMeta));
+        abort();
     }
 }
 #endif
@@ -83,10 +93,9 @@ static void Block_recycleUntouched(Allocator *allocator, BlockMeta *blockMeta,
 #endif
     if (BlockMeta_FirstFreeLine(blockMeta) == LAST_HOLE)
         return;
-    uint32_t freeLines = 0;
-    for (int line = 0; line < LINE_COUNT; line++)
-        freeLines += !Line_IsMarked(&lineMetas[line]);
-    Block_recycledFreeLines += freeLines;
+    // Nothing was allocated into the block: its holes are as the last sweep
+    // left them.
+    Block_recycledFreeLines += BlockMeta_FreeLines(blockMeta);
     BlockList_AddLast(&allocator->recycledBlocks, blockMeta);
     atomic_fetch_add_explicit(&allocator->recycledBlockCount, 1,
                               memory_order_relaxed);
@@ -126,6 +135,7 @@ void Block_Recycle(Allocator *allocator, BlockMeta *blockMeta,
         ObjectMeta *bytemapCursor = Bytemap_Get(bytemap, lineStart);
 
         FreeLineMeta *lastRecyclable = NULL;
+        uint32_t freeLines = 0;
         while (lineIndex < LINE_COUNT) {
             // If the line is marked, we need to unmark all objects in the line
             if (Line_IsMarked(lineMeta)) {
@@ -174,9 +184,13 @@ void Block_Recycle(Allocator *allocator, BlockMeta *blockMeta,
                     bytemapCursor = Bytemap_NextLine(bytemapCursor);
                 }
                 lastRecyclable->size = size;
-                Block_recycledFreeLines += size;
+                freeLines += size;
             }
         }
+        Block_recycledFreeLines += freeLines;
+#ifdef SCALANATIVE_GC_STICKY
+        BlockMeta_SetFreeLines(blockMeta, (uint8_t)freeLines);
+#endif
         // If there is no recyclable line, the block is unavailable
         if (lastRecyclable != NULL) {
             lastRecyclable->next = LAST_HOLE;
