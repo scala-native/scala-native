@@ -1,6 +1,7 @@
 #if defined(SCALANATIVE_GC_IMMIX) && defined(SCALANATIVE_GC_STICKY)
 
 #include <stdlib.h>
+#include <math.h>
 #include "Generations.h"
 #include "Block.h"
 #include "LargeAllocator.h"
@@ -58,7 +59,7 @@ static bool alwaysFull = false;
 void Generations_Init(void) {
     char *growth = getenv("GC_OLD_GENERATION_GROWTH");
     oldGrowth = growth != NULL ? atof(growth) : 0.0;
-    if (!(oldGrowth > 1.0))
+    if (!(oldGrowth > 1.0) || !isfinite(oldGrowth))
         oldGrowth = SCALANATIVE_GC_CONFIG_OLD_GENERATION_GROWTH;
     alwaysFull = getenv("GC_STICKY_ALWAYS_FULL") != NULL;
 }
@@ -193,14 +194,15 @@ void Generations_EndCollection(Heap *heap, bool full) {
     uint64_t usedLines = totalLines - freeLines;
     if (full)
         usedLinesAfterFull = usedLines;
-    uint64_t oldLimit = (uint64_t)(usedLinesAfterFull * oldGrowth);
+    // Compared as doubles: the product can exceed any integer type.
+    double oldLimit = (double)usedLinesAfterFull * oldGrowth;
     if (oldLimit < GENERATIONS_MIN_FULL_LINES)
         oldLimit = GENERATIONS_MIN_FULL_LINES;
     // After a full collection, the next one is minor: it may be the heap is
     // just full of live data, which a full collection cannot help with either.
     nextCollectionFull =
         !full && (freeLines * 100 < totalLines * GENERATIONS_MIN_FREE_PERCENT ||
-                  usedLines > oldLimit);
+                  (double)usedLines > oldLimit);
     uint32_t recycledBlocks = 0;
     MutatorThreads_foreach(mutatorThreads, node) {
         recycledBlocks += node->value->allocator.recycledBlockCount;
