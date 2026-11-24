@@ -1343,6 +1343,39 @@ class ArraysTest {
     )
   }
 
+  @Test def deepToStringRepeatedNestedArray(): Unit = {
+    val leaf = Array[AnyRef]("x")
+    val inner = Array[AnyRef](leaf, leaf)
+    assertEquals("[[x], [x]]", Arrays.deepToString(inner))
+    assertEquals(
+      "[[[x], [x]], [[x], [x]]]",
+      Arrays.deepToString(Array[AnyRef](inner, inner))
+    )
+    val ints = Array[Int](1, 2)
+    assertEquals(
+      "[[1, 2], [[1, 2]], [1, 2]]",
+      Arrays.deepToString(Array[AnyRef](ints, Array[AnyRef](ints), ints))
+    )
+  }
+
+  @Test def toStringLargeArray(): Unit = {
+    val n = 100000
+    val ints = Array.tabulate(n)(identity)
+    val expected = new jl.StringBuilder("[")
+    for (i <- 0 until n) {
+      if (i != 0) expected.append(", ")
+      expected.append(i)
+    }
+    expected.append(']')
+    assertEquals(expected.toString, Arrays.toString(ints))
+
+    val refs = Array.tabulate[AnyRef](n)(i => if (i % 2 == 0) null else "a")
+    val result = Arrays.toString(refs)
+    assertEquals(2 + (n / 2) * 5 + (n - 1) * 2, result.length)
+    assertTrue(result.startsWith("[null, a, null, "))
+    assertTrue(result.endsWith(", null, a]"))
+  }
+
 // Tests added for Scala Native.
 
   final val epsilon = 0.0000000 // tolerance for Floating point comparisons.
