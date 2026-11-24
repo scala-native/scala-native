@@ -62,10 +62,12 @@ jobs:
           PGP_PASSPHRASE: "${{ secrets.PGP_PASSWORD }}"
         run: sbt "-J-Xmx7G" "-J-XX:+UseG1GC" "publish-release-for-version ${{ matrix.scala }} ${{ matrix.part }}"
 
+  # Snapshot version for the docs
   save_tag:
     name: Save SHA as last published tag
     runs-on: ubuntu-slim
     needs: [publish]
+    if: inputs.snapshot
     permissions:
       contents: write
     steps:
@@ -80,7 +82,8 @@ jobs:
   build_docs:
     name: Trigger documentation build
     runs-on: ubuntu-slim
-    needs: [save_tag]
+    needs: [publish, save_tag]
+    if: ${{ !cancelled() && needs.publish.result == 'success' && needs.save_tag.result != 'failure' }}
     steps:
       - name: Trigger Read the Docs build
         shell: bash
