@@ -8,7 +8,15 @@ import org.junit.Test
 
 import org.scalanative.testsuite.utils.Platform._
 
+object DateTest {
+  class TimeOverridingDate(t: Long) extends Date(0L) {
+    override def getTime(): Long = t
+  }
+}
+
 class DateTest {
+  import DateTest.TimeOverridingDate
+
   // now : java.util.Date = Fri Mar 31 14:47:44 EDT 2017
   val nowUt = 1490986064740L
   val beforeUt = 1490986059300L
@@ -98,5 +106,26 @@ class DateTest {
       s"""Result "${result}" does not match regex "${expected}"""",
       result.matches(expected)
     )
+  }
+
+  @Test def subclassOverridingGetTime(): Unit = {
+    val d = new TimeOverridingDate(42L)
+    val one = new Date(1L)
+    assertTrue(d.after(one))
+    assertFalse(d.before(one))
+    assertEquals(1, d.compareTo(one))
+    assertEquals(-1, one.compareTo(d))
+    assertTrue(d.equals(new Date(42L)))
+    assertTrue(new Date(42L).equals(d))
+    assertEquals(42, d.hashCode())
+    assertEquals(new Date(42L).toString(), d.toString())
+  }
+
+  @Test def cloneKeepsSubclass(): Unit = {
+    val d = new TimeOverridingDate(42L)
+    val clone = d.clone()
+    assertEquals(classOf[TimeOverridingDate], clone.getClass())
+    assertEquals(42L, clone.asInstanceOf[Date].getTime())
+    assertNotSame(d, clone)
   }
 }
