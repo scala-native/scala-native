@@ -271,7 +271,7 @@ jobs:
   publish-snapshot:
     name: Publish snapshot
     needs: *gates
-    if: needs.plan.outputs.publish == 'snapshot'
+    if: ${{ !cancelled() && needs.ci-ok.result == 'success' && needs.plan.outputs.publish == 'snapshot' }}
     permissions:
       contents: write
     uses: ./.github/workflows/publish.yml
@@ -283,7 +283,7 @@ jobs:
   publish-release:
     name: Publish release
     needs: [plan, ci-ok]
-    if: needs.plan.outputs.publish == 'release'
+    if: ${{ !cancelled() && needs.ci-ok.result == 'success' && needs.plan.outputs.publish == 'release' }}
     permissions:
       contents: write
     uses: ./.github/workflows/publish.yml
