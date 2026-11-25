@@ -37,7 +37,8 @@ jobs:
   test-netbsd:
     name: Test runtime (NetBSD x86_64, Scala 3)
     if: inputs.extended
-    runs-on: ubuntu-24.04
+    # On ubuntu-24.04 the guest hangs at boot, after the action's retry it has no outbound network
+    runs-on: ubuntu-26.04
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v7
