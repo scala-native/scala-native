@@ -22,6 +22,10 @@ class DatagramSocketTestOnJDK17 {
   private def multicastInterface(
       hasAddress: InetAddress => Boolean
   ): NetworkInterface = {
+    assumeFalse(
+      "NetworkInterface not implemented in Windows",
+      Platform.isWindows
+    )
     val candidates = NetworkInterface
       .getNetworkInterfaces()
       .asScala
@@ -60,7 +64,6 @@ class DatagramSocketTestOnJDK17 {
   }
 
   @Test def joinLeaveIPv6GroupOnInterface(): Unit = {
-    assumeFalse("IPv4 only sockets on Windows", Platform.isWindows)
     val netIf = multicastInterface(_.isInstanceOf[Inet6Address])
     val ds = new DatagramSocket(0)
     try joinThenLeave(ds, "ff02::5354", netIf)
