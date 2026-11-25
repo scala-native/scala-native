@@ -176,7 +176,7 @@ class VarHandleTests {
           case nir.Inst.Let(_, nir.Op.Call(_, _, args), _) => args
         }
         .flatten
-        .collect { case nir.Val.ClassOf(name) => name }
+        .collect { case cls: nir.Val.ClassOf => cls.className }
       assertTrue(getTokens.contains(nir.Global.Top("Coordinates")))
       assertTrue(
         getTokens.contains(
@@ -294,7 +294,7 @@ class VarHandleTests {
         if (kind == "Reference")
           assertEquals(
             owner,
-            nir.Val.ClassOf(nir.Global.Top("java.lang.String")),
+            nir.Val.ClassOf.of(nir.Global.Top("java.lang.String")),
             args.last
           )
         else

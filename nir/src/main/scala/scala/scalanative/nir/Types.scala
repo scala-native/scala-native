@@ -288,6 +288,50 @@ object Type {
   }
   def fromArrayClass(name: Global.Top): Option[Type] =
     arrayToType.get(name)
+
+  /** Element types of the classes implementing arrays, `BlobArray` excluded: it
+   *  is a class of its own.
+   */
+  private val arrayClassToElement: Map[Global.Top, Type] =
+    typeToArray.map { case (k, v) => (v, k) }
+
+  /** Canonical form of the element type of an array: primitives, references to
+   *  classes and traits without flags, and arrays of canonical elements. Any
+   *  other element (`Unit`, `Nothing`, `Null`, pointers) is stored in an array
+   *  of `Object`.
+   */
+  def canonicalArrayElement(ty: Type): Type = ty match {
+    case Array(elem, _)  => Array(canonicalArrayElement(elem))
+    case Ref(name, _, _) =>
+      arrayClassToElement.get(name) match {
+        case Some(elem) => Array(elem)
+        case None       => Ref(name)
+      }
+    case _ if typeToArray.contains(ty) => ty
+    case _                             => Rt.Object
+  }
+
+  /** Canonical form of the type of a `classOf`: arrays are always `Array`,
+   *  never references to the classes implementing them, other types are
+   *  references to their class, primitives to their pseudo-class.
+   */
+  def classOfType(ty: Type): Type = ty match {
+    case Array(elem, _)  => Array(canonicalArrayElement(elem))
+    case Ref(name, _, _) =>
+      arrayClassToElement.get(name) match {
+        case Some(elem) => Array(elem)
+        case None       => Ref(name)
+      }
+    case _ => Ref(typeToName(ty))
+  }
+
+  /** Type of the class of a method parameter of type `ty`, as recorded for
+   *  reflective instantiation: primitives by their pseudo-class.
+   */
+  def parameterClassType(ty: Type): Type = ty match {
+    case _: Array => ty
+    case _        => Ref(typeToName(ty))
+  }
   def isArray(clsTy: Type.Ref): Boolean =
     isArray(clsTy.name)
   def isArray(clsName: Global.Top): Boolean =

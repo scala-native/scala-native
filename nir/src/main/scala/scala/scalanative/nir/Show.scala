@@ -564,9 +564,9 @@ object Show {
       case Val.Virtual(key) =>
         str("virtual ")
         str(key)
-      case Val.ClassOf(cls) =>
+      case Val.ClassOf(tpe) =>
         str("classOf[")
-        onGlobal(cls)
+        onType(tpe)
         str("]")
     }
 

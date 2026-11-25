@@ -187,7 +187,7 @@ trait NirGenType[G <: Global with Singleton] { self: NirGenPhase[G] =>
         .get(tpe.typeSymbol)
         .map(_.info)
         .getOrElse(tpe)
-    nir.Val.ClassOf(genRefType(refType).className)
+    nir.Val.ClassOf.of(genRefType(refType))
   }
 
   def genStructFields(sym: Symbol): Seq[nir.Type] = {

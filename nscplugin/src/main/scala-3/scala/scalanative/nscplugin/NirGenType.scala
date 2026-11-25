@@ -236,7 +236,7 @@ trait NirGenType(using Context) {
         .get(tpe.typeSymbol)
         .map(_.info)
         .getOrElse(tpe)
-    nir.Val.ClassOf(genRefType(refType).className)
+    nir.Val.ClassOf.of(genRefType(refType))
 
   private def genAnonymousStruct(tpe: Type): nir.Type =
     nir.Type.StructValue(

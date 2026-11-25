@@ -68,7 +68,7 @@ class SynchronizedMethodsTest {
       if (hasSimplifySynchronized) {
         assertEquals(
           "static synchronized methods lock on the enclosing Class",
-          Seq(Val.ClassOf(cls)),
+          Seq(Val.ClassOf.of(cls)),
           locks.head
         )
       }

@@ -220,7 +220,7 @@ private[linker] trait LinktimeIntrinsicCallsResolver { self: Reach =>
     implicit val pos: SourcePosition = let.pos
     implicit val scopeId: ScopeId = let.scopeId
 
-    val serviceName = cls.name.id
+    val serviceName = cls.className.id
     val serviceProvidersStatus = foundServices.getOrElseUpdate(serviceName, mutable.Map.empty)
 
     def providerInfo(symbol: Global.Top) = {
@@ -249,7 +249,7 @@ private[linker] trait LinktimeIntrinsicCallsResolver { self: Reach =>
           val loadProviderLambda = {
             new Defn.Define(
               attrs = Attrs.None,
-              name = cls.name.member(Sig.Generated(s"loadProvider_${providerCls.id}")),
+              name = cls.className.member(Sig.Generated(s"loadProvider_${providerCls.id}")),
               ty = Type.Function(Nil, providerClsRef),
               insts = {
                 val fresh = Fresh()
@@ -279,7 +279,7 @@ private[linker] trait LinktimeIntrinsicCallsResolver { self: Reach =>
 
     val serviceLoaderModule = buf.let(Op.Module(ServiceLoaderModule), let.unwind)
     val serviceProviders = loader.definedServicesProviders
-      .get(cls.name)
+      .get(cls.className)
       .toList
       .flatten
       .filter(providerInfo(_).status == ServiceProviderStatus.Loaded)
@@ -288,13 +288,13 @@ private[linker] trait LinktimeIntrinsicCallsResolver { self: Reach =>
         buf.call(
           ty = Type.Function(Seq(ServiceLoaderModuleRef, Rt.Class, Type.Ptr), ServiceLoaderProviderRef),
           ptr = Val.Global(ServiceLoaderCreateProvider, Type.Ptr),
-          args = Seq(serviceLoaderModule, Val.ClassOf(providerCls), loader),
+          args = Seq(serviceLoaderModule, Val.ClassOf.of(providerCls), loader),
           unwind = let.unwind
         )
       }
     // Mark every service provider found in config, but not found in any META-INF as NotFound
     config.compilerConfig.serviceProviders
-      .get(cls.name.id)
+      .get(cls.className.id)
       .foreach { providers =>
         providers.foreach { providerName =>
           serviceProvidersStatus.getOrElseUpdate(
@@ -313,7 +313,7 @@ private[linker] trait LinktimeIntrinsicCallsResolver { self: Reach =>
     val alloc = let.copy(op = Op.Classalloc(ServiceLoader, None))
     buf += alloc
     buf.call(
-      ty = Type.Function(Seq(ServiceLoaderRef, Rt.Class, Type.Array(Type.Ref(cls.name))), Type.Unit),
+      ty = Type.Function(Seq(ServiceLoaderRef, Rt.Class, Type.Array(Type.Ref(cls.className))), Type.Unit),
       ptr = Val.Global(ServiceLoaderCtor, Type.Ptr),
       args = Seq(
         /*this=*/ Val.Local(alloc.id, ServiceLoaderRef),
