@@ -242,9 +242,11 @@ sealed trait Config {
       case _         => false
     }
 
-  /** Experimental: GarbageCollectorConfig.generational, Immix only. */
+  /** Experimental: GarbageCollectorConfig.generational, which only Immix
+   *  accepts.
+   */
   private[scalanative] lazy val useGenerationalGC =
-    compilerConfig.gc == GC.Immix && gcSettings.generational.contains(true)
+    gcSettings.generational.contains(true)
 
   private def hasWriteBarrierDefine = {
     val define = "-DSCALANATIVE_GC_WRITE_BARRIER"

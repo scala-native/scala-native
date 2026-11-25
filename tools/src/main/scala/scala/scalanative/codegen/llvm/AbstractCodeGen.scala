@@ -1078,8 +1078,9 @@ private[codegen] abstract class AbstractCodeGen(
       }
     }
 
+  private lazy val writeBarrierSlowPaths = Lower.GCWriteBarrierSlowPaths.toSet
   private def usesPreserveMost(name: nir.Global): Boolean =
-    writeBarrierPreservesMost && Lower.GCWriteBarrierSlowPaths.contains(name)
+    writeBarrierPreservesMost && writeBarrierSlowPaths.contains(name)
 
   private[codegen] def genCall(
       genBind: () => Unit,

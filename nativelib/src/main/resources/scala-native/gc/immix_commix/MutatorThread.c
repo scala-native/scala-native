@@ -274,11 +274,11 @@ bool MutatorThread_hasTerminated(MutatorThread *thread) {
 void MutatorThread_reap(MutatorThread *thread) {
     if (thread == NULL)
         return;
-        // Do not capture the caller's stack or hold the Commix list read lock.
 #ifdef SCALANATIVE_GC_STICKY
     // The collector calls this with the list locked, before it marks.
     Generations_AdoptRememberedSet(&thread->rememberedSet);
 #endif
+    // Do not capture the caller's stack or hold the Commix list read lock.
     MutatorThreads_remove(thread);
     MutatorThread_dispose(thread);
 }

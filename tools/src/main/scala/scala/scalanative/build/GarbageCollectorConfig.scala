@@ -560,7 +560,7 @@ object GarbageCollectorConfig {
       value.trim.toLowerCase match {
         case "1" | "true"  => Right(true)
         case "0" | "false" => Right(false)
-        case _             => Left(s"'$value' is neither 1 nor 0")
+        case _             => Left(s"'$value' is neither 1/true nor 0/false")
       }
     private def encodeBoolean(value: Boolean) = if (value) "1" else "0"
 
@@ -842,7 +842,7 @@ object GarbageCollectorConfig {
       set = (c, v) => edit(c)(_.copy(statsEnabled = v)),
       // Only parsed from -DGC_ENABLE_STATS, where any value enables it
       parse = _ => Right(true),
-      encode = enabled => if (enabled) "1" else "0"
+      encode = encodeBoolean
     )
 
     val trapBasedYieldPoints = new Setting[Boolean](

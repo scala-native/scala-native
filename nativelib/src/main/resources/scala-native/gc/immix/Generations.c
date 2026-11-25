@@ -14,30 +14,12 @@
 // next collection full.
 #define GENERATIONS_MIN_FREE_PERCENT 20
 
-typedef struct {
-    Object **items;
-    size_t size;
-    size_t capacity;
-} ObjectList;
-
-static void ObjectList_Push(ObjectList *list, Object *object) {
-    if (list->size == list->capacity) {
-        size_t capacity = list->capacity == 0 ? 64 : list->capacity * 2;
-        Object **items = realloc(list->items, capacity * sizeof(Object *));
-        if (items == NULL)
-            Heap_exitWithOutOfMemory("for the generational collection");
-        list->items = items;
-        list->capacity = capacity;
-    }
-    list->items[list->size++] = object;
-}
-
 // Blob arrays and objects with an object tracer refer to other objects in
 // ways the write barrier does not see (raw words, the stacks of suspended
 // continuations), so every minor collection rescans the old ones. Those found
 // young in a collection join them once it ends.
-static ObjectList oldUnbarriered = {};
-static ObjectList youngUnbarriered = {};
+static RememberedSet oldUnbarriered = {};
+static RememberedSet youngUnbarriered = {};
 
 // Remembered objects of threads that exited since the last collection.
 // Guarded by the lock of the mutator thread list, which a collection holds.
@@ -120,7 +102,7 @@ void Generations_PrepareFull(Heap *heap) {
     RememberedSet_Clear(&orphanRemembered);
     WriteBarrier_ClearCards(
         (size_t)((ubyte_t *)heap->heapEnd - (ubyte_t *)heap->heapStart));
-    oldUnbarriered.size = 0;
+    RememberedSet_Clear(&oldUnbarriered);
 }
 
 // Traces the dirty cards of a large array the barrier remembered by card.
@@ -172,24 +154,22 @@ void Generations_MarkMinorRoots(Heap *heap, Stack *stack) {
         Generations_markRemembered(heap, stack, &node->value->rememberedSet);
     }
     for (size_t i = 0; i < oldUnbarriered.size; i++)
-        Marker_MarkRemembered(heap, stack, oldUnbarriered.items[i]);
+        Marker_MarkRemembered(heap, stack, (Object *)oldUnbarriered.items[i]);
     GC_LOG_DEBUG("Minor collection roots: %zu remembered objects, %zu old "
                  "objects written without the barrier",
                  remembered, oldUnbarriered.size);
 }
 
 void Generations_NoteUnbarriered(Object *object) {
-    ObjectList_Push(&youngUnbarriered, object);
+    RememberedSet_Push(&youngUnbarriered, (word_t *)object);
 }
 
 void Generations_EndCollection(Heap *heap, bool full) {
     for (size_t i = 0; i < youngUnbarriered.size; i++)
-        ObjectList_Push(&oldUnbarriered, youngUnbarriered.items[i]);
-    youngUnbarriered.size = 0;
+        RememberedSet_Push(&oldUnbarriered, youngUnbarriered.items[i]);
+    RememberedSet_Clear(&youngUnbarriered);
 
-    uint64_t freeLines =
-        (uint64_t)atomic_load(&blockAllocator.freeBlockCount) * LINE_COUNT +
-        Block_recycledFreeLines + LargeAllocator_sweptFreeBytes / LINE_SIZE;
+    uint64_t freeLines = Heap_freeLines();
     uint64_t totalLines = (uint64_t)heap->blockCount * LINE_COUNT;
     uint64_t usedLines = totalLines - freeLines;
     if (full)
@@ -203,17 +183,13 @@ void Generations_EndCollection(Heap *heap, bool full) {
     nextCollectionFull =
         !full && (freeLines * 100 < totalLines * GENERATIONS_MIN_FREE_PERCENT ||
                   (double)usedLines > oldLimit);
-    uint32_t recycledBlocks = 0;
-    MutatorThreads_foreach(mutatorThreads, node) {
-        recycledBlocks += node->value->allocator.recycledBlockCount;
-    }
     GC_LOG_DEBUG("%s collection left %" PRIu64 " of %" PRIu64
-                 " lines free (%u free blocks, %u recycled blocks with %" PRIu64
-                 " free lines, %" PRIu64 " large bytes), next collection %s",
+                 " lines free (%u free blocks, %" PRIu64
+                 " free lines in recycled blocks, %" PRIu64
+                 " large bytes), next collection %s",
                  full ? "Full" : "Minor", freeLines, totalLines,
                  (uint32_t)atomic_load(&blockAllocator.freeBlockCount),
-                 recycledBlocks, Block_recycledFreeLines,
-                 LargeAllocator_sweptFreeBytes,
+                 Block_recycledFreeLines, LargeAllocator_sweptFreeBytes,
                  nextCollectionFull ? "full" : "minor");
 }
 

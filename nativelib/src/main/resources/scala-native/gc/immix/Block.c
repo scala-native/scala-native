@@ -19,9 +19,6 @@ INLINE void Block_recycleUnmarkedBlock(Allocator *allocator,
 // Free lines found in partially used blocks by the current sweep.
 uint64_t Block_recycledFreeLines = 0;
 
-/**
- * recycles a block and adds it to the allocator
- */
 #ifdef SCALANATIVE_GC_STICKY
 // A block nothing was allocated into since it was last swept holds only old
 // objects, whose metadata a minor collection leaves as it is, and its free
@@ -102,6 +99,9 @@ static void Block_recycleUntouched(Allocator *allocator, BlockMeta *blockMeta,
 }
 #endif
 
+/**
+ * recycles a block and adds it to the allocator
+ */
 void Block_Recycle(Allocator *allocator, BlockMeta *blockMeta,
                    word_t *blockStart, LineMeta *lineMetas, bool full) {
 #ifdef SCALANATIVE_GC_STICKY

@@ -211,15 +211,16 @@ static bool Heap_reserveAllocation(size_t size) {
 #define HEAP_OVERHEAD_GC_PERCENT 98
 #define HEAP_OVERHEAD_COLLECTIONS 5
 
-/** At the size limit with under HEAP_OVERHEAD_FREE_PERCENT free, counting
- * free blocks, free lines in recycled blocks and the large allocators' free
- * chunks. */
+uint64_t Heap_freeLines(void) {
+    return (uint64_t)atomic_load(&blockAllocator.freeBlockCount) * LINE_COUNT +
+           Block_recycledFreeLines + LargeAllocator_sweptFreeBytes / LINE_SIZE;
+}
+
+/** At the size limit with under HEAP_OVERHEAD_FREE_PERCENT free. */
 static bool Heap_lowYield(Heap *heap) {
     if (heap->blockCount < heap->maxBlockCount)
         return false;
-    uint64_t freeLines =
-        (uint64_t)atomic_load(&blockAllocator.freeBlockCount) * LINE_COUNT +
-        Block_recycledFreeLines + LargeAllocator_sweptFreeBytes / LINE_SIZE;
+    uint64_t freeLines = Heap_freeLines();
     uint64_t totalLines = (uint64_t)heap->blockCount * LINE_COUNT;
     return freeLines * 100 < totalLines * HEAP_OVERHEAD_FREE_PERCENT;
 }
@@ -558,15 +559,8 @@ void Heap_Recycle(Heap *heap, bool full) {
     // Old garbage survives a minor collection, so after one the heap grows
     // only when collections take too much of the time, judged by all the
     // free lines: free blocks are scarce between full collections.
-    bool grow;
-    if (full) {
-        grow = Heap_shouldGrow(heap);
-    } else {
-        uint64_t freeLines =
-            (uint64_t)blockAllocator.freeBlockCount * LINE_COUNT +
-            Block_recycledFreeLines + LargeAllocator_sweptFreeBytes / LINE_SIZE;
-        grow = Heap_gcTooFrequent(heap, freeLines);
-    }
+    bool grow = full ? Heap_shouldGrow(heap)
+                     : Heap_gcTooFrequent(heap, Heap_freeLines());
     if (grow) {
         double growth;
         if (heap->heapSize < EARLY_GROWTH_THRESHOLD) {

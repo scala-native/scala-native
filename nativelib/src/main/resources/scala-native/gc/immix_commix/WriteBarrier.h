@@ -7,8 +7,10 @@
 // object's ObjectMeta byte. Only an old object that is not remembered yet
 // (om_old_unlogged) takes the slow path, which remembers it in the storing
 // thread's buffer and sets om_old_logged, so later stores into it stay on
-// the fast path. The fast path reads the three variables below; objects
-// outside the heap range (statics, zones, stacks) never take it.
+// the fast path. Objects outside the heap (statics, zones, stacks) are never
+// remembered: the fast path checks the heap range given by the variables
+// below or, where the heap is aligned to the barrier window, reads only the
+// bytemap and leaves the range check to the slow path.
 
 #include <assert.h>
 #include <stddef.h>
