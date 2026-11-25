@@ -281,7 +281,7 @@ trait GenReflectiveInstantisation(using Context) {
     // - inst is a function, which accepts an array with tpes and returns a new
     //   instance of the class.
     val ctorsInfo = buf.arrayalloc(
-      nir.Type.Array(nirSymbols.Tuple2Ref),
+      nirSymbols.Tuple2Ref,
       nir.Val.Int(ctors.length),
       unwind(using curFresh)
     )

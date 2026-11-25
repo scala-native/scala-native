@@ -180,6 +180,7 @@ private[linker] class Reach(
     if (!loaded.contains(owner) && !unreachable.contains(owner)) {
       loader
         .load(owner)
+        .orElse(syntheticArrayClass(owner))
         .fold[Unit] {
           if (!ignoreIfUnavailable) addMissing(global)
         } { defns =>
@@ -196,6 +197,36 @@ private[linker] class Reach(
         if (!ignoreIfUnavailable) addMissing(global)
         None
       }
+  }
+
+  /* Classes of arrays other than arrays of primitives and of Object have no
+   * definition in NIR: the linker defines them when reached, as subclasses of
+   * ObjectArray, see nir.Type.arrayClassName.
+   */
+  private def syntheticArrayClass(
+      name: nir.Global.Top
+  ): Option[Seq[nir.Defn]] =
+    if (!nir.Type.isSyntheticArrayClass(name)) None
+    else
+      Some(
+        Seq(
+          nir.Defn.Class(
+            nir.Attrs.None,
+            name,
+            Some(nir.Rt.ObjectArray.name),
+            Seq.empty
+          )(nir.SourcePosition.NoPosition)
+        )
+      )
+
+  /** Reaches the class of arrays of `elem`, see nir.Type.arrayClassName. */
+  def reachArrayClass(
+      elem: nir.Type
+  )(implicit srcPosition: nir.SourcePosition): nir.Global.Top = {
+    val name =
+      nir.Type.arrayClassName(nir.Type.canonicalArrayElement(elem))
+    reachGlobal(name)
+    name
   }
 
   def process(): Unit =
@@ -704,6 +735,9 @@ private[linker] class Reach(
     )
     reachAttrs(attrs)
     reachExported(name)
+    // The element type of arrays, needed for their runtime type information
+    if (nir.Type.isSyntheticArrayClass(name))
+      nir.Type.fromArrayClass(name).foreach(reachType)
   }
 
   def reachModule(defn: nir.Defn.Module): Unit = {
@@ -745,6 +779,7 @@ private[linker] class Reach(
         reachType(ty)
       case nir.Type.Array(ty, _) =>
         reachType(ty)
+        reachArrayClass(ty)
       case _ =>
         ()
     }
@@ -898,7 +933,7 @@ private[linker] class Reach(
       reachVal(slot)
       reachVal(value)
     case nir.Op.Arrayalloc(ty, init, zoneHandle) =>
-      classInfo(nir.Type.toArrayClass(ty)).foreach(reachAllocation)
+      classInfo(reachArrayClass(ty)).foreach(reachAllocation)
       reachType(ty)
       reachVal(init)
       zoneHandle.foreach(reachVal)

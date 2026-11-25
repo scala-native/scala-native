@@ -287,7 +287,11 @@ object Type {
       typeToArray(Rt.Object)
   }
   def fromArrayClass(name: Global.Top): Option[Type] =
-    arrayToType.get(name)
+    arrayToType.get(name).orElse {
+      if (isSyntheticArrayClass(name))
+        Some(fromDescriptor(name.id.substring(1)))
+      else None
+    }
 
   /** Element types of the classes implementing arrays, `BlobArray` excluded: it
    *  is a class of its own.
@@ -335,7 +339,58 @@ object Type {
   def isArray(clsTy: Type.Ref): Boolean =
     isArray(clsTy.name)
   def isArray(clsName: Global.Top): Boolean =
-    arrayToType.contains(clsName)
+    arrayToType.contains(clsName) || isSyntheticArrayClass(clsName)
+
+  /** The class of arrays of the canonical element type `elem`: the classes
+   *  implementing arrays of primitives and of `Object`, for other elements a
+   *  class created by the linker, named by the JVM binary name of the array
+   *  class (`[Ljava.lang.String;`, `[[I`). Its parent is `ObjectArray`.
+   */
+  def arrayClassName(elem: Type): Global.Top =
+    typeToArray.getOrElse(elem, Global.Top("[" + descriptor(elem)))
+
+  /** The class of `classOf` of the canonical type `ty`, see `classOfType`. */
+  def classOfClassName(ty: Type): Global.Top = ty match {
+    case Array(elem, _)  => arrayClassName(elem)
+    case Ref(name, _, _) => name
+    case _               => typeToName(ty)
+  }
+
+  /** `true` iff `name` is the class of an array type created by the linker, see
+   *  `arrayClassName`.
+   */
+  def isSyntheticArrayClass(name: Global.Top): Boolean =
+    name.id.startsWith("[")
+
+  private def descriptor(elem: Type): java.lang.String = elem match {
+    case Bool            => "Z"
+    case Char            => "C"
+    case Byte            => "B"
+    case Short           => "S"
+    case Int             => "I"
+    case Long            => "J"
+    case Float           => "F"
+    case Double          => "D"
+    case Array(elem, _)  => "[" + descriptor(elem)
+    case Ref(name, _, _) => "L" + name.id + ";"
+    case _ => throw new IllegalArgumentException(s"not an array element: $elem")
+  }
+
+  private def fromDescriptor(desc: java.lang.String): Type =
+    desc.charAt(0) match {
+      case 'Z'                       => Bool
+      case 'C'                       => Char
+      case 'B'                       => Byte
+      case 'S'                       => Short
+      case 'I'                       => Int
+      case 'J'                       => Long
+      case 'F'                       => Float
+      case 'D'                       => Double
+      case '['                       => Array(fromDescriptor(desc.substring(1)))
+      case 'L' if desc.endsWith(";") =>
+        Ref(Global.Top(desc.substring(1, desc.length - 1)))
+      case _ => throw new IllegalArgumentException(s"not a descriptor: $desc")
+    }
 
   def typeToName(tpe: Type): Global.Top = tpe match {
     case Rt.BoxedUnit => Global.Top("scala.scalanative.runtime.PrimitiveUnit")

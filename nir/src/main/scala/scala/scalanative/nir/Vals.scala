@@ -382,13 +382,8 @@ object Val {
    */
   final case class ClassOf(tpe: nir.Type) extends Val {
 
-    /** The class implementing instances of `tpe`, `ObjectArray` for any array
-     *  of references.
-     */
-    def className: nir.Global.Top = tpe match {
-      case ref: nir.Type.RefKind => ref.className
-      case _                     => nir.Type.typeToName(tpe)
-    }
+    /** The class denoted by `this`, see `Type.arrayClassName` for arrays. */
+    def className: nir.Global.Top = nir.Type.classOfClassName(tpe)
   }
   object ClassOf {
 

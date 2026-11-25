@@ -513,7 +513,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         // - inst is a function, which accepts an array with tpes and returns a new
         //   instance of the class.
         val ctorsInfo = exprBuf.arrayalloc(
-          nir.Type.Array(tuple2Ref),
+          tuple2Ref,
           nir.Val.Int(ctors.length),
           unwind(curFresh)
         )
