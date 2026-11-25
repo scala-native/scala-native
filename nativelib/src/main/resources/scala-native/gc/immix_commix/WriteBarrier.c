@@ -145,10 +145,31 @@ static word_t *WriteBarrier_objectBefore(word_t *slot) {
     return current;
 }
 
+#ifdef SCALANATIVE_GC_STICKY
+// Marking an object marks its block and every line it spans, and the marks
+// stay until the next full collection, which makes all objects young again.
+// So an old object lies only in marked lines of a marked block; the verifier
+// checks that after each collection.
+static inline bool WriteBarrier_inMarkedLine(word_t *word) {
+    BlockMeta *blockMeta =
+        Block_GetBlockMeta(heap.blockMetaStart, heap.heapStart, word);
+    return BlockMeta_IsMarked(blockMeta) &&
+           Line_IsMarked(Heap_LineMetaForWord(&heap, word));
+}
+#endif
+
 // Called by generated code before a reference is stored through a raw
 // pointer into the heap range, when the containing object is not known:
 // atomic operations on fields and array elements, and stores through Ptr.
 WRITE_BARRIER_SLOW_PATH void scalanative_GC_write_barrier_slot(word_t *slot) {
+#ifdef SCALANATIVE_GC_STICKY
+    // Most such stores are into young objects: tell without looking for the
+    // start of the object.
+    if (BlockMeta_IsSimpleBlock(
+            Block_GetBlockMeta(heap.blockMetaStart, heap.heapStart, slot)) &&
+        !WriteBarrier_inMarkedLine(slot))
+        return;
+#endif
     word_t *object = WriteBarrier_objectBefore(slot);
     if (object == NULL)
         return;
@@ -291,6 +312,16 @@ void WriteBarrier_VerifyAfterCollection(void) {
             continue;
         survivors++;
         Object *object = (Object *)current;
+        if (BlockMeta_IsSimpleBlock(Block_GetBlockMeta(
+                heap.blockMetaStart, heap.heapStart, current)) &&
+            !(WriteBarrier_inMarkedLine(current) &&
+              WriteBarrier_inMarkedLine(Object_LastWord(object)))) {
+            fprintf(stderr,
+                    "GC sticky collector: old object at %p is not in marked "
+                    "lines of a marked block\n",
+                    (void *)current);
+            abort();
+        }
         size_t offset;
         size_t bad = WriteBarrier_countReferences(
             object, &offset, WriteBarrier_isDangling, false);
