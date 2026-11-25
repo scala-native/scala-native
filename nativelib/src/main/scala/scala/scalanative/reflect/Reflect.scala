@@ -39,7 +39,24 @@ final class InstantiatableClass private[reflect] (
    *  If no such public constructor exists, returns `None`.
    */
   def getConstructor(parameterTypes: Class[_]*): Option[InvokableConstructor] =
-    declaredConstructors.find(_.parameterTypes.sameElements(parameterTypes))
+    declaredConstructors.find { ctor =>
+      ctor.parameterTypes.length == parameterTypes.length &&
+      ctor.parameterTypes.iterator.zip(parameterTypes.iterator).forall {
+        case (declared, requested) => sameParameterType(declared, requested)
+      }
+    }
+
+  /* The compiler records the class of an array parameter as the class of
+   * Array[Object]: any array of references matches it.
+   */
+  private def sameParameterType(
+      declared: Class[_],
+      requested: Class[_]
+  ): Boolean =
+    (declared eq requested) || {
+      (declared eq classOf[Array[Object]]) && requested != null &&
+      requested.isArray() && !requested.getComponentType().isPrimitive()
+    }
 }
 
 final class InvokableConstructor private[reflect] (

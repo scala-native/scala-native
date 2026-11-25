@@ -33,7 +33,17 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
       case "scala.scalanative.runtime.RawSize"          => "size"
       case "scala.scalanative.runtime.RawPtr"           => "pointer"
       case "scala.scalanative.runtime.BoxedUnit$" => "scala.runtime.BoxedUnit"
-      case name                                   => name
+      // JVM binary names of array classes, see Class.getName
+      case "scala.scalanative.runtime.BooleanArray" => "[Z"
+      case "scala.scalanative.runtime.CharArray"    => "[C"
+      case "scala.scalanative.runtime.ByteArray"    => "[B"
+      case "scala.scalanative.runtime.ShortArray"   => "[S"
+      case "scala.scalanative.runtime.IntArray"     => "[I"
+      case "scala.scalanative.runtime.LongArray"    => "[J"
+      case "scala.scalanative.runtime.FloatArray"   => "[F"
+      case "scala.scalanative.runtime.DoubleArray"  => "[D"
+      case "scala.scalanative.runtime.ObjectArray"  => "[Ljava.lang.Object;"
+      case name                                     => name
     }
     else info.name.id
   }
@@ -69,6 +79,10 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
         .genLayout(vtable = meta.vtable(cls).ty)
     case _ => meta.layouts.Rtti.layout
   }
+
+  /** Size of this RTTI in bytes. */
+  def size: Int = MemoryLayout.sizeOf(struct).toInt
+
   lazy val value: nir.Val.StructValue = {
     val flags = nir.Val.Int(Flags(info))
     val typeStr = nir.Val.String(typeName)
@@ -115,8 +129,10 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
       nir.Type.fromArrayClass(cls.name) match {
         case None         => meta.layout(cls).referenceOffsetsValue
         case Some(elemTy) =>
+          val component =
+            nir.Type.classOfClassName(nir.Type.classOfType(elemTy))
           meta.analysis.infos
-            .get(nir.Type.typeToName(elemTy))
+            .get(component)
             .map(info => meta.rtti(info).const)
             .getOrElse(nir.Val.Null)
       }
@@ -183,6 +199,22 @@ private[codegen] object RuntimeTypeInformation {
     private val SuspendedStacks =
       nir.Global.Top("scala.scalanative.runtime.SuspendedStacks")
 
+    final val MaxArrayDimensions = 255
+
+    // Of array classes, as on the JVM limited to 255
+    private def dimensions(cls: Class): Int = {
+      def loop(elem: Option[nir.Type]): Int = elem match {
+        case Some(nir.Type.Array(elem, _)) => 1 + loop(Some(elem))
+        case _                             => 0
+      }
+      val dims = 1 + loop(nir.Type.fromArrayClass(cls.name))
+      if (dims > MaxArrayDimensions)
+        util.unsupported(
+          s"${cls.name.id}: arrays have at most $MaxArrayDimensions dimensions"
+        )
+      dims
+    }
+
     /** Computed from the type and its ancestors only. */
     def apply(info: ScopeInfo)(implicit meta: Metadata): Int = info match {
       case trt: Trait =>
@@ -194,8 +226,9 @@ private[codegen] object RuntimeTypeInformation {
         val arrayFlags =
           if (!isArray) 0
           else
-            IsArray | (1 << ArrayDimensionsShift) | {
-              if (cls.name == ObjectArray) ArrayScanReferences
+            IsArray | (dimensions(cls) << ArrayDimensionsShift) | {
+              if (cls.name == ObjectArray ||
+                  nir.Type.isSyntheticArrayClass(cls.name)) ArrayScanReferences
               else if (cls.name == nir.Rt.BlobArray.name) ArrayScanConservative
               else ArrayScanNone
             }

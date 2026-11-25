@@ -99,8 +99,7 @@ private[runtime] object StackTrace {
   private[runtime] def materializeStackTrace(
       raw: scala.Array[Long]
   ): scala.Array[StackTraceElement] = {
-    def emptyStackTrace = scala.Array.emptyObjectArray
-      .asInstanceOf[scala.Array[StackTraceElement]]
+    def emptyStackTrace = new scala.Array[StackTraceElement](0)
     if (raw.isEmpty)
       return emptyStackTrace
 
@@ -140,8 +139,7 @@ private[runtime] object StackTrace {
 
   // Used only on Windows where we are forced to use the exactly the same context/cursor
   @noinline def currentStackTrace(): scala.Array[StackTraceElement] = {
-    def emptyStackTrace = scala.Array.emptyObjectArray
-      .asInstanceOf[scala.Array[StackTraceElement]]
+    def emptyStackTrace = new scala.Array[StackTraceElement](0)
     // Used to prevent filling stacktraces inside `currentStackTrace` which might lead to infinite loop
     val thread = NativeThread.currentNativeThread
     if (null eq thread)

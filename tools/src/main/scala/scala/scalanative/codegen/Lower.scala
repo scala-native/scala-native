@@ -1925,6 +1925,63 @@ private[scalanative] object Lower {
       val nir.Op.Arrayalloc(ty, v1, v2) = op
       val init = genVal(buf, v1)
       val zone = v2.map(genVal(buf, _))
+      val elem = nir.Type.canonicalArrayElement(ty)
+      if (nir.Type.typeToArray.contains(elem)) genUntypedArrayalloc(buf, n, ty, init, zone)
+      else {
+        // Arrays of references with elements other than Object have a class
+        // of their own, see nir.Type.arrayClassName
+        val arrayClass = rtti(analysis.infos(nir.Type.arrayClassName(elem))).const
+        genTypedArrayalloc(buf, n, arrayClass, init, zone)
+      }
+    }
+
+    private def genTypedArrayalloc(
+        buf: nir.InstructionBuilder,
+        n: nir.Local,
+        arrayClass: nir.Val,
+        init: nir.Val,
+        zone: Option[nir.Val]
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
+      val module = genModuleOp(buf, fresh(), nir.Op.Module(ObjectArrayModule))
+      val call = init match {
+        case len if len.ty == nir.Type.Int =>
+          zone match {
+            case Some(zone) =>
+              nir.Op.Call(typedArrayZoneAllocSig, nir.Val.Global(typedArrayZoneAlloc, nir.Type.Ptr), Seq(module, len, arrayClass, zone))
+            case None =>
+              nir.Op.Call(typedArrayHeapAllocSig, nir.Val.Global(typedArrayHeapAlloc, nir.Type.Ptr), Seq(module, len, arrayClass))
+          }
+        case arrval: nir.Val.ArrayValue =>
+          val len = nir.Val.Int(arrval.values.length)
+          val data = genArrayValueData(buf, arrval)
+          nir.Op.Call(typedArraySnapshotSig, nir.Val.Global(typedArraySnapshot, nir.Type.Ptr), Seq(module, len, arrayClass, data))
+        case _ => util.unreachable
+      }
+      buf.let(n, call, unwind)
+    }
+
+    // Initial values of an array, copied to the stack unless all are constant
+    private def genArrayValueData(buf: nir.InstructionBuilder, arrval: nir.Val.ArrayValue)(implicit
+        srcPosition: nir.SourcePosition,
+        scopeId: nir.ScopeId
+    ): nir.Val =
+      if (arrval.values.exists(!_.isCanonical)) {
+        val alloc = buf.stackalloc(arrval.ty, one, unwind)
+        arrval.values.zipWithIndex.foreach {
+          case (value, idx) =>
+            val innerPtr = buf.elem(arrval.ty, alloc, Seq(zero, nir.Val.Int(idx)), unwind)
+            buf.store(arrval.elemty, innerPtr, genVal(buf, value), unwind)
+        }
+        alloc
+      } else nir.Val.Const(arrval)
+
+    private def genUntypedArrayalloc(
+        buf: nir.InstructionBuilder,
+        n: nir.Local,
+        ty: nir.Type,
+        init: nir.Val,
+        zone: Option[nir.Val]
+    )(implicit srcPosition: nir.SourcePosition, scopeId: nir.ScopeId): Unit = {
       init match {
         case len if len.ty == nir.Type.Int =>
           val (arrayAlloc, arrayAllocSig) = zone match {
@@ -1952,23 +2009,7 @@ private[scalanative] object Lower {
           val func = arraySnapshot.getOrElse(ty, arraySnapshot(nir.Rt.Object))
           val module = genModuleOp(buf, fresh(), nir.Op.Module(func.owner))
           val len = nir.Val.Int(arrval.values.length)
-          val init =
-            if (arrval.values.exists(!_.isCanonical)) {
-              // At least one of init values in non canonical (e.g. Val.Local), create a copy on stack
-              val alloc = buf.stackalloc(arrval.ty, one, unwind)
-              arrval.values.zipWithIndex.foreach {
-                case (value, idx) =>
-                  val innerPtr =
-                    buf.elem(
-                      arrval.ty,
-                      alloc,
-                      Seq(zero, nir.Val.Int(idx)),
-                      unwind
-                    )
-                  buf.store(arrval.elemty, innerPtr, genVal(buf, value), unwind)
-              }
-              alloc
-            } else nir.Val.Const(arrval)
+          val init = genArrayValueData(buf, arrval)
           buf.let(
             n,
             nir.Op.Call(
@@ -2335,6 +2376,23 @@ private[scalanative] object Lower {
   val throwSig = nir.Type.Function(Seq(nir.Type.Ptr), nir.Type.Nothing)
   val throw_ = nir.Val.Global(throwName, nir.Type.Ptr)
 
+  val ObjectArrayModule = nir.Global.Top("scala.scalanative.runtime.ObjectArray$")
+  private val ObjectArrayModuleRef = nir.Type.Ref(ObjectArrayModule)
+
+  // Arrays of references with a class of their own, see nir.Type.arrayClassName
+  val typedArrayHeapAlloc =
+    ObjectArrayModule.member(nir.Sig.Method("alloc", Seq(nir.Type.Int, nir.Type.Ptr, nir.Rt.ObjectArray)))
+  val typedArrayHeapAllocSig =
+    nir.Type.Function(Seq(ObjectArrayModuleRef, nir.Type.Int, nir.Type.Ptr), nir.Rt.ObjectArray)
+  val typedArrayZoneAlloc =
+    ObjectArrayModule.member(nir.Sig.Method("alloc", Seq(nir.Type.Int, nir.Type.Ptr, SafeZone, nir.Rt.ObjectArray)))
+  val typedArrayZoneAllocSig =
+    nir.Type.Function(Seq(ObjectArrayModuleRef, nir.Type.Int, nir.Type.Ptr, SafeZone), nir.Rt.ObjectArray)
+  val typedArraySnapshot =
+    ObjectArrayModule.member(nir.Sig.Method("snapshot", Seq(nir.Type.Int, nir.Type.Ptr, nir.Type.Ptr, nir.Rt.ObjectArray)))
+  val typedArraySnapshotSig =
+    nir.Type.Function(Seq(ObjectArrayModuleRef, nir.Type.Int, nir.Type.Ptr, nir.Type.Ptr), nir.Rt.ObjectArray)
+
   def arrayHeapAllocOf(ty: nir.Type, arrayClassName: nir.Global.Top) = {
     val arrcls = nir.Type.Ref(arrayClassName)
     nir.Global.Member(
@@ -2612,6 +2670,9 @@ private[scalanative] object Lower {
     buf ++= allArrayHeapAlloc
     buf ++= allArrayZoneAlloc
     buf ++= allArraySnapshot
+    buf += typedArrayHeapAlloc
+    buf += typedArrayZoneAlloc
+    buf += typedArraySnapshot
     buf ++= allArrayApplyGeneric
     buf ++= allArrayApply
     buf ++= allArrayUpdateGeneric

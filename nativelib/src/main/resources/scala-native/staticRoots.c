@@ -126,7 +126,7 @@ SN_SECTION_LOCAL void scalanative_register_object_roots(void *object) {
     }
 }
 
-SN_SECTION_LOCAL void scalanative_register_static_roots(void) {
+static void registerStaticObjectRoots(void) {
     registerSection(scalanative_static_globals_section());
     if (!scalanative_GC_add_root_provider(scanLockWords, NULL))
         abort();
@@ -136,7 +136,7 @@ SN_SECTION_LOCAL void scalanative_register_static_roots(void) {
 
 // Without multithreading objects have no lock word to register
 
-SN_SECTION_LOCAL void scalanative_register_static_roots(void) {
+static void registerStaticObjectRoots(void) {
     registerSection(scalanative_static_globals_section());
 }
 
@@ -144,4 +144,76 @@ SN_SECTION_LOCAL void scalanative_register_object_roots(void *object) {
     (void)object;
 }
 
+static void lockLockWords(void) {}
+static void unlockLockWords(void) {}
+
 #endif
+
+/* Classes created at runtime, the classes of arrays of references, see
+ * runtime.ArrayClasses. Object headers do not keep classes alive, so they live
+ * outside the heap and are never freed. They reference the heap through
+ * their name and, with multithreading, their lock word: both are roots. The
+ * list only grows; collectors read the published count without locking.
+ */
+#define RUNTIME_CLASSES_PER_CHUNK 64
+
+typedef struct RuntimeClassChunk {
+    struct RuntimeClassChunk *next;
+    Rtti *classes[RUNTIME_CLASSES_PER_CHUNK];
+} RuntimeClassChunk;
+
+static RuntimeClassChunk firstClassChunk;
+static RuntimeClassChunk *lastClassChunk = &firstClassChunk;
+static atomic_size_t publishedRuntimeClasses;
+
+SN_SECTION_LOCAL void *scalanative_alloc_runtime_class(size_t size) {
+    Rtti *cls = calloc(1, size);
+    if (cls == NULL)
+        return NULL;
+    lockLockWords();
+    size_t count =
+        atomic_load_explicit(&publishedRuntimeClasses, memory_order_relaxed);
+    size_t index = count % RUNTIME_CLASSES_PER_CHUNK;
+    if (count > 0 && index == 0) {
+        RuntimeClassChunk *chunk = calloc(1, sizeof(RuntimeClassChunk));
+        if (chunk == NULL)
+            abort();
+        lastClassChunk->next = chunk;
+        lastClassChunk = chunk;
+    }
+    lastClassChunk->classes[index] = cls;
+    atomic_store_explicit(&publishedRuntimeClasses, count + 1,
+                          memory_order_release);
+    unlockLockWords();
+    return cls;
+}
+
+static void scanRuntimeClasses(void *data, GC_ScanRangeFn *scan, void *ctx) {
+    (void)data;
+    size_t count =
+        atomic_load_explicit(&publishedRuntimeClasses, memory_order_acquire);
+    RuntimeClassChunk *chunk = &firstClassChunk;
+    for (size_t i = 0; i < count; i++) {
+        if (i > 0 && i % RUNTIME_CLASSES_PER_CHUNK == 0)
+            chunk = chunk->next;
+        Rtti *cls = chunk->classes[i % RUNTIME_CLASSES_PER_CHUNK];
+        scan(ctx, &cls->rt.name, &cls->rt.name + 1);
+#ifdef USES_LOCKWORD
+        if (Field_isInflatedLock(cls->rt.lockWord))
+            scan(ctx, &cls->rt.lockWord, &cls->rt.lockWord + 1);
+#endif
+    }
+}
+
+// Defined by the code generator
+extern const int32_t __scalanative_object_array_class_size;
+
+SN_SECTION_LOCAL size_t scalanative_object_array_class_size(void) {
+    return (size_t)__scalanative_object_array_class_size;
+}
+
+SN_SECTION_LOCAL void scalanative_register_static_roots(void) {
+    registerStaticObjectRoots();
+    if (!scalanative_GC_add_root_provider(scanRuntimeClasses, NULL))
+        abort();
+}

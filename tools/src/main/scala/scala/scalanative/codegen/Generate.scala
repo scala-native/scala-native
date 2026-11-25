@@ -62,6 +62,15 @@ private[codegen] object Generate {
         )
         buf += classListEntry(rtti)(pos)
       }
+      // Template of the classes of arrays created at runtime, see runtime.ArrayClasses
+      meta.analysis.infos.get(nir.Rt.ObjectArray.name).foreach { info =>
+        buf += nir.Defn.Const(
+          nir.Attrs.None,
+          Extern("__scalanative_object_array_class_size"),
+          nir.Type.Int,
+          nir.Val.Int(meta.rtti(info).size)
+        )(info.position)
+      }
     }
 
     // Lists the RTTI in the class list section iterated by Class.forName

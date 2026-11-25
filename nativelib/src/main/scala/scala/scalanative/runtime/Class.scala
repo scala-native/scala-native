@@ -57,7 +57,40 @@ private[runtime] final class _Class[A] {
 
   def getName(): String = name
 
-  def getSimpleName(): String = {
+  /** Name of arrays in source code form, `java.lang.String[]`. */
+  def getTypeName(): String =
+    if (isArray()) getComponentType().getTypeName() + "[]"
+    else getName()
+
+  /** @since JDK 12 */
+  def componentType(): Class[_] = getComponentType()
+
+  /** @since JDK 12 */
+  def arrayType(): Class[_] = ArrayClasses.of(this)
+
+  // Type descriptor as in class files, `[Ljava/lang/String;`
+  /** @since JDK 12 */
+  def descriptorString(): String =
+    if (isPrimitive()) name match {
+      case "boolean" => "Z"
+      case "byte"    => "B"
+      case "char"    => "C"
+      case "short"   => "S"
+      case "int"     => "I"
+      case "long"    => "J"
+      case "float"   => "F"
+      case "double"  => "D"
+      case "void"    => "V"
+      case other     => other
+    }
+    else if (isArray()) name.replace('.', '/')
+    else "L" + name.replace('.', '/') + ";"
+
+  def getSimpleName(): String =
+    if (isArray()) getComponentType().getSimpleName() + "[]"
+    else getClassSimpleName()
+
+  private def getClassSimpleName(): String = {
     val lastDot = name.lastIndexOf('.'.toInt)
     val lastDollar = name.lastIndexOf('$'.toInt)
     if (lastDollar < 0) name.substring(lastDot + 1)
@@ -101,15 +134,21 @@ private[runtime] final class _Class[A] {
     val left = that.asInstanceOf[_Class[_]]
     // unlikely, only possible when operating on Class[_] instances
     if (left.isInterface()) _Class.interfaceIs(left, this)
+    else if (_Class.isReferenceArray(this)) _Class.arrayIs(left, this)
     else _Class.classIs(Intrinsics.castObjectToRawPtr(left), this)
   }
 
   // The class of an object is never an interface: no check on its side
   @inline def isInstance(obj: Object): scala.Boolean =
-    obj != null && _Class.classIs(
-      Intrinsics.loadRawPtr(Intrinsics.castObjectToRawPtr(obj)),
-      this
-    )
+    obj != null && {
+      val cls = Intrinsics.loadRawPtr(Intrinsics.castObjectToRawPtr(obj))
+      if (_Class.isReferenceArray(this))
+        _Class.arrayIs(
+          Intrinsics.castRawPtrToObject(cls).asInstanceOf[_Class[_]],
+          this
+        )
+      else _Class.classIs(cls, this)
+    }
 
   @inline override def equals(other: Any): scala.Boolean =
     other match {
@@ -130,13 +169,21 @@ private[runtime] final class _Class[A] {
   }
 
   def getInterfaces(): scala.Array[Class[_]] = {
-    val array =
-      if (interfacesCount == 0) scala.Array.emptyObjectArray
-      else ObjectArray.snapshot(interfacesCount, interfaces)
-    array.asInstanceOf[scala.Array[Class[_]]]
+    val array = new scala.Array[Class[_]](interfacesCount)
+    var idx = 0
+    while (idx < interfacesCount) {
+      array(idx) = Intrinsics
+        .loadObject(Intrinsics.elemRawPtr(interfaces, _Class.PtrSize * idx))
+        .asInstanceOf[Class[_]]
+      idx += 1
+    }
+    array
   }
+
   def getSuperclass(): Class[_ >: A] =
     if (isInterface() || superclassCount == 0) null
+    // Arrays are implemented by subclasses of runtime.Array
+    else if (isArray()) classOf[Object].asInstanceOf[Class[_ >: A]]
     else
       _Class.ancestorAt(this, superclassCount - 1).asInstanceOf[Class[_ >: A]]
 
@@ -209,8 +256,30 @@ private[runtime] object _Class {
     final val IsInterface = 0x1 // 1 << 0
     final val IsPrimitive = 0x2 // 1 << 1
     final val IsArray = 0x4 // 1 << 2
+    // Arrays only, bits 3-4: how the GC scans the elements
+    final val ArrayScanMask = 0x18 // 3 << 3
+    final val ArrayScanReferences = 0x8 // 1 << 3
     final val TraitKeyShift = 8
   }
+
+  /* Classes of arrays of references, other than BlobArray. Besides
+   * ObjectArray, the class of Array[Object], each array type has a class of
+   * its own, see ArrayClasses.
+   */
+  @alwaysinline private[runtime] def isReferenceArray(cls: _Class[_]) =
+    (cls.flags & (Flags.IsArray | Flags.ArrayScanMask)) ==
+      (Flags.IsArray | Flags.ArrayScanReferences)
+
+  /* Whether instances of class `left` are instances of `right`, an array of
+   * references: arrays of references are covariant in their component type
+   * (JLS 4.10.3). Their components are never primitives.
+   */
+  @noinline private[runtime] def arrayIs(
+      left: _Class[_],
+      right: _Class[_]
+  ): Boolean =
+    (left eq right) || (isReferenceArray(left) &&
+    right.getComponentType().isAssignableFrom(left.getComponentType()))
 
   // Keep in sync with codegen.CommonMemoryLayouts.LineageSize
   private final val LineageSize = 8
@@ -372,7 +441,7 @@ private[runtime] object _Class {
     }
 }
 
-private object LinkedClasses {
+private[runtime] object LinkedClasses {
   import Intrinsics._
 
   // ConcurrentHashMap does not allow null values
@@ -380,20 +449,80 @@ private object LinkedClasses {
   private val cache = new ConcurrentHashMap[String, AnyRef]
 
   def forName(className: String): Class[_] =
-    cache.computeIfAbsent(
-      className,
-      name => {
-        val cls = find(name)
-        if (cls != null) cls else NotFound
+    if (className.startsWith("[")) arrayForName(className)
+    else
+      cache.computeIfAbsent(
+        className,
+        name => {
+          val cls = find(name)
+          if (cls != null) cls else NotFound
+        }
+      ) match {
+        case cls: Class[_] => cls
+        case _             => throw new ClassNotFoundException(className)
       }
-    ) match {
-      case cls: Class[_] => cls
-      case _             => throw new ClassNotFoundException(className)
+
+  /* Binary names of array types: one `[` per dimension, then the code of a
+   * primitive component or `L<class name>;`.
+   */
+  private def arrayForName(className: String): Class[_] = {
+    def notFound() = throw new ClassNotFoundException(className)
+    var dims = 0
+    while (dims < className.length() && className.charAt(dims) == '[')
+      dims += 1
+    val element = className.substring(dims)
+    val component: Class[_] =
+      if (element.length() == 1) element.charAt(0) match {
+        case 'Z' => classOf[scala.Boolean]
+        case 'B' => classOf[scala.Byte]
+        case 'C' => classOf[scala.Char]
+        case 'S' => classOf[scala.Short]
+        case 'I' => classOf[scala.Int]
+        case 'J' => classOf[scala.Long]
+        case 'F' => classOf[scala.Float]
+        case 'D' => classOf[scala.Double]
+        case _   => notFound()
+      }
+      else if (element.length() > 2 && element.charAt(0) == 'L' &&
+          element.charAt(element.length() - 1) == ';' &&
+          element.charAt(1) != '[')
+        forName(element.substring(1, element.length() - 1))
+      else notFound()
+    if (dims > 255) notFound()
+    var cls = component
+    while (dims > 0) {
+      cls = ArrayClasses.of(cls)
+      dims -= 1
     }
+    cls
+  }
+
+  // Names of the classes of arrays before they were given JVM names
+  private def legacyArrayClass(className: String): Class[_] =
+    className match {
+      case "scala.scalanative.runtime.BooleanArray" => classOf[BooleanArray]
+      case "scala.scalanative.runtime.CharArray"    => classOf[CharArray]
+      case "scala.scalanative.runtime.ByteArray"    => classOf[ByteArray]
+      case "scala.scalanative.runtime.ShortArray"   => classOf[ShortArray]
+      case "scala.scalanative.runtime.IntArray"     => classOf[IntArray]
+      case "scala.scalanative.runtime.LongArray"    => classOf[LongArray]
+      case "scala.scalanative.runtime.FloatArray"   => classOf[FloatArray]
+      case "scala.scalanative.runtime.DoubleArray"  => classOf[DoubleArray]
+      case "scala.scalanative.runtime.ObjectArray"  => classOf[ObjectArray]
+      case _                                        => null
+    }
+
+  private def find(className: String): Class[_] = {
+    var found: Class[_] = null
+    foreach { cls =>
+      if (found == null && cls.name == className) found = cls
+    }
+    if (found != null) found else legacyArrayClass(className)
+  }
 
   // The class list section holds a pointer to the RTTI of every class and
   // trait, the RTTI of a type is its java.lang.Class instance
-  private def find(className: String): Class[_] = {
+  def foreach(f: _Class[_] => Unit): Unit = {
     val ptrSize = _Class.PtrSize
     val section = StaticRoots.classListSection()
     val start = loadRawPtr(section)
@@ -402,12 +531,9 @@ private object LinkedClasses {
     var offset = 0L
     while (offset < size) {
       val rtti = loadRawPtr(elemRawPtr(start, castLongToRawSize(offset)))
-      if (castRawPtrToLong(rtti) != 0L) {
-        val cls = castRawPtrToObject(rtti).asInstanceOf[_Class[_]]
-        if (cls.name == className) return cls
-      }
+      if (castRawPtrToLong(rtti) != 0L)
+        f(castRawPtrToObject(rtti).asInstanceOf[_Class[_]])
       offset += ptrSize
     }
-    null
   }
 }

@@ -79,9 +79,11 @@ object Array {
     if (from == null || to == null) {
       throw new NullPointerException()
     } else if (!from.isInstanceOf[Array[_]]) {
-      throw new IllegalArgumentException("from argument must be an array")
+      throw new ArrayStoreException(
+        "Cannot copy from " + from.getClass.getName + ", not an array")
     } else if (!to.isInstanceOf[Array[_]]) {
-      throw new IllegalArgumentException("to argument must be an array")
+      throw new ArrayStoreException(
+        "Cannot copy to " + to.getClass.getName + ", not an array")
     } else {
       copy(from.asInstanceOf[Array[_]],
            fromPos,
@@ -98,8 +100,14 @@ object Array {
            len: Int): Unit = {
     if (from == null || to == null) {
       throw new NullPointerException()
-    } else if (from.getClass != to.getClass) {
-      throw new ArrayStoreException("Invalid array copy.")
+    }
+    val sameClass = from.getClass eq to.getClass
+    if (!sameClass &&
+        !(from.isInstanceOf[ObjectArray] && to.isInstanceOf[ObjectArray])) {
+      // Arrays of different primitives, or of primitives and references
+      throw new ArrayStoreException(
+        "Cannot copy from an array of class " + from.getClass.getName +
+          " to an array of class " + to.getClass.getName)
     } else if (len < 0) {
       throw new ArrayIndexOutOfBoundsException("length is negative")
     } else if (len == 0) {
@@ -108,11 +116,37 @@ object Array {
       throwOutOfBounds(fromPos, from.length)
     } else if (toPos < 0 || len > to.length - toPos) {
       throwOutOfBounds(toPos, to.length)
-    } else {
+    } else if (sameClass || to.getClass.isAssignableFrom(from.getClass)) {
       val fromPtr = from.atRawUnsafe(fromPos)
       val toPtr   = to.atRawUnsafe(toPos)
       val size    = to.stride * len
       ffi.memmove(toPtr, fromPtr, castIntToRawSizeUnsigned(size))
+    } else {
+      checkedCopy(from.asInstanceOf[ObjectArray], fromPos,
+                  to.asInstanceOf[ObjectArray], toPos, len)
+    }
+  }
+
+  /* Copy between arrays of references of unrelated types: each element
+   * must be an instance of the component type of `to`. Elements before the
+   * first one that is not are copied. The arrays are distinct, they have
+   * different classes.
+   */
+  @noinline private def checkedCopy(from: ObjectArray,
+                                    fromPos: Int,
+                                    to: ObjectArray,
+                                    toPos: Int,
+                                    len: Int): Unit = {
+    val component = to.getClass.getComponentType
+    var i = 0
+    while (i < len) {
+      val elem = from(fromPos + i)
+      if (elem != null && !component.isInstance(elem))
+        throw new ArrayStoreException(
+          "Cannot store an instance of " + elem.getClass.getName +
+            " in an array of class " + to.getClass.getName)
+      to(toPos + i) = elem
+      i += 1
     }
   }
 
@@ -226,7 +260,12 @@ final class ${T}Array private () extends Array[${Repr}] {
   @inline def update(i: Int, value: ${Repr}): Unit = store${Repr}(atRaw(i), value)
 
   @inline override def clone(): ${T}Array = {
+  % if T == 'Object':
+    // Arrays of references share this class, keep the class of the receiver
+    val arrcls  = getClass().asInstanceOf[Class[ObjectArray]]
+  % else:
     val arrcls  = classOf[${T}Array]
+  % end
     val arr     = GC.alloc_array(arrcls, castIntToRawSizeUnsigned(length), castIntToRawSize(${sizeT}))
     val src     = castObjectToRawPtr(this)
     ffi.memcpy(
@@ -284,5 +323,41 @@ object ${T}Array {
     }
     arr
   }
+% if T == 'Object':
+
+  /* Allocation of arrays of references of class `arrayClass`, the RTTI of an
+   * array type, see ArrayClasses. Used by the compiler for arrays with
+   * elements other than Object.
+   */
+  @inline def alloc(length: Int, arrayClass: RawPtr): ObjectArray = {
+    if (length < 0) {
+      throw new NegativeArraySizeException
+    }
+    val arrcls = castRawPtrToObject(arrayClass).asInstanceOf[Class[ObjectArray]]
+    val arr = GC.alloc_array(arrcls, castIntToRawSizeUnsigned(length), castIntToRawSize(${sizeT}))
+    castRawPtrToObject(arr).asInstanceOf[ObjectArray]
+  }
+
+  @inline def alloc(length: Int, arrayClass: RawPtr, zone: SafeZone): ObjectArray = {
+    if (length < 0) {
+      throw new NegativeArraySizeException
+    }
+    val arrsize = castIntToRawSizeUnsigned(MemoryLayout.Array.ValuesOffset + ${sizeT} * length)
+    val arr = zone.allocImpl(arrayClass, arrsize)
+    storeInt(elemRawPtr(arr, MemoryLayout.Array.LengthOffset), length)
+    storeInt(elemRawPtr(arr, MemoryLayout.Array.StrideOffset), ${sizeT})
+    castRawPtrToObject(arr).asInstanceOf[ObjectArray]
+  }
+
+  @inline def snapshot(length: Int, arrayClass: RawPtr, data: RawPtr): ObjectArray = {
+    val arr  = alloc(length, arrayClass)
+    if(length > 0) {
+      val dst  = arr.atRawUnsafe(0)
+      val size = castIntToRawSizeUnsigned(${sizeT} * length)
+      ffi.memcpy(dst, data, size)
+    }
+    arr
+  }
+% end
 }
 % end
