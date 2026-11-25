@@ -39,8 +39,9 @@ import scala.scalanative.windows._
  * with ClosedByInterruptException or AsynchronousCloseException. Stream
  * methods (private[java]) skip begin()/end().
  *
- * Syscalls run under an fd lease (see FileDescriptor), so close() never
- * frees an fd number still in use.
+ * Syscalls run under an fd lease (see SharedHandle), so close() never frees
+ * an fd number still in use. Open checks run before begin(), so a closed
+ * channel throws ClosedChannelException.
  */
 private[java] final class FileChannelImpl(
     fd: FileDescriptor,
@@ -49,14 +50,15 @@ private[java] final class FileChannelImpl(
     openForReading: Boolean,
     openForWriting: Boolean,
     openForAppending: Boolean = false,
-    // Unix: opened by FileChannel.open and not shared, so O_NONBLOCK is safe.
-    privateDescription: Boolean = false
+    initialKind: Int = FileChannelImpl.KindUnknown
 ) extends FileChannel {
   import FileChannelImpl._
 
-  @volatile private var kindCache = KindUnknown
-  @volatile private var pipeBufCache = 0
-  @volatile private var nonBlocking = false
+  private val shared = fd.shared
+  // Idempotent caches: a race only repeats the work.
+  private var kindCache = initialKind
+  private var pipeBufCache = 0
+  private var nonBlocking = false
 
   // Held by operations that use or move the position, or change the size.
   private val positionLock = new ReentrantLock()
@@ -98,28 +100,31 @@ private[java] final class FileChannelImpl(
 
   // Leases the fd; `intr` marks a channel operation, which close() wakes.
   @inline private def leased[T](intr: Boolean)(body: => T): T = {
-    if (!fd.acquire())
+    if (!shared.acquire())
       throw {
         if (intr) new ClosedChannelException()
         else new IOException("Stream Closed")
       }
     var registered = false
     try {
-      if (intr && kind == KindCancellable) {
-        fd.registerBlocked()
-        registered = true
+      if (isWindows) {
+        if (intr && kind == KindCancellable) {
+          shared.registerBlocked()
+          registered = true
+        }
       }
       body
     } finally {
-      if (registered) fd.deregisterBlocked()
-      fd.release()
+      if (registered) shared.deregisterBlocked()
+      shared.release()
     }
   }
 
   private def locked[T](intr: Boolean)(body: => T): T =
     withPositionLock(intr)(leased(intr)(body))
 
-  @inline private def closing(intr: Boolean): Boolean = intr && fd.isClosing
+  @inline private def closing(intr: Boolean): Boolean =
+    intr && shared.isClosing
 
   // Unix uses O_APPEND, Windows emulates it.
   if (isWindows) {
@@ -252,13 +257,13 @@ private[java] final class FileChannelImpl(
     new FileLockImpl(this, position, size, true, fd)
   }
 
-  // Wakes blocked channel operations; the OS close waits for syscalls in flight.
+  // See SharedHandle.close.
   protected def implCloseChannel(): Unit = {
     val delete: () => Unit =
       if (deleteFileOnClose && file.isDefined)
         () => Files.delete(file.get.toPath())
       else null
-    fd.close(delete)
+    shared.close(delete)
   }
 
   override def map(
@@ -328,7 +333,6 @@ private[java] final class FileChannelImpl(
     this
   }
 
-  // Called before begin(): already closed means ClosedChannelException.
   private def checkPosition(offset: Long): Unit = {
     ensureOpen()
     if (offset < 0)
@@ -585,8 +589,8 @@ private[java] final class FileChannelImpl(
     else n.toInt
   }
 
-  /* write, or pwrite if pos >= 0. Writes all bytes unless a write returns 0
-   * or close() intervenes; throws AsynchronousCloseException if none written.
+  /* write, or pwrite if pos >= 0. Loops until done, a 0-byte write or
+   * close(); throws AsynchronousCloseException only if nothing was written.
    */
   private def unixWrite(
       buf: Ptr[Byte],
@@ -595,8 +599,8 @@ private[java] final class FileChannelImpl(
       intr: Boolean
   ): Int = {
     val pollFirst = prepareBlockingCall(intr, pos)
-    // After POLLOUT, a pipe or FIFO write of up to PIPE_BUF bytes does not
-    // block. A terminal gives no such promise: close() may not wake it.
+    // After POLLOUT a pipe takes PIPE_BUF bytes without blocking. A terminal
+    // may not, and close() cannot wake it.
     val chunk = if (pollFirst) pipeBuf else count
     var written = 0
     var n = 1L
@@ -610,8 +614,9 @@ private[java] final class FileChannelImpl(
     written
   }
 
-  // Retries on EINTR, and a channel operation on EAGAIN after poll(); -1 once
-  // close() stops a channel operation.
+  /* One read or write (pread/pwrite if pos >= 0), retried on EINTR. Channel
+   * operations also wait out EAGAIN, and get -1 once close() stops them.
+   */
   private def blockingCall(
       write: Boolean,
       buf: Ptr[Byte],
@@ -622,10 +627,10 @@ private[java] final class FileChannelImpl(
   ): Long = {
     val fdNum = fd.fd
     val events = if (write) POLLOUT else POLLIN
-    var result = -2L
-    while (result == -2L) {
-      if (closing(intr) || (pollFirst && !awaitReady(fdNum, events, intr)))
-        result = -1L
+    var result = Retry
+    while (result == Retry) {
+      if (pollFirst) awaitReady(fdNum, events)
+      if (closing(intr)) result = -1L
       else {
         val n =
           if (write) {
@@ -638,32 +643,27 @@ private[java] final class FileChannelImpl(
         if (n >= 0) result = n
         else {
           val e = errno
-          // A stream over a non-blocking fd fails, as before: nothing could
-          // wake its poll().
-          if (intr && (e == EAGAIN || e == EWOULDBLOCK)) {
-            if (!awaitReady(fdNum, events, intr)) result = -1L
-          } else if (e != EINTR) throw UnixException(getFileName(), e)
+          // Streams fail on EAGAIN: close() could not wake their poll().
+          if (intr && (e == EAGAIN || e == EWOULDBLOCK))
+            awaitReady(fdNum, events)
+          else if (e != EINTR) throw UnixException(getFileName(), e)
         }
       }
     }
     result
   }
 
-  /* True if each call must poll first: O_NONBLOCK would leak into a shared
-   * description. Positional calls need no waking: they fail at once on FIFOs.
+  /* Makes a relative channel call wakeable: O_NONBLOCK on a private
+   * description, else poll first (true). pread/pwrite fail at once on pipes.
    */
   private def prepareBlockingCall(intr: Boolean, pos: Long): Boolean =
-    if (!intr || pos >= 0) false
-    else
-      kind match {
-        case KindNonBlocking =>
-          enableNonBlocking()
-          false
-        case KindPollFirst => true
-        case _             => false
-      }
+    intr && pos < 0 && {
+      val k = kind
+      if (k == KindNonBlocking) enableNonBlocking()
+      k == KindPollFirst
+    }
 
-  // Kind of file, see KindRegular. Call with a lease held.
+  // See Kind* below. Call with a lease held.
   private def kind: Int = {
     if (kindCache == KindUnknown) kindCache = computeKind()
     kindCache
@@ -673,12 +673,8 @@ private[java] final class FileChannelImpl(
     if (isWindows) {
       if (GetFileType(fd.handle) == FILE_TYPE_DISK) KindRegular
       else KindCancellable
-    } else
-      Zone.acquire { implicit z =>
-        if (FileChannelImpl.isRegularFile(fd.fd)) KindRegular
-        else if (privateDescription) KindNonBlocking
-        else KindPollFirst
-      }
+    } else if (isRegularFd(fd.fd)) KindRegular
+    else KindPollFirst
 
   // Unix: PIPE_BUF for this fd. Call with a lease held.
   private def pipeBuf: Int = {
@@ -689,8 +685,7 @@ private[java] final class FileChannelImpl(
     pipeBufCache
   }
 
-  // Sets O_NONBLOCK. Only for KindNonBlocking: no one else sees the flag, so
-  // racing callers may both set it.
+  // KindNonBlocking only. Racing callers may both set it; harmless.
   private def enableNonBlocking(): Unit =
     if (!nonBlocking) {
       val flags = fcntl(fd.fd, F_GETFL, 0)
@@ -699,27 +694,21 @@ private[java] final class FileChannelImpl(
       nonBlocking = true
     }
 
-  // Polls fdNum; a channel operation also wakes on close() and returns false.
-  private def awaitReady(fdNum: Int, events: Int, intr: Boolean): Boolean = {
+  // Waits until fdNum is ready or close() starts.
+  private def awaitReady(fdNum: Int, events: Int): Unit = {
     val fds = stackalloc[struct_pollfd](2)
     fds.fd = fdNum
     fds.events = events.toShort
-    val nfds =
-      if (!intr) 1
-      else {
-        val wake = fds + 1
-        wake.fd = fd.wakeFd()
-        wake.events = POLLIN.toShort
-        2
-      }
+    val wake = fds + 1
+    wake.fd = shared.wakeFd()
+    wake.events = POLLIN.toShort
     var ready = false
-    while (!ready && !closing(intr)) {
-      val n = poll(fds, nfds.toUInt, -1)
+    while (!ready && !shared.isClosing) {
+      val n = poll(fds, 2.toUInt, -1)
       if (n > 0) ready = true
       else if (n < 0 && errno != EINTR)
         throw UnixException(getFileName(), errno)
     }
-    !closing(intr)
   }
 
   override def size(): Long = {
@@ -741,11 +730,10 @@ private[java] final class FileChannelImpl(
         statBuf.st_size.toLong
       }
 
-  /* Transfers lease the fd and enter begin()/end() only for this channel's
-   * steps, so waiting on the other channel does not hold this one open.
+  /* An interrupt during a transfer closes both channels. Only this channel's
+   * own steps are leased and interruptible, so waiting on the other channel
+   * never holds this one open.
    */
-
-  // An interrupt during a transfer closes both channels.
   private def closeBothIfInterrupted[T](other: Channel)(body: => T): T =
     try body
     catch {
@@ -968,7 +956,7 @@ private[java] final class FileChannelImpl(
     else if (isWindows) {
       val buf = array.at(offset) // no intermediate buffer
       val n = stackalloc[DWord]()
-      // Until all is written or close() stops a channel operation.
+      // Loop until all is written or close() stops a channel operation.
       var written = 0
       var closed = false
       while (!closed && written < count) {
@@ -1034,7 +1022,7 @@ private[java] final class FileChannelImpl(
       (src.array(), src.arrayOffset() + srcPos)
     } else {
       val ba = new Array[Byte](nBytes)
-      src.duplicate().get(ba, 0, nBytes) // src moves only by what is written
+      src.get(srcPos, ba, 0, nBytes) // src moves only by what is written
       (ba, 0)
     }
 
@@ -1207,6 +1195,8 @@ private[java] final class FileChannelImpl(
 }
 
 private[java] object FileChannelImpl {
+  private final val Retry = -2L
+
   private final val KindUnknown = 0
   // Regular or disk file: I/O finishes on its own, no waking needed.
   private final val KindRegular = 1
@@ -1263,10 +1253,14 @@ private[java] object FileChannelImpl {
     val fd =
       if (isWindows) openWindows(pathString, options)
       else openUnix(pathString, options, mode)
-    // O_CLOEXEC, opened here: safe to make O_NONBLOCK, unless shared.
-    val isPrivate = !isWindows && Zone.acquire { implicit z =>
-      !isRegularFile(fd.fd) && !reopensDescription(pathString)
-    }
+    // Opened here with O_CLOEXEC: O_NONBLOCK is safe unless the path
+    // reopens a shared description.
+    val kind =
+      if (isWindows) KindUnknown
+      else if (isRegularFd(fd.fd)) KindRegular
+      else if (Zone.acquire(implicit z => reopensDescription(pathString)))
+        KindPollFirst
+      else KindNonBlocking
     new FileChannelImpl(
       fd,
       Some(path.toFile()),
@@ -1274,7 +1268,7 @@ private[java] object FileChannelImpl {
       openForReading = options.read,
       openForWriting = options.write,
       openForAppending = options.append,
-      privateDescription = isPrivate
+      initialKind = kind
     )
   }
 
@@ -1315,7 +1309,7 @@ private[java] object FileChannelImpl {
     new FileDescriptor(fd, readOnly = !options.write)
   }
 
-  private def isRegularFile(fd: Int)(implicit z: Zone): Boolean = {
+  private def isRegularFd(fd: Int): Boolean = Zone.acquire { implicit z =>
     val st = alloc[stat.stat]()
     stat.fstat(fd, st) == 0 && stat.S_ISREG(st.st_mode) != 0
   }
