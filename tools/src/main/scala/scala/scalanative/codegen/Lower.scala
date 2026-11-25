@@ -841,11 +841,11 @@ private[scalanative] object Lower {
 
       // One ObjectMeta byte per allocation granule of two words.
       val granuleShift = if (platform.is32Bit) 3 else 4
-      val index =
-        if (platform.is32Bit || platform.targetsWindows) {
+      val index = platform.gcBarrierWindowBits match {
+        case None =>
           val offset = genHeapRangeCheck(buf, obj, doneL)
           bin(nir.Bin.Lshr, sizeTy, offset, nir.Val.Size(granuleShift), unwind)
-        } else {
+        case Some(windowBits) =>
           // The heap is aligned to the barrier window and the bytemap covers
           // all of it (see WriteBarrier.h), so the masked address indexes it
           // for any object. An object outside the heap reads an unrelated
@@ -853,8 +853,8 @@ private[scalanative] object Lower {
           val addr = conv(nir.Conv.Ptrtoint, sizeTy, obj, unwind)
           val granule =
             bin(nir.Bin.Lshr, sizeTy, addr, nir.Val.Size(granuleShift), unwind)
-          bin(nir.Bin.And, sizeTy, granule, nir.Val.Size((1L << (GCBarrierWindowBits - granuleShift)) - 1), unwind)
-        }
+          bin(nir.Bin.And, sizeTy, granule, nir.Val.Size((1L << (windowBits - granuleShift)) - 1), unwind)
+      }
       val bytemap = load(nir.Type.Ptr, GCBarrierBytemap, unwind)
       val metaPtr = elem(nir.Type.Byte, bytemap, Seq(index), unwind)
       val meta = load(nir.Type.Byte, metaPtr, unwind)
@@ -2739,8 +2739,6 @@ private[scalanative] object Lower {
     GC.member(nir.Sig.Extern("scalanative_GC_barrier_heap_size")),
     nir.Type.Ptr
   )
-  // Must match SCALANATIVE_GC_BARRIER_WINDOW_BITS in gc/immix_commix/WriteBarrier.h
-  val GCBarrierWindowBits = 40
   val GCBarrierBytemap = nir.Val.Global(
     GC.member(nir.Sig.Extern("scalanative_GC_barrier_bytemap")),
     nir.Type.Ptr

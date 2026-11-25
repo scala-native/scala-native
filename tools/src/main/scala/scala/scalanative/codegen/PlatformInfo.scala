@@ -11,7 +11,8 @@ private[scalanative] case class PlatformInfo(
     useGCYieldPointTraps: Boolean,
     useCxxExceptions: Boolean,
     alignmentOf64BitPrimitives: Int,
-    useGCWriteBarrier: Boolean
+    useGCWriteBarrier: Boolean,
+    gcBarrierWindowBits: Option[Int]
 ) {
   val sizeOfPtr = if (is32Bit) 4 else 8
   val sizeOfPtrBits = sizeOfPtr * 8
@@ -29,7 +30,8 @@ private[scalanative] object PlatformInfo {
     alignmentOf64BitPrimitives = alignmentOf64BitPrimitives(
       config.compilerConfig.configuredOrDetectedTriple
     ),
-    useGCWriteBarrier = config.useGCWriteBarrier
+    useGCWriteBarrier = config.useGCWriteBarrier,
+    gcBarrierWindowBits = config.gcBarrierWindowBits
   )
 
   /** Only the i386 System V ABI aligns i64 and f64 to 4 bytes. */

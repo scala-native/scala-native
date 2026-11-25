@@ -171,7 +171,13 @@ private[scalanative] object NativeLib {
           if (config.compilerConfig.gc != GC.boehm) None
           else Some("-DSCALANATIVE_GC_STOPS_THREADS_ANYWHERE"),
           if (!config.useTrapBasedGCYieldPoints) None
-          else Some("-DSCALANATIVE_GC_USE_YIELDPOINT_TRAPS")
+          else Some("-DSCALANATIVE_GC_USE_YIELDPOINT_TRAPS"),
+          // See gc/immix_commix/WriteBarrier.h
+          config.gcBarrierWindowBits.map(bits =>
+            s"-DSCALANATIVE_GC_BARRIER_WINDOW_BITS=$bits"
+          ),
+          if (!config.gcBarrierPreservesMost) None
+          else Some("-DSCALANATIVE_GC_BARRIER_PRESERVE_MOST")
         ).flatten ++
           GarbageCollectorConfig.Settings
             .resolve(config.compilerConfig)

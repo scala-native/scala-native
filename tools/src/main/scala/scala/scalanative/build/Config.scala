@@ -248,6 +248,29 @@ sealed trait Config {
   private[scalanative] lazy val useGenerationalGC =
     gcSettings.generational.contains(true)
 
+  /** Bits of the address window the heap is aligned to, where the write barrier
+   *  indexes the object metadata with the masked address of an object. None
+   *  where it checks the heap range instead: Windows commits reserved memory
+   *  explicitly, and 32-bit targets lack the address space. Passed to the GC as
+   *  SCALANATIVE_GC_BARRIER_WINDOW_BITS.
+   */
+  private[scalanative] lazy val gcBarrierWindowBits: Option[Int] =
+    if (useGCWriteBarrier && !compilerConfig.is32BitPlatform && !targetsWindows)
+      Some(40)
+    else None
+
+  /** Whether the slow paths of the write barrier keep the caller's registers,
+   *  so that the fast path does not make the values live across it spill.
+   *  Passed to the GC as SCALANATIVE_GC_BARRIER_PRESERVE_MOST.
+   */
+  private[scalanative] lazy val gcBarrierPreservesMost: Boolean =
+    useGCWriteBarrier && !targetsWindows && {
+      compilerConfig.configuredOrDetectedTriple.arch match {
+        case TargetTriple.Arch.aarch64 | TargetTriple.Arch.x86_64 => true
+        case _                                                    => false
+      }
+    }
+
   private def hasWriteBarrierDefine = {
     val define = "-DSCALANATIVE_GC_WRITE_BARRIER"
     (compilerConfig.compileOptions ++ compilerConfig.cOptions)

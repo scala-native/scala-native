@@ -20,14 +20,20 @@
 
 #ifdef SCALANATIVE_GC_WRITE_BARRIER
 
-#if UINTPTR_MAX > 0xFFFFFFFFu && !defined(_WIN32)
+// How generated code calls into the barrier is decided by the build tools
+// (Config.gcBarrierWindowBits, Config.gcBarrierPreservesMost), which pass the
+// defines below both to this code and to the code generator.
+
+#ifdef SCALANATIVE_GC_BARRIER_WINDOW_BITS
 // The heap is aligned to the barrier window, and the bytemap covers all of
 // it, so the fast path indexes the bytemap with the masked object address and
 // does not check the heap range. The bytemap's address space is reserved but
 // only the part for the heap is ever written. Windows commits reserved memory
 // explicitly, and 32-bit targets lack the address space, so both check the
-// range instead. Must match GCBarrierWindowBits in Lower.
-#define SCALANATIVE_GC_BARRIER_WINDOW_BITS 40
+// range instead.
+#if UINTPTR_MAX <= 0xFFFFFFFFu || defined(_WIN32)
+#error "The write barrier window needs a 64-bit target other than Windows"
+#endif
 #define SCALANATIVE_GC_BARRIER_WINDOW                                          \
     ((size_t)1 << SCALANATIVE_GC_BARRIER_WINDOW_BITS)
 #endif
@@ -47,9 +53,11 @@ typedef struct {
     size_t capacity;
 } RememberedSet;
 
-// The slow paths keep the caller's registers; must match
-// writeBarrierPreservesMost in AbstractCodeGen.
-#if (defined(__aarch64__) || defined(__x86_64__)) && !defined(_WIN32)
+// The slow paths keep the caller's registers.
+#ifdef SCALANATIVE_GC_BARRIER_PRESERVE_MOST
+#if !(defined(__aarch64__) || defined(__x86_64__)) || defined(_WIN32)
+#error "The write barrier cannot preserve registers on this target"
+#endif
 #define WRITE_BARRIER_SLOW_PATH __attribute__((preserve_most))
 #else
 #define WRITE_BARRIER_SLOW_PATH

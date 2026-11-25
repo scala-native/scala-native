@@ -8,7 +8,7 @@ import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
 
-import scala.scalanative.build.{BuildTarget, Discover, TargetTriple}
+import scala.scalanative.build.{BuildTarget, Discover}
 import scala.scalanative.codegen.llvm.Metadata.conversions._
 import scala.scalanative.codegen.llvm.compat.os.OsCompat
 import scala.scalanative.codegen.{
@@ -1067,20 +1067,11 @@ private[codegen] abstract class AbstractCodeGen(
 
   }
 
-  // The write barrier's slow paths are rarely taken, and keep the caller's
-  // registers so that the fast path does not make values live across it spill.
-  // Must match WRITE_BARRIER_SLOW_PATH in gc/immix_commix/WriteBarrier.h.
-  private lazy val writeBarrierPreservesMost: Boolean =
-    useGCWriteBarrier && !targetsWindows && {
-      meta.buildConfig.compilerConfig.configuredOrDetectedTriple.arch match {
-        case TargetTriple.Arch.aarch64 | TargetTriple.Arch.x86_64 => true
-        case _                                                    => false
-      }
-    }
-
   private lazy val writeBarrierSlowPaths = Lower.GCWriteBarrierSlowPaths.toSet
   private def usesPreserveMost(name: nir.Global): Boolean =
-    writeBarrierPreservesMost && writeBarrierSlowPaths.contains(name)
+    meta.buildConfig.gcBarrierPreservesMost && writeBarrierSlowPaths.contains(
+      name
+    )
 
   private[codegen] def genCall(
       genBind: () => Unit,
