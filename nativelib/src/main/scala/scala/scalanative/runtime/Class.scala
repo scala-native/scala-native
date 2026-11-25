@@ -45,6 +45,10 @@ private[runtime] final class _Class[A] {
   def cast(obj: Object): A =
     obj.asInstanceOf[A]
 
+  def asSubclass[U](clazz: Class[U]): Class[_ <: U] =
+    if (clazz.isAssignableFrom(this)) this.asInstanceOf[Class[_ <: U]]
+    else throw new ClassCastException(toString())
+
   def getComponentType(): _Class[_] =
     if (isArray())
       // Array RTTI stores the element type in place of the reference map

@@ -309,6 +309,38 @@ class ClassTest {
     )
   }
 
+  @Test def asSubclass(): Unit = {
+    val asCharSequence: Class[_ <: CharSequence] =
+      classOf[String].asSubclass(classOf[CharSequence])
+    assertSame(classOf[String], asCharSequence)
+    assertSame(classOf[String], classOf[String].asSubclass(classOf[String]))
+    assertSame(classOf[Runnable], classOf[Runnable].asSubclass(classOf[Object]))
+    assertSame(classOf[Int], classOf[Int].asSubclass(classOf[Int]))
+    assertSame(
+      classOf[Array[String]],
+      classOf[Array[String]].asSubclass(classOf[Array[Object]])
+    )
+
+    val e1 = assertThrows(
+      classOf[ClassCastException],
+      () => classOf[String].asSubclass(classOf[Integer])
+    )
+    assertEquals("class java.lang.String", e1.getMessage())
+    val e2 = assertThrows(
+      classOf[ClassCastException],
+      () => classOf[Runnable].asSubclass(classOf[Integer])
+    )
+    assertEquals("interface java.lang.Runnable", e2.getMessage())
+    assertThrows(
+      classOf[ClassCastException],
+      () => classOf[Int].asSubclass(classOf[Integer])
+    )
+    assertThrows(
+      classOf[NullPointerException],
+      () => classOf[String].asSubclass(null)
+    )
+  }
+
   @Test def getClassLoader(): Unit = {
     val cl = getClass().getClassLoader()
     assertTrue(cl != null)
