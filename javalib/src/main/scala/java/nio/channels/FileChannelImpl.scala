@@ -8,6 +8,7 @@ import java.nio.file.{
 }
 import java.nio.{ByteBuffer, MappedByteBuffer, MappedByteBufferImpl}
 import java.util.Objects
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 
 import scala.scalanative.libc.errno.errno
@@ -56,13 +57,29 @@ private[java] final class FileChannelImpl(
   private val positionLock = new ReentrantLock()
 
   // Rechecks after locking, as close() may run while we wait.
-  private def withPositionLock[T](body: => T): T = {
-    positionLock.lock()
+  private def withPositionLock[T](intr: Boolean)(body: => T): T = {
+    lockPosition(intr)
     try {
       ensureOpen()
       body
     } finally positionLock.unlock()
   }
+
+  // close() cannot wake a lock waiter, so a channel operation waits in slices.
+  private def lockPosition(intr: Boolean): Unit =
+    if (!intr) positionLock.lock()
+    else if (!positionLock.tryLock()) {
+      while (!tryLockPosition()) ensureOpen()
+    }
+
+  private def tryLockPosition(): Boolean =
+    try positionLock.tryLock(10L, TimeUnit.MILLISECONDS)
+    catch {
+      case _: InterruptedException =>
+        // Restoring the status closes this channel, as begin() is active.
+        Thread.currentThread().interrupt()
+        false
+    }
 
   @inline private def interruptibly[T](body: => T): T = {
     begin()
@@ -81,17 +98,21 @@ private[java] final class FileChannelImpl(
         if (intr) new ClosedChannelException()
         else new IOException("Stream Closed")
       }
-    val register = intr && fd.kind == KindCancellable
-    if (register) fd.registerBlocked()
-    try body
-    finally {
-      if (register) fd.deregisterBlocked()
+    var registered = false
+    try {
+      if (intr && fd.kind == KindCancellable) {
+        fd.registerBlocked()
+        registered = true
+      }
+      body
+    } finally {
+      if (registered) fd.deregisterBlocked()
       fd.release()
     }
   }
 
   private def locked[T](intr: Boolean)(body: => T): T =
-    withPositionLock(leased(intr)(body))
+    withPositionLock(intr)(leased(intr)(body))
 
   @inline private def closing(intr: Boolean): Boolean = intr && fd.isClosing
 
@@ -270,7 +291,7 @@ private[java] final class FileChannelImpl(
         // This "lengthen" branch is tested/exercised in MappedByteBufferTest.
         // Detect Long overflow & throw. Room for improvement here.
         val newFileSize = Math.addExact(position, size)
-        withPositionLock {
+        withPositionLock(intr = true) {
           if (newFileSize > sizeNow())
             lengthen(newFileSize)
         }
@@ -382,7 +403,9 @@ private[java] final class FileChannelImpl(
         val len = dst.remaining()
 
         val bs = new Array[Byte](len)
-        val n = readArray(bs, 0, len, intr = true)
+        val n =
+          try readArray(bs, 0, len, intr = true)
+          catch { case _: AsynchronousCloseException if totalRead > 0 => 0 }
 
         if (n > 0) {
           dst.put(bs, 0, n)
@@ -548,7 +571,7 @@ private[java] final class FileChannelImpl(
       pos: Long,
       intr: Boolean
   ): Int = {
-    val pollFirst = prepareBlockingCall(intr)
+    val pollFirst = prepareBlockingCall(intr, pos)
     val n = blockingCall(write = false, buf, count, pos, pollFirst, intr)
     if (n < 0) throw new AsynchronousCloseException()
     else if (n == 0) -1
@@ -564,7 +587,7 @@ private[java] final class FileChannelImpl(
       pos: Long,
       intr: Boolean
   ): Int = {
-    val pollFirst = prepareBlockingCall(intr)
+    val pollFirst = prepareBlockingCall(intr, pos)
     // After POLLOUT, a write of up to PIPE_BUF bytes does not block.
     val chunk = if (pollFirst) fd.pipeBuf else count
     var written = 0
@@ -616,10 +639,11 @@ private[java] final class FileChannelImpl(
     result
   }
 
-  // True if each call must poll first: O_NONBLOCK would leak into a shared
-  // description.
-  private def prepareBlockingCall(intr: Boolean): Boolean =
-    if (!intr) false
+  /* True if each call must poll first: O_NONBLOCK would leak into a shared
+   * description. Positional calls need no waking: they fail at once on FIFOs.
+   */
+  private def prepareBlockingCall(intr: Boolean, pos: Long): Boolean =
+    if (!intr || pos >= 0) false
     else
       fd.kind match {
         case KindNonBlocking =>
@@ -675,15 +699,19 @@ private[java] final class FileChannelImpl(
    * steps, so waiting on the other channel does not hold this one open.
    */
 
-  // A step on the other channel: its ClosedByInterruptException closes this
-  // one too.
-  private def closeIfInterrupted[T](step: => T): T =
-    try step
+  // An interrupt during a transfer closes both channels.
+  private def closeBothIfInterrupted[T](other: Channel)(body: => T): T =
+    try body
     catch {
       case e: ClosedByInterruptException =>
-        interruptBy(Thread.currentThread())
+        closeQuietly(this)
+        closeQuietly(other)
         throw e
     }
+
+  private def closeQuietly(channel: Channel): Unit =
+    try channel.close()
+    catch { case _: IOException => () }
 
   override def transferFrom(
       src: ReadableByteChannel,
@@ -698,7 +726,15 @@ private[java] final class FileChannelImpl(
     if (count < 0L)
       throw new IllegalArgumentException("Negative count")
 
-    // An interrupt closes the channel even if nothing is transferred.
+    closeBothIfInterrupted(src)(transferFromNow(src, _position, count))
+  }
+
+  private def transferFromNow(
+      src: ReadableByteChannel,
+      _position: Long,
+      count: Long
+  ): Long = {
+    // An interrupt closes the channels even if nothing is transferred.
     interruptibly(())
 
     // Positional writes leave the channel position unchanged. Like the JVM,
@@ -720,7 +756,7 @@ private[java] final class FileChannelImpl(
         buf.limit(nRemaining.toInt)
 
       // Stop at end of stream, or when a nonblocking source has no data.
-      if (closeIfInterrupted(src.read(buf)) <= 0) {
+      if (src.read(buf) <= 0) {
         done = true
       } else {
         buf.flip()
@@ -748,6 +784,14 @@ private[java] final class FileChannelImpl(
     if (count < 0L)
       throw new IllegalArgumentException("Negative count")
 
+    closeBothIfInterrupted(target)(transferToNow(_position, count, target))
+  }
+
+  private def transferToNow(
+      _position: Long,
+      count: Long,
+      target: WritableByteChannel
+  ): Long =
     if (_position > size()) {
       0L
     } else {
@@ -773,13 +817,12 @@ private[java] final class FileChannelImpl(
         } else {
           buf.flip()
           while (buf.hasRemaining())
-            totalWritten += closeIfInterrupted(target.write(buf))
+            totalWritten += target.write(buf)
         }
       }
 
       totalWritten
     }
-  }
 
   private def lengthen(newFileSize: Long): Unit = {
     /* Preconditions: only caller, this.map(),  has ensured:
@@ -945,7 +988,7 @@ private[java] final class FileChannelImpl(
       (src.array(), src.arrayOffset() + srcPos)
     } else {
       val ba = new Array[Byte](nBytes)
-      src.get(ba, 0, nBytes)
+      src.duplicate().get(ba, 0, nBytes) // src moves only by what is written
       (ba, 0)
     }
 
@@ -979,7 +1022,9 @@ private[java] final class FileChannelImpl(
         val len = src.remaining()
 
         seekEOFBeforeRelativeWrite()
-        val n = writeByteBuffer(src)
+        val n =
+          try writeByteBuffer(src)
+          catch { case _: AsynchronousCloseException if totalWritten > 0 => 0 }
 
         totalWritten += n
         if (n < len) {

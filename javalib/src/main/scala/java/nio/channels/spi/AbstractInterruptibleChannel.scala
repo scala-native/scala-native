@@ -54,10 +54,10 @@ abstract class AbstractInterruptibleChannel protected ()
     if (!completed && closed) throw new AsynchronousCloseException()
   }
 
-  // Closes this channel for an interrupted thread; its end() then throws
-  // ClosedByInterruptException.
+  // Closes this channel for an interrupted thread still between begin() and
+  // end(); its end() then throws ClosedByInterruptException.
   private[java] final def interruptBy(thread: Thread): Unit = synchronized {
-    if (!closed) {
+    if (!closed && (thread.nioBlocker eq this)) {
       interruptedThread = thread
       try close()
       catch { case _: IOException => () }

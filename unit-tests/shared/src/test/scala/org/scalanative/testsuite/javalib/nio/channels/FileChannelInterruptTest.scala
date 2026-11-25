@@ -34,6 +34,7 @@ object FileChannelInterruptTest {
 
   // Runs body on a fresh thread, so the test thread's interrupt flag stays clear.
   def inThread(body: => Unit): Unit = {
+    assumeMultithreadingIsEnabled()
     val failure = new AtomicReference[Throwable]()
     val t = daemon(() =>
       try body
@@ -68,6 +69,8 @@ object FileChannelInterruptTest {
     @volatile var interrupted = false
     @volatile var actionMillis = -1L
     @volatile var finished = false
+    // Finished before blocked() had to unblock it.
+    @volatile var woken = false
 
     def capture(op: => Any): Unit = {
       try result = op
@@ -110,6 +113,7 @@ object FileChannelInterruptTest {
     if (!actor.isAlive())
       out.actionMillis = (System.nanoTime() - start) / 1000000L
     t.join(JoinMillis)
+    out.woken = out.finished
     if (t.isAlive() || actor.isAlive()) {
       val helper = unblock()
       try {
@@ -122,6 +126,12 @@ object FileChannelInterruptTest {
 
   def assertPrompt(out: Outcome): Unit =
     assertTrue(s"action must return promptly: $out", out.actionMillis >= 0)
+
+  // The action itself ended the operation, not the unblock fallback.
+  def assertWoken(out: Outcome): Unit = {
+    assertPrompt(out)
+    assertTrue(s"action must wake the operation: $out", out.woken)
+  }
 
   def assertThrew[T <: Throwable](
       expected: Class[T],
@@ -167,7 +177,7 @@ object FileChannelInterruptTest {
         () => feed(fifo),
         start
       )
-      assertPrompt(out)
+      assertWoken(out)
       assertThrew(classOf[AsynchronousCloseException], out)
       assertFalse("interrupted", out.interrupted)
     }
@@ -185,7 +195,7 @@ object FileChannelInterruptTest {
           () => feed(fifo),
           start
         )
-        assertPrompt(out)
+        assertWoken(out)
         assertThrew(classOf[ClosedByInterruptException], out)
         assertTrue("interrupt status kept", out.interrupted)
         assertFalse("channel closed", ch.isOpen())
@@ -205,7 +215,7 @@ object FileChannelInterruptTest {
           () => drain(fifo),
           start
         )
-        assertPrompt(out)
+        assertWoken(out)
         assertThrew(classOf[ClosedByInterruptException], out)
         assertTrue("interrupt status kept", out.interrupted)
         assertFalse("channel closed", ch.isOpen())
@@ -397,8 +407,7 @@ class FileChannelInterruptTest {
         _ => ch.close(),
         () => drain(fifo)
       )
-      assertPrompt(out)
-      assertTrue("still blocked", out.finished)
+      assertWoken(out)
       // A short count or AsynchronousCloseException; both are allowed.
       if (out.error != null)
         assertThrew(classOf[AsynchronousCloseException], out)
@@ -424,7 +433,7 @@ class FileChannelInterruptTest {
           _ => src.close(),
           () => feed(fifo)
         )
-        assertPrompt(out)
+        assertWoken(out)
         assertThrew(classOf[AsynchronousCloseException], out)
       } finally dst.close()
     }
@@ -444,7 +453,7 @@ class FileChannelInterruptTest {
           _.interrupt(),
           () => feed(fifo)
         )
-        assertPrompt(out)
+        assertWoken(out)
         assertThrew(classOf[ClosedByInterruptException], out)
         assertTrue("interrupt status kept", out.interrupted)
         assertFalse("source closed", src.isOpen())
@@ -470,7 +479,7 @@ class FileChannelInterruptTest {
           _.interrupt(),
           () => drain(fifo)
         )
-        assertPrompt(out)
+        assertWoken(out)
         assertThrew(classOf[ClosedByInterruptException], out)
         assertTrue("interrupt status kept", out.interrupted)
         assertFalse("source closed", src.isOpen())
@@ -495,13 +504,15 @@ class FileChannelInterruptTest {
         () => feed(fifo)
       )
       t2.join(JoinMillis)
+      val secondWoken = !t2.isAlive()
       if (t2.isAlive()) {
         val p = feed(fifo)
         try t2.join(JoinMillis)
         finally p.destroyForcibly()
       }
-      assertPrompt(out)
+      assertWoken(out)
       assertThrew(classOf[AsynchronousCloseException], out)
+      assertTrue(s"second reader woken: $second", secondWoken)
       assertThrew(classOf[AsynchronousCloseException], second)
     }
   }
@@ -568,8 +579,106 @@ class FileChannelInterruptTest {
         _ => raf.close(),
         () => feed(fifo)
       )
-      assertPrompt(out)
+      assertWoken(out)
       assertThrew(classOf[AsynchronousCloseException], out)
+    }
+  }
+
+  // A channel operation queued behind a blocked stream read is woken.
+  @Test def closeWakesChannelReadWaitingForStreamRead(): Unit = {
+    assumeFifos()
+    assumeFalse(
+      "the JDK does not order stream and channel reads",
+      Platform.executingInJVM
+    )
+    withTemporaryDirectory { dir =>
+      val fifo = mkfifo(dir)
+      val raf = new RandomAccessFile(fifo.toFile(), "rw")
+      val ch = raf.getChannel()
+      val streamRead = new Outcome
+      val reader = daemon(() => streamRead.capture(raf.read()))
+      Thread.sleep(BlockMillis) // the stream read takes the position lock
+      try {
+        val out = blocked(
+          ch.read(ByteBuffer.allocate(1)),
+          _ => ch.close(),
+          () => feed(fifo)
+        )
+        assertWoken(out)
+        assertThrew(classOf[AsynchronousCloseException], out)
+      } finally {
+        reader.join(JoinMillis)
+        if (reader.isAlive()) {
+          val p = feed(fifo)
+          try reader.join(JoinMillis)
+          finally p.destroyForcibly()
+        }
+      }
+    }
+  }
+
+  // Positional I/O fails at once on a FIFO, even through a stream's fd.
+  @Test def positionalReadOnStreamFifoFailsPromptly(): Unit = {
+    assumeFifos()
+    withTemporaryDirectory { dir =>
+      val fifo = mkfifo(dir)
+      val raf = new RandomAccessFile(fifo.toFile(), "rw")
+      try {
+        val out = new Outcome
+        val t = daemon { () =>
+          out.capture(raf.getChannel().read(ByteBuffer.allocate(1), 0L))
+        }
+        t.join(JoinMillis)
+        if (t.isAlive()) {
+          val p = feed(fifo)
+          try t.join(JoinMillis)
+          finally p.destroyForcibly()
+          fail(s"positional read blocked: $out")
+        }
+        assertTrue(
+          s"expected IOException: $out",
+          out.error.isInstanceOf[IOException] &&
+            !out.error.isInstanceOf[ClosedChannelException]
+        )
+      } finally raf.close()
+    }
+  }
+
+  // Like JDK 25: a pending interrupt closes both channels of a transfer.
+  @Test def interruptFlagSetBeforeTransferClosesBothChannels(): Unit = {
+    assumeFalse(
+      "older JDKs close only one channel",
+      Platform.executingInJVMOnLowerThanJDK(25)
+    )
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      val g = dir.resolve("g")
+      Files.write(f, new Array[Byte](10))
+      Files.write(g, new Array[Byte](10))
+      inThread {
+        val transfers: List[(String, (FileChannel, FileChannel) => Any)] =
+          List(
+            ("transferFrom", (a, b) => a.transferFrom(b, 0L, 4L)),
+            ("transferTo", (a, b) => a.transferTo(0L, 4L, b))
+          )
+        for ((name, op) <- transfers) {
+          val a = FileChannel.open(f, READ, WRITE)
+          val b = FileChannel.open(g, READ, WRITE)
+          try {
+            Thread.currentThread().interrupt()
+            try {
+              op(a, b); fail(s"$name: expected ClosedByInterruptException")
+            } catch { case _: ClosedByInterruptException => () }
+            assertTrue(s"$name: interrupt status kept", Thread.interrupted())
+            assertFalse(s"$name: channel closed", a.isOpen())
+            assertFalse(s"$name: other channel closed", b.isOpen())
+          } finally {
+            Thread.interrupted()
+            a.close()
+            b.close()
+          }
+        }
+      }
     }
   }
 

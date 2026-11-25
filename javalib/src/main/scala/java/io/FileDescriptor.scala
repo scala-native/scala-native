@@ -244,39 +244,43 @@ final class FileDescriptor private[java] (
     }
     else if (isMultithreadingEnabled) {
       /* A registered thread may not have entered its call yet, so keep
-       * cancelling until all have left, within CancelTimeoutNanos.
-       * Sleep, unlike wait(), ignores our interrupt status.
+       * cancelling until all have left. Sleep, unlike wait(), ignores our
+       * interrupt status.
        */
-      val deadline = System.nanoTime() + CancelTimeoutNanos
-      while (cancelBlocked() && System.nanoTime() < deadline)
-        SynchApi.Sleep(1.toUInt)
+      while (cancelBlocked()) SynchApi.Sleep(1.toUInt)
     }
 
-  /* Windows: cancels the I/O of registered threads; false if there are none.
-   * Under the lock, so a cancel only reaches a thread still registered.
+  /* Windows: cancels the I/O of other registered threads; false if there are
+   * none. Under the lock, so a cancel only reaches a thread still registered.
+   * The caller may be registered itself (an interrupt while waiting to lock).
    */
   private def cancelBlocked(): Boolean = synchronized {
+    val self = currentThreadId()
+    var others = 0
     var i = 0
     while (i < blockedCount) {
-      // CancelSynchronousIo needs THREAD_TERMINATE.
-      val thread = ProcessThreadsApi.OpenThread(
-        ProcessThreadsApiExt.THREAD_TERMINATE,
-        false,
-        blockedThreads(i).toUInt
-      )
-      if (thread != null) {
-        IoApiSet.CancelSynchronousIo(thread)
-        CloseHandle(thread)
+      val id = blockedThreads(i)
+      if (id != self) {
+        others += 1
+        // CancelSynchronousIo needs THREAD_TERMINATE.
+        val thread = ProcessThreadsApi.OpenThread(
+          ProcessThreadsApiExt.THREAD_TERMINATE,
+          false,
+          id.toUInt
+        )
+        if (thread != null) {
+          IoApiSet.CancelSynchronousIo(thread)
+          CloseHandle(thread)
+        }
       }
       i += 1
     }
-    blockedCount > 0
+    others > 0
   }
 }
 
 object FileDescriptor {
   private final val Closing = 1 << 30
-  private final val CancelTimeoutNanos = 2000000000L
 
   private final val KindUnknown = 0
   // Regular or disk file: I/O finishes on its own, no waking needed.
