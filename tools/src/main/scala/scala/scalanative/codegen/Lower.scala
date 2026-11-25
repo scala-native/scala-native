@@ -1414,7 +1414,6 @@ private[scalanative] object Lower {
       }
     }
 
-    // Whether instances of the class `typeptr`, the RTTI of a class, are instances of `ty`
     private def genClassIs(
         buf: nir.InstructionBuilder,
         ty: nir.Type,
@@ -1496,19 +1495,11 @@ private[scalanative] object Lower {
       }
     }
 
-    /* Tests against arrays of references check their element type, unless NIR
-     * older than classOf of array types is linked, see
-     * ReachabilityAnalysis.Result.strictArrayTypes. Arrays of primitives and of
-     * Object are tested by their class.
-     */
     private def isStrictArrayTest(elem: nir.Type): Boolean =
       analysis.strictArrayTypes &&
         !nir.Type.typeToArray.contains(nir.Type.canonicalArrayElement(elem))
 
-    /* Whether the only instances of arrays of `elem` are arrays of exactly that
-     * type: their element has no other subtypes than itself. Each array type
-     * the program uses has a single class, see nir.Type.arrayClassName.
-     */
+    // No other array type is assignable to arrays of `elem`
     private def isExactArrayElement(elem: nir.Type): Boolean = elem match {
       case nir.Rt.Object            => false
       case nir.Type.Array(inner, _) => isExactArrayElement(inner)
@@ -1517,9 +1508,6 @@ private[scalanative] object Lower {
       case _                        => true // primitives
     }
 
-    /* Whether instances of the class `typeptr` are instances of arrays of
-     * `elemTy`, a canonical element other than a primitive.
-     */
     private def genArrayIsOp(buf: nir.InstructionBuilder, elemTy: nir.Type, typeptr: nir.Val)(implicit
         srcPosition: nir.SourcePosition,
         scopeId: nir.ScopeId
@@ -1527,12 +1515,10 @@ private[scalanative] object Lower {
       import buf._
       val target = rtti(analysis.infos(nir.Type.arrayClassName(elemTy))).const
       lazy val isTarget = let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, typeptr, target), unwind)
-      // Any array of references is an array of Object
       if (elemTy == nir.Rt.Object) genClassIs(buf, nir.Rt.ObjectArray, typeptr)
       else if (isExactArrayElement(elemTy)) isTarget
       else {
-        // Arrays of references whose component is an instance of the element
-        // are instances too
+        // Covariance: test the component of the instance's class
         val arrayL, componentL, classL, traitL, resultL = fresh()
         branch(isTarget, nir.Next.Label(resultL, Seq(nir.Val.True)), nir.Next(arrayL))
 
@@ -1549,7 +1535,6 @@ private[scalanative] object Lower {
         val isInterface = let(nir.Op.Comp(nir.Comp.Ine, nir.Type.Int, interfaceBit, nir.Val.Int(0)), unwind)
         branch(isInterface, nir.Next(traitL), nir.Next(classL))
 
-        // A class component: test it against the element
         label(classL)
         val componentIs = elemTy match {
           case nir.Type.Array(inner, _) => genArrayIsOp(buf, inner, component)
@@ -1557,8 +1542,7 @@ private[scalanative] object Lower {
         }
         jump(resultL, Seq(componentIs))
 
-        // A trait component, whose RTTI has no lineage nor itable: the runtime
-        // follows its parent traits
+        // Trait RTTI has no lineage nor itable
         label(traitL)
         val module = genModuleOp(buf, fresh(), nir.Op.Module(ArrayClassesModule))
         val isSubclass = call(arrayIsSubclassSig, nir.Val.Global(arrayIsSubclass, nir.Type.Ptr), Seq(module, typeptr, target), unwind)
@@ -2020,8 +2004,6 @@ private[scalanative] object Lower {
       val elem = nir.Type.canonicalArrayElement(ty)
       if (nir.Type.typeToArray.contains(elem)) genUntypedArrayalloc(buf, n, ty, init, zone)
       else {
-        // Arrays of references with elements other than Object have a class
-        // of their own, see nir.Type.arrayClassName
         val arrayClass = rtti(analysis.infos(nir.Type.arrayClassName(elem))).const
         genTypedArrayalloc(buf, n, arrayClass, init, zone)
       }
@@ -2052,7 +2034,6 @@ private[scalanative] object Lower {
       buf.let(n, call, unwind)
     }
 
-    // Initial values of an array, copied to the stack unless all are constant
     private def genArrayValueData(buf: nir.InstructionBuilder, arrval: nir.Val.ArrayValue)(implicit
         srcPosition: nir.SourcePosition,
         scopeId: nir.ScopeId
@@ -2471,7 +2452,6 @@ private[scalanative] object Lower {
   val ObjectArrayModule = nir.Global.Top("scala.scalanative.runtime.ObjectArray$")
   private val ObjectArrayModuleRef = nir.Type.Ref(ObjectArrayModule)
 
-  // Arrays of references with a class of their own, see nir.Type.arrayClassName
   val typedArrayHeapAlloc =
     ObjectArrayModule.member(nir.Sig.Method("alloc", Seq(nir.Type.Int, nir.Type.Ptr, nir.Rt.ObjectArray)))
   val typedArrayHeapAllocSig =

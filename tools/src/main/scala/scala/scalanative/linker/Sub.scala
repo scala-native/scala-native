@@ -58,10 +58,8 @@ object Sub {
     }
   }
 
-  /** Whether every value of type `l` is an instance of the array type `r`, as
-   *  on the JVM: arrays of references are covariant in their element type (JLS
-   *  4.10.3). Values whose element type is not known are only instances of
-   *  `Object[]`.
+  /** Exact array subtyping, covariant for references (JLS 4.10.3). `Sub.is`
+   *  stays lenient for the NIR checker.
    */
   def isArray(l: nir.Type, r: nir.Type.Array)(implicit
       analysis: ReachabilityAnalysis.Result
@@ -74,7 +72,7 @@ object Sub {
         isArrayElement(nir.Type.canonicalArrayElement(lelem), relem)
       case nir.Type.Ref(name, exact, _) =>
         nir.Type.fromArrayClass(name) match {
-          // A reference to ObjectArray can be any array of references
+          // Any array of references
           case Some(lelem) if exact || name != nir.Rt.ObjectArray.name =>
             name != nir.Rt.BlobArray.name && isArrayElement(lelem, relem)
           case Some(_) => relem == nir.Rt.Object
@@ -85,7 +83,6 @@ object Sub {
     }
   }
 
-  // Canonical array elements, see nir.Type.canonicalArrayElement
   private def isArrayElement(l: nir.Type, r: nir.Type)(implicit
       analysis: ReachabilityAnalysis.Result
   ): Boolean = (l, r) match {

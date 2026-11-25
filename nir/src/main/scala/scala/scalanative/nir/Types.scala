@@ -137,8 +137,7 @@ object Type {
     final def isExact: Boolean = this match {
       case Type.Null => true
       case Type.Unit => true
-      // Arrays of references are covariant: an Array[Object] can be an
-      // Array[String]
+      // Arrays of references are covariant
       case a: Type.Array => typeToArray.contains(a.ty) && a.ty != Rt.Object
       case r: Type.Ref   => r.exact
     }
@@ -295,16 +294,11 @@ object Type {
       else None
     }
 
-  /** Element types of the classes implementing arrays, `BlobArray` excluded: it
-   *  is a class of its own.
-   */
   private val arrayClassToElement: Map[Global.Top, Type] =
     typeToArray.map { case (k, v) => (v, k) }
 
-  /** Canonical form of the element type of an array: primitives, references to
-   *  classes and traits without flags, and arrays of canonical elements. Any
-   *  other element (`Unit`, `Nothing`, `Null`, pointers) is stored in an array
-   *  of `Object`.
+  /** Primitives, flagless references and arrays of those; anything else is
+   *  `Object`.
    */
   def canonicalArrayElement(ty: Type): Type = ty match {
     case Array(elem, _)  => Array(canonicalArrayElement(elem))
@@ -317,10 +311,7 @@ object Type {
     case _                             => Rt.Object
   }
 
-  /** Canonical form of the type of a `classOf`: arrays are always `Array`,
-   *  never references to the classes implementing them, other types are
-   *  references to their class, primitives to their pseudo-class.
-   */
+  /** Canonical `classOf` type: arrays as `Array`, never as `Ref(XArray)`. */
   def classOfType(ty: Type): Type = ty match {
     case Array(elem, _)  => Array(canonicalArrayElement(elem))
     case Ref(name, _, _) =>
@@ -331,9 +322,7 @@ object Type {
     case _ => Ref(typeToName(ty))
   }
 
-  /** Type of the class of a method parameter of type `ty`, as recorded for
-   *  reflective instantiation: primitives by their pseudo-class.
-   */
+  /** Class of a parameter type recorded for reflective instantiation. */
   def parameterClassType(ty: Type): Type = ty match {
     case _: Array => ty
     case _        => Ref(typeToName(ty))
@@ -343,24 +332,18 @@ object Type {
   def isArray(clsName: Global.Top): Boolean =
     arrayToType.contains(clsName) || isSyntheticArrayClass(clsName)
 
-  /** The class of arrays of the canonical element type `elem`: the classes
-   *  implementing arrays of primitives and of `Object`, for other elements a
-   *  class created by the linker, named by the JVM binary name of the array
-   *  class (`[Ljava.lang.String;`, `[[I`). Its parent is `ObjectArray`.
+  /** `XArray` and `ObjectArray`, otherwise a linker-defined subclass of
+   *  `ObjectArray` named as on the JVM, e.g. `[Ljava.lang.String;`.
    */
   def arrayClassName(elem: Type): Global.Top =
     typeToArray.getOrElse(elem, Global.Top("[" + descriptor(elem)))
 
-  /** The class of `classOf` of the canonical type `ty`, see `classOfType`. */
   def classOfClassName(ty: Type): Global.Top = ty match {
     case Array(elem, _)  => arrayClassName(elem)
     case Ref(name, _, _) => name
     case _               => typeToName(ty)
   }
 
-  /** `true` iff `name` is the class of an array type created by the linker, see
-   *  `arrayClassName`.
-   */
   def isSyntheticArrayClass(name: Global.Top): Boolean =
     name.id.startsWith("[")
 

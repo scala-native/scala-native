@@ -161,9 +161,6 @@ class SubSuite extends ReachabilitySuite {
     testIs(T3, T3)
   }
 
-  // Arrays follow the JLS: reference arrays are covariant in their element
-  // type, primitive arrays are invariant, and an array of arrays is an array
-  // of objects, see Sub.isArray.
   @Test def arrays(): Unit = {
     import nir.Type.{Array => Arr}
     val Obj = nir.Rt.Object
@@ -195,13 +192,11 @@ class SubSuite extends ReachabilitySuite {
     testIsNotArray(Arr(Obj), Arr(Arr(Obj)))
     testIsNotArray(Arr(Str), Arr(Arr(Str)))
 
-    // The runtime classes implementing arrays
     testIs(Arr(nir.Type.Int), IntArray)
     testIs(Arr(Obj), ObjectArray)
     testIs(Arr(Str), ObjectArray)
     testIs(Arr(Arr(nir.Type.Int)), ObjectArray)
     testIsNot(Arr(nir.Type.Int), ObjectArray)
-    // A reference to ObjectArray can be any array of references
     testIsNotArray(ObjectArray, Arr(Str))
     testIsArray(ObjectArray, Arr(Obj))
     testIsArray(IntArray, Arr(nir.Type.Int))

@@ -46,9 +46,7 @@ final class InstantiatableClass private[reflect] (
       }
     }
 
-  /* The compiler records the class of an array parameter as the class of
-   * Array[Object]: any array of references matches it.
-   */
+  // NIR before revision 12 records array parameters as Object[]
   private def sameParameterType(
       declared: Class[_],
       requested: Class[_]

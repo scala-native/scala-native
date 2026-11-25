@@ -31,9 +31,7 @@ void *scalanative_dynmethod(Rtti *rtti, int32_t key) {
     const ReflectiveProxyTable *table = reflectiveProxies;
     if (table == NULL)
         return NULL;
-    /* Classes of arrays of references created at runtime are copies of
-     * ObjectArray's RTTI, which their lineage lists in place of themselves,
-     * see runtime.ArrayClasses. For other classes this is the class itself. */
+    // Array classes created at runtime use ObjectArray's proxies
     if (rtti->superclassCount < SCALANATIVE_RTTI_LINEAGE_SIZE)
         rtti = rtti->lineage[rtti->superclassCount];
     uint32_t classKey = (uint32_t)rtti->rt.flags >> RTTI_CLASS_KEY_SHIFT;

@@ -128,11 +128,7 @@ object Array {
     }
   }
 
-  /* Copy between arrays of references of unrelated types: each element
-   * must be an instance of the component type of `to`. Elements before the
-   * first one that is not are copied. The arrays are distinct, they have
-   * different classes.
-   */
+  // Copies until the first element not assignable to `to`'s component
   @noinline private def checkedCopy(from: ObjectArray,
                                     fromPos: Int,
                                     to: ObjectArray,
@@ -792,7 +788,6 @@ final class ObjectArray private () extends Array[Object] {
   @inline def update(i: Int, value: Object): Unit = storeObject(atRaw(i), value)
 
   @inline override def clone(): ObjectArray = {
-    // Arrays of references share this class, keep the class of the receiver
     val arrcls  = getClass().asInstanceOf[Class[ObjectArray]]
     val arr     = GC.alloc_array(arrcls, castIntToRawSizeUnsigned(length), castIntToRawSize(castRawSizeToInt(Intrinsics.sizeOf[RawPtr])))
     val src     = castObjectToRawPtr(this)
@@ -842,10 +837,7 @@ object ObjectArray {
     arr
   }
 
-  /* Allocation of arrays of references of class `arrayClass`, the RTTI of an
-   * array type, see ArrayClasses. Used by the compiler for arrays with
-   * elements other than Object.
-   */
+  // Allocation with the class of the array type, see ArrayClasses
   @inline def alloc(length: Int, arrayClass: RawPtr): ObjectArray = {
     if (length < 0) {
       throw new NegativeArraySizeException

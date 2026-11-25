@@ -9,14 +9,10 @@ import scala.scalanative.runtime.{
   ArrayClasses, ByteArray, IntArray, ObjectArray
 }
 
-/* Classes of arrays of references: defined by the linker for array types
- * used by the program, created at runtime for others, see
- * scala.scalanative.runtime.ArrayClasses
- */
 class ArrayClassesTest {
   import ArrayClassesTest._
 
-  // No code mentions arrays of OnlyReflective, the linker does not see them
+  // No code mentions arrays of OnlyReflective
   @Test def classesOfArrayTypesUnknownToTheLinker(): Unit = {
     val component: Class[_] = (new OnlyReflective: AnyRef).getClass
     val array = java.lang.reflect.Array
@@ -62,7 +58,7 @@ class ArrayClassesTest {
     assertSame(classOf[ObjectArray], ArrayClasses.of(classOf[Object]))
   }
 
-  // The name is a heap object referenced only by the class, outside the heap
+  // The name is referenced only from outside the heap
   @Test def nameOfARuntimeClassSurvivesCollections(): Unit = {
     val name = new WeakReference(
       ArrayClasses.of(classOf[NamedAtRuntime]).getName()

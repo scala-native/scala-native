@@ -90,7 +90,6 @@ private[interflow] trait Intrinsics { self: Interflow =>
                 nir.Val.Global(ScopeRef(linfo), lty),
                 nir.Val.Global(ScopeRef(rinfo), rty)
               ) if lty == nir.Rt.Class && rty == nir.Rt.Class =>
-            // Arrays of references are covariant, unlike their classes
             val isAssignable = nir.Type.fromArrayClass(linfo.name) match {
               case Some(lelem) if linfo.name != nir.Rt.BlobArray.name =>
                 Sub.isArray(
@@ -106,8 +105,7 @@ private[interflow] trait Intrinsics { self: Interflow =>
       case nir.Global.Member(Class, nir.Rt.GetNameSig) =>
         val args = rawArgs.map(eval)
         args match {
-          // Classes of the runtime have names of their own, see
-          // codegen.RuntimeTypeInformation
+          // Runtime classes are renamed by RuntimeTypeInformation
           case Seq(nir.Val.Global(name: nir.Global.Top, ty))
               if ty == nir.Rt.Class &&
                 !name.id.startsWith("scala.scalanative.runtime.") =>

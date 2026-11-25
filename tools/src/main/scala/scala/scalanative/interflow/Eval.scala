@@ -1042,8 +1042,6 @@ private[interflow] trait Eval { self: Interflow =>
     }
   }
 
-  // Tests against arrays of references check their element type, see
-  // ReachabilityAnalysis.Result.strictArrayTypes
   private def isStrictArrayTest(ty: nir.Type): Boolean = ty match {
     case nir.Type.Array(elem, _) =>
       analysis.strictArrayTypes &&

@@ -461,7 +461,6 @@ final class BinaryDeserializer(buffer: ByteBuffer, nirSource: NIRSource) {
       case T.StringVal  => Val.String(getString())
       case T.VirtualVal => Val.Virtual(getLebUnsignedLong())
       case T.ClassOfVal =>
-        // Revision 12 stores the type, earlier revisions the name of the class
         if (prelude.revision >= Versions.arrayTypesRevision) Val.ClassOf(getType())
         else Val.ClassOf.of(getGlobal().narrow[Global.Top])
       case T.SizeVal   => Val.Size(getLebUnsignedLong())

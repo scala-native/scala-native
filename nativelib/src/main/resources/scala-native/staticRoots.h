@@ -21,15 +21,9 @@ SN_SECTION_LOCAL void scalanative_register_static_roots(void);
  */
 SN_SECTION_LOCAL void scalanative_register_object_roots(void *object);
 
-/* Allocates `size` zeroed bytes for a class created at runtime, outside the
- * heap and never freed. Its name and lock word are GC roots. Returns NULL
- * when out of memory.
- */
+/* Zeroed, never freed memory for a runtime class; NULL when out of memory. */
 SN_SECTION_LOCAL void *scalanative_alloc_runtime_class(size_t size);
 
-/* Size of the RTTI of ObjectArray, the template of classes of arrays created
- * at runtime.
- */
 SN_SECTION_LOCAL size_t scalanative_object_array_class_size(void);
 
 #ifdef __cplusplus

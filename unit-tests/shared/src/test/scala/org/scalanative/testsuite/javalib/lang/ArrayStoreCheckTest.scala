@@ -8,11 +8,7 @@ import org.junit.{Ignore, Test}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
-/* Library operations that store into an array whose element type is only
- * known at runtime, and must reject incompatible elements: System.arraycopy,
- * java.lang.reflect.Array.set, Arrays.copyOf with a new type and
- * Collection.toArray(T[]). See #209, #1694, #1695 and #4845.
- */
+// Library stores into arrays typed at runtime, see #209, #1694, #1695, #4845
 object ArrayStoreCheckTest {
   class Item(val id: Int)
 }
@@ -20,15 +16,12 @@ object ArrayStoreCheckTest {
 class ArrayStoreCheckTest {
   import ArrayStoreCheckTest._
 
-  // System.arraycopy
-
   @Test def arraycopyBetweenCompatibleReferenceArrays(): Unit = {
     val strings = Array("a", "b", "c")
     val objects = new Array[Object](3)
     System.arraycopy(strings, 0, objects, 0, 3)
     assertArrayEquals(Array[Object]("a", "b", "c"), objects)
 
-    // Elements are checked one by one, not by the source array type
     val onlyStrings: Array[Object] = Array("x", null, "z")
     val target = new Array[String](3)
     System.arraycopy(onlyStrings, 0, target, 0, 3)
@@ -98,8 +91,6 @@ class ArrayStoreCheckTest {
     )
   }
 
-  // java.lang.reflect.Array.set
-
   @Test def reflectSetChecksTheElementType(): Unit = {
     val strings = new Array[String](2)
     JArray.set(strings, 0, "a")
@@ -137,8 +128,6 @@ class ArrayStoreCheckTest {
     )
   }
 
-  // java.util.Arrays
-
   @Test def arraysCopyOfIntoIncompatibleType(): Unit = {
     val objects: Array[Object] = Array("a", Integer.valueOf(1))
     assertThrows(
@@ -151,8 +140,6 @@ class ArrayStoreCheckTest {
     assertSame(classOf[Array[String]], prefix.getClass)
     assertEquals("a", prefix(0))
   }
-
-  // Collection.toArray(T[]), see #1695 and #4845
 
   private def collectionsOfItems(): Seq[ju.Collection[Object]] = Seq(
     new ju.ArrayList[Object](),
@@ -198,7 +185,6 @@ class ArrayStoreCheckTest {
     )
   }
 
-  // Collections copying their elements with System.arraycopy or Arrays.copyOf
   @Test def collectionToArrayOfIncompatibleType(): Unit =
     collectionsOfItems()
       .filter {
@@ -211,7 +197,6 @@ class ArrayStoreCheckTest {
       }
       .foreach(assertToArrayOfIncompatibleTypeThrows)
 
-  // Collections storing their elements one by one
   @Ignore("Stores into arrays of references are not type checked")
   @Test def collectionToArrayOfIncompatibleTypeStoredOneByOne(): Unit =
     Seq(

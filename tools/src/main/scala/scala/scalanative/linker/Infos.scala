@@ -255,13 +255,11 @@ object ReachabilityAnalysis {
       val dynimpls: Seq[nir.Global.Member],
       val resolvedVals: mutable.Map[String, nir.Val],
       val foundServiceProviders: FoundServiceProviders,
-      val minNirRevision: Int
+      val minNirRevision: Int = nir.Versions.revision
   ) extends ReachabilityAnalysis {
 
-    /** Whether type tests and casts against arrays check their element type, as
-     *  on the JVM. NIR compiled before `classOf` kept the type of arrays
-     *  creates arrays with the wrong element type, so if any is linked arrays
-     *  of references pass tests against any array of references.
+    /** Array type tests check element types, unless NIR older than revision 12
+     *  is linked: its erased `classOf` creates mistyped arrays.
      */
     def strictArrayTypes: Boolean =
       minNirRevision >= nir.Versions.arrayTypesRevision

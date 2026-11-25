@@ -24,7 +24,6 @@ package object serialization {
   def deserializeBinary(directory: VirtualDirectory, path: Path): Seq[Defn] =
     deserializeBinaryWithRevision(directory, path)._1
 
-  /** Definitions of a NIR file and the revision of the format of the file. */
   def deserializeBinaryWithRevision(
       directory: VirtualDirectory,
       path: Path

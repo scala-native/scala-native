@@ -7,10 +7,7 @@ import org.junit.{Before, Test}
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
 
-/* Plain element stores into a reference array seen through a supertype,
- * which the JVM checks on every store (JLS 10.5). Kept apart from
- * ArrayStoreCheckTest: these checks cost on every reference array store.
- */
+// Plain stores through a covariant array type (JLS 10.5)
 class ArrayCovariantStoreTest {
 
   @Before def storesAreChecked(): Unit =

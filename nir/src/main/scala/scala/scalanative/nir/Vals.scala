@@ -363,12 +363,9 @@ object Val {
    */
   final case class Virtual(key: scala.Long) extends Val
 
-  /** A reference to `java.lang.Class[_]` of type `tpe`.
-   *
-   *  `tpe` is in canonical form, see `Type.classOfType`: a `Type.Ref` to a
-   *  class, trait, module or primitive pseudo-class, or a `Type.Array` for
-   *  arrays of any element type and dimensions. NIR before revision 12 stored
-   *  the name of the class, erasing arrays of references to `ObjectArray`.
+  /** A reference to `java.lang.Class[_]` of type `tpe`, in canonical form
+   *  (`Type.classOfType`). Before NIR revision 12 it held a class name, which
+   *  erased arrays of references to `ObjectArray`.
    *
    *  Instances are emitted as global variables during code feneration. They are
    *  used to deduplicate `Class` instances. There should be only 1 instance per
@@ -382,15 +379,12 @@ object Val {
    */
   final case class ClassOf(tpe: nir.Type) extends Val {
 
-    /** The class denoted by `this`, see `Type.arrayClassName` for arrays. */
     def className: nir.Global.Top = nir.Type.classOfClassName(tpe)
   }
   object ClassOf {
 
-    /** The class of a given type, in canonical form. */
     def of(tpe: nir.Type): ClassOf = ClassOf(nir.Type.classOfType(tpe))
 
-    /** The class named `name`, in canonical form. */
     def of(name: nir.Global.Top): ClassOf = of(nir.Type.Ref(name))
   }
 

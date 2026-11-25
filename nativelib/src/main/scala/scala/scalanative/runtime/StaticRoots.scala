@@ -9,14 +9,12 @@ private[runtime] object StaticRoots {
   @name("scalanative_register_object_roots")
   def registerObject(obj: RawPtr): Unit = extern
 
-  // Zeroed memory for a class created at runtime, never freed; its name and
-  // lock word are GC roots. Null when out of memory.
+  // Never freed; name and lock word are GC roots
   @blocking
   @name("scalanative_alloc_runtime_class")
   def allocRuntimeClass(size: RawSize): RawPtr = extern
 
-  // Size of the RTTI of ObjectArray, copied by classes of arrays created at
-  // runtime, see ArrayClasses
+  // Size of ObjectArray's RTTI, copied by ArrayClasses
   @name("scalanative_object_array_class_size")
   def objectArrayClassSize(): RawSize = extern
 

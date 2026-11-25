@@ -41,8 +41,7 @@ object Array {
     if (dimensions.length == 0)
       throw new IllegalArgumentException("Empty dimensions array")
 
-    // The class of the arrays at each level, the outermost first: the
-    // classes are created before allocating, they validate the dimensions
+    // Classes per level, outermost first; creating them checks the dimensions
     val classes = new scala.Array[Class[_]](dimensions.length)
     var cls: Class[_] = componentType
     var level = dimensions.length - 1

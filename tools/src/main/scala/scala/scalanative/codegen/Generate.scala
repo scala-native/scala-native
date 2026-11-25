@@ -62,7 +62,7 @@ private[codegen] object Generate {
         )
         buf += classListEntry(rtti)(pos)
       }
-      // Template of the classes of arrays created at runtime, see runtime.ArrayClasses
+      // Copied by runtime.ArrayClasses
       meta.analysis.infos.get(nir.Rt.ObjectArray.name).foreach { info =>
         buf += nir.Defn.Const(
           nir.Attrs.None,

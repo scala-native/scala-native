@@ -57,7 +57,6 @@ private[runtime] final class _Class[A] {
 
   def getName(): String = name
 
-  /** Name of arrays in source code form, `java.lang.String[]`. */
   def getTypeName(): String =
     if (isArray()) getComponentType().getTypeName() + "[]"
     else getName()
@@ -68,7 +67,6 @@ private[runtime] final class _Class[A] {
   /** @since JDK 12 */
   def arrayType(): Class[_] = ArrayClasses.of(this)
 
-  // Type descriptor as in class files, `[Ljava/lang/String;`
   /** @since JDK 12 */
   def descriptorString(): String =
     if (isPrimitive()) name match {
@@ -182,7 +180,6 @@ private[runtime] final class _Class[A] {
 
   def getSuperclass(): Class[_ >: A] =
     if (isInterface() || superclassCount == 0) null
-    // Arrays are implemented by subclasses of runtime.Array
     else if (isArray()) classOf[Object].asInstanceOf[Class[_ >: A]]
     else
       _Class.ancestorAt(this, superclassCount - 1).asInstanceOf[Class[_ >: A]]
@@ -262,18 +259,12 @@ private[runtime] object _Class {
     final val TraitKeyShift = 8
   }
 
-  /* Classes of arrays of references, other than BlobArray. Besides
-   * ObjectArray, the class of Array[Object], each array type has a class of
-   * its own, see ArrayClasses.
-   */
+  // Excludes BlobArray
   @alwaysinline private[runtime] def isReferenceArray(cls: _Class[_]) =
     (cls.flags & (Flags.IsArray | Flags.ArrayScanMask)) ==
       (Flags.IsArray | Flags.ArrayScanReferences)
 
-  /* Whether instances of class `left` are instances of `right`, an array of
-   * references: arrays of references are covariant in their component type
-   * (JLS 4.10.3). Their components are never primitives.
-   */
+  // Arrays of references are covariant (JLS 4.10.3)
   @noinline private[runtime] def arrayIs(
       left: _Class[_],
       right: _Class[_]
@@ -462,9 +453,7 @@ private[runtime] object LinkedClasses {
         case _             => throw new ClassNotFoundException(className)
       }
 
-  /* Binary names of array types: one `[` per dimension, then the code of a
-   * primitive component or `L<class name>;`.
-   */
+  // `[` per dimension, then a primitive code or `L<class name>;`
   private def arrayForName(className: String): Class[_] = {
     def notFound() = throw new ClassNotFoundException(className)
     var dims = 0
@@ -497,7 +486,7 @@ private[runtime] object LinkedClasses {
     cls
   }
 
-  // Names of the classes of arrays before they were given JVM names
+  // Names used before array classes had JVM names
   private def legacyArrayClass(className: String): Class[_] =
     className match {
       case "scala.scalanative.runtime.BooleanArray" => classOf[BooleanArray]

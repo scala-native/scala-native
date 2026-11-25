@@ -30,7 +30,7 @@ trait ReachabilitySuite {
     nir.Global.Top("java.io.Serializable"),
     nir.Global.Top("java.lang.constant.Constable"),
     nir.Global.Top("java.lang.constant.ConstantDesc"),
-    // The class of Array[String], see nir.Type.arrayClassName
+    // Array[String]
     nir.Global.Top("[Ljava.lang.String;"),
     nir.Global.Top("scala.scalanative.runtime.ObjectArray"),
     nir.Global.Top("scala.scalanative.runtime.Array"),

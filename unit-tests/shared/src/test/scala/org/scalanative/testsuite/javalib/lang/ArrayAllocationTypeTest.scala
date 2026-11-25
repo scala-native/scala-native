@@ -12,10 +12,6 @@ import org.junit.Test
 
 import org.scalanative.testsuite.utils.Platform
 
-/* Every way of creating an array, in the compiler, the runtime, the Java and
- * the Scala standard library, gives the array the class of its static or
- * requested type.
- */
 object ArrayAllocationTypeTest {
   class Elem(val id: Int)
   class SubElem(id: Int) extends Elem(id)
@@ -36,8 +32,6 @@ class ArrayAllocationTypeTest {
       array.getClass
     )
   }
-
-  // Compiler generated allocations
 
   @Test def newArray(): Unit = {
     assertArrayClass(classOf[Array[String]], new Array[String](2))
@@ -152,8 +146,6 @@ class ArrayAllocationTypeTest {
     )
   }
 
-  // Java standard library
-
   @Test def javaUtilArraysCopies(): Unit = {
     val strings = Array("a", "b", "c")
     assertArrayClass(classOf[Array[String]], ju.Arrays.copyOf(strings, 5))
@@ -226,8 +218,6 @@ class ArrayAllocationTypeTest {
     assertArrayClass(classOf[Array[Thread.State]], Thread.State.values())
   }
 
-  // Runtime created array types
-
   @Test def runtimeCreatedArrayTypesKeepElementsAliveAcrossGC(): Unit = {
     val arrays = Array.tabulate(64) { i =>
       val array = JArray
@@ -236,7 +226,6 @@ class ArrayAllocationTypeTest {
       for (j <- array.indices) array(j) = new OnlyAtRuntime(i * 1000 + j)
       array
     }
-    // Garbage to trigger collections
     for (_ <- 0 until 1000) new Array[Long](1024)
     System.gc()
     for ((array, i) <- arrays.zipWithIndex) {

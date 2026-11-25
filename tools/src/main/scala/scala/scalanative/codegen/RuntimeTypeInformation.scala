@@ -32,8 +32,7 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
       case "scala.scalanative.runtime.PrimitiveUnit"    => "void"
       case "scala.scalanative.runtime.RawSize"          => "size"
       case "scala.scalanative.runtime.RawPtr"           => "pointer"
-      case "scala.scalanative.runtime.BoxedUnit$" => "scala.runtime.BoxedUnit"
-      // JVM binary names of array classes, see Class.getName
+      case "scala.scalanative.runtime.BoxedUnit$"   => "scala.runtime.BoxedUnit"
       case "scala.scalanative.runtime.BooleanArray" => "[Z"
       case "scala.scalanative.runtime.CharArray"    => "[C"
       case "scala.scalanative.runtime.ByteArray"    => "[B"
@@ -80,7 +79,6 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
     case _ => meta.layouts.Rtti.layout
   }
 
-  /** Size of this RTTI in bytes. */
   def size: Int = MemoryLayout.sizeOf(struct).toInt
 
   lazy val value: nir.Val.StructValue = {
@@ -201,7 +199,6 @@ private[codegen] object RuntimeTypeInformation {
 
     final val MaxArrayDimensions = 255
 
-    // Of array classes, as on the JVM limited to 255
     private def dimensions(cls: Class): Int = {
       def loop(elem: Option[nir.Type]): Int = elem match {
         case Some(nir.Type.Array(elem, _)) => 1 + loop(Some(elem))

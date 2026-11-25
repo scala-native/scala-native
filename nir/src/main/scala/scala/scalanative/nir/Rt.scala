@@ -97,8 +97,7 @@ private[scalanative] object Rt {
     val sig = Sig.Method("alloc", Seq(Int, Ref(cls))).mangled
     sig -> cls
   }.toMap ++ {
-    // Arrays of references of a given class, including classes of arrays
-    // created at runtime: they are ObjectArrays for the optimizer
+    // Typed arrays of references, see ArrayClasses
     val cls = ObjectArray.name
     Seq(
       Sig.Method("alloc", Seq(Int, Ptr, Ref(cls))),

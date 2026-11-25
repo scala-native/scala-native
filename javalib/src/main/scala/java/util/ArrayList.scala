@@ -111,8 +111,6 @@ class ArrayList[E] private (
         a.getClass()
       )
     else {
-      // Throws ArrayStoreException for elements that are not instances of
-      // the component type of `a`
       System.arraycopy(inner, 0, a, 0, size())
 
       // fill only the first slot, if any, with a null - see JDK javadoc

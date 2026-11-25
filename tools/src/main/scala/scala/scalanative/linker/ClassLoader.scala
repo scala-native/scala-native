@@ -15,7 +15,6 @@ sealed abstract class ClassLoader {
 
   def load(global: nir.Global.Top): Option[Seq[nir.Defn]]
 
-  /** Revision of the NIR format `global` was loaded from. */
   def revision(global: nir.Global.Top): Int
 
 }
@@ -32,9 +31,6 @@ object ClassLoader {
   def fromMemory(defns: Seq[nir.Defn]): ClassLoader =
     new FromMemory(defns, nir.Versions.revision)
 
-  /** Definitions loaded before from NIR files, the oldest of revision
-   *  `revision`.
-   */
   def fromMemory(defns: Seq[nir.Defn], revision: Int): ClassLoader =
     new FromMemory(defns, revision)
 

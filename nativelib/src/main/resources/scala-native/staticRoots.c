@@ -149,11 +149,8 @@ static void unlockLockWords(void) {}
 
 #endif
 
-/* Classes created at runtime, the classes of arrays of references, see
- * runtime.ArrayClasses. Object headers do not keep classes alive, so they live
- * outside the heap and are never freed. They reference the heap through
- * their name and, with multithreading, their lock word: both are roots. The
- * list only grows; collectors read the published count without locking.
+/* Array classes created at runtime, see runtime.ArrayClasses. Never freed;
+ * their name and lock word are roots. Append-only, read without locking.
  */
 #define RUNTIME_CLASSES_PER_CHUNK 64
 
@@ -205,7 +202,6 @@ static void scanRuntimeClasses(void *data, GC_ScanRangeFn *scan, void *ctx) {
     }
 }
 
-// Defined by the code generator
 extern const int32_t __scalanative_object_array_class_size;
 
 SN_SECTION_LOCAL size_t scalanative_object_array_class_size(void) {

@@ -55,7 +55,6 @@ class ClassMonitorRootTest {
     // This class must have no allocated instances that could keep its monitor.
     assertStaticMonitorSurvives(classOf[NeverInstantiated])
 
-  // Classes of arrays of references are created at runtime, outside the heap
   @Test def inflatedMonitorOfARuntimeArrayClassSurvivesCollections(): Unit =
     assertStaticMonitorSurvives(
       scala.scalanative.runtime.ArrayClasses.of(classOf[OnlyAsArrayClass])
@@ -224,7 +223,7 @@ object ClassMonitorRootTest {
 
   private class NeverInstantiated
   private class AlsoNeverInstantiated
-  // Only the class of its arrays is used, see ArrayClasses
+  // Its array class is created at runtime
   private class OnlyAsArrayClass
   private object StaticSingleton
 

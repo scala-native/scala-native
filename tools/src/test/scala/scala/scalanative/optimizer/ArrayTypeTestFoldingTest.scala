@@ -6,10 +6,7 @@ import org.junit._
 
 import scala.scalanative.OptimizerSpec
 
-/* The optimizer folds type tests and casts against the known type of a
- * value. For arrays the element type takes part in the test: an Object[]
- * is not a String[], even though both are implemented by ObjectArray.
- */
+// Folding of array type tests must take the element type into account
 class ArrayTypeTestFoldingTest extends OptimizerSpec {
 
   private def sinkArgs(entry: nir.Defn.Define): Seq[nir.Val] =
@@ -25,10 +22,7 @@ class ArrayTypeTestFoldingTest extends OptimizerSpec {
   private def releaseFast(c: build.NativeConfig) =
     c.withMode(build.Mode.releaseFast)
 
-  /* A type test that is false at runtime may only fold to false, or stay as
-   * a type test against the array type. Folding it to true, or to a null
-   * check, is wrong.
-   */
+  // False tests may fold to false or stay, never to true or a null check
   private def assertNotFoldedToTrue(entry: nir.Defn.Define): Unit = {
     val arrayTests = entry.insts.collect {
       case nir.Inst.Let(n, nir.Op.Is(_: nir.Type.Array, _), _) => n

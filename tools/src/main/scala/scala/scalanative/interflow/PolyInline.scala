@@ -83,11 +83,8 @@ private[interflow] trait PolyInline { self: Interflow =>
 
     // the only case when result won't be empty or one element seq is reading from `scop.implementors`
     // scop.implementors are prestorted by the same way => I don't need sort here.
-    //
-    // The last target is called without checking the class of the receiver.
-    // Classes of arrays created at runtime match none of the targets, see
-    // runtime.ArrayClasses: they share the methods of ObjectArray, so a class
-    // of arrays of references goes last.
+    // The last target is unguarded: array classes created at runtime match
+    // no guard and must reach ObjectArray's methods.
     val (arrays, others) = res.partition(t => isReferenceArrayClass(t._1))
     if (arrays.isEmpty || others.isEmpty) res else others ++ arrays
   }

@@ -28,7 +28,6 @@ private[linker] class Reach(
   val infos = mutable.Map.empty[nir.Global, Info]
   val from = mutable.Map.empty[nir.Global, ReferencedFrom]
   val exports = mutable.UnrolledBuffer.empty[nir.Global]
-  // Oldest revision of the NIR format among loaded definitions
   var minNirRevision = nir.Versions.revision
 
   val dyncandidates = mutable.Map.empty[nir.Sig, mutable.Set[nir.Global.Member]]
@@ -203,10 +202,7 @@ private[linker] class Reach(
       }
   }
 
-  /* Classes of arrays other than arrays of primitives and of Object have no
-   * definition in NIR: the linker defines them when reached, as subclasses of
-   * ObjectArray, see nir.Type.arrayClassName.
-   */
+  // Array classes other than XArray and ObjectArray have no NIR definition
   private def syntheticArrayClass(
       name: nir.Global.Top
   ): Option[Seq[nir.Defn]] =
@@ -223,7 +219,6 @@ private[linker] class Reach(
         )
       )
 
-  /** Reaches the class of arrays of `elem`, see nir.Type.arrayClassName. */
   def reachArrayClass(
       elem: nir.Type
   )(implicit srcPosition: nir.SourcePosition): nir.Global.Top = {
@@ -739,7 +734,6 @@ private[linker] class Reach(
     )
     reachAttrs(attrs)
     reachExported(name)
-    // The element type of arrays, needed for their runtime type information
     if (nir.Type.isSyntheticArrayClass(name))
       nir.Type.fromArrayClass(name).foreach(reachType)
   }

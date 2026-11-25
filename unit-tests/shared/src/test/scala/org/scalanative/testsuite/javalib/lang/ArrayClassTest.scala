@@ -8,18 +8,13 @@ import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
-/* java.lang.Class of array types: identity, names, component types,
- * supertypes and assignability. Every array type has exactly one Class
- * instance, whichever way it is obtained, and it knows its element type and
- * number of dimensions.
- */
 object ArrayClassTest {
   class Elem
   class SubElem extends Elem
   trait Marker
   class MarkedElem extends Elem with Marker
 
-  // Element types whose arrays appear only through reflection
+  // Arrays of these appear only through reflection
   class OnlyReflective
   class OnlyForName
 }
@@ -40,8 +35,6 @@ class ArrayClassTest {
     assertNotEquals(a, b)
     assertNotSame(a, b)
   }
-
-  // Identity
 
   @Test def classOfArrayEqualsGetClassOfInstance(): Unit = {
     assertSameClass(classOf[Array[String]], new Array[String](0).getClass)
@@ -124,8 +117,6 @@ class ArrayClassTest {
     } assertDifferentClass(a, b)
   }
 
-  // Names
-
   @Test def getNameOfPrimitiveArrays(): Unit = {
     assertEquals("[Z", classOf[Array[scala.Boolean]].getName)
     assertEquals("[C", classOf[Array[scala.Char]].getName)
@@ -189,8 +180,6 @@ class ArrayClassTest {
     assertEquals("class [Ljava.lang.String;", classOf[Array[String]].toString)
     assertEquals("class [[J", classOf[Array[Array[Long]]].toString)
   }
-
-  // Component type and dimensions
 
   @Test def getComponentTypeOfPrimitiveArrays(): Unit = {
     assertSameClass(classOf[Int], classOf[Array[Int]].getComponentType)
@@ -280,8 +269,6 @@ class ArrayClassTest {
     )
   }
 
-  // Kind, supertypes and interfaces
-
   @Test def arrayClassKind(): Unit = {
     for (cls <- Seq[Class[_]](
           classOf[Array[Int]],
@@ -317,8 +304,6 @@ class ArrayClassTest {
       assertEquals(cls.getName, expected, interfaces.toSet)
     }
   }
-
-  // Assignability, following the subtyping rules of arrays in the JLS
 
   private def assertAssignable(to: Class[_], from: Class[_]): Unit =
     assertTrue(
@@ -451,8 +436,6 @@ class ArrayClassTest {
     assertFalse(classOf[Array[MarkedElem]].isInstance(subElems))
     assertFalse(classOf[Array[Marker]].isInstance(subElems))
   }
-
-  // Class.forName with binary names of array types
 
   @Test def forNameOfArrayTypes(): Unit = {
     assertSameClass(classOf[Array[Int]], Class.forName("[I"))

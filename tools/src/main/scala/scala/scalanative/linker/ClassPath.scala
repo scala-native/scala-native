@@ -21,7 +21,6 @@ sealed trait ClassPath {
   /** Load given global and info about its dependencies. */
   private[scalanative] def load(name: nir.Global.Top): Option[Seq[nir.Defn]]
 
-  /** Revision of the NIR format of a loaded global. */
   private[scalanative] def revision(name: nir.Global.Top): Int
 
   private[scalanative] def classesWithEntryPoints: Iterable[nir.Global.Top]
