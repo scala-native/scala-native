@@ -951,8 +951,8 @@ private[scalanative] object Lower {
       offset
     }
 
-    /** Whether storing `value` may store a reference. A raw pointer computed at run time may be an object cast to one, in this method or, for a parameter or a
-     *  loaded value, anywhere else; constants are not.
+    /** Whether storing `value` may store a reference to a heap object. A raw pointer computed at run time may be an object cast to one, in this method or, for
+     *  a parameter or a loaded value, anywhere else. Constants never are: strings, classes and modules live outside the heap, where nothing is young.
      */
     private def isReferenceStore(ty: nir.Type, value: nir.Val): Boolean =
       platform.useGCWriteBarrier && (value match {
@@ -961,8 +961,7 @@ private[scalanative] object Lower {
             case _: nir.Type.RefKind | nir.Type.Ptr => true
             case _                                  => rawPtrBases.contains(id)
           }
-        case nir.Val.Null => false
-        case _            => ty.isInstanceOf[nir.Type.RefKind]
+        case _ => false
       })
 
     def genFieldOp(
