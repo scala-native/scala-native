@@ -1,6 +1,5 @@
 package java.lang
 
-import scalanative.libc.errno._
 import scalanative.unsafe._
 
 private[java] object IEEE754Helpers {
@@ -18,75 +17,70 @@ private[java] object IEEE754Helpers {
   @inline private def isSuffix(c: Int): scala.Boolean =
     (c | 0x20) == 'd' || (c | 0x20) == 'f'
 
-  private def matches(b: CString, from: Int, end: Int, lit: String): Boolean = {
-    if (end - from != lit.length) return false
-    var i = 0
-    while (i < lit.length) {
-      if (b(from + i) != lit.charAt(i).toByte) return false
-      i += 1
-    }
-    true
+  @inline private def skipDigits(
+      b: CString,
+      from: Int,
+      end: Int,
+      hex: scala.Boolean
+  ): Int = {
+    var i = from
+    while (i < end && (if (hex) isHexDigit(b(i)) else isDigit(b(i)))) i += 1
+    i
   }
 
-  /** Validates the ASCII bytes `b[0, len)` against the `Double.valueOf(String)`
-   *  grammar.
-   *
-   *  Returns the `(start, end)` range, packed into a Long, of the part that
-   *  should be passed to `strtod`/`strtof`: surrounding whitespace (any char
-   *  `<= '\u0020'`) and the `fFdD` suffix are excluded, and for `NaN` the sign
-   *  is excluded as well. Returns -1 if the input is not a valid literal.
+  private def isLiteral(b: CString, from: Int, end: Int, lit: String) = {
+    var i = 0
+    while (i < lit.length && from + i < end && b(from + i) == lit.charAt(i))
+      i += 1
+    i == lit.length && from + i == end
+  }
+
+  /** Is `b[from, end)` an unsigned decimal or hexadecimal floating point
+   *  literal without the type suffix.
    */
-  private def validate(b: CString, len: Int): scala.Long = {
+  private def isNumber(b: CString, from: Int, end: Int): scala.Boolean = {
+    val hex = end - from >= 2 && b(from) == '0' && (b(from + 1) | 0x20) == 'x'
+    val mantissa = if (hex) from + 2 else from
+    var i = skipDigits(b, mantissa, end, hex)
+    var nDigits = i - mantissa
+    if (i < end && b(i) == '.') {
+      val j = skipDigits(b, i + 1, end, hex)
+      nDigits += j - i - 1
+      i = j
+    }
+    if (nDigits == 0) false
+    else if (i == end) !hex // hex requires a binary exponent
+    else if ((b(i) | 0x20) != (if (hex) 'p' else 'e')) false
+    else {
+      i += 1
+      if (i < end && (b(i) == '+' || b(i) == '-')) i += 1
+      val j = skipDigits(b, i, end, hex = false)
+      j > i && j == end
+    }
+  }
+
+  /** Validates `b[0, len)` against the `Double.valueOf(String)` grammar and
+   *  NUL-terminates it before the trailing whitespace and suffix. Returns the
+   *  offset to pass to `strtod`/`strtof`, or -1 if invalid.
+   */
+  private def prepare(b: CString, len: Int): Int = {
     var end = len
     while (end > 0 && b(end - 1) <= ' ') end -= 1
     var start = 0
     while (start < end && b(start) <= ' ') start += 1
-    if (start == end) return -1L
+    val body =
+      if (start < end && (b(start) == '+' || b(start) == '-')) start + 1
+      else start
 
-    var i = start
-    val c0 = b(i)
-    if (c0 == '+' || c0 == '-') i += 1
-    if (i == end) return -1L
-
-    def packed(from: Int, to: Int): scala.Long =
-      (from.toLong << 32) | to.toLong
-
-    val c = b(i)
-    if (c == 'N')
-      return if (matches(b, i, end, "NaN")) packed(i, end) else -1L
-    if (c == 'I')
-      return if (matches(b, i, end, "Infinity")) packed(start, end) else -1L
-
-    if (isSuffix(b(end - 1))) end -= 1
-
-    if (c == '0' && i + 1 < end && (b(i + 1) | 0x20) == 'x') {
-      i += 2
-      var nDigits = 0
-      while (i < end && isHexDigit(b(i))) { i += 1; nDigits += 1 }
-      if (i < end && b(i) == '.') {
-        i += 1
-        while (i < end && isHexDigit(b(i))) { i += 1; nDigits += 1 }
+    val offset =
+      if (isLiteral(b, body, end, "NaN")) body // strtod("-NaN") keeps the sign
+      else if (isLiteral(b, body, end, "Infinity")) start
+      else {
+        if (end > body && isSuffix(b(end - 1))) end -= 1
+        if (isNumber(b, body, end)) start else -1
       }
-      if (nDigits == 0 || i == end || (b(i) | 0x20) != 'p') return -1L
-    } else {
-      var nDigits = 0
-      while (i < end && isDigit(b(i))) { i += 1; nDigits += 1 }
-      if (i < end && b(i) == '.') {
-        i += 1
-        while (i < end && isDigit(b(i))) { i += 1; nDigits += 1 }
-      }
-      if (nDigits == 0) return -1L
-      if (i == end) return packed(start, end)
-      if ((b(i) | 0x20) != 'e') return -1L
-    }
-
-    // Exponent: 'e' / 'p' already checked at b(i)
-    i += 1
-    if (i < end && (b(i) == '+' || b(i) == '-')) i += 1
-    if (i == end) return -1L
-    while (i < end && isDigit(b(i))) i += 1
-    if (i != end) return -1L
-    packed(start, end)
+    b(end) = 0.toByte
+    offset
   }
 
   def parseIEEE754[T](s: String, f: (CString, Ptr[CString]) => T): T = {
@@ -98,28 +92,20 @@ private[java] object IEEE754Helpers {
     var i = 0
     while (i < len) {
       val c = s.charAt(i)
-      // Grammar and trimmed whitespace are ASCII only
       if (c > 0x7f) throw new NumberFormatException(exceptionMsg(s))
       cStr(i) = c.toByte
       i += 1
     }
 
-    val range = validate(cStr, len)
-    if (range < 0L)
+    val offset = prepare(cStr, len)
+    if (offset < 0)
       throw new NumberFormatException(exceptionMsg(s))
 
-    val start = cStr + (range >>> 32).toInt
-    val stop = cStr + range.toInt
-    !stop = 0.toByte
-
+    // Out of range values yield 0.0 or +/-Infinity, as Java requires.
     val end = stackalloc[CString]()
-    errno = 0
-    val res = f(start, end)
-
-    // ERANGE: res already holds 0.0 or +/-Infinity, as Java requires.
-    if ((errno != 0 && errno != ERANGE) || !end != stop)
+    val res = f(cStr + offset, end)
+    if (!(!end) != 0)
       throw new NumberFormatException(exceptionMsg(s))
-
     res
   }
 }
