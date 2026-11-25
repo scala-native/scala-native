@@ -103,7 +103,7 @@ object LinktimeInfo {
 
   @resolvedAtLinktime()
   def isVirtualThreadsSupported: Boolean =
-    isMultithreadingEnabled && isContinuationsSupported
+    isMultithreadingEnabled && isContinuationsSupported && !is32BitPlatform
 
   @resolvedAtLinktime(
     "scala.scalanative.meta.linktimeinfo.isMultithreadingEnabled"
