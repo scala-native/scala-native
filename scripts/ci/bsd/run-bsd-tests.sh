@@ -11,6 +11,14 @@ export GC_MAXIMUM_HEAP_SIZE=1G
 # Override -Xmx5G from .sbtopts; matches the Linux workflow.
 SBT_MEM_OPTS="-J-Xmx3G"
 
+# Maven Central rate limits CI, as in .github/actions/sbt-warmup: the build
+# (project/MavenMirror.scala), coursier and the sbt launcher use the mirror.
+mirror=https://maven-central.storage-download.googleapis.com/maven2
+export MAVEN_CENTRAL_MIRROR="$mirror/"
+export COURSIER_REPOSITORIES="ivy2Local|$mirror"
+printf '[repositories]\n  local\n  maven-central-mirror: %s/\n' "$mirror" > /tmp/sbt-launcher-repositories
+export SBT_OPTS="-Dsbt.repository.config=/tmp/sbt-launcher-repositories ${SBT_OPTS:-}"
+
 # Show which process the OOM killer picked if a run is killed.
 on_exit() {
   status=$?

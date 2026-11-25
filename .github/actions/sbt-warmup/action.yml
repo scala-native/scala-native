@@ -21,6 +21,11 @@ runs:
         mirror=https://maven-central.storage-download.googleapis.com/maven2
         echo "MAVEN_CENTRAL_MIRROR=$mirror/" >> "$GITHUB_ENV"
         echo "COURSIER_REPOSITORIES=ivy2Local|$mirror" >> "$GITHUB_ENV"
+        # The sbt launcher downloads sbt itself from repo1 otherwise
+        repos="$RUNNER_TEMP/sbt-launcher-repositories"
+        printf '[repositories]\n  local\n  maven-central-mirror: %s/\n' "$mirror" > "$repos"
+        if [[ "$RUNNER_OS" == "Windows" ]]; then repos=$(cygpath -m "$repos"); fi
+        echo "SBT_OPTS=-Dsbt.repository.config=$repos ${SBT_OPTS:-}" >> "$GITHUB_ENV"
 
     # The build definition includes toolchain sources, see project/build.sbt
     - name: Restore compiled build definition

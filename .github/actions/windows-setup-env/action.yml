@@ -19,6 +19,8 @@ runs:
       # Installs sbt from the mirror, repo1 rate-limits parallel jobs
       env:
         COURSIER_REPOSITORIES: "https://maven-central.storage-download.googleapis.com/maven2"
+        # App descriptors name their own repositories, mirrors still apply
+        COURSIER_MIRRORS: ${{ github.workspace }}/.github/coursier-mirrors.properties
       with:
         jvm: ${{inputs.java-version}}
         apps: sbt
