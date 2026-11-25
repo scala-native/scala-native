@@ -350,20 +350,11 @@ class PropertiesTest {
       "a=\\u-001",
       "a=\\u 123"
     )
-    for (input <- inputs) {
-      val e1 = assertThrows(
-        input,
-        classOf[IllegalArgumentException],
-        new Properties().load(new StringReader(input))
-      )
-      assertEquals(input, "Malformed \\uxxxx encoding.", e1.getMessage())
-      val bytes = input.getBytes(StandardCharsets.ISO_8859_1)
-      val e2 = assertThrows(
-        input,
-        classOf[IllegalArgumentException],
-        new Properties().load(new ByteArrayInputStream(bytes))
-      )
-      assertEquals(input, "Malformed \\uxxxx encoding.", e2.getMessage())
+    val loaders = Seq[String => Properties](loadReader(_), loadStream(_))
+    for (input <- inputs; load <- loaders) {
+      val e =
+        assertThrows(input, classOf[IllegalArgumentException], load(input))
+      assertEquals(input, "Malformed \\uxxxx encoding.", e.getMessage())
     }
   }
 

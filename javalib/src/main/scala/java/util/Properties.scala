@@ -167,23 +167,15 @@ class Properties private (
       }
 
       def parseUnicodeEscape(): Char = {
-        if (i + 4 > line.length())
+        val end = i + 5
+        var j = i + 1
+        while (j < end && j < line.length() &&
+            HexFormat.isHexDigit(line.charAt(j)))
+          j += 1
+        if (j < end)
           throw new IllegalArgumentException("Malformed \\uxxxx encoding.")
-        var value = 0
-        val end = i + 4
-        while (i < end) {
-          val c = line.charAt(i)
-          val digit =
-            if (c >= '0' && c <= '9') c - '0'
-            else if (c >= 'a' && c <= 'f') c - 'a' + 10
-            else if (c >= 'A' && c <= 'F') c - 'A' + 10
-            else
-              throw new IllegalArgumentException("Malformed \\uxxxx encoding.")
-          value = (value << 4) | digit
-          i += 1
-        }
-        // don't advance past the last char used
-        i -= 1
+        val value = HexFormat.fromHexDigits(line, i + 1, end)
+        i = end - 1
         value.toChar
       }
 
@@ -215,10 +207,7 @@ class Properties private (
         if (ch == '\\') {
           ch = getNextChar()
           ch match {
-            case 'u' =>
-              getNextChar() // advance
-              val uch = parseUnicodeEscape()
-              buf.append(uch)
+            case 'u' => buf.append(parseUnicodeEscape())
             case 't' => buf.append('\t')
             case 'f' => buf.append('\f')
             case 'r' => buf.append('\r')
