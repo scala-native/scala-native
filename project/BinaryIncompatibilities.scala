@@ -55,6 +55,9 @@ object BinaryIncompatibilities {
     exclude[MissingClassProblem]("scala.scalanative.runtime.StringConstants"),
     exclude[MissingClassProblem]("scala.scalanative.runtime.StringConstants$"),
     exclude[MissingClassProblem]("scala.scalanative.runtime.rtti*"),
+    // Experimental API
+    exclude[Problem]("scala.scalanative.memory.SafeZone*"),
+    exclude[Problem]("scala.scalanative.runtime.SafeZoneAllocator*"),
     exclude[Problem]("scala.scalanative.runtime.Backtrace*"),
     exclude[Problem]("scala.scalanative.runtime.dwarf.DWARF*"),
     exclude[Problem]("scala.scalanative.runtime.StackTraceElement*"),

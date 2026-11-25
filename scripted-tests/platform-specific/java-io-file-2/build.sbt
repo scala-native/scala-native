@@ -25,7 +25,11 @@ Compile / nativeConfig ~= {
   _.withLinkStubs(true) // DateFormatSymbols
 }
 
-lazy val setupTests = taskKey[Unit]("")
+@transient lazy val setupTests = taskKey[Unit]("")
+
+@transient lazy val cleanupTests = taskKey[Unit]("")
+
+cleanupTests := JavaIoFilePermissionCleanup.restore(baseDirectory.value)
 
 setupTests := {
 

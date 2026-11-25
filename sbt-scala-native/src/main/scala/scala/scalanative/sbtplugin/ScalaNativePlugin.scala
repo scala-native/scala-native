@@ -72,9 +72,9 @@ object ScalaNativePlugin extends AutoPlugin {
       NativeConfigJsonFormats.NativeConfigCodec
   }
 
-  override def globalSettings: Seq[Setting[_]] =
+  override def globalSettings: Seq[Setting[?]] =
     ScalaNativePluginInternal.scalaNativeGlobalSettings
 
-  override def projectSettings: Seq[Setting[_]] =
+  override def projectSettings: Seq[Setting[?]] =
     ScalaNativePluginInternal.scalaNativeProjectSettings
 }
