@@ -13,10 +13,10 @@ class SomeClass
 class scala.collection.immutable.List
 class scala.Tuple2
 Arrays:
-class scala.scalanative.runtime.ObjectArray
-class scala.scalanative.runtime.IntArray
-class scala.scalanative.runtime.DoubleArray
-class scala.scalanative.runtime.ObjectArray
+class [Lscala.runtime.BoxedUnit;
+class [I
+class [D
+class [Lscala.collection.immutable.List;
 Functions:
 interface scala.Function2
 interface scala.Function1

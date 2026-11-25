@@ -476,7 +476,6 @@ class PriorityBlockingQueueTest extends JSR166Test {
     assertTrue(q.isEmpty)
   }
 
-  @Ignore("Runtime limitation - issue #209")
   @Test def testToArray1_BadArg(): Unit = {
     val q =
       PriorityBlockingQueueTest.populatedQueue(SIZE)

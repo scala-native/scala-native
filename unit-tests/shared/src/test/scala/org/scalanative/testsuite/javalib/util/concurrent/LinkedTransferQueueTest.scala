@@ -447,7 +447,7 @@ class LinkedTransferQueueTest extends JSR166Test {
 
   /** toArray(incompatible array type) throws ArrayStoreException
    *
-   *  We don't have this, because SN doesn't yet do runtime variance check.
+   *  Stores into arrays of references are not type checked in Scala Native.
    */
   // @Test def testToArray_incompatibleArrayType() = {
   //   val q = populatedQueue(SIZE)

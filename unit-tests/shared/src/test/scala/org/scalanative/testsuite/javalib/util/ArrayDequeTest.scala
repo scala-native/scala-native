@@ -3,7 +3,7 @@ package org.scalanative.testsuite.javalib.util
 import java.util._
 
 import org.junit.Assert._
-import org.junit.{Ignore, Test}
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
@@ -994,7 +994,6 @@ class ArrayDequeTest {
     assertTrue(in.toArray sameElements aout)
   }
 
-  @Ignore("#1694")
   @Test def toArrayArrayThrowsArrayStoreExceptionWhenNotSuperClass(): Unit = {
     class NotSuperClass
     class SubClass

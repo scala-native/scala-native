@@ -745,7 +745,7 @@ class ConcurrentLinkedDequeTest extends JSR166Test {
   /** toArray(incompatible array type) throws ArrayStoreException
    */
   // Lack of ArrayStoreExeption in Scala Native is a known defect/insufficiency
-  @Ignore("No distinguishment in Array component types in Scala Native")
+  @Ignore("Stores into arrays of references are not type checked")
   @Test def testToArray1_BadArg(): Unit = {
     val q = populatedDeque(SIZE)
     try {

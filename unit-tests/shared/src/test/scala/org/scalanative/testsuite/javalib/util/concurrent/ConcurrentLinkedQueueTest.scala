@@ -475,7 +475,7 @@ class ConcurrentLinkedQueueTest extends JSR166Test {
 
   /** toArray(incompatible array type) throws ArrayStoreException
    */
-  @Ignore("No array object exact element type information in SN runtime")
+  @Ignore("Stores into arrays of references are not type checked")
   @Test def testToArray_incompatibleArrayType(): Unit = {
     val q: ConcurrentLinkedQueue[Item] =
       ConcurrentLinkedQueueTest.populatedQueue(SIZE)

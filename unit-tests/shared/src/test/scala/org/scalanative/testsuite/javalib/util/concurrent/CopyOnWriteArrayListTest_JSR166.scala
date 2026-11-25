@@ -640,7 +640,6 @@ class CopyOnWriteArrayListTest_JSR166 extends JSR166Test {
   /** toArray throws an ArrayStoreException when the given array can not store
    *  the objects inside the list
    */
-  @Ignore("No array object exact element type information in SN runtime")
   @Test def testToArray_ArrayStoreException(): Unit = {
     val list: List[Item] = new CopyOnWriteArrayList[Item]()
     // Items are not auto-converted to Longs
