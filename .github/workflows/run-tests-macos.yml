@@ -16,7 +16,7 @@ env:
 jobs:
   # Native runtime tests in other configurations than the gate
   runtime:
-    name: Runtime ${{ matrix.arch }} (${{ matrix.scala }}, ${{ matrix.mode }})
+    name: Runtime ${{ matrix.runner }} (${{ matrix.scala }}, ${{ matrix.mode }})
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -24,13 +24,10 @@ jobs:
         include:
           - scala: "3"
             mode: release-fast
-            arch: arm64
             runner: macos-26
-          # The Intel gate runs debug, which uses conditional yieldpoints.
-          # Release modes use trap-based yieldpoints, see #5393
+          # Release modes use trap yieldpoints; the Intel gate only runs debug
           - scala: "3"
             mode: release-fast
-            arch: x86_64
             runner: macos-26-intel
     steps: &runtime-steps
       - uses: actions/checkout@v7

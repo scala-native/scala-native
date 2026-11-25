@@ -116,13 +116,10 @@ bool scalanative_gc_safepoint_prepare_redirect(void *uap, void *mutatorThread) {
     if (uap == NULL || self == NULL)
         return false;
     ucontext_t *uc = (ucontext_t *)uap;
-    uintptr_t pc = SN_UC_GET_PC(uc);
-    self->safepointResumePc = pc;
+    self->safepointResumePc = SN_UC_GET_PC(uc);
 #if defined(__x86_64__)
-    /* Skip the red zone and reserve the return slot for `ret $128`, but do
-     * not write it here: the kernel's signal frame starts right below the
-     * red zone (on Darwin the slot is ucontext->uc_mcontext, which sigreturn
-     * reads back). The trampoline fills the slot after sigreturn. */
+    /* Skip the red zone and reserve the `ret $128` slot. Don't write it: it
+     * overlaps the kernel signal frame (#5393). The trampoline fills it. */
     SN_UC_SET_SP(uc, SN_UC_GET_SP(uc) - 128 - sizeof(uintptr_t));
 #elif defined(__aarch64__) && defined(SN_RED_ZONE)
     SN_UC_SET_SP(uc, SN_UC_GET_SP(uc) - SN_RED_ZONE);

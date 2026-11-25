@@ -1,8 +1,9 @@
 /* clang-format off */
 /*
  * POSIX x86_64: normal-context stub after a yield-point page fault.
- * Saves XMM0-15, GPRs and rflags, calls scalanative_gc_safepoint_poll_run_yield
- * (C), then returns to the interrupted PC with `ret $128`.
+ * Saves XMM0-15, GPRs and rflags, calls run_yield + load_resume_pc, writes the
+ * resume PC into the slot reserved by prepare_redirect and returns with
+ * `ret $128`.
  * See SafepointPollTrampoline.c and docs/contrib/gc-safepoint-trampoline.md.
  */
 #if defined(SCALANATIVE_MULTITHREADING_ENABLED) &&                              \
@@ -70,8 +71,6 @@ scalanative_gc_safepoint_poll_trampoline:
     call RUN_YIELD
     call LOAD_RESUME
     movq %rbp, %rsp
-    /* prepare_redirect reserved the return slot right above this frame but
-     * must not write it: it overlaps the kernel signal frame. */
     movq %rax, SFPT_FRAME(%rsp)
 
     movq 384(%rsp), %r15
