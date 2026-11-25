@@ -1,6 +1,6 @@
 package scala.scalanative.runtime
 
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{CountDownLatch, TimeUnit}
 import java.util.concurrent.atomic.{
   AtomicBoolean, AtomicInteger, AtomicReference
 }
@@ -29,25 +29,36 @@ class VirtualThreadYieldpointStressTest {
     val stop = new AtomicBoolean(false)
     val failure = new AtomicReference[java.lang.Throwable](null)
     val rounds = new AtomicInteger(0)
+    // Counted down once per thread after its first completed round
+    val started = new CountDownLatch(count)
 
     val threads = Seq.fill(count) {
       Thread
         .ofVirtual()
         .start(new Runnable {
           def run(): Unit =
-            try
+            try {
+              buildYieldAndCheck()
+              rounds.incrementAndGet()
+              started.countDown()
               while (!stop.get()) {
                 buildYieldAndCheck()
                 rounds.incrementAndGet()
               }
-            catch {
-              case e: java.lang.Throwable => failure.compareAndSet(null, e)
+            } catch {
+              case e: java.lang.Throwable =>
+                failure.compareAndSet(null, e)
+                started.countDown()
             }
         })
     }
 
+    /* Carriers may take a while to schedule all virtual threads; start the
+     * timed GC window only once every thread completed a round.
+     */
+    val allStarted = started.await(60, TimeUnit.SECONDS)
     val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2)
-    while (System.nanoTime() < deadline && failure.get() == null)
+    while (allStarted && System.nanoTime() < deadline && failure.get() == null)
       System.gc()
     stop.set(true)
     threads.foreach { t =>
@@ -56,7 +67,11 @@ class VirtualThreadYieldpointStressTest {
     }
 
     if (failure.get() != null) throw failure.get()
-    assertTrue("rounds", rounds.get() > 0)
+    assertTrue(
+      s"virtual threads started: ${count - started.getCount()}/$count",
+      allStarted
+    )
+    assertTrue("rounds", rounds.get() >= count)
   }
 }
 
