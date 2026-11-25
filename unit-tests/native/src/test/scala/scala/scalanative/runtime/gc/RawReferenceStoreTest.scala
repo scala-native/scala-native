@@ -1,10 +1,11 @@
 package scala.scalanative.runtime.gc
 
 import org.junit.Assert._
+import org.junit.Assume._
 import org.junit.Test
 
 import scala.scalanative.annotation.nooptimize
-import scala.scalanative.runtime.{Intrinsics, ObjectArray, RawPtr}
+import scala.scalanative.runtime.{GC, Intrinsics, ObjectArray, RawPtr}
 
 object RawReferenceStoreTest {
   final class Payload(val x: Long, val y: Long)
@@ -27,6 +28,19 @@ object RawReferenceStoreTest {
     while (i < count) { sum += new Junk(i).a; i += 1 }
     sum
   }
+
+  // Allocates until the GC has collected twice; false when the heap is so
+  // large that it does not within the bound.
+  def churnUntilCollected(): Boolean = {
+    def collections = GC.getStatsCollectionTotal().toLong
+    val before = collections
+    var batches = 0
+    while (collections < before + 2 && batches < 256) {
+      churn(250000)
+      batches += 1
+    }
+    collections >= before + 2
+  }
 }
 
 class RawReferenceStoreTest {
@@ -44,7 +58,10 @@ class RawReferenceStoreTest {
     while (round < 4) {
       var i = 0
       while (i < array.length) { fill(array, i, i + round); i += 1 }
-      churn(1000000)
+      assumeTrue(
+        "no collection after the stores, the heap is too large",
+        churnUntilCollected()
+      )
       i = 0
       while (i < array.length) {
         val expected = i + round
