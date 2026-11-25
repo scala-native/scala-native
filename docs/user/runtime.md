@@ -250,6 +250,12 @@ Experimental. Most collections trace only the objects allocated since the
 previous one and keep the older ones; the whole heap is collected when that
 does not free enough memory, and on `System.gc()`.
 
+On 64-bit systems other than Windows this mode reserves 1 TiB of address space
+for the heap, and about 64 GiB for its metadata, whatever the maximum heap
+size. Only the used part is backed by memory, but the program does not start
+where address space is limited (`ulimit -v`) or the system does not overcommit
+memory (`vm.overcommit_memory=2` on Linux).
+
 Environment variable: `SCALANATIVE_GC_GENERATIONAL` (`1` or `0`), only when building
 
 Supported by: Immix
