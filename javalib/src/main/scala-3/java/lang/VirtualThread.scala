@@ -10,10 +10,12 @@ import scala.noinline
 
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.libc.stdatomic.{AtomicBool, AtomicInt, AtomicRef}
+import scala.scalanative.meta.LinktimeInfo.isVirtualThreadsSupported
 import scala.scalanative.runtime
 import scala.scalanative.runtime.javalib.Proxy
-import scala.scalanative.meta.LinktimeInfo.isVirtualThreadsSupported
-import scala.scalanative.runtime.{Continuations, Intrinsics, NativeThread, UnsupportedFeature, VirtualThreadScheduler, fromRawPtr}
+import scala.scalanative.runtime.{
+  Continuations, Intrinsics, NativeThread, UnsupportedFeature, VirtualThreadScheduler, fromRawPtr
+}
 
 /** Loom-style virtual thread: a `Runnable` fiber that mounts on a platform carrier, suspends via
  *  `Continuations.suspend`, and resumes through `VirtualThreadScheduler`.
