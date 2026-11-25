@@ -39,7 +39,7 @@ object ArrayClasses {
         val arrayClass =
           if (known != null) known
           else classes.computeIfAbsent(component, _ => create(cls))
-        cache(slot) = arrayClass
+        if (isLinked(arrayClass)) cache(slot) = arrayClass
         arrayClass
       }
     }
@@ -80,7 +80,9 @@ object ArrayClasses {
 
   /* Direct-mapped cache of `classes` for reflective allocations, such as
    * ClassTag.newArray. Entries are written without synchronization: a reader
-   * sees an older or a newer class, and checks its component.
+   * sees an older or a newer class, and checks its component. Only classes
+   * defined by the linker are cached, they are never written; classes created
+   * at runtime are published by `classes`.
    */
   private final val CacheSize = 256
   private val cache = new scala.Array[Class[_]](CacheSize)
@@ -88,6 +90,13 @@ object ArrayClasses {
   @alwaysinline private def cacheSlot(cls: _Class[_]): Int = {
     val address = castRawPtrToLong(castObjectToRawPtr(cls))
     ((address ^ (address >>> 12)) >>> 4).toInt & (CacheSize - 1)
+  }
+
+  // Classes created at runtime list ObjectArray in place of themselves in
+  // their lineage, see create
+  @alwaysinline private def isLinked(arrayClass: Class[_]): Boolean = {
+    val cls = arrayClass.asInstanceOf[_Class[_]]
+    _Class.ancestorAt(cls, cls.superclassCount) eq cls
   }
 
   @alwaysinline private def is(cls: _Class[_], other: Class[_]): Boolean =

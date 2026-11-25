@@ -101,8 +101,12 @@ Every array type has one class, named as on the JVM: `[I`, `[Ljava.lang.Object;`
 
 Arrays of references are covariant (`String[]` is an `Object[]`), unlike their
 classes. Type tests against an array type whose element has no subtypes
-(`String[]`, `int[][]`) compare the class; against other arrays of references
-they test for an array of references and call `ArrayClasses.isSubclass`. When
+(`String[]`, `int[][]`) compare the class. Against other arrays of references
+they test for an array of references, then test its component class against
+the element as any class test; a component that is a trait, whose RTTI has no
+lineage nor itable, goes to `ArrayClasses.isSubclass`. Poly-inlined calls test
+classes of arrays last: classes created at runtime match no test and share
+`ObjectArray`'s methods. When
 the program links NIR compiled before revision 12, in which `classOf` erased
 arrays of references to `ObjectArray`, these tests only check that the value is
 an array of references, as before. Reflection is exact either way.

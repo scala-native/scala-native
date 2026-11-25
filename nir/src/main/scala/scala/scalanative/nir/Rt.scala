@@ -96,7 +96,23 @@ private[scalanative] object Rt {
     val cls = Global.Top("scala.scalanative.runtime." + arr)
     val sig = Sig.Method("alloc", Seq(Int, Ref(cls))).mangled
     sig -> cls
-  }.toMap
+  }.toMap ++ {
+    // Arrays of references of a given class, including classes of arrays
+    // created at runtime: they are ObjectArrays for the optimizer
+    val cls = ObjectArray.name
+    Seq(
+      Sig.Method("alloc", Seq(Int, Ptr, Ref(cls))),
+      Sig.Method(
+        "alloc",
+        Seq(
+          Int,
+          Ptr,
+          Ref(Global.Top("scala.scalanative.memory.SafeZone")),
+          Ref(cls)
+        )
+      )
+    ).map(_.mangled -> cls)
+  }
   val RuntimeObjectMonitor = Ref(
     Global.Top("scala.scalanative.runtime.monitor.ObjectMonitor")
   )

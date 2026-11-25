@@ -26,6 +26,9 @@ object BinaryIncompatibilities {
     exclude[DirectMissingMethodProblem]("scala.scalanative.nir.Global#None.member"),
     // Internal state of the NIR writer, not meant for subclasses
     exclude[DirectMissingMethodProblem]("scala.scalanative.nir.serialization.InternedBinarySectionWriter.entries"),
+    // since 0.5.14 - classOf takes a type to denote array types (NIR revision 12)
+    exclude[Problem]("scala.scalanative.nir.Val#ClassOf*"),
+    exclude[Problem]("scala.scalanative.nir.Val$ClassOf$"),
   )
 
   final val Tools: Filters = Seq(
