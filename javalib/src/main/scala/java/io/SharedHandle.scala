@@ -13,18 +13,18 @@ import scala.scalanative.windows.{
   IoApiSet, ProcessThreadsApi, ProcessThreadsApiExt, SynchApi
 }
 
-/* The OS handle of a FileDescriptor, shared by all its streams and channels.
- * Each syscall holds a lease, so the OS close waits for the last one, and
- * close() wakes channel operations blocked on the handle.
+/* The OS handle of a FileDescriptor, shared by its streams and channels.
+ * Syscalls lease it: close() wakes blocked channel calls, and the OS close
+ * waits for the last lease.
  */
 private[java] final class SharedHandle(handle: AtomicObjectHandle) {
   import SharedHandle._
 
   // Leases in flight (low bits) and the Closing bit.
   @volatile private var state = 0
-  // Runs after the OS close; set by the closer.
+  // Runs after the OS close.
   @volatile private var afterClose: () => Unit = null
-  // Created by the first channel operation; written under this lock.
+  // Lazy; written under this lock.
   @volatile private var wakePipe: WakePipe = null // Unix
   @volatile private var blocked: BlockedThreads = null // Windows
 
@@ -48,12 +48,12 @@ private[java] final class SharedHandle(handle: AtomicObjectHandle) {
     acquired
   }
 
-  /** Ends a syscall. The last one after close() closes the OS handle. */
+  /** Ends a syscall; the last one after close() closes the OS handle. */
   def release(): Unit =
     if (atomicState.fetchSub(1) - 1 == Closing) closeNow(deferred = true)
 
-  /** Closes once: wakes channel operations, then closes the OS handle when no
-   *  syscall is in flight. Stream calls are not woken. `after` runs last.
+  /** Wakes channel calls, then closes the OS handle once no syscall is in
+   *  flight. `after` runs last.
    */
   def close(after: () => Unit): Unit = {
     var prev = state
@@ -84,7 +84,7 @@ private[java] final class SharedHandle(handle: AtomicObjectHandle) {
       catch { case _: Exception if deferred => () }
   }
 
-  /** Unix: read end of the wake pipe; readable once closing has started. */
+  /** Unix: wake pipe read end, readable once closing starts. */
   def wakeFd(): Int = {
     val p = wakePipe
     if (p != null) p.readFd
@@ -98,7 +98,7 @@ private[java] final class SharedHandle(handle: AtomicObjectHandle) {
       }
   }
 
-  /** Windows: the current thread is in channel I/O until deregistered. */
+  /** Windows: lets close() cancel the current thread's I/O. */
   def registerBlocked(): Unit = if (isWindows) synchronized {
     if (blocked == null) blocked = new BlockedThreads()
     blocked.add()
@@ -113,9 +113,8 @@ private[java] final class SharedHandle(handle: AtomicObjectHandle) {
       if (wakePipe != null) wakePipe.signal()
     }
     else {
-      /* A thread not yet in its call misses the cancel, so retry until all
-       * leave or the timeout passes; any left delay the OS close. Sleep, as
-       * wait() would throw on our interrupt status.
+      /* A cancel misses a thread not yet in its call: retry until none is
+       * left or the timeout passes. Sleep, as our interrupt breaks wait().
        */
       val deadline = System.nanoTime() + CancelTimeoutNanos
       while (cancelBlocked() && System.nanoTime() < deadline)
@@ -178,9 +177,8 @@ private[java] object SharedHandle {
       }
     }
 
-    /* Cancels the I/O of every thread but the caller, which may be registered
-     * itself (map() leases before it waits for the position lock). False if
-     * none was cancelled.
+    /* Cancels all but the caller, which map() may have registered before
+     * it waits for the position lock. False if none.
      */
     def cancelOthers(): Boolean = isMultithreadingEnabled && {
       val self = currentThreadId()

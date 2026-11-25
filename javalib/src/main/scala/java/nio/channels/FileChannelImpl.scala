@@ -35,13 +35,10 @@ import scala.scalanative.windows.MinWinBaseApi._
 import scala.scalanative.windows.MinWinBaseApiOps._
 import scala.scalanative.windows._
 
-/* Public operations run in begin()/end(): an interrupt or close() ends them
- * with ClosedByInterruptException or AsynchronousCloseException. Stream
- * methods (private[java]) skip begin()/end().
- *
- * Syscalls run under an fd lease (see SharedHandle), so close() never frees
- * an fd number still in use. Open checks run before begin(), so a closed
- * channel throws ClosedChannelException.
+/* Public operations run in begin()/end(), so an interrupt or close() ends
+ * them; stream methods (private[java]) do not. Open checks come first: a
+ * closed channel throws ClosedChannelException. Syscalls hold an fd lease
+ * (see SharedHandle).
  */
 private[java] final class FileChannelImpl(
     fd: FileDescriptor,
@@ -72,7 +69,7 @@ private[java] final class FileChannelImpl(
     } finally positionLock.unlock()
   }
 
-  // close() cannot wake a lock waiter, so a channel operation waits in slices.
+  // close() cannot wake a lock waiter, so channel calls wait in slices.
   private def lockPosition(intr: Boolean): Unit =
     if (!intr) positionLock.lock()
     else if (!positionLock.tryLock()) {
@@ -83,7 +80,7 @@ private[java] final class FileChannelImpl(
     try positionLock.tryLock(10L, TimeUnit.MILLISECONDS)
     catch {
       case _: InterruptedException =>
-        // Restoring the status closes this channel, as begin() is active.
+        // Restoring the flag closes this channel: begin() is active.
         Thread.currentThread().interrupt()
         false
     }
@@ -98,7 +95,7 @@ private[java] final class FileChannelImpl(
     } finally end(completed)
   }
 
-  // Leases the fd; `intr` marks a channel operation, which close() wakes.
+  // Leases the fd; `intr` marks a channel call, which close() wakes.
   @inline private def leased[T](intr: Boolean)(body: => T): T = {
     if (!shared.acquire())
       throw {
@@ -589,8 +586,8 @@ private[java] final class FileChannelImpl(
     else n.toInt
   }
 
-  /* write, or pwrite if pos >= 0. Loops until done, a 0-byte write or
-   * close(); throws AsynchronousCloseException only if nothing was written.
+  /* write, or pwrite if pos >= 0, until done, a 0-byte write or close().
+   * Throws AsynchronousCloseException if nothing was written.
    */
   private def unixWrite(
       buf: Ptr[Byte],
@@ -599,8 +596,7 @@ private[java] final class FileChannelImpl(
       intr: Boolean
   ): Int = {
     val pollFirst = prepareBlockingCall(intr, pos)
-    // After POLLOUT a pipe takes PIPE_BUF bytes without blocking. A terminal
-    // may not, and close() cannot wake it.
+    // POLLOUT promises PIPE_BUF bytes to a pipe, not to a terminal.
     val chunk = if (pollFirst) pipeBuf else count
     var written = 0
     var n = 1L
@@ -615,7 +611,7 @@ private[java] final class FileChannelImpl(
   }
 
   /* One read or write (pread/pwrite if pos >= 0), retried on EINTR. Channel
-   * operations also wait out EAGAIN, and get -1 once close() stops them.
+   * calls also wait out EAGAIN; -1 once close() stops them.
    */
   private def blockingCall(
       write: Boolean,
@@ -653,8 +649,8 @@ private[java] final class FileChannelImpl(
     result
   }
 
-  /* Makes a relative channel call wakeable: O_NONBLOCK on a private
-   * description, else poll first (true). pread/pwrite fail at once on pipes.
+  /* Makes a relative channel call wakeable: sets O_NONBLOCK, or returns true
+   * to poll first. pread/pwrite need neither; they fail at once on pipes.
    */
   private def prepareBlockingCall(intr: Boolean, pos: Long): Boolean =
     intr && pos < 0 && {
@@ -663,7 +659,7 @@ private[java] final class FileChannelImpl(
       k == KindPollFirst
     }
 
-  // See Kind* below. Call with a lease held.
+  // See Kind*. Call with a lease held.
   private def kind: Int = {
     if (kindCache == KindUnknown) kindCache = computeKind()
     kindCache
@@ -731,8 +727,7 @@ private[java] final class FileChannelImpl(
       }
 
   /* An interrupt during a transfer closes both channels. Only this channel's
-   * own steps are leased and interruptible, so waiting on the other channel
-   * never holds this one open.
+   * steps hold its lease, so waiting on the other never keeps it open.
    */
   private def closeBothIfInterrupted[T](other: Channel)(body: => T): T =
     try body
@@ -1253,8 +1248,7 @@ private[java] object FileChannelImpl {
     val fd =
       if (isWindows) openWindows(pathString, options)
       else openUnix(pathString, options, mode)
-    // Opened here with O_CLOEXEC: O_NONBLOCK is safe unless the path
-    // reopens a shared description.
+    // Opened here with O_CLOEXEC, so O_NONBLOCK is safe unless shared.
     val kind =
       if (isWindows) KindUnknown
       else if (isRegularFd(fd.fd)) KindRegular

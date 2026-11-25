@@ -85,9 +85,8 @@ object FileChannelInterruptTest {
       else s"returned $result; interrupted=$interrupted"
   }
 
-  /* Starts op on a thread, lets it block, then runs action from another
-   * thread. If op is still blocked after the bounded wait, unblock releases
-   * it, so no test can hang.
+  /* Runs op on a thread, lets it block, then runs action. If op is still
+   * blocked after a bounded wait, unblock frees it: no test can hang.
    */
   def blocked(
       op: => Any,
@@ -614,8 +613,7 @@ class FileChannelInterruptTest {
           finally p.destroyForcibly()
         }
       }
-      // Had the channel read locked first, the stream read would have seen
-      // the closed channel instead of the byte.
+      // The stream read locked first, so it got the byte.
       assertEquals(s"stream read: $streamRead", 'x'.toInt, streamRead.result)
     }
   }
