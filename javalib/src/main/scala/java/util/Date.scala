@@ -20,23 +20,23 @@ class Date(var milliseconds: Long)
 
   def this() = this(System.currentTimeMillis())
 
-  def after(when: Date): Boolean = milliseconds > when.getTime()
+  def after(when: Date): Boolean = getTime() > when.getTime()
 
-  def before(when: Date): Boolean = milliseconds < when.getTime()
+  def before(when: Date): Boolean = getTime() < when.getTime()
 
-  override def clone(): Object = new Date(milliseconds)
+  override def clone(): Object = super.clone()
 
   override def compareTo(anotherDate: Date): Int =
-    milliseconds.compareTo(anotherDate.getTime())
+    java.lang.Long.compare(getTime(), anotherDate.getTime())
 
   override def equals(obj: Any): Boolean = obj match {
-    case d: Date => d.getTime() == milliseconds
+    case d: Date => d.getTime() == getTime()
     case _       => false
   }
 
   def getTime(): Long = milliseconds
 
-  override def hashCode(): Int = milliseconds.hashCode()
+  override def hashCode(): Int = java.lang.Long.hashCode(getTime())
 
   def setTime(time: Long): Unit =
     milliseconds = time
