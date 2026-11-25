@@ -510,9 +510,107 @@ class PropertiesTest {
           |""".stripMargin
   }
 
+  @Test def getPropertyIgnoresOverriddenGet(): Unit = {
+    val p = new PropertiesTest.OverriddenGet
+    p.setProperty("k", "stored")
+    assertEquals("stored", p.getProperty("k"))
+    assertEquals("stored", p.getProperty("k", "d"))
+  }
+
+  @Test def getPropertyWithDefaultCallingSuperGetProperty(): Unit = {
+    val p = new PropertiesTest.WithDefault
+    assertEquals("d", p.getProperty("k", "d"))
+    p.setProperty("k", "v")
+    assertEquals("v", p.getProperty("k", "d"))
+  }
+
+  @Test def getPropertyUsesDefaultsRecursively(): Unit = {
+    val grandParent = new Properties()
+    grandParent.setProperty("a", "1")
+    val parent = new Properties(grandParent)
+    parent.put("a", Int.box(2)) // non-String values are skipped
+    val p = new Properties(parent)
+    assertEquals("1", p.getProperty("a"))
+    assertEquals("1", p.getProperty("a", "d"))
+    assertEquals(null, p.getProperty("b"))
+    assertEquals("d", p.getProperty("b", "d"))
+  }
+
+  @Test def subclassCanAssignDefaults(): Unit = {
+    val d = new Properties()
+    d.setProperty("k", "from-defaults")
+    val p = new PropertiesTest.AssignableDefaults
+    p.setDefaults(d)
+    assertEquals("from-defaults", p.getProperty("k"))
+    assertTrue(p.stringPropertyNames().contains("k"))
+    assertEquals("k", p.propertyNames().nextElement())
+  }
+
+  @Test def subclassSuperCallsToHashtableMethods(): Unit = {
+    val p = new PropertiesTest.SuperCalls
+    assertNull(p.put("a", "1"))
+    assertNull(p.put("b", "2"))
+    assertEquals("1", p.get("a"))
+    assertEquals(2, p.size())
+    assertEquals(2, p.entrySet().size())
+    assertTrue(p.containsKey("b"))
+    assertEquals("2", p.remove("b"))
+    assertEquals(1, p.keySet().size())
+    p.clear()
+    assertTrue(p.isEmpty())
+    assertThrows(
+      classOf[UnsupportedOperationException],
+      p.entrySet().clear()
+    )
+  }
+
+  @Test def cloneKeepsDefaultsAndCopiesEntries(): Unit = {
+    val d = new Properties()
+    d.setProperty("d", "from-defaults")
+    val p = new Properties(d)
+    p.setProperty("k", "v")
+    val c = p.clone()
+    assertTrue(c.isInstanceOf[Properties])
+    val copy = c.asInstanceOf[Properties]
+    assertEquals("v", copy.getProperty("k"))
+    assertEquals("from-defaults", copy.getProperty("d"))
+    copy.setProperty("k", "changed")
+    assertEquals("v", p.getProperty("k"))
+  }
+
   def withUnixLineSeparators(str: String): String = {
     if (str != null && isWindows) {
       str.replaceAll(System.lineSeparator(), "\n")
     } else str
+  }
+}
+
+object PropertiesTest {
+  class OverriddenGet extends Properties {
+    override def get(k: Any): AnyRef = "from-get"
+  }
+
+  class WithDefault extends Properties {
+    override def getProperty(k: String, d: String): String = {
+      val v = super.getProperty(k)
+      if (v == null) d else v
+    }
+  }
+
+  class AssignableDefaults extends Properties {
+    def setDefaults(d: Properties): Unit = defaults = d
+  }
+
+  class SuperCalls extends Properties {
+    override def put(k: AnyRef, v: AnyRef): AnyRef = super.put(k, v)
+    override def get(k: Any): AnyRef = super.get(k)
+    override def remove(k: Any): AnyRef = super.remove(k)
+    override def clear(): Unit = super.clear()
+    override def size(): Int = super.size()
+    override def isEmpty(): Boolean = super.isEmpty()
+    override def containsKey(k: Any): Boolean = super.containsKey(k)
+    override def keySet(): ju.Set[AnyRef] = super.keySet()
+    override def entrySet(): ju.Set[ju.Map.Entry[AnyRef, AnyRef]] =
+      Collections.unmodifiableSet(super.entrySet())
   }
 }
