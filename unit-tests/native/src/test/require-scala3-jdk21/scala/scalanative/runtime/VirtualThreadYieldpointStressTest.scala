@@ -1,9 +1,9 @@
 package scala.scalanative.runtime
 
-import java.util.concurrent.{CountDownLatch, TimeUnit}
 import java.util.concurrent.atomic.{
   AtomicBoolean, AtomicInteger, AtomicReference
 }
+import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 import org.junit.Assert._
 import org.junit.Assume.assumeTrue
