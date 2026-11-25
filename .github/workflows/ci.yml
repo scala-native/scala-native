@@ -56,7 +56,10 @@ jobs:
       - uses: actions/checkout@v7
         with:
           sparse-checkout: scripts/ci
-      - uses: coursier/cache-action@v8
+      - uses: coursier/cache-action@ee0650f98295f27a505e4bfd284c9bfaa913a465 # v9.0.1
+        # Only main saves, so PR caches don't evict main's
+        with:
+          cacheMode: ${{ github.ref != 'refs/heads/main' && 'read' || '' }}
       - uses: VirtusLab/scala-cli-setup@v1.19
       - name: Select jobs
         id: plan
@@ -87,7 +90,10 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
-      - uses: coursier/cache-action@v8
+      - uses: coursier/cache-action@ee0650f98295f27a505e4bfd284c9bfaa913a465 # v9.0.1
+        # Only main saves, so PR caches don't evict main's
+        with:
+          cacheMode: ${{ github.ref != 'refs/heads/main' && 'read' || '' }}
       - uses: coursier/setup-action@v3
       # Formatting requires clang-format 14
       - name: Install clang-format

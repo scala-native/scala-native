@@ -734,6 +734,7 @@ object Settings {
         ) ++
         nestedCiMitigations ++
         nestedLauncherMirror(target.value) ++
+        CoursierUserAgent.javaOptions ++
         ivyPaths.value.ivyHome.map(home => s"-Dsbt.ivy.home=$home").toSeq
     }
   )
