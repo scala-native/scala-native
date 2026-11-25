@@ -129,7 +129,7 @@ private[math] object Primality {
         n.digits(last) = (n.digits(last) | 0x80000000) >>> shiftCount
         // To create an odd number
         n.digits(0) |= 1
-        done = (!isProbablePrime(n, certainty))
+        done = isProbablePrime(n, certainty)
       }
       n
     }
@@ -224,8 +224,9 @@ private[math] object Primality {
     else startPoint.digits(0) |= 1
 
     // To set the improved certainty of Miller-Rabin
+    val startBitLength = startPoint.bitLength()
     var certainty = 2
-    for (j <- startPoint.bitLength() until Bits(certainty)) {
+    while (startBitLength < Bits(certainty)) {
       certainty += 1
     }
 
@@ -234,7 +235,6 @@ private[math] object Primality {
       modules(i) = Division.remainder(startPoint, Primes(i)) - gapSize
     }
 
-    val probPrime: BigInteger = startPoint.copy()
     while (true) {
       // At this point, all numbers in the gap are initialized as probably primes
       Arrays.fill(isDivisible, false)
@@ -253,7 +253,7 @@ private[math] object Primality {
       var j = 0
       while (j != gapSize) {
         if (!isDivisible(j)) {
-          Elementary.inplaceAdd(probPrime, j)
+          val probPrime = startPoint.add(BigInteger.valueOf(j))
           if (millerRabin(probPrime, certainty)) {
             return probPrime
           }
