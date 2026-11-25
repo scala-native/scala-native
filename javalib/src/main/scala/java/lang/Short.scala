@@ -196,7 +196,7 @@ object Short {
       valueOf(r)
     else
       throw new NumberFormatException(
-        s"""Value $nm out of range from input $nm"""
+        s"""Value $i out of range from input $nm"""
       )
   }
 
