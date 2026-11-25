@@ -19,4 +19,15 @@ object Link {
   ): ReachabilityAnalysis =
     Reach(config, entries, ClassLoader.fromMemory(defns))
 
+  /** Run reachability analysis on methods loaded before from NIR files, the
+   *  oldest of revision `nirRevision`.
+   */
+  def apply(
+      config: build.Config,
+      entries: Seq[nir.Global],
+      defns: Seq[nir.Defn],
+      nirRevision: Int
+  ): ReachabilityAnalysis =
+    Reach(config, entries, ClassLoader.fromMemory(defns, nirRevision))
+
 }

@@ -58,6 +58,48 @@ object Sub {
     }
   }
 
+  /** Whether every value of type `l` is an instance of the array type `r`, as
+   *  on the JVM: arrays of references are covariant in their element type (JLS
+   *  4.10.3). Values whose element type is not known are only instances of
+   *  `Object[]`.
+   */
+  def isArray(l: nir.Type, r: nir.Type.Array)(implicit
+      analysis: ReachabilityAnalysis.Result
+  ): Boolean = {
+    val relem = nir.Type.canonicalArrayElement(r.ty)
+    l match {
+      case nir.Type.NullType(_) | nir.Type.NothingType(_) =>
+        true
+      case nir.Type.Array(lelem, _) =>
+        isArrayElement(nir.Type.canonicalArrayElement(lelem), relem)
+      case nir.Type.Ref(name, exact, _) =>
+        nir.Type.fromArrayClass(name) match {
+          // A reference to ObjectArray can be any array of references
+          case Some(lelem) if exact || name != nir.Rt.ObjectArray.name =>
+            name != nir.Rt.BlobArray.name && isArrayElement(lelem, relem)
+          case Some(_) => relem == nir.Rt.Object
+          case None    => false
+        }
+      case _ =>
+        false
+    }
+  }
+
+  // Canonical array elements, see nir.Type.canonicalArrayElement
+  private def isArrayElement(l: nir.Type, r: nir.Type)(implicit
+      analysis: ReachabilityAnalysis.Result
+  ): Boolean = (l, r) match {
+    case _ if l == r                                          => true
+    case (_: nir.Type.RefKind, nir.Rt.Object)                 => true
+    case (nir.Type.Array(lelem, _), nir.Type.Array(relem, _)) =>
+      isArrayElement(lelem, relem)
+    case (ScopeRef(linfo), ScopeRef(rinfo))
+        if !l.isInstanceOf[nir.Type.Array] &&
+          !r.isInstanceOf[nir.Type.Array] =>
+      linfo.is(rinfo)
+    case _ => false
+  }
+
   def is(info: ScopeInfo, ty: nir.Type.RefKind)(implicit
       analysis: ReachabilityAnalysis.Result
   ): Boolean = {

@@ -79,6 +79,12 @@ class SubSuite extends ReachabilitySuite {
   def testIsNot(l: nir.Type, r: nir.Type) =
     assertTrue(s"${l.show} is not ${r.show}", !Sub.is(l, r))
 
+  def testIsArray(l: nir.Type, r: nir.Type.Array) =
+    assertTrue(s"${l.show} is ${r.show}", Sub.isArray(l, r))
+
+  def testIsNotArray(l: nir.Type, r: nir.Type.Array) =
+    assertTrue(s"${l.show} is not ${r.show}", !Sub.isArray(l, r))
+
   @Test def valueTypeWithvalueTypes(): Unit = {
     valueTypes.foreach { v1 =>
       valueTypes.foreach { v2 =>
@@ -153,6 +159,52 @@ class SubSuite extends ReachabilitySuite {
     testIsNot(T3, T1)
     testIsNot(T3, T2)
     testIs(T3, T3)
+  }
+
+  // Arrays follow the JLS: reference arrays are covariant in their element
+  // type, primitive arrays are invariant, and an array of arrays is an array
+  // of objects, see Sub.isArray.
+  @Test def arrays(): Unit = {
+    import nir.Type.{Array => Arr}
+    val Obj = nir.Rt.Object
+    val Str = nir.Rt.String
+    val ObjectArray =
+      nir.Type.Ref(nir.Global.Top("scala.scalanative.runtime.ObjectArray"))
+    val IntArray =
+      nir.Type.Ref(nir.Global.Top("scala.scalanative.runtime.IntArray"))
+
+    testIsArray(Arr(Str), Arr(Obj))
+    testIsNotArray(Arr(Obj), Arr(Str))
+    testIsArray(Arr(B), Arr(A))
+    testIsArray(Arr(B), Arr(T1))
+    testIsArray(Arr(B), Arr(T3))
+    testIsNotArray(Arr(A), Arr(B))
+    testIsNotArray(Arr(A), Arr(T3))
+    testIsNotArray(Arr(C), Arr(A))
+    testIsNotArray(Arr(T1), Arr(A))
+
+    testIsNotArray(Arr(nir.Type.Int), Arr(Obj))
+    testIsNotArray(Arr(nir.Type.Int), Arr(nir.Type.Long))
+    testIsNotArray(Arr(Obj), Arr(nir.Type.Int))
+
+    testIsArray(Arr(Arr(nir.Type.Int)), Arr(Obj))
+    testIsArray(Arr(Arr(Str)), Arr(Arr(Obj)))
+    testIsArray(Arr(Arr(Arr(nir.Type.Int))), Arr(Arr(Obj)))
+    testIsNotArray(Arr(Arr(nir.Type.Int)), Arr(Arr(Obj)))
+    testIsNotArray(Arr(Arr(nir.Type.Int)), Arr(nir.Type.Int))
+    testIsNotArray(Arr(Obj), Arr(Arr(Obj)))
+    testIsNotArray(Arr(Str), Arr(Arr(Str)))
+
+    // The runtime classes implementing arrays
+    testIs(Arr(nir.Type.Int), IntArray)
+    testIs(Arr(Obj), ObjectArray)
+    testIs(Arr(Str), ObjectArray)
+    testIs(Arr(Arr(nir.Type.Int)), ObjectArray)
+    testIsNot(Arr(nir.Type.Int), ObjectArray)
+    // A reference to ObjectArray can be any array of references
+    testIsNotArray(ObjectArray, Arr(Str))
+    testIsArray(ObjectArray, Arr(Obj))
+    testIsArray(IntArray, Arr(nir.Type.Int))
   }
 
 }

@@ -1407,6 +1407,9 @@ private[scalanative] object Lower {
       val obj = genVal(buf, v)
 
       ty match {
+        case nir.Type.Array(elem, _) if isStrictArrayTest(elem) =>
+          genArrayIsOp(buf, nir.Type.canonicalArrayElement(elem), obj)
+
         case ClassRef(cls) if cls.subclasses.isEmpty =>
           val typeptr = let(nir.Op.Load(nir.Type.Ptr, obj), unwind)
           let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, typeptr, rtti(cls).const), unwind)
@@ -1482,6 +1485,50 @@ private[scalanative] object Lower {
       }
     }
 
+    /* Tests against arrays of references check their element type, unless NIR
+     * older than classOf of array types is linked, see
+     * ReachabilityAnalysis.Result.strictArrayTypes. Arrays of primitives and of
+     * Object are tested by their class.
+     */
+    private def isStrictArrayTest(elem: nir.Type): Boolean =
+      analysis.strictArrayTypes &&
+        !nir.Type.typeToArray.contains(nir.Type.canonicalArrayElement(elem))
+
+    /* Whether the only instances of arrays of `elem` are arrays of exactly that
+     * type: their element has no other subtypes than itself. Each array type
+     * the program uses has a single class, see nir.Type.arrayClassName.
+     */
+    private def isExactArrayElement(elem: nir.Type): Boolean = elem match {
+      case nir.Rt.Object            => false
+      case nir.Type.Array(inner, _) => isExactArrayElement(inner)
+      case ClassRef(cls)            => cls.subclasses.isEmpty
+      case _: nir.Type.Ref          => false // traits
+      case _                        => true // primitives
+    }
+
+    private def genArrayIsOp(buf: nir.InstructionBuilder, elemTy: nir.Type, obj: nir.Val)(implicit
+        srcPosition: nir.SourcePosition,
+        scopeId: nir.ScopeId
+    ): nir.Val = {
+      import buf._
+      val target = rtti(analysis.infos(nir.Type.arrayClassName(elemTy))).const
+      val typeptr = let(nir.Op.Load(nir.Type.Ptr, obj), unwind)
+      val isTarget = let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, typeptr, target), unwind)
+      if (isExactArrayElement(elemTy)) isTarget
+      else {
+        // Arrays of subtypes of the element are instances too
+        val checkL, resultL = fresh()
+        branch(isTarget, nir.Next.Label(resultL, Seq(nir.Val.True)), nir.Next(checkL))
+        label(checkL)
+        val module = genModuleOp(buf, fresh(), nir.Op.Module(ArrayClassesModule))
+        val isSubclass = call(arrayIsSubclassSig, nir.Val.Global(arrayIsSubclass, nir.Type.Ptr), Seq(module, typeptr, target), unwind)
+        jump(resultL, Seq(isSubclass))
+        val result = nir.Val.Local(fresh(), nir.Type.Bool)
+        label(resultL, Seq(result))
+        result
+      }
+    }
+
     def genAsOp(
         buf: nir.InstructionBuilder,
         n: nir.Local,
@@ -1503,7 +1550,11 @@ private[scalanative] object Lower {
 
           label(checkIfIsInstanceOfL)
           val isInstanceOf = genIsOp(buf, ty, v)
-          val toTy = rtti(analysis.infos(ty.className)).const
+          val toCls = ty match {
+            case nir.Type.Array(elem, _) => nir.Type.arrayClassName(nir.Type.canonicalArrayElement(elem))
+            case _                       => ty.className
+          }
+          val toTy = rtti(analysis.infos(toCls)).const
           branch(
             isInstanceOf,
             nir.Next(castL),
@@ -2390,6 +2441,11 @@ private[scalanative] object Lower {
     nir.Type.Function(Seq(ObjectArrayModuleRef, nir.Type.Int, nir.Type.Ptr, SafeZone), nir.Rt.ObjectArray)
   val typedArraySnapshot =
     ObjectArrayModule.member(nir.Sig.Method("snapshot", Seq(nir.Type.Int, nir.Type.Ptr, nir.Type.Ptr, nir.Rt.ObjectArray)))
+  val ArrayClassesModule = nir.Global.Top("scala.scalanative.runtime.ArrayClasses$")
+  val arrayIsSubclass =
+    ArrayClassesModule.member(nir.Sig.Method("isSubclass", Seq(nir.Rt.Class, nir.Rt.Class, nir.Type.Bool)))
+  val arrayIsSubclassSig =
+    nir.Type.Function(Seq(nir.Type.Ref(ArrayClassesModule), nir.Rt.Class, nir.Rt.Class), nir.Type.Bool)
   val typedArraySnapshotSig =
     nir.Type.Function(Seq(ObjectArrayModuleRef, nir.Type.Int, nir.Type.Ptr, nir.Type.Ptr), nir.Rt.ObjectArray)
 
@@ -2673,6 +2729,7 @@ private[scalanative] object Lower {
     buf += typedArrayHeapAlloc
     buf += typedArrayZoneAlloc
     buf += typedArraySnapshot
+    buf += arrayIsSubclass
     buf ++= allArrayApplyGeneric
     buf ++= allArrayApply
     buf ++= allArrayUpdateGeneric

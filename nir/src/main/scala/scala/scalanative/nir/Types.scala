@@ -135,9 +135,11 @@ object Type {
      *  of an arbitrary reference after it has replaced a virtual call.
      */
     final def isExact: Boolean = this match {
-      case Type.Null     => true
-      case Type.Unit     => true
-      case _: Type.Array => true
+      case Type.Null => true
+      case Type.Unit => true
+      // Arrays of references are covariant: an Array[Object] can be an
+      // Array[String]
+      case a: Type.Array => typeToArray.contains(a.ty) && a.ty != Rt.Object
       case r: Type.Ref   => r.exact
     }
 

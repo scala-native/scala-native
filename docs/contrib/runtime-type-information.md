@@ -75,9 +75,37 @@ of the reference map; the collectors mark soft referents themselves.
 
 Arrays have no fields to scan, the GC uses the element scan kind from the flags
 instead. In array RTTI the same slot holds the RTTI of the element type, read
-by `Class.getComponentType`. Reference arrays are all `ObjectArray` today, with
-`java.lang.Object` as element type; one RTTI per array type would only change
-this slot and the dimensions in the flags.
+by `Class.getComponentType`.
+
+## Array classes
+
+Every array type has one class, named as on the JVM: `[I`, `[Ljava.lang.Object;`,
+`[[Ljava.lang.String;`.
+
+- Arrays of primitives are instances of `IntArray` and the like, arrays of
+  `Object` of `ObjectArray`.
+- Any other array type used by the program, through the type of a value, an
+  allocation, a `classOf` or a type test, gets a class from the linker: a
+  subclass of `ObjectArray` with no members, named by the JVM binary name of
+  the array type. Its RTTI holds the component class and the number of
+  dimensions, and it inherits `ObjectArray`'s methods, so the code of arrays of
+  references is shared.
+- `runtime.ArrayClasses` finds the class of arrays of a component for
+  reflection (`java.lang.reflect.Array.newInstance`, `Class.arrayType`,
+  `Class.forName`) among the classes of the class list. Array types the linker
+  never saw get a class on first use: a copy of `ObjectArray`'s RTTI, with its
+  own name, component and dimensions, allocated outside the heap and never
+  freed. Its lineage and class key are `ObjectArray`'s, so type tests against
+  `ObjectArray`, virtual and reflective calls work as for any array of
+  references. Its name and lock word are GC roots.
+
+Arrays of references are covariant (`String[]` is an `Object[]`), unlike their
+classes. Type tests against an array type whose element has no subtypes
+(`String[]`, `int[][]`) compare the class; against other arrays of references
+they test for an array of references and call `ArrayClasses.isSubclass`. When
+the program links NIR compiled before revision 12, in which `classOf` erased
+arrays of references to `ObjectArray`, these tests only check that the value is
+an array of references, as before. Reflection is exact either way.
 
 ## Class list
 

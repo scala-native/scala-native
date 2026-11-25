@@ -66,7 +66,7 @@ private[scalanative] object ScalaNative {
         ) {
           Interflow
             .optimize(config, analysis)
-            .map(Link(config, analysis.entries, _))
+            .map(Link(config, analysis.entries, _, analysis.minNirRevision))
         }
       }
     else {

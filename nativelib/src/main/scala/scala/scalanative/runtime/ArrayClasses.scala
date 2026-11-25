@@ -36,6 +36,17 @@ object ArrayClasses {
     }
   }
 
+  /** Whether instances of `cls` are instances of `arrayClass`, a class of
+   *  arrays of references: arrays of references are covariant in their
+   *  component type. Called by type tests the compiler cannot decide by
+   *  comparing classes.
+   */
+  def isSubclass(cls: Class[_], arrayClass: Class[_]): Boolean =
+    _Class.arrayIs(
+      cls.asInstanceOf[_Class[_]],
+      arrayClass.asInstanceOf[_Class[_]]
+    )
+
   /** Number of dimensions of an array class, 0 for other classes. */
   @alwaysinline private[runtime] def dimensions(cls: _Class[_]): Int =
     if (cls.isArray()) (cls.flags >>> DimensionsShift) & 0xff

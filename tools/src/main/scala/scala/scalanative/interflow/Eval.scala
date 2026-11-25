@@ -369,6 +369,9 @@ private[interflow] trait Eval { self: Interflow =>
         objty match {
           case nir.Type.Null =>
             nir.Val.Null
+          case _ if isStrictArrayTest(refty) =>
+            if (Sub.isArray(objty, refty.asInstanceOf[nir.Type.Array])) obj
+            else fallback
           case ScopeRef(scope) if Sub.is(scope, refty) =>
             obj
           case _ =>
@@ -393,6 +396,11 @@ private[interflow] trait Eval { self: Interflow =>
         objty match {
           case nir.Type.Null =>
             nir.Val.False
+          case objty: nir.Type.RefKind if isStrictArrayTest(refty) =>
+            if (!Sub.isArray(objty, refty.asInstanceOf[nir.Type.Array]))
+              fallback
+            else if (!objty.isNullable) nir.Val.True
+            else objNotNull
           case And(scoperef: nir.Type.RefKind, ScopeRef(scope)) =>
             if (Sub.is(scope, refty)) {
               if (!scoperef.isNullable) {
@@ -1032,6 +1040,15 @@ private[interflow] trait Eval { self: Interflow =>
         v.copy(values = values.map(eval(_)))
       case _ => value.canonicalize
     }
+  }
+
+  // Tests against arrays of references check their element type, see
+  // ReachabilityAnalysis.Result.strictArrayTypes
+  private def isStrictArrayTest(ty: nir.Type): Boolean = ty match {
+    case nir.Type.Array(elem, _) =>
+      analysis.strictArrayTypes &&
+        !nir.Type.typeToArray.contains(nir.Type.canonicalArrayElement(elem))
+    case _ => false
   }
 
   private def inBounds(values: Array[nir.Val], offset: Int): Boolean = {

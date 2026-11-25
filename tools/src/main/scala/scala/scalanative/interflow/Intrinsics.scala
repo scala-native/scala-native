@@ -90,15 +90,27 @@ private[interflow] trait Intrinsics { self: Interflow =>
                 nir.Val.Global(ScopeRef(linfo), lty),
                 nir.Val.Global(ScopeRef(rinfo), rty)
               ) if lty == nir.Rt.Class && rty == nir.Rt.Class =>
-            Some(nir.Val.Bool(rinfo.is(linfo)))
+            // Arrays of references are covariant, unlike their classes
+            val isAssignable = nir.Type.fromArrayClass(linfo.name) match {
+              case Some(lelem) if linfo.name != nir.Rt.BlobArray.name =>
+                Sub.isArray(
+                  nir.Type.Ref(rinfo.name, exact = true),
+                  nir.Type.Array(lelem)
+                )
+              case _ => rinfo.is(linfo)
+            }
+            Some(nir.Val.Bool(isAssignable))
           case _ =>
             None
         }
       case nir.Global.Member(Class, nir.Rt.GetNameSig) =>
         val args = rawArgs.map(eval)
         args match {
+          // Classes of the runtime have names of their own, see
+          // codegen.RuntimeTypeInformation
           case Seq(nir.Val.Global(name: nir.Global.Top, ty))
-              if ty == nir.Rt.Class =>
+              if ty == nir.Rt.Class &&
+                !name.id.startsWith("scala.scalanative.runtime.") =>
             Some(eval(nir.Val.String(name.id)))
           case _ =>
             None
