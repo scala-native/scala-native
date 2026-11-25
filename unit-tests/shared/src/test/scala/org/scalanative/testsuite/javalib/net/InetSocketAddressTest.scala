@@ -3,9 +3,11 @@ package org.scalanative.testsuite.javalib.net
 import java.net._
 
 import org.junit.Assert._
+import org.junit.Assume._
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.Platform.executingInJVMOnLowerThanJDK
 
 class InetSocketAddressTest {
 
@@ -64,5 +66,33 @@ class InetSocketAddressTest {
         InetSocketAddress.createUnresolved(host, port)
       )
     }
+  }
+
+  @Test def thisIntUsesWildcardAddress(): Unit = {
+    for (port <- Array(0, 1, 8080, 65535)) {
+      val addr = new InetSocketAddress(port)
+      assertEquals(port, addr.getPort)
+      assertFalse(addr.isUnresolved)
+      assertNotNull(addr.getAddress)
+      assertTrue(addr.getAddress.isAnyLocalAddress)
+      assertEquals(addr.getAddress.getHostAddress, addr.getHostString)
+    }
+  }
+
+  @Test def thisIntShouldThrowIllegalArgumentException(): Unit = {
+    for (port <- Array(-1, 65536, Int.MinValue, Int.MaxValue)) {
+      assertThrows(
+        classOf[IllegalArgumentException],
+        new InetSocketAddress(port)
+      )
+    }
+  }
+
+  @Test def toStringOfUnresolvedAddress(): Unit = {
+    assumeFalse(executingInJVMOnLowerThanJDK(14))
+    assertEquals(
+      "proxy/<unresolved>:8080",
+      InetSocketAddress.createUnresolved("proxy", 8080).toString
+    )
   }
 }
