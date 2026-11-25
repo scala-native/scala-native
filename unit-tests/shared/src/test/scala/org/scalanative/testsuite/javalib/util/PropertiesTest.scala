@@ -334,6 +334,39 @@ class PropertiesTest {
     assertEquals("1", prop1.get("fred"))
   }
 
+  @Test def loadUnicodeEscapes(): Unit = {
+    val prop = loadReader("k\\u0041y=\\u00e9\\u00C9\\uABcd!\\u0031")
+    assertEquals("\u00e9\u00c9\uabcd!1", prop.getProperty("kAy"))
+  }
+
+  @Test def loadMalformedUnicodeEscapes(): Unit = {
+    val inputs = Seq(
+      "a=\\u12", // truncated at end of input
+      "a=\\u",
+      "a=\\u12\nb=c", // truncated at end of line
+      "a\\u1=b",
+      "a=\\u12g4", // non-hex digit
+      "a=\\u+123",
+      "a=\\u-001",
+      "a=\\u 123"
+    )
+    for (input <- inputs) {
+      val e1 = assertThrows(
+        input,
+        classOf[IllegalArgumentException],
+        new Properties().load(new StringReader(input))
+      )
+      assertEquals(input, "Malformed \\uxxxx encoding.", e1.getMessage())
+      val bytes = input.getBytes(StandardCharsets.ISO_8859_1)
+      val e2 = assertThrows(
+        input,
+        classOf[IllegalArgumentException],
+        new Properties().load(new ByteArrayInputStream(bytes))
+      )
+      assertEquals(input, "Malformed \\uxxxx encoding.", e2.getMessage())
+    }
+  }
+
   @Test def loadReaderWithFileInput(): Unit = {
     // string input for Scala.js
     val is = new ByteArrayInputStream(filestr.getBytes())
