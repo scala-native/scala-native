@@ -1405,19 +1405,32 @@ private[scalanative] object Lower {
     ): nir.Val = {
       import buf._
       val obj = genVal(buf, v)
-
+      val typeptr = let(nir.Op.Load(nir.Type.Ptr, obj), unwind)
       ty match {
         case nir.Type.Array(elem, _) if isStrictArrayTest(elem) =>
-          genArrayIsOp(buf, nir.Type.canonicalArrayElement(elem), obj)
+          genArrayIsOp(buf, nir.Type.canonicalArrayElement(elem), typeptr)
+        case _ =>
+          genClassIs(buf, ty, typeptr)
+      }
+    }
 
+    // Whether instances of the class `typeptr`, the RTTI of a class, are instances of `ty`
+    private def genClassIs(
+        buf: nir.InstructionBuilder,
+        ty: nir.Type,
+        typeptr: nir.Val
+    )(implicit
+        srcPosition: nir.SourcePosition,
+        scopeId: nir.ScopeId
+    ): nir.Val = {
+      import buf._
+      ty match {
         case ClassRef(cls) if cls.subclasses.isEmpty =>
-          val typeptr = let(nir.Op.Load(nir.Type.Ptr, obj), unwind)
           let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, typeptr, rtti(cls).const), unwind)
 
         case ClassRef(cls) =>
           // In the lineage of an instance of `cls`, `cls` is at index superclassCount(cls)
           val superclassCount = meta.superclassCount(cls)
-          val typeptr = let(nir.Op.Load(nir.Type.Ptr, obj), unwind)
           if (superclassCount < CommonMemoryLayouts.LineageSize) {
             val ancestorPtr = let(
               nir.Op.Elem(ClassRtti.layout, typeptr, Seq(zero, nir.Val.Int(ClassRtti.LineageIdx), nir.Val.Int(superclassCount))),
@@ -1460,15 +1473,13 @@ private[scalanative] object Lower {
         case TraitRef(trt) if meta.alwaysAtHomeSlot(trt) =>
           // A class implementing `trt` holds it in the slot where its lookup
           // starts, any other trait there means the class does not implement it
-          val rttiPtr = let(nir.Op.Load(nir.Type.Ptr, obj), unwind)
-          val (_, itables, pos) = genItableStart(buf, rttiPtr, trt)
+          val (_, itables, pos) = genItableStart(buf, typeptr, trt)
           val entryTrait = genLoadEntryTrait(buf, itables, pos)
           let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, entryTrait, rtti(trt).const), unwind)
 
         case TraitRef(trt) =>
-          val rttiPtr = let(nir.Op.Load(nir.Type.Ptr, obj), unwind)
           val foundL, missingL, resultL = fresh()
-          genItableProbe(buf, rttiPtr, trt, implemented = false)(found = foundL, missing = missingL)
+          genItableProbe(buf, typeptr, trt, implemented = false)(found = foundL, missing = missingL)
 
           label(foundL, Seq(nir.Val.Local(fresh(), nir.Type.Ptr), nir.Val.Local(fresh(), nir.Type.Int)))
           jump(resultL, Seq(nir.Val.True))
@@ -1481,7 +1492,7 @@ private[scalanative] object Lower {
           result
 
         case _ =>
-          util.unsupported(s"is[$ty] $obj")
+          util.unsupported(s"is[$ty] $typeptr")
       }
     }
 
@@ -1506,23 +1517,53 @@ private[scalanative] object Lower {
       case _                        => true // primitives
     }
 
-    private def genArrayIsOp(buf: nir.InstructionBuilder, elemTy: nir.Type, obj: nir.Val)(implicit
+    /* Whether instances of the class `typeptr` are instances of arrays of
+     * `elemTy`, a canonical element other than a primitive.
+     */
+    private def genArrayIsOp(buf: nir.InstructionBuilder, elemTy: nir.Type, typeptr: nir.Val)(implicit
         srcPosition: nir.SourcePosition,
         scopeId: nir.ScopeId
     ): nir.Val = {
       import buf._
       val target = rtti(analysis.infos(nir.Type.arrayClassName(elemTy))).const
-      val typeptr = let(nir.Op.Load(nir.Type.Ptr, obj), unwind)
-      val isTarget = let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, typeptr, target), unwind)
-      if (isExactArrayElement(elemTy)) isTarget
+      lazy val isTarget = let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, typeptr, target), unwind)
+      // Any array of references is an array of Object
+      if (elemTy == nir.Rt.Object) genClassIs(buf, nir.Rt.ObjectArray, typeptr)
+      else if (isExactArrayElement(elemTy)) isTarget
       else {
-        // Arrays of subtypes of the element are instances too
-        val checkL, resultL = fresh()
-        branch(isTarget, nir.Next.Label(resultL, Seq(nir.Val.True)), nir.Next(checkL))
-        label(checkL)
+        // Arrays of references whose component is an instance of the element
+        // are instances too
+        val arrayL, componentL, classL, traitL, resultL = fresh()
+        branch(isTarget, nir.Next.Label(resultL, Seq(nir.Val.True)), nir.Next(arrayL))
+
+        label(arrayL)
+        val isArray = genClassIs(buf, nir.Rt.ObjectArray, typeptr)
+        branch(isArray, nir.Next(componentL), nir.Next.Label(resultL, Seq(nir.Val.False)))
+
+        label(componentL)
+        val componentPtr = elem(ClassRtti.layout, typeptr, Seq(zero, nir.Val.Int(ClassRtti.ReferenceOffsetsIdx)), unwind)
+        val component = let(nir.Op.Load(nir.Type.Ptr, componentPtr), unwind)
+        val flagsPtr = elem(Rtti.layout, component, Seq(zero, nir.Val.Int(Rtti.FlagsIdx)), unwind)
+        val flags = let(nir.Op.Load(nir.Type.Int, flagsPtr), unwind)
+        val interfaceBit = let(nir.Op.Bin(nir.Bin.And, nir.Type.Int, flags, nir.Val.Int(RuntimeTypeInformation.Flags.IsInterface)), unwind)
+        val isInterface = let(nir.Op.Comp(nir.Comp.Ine, nir.Type.Int, interfaceBit, nir.Val.Int(0)), unwind)
+        branch(isInterface, nir.Next(traitL), nir.Next(classL))
+
+        // A class component: test it against the element
+        label(classL)
+        val componentIs = elemTy match {
+          case nir.Type.Array(inner, _) => genArrayIsOp(buf, inner, component)
+          case _                        => genClassIs(buf, elemTy, component)
+        }
+        jump(resultL, Seq(componentIs))
+
+        // A trait component, whose RTTI has no lineage nor itable: the runtime
+        // follows its parent traits
+        label(traitL)
         val module = genModuleOp(buf, fresh(), nir.Op.Module(ArrayClassesModule))
         val isSubclass = call(arrayIsSubclassSig, nir.Val.Global(arrayIsSubclass, nir.Type.Ptr), Seq(module, typeptr, target), unwind)
         jump(resultL, Seq(isSubclass))
+
         val result = nir.Val.Local(fresh(), nir.Type.Bool)
         label(resultL, Seq(result))
         result

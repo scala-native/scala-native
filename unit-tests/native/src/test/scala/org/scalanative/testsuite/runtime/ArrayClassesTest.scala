@@ -38,6 +38,8 @@ class ArrayClassesTest {
       System.gc()
     }
     refs.foreach(ref => assertNotNull(ref.get()))
+    // Keeps the array alive until here
+    assertTrue(array.forall(_.isInstanceOf[OnlyReflective]))
 
     val nested = java.lang.reflect.Array.newInstance(cls, 1).getClass
     assertSame(cls, nested.getComponentType())

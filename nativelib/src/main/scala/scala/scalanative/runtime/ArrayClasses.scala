@@ -30,9 +30,18 @@ object ArrayClasses {
     if (cls.isPrimitive()) primitiveArrayClass(cls)
     else if (is(cls, classOf[Object])) classOf[ObjectArray]
     else {
-      val known = classes.get(component)
-      if (known != null) known
-      else classes.computeIfAbsent(component, _ => create(cls))
+      val slot = cacheSlot(cls)
+      val cached = cache(slot)
+      // An entry is the class of arrays of its own component
+      if (cached != null && (cached.getComponentType() eq component)) cached
+      else {
+        val known = classes.get(component)
+        val arrayClass =
+          if (known != null) known
+          else classes.computeIfAbsent(component, _ => create(cls))
+        cache(slot) = arrayClass
+        arrayClass
+      }
     }
   }
 
@@ -67,6 +76,18 @@ object ArrayClasses {
         map.put(cls.getComponentType(), cls)
     }
     map
+  }
+
+  /* Direct-mapped cache of `classes` for reflective allocations, such as
+   * ClassTag.newArray. Entries are written without synchronization: a reader
+   * sees an older or a newer class, and checks its component.
+   */
+  private final val CacheSize = 256
+  private val cache = new scala.Array[Class[_]](CacheSize)
+
+  @alwaysinline private def cacheSlot(cls: _Class[_]): Int = {
+    val address = castRawPtrToLong(castObjectToRawPtr(cls))
+    ((address ^ (address >>> 12)) >>> 4).toInt & (CacheSize - 1)
   }
 
   @alwaysinline private def is(cls: _Class[_], other: Class[_]): Boolean =
