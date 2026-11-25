@@ -98,8 +98,8 @@ object LinktimeInfo {
   def isContinuationsSupported: Boolean =
     (isLinux || isApple || isFreeBSD || isOpenBSD || isNetBSD) &&
       (target.arch == "x86_64" || target.arch == "aarch64" ||
-        target.arch == "i386" || target.arch == "arm" ||
-        target.arch == "thumb" || target.arch == "riscv64")
+      target.arch == "i386" || target.arch == "arm" ||
+      target.arch == "thumb" || target.arch == "riscv64")
 
   @resolvedAtLinktime()
   def isVirtualThreadsSupported: Boolean =
