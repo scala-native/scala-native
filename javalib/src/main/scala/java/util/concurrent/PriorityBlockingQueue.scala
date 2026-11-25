@@ -204,7 +204,7 @@ class PriorityBlockingQueue[E <: AnyRef] private (
         var es = c.toArray()
         val n = es.length
         if (c.getClass() != classOf[java.util.ArrayList[_]])
-          es = Arrays.copyOf(es, n)
+          es = Arrays.copyOf(es, n, classOf[Array[AnyRef]])
         if (screen && (n == 1 || hasComparator)) {
           if (es.contains(null)) throw new NullPointerException()
         }
@@ -488,9 +488,11 @@ class PriorityBlockingQueue[E <: AnyRef] private (
     try {
       val n = curSize
       if (a.length < n) { // Make a new array of a's runtime type, but my contents:
-        util.Arrays
-          .copyOf(queue, curSize)
-          .asInstanceOf[Array[T]]
+        util.Arrays.copyOf[T, AnyRef](
+          queue.asInstanceOf[Array[AnyRef]],
+          curSize,
+          a.getClass()
+        )
       } else {
         System.arraycopy(queue, 0, a, 0, n)
         if (a.length > n) a(n) = null.asInstanceOf[T]
