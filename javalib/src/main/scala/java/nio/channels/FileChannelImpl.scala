@@ -595,7 +595,8 @@ private[java] final class FileChannelImpl(
       intr: Boolean
   ): Int = {
     val pollFirst = prepareBlockingCall(intr, pos)
-    // After POLLOUT, a write of up to PIPE_BUF bytes does not block.
+    // After POLLOUT, a pipe or FIFO write of up to PIPE_BUF bytes does not
+    // block. A terminal gives no such promise: close() may not wake it.
     val chunk = if (pollFirst) pipeBuf else count
     var written = 0
     var n = 1L
@@ -609,8 +610,8 @@ private[java] final class FileChannelImpl(
     written
   }
 
-  // Retries on EINTR, and on EAGAIN after poll(); -1 once close() stops a
-  // channel operation.
+  // Retries on EINTR, and a channel operation on EAGAIN after poll(); -1 once
+  // close() stops a channel operation.
   private def blockingCall(
       write: Boolean,
       buf: Ptr[Byte],
@@ -637,7 +638,9 @@ private[java] final class FileChannelImpl(
         if (n >= 0) result = n
         else {
           val e = errno
-          if (e == EAGAIN || e == EWOULDBLOCK) {
+          // A stream over a non-blocking fd fails, as before: nothing could
+          // wake its poll().
+          if (intr && (e == EAGAIN || e == EWOULDBLOCK)) {
             if (!awaitReady(fdNum, events, intr)) result = -1L
           } else if (e != EINTR) throw UnixException(getFileName(), e)
         }

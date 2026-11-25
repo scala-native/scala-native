@@ -112,7 +112,12 @@ final class FileDescriptor private[java] (
   }
 
   private def closeNow(deferred: Boolean): Unit = {
-    synchronized { if (waker != null) waker.dispose() }
+    // Detached under the lock, so a racing wakeOnce() never writes to a
+    // closed (and maybe reused) pipe fd.
+    synchronized {
+      if (waker != null) waker.dispose()
+      waker = null
+    }
     fileHandle.close()
     val action = afterClose
     afterClose = null
