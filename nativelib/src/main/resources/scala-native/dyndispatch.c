@@ -25,15 +25,19 @@ void scalanative_register_reflective_proxies(
     reflectiveProxies = table;
 }
 
+extern void *const __scalanative_object_array_class;
+
 /* Proxy for the reflectively called signature `key` on an instance of
  * `rtti`, or NULL when the class has none. */
 void *scalanative_dynmethod(Rtti *rtti, int32_t key) {
     const ReflectiveProxyTable *table = reflectiveProxies;
     if (table == NULL)
         return NULL;
-    // Array classes created at runtime use ObjectArray's proxies
-    if (rtti->superclassCount < SCALANATIVE_RTTI_LINEAGE_SIZE)
-        rtti = rtti->lineage[rtti->superclassCount];
+    // Arrays of references share ObjectArray's proxies
+    const int32_t arrayBits = RTTI_FLAG_IS_ARRAY | RTTI_ARRAY_SCAN_MASK;
+    if ((rtti->rt.flags & arrayBits) ==
+        (RTTI_FLAG_IS_ARRAY | RTTI_ARRAY_SCAN_REFERENCES))
+        rtti = (Rtti *)__scalanative_object_array_class;
     uint32_t classKey = (uint32_t)rtti->rt.flags >> RTTI_CLASS_KEY_SHIFT;
     uint32_t mask = (uint32_t)table->mask;
     uint32_t pos = (((uint32_t)key * 0x9e3779b1u) ^ classKey) & mask;

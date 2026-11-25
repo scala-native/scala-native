@@ -98,7 +98,7 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
   private def referenceMapOrComponentType(cls: Class): nir.Val =
     if (cls.name == nir.Rt.GenericArray.name) nir.Val.Null
     else
-      nir.Type.fromArrayClass(cls.name) match {
+      cls.arrayElement match {
         case None         => meta.layout(cls).referenceOffsetsValue
         case Some(elemTy) =>
           meta.analysis.infos
@@ -203,7 +203,7 @@ private[scalanative] object RuntimeTypeInformation {
         case Some(nir.Type.Array(elem, _)) => 1 + loop(Some(elem))
         case _                             => 0
       }
-      val dims = 1 + loop(nir.Type.fromArrayClass(cls.name))
+      val dims = 1 + loop(cls.arrayElement)
       if (dims > MaxArrayDimensions)
         util.unsupported(
           s"${cls.name.id}: arrays have at most $MaxArrayDimensions dimensions"

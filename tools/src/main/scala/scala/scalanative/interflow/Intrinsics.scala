@@ -90,12 +90,14 @@ private[interflow] trait Intrinsics { self: Interflow =>
                 nir.Val.Global(ScopeRef(linfo), lty),
                 nir.Val.Global(ScopeRef(rinfo), rty)
               ) if lty == nir.Rt.Class && rty == nir.Rt.Class =>
-            val isAssignable = nir.Type.fromArrayClass(linfo.name) match {
-              case Some(lelem) if linfo.name != nir.Rt.BlobArray.name =>
-                Sub.isArray(
-                  nir.Type.Ref(rinfo.name, exact = true),
-                  nir.Type.Array(lelem)
-                )
+            val isAssignable = linfo match {
+              case cls: Class if cls.name != nir.Rt.BlobArray.name =>
+                cls.arrayElement.fold(rinfo.is(linfo)) { lelem =>
+                  Sub.isArray(
+                    nir.Type.Ref(rinfo.name, exact = true),
+                    nir.Type.Array(lelem)
+                  )
+                }
               case _ => rinfo.is(linfo)
             }
             Some(nir.Val.Bool(isAssignable))

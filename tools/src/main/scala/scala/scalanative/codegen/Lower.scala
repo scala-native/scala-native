@@ -1424,7 +1424,7 @@ private[scalanative] object Lower {
     ): nir.Val = {
       import buf._
       ty match {
-        case ClassRef(cls) if cls.subclasses.isEmpty =>
+        case ClassRef(cls) if cls.subclasses.isEmpty && !cls.hasRuntimeSubclasses =>
           let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, typeptr, rtti(cls).const), unwind)
 
         case ClassRef(cls) =>

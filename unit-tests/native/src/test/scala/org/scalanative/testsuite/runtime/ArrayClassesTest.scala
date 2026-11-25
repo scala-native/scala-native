@@ -43,6 +43,23 @@ class ArrayClassesTest {
     assertSame(nested, Class.forName(nested.getName()))
   }
 
+  @Test def runtimeArrayClassesDispatchToObjectArray(): Unit = {
+    import scala.language.reflectiveCalls
+    val component: Class[_] = (new OnlyReflective: AnyRef).getClass
+    val array: AnyRef = java.lang.reflect.Array.newInstance(component, 2)
+    val values: Seq[AnyRef] = Seq("a", array, Integer.valueOf(1), array)
+    assertEquals(
+      Seq(true, false, true, false),
+      values.map(_.isInstanceOf[Comparable[_]])
+    )
+    assertEquals(
+      Seq(false, true, false, true),
+      values.map(v => v.equals(v) && (v eq array))
+    )
+    val structural = array.asInstanceOf[{ def hashCode(): Int }]
+    assertEquals(System.identityHashCode(array), structural.hashCode())
+  }
+
   @Test def classesAreCreatedOnceAndCached(): Unit = {
     val cls = ArrayClasses.of(classOf[Component])
     assertSame(cls, ArrayClasses.of(classOf[Component]))

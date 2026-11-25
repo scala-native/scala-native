@@ -501,6 +501,9 @@ private[linker] class Reach(
     if (info.allocated) info.allocations += 1
     else {
       info.allocations += 1
+      // Calls on arrays of references dispatch to ObjectArray's methods
+      if (info.isSyntheticArray)
+        classInfo(nir.Rt.ObjectArray.name).foreach(reachAllocation)
 
       // Handle all class and trait virtual calls
       // on this class. This includes virtual calls
@@ -719,19 +722,17 @@ private[linker] class Reach(
   def reachClass(defn: nir.Defn.Class): Unit = {
     val nir.Defn.Class(attrs, name, parent, traits) = defn
     implicit val pos: nir.SourcePosition = defn.pos
-    newInfo(
-      new Class(
-        attrs,
-        name,
-        parent.map(classInfoOrObject),
-        traits.flatMap(traitInfo),
-        isModule = false
-      )
+    val info = new Class(
+      attrs,
+      name,
+      parent.map(classInfoOrObject),
+      traits.flatMap(traitInfo),
+      isModule = false
     )
+    newInfo(info)
     reachAttrs(attrs)
     reachExported(name)
-    if (nir.Type.isSyntheticArrayClass(name))
-      nir.Type.fromArrayClass(name).foreach(reachType)
+    if (info.isSyntheticArray) info.arrayElement.foreach(reachType)
   }
 
   def reachModule(defn: nir.Defn.Module): Unit = {

@@ -51,8 +51,9 @@ private[codegen] object ReflectiveProxyTable {
         }
       )
 
+    // Arrays of references use ObjectArray's entries, see dyndispatch.c
     val entries = for {
-      cls <- meta.classes
+      cls <- meta.classes if !cls.isSyntheticArray
       proxy <- proxiesOf(cls)
     } yield (cls, StableHash.dynsigKey(proxy.sig), proxy)
 

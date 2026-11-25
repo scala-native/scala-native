@@ -62,13 +62,19 @@ private[codegen] object Generate {
         )
         buf += classListEntry(rtti)(pos)
       }
-      // Copied by runtime.ArrayClasses
+      // Copied by runtime.ArrayClasses, dispatches for all arrays of references
       meta.analysis.infos.get(nir.Rt.ObjectArray.name).foreach { info =>
         buf += nir.Defn.Const(
           nir.Attrs.None,
           Extern("__scalanative_object_array_class_size"),
           nir.Type.Int,
           nir.Val.Int(meta.rtti(info).size)
+        )(info.position)
+        buf += nir.Defn.Const(
+          nir.Attrs.None,
+          Extern("__scalanative_object_array_class"),
+          nir.Type.Ptr,
+          meta.rtti(info).const
         )(info.position)
       }
     }

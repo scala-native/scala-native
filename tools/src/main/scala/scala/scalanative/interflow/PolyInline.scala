@@ -71,8 +71,9 @@ private[interflow] trait PolyInline { self: Interflow =>
         cls.resolve(sig).map(g => (cls, g)).toIndexedSeq
       case ScopeRef(scope) =>
         val targets = mutable.UnrolledBuffer.empty[(Class, nir.Global.Member)]
+        // Arrays of references share ObjectArray's methods
         scope.implementors.foreach { cls =>
-          if (cls.allocated) {
+          if (cls.allocated && !cls.isSyntheticArray) {
             cls.resolve(sig).foreach { g => targets += ((cls, g)) }
           }
         }
@@ -83,14 +84,11 @@ private[interflow] trait PolyInline { self: Interflow =>
 
     // the only case when result won't be empty or one element seq is reading from `scop.implementors`
     // scop.implementors are prestorted by the same way => I don't need sort here.
-    // The last target is unguarded: array classes created at runtime match
-    // no guard and must reach ObjectArray's methods.
-    def isArray(target: (Class, nir.Global.Member)) =
-      nir.Type.isReferenceArrayClass(target._1.name)
-    if (!res.exists(isArray)) res
-    else {
-      val (arrays, others) = res.partition(isArray)
-      others ++ arrays
+    // The last target is unguarded, the only one any array of references
+    // reaches: ObjectArray
+    res.indexWhere(_._1.hasRuntimeSubclasses) match {
+      case -1  => res
+      case idx => res.patch(idx, Nil, 1) :+ res(idx)
     }
   }
 
