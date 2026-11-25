@@ -14,7 +14,10 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: coursier/cache-action@v8
+    - uses: coursier/cache-action@ee0650f98295f27a505e4bfd284c9bfaa913a465 # v9.0.1
+      # Only main saves, so PR caches don't evict main's
+      with:
+        cacheMode: ${{ github.ref != 'refs/heads/main' && 'read' || '' }}
     - uses: coursier/setup-action@v3
       # Installs sbt from the mirror, repo1 rate-limits parallel jobs
       env:

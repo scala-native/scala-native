@@ -20,7 +20,12 @@ runs:
         distribution: microsoft
         java-version: ${{ inputs.java-version }}
         architecture: aarch64
-        cache: sbt
+
+    # Per-job cache, setup-java's `cache: sbt` shares one key across jobs
+    - uses: coursier/cache-action@ee0650f98295f27a505e4bfd284c9bfaa913a465 # v9.0.1
+      # Only main saves, so PR caches don't evict main's
+      with:
+        cacheMode: ${{ github.ref != 'refs/heads/main' && 'read' || '' }}
 
     - name: Ensure sbt on PATH
       shell: pwsh
