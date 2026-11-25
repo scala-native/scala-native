@@ -33,11 +33,8 @@ class InetSocketAddress private[net] (
 
   private val isResolved = (addr != null)
 
-  def this(port: Int) = {
-    this(null, port, null, false)
-    addr = SocketHelpers.getWildcardAddress()
-    hostName = addr.getHostName()
-  }
+  def this(port: Int) =
+    this(SocketHelpers.getWildcardAddress(), port, null, true)
 
   def this(hostname: String, port: Int) =
     this(
@@ -90,7 +87,7 @@ class InetSocketAddress private[net] (
   }
 
   override def toString: String = {
-    val host = if (addr != null) addr.toString else hostName
+    val host = if (addr != null) addr.toString else hostName + "/<unresolved>"
     host + ":" + port
   }
 
