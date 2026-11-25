@@ -244,10 +244,12 @@ object ScalaNativePluginInternal {
       auxiliaryClassFiles.value :+ NirAuxiliaryClassFiles
     },
     compile / scalacOptions ++= {
-      if (isGeneratingForIDE) None
+      implicit val conv: FileConverter = Keys.fileConverter.value
+      // One option per directory, sbt resolves placeholders only in ':' or ',' separated parts
+      if (isGeneratingForIDE) Nil
       else
-        Some(
-          s"-P:scalanative:positionRelativizationPaths:${sourceDirectories.value.map(_.getAbsolutePath()).mkString(";")}"
+        sourceDirectories.value.distinct.map(dir =>
+          s"-P:scalanative:positionRelativizationPaths:${toScalacOptionPath(dir.toPath())}"
         )
     },
     nativeLink / nativeConfig := nativeConfig.value,

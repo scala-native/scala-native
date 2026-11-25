@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 env:
-  CI_SHARE_BUILD_OUTPUTS: ${{ vars.CI_SHARE_BUILD_OUTPUTS }}
+  CI_SHARE_BUILD_OUTPUTS: ${{ vars.CI_SHARE_BUILD_OUTPUTS != 'false' }}
   SCALANATIVE_TEST_PREFETCH_DEBUG_INFO: 1
 
 jobs:

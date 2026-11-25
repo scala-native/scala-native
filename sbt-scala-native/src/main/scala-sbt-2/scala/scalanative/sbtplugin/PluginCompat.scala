@@ -55,6 +55,12 @@ private[scalanative] object PluginCompat:
   def toFileRef(path: NioPath)(using conv: FileConverter): FileRef =
     conv.toVirtualFile(path)
 
+  /** Placeholder path, e.g. `${BASE}/src`, keeping compilation outputs machine
+   *  independent. sbt resolves it before calling the compiler.
+   */
+  def toScalacOptionPath(path: NioPath)(using conv: FileConverter): String =
+    conv.toVirtualFile(path).id
+
   inline def toFileRef(file: File)(using conv: FileConverter): FileRef =
     toFileRef(file.toPath())
 

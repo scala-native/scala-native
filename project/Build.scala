@@ -1287,7 +1287,7 @@ object Build {
             Test / scalacOptions += Def.taskDyn {
               val pluginProject = junitPlugin.forBinaryVersion(version)
               (pluginProject / Compile / packageBin).map { jar =>
-                s"-Xplugin:${fileConverter.value.toPath(jar).toAbsolutePath}"
+                s"-Xplugin:${jar.id}"
               }
             }.value
           )
