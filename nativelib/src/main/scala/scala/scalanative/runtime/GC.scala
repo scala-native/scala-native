@@ -159,8 +159,9 @@ object GC {
     extern
 
   /** Write barrier for reference stores that code generation cannot see, such
-   *  as a `memmove` into an object array. Code generation inlines it, or drops
-   *  it when the GC is built without the write barrier.
+   *  as a `memmove` into an object array, or a store of an object address that
+   *  was passed around as an integer. Code generation inlines it, or drops it
+   *  when the GC is built without the write barrier.
    */
   @name("scalanative_GC_write_barrier")
   def writeBarrier(obj: Object): Unit = extern

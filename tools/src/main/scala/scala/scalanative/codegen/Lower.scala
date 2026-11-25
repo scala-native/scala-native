@@ -953,6 +953,9 @@ private[scalanative] object Lower {
 
     /** Whether storing `value` may store a reference to a heap object. A raw pointer computed at run time may be an object cast to one, in this method or, for
      *  a parameter or a loaded value, anywhere else. Constants never are: strings, classes and modules live outside the heap, where nothing is young.
+     *
+     *  An integer counts only when this method converted it from an object or from a pointer into one. A plain store of an object address that reached the
+     *  method as an integer is not seen, and needs GC.writeBarrier: checking every integer store through a pointer would slow down all native memory access.
      */
     private def isReferenceStore(ty: nir.Type, value: nir.Val): Boolean =
       platform.useGCWriteBarrier && (value match {
@@ -1337,7 +1340,9 @@ private[scalanative] object Lower {
         case nir.Val.Global(global: nir.Global.Member, _) =>
           if (platform.useGCWriteBarrier) {
             referenceStoringAtomics.get(global.sig).foreach { valueIdx =>
-              if (isReferenceStore(args(valueIdx).ty, args(valueIdx)))
+              // Whatever the type of the value: these operations exist to
+              // store addresses, and the barrier is cheap next to them.
+              if (args(valueIdx).isInstanceOf[nir.Val.Local])
                 genRawStoreWriteBarrier(buf, args.head)
               // A failed compare-exchange stores the value it found, which may
               // be a reference, through the pointer to the expected value.
