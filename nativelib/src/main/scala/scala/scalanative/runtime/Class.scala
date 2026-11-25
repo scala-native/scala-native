@@ -485,32 +485,15 @@ private[runtime] object LinkedClasses {
     cls
   }
 
-  // Names used before array classes had JVM names
-  private def legacyArrayClass(className: String): Class[_] =
-    className match {
-      case "scala.scalanative.runtime.BooleanArray" => classOf[BooleanArray]
-      case "scala.scalanative.runtime.CharArray"    => classOf[CharArray]
-      case "scala.scalanative.runtime.ByteArray"    => classOf[ByteArray]
-      case "scala.scalanative.runtime.ShortArray"   => classOf[ShortArray]
-      case "scala.scalanative.runtime.IntArray"     => classOf[IntArray]
-      case "scala.scalanative.runtime.LongArray"    => classOf[LongArray]
-      case "scala.scalanative.runtime.FloatArray"   => classOf[FloatArray]
-      case "scala.scalanative.runtime.DoubleArray"  => classOf[DoubleArray]
-      case "scala.scalanative.runtime.ObjectArray"  => classOf[ObjectArray]
-      case _                                        => null
-    }
-
-  private def find(className: String): Class[_] = {
-    val found = find(_.name == className)
-    if (found != null) found else legacyArrayClass(className)
-  }
+  private def find(className: String): Class[_] =
+    findClass(_.name == className)
 
   def foreach(f: _Class[_] => Unit): Unit =
-    find { cls => f(cls); false }
+    findClass { cls => f(cls); false }
 
   // The class list section holds a pointer to the RTTI of every class and
   // trait, the RTTI of a type is its java.lang.Class instance
-  private def find(p: _Class[_] => Boolean): _Class[_] = {
+  private def findClass(p: _Class[_] => Boolean): _Class[_] = {
     val ptrSize = _Class.PtrSize
     val section = StaticRoots.classListSection()
     val start = loadRawPtr(section)

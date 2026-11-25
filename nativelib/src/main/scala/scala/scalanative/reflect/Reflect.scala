@@ -39,28 +39,7 @@ final class InstantiatableClass private[reflect] (
    *  If no such public constructor exists, returns `None`.
    */
   def getConstructor(parameterTypes: Class[_]*): Option[InvokableConstructor] =
-    findConstructor(parameterTypes)(_ eq _)
-      .orElse(findConstructor(parameterTypes)(legacyParameterType))
-
-  private def findConstructor(parameterTypes: Seq[Class[_]])(
-      matches: (Class[_], Class[_]) => Boolean
-  ): Option[InvokableConstructor] =
-    declaredConstructors.find { ctor =>
-      ctor.parameterTypes.length == parameterTypes.length &&
-      ctor.parameterTypes.iterator.zip(parameterTypes.iterator).forall {
-        case (declared, requested) => matches(declared, requested)
-      }
-    }
-
-  // NIR before revision 12 records array parameters as Object[]
-  private def legacyParameterType(
-      declared: Class[_],
-      requested: Class[_]
-  ): Boolean =
-    (declared eq requested) || {
-      (declared eq classOf[Array[Object]]) && requested != null &&
-      requested.isArray() && !requested.getComponentType().isPrimitive()
-    }
+    declaredConstructors.find(_.parameterTypes.sameElements(parameterTypes))
 }
 
 final class InvokableConstructor private[reflect] (
