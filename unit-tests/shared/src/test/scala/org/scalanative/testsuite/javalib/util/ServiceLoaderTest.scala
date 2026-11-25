@@ -42,4 +42,14 @@ class ServiceLoaderTest {
     assertEquals(executingInJVM, idsFound.contains(3))
     assertFalse("4", idsFound.contains(4))
   }
+
+  @Test def loadServiceInsideTry(): Unit = {
+    val idsFound = scala.collection.mutable.Set.empty[Int]
+    try {
+      val it = ServiceLoader.load(classOf[MyService]).iterator()
+      while (it.hasNext()) idsFound += it.next().id
+    } catch { case _: Throwable => fail("unexpected exception") }
+    assertTrue("1", idsFound.contains(1))
+    assertTrue("2", idsFound.contains(2))
+  }
 }
