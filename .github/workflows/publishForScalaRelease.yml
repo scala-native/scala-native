@@ -30,8 +30,10 @@ jobs:
         with:
           scala-version: ${{ inputs.scala-version }}
           java-version: 17
+      # --server: the sbt 2 thin client joins the arguments into one command,
+      # and its background server would not see the secrets of later steps
       - name: Test runtime
-        run: sbt "++${{ inputs.scala-version }} -v" "test-runtime ${{ inputs.scala-version }}"
+        run: sbt --server "++${{ inputs.scala-version }} -v" "test-runtime ${{ inputs.scala-version }}"
       - name: Setup PGP Key
         run: |
           echo -n "$PGP_SECRET" | base64 --decode | gpg --batch --import
@@ -43,7 +45,7 @@ jobs:
           SONATYPE_PASSWORD: "${{ secrets.SONATYPE_PASSWORD }}"
           PGP_PASSPHRASE: "${{ secrets.PGP_PASSWORD }}"
         run: >
-          sbt '
+          sbt --server '
             ++${{ inputs.scala-version }} -v;
             nscplugin${{ env.project-version }}/publishSigned;
             junitPlugin${{ env.project-version }}/publishSigned;

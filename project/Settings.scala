@@ -743,19 +743,20 @@ object Settings {
    *  the Ivy repository the plugin and runtime are published to.
    */
   private def nestedLauncherMirror(target: File): Seq[String] =
-    sys.env.get("MAVEN_CENTRAL_MIRROR").filter(_.nonEmpty).toSeq.flatMap { url =>
-      val config = target / "scripted-launcher-repositories"
-      IO.write(
-        config,
-        s"""|[repositories]
-            |  local
-            |  maven-central-mirror: $url
-            |""".stripMargin
-      )
-      Seq(
-        s"-Dsbt.repository.config=${config.getAbsolutePath}",
-        "-Dsbt.override.build.repos=true"
-      )
+    sys.env.get("MAVEN_CENTRAL_MIRROR").filter(_.nonEmpty).toSeq.flatMap {
+      url =>
+        val config = target / "scripted-launcher-repositories"
+        IO.write(
+          config,
+          s"""|[repositories]
+              |  local
+              |  maven-central-mirror: $url
+              |""".stripMargin
+        )
+        Seq(
+          s"-Dsbt.repository.config=${config.getAbsolutePath}",
+          "-Dsbt.override.build.repos=true"
+        )
     }
 
   lazy val toolSettings: Seq[Setting[_]] =
