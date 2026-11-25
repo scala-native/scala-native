@@ -2,119 +2,123 @@ package java.lang
 
 import scalanative.libc.errno._
 import scalanative.unsafe._
-import scalanative.unsigned._
 
 private[java] object IEEE754Helpers {
-  // Java parseDouble() and parseFloat() allow characters at and after
-  // the address where C strtod() or strtof() stopped.
-  // Continuous trailing whitespace with or without an initial
-  // 'D', 'd', 'F', 'f' size indicator is allowed.
-  //
-  // Whitespace is defined by Java as being any character with an unsigned code
-  // <= '\u0020'. URL:
-  //   https://docs.oracle.com/javase/8/docs/api/java/lang/String.html#trim--
-  // It can include horizontal tabs ('\t') and even newlines!('\n').
-
   // DO NOT USE STRING INTERPOLATION with an interior double quote ("),
-  // a.k.a Unicode "QUOTATION MARK" (\u0022).
-  // Double quote failing interpolated strings is a longstanding
-  // bug in many Scala versions, including 2.12.n, & 2.13.2.
-  // See URLS:
-  //     https://github.com/scala/bug/issues/6476
-  //     https://github.com/scala/scala/pull/8830
-  // The second is yet unmerged for Scala 2.13.x.
+  // see https://github.com/scala/bug/issues/6476
 
   private def exceptionMsg(s: String) = "For input string: \"" + s + "\""
 
-  /** Converts a `CharSequence` to a `CString` type. The `CString` pointer is
-   *  passed to allow stack allocation from caller. The `CharSequence`
-   *  characters are iterated and converted to ASCII bytes. In order to be
-   *  considered as a valid ASCII sequence, its characters be all ASCII. This
-   *  should be the case if the first byte of the `Char` is zero, which is
-   *  verified by applying the mask 0xFF80.
-   */
-  @inline
-  private def _numericCharSeqToCString(
-      csq: CharSequence,
-      nChars: Int,
-      cStrOut: CString
-  ): Boolean = {
+  @inline private def isDigit(c: Int): scala.Boolean =
+    c >= '0' && c <= '9'
 
+  @inline private def isHexDigit(c: Int): scala.Boolean =
+    isDigit(c) || ((c | 0x20) >= 'a' && (c | 0x20) <= 'f')
+
+  @inline private def isSuffix(c: Int): scala.Boolean =
+    (c | 0x20) == 'd' || (c | 0x20) == 'f'
+
+  private def matches(b: CString, from: Int, end: Int, lit: String): Boolean = {
+    if (end - from != lit.length) return false
     var i = 0
-    while (i < nChars) {
-      // If the CharSequence contains valid characters (see strtod/strtof)
-      // they should correspond to ASCII chars (thus first byte is zero).
-      if ((csq.charAt(i) & 0xff80) != 0) {
-        return false
-      }
-      // Convert UTF16 Char to ASCII Byte
-      cStrOut(i) = csq.charAt(i).toByte
+    while (i < lit.length) {
+      if (b(from + i) != lit.charAt(i).toByte) return false
       i += 1
     }
-
-    // Add NUL-terminator to CString
-    cStrOut(nChars) = 0.toByte
-
-    // Return true if conversion went fine
     true
+  }
+
+  /** Validates the ASCII bytes `b[0, len)` against the `Double.valueOf(String)`
+   *  grammar.
+   *
+   *  Returns the `(start, end)` range, packed into a Long, of the part that
+   *  should be passed to `strtod`/`strtof`: surrounding whitespace (any char
+   *  `<= '\u0020'`) and the `fFdD` suffix are excluded, and for `NaN` the sign
+   *  is excluded as well. Returns -1 if the input is not a valid literal.
+   */
+  private def validate(b: CString, len: Int): scala.Long = {
+    var end = len
+    while (end > 0 && b(end - 1) <= ' ') end -= 1
+    var start = 0
+    while (start < end && b(start) <= ' ') start += 1
+    if (start == end) return -1L
+
+    var i = start
+    val c0 = b(i)
+    if (c0 == '+' || c0 == '-') i += 1
+    if (i == end) return -1L
+
+    def packed(from: Int, to: Int): scala.Long =
+      (from.toLong << 32) | to.toLong
+
+    val c = b(i)
+    if (c == 'N')
+      return if (matches(b, i, end, "NaN")) packed(i, end) else -1L
+    if (c == 'I')
+      return if (matches(b, i, end, "Infinity")) packed(start, end) else -1L
+
+    if (isSuffix(b(end - 1))) end -= 1
+
+    if (c == '0' && i + 1 < end && (b(i + 1) | 0x20) == 'x') {
+      i += 2
+      var nDigits = 0
+      while (i < end && isHexDigit(b(i))) { i += 1; nDigits += 1 }
+      if (i < end && b(i) == '.') {
+        i += 1
+        while (i < end && isHexDigit(b(i))) { i += 1; nDigits += 1 }
+      }
+      if (nDigits == 0 || i == end || (b(i) | 0x20) != 'p') return -1L
+    } else {
+      var nDigits = 0
+      while (i < end && isDigit(b(i))) { i += 1; nDigits += 1 }
+      if (i < end && b(i) == '.') {
+        i += 1
+        while (i < end && isDigit(b(i))) { i += 1; nDigits += 1 }
+      }
+      if (nDigits == 0) return -1L
+      if (i == end) return packed(start, end)
+      if ((b(i) | 0x20) != 'e') return -1L
+    }
+
+    // Exponent: 'e' / 'p' already checked at b(i)
+    i += 1
+    if (i < end && (b(i) == '+' || b(i) == '-')) i += 1
+    if (i == end) return -1L
+    while (i < end && isDigit(b(i))) i += 1
+    if (i != end) return -1L
+    packed(start, end)
   }
 
   def parseIEEE754[T](s: String, f: (CString, Ptr[CString]) => T): T = {
     if (s == null)
       throw new NumberFormatException(exceptionMsg(s))
 
-    val nChars = s.length
-    if (nChars == 0)
-      throw new NumberFormatException(exceptionMsg(s))
-
-    val cStr: CString = stackalloc[scala.Byte](nChars + 1)
-
-    if (_numericCharSeqToCString(s, nChars, cStr) == false) {
-      throw new NumberFormatException(exceptionMsg(s))
+    val len = s.length
+    val cStr: CString = stackalloc[scala.Byte](len + 1)
+    var i = 0
+    while (i < len) {
+      val c = s.charAt(i)
+      // Grammar and trimmed whitespace are ASCII only
+      if (c > 0x7f) throw new NumberFormatException(exceptionMsg(s))
+      cStr(i) = c.toByte
+      i += 1
     }
 
-    val end = stackalloc[CString]() // Address one past last parsed cStr byte.
+    val range = validate(cStr, len)
+    if (range < 0L)
+      throw new NumberFormatException(exceptionMsg(s))
 
+    val start = cStr + (range >>> 32).toInt
+    val stop = cStr + range.toInt
+    !stop = 0.toByte
+
+    val end = stackalloc[CString]()
     errno = 0
+    val res = f(start, end)
 
-    val res = f(cStr, end)
-
-    if (errno != 0) {
-      if (errno == ERANGE) {
-        // Do nothing. res holds the proper value as returned by strtod()
-        // or strtof(): 0.0 for string translations too close to zero
-        // or +/- infinity for values too +/- large for an IEEE754.
-        // Slick C lib design!
-      } else {
-        throw new NumberFormatException(exceptionMsg(s))
-      }
-    } else if (!end == cStr) { // No leading digit found: only "D" not "0D"
+    // ERANGE: res already holds 0.0 or +/-Infinity, as Java requires.
+    if ((errno != 0 && errno != ERANGE) || !end != stop)
       throw new NumberFormatException(exceptionMsg(s))
-    } else {
-      // Beware: cStr may have interior NUL/null bytes. Better to
-      //         consider it a counted byte array rather than a proper
-      //         C string.
-
-      val bytesLen = nChars
-      val nSeen = !end - cStr
-
-      // If we used fewer bytes than in our input, there is a risk that the input contains invalid characters.
-      // We should thus verify if the input contains only valid characters.
-      // See: https://github.com/scala-native/scala-native/issues/2903
-      if (nSeen != bytesLen) {
-        // magic: is first char one of D d F f
-        var idx =
-          if ((cStr(nSeen.toUSize) & 0xdd) == 0x44) (nSeen + 1) else nSeen
-
-        while (idx < bytesLen) { // Check for garbage in the unparsed remnant.
-          val b = cStr(idx.toUSize)
-          if ((b < 0) || b > 0x20) {
-            throw new NumberFormatException(exceptionMsg(s))
-          }
-          idx += 1
-        }
-      }
-    }
 
     res
   }

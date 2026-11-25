@@ -287,6 +287,40 @@ class DoubleTest {
     assertTrue("a34", Double.parseDouble("-0x1.8eae14p6") == -99.67f)
   }
 
+  // Expected values checked against the JVM (issue #5349)
+  @Test def parseDoubleAcceptsJavaFloatingLiterals(): Unit = {
+    for ((s, expected) <- DoubleTest.acceptedFloatingLiterals) {
+      val result = Double.parseDouble(s)
+      assertEquals("parseDouble(\"" + s + "\")", expected, result, 0.0)
+      assertEquals(
+        "valueOf(\"" + s + "\")",
+        expected,
+        Double.valueOf(s).doubleValue(),
+        0.0
+      )
+    }
+    assertEquals(171.80442810058594, Double.parseDouble("0xAbC.dEfp-4F"), 0.0)
+    assertEquals(
+      doubleToRawLongBits(Double.parseDouble("NaN")),
+      doubleToRawLongBits(Double.parseDouble("-NaN"))
+    )
+  }
+
+  @Test def parseDoubleRejectsNonJavaSyntax(): Unit = {
+    for (s <- DoubleTest.rejectedFloatingLiterals) {
+      assertThrows(
+        "parseDouble(\"" + s + "\")",
+        classOf[NumberFormatException],
+        Double.parseDouble(s)
+      )
+      assertThrows(
+        "valueOf(\"" + s + "\")",
+        classOf[NumberFormatException],
+        Double.valueOf(s)
+      )
+    }
+  }
+
   // scala.Double passes -0.0d without change. j.l.Double gets forced to +0.0.
   private def assertD2sEquals(expected: String, f: scala.Double): Unit = {
     val result = f.toString
@@ -473,4 +507,110 @@ class DoubleTest {
       (1.0d / localNegZeroD) == Double.NEGATIVE_INFINITY
     )
   }
+}
+
+object DoubleTest {
+  // Exactly representable in both Float and Double
+  val acceptedFloatingLiterals: Seq[(String, scala.Double)] = Seq(
+    "1" -> 1.0,
+    "+1" -> 1.0,
+    "-1" -> -1.0,
+    "1." -> 1.0,
+    ".5" -> 0.5,
+    "-.5" -> -0.5,
+    "+.5e1" -> 5.0,
+    "1.e1" -> 10.0,
+    "1e5" -> 100000.0,
+    "1E+5" -> 100000.0,
+    "1.5e5f" -> 150000.0,
+    "1D" -> 1.0,
+    "1d" -> 1.0,
+    "1F" -> 1.0,
+    "1f" -> 1.0,
+    " 1.0 " -> 1.0,
+    "\t\n1.0\r" -> 1.0,
+    "\u00011.0\u0000" -> 1.0,
+    "\u0000-1.5\u001f" -> -1.5,
+    "00012.5000" -> 12.5,
+    "1e0005" -> 100000.0,
+    "NaN" -> scala.Double.NaN,
+    "-NaN" -> scala.Double.NaN,
+    "+NaN" -> scala.Double.NaN,
+    "Infinity" -> scala.Double.PositiveInfinity,
+    "+Infinity" -> scala.Double.PositiveInfinity,
+    "-Infinity" -> scala.Double.NegativeInfinity,
+    " Infinity\t" -> scala.Double.PositiveInfinity,
+    "0x1p3" -> 8.0,
+    "0X1P3" -> 8.0,
+    "0x1.8p3" -> 12.0,
+    "0x.8p1" -> 1.0,
+    "0x1.p0" -> 1.0,
+    "-0x1p-2" -> -0.25,
+    "+0x1p+2" -> 4.0,
+    "0x1p3d" -> 8.0,
+    "0x1fp0" -> 31.0,
+    "0x0p0" -> 0.0
+  )
+
+  val rejectedFloatingLiterals: Seq[String] = Seq(
+    "",
+    " ",
+    "\u0000",
+    "+",
+    "-",
+    ".",
+    "+.",
+    "e5",
+    ".e5",
+    "1e",
+    "1e+",
+    "1e-",
+    "1e5.0",
+    "1..0",
+    "1.0.0",
+    "--1",
+    "+-1",
+    "1 0",
+    "1.0 f",
+    "1fd",
+    "1ff",
+    "1e5 x",
+    "- 1",
+    "1_000",
+    "1,5",
+    // hex: binary exponent is mandatory
+    "0x10",
+    "0x1.8",
+    "0x1f",
+    "0x",
+    "0xp1",
+    "0x.p1",
+    "0x1p",
+    "0x1p+",
+    "0x1.8e3",
+    "0x1g",
+    "0x1p1.5",
+    "x1p1",
+    "00x1p1",
+    // C strtod special values
+    "nan",
+    "NAN",
+    "nan(1)",
+    "inf",
+    "INF",
+    "Inf",
+    "-inf",
+    "infinity",
+    "INFINITY",
+    "Infinite",
+    "NaNd",
+    "InfinityF",
+    "NaN0",
+    "+-Infinity",
+    // non-ASCII whitespace and digits
+    "\u00a01.0",
+    "1.0\u00a0",
+    "\u0661",
+    "\u3000" + "1"
+  )
 }

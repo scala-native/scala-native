@@ -333,6 +333,35 @@ class FloatTest {
     assertTrue("a34", Float.parseFloat("-0x1.8eae14p6") == -99.67f)
   }
 
+  // Expected values checked against the JVM (issue #5349)
+  @Test def parseFloatAcceptsJavaFloatingLiterals(): Unit = {
+    for ((s, expected) <- DoubleTest.acceptedFloatingLiterals) {
+      assertEquals(
+        "parseFloat(\"" + s + "\")",
+        expected.toFloat,
+        Float.parseFloat(s),
+        0.0f
+      )
+      assertEquals(
+        "valueOf(\"" + s + "\")",
+        expected.toFloat,
+        Float.valueOf(s).floatValue(),
+        0.0f
+      )
+    }
+    assertEquals(171.80443f, Float.parseFloat("0xAbC.dEfp-4F"), 0.0f)
+  }
+
+  @Test def parseFloatRejectsNonJavaSyntax(): Unit = {
+    for (s <- DoubleTest.rejectedFloatingLiterals) {
+      assertThrows(
+        "parseFloat(\"" + s + "\")",
+        classOf[NumberFormatException],
+        Float.parseFloat(s)
+      )
+    }
+  }
+
   // scala.Float passes -0.0F without change. j.l.Double forced to +0.0.
   private def assertF2sEquals(expected: String, f: scala.Float): Unit = {
     val result = f.toString
