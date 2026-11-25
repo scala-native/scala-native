@@ -48,11 +48,15 @@ private[java] final class FileChannelImpl(
     deleteFileOnClose: Boolean,
     openForReading: Boolean,
     openForWriting: Boolean,
-    openForAppending: Boolean = false
+    openForAppending: Boolean = false,
+    // Unix: opened by FileChannel.open and not shared, so O_NONBLOCK is safe.
+    privateDescription: Boolean = false
 ) extends FileChannel {
-  import FileDescriptor.{
-    KindCancellable, KindNonBlocking, KindPollFirst, KindRegular
-  }
+  import FileChannelImpl._
+
+  @volatile private var kindCache = KindUnknown
+  @volatile private var pipeBufCache = 0
+  @volatile private var nonBlocking = false
 
   // Held by operations that use or move the position, or change the size.
   private val positionLock = new ReentrantLock()
@@ -101,7 +105,7 @@ private[java] final class FileChannelImpl(
       }
     var registered = false
     try {
-      if (intr && fd.kind == KindCancellable) {
+      if (intr && kind == KindCancellable) {
         fd.registerBlocked()
         registered = true
       }
@@ -592,7 +596,7 @@ private[java] final class FileChannelImpl(
   ): Int = {
     val pollFirst = prepareBlockingCall(intr, pos)
     // After POLLOUT, a write of up to PIPE_BUF bytes does not block.
-    val chunk = if (pollFirst) fd.pipeBuf else count
+    val chunk = if (pollFirst) pipeBuf else count
     var written = 0
     var n = 1L
     while (n > 0 && written < count) {
@@ -648,13 +652,49 @@ private[java] final class FileChannelImpl(
   private def prepareBlockingCall(intr: Boolean, pos: Long): Boolean =
     if (!intr || pos >= 0) false
     else
-      fd.kind match {
+      kind match {
         case KindNonBlocking =>
-          fd.enableNonBlocking()
+          enableNonBlocking()
           false
         case KindPollFirst => true
         case _             => false
       }
+
+  // Kind of file, see KindRegular. Call with a lease held.
+  private def kind: Int = {
+    if (kindCache == KindUnknown) kindCache = computeKind()
+    kindCache
+  }
+
+  private def computeKind(): Int =
+    if (isWindows) {
+      if (GetFileType(fd.handle) == FILE_TYPE_DISK) KindRegular
+      else KindCancellable
+    } else
+      Zone.acquire { implicit z =>
+        if (FileChannelImpl.isRegularFile(fd.fd)) KindRegular
+        else if (privateDescription) KindNonBlocking
+        else KindPollFirst
+      }
+
+  // Unix: PIPE_BUF for this fd. Call with a lease held.
+  private def pipeBuf: Int = {
+    if (pipeBufCache == 0) {
+      val n = unistd.fpathconf(fd.fd, unistd._PC_PIPE_BUF)
+      pipeBufCache = if (n > 0) n.toInt else 512
+    }
+    pipeBufCache
+  }
+
+  // Sets O_NONBLOCK. Only for KindNonBlocking: no one else sees the flag, so
+  // racing callers may both set it.
+  private def enableNonBlocking(): Unit =
+    if (!nonBlocking) {
+      val flags = fcntl(fd.fd, F_GETFL, 0)
+      if (flags == -1 || fcntl(fd.fd, F_SETFL, flags | O_NONBLOCK) == -1)
+        throw new IOException("Cannot make the file descriptor non-blocking")
+      nonBlocking = true
+    }
 
   // Polls fdNum; a channel operation also wakes on close() and returns false.
   private def awaitReady(fdNum: Int, events: Int, intr: Boolean): Boolean = {
@@ -1149,7 +1189,7 @@ private[java] final class FileChannelImpl(
 
   // FileInputStream.skip seeks only regular files, like JDK 25.
   private[java] def isRegularFile: Boolean =
-    leased(intr = false)(fd.kind == KindRegular)
+    leased(intr = false)(kind == KindRegular)
 
   // Moves the position by n, possibly past the end of file or backward.
   private[java] def skip(n: Long): Long =
@@ -1164,6 +1204,15 @@ private[java] final class FileChannelImpl(
 }
 
 private[java] object FileChannelImpl {
+  private final val KindUnknown = 0
+  // Regular or disk file: I/O finishes on its own, no waking needed.
+  private final val KindRegular = 1
+  // Unix, private description: O_NONBLOCK and poll with the wake pipe.
+  private final val KindNonBlocking = 2
+  // Unix, shared description: poll with the wake pipe before each call.
+  private final val KindPollFirst = 3
+  // Windows pipe or console: woken by CancelSynchronousIo.
+  private final val KindCancellable = 4
 
   // Streams over a channel (Files, RandomAccessFile) ignore interrupts.
   private[java] def newInputStream(channel: FileChannelImpl): InputStream =
@@ -1199,16 +1248,31 @@ private[java] object FileChannelImpl {
       val noFollowLinks: Boolean
   )
 
-  private[java] def openFileDescriptor(
+  private[java] def openPath(
       path: Path,
       options: OpenOptions,
-      attrs: Array[FileAttribute[_]]
-  ): FileDescriptor = {
+      attrs: Array[FileAttribute[_]],
+      deleteFileOnClose: Boolean
+  ): FileChannelImpl = {
     val creating = options.create || options.createNew
     val mode = if (creating) Files.creationMode(attrs, default = 0x1b6) else 0
     val pathString = path.toString()
-    if (isWindows) openWindows(pathString, options)
-    else openUnix(pathString, options, mode)
+    val fd =
+      if (isWindows) openWindows(pathString, options)
+      else openUnix(pathString, options, mode)
+    // O_CLOEXEC, opened here: safe to make O_NONBLOCK, unless shared.
+    val isPrivate = !isWindows && Zone.acquire { implicit z =>
+      !isRegularFile(fd.fd) && !reopensDescription(pathString)
+    }
+    new FileChannelImpl(
+      fd,
+      Some(path.toFile()),
+      deleteFileOnClose = deleteFileOnClose,
+      openForReading = options.read,
+      openForWriting = options.write,
+      openForAppending = options.append,
+      privateDescription = isPrivate
+    )
   }
 
   private def openUnix(
@@ -1245,11 +1309,7 @@ private[java] object FileChannelImpl {
         else new FileSystemException(path, null, LibcExt.strError(err))
       }
     }
-    val desc = new FileDescriptor(fd, readOnly = !options.write)
-    // O_CLOEXEC, opened here: safe to make O_NONBLOCK, unless shared.
-    if (!isRegularFile(fd) && !reopensDescription(path))
-      desc.markPrivateDescription()
-    desc
+    new FileDescriptor(fd, readOnly = !options.write)
   }
 
   private def isRegularFile(fd: Int)(implicit z: Zone): Boolean = {

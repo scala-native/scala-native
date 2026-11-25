@@ -6,8 +6,6 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.javalib.io._
 import scala.scalanative.meta.LinktimeInfo.{isMultithreadingEnabled, isWindows}
-import scala.scalanative.posix.sys.stat
-import scala.scalanative.posix.sys.statOps._
 import scala.scalanative.posix.{fcntl, unistd}
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
@@ -43,20 +41,8 @@ final class FileDescriptor private[java] (
   // once Closing is set and nothing is in flight.
   private val leases = new AtomicInteger(0)
   @volatile private var afterClose: () => Unit = null
-
-  // Set by FileChannel.open: an O_CLOEXEC fd that no one else shares.
-  @volatile private var privateDescription = false
-  @volatile private var kindCache = KindUnknown
-  @volatile private var pipeBufCache = 0
-  @volatile private var nonBlocking = false
-
-  // Unix: pipe that wakes channel operations polling this fd. Guarded by this.
-  @volatile private var wakeRead = -1
-  private var wakeWrite = -1
-
-  // Windows: ids of threads in channel I/O on this handle. Guarded by this.
-  private var blockedThreads: Array[Int] = null
-  private var blockedCount = 0
+  // Wakes channel operations on close; made by the first one. Guarded by this.
+  @volatile private var waker: Waker = null
 
   override def toString(): String =
     s"FileDescriptor($fd, readOnly=$readOnly)"
@@ -87,11 +73,6 @@ final class FileDescriptor private[java] (
   }
 
   def valid(): Boolean = !isClosing && get().valid()
-
-  private[java] def markPrivateDescription(): this.type = {
-    privateDescription = true
-    this
-  }
 
   /** Starts a syscall on this fd; false once closing has started. */
   private[java] def acquire(): Boolean = {
@@ -131,14 +112,7 @@ final class FileDescriptor private[java] (
   }
 
   private def closeNow(deferred: Boolean): Unit = {
-    if (!isWindows) synchronized {
-      if (wakeRead >= 0) {
-        unistd.close(wakeRead)
-        unistd.close(wakeWrite)
-        wakeRead = -1
-        wakeWrite = -1
-      }
-    }
+    synchronized { if (waker != null) waker.dispose() }
     fileHandle.close()
     val action = afterClose
     afterClose = null
@@ -148,154 +122,55 @@ final class FileDescriptor private[java] (
       catch { case _: Exception if deferred => () }
   }
 
-  /** Kind of file, see KindRegular. Call with a lease held. */
-  private[java] def kind: Int = {
-    if (kindCache == KindUnknown) kindCache = computeKind()
-    kindCache
-  }
-
-  private def computeKind(): Int =
-    if (isWindows) {
-      if (GetFileType(handle) == FILE_TYPE_DISK) KindRegular
-      else KindCancellable
-    } else {
-      val isRegular = Zone.acquire { implicit z =>
-        val st = alloc[stat.stat]()
-        stat.fstat(fd, st) == 0 && stat.S_ISREG(st.st_mode) != 0
+  private def obtainWaker(): Waker = {
+    val w = waker
+    if (w != null) w
+    else
+      synchronized {
+        if (waker == null) {
+          waker = if (isWindows) new BlockedThreads() else WakePipe()
+          if (isClosing) waker.wake()
+        }
+        waker
       }
-      if (isRegular) KindRegular
-      else if (privateDescription) KindNonBlocking
-      else KindPollFirst
-    }
-
-  /** Unix: PIPE_BUF for this fd. Call with a lease held. */
-  private[java] def pipeBuf: Int = {
-    if (pipeBufCache == 0) {
-      val n = unistd.fpathconf(fd, unistd._PC_PIPE_BUF)
-      pipeBufCache = if (n > 0) n.toInt else 512
-    }
-    pipeBufCache
   }
-
-  /** Sets O_NONBLOCK, once. Only for KindNonBlocking. */
-  private[java] def enableNonBlocking(): Unit =
-    if (!nonBlocking) synchronized {
-      if (!nonBlocking) {
-        val flags = fcntl.fcntl(fd, fcntl.F_GETFL, 0)
-        if (flags == -1 ||
-            fcntl.fcntl(fd, fcntl.F_SETFL, flags | fcntl.O_NONBLOCK) == -1)
-          throw new IOException("Cannot make the file descriptor non-blocking")
-        nonBlocking = true
-      }
-    }
 
   /** Unix: read end of the wake pipe, readable once closing has started. */
-  private[java] def wakeFd(): Int = {
-    val w = wakeRead
-    if (w >= 0) w else createWakeFd()
-  }
-
-  private def createWakeFd(): Int = synchronized {
-    if (wakeRead < 0) {
-      val fds = stackalloc[CInt](2)
-      if (unistd.pipe(fds) != 0)
-        throw new IOException("Cannot create a wake-up pipe")
-      wakeRead = fds(0)
-      wakeWrite = fds(1)
-      fcntl.fcntl(wakeRead, fcntl.F_SETFD, fcntl.FD_CLOEXEC)
-      fcntl.fcntl(wakeWrite, fcntl.F_SETFD, fcntl.FD_CLOEXEC)
-      val flags = fcntl.fcntl(wakeWrite, fcntl.F_GETFL, 0)
-      fcntl.fcntl(wakeWrite, fcntl.F_SETFL, flags | fcntl.O_NONBLOCK)
-      if (isClosing) signalWakeFd()
-    }
-    wakeRead
-  }
-
-  private def signalWakeFd(): Unit = {
-    val b = stackalloc[Byte]()
-    unistd.write(wakeWrite, b, 1.toUInt)
-  }
+  private[java] def wakeFd(): Int =
+    obtainWaker().asInstanceOf[WakePipe].readFd
 
   /** Windows: marks the current thread as blocked in channel I/O. */
-  private[java] def registerBlocked(): Unit = if (isWindows) synchronized {
-    if (blockedThreads == null) blockedThreads = new Array[Int](4)
-    else if (blockedCount == blockedThreads.length)
-      blockedThreads = java.util.Arrays.copyOf(blockedThreads, blockedCount * 2)
-    blockedThreads(blockedCount) = currentThreadId()
-    blockedCount += 1
+  private[java] def registerBlocked(): Unit = {
+    val threads = obtainWaker().asInstanceOf[BlockedThreads]
+    synchronized(threads.add())
   }
 
-  private[java] def deregisterBlocked(): Unit = if (isWindows) synchronized {
-    val id = currentThreadId()
-    var i = 0
-    while (i < blockedCount && blockedThreads(i) != id) i += 1
-    if (i < blockedCount) {
-      blockedCount -= 1
-      blockedThreads(i) = blockedThreads(blockedCount)
-    }
+  private[java] def deregisterBlocked(): Unit = synchronized {
+    waker.asInstanceOf[BlockedThreads].remove()
   }
 
-  private def currentThreadId(): Int =
-    ProcessThreadsApi.GetCurrentThreadId().toInt
-
+  /* Windows: a registered thread may not have entered its call yet, so keep
+   * cancelling until all have left, within CancelTimeoutNanos. A thread still
+   * in its call then keeps its lease: the OS close waits for it. Sleep, unlike
+   * wait(), ignores our interrupt status.
+   */
   private def wakeBlocked(): Unit =
-    if (!isWindows) synchronized {
-      if (wakeWrite >= 0) signalWakeFd()
-    }
-    else if (isMultithreadingEnabled) {
-      /* A registered thread may not have entered its call yet, so keep
-       * cancelling until all have left, within CancelTimeoutNanos. A thread
-       * still in its call then keeps its lease: the OS close waits for it.
-       * Sleep, unlike wait(), ignores our interrupt status.
-       */
+    if (!isWindows) wakeOnce()
+    else {
       val deadline = System.nanoTime() + CancelTimeoutNanos
-      while (cancelBlocked() && System.nanoTime() < deadline)
+      while (wakeOnce() && System.nanoTime() < deadline)
         SynchApi.Sleep(1.toUInt)
     }
 
-  /* Windows: cancels the I/O of other registered threads; false if none could
-   * be cancelled. Under the lock, so a cancel only reaches a thread still
-   * registered. The caller may be registered itself (an interrupt while
-   * waiting to lock).
-   */
-  private def cancelBlocked(): Boolean = synchronized {
-    val self = currentThreadId()
-    var others = 0
-    var i = 0
-    while (i < blockedCount) {
-      val id = blockedThreads(i)
-      if (id != self) {
-        // CancelSynchronousIo needs THREAD_TERMINATE.
-        val thread = ProcessThreadsApi.OpenThread(
-          ProcessThreadsApiExt.THREAD_TERMINATE,
-          false,
-          id.toUInt
-        )
-        if (thread != null) {
-          IoApiSet.CancelSynchronousIo(thread)
-          CloseHandle(thread)
-          others += 1
-        }
-      }
-      i += 1
-    }
-    others > 0
+  // Under the lock, so a Windows cancel only reaches a thread still registered.
+  private def wakeOnce(): Boolean = synchronized {
+    waker != null && waker.wake()
   }
 }
 
 object FileDescriptor {
   private final val Closing = 1 << 30
   private final val CancelTimeoutNanos = 2000000000L
-
-  private final val KindUnknown = 0
-  // Regular or disk file: I/O finishes on its own, no waking needed.
-  private[java] final val KindRegular = 1
-  // Unix, private description: O_NONBLOCK and poll with the wake pipe.
-  private[java] final val KindNonBlocking = 2
-  // Unix, shared description: poll with the wake pipe before each call.
-  private[java] final val KindPollFirst = 3
-  // Windows pipe or console: woken by CancelSynchronousIo.
-  private[java] final val KindCancellable = 4
 
   private[java] val none: FileDescriptor = new FileDescriptor()
 
@@ -316,6 +191,95 @@ object FileDescriptor {
       new FileDescriptor(ConsoleApiExt.stdErr, readOnly = false)
     else
       new FileDescriptor(unistd.STDERR_FILENO, readOnly = false)
+
+  /* Wakes channel operations in flight once closing has started. Called with
+   * the FileDescriptor lock held.
+   */
+  private abstract class Waker {
+    // True if a wake should be retried: a thread may not be in its call yet.
+    def wake(): Boolean
+    def dispose(): Unit
+  }
+
+  // Unix: channel operations poll the read end with their fd.
+  private final class WakePipe(val readFd: Int, writeFd: Int) extends Waker {
+    def wake(): Boolean = {
+      val b = stackalloc[Byte]()
+      unistd.write(writeFd, b, 1.toUInt)
+      false
+    }
+    def dispose(): Unit = {
+      unistd.close(readFd)
+      unistd.close(writeFd)
+    }
+  }
+
+  private object WakePipe {
+    def apply(): WakePipe = {
+      val fds = stackalloc[CInt](2)
+      if (unistd.pipe(fds) != 0)
+        throw new IOException("Cannot create a wake-up pipe")
+      fcntl.fcntl(fds(0), fcntl.F_SETFD, fcntl.FD_CLOEXEC)
+      fcntl.fcntl(fds(1), fcntl.F_SETFD, fcntl.FD_CLOEXEC)
+      val flags = fcntl.fcntl(fds(1), fcntl.F_GETFL, 0)
+      fcntl.fcntl(fds(1), fcntl.F_SETFL, flags | fcntl.O_NONBLOCK)
+      new WakePipe(fds(0), fds(1))
+    }
+  }
+
+  // Windows: ids of threads in channel I/O, woken by CancelSynchronousIo.
+  private final class BlockedThreads extends Waker {
+    private var ids = new Array[Int](4)
+    private var count = 0
+
+    def add(): Unit = {
+      if (count == ids.length) ids = java.util.Arrays.copyOf(ids, count * 2)
+      ids(count) = currentThreadId()
+      count += 1
+    }
+
+    def remove(): Unit = {
+      val id = currentThreadId()
+      var i = 0
+      while (i < count && ids(i) != id) i += 1
+      if (i < count) {
+        count -= 1
+        ids(i) = ids(count)
+      }
+    }
+
+    /* Cancels the I/O of the other threads; false if none could be. The
+     * caller may be registered itself (an interrupt while waiting to lock).
+     */
+    def wake(): Boolean = isMultithreadingEnabled && {
+      val self = currentThreadId()
+      var others = 0
+      var i = 0
+      while (i < count) {
+        val id = ids(i)
+        if (id != self) {
+          // CancelSynchronousIo needs THREAD_TERMINATE.
+          val thread = ProcessThreadsApi.OpenThread(
+            ProcessThreadsApiExt.THREAD_TERMINATE,
+            false,
+            id.toUInt
+          )
+          if (thread != null) {
+            IoApiSet.CancelSynchronousIo(thread)
+            CloseHandle(thread)
+            others += 1
+          }
+        }
+        i += 1
+      }
+      others > 0
+    }
+
+    def dispose(): Unit = ()
+
+    private def currentThreadId(): Int =
+      ProcessThreadsApi.GetCurrentThreadId().toInt
+  }
 
   private[io] def openReadOnly(file: File): FileDescriptor =
     Zone.acquire { implicit z =>
