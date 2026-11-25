@@ -28,4 +28,20 @@ class HashtableTest {
     }
   }
 
+  @Test def cloneKeepsRuntimeClassAndCopiesEntries(): Unit = {
+    val t = new HashtableTest.SubHashtable
+    t.put("a", "1")
+    val c = t.clone()
+    assertTrue(c.isInstanceOf[HashtableTest.SubHashtable])
+    val copy = c.asInstanceOf[HashtableTest.SubHashtable]
+    assertEquals("1", copy.get("a"))
+    copy.put("b", "2")
+    t.remove("a")
+    assertFalse(t.containsKey("b"))
+    assertEquals("1", copy.get("a"))
+  }
+}
+
+object HashtableTest {
+  class SubHashtable extends Hashtable[AnyRef, AnyRef]
 }

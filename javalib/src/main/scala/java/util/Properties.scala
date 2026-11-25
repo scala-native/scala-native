@@ -2,6 +2,7 @@ package java.util
 
 import java.io._
 import java.nio.charset.StandardCharsets
+import java.util.function.{BiConsumer, BiFunction, Function}
 import java.{lang => jl, util => ju}
 
 import scala.annotation.{switch, tailrec}
@@ -9,9 +10,11 @@ import scala.annotation.{switch, tailrec}
 import ScalaOps._
 
 class Properties private (
-    protected val defaults: Properties,
+    initialDefaults: Properties,
     initialCapacity: Int
 ) extends ju.Hashtable[AnyRef, AnyRef](initialCapacity) {
+
+  @volatile protected var defaults: Properties = initialDefaults
 
   def this(defaults: Properties) = this(defaults, 11)
 
@@ -31,17 +34,19 @@ class Properties private (
   def load(reader: Reader): Unit =
     loadImpl(reader)
 
-  def getProperty(key: String): String =
-    getProperty(key, defaultValue = null)
+  def getProperty(key: String): String = {
+    super.get(key) match {
+      case value: String => value
+      case _             =>
+        val parent = defaults
+        if (parent != null) parent.getProperty(key)
+        else null
+    }
+  }
 
   def getProperty(key: String, defaultValue: String): String = {
-    get(key) match {
-      case value: String => value
-
-      case _ =>
-        if (defaults != null) defaults.getProperty(key, defaultValue)
-        else defaultValue
-    }
+    val value = getProperty(key)
+    if (value == null) defaultValue else value
   }
 
   def propertyNames(): ju.Enumeration[_] = {
@@ -71,8 +76,9 @@ class Properties private (
   @inline @tailrec
   private final def foreachAncestor(f: Properties => Unit): Unit = {
     f(this)
-    if (defaults ne null)
-      defaults.foreachAncestor(f)
+    val parent = defaults
+    if (parent ne null)
+      parent.foreachAncestor(f)
   }
 
   private def format(entry: ju.Map.Entry[AnyRef, AnyRef]): String = {
@@ -387,6 +393,65 @@ class Properties private (
       hexChar(ch & 15)
     )
   }
+
+  // Redeclared like in JDK 9+, so that `super.m` calls from subclasses link.
+  override def size(): Int = super.size()
+  override def isEmpty(): Boolean = super.isEmpty()
+  override def keys(): ju.Enumeration[AnyRef] = super.keys()
+  override def elements(): ju.Enumeration[AnyRef] = super.elements()
+  override def contains(value: Any): Boolean = super.contains(value)
+  override def containsValue(value: Any): Boolean = super.containsValue(value)
+  override def containsKey(key: Any): Boolean = super.containsKey(key)
+  override def get(key: Any): AnyRef = super.get(key)
+  override def put(key: AnyRef, value: AnyRef): AnyRef = super.put(key, value)
+  override def remove(key: Any): AnyRef = super.remove(key)
+  override def putAll(t: ju.Map[_ <: AnyRef, _ <: AnyRef]): Unit =
+    super.putAll(t)
+  override def clear(): Unit = super.clear()
+  override def toString(): String = super.toString()
+  override def keySet(): ju.Set[AnyRef] = super.keySet()
+  override def values(): ju.Collection[AnyRef] = super.values()
+  override def entrySet(): ju.Set[ju.Map.Entry[AnyRef, AnyRef]] =
+    super.entrySet()
+  override def equals(o: Any): Boolean = super.equals(o)
+  override def hashCode(): Int = super.hashCode()
+  override def getOrDefault(key: Any, defaultValue: AnyRef): AnyRef =
+    super.getOrDefault(key, defaultValue)
+  override def forEach(action: BiConsumer[_ >: AnyRef, _ >: AnyRef]): Unit =
+    super.forEach(action)
+  override def replaceAll(
+      function: BiFunction[_ >: AnyRef, _ >: AnyRef, _ <: AnyRef]
+  ): Unit = super.replaceAll(function)
+  override def putIfAbsent(key: AnyRef, value: AnyRef): AnyRef =
+    super.putIfAbsent(key, value)
+  override def remove(key: Any, value: Any): Boolean =
+    super.remove(key, value)
+  override def replace(
+      key: AnyRef,
+      oldValue: AnyRef,
+      newValue: AnyRef
+  ): Boolean = super.replace(key, oldValue, newValue)
+  override def replace(key: AnyRef, value: AnyRef): AnyRef =
+    super.replace(key, value)
+  override def computeIfAbsent(
+      key: AnyRef,
+      mappingFunction: Function[_ >: AnyRef, _ <: AnyRef]
+  ): AnyRef = super.computeIfAbsent(key, mappingFunction)
+  override def computeIfPresent(
+      key: AnyRef,
+      remappingFunction: BiFunction[_ >: AnyRef, _ >: AnyRef, _ <: AnyRef]
+  ): AnyRef = super.computeIfPresent(key, remappingFunction)
+  override def compute(
+      key: AnyRef,
+      remappingFunction: BiFunction[_ >: AnyRef, _ >: AnyRef, _ <: AnyRef]
+  ): AnyRef = super.compute(key, remappingFunction)
+  override def merge(
+      key: AnyRef,
+      value: AnyRef,
+      remappingFunction: BiFunction[_ >: AnyRef, _ >: AnyRef, _ <: AnyRef]
+  ): AnyRef = super.merge(key, value, remappingFunction)
+  override protected def rehash(): Unit = super.rehash()
+  override def clone(): AnyRef = super.clone()
 
   // TODO:
   // def loadFromXML(in: InputStream): Unit

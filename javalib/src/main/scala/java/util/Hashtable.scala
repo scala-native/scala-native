@@ -3,7 +3,7 @@ package java.util
 import java.util.function.{BiConsumer, BiFunction, Function}
 import java.{util => ju}
 
-class Hashtable[K, V] private (inner: NullRejectingHashMap[K, V])
+class Hashtable[K, V] private (private var inner: NullRejectingHashMap[K, V])
     extends ju.Dictionary[K, V]
     with ju.Map[K, V]
     with Cloneable
@@ -45,8 +45,8 @@ class Hashtable[K, V] private (inner: NullRejectingHashMap[K, V])
 
   def get(key: Any): V = synchronized(inner.get(key))
 
-  // Not implemented
-  // protected def rehash(): Unit
+  // Capacity is managed by the backing map.
+  protected def rehash(): Unit = ()
 
   def put(key: K, value: V): V = synchronized(inner.put(key, value))
 
@@ -116,7 +116,12 @@ class Hashtable[K, V] private (inner: NullRejectingHashMap[K, V])
   override def replaceAll(function: BiFunction[_ >: K, _ >: V, _ <: V]): Unit =
     synchronized(inner.replaceAll(function))
 
-  override def clone(): AnyRef = synchronized(new ju.Hashtable[K, V](this))
+  override def clone(): AnyRef = synchronized {
+    val result = super.clone().asInstanceOf[Hashtable[K, V]]
+    result.inner = new NullRejectingHashMap[K, V]()
+    result.inner.putAll(inner)
+    result
+  }
 
   override def equals(o: Any): Boolean = synchronized {
     (o.asInstanceOf[AnyRef] eq this) || inner.equals(o)
