@@ -614,6 +614,9 @@ class FileChannelInterruptTest {
           finally p.destroyForcibly()
         }
       }
+      // Had the channel read locked first, the stream read would have seen
+      // the closed channel instead of the byte.
+      assertEquals(s"stream read: $streamRead", 'x'.toInt, streamRead.result)
     }
   }
 

@@ -22,9 +22,10 @@ import scala.scalanative.posix.fcntl._
 import scala.scalanative.posix.fcntlOps._
 import scala.scalanative.posix.poll._
 import scala.scalanative.posix.pollOps._
+import scala.scalanative.posix.stdlib.realpath
 import scala.scalanative.posix.sys.statOps._
 import scala.scalanative.posix.sys.{ioctl, stat}
-import scala.scalanative.posix.unistd
+import scala.scalanative.posix.{limits, unistd}
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.windows
@@ -558,7 +559,9 @@ private[java] final class FileChannelImpl(
         else {
           val toRead = if (count == 1) 0 else availableNow()
           if (toRead <= 0) 1
-          else 1 + readAll(offset + 1, toRead.min(count - 1))
+          else
+            try 1 + readAll(offset + 1, toRead.min(count - 1))
+            catch { case _: AsynchronousCloseException => 1 } // keep the byte
         }
       }
     } else unixRead(buffer.at(offset), count, -1L, intr)
@@ -1242,8 +1245,27 @@ private[java] object FileChannelImpl {
         else new FileSystemException(path, null, LibcExt.strError(err))
       }
     }
-    // O_CLOEXEC, opened here: safe to make O_NONBLOCK.
-    new FileDescriptor(fd, readOnly = !options.write).markPrivateDescription()
+    val desc = new FileDescriptor(fd, readOnly = !options.write)
+    // O_CLOEXEC, opened here: safe to make O_NONBLOCK, unless shared.
+    if (!isRegularFile(fd) && !reopensDescription(path))
+      desc.markPrivateDescription()
+    desc
+  }
+
+  private def isRegularFile(fd: Int)(implicit z: Zone): Boolean = {
+    val st = alloc[stat.stat]()
+    stat.fstat(fd, st) == 0 && stat.S_ISREG(st.st_mode) != 0
+  }
+
+  /* macOS and BSD: opening /dev/fd/N (or /dev/stdin, or a link to them)
+   * shares the description of fd N. Unresolvable paths count as shared.
+   */
+  private def reopensDescription(path: String)(implicit z: Zone): Boolean = {
+    val resolved = alloc[Byte](limits.PATH_MAX)
+    realpath(toCString(path), resolved) == null || {
+      val real = fromCString(resolved)
+      real.startsWith("/dev/fd/") || real.startsWith("/dev/std")
+    }
   }
 
   private def openWindows(
