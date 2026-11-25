@@ -1,6 +1,6 @@
 package scala.scalanative.runtime.gc
 
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{CountDownLatch, TimeUnit}
 import java.util.concurrent.atomic.AtomicReference
 
 import org.junit.Assert._
@@ -48,40 +48,53 @@ class YieldpointStressTest {
 }
 
 object YieldpointStressTest {
-  final class Control {
+  final class Control(workers: Int) {
     @volatile var stop = false
+    private val ready = new CountDownLatch(workers)
+    def started(): Unit = ready.countDown()
+    def awaitStarted(): Boolean = ready.await(30, TimeUnit.SECONDS)
   }
 
   final class Node(val value: Long, val payload: Array[Long], val next: Node)
 
   @volatile var sink: Long = 0L
 
-  /* Runs each body on its own thread while forcing collections. */
+  /* Runs each body on its own thread and, once all of them called
+   * `control.started()`, forces collections for `millis`.
+   */
   def stressGC(millis: Long)(bodies: Seq[Control => Unit]): Unit = {
-    val control = new Control
+    val control = new Control(bodies.size)
     val failure = new AtomicReference[Throwable](null)
     val threads = bodies.map { body =>
       val t = new Thread(new Runnable {
         def run(): Unit =
           try body(control)
-          catch { case e: Throwable => failure.compareAndSet(null, e) }
+          catch {
+            case e: Throwable =>
+              failure.compareAndSet(null, e)
+              control.started()
+          }
       })
       t.setDaemon(true)
       t.start()
       t
     }
 
+    val allStarted = control.awaitStarted()
     val deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(millis)
-    while (System.nanoTime() < deadline && failure.get() == null) System.gc()
+    while (allStarted && System.nanoTime() < deadline && failure.get() == null)
+      System.gc()
     control.stop = true
     threads.foreach(_.join(TimeUnit.SECONDS.toMillis(30)))
 
     if (failure.get() != null) throw failure.get()
+    assertTrue("workers started", allStarted)
     assertFalse("threads still running", threads.exists(_.isAlive()))
   }
 
   // No calls in the loop body: only the back-edge yieldpoint stops it.
   def spin(control: Control): Unit = {
+    control.started()
     var i = 0L
     while (!control.stop) i += 1
     sink = i
@@ -103,6 +116,7 @@ object YieldpointStressTest {
   }
 
   def allocate(control: Control): Unit = {
+    control.started()
     var round = 0L
     while (!control.stop) {
       var head: Node = null
