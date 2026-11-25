@@ -5,7 +5,7 @@ import org.junit.Test
 
 import scala.scalanative.LinkerSpec
 import scala.scalanative.linker.LinktimeIntrinsicCallsResolver.ServiceProviderStatus
-import scalanative.nir.{Global, Rt, Sig, Type}
+import scalanative.nir.{ControlFlow, Defn, Global, Rt, Sig, Type}
 
 class ServiceLoaderReachabilityTest extends LinkerSpec {
   val simpleServicesSources = Map(
@@ -118,5 +118,43 @@ class ServiceLoaderReachabilityTest extends LinkerSpec {
       val otherServiceProviders =
         result.foundServiceProviders.serviceProviders("services.OtherService")
       assertTrue(otherServiceProviders.isEmpty)
+  }
+
+  @Test def loadInsideTryHasValidControlFlow(): Unit = link(
+    "Test",
+    simpleServicesSources ++ Map(
+      "Test.scala" ->
+        """|
+           |trait Service
+           |class Foo extends Service
+           |class Bar extends Service
+           |class Baz extends Bar
+           |
+           |object Test{
+           |  def main(args: Array[String]): Unit = {
+           |    try {
+           |      val it = java.util.ServiceLoader.load(classOf[Service]).iterator()
+           |      while (it.hasNext()) println(it.next())
+           |    } catch { case _: Throwable => () }
+           |  }
+           |}
+           |""".stripMargin
+    ),
+    _.withServiceProviders(Map("Service" -> Seq("Foo", "Baz")))
+  ) {
+    case (_, result) =>
+      val providers = result.foundServiceProviders.serviceProviders("Service")
+      assertEquals(
+        ServiceProviderStatus.Loaded,
+        providers.find(_.name == "Foo").get.status
+      )
+      assertTrue(
+        "generated provider loader",
+        result.defns.exists(_.name.show.contains("loadProvider_Foo"))
+      )
+      result.defns.foreach {
+        case defn: Defn.Define => ControlFlow.Graph(defn.insts)
+        case _                 => ()
+      }
   }
 }

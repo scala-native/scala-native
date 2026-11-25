@@ -255,17 +255,17 @@ private[linker] trait LinktimeIntrinsicCallsResolver { self: Reach =>
                 val fresh = Fresh()
                 val buf = new InstructionBuilder()(fresh)
                 buf.label(fresh(), Nil)
-                val alloc = buf.classalloc(providerCls, let.unwind)
+                val alloc = buf.classalloc(providerCls, Next.None)
                 val callCtor = buf.call(
                   ty = Type.Function(Seq(providerClsRef), Type.Unit),
                   ptr = Val.Global(providerCls.member(Sig.Ctor(Nil)), Type.Ptr),
                   args = Seq( /*this=*/ Val.Local(alloc.id, providerClsRef)),
-                  unwind = let.unwind
+                  unwind = Next.None
                 )
                 // Load provider module as it might contain a registration logic
                 val moduleName = Global.Top(providerCls.id + "$")
                 lookup(moduleName, ignoreIfUnavailable = true).foreach { _ =>
-                  buf.module(moduleName, let.unwind)
+                  buf.module(moduleName, Next.None)
                 }
                 buf.ret(alloc)
                 buf.toSeq
