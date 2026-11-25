@@ -887,6 +887,9 @@ private[scalanative] object Lower {
         rawPtrBases.get(ptr).foreach(rawPtrBases(n) = _)
       case nir.Op.Copy(nir.Val.Local(ptr, _)) =>
         rawPtrBases.get(ptr).foreach(rawPtrBases(n) = _)
+      // The address as an integer, as the intptr atomics may take it
+      case nir.Op.Conv(nir.Conv.Ptrtoint, _, nir.Val.Local(ptr, _)) =>
+        rawPtrBases.get(ptr).foreach(rawPtrBases(n) = _)
       case _ => ()
     }
 
