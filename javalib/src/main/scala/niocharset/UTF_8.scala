@@ -43,12 +43,13 @@ private[niocharset] object UTF_8
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, // 110yyyyy
+    -1, -1, -1, -1, -1, -1, -1, // 1100000y (overlong)
+    -1, -1, // 110yyyyy
     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-    2, 2, 2, 2, 2, 2, 2, // 1110zzzz
-    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 11110uuu
-    4, 4, 4, 4, 4, 4, 4, 4, // > 11110111
-    -1, -1, -1, -1, -1, -1, -1, -1
+    2, 2, 2, 2, 2, // 1110zzzz
+    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 11110uuu up to U+10FFFF
+    4, 4, 4, 4, 4, // > 11110100
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
   )
 
   @inline
@@ -125,7 +126,7 @@ private[niocharset] object UTF_8
                   val b2 =
                     if (inPtr != null) inPtr(inPos + 1)
                     else in.get(inPos + 1)
-                  if (isInvalidNextByte(b2)) {
+                  if (isInvalidSecondByte(leading, b2)) {
                     DecodedMultiByte(CoderResult.malformedForLength(1))
                   } else if (length == 2) {
                     decode2(leading, b2)
@@ -194,26 +195,27 @@ private[niocharset] object UTF_8
     @inline private def isInvalidNextByte(b: Int): Boolean =
       (b & 0xc0) != 0x80
 
+    // Rejects overlong 3/4-byte forms and code points above U+10FFFF as soon
+    // as the second byte is known, so only the lead byte is malformed.
+    @inline private def isInvalidSecondByte(b1: Int, b2: Int): Boolean =
+      isInvalidNextByte(b2) || ((b1 & 0xff) match {
+        case 0xe0 => (b2 & 0xff) < 0xa0
+        case 0xf0 => (b2 & 0xff) < 0x90
+        case 0xf4 => (b2 & 0xff) > 0x8f
+        case _    => false
+      })
+
     /** Requires the input bytes to be a valid byte sequence. */
     @inline private def decode2(b1: Int, b2: Int): DecodedMultiByte = {
-      val codePoint = (((b1 & 0x1f) << 6) | (b2 & 0x3f))
-      // By construction, 0 <= codePoint <= 0x7ff < MIN_SURROGATE
-      if (codePoint < 0x80) {
-        // Should have been encoded with only 1 byte
-        DecodedMultiByte(CoderResult.malformedForLength(1))
-      } else {
-        DecodedMultiByte(codePoint.toChar)
-      }
+      // By construction, 0x80 <= codePoint <= 0x7ff < MIN_SURROGATE
+      DecodedMultiByte((((b1 & 0x1f) << 6) | (b2 & 0x3f)).toChar)
     }
 
     /** Requires the input bytes to be a valid byte sequence. */
     @inline private def decode3(b1: Int, b2: Int, b3: Int): DecodedMultiByte = {
       val codePoint = (((b1 & 0xf) << 12) | ((b2 & 0x3f) << 6) | (b3 & 0x3f))
-      // By construction, 0 <= codePoint <= 0xffff < MIN_SUPPLEMENTARY_CODE_POINT
-      if (codePoint < 0x800) {
-        // Should have been encoded with only 1 or 2 bytes
-        DecodedMultiByte(CoderResult.malformedForLength(1))
-      } else if (codePoint >= MIN_SURROGATE && codePoint <= MAX_SURROGATE) {
+      // By construction, 0x800 <= codePoint <= 0xffff
+      if (codePoint >= MIN_SURROGATE && codePoint <= MAX_SURROGATE) {
         // It is a surrogate, which is not a valid code point
         DecodedMultiByte(CoderResult.malformedForLength(3))
       } else {
@@ -230,20 +232,12 @@ private[niocharset] object UTF_8
     ): DecodedMultiByte = {
       val codePoint = (((b1 & 0x7) << 18) | ((b2 & 0x3f) << 12) |
         ((b3 & 0x3f) << 6) | (b4 & 0x3f))
-      // By construction, 0 <= codePoint <= 0x1fffff
-      if (codePoint < 0x10000 || codePoint > MAX_CODE_POINT) {
-        // It should have been encoded with 1, 2, or 3 bytes
-        // or it is not a valid code point
-        DecodedMultiByte(CoderResult.malformedForLength(1))
-      } else {
-        // Here, we need to encode the code point as a surrogate pair.
-        // http://en.wikipedia.org/wiki/UTF-16
-        val offsetCodePoint = codePoint - 0x10000
-        DecodedMultiByte(
-          ((offsetCodePoint >> 10) | 0xd800).toChar,
-          ((offsetCodePoint & 0x3ff) | 0xdc00).toChar
-        )
-      }
+      // By construction, 0x10000 <= codePoint <= MAX_CODE_POINT
+      val offsetCodePoint = codePoint - 0x10000
+      DecodedMultiByte(
+        ((offsetCodePoint >> 10) | 0xd800).toChar,
+        ((offsetCodePoint & 0x3ff) | 0xdc00).toChar
+      )
     }
   }
 
