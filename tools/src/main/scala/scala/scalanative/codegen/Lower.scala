@@ -60,6 +60,8 @@ private[scalanative] object Lower {
     private val youngObjects = mutable.Set.empty[nir.Local]
     // Raw pointers into objects, by the object they point into.
     private val rawPtrBases = mutable.Map.empty[nir.Local, nir.Val]
+    // Raw pointers into stack memory of this method: stores through them need no barrier.
+    private val stackSlots = mutable.Set.empty[nir.Local]
     private def getCurrentBlockInfo: BlockInfo = {
       assert(currentBlock != null)
       blockInfo.getOrElseUpdate(currentBlock, new BlockInfo())
@@ -176,6 +178,7 @@ private[scalanative] object Lower {
       val defn = currentDefn.get
       youngObjects.clear()
       rawPtrBases.clear()
+      stackSlots.clear()
       val buf = new nir.InstructionBuilder()(fresh)
       val handlers = new nir.InstructionBuilder()(fresh)
 
@@ -883,10 +886,14 @@ private[scalanative] object Lower {
         rawPtrBases(n) = obj
       case nir.Op.Field(obj, _) =>
         rawPtrBases(n) = obj
+      case _: nir.Op.Stackalloc | _: nir.Op.Var =>
+        stackSlots += n
       case nir.Op.Elem(_, nir.Val.Local(ptr, _), _) =>
         rawPtrBases.get(ptr).foreach(rawPtrBases(n) = _)
+        if (stackSlots.contains(ptr)) stackSlots += n
       case nir.Op.Copy(nir.Val.Local(ptr, _)) =>
         rawPtrBases.get(ptr).foreach(rawPtrBases(n) = _)
+        if (stackSlots.contains(ptr)) stackSlots += n
       // The address as an integer, as the intptr atomics may take it
       case nir.Op.Conv(nir.Conv.Ptrtoint, _, obj) if obj.ty.isInstanceOf[nir.Type.RefKind] =>
         rawPtrBases(n) = obj
@@ -900,7 +907,8 @@ private[scalanative] object Lower {
         srcPosition: nir.SourcePosition,
         scopeId: nir.ScopeId
     ): Unit = ptr match {
-      case nir.Val.Local(id, _) =>
+      case nir.Val.Local(id, _) if stackSlots.contains(id) => ()
+      case nir.Val.Local(id, _)                            =>
         rawPtrBases.get(id) match {
           case Some(obj) =>
             if (needsWriteBarrier(nir.Rt.Object, obj, value)) genWriteBarrier(buf, genVal(buf, obj), Some(genVal(buf, ptr)))
@@ -1340,8 +1348,14 @@ private[scalanative] object Lower {
             for {
               name <- externName(global)
               valueIdx <- referenceStoringAtomics.get(name)
-              if isReferenceStore(args(valueIdx).ty, args(valueIdx))
-            } genRawStoreWriteBarrier(buf, args.head, args(valueIdx))
+            } {
+              if (isReferenceStore(args(valueIdx).ty, args(valueIdx)))
+                genRawStoreWriteBarrier(buf, args.head, args(valueIdx))
+              // A failed compare-exchange stores the value it found, which may
+              // be a reference, through the pointer to the expected value.
+              if (valueIdx == CompareExchangeDesiredIdx)
+                genRawStoreWriteBarrier(buf, args(1), args(1))
+            }
           }
           // Notify GC about entering blocking external call
           def maybeSwitchThreadState(body: => Unit): Unit = {
@@ -2775,6 +2789,8 @@ private[scalanative] object Lower {
     Seq(GCWriteBarrierSlow.name, GCWriteBarrierSlot.name, GCWriteBarrierElem.name)
   // Atomic operations that may store a reference given as the argument at
   // the index into the location given as the first argument.
+  // In the compare-exchange operations: (location, expected, desired, ...)
+  val CompareExchangeDesiredIdx = 2
   val referenceStoringAtomics: Map[String, Int] = Map(
     "scalanative_atomic_init_intptr" -> 1,
     "scalanative_atomic_store_intptr" -> 1,
