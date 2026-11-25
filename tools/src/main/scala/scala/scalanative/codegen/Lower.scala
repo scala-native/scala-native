@@ -411,8 +411,8 @@ private[scalanative] object Lower {
         pos: nir.SourcePosition
     ): nir.Val =
       value match {
-        case cls: nir.Val.ClassOf =>
-          rtti(analysis.infos(cls.className)).const
+        case nir.Val.ClassOf(ScopeRef(node)) =>
+          rtti(node).const
         case nir.Val.Const(v) =>
           nir.Val.Const(genVal(buf, v))
         case nir.Val.StructValue(values) =>

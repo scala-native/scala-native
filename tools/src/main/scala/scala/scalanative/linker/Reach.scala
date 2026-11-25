@@ -798,9 +798,8 @@ private[linker] class Reach(
         reachType(ty)
       case nir.Val.Const(v) =>
         reachVal(v)
-      case cls: nir.Val.ClassOf =>
-        reachType(cls.tpe)
-        reachGlobal(cls.className)
+      case nir.Val.ClassOf(cls) =>
+        reachGlobal(cls)
       case _ =>
         ()
     }

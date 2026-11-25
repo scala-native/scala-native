@@ -491,7 +491,7 @@ trait NirGenStat(using Context) {
 
   private def genSynchronizedMethodReceiver(): nir.Val =
     curMethodThis.get.getOrElse {
-      nir.Val.ClassOf.of(genTypeName(curClassSym.get))
+      nir.Val.ClassOf(genTypeName(curClassSym.get))
     }
 
   private def genStruct(td: TypeDef): Unit = {

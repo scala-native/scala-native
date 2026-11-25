@@ -467,7 +467,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
         exprBuf.label(curFresh(), Seq.empty)
 
         val fqcnArg = nir.Val.String(fqSymId)
-        val runtimeClassArg = nir.Val.ClassOf.of(fqSymName)
+        val runtimeClassArg = nir.Val.ClassOf(fqSymName)
         val loadModuleFunArg = genModuleLoaderAnonFun(exprBuf)
 
         exprBuf.genApplyModuleMethod(
@@ -625,7 +625,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
               jlClassRef,
               rtClasses,
               nir.Val.Int(argIdx),
-              nir.Val.ClassOf.of(nir.Type.parameterClassType(arg)),
+              nir.Val.ClassOf(nir.Type.parameterClassType(arg)),
               unwind(curFresh)
             )
           }
@@ -662,7 +662,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
           exprBuf.label(curFresh(), Seq.empty)
 
           val fqcnArg = nir.Val.String(fqSymId)
-          val runtimeClassArg = nir.Val.ClassOf.of(fqSymName)
+          val runtimeClassArg = nir.Val.ClassOf(fqSymName)
 
           val instantiateClassFunArg =
             genClassConstructorsInfo(exprBuf, ctors)
@@ -1278,7 +1278,7 @@ trait NirGenStat[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
 
     def genSynchronizedMethodReceiver(): nir.Val =
       curMethodThis.get.getOrElse {
-        nir.Val.ClassOf.of(genTypeName(curClassSym.get))
+        nir.Val.ClassOf(genTypeName(curClassSym.get))
       }
   }
 

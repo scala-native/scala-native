@@ -174,7 +174,7 @@ final class BinarySerializer(channel: WritableByteChannel) {
       case Val.ByteString(v)      => putTag(T.ByteStringVal); putLebUnsignedInt(v.length); put(v)
       case Val.Const(v)           => putTag(T.ConstVal); putVal(v)
       case Val.Size(v)            => putTag(T.SizeVal); putLebUnsignedLong(v)
-      case Val.ClassOf(tpe)       => putTag(T.ClassOfVal); putType(tpe)
+      case cls: Val.ClassOf       => putTag(T.ClassOfVal); putType(cls.tpe)
       case Val.Zero(ty)           => putTag(T.ZeroVal); putType(ty)
       case Val.ArrayValue(ty, vs) => putTag(T.ArrayValueVal); putType(ty); putVals(vs)
       case Val.StructValue(vs)    => putTag(T.StructValueVal); putVals(vs)

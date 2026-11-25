@@ -363,9 +363,9 @@ object Val {
    */
   final case class Virtual(key: scala.Long) extends Val
 
-  /** A reference to `java.lang.Class[_]` of type `tpe`, in canonical form
-   *  (`Type.classOfType`). Before NIR revision 12 it held a class name, which
-   *  erased arrays of references to `ObjectArray`.
+  /** A reference to `java.lang.Class[_]` of the class `name`. Since NIR
+   *  revision 12 every array type has its own class (`Type.arrayClassName`);
+   *  before, arrays of references were erased to `ObjectArray`.
    *
    *  Instances are emitted as global variables during code feneration. They are
    *  used to deduplicate `Class` instances. There should be only 1 instance per
@@ -377,15 +377,19 @@ object Val {
    *  (specifically, `lockWord`), which contains an `ObjectMonitor` or a bit set
    *  of lock word.
    */
-  final case class ClassOf(tpe: nir.Type) extends Val {
+  case class ClassOf(name: nir.Global.Top) extends Val {
 
-    def className: nir.Global.Top = nir.Type.classOfClassName(tpe)
+    /** Canonical type of instances, see `Type.classOfType`. */
+    def tpe: nir.Type = nir.Type.classOfType(nir.Type.Ref(name))
   }
-  object ClassOf {
+  object ClassOf
+      extends scala.runtime.AbstractFunction1[nir.Global.Top, ClassOf] {
+    def apply(name: nir.Global.Top): ClassOf = new ClassOf(name)
+    def apply(tpe: nir.Type): ClassOf = new OfType(nir.Type.classOfType(tpe))
 
-    def of(tpe: nir.Type): ClassOf = ClassOf(nir.Type.classOfType(tpe))
-
-    def of(name: nir.Global.Top): ClassOf = of(nir.Type.Ref(name))
+    // Keeps the type it was created from; to be merged into ClassOf in 1.0
+    private final class OfType(override val tpe: nir.Type)
+        extends ClassOf(nir.Type.classOfClassName(tpe))
   }
 
 }

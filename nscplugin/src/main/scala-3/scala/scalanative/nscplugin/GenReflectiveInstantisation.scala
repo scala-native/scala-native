@@ -97,7 +97,7 @@ trait GenReflectiveInstantisation(using Context) {
     val fqSymId = curClassSym.get.fullName.mangledString
     val fqSymName = nir.Global.Top(fqSymId)
     val fqcnArg = nir.Val.String(fqSymId)
-    val runtimeClassArg = nir.Val.ClassOf.of(fqSymName)
+    val runtimeClassArg = nir.Val.ClassOf(fqSymName)
 
     given nir.SourcePosition = td.span
     given reflInstBuffer: ReflectiveInstantiationBuffer =
@@ -125,7 +125,7 @@ trait GenReflectiveInstantisation(using Context) {
     val fqSymId = curClassSym.get.fullName.mangledString
     val fqSymName = nir.Global.Top(fqSymId)
     val fqcnArg = nir.Val.String(fqSymId)
-    val runtimeClassArg = nir.Val.ClassOf.of(fqSymName)
+    val runtimeClassArg = nir.Val.ClassOf(fqSymName)
 
     // Collect public constructors.
     val ctors =
@@ -380,7 +380,7 @@ trait GenReflectiveInstantisation(using Context) {
           nir.Rt.Class,
           rtClasses,
           nir.Val.Int(argIdx),
-          nir.Val.ClassOf.of(nir.Type.parameterClassType(arg)),
+          nir.Val.ClassOf(nir.Type.parameterClassType(arg)),
           unwind(using curFresh)
         )
       }

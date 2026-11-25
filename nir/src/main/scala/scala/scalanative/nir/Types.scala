@@ -316,8 +316,10 @@ object Type {
     case Array(elem, _)  => Array(canonicalArrayElement(elem))
     case Ref(name, _, _) =>
       arrayClassToElement.get(name) match {
-        case Some(elem) => Array(elem)
-        case None       => Ref(name)
+        case Some(elem)                          => Array(elem)
+        case None if isSyntheticArrayClass(name) =>
+          Array(fromDescriptor(name.id.substring(1)))
+        case None => Ref(name)
       }
     case _ => Ref(typeToName(ty))
   }
