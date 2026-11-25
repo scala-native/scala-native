@@ -99,7 +99,9 @@ class BigIntegerPrimalityTest {
   @Test def isProbablePrimeKnownValues(): Unit = {
     val mersenne127 = BigInteger.ONE.shiftLeft(127).subtract(BigInteger.ONE)
     assertTrue(mersenne127.isProbablePrime(100))
-    assertFalse(BigInteger.ONE.shiftLeft(128).add(BigInteger.ONE).isProbablePrime(100))
+    assertFalse(
+      BigInteger.ONE.shiftLeft(128).add(BigInteger.ONE).isProbablePrime(100)
+    )
     // 2^64 - 59 is the largest prime below 2^64
     val p64 = BigInteger.ONE.shiftLeft(64).subtract(BigInteger.valueOf(59))
     assertTrue(p64.isProbablePrime(100))
