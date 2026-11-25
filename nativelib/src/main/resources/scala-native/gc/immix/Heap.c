@@ -342,6 +342,7 @@ static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
             kind = STATS_COLLECTION_MINOR_THEN_FULL;
             Heap_traceAndSweep(heap, stack, true,
                                stats != NULL ? &mark_ns : NULL, &nullify_ns);
+            full = true;
             lowYield = Heap_lowYield(heap);
             available = Heap_reserveAllocation(allocationSize);
         }
@@ -362,7 +363,10 @@ static bool Heap_collect(Heap *heap, Stack *stack, size_t allocationSize,
         // allocation even when one object would fit: near the cap a
         // reservation almost always succeeds, and failing only when it does
         // not would collect every few allocations without end.
-        if (Heap_overheadLimitReached(heap, start_ns, lowYield))
+        // A minor collection cannot tell how much of the heap is garbage,
+        // so it neither counts towards the limit nor ends a run of full
+        // collections that do.
+        if (full && Heap_overheadLimitReached(heap, start_ns, lowYield))
             available = false;
     }
     atomic_fetch_add_explicit(&heap->collectionGeneration, 1,
