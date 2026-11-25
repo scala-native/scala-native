@@ -32,6 +32,19 @@ sealed trait SemanticsConfig {
     * When enabled every invocation of foreign function would notify the GC about the thread state which guarantees no deadlocks introduced by waiting for threads executing foreign code, but might reduce overall performance.
     */
   def withStrictExternCallSemantics(value: Boolean): SemanticsConfig
+
+  /**
+    * Controls type tests and casts against arrays of references.
+    * When enabled (default) they check the element type as on the JVM, e.g. an `Object[]` is not a `String[]`.
+    * When disabled any array of references passes a test against another one, as before 0.5.14 - use it for libraries that create arrays with wrong element types, e.g. compiled with older Scala Native.
+    */
+  def strictArrayTypeChecks: Boolean
+  /**
+    * Sets behaviour of type tests and casts against arrays of references.
+    * When enabled (default) they check the element type as on the JVM, e.g. an `Object[]` is not a `String[]`.
+    * When disabled any array of references passes a test against another one, as before 0.5.14 - use it for libraries that create arrays with wrong element types, e.g. compiled with older Scala Native.
+    */
+  def withStrictArrayTypeChecks(value: Boolean): SemanticsConfig
 // format: on
 
   private[scalanative] def show(indent: String): String
@@ -41,12 +54,14 @@ object SemanticsConfig {
   val default: SemanticsConfig =
     Impl(
       finalFields = JVMMemoryModelCompliance.Relaxed,
-      strictExternCallSemantics = false
+      strictExternCallSemantics = false,
+      strictArrayTypeChecks = true
     )
 
   private[build] case class Impl(
       finalFields: JVMMemoryModelCompliance,
-      strictExternCallSemantics: Boolean
+      strictExternCallSemantics: Boolean,
+      strictArrayTypeChecks: Boolean
   ) extends SemanticsConfig {
     override def withFinalFields(
         value: JVMMemoryModelCompliance
@@ -54,12 +69,16 @@ object SemanticsConfig {
     override def withStrictExternCallSemantics(
         value: Boolean
     ): SemanticsConfig = copy(strictExternCallSemantics = value)
+    override def withStrictArrayTypeChecks(
+        value: Boolean
+    ): SemanticsConfig = copy(strictArrayTypeChecks = value)
 
     override def toString: String = show(indent = " ")
     override private[scalanative] def show(indent: String): String = {
       s"""|SemanticsConfig(
           |$indent- finalFields: ${finalFields}
           |$indent- strictExternCallSemantics: ${strictExternCallSemantics}
+          |$indent- strictArrayTypeChecks: ${strictArrayTypeChecks}
           |$indent)""".stripMargin
     }
   }

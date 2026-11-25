@@ -15,8 +15,6 @@ sealed abstract class ClassLoader {
 
   def load(global: nir.Global.Top): Option[Seq[nir.Defn]]
 
-  def revision(global: nir.Global.Top): Int
-
 }
 
 object ClassLoader {
@@ -29,10 +27,7 @@ object ClassLoader {
   }
 
   def fromMemory(defns: Seq[nir.Defn]): ClassLoader =
-    new FromMemory(defns, nir.Versions.revision)
-
-  def fromMemory(defns: Seq[nir.Defn], revision: Int): ClassLoader =
-    new FromMemory(defns, revision)
+    new FromMemory(defns)
 
   final class FromDisk(classpath: Seq[ClassPath]) extends ClassLoader {
     lazy val classesWithEntryPoints: Iterable[nir.Global.Top] = {
@@ -47,17 +42,9 @@ object ClassLoader {
         case path if path.contains(global) =>
           path.load(global)
       }.flatten
-
-    def revision(global: nir.Global.Top): Int =
-      classpath
-        .collectFirst {
-          case path if path.contains(global) => path.revision(global)
-        }
-        .getOrElse(nir.Versions.revision)
   }
 
-  final class FromMemory(defns: Seq[nir.Defn], revision: Int)
-      extends ClassLoader {
+  final class FromMemory(defns: Seq[nir.Defn]) extends ClassLoader {
 
     private val scopes = {
       val out =
@@ -83,8 +70,6 @@ object ClassLoader {
 
     def load(global: nir.Global.Top): Option[Seq[nir.Defn]] =
       scopes.get(global).map(_.toSeq)
-
-    def revision(global: nir.Global.Top): Int = revision
 
   }
 

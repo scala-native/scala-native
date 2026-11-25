@@ -1042,12 +1042,8 @@ private[interflow] trait Eval { self: Interflow =>
     }
   }
 
-  private def isStrictArrayTest(ty: nir.Type): Boolean = ty match {
-    case nir.Type.Array(elem, _) =>
-      analysis.strictArrayTypes &&
-        !nir.Type.typeToArray.contains(nir.Type.canonicalArrayElement(elem))
-    case _ => false
-  }
+  private def isStrictArrayTest(ty: nir.Type): Boolean =
+    Sub.isStrictArrayTest(ty, config.compilerConfig)
 
   private def inBounds(values: Array[nir.Val], offset: Int): Boolean = {
     inBounds(values.length, offset)

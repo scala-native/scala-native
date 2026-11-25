@@ -277,10 +277,11 @@ object Type {
     Type.Double -> Global.Top("scala.scalanative.runtime.DoubleArray"),
     Rt.Object -> Global.Top("scala.scalanative.runtime.ObjectArray")
   )
-  val arrayToType: Map[Global.Top, Type] =
-    typeToArray.map { case (k, v) => (v, k) } ++ Map(
-      Global.Top("scala.scalanative.runtime.BlobArray") -> Type.Byte
-    )
+  private val arrayClassToElement: Map[Global.Top, Type] =
+    typeToArray.map { case (k, v) => (v, k) }
+  val arrayToType: Map[Global.Top, Type] = arrayClassToElement + (
+    Global.Top("scala.scalanative.runtime.BlobArray") -> Type.Byte
+  )
   def toArrayClass(ty: Type): Global.Top = ty match {
     case _ if typeToArray.contains(ty) =>
       typeToArray(ty)
@@ -294,9 +295,6 @@ object Type {
       else None
     }
 
-  private val arrayClassToElement: Map[Global.Top, Type] =
-    typeToArray.map { case (k, v) => (v, k) }
-
   /** Primitives, flagless references and arrays of those; anything else is
    *  `Object`.
    */
@@ -304,8 +302,10 @@ object Type {
     case Array(elem, _)  => Array(canonicalArrayElement(elem))
     case Ref(name, _, _) =>
       arrayClassToElement.get(name) match {
-        case Some(elem) => Array(elem)
-        case None       => Ref(name)
+        case Some(elem)                          => Array(elem)
+        case None if isSyntheticArrayClass(name) =>
+          Array(canonicalArrayElement(fromDescriptor(name.id.substring(1))))
+        case None => Ref(name)
       }
     case _ if typeToArray.contains(ty) => ty
     case _                             => Rt.Object
@@ -313,15 +313,8 @@ object Type {
 
   /** Canonical `classOf` type: arrays as `Array`, never as `Ref(XArray)`. */
   def classOfType(ty: Type): Type = ty match {
-    case Array(elem, _)  => Array(canonicalArrayElement(elem))
-    case Ref(name, _, _) =>
-      arrayClassToElement.get(name) match {
-        case Some(elem)                          => Array(elem)
-        case None if isSyntheticArrayClass(name) =>
-          Array(fromDescriptor(name.id.substring(1)))
-        case None => Ref(name)
-      }
-    case _ => Ref(typeToName(ty))
+    case _: Array | _: Ref => canonicalArrayElement(ty)
+    case _                 => Ref(typeToName(ty))
   }
 
   /** Class of a parameter type recorded for reflective instantiation. */
@@ -337,8 +330,17 @@ object Type {
   /** `XArray` and `ObjectArray`, otherwise a linker-defined subclass of
    *  `ObjectArray` named as on the JVM, e.g. `[Ljava.lang.String;`.
    */
-  def arrayClassName(elem: Type): Global.Top =
-    typeToArray.getOrElse(elem, Global.Top("[" + descriptor(elem)))
+  def arrayClassName(elem: Type): Global.Top = {
+    val canonical = canonicalArrayElement(elem)
+    typeToArray.getOrElse(canonical, Global.Top("[" + descriptor(canonical)))
+  }
+
+  /** Arrays of `elem` have a class of their own, see `arrayClassName`. */
+  def hasSyntheticArrayClass(elem: Type): Boolean =
+    !typeToArray.contains(canonicalArrayElement(elem))
+
+  def isReferenceArrayClass(name: Global.Top): Boolean =
+    name == Rt.ObjectArray.name || isSyntheticArrayClass(name)
 
   def classOfClassName(ty: Type): Global.Top = ty match {
     case Array(elem, _)  => arrayClassName(elem)

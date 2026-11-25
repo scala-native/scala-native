@@ -19,33 +19,7 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
       id == "scala.scalanative.runtime.RawPtr"
   }
 
-  private def typeName = {
-    if (isScalaNativeRuntimeType) info.name.id match {
-      case "scala.scalanative.runtime.PrimitiveByte"    => "byte"
-      case "scala.scalanative.runtime.PrimitiveShort"   => "short"
-      case "scala.scalanative.runtime.PrimitiveInt"     => "int"
-      case "scala.scalanative.runtime.PrimitiveLong"    => "long"
-      case "scala.scalanative.runtime.PrimitiveChar"    => "char"
-      case "scala.scalanative.runtime.PrimitiveFloat"   => "float"
-      case "scala.scalanative.runtime.PrimitiveDouble"  => "double"
-      case "scala.scalanative.runtime.PrimitiveBoolean" => "boolean"
-      case "scala.scalanative.runtime.PrimitiveUnit"    => "void"
-      case "scala.scalanative.runtime.RawSize"          => "size"
-      case "scala.scalanative.runtime.RawPtr"           => "pointer"
-      case "scala.scalanative.runtime.BoxedUnit$"   => "scala.runtime.BoxedUnit"
-      case "scala.scalanative.runtime.BooleanArray" => "[Z"
-      case "scala.scalanative.runtime.CharArray"    => "[C"
-      case "scala.scalanative.runtime.ByteArray"    => "[B"
-      case "scala.scalanative.runtime.ShortArray"   => "[S"
-      case "scala.scalanative.runtime.IntArray"     => "[I"
-      case "scala.scalanative.runtime.LongArray"    => "[J"
-      case "scala.scalanative.runtime.FloatArray"   => "[F"
-      case "scala.scalanative.runtime.DoubleArray"  => "[D"
-      case "scala.scalanative.runtime.ObjectArray"  => "[Ljava.lang.Object;"
-      case name                                     => name
-    }
-    else info.name.id
-  }
+  private def typeName = javaName(info.name)
 
   private def typeSize = {
     if (isPrimitiveType) info.name.id match {
@@ -127,10 +101,8 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
       nir.Type.fromArrayClass(cls.name) match {
         case None         => meta.layout(cls).referenceOffsetsValue
         case Some(elemTy) =>
-          val component =
-            nir.Type.classOfClassName(nir.Type.classOfType(elemTy))
           meta.analysis.infos
-            .get(component)
+            .get(nir.Type.classOfClassName(elemTy))
             .map(info => meta.rtti(info).const)
             .getOrElse(nir.Val.Null)
       }
@@ -156,7 +128,36 @@ private[codegen] class RuntimeTypeInformation(info: ScopeInfo)(implicit
   }
 }
 
-private[codegen] object RuntimeTypeInformation {
+private[scalanative] object RuntimeTypeInformation {
+
+  /** Name returned by `Class.getName` for a class with this symbol. */
+  private[scalanative] def javaName(name: nir.Global.Top): String = {
+    if (name.id.startsWith("scala.scalanative.runtime.")) name.id match {
+      case "scala.scalanative.runtime.PrimitiveByte"    => "byte"
+      case "scala.scalanative.runtime.PrimitiveShort"   => "short"
+      case "scala.scalanative.runtime.PrimitiveInt"     => "int"
+      case "scala.scalanative.runtime.PrimitiveLong"    => "long"
+      case "scala.scalanative.runtime.PrimitiveChar"    => "char"
+      case "scala.scalanative.runtime.PrimitiveFloat"   => "float"
+      case "scala.scalanative.runtime.PrimitiveDouble"  => "double"
+      case "scala.scalanative.runtime.PrimitiveBoolean" => "boolean"
+      case "scala.scalanative.runtime.PrimitiveUnit"    => "void"
+      case "scala.scalanative.runtime.RawSize"          => "size"
+      case "scala.scalanative.runtime.RawPtr"           => "pointer"
+      case "scala.scalanative.runtime.BoxedUnit$"   => "scala.runtime.BoxedUnit"
+      case "scala.scalanative.runtime.BooleanArray" => "[Z"
+      case "scala.scalanative.runtime.CharArray"    => "[C"
+      case "scala.scalanative.runtime.ByteArray"    => "[B"
+      case "scala.scalanative.runtime.ShortArray"   => "[S"
+      case "scala.scalanative.runtime.IntArray"     => "[I"
+      case "scala.scalanative.runtime.LongArray"    => "[J"
+      case "scala.scalanative.runtime.FloatArray"   => "[F"
+      case "scala.scalanative.runtime.DoubleArray"  => "[D"
+      case "scala.scalanative.runtime.ObjectArray"  => "[Ljava.lang.Object;"
+      case name                                     => name
+    }
+    else name.id
+  }
 
   /** Bits of the RTTI flags word. Keep in sync with ObjectHeader.h and
    *  scala.scalanative.runtime.Class.
@@ -190,8 +191,6 @@ private[codegen] object RuntimeTypeInformation {
     // Classes, bits 16-31: StableHash.classKey, for reflective proxy lookups
     final val ClassKeyShift = 16
 
-    private val ObjectArray =
-      nir.Global.Top("scala.scalanative.runtime.ObjectArray")
     // The only class with an object tracer: it owns the stacks of a
     // suspended continuation
     private val SuspendedStacks =
@@ -224,8 +223,7 @@ private[codegen] object RuntimeTypeInformation {
           if (!isArray) 0
           else
             IsArray | (dimensions(cls) << ArrayDimensionsShift) | {
-              if (cls.name == ObjectArray ||
-                  nir.Type.isSyntheticArrayClass(cls.name)) ArrayScanReferences
+              if (nir.Type.isReferenceArrayClass(cls.name)) ArrayScanReferences
               else if (cls.name == nir.Rt.BlobArray.name) ArrayScanConservative
               else ArrayScanNone
             }

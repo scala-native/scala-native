@@ -21,18 +21,13 @@ package object serialization {
     new BinarySerializer(channel).serialize(defns)
   }
 
-  def deserializeBinary(directory: VirtualDirectory, path: Path): Seq[Defn] =
-    deserializeBinaryWithRevision(directory, path)._1
-
-  def deserializeBinaryWithRevision(
-      directory: VirtualDirectory,
-      path: Path
-  ): (Seq[Defn], Int) = {
+  def deserializeBinary(directory: VirtualDirectory, path: Path): Seq[Defn] = {
     val buffer = directory.read(path)
-    withBigEndian(buffer) { buffer =>
-      val deserializer =
-        new BinaryDeserializer(buffer, new NIRSource(directory.path, path))
-      (deserializer.deserialize(), deserializer.prelude.revision)
+    withBigEndian(buffer) {
+      new BinaryDeserializer(
+        _,
+        new NIRSource(directory.path, path)
+      ).deserialize()
     }
   }
 

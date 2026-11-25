@@ -28,7 +28,6 @@ private[linker] class Reach(
   val infos = mutable.Map.empty[nir.Global, Info]
   val from = mutable.Map.empty[nir.Global, ReferencedFrom]
   val exports = mutable.UnrolledBuffer.empty[nir.Global]
-  var minNirRevision = nir.Versions.revision
 
   val dyncandidates = mutable.Map.empty[nir.Sig, mutable.Set[nir.Global.Member]]
   val dynsigs = mutable.Set.empty[nir.Sig]
@@ -106,8 +105,7 @@ private[linker] class Reach(
         dynsigs = dynsigs.toSeq.sortBy(_.mangle),
         dynimpls = dynimpls.toSeq.sorted(nir.Global.globalOrdering),
         resolvedVals = resolvedNirValues,
-        foundServiceProviders = foundServiceProviders,
-        minNirRevision = minNirRevision
+        foundServiceProviders = foundServiceProviders
       )
     else
       new ReachabilityAnalysis.Failure(
@@ -189,7 +187,6 @@ private[linker] class Reach(
           val scope = mutable.Map.empty[nir.Global, nir.Defn]
           defns.foreach { defn => scope(defn.name) = defn }
           loaded(owner) = scope
-          minNirRevision = minNirRevision.min(loader.revision(owner))
         }
     }
 
@@ -222,8 +219,7 @@ private[linker] class Reach(
   def reachArrayClass(
       elem: nir.Type
   )(implicit srcPosition: nir.SourcePosition): nir.Global.Top = {
-    val name =
-      nir.Type.arrayClassName(nir.Type.canonicalArrayElement(elem))
+    val name = nir.Type.arrayClassName(elem)
     reachGlobal(name)
     name
   }

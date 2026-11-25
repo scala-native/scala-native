@@ -9,8 +9,7 @@ import scala.collection.mutable
 import scala.scalanative.build.Logger
 import scala.scalanative.io.VirtualDirectory
 import scala.scalanative.nir.serialization.{
-  NirDeserializationException, Prelude => NirPrelude,
-  deserializeBinaryWithRevision
+  NirDeserializationException, Prelude => NirPrelude, deserializeBinary
 }
 
 sealed trait ClassPath {
@@ -20,8 +19,6 @@ sealed trait ClassPath {
 
   /** Load given global and info about its dependencies. */
   private[scalanative] def load(name: nir.Global.Top): Option[Seq[nir.Defn]]
-
-  private[scalanative] def revision(name: nir.Global.Top): Int
 
   private[scalanative] def classesWithEntryPoints: Iterable[nir.Global.Top]
 
@@ -69,22 +66,14 @@ object ClassPath {
     def contains(name: nir.Global) =
       nirFiles.contains(name.top)
 
-    private val revisions = mutable.Map.empty[nir.Global.Top, Int]
-
     def load(name: nir.Global.Top): Option[Seq[nir.Defn]] =
       cache.getOrElseUpdate(
         name, {
           nirFiles.get(name.top).map { file =>
-            val (defns, revision) =
-              deserializeBinaryWithRevision(directory, file)
-            revisions(name) = revision
-            defns
+            deserializeBinary(directory, file)
           }
         }
       )
-
-    def revision(name: nir.Global.Top): Int =
-      revisions.getOrElse(name, nir.Versions.revision)
 
     lazy val classesWithEntryPoints: Iterable[nir.Global.Top] = {
       nirFiles.filter {

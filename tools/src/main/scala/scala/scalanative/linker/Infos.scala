@@ -254,16 +254,8 @@ object ReachabilityAnalysis {
       val dynsigs: Seq[nir.Sig],
       val dynimpls: Seq[nir.Global.Member],
       val resolvedVals: mutable.Map[String, nir.Val],
-      val foundServiceProviders: FoundServiceProviders,
-      val minNirRevision: Int = nir.Versions.revision
+      val foundServiceProviders: FoundServiceProviders
   ) extends ReachabilityAnalysis {
-
-    /** Array type tests check element types, unless NIR older than revision 12
-     *  is linked: its erased `classOf` creates mistyped arrays.
-     */
-    def strictArrayTypes: Boolean =
-      minNirRevision >= nir.Versions.arrayTypesRevision
-
     lazy val ObjectClass = infos(nir.Rt.Object.name).asInstanceOf[Class]
     lazy val StringClass = infos(nir.Rt.StringName).asInstanceOf[Class]
     lazy val StringValueField =

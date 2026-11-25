@@ -377,13 +377,12 @@ object Val {
    *  (specifically, `lockWord`), which contains an `ObjectMonitor` or a bit set
    *  of lock word.
    */
-  case class ClassOf(name: nir.Global.Top) extends Val {
+  sealed case class ClassOf(name: nir.Global.Top) extends Val {
 
     /** Canonical type of instances, see `Type.classOfType`. */
     def tpe: nir.Type = nir.Type.classOfType(nir.Type.Ref(name))
   }
-  object ClassOf
-      extends scala.runtime.AbstractFunction1[nir.Global.Top, ClassOf] {
+  object ClassOf {
     def apply(name: nir.Global.Top): ClassOf = new ClassOf(name)
     def apply(tpe: nir.Type): ClassOf = new OfType(nir.Type.classOfType(tpe))
 

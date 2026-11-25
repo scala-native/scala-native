@@ -167,15 +167,11 @@ private[runtime] final class _Class[A] {
   }
 
   def getInterfaces(): scala.Array[Class[_]] = {
-    val array = new scala.Array[Class[_]](interfacesCount)
-    var idx = 0
-    while (idx < interfacesCount) {
-      array(idx) = Intrinsics
-        .loadObject(Intrinsics.elemRawPtr(interfaces, _Class.PtrSize * idx))
-        .asInstanceOf[Class[_]]
-      idx += 1
-    }
-    array
+    val arrayClass =
+      Intrinsics.castObjectToRawPtr(classOf[scala.Array[Class[_]]])
+    ObjectArray
+      .snapshot(interfacesCount, arrayClass, interfaces)
+      .asInstanceOf[scala.Array[Class[_]]]
   }
 
   def getSuperclass(): Class[_ >: A] =
@@ -257,6 +253,9 @@ private[runtime] object _Class {
     final val ArrayScanMask = 0x18 // 3 << 3
     final val ArrayScanReferences = 0x8 // 1 << 3
     final val TraitKeyShift = 8
+    // Arrays only, bits 8-15: number of dimensions
+    final val ArrayDimensionsShift = 8
+    final val ArrayDimensionsMask = 0xff00 // 0xff << 8
   }
 
   // Excludes BlobArray
@@ -477,7 +476,7 @@ private[runtime] object LinkedClasses {
           element.charAt(1) != '[')
         forName(element.substring(1, element.length() - 1))
       else notFound()
-    if (dims > 255) notFound()
+    if (dims > ArrayClasses.MaxDimensions) notFound()
     var cls = component
     while (dims > 0) {
       cls = ArrayClasses.of(cls)
@@ -502,16 +501,16 @@ private[runtime] object LinkedClasses {
     }
 
   private def find(className: String): Class[_] = {
-    var found: Class[_] = null
-    foreach { cls =>
-      if (found == null && cls.name == className) found = cls
-    }
+    val found = find(_.name == className)
     if (found != null) found else legacyArrayClass(className)
   }
 
+  def foreach(f: _Class[_] => Unit): Unit =
+    find { cls => f(cls); false }
+
   // The class list section holds a pointer to the RTTI of every class and
   // trait, the RTTI of a type is its java.lang.Class instance
-  def foreach(f: _Class[_] => Unit): Unit = {
+  private def find(p: _Class[_] => Boolean): _Class[_] = {
     val ptrSize = _Class.PtrSize
     val section = StaticRoots.classListSection()
     val start = loadRawPtr(section)
@@ -520,9 +519,12 @@ private[runtime] object LinkedClasses {
     var offset = 0L
     while (offset < size) {
       val rtti = loadRawPtr(elemRawPtr(start, castLongToRawSize(offset)))
-      if (castRawPtrToLong(rtti) != 0L)
-        f(castRawPtrToObject(rtti).asInstanceOf[_Class[_]])
+      if (castRawPtrToLong(rtti) != 0L) {
+        val cls = castRawPtrToObject(rtti).asInstanceOf[_Class[_]]
+        if (p(cls)) return cls
+      }
       offset += ptrSize
     }
+    null
   }
 }

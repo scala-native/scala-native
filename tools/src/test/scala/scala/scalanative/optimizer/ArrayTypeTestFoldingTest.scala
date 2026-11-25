@@ -121,4 +121,26 @@ class ArrayTypeTestFoldingTest extends OptimizerSpec {
       }
       assertTrue(entry.show, keepsCast || sinkArgs(entry).isEmpty)
   }
+
+  @Test def nonStrictArrayTypeChecksIgnoreElementTypes(): Unit = optimize(
+    entry = "Test",
+    sources = Map(
+      "Test.scala" ->
+        """|import scala.scalanative.annotation.nooptimize
+           |object Test {
+           |  @noinline @nooptimize def sink(b: Boolean): Unit = println(b)
+           |  def main(args: Array[String]): Unit = {
+           |    val objects: AnyRef = new Array[AnyRef](1)
+           |    sink(objects.isInstanceOf[Array[String]])
+           |  }
+           |}
+           |""".stripMargin
+    ),
+    setupConfig = c =>
+      releaseFast(c).withSemanticsConfig(_.withStrictArrayTypeChecks(false))
+  ) {
+    case (_, result) =>
+      val entry = findEntry(result.defns).get
+      assertEquals(entry.show, Seq(nir.Val.True), sinkArgs(entry))
+  }
 }

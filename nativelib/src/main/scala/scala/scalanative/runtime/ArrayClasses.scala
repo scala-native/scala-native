@@ -41,13 +41,12 @@ object ArrayClasses {
     )
 
   @alwaysinline private[runtime] def dimensions(cls: _Class[_]): Int =
-    if (cls.isArray()) (cls.flags >>> DimensionsShift) & 0xff
+    if (cls.isArray())
+      (cls.flags & _Class.Flags.ArrayDimensionsMask) >>>
+        _Class.Flags.ArrayDimensionsShift
     else 0
 
-  // Keep in sync with codegen.RuntimeTypeInformation.Flags
-  private final val DimensionsShift = 8
-  private final val DimensionsMask = 0xff << DimensionsShift
-  private final val MaxDimensions = 255
+  private[runtime] final val MaxDimensions = 255
 
   // Seeded with the linker's classes, from the class list
   private lazy val classes: ConcurrentHashMap[Class[_], Class[_]] = {
@@ -97,7 +96,8 @@ object ArrayClasses {
     val dims = dimensions(component) + 1
     if (dims > MaxDimensions)
       throw new IllegalArgumentException(
-        "Cannot create an array type with more than 255 dimensions"
+        "Cannot create an array type with more than " + MaxDimensions +
+          " dimensions"
       )
     val template = classOf[ObjectArray].asInstanceOf[_Class[_]]
     val size = StaticRoots.objectArrayClassSize()
@@ -111,7 +111,8 @@ object ArrayClasses {
         elemRawPtr(rawptr, MemoryLayout.Rtti.LockWordOffset),
         castLongToRawPtr(0L)
       )
-    cls.flags = (template.flags & ~DimensionsMask) | (dims << DimensionsShift)
+    cls.flags = (template.flags & ~_Class.Flags.ArrayDimensionsMask) |
+      (dims << _Class.Flags.ArrayDimensionsShift)
     cls.refFieldOffsets = castObjectToRawPtr(component)
     cls.name =
       if (component.isArray()) "[" + component.getName()

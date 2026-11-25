@@ -58,6 +58,17 @@ object Sub {
     }
   }
 
+  /** Tests against `ty` use `isArray`, see
+   *  `SemanticsConfig.strictArrayTypeChecks`.
+   */
+  def isStrictArrayTest(ty: nir.Type, config: build.NativeConfig): Boolean =
+    ty match {
+      case nir.Type.Array(elem, _) =>
+        config.semanticsConfig.strictArrayTypeChecks &&
+          nir.Type.hasSyntheticArrayClass(elem)
+      case _ => false
+    }
+
   /** Exact array subtyping, covariant for references (JLS 4.10.3). `Sub.is`
    *  stays lenient for the NIR checker.
    */
@@ -90,9 +101,9 @@ object Sub {
     case (_: nir.Type.RefKind, nir.Rt.Object)                 => true
     case (nir.Type.Array(lelem, _), nir.Type.Array(relem, _)) =>
       isArrayElement(lelem, relem)
+    // Arrays reach Cloneable and Serializable through their array class
     case (ScopeRef(linfo), ScopeRef(rinfo))
-        if !l.isInstanceOf[nir.Type.Array] &&
-          !r.isInstanceOf[nir.Type.Array] =>
+        if !r.isInstanceOf[nir.Type.Array] =>
       linfo.is(rinfo)
     case _ => false
   }

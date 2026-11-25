@@ -56,19 +56,19 @@ object Array {
       val length = dimensions(idx)
       if (length < 0) throw new NegativeArraySizeException(length.toString)
 
-      if (idx == dimensions.length - 1) {
-        // Create base array
+      if (idx == dimensions.length - 1 && componentType.isPrimitive()) {
         newInstance(componentType, length)
       } else {
-        // Create subarrays recursively
         val arr = ObjectArray.alloc(
           length,
           Intrinsics.castObjectToRawPtr(classes(idx))
         )
-        var i = 0
-        while (i < length) {
-          arr.update(i, fill(idx + 1))
-          i += 1
+        if (idx < dimensions.length - 1) {
+          var i = 0
+          while (i < length) {
+            arr.update(i, fill(idx + 1))
+            i += 1
+          }
         }
         arr
       }

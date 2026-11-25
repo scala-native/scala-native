@@ -1407,7 +1407,7 @@ private[scalanative] object Lower {
       val obj = genVal(buf, v)
       val typeptr = let(nir.Op.Load(nir.Type.Ptr, obj), unwind)
       ty match {
-        case nir.Type.Array(elem, _) if isStrictArrayTest(elem) =>
+        case nir.Type.Array(elem, _) if Sub.isStrictArrayTest(ty, config) =>
           genArrayIsOp(buf, nir.Type.canonicalArrayElement(elem), typeptr)
         case _ =>
           genClassIs(buf, ty, typeptr)
@@ -1495,10 +1495,6 @@ private[scalanative] object Lower {
       }
     }
 
-    private def isStrictArrayTest(elem: nir.Type): Boolean =
-      analysis.strictArrayTypes &&
-        !nir.Type.typeToArray.contains(nir.Type.canonicalArrayElement(elem))
-
     // No other array type is assignable to arrays of `elem`
     private def isExactArrayElement(elem: nir.Type): Boolean = elem match {
       case nir.Rt.Object            => false
@@ -1575,10 +1571,7 @@ private[scalanative] object Lower {
 
           label(checkIfIsInstanceOfL)
           val isInstanceOf = genIsOp(buf, ty, v)
-          val toCls = ty match {
-            case nir.Type.Array(elem, _) => nir.Type.arrayClassName(nir.Type.canonicalArrayElement(elem))
-            case _                       => ty.className
-          }
+          val toCls = nir.Type.classOfClassName(ty)
           val toTy = rtti(analysis.infos(toCls)).const
           branch(
             isInstanceOf,
@@ -2001,10 +1994,9 @@ private[scalanative] object Lower {
       val nir.Op.Arrayalloc(ty, v1, v2) = op
       val init = genVal(buf, v1)
       val zone = v2.map(genVal(buf, _))
-      val elem = nir.Type.canonicalArrayElement(ty)
-      if (nir.Type.typeToArray.contains(elem)) genUntypedArrayalloc(buf, n, ty, init, zone)
+      if (!nir.Type.hasSyntheticArrayClass(ty)) genUntypedArrayalloc(buf, n, ty, init, zone)
       else {
-        val arrayClass = rtti(analysis.infos(nir.Type.arrayClassName(elem))).const
+        val arrayClass = rtti(analysis.infos(nir.Type.arrayClassName(ty))).const
         genTypedArrayalloc(buf, n, arrayClass, init, zone)
       }
     }
@@ -2376,8 +2368,7 @@ private[scalanative] object Lower {
   val largeAllocName = Extern("scalanative_GC_alloc_large")
   val largeAlloc = nir.Val.Global(largeAllocName, allocSig)
 
-  val SafeZone =
-    nir.Type.Ref(nir.Global.Top("scala.scalanative.memory.SafeZone"))
+  val SafeZone = nir.Rt.SafeZone
   val safeZoneAllocImplSig =
     nir.Type.Function(Seq(SafeZone, nir.Type.Ptr, nir.Type.Size), nir.Type.Ptr)
   val safeZoneAllocImpl = SafeZone.name.member(
@@ -2449,26 +2440,26 @@ private[scalanative] object Lower {
   val throwSig = nir.Type.Function(Seq(nir.Type.Ptr), nir.Type.Nothing)
   val throw_ = nir.Val.Global(throwName, nir.Type.Ptr)
 
-  val ObjectArrayModule = nir.Global.Top("scala.scalanative.runtime.ObjectArray$")
+  val ObjectArrayModule = nir.Global.Top(nir.Rt.ObjectArray.name.id + "$")
   private val ObjectArrayModuleRef = nir.Type.Ref(ObjectArrayModule)
 
   val typedArrayHeapAlloc =
-    ObjectArrayModule.member(nir.Sig.Method("alloc", Seq(nir.Type.Int, nir.Type.Ptr, nir.Rt.ObjectArray)))
+    ObjectArrayModule.member(nir.Rt.TypedArrayAllocSig)
   val typedArrayHeapAllocSig =
     nir.Type.Function(Seq(ObjectArrayModuleRef, nir.Type.Int, nir.Type.Ptr), nir.Rt.ObjectArray)
   val typedArrayZoneAlloc =
-    ObjectArrayModule.member(nir.Sig.Method("alloc", Seq(nir.Type.Int, nir.Type.Ptr, SafeZone, nir.Rt.ObjectArray)))
+    ObjectArrayModule.member(nir.Rt.TypedArrayZoneAllocSig)
   val typedArrayZoneAllocSig =
     nir.Type.Function(Seq(ObjectArrayModuleRef, nir.Type.Int, nir.Type.Ptr, SafeZone), nir.Rt.ObjectArray)
   val typedArraySnapshot =
     ObjectArrayModule.member(nir.Sig.Method("snapshot", Seq(nir.Type.Int, nir.Type.Ptr, nir.Type.Ptr, nir.Rt.ObjectArray)))
+  val typedArraySnapshotSig =
+    nir.Type.Function(Seq(ObjectArrayModuleRef, nir.Type.Int, nir.Type.Ptr, nir.Type.Ptr), nir.Rt.ObjectArray)
   val ArrayClassesModule = nir.Global.Top("scala.scalanative.runtime.ArrayClasses$")
   val arrayIsSubclass =
     ArrayClassesModule.member(nir.Sig.Method("isSubclass", Seq(nir.Rt.Class, nir.Rt.Class, nir.Type.Bool)))
   val arrayIsSubclassSig =
     nir.Type.Function(Seq(nir.Type.Ref(ArrayClassesModule), nir.Rt.Class, nir.Rt.Class), nir.Type.Bool)
-  val typedArraySnapshotSig =
-    nir.Type.Function(Seq(ObjectArrayModuleRef, nir.Type.Int, nir.Type.Ptr, nir.Type.Ptr), nir.Rt.ObjectArray)
 
   def arrayHeapAllocOf(ty: nir.Type, arrayClassName: nir.Global.Top) = {
     val arrcls = nir.Type.Ref(arrayClassName)

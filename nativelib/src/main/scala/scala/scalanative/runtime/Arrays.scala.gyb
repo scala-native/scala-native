@@ -134,14 +134,19 @@ object Array {
                                     toPos: Int,
                                     len: Int): Unit = {
     val component = to.getClass.getComponentType
+    // Elements are mostly of one class, test each class once in a row
+    var checked: Class[_] = null
     var i = 0
     while (i < len) {
-      val elem = from(fromPos + i)
-      if (elem != null && !component.isInstance(elem))
-        throw new ArrayStoreException(
-          "Cannot store an instance of " + elem.getClass.getName +
-            " in an array of class " + to.getClass.getName)
-      to(toPos + i) = elem
+      val elem = loadObject(from.atRawUnsafe(fromPos + i))
+      if (elem != null && (elem.getClass ne checked)) {
+        if (!component.isInstance(elem))
+          throw new ArrayStoreException(
+            "Cannot store an instance of " + elem.getClass.getName +
+              " in an array of class " + to.getClass.getName)
+        checked = elem.getClass
+      }
+      storeObject(to.atRawUnsafe(toPos + i), elem)
       i += 1
     }
   }

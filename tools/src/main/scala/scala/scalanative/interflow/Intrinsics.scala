@@ -3,7 +3,7 @@ package interflow
 
 import java.util.Arrays
 
-import scalanative.codegen.Lower
+import scalanative.codegen.{Lower, RuntimeTypeInformation}
 import scalanative.linker._
 
 private[interflow] trait Intrinsics { self: Interflow =>
@@ -105,11 +105,8 @@ private[interflow] trait Intrinsics { self: Interflow =>
       case nir.Global.Member(Class, nir.Rt.GetNameSig) =>
         val args = rawArgs.map(eval)
         args match {
-          // Runtime classes are renamed by RuntimeTypeInformation
-          case Seq(nir.Val.Global(name: nir.Global.Top, ty))
-              if ty == nir.Rt.Class &&
-                !name.id.startsWith("scala.scalanative.runtime.") =>
-            Some(eval(nir.Val.String(name.id)))
+          case Seq(nir.Val.Global(name: nir.Global.Top, nir.Rt.Class)) =>
+            Some(eval(nir.Val.String(RuntimeTypeInformation.javaName(name))))
           case _ =>
             None
         }

@@ -192,6 +192,13 @@ class SubSuite extends ReachabilitySuite {
     testIsNotArray(Arr(Obj), Arr(Arr(Obj)))
     testIsNotArray(Arr(Str), Arr(Arr(Str)))
 
+    // Every array is Cloneable and Serializable
+    val Cloneable = nir.Type.Ref(nir.Global.Top("java.lang.Cloneable"))
+    val Serializable = nir.Type.Ref(nir.Global.Top("java.io.Serializable"))
+    testIsArray(Arr(Arr(nir.Type.Int)), Arr(Cloneable))
+    testIsArray(Arr(Arr(Str)), Arr(Serializable))
+    testIsNotArray(Arr(Obj), Arr(Cloneable))
+
     testIs(Arr(nir.Type.Int), IntArray)
     testIs(Arr(Obj), ObjectArray)
     testIs(Arr(Str), ObjectArray)

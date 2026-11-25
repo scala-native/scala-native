@@ -106,10 +106,9 @@ they test for an array of references, then test its component class against
 the element as any class test; a component that is a trait, whose RTTI has no
 lineage nor itable, goes to `ArrayClasses.isSubclass`. Poly-inlined calls test
 classes of arrays last: classes created at runtime match no test and share
-`ObjectArray`'s methods. When
-the program links NIR compiled before revision 12, in which `classOf` erased
-arrays of references to `ObjectArray`, these tests only check that the value is
-an array of references, as before. Reflection is exact either way.
+`ObjectArray`'s methods. With `SemanticsConfig.strictArrayTypeChecks` disabled
+these tests only check that the value is an array of references, as before
+0.5.14. Reflection checks element types either way.
 
 ## Class list
 

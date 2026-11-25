@@ -85,13 +85,14 @@ private[interflow] trait PolyInline { self: Interflow =>
     // scop.implementors are prestorted by the same way => I don't need sort here.
     // The last target is unguarded: array classes created at runtime match
     // no guard and must reach ObjectArray's methods.
-    val (arrays, others) = res.partition(t => isReferenceArrayClass(t._1))
-    if (arrays.isEmpty || others.isEmpty) res else others ++ arrays
+    def isArray(target: (Class, nir.Global.Member)) =
+      nir.Type.isReferenceArrayClass(target._1.name)
+    if (!res.exists(isArray)) res
+    else {
+      val (arrays, others) = res.partition(isArray)
+      others ++ arrays
+    }
   }
-
-  private def isReferenceArrayClass(cls: Class): Boolean =
-    cls.name == nir.Rt.ObjectArray.name ||
-      nir.Type.isSyntheticArrayClass(cls.name)
 
   private def polyInline(
       op: nir.Op.Method,

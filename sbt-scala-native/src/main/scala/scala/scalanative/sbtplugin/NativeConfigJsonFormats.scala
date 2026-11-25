@@ -313,12 +313,14 @@ object NativeConfigJsonFormats {
     private object Field {
       final val FinalFields = "finalFields"
       final val StrictExternCallSemantics = "strictExternCallSemantics"
+      final val StrictArrayTypeChecks = "strictArrayTypeChecks"
     }
 
     def write[J](obj: SemanticsConfig, builder: Builder[J]): Unit = {
       builder.beginObject()
       builder.addField(Field.FinalFields, JvmMemoryModelComplianceJsonFormat.toJson(obj.finalFields))
       builder.addField(Field.StrictExternCallSemantics, obj.strictExternCallSemantics)
+      builder.addField(Field.StrictArrayTypeChecks, obj.strictArrayTypeChecks)
       builder.endObject()
     }
 
@@ -333,6 +335,7 @@ object NativeConfigJsonFormats {
             )
           )
           .withStrictExternCallSemantics(unbuilder.readField[Boolean](Field.StrictExternCallSemantics))
+          .withStrictArrayTypeChecks(unbuilder.readField[Boolean](Field.StrictArrayTypeChecks))
       finally unbuilder.endObject()
     }
   }
