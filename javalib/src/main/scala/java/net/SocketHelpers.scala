@@ -481,17 +481,11 @@ private[net] object SocketHelpersNative {
  * Those definitions are not POSIX
  */
 @extern
+@define("__SCALANATIVE_JAVALIB_NETINET_IP")
 private[net] object ip {
   type ip_mreq = CStruct2[
     in_addr, // imr_multiaddr
     in_addr // imr_address
-  ]
-
-  // Linux only
-  type ip_mreqn = CStruct3[
-    in_addr, // imr_multiaddr
-    in_addr, // imr_address
-    CInt // imr_ifindex
   ]
 
   @name("scalanative_ip_multicast_ttl")
@@ -511,15 +505,6 @@ private[net] object ipOps {
     def imr_address: in_addr = ptr._2
     def imr_multiaddr_=(v: in_addr): Unit = ptr._1 = v
     def imr_address_=(v: in_addr): Unit = ptr._2 = v
-  }
-
-  implicit class mip_mreqnOps(val ptr: Ptr[ip_mreqn]) extends AnyVal {
-    def imr_multiaddr: in_addr = ptr._1
-    def imr_address: in_addr = ptr._2
-    def imr_ifindex: CInt = ptr._3
-    def imr_multiaddr_=(v: in_addr): Unit = ptr._1 = v
-    def imr_address_=(v: in_addr): Unit = ptr._2 = v
-    def imr_ifindex_=(v: CInt): Unit = ptr._3 = v
   }
 }
 

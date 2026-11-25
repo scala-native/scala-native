@@ -339,7 +339,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     if (isClosed) {
       throw new SocketException("Socket is closed")
     }
-    val level = in.IPPROTO_IP
+    val level = if (useIPv4Only) in.IPPROTO_IP else in.IPPROTO_IPV6
     val optValue =
       if (useIPv4Only) ip.IP_MULTICAST_TTL else ip6.IPV6_MULTICAST_HOPS
     val opt = stackalloc[CInt]()
@@ -363,7 +363,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     if (isClosed) {
       throw new SocketException("Socket is closed")
     }
-    val level = in.IPPROTO_IP
+    val level = if (useIPv4Only) in.IPPROTO_IP else in.IPPROTO_IPV6
     val optValue =
       if (useIPv4Only) ip.IP_MULTICAST_TTL else ip6.IPV6_MULTICAST_HOPS
     val opt = stackalloc[CInt]()
@@ -385,121 +385,94 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     Integer.valueOf(!opt)
   }
 
-  def mcastJoinLeave4(
-      inetaddr: InetAddress,
+  private def setMembership(
+      level: CInt,
+      optID: CInt,
+      req: Ptr[Byte],
+      len: CSize
+  ): Boolean =
+    posix.sys.socket.setsockopt(fd.fd, level, optID, req, len.toUInt) == 0
+
+  private def mcastJoinLeave4(
+      group: Array[Byte],
       netIf: NetworkInterface,
       join: Boolean
-  ): Unit = {
-    val mName = stackalloc[ip.ip_mreq]()
+  ): Boolean = {
+    var ifAddr: Array[Byte] = null
     if (netIf != null) {
-      val ifAddrs = netIf.getInetAddresses()
-      if (!ifAddrs.hasMoreElements()) {
-        throw new SocketException(
-          "bad argument for IP_ADD_MEMBERSHIP: No IP addresses bound to interface"
-        )
+      val it = netIf.getInetAddresses()
+      while (ifAddr == null && it.hasMoreElements()) it.nextElement() match {
+        case a: Inet4Address => ifAddr = a.getAddress()
+        case _               => ()
       }
-      val addrPtr = inetaddr.getAddress().at(0).asInstanceOf[Ptr[in.in_addr_t]]
-      val ifAddrPtr =
-        ifAddrs.nextElement().getAddress().at(0).asInstanceOf[Ptr[in.in_addr_t]]
-      mName.imr_multiaddr.s_addr = inet.htonl(!addrPtr)
-      mName.imr_address.s_addr = inet.htonl(!ifAddrPtr)
-    } else {
-      val opt = stackalloc[Ptr[in.sockaddr_in]]()
-      val len = stackalloc[posix.sys.socket.socklen_t]()
-      !len = sizeof[in.sockaddr_in].toUInt
-
-      if (posix.sys.socket.getsockopt(
-            fd.fd,
-            in.IPPROTO_IP,
-            in.IP_MULTICAST_IF,
-            opt.asInstanceOf[Ptr[Byte]],
-            len
-          ) != 0) {
-        throw new SocketException(
-          "Exception while getting socket option with id: IP_MULTICAST_IF, errno: " + lastError()
-        )
-      }
-
-      val addrPtr = inetaddr.getAddress().at(0).asInstanceOf[Ptr[in.in_addr_t]]
-      val ifAddrPtr = (!opt).sin_addr.asInstanceOf[Ptr[in.in_addr_t]]
-      mName.imr_multiaddr.s_addr = inet.htonl(!addrPtr)
-      mName.imr_address.s_addr = inet.htonl(!ifAddrPtr)
     }
-
-    // join / leave the multicast group.
-    val optID = if (join) ip.IP_ADD_MEMBERSHIP else ip.IP_DROP_MEMBERSHIP
-    if (posix.sys.socket.setsockopt(
-          fd.fd,
-          in.IPPROTO_IP,
-          optID,
-          mName.asInstanceOf[Ptr[Byte]],
-          sizeof[ip.ip_mreq].toUInt
-        ) != 0) {
-      throw new SocketException(
-        "Exception while setting socket option with id: "
-          + optID + ", errno: " + lastError()
+    if (netIf != null && ifAddr == null) false
+    else {
+      val req = stackalloc[ip.ip_mreq]()
+      memcpy(req.at1, group.at(0), 4.toUSize)
+      if (ifAddr == null) req.imr_address.s_addr = in.INADDR_ANY
+      else memcpy(req.at2, ifAddr.at(0), 4.toUSize)
+      val optID = if (join) ip.IP_ADD_MEMBERSHIP else ip.IP_DROP_MEMBERSHIP
+      setMembership(
+        in.IPPROTO_IP,
+        optID,
+        req.asInstanceOf[Ptr[Byte]],
+        sizeof[ip.ip_mreq]
       )
     }
   }
 
-  def mcastJoinLeave6(
-      inetaddr: InetAddress,
+  private def mcastJoinLeave6(
+      group: Array[Byte],
       netIf: NetworkInterface,
       join: Boolean
-  ): Unit = {
-    val mName = stackalloc[ip.ip_mreqn]()
-    if (netIf != null) {
-      val addrPtr = inetaddr.getAddress().at(0).asInstanceOf[Ptr[in.in_addr_t]]
-      val ifIdx = netIf.getIndex()
-      mName.imr_multiaddr.s_addr = inet.htonl(!addrPtr)
-      mName.imr_address.s_addr = 0.toUInt
-      mName.imr_ifindex = ifIdx
-    } else {
-      val opt = stackalloc[Ptr[in.sockaddr_in]]()
-      val len = stackalloc[posix.sys.socket.socklen_t]()
-      !len = sizeof[in.sockaddr_in].toUInt
-
-      if (posix.sys.socket.getsockopt(
-            fd.fd,
-            in.IPPROTO_IP,
-            in.IP_MULTICAST_IF,
-            opt.asInstanceOf[Ptr[Byte]],
-            len
-          ) != 0) {
-        throw new SocketException(
-          "Exception while getting socket option with id: IP_MULTICAST_IF, errno: " + lastError()
-        )
-      }
-      val addrPtr = inetaddr.getAddress().at(0).asInstanceOf[Ptr[in.in_addr_t]]
-      val ifAddrPtr = (!opt).sin_addr.asInstanceOf[Ptr[in.in_addr_t]]
-      mName.imr_multiaddr.s_addr = inet.htonl(!addrPtr)
-      mName.imr_address.s_addr = inet.htonl(!ifAddrPtr)
-      mName.imr_ifindex = 0
-    }
-
-    // join / leave the multicast group.
-    val optID = if (join) ip.IP_ADD_MEMBERSHIP else ip.IP_DROP_MEMBERSHIP
-    if (posix.sys.socket.setsockopt(
-          fd.fd,
-          in.IPPROTO_IP,
-          optID,
-          mName.asInstanceOf[Ptr[Byte]],
-          sizeof[ip.ip_mreqn].toUInt
-        ) != 0) {
-      throw new SocketException(
-        "Exception while setting socket option with id: "
-          + optID + ", errno: " + lastError()
-      )
-    }
+  ): Boolean = {
+    val req = stackalloc[in.ipv6_mreq]()
+    memcpy(req.at1, group.at(0), 16.toUSize)
+    req.ipv6mr_interface = (if (netIf == null) 0 else netIf.getIndex()).toUInt
+    val optID = if (join) in.IPV6_JOIN_GROUP else in.IPV6_LEAVE_GROUP
+    setMembership(
+      in.IPPROTO_IPV6,
+      optID,
+      req.asInstanceOf[Ptr[Byte]],
+      sizeof[in.ipv6_mreq]
+    )
   }
 
-  def mcastJoinLeave(
-      inetaddr: InetAddress,
+  private def mcastJoinLeave(
+      group: InetAddress,
       netIf: NetworkInterface,
       join: Boolean
   ): Unit = {
-    if (useIPv4Only) mcastJoinLeave4(inetaddr, netIf, join)
-    else mcastJoinLeave6(inetaddr, netIf, join)
+    if (group == null || !group.isMulticastAddress())
+      throw new SocketException("Not a multicast address")
+
+    val addr = group.getAddress()
+    val done = group match {
+      case _: Inet4Address =>
+        mcastJoinLeave4(addr, netIf, join) || (!useIPv4Only && {
+          // macOS & BSDs accept IPv4 groups on IPv6 sockets only v4-mapped
+          val mapped = new Array[Byte](16)
+          mapped(10) = 0xff.toByte
+          mapped(11) = 0xff.toByte
+          System.arraycopy(addr, 0, mapped, 12, 4)
+          mcastJoinLeave6(mapped, netIf, join)
+        })
+      case _ =>
+        if (useIPv4Only)
+          throw new SocketException(
+            "IPv6 multicast group is not supported on an IPv4 socket"
+          )
+        mcastJoinLeave6(addr, netIf, join)
+    }
+
+    if (!done) {
+      val op = if (join) "join" else "leave"
+      throw new SocketException(
+        s"Could not $op multicast group ${group.getHostAddress()}, errno: " +
+          lastError()
+      )
+    }
   }
 
   override def join(inetaddr: InetAddress): Unit = {
