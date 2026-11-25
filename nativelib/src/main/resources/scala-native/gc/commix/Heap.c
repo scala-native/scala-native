@@ -94,6 +94,9 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
         maxHeapSize = memoryLimit;
     }
     maxHeapSize = Heap_limitMaxHeapSize(maxHeapSize);
+    // The limit may be below the initial size that was asked for
+    if (minHeapSize > maxHeapSize)
+        minHeapSize = maxHeapSize;
 
     uint32_t maxNumberOfBlocks = maxHeapSize / SPACE_USED_PER_BLOCK;
     assert(maxNumberOfBlocks > 1);
