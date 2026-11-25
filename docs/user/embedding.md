@@ -47,11 +47,15 @@ thread exit cleans up the attachment, provided no managed scopes remain active.
 With multithreading enabled, different attached threads can execute Scala
 concurrently. In a single-threaded build, only one OS thread can own the runtime
 at a time. Automatic entry waits for ownership and releases it when the outermost
-callback returns to the host.
+callback returns to the host. The main thread of a single-threaded executable
+owns the runtime until the process exits, so a call from any other thread
+terminates the program with an error instead of waiting forever. Enable
+multithreading in executables using
+[callbacks on native threads](interop.md#callbacks-on-native-threads).
 
 Ownership remains held while Scala calls native code with Scala frames still
 on the stack, including blocking native calls. Do not wait inside such a call
-for a different thread to call back into a single-threaded runtime: that thread
+for a different thread to call back into a single-threaded library: that thread
 would wait for ownership. Likewise, avoid holding host locks needed by the
 current owner while waiting to enter Scala.
 

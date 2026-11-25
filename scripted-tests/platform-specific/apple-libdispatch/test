@@ -1,0 +1,19 @@
+# Scala callbacks run on libdispatch (Grand Central Dispatch) worker threads.
+# Only runs on macOS, tasks are skipped elsewhere.
+
+> set nativeConfig ~= {_.withGC(scala.scalanative.build.GC.immix) }
+> testAll
+
+> set nativeConfig ~= {_.withGC(scala.scalanative.build.GC.commix) }
+> testAll
+
+> set nativeConfig ~= {_.withGC(scala.scalanative.build.GC.boehm) }
+> testAll
+
+> set nativeConfig ~= {_.withGC(scala.scalanative.build.GC.none) }
+> testAll
+
+# A single-threaded executable cannot serve foreign threads, it must fail with
+# a diagnostic instead of hanging.
+> set nativeConfig ~= {_.withGC(scala.scalanative.build.GC.immix).withMultithreading(false) }
+> testSingleThreaded

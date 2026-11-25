@@ -1,0 +1,23 @@
+# Scala callbacks run on the threads of a native pthread pool, which the
+# runtime did not create. Tasks are skipped on Windows.
+
+> set nativeConfig ~= {_.withGC(scala.scalanative.build.GC.immix) }
+> testAll
+
+> set nativeConfig ~= {_.withGC(scala.scalanative.build.GC.commix) }
+> testAll
+
+> set nativeConfig ~= {_.withGC(scala.scalanative.build.GC.boehm) }
+> testAll
+
+> set nativeConfig ~= {_.withGC(scala.scalanative.build.GC.none) }
+> testAll
+
+# Optimized builds stop threads for a collection with a trap, not by polling.
+> set nativeConfig ~= {_.withGC(scala.scalanative.build.GC.immix).withMode(scala.scalanative.build.Mode.releaseFast) }
+> testAll
+
+# A single-threaded executable cannot serve foreign threads, it must fail with
+# a diagnostic instead of hanging.
+> set nativeConfig ~= {_.withGC(scala.scalanative.build.GC.immix).withMode(scala.scalanative.build.Mode.debug).withMultithreading(false) }
+> testSingleThreaded
