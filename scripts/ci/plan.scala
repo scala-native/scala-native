@@ -73,7 +73,12 @@ val posixPaths = globs(
 val applePaths =
   Seq(Re("(?i)darwin|apple|macos|(^|[/_.-])ios([/_.-]|$)".r))
 // Platforms tested on pull requests only for toolchain, GC or POSIX changes
-val extraPlatformPaths = toolchainPaths ++ gcPaths ++ posixPaths
+// Stack switching, written for each architecture
+val delimccPaths = globs(
+  "nativelib/src/main/resources/scala-native/delimcc*",
+  "nativelib/src/main/resources/scala-native/delimcc/**"
+)
+val extraPlatformPaths = toolchainPaths ++ gcPaths ++ posixPaths ++ delimccPaths
 
 /** Workflows called from ci.yml and their pull request triggers. Nightly runs
  *  all of them extended.

@@ -14,8 +14,7 @@ jobs:
       matrix:
         # linux-arm64 runs natively in run-tests-linux.yml
         arch: [linux-riscv64, linux-x86, linux-armv6, linux-armv7a]
-        # Scala 2.13 for partest coverage; Scala 3 needs one-shot continuations on these targets, see #5344
-        scala: [2.13]
+        scala: ["3"]
         include:
           # dockcross triple `arm-cortexa8_neon-...` would default to ARMv4T
           - arch: linux-armv7a
@@ -106,20 +105,6 @@ jobs:
             testsJVM${{env.project-version}}/test;
             tests${{env.project-version}}/clean;
             tests${{env.project-version}}/test
-        uses: nick-fields/retry@v4
-        with:
-          timeout_minutes: 90
-          max_attempts: 3
-          retry_on: error
-          command: ./ci-docker/run-test-gha.sh "scala-native-testing:${{ matrix.arch }}"
-
-      # Takes about 50 minutes on emulated riscv64
-      - name: Test partest JUnit
-        env:
-          TEST_COMMAND: >
-            set scalaPartestJunitTests.forBinaryVersion("${{ matrix.scala }}")/${{env.set-native-config}};
-            scalaPartestJunitTests${{env.project-version}}/clean;
-            scalaPartestJunitTests${{env.project-version}}/test
         uses: nick-fields/retry@v4
         with:
           timeout_minutes: 90

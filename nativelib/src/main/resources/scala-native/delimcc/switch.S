@@ -38,6 +38,34 @@ SYMBOL(scalanative_continuation_entry):
     callq SYMBOL(scalanative_continuation_main)
     ud2
 
+#elif defined(__i386__)
+    .balign 16
+SYMBOL(scalanative_continuation_entry):
+    movl  %esp, %eax
+    subl  $12, %esp
+    pushl %eax
+    calll SYMBOL(scalanative_continuation_main)
+    ud2
+
+#elif defined(__arm__)
+    .arm
+    .type scalanative_continuation_entry, %function
+    .balign 4
+scalanative_continuation_entry:
+    .fnstart
+    .cantunwind
+    mov   r0, sp
+    bl    scalanative_continuation_main
+    udf   #1
+    .fnend
+
+#elif defined(__riscv) && __riscv_xlen == 64
+    .balign 4
+scalanative_continuation_entry:
+    mv    a0, sp
+    call  scalanative_continuation_main
+    unimp
+
 #endif
 
 #endif // one-shot continuations

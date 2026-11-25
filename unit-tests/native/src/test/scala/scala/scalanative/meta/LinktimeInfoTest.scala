@@ -18,7 +18,8 @@ class LinktimeInfoTest {
 
   @Test def testVirtualThreadsSupport(): Unit = {
     assertEquals(
-      LinktimeInfo.isMultithreadingEnabled && LinktimeInfo.isContinuationsSupported,
+      LinktimeInfo.isMultithreadingEnabled && LinktimeInfo.isContinuationsSupported &&
+        !LinktimeInfo.is32BitPlatform,
       LinktimeInfo.isVirtualThreadsSupported
     )
   }

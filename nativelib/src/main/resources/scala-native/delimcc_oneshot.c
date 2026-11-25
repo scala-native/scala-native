@@ -1,5 +1,13 @@
-#if !defined(_WIN32) && (defined(SCALANATIVE_COMPILE_ALWAYS) ||                \
-                         defined(__SCALANATIVE_DELIMCC_ONESHOT))
+#if !defined(_WIN32) &&                                                        \
+    (defined(__x86_64__) || defined(__aarch64__) || defined(__i386__) ||       \
+     (defined(__arm__) && (!defined(__thumb__) || defined(__thumb2__))) ||     \
+     (defined(__riscv) && __riscv_xlen == 64))
+#define DELIMCC_ONESHOT_SUPPORTED
+#endif
+
+#if defined(DELIMCC_ONESHOT_SUPPORTED) &&                                      \
+    (defined(SCALANATIVE_COMPILE_ALWAYS) ||                                    \
+     defined(__SCALANATIVE_DELIMCC_ONESHOT))
 
 /*
  * One-shot delimited continuations.
@@ -37,7 +45,9 @@
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
 
@@ -47,13 +57,20 @@ extern size_t scalanative_StackOverflowGuards_size(void);
 // delimcc/switch.S
 extern void scalanative_continuation_entry(void);
 
+// Smaller on 32-bit platforms, where address space is scarce.
+#if UINTPTR_MAX > 0xffffffffu
 #define STACK_SIZE ((size_t)1024 * 1024)
+#define SCALE 4
+#else
+#define STACK_SIZE ((size_t)256 * 1024)
+#define SCALE 1
+#endif
 // Free stacks kept per thread, and by all threads together.
 #define LOCAL_POOL_CAPACITY 16
-#define SHARED_POOL_CAPACITY 1024
+#define SHARED_POOL_CAPACITY (256 * SCALE)
 // Continuations waiting to be resumed before a collection is requested to
 // find the unreachable ones. Their stacks are invisible to the GC heap.
-#define MIN_CAPTURED_LIMIT 1024
+#define MIN_CAPTURED_LIMIT (256 * SCALE)
 
 #define pauseCollections scalanative_GC_pause_collections
 #define resumeCollections scalanative_GC_resume_collections
@@ -254,8 +271,7 @@ static void scanCapturedStacks(void **fields, GC_ScanRangeFn *scan, void *ctx) {
 // which is never freed, and only while it holds that capture.
 static void scanAnchoredStacks(void **fields, GC_ScanRangeFn *scan, void *ctx) {
     StackSlot *slot = fields[0];
-    uint_fast64_t capture = (uintptr_t)fields[1];
-    if (atomic_load(&slot->capture) != capture)
+    if ((uintptr_t)atomic_load(&slot->capture) != (uintptr_t)fields[1])
         return;
     atomic_store(&slot->markedIn, scalanative_GC_mark_cycle());
     // The first stack; a SuspendedStack is the start of its coroutine.
@@ -459,9 +475,12 @@ static void destroy(ThreadState *thread, Coroutine *coroutine) {
  * carrier and be lost by the continuation.
  *
  * SWITCH_FRAME bytes are used below the stack pointer, past any red zone.
+ * FRAME_PC is the word of the saved stack pointer that holds the resume
+ * address; prepareControlState fills in the control state.
  */
 #if defined(__aarch64__)
 #define SWITCH_FRAME 144
+#define FRAME_PC 1
 // x18 is reserved by the platform on Apple and Android (shadow call stack);
 // elsewhere it is an ordinary register that the switch does not preserve.
 #if defined(__APPLE__) || defined(__ANDROID__)
@@ -500,13 +519,14 @@ static inline __attribute__((always_inline)) void switchStacks(void **saveSp,
                        "v28", "v29", "v30", "v31", "cc", "memory");
 }
 
-static void prepareControlState(void **frame) {
+static void prepareControlState(void **sp) {
     uint64_t fpcr;
     __asm__("mrs %0, fpcr" : "=r"(fpcr));
-    frame[2] = (void *)fpcr;
+    sp[2] = (void *)fpcr;
 }
 #elif defined(__x86_64__)
 #define SWITCH_FRAME 152
+#define FRAME_PC 2
 static inline __attribute__((always_inline)) void switchStacks(void **saveSp,
                                                                void *loadSp) {
     register void **save __asm__("rdi") = saveSp;
@@ -538,32 +558,190 @@ static inline __attribute__((always_inline)) void switchStacks(void **saveSp,
 }
 
 // The control words come first, then the frame pointer and the address.
-static void prepareControlState(void **frame) {
+static void prepareControlState(void **sp) {
     __asm__("stmxcsr (%0)\n"
             "fnstcw 4(%0)"
             :
-            : "r"(frame - 1)
+            : "r"(sp)
             : "memory");
 }
+#elif defined(__i386__)
+// No red zone. The x87 registers hold floating point values here, they are
+// clobbered as well.
+#define SWITCH_FRAME 16
+#define FRAME_PC 3
+#if defined(__SSE__)
+#define SAVE_MXCSR "stmxcsr (%%esp)\n"
+#define LOAD_MXCSR "ldmxcsr (%%esp)\n"
+#define SSE_REGISTERS                                                          \
+    "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7",
 #else
-#error "Unsupported architecture"
+#define SAVE_MXCSR
+#define LOAD_MXCSR
+#define SSE_REGISTERS
+#endif
+static inline __attribute__((always_inline)) void switchStacks(void **saveSp,
+                                                               void *loadSp) {
+    register void **save __asm__("ecx") = saveSp;
+    register void *load __asm__("edx") = loadSp;
+    __asm__ volatile("calll 0f\n"
+                     "0: popl %%eax\n"
+                     "addl $(1f - 0b), %%eax\n"
+                     "pushl %%eax\n"
+                     "pushl %%ebp\n"
+                     "subl $8, %%esp\n" SAVE_MXCSR "fnstcw 4(%%esp)\n"
+                     "movl %%esp, (%%ecx)\n"
+                     "movl %%edx, %%esp\n" LOAD_MXCSR "fldcw 4(%%esp)\n"
+                     "addl $8, %%esp\n"
+                     "popl %%ebp\n"
+                     "popl %%eax\n"
+                     "jmpl *%%eax\n"
+                     "1:\n"
+                     : "+r"(save), "+r"(load)
+                     :
+                     : "eax", "ebx", "esi", "edi", SSE_REGISTERS "st", "st(1)",
+                       "st(2)", "st(3)", "st(4)", "st(5)", "st(6)", "st(7)",
+                       "cc", "memory");
+}
+
+static void prepareControlState(void **sp) {
+#if defined(__SSE__)
+    __asm__("stmxcsr (%0)" : : "r"(sp) : "memory");
+#endif
+    __asm__("fnstcw (%0)" : : "r"(sp + 1) : "memory");
+}
+#elif defined(__arm__)
+// Both possible frame pointers, r7 (Thumb) and r11 (ARM), are saved by hand:
+// the compiler does not allow clobbering the one it uses.
+#define SWITCH_FRAME 16
+#define FRAME_PC 0
+#if defined(__thumb__)
+#define RESUME_ADDRESS "adr r2, 1f\n orr r2, r2, #1\n"
+#else
+#define RESUME_ADDRESS "adr r2, 1f\n"
+#endif
+#if defined(__ARM_FP)
+#define SAVE_FPSCR "vmrs r3, fpscr\n"
+#define LOAD_FPSCR                                                             \
+    "vmrs r12, fpscr\n"                                                        \
+    "cmp r3, r12\n"                                                            \
+    "beq 2f\n"                                                                 \
+    "vmsr fpscr, r3\n"                                                         \
+    "2:\n"
+#if defined(__ARM_NEON) || defined(__ARM_FEATURE_FP_D32)
+#define HIGH_FP_REGISTERS                                                      \
+    "d16", "d17", "d18", "d19", "d20", "d21", "d22", "d23", "d24", "d25",      \
+        "d26", "d27", "d28", "d29", "d30", "d31",
+#else
+#define HIGH_FP_REGISTERS
+#endif
+#define FP_REGISTERS                                                           \
+    "d0", "d1", "d2", "d3", "d4", "d5", "d6", "d7", "d8", "d9", "d10", "d11",  \
+        "d12", "d13", "d14", "d15", HIGH_FP_REGISTERS
+#else
+#define SAVE_FPSCR "mov r3, #0\n"
+#define LOAD_FPSCR
+#define FP_REGISTERS
+#endif
+static inline __attribute__((always_inline)) void switchStacks(void **saveSp,
+                                                               void *loadSp) {
+    register void **save __asm__("r0") = saveSp;
+    register void *load __asm__("r1") = loadSp;
+    __asm__ volatile(RESUME_ADDRESS SAVE_FPSCR
+                     "push {r2, r3, r7, r11}\n"
+                     "mov r12, sp\n"
+                     "str r12, [r0]\n"
+                     "mov sp, r1\n"
+                     "pop {r2, r3, r7, r11}\n" LOAD_FPSCR "bx r2\n"
+                     "1:\n"
+                     : "+r"(save), "+r"(load)
+                     :
+                     : "r2", "r3", "r4", "r5", "r6", "r8", "r9", "r10", "r12",
+                       "lr", FP_REGISTERS "cc", "memory");
+}
+
+static void prepareControlState(void **sp) {
+#if defined(__ARM_FP)
+    uint32_t fpscr;
+    __asm__("vmrs %0, fpscr" : "=r"(fpscr));
+    sp[1] = (void *)(uintptr_t)fpscr;
+#else
+    (void)sp;
+#endif
+}
+#elif defined(__riscv) && __riscv_xlen == 64
+// Only the rounding mode is control state; the accrued exception flags are
+// not preserved across calls.
+#define SWITCH_FRAME 32
+#define FRAME_PC 1
+#if defined(__riscv_flen)
+#define SAVE_FRM "frrm t1\n"
+#define LOAD_FRM                                                               \
+    "frrm t2\n"                                                                \
+    "beq t1, t2, 2f\n"                                                         \
+    "fsrm t1\n"                                                                \
+    "2:\n"
+#define FP_REGISTERS                                                           \
+    "f0", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10", "f11",  \
+        "f12", "f13", "f14", "f15", "f16", "f17", "f18", "f19", "f20", "f21",  \
+        "f22", "f23", "f24", "f25", "f26", "f27", "f28", "f29", "f30", "f31",
+#else
+#define SAVE_FRM "li t1, 0\n"
+#define LOAD_FRM
+#define FP_REGISTERS
+#endif
+#if defined(__riscv_vector)
+#define VECTOR_REGISTERS                                                       \
+    "v0", "v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "v9", "v10", "v11",  \
+        "v12", "v13", "v14", "v15", "v16", "v17", "v18", "v19", "v20", "v21",  \
+        "v22", "v23", "v24", "v25", "v26", "v27", "v28", "v29", "v30", "v31",
+#else
+#define VECTOR_REGISTERS
+#endif
+static inline __attribute__((always_inline)) void switchStacks(void **saveSp,
+                                                               void *loadSp) {
+    register void **save __asm__("a0") = saveSp;
+    register void *load __asm__("a1") = loadSp;
+    __asm__ volatile("lla t0, 1f\n" SAVE_FRM "addi sp, sp, -32\n"
+                     "sd s0, 0(sp)\n"
+                     "sd t0, 8(sp)\n"
+                     "sd t1, 16(sp)\n"
+                     "sd sp, 0(a0)\n"
+                     "mv sp, a1\n"
+                     "ld t1, 16(sp)\n" LOAD_FRM "ld s0, 0(sp)\n"
+                     "ld t0, 8(sp)\n"
+                     "addi sp, sp, 32\n"
+                     "jr t0\n"
+                     "1:\n"
+                     : "+r"(save), "+r"(load)
+                     :
+                     : "ra", "t0", "t1", "t2", "t3", "t4", "t5", "t6", "a2",
+                       "a3", "a4", "a5", "a6", "a7", "s1", "s2", "s3", "s4",
+                       "s5", "s6", "s7", "s8", "s9", "s10", "s11",
+                       FP_REGISTERS VECTOR_REGISTERS "memory");
+}
+
+static void prepareControlState(void **sp) {
+#if defined(__riscv_flen)
+    uintptr_t frm;
+    __asm__("frrm %0" : "=r"(frm));
+    sp[2] = (void *)frm;
+#else
+    (void)sp;
+#endif
+}
 #endif
 
-// Builds what the first switch to `coroutine` pops: a null frame pointer,
+// Builds what the first switch to `coroutine` pops: null frame pointers,
 // scalanative_continuation_entry, which finds the coroutine at the stack
 // pointer and calls scalanative_continuation_main, and the control state of
 // the creating context.
 static void prepareStack(Coroutine *coroutine) {
-#if defined(__aarch64__)
-    void **frame = (void **)((char *)coroutine - SWITCH_FRAME);
-    coroutine->sp = frame;
-#else
-    void **frame = (void **)((char *)coroutine - SWITCH_FRAME) + 1;
-    coroutine->sp = frame - 1;
-#endif
-    frame[0] = NULL;
-    frame[1] = (void *)scalanative_continuation_entry;
-    prepareControlState(frame);
+    void **sp = (void **)((char *)coroutine - SWITCH_FRAME);
+    memset(sp, 0, SWITCH_FRAME);
+    sp[FRAME_PC] = (void *)scalanative_continuation_entry;
+    prepareControlState(sp);
+    coroutine->sp = sp;
 }
 
 // =============================
@@ -970,9 +1148,9 @@ void *scalanative_continuation_suspend(ContinuationBoundaryLabel label,
     return scalanative_continuation_oneshot_suspend(label, f, arg);
 }
 
-#elif defined(_WIN32) && defined(__SCALANATIVE_DELIMCC_ONESHOT)
+#elif defined(__SCALANATIVE_DELIMCC_ONESHOT)
 
-// Not supported on Windows yet. Programs that only mention continuations
+// Not supported on this platform. Programs that only mention continuations
 // still have to link; the Scala side reports the unsupported feature.
 #include "delimcc_oneshot.h"
 #include <stdio.h>
@@ -981,7 +1159,7 @@ void *scalanative_continuation_suspend(ContinuationBoundaryLabel label,
 #define UNSUPPORTED(signature)                                                 \
     signature {                                                                \
         fprintf(stderr, "[ScalaNative Continuations | Error] one-shot "        \
-                        "continuations are not supported on Windows\n");       \
+                        "continuations are not supported on this platform\n"); \
         abort();                                                               \
     }
 
