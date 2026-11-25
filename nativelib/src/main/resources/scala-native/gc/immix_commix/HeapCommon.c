@@ -86,15 +86,17 @@ word_t *Heap_mapHeapSpace(size_t maxHeapSize) {
     word_t start = ((word_t)reserved + window - 1) & ~(window - 1);
     // Release the unaligned head and the tail beyond the heap
     size_t head = start - (word_t)reserved;
-    if (head > 0)
-        memoryUnmap(reserved, head);
+    // Failing to release either part only keeps address space reserved
+    if (head > 0 && memoryUnmap(reserved, head) != 0)
+        GC_LOG_WARN("Failed to release the head of the heap reservation");
     // From a page boundary: the heap size need not be a multiple of the
     // page size, and munmap rejects other addresses.
     word_t page = getPageSize();
     word_t tailStart = (start + maxHeapSize + page - 1) & ~(page - 1);
     word_t tailEnd = (word_t)reserved + maxHeapSize + window;
-    if (tailStart < tailEnd)
-        memoryUnmap((void *)tailStart, tailEnd - tailStart);
+    if (tailStart < tailEnd &&
+        memoryUnmap((void *)tailStart, tailEnd - tailStart) != 0)
+        GC_LOG_WARN("Failed to release the tail of the heap reservation");
     return (word_t *)start;
 #else
     return Heap_mapAndAlign(maxHeapSize, BLOCK_TOTAL_SIZE);
