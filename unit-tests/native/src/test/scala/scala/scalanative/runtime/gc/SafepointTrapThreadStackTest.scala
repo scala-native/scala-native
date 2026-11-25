@@ -37,8 +37,13 @@ class SafepointTrapThreadStackTest {
       def spinWithoutAltStack(): Unit = Zone.acquire { implicit z =>
         val previous = alloc[stack_t]()
         val disabled = alloc[stack_t]()
+        assertEquals("sigaltstack query", 0, sigaltstack(null, previous))
+        // Darwin rejects SS_DISABLE with ENOMEM unless ss_size >= MINSIGSTKSZ
+        disabled.ss_sp = previous.ss_sp
+        disabled.ss_size = previous.ss_size
         disabled.ss_flags = SS_DISABLE
-        assertEquals("sigaltstack", 0, sigaltstack(disabled, previous))
+        if ((previous.ss_flags & SS_DISABLE) == 0)
+          assertEquals("sigaltstack disable", 0, sigaltstack(disabled, null))
         started.incrementAndGet()
         try spin(control)
         finally {
