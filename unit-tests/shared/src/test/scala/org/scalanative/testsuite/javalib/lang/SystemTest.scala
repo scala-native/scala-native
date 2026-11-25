@@ -4,8 +4,10 @@ import java.nio.file.Paths
 import java.util.Properties
 
 import org.junit.Assert._
+import org.junit.Assume._
 import org.junit.Test
 
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform._
 
 class SystemTest {
@@ -56,6 +58,29 @@ class SystemTest {
         .get("SCALA_NATIVE_ENV_WITH_UNICODE")
     )
 
+  }
+
+  @Test def systemGetenvKeyPreservesCaseOnUnix(): Unit = {
+    assumeFalse("environment is case-insensitive on Windows", isWindows)
+    val name = "Scala_Native_Env_Mixed_Case"
+    assertEquals("mixed", System.getenv(name))
+    assertEquals("mixed", System.getenv().get(name))
+    assertNull(System.getenv(name.toUpperCase()))
+    assertNull(System.getenv().get(name.toUpperCase()))
+  }
+
+  @Test def systemGetenvKeyIsCaseInsensitiveOnWindows(): Unit = {
+    assumeTrue("Windows only", isWindows)
+    assertEquals("mixed", System.getenv("Scala_Native_Env_Mixed_Case"))
+    assertEquals("mixed", System.getenv("SCALA_NATIVE_ENV_MIXED_CASE"))
+    assertEquals("1+1=2", System.getenv("scala_native_env_with_equals"))
+  }
+
+  @Test def systemGetenvNullKeyThrows(): Unit = {
+    assertThrows(
+      classOf[NullPointerException],
+      System.getenv(null: String)
+    )
   }
 
   @Test def propertyOsNameShouldBeSet(): Unit = {

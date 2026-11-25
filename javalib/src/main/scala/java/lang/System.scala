@@ -78,7 +78,10 @@ object System {
   def currentTimeMillis(): scala.Long = time.scalanative_current_time_millis()
 
   def getenv(): ju.Map[String, String] = envVars
-  def getenv(key: String): String = envVars.get(key.toUpperCase())
+  def getenv(key: String): String = {
+    ju.Objects.requireNonNull(key)
+    envVars.get(if (isWindows) key.toUpperCase() else key)
+  }
 
   def setIn(in: InputStream): Unit =
     this.in = in

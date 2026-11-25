@@ -407,6 +407,7 @@ object Settings {
         "SCALA_NATIVE_ENV_WITH_EQUALS" -> "1+1=2",
         "SCALA_NATIVE_ENV_WITHOUT_VALUE" -> "",
         "SCALA_NATIVE_ENV_WITH_UNICODE" -> 0x2192.toChar.toString,
+        "Scala_Native_Env_Mixed_Case" -> "mixed",
         "SCALA_NATIVE_USER_DIR" -> System.getProperty("user.dir")
       )
     },
