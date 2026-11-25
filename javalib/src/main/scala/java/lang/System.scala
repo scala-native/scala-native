@@ -78,7 +78,10 @@ object System {
   def currentTimeMillis(): scala.Long = time.scalanative_current_time_millis()
 
   def getenv(): ju.Map[String, String] = envVars
-  def getenv(key: String): String = envVars.get(key.toUpperCase())
+  def getenv(key: String): String = {
+    ju.Objects.requireNonNull(key)
+    envVars.get(if (isWindows) key.toUpperCase(ju.Locale.ROOT) else key)
+  }
 
   def setIn(in: InputStream): Unit =
     this.in = in
@@ -537,7 +540,7 @@ private object EnvVars {
         /// Some Windows internal variables start with =
         val eqIdx = env.indexOf('=', 1)
         // Env variables in Windows are case insenstive - normalize them
-        val name = env.substring(0, eqIdx).toUpperCase()
+        val name = env.substring(0, eqIdx).toUpperCase(ju.Locale.ROOT)
         val value = env.substring(eqIdx + 1)
         envsMap.put(name, value)
       }
