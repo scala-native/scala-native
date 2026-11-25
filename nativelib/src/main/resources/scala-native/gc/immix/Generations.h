@@ -46,9 +46,9 @@ void Generations_NoteUnbarriered(Object *object);
 // After the sweep. Decides whether the next collection is full.
 void Generations_EndCollection(Heap *heap, bool full);
 
-// Keeps the remembered objects of a thread that exits for the next
-// collection. The caller holds the lock of the mutator thread list, so no
-// collection runs meanwhile.
+// Keeps the remembered objects of a thread removed from the mutator thread
+// list for the next collection. Called by MutatorThreads_remove with the
+// lock of the list held, so no collection runs meanwhile.
 void Generations_AdoptRememberedSet(RememberedSet *set);
 
 // In the child of a fork: the remembered objects of the threads that do not

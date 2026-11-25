@@ -165,13 +165,6 @@ void MutatorThread_delete(MutatorThread *self) {
     if (atomic_load_explicit(&self->state, memory_order_relaxed) !=
         GC_MutatorThreadState_Unmanaged)
         MutatorThread_switchState(self, GC_MutatorThreadState_Unmanaged);
-#ifdef SCALANATIVE_GC_STICKY
-    // A collection holds this lock: it either read the set already, or
-    // finds the entries among the adopted ones.
-    MutatorThreads_lock();
-    Generations_AdoptRememberedSet(&self->rememberedSet);
-    MutatorThreads_unlock();
-#endif
     MutatorThreads_remove(self);
 
     assert(currentMutatorThread == self);
@@ -274,10 +267,6 @@ bool MutatorThread_hasTerminated(MutatorThread *thread) {
 void MutatorThread_reap(MutatorThread *thread) {
     if (thread == NULL)
         return;
-#ifdef SCALANATIVE_GC_STICKY
-    // The collector calls this with the list locked, before it marks.
-    Generations_AdoptRememberedSet(&thread->rememberedSet);
-#endif
     // Do not capture the caller's stack or hold the Commix list read lock.
     MutatorThreads_remove(thread);
     MutatorThread_dispose(thread);
