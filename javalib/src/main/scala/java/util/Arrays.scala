@@ -1099,16 +1099,19 @@ object Arrays extends ArraysJDK9Methods {
     if (a == null) {
       "null"
     } else {
-      var result = "["
       val len = a.length
+      val sb = new java.lang.StringBuilder(
+        Math.min(len.toLong * 3 + 2, 1L << 16).toInt
+      )
+      sb.append('[')
       var i = 0
       while (i != len) {
         if (i != 0)
-          result += ", "
-        result += a(i)
+          sb.append(", ")
+        sb.append(a(i).asInstanceOf[AnyRef])
         i += 1
       }
-      result + "]"
+      sb.append(']').toString()
     }
   }
 
@@ -1123,9 +1126,7 @@ object Arrays extends ArraysJDK9Methods {
       if (e == null) "null"
       else {
         e match {
-          case e: Array[AnyRef] =>
-            branch.add(new AsRef(a))
-            deepToStringImpl(e, branch)
+          case e: Array[AnyRef]  => deepToStringImpl(e, branch)
           case e: Array[Long]    => toString(e)
           case e: Array[Int]     => toString(e)
           case e: Array[Short]   => toString(e)
@@ -1139,8 +1140,15 @@ object Arrays extends ArraysJDK9Methods {
       }
     }
     if (a == null) "null"
-    else if (branch.contains(new AsRef(a))) "[...]"
-    else a.iterator.map(valueToString).mkString("[", ", ", "]")
+    else {
+      val ref = new AsRef(a)
+      if (!branch.add(ref)) "[...]"
+      else {
+        val result = a.iterator.map(valueToString).mkString("[", ", ", "]")
+        branch.remove(ref)
+        result
+      }
+    }
   }
 
   @inline
