@@ -167,10 +167,16 @@ class Properties private (
       }
 
       def parseUnicodeEscape(): Char = {
-        val hexStr = line.substring(i, i + 4)
-        // don't advance past the last char used
-        i += 3
-        Integer.parseInt(hexStr, 16).toChar
+        val end = i + 5
+        var j = i + 1
+        while (j < end && j < line.length() &&
+            HexFormat.isHexDigit(line.charAt(j)))
+          j += 1
+        if (j < end)
+          throw new IllegalArgumentException("Malformed \\uxxxx encoding.")
+        val value = HexFormat.fromHexDigits(line, i + 1, end)
+        i = end - 1
+        value.toChar
       }
 
       def isWhitespace(char: Char): Boolean =
@@ -201,10 +207,7 @@ class Properties private (
         if (ch == '\\') {
           ch = getNextChar()
           ch match {
-            case 'u' =>
-              getNextChar() // advance
-              val uch = parseUnicodeEscape()
-              buf.append(uch)
+            case 'u' => buf.append(parseUnicodeEscape())
             case 't' => buf.append('\t')
             case 'f' => buf.append('\f')
             case 'r' => buf.append('\r')
