@@ -26,11 +26,11 @@ Scala Native follows the same *idea* on POSIX (with its own `ucontext` + assembl
 
 The interrupted code can be a leaf function that keeps live spills in the 128-byte SysV **red zone** below `%rsp`, with any register (`%r10`/`%r11` included) holding a live value. So on x86_64 the redirect does not simply replace the PC:
 
-- `prepare_redirect` emulates a `call` that **skips the red zone**: it lowers `%rsp` by `128 + 8`, stores the interrupted `%rip` in the new top slot, and then points `%rip` at the trampoline.
+- `prepare_redirect` emulates a `call` that **skips the red zone**: it lowers `%rsp` by `128 + 8`, reserving the return slot, and then points `%rip` at the trampoline.
+- The handler must **not write** the return slot. The kernel places the signal frame directly below the red zone, and on Darwin that slot is `ucontext->uc_mcontext`, which `sigreturn` reads back; overwriting it makes `sigreturn` fail and `_sigtramp` hit its `ud2` (SIGILL), or the handler fault again with the signal blocked (hang), see #5393. The trampoline writes the slot itself after `Synchronizer_yield()`, from `scalanative_gc_safepoint_load_resume_pc`.
 - The trampoline returns with **`ret $128`**: it pops the interrupted `%rip` and drops the red-zone skip in one instruction, so resuming needs **no scratch register**. `rflags` are saved and restored with `pushfq`/`popfq`.
 - Before calling C, the trampoline aligns `%rsp` to 16 bytes; `%rbp` carries the unaligned value across the call.
 
-`safepointResumePc` is still recorded, but only the aarch64 trampoline reads it.
 
 ### aarch64: SIMD registers and x16
 
