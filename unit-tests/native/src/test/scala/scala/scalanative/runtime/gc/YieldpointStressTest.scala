@@ -1,7 +1,7 @@
 package scala.scalanative.runtime.gc
 
-import java.util.concurrent.{CountDownLatch, TimeUnit}
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 import org.junit.Assert._
 import org.junit.Assume.assumeTrue
