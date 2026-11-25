@@ -80,7 +80,7 @@ object System {
   def getenv(): ju.Map[String, String] = envVars
   def getenv(key: String): String = {
     ju.Objects.requireNonNull(key)
-    envVars.get(if (isWindows) key.toUpperCase(ju.Locale.ROOT) else key)
+    envVars.get(if (isWindows) key.toUpperCase() else key)
   }
 
   def setIn(in: InputStream): Unit =
@@ -540,7 +540,7 @@ private object EnvVars {
         /// Some Windows internal variables start with =
         val eqIdx = env.indexOf('=', 1)
         // Env variables in Windows are case insenstive - normalize them
-        val name = env.substring(0, eqIdx).toUpperCase(ju.Locale.ROOT)
+        val name = env.substring(0, eqIdx).toUpperCase()
         val value = env.substring(eqIdx + 1)
         envsMap.put(name, value)
       }
