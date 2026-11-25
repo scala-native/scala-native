@@ -62,6 +62,7 @@ docker run --rm \
   --mount type=bind,source=$PWD,target=/home/scala-native/scala-native \
   -e TEST_COMMAND="$TEST_COMMAND" \
   -e COURSIER_REPOSITORIES \
+  -e MAVEN_CENTRAL_MIRROR \
   -e SCALANATIVE_MODE="$SCALANATIVE_MODE" \
   -e SCALANATIVE_GC="$SCALANATIVE_GC" \
   -e SCALANATIVE_LTO="${SCALANATIVE_LTO:-none}" \

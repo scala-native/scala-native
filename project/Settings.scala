@@ -733,9 +733,26 @@ object Settings {
           "-Dsbt.server.forcestart=true"
         ) ++
         nestedCiMitigations ++
+        nestedLauncherMirror(target.value) ++
         ivyPaths.value.ivyHome.map(home => s"-Dsbt.ivy.home=$home").toSeq
     }
   )
+
+  /** The nested sbt launcher downloads sbt from Maven Central, which rate
+   *  limits CI, see project/MavenMirror.scala.
+   */
+  private def nestedLauncherMirror(target: File): Option[String] =
+    sys.env.get("MAVEN_CENTRAL_MIRROR").filter(_.nonEmpty).map { url =>
+      val config = target / "scripted-launcher-repositories"
+      IO.write(
+        config,
+        s"""|[repositories]
+            |  local
+            |  maven-central-mirror: $url
+            |""".stripMargin
+      )
+      s"-Dsbt.repository.config=${config.getAbsolutePath}"
+    }
 
   lazy val toolSettings: Seq[Setting[_]] =
     Def.settings(
