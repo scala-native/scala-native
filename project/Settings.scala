@@ -738,11 +738,12 @@ object Settings {
     }
   )
 
-  /** The nested sbt launcher downloads sbt from Maven Central, which rate
-   *  limits CI, see project/MavenMirror.scala.
+  /** Nested sbt downloads itself and the test builds' dependencies from Maven
+   *  Central, which rate limits CI, see project/MavenMirror.scala. `local` is
+   *  the Ivy repository the plugin and runtime are published to.
    */
-  private def nestedLauncherMirror(target: File): Option[String] =
-    sys.env.get("MAVEN_CENTRAL_MIRROR").filter(_.nonEmpty).map { url =>
+  private def nestedLauncherMirror(target: File): Seq[String] =
+    sys.env.get("MAVEN_CENTRAL_MIRROR").filter(_.nonEmpty).toSeq.flatMap { url =>
       val config = target / "scripted-launcher-repositories"
       IO.write(
         config,
@@ -751,7 +752,10 @@ object Settings {
             |  maven-central-mirror: $url
             |""".stripMargin
       )
-      s"-Dsbt.repository.config=${config.getAbsolutePath}"
+      Seq(
+        s"-Dsbt.repository.config=${config.getAbsolutePath}",
+        "-Dsbt.override.build.repos=true"
+      )
     }
 
   lazy val toolSettings: Seq[Setting[_]] =
