@@ -14,24 +14,31 @@ import scala.scalanative.runtime.Intrinsics._
  */
 object ArrayClasses {
 
-  def of(component: Class[_]): Class[_] = {
+  @inline def of(component: Class[_]): Class[_] = {
     val cls = component.asInstanceOf[_Class[_]]
-    if (cls.isPrimitive()) primitiveArrayClass(cls)
-    else if (is(cls, classOf[Object])) classOf[ObjectArray]
-    else {
-      val slot = cacheSlot(cls)
-      val cached = cache(slot)
-      if (cached != null && (cached.getComponentType() eq component)) cached
-      else {
-        val known = classes.get(component)
-        val arrayClass =
-          if (known != null) known
-          else classes.computeIfAbsent(component, _ => create(cls))
-        if (isLinked(arrayClass)) cache(slot) = arrayClass
-        arrayClass
-      }
-    }
+    val slot = cacheSlot(cls)
+    val cached = cache(slot)
+    if (cached != null && (componentOf(cached) eq cls)) cached
+    else lookup(cls, slot)
   }
+
+  @noinline private def lookup(cls: _Class[_], slot: Int): Class[_] = {
+    val arrayClass: Class[_] =
+      if (cls.isPrimitive()) primitiveArrayClass(cls)
+      else if (is(cls, classOf[Object])) classOf[ObjectArray]
+      else {
+        val component = cls.asInstanceOf[Class[_]]
+        val known = classes.get(component)
+        if (known != null) known
+        else classes.computeIfAbsent(component, _ => create(cls))
+      }
+    if (isLinked(arrayClass)) cache(slot) = arrayClass
+    arrayClass
+  }
+
+  // Array RTTI stores the component class in place of the reference map
+  @alwaysinline private def componentOf(arrayClass: Class[_]): AnyRef =
+    castRawPtrToObject(arrayClass.asInstanceOf[_Class[_]].refFieldOffsets)
 
   /** Called by compiled type tests against arrays with trait components. */
   def isSubclass(cls: Class[_], arrayClass: Class[_]): Boolean =
@@ -48,18 +55,25 @@ object ArrayClasses {
 
   private[runtime] final val MaxDimensions = 255
 
-  // Seeded with the linker's classes, from the class list
+  // Seeded with the linker's classes
   private lazy val classes: ConcurrentHashMap[Class[_], Class[_]] = {
     val map = new ConcurrentHashMap[Class[_], Class[_]]
-    LinkedClasses.foreach { cls =>
-      if (_Class.isReferenceArray(cls) && !is(cls, classOf[ObjectArray]))
-        map.put(cls.getComponentType(), cls)
+    val table = StaticRoots.referenceArrayClasses()
+    val count = castRawSizeToInt(StaticRoots.referenceArrayClassCount())
+    var i = 0
+    while (i < count) {
+      val cls = castRawPtrToObject(
+        loadRawPtr(elemRawPtr(table, castIntToRawSize(i * _Class.PtrSize)))
+      ).asInstanceOf[_Class[_]]
+      map.put(cls.getComponentType(), cls)
+      i += 1
     }
     map
   }
 
-  /* Racy direct-mapped cache, entries validated by their component. Holds
-   * only immutable linker classes; runtime ones are published by `classes`.
+  /* Racy direct-mapped cache of all lookups, entries validated by their
+   * component. Holds only immutable linker classes; runtime ones are
+   * published by `classes`.
    */
   private final val CacheSize = 256
   private val cache = new scala.Array[Class[_]](CacheSize)

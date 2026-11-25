@@ -485,15 +485,9 @@ private[runtime] object LinkedClasses {
     cls
   }
 
-  private def find(className: String): Class[_] =
-    findClass(_.name == className)
-
-  def foreach(f: _Class[_] => Unit): Unit =
-    findClass { cls => f(cls); false }
-
   // The class list section holds a pointer to the RTTI of every class and
   // trait, the RTTI of a type is its java.lang.Class instance
-  private def findClass(p: _Class[_] => Boolean): _Class[_] = {
+  private def find(className: String): Class[_] = {
     val ptrSize = _Class.PtrSize
     val section = StaticRoots.classListSection()
     val start = loadRawPtr(section)
@@ -504,7 +498,7 @@ private[runtime] object LinkedClasses {
       val rtti = loadRawPtr(elemRawPtr(start, castLongToRawSize(offset)))
       if (castRawPtrToLong(rtti) != 0L) {
         val cls = castRawPtrToObject(rtti).asInstanceOf[_Class[_]]
-        if (p(cls)) return cls
+        if (cls.name == className) return cls
       }
       offset += ptrSize
     }

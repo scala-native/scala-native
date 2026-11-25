@@ -77,6 +77,20 @@ private[codegen] object Generate {
           meta.rtti(info).const
         )(info.position)
       }
+      // Linker classes of arrays of references, seed runtime.ArrayClasses
+      val arrayClasses = meta.classes.filter(_.isSyntheticArray).map(meta.rtti(_).const)
+      buf += nir.Defn.Const(
+        nir.Attrs.None,
+        Extern("__scalanative_reference_array_classes"),
+        nir.Type.ArrayValue(nir.Type.Ptr, arrayClasses.size),
+        nir.Val.ArrayValue(nir.Type.Ptr, arrayClasses)
+      )(nir.SourcePosition.NoPosition)
+      buf += nir.Defn.Const(
+        nir.Attrs.None,
+        Extern("__scalanative_reference_array_class_count"),
+        nir.Type.Int,
+        nir.Val.Int(arrayClasses.size)
+      )(nir.SourcePosition.NoPosition)
     }
 
     // Lists the RTTI in the class list section iterated by Class.forName

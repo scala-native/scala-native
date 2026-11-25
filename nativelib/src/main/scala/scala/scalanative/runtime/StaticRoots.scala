@@ -18,6 +18,12 @@ private[runtime] object StaticRoots {
   @name("scalanative_object_array_class_size")
   def objectArrayClassSize(): RawSize = extern
 
+  // Classes of arrays of references defined by the linker
+  @name("scalanative_reference_array_classes")
+  def referenceArrayClasses(): RawPtr = extern
+  @name("scalanative_reference_array_class_count")
+  def referenceArrayClassCount(): RawSize = extern
+
   // Pointers to the RTTI of every class and trait
   @name("scalanative_static_classlist_section")
   def classListSection(): RawPtr = extern

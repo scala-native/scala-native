@@ -26,6 +26,10 @@ SN_SECTION_LOCAL void *scalanative_alloc_runtime_class(size_t size);
 
 SN_SECTION_LOCAL size_t scalanative_object_array_class_size(void);
 
+/* Classes of arrays of references defined by the linker. */
+SN_SECTION_LOCAL void *const *scalanative_reference_array_classes(void);
+SN_SECTION_LOCAL size_t scalanative_reference_array_class_count(void);
+
 #ifdef __cplusplus
 }
 #endif
