@@ -5,6 +5,7 @@ import org.junit.Assume._
 import org.junit.Test
 
 import scala.scalanative.annotation.nooptimize
+import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.runtime.{GC, Intrinsics, ObjectArray, RawPtr}
 
 object RawReferenceStoreTest {
@@ -51,6 +52,7 @@ class RawReferenceStoreTest {
    * one.
    */
   @Test def referencesStoredThroughRawPointersSurvive(): Unit = {
+    assumeFalse("requires a collecting GC", LinktimeInfo.gc.isNone)
     val array = new Array[AnyRef](512)
     System.gc()
     System.gc()

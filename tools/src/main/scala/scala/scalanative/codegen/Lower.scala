@@ -806,8 +806,7 @@ private[scalanative] object Lower {
         obj: nir.Val,
         value: nir.Val
     ): Boolean =
-      platform.useGCWriteBarrier && ty.isInstanceOf[nir.Type.RefKind] &&
-        value != nir.Val.Null && !isYoung(obj)
+      isReferenceStore(ty, value) && !isYoung(obj)
 
     private def isYoung(obj: nir.Val): Boolean = obj match {
       case nir.Val.Local(id, _) => youngObjects.contains(id)
