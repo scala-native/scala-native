@@ -40,7 +40,8 @@ abstract class AbstractInterruptibleChannel protected ()
     endInterruptible()
     val by = closedBy
     if (by eq Thread.currentThread()) {
-      closedBy = this // reported once
+      // Waits for the interrupting thread to finish closing, like the JDK.
+      synchronized { closedBy = this } // reported once
       throw new ClosedByInterruptException()
     }
     if (!completed && by != null) throw new AsynchronousCloseException()

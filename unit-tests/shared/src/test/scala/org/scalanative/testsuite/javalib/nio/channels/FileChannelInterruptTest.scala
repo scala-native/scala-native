@@ -727,22 +727,28 @@ class FileChannelInterruptTest {
     }
   }
 
-  // end() while the interrupter is still closing reports the interrupt.
-  @Test def endDuringInterruptCloseThrowsClosedByInterrupt(): Unit = {
+  // Like JDK 25: end() waits for the interrupting thread to finish closing.
+  @Test def endWaitsForInterruptClose(): Unit = {
     assumeMultithreadingIsEnabled()
     val started = new CountDownLatch(1)
+    val sawClosed = new CountDownLatch(1)
     val ended = new CountDownLatch(1)
+    val endedDuringClose = new java.util.concurrent.atomic.AtomicBoolean()
     class Probe extends spi.AbstractInterruptibleChannel {
       def op(): Unit = {
         begin()
         try {
           started.countDown()
           while (isOpen()) Thread.`yield`()
+          sawClosed.countDown()
         } finally end(false)
       }
-      // Runs on the interrupting thread; holds the close open until end().
-      protected def implCloseChannel(): Unit =
-        ended.await(JoinMillis, TimeUnit.MILLISECONDS)
+      // Runs on the interrupting thread, after the channel reads as closed.
+      protected def implCloseChannel(): Unit = {
+        sawClosed.await(JoinMillis, TimeUnit.MILLISECONDS)
+        if (ended.await(BlockMillis, TimeUnit.MILLISECONDS))
+          endedDuringClose.set(true)
+      }
     }
     val ch = new Probe
     val failure = new AtomicReference[Throwable]()
@@ -755,6 +761,10 @@ class FileChannelInterruptTest {
     t.interrupt()
     t.join(JoinMillis)
     assertFalse("op finished", t.isAlive())
+    assertFalse(
+      "end() returned before the close finished",
+      endedDuringClose.get()
+    )
     assertTrue(
       s"expected ClosedByInterruptException, got ${failure.get()}",
       failure.get().isInstanceOf[ClosedByInterruptException]
