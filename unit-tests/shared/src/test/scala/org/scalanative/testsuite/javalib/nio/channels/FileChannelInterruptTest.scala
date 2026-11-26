@@ -567,8 +567,9 @@ class FileChannelInterruptTest {
       val fifo = mkfifo(dir)
       val raf = new RandomAccessFile(fifo.toFile(), "rw")
       val out = blocked(raf.read(), _ => raf.close(), () => feed(fifo))
-      // The JDK's close() waits for the read on macOS.
-      if (!(Platform.executingInJVM && Platform.isMacOs)) assertPrompt(out)
+      // The JDK's close() waits for the read on macOS and NetBSD.
+      if (!(Platform.executingInJVM && (Platform.isMacOs || Platform.isNetBSD)))
+        assertPrompt(out)
       assertTrue(s"read completes after feed: $out", out.finished)
       assertEquals(s"$out", 'x'.toInt, out.result)
       try { raf.read(); fail("stream must be closed") }
