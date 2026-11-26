@@ -34,17 +34,17 @@ sealed trait SemanticsConfig {
   def withStrictExternCallSemantics(value: Boolean): SemanticsConfig
 
   /**
-    * Controls type tests and casts against arrays of references.
-    * When enabled (default) they check the element type as on the JVM, e.g. an `Object[]` is not a `String[]`.
-    * When disabled any array of references passes a test against another one, as before 0.5.14 - use it for libraries that create arrays with wrong element types, e.g. compiled with older Scala Native.
+    * Controls casts to arrays of references. Type tests and pattern matches always check the element type as on the JVM.
+    * When enabled (default) casts check the element type too, e.g. an `Object[]` cannot be cast to `String[]`.
+    * When disabled any array of references can be cast to another one, as before 0.5.14 - use it for libraries that create arrays with wrong element types, e.g. compiled with older Scala Native.
     */
-  def strictArrayTypeChecks: Boolean
+  def strictArrayCasts: Boolean
   /**
-    * Sets behaviour of type tests and casts against arrays of references.
-    * When enabled (default) they check the element type as on the JVM, e.g. an `Object[]` is not a `String[]`.
-    * When disabled any array of references passes a test against another one, as before 0.5.14 - use it for libraries that create arrays with wrong element types, e.g. compiled with older Scala Native.
+    * Sets behaviour of casts to arrays of references. Type tests and pattern matches always check the element type as on the JVM.
+    * When enabled (default) casts check the element type too, e.g. an `Object[]` cannot be cast to `String[]`.
+    * When disabled any array of references can be cast to another one, as before 0.5.14 - use it for libraries that create arrays with wrong element types, e.g. compiled with older Scala Native.
     */
-  def withStrictArrayTypeChecks(value: Boolean): SemanticsConfig
+  def withStrictArrayCasts(value: Boolean): SemanticsConfig
 // format: on
 
   private[scalanative] def show(indent: String): String
@@ -55,13 +55,13 @@ object SemanticsConfig {
     Impl(
       finalFields = JVMMemoryModelCompliance.Relaxed,
       strictExternCallSemantics = false,
-      strictArrayTypeChecks = true
+      strictArrayCasts = true
     )
 
   private[build] case class Impl(
       finalFields: JVMMemoryModelCompliance,
       strictExternCallSemantics: Boolean,
-      strictArrayTypeChecks: Boolean
+      strictArrayCasts: Boolean
   ) extends SemanticsConfig {
     override def withFinalFields(
         value: JVMMemoryModelCompliance
@@ -69,16 +69,16 @@ object SemanticsConfig {
     override def withStrictExternCallSemantics(
         value: Boolean
     ): SemanticsConfig = copy(strictExternCallSemantics = value)
-    override def withStrictArrayTypeChecks(
+    override def withStrictArrayCasts(
         value: Boolean
-    ): SemanticsConfig = copy(strictArrayTypeChecks = value)
+    ): SemanticsConfig = copy(strictArrayCasts = value)
 
     override def toString: String = show(indent = " ")
     override private[scalanative] def show(indent: String): String = {
       s"""|SemanticsConfig(
           |$indent- finalFields: ${finalFields}
           |$indent- strictExternCallSemantics: ${strictExternCallSemantics}
-          |$indent- strictArrayTypeChecks: ${strictArrayTypeChecks}
+          |$indent- strictArrayCasts: ${strictArrayCasts}
           |$indent)""".stripMargin
     }
   }

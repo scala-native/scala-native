@@ -59,7 +59,9 @@ similarly to JVM:
     tests and casts against arrays check the element type, so an `Object[]`
     is not a `String[]`. Libraries that create arrays with wrong element
     types, e.g. compiled with an older Scala Native, can be linked with
-    `nativeConfig ~= { _.withSemanticsConfig(_.withStrictArrayTypeChecks(false)) }`.
+    `nativeConfig ~= { _.withSemanticsConfig(_.withStrictArrayCasts(false)) }`:
+    casts to arrays of references then only check for an array of references,
+    type tests stay exact.
 3.  Accessing a field or method on `null`, throwing `null` exception,
     throws `NullPointerException`.
 4.  Integer division by zero throws `ArithmeticException`.

@@ -371,7 +371,7 @@ private[interflow] trait Eval { self: Interflow =>
         objty match {
           case nir.Type.Null =>
             nir.Val.Null
-          case _ if isStrictArrayTest(refty) =>
+          case _ if Sub.isStrictArrayCast(refty, config.compilerConfig) =>
             if (Sub.isArray(objty, refty.asInstanceOf[nir.Type.Array])) obj
             else fallback
           case ScopeRef(scope) if Sub.is(scope, refty) =>
@@ -398,7 +398,7 @@ private[interflow] trait Eval { self: Interflow =>
         objty match {
           case nir.Type.Null =>
             nir.Val.False
-          case objty: nir.Type.RefKind if isStrictArrayTest(refty) =>
+          case objty: nir.Type.RefKind if Sub.isStrictArrayTest(refty) =>
             if (!Sub.isArray(objty, refty.asInstanceOf[nir.Type.Array]))
               fallback
             else if (!objty.isNullable) nir.Val.True
@@ -1043,9 +1043,6 @@ private[interflow] trait Eval { self: Interflow =>
       case _ => value.canonicalize
     }
   }
-
-  private def isStrictArrayTest(ty: nir.Type): Boolean =
-    Sub.isStrictArrayTest(ty, config.compilerConfig)
 
   private def inBounds(values: Array[nir.Val], offset: Int): Boolean = {
     inBounds(values.length, offset)

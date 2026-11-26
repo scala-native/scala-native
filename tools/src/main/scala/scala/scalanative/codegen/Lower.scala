@@ -1398,7 +1398,8 @@ private[scalanative] object Lower {
     def genIsOp(
         buf: nir.InstructionBuilder,
         ty: nir.Type,
-        v: nir.Val
+        v: nir.Val,
+        strictArray: Boolean = true
     )(implicit
         srcPosition: nir.SourcePosition,
         scopeId: nir.ScopeId
@@ -1407,7 +1408,7 @@ private[scalanative] object Lower {
       val obj = genVal(buf, v)
       val typeptr = let(nir.Op.Load(nir.Type.Ptr, obj), unwind)
       ty match {
-        case nir.Type.Array(elem, _) if Sub.isStrictArrayTest(ty, config) =>
+        case nir.Type.Array(elem, _) if strictArray && Sub.isStrictArrayTest(ty) =>
           genArrayIsOp(buf, nir.Type.canonicalArrayElement(elem), typeptr)
         case _ =>
           genClassIs(buf, ty, typeptr)
@@ -1570,7 +1571,8 @@ private[scalanative] object Lower {
           branch(isNull, nir.Next(castL), nir.Next(checkIfIsInstanceOfL))
 
           label(checkIfIsInstanceOfL)
-          val isInstanceOf = genIsOp(buf, ty, v)
+          val isInstanceOf =
+            genIsOp(buf, ty, v, config.semanticsConfig.strictArrayCasts)
           val toCls = ty match {
             case _: nir.Type.Array => nir.Type.classOfClassName(ty)
             case _                 => ty.className

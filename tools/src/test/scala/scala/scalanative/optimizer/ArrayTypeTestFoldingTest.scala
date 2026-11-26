@@ -122,7 +122,10 @@ class ArrayTypeTestFoldingTest extends OptimizerSpec {
       assertTrue(entry.show, keepsCast || sinkArgs(entry).isEmpty)
   }
 
-  @Test def nonStrictArrayTypeChecksIgnoreElementTypes(): Unit = optimize(
+  private def lenientCasts(c: build.NativeConfig) =
+    releaseFast(c).withSemanticsConfig(_.withStrictArrayCasts(false))
+
+  @Test def typeTestsStayStrictWithLenientCasts(): Unit = optimize(
     entry = "Test",
     sources = Map(
       "Test.scala" ->
@@ -136,11 +139,38 @@ class ArrayTypeTestFoldingTest extends OptimizerSpec {
            |}
            |""".stripMargin
     ),
-    setupConfig = c =>
-      releaseFast(c).withSemanticsConfig(_.withStrictArrayTypeChecks(false))
+    setupConfig = lenientCasts
   ) {
     case (_, result) =>
       val entry = findEntry(result.defns).get
+      assertEquals(entry.show, 1, sinkArgs(entry).size)
+      assertNotFoldedToTrue(entry)
+  }
+
+  @Test def lenientCastsAcceptAnyArrayOfReferences(): Unit = optimize(
+    entry = "Test",
+    sources = Map(
+      "Test.scala" ->
+        """|import scala.scalanative.annotation.nooptimize
+           |object Test {
+           |  @noinline @nooptimize def sink(b: Boolean): Unit = println(b)
+           |  def main(args: Array[String]): Unit = {
+           |    val objects: AnyRef = new Array[AnyRef](1)
+           |    val strings = objects.asInstanceOf[Array[String]]
+           |    sink(strings.length == 1)
+           |  }
+           |}
+           |""".stripMargin
+    ),
+    setupConfig = lenientCasts
+  ) {
+    case (_, result) =>
+      val entry = findEntry(result.defns).get
+      val keepsCast = entry.insts.exists {
+        case nir.Inst.Let(_, nir.Op.As(_: nir.Type.Array, _), _) => true
+        case _                                                   => false
+      }
+      assertFalse(entry.show, keepsCast)
       assertEquals(entry.show, Seq(nir.Val.True), sinkArgs(entry))
   }
 }

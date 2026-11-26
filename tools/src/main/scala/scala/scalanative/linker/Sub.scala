@@ -77,16 +77,15 @@ object Sub {
     }
   }
 
-  /** Tests against `ty` use `isArray`, see
-   *  `SemanticsConfig.strictArrayTypeChecks`.
-   */
-  def isStrictArrayTest(ty: nir.Type, config: build.NativeConfig): Boolean =
-    ty match {
-      case nir.Type.Array(elem, _) =>
-        config.semanticsConfig.strictArrayTypeChecks &&
-          nir.Type.hasSyntheticArrayClass(elem)
-      case _ => false
-    }
+  /** Type tests against `ty` use `isArray`. */
+  def isStrictArrayTest(ty: nir.Type): Boolean = ty match {
+    case nir.Type.Array(elem, _) => nir.Type.hasSyntheticArrayClass(elem)
+    case _                       => false
+  }
+
+  /** Casts to `ty` use `isArray`, see `SemanticsConfig.strictArrayCasts`. */
+  def isStrictArrayCast(ty: nir.Type, config: build.NativeConfig): Boolean =
+    config.semanticsConfig.strictArrayCasts && isStrictArrayTest(ty)
 
   /** Exact array subtyping, covariant for references (JLS 4.10.3). `Sub.is`
    *  stays lenient for the NIR checker.
