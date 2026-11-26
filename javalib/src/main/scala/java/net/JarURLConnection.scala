@@ -86,7 +86,9 @@ abstract class JarURLConnection protected (url: URL)
     if (m == null) null else m.getMainAttributes()
   }
 
-  /** Always `null`: signed JAR files are not verified. */
+  /** Always `null`: signed JAR files are not verified. Does not link yet, as
+   *  `java.security.cert.Certificate` is missing.
+   */
   @throws[IOException]
   def getCertificates(): Array[Certificate] = {
     getJarEntry()
