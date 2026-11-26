@@ -12,8 +12,8 @@ private[java] trait Interruptible {
   /** Wakes `thread`; runs on the interrupting thread. */
   private[java] def onInterrupt(thread: Thread): Unit
 
-  /** Until endInterruptible(), Thread.interrupt() calls onInterrupt. A
-   *  pending interrupt calls it now.
+  /** Until endInterruptible(), Thread.interrupt() calls onInterrupt. A pending
+   *  interrupt calls it now.
    */
   private[java] final def beginInterruptible(): Unit = {
     val thread = Thread.currentThread()
