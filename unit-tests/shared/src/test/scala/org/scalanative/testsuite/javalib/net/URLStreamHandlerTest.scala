@@ -35,6 +35,33 @@ class URLStreamHandlerTest {
     def defaultPort: Int = getDefaultPort()
   }
 
+  private class PortHandler(port: Int) extends Handler {
+    override protected def getDefaultPort(): Int = port
+    def legacy(u: URL, host: String, port: Int, file: String): URL = {
+      setURL(u, "demo", host, port, file, null)
+      u
+    }
+  }
+
+  @Test def legacySetURL(): Unit = {
+    val h = new PortHandler(-1)
+    val u = h.legacy(new URL(null, "demo://old/p", h), "", -1, "/new")
+    assertEquals("demo:/new", u.toString())
+    assertNull(u.getAuthority())
+    val v = h.legacy(new URL(null, "demo://old/p", h), "nh", 5, "/x?a?b")
+    assertEquals(
+      Seq("nh:5", "/x?a", "b"),
+      Seq(v.getAuthority(), v.getPath(), v.getQuery())
+    )
+  }
+
+  @Test def omittedPortUsesEachURLsDefault(): Unit = {
+    val a = new URL(null, "demo://h.invalid/p", new PortHandler(80))
+    val b = new URL(null, "demo://h.invalid:80/p", new PortHandler(81))
+    assertEquals(a, b)
+    assertEquals(b, a)
+  }
+
   @Test def parseURLGetsTheSpecWithoutReference(): Unit = {
     var seen: (String, String) = null
     val h = new Handler {

@@ -31,6 +31,14 @@ class ProxyTest {
     assertNull(new Proxy(null, addr("h", 1)).`type`())
   }
 
+  @Test def constructorRejectsOtherAddressTypes(): Unit = {
+    val other = new SocketAddress {}
+    assertThrows(
+      classOf[IllegalArgumentException],
+      new Proxy(Proxy.Type.HTTP, other)
+    )
+  }
+
   @Test def accessorsAndToString(): Unit = {
     val a = addr("proxy", 8080)
     val p = new Proxy(Proxy.Type.HTTP, a)

@@ -21,7 +21,18 @@ class URLStreamHandlerFactoryTest {
       override protected def openConnection(u: URL): URLConnection = null
       override protected def getDefaultPort(): Int = 4242
     }
-    URL.setURLStreamHandlerFactory(p => if (p == "sntest") handler else null)
+    URL.setURLStreamHandlerFactory { p =>
+      if (p == "sntestboom") throw new IllegalArgumentException("bad factory")
+      if (p == "sntest") handler else null
+    }
+    val boom =
+      assertThrows(classOf[MalformedURLException], new URL("sntestboom://h/"))
+    assertEquals("bad factory", boom.getMessage())
+    assertTrue(boom.getCause().isInstanceOf[IllegalArgumentException])
+    assertThrows(
+      classOf[IllegalArgumentException],
+      new URL("sntestboom", "h", 1, "/")
+    )
     val u = new URL("SNTEST://h/x")
     assertEquals("sntest", u.getProtocol())
     assertEquals(4242, u.getDefaultPort())

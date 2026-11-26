@@ -30,7 +30,7 @@ object BuiltinHandlers {
     case "http"   => new ParseOnlyHandler("http", 80)
     case "https"  => new ParseOnlyHandler("https", 443)
     case "ftp"    => new ParseOnlyHandler("ftp", 21)
-    case "jar"    => new ParseOnlyHandler("jar", -1)
+    case "jar"    => new jar.Handler
     case "mailto" => new ParseOnlyHandler("mailto", -1)
     case _        => null
   }

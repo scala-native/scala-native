@@ -119,7 +119,7 @@ final class URL private () extends Serializable {
             context.getUserInfo(),
             cPath,
             context.getQuery(),
-            null
+            if (index + 1 == spec.length) context.getRef() else null
           )
         if (handler == null) handler = context.handler
       }
@@ -139,7 +139,12 @@ final class URL private () extends Serializable {
       if (handler == null) handler = context.handler
     }
 
-    if (handler == null) handler = URL.requireHandler(protocol)
+    if (handler == null)
+      try handler = URL.requireHandler(protocol)
+      catch {
+        case e: MalformedURLException => throw e
+        case e: Exception             => throw URL.malformed(e.getMessage(), e)
+      }
 
     // The reference is split off before the handler parses the rest
     var limit = spec.length
@@ -154,9 +159,7 @@ final class URL private () extends Serializable {
       case e: MalformedURLException => throw e
       case e: Exception             =>
         val msg = if (e.getMessage() != null) e.getMessage() else e.toString
-        val m = new MalformedURLException(msg)
-        m.initCause(e)
-        throw m
+        throw URL.malformed(msg, e)
     }
     URL.checkPort(port)
   }
@@ -195,7 +198,7 @@ final class URL private () extends Serializable {
     if (host != null && (host.nonEmpty || !fixHost)) {
       authority = host
       if (port != -1) authority = authority + ":" + port
-    }
+    } else authority = null
     if (fixHost) {
       val at = if (host == null) -1 else host.lastIndexOf('@')
       if (at > -1) {
@@ -203,7 +206,8 @@ final class URL private () extends Serializable {
         host = host.substring(at + 1)
       } else userInfo = null
     }
-    val q = if (file == null) -1 else file.indexOf('?')
+    // Parsed specs split at the first '?' later; parts split at the last
+    val q = if (file == null) -1 else file.lastIndexOf('?')
     if (q > -1) {
       query = file.substring(q + 1)
       path = file.substring(0, q)
@@ -331,19 +335,36 @@ object URL {
    *  reflective instantiation.
    */
   private[net] def handlerFor(protocol: String): URLStreamHandler = {
-    var h = handlers.get(protocol)
-    if (h != null) return h
-    val fac = factory
-    if (fac != null) h = fac.createURLStreamHandler(protocol)
-    if (h == null) h = BuiltinHandlers.forProtocol(protocol)
-    // Not cached if a factory was set meanwhile: it must be asked first
-    if (h != null) synchronized {
-      if (factory eq fac) {
-        val previous = handlers.putIfAbsent(protocol, h)
-        if (previous != null) h = previous
+    var result: URLStreamHandler = null
+    var done = false
+    while (!done) {
+      var h = handlers.get(protocol)
+      if (h != null) return h
+      val fac = factory
+      if (fac != null) h = fac.createURLStreamHandler(protocol)
+      if (h == null) h = BuiltinHandlers.forProtocol(protocol)
+      // Retried if a factory was set meanwhile: it must be asked first
+      synchronized {
+        if (factory eq fac) {
+          if (h != null) {
+            val previous = handlers.putIfAbsent(protocol, h)
+            if (previous != null) h = previous
+          }
+          result = h
+          done = true
+        }
       }
     }
-    h
+    result
+  }
+
+  private def malformed(
+      msg: String,
+      cause: Throwable
+  ): MalformedURLException = {
+    val m = new MalformedURLException(msg)
+    m.initCause(cause)
+    m
   }
 
   private def requireHandler(protocol: String): URLStreamHandler = {

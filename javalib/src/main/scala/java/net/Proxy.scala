@@ -26,7 +26,7 @@ class Proxy private (tpe: Proxy.Type, sa: SocketAddress, direct: Boolean) {
    */
   def this(`type`: Proxy.Type, sa: SocketAddress) = {
     this(`type`, sa, false)
-    if (`type` == Proxy.Type.DIRECT || sa == null)
+    if (`type` == Proxy.Type.DIRECT || !sa.isInstanceOf[InetSocketAddress])
       throw new IllegalArgumentException(
         "type " + `type` + " is not compatible with address " + sa
       )

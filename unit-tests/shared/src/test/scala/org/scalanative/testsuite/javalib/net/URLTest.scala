@@ -303,6 +303,73 @@ class URLTest {
     assertEquals("http://o#a/b", new URL(base, "//o#a/b").toString())
   }
 
+  @Test def sameProtocolWithoutRestKeepsTheReference(): Unit = {
+    val base = new URL("http://h/p?q#old")
+    assertEquals("http://h/p?q#old", new URL(base, "http:").toString())
+    assertEquals("http://h/p?q#new", new URL(base, "http:#new").toString())
+    assertEquals("http://h/new", new URL(base, "http:/new").toString())
+  }
+
+  @Test def componentQueryStartsAtTheLastQuestionMark(): Unit = {
+    val u = new URL("http", "h", "/p?a?b")
+    assertEquals(Seq("/p?a", "b"), Seq(u.getPath(), u.getQuery()))
+    val v = new URL("http://h/p?a?b")
+    assertEquals(Seq("/p", "a?b"), Seq(v.getPath(), v.getQuery()))
+  }
+
+  @Test def bracketedHosts(): Unit = {
+    // Accepted by JDK 17 and 21
+    if (!executingInJVMOnLowerThanJDK(25)) {
+      assertMalformed("Invalid host: [not-ip]", "http://[not-ip]/")
+      assertMalformed("Invalid host: [1.2.3.4]", "http://[1.2.3.4]/")
+      assertMalformed("Invalid host: [nope]", "http://u@[nope]/")
+      assertMalformed(
+        "Invalid authority field: [::1]suffix",
+        "http://[::1]suffix/"
+      )
+      assertMalformed(
+        "Invalid authority field: [::1]x:80",
+        "http://[::1]x:80/"
+      )
+      assertMalformed("Invalid authority field: u@[::1]x", "http://u@[::1]x/")
+      assertMalformed("Invalid authority field: [::1", "http://[::1/")
+    }
+    val u = new URL("http://[::1]:/")
+    assertEquals(
+      Seq("[::1]", -1, "[::1]:"),
+      Seq(u.getHost(), u.getPort(), u.getAuthority())
+    )
+    assertEquals("[::1%lo0]", new URL("http://[::1%lo0]/").getHost())
+  }
+
+  @Test def ipv6HostsCompareByAddress(): Unit = {
+    val a = new URL("http://[::1]/")
+    val b = new URL("http://[0:0:0:0:0:0:0:1]/")
+    assertEquals(a, b)
+    // The address hash of ::1 is 1
+    assertEquals("http".hashCode + 1 + 80 + "/".hashCode, a.hashCode())
+    assertEquals(a.hashCode(), b.hashCode())
+  }
+
+  @Test def jarURLs(): Unit = {
+    val base = new URL("jar:file:/tmp/a.jar!/dir/a")
+    assertEquals("file:/tmp/a.jar!/dir/a", base.getFile())
+    assertEquals(Seq("", null), Seq(base.getHost(), base.getAuthority()))
+    val cases = Seq(
+      "/b" -> "jar:file:/tmp/a.jar!/b",
+      "c" -> "jar:file:/tmp/a.jar!/dir/c",
+      "../c#r" -> "jar:file:/tmp/a.jar!/c#r",
+      "?q" -> "jar:file:/tmp/a.jar!/dir/?q",
+      "#f" -> "jar:file:/tmp/a.jar!/dir/a#f",
+      "jar:file:/x.jar!/y" -> "jar:file:/x.jar!/y"
+    )
+    cases.foreach {
+      case (spec, expected) =>
+        assertEquals(spec, expected, new URL(base, spec).toString())
+    }
+    assertMalformed("no !/ in spec", "jar:file:/tmp/a.jar")
+  }
+
   @Test def relativeResolution(): Unit = {
     val base = new URL("http://h:81/a/b/c.html?q#r")
     val cases = Seq(

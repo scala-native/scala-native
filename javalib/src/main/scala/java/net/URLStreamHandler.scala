@@ -84,12 +84,26 @@ abstract class URLStreamHandler {
         hostIdx = userIdx + 1
       }
       var portIdx = s.indexOf(':', if (userIdx == -1) hostIdx else userIdx)
-      val endOfIPv6 = s.indexOf(']', hostIdx)
-      if (endOfIPv6 != -1 && endOfIPv6 < hostEnd)
-        portIdx =
-          if (s.length > endOfIPv6 + 1 && s.charAt(endOfIPv6 + 1) == ':')
-            endOfIPv6 + 1
-          else -1
+      if (hostIdx < hostEnd && s.charAt(hostIdx) == '[') {
+        val close = s.indexOf(']', hostIdx)
+        if (close == -1 || close >= hostEnd ||
+            (close + 1 < hostEnd && s.charAt(close + 1) != ':'))
+          throw new IllegalArgumentException(
+            "Invalid authority field: " + authority
+          )
+        if (!URL.isIPv6Literal(s.substring(hostIdx + 1, close)))
+          throw new IllegalArgumentException(
+            "Invalid host: " + s.substring(hostIdx, close + 1)
+          )
+        portIdx = if (close + 1 < hostEnd) close + 1 else -1
+      } else {
+        val endOfIPv6 = s.indexOf(']', hostIdx)
+        if (endOfIPv6 != -1 && endOfIPv6 < hostEnd)
+          portIdx =
+            if (s.length > endOfIPv6 + 1 && s.charAt(endOfIPv6 + 1) == ':')
+              endOfIPv6 + 1
+            else -1
+      }
       if (portIdx == -1 || portIdx > hostEnd)
         host = s.substring(hostIdx, hostEnd)
       else {
@@ -186,7 +200,7 @@ abstract class URLStreamHandler {
       throw new SecurityException("handler for url different from this handler")
 
   private def effectivePort(u: URL): Int =
-    if (u.getPort() == -1) getDefaultPort() else u.getPort()
+    if (u.getPort() == -1) u.getDefaultPort() else u.getPort()
 
   protected[net] def toExternalForm(u: URL): String = {
     val sb = new java.lang.StringBuilder()
@@ -210,7 +224,9 @@ abstract class URLStreamHandler {
    *  resolve.
    */
   protected def getHostAddress(u: URL): InetAddress = {
-    val host = u.getHost()
+    var host = u.getHost()
+    if (host != null && host.startsWith("[") && host.endsWith("]"))
+      host = host.substring(1, host.length - 1)
     if (host == null || host.isEmpty) null
     else
       try InetAddress.getByName(host)
