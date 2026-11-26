@@ -433,6 +433,12 @@ class URLTest {
         assertEquals(spec, expected, new URL(nested, spec).toString())
     }
     assertMalformed("no !/ in spec", "jar:file:/tmp/a.jar")
+
+    val foo = new URL("jar", "", "foo!/x")
+    assertNotEquals(foo, new URL("jar", "", "bar!/x"))
+    assertFalse(foo.sameFile(new URL("jar", "h.invalid", "foo!/x")))
+    assertEquals(foo, new URL("jar", "", "foo!/x"))
+    assertEquals(foo.hashCode(), new URL("jar", "", "foo!/x").hashCode())
   }
 
   @Test def relativeResolution(): Unit = {

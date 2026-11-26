@@ -85,13 +85,15 @@ final class Handler extends URLStreamHandler {
   override def equals(u1: URL, u2: URL): Boolean =
     sameFile(u1, u2) && java.util.Objects.equals(u1.getRef(), u2.getRef())
 
-  /** Equal JAR file URLs and entries. */
+  /** Equal JAR file URLs and entries, or equal files if a JAR file URL does not
+   *  parse.
+   */
   override def sameFile(u1: URL, u2: URL): Boolean =
     u2.getProtocol() == "jar" && {
       val f1 = Handler.jarFile(u1)
       val f2 = Handler.jarFile(u2)
-      Handler.entry(u1) == Handler.entry(u2) &&
-        (if (f1 == null || f2 == null) f1 == f2 else f1.sameFile(f2))
+      if (f1 == null || f2 == null) super.sameFile(u1, u2)
+      else Handler.entry(u1) == Handler.entry(u2) && f1.sameFile(f2)
     }
 
   /** `"jar".hashCode` plus the hash codes of the JAR file URL and the entry. */
