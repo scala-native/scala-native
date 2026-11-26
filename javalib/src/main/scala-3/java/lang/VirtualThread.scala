@@ -10,12 +10,13 @@ import scala.noinline
 
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.libc.stdatomic.{AtomicBool, AtomicInt, AtomicRef}
-import scala.scalanative.meta.LinktimeInfo.isVirtualThreadsSupported
+import scala.scalanative.meta.LinktimeInfo.{isMultithreadingEnabled, isVirtualThreadsSupported}
 import scala.scalanative.runtime
 import scala.scalanative.runtime.javalib.Proxy
 import scala.scalanative.runtime.{
-  Continuations, Intrinsics, NativeThread, UnsupportedFeature, VirtualThreadScheduler, fromRawPtr
+  Continuations, Intrinsics, NativeThread, RawPtr, UnsupportedFeature, VirtualThreadScheduler, fromRawPtr
 }
+import scala.scalanative.unsafe.{extern, name}
 
 /** Loom-style virtual thread: a `Runnable` fiber that mounts on a platform carrier, suspends via
  *  `Continuations.suspend`, and resumes through `VirtualThreadScheduler`.
@@ -708,12 +709,25 @@ private[java] final class VirtualThread(
       }
     }
     NativeThread.setCurrentThread(this)
+    swapModuleInitializationContext()
   }
+
+  /** While unmounted: this VT's chain of module initializations in progress (module_load.c). While mounted: the
+   *  carrier's chain. The contexts live on the continuation stack, which does not move, but a VT can resume on another
+   *  carrier, so the chain must follow the VT rather than stay in carrier TLS.
+   */
+  private var moduleInitializationContext: RawPtr = compiletime.uninitialized
+
+  @alwaysinline private def swapModuleInitializationContext(): Unit =
+    if (isMultithreadingEnabled)
+      moduleInitializationContext = VirtualThread.ModuleInitialization.swapContext(moduleInitializationContext)
 
   /** Restores the carrier as `NativeThread.currentThread`, clears `carrierThread` under `interruptLock`, and clears the
    *  carrier interrupt bit we used for proxying this VT’s interrupt.
    */
   private def unmount(): Unit = {
+    // First, so the carrier never keeps a chain pointing into this VT's stack.
+    swapModuleInitializationContext()
     if (this.state == State.Running) {
       throw new IllegalStateException("Cannot unmount virtual thread while Running")
     }
@@ -952,6 +966,11 @@ private[java] final class VirtualThread(
 
 /** Internal constants and opaque state tags for `java.lang.VirtualThread` (javalib implementation). */
 object VirtualThread {
+
+  @extern private object ModuleInitialization {
+    @name("scalanative_swapModuleInitializationContext")
+    def swapContext(context: RawPtr): RawPtr = extern
+  }
   private[java] type Boundary = Continuations.BoundaryLabel[Unit]
   private[java] type Continuation = () => Unit
 
