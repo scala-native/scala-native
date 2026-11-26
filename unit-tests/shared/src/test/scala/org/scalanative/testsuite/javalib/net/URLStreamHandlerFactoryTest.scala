@@ -22,7 +22,7 @@ class URLStreamHandlerFactoryTest {
       override protected def getDefaultPort(): Int = 4242
     }
     URL.setURLStreamHandlerFactory(p => if (p == "sntest") handler else null)
-    val u = new URL("NHTEST://h/x")
+    val u = new URL("SNTEST://h/x")
     assertEquals("sntest", u.getProtocol())
     assertEquals(4242, u.getDefaultPort())
     assertEquals("http", new URL("http://h/").getProtocol())
