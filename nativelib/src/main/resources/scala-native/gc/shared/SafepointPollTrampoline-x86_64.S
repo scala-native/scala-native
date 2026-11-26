@@ -1,8 +1,9 @@
 /* clang-format off */
 /*
  * POSIX x86_64: normal-context stub after a yield-point page fault.
- * Saves XMM0-15, GPRs and rflags, calls scalanative_gc_safepoint_poll_run_yield
- * (C), then returns to the interrupted PC with `ret $128`.
+ * Saves XMM0-15, GPRs and rflags, calls run_yield + load_resume_pc, writes the
+ * resume PC into the slot reserved by prepare_redirect and returns with
+ * `ret $128`.
  * See SafepointPollTrampoline.c and docs/contrib/gc-safepoint-trampoline.md.
  */
 #if defined(SCALANATIVE_MULTITHREADING_ENABLED) &&                              \
@@ -16,12 +17,14 @@
 
 #if defined(__APPLE__)
 #    define RUN_YIELD _scalanative_gc_safepoint_poll_run_yield
+#    define LOAD_RESUME _scalanative_gc_safepoint_load_resume_pc
 .globl scalanative_gc_safepoint_poll_trampoline
 .globl _scalanative_gc_safepoint_poll_trampoline
 scalanative_gc_safepoint_poll_trampoline:
 _scalanative_gc_safepoint_poll_trampoline:
 #else
 #    define RUN_YIELD scalanative_gc_safepoint_poll_run_yield
+#    define LOAD_RESUME scalanative_gc_safepoint_load_resume_pc
 .globl scalanative_gc_safepoint_poll_trampoline
 .type scalanative_gc_safepoint_poll_trampoline, @function
 scalanative_gc_safepoint_poll_trampoline:
@@ -66,7 +69,9 @@ scalanative_gc_safepoint_poll_trampoline:
     movq %rsp, %rbp
     andq $-16, %rsp
     call RUN_YIELD
+    call LOAD_RESUME
     movq %rbp, %rsp
+    movq %rax, SFPT_FRAME(%rsp)
 
     movq 384(%rsp), %r15
     movq 376(%rsp), %r14
