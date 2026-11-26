@@ -1571,7 +1571,10 @@ private[scalanative] object Lower {
 
           label(checkIfIsInstanceOfL)
           val isInstanceOf = genIsOp(buf, ty, v)
-          val toCls = nir.Type.classOfClassName(ty)
+          val toCls = ty match {
+            case _: nir.Type.Array => nir.Type.classOfClassName(ty)
+            case _                 => ty.className
+          }
           val toTy = rtti(analysis.infos(toCls)).const
           branch(
             isInstanceOf,
