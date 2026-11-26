@@ -2,14 +2,14 @@ package org.scalanative.testsuite.javalib.net
 
 import java.net._
 
-import scala.collection.JavaConverters._
-
 import org.junit.Assert._
 import org.junit.Assume._
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
+
+import scala.scalanative.junit.utils.CollectionConverters._
 
 class MulticastSocketTest {
 
@@ -80,7 +80,7 @@ class MulticastSocketTest {
       ms.setNetworkInterface(loopbackIf)
       assertEquals(loopbackIf, ms.getNetworkInterface())
       assertTrue(
-        loopbackIf.getInetAddresses().asScala.contains(ms.getInterface())
+        loopbackIf.getInetAddresses().toScalaSeq.contains(ms.getInterface())
       )
 
       ms.setInterface(InetAddress.getLoopbackAddress())
@@ -129,10 +129,10 @@ class MulticastSocketTest {
     MulticastInterface.assumeReadable()
     val candidates = NetworkInterface
       .getNetworkInterfaces()
-      .asScala
+      .toScalaSeq
       .filter { ni =>
         ni.isUp() && ni.supportsMulticast() &&
-        ni.getInetAddresses().asScala.exists(_.isInstanceOf[Inet4Address])
+        ni.getInetAddresses().toScalaSeq.exists(_.isInstanceOf[Inet4Address])
       }
       .toList
     assumeTrue("no multicast capable interface", candidates.nonEmpty)

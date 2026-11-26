@@ -22,7 +22,7 @@ class CollectionDefaultSpliteratorTest {
     val expectedSize = expectedElements.size
     val foundElements = new Array[String](expectedSize)
 
-    val coll = TrivialImmutableCollection(expectedElements: _*)
+    val coll = TrivialImmutableCollection(expectedElements.toSeq: _*)
     assertEquals(expectedSize, coll.size())
 
     val spliter = coll.spliterator()

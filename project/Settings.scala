@@ -121,12 +121,10 @@ object Settings {
     ) ++ CrossVersion
       .partialVersion(scalaVersion.value)
       .fold(Seq.empty[String]) {
-        // -Xfatal-warnings is deprecated, but -Werror is not available in older Scala versions
         case (2, _) =>
-          Seq("-Xfatal-warnings", "-encoding", "utf8", "-Xsource:3")
+          Seq("-encoding", "utf8", "-Xsource:3")
         case _ =>
           Seq(
-            "-Werror",
             "-encoding:utf8",
             // Tests intentionally use expressions like `-1.toUByte`
             "-Wconf:msg=Illegal literal:s",
@@ -136,12 +134,30 @@ object Settings {
             "-Wconf:msg=Catching Throwable:s"
           )
       },
+    scalacOptions ++= fatalWarningsOptions(scalaVersion.value),
     javaReleaseSettings,
     mimaSettings,
     docsSettings,
     scalacOptions ++= ignoredScalaDeprecations(scalaVersion.value),
     publishLocal := publishLocal.tag(Tags.Publish).value
   )
+
+  /** Fatal warnings only for the default Scala versions, not for cross or
+   *  backport builds.
+   */
+  def fatalWarningsEnabled(scalaVersion: String): Boolean =
+    sys.env.get("BACKPORT_RELEASE").isEmpty &&
+      Set(
+        ScalaVersions.scala212,
+        ScalaVersions.scala213,
+        ScalaVersions.scala3,
+        // sbt 2.x plugin
+        ScalaVersions.sbt2ScalaVersion
+      ).contains(scalaVersion)
+
+  def fatalWarningsOptions(scalaVersion: String): Seq[String] =
+    if (!fatalWarningsEnabled(scalaVersion)) Nil
+    else Seq("-Werror")
 
   def targetJDKVersion(scalaVersion: String) =
     CrossVersion.partialVersion(scalaVersion) match {
@@ -197,7 +213,7 @@ object Settings {
       autoAPIMappings := true,
       exportJars := true, // required so ScalaDoc linking works
       // Don't fail on Scaladoc warnings (e.g., unresolved links to Java classes)
-      Compile / doc / scalacOptions --= Seq("-Werror", "-Xfatal-warnings"),
+      Compile / doc / scalacOptions --= Seq("-Werror"),
       Compile / doc / scalacOptions --= scalaVersionsDependendent(
         scalaVersion.value
       )(Seq.empty[String]) {
@@ -386,16 +402,10 @@ object Settings {
 
   // Tests
   lazy val testsCommonSettings = Def.settings(
-    scalacOptions -= "-deprecation",
-    scalacOptions ++= Seq("-deprecation:false"),
-    scalacOptions --= {
-      if (
-          // Disable fatal warnings when
-          // Scala 3, becouse null.isInstanceOf[String] warning cannot be supressed
-          scalaVersion.value.startsWith("3.") ||
-          // Scala Native - due to specific warnings for unsafe ops in IssuesTest
-          !moduleName.value.contains("jvm")) Seq("-Werror", "-Xfatal-warnings")
-      else Nil
+    // Tests use deprecated JDK APIs on purpose, the set depends on the build JDK
+    scalacOptions ++= {
+      if (!fatalWarningsEnabled(scalaVersion.value)) Nil
+      else Seq("-Wconf:cat=deprecation&origin=java\\..*:s")
     },
     Test / testOptions ++= Seq(
       Tests.Argument(TestFrameworks.JUnit, "-a", "-s")
@@ -662,7 +672,6 @@ object Settings {
     publishSettings(None),
     mavenPublishSettings,
     exportJars := true,
-    scalacOptions --= Seq("-Xfatal-warnings", "-Werror"),
     scalacOptions ++= ignoredScalaDeprecations(scalaVersion.value),
     disableMimaSettings,
     Compile / unmanagedSourceDirectories ++=
@@ -902,7 +911,6 @@ object Settings {
       scalacOptions --= Seq(
         "-deprecation",
         "-Werror",
-        "-Xfatal-warnings",
         "-Xsource:3"
       ),
       // Scala.js original comment modified to clarify issue is Scala.js.
@@ -1239,9 +1247,7 @@ object Settings {
     Test / testOptions ++= Seq(
       Tests.Argument(TestFrameworks.JUnit, "-a", "-s"),
       Tests.Filter(_.endsWith("Assertions"))
-    ),
-    Test / scalacOptions --= Seq("-deprecation", "-Werror", "-Xfatal-warnings"),
-    Test / scalacOptions += "-deprecation:false"
+    )
   )
 
 // Partests

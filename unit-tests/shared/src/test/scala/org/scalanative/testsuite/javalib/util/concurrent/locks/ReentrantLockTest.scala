@@ -131,7 +131,7 @@ class ReentrantLockTest extends JSR166Test {
   def assertHasNoWaiters(
       lock: ReentrantLockTest.PublicReentrantLock,
       c: Condition
-  ): Unit = { assertHasWaiters(lock, c, Array.empty[Thread]: _*) }
+  ): Unit = { assertHasWaiters(lock, c) }
 
   /** Checks that condition c has exactly the given waiter threads.
    */

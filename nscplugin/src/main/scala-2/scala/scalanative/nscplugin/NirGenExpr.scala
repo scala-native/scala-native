@@ -4,6 +4,7 @@ package nscplugin
 import scala.annotation.{switch, tailrec}
 import scala.collection.mutable
 import scala.tools.nsc
+import scala.tools.nsc.Reporting.WarningCategory
 
 import scalanative.nscplugin.NirPrimitives._
 import scalanative.util.ScopedVar.scoped
@@ -3163,10 +3164,13 @@ trait NirGenExpr[G <: nsc.Global with Singleton] { self: NirGenPhase[G] =>
             externType match {
               case nir.Type.Ptr | _: nir.Type.RefKind => value
               case _                                  =>
-                reporter.warning(
+                // Allows suppressing with @nowarn
+                runReporting.warning(
                   argp.pos,
                   s"Passing null as argument of type ${paramTpe} to the extern method is unsafe. " +
-                    s"The argument would be unboxed to primitive value of type $externType."
+                    s"The argument would be unboxed to primitive value of type $externType.",
+                  WarningCategory.Other,
+                  curMethodSym.get
                 )
                 nir.Val.Zero(unboxedType)
             }

@@ -804,7 +804,7 @@ class ProcessTest {
       .toArray()
       .map(_.toString())
     val cmd = if (scala.util.Properties.isWin) "type" else "cat"
-    val proc = processForCommand((cmd +: files): _*)
+    val proc = processForCommand((cmd +: files.toSeq): _*)
       .redirectOutput(out.toFile())
       .start()
 

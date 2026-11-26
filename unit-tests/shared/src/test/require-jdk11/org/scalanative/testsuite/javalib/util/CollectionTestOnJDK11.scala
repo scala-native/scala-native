@@ -20,7 +20,7 @@ class CollectionTestOnJDK11 {
     expected(1) = "Helios"
     expected(2) = "Eos"
 
-    val collection = TrivialImmutableCollection(expected: _*)
+    val collection = TrivialImmutableCollection(expected.toSeq: _*)
 
     val result = collection.toArray((n) => new T(n))
 

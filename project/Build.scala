@@ -614,7 +614,7 @@ object Build {
                       .stripPrefix("2.12.")
                       .takeWhile(_.isDigit)
                       .toInt >= 13 =>
-                  List("-Xfatal-warnings")
+                  List("-Werror")
               }
             }
           )
@@ -885,7 +885,11 @@ object Build {
       .settings(
         // Setting only used to ensure that compiler does not crash when reporting deprecated options
         scalacOptions += "-P:scalanative:mapSourceURI:path->unused",
-        scalacOptions --= Seq("-Xfatal-warnings", "-Werror"),
+        // Scala 2 cannot filter the warning for the deprecated option above
+        scalacOptions --= {
+          if (scalaVersion.value.startsWith("2.")) Seq("-Werror")
+          else Nil
+        },
         nativeConfig ~= {
           _.withLinkStubs(true)
         },
@@ -1046,7 +1050,7 @@ object Build {
     MultiScalaProject("scalaPartest", base = "scala-partest")
       .settings(
         scalacOptions --= Seq(
-          "-Xfatal-warnings"
+          "-Werror"
         ),
         // Not cross-compiled to Scala 3 yet
         bspEnabled := ideScalaVersion.startsWith("2."),
@@ -1200,7 +1204,7 @@ object Build {
         Seq("-Wconf:cat=deprecation:s")
       },
       scalacOptions --= Seq(
-        "-Xfatal-warnings",
+        "-Werror",
         "-Xsource:3"
       ),
       // No control over sources
