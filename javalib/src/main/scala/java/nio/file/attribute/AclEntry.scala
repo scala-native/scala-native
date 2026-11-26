@@ -2,6 +2,8 @@ package java.nio.file.attribute
 
 import java.util.{HashSet, Objects, Set}
 
+import scala.annotation.varargs
+
 final class AclEntry private (
     _type: AclEntryType,
     _principal: UserPrincipal,
@@ -90,6 +92,7 @@ object AclEntry {
       this
     }
 
+    @varargs
     def setPermissions(perms: AclEntryPermission*): Builder = {
       _permissions = checkedCopy(perms, classOf[AclEntryPermission])
       this
@@ -100,6 +103,7 @@ object AclEntry {
       this
     }
 
+    @varargs
     def setFlags(flags: AclEntryFlag*): Builder = {
       _flags = checkedCopy(flags, classOf[AclEntryFlag])
       this
