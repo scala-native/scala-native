@@ -32,7 +32,13 @@ object ArrayClasses {
         if (known != null) known
         else classes.computeIfAbsent(component, _ => create(cls))
       }
-    if (isLinked(arrayClass)) cache(slot) = arrayClass
+    // Release: readers load the class through this pointer (a dependent load,
+    // ordered on every supported architecture), so they see it initialized
+    ffi.stdatomic.atomic_store_intptr(
+      cache.asInstanceOf[ObjectArray].atRawUnsafe(slot),
+      castObjectToRawPtr(arrayClass),
+      ffi.stdatomic.memory_order.memory_order_release
+    )
     arrayClass
   }
 
@@ -85,8 +91,7 @@ object ArrayClasses {
   }
 
   /* Racy direct-mapped cache of all lookups, entries validated by their
-   * component. Holds only immutable linker classes; runtime ones are
-   * published by `classes`.
+   * component and published with a release store.
    */
   private final val CacheSize = 256
   private val cache = new scala.Array[Class[_]](CacheSize)
@@ -94,12 +99,6 @@ object ArrayClasses {
   @alwaysinline private def cacheSlot(cls: _Class[_]): Int = {
     val address = castRawPtrToLong(castObjectToRawPtr(cls))
     ((address ^ (address >>> 12)) >>> 4).toInt & (CacheSize - 1)
-  }
-
-  // Runtime-created classes have ObjectArray in their own lineage slot
-  @alwaysinline private def isLinked(arrayClass: Class[_]): Boolean = {
-    val cls = arrayClass.asInstanceOf[_Class[_]]
-    _Class.ancestorAt(cls, cls.superclassCount) eq cls
   }
 
   @alwaysinline private def is(cls: _Class[_], other: Class[_]): Boolean =
