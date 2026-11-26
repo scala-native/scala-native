@@ -37,6 +37,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
   protected[net] var socket: DatagramSocket = _
 
   private final val useIPv4Only = SocketHelpers.getUseIPv4Stack()
+  private var multicastInterface: NetworkInterface = null
 
   protected[net] var timeout = 0
   protected[net] var connected = false
@@ -452,11 +453,16 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
       if (!setV4()) throwOptionError("set", "IP_MULTICAST_IF")
     } else {
       val index = netIf.getIndex()
-      if (!setIntOption(in.IPPROTO_IPV6, in.IPV6_MULTICAST_IF, index))
+      if (setIntOption(in.IPPROTO_IPV6, in.IPV6_MULTICAST_IF, index)) setV4()
+      else if (!(isOptionUnsupported() && setV4()))
         throwOptionError("set", "IP_MULTICAST_IF")
-      setV4()
     }
+    multicastInterface = netIf
   }
+
+  // qemu-user rejects IP_MULTICAST_IF reads and IPV6_MULTICAST_IF entirely
+  private def isOptionUnsupported(): Boolean =
+    mapLastError(_ == ENOPROTOOPT, _ => false)
 
   private def getMulticastInterface(): NetworkInterface = {
     if (useIPv4Only) {
@@ -470,8 +476,10 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
             in.IP_MULTICAST_IF,
             addr.asInstanceOf[Ptr[Byte]],
             len
-          ) != 0)
+          ) != 0) {
+        if (isOptionUnsupported()) return multicastInterface
         throwOptionError("get", "IP_MULTICAST_IF")
+      }
       if (addr._1 == in.INADDR_ANY) null
       else {
         val bytes = new Array[Byte](4)
@@ -479,8 +487,21 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
         NetworkInterface.getByInetAddress(InetAddress.getByAddress(bytes))
       }
     } else {
-      val index =
-        getIntOption(in.IPPROTO_IPV6, in.IPV6_MULTICAST_IF, "IP_MULTICAST_IF")
+      val opt = stackalloc[CInt]()
+      !opt = 0
+      val len = stackalloc[posix.sys.socket.socklen_t]()
+      !len = sizeof[CInt].toUInt
+      if (posix.sys.socket.getsockopt(
+            fd.fd,
+            in.IPPROTO_IPV6,
+            in.IPV6_MULTICAST_IF,
+            opt.asInstanceOf[Ptr[Byte]],
+            len
+          ) != 0) {
+        if (isOptionUnsupported()) return multicastInterface
+        throwOptionError("get", "IP_MULTICAST_IF")
+      }
+      val index = !opt
       if (index == 0) null
       else NetworkInterface.getByIndex(index)
     }
