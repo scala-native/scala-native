@@ -122,7 +122,10 @@ abstract class URLConnection protected (protected var url: URL) {
 
   private def contentHandler(): ContentHandler = {
     val tpe = getContentType()
-    if (tpe == null) throw new UnknownServiceException("no content-type")
+    if (tpe == null) {
+      getInputStream() // its IOException comes first
+      throw new UnknownServiceException("no content-type")
+    }
     URLConnection.contentHandlerFor(tpe)
   }
 
@@ -288,7 +291,7 @@ object URLConnection {
     var tpe = contentType
     val semi = tpe.indexOf(';')
     if (semi >= 0) tpe = tpe.substring(0, semi)
-    tpe = tpe.trim().toLowerCase()
+    tpe = tpe.trim()
     var h = contentHandlers.get(tpe)
     if (h == null) {
       val fac = contentHandlerFactory
@@ -363,8 +366,8 @@ object URLConnection {
     else if (at("#def")) "image/x-bitmap"
     else if (at("! XPM2")) "image/x-pixmap"
     else if (at("\u0089PNG\r\n\u001a\n")) "image/png"
-    else if (at("\u00ff\u00d8\u00ff\u00e0") || at("\u00ff\u00d8\u00ff\u00ee"))
-      "image/jpeg"
+    else if (at("\u00ff\u00d8\u00ff\u00e0") || at("\u00ff\u00d8\u00ff\u00ee") ||
+        (at("\u00ff\u00d8\u00ff\u00e1") && at("Exif\u0000", 6))) "image/jpeg"
     else if (at("II*\u0000") || at("MM\u0000*")) "image/tiff"
     else if (at("RIFF")) "audio/x-wav"
     else if (at(".snd")) "audio/basic"

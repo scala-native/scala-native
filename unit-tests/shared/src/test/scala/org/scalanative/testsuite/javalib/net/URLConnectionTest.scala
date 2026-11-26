@@ -208,6 +208,12 @@ class URLConnectionTest {
     } finally c.setDefaultUseCaches(true)
   }
 
+  @Test def getContentWithoutTypeOpensTheStreamFirst(): Unit = {
+    val c = conn()
+    val e = assertThrows(classOf[UnknownServiceException], c.getContent())
+    assertEquals("none", e.getMessage())
+  }
+
   @Test def unsupportedStreams(): Unit = {
     val c = new URLConnection(new URL("http://h/")) { def connect(): Unit = () }
     assertEquals(
@@ -370,6 +376,8 @@ class URLConnectionTest {
       "ÿØÿà" -> "image/jpeg",
       "ÿØÿî" -> "image/jpeg",
       "ÿØÿá" -> null,
+      "ÿØÿá\u0000\u0010Exif\u0000\u0000" -> "image/jpeg",
+      "ÿØÿá\u0000\u0000Exif" -> null,
       "Êþº¾" -> "application/java-vm",
       "Êþº" -> null,
       "¬í" -> "application/x-java-serialized-object",
