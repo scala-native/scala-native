@@ -966,7 +966,15 @@ object Build {
           )
       )
       // SMH forks fresh JVMs from the class path of the running one
-      .jvmPlatform(Seq(scalaVersion), Nil, (_: Project).settings(run / fork := true))
+      .jvmPlatform(
+        Seq(scalaVersion),
+        Nil,
+        (_: Project).settings(
+          run / fork := true,
+          // JMH 1.37 uses sun.misc.Unsafe, deprecated with warnings since JDK 23
+          run / javaOptions += "--sun-misc-unsafe-memory-access=allow"
+        )
+      )
   }
 
 // Testing infrastructure ------------------------------------------------
