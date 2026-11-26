@@ -451,8 +451,8 @@ private[java] final class VirtualThread(
       carrierThread.setInterrupt()
       setParkPermit(true) // consume parking permit
     }
-    // Outside interruptLock: closing the channel may block briefly.
-    interruptNioBlocker()
+    // Outside interruptLock: waking may block briefly.
+    notifyInterruptible()
   }
 
   // ---------------------------------------------------------------------------

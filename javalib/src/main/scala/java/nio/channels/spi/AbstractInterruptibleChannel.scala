@@ -1,33 +1,23 @@
 package java.nio.channels.spi
 
 import java.io.IOException
+import java.lang.impl.Interruptible
 import java.nio.channels.{
   AsynchronousCloseException, Channel, ClosedByInterruptException,
   InterruptibleChannel
 }
 
-import scala.scalanative.libc.stdatomic.atomic_thread_fence
-import scala.scalanative.libc.stdatomic.memory_order.memory_order_seq_cst
-import scala.scalanative.meta.LinktimeInfo.isMultithreadingEnabled
-
 abstract class AbstractInterruptibleChannel protected ()
     extends Channel
-    with InterruptibleChannel {
+    with InterruptibleChannel
+    with Interruptible {
 
   @volatile private var closed: Boolean = false
   // The thread whose interrupt closed this channel.
   @volatile private var interruptedThread: Thread = _
 
-  /* Until end(), Thread.interrupt() closes this channel; a pending interrupt
-   * closes it now. Calls do not nest.
-   */
-  protected final def begin(): Unit = {
-    val thread = Thread.currentThread()
-    thread.nioBlocker = this
-    // Pairs with the fence in Thread.interruptNioBlocker.
-    if (isMultithreadingEnabled) atomic_thread_fence(memory_order_seq_cst)
-    if (thread.isInterrupted()) interruptBy(thread)
-  }
+  // Until end(), Thread.interrupt() closes this channel.
+  protected final def begin(): Unit = beginInterruptible()
 
   /* close() uses a synchronized() block, not an AtomicBoolean because the
    * Java documentation for java.nio.channels.Channel#close describes a
@@ -45,8 +35,8 @@ abstract class AbstractInterruptibleChannel protected ()
   }
 
   protected final def end(completed: Boolean): Unit = {
+    endInterruptible()
     val thread = Thread.currentThread()
-    thread.nioBlocker = null
     if (interruptedThread eq thread) {
       interruptedThread = null
       throw new ClosedByInterruptException()
@@ -54,11 +44,9 @@ abstract class AbstractInterruptibleChannel protected ()
     if (!completed && closed) throw new AsynchronousCloseException()
   }
 
-  /* Closes this channel if `thread` is still interrupted and inside
-   * begin()/end(); its end() then throws ClosedByInterruptException.
-   */
-  private[java] final def interruptBy(thread: Thread): Unit = synchronized {
-    if (!closed && (thread.nioBlocker eq this) && thread.isInterrupted()) {
+  // The interrupted thread's end() then throws ClosedByInterruptException.
+  private[java] final def onInterrupt(thread: Thread): Unit = synchronized {
+    if (!closed) {
       interruptedThread = thread
       try close()
       catch { case _: IOException => () }
