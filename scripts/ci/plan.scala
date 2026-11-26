@@ -9,6 +9,14 @@
  *  `if: inputs.extended` jobs). Writes `tier`, `publish` and the level of each
  *  workflow to $GITHUB_OUTPUT.
  *
+ *  Pull requests can request workflows in their description or with labels,
+ *  documented in docs/contrib/build.md:
+ *    - `[test-extended]` or `ci:full`: every workflow extended, as nightly
+ *    - `[test-<name>]` or `ci:<name>`: that workflow extended, names are
+ *      toolchain, linux, gc, macos, windows, apple, multiarch, bsd, termux,
+ *      sbt-plugin, partest
+ *  Draft pull requests ignore them and run only the gates.
+ *
  *  Environment: EVENT_NAME, REF, REF_TYPE, GH_REPO, SHA, GH_TOKEN,
  *  GITHUB_OUTPUT; for pull requests PR_NUMBER, PR_DRAFT, PR_BODY, PR_LABELS
  *  (JSON list); DISPATCH_TIER for workflow_dispatch.
@@ -79,6 +87,9 @@ val delimccPaths = globs(
   "nativelib/src/main/resources/scala-native/delimcc/**"
 )
 val extraPlatformPaths = toolchainPaths ++ gcPaths ++ posixPaths ++ delimccPaths
+// Java library and its tests, also tested on BSD and Termux
+val javalibPaths =
+  globs("javalib/**", "javalib-intf/**", "unit-tests/**", "unit-tests-ext/**")
 
 /** Workflows called from ci.yml and their pull request triggers. Nightly runs
  *  all of them extended.
@@ -88,8 +99,15 @@ enum Workflow(
     val base: Trigger,
     val extended: Trigger,
     // tested before publishing a release
-    val release: Boolean = false
+    val release: Boolean = false,
+    // in `[test-<name>]` and `ci:<name>`, the output by default
+    requestName: String = ""
 ):
+  /** Runs this workflow extended on request */
+  def requested: Trigger =
+    val name = if requestName.nonEmpty then requestName else output
+    Trigger.Requested(s"ci:$name", s"[test-$name]")
+
   case Toolchain
       extends Workflow(
         "toolchain",
@@ -134,18 +152,19 @@ enum Workflow(
       extends Workflow(
         "linux-multiarch",
         base = Trigger.Changed(extraPlatformPaths),
-        extended = Trigger.Never
+        extended = Trigger.Never,
+        requestName = "multiarch"
       )
   case BSD
       extends Workflow(
         "bsd",
-        base = Trigger.Changed(extraPlatformPaths),
+        base = Trigger.Changed(extraPlatformPaths ++ javalibPaths),
         extended = Trigger.Changed(posixPaths)
       )
   case Termux
       extends Workflow(
         "termux",
-        base = Trigger.Changed(extraPlatformPaths),
+        base = Trigger.Changed(extraPlatformPaths ++ javalibPaths),
         extended = Trigger.Never
       )
   case SbtPlugin
@@ -168,7 +187,8 @@ enum Workflow(
         base = Trigger.Changed(
           globs("scala-partest*/**", "scripts/partest-check-files.scala")
         ),
-        extended = Trigger.Requested("ci:partest", "[test-partest]")
+        extended = Trigger.Never,
+        requestName = "partest"
       )
 
 enum Level:
@@ -249,7 +269,8 @@ object Plan:
       Tier.PR,
       Workflow.values.map { w =>
         val level =
-          if w.extended.matches(pr) then Level.Extended
+          if w.extended.matches(pr) || w.requested.matches(pr) then
+            Level.Extended
           else if fullPr || w.base.matches(pr) then Level.Base
           else Level.Off
         w -> level
@@ -291,7 +312,9 @@ def plan(): Plan =
       else if Trigger.Requested("ci:full", "[test-extended]").matches(pr) then
         Plan.nightly
       else if pr.files.nonEmpty && pr.files.forall(docsPaths.matchAny) &&
-          !Workflow.values.exists(_.extended.matches(pr))
+          !Workflow.values.exists(w =>
+            w.extended.matches(pr) || w.requested.matches(pr)
+          )
       then Plan.all(Tier.Docs, Level.Off)
       else Plan.pullRequest(pr)
 
