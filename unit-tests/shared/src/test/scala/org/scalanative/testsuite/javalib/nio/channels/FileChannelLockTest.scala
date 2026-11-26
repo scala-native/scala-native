@@ -44,9 +44,31 @@ object FileChannelLockTest {
     } finally child.close()
   }
 
+  // The JDK on Windows waits in the OS, which interrupt and close() can't end.
+  private def assumeLockWaitWakes(): Unit =
+    assumeFalse(
+      "JDK on Windows: lock() waits in the OS",
+      Platform.executingInJVM && Platform.isWindows
+    )
+
+  // Waits until a request for [pos, pos + size) is registered by another channel.
+  def awaitPendingRequest(ch: FileChannel, pos: Long, size: Long): Unit = {
+    val deadline = System.nanoTime() + JoinMillis * 1000000L
+    var pending = false
+    while (!pending) {
+      try assertNull("range is held", ch.tryLock(pos, size, false))
+      catch { case _: OverlappingFileLockException => pending = true }
+      if (!pending) {
+        assertTrue("request registered", System.nanoTime() < deadline)
+        Thread.sleep(5)
+      }
+    }
+  }
+
   // Also run on virtual threads by FileChannelLockVirtualThreadTest.
   def checkInterruptWakesLock(start: Runnable => Thread): Unit =
     withFile { (_, f) =>
+      assumeLockWaitWakes()
       val ch = rw(f)
       try {
         val out =
@@ -60,6 +82,7 @@ object FileChannelLockTest {
 
   def checkCloseWakesLock(start: Runnable => Thread): Unit =
     withFile { (_, f) =>
+      assumeLockWaitWakes()
       val ch = rw(f)
       try {
         val out =
@@ -420,10 +443,7 @@ class FileChannelLockTest {
       val out = blockedUntil(
         c3.lock(0, 10, false),
         _ => {
-          assertThrows(
-            classOf[OverlappingFileLockException],
-            c4.tryLock(5, 10, false)
-          )
+          awaitPendingRequest(c4, 5, 10)
           assertThrows(
             classOf[OverlappingFileLockException],
             c3.tryLock(5, 10, false)

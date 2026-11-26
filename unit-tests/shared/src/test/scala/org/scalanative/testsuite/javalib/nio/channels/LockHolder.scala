@@ -147,9 +147,9 @@ object LockHolder {
   }
 
   /* Compiled once per run with the javac next to java; without one, every
-   * holder runs the source file and compiles it again.
+   * holder runs the source file (Java 11+) and compiles it again.
    */
-  private lazy val launcher: Seq[String] = {
+  private lazy val launcher: Option[Seq[String]] = {
     val java = javaCommand.get
     val dir = Files.createTempDirectory("lock-holder")
     val src = dir.resolve("LockHolderMain.java")
@@ -171,15 +171,30 @@ object LockHolder {
       if (!p.waitFor(ReplyMillis, TimeUnit.MILLISECONDS)) p.destroyForcibly()
       Files.exists(cls)
     }
-    if (compiled) Seq(java, "-cp", dir.toString(), "LockHolderMain")
-    else Seq(java, src.toString())
+    if (compiled) Some(Seq(java, "-cp", dir.toString(), "LockHolderMain"))
+    else if (javaMajorVersion(java) >= 11) Some(Seq(java, src.toString()))
+    else None
+  }
+
+  // From `java -version`, e.g. "1.8.0_402" is 8 and "25.0.1" is 25.
+  private def javaMajorVersion(java: String): Int = {
+    val p =
+      new ProcessBuilder(java, "-version").redirectErrorStream(true).start()
+    val out = new String(p.getInputStream().readAllBytes(), UTF_8)
+    p.waitFor(ReplyMillis, TimeUnit.MILLISECONDS)
+    val m = "version \"(?:1\\.)?(\\d+)".r.findFirstMatchIn(out)
+    m.fold(0)(_.group(1).toInt)
   }
 
   // Starts a holder on `file`.
   def start(file: Path): LockHolder = {
     assumeAvailable()
+    assumeTrue(
+      "lock holder needs javac next to java, or Java 11+",
+      launcher.isDefined
+    )
     val cmd = new java.util.ArrayList[String]()
-    launcher.foreach(cmd.add(_))
+    launcher.get.foreach(cmd.add(_))
     cmd.add(file.toString())
     val proc = new ProcessBuilder(cmd)
       .redirectError(ProcessBuilder.Redirect.INHERIT)

@@ -212,7 +212,9 @@ private[java] final class FileChannelImpl(
 
   /* Retries a non-blocking attempt with capped backoff: no carrier thread
    * blocks in the OS, and no lease is held while parked. close() and an
-   * interrupt (which closes the channel) unpark the waiter.
+   * interrupt (which closes the channel) unpark the waiter. Unlike a
+   * blocking OS wait, this never reports a deadlock with another process:
+   * only an interrupt or close() ends such a wait.
    */
   private def awaitLock(lock: FileLockImpl): Unit =
     try
@@ -274,10 +276,10 @@ private[java] final class FileChannelImpl(
    * cancelled meanwhile is unlocked again.
    */
   private def attemptLock(lock: FileLockImpl): Boolean = {
-    ensureOpen()
+    if (!FileLockTable.beginAttempt(lock)) throw new ClosedChannelException()
     leased(intr = true) {
       val granted = osLock(lock, unlock = false)
-      if (granted && !FileLockTable.grant(lock)) {
+      if (!FileLockTable.endAttempt(lock, granted)) {
         osLock(lock, unlock = true)
         throw new AsynchronousCloseException()
       }
@@ -300,18 +302,17 @@ private[java] final class FileChannelImpl(
     else unixLock(lock, unlock)
 
   /* POSIX record locks, like the JDK: they belong to the process, so closing
-   * any fd of the file drops them while isValid() stays true. Linux OFD
-   * locks would avoid that, but would differ from the JDK.
+   * any fd of the file drops them while isValid() stays true. That includes
+   * an fd whose close() returned while a lease still defers the OS close.
+   * Linux OFD locks would avoid that, but would differ from the JDK.
    */
   private def unixLock(lock: FileLockImpl, unlock: Boolean): Boolean = {
     val mode =
       if (unlock) LockUnlock
       else if (lock.isShared()) LockShared
       else LockExclusive
-    // A lock reaching Long.MaxValue covers any growth: l_len 0.
-    val end = lock.position + lock.size
-    val len = if (end == Long.MaxValue) 0L else lock.size
-    val err = FileChannelNative.lock(fd.fd, mode, lock.position, len)
+    // Size 0 only at Long.MaxValue, where l_len 0 adds nothing.
+    val err = FileChannelNative.lock(fd.fd, mode, lock.position, lock.size)
     if (err == 0) true
     else if (!unlock && (err == EAGAIN || err == EACCES)) false
     else throw UnixException(getFileName(), err)
@@ -360,7 +361,7 @@ private[java] final class FileChannelImpl(
         if (lock.state == FileLockImpl.Releasing)
           try unlock(lock)
           catch { case _: IOException => () }
-        else LockSupport.unpark(lock.waiter)
+        else if (lock.waiter != null) LockSupport.unpark(lock.waiter)
         i += 1
       }
     }

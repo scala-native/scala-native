@@ -32,12 +32,30 @@ private[channels] object FileLockTable {
     list.add(lock)
   }
 
-  // Pending to held; false if close() came first.
-  def grant(lock: FileLockImpl): Boolean = synchronized {
+  // Before an OS attempt; false once close() came first.
+  def beginAttempt(lock: FileLockImpl): Boolean = synchronized {
     val ok = lock.state == FileLockImpl.Pending && lock.channel().isOpen()
-    if (ok) lock.state = FileLockImpl.Held
+    if (ok) lock.attempting = true
     ok
   }
+
+  /* After an OS attempt. A grant becomes held, or false if close() came
+   * first: the entry then stays until the caller has undone the OS lock.
+   */
+  def endAttempt(lock: FileLockImpl, granted: Boolean): Boolean =
+    synchronized {
+      if (!granted) {
+        lock.attempting = false
+        true
+      } else {
+        val ok = lock.state == FileLockImpl.Pending && lock.channel().isOpen()
+        if (ok) {
+          lock.state = FileLockImpl.Held
+          lock.attempting = false
+        }
+        ok
+      }
+    }
 
   // Held to releasing, for one caller only.
   def startRelease(lock: FileLockImpl): Boolean = synchronized {
@@ -61,8 +79,8 @@ private[channels] object FileLockTable {
 
   /* For close(): starts releasing the channel's held locks, which the caller
    * unlocks (state Releasing), and returns its pending requests for waking.
-   * Those stay until their owner cancels them: an owner may be inside an OS
-   * attempt and must undo a grant before another channel takes the range.
+   * A request inside an OS attempt stays until its owner cancels it, as it
+   * must undo a grant before another channel takes the range; others go.
    */
   def closeChannel(key: Key, channel: Channel): ArrayList[FileLockImpl] =
     synchronized {
@@ -78,6 +96,14 @@ private[channels] object FileLockTable {
               result.add(lock)
             } else if (lock.state == FileLockImpl.Pending) result.add(lock)
           }
+          i += 1
+        }
+        // Not in place: removeLocked edits the list.
+        i = 0
+        while (i < result.size()) {
+          val lock = result.get(i)
+          if (lock.state == FileLockImpl.Pending && !lock.attempting)
+            removeLocked(lock)
           i += 1
         }
       }

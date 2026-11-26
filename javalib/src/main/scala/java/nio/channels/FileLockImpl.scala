@@ -13,11 +13,17 @@ private[java] final class FileLockImpl(
     private[channels] val waiter: Thread
 ) extends FileLock(channel, position, size, shared) {
   @volatile private[channels] var state: Int = FileLockImpl.Pending
+  // Pending and inside an OS attempt; under the table's lock.
+  private[channels] var attempting = false
 
-  override def isValid(): Boolean =
-    state == FileLockImpl.Held && channel.isOpen()
+  // Still valid while a release is in progress: it may fail.
+  override def isValid(): Boolean = {
+    val s = state
+    (s == FileLockImpl.Held || s == FileLockImpl.Releasing) && channel.isOpen()
+  }
 
-  override def release(): Unit = {
+  // Serialized, so a second call waits for the first one's unlock.
+  override def release(): Unit = synchronized {
     if (!channel.isOpen()) throw new ClosedChannelException()
     if (FileLockTable.startRelease(this)) channel.unlock(this)
   }
