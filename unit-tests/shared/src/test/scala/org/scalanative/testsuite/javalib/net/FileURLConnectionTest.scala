@@ -137,6 +137,35 @@ class FileURLConnectionTest {
     }
   }
 
+  @Test def directoryListingIsSorted(): Unit = {
+    val d = new File(dir, "sorted")
+    d.mkdir()
+    Seq("beta", "zeta", "Mid", "alpha").foreach(n =>
+      new File(d, n).createNewFile()
+    )
+    assertEquals("alpha\nbeta\nMid\nzeta\n", read(url("sorted").openStream()))
+  }
+
+  @Test def missingFileTypeFromName(): Unit = {
+    assertEquals(
+      "text/plain",
+      url("nope.txt").openConnection().getContentType()
+    )
+    assertEquals(
+      "text/html",
+      url("nope.html").openConnection().getContentType()
+    )
+  }
+
+  @Test def nulInPath(): Unit = {
+    val c = url("a.txt%00.png").openConnection()
+    val e = assertThrows(classOf[FileNotFoundException], c.connect())
+    assertEquals("Invalid file path", e.getMessage())
+    assertEquals("image/png", c.getContentType())
+    assertEquals(0, c.getContentLength())
+    assertEquals(0L, c.getLastModified())
+  }
+
   @Test def missingFile(): Unit = {
     val c = url("missing").openConnection()
     assertThrows(classOf[FileNotFoundException], c.connect())

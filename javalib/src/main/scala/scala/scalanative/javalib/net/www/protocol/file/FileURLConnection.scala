@@ -21,8 +21,8 @@
 package scala.scalanative.javalib.net.www.protocol.file
 
 import java.io.{
-  BufferedInputStream, ByteArrayInputStream, File, FileInputStream, IOException,
-  InputStream
+  BufferedInputStream, ByteArrayInputStream, File, FileInputStream,
+  FileNotFoundException, IOException, InputStream
 }
 import java.net.{URL, URLConnection}
 import java.nio.charset.StandardCharsets
@@ -36,16 +36,22 @@ final class FileURLConnection(u: URL) extends URLConnection(u) {
   private val file = new File(
     FileURLConnection.decode(if (u.getPath() == null) "" else u.getPath())
   )
+  // A NUL would truncate the path passed to the OS
+  private val invalidPath = file.getPath().indexOf('\u0000') >= 0
   private var is: InputStream = null
   private var headers: List[Array[String]] = null
 
   @throws[IOException]
   override def connect(): Unit = if (!connected) {
+    if (invalidPath)
+      throw new FileNotFoundException("Invalid file path")
     is =
       if (file.isDirectory()) {
         val sb = new java.lang.StringBuilder()
         val names = file.list()
         if (names != null) {
+          // The JDK sorts with a Collator; equal for ASCII names
+          java.util.Arrays.sort(names, String.CASE_INSENSITIVE_ORDER)
           var i = 0
           while (i < names.length) {
             sb.append(names(i)).append('\n')
@@ -95,19 +101,24 @@ final class FileURLConnection(u: URL) extends URLConnection(u) {
   override def getHeaderFields(): Map[String, List[String]] =
     FileURLConnection.group(initHeaders())
 
-  /** `text/plain` for a directory, else guessed from the name, then from the
-   *  content; `content/unknown` if neither works or the file cannot be read.
+  /** `text/plain` for a directory, else guessed from the name (even if the file
+   *  cannot be read), then from the content; `content/unknown` if neither
+   *  works.
    */
-  override def getContentType(): String =
-    try {
-      connect()
-      if (file.isDirectory()) "text/plain"
-      else {
-        var t = URLConnection.guessContentTypeFromName(file.getName())
-        if (t == null) t = URLConnection.guessContentTypeFromStream(is)
-        if (t == null) "content/unknown" else t
-      }
-    } catch { case _: IOException => "content/unknown" }
+  override def getContentType(): String = {
+    val opened =
+      try { connect(); true }
+      catch { case _: IOException => false }
+    if (opened && file.isDirectory()) "text/plain"
+    else {
+      var t = URLConnection.guessContentTypeFromName(file.getName())
+      if (t == null && opened)
+        t =
+          try URLConnection.guessContentTypeFromStream(is)
+          catch { case _: IOException => null }
+      if (t == null) "content/unknown" else t
+    }
+  }
 
   override def getContentLength(): Int = {
     val n = getContentLengthLong()
@@ -116,12 +127,12 @@ final class FileURLConnection(u: URL) extends URLConnection(u) {
 
   override def getContentLengthLong(): Long = {
     initHeaders()
-    file.length()
+    if (invalidPath) 0L else file.length()
   }
 
   override def getLastModified(): Long = {
     initHeaders()
-    file.lastModified()
+    if (invalidPath) 0L else file.lastModified()
   }
 
   @throws[IOException]
