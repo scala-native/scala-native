@@ -30,6 +30,10 @@ jobs:
         with:
           scala-version: ${{ inputs.scala-version }}
           java-version: 17
+      - name: Resolve from Maven Central
+        run: |
+          echo "MAVEN_CENTRAL_MIRROR=" >> "$GITHUB_ENV"
+          echo "COURSIER_REPOSITORIES=ivy2Local|central" >> "$GITHUB_ENV"
       # --server: the sbt 2 thin client joins the arguments into one command,
       # and its background server would not see the secrets of later steps
       - name: Test runtime
