@@ -356,6 +356,19 @@ class FileChannelLockTest {
     } finally c2.close()
   }
 
+  @Test def closingStreamReleasesChannelLocks(): Unit = withFile { (_, f) =>
+    val raf = new java.io.RandomAccessFile(f.toFile(), "rw")
+    val l = raf.getChannel().lock(0, 10, false)
+    raf.close()
+    assertFalse(l.isValid())
+    val ch = rw(f)
+    try {
+      val again = ch.lock(0, 10, false)
+      assertTrue(again.isValid())
+      again.release()
+    } finally ch.close()
+  }
+
   // D2: another process
 
   @Test def tryLockReturnsNullWhenAnotherProcessHoldsIt(): Unit =
