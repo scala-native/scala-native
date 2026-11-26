@@ -20,6 +20,9 @@ package scala.scalanative.javalib.net
 /** HTTP header dates as epoch milliseconds (UTC), without java.text or time
  *  zone data.
  */
+// TODO: move parseLenient into java.util.Date.parse (reading dates without a
+// zone in the default time zone, as the JDK does) and call it from
+// URLConnection.getHeaderFieldDate; keep only the RFC 1123 formatter here.
 object HttpDates {
 
   private val shortDays = Array("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
