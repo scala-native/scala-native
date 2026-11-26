@@ -184,4 +184,13 @@ class ArrayTypeTestsTest {
       classOf[Array[String]].cast(objects)
     )
   }
+
+  @Test def arrayApplyKeepsElementType(): Unit = {
+    def make[T: scala.reflect.ClassTag](xs: T*): Array[T] = Array[T](xs: _*)
+    val ints = make(1, 2, 3)
+    assertSame(classOf[Array[Int]], ints.getClass)
+    assertEquals(List(1, 2, 3), ints.toList)
+    val strings = make("a", "b")
+    assertSame(classOf[Array[String]], strings.getClass)
+  }
 }
