@@ -19,12 +19,12 @@ class MulticastSocketTest {
     try body(ms)
     finally ms.close()
 
-  // #5419: the FreeBSD JDK opens dual-stack sockets that cannot join IPv4
-  // groups, Scala Native is not affected
+  // #5419: FreeBSD and NetBSD JDKs open dual-stack sockets that cannot
+  // join IPv4 groups, Scala Native is not affected
   private def assumeCanJoinIPv4Group(): Unit =
     assumeFalse(
-      "FreeBSD JDK cannot join IPv4 groups on its dual-stack socket",
-      Platform.executingInJVM && Platform.isFreeBSD
+      "FreeBSD and NetBSD JDKs cannot join IPv4 groups on their dual-stack sockets",
+      Platform.executingInJVM && (Platform.isFreeBSD || Platform.isNetBSD)
     )
 
   @Test def constructors(): Unit = {

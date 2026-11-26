@@ -45,8 +45,8 @@ class DatagramSocketTestOnJDK17 {
   ): Unit = {
     val g = group(host)
     assumeFalse(
-      "FreeBSD JDK cannot join IPv4 groups on its dual-stack socket",
-      Platform.executingInJVM && Platform.isFreeBSD &&
+      "FreeBSD and NetBSD JDKs cannot join IPv4 groups on their dual-stack sockets",
+      Platform.executingInJVM && (Platform.isFreeBSD || Platform.isNetBSD) &&
         g.getAddress().isInstanceOf[Inet4Address]
     )
     ds.joinGroup(g, netIf)
