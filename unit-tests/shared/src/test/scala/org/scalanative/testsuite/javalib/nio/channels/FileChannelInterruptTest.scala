@@ -257,7 +257,12 @@ class FileChannelInterruptTest {
     withTemporaryDirectory { dir =>
       val f = dir.resolve("f")
       inThread {
-        for ((name, op) <- opsOnRegularFile) {
+        // JDK < 25 leaves the channel open after an interrupted transferFrom
+        val ops =
+          if (Platform.executingInJVMOnLowerThanJDK(25))
+            opsOnRegularFile.filterNot(_._1 == "transferFrom")
+          else opsOnRegularFile
+        for ((name, op) <- ops) {
           Files.write(f, new Array[Byte](100))
           val ch = FileChannel.open(f, READ, WRITE)
           try {
@@ -456,7 +461,9 @@ class FileChannelInterruptTest {
         assertThrew(classOf[ClosedByInterruptException], out)
         assertTrue("interrupt status kept", out.interrupted)
         assertFalse("source closed", src.isOpen())
-        assertFalse("destination closed", dst.isOpen())
+        // JDK < 25 may close only one of the two channels
+        if (!Platform.executingInJVMOnLowerThanJDK(25))
+          assertFalse("destination closed", dst.isOpen())
       } finally {
         dst.close()
         src.close()
@@ -482,7 +489,9 @@ class FileChannelInterruptTest {
         assertThrew(classOf[ClosedByInterruptException], out)
         assertTrue("interrupt status kept", out.interrupted)
         assertFalse("source closed", src.isOpen())
-        assertFalse("destination closed", dst.isOpen())
+        // JDK < 25 may close only one of the two channels
+        if (!Platform.executingInJVMOnLowerThanJDK(25))
+          assertFalse("destination closed", dst.isOpen())
       } finally {
         dst.close()
         src.close()
@@ -558,8 +567,9 @@ class FileChannelInterruptTest {
       val fifo = mkfifo(dir)
       val raf = new RandomAccessFile(fifo.toFile(), "rw")
       val out = blocked(raf.read(), _ => raf.close(), () => feed(fifo))
-      // The JDK's close() waits for the read on macOS.
-      if (!(Platform.executingInJVM && Platform.isMacOs)) assertPrompt(out)
+      // The JDK's close() waits for the read on macOS and NetBSD.
+      if (!(Platform.executingInJVM && (Platform.isMacOs || Platform.isNetBSD)))
+        assertPrompt(out)
       assertTrue(s"read completes after feed: $out", out.finished)
       assertEquals(s"$out", 'x'.toInt, out.result)
       try { raf.read(); fail("stream must be closed") }

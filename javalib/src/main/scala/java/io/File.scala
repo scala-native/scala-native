@@ -486,7 +486,7 @@ class File(_path: String) extends Serializable with Comparable[File] {
             val timebuf = alloc[utime.utimbuf]()
             import scala.scalanative.posix.sys.statOps.statOps
             timebuf._1 = statbuf.st_mtime
-            timebuf._2 = time.toSize / 1000
+            timebuf._2 = (time / 1000L).toSize
             utime.utime(toCString(path), timebuf) == 0
           } else {
             false
