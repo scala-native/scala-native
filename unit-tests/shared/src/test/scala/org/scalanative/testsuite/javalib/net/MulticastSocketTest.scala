@@ -19,6 +19,14 @@ class MulticastSocketTest {
     try body(ms)
     finally ms.close()
 
+  // #5419: the FreeBSD JDK opens dual-stack sockets that cannot join IPv4
+  // groups, Scala Native is not affected
+  private def assumeCanJoinIPv4Group(): Unit =
+    assumeFalse(
+      "FreeBSD JDK cannot join IPv4 groups on its dual-stack socket",
+      Platform.executingInJVM && Platform.isFreeBSD
+    )
+
   @Test def constructors(): Unit = {
     withSocket(new MulticastSocket()) { ms =>
       assertTrue(ms.isBound())
@@ -92,18 +100,21 @@ class MulticastSocketTest {
     )
   }
 
-  @Test def joinLeaveDefaultInterface(): Unit =
+  @Test def joinLeaveDefaultInterface(): Unit = {
+    assumeCanJoinIPv4Group()
     withSocket(new MulticastSocket(0)) { ms =>
       val group = InetAddress.getByName("239.255.53.64")
       ms.joinGroup(group)
       ms.leaveGroup(group)
     }
+  }
 
   @Test def joinUsesConfiguredInterface(): Unit = {
     assumeFalse(
       "NetworkInterface not implemented in Windows",
       Platform.isWindows
     )
+    assumeCanJoinIPv4Group()
     val candidates = NetworkInterface
       .getNetworkInterfaces()
       .asScala
