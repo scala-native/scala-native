@@ -34,7 +34,13 @@ trait ReachabilitySuite {
     nir.Global.Top("[Ljava.lang.String;"),
     nir.Global.Top("scala.scalanative.runtime.ObjectArray"),
     nir.Global.Top("scala.scalanative.runtime.Array"),
-    nir.Global.Top("java.lang.Cloneable")
+    nir.Global.Top("java.lang.Cloneable"),
+    // Markers of String's traits, for covariant tests of Array[String]
+    nir.Global.Top("#[Ljava.lang.CharSequence;"),
+    nir.Global.Top("#[Ljava.lang.Comparable;"),
+    nir.Global.Top("#[Ljava.io.Serializable;"),
+    nir.Global.Top("#[Ljava.lang.constant.Constable;"),
+    nir.Global.Top("#[Ljava.lang.constant.ConstantDesc;")
   )
 
   def testReachable(includeMainDeps: Boolean = true)(
