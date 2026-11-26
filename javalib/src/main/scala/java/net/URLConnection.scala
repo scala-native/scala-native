@@ -121,11 +121,9 @@ abstract class URLConnection protected (protected var url: URL) {
     contentHandler().getContent(this, classes)
 
   private def contentHandler(): ContentHandler = {
+    getInputStream() // its IOException comes first
     val tpe = getContentType()
-    if (tpe == null) {
-      getInputStream() // its IOException comes first
-      throw new UnknownServiceException("no content-type")
-    }
+    if (tpe == null) throw new UnknownServiceException("no content-type")
     URLConnection.contentHandlerFor(tpe)
   }
 

@@ -113,9 +113,13 @@ object MimeTable extends FileNameMap {
    *  (ignoring case and a `#` reference), or `null`.
    */
   override def getContentTypeFor(fileName: String): String = {
-    var name = fileName
-    val hash = name.lastIndexOf('#')
-    if (hash >= 0) name = name.substring(0, hash)
+    val hash = fileName.lastIndexOf('#')
+    val t = if (hash >= 0) typeOf(fileName.substring(0, hash)) else null
+    // A '#' may also be part of the file name
+    if (t != null) t else typeOf(fileName)
+  }
+
+  private def typeOf(name: String): String = {
     val dot = name.lastIndexOf('.')
     if (dot < 0 || dot < name.lastIndexOf('/')) null
     else types.get(name.substring(dot + 1).toLowerCase())

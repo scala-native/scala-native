@@ -316,6 +316,11 @@ class URLConnectionTest {
     )
     assertEquals("image/gif", URLConnection.guessContentTypeFromName(".gif"))
     assertNull(URLConnection.guessContentTypeFromName("a."))
+    assertEquals(
+      "text/plain",
+      URLConnection.guessContentTypeFromName("report#1.txt")
+    )
+    assertNull(URLConnection.guessContentTypeFromName("a#b"))
     assertThrows(
       classOf[NullPointerException],
       URLConnection.guessContentTypeFromName(null)

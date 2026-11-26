@@ -157,6 +157,63 @@ class FileURLConnectionTest {
     )
   }
 
+  @Test def unreadableDirectory(): Unit = {
+    val d = new File(dir, "locked")
+    d.mkdir()
+    d.setReadable(false)
+    try {
+      assumeFalse("running with read access to everything", d.canRead())
+      val c = url("locked").openConnection()
+      val e = assertThrows(classOf[FileNotFoundException], c.connect())
+      assertEquals(
+        d.getPath() + " exists, but is not accessible",
+        e.getMessage()
+      )
+      assertEquals("text/plain", c.getContentType())
+    } finally d.setReadable(true)
+  }
+
+  @Test def getContentOfMissingFileThrows(): Unit = {
+    assertThrows(classOf[FileNotFoundException], url("nope.txt").getContent())
+    assertThrows(
+      classOf[FileNotFoundException],
+      url("nope.txt").getContent(Array[Class[_]](classOf[String]))
+    )
+  }
+
+  @Test def fileNameMapGetsThePath(): Unit = {
+    val default = URLConnection.getFileNameMap()
+    val seen = new java.util.concurrent.ConcurrentLinkedQueue[String]()
+    // Delegates to the default map: other test classes run concurrently on the JVM
+    URLConnection.setFileNameMap { name =>
+      seen.add(name)
+      default.getContentTypeFor(name)
+    }
+    try url("noext").openConnection().getContentType()
+    finally URLConnection.setFileNameMap(default)
+    assertTrue(seen.toString, seen.contains(new File(dir, "noext").getPath()))
+  }
+
+  @Test def contentTypeAndMetadataAreRetained(): Unit = {
+    val c = url("noext").openConnection()
+    assertEquals("text/html", c.getContentType())
+    read(c.getInputStream())
+    assertEquals("text/html", c.getContentType())
+
+    val f = write("grow.txt", "hello")
+    val g = url("grow.txt").openConnection()
+    assertEquals("5", g.getHeaderField("content-length"))
+    val modified = g.getLastModified()
+    Files.write(f.toPath(), "hello!!".getBytes(StandardCharsets.UTF_8))
+    f.setLastModified(1000000L)
+    assertEquals(5L, g.getContentLengthLong())
+    assertEquals(modified, g.getLastModified())
+
+    val h = url("grow.txt").openConnection()
+    Files.write(f.toPath(), "abc".getBytes(StandardCharsets.UTF_8))
+    assertEquals(3L, h.getContentLengthLong())
+  }
+
   @Test def nulInPath(): Unit = {
     val c = url("a.txt%00.png").openConnection()
     val e = assertThrows(classOf[FileNotFoundException], c.connect())

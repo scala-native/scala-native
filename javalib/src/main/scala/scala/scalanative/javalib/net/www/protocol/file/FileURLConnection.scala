@@ -40,6 +40,9 @@ final class FileURLConnection(u: URL) extends URLConnection(u) {
   private val invalidPath = file.getPath().indexOf('\u0000') >= 0
   private var is: InputStream = null
   private var headers: List[Array[String]] = null
+  private var contentType: String = null
+  private var length = 0L
+  private var lastModified = 0L
 
   @throws[IOException]
   override def connect(): Unit = if (!connected) {
@@ -49,14 +52,16 @@ final class FileURLConnection(u: URL) extends URLConnection(u) {
       if (file.isDirectory()) {
         val sb = new java.lang.StringBuilder()
         val names = file.list()
-        if (names != null) {
-          // The JDK sorts with a Collator; equal for ASCII names
-          java.util.Arrays.sort(names, String.CASE_INSENSITIVE_ORDER)
-          var i = 0
-          while (i < names.length) {
-            sb.append(names(i)).append('\n')
-            i += 1
-          }
+        if (names == null)
+          throw new FileNotFoundException(
+            file.getPath() + " exists, but is not accessible"
+          )
+        // The JDK sorts with a Collator; equal for ASCII names
+        java.util.Arrays.sort(names, String.CASE_INSENSITIVE_ORDER)
+        var i = 0
+        while (i < names.length) {
+          sb.append(names(i)).append('\n')
+          i += 1
         }
         new ByteArrayInputStream(sb.toString.getBytes(StandardCharsets.UTF_8))
       } else new BufferedInputStream(new FileInputStream(file))
@@ -66,12 +71,16 @@ final class FileURLConnection(u: URL) extends URLConnection(u) {
   private def initHeaders(): List[Array[String]] = {
     if (headers == null) {
       val h = new ArrayList[Array[String]]()
+      if (!invalidPath) {
+        length = file.length()
+        lastModified = file.lastModified()
+      }
       try {
         connect()
         h.add(Array("content-type", getContentType()))
         if (!file.isDirectory()) {
-          h.add(Array("content-length", java.lang.Long.toString(file.length())))
-          h.add(Array("last-modified", HttpDates.format(file.lastModified())))
+          h.add(Array("content-length", java.lang.Long.toString(length)))
+          h.add(Array("last-modified", HttpDates.format(lastModified)))
         }
       } catch { case _: IOException => () }
       headers = h
@@ -106,18 +115,22 @@ final class FileURLConnection(u: URL) extends URLConnection(u) {
    *  works.
    */
   override def getContentType(): String = {
-    val opened =
-      try { connect(); true }
-      catch { case _: IOException => false }
-    if (opened && file.isDirectory()) "text/plain"
-    else {
-      var t = URLConnection.guessContentTypeFromName(file.getName())
-      if (t == null && opened)
-        t =
-          try URLConnection.guessContentTypeFromStream(is)
-          catch { case _: IOException => null }
-      if (t == null) "content/unknown" else t
+    if (contentType == null) {
+      val opened =
+        try { connect(); true }
+        catch { case _: IOException => false }
+      contentType =
+        if (!invalidPath && file.isDirectory()) "text/plain"
+        else {
+          var t = URLConnection.guessContentTypeFromName(file.getPath())
+          if (t == null && opened)
+            t =
+              try URLConnection.guessContentTypeFromStream(is)
+              catch { case _: IOException => null }
+          if (t == null) "content/unknown" else t
+        }
     }
+    contentType
   }
 
   override def getContentLength(): Int = {
@@ -127,12 +140,12 @@ final class FileURLConnection(u: URL) extends URLConnection(u) {
 
   override def getContentLengthLong(): Long = {
     initHeaders()
-    if (invalidPath) 0L else file.length()
+    length
   }
 
   override def getLastModified(): Long = {
     initHeaders()
-    if (invalidPath) 0L else file.lastModified()
+    lastModified
   }
 
   @throws[IOException]
