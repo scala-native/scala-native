@@ -219,9 +219,27 @@ runtime tests in the default configuration and MiMa checks. Platform tests
 start once the gate passes and are selected from the modified paths, see
 `scripts/ci/plan.scala`. Draft pull requests run only the gate.
 
-Add `[test-extended]` to the pull request description (or the `ci:full`
-label) to run all tests, `[test-partest]` (or `ci:partest`) to run all
-partests. The full set of tests also runs every night on `main`.
+Add a marker to the pull request description, or the matching label, to run
+more tests than the modified paths select:
+
+| Marker | Label | Runs |
+|--------|-------|------|
+| `[test-extended]` | `ci:full` | every workflow extended, as the nightly run |
+| `[test-toolchain]` | `ci:toolchain` | toolchain tests, also on Scala 2, and cross compilation |
+| `[test-linux]` | `ci:linux` | Linux runtime tests, also on Scala 2, runtime extension tests and other LLVM versions |
+| `[test-gc]` | `ci:gc` | GC tests, also on macOS, Windows and the iOS simulator |
+| `[test-macos]` | `ci:macos` | macOS tests, also on Scala 2, runtime extension tests and other LLVM versions |
+| `[test-windows]` | `ci:windows` | Windows tests, also on Scala 2, runtime extension tests and other LLVM versions |
+| `[test-apple]` | `ci:apple` | iOS and other Apple platforms, also builds for more targets |
+| `[test-multiarch]` | `ci:multiarch` | cross-compiled Linux (riscv64, x86, ARMv6, ARMv7) |
+| `[test-bsd]` | `ci:bsd` | FreeBSD and NetBSD |
+| `[test-termux]` | `ci:termux` | Termux (Android ARM64) |
+| `[test-sbt-plugin]` | `ci:sbt-plugin` | sbt plugin scripted tests, also platform-specific ones |
+| `[test-partest]` | `ci:partest` | all partests |
+
+A marker runs its workflow at the extended level, every job it has. Markers
+can be combined, e.g. `[test-bsd] [test-termux]`, and are ignored on draft
+pull requests. The full set of tests also runs every night on `main`.
 
 `CI OK` is the only required check. Each CI job runs an sbt command that can
 be used locally, e.g. `test-runtime 3`, `test-gc 3`, `test-tools 3`,
