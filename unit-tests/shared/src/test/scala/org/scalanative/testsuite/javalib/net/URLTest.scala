@@ -8,6 +8,7 @@ import org.junit.Assert._
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.Platform
 import org.scalanative.testsuite.utils.Platform.executingInJVMOnLowerThanJDK
 
 /* Hosts compared by equals/hashCode are IP literals, `localhost` or names
@@ -398,10 +399,11 @@ class URLTest {
     )
     assertThrows(classOf[IllegalArgumentException], new URI("a/b").toURL())
     assertThrows(classOf[MalformedURLException], new URI("foo://h/").toURL())
-    assertEquals(
-      "file:/tmp/x%20y",
-      new java.io.File("/tmp/x y").toURI().toURL().toString()
-    )
+    if (!Platform.isWindows)
+      assertEquals(
+        "file:/tmp/x%20y",
+        new java.io.File("/tmp/x y").toURI().toURL().toString()
+      )
   }
 
   @Test def openConnectionArguments(): Unit = {

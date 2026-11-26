@@ -16,14 +16,14 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 class URLStreamHandlerFactoryTest {
 
   @Test def factoryOnce(): Unit = {
-    assertThrows(classOf[MalformedURLException], new URL("nhtest://h/"))
+    assertThrows(classOf[MalformedURLException], new URL("sntest://h/"))
     val handler = new URLStreamHandler {
       override protected def openConnection(u: URL): URLConnection = null
       override protected def getDefaultPort(): Int = 4242
     }
-    URL.setURLStreamHandlerFactory(p => if (p == "nhtest") handler else null)
+    URL.setURLStreamHandlerFactory(p => if (p == "sntest") handler else null)
     val u = new URL("NHTEST://h/x")
-    assertEquals("nhtest", u.getProtocol())
+    assertEquals("sntest", u.getProtocol())
     assertEquals(4242, u.getDefaultPort())
     assertEquals("http", new URL("http://h/").getProtocol())
     val e =

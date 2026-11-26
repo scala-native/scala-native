@@ -33,7 +33,7 @@ class FileURLConnectionTest {
   @Before def setUp(): Unit = {
     // The URLs below are built from POSIX paths
     assumeFalse(Platform.isWindows)
-    dir = Files.createTempDirectory("nh-file-url").toFile()
+    dir = Files.createTempDirectory("file-url-test").toFile()
     write("a.txt", "hello").setLastModified(1577930645000L)
     new File(dir, "sub").mkdir()
     write("sub/b", "x")

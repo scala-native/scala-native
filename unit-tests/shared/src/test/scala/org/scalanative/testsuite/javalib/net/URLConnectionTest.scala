@@ -322,16 +322,16 @@ class URLConnectionTest {
     // Delegates to the default map: other test classes run concurrently on the JVM
     try {
       URLConnection.setFileNameMap(name =>
-        if (name.endsWith(".nhtest")) "custom/" + name
+        if (name.endsWith(".sntest")) "custom/" + name
         else default.getContentTypeFor(name)
       )
       assertEquals(
-        "custom/a.nhtest",
-        URLConnection.guessContentTypeFromName("a.nhtest")
+        "custom/a.sntest",
+        URLConnection.guessContentTypeFromName("a.sntest")
       )
       assertEquals("image/png", URLConnection.guessContentTypeFromName("a.png"))
     } finally URLConnection.setFileNameMap(default)
-    assertNull(URLConnection.guessContentTypeFromName("a.nhtest"))
+    assertNull(URLConnection.guessContentTypeFromName("a.sntest"))
   }
 
   private def bytes(s: String): Array[Byte] = s.toCharArray.map(_.toByte)
