@@ -44,6 +44,11 @@ class DatagramSocketTestOnJDK17 {
       netIf: NetworkInterface
   ): Unit = {
     val g = group(host)
+    assumeFalse(
+      "FreeBSD JDK cannot join IPv4 groups on its dual-stack socket",
+      Platform.executingInJVM && Platform.isFreeBSD &&
+        g.getAddress().isInstanceOf[Inet4Address]
+    )
     ds.joinGroup(g, netIf)
     assertThrows(classOf[SocketException], ds.joinGroup(g, netIf))
     ds.leaveGroup(g, netIf)

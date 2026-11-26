@@ -308,6 +308,10 @@ class ChannelsTest {
   }
 
   @Test def newWriterWritesMoreThanBufferCapacity(): Unit = {
+    assumeFalse(
+      "JDK < 25 drops bytes on partial channel writes",
+      Platform.executingInJVMOnLowerThanJDK(25)
+    )
     val text = ("a" * 1000) + "书" + ("b" * 3000) + "😊"
     val sink = new ChunkedSink(7)
     val writer = Channels.newWriter(sink, "UTF-8")
