@@ -87,17 +87,21 @@ final class JarURLConnectionImpl(u: URL) extends JarURLConnection(u) {
    */
   override def getContentType(): String =
     if (getEntryName() == null) "x-java/jar"
-    else
-      try {
-        connect()
-        var t = URLConnection.guessContentTypeFromName(entry.getName())
-        if (t == null && !entry.isDirectory()) {
-          val in = new BufferedInputStream(jarFile.getInputStream(entry), 64)
-          try t = URLConnection.guessContentTypeFromStream(in)
-          finally in.close()
-        }
-        if (t == null) "content/unknown" else t
-      } catch { case _: IOException => "content/unknown" }
+    else {
+      val byName = URLConnection.guessContentTypeFromName(getEntryName())
+      if (byName != null) byName
+      else
+        try {
+          connect()
+          var t: String = null
+          if (!entry.isDirectory()) {
+            val in = new BufferedInputStream(jarFile.getInputStream(entry), 64)
+            try t = URLConnection.guessContentTypeFromStream(in)
+            finally in.close()
+          }
+          if (t == null) "content/unknown" else t
+        } catch { case _: IOException => "content/unknown" }
+    }
 
   /** The size of the entry, or of the JAR file itself; -1 if unknown. */
   override def getContentLengthLong(): Long =

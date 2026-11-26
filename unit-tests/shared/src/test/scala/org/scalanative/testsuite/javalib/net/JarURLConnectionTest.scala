@@ -160,8 +160,11 @@ class JarURLConnectionTest {
   }
 
   @Test def missingArchive(): Unit = {
-    val c = open("a/b.txt", new File(dir, "missing.jar"))
-    assertEquals("content/unknown", c.getContentType())
+    val missing = new File(dir, "missing.jar")
+    // Guessed from the name without connecting
+    assertEquals("text/plain", open("a/b.txt", missing).getContentType())
+    assertEquals("content/unknown", open("noext", missing).getContentType())
+    val c = open("a/b.txt", missing)
     assertEquals(-1, c.getContentLength())
     assertThrows(classOf[IOException], c.connect())
     assertThrows(classOf[IOException], c.getJarFile())
