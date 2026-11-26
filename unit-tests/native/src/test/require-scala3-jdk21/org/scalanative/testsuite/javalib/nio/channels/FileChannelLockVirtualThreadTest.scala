@@ -28,15 +28,17 @@ class FileChannelLockVirtualThreadTest {
     assumeSupportsVirtualThreads()
     withFile { (_, f) =>
       val ch = rw(f)
-      val out = new Outcome
-      val t = virtual { () =>
-        Thread.currentThread().interrupt()
-        out.capture(ch.lock())
-      }
-      t.join(JoinMillis)
-      assertThrew(classOf[FileLockInterruptionException], out)
-      assertTrue("interrupt status kept", out.interrupted)
-      assertFalse("channel closed", ch.isOpen())
+      try {
+        val out = new Outcome
+        val t = virtual { () =>
+          Thread.currentThread().interrupt()
+          out.capture(ch.lock())
+        }
+        t.join(JoinMillis)
+        assertThrew(classOf[FileLockInterruptionException], out)
+        assertTrue("interrupt status kept", out.interrupted)
+        assertFalse("channel closed", ch.isOpen())
+      } finally ch.close()
     }
   }
 }

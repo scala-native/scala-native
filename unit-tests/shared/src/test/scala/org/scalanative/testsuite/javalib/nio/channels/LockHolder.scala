@@ -185,7 +185,12 @@ object LockHolder {
       .redirectError(ProcessBuilder.Redirect.INHERIT)
       .start()
     val holder = new LockHolder(proc)
-    assertEquals("lock holder start", "READY", holder.line())
+    try assertEquals("lock holder start", "READY", holder.line())
+    catch {
+      case e: Throwable =>
+        proc.destroyForcibly()
+        throw e
+    }
     holder
   }
 }

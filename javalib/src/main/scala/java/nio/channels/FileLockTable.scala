@@ -51,33 +51,35 @@ private[channels] object FileLockTable {
     if (lock.state == FileLockImpl.Pending) removeLocked(lock)
   }
 
-  // Ends a lock whose OS unlock is done or no longer needed.
-  def remove(lock: FileLockImpl): Unit = synchronized(removeLocked(lock))
+  /* After an OS unlock: the lock ends, unless the unlock failed on an open
+   * channel, where it stays held so release() can be retried.
+   */
+  def endRelease(lock: FileLockImpl, unlocked: Boolean): Unit = synchronized {
+    if (unlocked || !lock.channel().isOpen()) removeLocked(lock)
+    else lock.state = FileLockImpl.Held
+  }
 
-  /* For close(): cancels the channel's pending requests and starts releasing
-   * its held locks. Returns both; the caller unlocks the held ones (state
-   * Releasing) and wakes the waiters of the others.
+  /* For close(): starts releasing the channel's held locks, which the caller
+   * unlocks (state Releasing), and returns its pending requests for waking.
+   * Those stay until their owner cancels them: an owner may be inside an OS
+   * attempt and must undo a grant before another channel takes the range.
    */
   def closeChannel(key: Key, channel: Channel): ArrayList[FileLockImpl] =
     synchronized {
       val result = new ArrayList[FileLockImpl]()
       val list = files.get(key)
       if (list != null) {
-        val it = list.iterator()
-        while (it.hasNext()) {
-          val lock = it.next()
+        var i = 0
+        while (i < list.size()) {
+          val lock = list.get(i)
           if (lock.channel() eq channel) {
-            if (lock.state == FileLockImpl.Pending) {
-              lock.state = FileLockImpl.Released
-              it.remove()
-              result.add(lock)
-            } else if (lock.state == FileLockImpl.Held) {
+            if (lock.state == FileLockImpl.Held) {
               lock.state = FileLockImpl.Releasing
               result.add(lock)
-            }
+            } else if (lock.state == FileLockImpl.Pending) result.add(lock)
           }
+          i += 1
         }
-        if (list.isEmpty()) files.remove(key)
       }
       result
     }

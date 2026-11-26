@@ -286,9 +286,13 @@ private[java] final class FileChannelImpl(
   }
 
   // From FileLockImpl.release(), after FileLockTable.startRelease.
-  private[channels] def unlock(lock: FileLockImpl): Unit =
-    try leased(intr = true)(osLock(lock, unlock = true))
-    finally FileLockTable.remove(lock)
+  private[channels] def unlock(lock: FileLockImpl): Unit = {
+    var unlocked = false
+    try {
+      leased(intr = true)(osLock(lock, unlock = true))
+      unlocked = true
+    } finally FileLockTable.endRelease(lock, unlocked)
+  }
 
   // False if another process holds a conflicting lock.
   private def osLock(lock: FileLockImpl, unlock: Boolean): Boolean =

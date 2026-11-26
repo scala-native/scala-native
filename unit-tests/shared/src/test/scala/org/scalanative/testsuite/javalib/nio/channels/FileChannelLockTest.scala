@@ -61,11 +61,13 @@ object FileChannelLockTest {
   def checkCloseWakesLock(start: Runnable => Thread): Unit =
     withFile { (_, f) =>
       val ch = rw(f)
-      val out =
-        blockedOnChild(f, ch.lock(0, 10, false), _ => ch.close(), start)
-      assertWoken(out)
-      assertThrew(classOf[AsynchronousCloseException], out)
-      assertFalse("interrupted", out.interrupted)
+      try {
+        val out =
+          blockedOnChild(f, ch.lock(0, 10, false), _ => ch.close(), start)
+        assertWoken(out)
+        assertThrew(classOf[AsynchronousCloseException], out)
+        assertFalse("interrupted", out.interrupted)
+      } finally ch.close()
     }
 }
 
@@ -259,19 +261,29 @@ class FileChannelLockTest {
       try {
         for (_ <- 0 until 50) {
           val go = new CountDownLatch(1)
-          val locks = channels.map(_ => new AtomicReference[FileLock]())
+          val results = channels.map(_ => new AtomicReference[Any]("running"))
           val threads = channels.indices.map { i =>
             daemon { () =>
               go.await()
-              try locks(i).set(channels(i).tryLock(0, 10, false))
-              catch { case _: OverlappingFileLockException => () }
+              results(i).set(
+                try channels(i).tryLock(0, 10, false)
+                catch { case e: Throwable => e }
+              )
             }
           }
           go.countDown()
           threads.foreach(_.join(JoinMillis))
-          val granted = locks.map(_.get()).filter(_ != null)
-          assertEquals("exactly one lock granted", 1, granted.length)
+          val outcomes = results.map(_.get())
+          val granted = outcomes.collect { case l: FileLock => l }
           granted.foreach(_.release())
+          assertEquals("exactly one lock granted", 1, granted.length)
+          outcomes.foreach { o =>
+            assertTrue(
+              s"lock or overlap: $o",
+              o.isInstanceOf[FileLock] ||
+                o.isInstanceOf[OverlappingFileLockException]
+            )
+          }
         }
       } finally channels.foreach(_.close())
     }
@@ -387,9 +399,10 @@ class FileChannelLockTest {
       val out = blockedUntil(
         ch.lock(5, 10, false),
         _ => child.release(),
-        () => ch.close()
+        () => child.close()
       )
-      assertTrue(s"lock acquired: $out", out.finished && out.error == null)
+      assertWoken(out)
+      assertTrue(s"lock acquired: $out", out.error == null)
       out.result.asInstanceOf[FileLock].release()
     } finally {
       ch.close()
@@ -420,9 +433,10 @@ class FileChannelLockTest {
           other.release()
           child.release()
         },
-        () => c3.close()
+        () => child.close()
       )
-      assertTrue(s"waiter acquired: $out", out.finished && out.error == null)
+      assertWoken(out)
+      assertTrue(s"waiter acquired: $out", out.error == null)
       assertTrue(out.result.asInstanceOf[FileLock].isValid())
     } finally {
       c3.close()
@@ -441,8 +455,10 @@ class FileChannelLockTest {
 
   @Test def failedWaitForgetsItsRange(): Unit = withFile { (_, f) =>
     val ch = rw(f)
-    val out = blockedOnChild(f, ch.lock(0, 10, false), _ => ch.close())
-    assertThrew(classOf[AsynchronousCloseException], out)
+    try {
+      val out = blockedOnChild(f, ch.lock(0, 10, false), _ => ch.close())
+      assertThrew(classOf[AsynchronousCloseException], out)
+    } finally ch.close()
     val c2 = rw(f)
     try {
       val l = c2.lock(0, 10, false)
