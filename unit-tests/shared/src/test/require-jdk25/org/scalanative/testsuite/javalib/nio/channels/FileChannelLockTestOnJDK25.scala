@@ -28,6 +28,10 @@ class FileChannelLockTestOnJDK25 {
         )
       } finally other.close()
       t.release()
+      // Nothing is left past Long.MaxValue.
+      val last = ch.lock(Long.MaxValue, 0, false)
+      assertEquals(0L, last.size())
+      last.release()
     } finally ch.close()
   }
 
