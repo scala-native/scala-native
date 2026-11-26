@@ -294,6 +294,8 @@ private[java] final class VirtualThread(
       nanos: scala.Long,
       setResume: SetResumeContinuation
   ): Unit = {
+    // Resolve the boundary first, so a failure does not leave the state Blocked.
+    val label = currentBoundaryOrThrow("blockForMonitorWait")
     state = if (nanos == 0) State.Blocked else State.TimedBlocked
     Continuations.suspend[Unit] { resume =>
       val generation = publishResume(resume)
@@ -311,7 +313,7 @@ private[java] final class VirtualThread(
       // interrupt() sets the flag and looks for the continuation under this
       // lock, so either it finds this one or the flag is set here
       if (interruptLock.synchronized(interruptedState)) unblock(resume, generation)
-    }(using currentBoundaryOrThrow("blockForMonitorWait"))
+    }(using label)
     currentWaitResume = null
     currentWaitResumeGeneration = 0L
     state = State.Running
@@ -470,7 +472,10 @@ private[java] final class VirtualThread(
   // analogous to pinning around scheduler submission.
   @volatile private var pinnedForSubmit: scala.Boolean = false
 
-  override def isPinned: scala.Boolean = pinnedForSubmit || super.isPinned
+  // Without a boundary (the run loop between mount and boundary entry) the VT
+  // cannot suspend, so it has to block its carrier like a platform thread.
+  override def isPinned: scala.Boolean =
+    pinnedForSubmit || (boundary == null) || super.isPinned
 
   /** Timed `LockSupport.parkNanos` for this VT: may yield the continuation or pin the native carrier when already
    *  inside scheduler submission or nested suspension.
@@ -975,6 +980,17 @@ object VirtualThread {
   private[java] type Boundary = Continuations.BoundaryLabel[Unit]
   private[java] type Continuation = () => Unit
 
+  @volatile private var continuationsLoaded = false
+
+  /** The first `Continuations.boundary` loads its modules. A mounted VT that loses that race to another carrier would
+   *  wait for the module as a VT with no boundary to suspend to, so load them on the carrier before the first mount.
+   */
+  private def ensureContinuationsLoaded(): Unit =
+    if (!continuationsLoaded) {
+      Continuations.boundary[Unit](())
+      continuationsLoaded = true
+    }
+
   /** `Runnable` submitted to `VirtualThreadScheduler`: owns the outer run loop, `mount`/`unmount`, and either starts
    *  the root `task` inside a delimcc boundary or resumes a published continuation.
    */
@@ -1021,6 +1037,19 @@ object VirtualThread {
             case _ => ()
           }
 
+          // Modules loaded on first boundary entry must be initialized while
+          // the carrier is still the current thread, see ensureContinuationsLoaded.
+          // If that fails the task cannot start: terminate the VT without mounting it.
+          if (runCurrent && initialState == State.Started) {
+            try ensureContinuationsLoaded()
+            catch {
+              case ex: Throwable =>
+                runCurrent = false
+                try vt.getUncaughtExceptionHandler().uncaughtException(vt, ex)
+                finally vt.afterDone()
+            }
+          }
+
           if (runCurrent) {
             var resubmitYield = false
             var didAfterYieldSubmit = false
@@ -1030,12 +1059,13 @@ object VirtualThread {
               if (initialState == State.Started) {
                 Continuations.boundary[Unit] {
                   vt.boundary = summon[Boundary]
-                  // Initial invocation of the task, might suspend
-                  val t = vt.task
-                  if (t != null) t.run()
-                  // We get here only when whole fiber is completed
-                  vt.afterDone()
-                  vt.boundary = null
+                  try {
+                    // Initial invocation of the task, might suspend
+                    val t = vt.task
+                    if (t != null) t.run()
+                    // We get here only when whole fiber is completed
+                    vt.afterDone()
+                  } finally vt.boundary = null
                 }
               } else {
                 // Consume continuation and resume, might suspend
