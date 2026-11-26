@@ -16,7 +16,7 @@ import scala.scalanative.windows.HandleApiExt._
 import scala.scalanative.windows.winnt.AccessRights._
 
 final class FileDescriptor private[java] (
-    private val fileHandle: AtomicObjectHandle,
+    fileHandle: AtomicObjectHandle,
     readOnly: Boolean
 ) {
   def this() = this(
@@ -34,10 +34,13 @@ final class FileDescriptor private[java] (
   private[java] def this(fh: ObjectHandle, readOnly: Boolean) =
     this(AtomicObjectHandle(fh), readOnly)
 
+  // Leases, close and wakeup, shared by every stream and channel on this fd.
+  private[java] val shared = new SharedHandle(fileHandle)
+
   override def toString(): String =
     s"FileDescriptor($fd, readOnly=$readOnly)"
 
-  @inline private[java] def get(): ObjectHandle = fileHandle.get()
+  @inline private[java] def get(): ObjectHandle = shared.get()
 
   /* Unix file descriptor underlying value */
   @alwaysinline private[java] def fd: Int = get().asInt
@@ -46,26 +49,21 @@ final class FileDescriptor private[java] (
   @alwaysinline private[java] def handle: Handle = get().asHandle
 
   def sync(): Unit = {
-    def isStdOrInvalidFileDescriptor: Boolean =
-      if (isWindows) !valid() || this == in || this == out || this == err
-      else fd <= 2
-
-    val failed = isStdOrInvalidFileDescriptor || !readOnly && {
-      if (isWindows) !FlushFileBuffers(handle) else unistd.fsync(fd) != 0
+    val isStd =
+      if (isWindows) this == in || this == out || this == err else fd <= 2
+    val synced = !isStd && shared.acquire() && {
+      try
+        readOnly ||
+          (if (isWindows) FlushFileBuffers(handle) else unistd.fsync(fd) == 0)
+      finally shared.release()
     }
-
-    if (failed) throw new SyncFailedException("sync failed")
+    if (!synced) throw new SyncFailedException("sync failed")
   }
 
-  @alwaysinline def valid(): Boolean = get().valid()
-
-  // Not in the Java API. Called by java.nio.channels.FileChannelImpl.scala
-  private[java] def close(): Unit = fileHandle.close()
-
+  def valid(): Boolean = shared.valid()
 }
 
 object FileDescriptor {
-
   private[java] val none: FileDescriptor = new FileDescriptor()
 
   val in: FileDescriptor =

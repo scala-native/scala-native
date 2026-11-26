@@ -31,6 +31,8 @@ class Thread private[lang] (
   @volatile protected var interruptedState = false
   // Argument of blocker set by LockSupport.park* methods
   @volatile private[java] var parkBlocker: Object = _
+  // Operation in progress, see Interruptible.beginInterruptible
+  @volatile private[java] var interruptible: Interruptible = _
 
   private var unhandledExceptionHandler: Thread.UncaughtExceptionHandler = _
 
@@ -254,6 +256,15 @@ class Thread private[lang] (
     interruptedState = true
     if (isAlive())
       platformCtx.nativeThread.interrupt()
+    notifyInterruptible()
+  }
+
+  // Wakes the operation this thread is blocked in. Call after setting the flag.
+  private[java] final def notifyInterruptible(): Unit = {
+    // Pairs with the fence in Interruptible.beginInterruptible.
+    if (isMultithreadingEnabled) atomic_thread_fence(memory_order_seq_cst)
+    val target = interruptible
+    if (target != null) target.interruptBy(this)
   }
   private[java] def setInterrupt(): Unit = {
     if (!interruptedState) {

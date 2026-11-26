@@ -4,7 +4,8 @@ package spi
 import java.io.{InputStream, OutputStream}
 import java.net.URI
 import java.nio.channels.{
-  AsynchronousFileChannel, Channels, FileChannel, SeekableByteChannel
+  AsynchronousFileChannel, Channels, FileChannel, FileChannelImpl,
+  SeekableByteChannel
 }
 import java.nio.file.attribute.{
   BasicFileAttributes, FileAttribute, FileAttributeView
@@ -35,8 +36,10 @@ abstract class FileSystemProvider protected () {
     val options =
       if (_options.isEmpty) Array[OpenOption](StandardOpenOption.READ)
       else _options
-    val channel = Files.newByteChannel(path, options)
-    Channels.newInputStream(channel)
+    Files.newByteChannel(path, options) match {
+      case channel: FileChannelImpl => FileChannelImpl.newInputStream(channel)
+      case channel                  => Channels.newInputStream(channel)
+    }
   }
 
   def newOutputStream(path: Path, _options: Array[OpenOption]): OutputStream = {
@@ -48,8 +51,10 @@ abstract class FileSystemProvider protected () {
           StandardOpenOption.WRITE
         )
       else _options :+ StandardOpenOption.WRITE
-    val channel = Files.newByteChannel(path, options)
-    Channels.newOutputStream(channel)
+    Files.newByteChannel(path, options) match {
+      case channel: FileChannelImpl => FileChannelImpl.newOutputStream(channel)
+      case channel                  => Channels.newOutputStream(channel)
+    }
   }
 
   def newFileChannel(
