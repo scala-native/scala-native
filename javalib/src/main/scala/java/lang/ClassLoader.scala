@@ -10,8 +10,6 @@ class ClassLoader protected (parent: ClassLoader) {
     if (name.startsWith("/")) null
     else this.getClass().getResourceAsStream("/" + name)
 
-  // Embedded resources cannot be addressed by a URL (#5326), so lookups that
-  // yield URLs find nothing; getResourceAsStream is the supported access path.
   def getResources(name: String): Enumeration[URL] = {
     Objects.requireNonNull(name)
     Collections.emptyEnumeration[URL]()

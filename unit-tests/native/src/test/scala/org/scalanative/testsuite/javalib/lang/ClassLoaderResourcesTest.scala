@@ -19,7 +19,6 @@ class ClassLoaderResourcesTest {
     assertNull(ClassLoader.getSystemResourceAsStream(missing))
   }
 
-  // Embedded resources have no URL representation yet, so URL lookups are empty
   @Test def urlLookupsAreEmpty(): Unit = {
     for (name <- Seq(embedded, missing)) {
       assertFalse(cl.getResources(name).hasMoreElements())
