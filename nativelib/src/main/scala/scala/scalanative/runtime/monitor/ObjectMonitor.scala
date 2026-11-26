@@ -391,7 +391,10 @@ private[monitor] class ObjectMonitor() {
     // Virtual threads register blockForMonitorWait so wait() does not consume
     // the LockSupport permit and so the carrier is not parked (many VTs can wait).
     val interruped = currentThread.isInterrupted()
-    if (!interruped && !node.isNotified) {
+    // The monitor is released now: a failure to block must still re-acquire it
+    // below, otherwise the caller's monitor exit throws and hides the failure.
+    var blockFailure: Throwable = null
+    if (!interruped && !node.isNotified) try {
       currentThread match {
         case vt: VirtualThread if suspendsWhileWaiting =>
           vt.blockForMonitorWait(
@@ -409,7 +412,7 @@ private[monitor] class ObjectMonitor() {
           if (nanos == 0) LockSupport.park()
           else LockSupport.parkNanos(nanos)
       }
-    }
+    } catch { case ex: Throwable => blockFailure = ex }
     // The wait continuation is no longer needed after wait() has resumed. Clear
     // it before monitor reentry so a stale wait resume cannot mask a later
     // resumeForEnter handoff on the same node.
@@ -456,6 +459,7 @@ private[monitor] class ObjectMonitor() {
     } finally nativeThread.state = stateBeforeWait
     this.recursion = savedRecursion
     // assert(ownerThread == currentThread, "reenter")
+    if (blockFailure != null) throw blockFailure
 
     if (!wasNotified && Thread.interrupted()) {
       throw new InterruptedException()
