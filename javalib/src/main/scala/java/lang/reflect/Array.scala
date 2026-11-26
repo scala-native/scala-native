@@ -41,18 +41,16 @@ object Array {
     if (dimensions.length == 0)
       throw new IllegalArgumentException("Empty dimensions array")
 
-    // Classes per level, outermost first; creating them checks the dimensions
-    val classes = new scala.Array[Class[_]](dimensions.length)
+    // Class of the outermost array; creating it checks the dimensions
     var cls: Class[_] = componentType
-    var level = dimensions.length - 1
-    while (level >= 0) {
+    var level = 0
+    while (level < dimensions.length) {
       cls = ArrayClasses.of(cls)
-      classes(level) = cls
-      level -= 1
+      level += 1
     }
 
-    // Recursively build nested arrays
-    def fill(idx: Int): AnyRef = {
+    // The class of each nested array is the component of its parent's class
+    def fill(idx: Int, arrayClass: Class[_]): AnyRef = {
       val length = dimensions(idx)
       if (length < 0) throw new NegativeArraySizeException(length.toString)
 
@@ -61,12 +59,13 @@ object Array {
       } else {
         val arr = ObjectArray.alloc(
           length,
-          Intrinsics.castObjectToRawPtr(classes(idx))
+          Intrinsics.castObjectToRawPtr(arrayClass)
         )
         if (idx < dimensions.length - 1) {
+          val component = arrayClass.getComponentType()
           var i = 0
           while (i < length) {
-            arr.update(i, fill(idx + 1))
+            arr.update(i, fill(idx + 1, component))
             i += 1
           }
         }
@@ -74,7 +73,7 @@ object Array {
       }
     }
 
-    fill(0)
+    fill(0, cls)
   }
 
   def getLength(array: AnyRef): Int = array match {
