@@ -132,21 +132,20 @@ class OutputStreamWriter(
       }
     }
 
-    loopEncode()
-    loopFlush()
-
-    // Flush before closing
-    flush()
-
-    // Close the underlying stream
-    out.close()
-
-    // Clean up all the resources
-    closed = true
-    out = null
-    enc = null
-    inBuf = null
-    outBuf = null
+    try {
+      loopEncode()
+      loopFlush()
+      flush()
+    } finally {
+      try out.close()
+      finally {
+        closed = true
+        out = null
+        enc = null
+        inBuf = null
+        outBuf = null
+      }
+    }
   }
 
   private def ensureOpen(): Unit = {

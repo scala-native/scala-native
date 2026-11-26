@@ -383,4 +383,16 @@ class ChannelsTest {
     assertEquals(-1, reader.read())
     assertTrue(s"requested $maxRequested", maxRequested >= 10000)
   }
+
+  @Test def newWriterClosesChannelWhenFinalFlushFails(): Unit = {
+    val sink = new ChunkedSink(16) {
+      override def write(src: ByteBuffer): Int =
+        throw new java.io.IOException("write failed")
+    }
+    val writer = Channels.newWriter(sink, "UTF-8")
+    writer.write("hello")
+    assertThrows(classOf[java.io.IOException], writer.close())
+    assertFalse(sink.isOpen())
+    writer.close()
+  }
 }
