@@ -945,7 +945,7 @@ object Build {
         commonSettings,
         noPublishSettings,
         // Built against the published runtime, use the local one instead
-        libraryDependencies += ("io.github.wojciechmazur" %% "microbench" % "1.0.0")
+        libraryDependencies += ("io.github.wojciechmazur" %% "microbench" % "1.0.1")
           .excludeAll(ExclusionRule(organization = "org.scala-native"))
       )
       .nativePlatform(
