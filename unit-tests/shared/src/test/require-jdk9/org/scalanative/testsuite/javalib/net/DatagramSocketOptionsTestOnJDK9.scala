@@ -89,6 +89,7 @@ class DatagramSocketOptionsTestOnJDK9 {
 
   @Test def multicastInterfaceOption(): Unit = {
     val netIf = multicastInterface()
+    MulticastInterface.assumeReadable()
     withSocket(new DatagramSocket()) { ds =>
       assertNull(ds.getOption(IP_MULTICAST_IF))
       ds.setOption(IP_MULTICAST_IF, netIf)
