@@ -220,7 +220,9 @@ class ChannelsTest {
   }
 
   @Test def newReaderReadSingleUntilEOF(): Unit = {
-    val reader = utf8Reader(chunkedChannel("xy".getBytes("UTF-8"), 16))
+    val reader = utf8Reader(
+      chunkedChannel("xy".getBytes(StandardCharsets.UTF_8), 16)
+    )
     assertEquals('x'.toInt, reader.read())
     assertEquals('y'.toInt, reader.read())
     assertEquals(-1, reader.read())
@@ -236,7 +238,7 @@ class ChannelsTest {
   }
 
   @Test def newReaderDecodesCharsStraddlingInternalBuffer(): Unit = {
-    for (prefix <- 1021 to 1025) {
+    for (prefix <- (1022 to 1025) ++ (4094 to 4097)) {
       val text = ("a" * prefix) + "书😊" + ("b" * 2000)
       val bytes = text.getBytes(StandardCharsets.UTF_8)
       val in = new ByteArrayInputStream(bytes)
@@ -264,7 +266,9 @@ class ChannelsTest {
   }
 
   @Test def newReaderChecksBounds(): Unit = {
-    val reader = utf8Reader(chunkedChannel("abc".getBytes("UTF-8"), 16))
+    val reader = utf8Reader(
+      chunkedChannel("abc".getBytes(StandardCharsets.UTF_8), 16)
+    )
     val buf = new Array[Char](4)
     assertThrows(classOf[IndexOutOfBoundsException], reader.read(buf, -1, 2))
     assertThrows(classOf[IndexOutOfBoundsException], reader.read(buf, 0, -1))
@@ -335,7 +339,33 @@ class ChannelsTest {
     writer.write("hello")
     writer.close()
     assertFalse(sink.isOpen())
-    assertArrayEquals("hello".getBytes("UTF-8"), sink.out.toByteArray())
+    assertArrayEquals(
+      "hello".getBytes(StandardCharsets.UTF_8),
+      sink.out.toByteArray()
+    )
+  }
+
+  @Test def newReaderAndWriterAcceptUsedCoders(): Unit = {
+    val enc = StandardCharsets.UTF_8.newEncoder()
+    enc.encode(CharBuffer.wrap("x"))
+    val sink = new ChunkedSink(16)
+    val writer = Channels.newWriter(sink, enc, -1)
+    writer.write("ok")
+    writer.close()
+    assertArrayEquals(
+      "ok".getBytes(StandardCharsets.UTF_8),
+      sink.out.toByteArray()
+    )
+
+    val dec = StandardCharsets.UTF_8.newDecoder()
+    dec.decode(ByteBuffer.wrap("x".getBytes(StandardCharsets.UTF_8)))
+    val reader =
+      Channels.newReader(
+        chunkedChannel("ok".getBytes(StandardCharsets.UTF_8), 16),
+        dec,
+        -1
+      )
+    assertEquals("ok", readAll(reader, 16))
   }
 
 }
