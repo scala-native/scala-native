@@ -1017,12 +1017,22 @@ object VirtualThread {
             case _ => ()
           }
 
+          // Modules loaded on first boundary entry must be initialized while
+          // the carrier is still the current thread, see ensureContinuationsLoaded.
+          // If that fails the task cannot start: terminate the VT without mounting it.
+          if (runCurrent && initialState == State.Started) {
+            try ensureContinuationsLoaded()
+            catch {
+              case ex: Throwable =>
+                runCurrent = false
+                try vt.getUncaughtExceptionHandler().uncaughtException(vt, ex)
+                finally vt.afterDone()
+            }
+          }
+
           if (runCurrent) {
             var resubmitYield = false
             var didAfterYieldSubmit = false
-            // Modules loaded on first boundary entry must be initialized while
-            // the carrier is still the current thread, see ensureContinuationsLoaded.
-            if (initialState == State.Started) ensureContinuationsLoaded()
             vt.mount()
             try {
               // initial run
