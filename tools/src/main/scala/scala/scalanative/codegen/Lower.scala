@@ -1505,42 +1505,55 @@ private[scalanative] object Lower {
       case _                        => true // primitives
     }
 
+    // Arrays of `elem` are subtypes of other arrays through markers
+    private def isTraitLikeElement(elem: nir.Type): Boolean = elem match {
+      case nir.Type.Array(inner, _) => isTraitLikeElement(inner)
+      case TraitRef(_)              => true
+      case _                        => false
+    }
+
+    private def arrayMarker(elem: nir.Type): nir.Global.Top = elem match {
+      case nir.Type.Array(inner, _) => nir.Type.arrayMarkerName(arrayMarker(inner))
+      case ref: nir.Type.Ref        => nir.Type.arrayMarkerName(ref.name)
+      case _                        => util.unreachable
+    }
+
     private def genArrayIsOp(buf: nir.InstructionBuilder, elemTy: nir.Type, typeptr: nir.Val)(implicit
         srcPosition: nir.SourcePosition,
         scopeId: nir.ScopeId
     ): nir.Val = {
       import buf._
-      val target = rtti(analysis.infos(nir.Type.arrayClassName(elemTy))).const
-      lazy val isTarget = let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, typeptr, target), unwind)
+      val targetName = nir.Type.arrayClassName(elemTy)
+      val target = rtti(analysis.infos(targetName)).const
       if (elemTy == nir.Rt.Object) genClassIs(buf, nir.Rt.ObjectArray, typeptr)
-      else if (isExactArrayElement(elemTy)) isTarget
+      else if (isExactArrayElement(elemTy))
+        let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, typeptr, target), unwind)
       else {
-        // Covariance: test the component of the instance's class
-        val arrayL, componentL, classL, traitL, resultL = fresh()
-        branch(isTarget, nir.Next.Label(resultL, Seq(nir.Val.True)), nir.Next(arrayL))
+        // Array classes mirror covariance: a class or marker trait test
+        val testTy =
+          if (isTraitLikeElement(elemTy)) nir.Type.Ref(arrayMarker(elemTy))
+          else nir.Type.Ref(targetName)
+        val slowL, runtimeL, callL, resultL = fresh()
+        val isSubtype = genClassIs(buf, testTy, typeptr)
+        branch(isSubtype, nir.Next.Label(resultL, Seq(nir.Val.True)), nir.Next(slowL))
 
-        label(arrayL)
+        // Classes created at runtime keep ObjectArray's lineage: Object,
+        // runtime.Array, ObjectArray, then nothing; test their components
+        label(slowL)
         val isArray = genClassIs(buf, nir.Rt.ObjectArray, typeptr)
-        branch(isArray, nir.Next(componentL), nir.Next.Label(resultL, Seq(nir.Val.False)))
+        branch(isArray, nir.Next(runtimeL), nir.Next.Label(resultL, Seq(nir.Val.False)))
 
-        label(componentL)
-        val componentPtr = elem(ClassRtti.layout, typeptr, Seq(zero, nir.Val.Int(ClassRtti.ReferenceOffsetsIdx)), unwind)
-        val component = let(nir.Op.Load(nir.Type.Ptr, componentPtr), unwind)
-        val flagsPtr = elem(Rtti.layout, component, Seq(zero, nir.Val.Int(Rtti.FlagsIdx)), unwind)
-        val flags = let(nir.Op.Load(nir.Type.Int, flagsPtr), unwind)
-        val interfaceBit = let(nir.Op.Bin(nir.Bin.And, nir.Type.Int, flags, nir.Val.Int(RuntimeTypeInformation.Flags.IsInterface)), unwind)
-        val isInterface = let(nir.Op.Comp(nir.Comp.Ine, nir.Type.Int, interfaceBit, nir.Val.Int(0)), unwind)
-        branch(isInterface, nir.Next(traitL), nir.Next(classL))
+        label(runtimeL)
+        val nextPtr =
+          elem(ClassRtti.layout, typeptr, Seq(zero, nir.Val.Int(ClassRtti.LineageIdx), nir.Val.Int(3)), unwind)
+        val next = let(nir.Op.Load(nir.Type.Ptr, nextPtr), unwind)
+        val isLast = let(nir.Op.Comp(nir.Comp.Ieq, nir.Type.Ptr, next, nir.Val.Null), unwind)
+        val objectArray = rtti(analysis.infos(nir.Rt.ObjectArray.name)).const
+        val isCopy = let(nir.Op.Comp(nir.Comp.Ine, nir.Type.Ptr, typeptr, objectArray), unwind)
+        val isRuntimeClass = let(nir.Op.Bin(nir.Bin.And, nir.Type.Bool, isLast, isCopy), unwind)
+        branch(isRuntimeClass, nir.Next(callL), nir.Next.Label(resultL, Seq(nir.Val.False)))
 
-        label(classL)
-        val componentIs = elemTy match {
-          case nir.Type.Array(inner, _) => genArrayIsOp(buf, inner, component)
-          case _                        => genClassIs(buf, elemTy, component)
-        }
-        jump(resultL, Seq(componentIs))
-
-        // Trait RTTI has no lineage nor itable
-        label(traitL)
+        label(callL)
         val module = genModuleOp(buf, fresh(), nir.Op.Module(ArrayClassesModule))
         val isSubclass = call(arrayIsSubclassSig, nir.Val.Global(arrayIsSubclass, nir.Type.Ptr), Seq(module, typeptr, target), unwind)
         jump(resultL, Seq(isSubclass))

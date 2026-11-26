@@ -31,6 +31,11 @@ object ArrayTypeTestsTest {
   }
 
   def deepChain: Array[D17] = Array(new D17)
+
+  // Arrays of these are never mentioned statically: their classes are
+  // created at runtime
+  trait RuntimeOnlyMarker extends Marker
+  class RuntimeOnlyElem extends SubElem with RuntimeOnlyMarker
 }
 
 class ArrayTypeTestsTest {
@@ -113,6 +118,58 @@ class ArrayTypeTestsTest {
     val shallow = opaque(Array(new D8))
     assertFalse(shallow.isInstanceOf[Array[D17]])
     assertTrue(shallow.isInstanceOf[Array[Base1]])
+  }
+
+  @Test def isInstanceOfNestedCovariantArrays(): Unit = {
+    val strings = opaque(Array.ofDim[String](1, 1))
+    assertTrue(strings.isInstanceOf[Array[Array[CharSequence]]])
+    assertTrue(strings.isInstanceOf[Array[Array[Comparable[_]]]])
+    assertTrue(strings.isInstanceOf[Array[Array[AnyRef]]])
+    assertTrue(strings.isInstanceOf[Array[Serializable]])
+    assertTrue(strings.isInstanceOf[Array[java.lang.Cloneable]])
+    assertFalse(strings.isInstanceOf[Array[Array[Marker]]])
+    assertFalse(strings.isInstanceOf[Array[CharSequence]])
+    val elems = opaque(Array.ofDim[SubElem](1, 1))
+    assertTrue(elems.isInstanceOf[Array[Array[Elem]]])
+    assertFalse(elems.isInstanceOf[Array[Array[MarkedElem]]])
+    val chars = opaque(Array.ofDim[CharSequence](1, 1))
+    assertFalse(chars.isInstanceOf[Array[Array[String]]])
+    assertTrue(chars.isInstanceOf[Array[Array[CharSequence]]])
+  }
+
+  @Test def isInstanceOfArraysWithRuntimeClasses(): Unit = {
+    val elems = opaque(JArray.newInstance(classOf[RuntimeOnlyElem], 1))
+    assertEquals("Elem[]", kind(elems))
+    assertTrue(elems.isInstanceOf[Array[Elem]])
+    assertTrue(elems.isInstanceOf[Array[SubElem]])
+    assertTrue(elems.isInstanceOf[Array[Marker]])
+    assertTrue(elems.isInstanceOf[Array[AnyRef]])
+    assertFalse(elems.isInstanceOf[Array[MarkedElem]])
+    assertFalse(elems.isInstanceOf[Array[String]])
+    assertFalse(elems.isInstanceOf[Array[CharSequence]])
+    assertEquals(1, elems.asInstanceOf[Array[Elem]].length)
+    assertEquals(1, elems.asInstanceOf[Array[Marker]].length)
+    assertThrows(
+      classOf[ClassCastException],
+      elems.asInstanceOf[Array[MarkedElem]].length
+    )
+    assertThrows(
+      classOf[ClassCastException],
+      elems.asInstanceOf[Array[CharSequence]].length
+    )
+
+    val matrix =
+      opaque(JArray.newInstance(classOf[RuntimeOnlyElem], 1, 1))
+    assertTrue(matrix.isInstanceOf[Array[Array[Elem]]])
+    assertTrue(matrix.isInstanceOf[Array[Array[Marker]]])
+    assertTrue(matrix.isInstanceOf[Array[Array[AnyRef]]])
+    assertTrue(matrix.isInstanceOf[Array[Serializable]])
+    assertFalse(matrix.isInstanceOf[Array[Array[MarkedElem]]])
+    assertFalse(matrix.isInstanceOf[Array[Elem]])
+    assertThrows(
+      classOf[ClassCastException],
+      matrix.asInstanceOf[Array[Array[MarkedElem]]].length
+    )
   }
 
   @Test def asInstanceOfArrays(): Unit = {

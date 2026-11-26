@@ -201,6 +201,8 @@ object Sub {
 
       val candidates =
         linfo.linearized.filter { i =>
+          // Array markers exist for type tests only
+          !nir.Type.isArrayMarker(i.name) &&
           rinfo.is(i) && correctedBoundInfo.forall(i.is)
         }
 

@@ -351,6 +351,23 @@ object Type {
   def isSyntheticArrayClass(name: Global.Top): Boolean =
     name.id.startsWith("[")
 
+  /** Linker-defined trait implemented by arrays whose elements implement
+   *  `elem`, a trait or another marker: `#[LT;` for `T[]`, `#[[LT;` for
+   *  `T[][]`. Never visible to reflection.
+   */
+  def arrayMarkerName(elem: Global.Top): Global.Top =
+    if (isArrayMarker(elem)) Global.Top("#[" + elem.id.substring(1))
+    else Global.Top("#[L" + elem.id + ";")
+
+  def isArrayMarker(name: Global.Top): Boolean = name.id.startsWith("#")
+
+  /** The trait or marker whose arrays the marker stands for. */
+  def arrayMarkerElement(name: Global.Top): Global.Top = {
+    val desc = name.id.substring(2)
+    if (desc.startsWith("[")) Global.Top("#" + desc)
+    else Global.Top(desc.substring(1, desc.length - 1))
+  }
+
   private def descriptor(elem: Type): java.lang.String = elem match {
     case Bool            => "Z"
     case Char            => "C"

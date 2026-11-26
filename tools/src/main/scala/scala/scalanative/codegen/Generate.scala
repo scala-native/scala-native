@@ -60,7 +60,9 @@ private[codegen] object Generate {
           GlobalSections.ClassInfo,
           nir.Defn.Var(nir.Attrs.None, rtti.name, rtti.struct, rtti.value)(pos)
         )
-        buf += classListEntry(rtti)(pos)
+        // Array markers are invisible to Class.forName
+        if (!nir.Type.isArrayMarker(info.name))
+          buf += classListEntry(rtti)(pos)
         if (nir.Type.isReferenceArrayClass(info.name))
           buf += arrayClassEntry(rtti)(pos)
       }

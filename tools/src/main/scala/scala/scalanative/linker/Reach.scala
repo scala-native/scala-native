@@ -199,22 +199,67 @@ private[linker] class Reach(
       }
   }
 
-  // Array classes other than XArray and ObjectArray have no NIR definition
+  /* Array classes other than XArray and ObjectArray have no NIR definition.
+   * They mirror covariance: the class of X[] extends the class of P[] for the
+   * superclass P of X (ObjectArray when P is Object or runtime.Array), and
+   * implements a marker trait for T[] for each trait T of X. Markers extend
+   * the markers of the super-traits.
+   */
   private def syntheticArrayClass(
       name: nir.Global.Top
-  ): Option[Seq[nir.Defn]] =
-    if (!nir.Type.isSyntheticArrayClass(name)) None
-    else
+  ): Option[Seq[nir.Defn]] = {
+    def defnOf(top: nir.Global.Top): Option[nir.Defn] =
+      lookup(top, ignoreIfUnavailable = true)
+    def traitsOf(top: nir.Global.Top): Seq[nir.Global.Top] =
+      defnOf(top) match {
+        case Some(defn: nir.Defn.Class)  => defn.traits
+        case Some(defn: nir.Defn.Module) => defn.traits
+        case Some(defn: nir.Defn.Trait)  => defn.traits
+        case _                           => Seq.empty
+      }
+    def parentOf(top: nir.Global.Top): Option[nir.Global.Top] =
+      defnOf(top) match {
+        case Some(defn: nir.Defn.Class)  => defn.parent
+        case Some(defn: nir.Defn.Module) => defn.parent
+        case _                           => None
+      }
+    implicit val pos: nir.SourcePosition = nir.SourcePosition.NoPosition
+    if (nir.Type.isSyntheticArrayClass(name)) {
+      val elem = nir.Type.classOfClassName(nir.Type.fromArrayClass(name).get)
+      val (parent, skippedTraits) = parentOf(elem) match {
+        case Some(nir.Rt.GenericArray.name) =>
+          nir.Rt.ObjectArray.name -> traitsOf(nir.Rt.GenericArray.name)
+        case Some(p) if p != nir.Rt.Object.name =>
+          nir.Type.arrayClassName(nir.Type.Ref(p)) -> Nil
+        case _ => nir.Rt.ObjectArray.name -> Nil
+      }
+      val traits = defnOf(elem) match {
+        case Some(_: nir.Defn.Trait) => Seq(elem)
+        case _ => (traitsOf(elem) ++ skippedTraits).distinct
+      }
       Some(
         Seq(
           nir.Defn.Class(
             nir.Attrs.None,
             name,
-            Some(nir.Rt.ObjectArray.name),
-            Seq.empty
-          )(nir.SourcePosition.NoPosition)
+            Some(parent),
+            traits.map(nir.Type.arrayMarkerName)
+          )
         )
       )
+    } else if (nir.Type.isArrayMarker(name)) {
+      val elem = nir.Type.arrayMarkerElement(name)
+      Some(
+        Seq(
+          nir.Defn.Trait(
+            nir.Attrs.None,
+            name,
+            traitsOf(elem).map(nir.Type.arrayMarkerName)
+          )
+        )
+      )
+    } else None
+  }
 
   def reachArrayClass(
       elem: nir.Type
