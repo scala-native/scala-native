@@ -38,6 +38,16 @@ class InputStreamReader(
   private var outBuf: CharBuffer =
     InputStreamReader.CommonEmptyCharBuffer
 
+  private[java] def this(
+      in: InputStream,
+      decoder: CharsetDecoder,
+      minBufferCap: Int
+  ) = {
+    this(in, decoder)
+    if (minBufferCap > inBuf.capacity())
+      inBuf = ByteBuffer.allocate(minBufferCap).limit(0)
+  }
+
   def this(in: InputStream, charset: Charset) =
     this(
       in,

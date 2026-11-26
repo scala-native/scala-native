@@ -368,4 +368,19 @@ class ChannelsTest {
     assertEquals("ok", readAll(reader, 16))
   }
 
+  @Test def newReaderHonoursMinBufferCap(): Unit = {
+    var maxRequested = 0
+    val ch = new ReadableByteChannel {
+      def read(dst: ByteBuffer): Int = {
+        maxRequested = maxRequested.max(dst.remaining())
+        -1
+      }
+      def isOpen(): Boolean = true
+      def close(): Unit = ()
+    }
+    val reader =
+      Channels.newReader(ch, StandardCharsets.UTF_8.newDecoder(), 10000)
+    assertEquals(-1, reader.read())
+    assertTrue(s"requested $maxRequested", maxRequested >= 10000)
+  }
 }

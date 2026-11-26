@@ -125,7 +125,7 @@ object Channels {
     Objects.requireNonNull(ch, "ch")
     Objects.requireNonNull(dec, "dec")
     dec.reset()
-    new InputStreamReader(newInputStream(ch), dec)
+    new InputStreamReader(newInputStream(ch), dec, minBufferCap)
   }
 
   def newReader(ch: ReadableByteChannel, csName: String): Reader =
