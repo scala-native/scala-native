@@ -1,6 +1,7 @@
 # Publishes compiler plugins and scalalib of a release for a new Scala version.
 # For 0.4.x use the workflow of the 0.4.x branch.
 name: Publish for Scala release
+run-name: Publish Scala Native ${{ inputs.scala-native-version }} for Scala ${{ inputs.scala-version }}
 on:
   workflow_dispatch:
     inputs:
@@ -17,6 +18,7 @@ permissions:
 
 env:
   EXTRA_CROSS_SCALA_VERSION: "${{ inputs.scala-version }}"
+  BACKPORT_RELEASE: 1
 
 jobs:
   publish:
@@ -54,5 +56,6 @@ jobs:
             nscplugin${{ env.project-version }}/publishSigned;
             junitPlugin${{ env.project-version }}/publishSigned;
             scalalib${{ env.project-version }}/publishSigned;
-            sonaUpload;
+            scala3lib${{ env.project-version }}/publishSigned;
+            sonaRelease;
           '
