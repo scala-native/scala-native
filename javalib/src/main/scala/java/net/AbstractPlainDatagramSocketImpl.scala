@@ -447,7 +447,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
   private def getMulticastInterface(): NetworkInterface = {
     if (useIPv4Only) {
       val addr = stackalloc[in.in_addr]()
-      addr.s_addr = 0.toUInt
+      addr._1 = in.INADDR_ANY
       val len = stackalloc[posix.sys.socket.socklen_t]()
       !len = sizeof[in.in_addr].toUInt
       if (posix.sys.socket.getsockopt(
@@ -458,7 +458,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
             len
           ) != 0)
         throwOptionError("get", "IP_MULTICAST_IF")
-      if (addr.s_addr == in.INADDR_ANY) null
+      if (addr._1 == in.INADDR_ANY) null
       else {
         val bytes = new Array[Byte](4)
         memcpy(bytes.at(0), addr.asInstanceOf[Ptr[Byte]], 4.toUSize)

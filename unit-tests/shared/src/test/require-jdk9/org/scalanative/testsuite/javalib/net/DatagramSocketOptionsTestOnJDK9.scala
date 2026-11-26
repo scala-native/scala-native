@@ -77,11 +77,11 @@ class DatagramSocketOptionsTestOnJDK9 {
   }
 
   @Test def multicastLoop(): Unit = withSocket(new DatagramSocket()) { ds =>
-    assertTrue(ds.getOption(IP_MULTICAST_LOOP))
+    assertTrue(ds.getOption(IP_MULTICAST_LOOP).booleanValue())
     ds.setOption(IP_MULTICAST_LOOP, java.lang.Boolean.FALSE)
-    assertFalse(ds.getOption(IP_MULTICAST_LOOP))
+    assertFalse(ds.getOption(IP_MULTICAST_LOOP).booleanValue())
     ds.setOption(IP_MULTICAST_LOOP, java.lang.Boolean.TRUE)
-    assertTrue(ds.getOption(IP_MULTICAST_LOOP))
+    assertTrue(ds.getOption(IP_MULTICAST_LOOP).booleanValue())
   }
 
   @Test def multicastInterfaceOption(): Unit = {
@@ -95,13 +95,13 @@ class DatagramSocketOptionsTestOnJDK9 {
 
   @Test def socketOptions(): Unit = withSocket(new DatagramSocket()) { ds =>
     ds.setOption(SO_REUSEADDR, java.lang.Boolean.TRUE)
-    assertTrue(ds.getOption(SO_REUSEADDR))
+    assertTrue(ds.getOption(SO_REUSEADDR).booleanValue())
     assertTrue(ds.getReuseAddress())
 
     ds.setOption(SO_BROADCAST, java.lang.Boolean.FALSE)
-    assertFalse(ds.getOption(SO_BROADCAST))
+    assertFalse(ds.getOption(SO_BROADCAST).booleanValue())
     ds.setOption(SO_BROADCAST, java.lang.Boolean.TRUE)
-    assertTrue(ds.getOption(SO_BROADCAST))
+    assertTrue(ds.getOption(SO_BROADCAST).booleanValue())
 
     ds.setOption(SO_RCVBUF, Integer.valueOf(16384))
     assertTrue(ds.getOption(SO_RCVBUF).intValue() > 0)
