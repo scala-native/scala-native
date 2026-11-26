@@ -1,5 +1,3 @@
-package scala.scalanative.benchmarks
-
 import microbench.{run, suite}
 
 /** Entry point of the benchmarks (`benchmarks/run <JMH options>`).

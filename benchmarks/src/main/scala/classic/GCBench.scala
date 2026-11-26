@@ -38,7 +38,7 @@
 //  	commercial Java implementations seriously attempt to minimize GC pause
 //  	times.
 
-package scala.scalanative.benchmarks.classic
+package classic
 
 import java.util.concurrent.TimeUnit
 

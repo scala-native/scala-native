@@ -1,4 +1,4 @@
-package scala.scalanative.benchmarks.runtime
+package runtime
 
 import java.util.concurrent.TimeUnit
 import java.util as ju

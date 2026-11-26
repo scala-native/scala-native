@@ -6,7 +6,7 @@
 // suspected Scala Native bottlenecks in scala-native/scala-native#4040.
 // Changes: package, injected seeded Random (reproducible worlds), public makeKey.
 
-package scala.scalanative.benchmarks.issues
+package issues
 
 import java.util.concurrent.TimeUnit
 

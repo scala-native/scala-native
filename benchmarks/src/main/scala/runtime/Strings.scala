@@ -1,4 +1,4 @@
-package scala.scalanative.benchmarks.runtime
+package runtime
 
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit

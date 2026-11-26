@@ -1,4 +1,4 @@
-package scala.scalanative.benchmarks.jsr166
+package jsr166
 
 import java.util.concurrent.TimeUnit
 import java.util as ju
