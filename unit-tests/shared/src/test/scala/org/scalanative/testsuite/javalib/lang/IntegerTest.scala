@@ -6,6 +6,7 @@ import org.junit.Assert._
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.Platform
 
 class IntegerTest {
   val signedMaxValue = Integer.MAX_VALUE
@@ -24,7 +25,9 @@ class IntegerTest {
       expectedThrowable: Class[T],
       code: => U
   )(expectedMsg: String): Unit = {
-    assertThrows(expectedMsg, expectedThrowable, code)
+    val e = assertThrows(expectedThrowable, code)
+    if (!Platform.executingInJVMOnLowerThanJDK(17))
+      assertEquals(expectedMsg, e.toString())
   }
 
   @Test def decodeTest(): Unit = {
@@ -79,28 +82,28 @@ class IntegerTest {
 
     assertThrows(classOf[NullPointerException], decode(null))
     assertThrowsAndMessage(classOf[NumberFormatException], decode("+"))(
-      """java.lang.NumberFormatException: For input string: "+""""
+      """java.lang.NumberFormatException: For input string: """""
     )
     assertThrowsAndMessage(classOf[NumberFormatException], decode("-"))(
       """java.lang.NumberFormatException: For input string: "-""""
     )
     assertThrowsAndMessage(classOf[NumberFormatException], decode(""))(
-      """java.lang.NumberFormatException: For input string: """""
+      """java.lang.NumberFormatException: Zero length string"""
     )
     assertThrowsAndMessage(classOf[NumberFormatException], decode("0x"))(
-      """java.lang.NumberFormatException: For input string: "0x""""
+      """java.lang.NumberFormatException: For input string: "" under radix 16"""
     )
     assertThrowsAndMessage(classOf[NumberFormatException], decode("#"))(
-      """java.lang.NumberFormatException: For input string: "#""""
+      """java.lang.NumberFormatException: For input string: "" under radix 16"""
     )
     assertThrowsAndMessage(classOf[NumberFormatException], decode("0xh"))(
-      """java.lang.NumberFormatException: For input string: "0xh""""
+      """java.lang.NumberFormatException: For input string: "h" under radix 16"""
     )
     assertThrowsAndMessage(classOf[NumberFormatException], decode("0XH"))(
-      """java.lang.NumberFormatException: For input string: "0XH""""
+      """java.lang.NumberFormatException: For input string: "H" under radix 16"""
     )
     assertThrowsAndMessage(classOf[NumberFormatException], decode("09"))(
-      """java.lang.NumberFormatException: For input string: "09""""
+      """java.lang.NumberFormatException: For input string: "9" under radix 8"""
     )
     assertThrowsAndMessage(classOf[NumberFormatException], decode("123a"))(
       """java.lang.NumberFormatException: For input string: "123a""""
@@ -117,6 +120,25 @@ class IntegerTest {
     )(
       s"""java.lang.NumberFormatException: For input string: "$signedMaxPlusOneText""""
     )
+    assertThrowsAndMessage(classOf[NumberFormatException], decode("-0xg"))(
+      """java.lang.NumberFormatException: For input string: "-g" under radix 16"""
+    )
+    assertThrowsAndMessage(
+      classOf[NumberFormatException],
+      decode("0x80000000")
+    )(
+      """java.lang.NumberFormatException: For input string: "80000000" under radix 16"""
+    )
+    assertThrowsAndMessage(
+      classOf[NumberFormatException],
+      decode("-#80000001")
+    )(
+      """java.lang.NumberFormatException: For input string: "-80000001" under radix 16"""
+    )
+    for (nm <- Seq("--1", "-+1", "+-1", "0x-1", "#+1", "0-1"))
+      assertThrowsAndMessage(classOf[NumberFormatException], decode(nm))(
+        """java.lang.NumberFormatException: Sign character in wrong position"""
+      )
   }
 
   @Test def parseInt(): Unit = {
@@ -138,7 +160,7 @@ class IntegerTest {
     assertEquals(signedMinValue, parse(signedMinValueText))
 
     assertThrowsAndMessage(classOf[NumberFormatException], parse(null))(
-      "java.lang.NumberFormatException: null"
+      "java.lang.NumberFormatException: Cannot parse null string"
     )
     assertThrowsAndMessage(classOf[NumberFormatException], parse("+"))(
       """java.lang.NumberFormatException: For input string: "+""""
@@ -163,6 +185,15 @@ class IntegerTest {
     )
     assertThrowsAndMessage(classOf[NumberFormatException], parse("123a", 10))(
       """java.lang.NumberFormatException: For input string: "123a""""
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException], parse("12g", 16))(
+      """java.lang.NumberFormatException: For input string: "12g" under radix 16"""
+    )
+    assertThrowsAndMessage(
+      classOf[NumberFormatException],
+      parse("-80000001", 16)
+    )(
+      """java.lang.NumberFormatException: For input string: "-80000001" under radix 16"""
     )
     assertThrowsAndMessage(
       classOf[NumberFormatException],
@@ -190,13 +221,13 @@ class IntegerTest {
     assertEquals(unsignedMaxValue, parse(unsignedMaxValueText))
 
     assertThrowsAndMessage(classOf[NumberFormatException], parse(null))(
-      """java.lang.NumberFormatException: null"""
+      """java.lang.NumberFormatException: Cannot parse null string"""
     )
     assertThrowsAndMessage(classOf[NumberFormatException], parse("+"))(
       """java.lang.NumberFormatException: For input string: "+""""
     )
     assertThrowsAndMessage(classOf[NumberFormatException], parse("-"))(
-      """java.lang.NumberFormatException: For input string: "-""""
+      """java.lang.NumberFormatException: Illegal leading minus sign on unsigned string -."""
     )
     assertThrowsAndMessage(classOf[NumberFormatException], parse(""))(
       """java.lang.NumberFormatException: For input string: """""
@@ -224,6 +255,18 @@ class IntegerTest {
       parse(unsignedMaxPlusOneText)
     )(
       s"""java.lang.NumberFormatException: String value $unsignedMaxPlusOneText exceeds range of unsigned int."""
+    )
+    assertThrowsAndMessage(
+      classOf[NumberFormatException],
+      parse("1000000000", 16)
+    )(
+      """java.lang.NumberFormatException: String value 1000000000 exceeds range of unsigned int."""
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException], parse("12g", 16))(
+      """java.lang.NumberFormatException: For input string: "12g" under radix 16"""
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException], parse("+", 16))(
+      """java.lang.NumberFormatException: For input string: "+" under radix 16"""
     )
 
     val octalMulOverflow = "137777777770"
