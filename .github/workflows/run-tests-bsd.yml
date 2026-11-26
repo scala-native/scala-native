@@ -3,14 +3,15 @@ name: Run tests BSD
 on:
   workflow_call:
     inputs:
-      extended: { type: boolean, default: false }
+      # javalib: FreeBSD javalib suites only; base; extended adds NetBSD
+      scope: { type: string, default: base }
 
 permissions:
   contents: read
 
 jobs:
   test-freebsd:
-    name: Test runtime (FreeBSD x86_64, Scala 3)
+    name: Test ${{ inputs.scope == 'javalib' && 'javalib' || 'runtime' }} (FreeBSD x86_64, Scala 3)
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     steps:
@@ -32,11 +33,11 @@ jobs:
             export JAVA_HOME=/usr/local/openjdk21
             export LLVM_BIN=/usr/local/llvm18/bin
             export PATH="$JAVA_HOME/bin:$LLVM_BIN:/usr/local/sbt/bin:/usr/local/bin:$PATH"
-            sh scripts/ci/bsd/run-bsd-tests.sh
+            sh scripts/ci/bsd/run-bsd-tests.sh ${{ inputs.scope }}
 
   test-netbsd:
     name: Test runtime (NetBSD x86_64, Scala 3)
-    if: inputs.extended
+    if: inputs.scope == 'extended'
     # On ubuntu-24.04 the guest hangs at boot, after the action's retry it has no outbound network
     runs-on: ubuntu-26.04
     timeout-minutes: 120

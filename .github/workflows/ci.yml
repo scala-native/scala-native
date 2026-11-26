@@ -1,6 +1,6 @@
 name: CI
 # Entry point for all tests and publishing. The plan job (scripts/ci/plan.scala)
-# runs each workflow off, base or extended. `ci-ok` is the only required check.
+# runs each workflow off, javalib, base or extended. `ci-ok` is the only required check.
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
@@ -50,6 +50,7 @@ jobs:
       linux-multiarch: ${{ steps.plan.outputs.linux-multiarch }}
       bsd: ${{ steps.plan.outputs.bsd }}
       termux: ${{ steps.plan.outputs.termux }}
+      jdk: ${{ steps.plan.outputs.jdk }}
       sbt-plugin: ${{ steps.plan.outputs.sbt-plugin }}
       partests: ${{ steps.plan.outputs.partests }}
     steps:
@@ -252,13 +253,21 @@ jobs:
     if: needs.plan.outputs.bsd != 'off'
     uses: ./.github/workflows/run-tests-bsd.yml
     with:
-      extended: ${{ needs.plan.outputs.bsd == 'extended' }}
+      scope: ${{ needs.plan.outputs.bsd }}
 
   termux:
     name: Termux
     needs: *gates
     if: needs.plan.outputs.termux != 'off'
     uses: ./.github/workflows/run-tests-termux.yml
+    with:
+      scope: ${{ needs.plan.outputs.termux }}
+
+  jdk:
+    name: Older JDKs
+    needs: *gates
+    if: needs.plan.outputs.jdk != 'off'
+    uses: ./.github/workflows/run-tests-jdk.yml
 
   sbt-plugin:
     name: sbt plugin
@@ -304,7 +313,7 @@ jobs:
   ci-ok:
     name: CI OK
     if: always()
-    needs: [plan, checks, gate, gate-sbt-plugin, gate-macos, gate-windows, toolchain, linux, gc, macos, windows, apple, linux-multiarch, bsd, termux, sbt-plugin, partests]
+    needs: [plan, checks, gate, gate-sbt-plugin, gate-macos, gate-windows, toolchain, linux, gc, macos, windows, apple, linux-multiarch, bsd, termux, jdk, sbt-plugin, partests]
     runs-on: ubuntu-slim
     steps:
       - name: Check results
