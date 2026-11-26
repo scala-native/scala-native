@@ -1,7 +1,6 @@
 package org.scalanative.testsuite.javalib.nio.channels
 
 import java.nio.channels._
-import java.nio.file.StandardOpenOption._
 
 import org.junit.Assert._
 import org.junit.Test
@@ -28,7 +27,7 @@ class FileChannelLockVirtualThreadTest {
   @Test def interruptFlagSetBeforeLock(): Unit = {
     assumeSupportsVirtualThreads()
     withFile { (_, f) =>
-      val ch = FileChannel.open(f, READ, WRITE)
+      val ch = rw(f)
       val out = new Outcome
       val t = virtual { () =>
         Thread.currentThread().interrupt()

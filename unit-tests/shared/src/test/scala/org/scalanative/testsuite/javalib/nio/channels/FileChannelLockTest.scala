@@ -1,11 +1,9 @@
 package org.scalanative.testsuite.javalib.nio.channels
 
-import java.io.IOException
 import java.nio.channels._
 import java.nio.file.StandardOpenOption._
 import java.nio.file.{Files, Path}
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.atomic.AtomicReference
 
 import org.junit.Assert._
@@ -32,48 +30,14 @@ object FileChannelLockTest {
 
   def rw(f: Path): FileChannel = FileChannel.open(f, READ, WRITE)
 
-  /* Like blocked(), but unblock is any action: runs op on a thread, lets it
-   * block, then runs action; unblock frees op if it is still blocked.
-   */
-  def blockedUntil(
-      op: => Any,
-      action: Thread => Unit,
-      unblock: () => Unit,
-      start: Runnable => Thread = daemon(_)
-  ): Outcome = {
-    val out = new Outcome
-    val started = new CountDownLatch(1)
-    val t = start { () =>
-      started.countDown()
-      out.capture(op)
-    }
-    assertTrue("thread started", started.await(JoinMillis, MILLISECONDS))
-    Thread.sleep(BlockMillis)
-    assertFalse(s"operation did not block: $out", out.finished)
-    val begin = System.nanoTime()
-    val actor = daemon(() => action(t))
-    actor.join(JoinMillis)
-    if (!actor.isAlive())
-      out.actionMillis = (System.nanoTime() - begin) / 1000000L
-    t.join(JoinMillis)
-    out.woken = out.finished
-    if (t.isAlive() || actor.isAlive()) {
-      unblock()
-      t.join(JoinMillis)
-      actor.join(JoinMillis)
-    }
-    out
-  }
-
   // Runs op on a thread while a child holds [0, 10); the child's release frees it.
   def blockedOnChild(
-      dir: Path,
       f: Path,
       op: => Any,
       action: Thread => Unit,
       start: Runnable => Thread = daemon(_)
   ): Outcome = {
-    val child = LockHolder.start(dir, f)
+    val child = LockHolder.start(f)
     try {
       child.lock(0, 10)
       blockedUntil(op, action, () => child.close(), start)
@@ -82,11 +46,11 @@ object FileChannelLockTest {
 
   // Also run on virtual threads by FileChannelLockVirtualThreadTest.
   def checkInterruptWakesLock(start: Runnable => Thread): Unit =
-    withFile { (dir, f) =>
+    withFile { (_, f) =>
       val ch = rw(f)
       try {
         val out =
-          blockedOnChild(dir, f, ch.lock(0, 10, false), _.interrupt(), start)
+          blockedOnChild(f, ch.lock(0, 10, false), _.interrupt(), start)
         assertWoken(out)
         assertThrew(classOf[FileLockInterruptionException], out)
         assertTrue("interrupt status kept", out.interrupted)
@@ -95,10 +59,10 @@ object FileChannelLockTest {
     }
 
   def checkCloseWakesLock(start: Runnable => Thread): Unit =
-    withFile { (dir, f) =>
+    withFile { (_, f) =>
       val ch = rw(f)
       val out =
-        blockedOnChild(dir, f, ch.lock(0, 10, false), _ => ch.close(), start)
+        blockedOnChild(f, ch.lock(0, 10, false), _ => ch.close(), start)
       assertWoken(out)
       assertThrew(classOf[AsynchronousCloseException], out)
       assertFalse("interrupted", out.interrupted)
@@ -270,7 +234,7 @@ class FileChannelLockTest {
         classOf[OverlappingFileLockException],
         ch.tryLock(5, 10, false)
       )
-      if (!Platform.isWindows) {
+      if (Platform.canCreateSymbolicLinks) {
         val sym = dir.resolve("sym")
         Files.createSymbolicLink(sym, f)
         val cs = rw(sym)
@@ -372,8 +336,8 @@ class FileChannelLockTest {
   // D2: another process
 
   @Test def tryLockReturnsNullWhenAnotherProcessHoldsIt(): Unit =
-    withFile { (dir, f) =>
-      val child = LockHolder.start(dir, f)
+    withFile { (_, f) =>
+      val child = LockHolder.start(f)
       val ch = rw(f)
       try {
         child.lock(0, 10)
@@ -392,8 +356,8 @@ class FileChannelLockTest {
       }
     }
 
-  @Test def sharedLocksAcrossProcesses(): Unit = withFile { (dir, f) =>
-    val child = LockHolder.start(dir, f)
+  @Test def sharedLocksAcrossProcesses(): Unit = withFile { (_, f) =>
+    val child = LockHolder.start(f)
     val ch = rw(f)
     try {
       child.lock(0, 10, shared = true)
@@ -414,9 +378,9 @@ class FileChannelLockTest {
     }
   }
 
-  @Test def lockWaitsForAnotherProcess(): Unit = withFile { (dir, f) =>
+  @Test def lockWaitsForAnotherProcess(): Unit = withFile { (_, f) =>
     assumeMultithreadingIsEnabled()
-    val child = LockHolder.start(dir, f)
+    val child = LockHolder.start(f)
     val ch = rw(f)
     try {
       child.lock(0, 10)
@@ -433,9 +397,9 @@ class FileChannelLockTest {
     }
   }
 
-  @Test def waitingLockCountsAsOverlap(): Unit = withFile { (dir, f) =>
+  @Test def waitingLockCountsAsOverlap(): Unit = withFile { (_, f) =>
     assumeMultithreadingIsEnabled()
-    val child = LockHolder.start(dir, f)
+    val child = LockHolder.start(f)
     val c3 = rw(f)
     val c4 = rw(f)
     try {
@@ -475,9 +439,9 @@ class FileChannelLockTest {
   @Test def closeWakesLock(): Unit =
     checkCloseWakesLock(daemon(_))
 
-  @Test def failedWaitForgetsItsRange(): Unit = withFile { (dir, f) =>
+  @Test def failedWaitForgetsItsRange(): Unit = withFile { (_, f) =>
     val ch = rw(f)
-    val out = blockedOnChild(dir, f, ch.lock(0, 10, false), _ => ch.close())
+    val out = blockedOnChild(f, ch.lock(0, 10, false), _ => ch.close())
     assertThrew(classOf[AsynchronousCloseException], out)
     val c2 = rw(f)
     try {
@@ -492,11 +456,7 @@ class FileChannelLockTest {
       val ch = rw(f)
       try {
         Thread.currentThread().interrupt()
-        val e = assertThrows(classOf[IOException], ch.lock())
-        assertTrue(
-          s"expected FileLockInterruptionException: $e",
-          e.isInstanceOf[FileLockInterruptionException]
-        )
+        assertThrows(classOf[FileLockInterruptionException], ch.lock())
         assertTrue("interrupt status kept", Thread.interrupted())
         assertFalse("channel closed", ch.isOpen())
         Thread.currentThread().interrupt()

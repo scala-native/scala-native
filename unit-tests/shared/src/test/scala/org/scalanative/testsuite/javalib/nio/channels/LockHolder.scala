@@ -23,22 +23,18 @@ final class LockHolder private (proc: Process) extends AutoCloseable {
     true
   )
 
-  locally {
-    val reader = new Thread(() => {
-      val out = new BufferedReader(
-        new InputStreamReader(proc.getInputStream(), UTF_8)
-      )
-      try {
-        var line = out.readLine()
-        while (line != null) {
-          lines.put(line)
-          line = out.readLine()
-        }
-      } catch { case _: IOException => () }
-      lines.put("EOF")
-    })
-    reader.setDaemon(true)
-    reader.start()
+  FileChannelInterruptTest.daemon { () =>
+    val out = new BufferedReader(
+      new InputStreamReader(proc.getInputStream(), UTF_8)
+    )
+    try {
+      var line = out.readLine()
+      while (line != null) {
+        lines.put(line)
+        line = out.readLine()
+      }
+    } catch { case _: IOException => () }
+    lines.put("EOF")
   }
 
   def line(): String = {
@@ -144,21 +140,50 @@ object LockHolder {
         .map(_.toString())
     }
 
-  def assumeAvailable(): Unit = {
+  private def assumeAvailable(): Unit = {
     assumeMultithreadingIsEnabled()
     assumeSupportsSubprocesses()
     assumeTrue("no java executable for the lock holder", javaCommand.isDefined)
   }
 
-  // Starts a holder on `file`; `dir` keeps its source.
-  def start(dir: Path, file: Path): LockHolder = {
-    assumeAvailable()
+  /* Compiled once per run with the javac next to java; without one, every
+   * holder runs the source file and compiles it again.
+   */
+  private lazy val launcher: Seq[String] = {
+    val java = javaCommand.get
+    val dir = Files.createTempDirectory("lock-holder")
     val src = dir.resolve("LockHolderMain.java")
-    if (!Files.exists(src)) Files.write(src, source.getBytes(UTF_8))
-    val proc =
-      new ProcessBuilder(javaCommand.get, src.toString(), file.toString())
-        .redirectError(ProcessBuilder.Redirect.INHERIT)
+    val cls = dir.resolve("LockHolderMain.class")
+    Seq(dir, src, cls).foreach(_.toFile().deleteOnExit())
+    Files.write(src, source.getBytes(UTF_8))
+    val javac = Paths
+      .get(java)
+      .resolveSibling(if (Platform.isWindows) "javac.exe" else "javac")
+    val compiled = Files.isExecutable(javac) && {
+      val p = new ProcessBuilder(
+        javac.toString(),
+        "-d",
+        dir.toString(),
+        src.toString()
+      )
+        .inheritIO()
         .start()
+      if (!p.waitFor(ReplyMillis, TimeUnit.MILLISECONDS)) p.destroyForcibly()
+      Files.exists(cls)
+    }
+    if (compiled) Seq(java, "-cp", dir.toString(), "LockHolderMain")
+    else Seq(java, src.toString())
+  }
+
+  // Starts a holder on `file`.
+  def start(file: Path): LockHolder = {
+    assumeAvailable()
+    val cmd = new java.util.ArrayList[String]()
+    launcher.foreach(cmd.add(_))
+    cmd.add(file.toString())
+    val proc = new ProcessBuilder(cmd)
+      .redirectError(ProcessBuilder.Redirect.INHERIT)
+      .start()
     val holder = new LockHolder(proc)
     assertEquals("lock holder start", "READY", holder.line())
     holder

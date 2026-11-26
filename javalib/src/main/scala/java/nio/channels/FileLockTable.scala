@@ -63,25 +63,19 @@ private[channels] object FileLockTable {
       val result = new ArrayList[FileLockImpl]()
       val list = files.get(key)
       if (list != null) {
-        var i = 0
-        while (i < list.size()) {
-          val lock = list.get(i)
+        val it = list.iterator()
+        while (it.hasNext()) {
+          val lock = it.next()
           if (lock.channel() eq channel) {
             if (lock.state == FileLockImpl.Pending) {
               lock.state = FileLockImpl.Released
+              it.remove()
               result.add(lock)
             } else if (lock.state == FileLockImpl.Held) {
               lock.state = FileLockImpl.Releasing
               result.add(lock)
             }
           }
-          i += 1
-        }
-        var j = 0
-        while (j < result.size()) {
-          val lock = result.get(j)
-          if (lock.state == FileLockImpl.Released) list.remove(lock)
-          j += 1
         }
         if (list.isEmpty()) files.remove(key)
       }

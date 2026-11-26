@@ -19,7 +19,6 @@ import scala.scalanative.posix.errno.{
   EACCES, EAGAIN, EEXIST, EINTR, ELOOP, ENOENT, EPERM, EWOULDBLOCK
 }
 import scala.scalanative.posix.fcntl._
-import scala.scalanative.posix.fcntlOps._
 import scala.scalanative.posix.poll._
 import scala.scalanative.posix.pollOps._
 import scala.scalanative.posix.stdlib.realpath
@@ -200,10 +199,8 @@ private[java] final class FileChannelImpl(
   ): FileLock = {
     // No begin(): tryLock ignores the interrupt status.
     val lock = newLock(position, size, shared, waiter = null)
-    var granted = false
-    try granted = attemptLock(lock)
-    finally if (!granted) FileLockTable.cancel(lock)
-    if (granted) lock else null
+    try if (attemptLock(lock)) lock else null
+    finally FileLockTable.cancel(lock) // no-op once granted
   }
 
   override def lock(position: Long, size: Long, shared: Boolean): FileLock = {
@@ -217,24 +214,19 @@ private[java] final class FileChannelImpl(
    * blocks in the OS, and no lease is held while parked. close() and an
    * interrupt (which closes the channel) unpark the waiter.
    */
-  private def awaitLock(lock: FileLockImpl): Unit = {
-    var completed = false
-    begin()
-    try {
-      var delay = LockMinDelayNanos
-      while (!attemptLock(lock)) {
-        LockSupport.parkNanos(this, delay)
-        delay = Math.min(delay * 2, LockMaxDelayNanos)
+  private def awaitLock(lock: FileLockImpl): Unit =
+    try
+      interruptibly {
+        var delay = LockMinDelayNanos
+        while (!attemptLock(lock)) {
+          LockSupport.parkNanos(this, delay)
+          delay = Math.min(delay * 2, LockMaxDelayNanos)
+        }
       }
-      completed = true
-    } finally {
-      try end(completed)
-      catch {
-        case _: ClosedByInterruptException =>
-          throw new FileLockInterruptionException()
-      }
+    catch {
+      case _: ClosedByInterruptException =>
+        throw new FileLockInterruptionException()
     }
-  }
 
   // Checks, then registers a pending lock; throws on overlap.
   private def newLock(
@@ -243,10 +235,7 @@ private[java] final class FileChannelImpl(
       shared: Boolean,
       waiter: Thread
   ): FileLockImpl = {
-    ensureOpen()
-    if (shared) {
-      if (!openForReading) throw new NonReadableChannelException()
-    } else if (!openForWriting) throw new NonWritableChannelException()
+    if (shared) ensureOpenForRead() else ensureOpenForWrite()
     if (position < 0) throw new IllegalArgumentException("Negative position")
     if (size < 0) throw new IllegalArgumentException("Negative size")
     if (position + size < 0)
@@ -285,7 +274,7 @@ private[java] final class FileChannelImpl(
    * cancelled meanwhile is unlocked again.
    */
   private def attemptLock(lock: FileLockImpl): Boolean = {
-    if (lock.state != FileLockImpl.Pending) throw new ClosedChannelException()
+    ensureOpen()
     leased(intr = true) {
       val granted = osLock(lock, unlock = false)
       if (granted && !FileLockTable.grant(lock)) {
@@ -364,14 +353,10 @@ private[java] final class FileChannelImpl(
       var i = 0
       while (i < locks.size()) {
         val lock = locks.get(i)
-        if (lock.state == FileLockImpl.Releasing) {
-          try {
-            if (shared.acquire())
-              try osLock(lock, unlock = true)
-              finally shared.release()
-          } catch { case _: IOException => () }
-          finally FileLockTable.remove(lock)
-        } else LockSupport.unpark(lock.waiter)
+        if (lock.state == FileLockImpl.Releasing)
+          try unlock(lock)
+          catch { case _: IOException => () }
+        else LockSupport.unpark(lock.waiter)
         i += 1
       }
     }
