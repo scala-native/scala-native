@@ -157,6 +157,8 @@ private[interflow] trait Eval { self: Interflow =>
         def nonIntrinsic = {
           val eargs = args.map(eval)
           val argtys = eargs.map {
+            case VirtualRef(_, cls, _) if cls.isSyntheticArray =>
+              nir.Type.Array(cls.arrayElement.get)
             case VirtualRef(_, cls, _) => cls.ty
             case DelayedRef(op)        => op.resty
             case value                 => value.ty

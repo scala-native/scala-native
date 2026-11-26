@@ -51,7 +51,13 @@ private[codegen] object ReflectiveProxyTable {
         }
       )
 
-    // Arrays of references use ObjectArray's entries, see dyndispatch.c
+    // Arrays of references use ObjectArray's entries, found by dyndispatch.c
+    // at a fixed index of their lineage
+    meta.analysis.infos.get(nir.Rt.ObjectArray.name).foreach {
+      case cls: Class =>
+        assert(meta.superclassCount(cls) == 2, "ObjectArray at lineage index 2")
+      case _ => ()
+    }
     val entries = for {
       cls <- meta.classes if !cls.isSyntheticArray
       proxy <- proxiesOf(cls)

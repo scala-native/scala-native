@@ -14,15 +14,10 @@ private[runtime] object StaticRoots {
   @name("scalanative_alloc_runtime_class")
   def allocRuntimeClass(size: RawSize): RawPtr = extern
 
-  // Size of ObjectArray's RTTI, copied by ArrayClasses
-  @name("scalanative_object_array_class_size")
-  def objectArrayClassSize(): RawSize = extern
-
-  // Classes of arrays of references defined by the linker
-  @name("scalanative_reference_array_classes")
-  def referenceArrayClasses(): RawPtr = extern
-  @name("scalanative_reference_array_class_count")
-  def referenceArrayClassCount(): RawSize = extern
+  // {RTTI, RTTI size} of ObjectArray and the linker's classes of arrays of
+  // references
+  @name("scalanative_static_arrayclasses_section")
+  def arrayClassesSection(): RawPtr = extern
 
   // Pointers to the RTTI of every class and trait
   @name("scalanative_static_classlist_section")

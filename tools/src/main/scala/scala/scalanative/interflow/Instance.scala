@@ -14,6 +14,9 @@ private[interflow] sealed abstract class Instance(implicit
       value.ty
     case DelayedInstance(op) =>
       op.resty
+    // Values of arrays are typed by their array type, not the linker class
+    case VirtualInstance(_, cls, _, _) if cls.isSyntheticArray =>
+      nir.Type.Array(cls.arrayElement.get, nullable = false)
     case VirtualInstance(_, cls, _, _) =>
       nir.Type.Ref(cls.name, exact = true, nullable = false)
   }

@@ -50,7 +50,7 @@ private[codegen] object Generate {
       buf ++= Lower.injects
     }
 
-    // RTTI of every class and trait, and its class list entry
+    // RTTI of every class and trait, its class list and array class entries
     def genTypeMetadata(): Unit = {
       buf += ITable.emptyDefn
       (meta.classes ++ meta.traits).foreach { info =>
@@ -61,36 +61,9 @@ private[codegen] object Generate {
           nir.Defn.Var(nir.Attrs.None, rtti.name, rtti.struct, rtti.value)(pos)
         )
         buf += classListEntry(rtti)(pos)
+        if (nir.Type.isReferenceArrayClass(info.name))
+          buf += arrayClassEntry(rtti)(pos)
       }
-      // Copied by runtime.ArrayClasses, dispatches for all arrays of references
-      meta.analysis.infos.get(nir.Rt.ObjectArray.name).foreach { info =>
-        buf += nir.Defn.Const(
-          nir.Attrs.None,
-          Extern("__scalanative_object_array_class_size"),
-          nir.Type.Int,
-          nir.Val.Int(meta.rtti(info).size)
-        )(info.position)
-        buf += nir.Defn.Const(
-          nir.Attrs.None,
-          Extern("__scalanative_object_array_class"),
-          nir.Type.Ptr,
-          meta.rtti(info).const
-        )(info.position)
-      }
-      // Linker classes of arrays of references, seed runtime.ArrayClasses
-      val arrayClasses = meta.classes.filter(_.isSyntheticArray).map(meta.rtti(_).const)
-      buf += nir.Defn.Const(
-        nir.Attrs.None,
-        Extern("__scalanative_reference_array_classes"),
-        nir.Type.ArrayValue(nir.Type.Ptr, arrayClasses.size),
-        nir.Val.ArrayValue(nir.Type.Ptr, arrayClasses)
-      )(nir.SourcePosition.NoPosition)
-      buf += nir.Defn.Const(
-        nir.Attrs.None,
-        Extern("__scalanative_reference_array_class_count"),
-        nir.Type.Int,
-        nir.Val.Int(arrayClasses.size)
-      )(nir.SourcePosition.NoPosition)
     }
 
     // Lists the RTTI in the class list section iterated by Class.forName
@@ -102,6 +75,18 @@ private[codegen] object Generate {
           rtti.name.owner.member(nir.Sig.Generated("classlist")),
           nir.Type.Ptr,
           rtti.const
+        )
+      )
+
+    // Read by runtime.ArrayClasses: classes to reuse, the size to copy
+    private def arrayClassEntry(rtti: RuntimeTypeInformation)(implicit pos: nir.SourcePosition): nir.Defn.Var =
+      meta.globalSections.define(
+        GlobalSections.ArrayClasses,
+        nir.Defn.Var(
+          nir.Attrs.None,
+          rtti.name.owner.member(nir.Sig.Generated("arrayclass")),
+          nir.Type.StructValue(Seq(nir.Type.Ptr, nir.Type.Size)),
+          nir.Val.StructValue(Seq(rtti.const, nir.Val.Size(rtti.size)))
         )
       )
 

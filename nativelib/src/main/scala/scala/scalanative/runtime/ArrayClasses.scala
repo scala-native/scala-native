@@ -55,18 +55,31 @@ object ArrayClasses {
 
   private[runtime] final val MaxDimensions = 255
 
-  // Seeded with the linker's classes
+  // RTTI size of ObjectArray, set with `classes`
+  private var objectArrayClassSize: RawSize = _
+
+  // Seeded with the linker's classes, from their sn_arrayclasses entries
   private lazy val classes: ConcurrentHashMap[Class[_], Class[_]] = {
     val map = new ConcurrentHashMap[Class[_], Class[_]]
-    val table = StaticRoots.referenceArrayClasses()
-    val count = castRawSizeToInt(StaticRoots.referenceArrayClassCount())
-    var i = 0
-    while (i < count) {
-      val cls = castRawPtrToObject(
-        loadRawPtr(elemRawPtr(table, castIntToRawSize(i * _Class.PtrSize)))
-      ).asInstanceOf[_Class[_]]
-      map.put(cls.getComponentType(), cls)
-      i += 1
+    val ptrSize = _Class.PtrSize
+    val entrySize = 2 * ptrSize // {RTTI, RTTI size}
+    val section = StaticRoots.arrayClassesSection()
+    val start = loadRawPtr(section)
+    val end = loadRawPtr(elemRawPtr(section, castIntToRawSize(ptrSize)))
+    val size = castRawPtrToLong(end) - castRawPtrToLong(start)
+    var offset = 0L
+    while (offset < size) {
+      val entry = elemRawPtr(start, castLongToRawSize(offset))
+      val rtti = loadRawPtr(entry)
+      if (castRawPtrToLong(rtti) != 0L) {
+        val cls = castRawPtrToObject(rtti).asInstanceOf[Class[_]]
+        if (is(cls.asInstanceOf[_Class[_]], classOf[ObjectArray]))
+          objectArrayClassSize = loadRawSize(
+            elemRawPtr(entry, castIntToRawSize(ptrSize))
+          )
+        else map.put(cls.getComponentType(), cls)
+      }
+      offset += entrySize
     }
     map
   }
@@ -114,7 +127,7 @@ object ArrayClasses {
           " dimensions"
       )
     val template = classOf[ObjectArray].asInstanceOf[_Class[_]]
-    val size = StaticRoots.objectArrayClassSize()
+    val size = objectArrayClassSize
     val rawptr = StaticRoots.allocRuntimeClass(size)
     if (castRawPtrToLong(rawptr) == 0L)
       throw new OutOfMemoryError("Cannot allocate the class of an array")

@@ -25,6 +25,8 @@ SN_SECTION_LOCAL const SNStaticSection *
 scalanative_static_globals_section(void);
 SN_SECTION_LOCAL const SNStaticSection *
 scalanative_static_classlist_section(void);
+SN_SECTION_LOCAL const SNStaticSection *
+scalanative_static_arrayclasses_section(void);
 
 #ifdef __cplusplus
 }

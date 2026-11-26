@@ -49,6 +49,25 @@ object Sub {
         true
       case (_: nir.Type.RefKind, nir.Rt.Object) =>
         true
+      // A linker class of an array names the array type
+      case (_, nir.Type.Ref(name, _, nullable))
+          if nir.Type.isSyntheticArrayClass(name) =>
+        is(
+          l,
+          nir.Type
+            .classOfType(r)
+            .asInstanceOf[nir.Type.Array]
+            .copy(nullable = nullable)
+        )
+      case (nir.Type.Ref(name, _, nullable), _)
+          if nir.Type.isSyntheticArrayClass(name) =>
+        is(
+          nir.Type
+            .classOfType(l)
+            .asInstanceOf[nir.Type.Array]
+            .copy(nullable = nullable),
+          r
+        )
       case (ScopeRef(linfo), ScopeRef(rinfo)) =>
         linfo.is(rinfo)
       // FIXME: Workaround for method/return types not being defined as scala.runtime.Nothing$|Null$

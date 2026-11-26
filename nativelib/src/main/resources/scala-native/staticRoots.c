@@ -194,22 +194,6 @@ static void scanRuntimeClasses(void *data, GC_ScanRangeFn *scan, void *ctx) {
     }
 }
 
-extern const int32_t __scalanative_object_array_class_size;
-extern void *const __scalanative_reference_array_classes[];
-extern const int32_t __scalanative_reference_array_class_count;
-
-SN_SECTION_LOCAL size_t scalanative_object_array_class_size(void) {
-    return (size_t)__scalanative_object_array_class_size;
-}
-
-SN_SECTION_LOCAL void *const *scalanative_reference_array_classes(void) {
-    return __scalanative_reference_array_classes;
-}
-
-SN_SECTION_LOCAL size_t scalanative_reference_array_class_count(void) {
-    return (size_t)__scalanative_reference_array_class_count;
-}
-
 SN_SECTION_LOCAL void scalanative_register_static_roots(void) {
     registerStaticObjectRoots();
     if (!scalanative_GC_add_root_provider(scanRuntimeClasses, NULL))
