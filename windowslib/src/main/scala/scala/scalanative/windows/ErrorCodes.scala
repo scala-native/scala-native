@@ -816,4 +816,9 @@ object ErrorCodes {
 
   /** Attempt to access invalid address. */
   final val ERROR_INVALID_ADDRESS = 0x1e7.toUInt
+
+  /** The I/O operation has been aborted because of either a thread exit or an
+   *  application request.
+   */
+  final val ERROR_OPERATION_ABORTED = 0x3e3.toUInt
 }

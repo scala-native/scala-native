@@ -6,6 +6,7 @@ import org.junit.Assert._
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.Platform
 
 class ShortTest {
   val signedMaxValue = Short.MAX_VALUE
@@ -20,7 +21,9 @@ class ShortTest {
       expectedThrowable: Class[T],
       code: => U
   )(expectedMsg: String): Unit = {
-    assertThrows(expectedMsg, expectedThrowable, code)
+    val e = assertThrows(expectedThrowable, code)
+    if (!Platform.executingInJVMOnLowerThanJDK(17))
+      assertEquals(expectedMsg, e.toString())
   }
 
   @Test def decodeTest(): Unit = {
@@ -75,28 +78,28 @@ class ShortTest {
 
     assertThrows(classOf[NullPointerException], decode(null))
     assertThrowsAndMessage(classOf[NumberFormatException], decode("+"))(
-      """java.lang.NumberFormatException: For input string: "+""""
+      """java.lang.NumberFormatException: For input string: """""
     )
     assertThrowsAndMessage(classOf[NumberFormatException], decode("-"))(
       """java.lang.NumberFormatException: For input string: "-""""
     )
     assertThrowsAndMessage(classOf[NumberFormatException], decode(""))(
-      """java.lang.NumberFormatException: For input string: """""
+      """java.lang.NumberFormatException: Zero length string"""
     )
     assertThrowsAndMessage(classOf[NumberFormatException], decode("0x"))(
-      """java.lang.NumberFormatException: For input string: "0x""""
+      """java.lang.NumberFormatException: For input string: "" under radix 16"""
     )
     assertThrowsAndMessage(classOf[NumberFormatException], decode("#"))(
-      """java.lang.NumberFormatException: For input string: "#""""
+      """java.lang.NumberFormatException: For input string: "" under radix 16"""
     )
     assertThrowsAndMessage(classOf[NumberFormatException], decode("0xh"))(
-      """java.lang.NumberFormatException: For input string: "0xh""""
+      """java.lang.NumberFormatException: For input string: "h" under radix 16"""
     )
     assertThrowsAndMessage(classOf[NumberFormatException], decode("0XH"))(
-      """java.lang.NumberFormatException: For input string: "0XH""""
+      """java.lang.NumberFormatException: For input string: "H" under radix 16"""
     )
     assertThrowsAndMessage(classOf[NumberFormatException], decode("09"))(
-      """java.lang.NumberFormatException: For input string: "09""""
+      """java.lang.NumberFormatException: For input string: "9" under radix 8"""
     )
     assertThrowsAndMessage(classOf[NumberFormatException], decode("123a"))(
       """java.lang.NumberFormatException: For input string: "123a""""
@@ -112,6 +115,12 @@ class ShortTest {
       decode(signedMinMinusOneText)
     )(
       s"""java.lang.NumberFormatException: Value $signedMinMinusOneText out of range from input $signedMinMinusOneText"""
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException], decode("0x8000"))(
+      """java.lang.NumberFormatException: Value 32768 out of range from input 0x8000"""
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException], decode("-#8001"))(
+      """java.lang.NumberFormatException: Value -32769 out of range from input -#8001"""
     )
   }
 
@@ -134,7 +143,7 @@ class ShortTest {
     assertEquals(signedMinValue, parse(signedMinValueText))
 
     assertThrowsAndMessage(classOf[NumberFormatException], parse(null))(
-      "java.lang.NumberFormatException: null"
+      "java.lang.NumberFormatException: Cannot parse null string"
     )
     assertThrowsAndMessage(classOf[NumberFormatException], parse("+"))(
       """java.lang.NumberFormatException: For input string: "+""""
@@ -159,6 +168,9 @@ class ShortTest {
     )
     assertThrowsAndMessage(classOf[NumberFormatException], parse("123a", 10))(
       """java.lang.NumberFormatException: For input string: "123a""""
+    )
+    assertThrowsAndMessage(classOf[NumberFormatException], parse("8000", 16))(
+      """java.lang.NumberFormatException: Value out of range. Value:"8000" Radix:16"""
     )
     assertThrowsAndMessage(
       classOf[NumberFormatException],

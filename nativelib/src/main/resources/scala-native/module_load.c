@@ -80,6 +80,19 @@ void scalanative_completeModuleInitializationForCurrentThread(void) {
     currentInitializationContext = currentInitializationContext->previous;
 }
 
+// Initialization contexts live on the stack that runs the module constructor,
+// so the chain belongs to the Java thread, not to the native thread. A virtual
+// thread saves its chain on unmount and installs it on mount, see
+// VirtualThread.mount/unmount. Returns the previous chain of this native
+// thread. Not inlined: the TLS address must not be reused across a suspend.
+NOINLINE void *
+scalanative_swapModuleInitializationContext(void *initializationContext) {
+    InitializationContext *previous = currentInitializationContext;
+    currentInitializationContext =
+        (InitializationContext *)initializationContext;
+    return previous;
+}
+
 // Set while the thread runs the managed wait, which can itself load modules.
 static SN_ThreadLocal bool awaitingInitialization = false;
 

@@ -195,7 +195,9 @@ object Byte {
     if (b == i)
       valueOf(b)
     else
-      throw new NumberFormatException()
+      throw new NumberFormatException(
+        s"""Value $i out of range from input $nm"""
+      )
   }
 
   @inline def hashCode(b: scala.Byte): scala.Int =
@@ -207,7 +209,9 @@ object Byte {
   @inline def parseByte(s: String, radix: scala.Int): scala.Byte = {
     val i = Integer.parseInt(s, radix)
     if (i < MIN_VALUE || i > MAX_VALUE)
-      throw new NumberFormatException(s"""For input string: "$s"""")
+      throw new NumberFormatException(
+        s"""Value out of range. Value:"$s" Radix:$radix"""
+      )
     else
       i.toByte
   }

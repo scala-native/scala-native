@@ -296,6 +296,54 @@ class MissingSymbolsTest extends LinkerSpec {
       ).isSuccessful
     )
 
+  // Issue #5325: Impl is allocated, only another implementor of the
+  // interface defines the method
+  @Test def methodMissingInAllocatedTraitImplementor(): Unit =
+    linkSeparately(
+      linked = Map(
+        "Api.scala" ->
+          """|package foo.bar
+             |trait Api
+             |class Impl extends Api
+             |object Impl {
+             |  def get(): Api = new Impl
+             |}
+             |""".stripMargin
+      ),
+      sources = Map(
+        "Api.java" ->
+          """|package foo.bar;
+             |public interface Api {
+             |  long missing();
+             |}
+             |""".stripMargin,
+        "Impl.java" ->
+          """|package foo.bar;
+             |public class Impl implements Api {
+             |  public static Api get() { return null; }
+             |  public native long missing();
+             |}
+             |""".stripMargin,
+        sourceFile ->
+          s"""|class Other extends foo.bar.Api {
+              |  def missing(): Long = 1L
+              |}
+              |object $mainClass{
+              |  def main(args: Array[String]): Unit = {
+              |    println(new Other().missing())
+              |    println(foo.bar.Impl.get().missing())
+              |  }
+              |}
+              |""".stripMargin
+      )
+    ) match {
+      case result: ReachabilityAnalysis.Failure =>
+        assertTrue(
+          result.unreachable.exists(_.symbol.name == "foo.bar.Api.missing")
+        )
+      case _ => fail("Expected code to not link")
+    }
+
   @Test def unsupportedFeature(): Unit = {
     doesNotLink(
       entry = mainClass,

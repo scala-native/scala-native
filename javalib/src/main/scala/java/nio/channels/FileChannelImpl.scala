@@ -1,6 +1,6 @@
 package java.nio.channels
 
-import java.io.{File, FileDescriptor, IOException}
+import java.io.{File, FileDescriptor, IOException, InputStream, OutputStream}
 import java.nio.file.attribute.FileAttribute
 import java.nio.file.{
   AccessDeniedException, FileAlreadyExistsException, FileSystemException, Files,
@@ -8,6 +8,7 @@ import java.nio.file.{
 }
 import java.nio.{ByteBuffer, MappedByteBuffer, MappedByteBufferImpl}
 import java.util.Objects
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 
 import scala.scalanative.libc.errno.errno
@@ -15,13 +16,16 @@ import scala.scalanative.libc.{LibcExt, stdio}
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.nio.fs.unix.UnixException
 import scala.scalanative.posix.errno.{
-  EACCES, EEXIST, EINTR, ELOOP, ENOENT, EPERM
+  EACCES, EAGAIN, EEXIST, EINTR, ELOOP, ENOENT, EPERM, EWOULDBLOCK
 }
 import scala.scalanative.posix.fcntl._
 import scala.scalanative.posix.fcntlOps._
+import scala.scalanative.posix.poll._
+import scala.scalanative.posix.pollOps._
+import scala.scalanative.posix.stdlib.realpath
 import scala.scalanative.posix.sys.statOps._
 import scala.scalanative.posix.sys.{ioctl, stat}
-import scala.scalanative.posix.unistd
+import scala.scalanative.posix.{limits, unistd}
 import scala.scalanative.unsafe._
 import scala.scalanative.unsigned._
 import scala.scalanative.windows
@@ -31,25 +35,93 @@ import scala.scalanative.windows.MinWinBaseApi._
 import scala.scalanative.windows.MinWinBaseApiOps._
 import scala.scalanative.windows._
 
+/* Public operations run in begin()/end(), so an interrupt or close() ends
+ * them; stream methods (private[java]) do not. Open checks come first: a
+ * closed channel throws ClosedChannelException. Syscalls hold an fd lease
+ * (see SharedHandle).
+ */
 private[java] final class FileChannelImpl(
     fd: FileDescriptor,
     file: Option[File],
     deleteFileOnClose: Boolean,
     openForReading: Boolean,
     openForWriting: Boolean,
-    openForAppending: Boolean = false
+    openForAppending: Boolean = false,
+    initialKind: Int = FileChannelImpl.KindUnknown
 ) extends FileChannel {
+  import FileChannelImpl._
+
+  private val shared = fd.shared
+  // Idempotent caches: a race only repeats the work.
+  private var kindCache = initialKind
+  private var pipeBufCache = 0
+  private var nonBlocking = false
+
   // Held by operations that use or move the position, or change the size.
   private val positionLock = new ReentrantLock()
 
   // Rechecks after locking, as close() may run while we wait.
-  private def withPositionLock[T](body: => T): T = {
-    positionLock.lock()
+  private def withPositionLock[T](intr: Boolean)(body: => T): T = {
+    lockPosition(intr)
     try {
       ensureOpen()
       body
     } finally positionLock.unlock()
   }
+
+  // close() cannot wake a lock waiter, so channel calls wait in slices.
+  private def lockPosition(intr: Boolean): Unit =
+    if (!intr) positionLock.lock()
+    else if (!positionLock.tryLock()) {
+      while (!tryLockPosition()) ensureOpen()
+    }
+
+  private def tryLockPosition(): Boolean =
+    try positionLock.tryLock(10L, TimeUnit.MILLISECONDS)
+    catch {
+      case _: InterruptedException =>
+        // Restoring the flag closes this channel: begin() is active.
+        Thread.currentThread().interrupt()
+        false
+    }
+
+  @inline private def interruptibly[T](body: => T): T = {
+    begin()
+    var completed = false
+    try {
+      val result = body
+      completed = true
+      result
+    } finally end(completed)
+  }
+
+  // Leases the fd; `intr` marks a channel call, which close() wakes.
+  @inline private def leased[T](intr: Boolean)(body: => T): T = {
+    if (!shared.acquire())
+      throw {
+        if (intr) new ClosedChannelException()
+        else new IOException("Stream Closed")
+      }
+    var registered = false
+    try {
+      if (isWindows) {
+        if (intr && kind == KindCancellable) {
+          shared.registerBlocked()
+          registered = true
+        }
+      }
+      body
+    } finally {
+      if (registered) shared.deregisterBlocked()
+      shared.release()
+    }
+  }
+
+  private def locked[T](intr: Boolean)(body: => T): T =
+    withPositionLock(intr)(leased(intr)(body))
+
+  @inline private def closing(intr: Boolean): Boolean =
+    intr && shared.isClosing
 
   // Unix uses O_APPEND, Windows emulates it.
   if (isWindows) {
@@ -100,6 +172,10 @@ private[java] final class FileChannelImpl(
 
   override def force(metadata: Boolean): Unit = {
     ensureOpen()
+    interruptibly(leased(intr = true)(forceNow(metadata)))
+  }
+
+  private def forceNow(metadata: Boolean): Unit =
     if (isWindows) {
       // FlushFileBuffers needs write access.
       if (openForWriting && !FlushFileBuffers(fd.handle))
@@ -110,7 +186,6 @@ private[java] final class FileChannelImpl(
         else unistd.fdatasync(fd.fd)
       if (res != 0) throw UnixException(getFileName(), errno)
     }
-  }
 
   @inline private def assertIfCanLock(): Unit =
     ensureOpenForWrite()
@@ -179,47 +254,13 @@ private[java] final class FileChannelImpl(
     new FileLockImpl(this, position, size, true, fd)
   }
 
-  /* Buckle up, buckaroos!
-   *
-   * This implementation relies on two pre-conditions by contract.
-   * Condition descriptions are from Java 25 API documentation.
-   *
-   *   - AbstractInterruptibleChannel#close is the sole caller. That method
-   *     ensures the condition:
-   *
-   *       This method is only invoked if the channel has not yet been
-   *       closed, and it is never invoked more than once.
-   *
-   *   - nio.channels.Channel#close is higher up the call chain. It
-   *     requires:
-   *
-   *       This method may be invoked at any time. If some other thread has
-   *       already invoked it, however, then another invocation will block
-   *       until the first invocation is complete, after which it will
-   *       return without effect.
-   *
-   *      This means implCloseChannel is executing in a synchronized block
-   *      including closing the operating system fd. Yes, that is a
-   *      long span across os I/O.
-   *
-   * Note well:
-   *
-   *  This implementation does not comply with the requirement in
-   *  AbstractInterruptibleChannel:
-   *
-   *    An implementation of this method must arrange for any other thread
-   *    that is blocked in an I/O operation upon this channel to return
-   *    immediately, either by throwing an exception or by returning
-   *    normally.
-   *
-   *  Someday, somebody will trip over this non-compliance.
-   */
-
+  // See SharedHandle.close.
   protected def implCloseChannel(): Unit = {
-    fd.close()
-
-    if (deleteFileOnClose && file.isDefined)
-      Files.delete(file.get.toPath())
+    val delete: () => Unit =
+      if (deleteFileOnClose && file.isDefined)
+        () => Files.delete(file.get.toPath())
+      else null
+    shared.close(delete)
   }
 
   override def map(
@@ -240,9 +281,6 @@ private[java] final class FileChannelImpl(
      *
      * Call to MappedByteBufferImpl() below truncates its third argument
      * to an Int, knowing this guard is in place.
-     *
-     * Java is playing pretty fast & loose with its Ints & Longs, but that is
-     * the specification & practice that needs to be followed.
      */
 
     if ((size < 0) || (size > Integer.MAX_VALUE))
@@ -250,27 +288,28 @@ private[java] final class FileChannelImpl(
 
     ensureOpen()
 
-    if (mode ne FileChannel.MapMode.READ_ONLY) {
-      // FileChannel.open() has previously rejected READ + APPEND combination.
-      if (!openForWriting)
-        throw new NonWritableChannelException
+    val readOnly = mode eq FileChannel.MapMode.READ_ONLY
+    // FileChannel.open() has previously rejected READ + APPEND combination.
+    if (!readOnly && !openForWriting)
+      throw new NonWritableChannelException
 
-      // This "lengthen" branch is tested/exercised in MappedByteBufferTest.
-      // Look in MappedByteBufferTest for tests of this "lengthen" block.
-      // Detect Long overflow & throw. Room for improvement here.
-      val newFileSize = Math.addExact(position, size)
-      withPositionLock {
-        if (newFileSize > this.size())
-          this.lengthen(newFileSize)
+    interruptibly(leased(intr = true) {
+      if (!readOnly) {
+        // This "lengthen" branch is tested/exercised in MappedByteBufferTest.
+        // Detect Long overflow & throw. Room for improvement here.
+        val newFileSize = Math.addExact(position, size)
+        withPositionLock(intr = true) {
+          if (newFileSize > sizeNow())
+            lengthen(newFileSize)
+        }
       }
-    }
-
-    // RE: toInt() truncation safety, see note for "size" arg checking above.
-    MappedByteBufferImpl(mode, position, size.toInt, fd)
+      // RE: toInt() truncation safety, see note for "size" arg checking above.
+      MappedByteBufferImpl(mode, position, size.toInt, fd)
+    })
   }
 
   // change position, even in APPEND mode. Use _carefully_.
-  private def compelPosition(offset: Long): FileChannel = {
+  private def compelPosition(offset: Long): Unit = {
     if (isWindows)
       FileApi.SetFilePointerEx(
         fd.handle,
@@ -283,21 +322,53 @@ private[java] final class FileChannelImpl(
       if (pos < 0)
         throwPosixException("lseek")
     }
-
-    this
   }
 
   override def position(offset: Long): FileChannel = {
-    ensureOpen()
-    if (offset < 0)
-      throw new IllegalArgumentException("Negative position")
-    if (!openForAppending)
-      withPositionLock(compelPosition(offset))
-
+    checkPosition(offset)
+    interruptibly(setPosition(offset, intr = true))
     this
   }
 
-  override def position(): Long = withPositionLock(currentPosition())
+  private def checkPosition(offset: Long): Unit = {
+    ensureOpen()
+    if (offset < 0)
+      throw new IllegalArgumentException("Negative position")
+  }
+
+  private def checkSize(newSize: Long): Unit = {
+    ensureOpenForWrite()
+    if (newSize < 0)
+      throw new IllegalArgumentException("Negative size")
+  }
+
+  private def setPosition(offset: Long, intr: Boolean): Unit =
+    if (!openForAppending)
+      locked(intr)(compelPosition(offset))
+
+  override def position(): Long = {
+    ensureOpen()
+    interruptibly(getPosition(intr = true))
+  }
+
+  private def getPosition(intr: Boolean): Long =
+    locked(intr)(currentPosition())
+
+  // RandomAccessFile: position operations that ignore interrupts.
+  private[java] def streamPosition(): Long = {
+    ensureOpen()
+    getPosition(intr = false)
+  }
+
+  private[java] def streamSeek(offset: Long): Unit = {
+    checkPosition(offset)
+    setPosition(offset, intr = false)
+  }
+
+  private[java] def streamTruncate(newSize: Long): Unit = {
+    checkSize(newSize)
+    truncateNow(newSize, intr = false)
+  }
 
   private def currentPosition(): Long =
     if (isWindows) {
@@ -311,7 +382,7 @@ private[java] final class FileChannelImpl(
           ))
         throw WindowsException.onPath(getFileName())
       !filePointer
-    } else if (openForAppending) size()
+    } else if (openForAppending) sizeNow()
     else {
       val pos = FileChannelNative.lseek(fd.fd, 0, stdio.SEEK_CUR)
       if (pos < 0)
@@ -329,7 +400,7 @@ private[java] final class FileChannelImpl(
 
     ensureOpenForRead()
 
-    withPositionLock {
+    interruptibly(locked(intr = true) {
       var i = 0
       var partialReadSeen = false
       var totalRead = 0L
@@ -338,7 +409,9 @@ private[java] final class FileChannelImpl(
         val len = dst.remaining()
 
         val bs = new Array[Byte](len)
-        val n = readUnlocked(bs, 0, len)
+        val n =
+          try readArray(bs, 0, len, intr = true)
+          catch { case _: AsynchronousCloseException if totalRead > 0 => 0 }
 
         if (n > 0) {
           dst.put(bs, 0, n)
@@ -352,8 +425,11 @@ private[java] final class FileChannelImpl(
       }
 
       totalRead
-    }
+    })
   }
+
+  private def readBuffer(dst: ByteBuffer): Int =
+    readIntoBuffer(dst)(readArray(_, _, _, intr = true))
 
   private def readIntoBuffer(dst: ByteBuffer)(
       readArray: (Array[Byte], Int, Int) => Int
@@ -382,25 +458,35 @@ private[java] final class FileChannelImpl(
       throw new IllegalArgumentException("Negative position")
 
     ensureOpenForRead()
-
-    if (isWindows) atPosition(pos)(readIntoBuffer(buffer)(readUnlocked))
-    else readIntoBuffer(buffer)(preadArray(_, _, _, pos))
+    interruptibly(readAt(buffer, pos))
   }
+
+  private def readAt(buffer: ByteBuffer, pos: Long): Int =
+    if (isWindows)
+      atPosition(pos)(readBuffer(buffer))
+    else
+      leased(intr = true) {
+        readIntoBuffer(buffer)(preadArray(_, _, _, pos))
+      }
+
+  // Windows has no positional I/O on synchronous handles: seek, then restore.
+  private def atPosition[T](pos: Long)(body: => T): T =
+    locked(intr = true) {
+      val stashPosition = currentPosition()
+      compelPosition(pos)
+      try body
+      finally restorePosition(stashPosition)
+    }
+
+  private def restorePosition(stashPosition: Long): Unit =
+    if (openForAppending) seekEOF()
+    else compelPosition(stashPosition)
 
   override def read(buffer: ByteBuffer): Int = {
     ensureOpenForRead()
-    withPositionLock(readIntoBuffer(buffer)(readUnlocked))
-  }
-
-  // Windows has no positional I/O on synchronous handles: seek, then restore.
-  private def atPosition[T](pos: Long)(body: => T): T = withPositionLock {
-    val stashPosition = currentPosition()
-    compelPosition(pos)
-    try body
-    finally {
-      if (openForAppending) seekEOF()
-      else compelPosition(stashPosition)
-    }
+    interruptibly(locked(intr = true) {
+      readBuffer(buffer)
+    })
   }
 
   private def preadArray(
@@ -408,21 +494,18 @@ private[java] final class FileChannelImpl(
       offset: Int,
       count: Int,
       pos: Long
-  ): Int = {
+  ): Int =
     if (count == 0) 0
-    else {
-      var readCount = 0L
-      while ({
-        readCount = FileChannelNative
-          .pread(fd.fd, buffer.at(offset), count.toCSize, pos)
-          .toLong
-        readCount < 0 && errno == EINTR
-      }) ()
-      if (readCount == 0) -1 // end of file
-      else if (readCount < 0) throw UnixException(getFileName(), errno)
-      else readCount.toInt
-    }
-  }
+    else unixRead(buffer.at(offset), count, pos, intr = true)
+
+  private def pwriteArray(
+      array: Array[Byte],
+      offset: Int,
+      count: Int,
+      pos: Long
+  ): Int =
+    if (count == 0) 0
+    else unixWrite(array.at(offset), count, pos, intr = true)
 
   private def getFileName(orElse: => String = ""): String =
     file.fold(orElse)(_.toString())
@@ -435,33 +518,43 @@ private[java] final class FileChannelImpl(
       throw new IndexOutOfBoundsException
     }
     if (count == 0) 0
-    else withPositionLock(readArray(buffer, offset, count))
+    else
+      locked(intr = false) {
+        readArray(buffer, offset, count, intr = false)
+      }
   }
 
-  // Caller holds the position lock.
-  private def readUnlocked(buffer: Array[Byte], offset: Int, count: Int): Int =
+  // Precondition: the fd is leased.
+  private def readArray(
+      buffer: Array[Byte],
+      offset: Int,
+      count: Int,
+      intr: Boolean
+  ): Int = {
     if (count == 0) 0
-    else readArray(buffer, offset, count)
-
-  private def readArray(buffer: Array[Byte], offset: Int, count: Int): Int = {
-    // we use the runtime knowledge of the array layout to avoid
-    // intermediate buffer, and write straight into the array memory
-    if (isWindows) {
+    else if (isWindows) {
       val readBytes = stackalloc[DWord]()
 
       def readAll(off: Int, len: Int): Int = {
-        if (ReadFile(fd.handle, buffer.at(off), len.toUInt, readBytes, null))
-          (!readBytes).toInt
-        else {
-          val error = ErrorHandlingApi.GetLastError()
-          if (error == ErrorCodes.ERROR_BROKEN_PIPE) 0
-          else throw WindowsException.onPathWithLastEror(getFileName(), error)
+        var result = -1
+        while (result < 0) {
+          if (closing(intr)) throw new AsynchronousCloseException()
+          if (ReadFile(fd.handle, buffer.at(off), len.toUInt, readBytes, null))
+            result = (!readBytes).toInt
+          else {
+            val error = ErrorHandlingApi.GetLastError()
+            if (error == ErrorCodes.ERROR_BROKEN_PIPE) result = 0
+            // Cancelled by close(): the loop rechecks closing.
+            else if (error != ErrorCodes.ERROR_OPERATION_ABORTED)
+              throw WindowsException.onPathWithLastEror(getFileName(), error)
+          }
         }
+        result
       }
 
       // readAll blocks until everything is read
       // but we are OK with less so we need to see what's available
-      val avail = if (file.isEmpty) available() else count
+      val avail = if (file.isEmpty) availableNow() else count
       if (avail > 0) {
         val readCount = readAll(offset, avail.min(count))
         if (readCount == 0) -1 else readCount
@@ -469,55 +562,185 @@ private[java] final class FileChannelImpl(
         val readCount = readAll(offset, 1)
         if (readCount == 0) -1 // EOF
         else {
-          val toRead = if (count == 1) 0 else available()
+          val toRead = if (count == 1) 0 else availableNow()
           if (toRead <= 0) 1
-          else 1 + readAll(offset + 1, toRead.min(count - 1))
+          else
+            try 1 + readAll(offset + 1, toRead.min(count - 1))
+            catch { case _: AsynchronousCloseException => 1 } // keep the byte
         }
       }
-    } else {
-      var readCount = 0
-      while ({
-        readCount = unistd.read(fd.fd, buffer.at(offset), count.toUInt)
-        readCount < 0 && errno == EINTR
-      }) ()
-      if (readCount == 0) {
-        -1 // end of file
-      } else if (readCount < 0) {
-        // negative value (typically -1) indicates that read failed
-        throw UnixException(getFileName(), errno)
-      } else {
-        // successfully read readCount bytes
-        readCount
+    } else unixRead(buffer.at(offset), count, -1L, intr)
+  }
+
+  // read, or pread if pos >= 0. Returns -1 at end of file.
+  private def unixRead(
+      buf: Ptr[Byte],
+      count: Int,
+      pos: Long,
+      intr: Boolean
+  ): Int = {
+    val pollFirst = prepareBlockingCall(intr, pos)
+    val n = blockingCall(write = false, buf, count, pos, pollFirst, intr)
+    if (n < 0) throw new AsynchronousCloseException()
+    else if (n == 0) -1
+    else n.toInt
+  }
+
+  /* write, or pwrite if pos >= 0, until done, a 0-byte write or close().
+   * Throws AsynchronousCloseException if nothing was written.
+   */
+  private def unixWrite(
+      buf: Ptr[Byte],
+      count: Int,
+      pos: Long,
+      intr: Boolean
+  ): Int = {
+    val pollFirst = prepareBlockingCall(intr, pos)
+    // POLLOUT promises PIPE_BUF bytes to a pipe, not to a terminal.
+    val chunk = if (pollFirst) pipeBuf else count
+    var written = 0
+    var n = 1L
+    while (n > 0 && written < count) {
+      val len = Math.min(count - written, chunk)
+      val at = if (pos < 0) pos else pos + written
+      n = blockingCall(write = true, buf + written, len, at, pollFirst, intr)
+      if (n > 0) written += n.toInt
+    }
+    if (n < 0 && written == 0) throw new AsynchronousCloseException()
+    written
+  }
+
+  /* One read or write (pread/pwrite if pos >= 0), retried on EINTR. Channel
+   * calls also wait out EAGAIN; -1 once close() stops them.
+   */
+  private def blockingCall(
+      write: Boolean,
+      buf: Ptr[Byte],
+      len: Int,
+      pos: Long,
+      pollFirst: Boolean,
+      intr: Boolean
+  ): Long = {
+    val fdNum = fd.fd
+    val events = if (write) POLLOUT else POLLIN
+    var result = Retry
+    while (result == Retry) {
+      if (pollFirst) awaitReady(fdNum, events)
+      if (closing(intr)) result = -1L
+      else {
+        val n =
+          if (write) {
+            if (pos < 0) unistd.write(fdNum, buf, len.toUInt).toLong
+            else FileChannelNative.pwrite(fdNum, buf, len.toCSize, pos).toLong
+          } else {
+            if (pos < 0) unistd.read(fdNum, buf, len.toUInt).toLong
+            else FileChannelNative.pread(fdNum, buf, len.toCSize, pos).toLong
+          }
+        if (n >= 0) result = n
+        else {
+          val e = errno
+          // Streams fail on EAGAIN: close() could not wake their poll().
+          if (intr && (e == EAGAIN || e == EWOULDBLOCK))
+            awaitReady(fdNum, events)
+          else if (e != EINTR) throw UnixException(getFileName(), e)
+        }
       }
+    }
+    result
+  }
+
+  /* Makes a relative channel call wakeable: sets O_NONBLOCK, or returns true
+   * to poll first. pread/pwrite need neither; they fail at once on pipes.
+   */
+  private def prepareBlockingCall(intr: Boolean, pos: Long): Boolean =
+    intr && pos < 0 && {
+      val k = kind
+      if (k == KindNonBlocking) enableNonBlocking()
+      k == KindPollFirst
+    }
+
+  // See Kind*. Call with a lease held.
+  private def kind: Int = {
+    if (kindCache == KindUnknown) kindCache = computeKind()
+    kindCache
+  }
+
+  private def computeKind(): Int =
+    if (isWindows) {
+      if (GetFileType(fd.handle) == FILE_TYPE_DISK) KindRegular
+      else KindCancellable
+    } else if (isRegularFd(fd.fd)) KindRegular
+    else KindPollFirst
+
+  // Unix: PIPE_BUF for this fd. Call with a lease held.
+  private def pipeBuf: Int = {
+    if (pipeBufCache == 0) {
+      val n = unistd.fpathconf(fd.fd, unistd._PC_PIPE_BUF)
+      pipeBufCache = if (n > 0) n.toInt else 512
+    }
+    pipeBufCache
+  }
+
+  // KindNonBlocking only. Racing callers may both set it; harmless.
+  private def enableNonBlocking(): Unit =
+    if (!nonBlocking) {
+      val flags = fcntl(fd.fd, F_GETFL, 0)
+      if (flags == -1 || fcntl(fd.fd, F_SETFL, flags | O_NONBLOCK) == -1)
+        throw new IOException("Cannot make the file descriptor non-blocking")
+      nonBlocking = true
+    }
+
+  // Waits until fdNum is ready or close() starts.
+  private def awaitReady(fdNum: Int, events: Int): Unit = {
+    val fds = stackalloc[struct_pollfd](2)
+    fds.fd = fdNum
+    fds.events = events.toShort
+    val wake = fds + 1
+    wake.fd = shared.wakeFd()
+    wake.events = POLLIN.toShort
+    var ready = false
+    while (!ready && !shared.isClosing) {
+      val n = poll(fds, 2.toUInt, -1)
+      if (n > 0) ready = true
+      else if (n < 0 && errno != EINTR)
+        throw UnixException(getFileName(), errno)
     }
   }
 
   override def size(): Long = {
     ensureOpen()
+    interruptibly(leased(intr = true)(sizeNow()))
+  }
+
+  private def sizeNow(): Long =
     if (isWindows) {
       val size = stackalloc[windows.LargeInteger]()
       if (!GetFileSizeEx(fd.handle, size))
         throw WindowsException.onPath(getFileName())
       (!size).toLong
-    } else withStat(_.st_size.toLong)
-  }
+    } else
+      Zone.acquire { implicit z =>
+        val statBuf = alloc[stat.stat]() // too large for the stack
+        if (stat.fstat(fd.fd, statBuf) != 0)
+          throwPosixException("fstat")
+        statBuf.st_size.toLong
+      }
 
-  // stat is too large for the stack.
-  private def withStat[T](f: Ptr[stat.stat] => T): T =
-    Zone.acquire { implicit z =>
-      val statBuf = alloc[stat.stat]()
-      if (stat.fstat(fd.fd, statBuf) != 0)
-        throwPosixException("fstat")
-      f(statBuf)
+  /* An interrupt during a transfer closes both channels. Only this channel's
+   * steps hold its lease, so waiting on the other never keeps it open.
+   */
+  private def closeBothIfInterrupted[T](other: Channel)(body: => T): T =
+    try body
+    catch {
+      case e: ClosedByInterruptException =>
+        closeQuietly(this)
+        closeQuietly(other)
+        throw e
     }
 
-  /* The pair transferFrom() and transferTo() and quite similar and
-   * beg calling into a common implementation.
-   *
-   * They differ just enough in how they must handle the position of
-   * the 'this' FileChannel that such a common implementation exceeds the
-   * day is left for the reader.
-   */
+  private def closeQuietly(channel: Channel): Unit =
+    try channel.close()
+    catch { case _: IOException => () }
 
   override def transferFrom(
       src: ReadableByteChannel,
@@ -531,6 +754,17 @@ private[java] final class FileChannelImpl(
 
     if (count < 0L)
       throw new IllegalArgumentException("Negative count")
+
+    closeBothIfInterrupted(src)(transferFromNow(src, _position, count))
+  }
+
+  private def transferFromNow(
+      src: ReadableByteChannel,
+      _position: Long,
+      count: Long
+  ): Long = {
+    // An interrupt closes the channels even if nothing is transferred.
+    interruptibly(())
 
     // Positional writes leave the channel position unchanged. Like the JVM,
     // a position past the end of file grows the file.
@@ -556,7 +790,7 @@ private[java] final class FileChannelImpl(
       } else {
         buf.flip()
         while (!done && buf.hasRemaining()) {
-          val n = this.write(buf, _position + totalWritten)
+          val n = interruptibly(writeAt(buf, _position + totalWritten))
           totalWritten += n
           if (n == 0) done = true
         }
@@ -565,8 +799,6 @@ private[java] final class FileChannelImpl(
 
     totalWritten
   }
-
-  // See comment about lack of common code before transferFrom()
 
   override def transferTo(
       _position: Long,
@@ -581,7 +813,15 @@ private[java] final class FileChannelImpl(
     if (count < 0L)
       throw new IllegalArgumentException("Negative count")
 
-    if (_position > this.size()) {
+    closeBothIfInterrupted(target)(transferToNow(_position, count, target))
+  }
+
+  private def transferToNow(
+      _position: Long,
+      count: Long,
+      target: WritableByteChannel
+  ): Long =
+    if (_position > size()) {
       0L
     } else {
       val maxBufSize = 8 * 1024 // value used by JVM
@@ -601,7 +841,7 @@ private[java] final class FileChannelImpl(
         if (nRemaining < bufSize)
           buf.limit(nRemaining.toInt)
 
-        if (this.read(buf, _position + totalWritten) == -1) {
+        if (interruptibly(readAt(buf, _position + totalWritten)) == -1) {
           done = true
         } else {
           buf.flip()
@@ -612,20 +852,19 @@ private[java] final class FileChannelImpl(
 
       totalWritten
     }
-  }
 
   private def lengthen(newFileSize: Long): Unit = {
     /* Preconditions: only caller, this.map(),  has ensured:
      *   - newFileSize > currentSize
      *   - file was opened for writing.
-     *   - "this" channel is open
+     *   - "this" channel is open, the fd is leased, the position lock held.
      */
     if (!isWindows) {
       val status = FileChannelNative.ftruncate(fd.fd, newFileSize)
       if (status < 0)
         throwPosixException("ftruncate")
     } else {
-      val currentPosition = position()
+      val currentPos = currentPosition()
 
       val hasSucceded =
         FileApi.SetFilePointerEx(
@@ -647,9 +886,9 @@ private[java] final class FileChannelImpl(
        * Write a single byte to just before EOF to convince the
        * Windows file systems to actualize and zero the undefined blocks.
        */
-      write(ByteBuffer.wrap(Array[Byte](0.toByte)), newFileSize - 1)
-
-      position(currentPosition)
+      compelPosition(newFileSize - 1)
+      writeArray(Array[Byte](0.toByte), 0, 1, intr = false)
+      restorePosition(currentPos)
     }
 
     /* This next step may not be strictly necessary; it is included for the
@@ -665,19 +904,20 @@ private[java] final class FileChannelImpl(
      * should be. If the data is already non-volatile, this should be as
      * fast as a kernel call can be.
      */
-    force(true)
+    forceNow(true)
   }
 
   override def truncate(newSize: Long): FileChannel = {
-    ensureOpenForWrite()
+    checkSize(newSize)
+    interruptibly(truncateNow(newSize, intr = true))
+    this
+  }
 
-    if (newSize < 0)
-      throw new IllegalArgumentException("Negative size")
-
-    withPositionLock {
+  private def truncateNow(newSize: Long, intr: Boolean): Unit =
+    locked(intr) {
       val position = currentPosition()
 
-      if (newSize < size()) {
+      if (newSize < sizeNow()) {
         if (isWindows) {
           val hasSucceded =
             FileApi.SetFilePointerEx(
@@ -700,55 +940,45 @@ private[java] final class FileChannelImpl(
       compelPosition(Math.min(position, newSize))
     }
 
-    this
-  }
-
+  // Precondition: arguments checked, the fd is leased.
   private def writeArray(
       array: Array[Byte],
       offset: Int,
-      count: Int
-  ): Int = {
-    // Precondition: caller has checked arguments.
-
-    val nWritten =
-      if (count == 0) 0
-      else {
-        // we use the runtime knowledge of the array layout to avoid an
-        // intermediate buffer, and read straight from the array memory.
-        val buf = array.at(offset)
-
-        // Blocking writes return once all bytes are written, or a write
-        // makes no progress.
-        var written = 0
-        if (isWindows) {
-          val n = stackalloc[DWord]()
-          while (written < count) {
-            if (!WriteFile(
-                  fd.handle,
-                  buf + written,
-                  (count - written).toUInt,
-                  n,
-                  null
-                ))
-              throw WindowsException.onPath(getFileName("<file descriptor>"))
-            written += (!n).toInt
-            // A full nonblocking pipe accepts nothing; wait for the reader.
-            if (!n == 0.toUInt) Thread.sleep(1)
-          }
+      count: Int,
+      intr: Boolean
+  ): Int =
+    if (count == 0) 0
+    else if (isWindows) {
+      val buf = array.at(offset) // no intermediate buffer
+      val n = stackalloc[DWord]()
+      // Loop until all is written or close() stops a channel operation.
+      var written = 0
+      var closed = false
+      while (!closed && written < count) {
+        if (closing(intr)) closed = true
+        else if (!WriteFile(
+              fd.handle,
+              buf + written,
+              (count - written).toUInt,
+              n,
+              null
+            )) {
+          val error = ErrorHandlingApi.GetLastError()
+          // Cancelled by close(): the loop rechecks closing.
+          if (error != ErrorCodes.ERROR_OPERATION_ABORTED)
+            throw WindowsException.onPathWithLastEror(
+              getFileName("<file descriptor>"),
+              error
+            )
         } else {
-          var done = false
-          while (!done && written < count) {
-            val n = unistd.write(fd.fd, buf + written, (count - written).toUInt)
-            if (n > 0) written += n
-            else if (n == 0) done = true
-            else if (errno != EINTR) throw UnixException(getFileName(), errno)
-          }
+          written += (!n).toInt
+          // A full nonblocking pipe accepts nothing; wait for the reader.
+          if (!n == 0.toUInt) SynchApi.Sleep(1.toUInt)
         }
-        written
       }
-
-    nWritten
-  }
+      if (closed && written == 0) throw new AsynchronousCloseException()
+      written
+    } else unixWrite(array.at(offset), count, -1L, intr)
 
   // since all of Java packages can call this, be stricter with argument checks.
   private[java] def write(
@@ -761,9 +991,9 @@ private[java] final class FileChannelImpl(
     if ((offset < 0) || (count < 0) || (count > buffer.length - offset))
       throw new IndexOutOfBoundsException
 
-    val written = withPositionLock {
+    val written = locked(intr = false) {
       seekEOFBeforeRelativeWrite()
-      writeArray(buffer, offset, count)
+      writeArray(buffer, offset, count, intr = false)
     }
     // Streams must write everything; channels may return a short count.
     if (written < count)
@@ -772,7 +1002,7 @@ private[java] final class FileChannelImpl(
   }
 
   private def writeByteBuffer(src: ByteBuffer): Int =
-    writeByteBuffer(src, writeArray(_, _, _))
+    writeByteBuffer(src, writeArray(_, _, _, intr = true))
 
   private def writeByteBuffer(
       src: ByteBuffer,
@@ -787,7 +1017,7 @@ private[java] final class FileChannelImpl(
       (src.array(), src.arrayOffset() + srcPos)
     } else {
       val ba = new Array[Byte](nBytes)
-      src.get(ba, 0, nBytes)
+      src.get(srcPos, ba, 0, nBytes) // src moves only by what is written
       (ba, 0)
     }
 
@@ -812,7 +1042,7 @@ private[java] final class FileChannelImpl(
 
     ensureOpenForWrite()
 
-    withPositionLock {
+    interruptibly(locked(intr = true) {
       var i = 0
       var partialWriteSeen = false
       var totalWritten = 0L
@@ -821,7 +1051,9 @@ private[java] final class FileChannelImpl(
         val len = src.remaining()
 
         seekEOFBeforeRelativeWrite()
-        val n = writeByteBuffer(src)
+        val n =
+          try writeByteBuffer(src)
+          catch { case _: AsynchronousCloseException if totalWritten > 0 => 0 }
 
         totalWritten += n
         if (n < len) {
@@ -831,7 +1063,7 @@ private[java] final class FileChannelImpl(
       }
 
       totalWritten
-    }
+    })
   }
 
   /* Write to absolute position, do not change current position.
@@ -852,43 +1084,24 @@ private[java] final class FileChannelImpl(
       throw new IllegalArgumentException("Negative position")
 
     ensureOpenForWrite()
-
-    if (isWindows) atPosition(pos)(writeByteBuffer(src))
-    else writeByteBuffer(src, pwriteArray(_, _, _, pos))
+    interruptibly(writeAt(src, pos))
   }
 
-  private def pwriteArray(
-      array: Array[Byte],
-      offset: Int,
-      count: Int,
-      pos: Long
-  ): Int = {
-    if (count == 0) 0
-    else {
-      var written = 0
-      var done = false
-      while (!done && written < count) {
-        val n = FileChannelNative.pwrite(
-          fd.fd,
-          array.at(offset + written),
-          (count - written).toCSize,
-          pos + written
-        )
-        if (n > 0) written += n.toInt
-        else if (n == 0) done = true
-        else if (errno != EINTR) throw UnixException(getFileName(), errno)
+  private def writeAt(src: ByteBuffer, pos: Long): Int =
+    if (isWindows)
+      atPosition(pos)(writeByteBuffer(src))
+    else
+      leased(intr = true) {
+        writeByteBuffer(src, pwriteArray(_, _, _, pos))
       }
-      written
-    }
-  }
 
   // Write relative to current position (SEEK_CUR) or, for APPEND, SEEK_END.
   override def write(src: ByteBuffer): Int = {
     ensureOpenForWrite()
-    withPositionLock {
+    interruptibly(locked(intr = true) {
       seekEOFBeforeRelativeWrite()
       writeByteBuffer(src)
-    }
+    })
   }
 
   /* The Scala Native implementation of FileInputStream#available delegates
@@ -931,7 +1144,14 @@ private[java] final class FileChannelImpl(
   // local API extension, but follows description of FileInputStream#available
   private[java] def available(): Int = {
     ensureOpen()
+    // Windows files compute it from the position, which needs the lock.
+    val usesPosition = if (isWindows) file.isDefined else false
+    if (usesPosition) locked(intr = false)(availableNow())
+    else leased(intr = false)(availableNow())
+  }
 
+  // Precondition: the fd is leased; for files on Windows, the position lock.
+  private def availableNow(): Int =
     if (!isWindows) {
       val res = stackalloc[CInt]()
       val resByte = res.asInstanceOf[Ptr[scala.Byte]]
@@ -950,29 +1170,59 @@ private[java] final class FileChannelImpl(
       if (failed) 0
       else Math.min((!availableTotal).toLong, Int.MaxValue).toInt
     } else {
-      withPositionLock {
-        Math.clamp((size() - currentPosition()), 0, Int.MaxValue)
-      }
+      Math.clamp((sizeNow() - currentPosition()), 0, Int.MaxValue)
     }
-  }
 
   // FileInputStream.skip seeks only regular files, like JDK 25.
-  private[java] lazy val isRegularFile: Boolean =
-    if (isWindows) GetFileType(fd.handle) == FILE_TYPE_DISK
-    else withStat(st => stat.S_ISREG(st.st_mode) != 0)
+  private[java] def isRegularFile: Boolean =
+    leased(intr = false)(kind == KindRegular)
 
   // Moves the position by n, possibly past the end of file or backward.
-  private[java] def skip(n: Long): Long = withPositionLock {
-    if (isWindows) {
-      if (!SetFilePointerEx(fd.handle, n, null, FILE_CURRENT))
-        throw WindowsException.onPath(getFileName())
-    } else if (FileChannelNative.lseek(fd.fd, n, stdio.SEEK_CUR) < 0)
-      throw UnixException(getFileName(), errno)
-    n
-  }
+  private[java] def skip(n: Long): Long =
+    locked(intr = false) {
+      if (isWindows) {
+        if (!SetFilePointerEx(fd.handle, n, null, FILE_CURRENT))
+          throw WindowsException.onPath(getFileName())
+      } else if (FileChannelNative.lseek(fd.fd, n, stdio.SEEK_CUR) < 0)
+        throw UnixException(getFileName(), errno)
+      n
+    }
 }
 
 private[java] object FileChannelImpl {
+  private final val Retry = -2L
+
+  private final val KindUnknown = 0
+  // Regular or disk file: I/O finishes on its own, no waking needed.
+  private final val KindRegular = 1
+  // Unix, private description: O_NONBLOCK and poll with the wake pipe.
+  private final val KindNonBlocking = 2
+  // Unix, shared description: poll with the wake pipe before each call.
+  private final val KindPollFirst = 3
+  // Windows pipe or console: woken by CancelSynchronousIo.
+  private final val KindCancellable = 4
+
+  // Streams over a channel (Files, RandomAccessFile) ignore interrupts.
+  private[java] def newInputStream(channel: FileChannelImpl): InputStream =
+    new InputStream {
+      override def read(): Int = {
+        val b = new Array[Byte](1)
+        if (channel.read(b, 0, 1) <= 0) -1 else b(0) & 0xff
+      }
+      override def read(b: Array[Byte], off: Int, len: Int): Int =
+        channel.read(b, off, len)
+      override def available(): Int = channel.available()
+      override def close(): Unit = channel.close()
+    }
+
+  private[java] def newOutputStream(channel: FileChannelImpl): OutputStream =
+    new OutputStream {
+      override def write(b: Int): Unit =
+        channel.write(Array(b.toByte), 0, 1)
+      override def write(b: Array[Byte], off: Int, len: Int): Unit =
+        channel.write(b, off, len)
+      override def close(): Unit = channel.close()
+    }
 
   private[java] final class OpenOptions(
       val read: Boolean,
@@ -986,16 +1236,34 @@ private[java] object FileChannelImpl {
       val noFollowLinks: Boolean
   )
 
-  private[java] def openFileDescriptor(
+  private[java] def openPath(
       path: Path,
       options: OpenOptions,
-      attrs: Array[FileAttribute[_]]
-  ): FileDescriptor = {
+      attrs: Array[FileAttribute[_]],
+      deleteFileOnClose: Boolean
+  ): FileChannelImpl = {
     val creating = options.create || options.createNew
     val mode = if (creating) Files.creationMode(attrs, default = 0x1b6) else 0
     val pathString = path.toString()
-    if (isWindows) openWindows(pathString, options)
-    else openUnix(pathString, options, mode)
+    val fd =
+      if (isWindows) openWindows(pathString, options)
+      else openUnix(pathString, options, mode)
+    // Opened here with O_CLOEXEC, so O_NONBLOCK is safe unless shared.
+    val kind =
+      if (isWindows) KindUnknown
+      else if (isRegularFd(fd.fd)) KindRegular
+      else if (Zone.acquire(implicit z => reopensDescription(pathString)))
+        KindPollFirst
+      else KindNonBlocking
+    new FileChannelImpl(
+      fd,
+      Some(path.toFile()),
+      deleteFileOnClose = deleteFileOnClose,
+      openForReading = options.read,
+      openForWriting = options.write,
+      openForAppending = options.append,
+      initialKind = kind
+    )
   }
 
   private def openUnix(
@@ -1033,6 +1301,22 @@ private[java] object FileChannelImpl {
       }
     }
     new FileDescriptor(fd, readOnly = !options.write)
+  }
+
+  private def isRegularFd(fd: Int): Boolean = Zone.acquire { implicit z =>
+    val st = alloc[stat.stat]()
+    stat.fstat(fd, st) == 0 && stat.S_ISREG(st.st_mode) != 0
+  }
+
+  /* macOS and BSD: opening /dev/fd/N (or /dev/stdin, or a link to them)
+   * shares the description of fd N. Unresolvable paths count as shared.
+   */
+  private def reopensDescription(path: String)(implicit z: Zone): Boolean = {
+    val resolved = alloc[Byte](limits.PATH_MAX)
+    realpath(toCString(path), resolved) == null || {
+      val real = fromCString(resolved)
+      real.startsWith("/dev/fd/") || real.startsWith("/dev/std")
+    }
   }
 
   private def openWindows(

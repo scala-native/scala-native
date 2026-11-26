@@ -103,15 +103,11 @@ object FileChannel {
       noFollowLinks = options.contains(LinkOption.NOFOLLOW_LINKS)
     )
 
-    val fd = FileChannelImpl.openFileDescriptor(path, openOptions, attrs)
-
-    new FileChannelImpl(
-      fd,
-      Some(path.toFile()),
-      deleteFileOnClose = options.contains(DELETE_ON_CLOSE),
-      openForReading = reading,
-      openForWriting = writing,
-      openForAppending = appending
+    FileChannelImpl.openPath(
+      path,
+      openOptions,
+      attrs,
+      deleteFileOnClose = options.contains(DELETE_ON_CLOSE)
     )
   }
 
