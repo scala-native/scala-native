@@ -742,7 +742,8 @@ object Settings {
 
   /** Nested sbt downloads itself and the test builds' dependencies from Maven
    *  Central, which rate limits CI, see project/MavenMirror.scala. `local` is
-   *  the Ivy repository the plugin and runtime are published to.
+   *  the Ivy repository the plugin and runtime are published to, Maven Central
+   *  is the fallback for releases the mirror has not synced yet.
    */
   private def nestedLauncherMirror(target: File): Seq[String] =
     sys.env.get("MAVEN_CENTRAL_MIRROR").filter(_.nonEmpty).toSeq.flatMap {
@@ -753,6 +754,7 @@ object Settings {
           s"""|[repositories]
               |  local
               |  maven-central-mirror: $url
+              |  maven-central
               |""".stripMargin
         )
         Seq(
