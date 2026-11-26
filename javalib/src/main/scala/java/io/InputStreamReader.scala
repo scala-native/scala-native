@@ -137,7 +137,9 @@ class InputStreamReader(
         charsRead
       } else {
         // Should never happen but be robust, multiply by 1.5 & try again.
-        loopWithOutBuf((desiredOutBufSize * 3) >> 1)
+        loopWithOutBuf(
+          Math.max(desiredOutBufSize + 1, (desiredOutBufSize * 3) >> 1)
+        )
       }
     }
 
