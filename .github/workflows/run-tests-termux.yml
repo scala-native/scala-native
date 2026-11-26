@@ -2,16 +2,13 @@ name: Run tests Termux
 # Called from ci.yml, see scripts/ci/plan.scala
 on:
   workflow_call:
-    inputs:
-      # javalib: only the javalib suites
-      scope: { type: string, default: base }
 
 permissions:
   contents: read
 
 jobs:
   test-runtime:
-    name: Test ${{ inputs.scope == 'javalib' && 'javalib' || 'runtime' }} (Termux ARM64, Scala 3)
+    name: Test runtime (Termux ARM64, Scala 3)
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 90
     steps:
@@ -35,8 +32,6 @@ jobs:
 
       - name: Run runtime suite
         shell: bash
-        env:
-          TESTS: ${{ inputs.scope == 'javalib' && 'testsJVM3/test tests3/test' || '' }}
         run: |
           cache_dir="$HOME/.cache/scala-native-termux"
           mkdir -p "$cache_dir"/{cache,sbt,ivy2}
@@ -46,8 +41,7 @@ jobs:
             --mount type=bind,source="$cache_dir/cache",target=/data/data/com.termux/files/home/.cache \
             --mount type=bind,source="$cache_dir/sbt",target=/data/data/com.termux/files/home/.sbt \
             --mount type=bind,source="$cache_dir/ivy2",target=/data/data/com.termux/files/home/.ivy2 \
-            scala-native-termux \
-            ${TESTS:+bash /data/data/com.termux/files/home/run-tests.sh $TESTS} 2>&1 | tee /tmp/termux-runtime.log
+            scala-native-termux 2>&1 | tee /tmp/termux-runtime.log
 
       - name: Restore checkout and cache ownership
         if: always()

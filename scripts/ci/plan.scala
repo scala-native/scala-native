@@ -5,10 +5,9 @@
 /** Selects the CI jobs to run, used by the plan job of
  *  .github/workflows/ci.yml.
  *
- *  Each `Workflow` runs off, javalib (only the javalib suites, for workflows
- *  with a `javalib` trigger), base (jobs without a condition) or extended (also
- *  extended-only jobs). Writes `tier`, `publish` and the level of each workflow
- *  to $GITHUB_OUTPUT.
+ *  Each `Workflow` runs off, base (jobs without a condition) or extended (also
+ *  `if: inputs.extended` jobs). Writes `tier`, `publish` and the level of each
+ *  workflow to $GITHUB_OUTPUT.
  *
  *  Environment: EVENT_NAME, REF, REF_TYPE, GH_REPO, SHA, GH_TOKEN,
  *  GITHUB_OUTPUT; for pull requests PR_NUMBER, PR_DRAFT, PR_BODY, PR_LABELS
@@ -80,7 +79,7 @@ val delimccPaths = globs(
   "nativelib/src/main/resources/scala-native/delimcc/**"
 )
 val extraPlatformPaths = toolchainPaths ++ gcPaths ++ posixPaths ++ delimccPaths
-// Java library and its tests, checked on some extra platforms
+// Java library and its tests, also tested on BSD and Termux
 val javalibPaths =
   globs("javalib/**", "javalib-intf/**", "unit-tests/**", "unit-tests-ext/**")
 
@@ -91,8 +90,6 @@ enum Workflow(
     val output: String,
     val base: Trigger,
     val extended: Trigger,
-    // only the javalib suites, below base
-    val javalib: Trigger = Trigger.Never,
     // tested before publishing a release
     val release: Boolean = false
 ):
@@ -145,16 +142,14 @@ enum Workflow(
   case BSD
       extends Workflow(
         "bsd",
-        base = Trigger.Changed(extraPlatformPaths),
-        extended = Trigger.Changed(posixPaths),
-        javalib = Trigger.Changed(javalibPaths)
+        base = Trigger.Changed(extraPlatformPaths ++ javalibPaths),
+        extended = Trigger.Changed(posixPaths)
       )
   case Termux
       extends Workflow(
         "termux",
-        base = Trigger.Changed(extraPlatformPaths),
-        extended = Trigger.Never,
-        javalib = Trigger.Changed(javalibPaths)
+        base = Trigger.Changed(extraPlatformPaths ++ javalibPaths),
+        extended = Trigger.Never
       )
   case SbtPlugin
       extends Workflow(
@@ -180,7 +175,7 @@ enum Workflow(
       )
 
 enum Level:
-  case Off, Javalib, Base, Extended
+  case Off, Base, Extended
 
   def output: String = toString.toLowerCase
 
@@ -259,7 +254,6 @@ object Plan:
         val level =
           if w.extended.matches(pr) then Level.Extended
           else if fullPr || w.base.matches(pr) then Level.Base
-          else if w.javalib.matches(pr) then Level.Javalib
           else Level.Off
         w -> level
       }.toMap

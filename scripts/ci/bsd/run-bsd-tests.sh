@@ -1,7 +1,5 @@
 #!/bin/sh
-# Usage: run-bsd-tests.sh [javalib|base|extended]
 set -eu
-scope=${1:-base}
 
 export SCALANATIVE_TEST_PREFETCH_DEBUG_INFO=1
 export SCALANATIVE_TEST_DEBUG_SIGNALS=1
@@ -50,10 +48,6 @@ uname -a
 java -version
 clang --version
 # --server avoids the native thin client, which is not available for BSD.
-if [ "$scope" = javalib ]; then
-  sbt --server --batch $SBT_MEM_OPTS "testsJVM3/test" "tests3/test"
-  exit 0
-fi
 sbt --server --batch $SBT_MEM_OPTS \
   'set sandbox.forBinaryVersion("3") / nativeConfig ~= (_.withMultithreading(true))' \
   "test-gc 3"

@@ -1,6 +1,6 @@
 name: CI
 # Entry point for all tests and publishing. The plan job (scripts/ci/plan.scala)
-# runs each workflow off, javalib, base or extended. `ci-ok` is the only required check.
+# runs each workflow off, base or extended. `ci-ok` is the only required check.
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
@@ -252,15 +252,13 @@ jobs:
     if: needs.plan.outputs.bsd != 'off'
     uses: ./.github/workflows/run-tests-bsd.yml
     with:
-      scope: ${{ needs.plan.outputs.bsd }}
+      extended: ${{ needs.plan.outputs.bsd == 'extended' }}
 
   termux:
     name: Termux
     needs: *gates
     if: needs.plan.outputs.termux != 'off'
     uses: ./.github/workflows/run-tests-termux.yml
-    with:
-      scope: ${{ needs.plan.outputs.termux }}
 
   sbt-plugin:
     name: sbt plugin
