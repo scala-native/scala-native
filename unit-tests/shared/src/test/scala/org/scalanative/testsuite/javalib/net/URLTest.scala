@@ -409,11 +409,28 @@ class URLTest {
       "../" -> "jar:file:/tmp/a.jar!/",
       "../../b" -> "jar:file:/tmp/a.jar!/b",
       "../.." -> "jar:file:/tmp/a.jar!",
-      "/.." -> "jar:file:/tmp/a.jar!"
+      "/.." -> "jar:file:/tmp/a.jar!",
+      "/x!/../b" -> "jar:file:/tmp/a.jar!/x!/b",
+      "x!/./b" -> "jar:file:/tmp/a.jar!/dir/x!/b",
+      "/a!/b/../c" -> "jar:file:/tmp/a.jar!/a!/c"
     )
     cases.foreach {
       case (spec, expected) =>
         assertEquals(spec, expected, new URL(base, spec).toString())
+    }
+    val root = new URL(base, "/..")
+    assertEquals("jar:file:/tmp/a.jar!#f", new URL(root, "#f").toString())
+    val nested = new URL(base, "/x!/dir/a")
+    val nestedCases = Seq(
+      "b" -> "jar:file:/tmp/a.jar!/x!/dir/b",
+      "/b" -> "jar:file:/tmp/a.jar!/x!/b",
+      "../../b" -> "jar:file:/tmp/a.jar!/x!/b",
+      ".." -> "jar:file:/tmp/a.jar!/x!/",
+      "#f" -> "jar:file:/tmp/a.jar!/x!/dir/a#f"
+    )
+    nestedCases.foreach {
+      case (spec, expected) =>
+        assertEquals(spec, expected, new URL(nested, spec).toString())
     }
     assertMalformed("no !/ in spec", "jar:file:/tmp/a.jar")
   }

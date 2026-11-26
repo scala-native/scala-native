@@ -44,18 +44,23 @@ final class Handler extends URLStreamHandler {
   override def parseURL(u: URL, spec0: String, start: Int, limit: Int): Unit = {
     val spec = if (limit > start) spec0.substring(start, limit) else ""
     val context = if (u.getFile() == null) "" else u.getFile()
+    // An empty spec (such as "#ref") keeps the context
+    if (spec.isEmpty && !context.isEmpty) return
     val bang = context.indexOf("!/")
-    // Without a jar: context the spec is absolute; otherwise it is an entry,
-    // even if it contains "!/"
+    // Without a jar: context the spec is absolute; otherwise it is an entry
+    // of the innermost archive, even if it contains "!/"
     val relative = bang >= 0
     val file =
       if (!relative) spec
-      else if (spec.isEmpty) context
       else {
-        val entry =
-          if (spec.startsWith("/")) spec
-          else context.substring(bang + 1, context.lastIndexOf('/') + 1) + spec
-        context.substring(0, bang + 1) + Handler.canonicalize(entry)
+        val root = context.lastIndexOf("!/")
+        val resolved = context.substring(0, root + 1) +
+          (if (spec.startsWith("/")) spec
+           else
+             context.substring(root + 1, context.lastIndexOf('/') + 1) + spec)
+        val last = resolved.lastIndexOf("!/")
+        resolved.substring(0, last + 1) +
+          Handler.canonicalize(resolved.substring(last + 1))
       }
     val sep = if (relative) bang else file.indexOf("!/")
     if (sep < 0) throw new MalformedURLException("no !/ in spec")
