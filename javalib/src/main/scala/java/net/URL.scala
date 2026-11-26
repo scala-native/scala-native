@@ -392,21 +392,75 @@ object URL {
     true
   }
 
-  /** A rough IPv6 literal check (without brackets): hex digits, colons and
-   *  dots, at least two colons, optionally followed by a `%` zone.
+  /** An IPv6 address (without brackets): eight groups of 1-4 hex digits, the
+   *  last two of which may be a dotted IPv4 address, with at most one `::`
+   *  standing for one or more zero groups; optionally followed by a non-empty
+   *  `%` zone.
    */
   private[net] def isIPv6Literal(s: String): Boolean = {
     val pct = s.indexOf('%')
+    if (pct == s.length - 1) return false
     val addr = if (pct >= 0) s.substring(0, pct) else s
-    var colons = 0
-    var i = 0
-    while (i < addr.length) {
-      val c = addr.charAt(i)
-      if (c == ':') colons += 1
-      else if (!(Character.digit(c, 16) >= 0 || c == '.')) return false
-      i += 1
+    val gap = addr.indexOf("::")
+    if (gap < 0) groups(addr, ipv4Last = true) == 8
+    else if (addr.indexOf("::", gap + 1) >= 0) false
+    else {
+      val left = groups(addr.substring(0, gap), ipv4Last = false)
+      val right = groups(addr.substring(gap + 2), ipv4Last = true)
+      left >= 0 && right >= 0 && left + right <= 7
     }
-    colons >= 2
+  }
+
+  /** The number of 16-bit groups in `s` (colon-separated, possibly empty), or
+   *  -1 if it is malformed.
+   */
+  private def groups(s: String, ipv4Last: Boolean): Int = {
+    if (s.isEmpty) return 0
+    var count = 0
+    var from = 0
+    while (from <= s.length) {
+      var to = s.indexOf(':', from)
+      if (to < 0) to = s.length
+      val part = s.substring(from, to)
+      if (to == s.length && ipv4Last && part.indexOf('.') >= 0) {
+        if (!isIPv4(part)) return -1
+        count += 2
+      } else {
+        if (part.isEmpty || part.length > 4) return -1
+        var i = 0
+        while (i < part.length) {
+          val c = part.charAt(i)
+          if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') ||
+                (c >= 'A' && c <= 'F'))) return -1
+          i += 1
+        }
+        count += 1
+      }
+      from = to + 1
+    }
+    count
+  }
+
+  private def isIPv4(s: String): Boolean = {
+    var octets = 0
+    var from = 0
+    while (from <= s.length) {
+      var to = s.indexOf('.', from)
+      if (to < 0) to = s.length
+      if (to == from || to - from > 3) return false
+      var v = 0
+      var i = from
+      while (i < to) {
+        val c = s.charAt(i)
+        if (c < '0' || c > '9') return false
+        v = v * 10 + (c - '0')
+        i += 1
+      }
+      if (v > 255) return false
+      octets += 1
+      from = to + 1
+    }
+    octets == 4
   }
 
   /** Rejects hosts with whitespace, control characters, `/`, `?`, `#` or (when

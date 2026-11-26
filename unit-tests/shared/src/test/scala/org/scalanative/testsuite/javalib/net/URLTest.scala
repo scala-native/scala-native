@@ -333,6 +333,27 @@ class URLTest {
       )
       assertMalformed("Invalid authority field: u@[::1]x", "http://u@[::1]x/")
       assertMalformed("Invalid authority field: [::1", "http://[::1/")
+      Seq(
+        ":::",
+        "1:2:3",
+        "1::2::3",
+        "1:2:3:4:5:6:7:8:9",
+        "12345::1",
+        "fe80::1%",
+        "::1.2.3",
+        "::1.2.3.256",
+        "::1.2.3.4.5",
+        ":1::2",
+        "1::2:",
+        "g::1",
+        "1.2.3.4::"
+      ).foreach { h =>
+        assertMalformed("Invalid host: [" + h + "]", "http://[" + h + "]/")
+      }
+      assertMalformedURL(
+        "Unrecognized IPv6 address format",
+        new URL("http", "1:2:3", 80, "/")
+      )
     }
     val u = new URL("http://[::1]:/")
     assertEquals(
@@ -340,6 +361,20 @@ class URLTest {
       Seq(u.getHost(), u.getPort(), u.getAuthority())
     )
     assertEquals("[::1%lo0]", new URL("http://[::1%lo0]/").getHost())
+    Seq(
+      "::",
+      "1::",
+      "::ffff:1.2.3.4",
+      "1:2:3:4:5:6:1.2.3.4",
+      "1:2:3:4:5:6:7:8",
+      "1:2:3:4:5:6:7::",
+      "::1:2:3:4:5:6:7",
+      "fe80::1%25en0",
+      "1:2:3:4:5:6:7:8%1",
+      "::FFFF:abcd"
+    ).foreach { h =>
+      assertEquals("[" + h + "]", new URL("http://[" + h + "]/").getHost())
+    }
   }
 
   @Test def ipv6HostsCompareByAddress(): Unit = {
@@ -361,7 +396,20 @@ class URLTest {
       "../c#r" -> "jar:file:/tmp/a.jar!/c#r",
       "?q" -> "jar:file:/tmp/a.jar!/dir/?q",
       "#f" -> "jar:file:/tmp/a.jar!/dir/a#f",
-      "jar:file:/x.jar!/y" -> "jar:file:/x.jar!/y"
+      "jar:file:/x.jar!/y" -> "jar:file:/x.jar!/y",
+      "sub!/b" -> "jar:file:/tmp/a.jar!/dir/sub!/b",
+      "/a!/b" -> "jar:file:/tmp/a.jar!/a!/b",
+      "/x/../b" -> "jar:file:/tmp/a.jar!/b",
+      "/x/./b" -> "jar:file:/tmp/a.jar!/x/b",
+      "/" -> "jar:file:/tmp/a.jar!/",
+      "." -> "jar:file:/tmp/a.jar!/dir/",
+      "./" -> "jar:file:/tmp/a.jar!/dir/",
+      "x/.." -> "jar:file:/tmp/a.jar!/dir/",
+      ".." -> "jar:file:/tmp/a.jar!/",
+      "../" -> "jar:file:/tmp/a.jar!/",
+      "../../b" -> "jar:file:/tmp/a.jar!/b",
+      "../.." -> "jar:file:/tmp/a.jar!",
+      "/.." -> "jar:file:/tmp/a.jar!"
     )
     cases.foreach {
       case (spec, expected) =>

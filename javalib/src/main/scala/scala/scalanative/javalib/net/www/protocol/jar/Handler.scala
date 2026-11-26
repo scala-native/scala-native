@@ -45,16 +45,19 @@ final class Handler extends URLStreamHandler {
     val spec = if (limit > start) spec0.substring(start, limit) else ""
     val context = if (u.getFile() == null) "" else u.getFile()
     val bang = context.indexOf("!/")
+    // Without a jar: context the spec is absolute; otherwise it is an entry,
+    // even if it contains "!/"
+    val relative = bang >= 0
     val file =
-      if (spec.indexOf("!/") >= 0 || bang < 0) spec
+      if (!relative) spec
       else if (spec.isEmpty) context
-      else if (spec.startsWith("/")) context.substring(0, bang + 1) + spec
       else {
         val entry =
-          context.substring(bang + 1, context.lastIndexOf('/') + 1) + spec
+          if (spec.startsWith("/")) spec
+          else context.substring(bang + 1, context.lastIndexOf('/') + 1) + spec
         context.substring(0, bang + 1) + Handler.canonicalize(entry)
       }
-    val sep = file.indexOf("!/")
+    val sep = if (relative) bang else file.indexOf("!/")
     if (sep < 0) throw new MalformedURLException("no !/ in spec")
     try new URL(file.substring(0, sep))
     catch {
@@ -113,8 +116,9 @@ private object Handler {
     if (sep < 0) file else file.substring(sep + 2)
   }
 
-  /** Removes `.` segments and `..` segments with the segment before them,
-   *  within the entry.
+  /** Removes `.` segments and `..` segments with the segment before them; a
+   *  trailing `.` or `..` keeps the directory's slash. A trailing `..` at the
+   *  root leaves an empty entry, an earlier one is ignored.
    */
   private def canonicalize(entry: String): String = {
     val segments = new java.util.ArrayList[String]()
@@ -127,7 +131,10 @@ private object Handler {
       val p = entry.substring(from, to)
       if (p == "..") {
         if (segments.size() > 1) segments.remove(segments.size() - 1)
-      } else if (p != "." || last) segments.add(if (p == ".") "" else p)
+        else if (last) segments.clear()
+      } else if (p != ".") segments.add(p)
+      if (last && (p == "." || p == "..") && !segments.isEmpty())
+        segments.add("")
       from = to + 1
     }
     val sb = new java.lang.StringBuilder()
