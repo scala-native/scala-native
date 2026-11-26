@@ -146,7 +146,7 @@ class URLConnectionTest {
     assertEquals("b", c.getRequestProperty("Accept"))
     assertEquals("b", c.getRequestProperty("accept"))
     val props = c.getRequestProperties()
-    // JDK 17 lists the values of a key newest first
+    // JDK 17 and 21 list the values of a key newest first
     if (!executingInJVMOnLowerThanJDK(25))
       assertEquals("{Accept=[a, b], X=[1], Y=[null]}", props.toString)
     assertThrows(classOf[UnsupportedOperationException], props.put("z", null))

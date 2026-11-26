@@ -48,10 +48,7 @@ abstract class URLStreamHandler {
       if ((limit <= Integer.MIN_VALUE + 1 && (start >= spec.length || start < 0)) ||
           (spec.startsWith("//", start) && spec.indexOf('/', start + 2) == -1))
         throw new StringIndexOutOfBoundsException(limit)
-      if (this ne u.handler)
-        throw new SecurityException(
-          "handler for url different from this handler"
-        )
+      checkOwner(u)
       return
     }
     val s = spec.substring(start, limit)
@@ -167,8 +164,7 @@ abstract class URLStreamHandler {
       file: String,
       ref: String
   ): Unit = {
-    if (this ne u.handler)
-      throw new SecurityException("handler for url different from this handler")
+    checkOwner(u)
     u.set(protocol, host, port, file, ref)
   }
 
@@ -183,10 +179,16 @@ abstract class URLStreamHandler {
       query: String,
       ref: String
   ): Unit = {
-    if (this ne u.handler)
-      throw new SecurityException("handler for url different from this handler")
+    checkOwner(u)
     u.set(protocol, host, port, authority, userInfo, path, query, ref)
   }
+
+  private def checkOwner(u: URL): Unit =
+    if (this ne u.handler)
+      throw new SecurityException("handler for url different from this handler")
+
+  private def effectivePort(u: URL): Int =
+    if (u.getPort() == -1) getDefaultPort() else u.getPort()
 
   protected[net] def toExternalForm(u: URL): String = {
     val sb = new java.lang.StringBuilder()
@@ -236,7 +238,7 @@ abstract class URLStreamHandler {
     }
     val file = u.getFile()
     if (file != null) h += file.hashCode()
-    h += (if (u.getPort() == -1) getDefaultPort() else u.getPort())
+    h += effectivePort(u)
     val ref = u.getRef()
     if (ref != null) h += ref.hashCode()
     h
@@ -262,11 +264,8 @@ abstract class URLStreamHandler {
   protected[net] def sameFile(u1: URL, u2: URL): Boolean =
     u1.getProtocol() == u2.getProtocol() &&
       java.util.Objects.equals(u1.getFile(), u2.getFile()) &&
-      hostsEqual(u1, u2) && {
-        val p1 = if (u1.getPort() == -1) getDefaultPort() else u1.getPort()
-        val p2 = if (u2.getPort() == -1) getDefaultPort() else u2.getPort()
-        p1 == p2
-      }
+      effectivePort(u1) == effectivePort(u2) &&
+      hostsEqual(u1, u2)
 }
 
 private[net] object URLStreamHandler {

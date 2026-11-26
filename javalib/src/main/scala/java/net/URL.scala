@@ -139,11 +139,7 @@ final class URL private () extends Serializable {
       if (handler == null) handler = context.handler
     }
 
-    if (handler == null) {
-      handler = URL.handlerFor(protocol)
-      if (handler == null)
-        throw new MalformedURLException("unknown protocol: " + protocol)
-    }
+    if (handler == null) handler = URL.requireHandler(protocol)
 
     try handler.parseURL(this, spec, index + 1, spec.length)
     catch {
@@ -154,8 +150,7 @@ final class URL private () extends Serializable {
         m.initCause(e)
         throw m
     }
-    if (port < -1)
-      throw new MalformedURLException("Invalid port number :" + port)
+    URL.checkPort(port)
   }
 
   private def init(
@@ -165,8 +160,7 @@ final class URL private () extends Serializable {
       file0: String,
       h: URLStreamHandler
   ): Unit = {
-    if (port0 < -1)
-      throw new MalformedURLException("Invalid port number :" + port0)
+    URL.checkPort(port0)
     if (protocol0 == null) throw new NullPointerException("protocol is null")
     var host = host0
     if (host != null && host.indexOf(':') >= 0 && !host.startsWith("[")) {
@@ -184,9 +178,7 @@ final class URL private () extends Serializable {
       ref = file0.substring(index + 1)
     } else file = file0
     fixURL(fixHost = false)
-    handler = if (h != null) h else URL.handlerFor(protocol)
-    if (handler == null)
-      throw new MalformedURLException("unknown protocol: " + protocol)
+    handler = if (h != null) h else URL.requireHandler(protocol)
   }
 
   private def fixURL(fixHost: Boolean): Unit = {
@@ -342,6 +334,17 @@ object URL {
     }
     h
   }
+
+  private def requireHandler(protocol: String): URLStreamHandler = {
+    val h = handlerFor(protocol)
+    if (h == null)
+      throw new MalformedURLException("unknown protocol: " + protocol)
+    h
+  }
+
+  private def checkPort(port: Int): Unit =
+    if (port < -1)
+      throw new MalformedURLException("Invalid port number :" + port)
 
   /** RFC 2396: `alpha *( alpha | digit | "+" | "-" | "." )`. */
   private def isValidScheme(s: String): Boolean = {

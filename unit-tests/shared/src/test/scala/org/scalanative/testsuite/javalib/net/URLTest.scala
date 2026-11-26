@@ -30,6 +30,11 @@ class URLTest {
     assertEquals(spec, message, e.getMessage())
   }
 
+  private def assertMalformedURL(message: String, url: => URL): Unit = {
+    val e = assertThrows(message, classOf[MalformedURLException], url)
+    assertEquals(message, e.getMessage())
+  }
+
   @Test def absoluteSpecs(): Unit = {
     assertParses(
       "[http://www.example.com/a/b.html?q=1#frag] proto=http auth=www.example.com user=null host=www.example.com port=-1 dport=80 file=/a/b.html?q=1 path=/a/b.html query=q=1 ref=frag",
@@ -172,7 +177,7 @@ class URLTest {
     assertMalformed("no protocol: ht~tp://h/", "ht~tp://h/")
     assertMalformed("no protocol: /relative", "/relative")
     assertMalformed("no protocol: ", "")
-    // Checked since a JDK newer than 17
+    // Differs on JDK 17 and 21
     if (!executingInJVMOnLowerThanJDK(25))
       assertMalformed("Illegal character found in host: ' '", "http://a b/")
     assertThrows(classOf[MalformedURLException], new URL(null: String))
@@ -225,49 +230,28 @@ class URLTest {
     val w = new URL("http", "h", 80, "a#b")
     assertEquals(Seq("a", "b"), Seq(w.getFile(), w.getRef()))
 
-    assertEquals(
+    assertMalformedURL(
       "Invalid port number :-2",
-      assertThrows(
-        classOf[MalformedURLException],
-        new URL("http", "h", -2, "/f")
-      ).getMessage()
+      new URL("http", "h", -2, "/f")
     )
-    assertEquals(
-      "unknown protocol: foo",
-      assertThrows(
-        classOf[MalformedURLException],
-        new URL("foo", "h", 80, "/f")
-      ).getMessage()
-    )
-    // Checked since a JDK newer than 17
+    assertMalformedURL("unknown protocol: foo", new URL("foo", "h", 80, "/f"))
+    // Differs on JDK 17 and 21
     if (!executingInJVMOnLowerThanJDK(25)) {
-      assertEquals(
+      assertMalformedURL(
         "Illegal character found in host: '@'",
-        assertThrows(
-          classOf[MalformedURLException],
-          new URL("http", "u@h", 80, "/f")
-        ).getMessage()
+        new URL("http", "u@h", 80, "/f")
       )
-      assertEquals(
+      assertMalformedURL(
         "Illegal character found in host: ' '",
-        assertThrows(
-          classOf[MalformedURLException],
-          new URL("http", "a b", 80, "/")
-        ).getMessage()
+        new URL("http", "a b", 80, "/")
       )
-      assertEquals(
+      assertMalformedURL(
         "Illegal character found in host: '/'",
-        assertThrows(
-          classOf[MalformedURLException],
-          new URL("http", "a/b", 80, "/")
-        ).getMessage()
+        new URL("http", "a/b", 80, "/")
       )
-      assertEquals(
+      assertMalformedURL(
         "Unrecognized IPv6 address format",
-        assertThrows(
-          classOf[MalformedURLException],
-          new URL("http", "a:b", 80, "/")
-        ).getMessage()
+        new URL("http", "a:b", 80, "/")
       )
     }
     assertThrows(classOf[NullPointerException], new URL(null, "h", 80, "/f"))

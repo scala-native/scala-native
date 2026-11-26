@@ -20,15 +20,15 @@
 
 package scala.scalanative.javalib.net.www.protocol.file
 
-import scala.scalanative.javalib.net.HttpDates
-
-import _root_.java.io.{
+import java.io.{
   BufferedInputStream, ByteArrayInputStream, File, FileInputStream, IOException,
   InputStream
 }
-import _root_.java.net.{URL, URLConnection}
-import _root_.java.nio.charset.StandardCharsets
-import _root_.java.util.{ArrayList, List, Map}
+import java.net.{URL, URLConnection}
+import java.nio.charset.StandardCharsets
+import java.util.{ArrayList, List, Map}
+
+import scala.scalanative.javalib.net.HttpDates
 
 /** A directory reads as its entry names, one per line. */
 final class FileURLConnection(u: URL) extends URLConnection(u) {
@@ -45,7 +45,13 @@ final class FileURLConnection(u: URL) extends URLConnection(u) {
       if (file.isDirectory()) {
         val sb = new java.lang.StringBuilder()
         val names = file.list()
-        if (names != null) names.foreach(n => sb.append(n).append('\n'))
+        if (names != null) {
+          var i = 0
+          while (i < names.length) {
+            sb.append(names(i)).append('\n')
+            i += 1
+          }
+        }
         new ByteArrayInputStream(sb.toString.getBytes(StandardCharsets.UTF_8))
       } else new BufferedInputStream(new FileInputStream(file))
     connected = true

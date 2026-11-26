@@ -1,9 +1,6 @@
 package org.scalanative.testsuite.javalib.net
 
-import java.io.{
-  ByteArrayOutputStream, File, FileNotFoundException, FileOutputStream,
-  InputStream
-}
+import java.io.{ByteArrayOutputStream, File, FileNotFoundException, InputStream}
 import java.net._
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
@@ -24,9 +21,7 @@ class FileURLConnectionTest {
 
   private def write(name: String, content: String): File = {
     val f = new File(dir, name)
-    val out = new FileOutputStream(f)
-    try out.write(content.getBytes(StandardCharsets.UTF_8))
-    finally out.close()
+    Files.write(f.toPath(), content.getBytes(StandardCharsets.UTF_8))
     f
   }
 
@@ -132,7 +127,7 @@ class FileURLConnectionTest {
       "hello",
       read(new URL("file://" + dir.getPath() + "/a.txt").openStream())
     )
-    // Rejected since a JDK newer than 17
+    // Differs on JDK 17 and 21
     if (!executingInJVMOnLowerThanJDK(25)) {
       val e = assertThrows(
         classOf[MalformedURLException],

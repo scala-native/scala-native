@@ -72,19 +72,29 @@ object HttpDates {
       two(ms / 60000 % 60) + ":" + two(ms / 1000 % 60) + " GMT"
   }
 
-  private val zones = Array(
-    "gmt" -> 0,
-    "ut" -> 0,
-    "utc" -> 0,
-    "est" -> -300,
-    "edt" -> -240,
-    "cst" -> -360,
-    "cdt" -> -300,
-    "mst" -> -420,
-    "mdt" -> -360,
-    "pst" -> -480,
-    "pdt" -> -420
-  )
+  private val zoneNames =
+    Array(
+      "gmt",
+      "ut",
+      "utc",
+      "est",
+      "edt",
+      "cst",
+      "cdt",
+      "mst",
+      "mdt",
+      "pst",
+      "pdt"
+    )
+  private val zoneOffsets =
+    Array(0, 0, 0, -300, -240, -360, -300, -420, -360, -480, -420)
+
+  /** The index of the first of `names` that starts with `prefix`, or -1. */
+  private def indexOfPrefix(names: Array[String], prefix: String): Int = {
+    var i = 0
+    while (i < names.length && !names(i).startsWith(prefix)) i += 1
+    if (i < names.length) i else -1
+  }
 
   /** Parses a date leniently, following the rules of the `Date.parse` Javadoc:
    *  numbers are classified by the separator after them (`:` hour/minute, `/`
@@ -117,7 +127,6 @@ object HttpDates {
         prev = c
         i += 1
       } else if (c >= '0' && c <= '9') {
-        val start = i
         var v = 0L
         while (i < n && s.charAt(i) >= '0' && s.charAt(i) <= '9') {
           v = v * 10 + (s.charAt(i) - '0')
@@ -138,8 +147,7 @@ object HttpDates {
           if (month == Unset) month = num - 1
           else if (day == Unset) day = num
           else return Long.MinValue
-        } else if (num >= 70 && year == Unset && i - start > 0 &&
-            (next <= ' ' || next == ',' || next == '/' || i >= n)) {
+        } else if (num >= 70 && year == Unset && (next <= ' ' || next == ',')) {
           year = num
         } else if (hour != Unset && minute == Unset) minute = num
         else if (minute != Unset && second == Unset) second = num
@@ -151,15 +159,18 @@ object HttpDates {
         val start = i
         while (i < n && Character.isLetter(s.charAt(i))) i += 1
         val w = s.substring(start, i).toLowerCase()
-        val zone = zones.find(_._1 == w)
         if (w == "am") pm = 0
         else if (w == "pm") pm = 1
-        else if (zone.isDefined) offset = zone.get._2
-        else if (w.length >= 3 && longDays.exists(_.startsWith(w))) ()
         else {
-          val m = fullMonths.indexWhere(_.startsWith(w))
-          if (m >= 0 && w.length >= 3 && month == Unset) month = m
-          else return Long.MinValue
+          var zone = zoneNames.length - 1
+          while (zone >= 0 && zoneNames(zone) != w) zone -= 1
+          if (zone >= 0) offset = zoneOffsets(zone)
+          else if (w.length < 3) return Long.MinValue
+          else if (indexOfPrefix(longDays, w) < 0) {
+            val m = indexOfPrefix(fullMonths, w)
+            if (m >= 0 && month == Unset) month = m
+            else return Long.MinValue
+          }
         }
         prev = ' '
       } else return Long.MinValue

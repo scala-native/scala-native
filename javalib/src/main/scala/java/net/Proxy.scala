@@ -65,12 +65,16 @@ object Proxy {
 
     def values(): Array[Type] = cachedValues.clone()
 
-    def valueOf(name: String): Type =
-      cachedValues.find(_.name() == name).getOrElse {
-        throw new IllegalArgumentException(
-          "No enum constant java.net.Proxy.Type." + name
-        )
+    def valueOf(name: String): Type = {
+      var i = 0
+      while (i < cachedValues.length) {
+        if (cachedValues(i).name() == name) return cachedValues(i)
+        i += 1
       }
+      throw new IllegalArgumentException(
+        "No enum constant java.net.Proxy.Type." + name
+      )
+    }
   }
 
   final val NO_PROXY: Proxy = new Proxy(Type.DIRECT, null, true)

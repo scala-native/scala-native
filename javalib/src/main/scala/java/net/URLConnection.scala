@@ -22,7 +22,7 @@ package java.net
 
 import java.io.{IOException, InputStream, OutputStream}
 import java.util.concurrent.ConcurrentHashMap
-import java.util.{ArrayList, Collections, LinkedHashMap, List, Map}
+import java.util.{ArrayList, Collections, LinkedHashMap, List, Map, TreeMap}
 
 import scala.scalanative.javalib.net.HttpDates
 import scala.scalanative.javalib.net.www.MimeTable
@@ -82,13 +82,21 @@ abstract class URLConnection protected (protected var url: URL) {
 
   def getHeaderFields(): Map[String, List[String]] = Collections.emptyMap()
 
-  def getHeaderFieldInt(name: String, default: Int): Int =
-    try Integer.parseInt(getHeaderField(name))
-    catch { case _: NumberFormatException => default }
+  def getHeaderFieldInt(name: String, default: Int): Int = {
+    val value = getHeaderField(name)
+    if (value == null) default
+    else
+      try Integer.parseInt(value)
+      catch { case _: NumberFormatException => default }
+  }
 
-  def getHeaderFieldLong(name: String, default: Long): Long =
-    try java.lang.Long.parseLong(getHeaderField(name))
-    catch { case _: NumberFormatException => default }
+  def getHeaderFieldLong(name: String, default: Long): Long = {
+    val value = getHeaderField(name)
+    if (value == null) default
+    else
+      try java.lang.Long.parseLong(value)
+      catch { case _: NumberFormatException => default }
+  }
 
   /** Dates without a zone are read as GMT, not in the default time zone. */
   def getHeaderFieldDate(name: String, default: Long): Long = {
@@ -216,31 +224,22 @@ object URLConnection {
    *  case are merged under their first spelling, values keep their order.
    */
   private[net] def group(
-      pairs: java.util.List[Array[String]]
+      pairs: List[Array[String]]
   ): Map[String, List[String]] = {
-    val map = new LinkedHashMap[String, List[String]]()
+    val lists = new TreeMap[String, List[String]](String.CASE_INSENSITIVE_ORDER)
+    val result = new LinkedHashMap[String, List[String]]()
     val it = pairs.iterator()
     while (it.hasNext()) {
       val kv = it.next()
-      var key: String = null
-      val keys = map.keySet().iterator()
-      while (key == null && keys.hasNext()) {
-        val k = keys.next()
-        if (k != null && kv(0) != null && k.equalsIgnoreCase(kv(0))) key = k
+      var values = lists.get(kv(0))
+      if (values == null) {
+        values = new ArrayList[String]()
+        lists.put(kv(0), values)
+        result.put(kv(0), Collections.unmodifiableList(values))
       }
-      if (key == null) {
-        key = kv(0)
-        if (!map.containsKey(key)) map.put(key, new ArrayList[String]())
-      }
-      map.get(key).add(kv(1))
+      values.add(kv(1))
     }
-    val ro = new LinkedHashMap[String, List[String]]()
-    val es = map.entrySet().iterator()
-    while (es.hasNext()) {
-      val e = es.next()
-      ro.put(e.getKey(), Collections.unmodifiableList(e.getValue()))
-    }
-    Collections.unmodifiableMap(ro)
+    Collections.unmodifiableMap(result)
   }
 
   @volatile private var defaultAllowUserInteraction = false
@@ -316,51 +315,59 @@ object URLConnection {
   def guessContentTypeFromStream(is: InputStream): String = {
     if (!is.markSupported()) return null
     is.mark(64)
-    val b = new Array[Int](64)
-    var n = 0
+    val buf = new Array[Int](64)
+    var read = 0
     var c = 0
-    while (n < 64 && { c = is.read(); c != -1 }) {
-      b(n) = c
-      n += 1
+    while (read < 64 && { c = is.read(); c != -1 }) {
+      buf(read) = c
+      read += 1
     }
     is.reset()
+    val n = read
 
-    def at(bytes: Int*): Boolean =
-      bytes.length <= n && bytes.indices.forall(i => b(i) == bytes(i))
-    def text(s: String): Boolean = at(s.map(_.toInt): _*)
-    def utf(unit: Int, bigEndian: Boolean, skip: Int, s: String): Boolean =
-      s.length * unit + skip <= n && s.indices.forall { i =>
-        val base = skip + i * unit
-        (0 until unit).forall { k =>
-          val expected =
-            if ((k == unit - 1) == bigEndian) s.charAt(i).toInt else 0
-          b(base + k) == expected
-        }
+    // `sig` holds one byte per char, matched at `off`
+    def at(sig: String, off: Int = 0): Boolean = {
+      var ok = off + sig.length <= n
+      var i = 0
+      while (ok && i < sig.length) {
+        ok = buf(off + i) == sig.charAt(i)
+        i += 1
       }
+      ok
+    }
+    // `s` encoded in UTF-16 or UTF-32 (`unit` bytes per char) after a BOM
+    def utf(unit: Int, bigEndian: Boolean, s: String): Boolean = {
+      var ok = unit + s.length * unit <= n
+      var i = 0
+      while (ok && i < s.length * unit) {
+        val low = (i % unit == unit - 1) == bigEndian
+        ok = buf(unit + i) == (if (low) s.charAt(i / unit).toInt else 0)
+        i += 1
+      }
+      ok
+    }
 
-    if (at(0xca, 0xfe, 0xba, 0xbe)) "application/java-vm"
-    else if (at(0xac, 0xed)) "application/x-java-serialized-object"
-    else if (text("<!")) "text/html"
-    else if (text("<html") || text("<HTML") || text("<head") ||
-        text("<HEAD") || text("<body") || text("<BODY")) "text/html"
-    else if (text("<?xml ")) "application/xml"
-    else if (at(0xef, 0xbb, 0xbf) && utf(1, true, 3, "<?xml"))
+    if (at("\u00ca\u00fe\u00ba\u00be")) "application/java-vm"
+    else if (at("\u00ac\u00ed")) "application/x-java-serialized-object"
+    else if (at("<!") || at("<html") || at("<HTML") || at("<head") ||
+        at("<HEAD") || at("<body") || at("<BODY")) "text/html"
+    else if (at("<?xml ")) "application/xml"
+    else if (at("\u00ef\u00bb\u00bf") && at("<?xml", 3)) "application/xml"
+    else if (at("\u00fe\u00ff") && utf(2, true, "<?xml")) "application/xml"
+    else if (at("\u00ff\u00fe") && utf(2, false, "<?xml")) "application/xml"
+    else if (at("\u0000\u0000\u00fe\u00ff") && utf(4, true, "<?xml"))
       "application/xml"
-    else if (at(0xfe, 0xff) && utf(2, true, 2, "<?xml")) "application/xml"
-    else if (at(0xff, 0xfe) && utf(2, false, 2, "<?xml")) "application/xml"
-    else if (at(0, 0, 0xfe, 0xff) && utf(4, true, 4, "<?xml"))
+    else if (at("\u00ff\u00fe\u0000\u0000") && utf(4, false, "<?xml"))
       "application/xml"
-    else if (at(0xff, 0xfe, 0, 0) && utf(4, false, 4, "<?xml"))
-      "application/xml"
-    else if (text("GIF8")) "image/gif"
-    else if (text("#def")) "image/x-bitmap"
-    else if (text("! XPM2")) "image/x-pixmap"
-    else if (at(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)) "image/png"
-    else if (at(0xff, 0xd8, 0xff, 0xe0) || at(0xff, 0xd8, 0xff, 0xee))
+    else if (at("GIF8")) "image/gif"
+    else if (at("#def")) "image/x-bitmap"
+    else if (at("! XPM2")) "image/x-pixmap"
+    else if (at("\u0089PNG\r\n\u001a\n")) "image/png"
+    else if (at("\u00ff\u00d8\u00ff\u00e0") || at("\u00ff\u00d8\u00ff\u00ee"))
       "image/jpeg"
-    else if (at(0x49, 0x49, 0x2a, 0) || at(0x4d, 0x4d, 0, 0x2a)) "image/tiff"
-    else if (text("RIFF")) "audio/x-wav"
-    else if (text(".snd")) "audio/basic"
+    else if (at("II*\u0000") || at("MM\u0000*")) "image/tiff"
+    else if (at("RIFF")) "audio/x-wav"
+    else if (at(".snd")) "audio/basic"
     else null
   }
 }

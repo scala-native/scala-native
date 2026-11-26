@@ -17,8 +17,8 @@
 
 package scala.scalanative.javalib.net.www.protocol
 
-import _root_.java.io.IOException
-import _root_.java.net.{
+import java.io.IOException
+import java.net.{
   Proxy, URL, URLConnection, URLStreamHandler, UnknownServiceException
 }
 

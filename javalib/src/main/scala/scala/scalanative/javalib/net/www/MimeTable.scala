@@ -18,8 +18,8 @@
 // Ported from Apache Harmony (org.apache.harmony.luni.internal.net.www.MimeTable)
 package scala.scalanative.javalib.net.www
 
-import _root_.java.net.FileNameMap
-import _root_.java.util.HashMap
+import java.net.FileNameMap
+import java.util.HashMap
 
 object MimeTable extends FileNameMap {
 

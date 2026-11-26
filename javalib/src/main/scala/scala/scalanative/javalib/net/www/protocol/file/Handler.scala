@@ -20,8 +20,8 @@
 
 package scala.scalanative.javalib.net.www.protocol.file
 
-import _root_.java.io.IOException
-import _root_.java.net.{
+import java.io.IOException
+import java.net.{
   MalformedURLException, Proxy, URL, URLConnection, URLStreamHandler
 }
 
@@ -37,8 +37,6 @@ final class Handler extends URLStreamHandler {
 
   /** The proxy is ignored. */
   @throws[IOException]
-  override def openConnection(u: URL, p: Proxy): URLConnection = {
-    if (p == null) throw new IllegalArgumentException("proxy can not be null")
+  override def openConnection(u: URL, p: Proxy): URLConnection =
     openConnection(u)
-  }
 }
