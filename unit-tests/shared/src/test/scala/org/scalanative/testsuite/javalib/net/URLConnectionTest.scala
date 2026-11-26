@@ -7,9 +7,11 @@ import java.util.TreeMap
 import scala.annotation.nowarn
 
 import org.junit.Assert._
+import org.junit.Assume.assumeFalse
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.Platform.executingInJVMOnLowerThanJDK
 
 @nowarn("cat=deprecation")
 class URLConnectionTest {
@@ -144,17 +146,20 @@ class URLConnectionTest {
     assertEquals("b", c.getRequestProperty("Accept"))
     assertEquals("b", c.getRequestProperty("accept"))
     val props = c.getRequestProperties()
-    assertEquals("{Accept=[a, b], X=[1], Y=[null]}", props.toString)
+    // JDK 17 lists the values of a key newest first
+    if (!executingInJVMOnLowerThanJDK(25))
+      assertEquals("{Accept=[a, b], X=[1], Y=[null]}", props.toString)
     assertThrows(classOf[UnsupportedOperationException], props.put("z", null))
     assertThrows(
       classOf[UnsupportedOperationException],
       props.get("Accept").add("z")
     )
     c.setRequestProperty("accept", "c") // replaces the last value
-    assertEquals(
-      "{Accept=[a, c], X=[1], Y=[null]}",
-      c.getRequestProperties().toString
-    )
+    if (!executingInJVMOnLowerThanJDK(25))
+      assertEquals(
+        "{Accept=[a, c], X=[1], Y=[null]}",
+        c.getRequestProperties().toString
+      )
   }
 
   @Test def timeouts(): Unit = {
@@ -253,6 +258,8 @@ class URLConnectionTest {
   }
 
   @Test def guessContentTypeFromName(): Unit = {
+    // The built-in table follows JDK 25
+    assumeFalse(executingInJVMOnLowerThanJDK(25))
     val cases = Seq(
       "txt" -> "text/plain",
       "java" -> "text/plain",

@@ -8,6 +8,7 @@ import org.junit.Assert._
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.Platform.executingInJVMOnLowerThanJDK
 
 /* Hosts compared by equals/hashCode are IP literals, `localhost` or names
  * under `.invalid`, so that their DNS lookups stay local.
@@ -170,7 +171,9 @@ class URLTest {
     assertMalformed("no protocol: ht~tp://h/", "ht~tp://h/")
     assertMalformed("no protocol: /relative", "/relative")
     assertMalformed("no protocol: ", "")
-    assertMalformed("Illegal character found in host: ' '", "http://a b/")
+    // Checked since a JDK newer than 17
+    if (!executingInJVMOnLowerThanJDK(25))
+      assertMalformed("Illegal character found in host: ' '", "http://a b/")
     assertThrows(classOf[MalformedURLException], new URL(null: String))
     val e =
       assertThrows(classOf[MalformedURLException], new URL(null: URL, "x"))
@@ -235,34 +238,37 @@ class URLTest {
         new URL("foo", "h", 80, "/f")
       ).getMessage()
     )
-    assertEquals(
-      "Illegal character found in host: '@'",
-      assertThrows(
-        classOf[MalformedURLException],
-        new URL("http", "u@h", 80, "/f")
-      ).getMessage()
-    )
-    assertEquals(
-      "Illegal character found in host: ' '",
-      assertThrows(
-        classOf[MalformedURLException],
-        new URL("http", "a b", 80, "/")
-      ).getMessage()
-    )
-    assertEquals(
-      "Illegal character found in host: '/'",
-      assertThrows(
-        classOf[MalformedURLException],
-        new URL("http", "a/b", 80, "/")
-      ).getMessage()
-    )
-    assertEquals(
-      "Unrecognized IPv6 address format",
-      assertThrows(
-        classOf[MalformedURLException],
-        new URL("http", "a:b", 80, "/")
-      ).getMessage()
-    )
+    // Checked since a JDK newer than 17
+    if (!executingInJVMOnLowerThanJDK(25)) {
+      assertEquals(
+        "Illegal character found in host: '@'",
+        assertThrows(
+          classOf[MalformedURLException],
+          new URL("http", "u@h", 80, "/f")
+        ).getMessage()
+      )
+      assertEquals(
+        "Illegal character found in host: ' '",
+        assertThrows(
+          classOf[MalformedURLException],
+          new URL("http", "a b", 80, "/")
+        ).getMessage()
+      )
+      assertEquals(
+        "Illegal character found in host: '/'",
+        assertThrows(
+          classOf[MalformedURLException],
+          new URL("http", "a/b", 80, "/")
+        ).getMessage()
+      )
+      assertEquals(
+        "Unrecognized IPv6 address format",
+        assertThrows(
+          classOf[MalformedURLException],
+          new URL("http", "a:b", 80, "/")
+        ).getMessage()
+      )
+    }
     assertThrows(classOf[NullPointerException], new URL(null, "h", 80, "/f"))
     assertThrows(classOf[NullPointerException], new URL("http", "h", 80, null))
   }

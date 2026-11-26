@@ -16,6 +16,7 @@ import org.junit.{After, Before, Test}
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
+import org.scalanative.testsuite.utils.Platform.executingInJVMOnLowerThanJDK
 
 @nowarn("cat=deprecation")
 class FileURLConnectionTest {
@@ -131,11 +132,14 @@ class FileURLConnectionTest {
       "hello",
       read(new URL("file://" + dir.getPath() + "/a.txt").openStream())
     )
-    val e = assertThrows(
-      classOf[MalformedURLException],
-      new URL("file://otherhost.invalid/x").openConnection()
-    )
-    assertEquals("Unsupported non-local file URL", e.getMessage())
+    // Rejected since a JDK newer than 17
+    if (!executingInJVMOnLowerThanJDK(25)) {
+      val e = assertThrows(
+        classOf[MalformedURLException],
+        new URL("file://otherhost.invalid/x").openConnection()
+      )
+      assertEquals("Unsupported non-local file URL", e.getMessage())
+    }
   }
 
   @Test def missingFile(): Unit = {
