@@ -392,7 +392,8 @@ class ChannelsTest {
     val writer = Channels.newWriter(sink, "UTF-8")
     writer.write("hello")
     assertThrows(classOf[java.io.IOException], writer.close())
-    assertFalse(sink.isOpen())
+    // Older JDKs leave the channel open (JDK-8136895)
+    if (!Platform.executingInJVM) assertFalse(sink.isOpen())
     writer.close()
   }
 }
