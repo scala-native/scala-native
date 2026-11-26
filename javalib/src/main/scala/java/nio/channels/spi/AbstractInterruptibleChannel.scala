@@ -27,12 +27,15 @@ abstract class AbstractInterruptibleChannel protected ()
    * to other threads, if any, when they read it.
    */
 
-  final def close(): Unit = synchronized {
+  final def close(): Unit = synchronized(closeBy(null))
+
+  // `closed` before the marker, so end() never sees the marker while open.
+  private def closeBy(interrupted: Thread): Unit =
     if (!closed) {
       closed = true
+      if (interrupted != null) interruptedThread = interrupted
       implCloseChannel() // relies upon this caller being synchronized.
     }
-  }
 
   protected final def end(completed: Boolean): Unit = {
     endInterruptible()
@@ -46,11 +49,8 @@ abstract class AbstractInterruptibleChannel protected ()
 
   // The interrupted thread's end() then throws ClosedByInterruptException.
   private[java] final def onInterrupt(thread: Thread): Unit = synchronized {
-    if (!closed) {
-      interruptedThread = thread
-      try close()
-      catch { case _: IOException => () }
-    }
+    try closeBy(thread)
+    catch { case _: IOException => () }
   }
 
   protected def implCloseChannel(): Unit

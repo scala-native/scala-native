@@ -683,6 +683,50 @@ class FileChannelInterruptTest {
     }
   }
 
+  // Like JDK 25: an interrupt during a call on a non-interruptible peer
+  // leaves both channels open and the transfer completes.
+  @Test def interruptDuringPeerCallDoesNotCloseChannels(): Unit = {
+    class Peer extends ReadableByteChannel with WritableByteChannel {
+      @volatile var open = true
+      def isOpen(): Boolean = open
+      def close(): Unit = open = false
+      def read(dst: ByteBuffer): Int = {
+        Thread.currentThread().interrupt()
+        -1
+      }
+      def write(src: ByteBuffer): Int = {
+        Thread.currentThread().interrupt()
+        val n = src.remaining()
+        src.position(src.limit())
+        n
+      }
+    }
+    withTemporaryDirectory { dir =>
+      val f = dir.resolve("f")
+      Files.write(f, new Array[Byte](10))
+      inThread {
+        val transfers: List[(String, Long, (FileChannel, Peer) => Long)] =
+          List(
+            ("transferFrom", 0L, (a, p) => a.transferFrom(p, 0L, 4L)),
+            ("transferTo", 4L, (a, p) => a.transferTo(0L, 4L, p))
+          )
+        for ((name, expected, op) <- transfers) {
+          val a = FileChannel.open(f, READ, WRITE)
+          val peer = new Peer
+          try {
+            assertEquals(s"$name: transferred", expected, op(a, peer))
+            assertTrue(s"$name: interrupt status kept", Thread.interrupted())
+            assertTrue(s"$name: channel open", a.isOpen())
+            assertTrue(s"$name: peer open", peer.isOpen())
+          } finally {
+            Thread.interrupted()
+            a.close()
+          }
+        }
+      }
+    }
+  }
+
   // No IOException may leak from a race with close().
   @Test def closeDuringPositionalReadsOnRegularFile(): Unit = {
     assumeMultithreadingIsEnabled()

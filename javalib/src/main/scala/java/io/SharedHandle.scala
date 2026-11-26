@@ -3,7 +3,7 @@ package java.io
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.javalib.io.{AtomicObjectHandle, ObjectHandle}
 import scala.scalanative.libc.stdatomic.AtomicInt
-import scala.scalanative.meta.LinktimeInfo.{isMultithreadingEnabled, isWindows}
+import scala.scalanative.meta.LinktimeInfo._
 import scala.scalanative.posix.{fcntl, unistd}
 import scala.scalanative.runtime.{Intrinsics, fromRawPtr}
 import scala.scalanative.unsafe._
@@ -146,13 +146,31 @@ private[java] object SharedHandle {
   private object WakePipe {
     def apply(): WakePipe = {
       val fds = stackalloc[CInt](2)
-      if (unistd.pipe(fds) != 0)
-        throw new IOException("Cannot create a wake-up pipe")
-      fcntl.fcntl(fds(0), fcntl.F_SETFD, fcntl.FD_CLOEXEC)
-      fcntl.fcntl(fds(1), fcntl.F_SETFD, fcntl.FD_CLOEXEC)
+      // pipe2 sets close-on-exec atomically; Apple has no pipe2.
+      val hasPipe2 = isLinux || isFreeBSD || isOpenBSD || isNetBSD
+      val created =
+        if (hasPipe2) unistd.pipe2(fds, fcntl.O_CLOEXEC) == 0
+        else
+          unistd.pipe(fds) == 0 && {
+            val ok =
+              fcntl.fcntl(fds(0), fcntl.F_SETFD, fcntl.FD_CLOEXEC) != -1 &&
+                fcntl.fcntl(fds(1), fcntl.F_SETFD, fcntl.FD_CLOEXEC) != -1
+            if (!ok) closeBoth(fds)
+            ok
+          }
+      if (!created) throw new IOException("Cannot create a wake-up pipe")
       val flags = fcntl.fcntl(fds(1), fcntl.F_GETFL, 0)
-      fcntl.fcntl(fds(1), fcntl.F_SETFL, flags | fcntl.O_NONBLOCK)
+      if (flags == -1 ||
+          fcntl.fcntl(fds(1), fcntl.F_SETFL, flags | fcntl.O_NONBLOCK) == -1) {
+        closeBoth(fds)
+        throw new IOException("Cannot create a wake-up pipe")
+      }
       new WakePipe(fds(0), fds(1))
+    }
+
+    private def closeBoth(fds: Ptr[CInt]): Unit = {
+      unistd.close(fds(0))
+      unistd.close(fds(1))
     }
   }
 

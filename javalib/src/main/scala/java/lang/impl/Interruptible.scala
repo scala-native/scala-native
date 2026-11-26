@@ -20,7 +20,14 @@ private[java] trait Interruptible {
     thread.interruptible = this
     // Pairs with the fence in Thread.notifyInterruptible.
     if (isMultithreadingEnabled) atomic_thread_fence(memory_order_seq_cst)
-    if (thread.isInterrupted()) interruptBy(thread)
+    if (thread.isInterrupted())
+      try interruptBy(thread)
+      catch {
+        case e: Throwable =>
+          // The caller gets no end() for a failed begin.
+          thread.interruptible = null
+          throw e
+      }
   }
 
   private[java] final def endInterruptible(): Unit =
