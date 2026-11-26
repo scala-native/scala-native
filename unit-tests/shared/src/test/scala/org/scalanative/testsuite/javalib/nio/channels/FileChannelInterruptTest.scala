@@ -727,6 +727,41 @@ class FileChannelInterruptTest {
     }
   }
 
+  // end() while the interrupter is still closing reports the interrupt.
+  @Test def endDuringInterruptCloseThrowsClosedByInterrupt(): Unit = {
+    assumeMultithreadingIsEnabled()
+    val started = new CountDownLatch(1)
+    val ended = new CountDownLatch(1)
+    class Probe extends spi.AbstractInterruptibleChannel {
+      def op(): Unit = {
+        begin()
+        try {
+          started.countDown()
+          while (isOpen()) Thread.`yield`()
+        } finally end(false)
+      }
+      // Runs on the interrupting thread; holds the close open until end().
+      protected def implCloseChannel(): Unit =
+        ended.await(JoinMillis, TimeUnit.MILLISECONDS)
+    }
+    val ch = new Probe
+    val failure = new AtomicReference[Throwable]()
+    val t = daemon { () =>
+      try ch.op()
+      catch { case e: Throwable => failure.set(e) }
+      finally ended.countDown()
+    }
+    assertTrue("op started", started.await(JoinMillis, TimeUnit.MILLISECONDS))
+    t.interrupt()
+    t.join(JoinMillis)
+    assertFalse("op finished", t.isAlive())
+    assertTrue(
+      s"expected ClosedByInterruptException, got ${failure.get()}",
+      failure.get().isInstanceOf[ClosedByInterruptException]
+    )
+    assertFalse("channel closed", ch.isOpen())
+  }
+
   // No IOException may leak from a race with close().
   @Test def closeDuringPositionalReadsOnRegularFile(): Unit = {
     assumeMultithreadingIsEnabled()

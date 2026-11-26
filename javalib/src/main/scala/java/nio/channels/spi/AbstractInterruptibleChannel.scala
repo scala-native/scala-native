@@ -12,9 +12,10 @@ abstract class AbstractInterruptibleChannel protected ()
     with InterruptibleChannel
     with Interruptible {
 
-  @volatile private var closed: Boolean = false
-  // The thread whose interrupt closed this channel.
-  @volatile private var interruptedThread: Thread = _
+  /* null while open; once closed, the thread whose interrupt closed it, or
+   * `this`. One field, so end() sees the state and reason together.
+   */
+  @volatile private var closedBy: AnyRef = null
 
   // Until end(), Thread.interrupt() closes this channel.
   protected final def begin(): Unit = beginInterruptible()
@@ -23,28 +24,26 @@ abstract class AbstractInterruptibleChannel protected ()
    * Java documentation for java.nio.channels.Channel#close describes a
    * simultaneous second invocation as blocking for the first.
    *
-   * The synchronized block will also make the new value of 'closed' visible
-   * to other threads, if any, when they read it.
+   * The synchronized block will also make the new value of 'closedBy'
+   * visible to other threads, if any, when they read it.
    */
 
   final def close(): Unit = synchronized(closeBy(null))
 
-  // `closed` before the marker, so end() never sees the marker while open.
   private def closeBy(interrupted: Thread): Unit =
-    if (!closed) {
-      closed = true
-      if (interrupted != null) interruptedThread = interrupted
+    if (closedBy == null) {
+      closedBy = if (interrupted != null) interrupted else this
       implCloseChannel() // relies upon this caller being synchronized.
     }
 
   protected final def end(completed: Boolean): Unit = {
     endInterruptible()
-    val thread = Thread.currentThread()
-    if (interruptedThread eq thread) {
-      interruptedThread = null
+    val by = closedBy
+    if (by eq Thread.currentThread()) {
+      closedBy = this // reported once
       throw new ClosedByInterruptException()
     }
-    if (!completed && closed) throw new AsynchronousCloseException()
+    if (!completed && by != null) throw new AsynchronousCloseException()
   }
 
   // The interrupted thread's end() then throws ClosedByInterruptException.
@@ -56,6 +55,6 @@ abstract class AbstractInterruptibleChannel protected ()
   protected def implCloseChannel(): Unit
 
   final def isOpen(): Boolean =
-    !closed
+    closedBy == null
 
 }
