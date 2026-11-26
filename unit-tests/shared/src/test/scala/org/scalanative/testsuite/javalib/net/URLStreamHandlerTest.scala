@@ -35,6 +35,24 @@ class URLStreamHandlerTest {
     def defaultPort: Int = getDefaultPort()
   }
 
+  @Test def parseURLGetsTheSpecWithoutReference(): Unit = {
+    var seen: (String, String) = null
+    val h = new Handler {
+      override protected def parseURL(
+          u: URL,
+          spec: String,
+          start: Int,
+          limit: Int
+      ): Unit = {
+        seen = (spec.substring(start, limit), u.getRef())
+        super.parseURL(u, spec, start, limit)
+      }
+    }
+    val u = new URL(null, "demo:entry#section", h)
+    assertEquals(("entry", "section"), seen)
+    assertEquals("demo:entry#section", u.toString())
+  }
+
   @Test def customHandler(): Unit = {
     val h = new Handler
     val u = new URL(null, "foo://h:5/p?q#r", h)

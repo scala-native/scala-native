@@ -68,16 +68,14 @@ abstract class URLStreamHandler {
     if (s.startsWith("//") && !s.startsWith("////")) {
       var hostIdx = 2
       port = -1
-      fileIdx = s.indexOf('/', hostIdx)
-      val questionMark = s.indexOf('?', hostIdx)
-      if (questionMark != -1 && (fileIdx == -1 || fileIdx > questionMark))
-        fileIdx = questionMark
-      if (fileIdx == -1) {
-        fileIdx = end
-        file = ""
-      }
-      var hostEnd = fileIdx
-      if (refIdx != -1 && refIdx < fileIdx) hostEnd = refIdx
+      // The authority ends at the first '/', '?' or '#'
+      val authorityEnd = if (refIdx == -1) end else refIdx
+      fileIdx = hostIdx
+      while (fileIdx < authorityEnd && s.charAt(fileIdx) != '/' &&
+          s.charAt(fileIdx) != '?')
+        fileIdx += 1
+      if (fileIdx == authorityEnd || s.charAt(fileIdx) == '?') file = ""
+      val hostEnd = fileIdx
       val userIdx = s.lastIndexOf('@', hostEnd)
       authority = s.substring(hostIdx, hostEnd)
       userInfo = null
@@ -86,8 +84,8 @@ abstract class URLStreamHandler {
         hostIdx = userIdx + 1
       }
       var portIdx = s.indexOf(':', if (userIdx == -1) hostIdx else userIdx)
-      val endOfIPv6 = s.indexOf(']')
-      if (endOfIPv6 != -1)
+      val endOfIPv6 = s.indexOf(']', hostIdx)
+      if (endOfIPv6 != -1 && endOfIPv6 < hostEnd)
         portIdx =
           if (s.length > endOfIPv6 + 1 && s.charAt(endOfIPv6 + 1) == ':')
             endOfIPv6 + 1

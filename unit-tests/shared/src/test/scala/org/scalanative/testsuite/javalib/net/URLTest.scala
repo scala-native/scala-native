@@ -258,6 +258,51 @@ class URLTest {
     assertThrows(classOf[NullPointerException], new URL("http", "h", 80, null))
   }
 
+  @Test def bracketsAndReferencesEndTheAuthority(): Unit = {
+    def parts(u: URL) =
+      Seq(u.getHost(), u.getPort(), u.getFile(), u.getQuery(), u.getRef())
+    assertEquals(
+      Seq("host", 8080, "/a]b", null, null),
+      parts(new URL("http://host:8080/a]b"))
+    )
+    assertEquals(
+      Seq("host", 8080, "/?q=]", "q=]", null),
+      parts(new URL("http://host:8080/?q=]"))
+    )
+    assertEquals(
+      Seq("host", 8080, "", null, "x]y"),
+      parts(new URL("http://host:8080#x]y"))
+    )
+    assertEquals(
+      Seq("[::1]", 8080, "/a]b", null, null),
+      parts(new URL("http://[::1]:8080/a]b"))
+    )
+    assertEquals(Seq("h", -1, "", null, "a/b"), parts(new URL("http://h#a/b")))
+    assertEquals(Seq("h", -1, "", null, "a?b"), parts(new URL("http://h#a?b")))
+    assertEquals(
+      Seq("h", 5, "", null, "x/y?z"),
+      parts(new URL("http://h:5#x/y?z"))
+    )
+  }
+
+  @Test def newAuthorityDropsTheContextPath(): Unit = {
+    val base = new URL("http://base.test/a/b?q#r")
+    assertEquals(
+      "http://other.test?x",
+      new URL(base, "//other.test?x").toString()
+    )
+    assertEquals("", new URL(base, "//other.test?x").getPath())
+    assertEquals(
+      "http://other.test?x#y",
+      new URL(base, "//other.test?x#y").toString()
+    )
+    assertEquals(
+      "http://other.test#x",
+      new URL(base, "//other.test#x").toString()
+    )
+    assertEquals("http://o#a/b", new URL(base, "//o#a/b").toString())
+  }
+
   @Test def relativeResolution(): Unit = {
     val base = new URL("http://h:81/a/b/c.html?q#r")
     val cases = Seq(

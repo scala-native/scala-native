@@ -141,7 +141,15 @@ final class URL private () extends Serializable {
 
     if (handler == null) handler = URL.requireHandler(protocol)
 
-    try handler.parseURL(this, spec, index + 1, spec.length)
+    // The reference is split off before the handler parses the rest
+    var limit = spec.length
+    val hash = spec.indexOf('#', index + 1)
+    if (hash >= 0) {
+      ref = spec.substring(hash + 1)
+      limit = hash
+    }
+
+    try handler.parseURL(this, spec, index + 1, limit)
     catch {
       case e: MalformedURLException => throw e
       case e: Exception             =>
@@ -328,9 +336,12 @@ object URL {
     val fac = factory
     if (fac != null) h = fac.createURLStreamHandler(protocol)
     if (h == null) h = BuiltinHandlers.forProtocol(protocol)
-    if (h != null) {
-      val previous = handlers.putIfAbsent(protocol, h)
-      if (previous != null) h = previous
+    // Not cached if a factory was set meanwhile: it must be asked first
+    if (h != null) synchronized {
+      if (factory eq fac) {
+        val previous = handlers.putIfAbsent(protocol, h)
+        if (previous != null) h = previous
+      }
     }
     h
   }
