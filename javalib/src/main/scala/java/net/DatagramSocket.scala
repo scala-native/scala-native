@@ -324,6 +324,8 @@ class DatagramSocket protected (
     checkClosedAndCreate()
     if (value == null)
       throw new IllegalArgumentException("Invalid value 'null'")
+    if (!name.`type`.isInstance(value))
+      throw new IllegalArgumentException(s"Invalid value '$value'")
 
     def intValue(): Int = value.asInstanceOf[Integer].intValue()
     def checkRange(min: Int, max: Int, what: String): Unit = {

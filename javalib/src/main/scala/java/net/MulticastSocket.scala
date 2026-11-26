@@ -29,30 +29,51 @@ class MulticastSocket(bindaddr: SocketAddress)
   private def checkClosed(): Unit =
     if (isClosed()) throw new SocketException("Socket is closed")
 
-  def setTimeToLive(ttl: Int): Unit = {
+  def setTimeToLive(ttl: Int): Unit = synchronized {
     if (ttl < 0 || ttl > 255)
       throw new IllegalArgumentException(s"Invalid TTL/hop value: $ttl")
     checkClosed()
     impl.setTimeToLive(ttl)
   }
 
-  def getTimeToLive(): Int = {
+  def getTimeToLive(): Int = synchronized {
     checkClosed()
     impl.getTimeToLive()
   }
 
+  private def configuredInterface(): NetworkInterface = {
+    checkClosed()
+    impl
+      .getOption(SocketOptions.IP_MULTICAST_IF2)
+      .asInstanceOf[NetworkInterface]
+  }
+
+  override def joinGroup(
+      mcastaddr: SocketAddress,
+      netIf: NetworkInterface
+  ): Unit = super.joinGroup(
+    mcastaddr,
+    if (netIf != null) netIf else configuredInterface()
+  )
+
+  override def leaveGroup(
+      mcastaddr: SocketAddress,
+      netIf: NetworkInterface
+  ): Unit = super.leaveGroup(
+    mcastaddr,
+    if (netIf != null) netIf else configuredInterface()
+  )
+
   @deprecated("Use joinGroup(SocketAddress, NetworkInterface)", "14")
   def joinGroup(mcastaddr: InetAddress): Unit = {
     Objects.requireNonNull(mcastaddr)
-    checkClosed()
-    impl.join(mcastaddr)
+    joinGroup(new InetSocketAddress(mcastaddr, 0), null)
   }
 
   @deprecated("Use leaveGroup(SocketAddress, NetworkInterface)", "14")
   def leaveGroup(mcastaddr: InetAddress): Unit = {
     Objects.requireNonNull(mcastaddr)
-    checkClosed()
-    impl.leave(mcastaddr)
+    leaveGroup(new InetSocketAddress(mcastaddr, 0), null)
   }
 
   @deprecated("Use setNetworkInterface(NetworkInterface)", "14")

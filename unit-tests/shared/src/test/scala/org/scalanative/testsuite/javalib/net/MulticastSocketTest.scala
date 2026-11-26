@@ -99,6 +99,34 @@ class MulticastSocketTest {
       ms.leaveGroup(group)
     }
 
+  @Test def joinUsesConfiguredInterface(): Unit = {
+    assumeFalse(
+      "NetworkInterface not implemented in Windows",
+      Platform.isWindows
+    )
+    val candidates = NetworkInterface
+      .getNetworkInterfaces()
+      .asScala
+      .filter { ni =>
+        ni.isUp() && ni.supportsMulticast() &&
+        ni.getInetAddresses().asScala.exists(_.isInstanceOf[Inet4Address])
+      }
+      .toList
+    assumeTrue("no multicast capable interface", candidates.nonEmpty)
+    val netIf = candidates.find(_.isLoopback()).getOrElse(candidates.head)
+    val group = InetAddress.getByName("239.255.53.65")
+    withSocket(new MulticastSocket(0)) { ms =>
+      ms.setNetworkInterface(netIf)
+      ms.joinGroup(group)
+      assertThrows(
+        classOf[SocketException],
+        ms.joinGroup(new InetSocketAddress(group, 0), netIf)
+      )
+      ms.leaveGroup(new InetSocketAddress(group, 0), netIf)
+      assertThrows(classOf[SocketException], ms.leaveGroup(group))
+    }
+  }
+
   @Test def closedSocket(): Unit = {
     val ms = new MulticastSocket()
     ms.close()

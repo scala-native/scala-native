@@ -125,6 +125,12 @@ class DatagramSocketOptionsTestOnJDK9 {
     iae(ds.setOption(IP_TOS, Integer.valueOf(-1)))
     iae(ds.setOption(SO_RCVBUF, Integer.valueOf(-1)))
     iae(ds.setOption(SO_SNDBUF, Integer.valueOf(-1)))
+    iae(
+      ds.setOption(
+        SO_SNDBUF.asInstanceOf[SocketOption[AnyRef]],
+        "1024": AnyRef
+      )
+    )
   }
 
   @Test def nullOption(): Unit = withSocket(new DatagramSocket()) { ds =>

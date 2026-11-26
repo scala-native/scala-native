@@ -399,12 +399,26 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
       value: Int
   ): Unit =
     if (useIPv4Only) {
-      if (!setIntOption(in.IPPROTO_IP, v4Opt, value))
+      if (!setIPv4MulticastOption(v4Opt, value))
         throwOptionError("set", name)
     } else {
       if (!setIntOption(in.IPPROTO_IPV6, v6Opt, value))
         throwOptionError("set", name)
-      setIntOption(in.IPPROTO_IP, v4Opt, value)
+      setIPv4MulticastOption(v4Opt, value)
+    }
+
+  // OpenBSD accepts IPv4 multicast TTL and loop only as a one-byte value
+  private def setIPv4MulticastOption(optName: CInt, value: Int): Boolean =
+    setIntOption(in.IPPROTO_IP, optName, value) || {
+      val opt = stackalloc[Byte]()
+      !opt = value.toByte
+      posix.sys.socket.setsockopt(
+        fd.fd,
+        in.IPPROTO_IP,
+        optName,
+        opt,
+        1.toUInt
+      ) == 0
     }
 
   private def getMulticastOption(
