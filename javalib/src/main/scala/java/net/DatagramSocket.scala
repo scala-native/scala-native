@@ -2,6 +2,7 @@ package java.net
 
 import java.io.Closeable
 import java.nio.channels.DatagramChannel
+import java.{util => ju}
 
 class DatagramSocket protected (
     private[net] var impl: DatagramSocketImpl,
@@ -317,6 +318,82 @@ class DatagramSocket protected (
     impl.getOption(SocketOptions.IP_TOS).asInstanceOf[Int]
   }
 
+  // Since: Java 9
+  def setOption[T](name: SocketOption[T], value: T): DatagramSocket = {
+    checkSupportedOption(name)
+    checkClosedAndCreate()
+    if (value == null)
+      throw new IllegalArgumentException("Invalid value 'null'")
+
+    def intValue(): Int = value.asInstanceOf[Integer].intValue()
+    def checkRange(min: Int, max: Int, what: String): Unit = {
+      val v = intValue()
+      if (v < min || v > max)
+        throw new IllegalArgumentException(s"Invalid $what value: $v")
+    }
+
+    import StandardSocketOptions._
+    name match {
+      case SO_SNDBUF =>
+        checkRange(0, Int.MaxValue, "send buffer size")
+        impl.setOption(SocketOptions.SO_SNDBUF, value.asInstanceOf[AnyRef])
+      case SO_RCVBUF =>
+        checkRange(0, Int.MaxValue, "receive buffer size")
+        impl.setOption(SocketOptions.SO_RCVBUF, value.asInstanceOf[AnyRef])
+      case SO_REUSEADDR =>
+        impl.setOption(SocketOptions.SO_REUSEADDR, value.asInstanceOf[AnyRef])
+      case SO_BROADCAST =>
+        impl.setOption(SocketOptions.SO_BROADCAST, value.asInstanceOf[AnyRef])
+      case IP_TOS =>
+        checkRange(0, 255, "IP_TOS")
+        impl.setOption(SocketOptions.IP_TOS, value.asInstanceOf[AnyRef])
+      case IP_MULTICAST_IF =>
+        impl.setOption(
+          SocketOptions.IP_MULTICAST_IF2,
+          value.asInstanceOf[AnyRef]
+        )
+      case IP_MULTICAST_TTL =>
+        checkRange(0, 255, "TTL")
+        impl.setTimeToLive(intValue())
+      case IP_MULTICAST_LOOP =>
+        impl.setOption(
+          SocketOptions.IP_MULTICAST_LOOP,
+          value.asInstanceOf[AnyRef]
+        )
+    }
+    this
+  }
+
+  // Since: Java 9
+  def getOption[T](name: SocketOption[T]): T = {
+    checkSupportedOption(name)
+    checkClosedAndCreate()
+
+    import StandardSocketOptions._
+    val result: AnyRef = name match {
+      case SO_SNDBUF         => impl.getOption(SocketOptions.SO_SNDBUF)
+      case SO_RCVBUF         => impl.getOption(SocketOptions.SO_RCVBUF)
+      case SO_REUSEADDR      => impl.getOption(SocketOptions.SO_REUSEADDR)
+      case SO_BROADCAST      => impl.getOption(SocketOptions.SO_BROADCAST)
+      case IP_TOS            => impl.getOption(SocketOptions.IP_TOS)
+      case IP_MULTICAST_IF   => impl.getOption(SocketOptions.IP_MULTICAST_IF2)
+      case IP_MULTICAST_TTL  => Integer.valueOf(impl.getTimeToLive())
+      case IP_MULTICAST_LOOP =>
+        impl.getOption(SocketOptions.IP_MULTICAST_LOOP)
+    }
+    result.asInstanceOf[T]
+  }
+
+  // Since: Java 9
+  def supportedOptions(): ju.Set[SocketOption[_]] = SupportedOptions
+
+  private def checkSupportedOption(name: SocketOption[_]): Unit = {
+    if (name == null)
+      throw new NullPointerException()
+    if (!SupportedOptions.contains(name))
+      throw new UnsupportedOperationException(s"'$name' not supported")
+  }
+
   // Since: Java 17
   def joinGroup(
       mcastaddr: SocketAddress,
@@ -346,4 +423,18 @@ object DatagramSocket {
   private[net] val ST_NOT_CONNECTED = 0
   private[net] val ST_CONNECTED = 1
   private[net] val ST_CONNECTED_NO_IMPL = 2
+
+  private val SupportedOptions: ju.Set[SocketOption[_]] = {
+    import StandardSocketOptions._
+    val set = new ju.HashSet[SocketOption[_]]()
+    set.add(SO_SNDBUF)
+    set.add(SO_RCVBUF)
+    set.add(SO_REUSEADDR)
+    set.add(SO_BROADCAST)
+    set.add(IP_TOS)
+    set.add(IP_MULTICAST_IF)
+    set.add(IP_MULTICAST_TTL)
+    set.add(IP_MULTICAST_LOOP)
+    ju.Collections.unmodifiableSet(set)
+  }
 }

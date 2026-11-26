@@ -74,7 +74,7 @@ import macOsIfDl._
  *   not rely upon the possibly zero contents of sin6_scope_id.
  */
 
-class NetworkInterface private (ifName: String) {
+class NetworkInterface private[net] (ifName: String) {
 
   override def equals(that: Any): Boolean = that match {
     case that: NetworkInterface =>

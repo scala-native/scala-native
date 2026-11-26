@@ -336,53 +336,140 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     )
 
   override def setTimeToLive(ttl: Int): Unit = {
-    if (isClosed) {
-      throw new SocketException("Socket is closed")
-    }
-    val level = if (useIPv4Only) in.IPPROTO_IP else in.IPPROTO_IPV6
-    val optValue =
-      if (useIPv4Only) ip.IP_MULTICAST_TTL else ip6.IPV6_MULTICAST_HOPS
-    val opt = stackalloc[CInt]()
-    val len = sizeof[CInt].toUInt
-    !opt = ttl
-
-    if (posix.sys.socket.setsockopt(
-          fd.fd,
-          level,
-          optValue,
-          opt.asInstanceOf[Ptr[Byte]],
-          len
-        ) != 0) {
-      throw new SocketException(
-        "Exception while setting socket option with id: IP_MULTICAST_TTL, errno: " + lastError()
-      )
-    }
+    throwIfClosed("setTimeToLive")
+    setMulticastOption(
+      "IP_MULTICAST_TTL",
+      ip.IP_MULTICAST_TTL,
+      ip6.IPV6_MULTICAST_HOPS,
+      ttl
+    )
   }
 
   override def getTimeToLive(): Int = {
-    if (isClosed) {
-      throw new SocketException("Socket is closed")
-    }
-    val level = if (useIPv4Only) in.IPPROTO_IP else in.IPPROTO_IPV6
-    val optValue =
-      if (useIPv4Only) ip.IP_MULTICAST_TTL else ip6.IPV6_MULTICAST_HOPS
+    throwIfClosed("getTimeToLive")
+    getMulticastOption(
+      "IP_MULTICAST_TTL",
+      ip.IP_MULTICAST_TTL,
+      ip6.IPV6_MULTICAST_HOPS
+    )
+  }
+
+  private def throwOptionError(op: String, name: String): Nothing =
+    throw new SocketException(
+      s"Exception while ${op}ting socket option $name, errno: ${lastError()}"
+    )
+
+  private def setIntOption(level: CInt, optName: CInt, value: Int): Boolean = {
     val opt = stackalloc[CInt]()
+    !opt = value
+    posix.sys.socket.setsockopt(
+      fd.fd,
+      level,
+      optName,
+      opt.asInstanceOf[Ptr[Byte]],
+      sizeof[CInt].toUInt
+    ) == 0
+  }
+
+  private def getIntOption(level: CInt, optName: CInt, name: String): Int = {
+    val opt = stackalloc[CInt]()
+    !opt = 0
     val len = stackalloc[posix.sys.socket.socklen_t]()
     !len = sizeof[CInt].toUInt
-
     if (posix.sys.socket.getsockopt(
           fd.fd,
           level,
-          optValue,
+          optName,
           opt.asInstanceOf[Ptr[Byte]],
           len
-        ) != 0) {
-      throw new SocketException(
-        "Exception while getting socket option with id: IP_MULTICAST_TTL, errno: " + lastError()
-      )
+        ) != 0)
+      throwOptionError("get", name)
+    // Some BSDs report IPv4 multicast options as a single byte
+    if ((!len).toInt == 1) (!opt.asInstanceOf[Ptr[Byte]]) & 0xff
+    else !opt
+  }
+
+  /* On dual-stack sockets the IPv6 option is authoritative; the IPv4 one is
+   * set best-effort since Linux uses it for IPv4 traffic and macOS rejects it.
+   */
+  private def setMulticastOption(
+      name: String,
+      v4Opt: CInt,
+      v6Opt: CInt,
+      value: Int
+  ): Unit =
+    if (useIPv4Only) {
+      if (!setIntOption(in.IPPROTO_IP, v4Opt, value))
+        throwOptionError("set", name)
+    } else {
+      if (!setIntOption(in.IPPROTO_IPV6, v6Opt, value))
+        throwOptionError("set", name)
+      setIntOption(in.IPPROTO_IP, v4Opt, value)
     }
 
-    Integer.valueOf(!opt)
+  private def getMulticastOption(
+      name: String,
+      v4Opt: CInt,
+      v6Opt: CInt
+  ): Int =
+    if (useIPv4Only) getIntOption(in.IPPROTO_IP, v4Opt, name)
+    else getIntOption(in.IPPROTO_IPV6, v6Opt, name)
+
+  private def setMulticastInterface(netIf: NetworkInterface): Unit = {
+    var v4Addr: Array[Byte] = null
+    val it = netIf.getInetAddresses()
+    while (v4Addr == null && it.hasMoreElements()) it.nextElement() match {
+      case a: Inet4Address => v4Addr = a.getAddress()
+      case _               => ()
+    }
+    def setV4(): Boolean = v4Addr != null && {
+      val addr = stackalloc[in.in_addr]()
+      memcpy(addr.asInstanceOf[Ptr[Byte]], v4Addr.at(0), 4.toUSize)
+      posix.sys.socket.setsockopt(
+        fd.fd,
+        in.IPPROTO_IP,
+        in.IP_MULTICAST_IF,
+        addr.asInstanceOf[Ptr[Byte]],
+        sizeof[in.in_addr].toUInt
+      ) == 0
+    }
+
+    if (useIPv4Only) {
+      if (!setV4()) throwOptionError("set", "IP_MULTICAST_IF")
+    } else {
+      val index = netIf.getIndex()
+      if (!setIntOption(in.IPPROTO_IPV6, in.IPV6_MULTICAST_IF, index))
+        throwOptionError("set", "IP_MULTICAST_IF")
+      setV4()
+    }
+  }
+
+  private def getMulticastInterface(): NetworkInterface = {
+    if (useIPv4Only) {
+      val addr = stackalloc[in.in_addr]()
+      addr.s_addr = 0.toUInt
+      val len = stackalloc[posix.sys.socket.socklen_t]()
+      !len = sizeof[in.in_addr].toUInt
+      if (posix.sys.socket.getsockopt(
+            fd.fd,
+            in.IPPROTO_IP,
+            in.IP_MULTICAST_IF,
+            addr.asInstanceOf[Ptr[Byte]],
+            len
+          ) != 0)
+        throwOptionError("get", "IP_MULTICAST_IF")
+      if (addr.s_addr == in.INADDR_ANY) null
+      else {
+        val bytes = new Array[Byte](4)
+        memcpy(bytes.at(0), addr.asInstanceOf[Ptr[Byte]], 4.toUSize)
+        NetworkInterface.getByInetAddress(InetAddress.getByAddress(bytes))
+      }
+    } else {
+      val index =
+        getIntOption(in.IPPROTO_IPV6, in.IPV6_MULTICAST_IF, "IP_MULTICAST_IF")
+      if (index == 0) null
+      else NetworkInterface.getByIndex(index)
+    }
   }
 
   private def setMembership(
@@ -530,8 +617,20 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
       throw new SocketException("Socket is closed")
     }
 
-    if (optID == SocketOptions.SO_TIMEOUT) {
-      return Integer.valueOf(this.timeout)
+    optID match {
+      case SocketOptions.SO_TIMEOUT =>
+        return Integer.valueOf(this.timeout)
+      case SocketOptions.IP_MULTICAST_LOOP =>
+        return Boolean.box(
+          getMulticastOption(
+            "IP_MULTICAST_LOOP",
+            in.IP_MULTICAST_LOOP,
+            in.IPV6_MULTICAST_LOOP
+          ) != 0
+        )
+      case SocketOptions.IP_MULTICAST_IF2 =>
+        return getMulticastInterface()
+      case _ => ()
     }
 
     val level = optID match {
@@ -568,9 +667,22 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
       throw new SocketException("Socket is closed")
     }
 
-    if (optID == SocketOptions.SO_TIMEOUT) {
-      this.timeout = value.asInstanceOf[Int]
-      return
+    optID match {
+      case SocketOptions.SO_TIMEOUT =>
+        this.timeout = value.asInstanceOf[Int]
+        return
+      case SocketOptions.IP_MULTICAST_LOOP =>
+        setMulticastOption(
+          "IP_MULTICAST_LOOP",
+          in.IP_MULTICAST_LOOP,
+          in.IPV6_MULTICAST_LOOP,
+          if (value.asInstanceOf[Boolean]) 1 else 0
+        )
+        return
+      case SocketOptions.IP_MULTICAST_IF2 =>
+        setMulticastInterface(value.asInstanceOf[NetworkInterface])
+        return
+      case _ => ()
     }
 
     val level = optID match {
