@@ -1,24 +1,35 @@
 package java.nio
 package channels
 
-import java.io.{InputStream, OutputStream, Reader, Writer}
+import java.io.{
+  InputStream, InputStreamReader, OutputStream, OutputStreamWriter, Reader,
+  Writer
+}
 import java.nio.charset.{Charset, CharsetDecoder, CharsetEncoder}
 import java.util.Objects
 
 object Channels {
+  private def writeFully(channel: WritableByteChannel, src: ByteBuffer) =
+    while (src.hasRemaining()) channel.write(src)
+
   def newInputStream(channel: ReadableByteChannel): InputStream = {
     Objects.requireNonNull(channel, "ch")
     new InputStream {
-      private lazy val buffer = ByteBuffer.allocate(1)
+      private val buffer = ByteBuffer.allocate(1)
 
       override def read(buf: Array[Byte], offset: Int, count: Int): Int = {
-        channel.read(ByteBuffer.wrap(buf, offset, count))
+        Objects.checkFromIndexSize(offset, count, buf.length)
+        if (count == 0) 0
+        else channel.read(ByteBuffer.wrap(buf, offset, count))
       }
 
       override def read(): Int = {
-        buffer.position(0)
-        val read = channel.read(buffer)
-        if (read <= 0) read
+        var read = 0
+        while (read == 0) {
+          buffer.clear()
+          read = channel.read(buffer)
+        }
+        if (read < 0) -1
         else buffer.get(0) & 0xff
       }
 
@@ -30,14 +41,15 @@ object Channels {
   def newOutputStream(channel: WritableByteChannel): OutputStream = {
     Objects.requireNonNull(channel, "ch")
     new OutputStream {
-      private lazy val buffer = ByteBuffer.allocate(1)
+      private val buffer = ByteBuffer.allocate(1)
       override def write(b: Int): Unit = {
-        buffer.position(0)
+        buffer.clear()
         buffer.put(0, b.toByte)
-        channel.write(buffer)
+        writeFully(channel, buffer)
       }
       override def write(b: Array[Byte], off: Int, len: Int): Unit = {
-        channel.write(ByteBuffer.wrap(b, off, len))
+        Objects.checkFromIndexSize(off, len, b.length)
+        writeFully(channel, ByteBuffer.wrap(b, off, len))
       }
       override def close(): Unit =
         channel.close()
@@ -55,24 +67,19 @@ object Channels {
         if (closed)
           throw new ClosedChannelException()
 
-        var eof = false
-        var written = 0
-        val capacity = dst.capacity()
-
-        while ({
-          val readByte = in.read()
-          if (readByte == -1) {
-            eof = true
-            false
-          } else {
-            dst.put(readByte.toByte)
-            written += 1
-            capacity > written
-          }
-        }) ()
-
-        if ((written == 0) && eof) -1
-        else written
+        val len = dst.remaining()
+        if (len == 0) 0
+        else if (dst.hasArray()) {
+          val read =
+            in.read(dst.array(), dst.arrayOffset() + dst.position(), len)
+          if (read > 0) dst.position(dst.position() + read)
+          read
+        } else {
+          val buf = new Array[Byte](len.min(8192))
+          val read = in.read(buf, 0, buf.length)
+          if (read > 0) dst.put(buf, 0, read)
+          read
+        }
       }
 
       override def close(): Unit = synchronized {
@@ -91,14 +98,16 @@ object Channels {
       override def write(src: ByteBuffer): Int = synchronized {
         if (closed) throw new ClosedChannelException()
 
-        val array = Array.ofDim[Byte](src.remaining())
-        var i = 0
-        while (src.hasRemaining()) {
-          array(i) = src.get()
-          i += 1
+        val len = src.remaining()
+        if (src.hasArray()) {
+          out.write(src.array(), src.arrayOffset() + src.position(), len)
+          src.position(src.position() + len)
+        } else {
+          val array = new Array[Byte](len)
+          src.get(array)
+          out.write(array)
         }
-        out.write(array)
-        i
+        len
       }
       override def close(): Unit = synchronized {
         out.close()
@@ -114,57 +123,9 @@ object Channels {
       minBufferCap: Int
   ): Reader = {
     Objects.requireNonNull(ch, "ch")
-    new Reader {
-      private val capacity =
-        if (minBufferCap == -1) 1024 else minBufferCap.max(1024)
-      private lazy val byteBuffer = {
-        val buffer = ByteBuffer.allocate(capacity)
-        buffer.limit(0)
-        buffer
-      }
-      private lazy val charBuffer = {
-        val buffer = CharBuffer.allocate(capacity)
-        buffer.limit(0)
-        buffer
-      }
-
-      private def fillBuffers() = {
-        if (!byteBuffer.hasRemaining()) {
-          byteBuffer.clear()
-          ch.read(byteBuffer)
-          byteBuffer.limit(byteBuffer.position())
-          byteBuffer.rewind()
-        }
-        if (!charBuffer.hasRemaining()) {
-          charBuffer.clear()
-          dec.decode(byteBuffer, charBuffer, false)
-          charBuffer.limit(charBuffer.position())
-          charBuffer.rewind()
-        }
-      }
-      override def read(cbuf: Array[Char], off: Int, len: Int): Int = {
-        if (len < 0 || len < 0 || cbuf.length < off + len)
-          throw new IndexOutOfBoundsException()
-
-        var read = 0
-        while (read < len) {
-          fillBuffers()
-
-          while (charBuffer.hasRemaining() && read < len) {
-            cbuf(off + read) = charBuffer.get()
-            read += 1
-          }
-        }
-        read
-      }
-      override def read(): Int = {
-        fillBuffers()
-        charBuffer.get()
-      }
-      override def close(): Unit = {
-        ch.close()
-      }
-    }
+    Objects.requireNonNull(dec, "dec")
+    dec.reset()
+    new InputStreamReader(newInputStream(ch), dec, minBufferCap)
   }
 
   def newReader(ch: ReadableByteChannel, csName: String): Reader =
@@ -179,38 +140,9 @@ object Channels {
       minBufferCap: Int
   ): Writer = {
     Objects.requireNonNull(ch, "ch")
-    new Writer {
-      private val capacity =
-        if (minBufferCap == -1) 1028 else minBufferCap.max(1028)
-      private lazy val charBuffer = CharBuffer.allocate(capacity)
-
-      override def write(cbuf: Array[Char], off: Int, len: Int): Unit = {
-        if (len < 0 || len < 0 || cbuf.length < off + len)
-          throw new IndexOutOfBoundsException()
-
-        synchronized {
-          var written = 0
-          while (written < len) {
-            val toPut = capacity.min(len - written)
-            charBuffer.put(cbuf, off + written, toPut)
-            if (!charBuffer.hasRemaining()) flush()
-            written += toPut
-          }
-        }
-      }
-      override def write(c: Int): Unit = synchronized {
-        charBuffer.put(c.toChar)
-        if (!charBuffer.hasRemaining()) flush()
-      }
-      override def flush() = synchronized {
-        charBuffer.limit(charBuffer.position())
-        charBuffer.position(0)
-        val encoded = enc.encode(charBuffer)
-        ch.write(encoded)
-        charBuffer.clear()
-      }
-      override def close() = ch.close()
-    }
+    Objects.requireNonNull(enc, "enc")
+    enc.reset()
+    new OutputStreamWriter(newOutputStream(ch), enc)
   }
 
   def newWriter(ch: WritableByteChannel, csName: String): Writer =

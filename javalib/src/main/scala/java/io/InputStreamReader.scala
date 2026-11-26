@@ -38,6 +38,16 @@ class InputStreamReader(
   private var outBuf: CharBuffer =
     InputStreamReader.CommonEmptyCharBuffer
 
+  private[java] def this(
+      in: InputStream,
+      decoder: CharsetDecoder,
+      minBufferCap: Int
+  ) = {
+    this(in, decoder)
+    if (minBufferCap > inBuf.capacity())
+      inBuf = ByteBuffer.allocate(minBufferCap).limit(0)
+  }
+
   def this(in: InputStream, charset: Charset) =
     this(
       in,
@@ -137,7 +147,9 @@ class InputStreamReader(
         charsRead
       } else {
         // Should never happen but be robust, multiply by 1.5 & try again.
-        loopWithOutBuf((desiredOutBufSize * 3) >> 1)
+        loopWithOutBuf(
+          Math.max(desiredOutBufSize + 1, (desiredOutBufSize * 3) >> 1)
+        )
       }
     }
 

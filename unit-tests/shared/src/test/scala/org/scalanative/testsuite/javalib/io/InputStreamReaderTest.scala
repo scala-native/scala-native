@@ -130,4 +130,19 @@ class InputStreamReaderTest {
     reader.close()
     reader.close()
   }
+
+  @Test def readSupplementaryCharOneCharAtATime(): Unit = {
+    val text = "a\uD83D\uDE0Ab"
+    val in = new ByteArrayInputStream(text.getBytes(StandardCharsets.UTF_8))
+    val reader = new InputStreamReader(in, StandardCharsets.UTF_8)
+    val buf = new Array[Char](1)
+    val sb = new java.lang.StringBuilder
+    var n = reader.read(buf, 0, 1)
+    while (n != -1) {
+      assertEquals(1, n)
+      sb.append(buf(0))
+      n = reader.read(buf, 0, 1)
+    }
+    assertEquals(text, sb.toString)
+  }
 }
