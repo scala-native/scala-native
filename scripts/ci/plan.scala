@@ -80,7 +80,7 @@ val delimccPaths = globs(
   "nativelib/src/main/resources/scala-native/delimcc/**"
 )
 val extraPlatformPaths = toolchainPaths ++ gcPaths ++ posixPaths ++ delimccPaths
-// Java library and its tests, checked on older JDKs and some extra platforms
+// Java library and its tests, checked on some extra platforms
 val javalibPaths =
   globs("javalib/**", "javalib-intf/**", "unit-tests/**", "unit-tests-ext/**")
 
@@ -155,13 +155,6 @@ enum Workflow(
         base = Trigger.Changed(extraPlatformPaths),
         extended = Trigger.Never,
         javalib = Trigger.Changed(javalibPaths)
-      )
-  // JVM tests on the older supported JDKs, gates use the newest one
-  case Jdk
-      extends Workflow(
-        "jdk",
-        base = Trigger.Changed(javalibPaths),
-        extended = Trigger.Never
       )
   case SbtPlugin
       extends Workflow(

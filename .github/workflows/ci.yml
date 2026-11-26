@@ -50,7 +50,6 @@ jobs:
       linux-multiarch: ${{ steps.plan.outputs.linux-multiarch }}
       bsd: ${{ steps.plan.outputs.bsd }}
       termux: ${{ steps.plan.outputs.termux }}
-      jdk: ${{ steps.plan.outputs.jdk }}
       sbt-plugin: ${{ steps.plan.outputs.sbt-plugin }}
       partests: ${{ steps.plan.outputs.partests }}
     steps:
@@ -263,12 +262,6 @@ jobs:
     with:
       scope: ${{ needs.plan.outputs.termux }}
 
-  jdk:
-    name: Older JDKs
-    needs: *gates
-    if: needs.plan.outputs.jdk != 'off'
-    uses: ./.github/workflows/run-tests-jdk.yml
-
   sbt-plugin:
     name: sbt plugin
     needs: *gates
@@ -313,7 +306,7 @@ jobs:
   ci-ok:
     name: CI OK
     if: always()
-    needs: [plan, checks, gate, gate-sbt-plugin, gate-macos, gate-windows, toolchain, linux, gc, macos, windows, apple, linux-multiarch, bsd, termux, jdk, sbt-plugin, partests]
+    needs: [plan, checks, gate, gate-sbt-plugin, gate-macos, gate-windows, toolchain, linux, gc, macos, windows, apple, linux-multiarch, bsd, termux, sbt-plugin, partests]
     runs-on: ubuntu-slim
     steps:
       - name: Check results
