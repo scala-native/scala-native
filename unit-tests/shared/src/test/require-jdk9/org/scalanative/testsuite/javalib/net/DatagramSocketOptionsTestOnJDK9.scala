@@ -27,7 +27,10 @@ class DatagramSocketOptionsTestOnJDK9 {
     val candidates = NetworkInterface
       .getNetworkInterfaces()
       .asScala
-      .filter(ni => ni.isUp() && ni.supportsMulticast())
+      .filter { ni =>
+        ni.isUp() && ni.supportsMulticast() &&
+        ni.getInetAddresses().asScala.exists(_.isInstanceOf[Inet4Address])
+      }
       .toList
     assumeTrue("no multicast capable interface", candidates.nonEmpty)
     candidates.find(_.isLoopback()).getOrElse(candidates.head)
