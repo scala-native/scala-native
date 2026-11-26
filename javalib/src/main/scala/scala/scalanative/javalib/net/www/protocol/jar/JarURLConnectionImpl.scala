@@ -21,11 +21,10 @@
 package scala.scalanative.javalib.net.www.protocol.jar
 
 import java.io.{
-  BufferedInputStream, File, FileNotFoundException, FilterInputStream,
-  IOException, InputStream
+  BufferedInputStream, File, FileNotFoundException, FileOutputStream,
+  FilterInputStream, IOException, InputStream
 }
 import java.net.{JarURLConnection, URL, URLConnection}
-import java.nio.file.{CopyOption, Files, StandardCopyOption}
 import java.util.concurrent.ConcurrentHashMap
 import java.util.jar.{JarEntry, JarFile}
 import java.util.zip.ZipFile
@@ -154,13 +153,12 @@ private object JarURLConnectionImpl {
         tmp.deleteOnExit()
         try {
           val in = url.openStream()
-          try
-            Files.copy(
-              in,
-              tmp.toPath(),
-              Array[CopyOption](StandardCopyOption.REPLACE_EXISTING)
-            )
-          finally in.close()
+          try {
+            // Written in place: replacing it could follow a planted symlink
+            val out = new FileOutputStream(tmp)
+            try in.transferTo(out)
+            finally out.close()
+          } finally in.close()
           new CachedJarFile(tmp, ZipFile.OPEN_READ | ZipFile.OPEN_DELETE, key)
         } catch {
           case e: IOException =>
