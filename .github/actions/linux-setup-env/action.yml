@@ -9,7 +9,7 @@ inputs:
     default: "25"
   llvm-version:
     description: "LLVM toolchain version"
-    default: "16"
+    default: "18"
 runs:
   using: "composite"
   steps:
