@@ -36,15 +36,15 @@ jobs:
         run: |
           echo "MAVEN_CENTRAL_MIRROR=" >> "$GITHUB_ENV"
           echo "COURSIER_REPOSITORIES=ivy2Local|central" >> "$GITHUB_ENV"
-      # --server: the sbt 2 thin client joins the arguments into one command,
-      # and its background server would not see the secrets of later steps
+
       - name: Test runtime
-        run: sbt --server "++${{ inputs.scala-version }} -v" "test-runtime ${{ inputs.scala-version }}"
+        run: sbt --server "++${{ inputs.scala-version }} -v" "nscplugin${{ env.project-version }}/test"
       - name: Setup PGP Key
         run: |
           echo -n "$PGP_SECRET" | base64 --decode | gpg --batch --import
         env:
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
+
       - name: Publish release
         env:
           SONATYPE_USER: "${{ secrets.SONATYPE_USER }}"
