@@ -209,6 +209,67 @@ class IntegerTest {
     )
   }
 
+  @Test def decimalParsingAcrossFastPrefix(): Unit = {
+    def arabicDigits(s: String): String =
+      s.map(ch =>
+        if (ch >= '0' && ch <= '9') ('\u0660' + ch - '0').toChar else ch
+      )
+
+    val zeros = "0" * 24
+    assertEquals(999999999, Integer.parseInt("999999999"))
+    assertEquals(
+      signedMaxValue,
+      Integer.parseInt(arabicDigits(signedMaxValueText))
+    )
+    assertEquals(
+      signedMinValue,
+      Integer.parseInt(arabicDigits(signedMinValueText))
+    )
+    assertEquals(
+      signedMaxValue,
+      Integer.parseInt("+" + zeros + signedMaxValueText, 10)
+    )
+    assertEquals(
+      signedMinValue,
+      Integer.parseInt("-" + zeros + signedMinValueText.drop(1), 10)
+    )
+    assertEquals(123, Integer.parseInt("1\u06623"))
+    assertEquals(0, Integer.parseInt("-" + zeros))
+
+    assertEquals(
+      unsignedMaxValue,
+      Integer.parseUnsignedInt(arabicDigits(unsignedMaxValueText))
+    )
+    assertEquals(
+      unsignedMaxValue,
+      Integer.parseUnsignedInt("+" + zeros + unsignedMaxValueText, 10)
+    )
+    assertEquals(
+      -6,
+      Integer.parseUnsignedInt(unsignedMaxValueText.dropRight(1) + "0")
+    )
+    assertEquals(123, Integer.parseUnsignedInt("1\u06623"))
+    assertEquals(0, Integer.parseUnsignedInt(zeros))
+
+    val slice = "x+" + zeros + unsignedMaxValueText + "!"
+    assertEquals(
+      unsignedMaxValue,
+      Integer.parseUnsignedInt(slice, 1, slice.length() - 1, 10)
+    )
+    assertThrows(
+      classOf[NumberFormatException],
+      Integer.parseInt(zeros + signedMaxPlusOneText)
+    )
+    assertThrows(
+      classOf[NumberFormatException],
+      Integer.parseUnsignedInt(zeros + unsignedMaxPlusOneText)
+    )
+    assertThrows(
+      classOf[NumberFormatException],
+      Integer.parseUnsignedInt("4294967300")
+    )
+  }
+
   @Test def parseUnsignedInt(): Unit = {
     import Integer.{parseUnsignedInt => parse}
 
