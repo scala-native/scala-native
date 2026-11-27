@@ -1,6 +1,6 @@
 package org.scalanative.testsuite.javalib.lang
 
-import java.io.FileNotFoundException
+import java.io.{FileNotFoundException, IOException, UncheckedIOException}
 import java.net.URL
 import java.nio.charset.StandardCharsets
 
@@ -85,6 +85,21 @@ class ClassLoaderResourcesTest {
       Array[Object](url, url),
       loader.resources("virtual/config").toArray()
     )
+  }
+
+  @Test def resourcesLooksUpLazily(): Unit = {
+    var lookups = 0
+    val loader = new ClassLoader() {
+      override def getResources(name: String): java.util.Enumeration[URL] = {
+        lookups += 1
+        throw new IOException("lookup failed")
+      }
+    }
+    val stream = loader.resources("virtual/config")
+    assertEquals(0, lookups)
+    val e = assertThrows(classOf[UncheckedIOException], stream.count())
+    assertEquals(1, lookups)
+    assertEquals("lookup failed", e.getCause().getMessage())
   }
 
   @Test def getSystemResourceAsStream(): Unit = {

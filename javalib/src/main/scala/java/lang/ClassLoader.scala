@@ -1,8 +1,9 @@
 package java.lang
 
+import java.io.{IOException, UncheckedIOException}
 import java.net.URL
-import java.util.stream.Stream
-import java.util.{Collections, Enumeration}
+import java.util.stream.{Stream, StreamSupport}
+import java.util.{Collections, Enumeration, Objects, Spliterator, Spliterators}
 
 import scala.scalanative.javalib.net.www.protocol.resource.{
   Handler => ResourceHandler
@@ -18,6 +19,7 @@ class ClassLoader protected (parent: ClassLoader) {
     if (name.startsWith("/")) null
     else ResourceHandler.urlOf("/" + name)
 
+  @throws[IOException]
   def getResources(name: String): Enumeration[URL] = {
     val url = getResource(name)
     if (url == null) Collections.emptyEnumeration[URL]()
@@ -25,8 +27,20 @@ class ClassLoader protected (parent: ClassLoader) {
   }
 
   /** @since JDK 9 */
-  def resources(name: String): Stream[URL] =
-    Collections.list(getResources(name)).stream()
+  def resources(name: String): Stream[URL] = {
+    Objects.requireNonNull(name)
+    StreamSupport.stream[URL](
+      () => {
+        val urls =
+          try getResources(name)
+          catch { case e: IOException => throw new UncheckedIOException(e) }
+        Spliterators
+          .spliteratorUnknownSize(urls.asIterator(), Spliterator.ORDERED)
+      },
+      Spliterator.ORDERED,
+      false
+    )
+  }
 
   def getUnnamedModule(): Module = new Module(null, this)
 }
