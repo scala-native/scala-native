@@ -3,8 +3,6 @@ package org.scalanative.testsuite.javalib.lang
 import org.junit.Assert.*
 import org.junit.Test
 
-// User-defined Java enums can only be written in Scala 3.
-
 object EnumReflectionScala3Test {
   enum Color extends java.lang.Enum[Color]:
     case Red, Green, Blue

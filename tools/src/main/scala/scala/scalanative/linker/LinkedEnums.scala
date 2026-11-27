@@ -16,7 +16,6 @@ private[scalanative] object LinkedEnums {
   val Module: nir.Global.Top =
     nir.Global.Top("scala.scalanative.runtime.LinkedEnums$")
 
-  /** Whether `name` is the `valuesOf` intrinsic. */
   def isValuesOf(name: nir.Global): Boolean = name match {
     case nir.Global.Member(Module, sig) =>
       sig.unmangled match {
@@ -26,9 +25,7 @@ private[scalanative] object LinkedEnums {
     case _ => false
   }
 
-  /** `values()` of the companion of `cls`, defined by both Scala 3 enums and
-   *  the javalib enums written by hand.
-   */
+  // Defined by Scala 3 enums and by the javalib enums
   def valuesMethod(cls: nir.Global.Top): nir.Global.Member =
     nir.Global
       .Top(cls.id + "$")
@@ -36,7 +33,6 @@ private[scalanative] object LinkedEnums {
         nir.Sig.Method("values", Seq(nir.Type.Array(nir.Type.Ref(cls))))
       )
 
-  /** The enum classes whose `values()` the analysis kept, sorted by name. */
   def linked(
       analysis: ReachabilityAnalysis.Result
   ): Seq[(nir.Global.Top, nir.Global.Member)] =

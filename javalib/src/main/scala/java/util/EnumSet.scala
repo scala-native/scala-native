@@ -2,9 +2,6 @@ package java.util
 
 import java.lang.{_Enum => Enum}
 
-/** Backed by an [[EnumMap]], so it iterates in ordinal order and rejects
- *  elements of other enums like the JDK.
- */
 final class EnumSet[E <: Enum[E]] private (
     elementType: Class[E],
     map: EnumMap[E, java.lang.Boolean]
@@ -37,8 +34,6 @@ final class EnumSet[E <: Enum[E]] private (
 }
 
 object EnumSet {
-  // The constants of elementType, resolved at link time by
-  // Class.getEnumConstants
   private def universe[E <: Enum[E]](elementType: Class[E]): Array[E] = {
     val constants = elementType.getEnumConstants()
     if (constants == null)
@@ -47,7 +42,7 @@ object EnumSet {
   }
 
   def noneOf[E <: Enum[E]](elementType: Class[E]): EnumSet[E] = {
-    universe(elementType) // ClassCastException for a non-enum, like the JDK
+    universe(elementType) // throws for a non-enum class
     new EnumSet[E](elementType, new EnumMap[E, java.lang.Boolean](elementType))
   }
 

@@ -55,7 +55,6 @@ private[scalanative] class Metadata(
       .toSet
 
   /** Proxies of reflectively called methods, registered at startup */
-  // Enum classes and their companion's values(), see linker.LinkedEnums
   lazy val linkedEnums: Seq[(nir.Global.Top, nir.Global.Member)] =
     linker.LinkedEnums.linked(analysis)
 

@@ -8,9 +8,7 @@ abstract class _Enum[E <: _Enum[E]] protected (_name: String, _ordinal: Int)
   override def toString(): String = _name
   final def compareTo(o: E): Int = _ordinal.compareTo(o.ordinal())
 
-  /** The enum class of this constant: a constant with a body is an instance of
-   *  a direct subclass of its enum class.
-   */
+  // A constant with a body is an instance of a subclass of its enum
   final def getDeclaringClass(): Class[E] = {
     val cls: Class[_] = getClass()
     val parent: Class[_] = cls.getSuperclass()

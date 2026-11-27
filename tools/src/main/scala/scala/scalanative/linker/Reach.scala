@@ -40,8 +40,7 @@ private[linker] class Reach(
   )
   private val delayedMethods = mutable.Set.empty[DelayedMethod]
 
-  // Enum classes whose companion's values() is kept once
-  // LinkedEnums.valuesOf is reached, see LinkedEnums
+  // See LinkedEnums
   private val enumClasses = mutable.Set.empty[nir.Global.Top]
   private val pendingEnumClasses = mutable.Queue.empty[nir.Global.Top]
   private var enumValuesRequested = false
@@ -226,8 +225,6 @@ private[linker] class Reach(
       pendingEnumClasses ++= enumClasses
     }
 
-  // Keeps what the lowered LinkedEnums.valuesOf calls: the companion module
-  // and its values() method
   private def reachEnumValues(cls: nir.Global.Top): Unit = {
     implicit val pos: nir.SourcePosition = nir.SourcePosition.NoPosition
     val values = LinkedEnums.valuesMethod(cls)

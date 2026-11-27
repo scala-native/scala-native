@@ -23,7 +23,7 @@ import java.lang.{_Enum => Enum}
 
 class EnumMap[K <: Enum[K], V] private (
     private val keyType: Class[K],
-    private val keys: Array[AnyRef], // the key universe, by ordinal
+    private val keys: Array[AnyRef],
     private val vals: Array[AnyRef], // masked values, null = absent
     private var count: Int
 ) extends AbstractMap[K, V]

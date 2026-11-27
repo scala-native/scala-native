@@ -8,8 +8,7 @@ import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 
-// JDK enums, so that the test cross-compiles with Scala 2. On Scala Native
-// the TimeUnit constants are anonymous subclasses of TimeUnit.
+// JDK enums, Scala 2 cannot define Java enums
 class EnumReflectionTest {
 
   @Test def isEnum(): Unit = {
