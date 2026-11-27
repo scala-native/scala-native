@@ -276,11 +276,13 @@ jobs:
     with:
       extended: ${{ needs.plan.outputs.partests == 'extended' }}
 
-  # Nightly snapshot, requires the gates
+  # Nightly or dispatched snapshot from main, requires only the gates
   publish-snapshot:
     name: Publish snapshot
     needs: *gates
-    if: ${{ !cancelled() && needs.ci-ok.result == 'success' && needs.plan.outputs.publish == 'snapshot' }}
+    if: >-
+      ${{ !cancelled() && needs.plan.outputs.publish == 'snapshot' &&
+      !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
     permissions:
       contents: write
     uses: ./.github/workflows/publish.yml

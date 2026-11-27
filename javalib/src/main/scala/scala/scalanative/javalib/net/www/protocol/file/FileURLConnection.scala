@@ -33,9 +33,7 @@ import scala.scalanative.javalib.net.HttpDates
 /** A directory reads as its entry names, one per line. */
 final class FileURLConnection(u: URL) extends URLConnection(u) {
 
-  private val file = new File(
-    FileURLConnection.decode(if (u.getPath() == null) "" else u.getPath())
-  )
+  private val file = FileURLConnection.toFile(u)
   // A NUL would truncate the path passed to the OS
   private val invalidPath = file.getPath().indexOf('\u0000') >= 0
   private var is: InputStream = null
@@ -166,6 +164,16 @@ object FileURLConnection {
     }
     java.util.Collections.unmodifiableMap(m)
   }
+
+  /** Whether `u` has no host other than `localhost`. */
+  def isLocal(u: URL): Boolean = {
+    val host = u.getHost()
+    host == null || host.isEmpty || host.equalsIgnoreCase("localhost")
+  }
+
+  /** The file named by the decoded path of `u`. */
+  def toFile(u: URL): File =
+    new File(decode(if (u.getPath() == null) "" else u.getPath()))
 
   /** Decodes `%XX` escapes as UTF-8; other characters are kept. */
   def decode(s: String): String = {

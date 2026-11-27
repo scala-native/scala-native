@@ -26,13 +26,14 @@ object BuiltinHandlers {
 
   /** The built-in handler of a lower-case protocol, or `null`. */
   def forProtocol(protocol: String): URLStreamHandler = protocol match {
-    case "file"   => new file.Handler
-    case "http"   => new ParseOnlyHandler("http", 80)
-    case "https"  => new ParseOnlyHandler("https", 443)
-    case "ftp"    => new ParseOnlyHandler("ftp", 21)
-    case "jar"    => new jar.Handler
-    case "mailto" => new ParseOnlyHandler("mailto", -1)
-    case _        => null
+    case "file"     => new file.Handler
+    case "http"     => new ParseOnlyHandler("http", 80)
+    case "https"    => new ParseOnlyHandler("https", 443)
+    case "ftp"      => new ParseOnlyHandler("ftp", 21)
+    case "jar"      => new jar.Handler
+    case "mailto"   => new ParseOnlyHandler("mailto", -1)
+    case "resource" => new resource.Handler
+    case _          => null
   }
 }
 
