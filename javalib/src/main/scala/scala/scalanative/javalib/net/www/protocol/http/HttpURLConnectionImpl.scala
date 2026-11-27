@@ -191,14 +191,29 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
     true
   }
 
+  /** `scheme://host:port/` for a URL with no URI form, so that proxy selection
+   *  still sees the host.
+   */
+  @throws[IOException]
+  private def selectorURI(): URI = {
+    val authority =
+      if (url.getPort() == -1) url.getHost()
+      else url.getHost() + ":" + url.getPort()
+    try new URI(url.getProtocol() + "://" + authority + "/")
+    catch {
+      case _: URISyntaxException =>
+        throw new IOException("Cannot select a proxy for " + url)
+    }
+  }
+
   @throws[IOException]
   private def openSocket(): Unit = {
     if (host.isEmpty) throw new UnknownHostException("no host in " + url)
     val selector = ProxySelector.getDefault()
-    val target = uri
+    val target = if (uri != null) uri else selectorURI()
     val candidates =
       if (requestedProxy != null) Collections.singletonList(requestedProxy)
-      else if (selector == null || target == null) DefaultProxySelector.Direct
+      else if (selector == null) DefaultProxySelector.Direct
       else {
         val l = selector.select(target)
         if (l == null || l.isEmpty()) DefaultProxySelector.Direct else l
@@ -470,18 +485,24 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
         target.getPort() != url.getPort()) {
       authorization = null
       triedAuth = false
-      var i = requestProps.size() - 1
-      while (i >= 0) {
-        val k = requestProps.get(i)(0)
-        if (k.equalsIgnoreCase("Authorization") ||
-            k.equalsIgnoreCase("Cookie") || k.equalsIgnoreCase("Cookie2"))
-          requestProps.remove(i)
-        i -= 1
-      }
+      removeRequestProps(CrossHostHeaders)
     }
     url = target
+    val previousProxy = proxy
     restart()
+    if (proxy != previousProxy) removeRequestProps(ProxyHeaders)
     true
+  }
+
+  private def removeRequestProps(names: Array[String]): Unit = {
+    var i = requestProps.size() - 1
+    while (i >= 0) {
+      val k = requestProps.get(i)(0)
+      var j = 0
+      while (j < names.length && !names(j).equalsIgnoreCase(k)) j += 1
+      if (j < names.length) requestProps.remove(i)
+      i -= 1
+    }
   }
 
   @throws[IOException]
@@ -574,7 +595,12 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
       add("Cache-Control", "no-cache")
       add("Pragma", "no-cache")
     }
-    sent.addAll(requestProps)
+    val props = requestProps.iterator()
+    while (props.hasNext()) {
+      val kv = props.next()
+      if (viaProxy || !"Proxy-Authorization".equalsIgnoreCase(kv(0)))
+        sent.add(kv)
+    }
     if (!has("User-Agent")) add("User-Agent", userAgent)
     add(
       "Host",
@@ -717,6 +743,10 @@ object HttpURLConnectionImpl {
 
   private final val MaxRedirects = 20
   private final val MaxHeaders = 1000
+
+  private val ProxyHeaders = Array("Proxy-Authorization")
+  private val CrossHostHeaders =
+    Array("Authorization", "Proxy-Authorization", "Cookie", "Cookie2")
 
   private val restricted = Array(
     "Access-Control-Request-Headers",

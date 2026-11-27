@@ -615,6 +615,65 @@ class HttpURLConnectionTest {
     finally ProxySelector.setDefault(old)
   }
 
+  @Test def proxySelectionWithoutURI(): Unit = withServer(r => ok(r.line)) {
+    s =>
+      assumeFalse("JDK behaviour not checked", Platform.executingInJVM)
+      val good =
+        new Proxy(Proxy.Type.HTTP, new InetSocketAddress("127.0.0.1", s.port))
+      val seen = new ArrayList[String]()
+      val old = ProxySelector.getDefault()
+      ProxySelector.setDefault(new ProxySelector {
+        def select(uri: URI): List[Proxy] = {
+          seen.add(uri.toString)
+          Collections.singletonList(good)
+        }
+        def connectFailed(uri: URI, sa: SocketAddress, e: IOException): Unit =
+          ()
+      })
+      try {
+        val c = open("http://a_b.invalid/a b")
+        assertEquals("GET http://a_b.invalid/a b HTTP/1.1", body(c))
+        assertEquals(Arrays.asList("http://a_b.invalid/"), seen)
+      } finally ProxySelector.setDefault(old)
+  }
+
+  @Test def proxyAuthorizationOnlyToProxies(): Unit =
+    withServer(_ => ok("")) { s =>
+      assumeFalse("JDK behaviour not checked", Platform.executingInJVM)
+      val c = open(s.base + "/")
+      c.setRequestProperty("Proxy-Authorization", "Basic c2VjcmV0")
+      assertEquals(200, c.getResponseCode())
+      assertNull(s.last.header("Proxy-Authorization"))
+    }
+
+  @Test def proxyAuthorizationStaysWithItsProxy(): Unit = {
+    assumeFalse("JDK behaviour not checked", Platform.executingInJVM)
+    withServer(_ => ok("")) { b =>
+      withServer { _ =>
+        "HTTP/1.1 302 Found\r\nLocation: http://example.invalid/second\r\n" +
+          "Content-Length: 0\r\nConnection: close\r\n\r\n"
+      } { a =>
+        def via(s: Server) =
+          new Proxy(Proxy.Type.HTTP, new InetSocketAddress("127.0.0.1", s.port))
+        val old = ProxySelector.getDefault()
+        ProxySelector.setDefault(new ProxySelector {
+          def select(uri: URI): List[Proxy] = Collections.singletonList(
+            if (uri.getPath() == "/first") via(a) else via(b)
+          )
+          def connectFailed(u: URI, sa: SocketAddress, e: IOException): Unit =
+            ()
+        })
+        try {
+          val c = open("http://example.invalid/first")
+          c.setRequestProperty("Proxy-Authorization", "Basic c2VjcmV0")
+          assertEquals(200, c.getResponseCode())
+          assertEquals("Basic c2VjcmV0", a.last.header("Proxy-Authorization"))
+          assertNull(b.last.header("Proxy-Authorization"))
+        } finally ProxySelector.setDefault(old)
+      }
+    }
+  }
+
   @Test def proxyAuthentication(): Unit = {
     assumeFalse("JDK 25 does not answer this 407", Platform.executingInJVM)
     withServer { r =>
