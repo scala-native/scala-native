@@ -44,6 +44,10 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
   protected[net] var connectedAddress: InetAddress = _
   protected[net] var connectedPort = -1
 
+  // (group, interface index) pairs joined on this socket; NetBSD accepts
+  // a repeated IPV6_JOIN_GROUP silently
+  private val memberships = new java.util.HashSet[(List[Byte], Int)]()
+
   override def getFileDescriptor(): FileDescriptor = fd
 
   override def setDatagramSocket(socket: DatagramSocket): Unit =
@@ -565,11 +569,18 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
       group: InetAddress,
       netIf: NetworkInterface,
       join: Boolean
-  ): Unit = {
+  ): Unit = memberships.synchronized {
     if (group == null || !group.isMulticastAddress())
       throw new SocketException("Not a multicast address")
 
     val addr = group.getAddress()
+    val groupKey = addr.toList
+    val membership = (groupKey, if (netIf == null) 0 else netIf.getIndex())
+    if (join && memberships.contains(membership))
+      throw new SocketException(
+        s"Already a member of multicast group ${group.getHostAddress()}"
+      )
+
     val done = group match {
       case _: Inet4Address =>
         mcastJoinLeave4(addr, netIf, join) || (!useIPv4Only && {
@@ -595,6 +606,12 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
           lastError()
       )
     }
+
+    if (join) memberships.add(membership)
+    else if (membership._2 != 0) {
+      memberships.remove(membership)
+      memberships.remove((groupKey, 0))
+    } else memberships.removeIf(_._1 == groupKey)
   }
 
   override def join(inetaddr: InetAddress): Unit = {
