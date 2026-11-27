@@ -381,9 +381,24 @@ private[runtime] object _Class {
 }
 
 private[runtime] object LinkedEnums {
+  // A lookup tests every linked enum class, so results are cached per class
+  private val NotAnEnum = new scala.Array[AnyRef](0)
+  private val cache = new ConcurrentHashMap[_Class[_], scala.Array[AnyRef]]
+
+  def valuesOf(cls: _Class[_]): scala.Array[AnyRef] = {
+    var values = cache.get(cls)
+    if (values == null) {
+      // Not computeIfAbsent: values() may initialize an enum whose
+      // initializer asks for its own constants
+      values = lookup(cls)
+      if (values == null) values = NotAnEnum
+      cache.putIfAbsent(cls, values)
+    }
+    if (values eq NotAnEnum) null else values.clone()
+  }
 
   // Replaced at link time, see scala.scalanative.linker.LinkedEnums
-  @noinline def valuesOf(cls: _Class[_]): scala.Array[AnyRef] = intrinsic
+  @noinline def lookup(cls: _Class[_]): scala.Array[AnyRef] = intrinsic
 }
 
 private object LinkedClasses {

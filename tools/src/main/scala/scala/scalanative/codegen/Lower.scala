@@ -1064,7 +1064,7 @@ private[scalanative] object Lower {
         val high64 = buf.bin(highBitsShift, nir.Type.Int128, res128, nir.Val.Int(64), nir.Next.None)
         buf.let(n, nir.Op.Conv(nir.Conv.Trunc, nir.Type.Long, high64), nir.Next.None)
 
-      case IntrinsicCall.EnumValuesOf =>
+      case IntrinsicCall.EnumLookup =>
         // if (cls eq classOf[E1]) E1$.values() else if ... else null
         val resty = op.resty
         val cls = genVal(buf, op.args.last)
@@ -2219,7 +2219,7 @@ private[scalanative] object Lower {
   private object IntrinsicCall {
     object MultiplyHigh extends IntrinsicCall
     object UnsignedMultiplyHigh extends IntrinsicCall
-    object EnumValuesOf extends IntrinsicCall
+    object EnumLookup extends IntrinsicCall
 
     private def resolveIntrinsicCall(owner: nir.Global.Top, sig: nir.Sig)(implicit
         metadata: Metadata,
@@ -2230,7 +2230,7 @@ private[scalanative] object Lower {
       (owner.id, sig.unmangled) match {
         case ("scala.scalanative.runtime.Intrinsics$", nir.Sig.Method("multiplyHigh", _, _))         => Some(MultiplyHigh)
         case ("scala.scalanative.runtime.Intrinsics$", nir.Sig.Method("unsignedMultiplyHigh", _, _)) => Some(UnsignedMultiplyHigh)
-        case _ if LinkedEnums.isValuesOf(owner.member(sig))                                          => Some(EnumValuesOf)
+        case _ if LinkedEnums.isLookup(owner.member(sig))                                            => Some(EnumLookup)
 
         case (_, nir.Sig.Method("intrinsic", _, _)) if owner == nir.Rt.Runtime.name =>
           val symbol @ nir.Global.Member(owner, sig) = currentDefn.get.name

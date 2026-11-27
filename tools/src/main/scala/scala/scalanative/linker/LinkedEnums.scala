@@ -3,9 +3,9 @@ package linker
 
 /** Link-time support for `Class.getEnumConstants`.
  *
- *  `scala.scalanative.runtime.LinkedEnums.valuesOf(cls)` is an intrinsic. Once
- *  it is reachable, `Reach` keeps the companion module and its `values()`
- *  method of every reached enum class (a class whose direct superclass is
+ *  `scala.scalanative.runtime.LinkedEnums.lookup(cls)` is an intrinsic. Once it
+ *  is reachable, `Reach` keeps the companion module and its `values()` method
+ *  of every reached enum class (a class whose direct superclass is
  *  `java.lang.Enum`), and `Lower` replaces each call with a test of `cls`
  *  against these classes. Programs that never ask for enum constants keep no
  *  extra code.
@@ -16,11 +16,11 @@ private[scalanative] object LinkedEnums {
   val Module: nir.Global.Top =
     nir.Global.Top("scala.scalanative.runtime.LinkedEnums$")
 
-  def isValuesOf(name: nir.Global): Boolean = name match {
+  def isLookup(name: nir.Global): Boolean = name match {
     case nir.Global.Member(Module, sig) =>
       sig.unmangled match {
-        case nir.Sig.Method("valuesOf", _, _) => true
-        case _                                => false
+        case nir.Sig.Method("lookup", _, _) => true
+        case _                              => false
       }
     case _ => false
   }

@@ -707,7 +707,7 @@ private[linker] class Reach(
     reachAttrs(attrs)
     reachType(ty)
     reachInsts(insts)
-    if (LinkedEnums.isValuesOf(name)) onEnumValuesRequested()
+    if (LinkedEnums.isLookup(name)) onEnumValuesRequested()
   }
 
   def reachTrait(defn: nir.Defn.Trait): Unit = {
