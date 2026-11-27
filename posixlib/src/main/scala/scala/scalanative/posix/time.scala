@@ -401,6 +401,28 @@ object timer {
       old_value: Ptr[itimerspec]
   ): CInt = extern
 
+  @deprecated(
+    "Binary compatibility: code compiled against 0.5.13 links to this extern name.",
+    "0.5.14"
+  )
+  @name("timer_gettime")
+  private[posix] def _timer_gettime(
+      timerid: timer_t,
+      curr_value: Ptr[itimerspec]
+  ): CInt = externRedirect(timer_gettime(timerid, curr_value))
+
+  @deprecated(
+    "Binary compatibility: code compiled against 0.5.13 links to this extern name.",
+    "0.5.14"
+  )
+  @name("timer_settime")
+  private[posix] def _timer_settime(
+      timerid: timer_t,
+      flags: CInt,
+      new_value: Ptr[itimerspec],
+      old_value: Ptr[itimerspec]
+  ): CInt = externRedirect(timer_settime(timerid, flags, new_value, old_value))
+
 // Symbolic constants
 
   @name("scalanative_timer_abstime")

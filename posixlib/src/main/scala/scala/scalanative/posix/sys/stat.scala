@@ -127,6 +127,14 @@ object stat {
   @name("scalanative_mknod")
   def mknod(path: CString, mode: mode_t, dev: dev_t): CInt = extern
 
+  @deprecated(
+    "Binary compatibility: code compiled against 0.5.13 links to this extern name.",
+    "0.5.14"
+  )
+  @name("mknod")
+  private[posix] def _mknod(path: CString, mode: mode_t, dev: dev_t): CInt =
+    externRedirect(mknod(path, mode, dev))
+
   /** XSI
    */
   def mknodat(dirfd: CInt, path: CString, mode: mode_t, dev: dev_t): CInt =

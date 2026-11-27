@@ -13,6 +13,16 @@ object time {
 
   @name("scalanative_gettimeofday")
   def gettimeofday(tv: Ptr[timeval], tz: Ptr[scala.Byte]): CInt = extern
+
+  @deprecated(
+    "Binary compatibility: code compiled against 0.5.13 links to this extern name.",
+    "0.5.14"
+  )
+  @name("gettimeofday")
+  private[posix] def _gettimeofday(
+      tv: Ptr[timeval],
+      tz: Ptr[scala.Byte]
+  ): CInt = externRedirect(gettimeofday(tv, tz))
 }
 
 object timeOps {
