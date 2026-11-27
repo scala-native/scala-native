@@ -55,14 +55,12 @@ class DatagramSocketTestOnJDK17 {
       Platform.executingInScalaNative && Platform.isFreeBSD &&
         g.getAddress().isInstanceOf[Inet4Address]
     )
-    // TODO: repeated join and leave do not fail on NetBSD
-    val checkRepeated = !(Platform.executingInScalaNative && Platform.isNetBSD)
     ds.joinGroup(g, netIf)
-    if (checkRepeated)
-      assertThrows(classOf[SocketException], ds.joinGroup(g, netIf))
+    assertThrows(classOf[SocketException], ds.joinGroup(g, netIf))
     ds.leaveGroup(g, netIf)
-    if (checkRepeated)
-      assertThrows(classOf[SocketException], ds.leaveGroup(g, netIf))
+    assertThrows(classOf[SocketException], ds.leaveGroup(g, netIf))
+    ds.joinGroup(g, netIf)
+    ds.leaveGroup(g, netIf)
   }
 
   @Test def joinLeaveIPv4GroupOnInterface(): Unit = {
