@@ -4,7 +4,7 @@ import java.io.{FileDescriptor, IOException}
 import java.net.ipOps._
 
 import scala.scalanative.libc.string.memcpy
-import scala.scalanative.meta.LinktimeInfo.{isLinux, isWindows}
+import scala.scalanative.meta.LinktimeInfo.{isFreeBSD, isLinux, isWindows}
 import scala.scalanative.posix
 import scala.scalanative.posix.arpa.inet
 import scala.scalanative.posix.errno._
@@ -36,7 +36,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
 
   protected[net] var socket: DatagramSocket = _
 
-  private final val useIPv4Only = SocketHelpers.getUseIPv4Stack()
+  @volatile private var useIPv4Only = SocketHelpers.getUseIPv4Stack()
   private var multicastInterface: NetworkInterface = null
 
   protected[net] var timeout = 0
@@ -144,14 +144,14 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     }
   }
 
-  private lazy val bindFunc =
-    if (useIPv4Only) bind4(_: InetAddress, _: Int)
-    else bind6(_: InetAddress, _: Int)
-
-  override def bind(port: Int, laddr: InetAddress): Unit = {
-    throwIfClosed("bind")
-    bindFunc(laddr, port)
-  }
+  override def bind(port: Int, laddr: InetAddress): Unit =
+    memberships.synchronized {
+      throwIfClosed("bind")
+      if (!useIPv4Only) bind6(laddr, port)
+      else if (laddr.isAnyLocalAddress())
+        bind4(InetAddress.getByAddress(new Array[Byte](4)), port)
+      else bind4(laddr, port)
+    }
 
   private def send4(p: DatagramPacket): Unit = {
     val insAddr = p.getSocketAddress().asInstanceOf[InetSocketAddress]
@@ -203,7 +203,16 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
   override def send(p: DatagramPacket): Unit = {
     throwIfClosed("send")
     if (useIPv4Only) send4(p)
-    else send6(p)
+    else
+      try send6(p)
+      catch {
+        // the FreeBSD join fallback may have switched the socket to IPv4,
+        // the lock waits for an in-flight switch to finish
+        case e: IOException =>
+          val switched = memberships.synchronized(useIPv4Only)
+          if (switched && p.getAddress().isInstanceOf[Inet4Address]) send4(p)
+          else throw e
+      }
   }
 
   private def connect4(address: InetAddress, port: Int): Unit = {
@@ -252,23 +261,27 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     if (useIPv4Only) connect4(address, port)
     else connect6(address, port)
 
-  override def connect(address: InetAddress, port: Int): Unit = {
-    throwIfClosed("connect")
-    connectTo(address, port)
-    connectedAddress = address
-    connectedPort = port
-    connected = true
-  }
+  override def connect(address: InetAddress, port: Int): Unit =
+    memberships.synchronized {
+      throwIfClosed("connect")
+      connectTo(address, port)
+      connectedAddress = address
+      connectedPort = port
+      connected = true
+    }
 
-  override def disconnect(): Unit = {
+  override def disconnect(): Unit = memberships.synchronized {
     throwIfClosed("disconnect")
-    connectTo(SocketHelpers.getWildcardAddress(), 0)
+    val wildcard =
+      if (useIPv4Only) InetAddress.getByAddress(new Array[Byte](4))
+      else SocketHelpers.getWildcardAddress()
+    connectTo(wildcard, 0)
     connectedAddress = null
     connectedPort = -1
     connected = false
   }
 
-  override def close(): Unit = {
+  override def close(): Unit = memberships.synchronized {
     if (!isClosed) {
       if (isWindows) WinSocketApi.closeSocket(fd.handle)
       else unistd.close(fd.fd)
@@ -340,7 +353,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
       "Deprecated method getTTL. Use getTimeToLive instead"
     )
 
-  override def setTimeToLive(ttl: Int): Unit = {
+  override def setTimeToLive(ttl: Int): Unit = memberships.synchronized {
     throwIfClosed("setTimeToLive")
     setMulticastOption(
       "IP_MULTICAST_TTL",
@@ -350,7 +363,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     )
   }
 
-  override def getTimeToLive(): Int = {
+  override def getTimeToLive(): Int = memberships.synchronized {
     throwIfClosed("getTimeToLive")
     getMulticastOption(
       "IP_MULTICAST_TTL",
@@ -584,12 +597,14 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     val done = group match {
       case _: Inet4Address =>
         mcastJoinLeave4(addr, netIf, join) || (!useIPv4Only && {
+          val v4Errno = if (isFreeBSD) errno else 0
           // macOS & BSDs accept IPv4 groups on IPv6 sockets only v4-mapped
           val mapped = new Array[Byte](16)
           mapped(10) = 0xff.toByte
           mapped(11) = 0xff.toByte
           System.arraycopy(addr, 0, mapped, 12, 4)
-          mcastJoinLeave6(mapped, netIf, join)
+          mcastJoinLeave6(mapped, netIf, join) ||
+            joinAsIPv4OnFreeBSD(addr, netIf, join, v4Errno)
         })
       case _ =>
         if (useIPv4Only)
@@ -612,6 +627,116 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
       memberships.remove(membership)
       memberships.remove((groupKey, 0))
     } else memberships.removeIf(_._1 == groupKey)
+  }
+
+  private def joinAsIPv4OnFreeBSD(
+      group: Array[Byte],
+      netIf: NetworkInterface,
+      join: Boolean,
+      v4Errno: CInt
+  ): Boolean =
+    if (isFreeBSD) {
+      join && v4Errno == EINVAL && switchToIPv4() &&
+      mcastJoinLeave4(group, netIf, join)
+    } else false
+
+  private def hasIPv4Address(netIf: NetworkInterface): Boolean = {
+    val it = netIf.getInetAddresses()
+    var found = false
+    while (!found && it.hasMoreElements())
+      found = it.nextElement().isInstanceOf[Inet4Address]
+    found
+  }
+
+  /* FreeBSD before 16 cannot join IPv4 groups on IPv6 sockets, see ip6(4).
+   * Replace the socket with an IPv4 one using the same address, port and
+   * options, unless it is connected or has memberships the swap would drop.
+   */
+  private def switchToIPv4(): Boolean = {
+    val storage = stackalloc[posix.sys.socket.sockaddr_storage]()
+    val sa = storage.asInstanceOf[Ptr[posix.sys.socket.sockaddr]]
+    val len = stackalloc[posix.sys.socket.socklen_t]()
+    !len = sizeof[posix.sys.socket.sockaddr_storage].toUInt
+    val local =
+      if (posix.sys.socket.getsockname(fd.fd, sa, len) != 0) null
+      else SocketHelpers.sockaddrStorageToInetSocketAddress(sa)
+    val localAddr = local match {
+      case null                                         => null
+      case l if l.getAddress.isInstanceOf[Inet4Address] => l.getAddress
+      case l if l.getAddress.isAnyLocalAddress()        =>
+        InetAddress.getByAddress(new Array[Byte](4))
+      case _ => null
+    }
+    val outIf = multicastInterface
+    val canSwitch = localAddr != null && memberships.isEmpty() && !connected &&
+      (outIf == null || hasIPv4Address(outIf))
+    canSwitch && {
+      import posix.sys.socket.{SOL_SOCKET, SO_REUSEADDR, SO_REUSEPORT}
+      import posix.sys.socket.{SO_BROADCAST, SO_RCVBUF, SO_SNDBUF}
+      val intOpts =
+        Array(SO_REUSEADDR, SO_REUSEPORT, SO_BROADCAST, SO_RCVBUF, SO_SNDBUF)
+          .map(o => o -> getIntOption(SOL_SOCKET, o, "SOL_SOCKET"))
+      val tclass = getIntOption(in.IPPROTO_IPV6, ip6.IPV6_TCLASS, "IPV6_TCLASS")
+      val hops =
+        getIntOption(
+          in.IPPROTO_IPV6,
+          ip6.IPV6_MULTICAST_HOPS,
+          "IP_MULTICAST_TTL"
+        )
+      val loop =
+        getIntOption(
+          in.IPPROTO_IPV6,
+          in.IPV6_MULTICAST_LOOP,
+          "IP_MULTICAST_LOOP"
+        )
+      val fdFlags = posix.fcntl.fcntl(fd.fd, posix.fcntl.F_GETFD, 0)
+      val flFlags = posix.fcntl.fcntl(fd.fd, posix.fcntl.F_GETFL, 0)
+
+      val oldReusePort =
+        getIntOption(SOL_SOCKET, SO_REUSEPORT, "SO_REUSEPORT")
+      def setReusePort(sock: CInt, value: Int): Boolean = {
+        val opt = stackalloc[CInt]()
+        !opt = value
+        posix.sys.socket.setsockopt(
+          sock,
+          SOL_SOCKET,
+          SO_REUSEPORT,
+          opt.asInstanceOf[Ptr[Byte]],
+          sizeof[CInt].toUInt
+        ) == 0
+      }
+      val sa4 = stackalloc[in.sockaddr_in]()
+      val sa4Ptr = sa4.asInstanceOf[Ptr[posix.sys.socket.sockaddr]]
+      val sa4Len = sizeof[in.sockaddr_in].toUInt
+      val port = local.getPort
+
+      val sock = posix.sys.socket.socket(
+        posix.sys.socket.AF_INET,
+        posix.sys.socket.SOCK_DGRAM,
+        0
+      )
+      // Bind while the old socket shares the port, then swap
+      val ready = sock >= 0 && setReusePort(fd.fd, 1) &&
+        setReusePort(sock, 1) && (port == 0 || {
+          SocketHelpers.prepareSockaddrIn4(localAddr, port, sa4)
+          posix.sys.socket.bind(sock, sa4Ptr, sa4Len) == 0
+        }) && unistd.dup2(sock, fd.fd) >= 0
+      if (sock >= 0) unistd.close(sock)
+      if (!ready) setReusePort(fd.fd, oldReusePort)
+      ready && {
+        useIPv4Only = true
+        if (fdFlags >= 0)
+          posix.fcntl.fcntl(fd.fd, posix.fcntl.F_SETFD, fdFlags)
+        if (flFlags >= 0)
+          posix.fcntl.fcntl(fd.fd, posix.fcntl.F_SETFL, flFlags)
+        for ((o, v) <- intOpts) setIntOption(SOL_SOCKET, o, v)
+        setIntOption(in.IPPROTO_IP, in.IP_TOS, tclass)
+        setIPv4MulticastOption(ip.IP_MULTICAST_TTL, hops)
+        setIPv4MulticastOption(in.IP_MULTICAST_LOOP, loop)
+        if (outIf != null) setMulticastInterface(outIf)
+        true
+      }
+    }
   }
 
   override def join(inetaddr: InetAddress): Unit = {
@@ -655,7 +780,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
   // for example IP_TOS and TCP_NODELAY have the same value on my machine
   private def nativeValueFromOption(option: Int) = option match {
     case SocketOptions.IP_TOS =>
-      SocketHelpers.getTrafficClassSocketOption()
+      if (useIPv4Only) in.IP_TOS else ip6.IPV6_TCLASS
     case SocketOptions.SO_TIMEOUT   => posix.sys.socket.SO_RCVTIMEO
     case SocketOptions.SO_RCVBUF    => posix.sys.socket.SO_RCVBUF
     case SocketOptions.SO_SNDBUF    => posix.sys.socket.SO_SNDBUF
@@ -664,7 +789,10 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     case _                          => sys.error(s"Unknown option: $option")
   }
 
-  override def getOption(optID: Int): Object = {
+  override def getOption(optID: Int): Object =
+    memberships.synchronized(getOptionLocked(optID))
+
+  private def getOptionLocked(optID: Int): Object = {
     if (isClosed) {
       throw new SocketException("Socket is closed")
     }
@@ -686,8 +814,9 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     }
 
     val level = optID match {
-      case SocketOptions.IP_TOS => SocketHelpers.getIPPROTO()
-      case _                    => posix.sys.socket.SOL_SOCKET
+      case SocketOptions.IP_TOS =>
+        if (useIPv4Only) in.IPPROTO_IP else in.IPPROTO_IPV6
+      case _ => posix.sys.socket.SOL_SOCKET
     }
 
     val optValue = nativeValueFromOption(optID)
@@ -714,7 +843,10 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     }
   }
 
-  override def setOption(optID: Int, value: Object): Unit = {
+  override def setOption(optID: Int, value: Object): Unit =
+    memberships.synchronized(setOptionLocked(optID, value))
+
+  private def setOptionLocked(optID: Int, value: Object): Unit = {
     if (isClosed) {
       throw new SocketException("Socket is closed")
     }
@@ -738,8 +870,9 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     }
 
     val level = optID match {
-      case SocketOptions.IP_TOS => SocketHelpers.getIPPROTO()
-      case _                    => posix.sys.socket.SOL_SOCKET
+      case SocketOptions.IP_TOS =>
+        if (useIPv4Only) in.IPPROTO_IP else in.IPPROTO_IPV6
+      case _ => posix.sys.socket.SOL_SOCKET
     }
     val optValue = nativeValueFromOption(optID)
 
