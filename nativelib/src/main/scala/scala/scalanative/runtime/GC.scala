@@ -51,7 +51,8 @@ object GC {
   // The part of the total heap size not taken by objects
   @name("scalanative_GC_get_free_heapsize")
   def getFreeHeapSize(): CSize = extern
-  // The size the heap does not grow beyond, the maximal CSize if unlimited
+  // The size the heap does not grow beyond, at least the total heap size and
+  // the maximal CSize if unlimited
   @name("scalanative_GC_get_heap_limit")
   def getHeapLimit(): CSize = extern
 

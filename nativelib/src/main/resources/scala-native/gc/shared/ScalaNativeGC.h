@@ -50,7 +50,9 @@ size_t scalanative_GC_get_used_heapsize();
 size_t scalanative_GC_get_total_heapsize();
 // The part of the total heap size not taken by objects, at most the total
 size_t scalanative_GC_get_free_heapsize();
-// The size the heap would not grow beyond, SIZE_MAX if there is no limit
+// The size the heap does not grow beyond, at least the total heap size and
+// SIZE_MAX if there is no limit. Unlike the max heap size it never stands in
+// for an unlimited heap with the physical memory or the current heap size.
 size_t scalanative_GC_get_heap_limit();
 
 // The total (accumulated) number of GC runs

@@ -166,24 +166,15 @@ class Runtime private () {
   }
 
   /** The memory held by the heap, never more than `maxMemory()`. */
-  def totalMemory(): scala.Long = {
-    val total = GC.getTotalHeapSize().toLong
-    if (total < 0L) scala.Long.MaxValue else total
-  }
+  def totalMemory(): scala.Long = GC.getTotalHeapSize().toLong
 
   /** The part of `totalMemory()` not taken by objects. */
-  def freeMemory(): scala.Long = {
-    val free = GC.getFreeHeapSize().toLong
-    if (free < 0L) 0L else free.min(totalMemory())
-  }
+  def freeMemory(): scala.Long = GC.getFreeHeapSize().toLong
 
   /** The size the heap does not grow beyond, `Long.MAX_VALUE` if unlimited. */
   def maxMemory(): scala.Long = {
     val limit = GC.getHeapLimit()
-    val max = limit.toLong
-    if (limit == ~0.toUSize || max < 0L) scala.Long.MaxValue
-    // The heap can be larger than the size it was configured with
-    else max.max(totalMemory())
+    if (limit == ~0.toUSize) scala.Long.MaxValue else limit.toLong
   }
 
   def exit(status: Int): Unit = stdlib.exit(status)

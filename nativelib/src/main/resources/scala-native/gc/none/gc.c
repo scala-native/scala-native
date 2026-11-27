@@ -102,6 +102,7 @@ size_t scalanative_GC_get_used_heapsize() { return TOTAL_ALLOCATED; }
 
 size_t scalanative_GC_get_total_heapsize() {
 #ifdef GC_ASAN
+    // Every object is its own allocation, there is no free memory
     return TOTAL_ALLOCATED;
 #else
     return atomic_load(&TOTAL_MAPPED);
