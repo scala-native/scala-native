@@ -82,6 +82,9 @@ class HttpURLConnectionTest {
       "HTTP/1.0 201 Created\r\nContent-Length: 0\r\n\r\n"
     else if (r.line.contains("/continue"))
       "HTTP/1.1 100 Continue\r\n\r\n" + ok("ok")
+    else if (r.line.contains("/odd/"))
+      "HTTP/1.1 " + r.line.split(' ')(1).substring(5) +
+        " Odd\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
     else "garbage\r\n\r\n"
   } { s =>
     val noMessage = open(s.base + "/nomsg")
@@ -94,6 +97,14 @@ class HttpURLConnectionTest {
     assertEquals(200, continued.getResponseCode())
     assertEquals("ok", body(continued))
     assertEquals(-1, open(s.base + "/bogus").getResponseCode())
+    val codes = Array("0200", "600", "99", "2000")
+    var i = 0
+    while (i < codes.length) {
+      val odd = open(s.base + "/odd/" + codes(i))
+      assertEquals(Integer.parseInt(codes(i)), odd.getResponseCode())
+      assertEquals("Odd", odd.getResponseMessage())
+      i += 1
+    }
   }
 
   @Test def requestMethods(): Unit = {
@@ -908,6 +919,50 @@ class HttpURLConnectionTest {
     )
   }
 
+  @Test def fixedLengthWithoutOutput(): Unit = withServer(r => ok(r.body)) {
+    s =>
+      val c = open(s.base + "/x")
+      c.setDoOutput(true)
+      c.setRequestMethod("POST")
+      c.setFixedLengthStreamingMode(3)
+      assertEquals(
+        "insufficient data written",
+        assertThrows(classOf[IOException], c.getResponseCode()).getMessage()
+      )
+  }
+
+  @Test def cachingCommitsFullyReadBody(): Unit = withServer(_ => ok("fresh")) {
+    s =>
+      val seen = new ArrayList[String]()
+      ResponseCache.setDefault(new ResponseCache {
+        def get(
+            uri: URI,
+            m: String,
+            h: Map[String, List[String]]
+        ): CacheResponse = null
+        def put(uri: URI, c: URLConnection): CacheRequest =
+          new CacheRequest {
+            def getBody(): OutputStream = new ByteArrayOutputStream() {
+              override def close(): Unit = seen.add("commit " + toString())
+            }
+            def abort(): Unit = seen.add("abort")
+          }
+      })
+      try {
+        val in = open(s.base + "/full").getInputStream()
+        val b = new Array[Byte](5)
+        var n = 0
+        while (n < 5) n += in.read(b, n, 5 - n)
+        in.close()
+        assertEquals(Arrays.asList("commit fresh"), seen)
+        seen.clear()
+        val partial = open(s.base + "/partial").getInputStream()
+        partial.read()
+        partial.close()
+        assertEquals(Arrays.asList("abort"), seen)
+      } finally ResponseCache.setDefault(null)
+  }
+
   @Test def disconnectAbortsCaching(): Unit = withServer(_ => ok("fresh")) {
     s =>
       val seen = new ArrayList[String]()
@@ -940,7 +995,8 @@ class HttpURLConnectionTest {
       "https.proxyHost",
       "https.proxyPort",
       "socksProxyHost",
-      "proxyHost"
+      "proxyHost",
+      "proxyPort"
     )
     val saved = props.map(System.getProperty(_))
     try {
@@ -957,6 +1013,18 @@ class HttpURLConnectionTest {
       assertTrue(a.isUnresolved())
       assertEquals("proxy.test", a.getHostString())
       assertEquals(3128, a.getPort())
+      def port(): Int = sel
+        .select(URI.create("http://example.com/"))
+        .get(0)
+        .address()
+        .asInstanceOf[InetSocketAddress]
+        .getPort()
+      System.setProperty("http.proxyPort", "0")
+      System.setProperty("proxyPort", "8080")
+      assertEquals(8080, port())
+      System.clearProperty("proxyPort")
+      assertEquals(80, port())
+      System.setProperty("http.proxyPort", "3128")
       assertEquals(
         p,
         sel.select(new URL("http://build_host:8080/").toURI()).get(0)

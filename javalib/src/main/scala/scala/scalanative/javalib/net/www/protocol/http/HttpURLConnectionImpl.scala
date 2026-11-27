@@ -416,6 +416,8 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
     try {
       connect()
       if (!responseRead) {
+        if (!headSent && doOutput && chunkLength <= 0 && fixedLength >= 0)
+          getOutputStream()
         var done = false
         while (!done) {
           if (!headSent)

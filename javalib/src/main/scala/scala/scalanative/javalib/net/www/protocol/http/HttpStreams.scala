@@ -59,6 +59,11 @@ private[http] object HttpStreams {
 }
 
 /** The socket input, failing once the connection is closed. */
+/** A response body that knows whether all of it was read. */
+private[http] trait BodyInput {
+  def complete: Boolean
+}
+
 private[http] final class SocketInput(in: InputStream)
     extends FilterInputStream(in) {
   @volatile private var closed = false
@@ -86,12 +91,15 @@ private[http] final class FixedLengthInputStream(
     in: InputStream,
     private var remaining: Long,
     onEnd: () => Unit
-) extends FilterInputStream(in) {
+) extends FilterInputStream(in)
+    with BodyInput {
   private var ended = false
 
   private def end(): Unit = if (!ended) { ended = true; onEnd() }
 
   if (remaining <= 0) end()
+
+  def complete: Boolean = remaining <= 0
 
   override def read(): Int =
     if (remaining <= 0) -1
@@ -133,10 +141,14 @@ private[http] final class FixedLengthInputStream(
 
 /** A chunked body; trailers are skipped. */
 private[http] final class ChunkedInputStream(in: InputStream, onEnd: () => Unit)
-    extends FilterInputStream(in) {
+    extends FilterInputStream(in)
+    with BodyInput {
   private var remaining = 0L
   private var started = false
   private var done = false
+  private var lastChunkRead = false
+
+  def complete: Boolean = lastChunkRead
 
   private def nextChunk(): Unit =
     if (remaining == 0 && !done) {
@@ -162,6 +174,7 @@ private[http] final class ChunkedInputStream(in: InputStream, onEnd: () => Unit)
           if (trailer == null) throw new IOException("Premature EOF")
           trailer = HttpStreams.readLine(in)
         }
+        lastChunkRead = true
         done = true
         onEnd()
       }
@@ -205,14 +218,18 @@ private[http] final class ChunkedInputStream(in: InputStream, onEnd: () => Unit)
 private[http] final class UntilCloseInputStream(
     in: InputStream,
     onEnd: () => Unit
-) extends FilterInputStream(in) {
+) extends FilterInputStream(in)
+    with BodyInput {
   private var ended = false
+  private var eof = false
+
+  def complete: Boolean = eof
 
   private def end(): Unit = if (!ended) { ended = true; onEnd() }
 
   override def read(): Int = {
     val c = if (ended) -1 else in.read()
-    if (c == -1) end()
+    if (c == -1) { if (!ended) eof = true; end() }
     c
   }
 
@@ -220,7 +237,7 @@ private[http] final class UntilCloseInputStream(
     if (len == 0) 0
     else {
       val n = if (ended) -1 else in.read(b, off, len)
-      if (n == -1) end()
+      if (n == -1) { if (!ended) eof = true; end() }
       n
     }
 
@@ -274,7 +291,10 @@ private[http] final class CachingInputStream(
   override def markSupported(): Boolean = false
 
   override def close(): Unit = {
-    finish(false)
+    finish(in match {
+      case b: BodyInput => b.complete
+      case _            => false
+    })
     in.close()
   }
 }

@@ -101,7 +101,8 @@ final class DefaultProxySelector extends ProxySelector {
       if (proxyHost != null)
         httpProxy(
           proxyHost,
-          portOr(property(portProperty), property("proxyPort")),
+          property(portProperty),
+          property("proxyPort"),
           defaultPort
         )
       else {
@@ -109,7 +110,8 @@ final class DefaultProxySelector extends ProxySelector {
         if (legacyHost != null)
           httpProxy(
             legacyHost,
-            portOr(property("proxyPort"), property(portProperty)),
+            property("proxyPort"),
+            property(portProperty),
             defaultPort
           )
         else socks()
@@ -129,11 +131,23 @@ final class DefaultProxySelector extends ProxySelector {
       )
   }
 
-  private def httpProxy(host: String, portValue: String, defaultPort: Int) =
+  /** The first positive port of `first` and `second`, else `defaultPort`. */
+  private def httpProxy(
+      host: String,
+      first: String,
+      second: String,
+      defaultPort: Int
+  ) = {
+    val p = port(first, 0)
+    val selected = if (p > 0) p else port(second, 0)
     new Proxy(
       Proxy.Type.HTTP,
-      InetSocketAddress.createUnresolved(host, port(portValue, defaultPort))
+      InetSocketAddress.createUnresolved(
+        host,
+        if (selected > 0) selected else defaultPort
+      )
     )
+  }
 }
 
 object DefaultProxySelector {
@@ -148,9 +162,6 @@ object DefaultProxySelector {
     val v = System.getProperty(name)
     if (v == null || v.isEmpty) null else v
   }
-
-  private def portOr(first: String, second: String): String =
-    if (first != null) first else second
 
   /** `default` when missing or not a number. */
   private def port(value: String, default: Int): Int =
