@@ -15,7 +15,7 @@ private[interflow] final class MergeProcessor(
     scopeMapping: nir.ScopeId => nir.ScopeId,
     eval: Eval
 )(implicit analysis: ReachabilityAnalysis.Result) {
-  import MergeProcessor.MergeBlockOffset
+  import MergeProcessor.{IncomingBox, MergeBlockOffset}
   assert(
     insts.length < MergeBlockOffset,
     s"Too big function, ${insts.length} instructions, max allowed ${MergeBlockOffset}"
@@ -62,7 +62,7 @@ private[interflow] final class MergeProcessor(
   )(implicit analysis: ReachabilityAnalysis.Result): (Seq[MergePhi], State) = {
     import block.cfPos
     // Has an incoming edge from a block that does not precede it
-    def isLoopHeader = offsets.get(block.label.id).exists { offset =>
+    val isLoopHeader = offsets.get(block.label.id).exists { offset =>
       block.incoming.keysIterator.exists(offsets.get(_).exists(_ >= offset))
     }
     merge(
@@ -77,7 +77,7 @@ private[interflow] final class MergeProcessor(
       merge: nir.Local,
       params: Seq[nir.Val.Local],
       incoming: Seq[(nir.Local, (Seq[nir.Val], State))],
-      isLoopHeader: => Boolean
+      isLoopHeader: Boolean
   )(implicit analysis: ReachabilityAnalysis.Result): (Seq[MergePhi], State) = {
     val localIds = incoming.map { case (n, (_, _)) => n }
     val states = incoming.map { case (_, (_, s)) => s }
@@ -103,7 +103,6 @@ private[interflow] final class MergeProcessor(
         (phis, newstate)
       case _ =>
         val headState = states.head
-        lazy val unboxesAllocated = isLoopHeader
 
         var mergeFresh = nir.Fresh(merge.id)
         val mergeLocals = mutable.OpenHashMap.empty[nir.Local, nir.Val]
@@ -123,21 +122,19 @@ private[interflow] final class MergeProcessor(
             values.forall(_ == h)
           } else false
 
-        /* Boxes are passed across the merge by value: when every incoming
-         * value is a not-yet-materialized box of the same class, only the
-         * boxed values are merged, and the result is a box that is again
-         * virtual in the merge state. Boxes have no guaranteed identity, so
-         * the box allocated (if ever) after the merge can stand for the ones
-         * that would otherwise be allocated on each incoming edge.
+        /* Boxes cross the merge by value: when every incoming value is a
+         * box of the same class that is not allocated yet, only the boxed
+         * values are merged and the result is again a box that is not
+         * allocated. Boxes have no guaranteed identity, so one box allocated
+         * after the merge, if it is needed at all, can stand for the ones
+         * allocated on each incoming edge.
          *
-         * A box carried around a loop would otherwise be allocated on every
-         * iteration. There it is worth to unbox also the already allocated
-         * boxes entering the loop, e.g. the initial value of a pointer that
-         * is incremented in the loop, even though such a box needs to be
-         * allocated again if it is used as an object later.
+         * In a loop header the boxes that are already allocated are unboxed
+         * as well. Otherwise the box of a value updated in the loop, e.g. of
+         * a pointer that is incremented, would be allocated on each iteration.
          *
-         * The same incoming boxes always merge to the same box, so that
-         * aliases of a box remain aliases after the merge.
+         * The same incoming boxes merge to the same box, so that aliases of
+         * a box remain aliases after the merge.
          */
         def mergeBoxes(
             values: Seq[nir.Val],
@@ -145,127 +142,101 @@ private[interflow] final class MergeProcessor(
         ): Option[nir.Val] =
           // Only a virtual value can be a box that is not allocated yet
           if (!values.exists(_.isInstanceOf[nir.Val.Virtual])) None
-          else mergedBoxes.get(values).orElse(mergeNewBoxes(values, localName))
+          else
+            mergedBoxes.get(values).orElse {
+              val merged = mergeNewBoxes(values, localName)
+              merged.foreach(mergedBoxes(values) = _)
+              merged
+            }
 
         def mergeNewBoxes(
             values: Seq[nir.Val],
             localName: Option[String]
         ): Option[nir.Val] = {
-          var boxTy: nir.Type.Ref = null
-          var boxInstance: Instance = null
-          var isBox = true
-          var hasAllocated = false
-          // Instances of box classes created with `new`, e.g. by pointer
-          // arithmetic, are boxes as well. They are never null.
-          var allInstantiated = true
-          // Either a value to be boxed, or an allocated box (boxed == false)
-          val unboxed = new Array[nir.Val](values.size)
-          val boxed = new Array[Boolean](values.size)
+          val incoming = states.zip(values).flatMap {
+            case (state, value) => IncomingBox(value)(state, analysis)
+          }
+          val pending = incoming.collect {
+            case box: IncomingBox.Pending => box
+          }
+          val hasAllocated = pending.size < incoming.size
 
-          def box(idx: Int, ty: nir.Type, value: nir.Val, instance: Instance) =
-            nir.Type.normalize(ty) match {
-              case ty: nir.Type.Ref if boxTy == null || boxTy == ty =>
-                boxTy = ty
-                boxInstance = instance
-                unboxed(idx) = value
-                boxed(idx) = true
-              case _ => isBox = false
+          pending.headOption
+            .filter { head =>
+              incoming.size == values.size &&
+              pending.forall(_.cls == head.cls) &&
+              (!hasAllocated || isLoopHeader)
             }
-          def allocated(idx: Int, value: nir.Val) = {
-            hasAllocated = true
-            allInstantiated = false
-            unboxed(idx) = value
-          }
-
-          var idx = 0
-          val statesIt = states.iterator
-          val valuesIt = values.iterator
-          while (isBox && valuesIt.hasNext) {
-            val state = statesIt.next()
-            valuesIt.next() match {
-              case nir.Val.Virtual(addr) =>
-                state.deref(addr) match {
-                  case instance @ VirtualInstance(
-                        kind @ (BoxKind | ClassKind),
-                        cls,
-                        Array(value),
-                        None
-                      ) if nir.Type.boxClasses.contains(cls.name) =>
-                    allInstantiated &&= kind == ClassKind
-                    box(idx, nir.Type.Ref(cls.name), value, instance)
-                  // Pointer boxes are not virtual allocations: null boxes to null
-                  case instance @ DelayedInstance(nir.Op.Box(ty, value)) =>
-                    allInstantiated = false
-                    box(idx, ty, value, instance)
-                  case EscapedInstance(value) =>
-                    allocated(idx, value)
-                  case _ => isBox = false
-                }
-              case value => allocated(idx, value)
+            .flatMap { head =>
+              val boxTy = nir.Type.Ref(head.cls.name)
+              nir.Type.unbox
+                .get(boxTy)
+                .filter(canUnbox(incoming, boxTy, _))
+                .map(mergeUnboxed(incoming, head, boxTy, _, localName))
             }
-            idx += 1
-          }
-          isBox &&= boxTy != null && (!hasAllocated || unboxesAllocated)
+        }
 
-          val unboxedTy = if (isBox) nir.Type.unbox.get(boxTy) else None
-          val isPtrBox = isBox && nir.Type.isPtrBox(boxTy)
-          // The boxed values end up in a phi of the primitive type
-          def hasUnboxedType(value: nir.Val)(implicit state: State) = {
-            val ty = value match {
-              case InstanceRef(ty) => ty
-              case _               => value.ty
-            }
-            unboxedTy.contains(ty) || (isPtrBox && ty == nir.Type.Null)
-          }
-          // Unboxing must not introduce a failure: only a pointer box can
-          // be null, in which case it unboxes to a null pointer.
-          def canUnbox(value: nir.Val) = value.ty match {
-            case nir.Type.Null                   => isPtrBox
-            case nir.Type.Ref(name, _, nullable) =>
-              name == boxTy.name && (isPtrBox || !nullable)
-            case _ => false
-          }
-          isBox &&= unboxedTy.isDefined && states.indices.forall { idx =>
-            if (boxed(idx)) hasUnboxedType(unboxed(idx))(states(idx))
-            else canUnbox(unboxed(idx))
-          }
-
-          if (!isBox) None
-          else {
-            val instance = boxInstance
-            import instance.{srcPosition, scopeId}
-            states.indices.foreach { idx =>
-              if (!boxed(idx)) unboxed(idx) = unboxed(idx) match {
-                case nir.Val.Null => nir.Val.Null
-                case value        =>
-                  states(idx).emit(nir.Op.Unbox(boxTy, value))
+        // The boxed values end up in a phi of the primitive type, and
+        // unboxing must not fail: only a pointer box can be null, in which
+        // case it unboxes to a null pointer.
+        def canUnbox(
+            incoming: Seq[IncomingBox],
+            boxTy: nir.Type.Ref,
+            unboxedTy: nir.Type
+        ): Boolean = {
+          val isPtrBox = nir.Type.isPtrBox(boxTy)
+          states.zip(incoming).forall {
+            case (state, box: IncomingBox.Pending) =>
+              val ty =
+                InstanceRef.unapply(box.value)(state).getOrElse(box.value.ty)
+              ty == unboxedTy || (isPtrBox && ty == nir.Type.Null)
+            case (_, IncomingBox.Allocated(value)) =>
+              value.ty match {
+                case nir.Type.Null                   => isPtrBox
+                case nir.Type.Ref(name, _, nullable) =>
+                  name == boxTy.name && (isPtrBox || !nullable)
+                case _ => false
               }
-            }
-            val value = mergeMaterialized(unboxed.toSeq, unboxedTy, localName)
-            val merged =
-              if (allInstantiated || !isPtrBox) {
-                val ClassRef(cls) = boxTy: @unchecked
-                val kind = if (allInstantiated) ClassKind else BoxKind
-                val addr = mergeFresh().id
-                mergeHeap(addr) = VirtualInstance(kind, cls, Array(value), None)
-                nir.Val.Virtual(addr)
-              } else {
-                // A pointer box that may be null on some edge
-                val op = nir.Op.Box(boxTy, value)
-                mergeDelayed.getOrElseUpdate(
-                  op, {
-                    val addr = mergeFresh().id
-                    mergeHeap(addr) = DelayedInstance(op)
-                    nir.Val.Virtual(addr)
-                  }
-                )
-              }
+          }
+        }
+
+        def mergeUnboxed(
+            incoming: Seq[IncomingBox],
+            head: IncomingBox.Pending,
+            boxTy: nir.Type.Ref,
+            unboxedTy: nir.Type,
+            localName: Option[String]
+        ): nir.Val = {
+          import head.instance.{srcPosition, scopeId}
+          val unboxed = states.zip(incoming).map {
+            case (_, box: IncomingBox.Pending)            => box.value
+            case (_, IncomingBox.Allocated(nir.Val.Null)) => nir.Val.Null
+            case (state, IncomingBox.Allocated(value))    =>
+              state.emit(nir.Op.Unbox(boxTy, value))
+          }
+          val value = mergeMaterialized(unboxed, Some(unboxedTy), localName)
+
+          def virtual(instance: Instance): nir.Val = {
+            val addr = mergeFresh().id
+            mergeHeap(addr) = instance
             if (eval.preserveDebugInfo) {
-              val nir.Val.Virtual(addr) = merged: @unchecked
               localName.foreach(mergeVirtualNames.getOrElseUpdate(addr, _))
             }
-            mergedBoxes(values) = merged
-            Some(merged)
+            nir.Val.Virtual(addr)
+          }
+          // A box created with `new` is never null, unlike the result of
+          // boxing a pointer, which stays a delayed operation.
+          val allInstantiated = incoming.forall {
+            case box: IncomingBox.Pending => box.instantiated
+            case _                        => false
+          }
+          if (allInstantiated)
+            virtual(VirtualInstance(ClassKind, head.cls, Array(value), None))
+          else if (!nir.Type.isPtrBox(boxTy))
+            virtual(VirtualInstance(BoxKind, head.cls, Array(value), None))
+          else {
+            val op = nir.Op.Box(boxTy, value)
+            mergeDelayed.getOrElseUpdate(op, virtual(DelayedInstance(op)))
           }
         }
 
@@ -705,6 +676,55 @@ private[interflow] final class MergeProcessor(
 
 private[interflow] object MergeProcessor {
   case object Restart extends Exception with scala.util.control.NoStackTrace
+
+  /** A value entering a merge, seen as a box. */
+  private sealed abstract class IncomingBox
+  private object IncomingBox {
+
+    /** A box of class `cls` that is not allocated yet. It is `instantiated` if
+     *  created with `new`, e.g. by pointer arithmetic, rather than by boxing
+     *  `value`.
+     */
+    final case class Pending(
+        cls: Class,
+        value: nir.Val,
+        instantiated: Boolean,
+        instance: Instance
+    ) extends IncomingBox
+
+    /** A value that exists at runtime; whether it is a box depends on its type.
+     */
+    final case class Allocated(value: nir.Val) extends IncomingBox
+
+    /** None if `value` is a virtual value other than a box. */
+    def apply(value: nir.Val)(implicit
+        state: State,
+        analysis: ReachabilityAnalysis.Result
+    ): Option[IncomingBox] = value match {
+      case nir.Val.Virtual(addr) =>
+        state.deref(addr) match {
+          case instance @ VirtualInstance(
+                kind @ (BoxKind | ClassKind),
+                cls,
+                Array(value),
+                None
+              ) if nir.Type.boxClasses.contains(cls.name) =>
+            Some(Pending(cls, value, kind == ClassKind, instance))
+          // Boxing of a pointer is delayed rather than virtual: null boxes
+          // to null.
+          case instance @ DelayedInstance(
+                nir.Op.Box(nir.Type.Ref(ClassRef(cls), _, _), value)
+              ) =>
+            Some(Pending(cls, value, instantiated = false, instance))
+          case EscapedInstance(value) =>
+            Some(Allocated(value))
+          case _ =>
+            None
+        }
+      case _ =>
+        Some(Allocated(value))
+    }
+  }
 
   /* To mitigate risk of duplicated ids each merge block uses a dedicated
    *  namespace. Translation to the new namespace is performed by multiplicating
