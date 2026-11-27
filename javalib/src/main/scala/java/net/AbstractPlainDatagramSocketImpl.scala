@@ -557,8 +557,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
           mapped(11) = 0xff.toByte
           System.arraycopy(addr, 0, mapped, 12, 4)
           mcastJoinLeave6(mapped, netIf, join) ||
-            (isFreeBSD && join && v4Errno == EINVAL && switchToIPv4() &&
-            mcastJoinLeave4(addr, netIf, join))
+            joinAsIPv4OnFreeBSD(addr, netIf, join, v4Errno)
         })
       case _ =>
         if (useIPv4Only)
@@ -578,6 +577,17 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
       )
     }
   }
+
+  private def joinAsIPv4OnFreeBSD(
+      group: Array[Byte],
+      netIf: NetworkInterface,
+      join: Boolean,
+      v4Errno: CInt
+  ): Boolean =
+    if (isFreeBSD) {
+      join && v4Errno == EINVAL && switchToIPv4() &&
+      mcastJoinLeave4(group, netIf, join)
+    } else false
 
   /* FreeBSD before 16 cannot join IPv4 groups on IPv6 sockets, see ip6(4).
    * Replace the socket with an IPv4 one using the same address, port, peer
