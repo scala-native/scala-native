@@ -144,13 +144,14 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     }
   }
 
-  override def bind(port: Int, laddr: InetAddress): Unit = {
-    throwIfClosed("bind")
-    if (!useIPv4Only) bind6(laddr, port)
-    else if (laddr.isAnyLocalAddress())
-      bind4(InetAddress.getByAddress(new Array[Byte](4)), port)
-    else bind4(laddr, port)
-  }
+  override def bind(port: Int, laddr: InetAddress): Unit =
+    memberships.synchronized {
+      throwIfClosed("bind")
+      if (!useIPv4Only) bind6(laddr, port)
+      else if (laddr.isAnyLocalAddress())
+        bind4(InetAddress.getByAddress(new Array[Byte](4)), port)
+      else bind4(laddr, port)
+    }
 
   private def send4(p: DatagramPacket): Unit = {
     val insAddr = p.getSocketAddress().asInstanceOf[InetSocketAddress]
@@ -271,7 +272,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     connected = false
   }
 
-  override def close(): Unit = {
+  override def close(): Unit = memberships.synchronized {
     if (!isClosed) {
       if (isWindows) WinSocketApi.closeSocket(fd.handle)
       else unistd.close(fd.fd)
@@ -343,7 +344,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
       "Deprecated method getTTL. Use getTimeToLive instead"
     )
 
-  override def setTimeToLive(ttl: Int): Unit = {
+  override def setTimeToLive(ttl: Int): Unit = memberships.synchronized {
     throwIfClosed("setTimeToLive")
     setMulticastOption(
       "IP_MULTICAST_TTL",
@@ -830,7 +831,10 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     }
   }
 
-  override def setOption(optID: Int, value: Object): Unit = {
+  override def setOption(optID: Int, value: Object): Unit =
+    memberships.synchronized(setOptionLocked(optID, value))
+
+  private def setOptionLocked(optID: Int, value: Object): Unit = {
     if (isClosed) {
       throw new SocketException("Socket is closed")
     }
