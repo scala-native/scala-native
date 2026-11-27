@@ -143,8 +143,10 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
 
   override def bind(port: Int, laddr: InetAddress): Unit = {
     throwIfClosed("bind")
-    if (useIPv4Only) bind4(laddr, port)
-    else bind6(laddr, port)
+    if (!useIPv4Only) bind6(laddr, port)
+    else if (laddr.isAnyLocalAddress())
+      bind4(InetAddress.getByAddress(new Array[Byte](4)), port)
+    else bind4(laddr, port)
   }
 
   private def send4(p: DatagramPacket): Unit = {
@@ -256,7 +258,10 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
 
   override def disconnect(): Unit = {
     throwIfClosed("disconnect")
-    connectTo(SocketHelpers.getWildcardAddress(), 0)
+    val wildcard =
+      if (useIPv4Only) InetAddress.getByAddress(new Array[Byte](4))
+      else SocketHelpers.getWildcardAddress()
+    connectTo(wildcard, 0)
     connectedAddress = null
     connectedPort = -1
     connected = false
@@ -563,7 +568,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
       group: InetAddress,
       netIf: NetworkInterface,
       join: Boolean
-  ): Unit = {
+  ): Unit = synchronized {
     if (group == null || !group.isMulticastAddress())
       throw new SocketException("Not a multicast address")
 
@@ -653,32 +658,55 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
       val fdFlags = posix.fcntl.fcntl(fd.fd, posix.fcntl.F_GETFD, 0)
       val flFlags = posix.fcntl.fcntl(fd.fd, posix.fcntl.F_GETFL, 0)
 
+      val oldReusePort =
+        getIntOption(SOL_SOCKET, SO_REUSEPORT, "SO_REUSEPORT")
+      def setReusePort(sock: CInt, value: Int): Boolean = {
+        val opt = stackalloc[CInt]()
+        !opt = value
+        posix.sys.socket.setsockopt(
+          sock,
+          SOL_SOCKET,
+          SO_REUSEPORT,
+          opt.asInstanceOf[Ptr[Byte]],
+          sizeof[CInt].toUInt
+        ) == 0
+      }
+      val sa4 = stackalloc[in.sockaddr_in]()
+      val sa4Ptr = sa4.asInstanceOf[Ptr[posix.sys.socket.sockaddr]]
+      val sa4Len = sizeof[in.sockaddr_in].toUInt
+      val port = local.getPort
+
       val sock = posix.sys.socket.socket(
         posix.sys.socket.AF_INET,
         posix.sys.socket.SOCK_DGRAM,
         0
       )
-      sock >= 0 && {
-        val replaced = unistd.dup2(sock, fd.fd) >= 0
-        unistd.close(sock)
-        replaced && {
-          useIPv4Only = true
-          if (fdFlags >= 0)
-            posix.fcntl.fcntl(fd.fd, posix.fcntl.F_SETFD, fdFlags)
-          if (flFlags >= 0)
-            posix.fcntl.fcntl(fd.fd, posix.fcntl.F_SETFL, flFlags)
-          for ((o, v) <- intOpts) setIntOption(SOL_SOCKET, o, v)
-          setIntOption(in.IPPROTO_IP, in.IP_TOS, tclass)
-          setIPv4MulticastOption(ip.IP_MULTICAST_TTL, hops)
-          setIPv4MulticastOption(in.IP_MULTICAST_LOOP, loop)
-          val netIf = multicastInterface
-          if (netIf != null)
-            try setMulticastInterface(netIf)
-            catch { case _: SocketException => () }
-          if (local.getPort != 0) bind4(localAddr, local.getPort)
-          if (connected) connect4(connectedAddress, connectedPort)
-          true
-        }
+      // Bind and connect while the old socket shares the port, then swap
+      val ready = sock >= 0 && setReusePort(fd.fd, 1) &&
+        setReusePort(sock, 1) && (port == 0 || {
+          SocketHelpers.prepareSockaddrIn4(localAddr, port, sa4)
+          posix.sys.socket.bind(sock, sa4Ptr, sa4Len) == 0
+        }) && (!connected || {
+          SocketHelpers.prepareSockaddrIn4(connectedAddress, connectedPort, sa4)
+          posix.sys.socket.connect(sock, sa4Ptr, sa4Len) == 0
+        }) && unistd.dup2(sock, fd.fd) >= 0
+      if (sock >= 0) unistd.close(sock)
+      if (!ready) setReusePort(fd.fd, oldReusePort)
+      ready && {
+        useIPv4Only = true
+        if (fdFlags >= 0)
+          posix.fcntl.fcntl(fd.fd, posix.fcntl.F_SETFD, fdFlags)
+        if (flFlags >= 0)
+          posix.fcntl.fcntl(fd.fd, posix.fcntl.F_SETFL, flFlags)
+        for ((o, v) <- intOpts) setIntOption(SOL_SOCKET, o, v)
+        setIntOption(in.IPPROTO_IP, in.IP_TOS, tclass)
+        setIPv4MulticastOption(ip.IP_MULTICAST_TTL, hops)
+        setIPv4MulticastOption(in.IP_MULTICAST_LOOP, loop)
+        val netIf = multicastInterface
+        if (netIf != null)
+          try setMulticastInterface(netIf)
+          catch { case _: SocketException => () }
+        true
       }
     }
   }
