@@ -10,7 +10,7 @@ import scala.scalanative.posix.signal._
 import scala.scalanative.posix.sys.select
 import scala.scalanative.posix.time.timespec
 import scala.scalanative.posix.timeOps._
-import scala.scalanative.posix.{fcntl, sched, unistd}
+import scala.scalanative.posix.{sched, unistd}
 import scala.scalanative.unsafe._
 
 /* Functions NetBSD renames in its headers (e.g. kevent -> __kevent100),
@@ -22,21 +22,6 @@ class RenamedSymbolsTest {
 
   // alloc zeroes memory
   private def zeroTimeout()(implicit z: Zone): Ptr[timespec] = alloc[timespec]()
-
-  @Test def dup3SetsCloseOnExec(): Unit = if (!isWindows && !isApple) {
-    val fds = stackalloc[CInt](2)
-    assertEquals(0, unistd.pipe(fds))
-    val fd = fds(0)
-    val target = fds(1)
-    try {
-      assertEquals(target, unistd.dup3(fd, target, fcntl.O_CLOEXEC))
-      val flags = fcntl.fcntl(target, fcntl.F_GETFD, 0)
-      assertEquals(fcntl.FD_CLOEXEC, flags & fcntl.FD_CLOEXEC)
-    } finally {
-      unistd.close(fd)
-      unistd.close(target)
-    }
-  }
 
   @Test def pselectWithZeroTimeout(): Unit = if (!isWindows) {
     Zone.acquire { implicit z =>

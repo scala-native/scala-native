@@ -353,15 +353,7 @@ import scala.scalanative.unsafe._
       act: Ptr[sigaction],
       oact: Ptr[sigaction]
   ): CInt = externRedirect(sigaction(sig, act, oact))
-  @name("scalanative_sigaddset")
   def sigaddset(set: Ptr[sigset_t], signo: CInt): CInt = extern
-  @deprecated(
-    "Binary compatibility: code compiled against 0.5.13 links to this extern name.",
-    "0.5.14"
-  )
-  @name("sigaddset")
-  private[posix] def _sigaddset(set: Ptr[sigset_t], signo: CInt): CInt =
-    externRedirect(sigaddset(set, signo))
   @name("scalanative_sigaltstack")
   def sigaltstack(ss: Ptr[stack_t], oss: Ptr[stack_t]): CInt = extern
   // Binary compatibility: code compiled against 0.5.12 links to this extern name.
@@ -370,85 +362,24 @@ import scala.scalanative.unsafe._
       ss: Ptr[stack_t],
       oss: Ptr[stack_t]
   ): CInt = externRedirect(sigaltstack(ss, oss))
-  @name("scalanative_sigdelset")
   def sigdelset(set: Ptr[sigset_t], signo: CInt): CInt = extern
-  @deprecated(
-    "Binary compatibility: code compiled against 0.5.13 links to this extern name.",
-    "0.5.14"
-  )
-  @name("sigdelset")
-  private[posix] def _sigdelset(set: Ptr[sigset_t], signo: CInt): CInt =
-    externRedirect(sigdelset(set, signo))
-  @name("scalanative_sigemptyset")
   def sigemptyset(set: Ptr[sigset_t]): CInt = extern
-  @deprecated(
-    "Binary compatibility: code compiled against 0.5.13 links to this extern name.",
-    "0.5.14"
-  )
-  @name("sigemptyset")
-  private[posix] def _sigemptyset(set: Ptr[sigset_t]): CInt =
-    externRedirect(sigemptyset(set))
-  @name("scalanative_sigfillset")
   def sigfillset(set: Ptr[sigset_t]): CInt = extern
-  @deprecated(
-    "Binary compatibility: code compiled against 0.5.13 links to this extern name.",
-    "0.5.14"
-  )
-  @name("sigfillset")
-  private[posix] def _sigfillset(set: Ptr[sigset_t]): CInt =
-    externRedirect(sigfillset(set))
   def sighold(sig: CInt): CInt = extern
   def sigignore(sig: CInt): CInt = extern
   def siginterrupt(sig: CInt, flag: CInt): CInt = extern
-  @name("scalanative_sigismember")
   def sigismember(set: Ptr[sigset_t], signo: CInt): CInt = extern
-  @deprecated(
-    "Binary compatibility: code compiled against 0.5.13 links to this extern name.",
-    "0.5.14"
-  )
-  @name("sigismember")
-  private[posix] def _sigismember(set: Ptr[sigset_t], signo: CInt): CInt =
-    externRedirect(sigismember(set, signo))
   @blocking
   def sigpause(sig: CInt): CInt = extern
-  @name("scalanative_sigpending")
   def sigpending(set: Ptr[sigset_t]): CInt = extern
-  @deprecated(
-    "Binary compatibility: code compiled against 0.5.13 links to this extern name.",
-    "0.5.14"
-  )
-  @name("sigpending")
-  private[posix] def _sigpending(set: Ptr[sigset_t]): CInt =
-    externRedirect(sigpending(set))
-  @name("scalanative_sigprocmask")
   def sigprocmask(how: CInt, set: Ptr[sigset_t], oset: Ptr[sigset_t]): CInt =
     extern
-  @deprecated(
-    "Binary compatibility: code compiled against 0.5.13 links to this extern name.",
-    "0.5.14"
-  )
-  @name("sigprocmask")
-  private[posix] def _sigprocmask(
-      how: CInt,
-      set: Ptr[sigset_t],
-      oset: Ptr[sigset_t]
-  ): CInt =
-    externRedirect(sigprocmask(how, set, oset))
   def sigqueue(pid: pid_t, signo: CInt, value: Ptr[sigval]): CInt = extern
   def sigrelse(sig: CInt): CInt = extern
   def sigset(sig: CInt, disp: CFuncPtr1[CInt, Unit]): CFuncPtr1[CInt, Unit] =
     extern
-  @name("scalanative_sigsuspend")
   @blocking
   def sigsuspend(sigmask: Ptr[sigset_t]): CInt = extern
-  @deprecated(
-    "Binary compatibility: code compiled against 0.5.13 links to this extern name.",
-    "0.5.14"
-  )
-  @blocking
-  @name("sigsuspend")
-  private[posix] def _sigsuspend(sigmask: Ptr[sigset_t]): CInt =
-    externRedirect(sigsuspend(sigmask))
   @name("scalanative_sigtimedwait")
   @blocking
   def sigtimedwait(
@@ -466,8 +397,7 @@ import scala.scalanative.unsafe._
       set: Ptr[sigset_t],
       info: Ptr[siginfo_t],
       timeout: Ptr[timespec]
-  ): CInt =
-    externRedirect(sigtimedwait(set, info, timeout))
+  ): CInt = externRedirect(sigtimedwait(set, info, timeout))
   @blocking
   def sigwait(set: Ptr[sigset_t], sig: Ptr[CInt]): CInt = extern
   @blocking

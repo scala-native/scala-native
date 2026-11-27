@@ -54,24 +54,12 @@ import scalanative.posix.sys.types.size_t
   def grantpt(fd: CInt): CInt = extern
 
   /** XSI */
-  @name("scalanative_initstate")
   def initstate(
       seed: CUnsignedInt,
       state: Ptr[CChar],
       size: size_t
   ): Ptr[CChar] =
     extern
-  @deprecated(
-    "Binary compatibility: code compiled against 0.5.13 links to this extern name.",
-    "0.5.14"
-  )
-  @name("initstate")
-  private[posix] def _initstate(
-      seed: CUnsignedInt,
-      state: Ptr[CChar],
-      size: size_t
-  ): Ptr[CChar] =
-    externRedirect(initstate(seed, state, size))
 
   /** XSI */
   def jrand48(xsubi: Ptr[CUnsignedShort]): CLong = extern
@@ -109,15 +97,7 @@ import scalanative.posix.sys.types.size_t
   def ptsname(fd: CInt): CString = extern
 
   /** XSI */
-  @name("scalanative_putenv")
   def putenv(string: CString): CInt = extern
-  @deprecated(
-    "Binary compatibility: code compiled against 0.5.13 links to this extern name.",
-    "0.5.14"
-  )
-  @name("putenv")
-  private[posix] def _putenv(string: CString): CInt =
-    externRedirect(putenv(string))
 
   // OB CX - not implemented
   // int rand_r(unsigned *);
@@ -143,26 +123,10 @@ import scalanative.posix.sys.types.size_t
   def srand48(seedval: CLong): Unit = extern
 
   /** XSI */
-  @name("scalanative_srandom")
   def srandom(seed: CUnsignedInt): Unit = extern
-  @deprecated(
-    "Binary compatibility: code compiled against 0.5.13 links to this extern name.",
-    "0.5.14"
-  )
-  @name("srandom")
-  private[posix] def _srandom(seed: CUnsignedInt): Unit =
-    externRedirect(srandom(seed))
 
   /** XSI */
   def unlockpt(fd: CInt): CInt = extern
 
-  @name("scalanative_unsetenv")
   def unsetenv(name: CString): CInt = extern
-  @deprecated(
-    "Binary compatibility: code compiled against 0.5.13 links to this extern name.",
-    "0.5.14"
-  )
-  @name("unsetenv")
-  private[posix] def _unsetenv(name: CString): CInt =
-    externRedirect(unsetenv(name))
 }

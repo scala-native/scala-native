@@ -63,36 +63,4 @@ class SignalTest {
       assertEquals(0, sigaction(SIGUSR1, oact, restored))
     }
   }
-
-  // Larger than sigset_t on every supported platform.
-  private final val SigsetBytes = 256
-
-  @Test def sigsetOperations(): Unit = if (!isWindows) {
-    val set = stackalloc[Byte](SigsetBytes).asInstanceOf[Ptr[sigset_t]]
-    assertEquals(0, sigemptyset(set))
-    assertEquals(0, sigismember(set, SIGUSR1))
-    assertEquals(0, sigaddset(set, SIGUSR1))
-    assertEquals(1, sigismember(set, SIGUSR1))
-    assertEquals(0, sigismember(set, SIGUSR2))
-    assertEquals(0, sigdelset(set, SIGUSR1))
-    assertEquals(0, sigismember(set, SIGUSR1))
-    assertEquals(0, sigfillset(set))
-    assertEquals(1, sigismember(set, SIGUSR2))
-  }
-
-  @Test def sigprocmaskAgreesWithPthreadSigmask(): Unit = if (!isWindows) {
-    val set = stackalloc[Byte](SigsetBytes).asInstanceOf[Ptr[sigset_t]]
-    val old = stackalloc[Byte](SigsetBytes).asInstanceOf[Ptr[sigset_t]]
-    val cur = stackalloc[Byte](SigsetBytes).asInstanceOf[Ptr[sigset_t]]
-    val pending = stackalloc[Byte](SigsetBytes).asInstanceOf[Ptr[sigset_t]]
-    sigemptyset(set)
-    sigaddset(set, SIGUSR2)
-    assertEquals(0, sigprocmask(SIG_BLOCK, set, old))
-    try {
-      assertEquals(0, pthread_sigmask(SIG_BLOCK, null, cur))
-      assertEquals(1, sigismember(cur, SIGUSR2))
-      assertEquals(0, sigpending(pending))
-      assertEquals(0, sigismember(pending, SIGUSR2))
-    } finally assertEquals(0, sigprocmask(SIG_SETMASK, old, null))
-  }
 }
