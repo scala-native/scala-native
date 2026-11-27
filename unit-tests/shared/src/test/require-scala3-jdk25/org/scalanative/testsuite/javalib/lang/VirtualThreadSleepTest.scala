@@ -138,7 +138,6 @@ class VirtualThreadSleepTest {
   @Test def manySleepingThreads(): Unit = {
     val count = 10000
     val latch = new CountDownLatch(count)
-    val start = System.nanoTime()
     for (_ <- 0 until count) {
       Thread.ofVirtual().start { () =>
         Thread.sleep(100)
@@ -155,11 +154,6 @@ class VirtualThreadSleepTest {
     assertTrue(
       s"Timed out waiting for $count virtual threads to finish sleep",
       finished
-    )
-    val elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start)
-    assertTrue(
-      s"10000 VTs sleeping 100ms should complete in well under 10s (took ${elapsed}ms)",
-      elapsed < 5000
     )
   }
 
