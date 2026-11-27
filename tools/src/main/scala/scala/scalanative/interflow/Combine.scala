@@ -439,7 +439,8 @@ private[interflow] trait Combine { self: Interflow =>
             ) =>
           def differentConstants =
             lvalue.isCanonical && rvalue.isCanonical && lvalue != rvalue
-          lcls == rcls && !differentConstants
+          lcls == rcls && !Combine.uncachedBoxes.contains(lcls.name) &&
+            !differentConstants
         case (VirtualRef(StringKind, _, _), VirtualRef(StringKind, _, _)) =>
           true
         case _ =>
@@ -738,4 +739,16 @@ private[interflow] trait Combine { self: Interflow =>
   private def isPowerOfTwoOrMinValue(x: Long): Boolean =
     x != 0 && (x & (x - 1)) == 0
 
+}
+
+private[interflow] object Combine {
+
+  /** Classes whose boxing method always allocates. */
+  private val uncachedBoxes: Set[nir.Global] =
+    Seq(nir.Type.Float, nir.Type.Double)
+      .map(nir.Type.box)
+      .collect {
+        case nir.Type.Ref(name, _, _) => name
+      }
+      .toSet
 }

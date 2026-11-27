@@ -66,6 +66,12 @@ class MergeBoxesTest extends OptimizerSpec {
          |    val y: Any = 2
          |    x.asInstanceOf[AnyRef] eq y.asInstanceOf[AnyRef]
          |  }
+         |  // Unlike boxes of floating point numbers, which are never cached
+         |  @noinline def sameDouble(n: Int): Boolean = {
+         |    val x: Any = n.toDouble
+         |    val y: Any = n.toDouble
+         |    x.asInstanceOf[AnyRef] eq y.asInstanceOf[AnyRef]
+         |  }
          |  def main(args: Array[String]): Unit = {
          |    val n = args.length
          |    println(loopAny(n) + branch(n) + unsigned(n))
@@ -77,6 +83,7 @@ class MergeBoxesTest extends OptimizerSpec {
          |    println(aliased(n))
          |    println(sameValue(n))
          |    println(differentValues())
+         |    println(sameDouble(n))
          |  }
          |}
          |""".stripMargin
@@ -127,6 +134,11 @@ class MergeBoxesTest extends OptimizerSpec {
 
   @Test def identityOfBoxesOfDifferentValues(): Unit =
     withMethod("differentValues", Mode.releaseFull) { (_, defn) =>
+      assertEquals(defn.show, Seq(nir.Val.False), returned(defn))
+    }
+
+  @Test def identityOfUncachedBoxes(): Unit =
+    withMethod("sameDouble", Mode.releaseFull) { (_, defn) =>
       assertEquals(defn.show, Seq(nir.Val.False), returned(defn))
     }
 }
