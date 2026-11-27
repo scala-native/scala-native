@@ -174,7 +174,9 @@ class Runtime private () {
   /** The size the heap does not grow beyond, `Long.MAX_VALUE` if unlimited. */
   def maxMemory(): scala.Long = {
     val limit = GC.getHeapLimit()
-    if (limit == ~0.toUSize) scala.Long.MaxValue else limit.toLong
+    val max = limit.toLong
+    // SIZE_MAX is a positive Long on 32-bit, limits from 2^63 negative on 64-bit
+    if (limit == ~0.toUSize || max < 0L) scala.Long.MaxValue else max
   }
 
   def exit(status: Int): Unit = stdlib.exit(status)

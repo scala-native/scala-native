@@ -204,6 +204,10 @@ void scalanative_GC_init() {
             GC_expand_hp(initial - current);
     }
 #endif
+    // GC_INIT creates the initial heap even when it exceeds the limit
+    size_t heapSize = GC_get_heap_size();
+    if (heapLimit < heapSize)
+        heapLimit = heapSize;
     defaultPushOtherRoots = GC_get_push_other_roots();
     GC_set_push_other_roots(pushCustomRoots);
     initTracedAnchorKind();

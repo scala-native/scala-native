@@ -46,8 +46,16 @@ static size_t DEFAULT_CHUNK;
 static size_t PREALLOC_CHUNK;
 static size_t CHUNK;
 static size_t TO_NORMAL_MMAP = 1L;
-static size_t DO_PREALLOC = 0L;     // No Preallocation.
-static size_t TOTAL_ALLOCATED = 0L; // Track total allocated memory
+static size_t DO_PREALLOC = 0L; // No Preallocation.
+// Track total allocated memory
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+static atomic_size_t TOTAL_ALLOCATED = 0L;
+#define COUNT_ALLOCATED(size)                                                  \
+    atomic_fetch_add_explicit(&TOTAL_ALLOCATED, size, memory_order_relaxed)
+#else
+static size_t TOTAL_ALLOCATED = 0L;
+#define COUNT_ALLOCATED(size) (TOTAL_ALLOCATED += (size))
+#endif
 #ifndef GC_ASAN
 static atomic_size_t TOTAL_MAPPED = 0L; // Memory of the chunks mapped so far
 #endif
@@ -200,7 +208,7 @@ void *scalanative_GC_alloc(Rtti *info, size_t size) {
         Object *alloc = (Object *)current;
         alloc->rtti = info;
         current += size;
-        TOTAL_ALLOCATED += size;
+        COUNT_ALLOCATED(size);
         return alloc;
     } else {
         if (end == emergencyEnd)
@@ -214,7 +222,7 @@ void *scalanative_GC_alloc(Rtti *info, size_t size) {
     if (alloc == NULL)
         throwOutOfMemory();
     alloc->rtti = info;
-    TOTAL_ALLOCATED += size;
+    COUNT_ALLOCATED(size);
     return alloc;
 #endif
 }
