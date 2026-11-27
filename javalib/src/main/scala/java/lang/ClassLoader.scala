@@ -25,11 +25,8 @@ class ClassLoader protected (parent: ClassLoader) {
   }
 
   /** @since JDK 9 */
-  def resources(name: String): Stream[URL] = {
-    val url = getResource(name)
-    if (url == null) Stream.empty[URL]()
-    else Stream.of(url)
-  }
+  def resources(name: String): Stream[URL] =
+    Collections.list(getResources(name)).stream()
 
   def getUnnamedModule(): Module = new Module(null, this)
 }

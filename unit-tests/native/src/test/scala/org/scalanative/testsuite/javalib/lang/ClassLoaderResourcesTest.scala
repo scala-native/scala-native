@@ -75,6 +75,18 @@ class ClassLoaderResourcesTest {
     assertEquals(0L, cl.resources(missing).count())
   }
 
+  @Test def resourcesUsesOverriddenGetResources(): Unit = {
+    val url = new URL("resource:/virtual/config")
+    val loader = new ClassLoader() {
+      override def getResources(name: String): java.util.Enumeration[URL] =
+        java.util.Collections.enumeration(java.util.Arrays.asList(url, url))
+    }
+    assertArrayEquals(
+      Array[Object](url, url),
+      loader.resources("virtual/config").toArray()
+    )
+  }
+
   @Test def getSystemResourceAsStream(): Unit = {
     val in = ClassLoader.getSystemResourceAsStream(embedded)
     assertNotNull(in)
