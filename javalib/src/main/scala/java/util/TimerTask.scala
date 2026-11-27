@@ -36,15 +36,7 @@ abstract class TimerTask protected () extends Runnable {
   private[util] var fixedRate = false
 
   /** Time the most recent run was scheduled for. */
-  private var scheduledTime = 0L
-
-  private[util] def setScheduledTime(time: Long): Unit = lock.synchronized {
-    scheduledTime = time
-  }
-
-  private[util] def isScheduled: Boolean = lock.synchronized {
-    when > 0 || scheduledTime > 0
-  }
+  private[util] var scheduledTime = 0L
 
   /** Stops future runs; `true` if that prevented a run (a scheduled one-shot
    *  task that has not run, or a repeating task).

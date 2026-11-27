@@ -24,6 +24,7 @@
 package java.util
 
 import java.lang.ref.Cleaner
+import java.util.concurrent.atomic.AtomicInteger
 
 import scala.scalanative.meta.LinktimeInfo
 
@@ -35,226 +36,177 @@ class Timer(name: String, isDaemon: Boolean) {
 
   if (name == null) throw new NullPointerException("name cannot be null")
 
-  // The thread must never reference the Timer, or the Timer is never cleaned
-  private val impl = new TimerImpl(name, isDaemon)
+  // Neither the queue nor the thread may reference the Timer, or the Timer is
+  // never cleaned
+  private val queue = new TaskQueue
 
-  if (LinktimeInfo.isMultithreadingEnabled &&
-      LinktimeInfo.isWeakReferenceSupported)
-    cleaner.register(this, new Stopper(impl))
+  locally {
+    val thread = new Thread(queue, name)
+    thread.setDaemon(isDaemon)
+    thread.start()
+  }
+
+  if (LinktimeInfo.isWeakReferenceSupported)
+    cleaner.register(this, new Stopper(queue))
 
   def this(name: String) = this(name, false)
 
-  def this(isDaemon: Boolean) = this("Timer-" + Timer.nextId(), isDaemon)
+  def this(isDaemon: Boolean) =
+    this("Timer-" + Timer.timerId.getAndIncrement(), isDaemon)
 
   def this() = this(false)
 
   /** Discards all scheduled tasks; a running task completes. */
-  def cancel(): Unit = impl.cancel()
+  def cancel(): Unit = queue.cancel()
 
   /** Removes cancelled tasks from the queue; returns how many. */
-  def purge(): Int = impl.synchronized(impl.purge())
+  def purge(): Int = queue.purge()
 
-  def schedule(task: TimerTask, time: Date): Unit = {
-    if (time.getTime() < 0)
-      throw new IllegalArgumentException("Illegal execution time.")
-    val delay = time.getTime() - System.currentTimeMillis()
-    scheduleImpl(task, if (delay < 0) 0 else delay, -1, false)
-  }
+  def schedule(task: TimerTask, time: Date): Unit =
+    queue.schedule(task, Math.max(0L, delayUntil(time)), -1, false)
 
-  def schedule(task: TimerTask, delay: Long): Unit = {
-    if (delay < 0) throw new IllegalArgumentException("Negative delay.")
-    scheduleImpl(task, delay, -1, false)
-  }
+  def schedule(task: TimerTask, delay: Long): Unit =
+    queue.schedule(task, checkDelay(delay), -1, false)
 
-  def schedule(task: TimerTask, delay: Long, period: Long): Unit = {
-    if (delay < 0) throw new IllegalArgumentException("Negative delay.")
-    if (period <= 0) throw new IllegalArgumentException("Non-positive period.")
-    scheduleImpl(task, delay, period, false)
-  }
+  def schedule(task: TimerTask, delay: Long, period: Long): Unit =
+    queue.schedule(task, checkDelay(delay), checkPeriod(period), false)
 
   def schedule(task: TimerTask, firstTime: Date, period: Long): Unit = {
-    if (period <= 0) throw new IllegalArgumentException("Non-positive period.")
-    if (firstTime.getTime() < 0)
-      throw new IllegalArgumentException("Illegal execution time.")
-    val delay = firstTime.getTime() - System.currentTimeMillis()
-    scheduleImpl(task, if (delay < 0) 0 else delay, period, false)
+    checkPeriod(period)
+    queue.schedule(task, Math.max(0L, delayUntil(firstTime)), period, false)
   }
 
-  def scheduleAtFixedRate(task: TimerTask, delay: Long, period: Long): Unit = {
-    if (delay < 0) throw new IllegalArgumentException("Negative delay.")
-    if (period <= 0) throw new IllegalArgumentException("Non-positive period.")
-    scheduleImpl(task, delay, period, true)
-  }
+  def scheduleAtFixedRate(task: TimerTask, delay: Long, period: Long): Unit =
+    queue.schedule(task, checkDelay(delay), checkPeriod(period), true)
 
   def scheduleAtFixedRate(
       task: TimerTask,
       firstTime: Date,
       period: Long
   ): Unit = {
-    if (period <= 0) throw new IllegalArgumentException("Non-positive period.")
-    if (firstTime.getTime() < 0)
-      throw new IllegalArgumentException("Illegal execution time.")
+    checkPeriod(period)
     // A first time in the past makes a fixed-rate task catch up
-    val delay = firstTime.getTime() - System.currentTimeMillis()
-    scheduleImpl(task, delay, period, true)
+    queue.schedule(task, delayUntil(firstTime), period, true)
+  }
+}
+
+object Timer {
+  private val timerId = new AtomicInteger(0)
+
+  // Runs the actions on the reference handler: they only notify a queue
+  private lazy val cleaner = Cleaner.create(null)
+
+  private def checkDelay(delay: Long): Long = {
+    if (delay < 0) throw new IllegalArgumentException("Negative delay.")
+    delay
   }
 
-  private def scheduleImpl(
-      task: TimerTask,
-      delay: Long,
-      period: Long,
-      fixed: Boolean
-  ): Unit =
-    impl.synchronized {
-      if (impl.cancelled)
+  private def checkPeriod(period: Long): Long = {
+    if (period <= 0) throw new IllegalArgumentException("Non-positive period.")
+    period
+  }
+
+  private def delayUntil(time: Date): Long = {
+    if (time.getTime() < 0)
+      throw new IllegalArgumentException("Illegal execution time.")
+    time.getTime() - System.currentTimeMillis()
+  }
+
+  /** Tells the thread of an unreachable timer to end once its queue is empty.
+   */
+  private final class Stopper(queue: TaskQueue) extends Runnable {
+    def run(): Unit = queue.stopWhenEmpty()
+  }
+
+  /** The tasks of a timer and the loop of its thread; its monitor, never
+   *  exposed, guards the state.
+   */
+  private final class TaskQueue extends Runnable {
+    private val tasks =
+      new PriorityQueue[TimerTask]((a: TimerTask, b: TimerTask) =>
+        java.lang.Long.compare(a.when, b.when)
+      )
+
+    private var cancelled = false
+
+    /** Set once the Timer is unreachable: no task can be scheduled anymore. */
+    private var unreachable = false
+
+    def schedule(
+        task: TimerTask,
+        delay: Long,
+        period: Long,
+        fixedRate: Boolean
+    ): Unit = synchronized {
+      if (cancelled)
         throw new IllegalStateException("Timer already cancelled.")
       val when = delay + System.currentTimeMillis()
       if (when < 0)
         throw new IllegalArgumentException("Illegal execution time.")
       task.lock.synchronized {
-        if (task.isScheduled || task.cancelled)
+        // A task gets a positive `when` when scheduled and a positive
+        // `scheduledTime` when run
+        if (task.when > 0 || task.scheduledTime > 0 || task.cancelled)
           throw new IllegalStateException("Task already scheduled or cancelled")
         task.when = when
         task.period = period
-        task.fixedRate = fixed
+        task.fixedRate = fixedRate
       }
-      impl.insertTask(task)
-    }
-}
-
-object Timer {
-  private val timerId = new java.util.concurrent.atomic.AtomicInteger(0)
-
-  private def nextId(): Int = timerId.getAndIncrement()
-
-  private lazy val cleaner = Cleaner.create()
-
-  /** Tells the thread of an unreachable timer to end once its queue is empty.
-   */
-  private final class Stopper(impl: TimerImpl) extends Runnable {
-    def run(): Unit = impl.stopWhenEmpty()
-  }
-
-  /** A binary min-heap of tasks ordered by `when`. */
-  private final class TimerHeap {
-    private var timers = new Array[TimerTask](256)
-    private var size = 0
-    var deletedCancelledNumber = 0
-
-    def minimum(): TimerTask = timers(0)
-
-    def isEmpty: Boolean = size == 0
-
-    def insert(task: TimerTask): Unit = {
-      if (timers.length == size) timers = Arrays.copyOf(timers, size * 2)
-      timers(size) = task
-      size += 1
-      upHeap()
+      tasks.add(task)
+      // Only the timer thread waits; it re-checks only for a new first task
+      if (tasks.peek() eq task) notify()
     }
 
-    def delete(pos: Int): Unit =
-      if (pos >= 0 && pos < size) {
-        size -= 1
-        timers(pos) = timers(size)
-        timers(size) = null
-        downHeap(pos)
-      }
-
-    private def upHeap(): Unit = {
-      var current = size - 1
-      var parent = (current - 1) / 2
-      while (timers(current).when < timers(parent).when) {
-        val tmp = timers(current)
-        timers(current) = timers(parent)
-        timers(parent) = tmp
-        current = parent
-        parent = (current - 1) / 2
-      }
+    def cancel(): Unit = synchronized {
+      cancelled = true
+      tasks.clear()
+      notify()
     }
 
-    private def downHeap(pos: Int): Unit = {
-      var current = pos
-      var child = 2 * current + 1
-      var done = false
-      while (!done && child < size) {
-        if (child + 1 < size && timers(child + 1).when < timers(child).when)
-          child += 1
-        if (timers(current).when < timers(child).when) done = true
-        else {
-          val tmp = timers(current)
-          timers(current) = timers(child)
-          timers(child) = tmp
-          current = child
-          child = 2 * current + 1
+    def purge(): Int = synchronized {
+      var removed = 0
+      val it = tasks.iterator()
+      while (it.hasNext()) {
+        if (it.next().cancelled) {
+          it.remove()
+          removed += 1
         }
       }
+      removed
     }
 
-    def reset(): Unit = {
-      timers = new Array[TimerTask](256)
-      size = 0
+    def stopWhenEmpty(): Unit = synchronized {
+      unreachable = true
+      notify()
     }
-
-    def deleteIfCancelled(): Unit = {
-      var i = 0
-      while (i < size) {
-        if (timers(i).cancelled) {
-          deletedCancelledNumber += 1
-          delete(i)
-        } else i += 1
-      }
-    }
-
-    def indexOf(task: TimerTask): Int = {
-      var i = 0
-      while (i < size) {
-        if (timers(i) eq task) return i
-        i += 1
-      }
-      -1
-    }
-  }
-
-  /** The timer thread; its monitor guards the queue. */
-  private final class TimerImpl(name: String, isDaemon: Boolean)
-      extends Thread {
-    var cancelled = false
-
-    /** Set once the Timer is unreachable: no task can be scheduled anymore. */
-    private var unreachable = false
-    private val tasks = new TimerHeap
-
-    setName(name)
-    setDaemon(isDaemon)
-    start()
 
     override def run(): Unit = {
       var running = true
       while (running) {
         var task: TimerTask = null
         synchronized {
-          if (cancelled || (unreachable && tasks.isEmpty)) running = false
-          else if (tasks.isEmpty) {
+          if (cancelled || (unreachable && tasks.isEmpty())) running = false
+          else if (tasks.isEmpty()) {
             try wait()
             catch { case _: InterruptedException => () }
           } else {
-            val first = tasks.minimum()
+            val first = tasks.peek()
             // Never wait while holding the task's lock: TimerTask.cancel takes it
             val timeToSleep = first.lock.synchronized {
               if (first.cancelled) {
-                tasks.delete(0)
+                tasks.poll()
                 0L
               } else {
                 val remaining = first.when - System.currentTimeMillis()
                 if (remaining <= 0) {
-                  first.setScheduledTime(first.when)
-                  tasks.delete(0)
-                  if (first.period >= 0) {
+                  first.scheduledTime = first.when
+                  tasks.poll()
+                  if (first.period > 0) {
                     // A repeating task goes back into the queue
                     first.when =
                       if (first.fixedRate) first.when + first.period
                       else System.currentTimeMillis() + first.period
-                    insertTask(first)
+                    tasks.add(first)
                   } else first.when = 0
                   task = first
                 }
@@ -268,42 +220,15 @@ object Timer {
           }
         }
         if (task != null) {
-          var completed = false
-          try {
-            task.run()
-            completed = true
-          } finally {
-            // A task that throws ends the timer, as in the JDK
-            if (!completed) synchronized { cancelled = true }
+          try task.run()
+          catch {
+            case t: Throwable =>
+              // A task that throws ends the timer, as in the JDK
+              cancel()
+              throw t
           }
         }
       }
     }
-
-    /** Callers hold this monitor. */
-    def insertTask(task: TimerTask): Unit = {
-      tasks.insert(task)
-      notifyAll()
-    }
-
-    def stopWhenEmpty(): Unit = synchronized {
-      unreachable = true
-      notifyAll()
-    }
-
-    def cancel(): Unit = synchronized {
-      cancelled = true
-      tasks.reset()
-      notifyAll()
-    }
-
-    /** Callers hold this monitor. */
-    def purge(): Int =
-      if (tasks.isEmpty) 0
-      else {
-        tasks.deletedCancelledNumber = 0
-        tasks.deleteIfCancelled()
-        tasks.deletedCancelledNumber
-      }
   }
 }

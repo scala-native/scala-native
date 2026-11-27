@@ -11,9 +11,10 @@ import org.junit.{After, BeforeClass, Test}
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
 
+import scala.scalanative.junit.utils.AssumesHelper.assumeMultithreadingIsEnabled
+
 object TimerTest {
-  @BeforeClass def assumeThreads(): Unit =
-    assumeTrue("requires multithreading", Platform.isMultithreadingEnabled)
+  @BeforeClass def assumeThreads(): Unit = assumeMultithreadingIsEnabled()
 }
 
 /** `Timer` and `TimerTask`. Timers are daemons and are cancelled after each
@@ -37,61 +38,69 @@ class TimerTest {
     def run(): Unit = body
   }
 
-  private def message(f: => Unit): String =
-    try {
-      f
-      "no exception"
-    } catch {
-      case e: RuntimeException =>
-        e.getClass().getSimpleName() + ": " + e.getMessage()
-    }
+  private def assertThrowsMessage[T <: Throwable](
+      expected: Class[T],
+      msg: String,
+      f: => Unit
+  ): Unit =
+    assertEquals(msg, assertThrows(expected, f).getMessage())
 
   private def await(latch: CountDownLatch): Unit =
     assertTrue("timed out", latch.await(10, TimeUnit.SECONDS))
 
   @Test def argumentChecks(): Unit = {
     val t = timer()
-    assertEquals(
-      "IllegalArgumentException: Negative delay.",
-      message(t.schedule(task(), -1L))
+    assertThrowsMessage(
+      classOf[IllegalArgumentException],
+      "Negative delay.",
+      t.schedule(task(), -1L)
     )
-    assertEquals(
-      "IllegalArgumentException: Negative delay.",
-      message(t.schedule(task(), -1L, 10L))
+    assertThrowsMessage(
+      classOf[IllegalArgumentException],
+      "Negative delay.",
+      t.schedule(task(), -1L, 10L)
     )
-    assertEquals(
-      "IllegalArgumentException: Non-positive period.",
-      message(t.schedule(task(), 1L, 0L))
+    assertThrowsMessage(
+      classOf[IllegalArgumentException],
+      "Non-positive period.",
+      t.schedule(task(), 1L, 0L)
     )
-    assertEquals(
-      "IllegalArgumentException: Non-positive period.",
-      message(t.scheduleAtFixedRate(task(), 1L, -5L))
+    assertThrowsMessage(
+      classOf[IllegalArgumentException],
+      "Non-positive period.",
+      t.scheduleAtFixedRate(task(), 1L, -5L)
     )
-    assertEquals(
-      "IllegalArgumentException: Illegal execution time.",
-      message(t.schedule(task(), new Date(-1)))
+    assertThrowsMessage(
+      classOf[IllegalArgumentException],
+      "Illegal execution time.",
+      t.schedule(task(), new Date(-1))
     )
-    assertEquals(
-      "IllegalArgumentException: Illegal execution time.",
-      message(t.schedule(task(), new Date(-1), 10L))
+    assertThrowsMessage(
+      classOf[IllegalArgumentException],
+      "Illegal execution time.",
+      t.schedule(task(), new Date(-1), 10L)
     )
-    assertEquals(
-      "IllegalArgumentException: Non-positive period.",
-      message(t.schedule(task(), new Date(), 0L))
+    assertThrowsMessage(
+      classOf[IllegalArgumentException],
+      "Non-positive period.",
+      t.schedule(task(), new Date(), 0L)
     )
-    assertEquals(
-      "IllegalArgumentException: Illegal execution time.",
-      message(t.schedule(task(), Long.MaxValue))
+    assertThrowsMessage(
+      classOf[IllegalArgumentException],
+      "Illegal execution time.",
+      t.schedule(task(), Long.MaxValue)
     )
     assertThrows(classOf[NullPointerException], t.schedule(null, 10L))
     assertThrows(classOf[NullPointerException], t.schedule(task(), null: Date))
-    assertEquals(
-      "NullPointerException: name cannot be null",
-      message(new Timer(null: String))
+    assertThrowsMessage(
+      classOf[NullPointerException],
+      "name cannot be null",
+      new Timer(null: String)
     )
-    assertEquals(
-      "NullPointerException: name cannot be null",
-      message(new Timer(null, true))
+    assertThrowsMessage(
+      classOf[NullPointerException],
+      "name cannot be null",
+      new Timer(null, true)
     )
   }
 
@@ -99,15 +108,17 @@ class TimerTest {
     val t = timer()
     val twice = task()
     t.schedule(twice, 100000L)
-    assertEquals(
-      "IllegalStateException: Task already scheduled or cancelled",
-      message(t.schedule(twice, 100000L))
+    assertThrowsMessage(
+      classOf[IllegalStateException],
+      "Task already scheduled or cancelled",
+      t.schedule(twice, 100000L)
     )
     val cancelled = task()
     cancelled.cancel()
-    assertEquals(
-      "IllegalStateException: Task already scheduled or cancelled",
-      message(t.schedule(cancelled, 10L))
+    assertThrowsMessage(
+      classOf[IllegalStateException],
+      "Task already scheduled or cancelled",
+      t.schedule(cancelled, 10L)
     )
     val fresh = task()
     assertFalse(fresh.cancel())
@@ -169,9 +180,10 @@ class TimerTest {
     t.cancel()
     t.cancel()
     assertEquals(0, t.purge())
-    assertEquals(
-      "IllegalStateException: Timer already cancelled.",
-      message(t.schedule(task(), 10L))
+    assertThrowsMessage(
+      classOf[IllegalStateException],
+      "Timer already cancelled.",
+      t.schedule(task(), 10L)
     )
   }
 
@@ -186,9 +198,10 @@ class TimerTest {
     )
     await(ran)
     Thread.sleep(50)
-    assertEquals(
-      "IllegalStateException: Timer already cancelled.",
-      message(t.schedule(task(), 10L))
+    assertThrowsMessage(
+      classOf[IllegalStateException],
+      "Timer already cancelled.",
+      t.schedule(task(), 10L)
     )
   }
 
@@ -254,9 +267,10 @@ class TimerTest {
     val done2 = new CountDownLatch(1)
     u.schedule(task { u.cancel(); done2.countDown() }, 1L)
     await(done2)
-    assertEquals(
-      "IllegalStateException: Timer already cancelled.",
-      message(u.schedule(task(), 1L))
+    assertThrowsMessage(
+      classOf[IllegalStateException],
+      "Timer already cancelled.",
+      u.schedule(task(), 1L)
     )
   }
 
