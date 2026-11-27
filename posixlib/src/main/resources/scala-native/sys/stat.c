@@ -146,5 +146,10 @@ int scalanative_utime_now() { return UTIME_NOW; }
 
 int scalanative_utime_omit() { return UTIME_OMIT; }
 
+// Calls the header-selected symbol, e.g. NetBSD's __mknod50.
+int scalanative_mknod(const char *path, mode_t mode, dev_t dev) {
+    return mknod(path, mode, dev);
+}
+
 #endif // Unix or Mac OS
 #endif
