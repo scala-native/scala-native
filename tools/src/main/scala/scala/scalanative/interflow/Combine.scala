@@ -435,14 +435,35 @@ private[interflow] trait Combine { self: Interflow =>
       )
     }
 
+    // Whether two distinct virtual allocations may end up as the same
+    // object: boxes of equal values can come from the cache of the boxing
+    // method, and strings of equal content from the same literal.
+    def mayBeInterned(l: Addr, r: Addr): Boolean =
+      l != r && ((state.deref(l), state.deref(r)) match {
+        case (
+              VirtualInstance(BoxKind, lcls, Array(lvalue), _),
+              VirtualInstance(BoxKind, rcls, Array(rvalue), _)
+            ) =>
+          def differentConstants =
+            lvalue.isCanonical && rvalue.isCanonical && lvalue != rvalue
+          lcls == rcls && !differentConstants
+        case (
+              VirtualInstance(StringKind, _, _, _),
+              VirtualInstance(StringKind, _, _, _)
+            ) =>
+          true
+        case _ =>
+          false
+      })
+
     (comp, l, r) match {
       // Two virtual allocations will compare equal if
       // and only if they have the same virtual address.
       case (Ieq, nir.Val.Virtual(l), nir.Val.Virtual(r))
-          if state.isVirtual(l) && state.isVirtual(r) =>
+          if state.isVirtual(l) && state.isVirtual(r) && !mayBeInterned(l, r) =>
         nir.Val.Bool(l == r)
       case (Ine, nir.Val.Virtual(l), nir.Val.Virtual(r))
-          if state.isVirtual(l) && state.isVirtual(r) =>
+          if state.isVirtual(l) && state.isVirtual(r) && !mayBeInterned(l, r) =>
         nir.Val.Bool(l != r)
 
       // A virtual allocation is never null, whatever its kind.

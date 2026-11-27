@@ -55,6 +55,17 @@ class MergeBoxesTest extends OptimizerSpec {
          |    val y = x
          |    x eq y
          |  }
+         |  // Boxes of equal values may be the same cached object
+         |  @noinline def sameValue(n: Int): Boolean = {
+         |    val x: Any = n
+         |    val y: Any = n
+         |    x.asInstanceOf[AnyRef] eq y.asInstanceOf[AnyRef]
+         |  }
+         |  @noinline def differentValues(): Boolean = {
+         |    val x: Any = 1
+         |    val y: Any = 2
+         |    x.asInstanceOf[AnyRef] eq y.asInstanceOf[AnyRef]
+         |  }
          |  def main(args: Array[String]): Unit = {
          |    val n = args.length
          |    println(loopAny(n) + branch(n) + unsigned(n))
@@ -64,6 +75,8 @@ class MergeBoxesTest extends OptimizerSpec {
          |    println(boxIsNull(n))
          |    println(escaping(n))
          |    println(aliased(n))
+         |    println(sameValue(n))
+         |    println(differentValues())
          |  }
          |}
          |""".stripMargin
@@ -103,5 +116,19 @@ class MergeBoxesTest extends OptimizerSpec {
       case (_, result) =>
         val defn = optimizedMethod(result.defns, "Test$", "aliased")
         assertEquals(defn.show, Seq(nir.Val.True), returned(defn))
+    }
+
+  @Test def identityOfBoxesOfSameValue(): Unit =
+    optimize("Test", sources, _.withMode(Mode.releaseFull)) {
+      case (_, result) =>
+        val defn = optimizedMethod(result.defns, "Test$", "sameValue")
+        assertTrue(defn.show, returned(defn).forall(!_.isCanonical))
+    }
+
+  @Test def identityOfBoxesOfDifferentValues(): Unit =
+    optimize("Test", sources, _.withMode(Mode.releaseFull)) {
+      case (_, result) =>
+        val defn = optimizedMethod(result.defns, "Test$", "differentValues")
+        assertEquals(defn.show, Seq(nir.Val.False), returned(defn))
     }
 }
