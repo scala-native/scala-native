@@ -13,6 +13,9 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 object EnumSetTest {
   enum Value extends java.lang.Enum[Value]:
     case A, B, C, D, E, F
+
+  enum Other extends java.lang.Enum[Other]:
+    case X
 }
 
 class EnumSetTest {
@@ -129,12 +132,13 @@ class EnumSetTest {
   @Test def allOf(): Unit = {
     val s = EnumSet.allOf(classOf[Value])
     assertEquals(6, s.size())
+    assertEquals("[A, B, C, D, E, F]", s.toString())
     Value.values.foreach(v => assertTrue(s.contains(v)))
   }
 
   @Test def complementOf(): Unit = {
     val s = EnumSet.complementOf(EnumSet.of(Value.A, Value.C))
-    assertEquals(4, s.size())
+    assertEquals("[B, D, E, F]", s.toString())
     assertFalse(s.contains(Value.A))
     assertTrue(s.contains(Value.B))
     assertFalse(s.contains(Value.C))
@@ -143,7 +147,7 @@ class EnumSetTest {
 
   @Test def range(): Unit = {
     val s = EnumSet.range(Value.B, Value.D)
-    assertEquals(3, s.size())
+    assertEquals("[B, C, D]", s.toString())
     assertTrue(s.contains(Value.B))
     assertTrue(s.contains(Value.C))
     assertTrue(s.contains(Value.D))
@@ -151,6 +155,17 @@ class EnumSetTest {
     assertThrows(
       classOf[IllegalArgumentException],
       EnumSet.range(Value.D, Value.B)
+    )
+  }
+
+  @Test def ordinalOrderAndForeignElements(): Unit = {
+    val s = EnumSet.of(Value.F, Value.A, Value.D)
+    assertEquals("[A, D, F]", s.toString())
+    assertFalse(s.contains("A"))
+    assertFalse(s.remove("A"))
+    assertThrows(
+      classOf[ClassCastException],
+      s.asInstanceOf[java.util.Set[Any]].add(EnumSetTest.Other.X)
     )
   }
 
