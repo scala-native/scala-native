@@ -37,13 +37,16 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
   protected[net] var socket: DatagramSocket = _
 
   private var useIPv4Only = SocketHelpers.getUseIPv4Stack()
-  private var joinedIPv6Group = false
   private var multicastInterface: NetworkInterface = null
 
   protected[net] var timeout = 0
   protected[net] var connected = false
   protected[net] var connectedAddress: InetAddress = _
   protected[net] var connectedPort = -1
+
+  // (group, interface index) pairs joined on this socket; NetBSD accepts
+  // a repeated IPV6_JOIN_GROUP silently
+  private val memberships = new java.util.HashSet[(List[Byte], Int)]()
 
   override def getFileDescriptor(): FileDescriptor = fd
 
@@ -248,15 +251,16 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     if (useIPv4Only) connect4(address, port)
     else connect6(address, port)
 
-  override def connect(address: InetAddress, port: Int): Unit = synchronized {
-    throwIfClosed("connect")
-    connectTo(address, port)
-    connectedAddress = address
-    connectedPort = port
-    connected = true
-  }
+  override def connect(address: InetAddress, port: Int): Unit =
+    memberships.synchronized {
+      throwIfClosed("connect")
+      connectTo(address, port)
+      connectedAddress = address
+      connectedPort = port
+      connected = true
+    }
 
-  override def disconnect(): Unit = synchronized {
+  override def disconnect(): Unit = memberships.synchronized {
     throwIfClosed("disconnect")
     val wildcard =
       if (useIPv4Only) InetAddress.getByAddress(new Array[Byte](4))
@@ -568,11 +572,18 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
       group: InetAddress,
       netIf: NetworkInterface,
       join: Boolean
-  ): Unit = synchronized {
+  ): Unit = memberships.synchronized {
     if (group == null || !group.isMulticastAddress())
       throw new SocketException("Not a multicast address")
 
     val addr = group.getAddress()
+    val groupKey = addr.toList
+    val membership = (groupKey, if (netIf == null) 0 else netIf.getIndex())
+    if (join && memberships.contains(membership))
+      throw new SocketException(
+        s"Already a member of multicast group ${group.getHostAddress()}"
+      )
+
     val done = group match {
       case _: Inet4Address =>
         mcastJoinLeave4(addr, netIf, join) || (!useIPv4Only && {
@@ -590,9 +601,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
           throw new SocketException(
             "IPv6 multicast group is not supported on an IPv4 socket"
           )
-        val ok = mcastJoinLeave6(addr, netIf, join)
-        if (ok && join) joinedIPv6Group = true
-        ok
+        mcastJoinLeave6(addr, netIf, join)
     }
 
     if (!done) {
@@ -602,6 +611,12 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
           lastError()
       )
     }
+
+    if (join) memberships.add(membership)
+    else if (membership._2 != 0) {
+      memberships.remove(membership)
+      memberships.remove((groupKey, 0))
+    } else memberships.removeIf(_._1 == groupKey)
   }
 
   private def joinAsIPv4OnFreeBSD(
@@ -625,7 +640,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
 
   /* FreeBSD before 16 cannot join IPv4 groups on IPv6 sockets, see ip6(4).
    * Replace the socket with an IPv4 one using the same address, port and
-   * options, unless it is connected or already relies on IPv6.
+   * options, unless it is connected or has memberships the swap would drop.
    */
   private def switchToIPv4(): Boolean = {
     val storage = stackalloc[posix.sys.socket.sockaddr_storage]()
@@ -643,7 +658,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
       case _ => null
     }
     val outIf = multicastInterface
-    val canSwitch = localAddr != null && !joinedIPv6Group && !connected &&
+    val canSwitch = localAddr != null && memberships.isEmpty() && !connected &&
       (outIf == null || hasIPv4Address(outIf))
     canSwitch && {
       import posix.sys.socket.{SOL_SOCKET, SO_REUSEADDR, SO_REUSEPORT}

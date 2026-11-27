@@ -49,14 +49,12 @@ class DatagramSocketTestOnJDK17 {
       Platform.executingInJVM && (Platform.isFreeBSD || Platform.isNetBSD) &&
         g.getAddress().isInstanceOf[Inet4Address]
     )
-    // TODO: repeated join and leave do not fail on NetBSD
-    val checkRepeated = !(Platform.executingInScalaNative && Platform.isNetBSD)
     ds.joinGroup(g, netIf)
-    if (checkRepeated)
-      assertThrows(classOf[SocketException], ds.joinGroup(g, netIf))
+    assertThrows(classOf[SocketException], ds.joinGroup(g, netIf))
     ds.leaveGroup(g, netIf)
-    if (checkRepeated)
-      assertThrows(classOf[SocketException], ds.leaveGroup(g, netIf))
+    assertThrows(classOf[SocketException], ds.leaveGroup(g, netIf))
+    ds.joinGroup(g, netIf)
+    ds.leaveGroup(g, netIf)
   }
 
   @Test def joinLeaveIPv4GroupOnInterface(): Unit = {
@@ -77,6 +75,19 @@ class DatagramSocketTestOnJDK17 {
     val ds = new DatagramSocket(0)
     try joinThenLeave(ds, "ff02::5354", netIf)
     finally ds.close()
+  }
+
+  @Test def joinDistinctIPv6GroupsWithEqualHashes(): Unit = {
+    val netIf = multicastInterface(_.isInstanceOf[Inet6Address])
+    val ds = new DatagramSocket(0)
+    try {
+      val g1 = group("ff02::1f")
+      val g2 = group("ff02::100")
+      ds.joinGroup(g1, netIf)
+      ds.joinGroup(g2, netIf)
+      ds.leaveGroup(g1, netIf)
+      ds.leaveGroup(g2, netIf)
+    } finally ds.close()
   }
 
   @Test def joinNonMulticastAddressThrows(): Unit = {
