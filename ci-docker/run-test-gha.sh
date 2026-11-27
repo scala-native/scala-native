@@ -57,6 +57,13 @@ sudo find "$CacheDir/coursier" -name '*.error' -delete 2>/dev/null || true
 
 # Maven Central throttles generic User-Agents, see .github/actions/sbt-warmup
 CoursierAgent="Scala-Native-CI/1.0+https://github.com/scala-native/scala-native"
+ContainerSbtOpts="-Dsbt.log.noformat=false -Dcoursier.http.agent=$CoursierAgent -Dlmcoursier.internal.shaded.coursier.http.agent=$CoursierAgent"
+
+# Resolve the meta-build from the mirror too, see .github/actions/sbt-warmup
+if [ -n "$MAVEN_CENTRAL_MIRROR" ]; then
+  printf '[repositories]\n  local\n  maven-central-mirror: %s/\n' "${MAVEN_CENTRAL_MIRROR%/}" > "$SbtDir/ci-repositories"
+  ContainerSbtOpts="-Dsbt.repository.config=/root/.sbt/ci-repositories $ContainerSbtOpts"
+fi
 
 docker run --rm \
   --mount type=bind,source=$CacheDir,target=/root/.cache \
@@ -74,5 +81,5 @@ docker run --rm \
   -e GC_MAXIMUM_HEAP_SIZE=1G \
   -e TERM=xterm-256color \
   -e JANSI_FORCE=true \
-  -e SBT_OPTS="-Dsbt.log.noformat=false -Dcoursier.http.agent=$CoursierAgent -Dlmcoursier.internal.shaded.coursier.http.agent=$CoursierAgent" \
+  -e SBT_OPTS="$ContainerSbtOpts" \
   -i "${FULL_IMAGE_NAME}"
