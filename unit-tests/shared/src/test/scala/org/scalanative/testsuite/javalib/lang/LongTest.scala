@@ -209,6 +209,67 @@ class LongTest {
     )
   }
 
+  @Test def decimalParsingAcrossFastPrefix(): Unit = {
+    def arabicDigits(s: String): String =
+      s.map(ch =>
+        if (ch >= '0' && ch <= '9') ('\u0660' + ch - '0').toChar else ch
+      )
+
+    val zeros = "0" * 24
+    assertEquals(999999999999999999L, Long.parseLong("999999999999999999"))
+    assertEquals(
+      signedMaxValue,
+      Long.parseLong(arabicDigits(signedMaxValueText))
+    )
+    assertEquals(
+      signedMinValue,
+      Long.parseLong(arabicDigits(signedMinValueText))
+    )
+    assertEquals(
+      signedMaxValue,
+      Long.parseLong("+" + zeros + signedMaxValueText, 10)
+    )
+    assertEquals(
+      signedMinValue,
+      Long.parseLong("-" + zeros + signedMinValueText.drop(1), 10)
+    )
+    assertEquals(123L, Long.parseLong("1\u06623"))
+    assertEquals(0L, Long.parseLong("-" + zeros))
+
+    assertEquals(
+      unsignedMaxValue,
+      Long.parseUnsignedLong(arabicDigits(unsignedMaxValueText))
+    )
+    assertEquals(
+      unsignedMaxValue,
+      Long.parseUnsignedLong("+" + zeros + unsignedMaxValueText, 10)
+    )
+    assertEquals(
+      -6L,
+      Long.parseUnsignedLong(unsignedMaxValueText.dropRight(1) + "0")
+    )
+    assertEquals(123L, Long.parseUnsignedLong("1\u06623"))
+    assertEquals(0L, Long.parseUnsignedLong(zeros))
+
+    val slice = "x+" + zeros + unsignedMaxValueText + "!"
+    assertEquals(
+      unsignedMaxValue,
+      Long.parseUnsignedLong(slice, 1, slice.length() - 1, 10)
+    )
+    assertThrows(
+      classOf[NumberFormatException],
+      Long.parseLong(zeros + signedMaxPlusOneText)
+    )
+    assertThrows(
+      classOf[NumberFormatException],
+      Long.parseUnsignedLong(zeros + unsignedMaxPlusOneText)
+    )
+    assertThrows(
+      classOf[NumberFormatException],
+      Long.parseUnsignedLong("18446744073709551620")
+    )
+  }
+
   @Test def parseUnsignedLong(): Unit = {
     import Long.{parseUnsignedLong => parse}
 

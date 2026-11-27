@@ -313,14 +313,13 @@ object Long {
 
     if (length == 0) fail(s, radix)
 
-    val negative = s.charAt(0) == '-'
-    val hasPlusSign = s.charAt(0) == '+'
+    val first = s.charAt(0)
+    val hasPlusSign = first == '+'
+    val hasMinusSign = first == '-'
+    val offset = if (hasPlusSign || hasMinusSign) 1 else 0
+    if (offset > 0 && length == 1) fail(s, radix)
 
-    if ((negative || hasPlusSign) && length == 1) fail(s, radix)
-
-    val offset = if (negative || hasPlusSign) 1 else 0
-
-    parse(s, offset, radix, negative)
+    parse(s, offset, radix, hasMinusSign)
   }
 
   private def parse(
@@ -329,18 +328,27 @@ object Long {
       radix: Int,
       negative: scala.Boolean
   ): scala.Long = {
-    val max = MIN_VALUE / radix
-    var result = 0L
-    var offset = _offset
     val length = s.length()
-    while (offset < length) {
-      val digit = Character.digit(s.charAt(offset), radix)
-      offset += 1
-      if (digit == -1) fail(s, radix)
-      if (max > result) fail(s, radix)
-      val next = result * radix - digit
-      if (next > result) fail(s, radix)
-      result = next
+    var offset = _offset
+    var result = 0L
+    if (radix == 10) {
+      // 18 decimal digits always fit in a signed Long.
+      val prefixEnd = offset + math.min(18, length - offset)
+      result = -DecimalParseHelpers.parsePrefix(s, offset, prefixEnd)
+      offset = prefixEnd
+    }
+
+    if (offset < length) {
+      val max = MIN_VALUE / radix
+      while (offset < length) {
+        val digit = Character.digit(s.charAt(offset), radix)
+        offset += 1
+        if (digit == -1) fail(s, radix)
+        if (max > result) fail(s, radix)
+        val next = result * radix - digit
+        if (next > result) fail(s, radix)
+        result = next
+      }
     }
 
     if (!negative) {
@@ -533,8 +541,9 @@ object Long {
     val len = s.length()
     if (len == 0) fail(s, radix)
 
-    val hasPlusSign = s.charAt(0) == '+'
-    val hasMinusSign = s.charAt(0) == '-'
+    val first = s.charAt(0)
+    val hasPlusSign = first == '+'
+    val hasMinusSign = first == '-'
     if (hasMinusSign)
       throw new NumberFormatException(
         s"""Illegal leading minus sign on unsigned string $s."""
@@ -547,24 +556,31 @@ object Long {
   }
 
   private def parseUnsigned(s: String, _offset: Int, radix: Int): scala.Long = {
-    val unsignedLongMaxValue = -1L
-    val max = divideUnsigned(unsignedLongMaxValue, radix)
-    var result = 0L
-    var offset = _offset
     val length = s.length()
+    var offset = _offset
+    var result = 0L
+    if (radix == 10) {
+      val prefixEnd = offset + math.min(18, length - offset)
+      result = DecimalParseHelpers.parsePrefix(s, offset, prefixEnd)
+      offset = prefixEnd
+    }
 
-    while (offset < length) {
-      val digit = Character.digit(s.charAt(offset), radix)
-      offset += 1
+    if (offset < length) {
+      val unsignedLongMaxValue = -1L
+      val max = divideUnsigned(unsignedLongMaxValue, radix)
+      while (offset < length) {
+        val digit = Character.digit(s.charAt(offset), radix)
+        offset += 1
 
-      if (digit == -1) fail(s, radix)
+        if (digit == -1) fail(s, radix)
 
-      if (compareUnsigned(result, max) > 0) exceedsUnsigned(s)
+        if (compareUnsigned(result, max) > 0) exceedsUnsigned(s)
 
-      result = result * radix + digit
+        result = result * radix + digit
 
-      if (compareUnsigned(digit, result) > 0)
-        exceedsUnsigned(s)
+        if (compareUnsigned(digit, result) > 0)
+          exceedsUnsigned(s)
+      }
     }
 
     result
