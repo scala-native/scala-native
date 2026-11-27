@@ -10,7 +10,9 @@
 #include <winsock2.h>
 typedef long int suseconds_t;
 #else
+#include <signal.h>
 #include <sys/select.h>
+#include <time.h>
 #endif
 
 #if (FD_SETSIZE > 1024)
@@ -67,7 +69,17 @@ int scalanative_fd_isset(int fd, struct scalanative_fd_set *set) {
     return FD_ISSET(fd, (fd_set *)set);
 }
 
-//  pselect() is straight call through, so no declaration here.
+#ifndef _WIN32
+// Calls the header-selected symbol, e.g. NetBSD's __pselect50.
+int scalanative_pselect(int nfds, struct scalanative_fd_set *readfds,
+                        struct scalanative_fd_set *writefds,
+                        struct scalanative_fd_set *exceptfds,
+                        const struct timespec *timeout,
+                        const sigset_t *sigmask) {
+    return pselect(nfds, (fd_set *)readfds, (fd_set *)writefds,
+                   (fd_set *)exceptfds, timeout, sigmask);
+}
+#endif
 
 int scalanative_select(int nfds, struct scalanative_fd_set *readfds,
                        struct scalanative_fd_set *writefds,

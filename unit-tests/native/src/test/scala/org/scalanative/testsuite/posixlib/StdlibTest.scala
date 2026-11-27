@@ -81,4 +81,24 @@ class StdlibTest {
     }
   }
 
+  @Test def putenvAndUnsetenv(): Unit = if (!LinktimeInfo.isWindows) {
+    val name = c"SCALANATIVE_STDLIB_TEST_PUTENV"
+    assertEquals(0, stdlib.putenv(c"SCALANATIVE_STDLIB_TEST_PUTENV=1"))
+    assertEquals("1", fromCString(stdlib.getenv(name)))
+    assertEquals(0, stdlib.unsetenv(name))
+    assertNull(stdlib.getenv(name))
+  }
+
+  @Test def initstateAndSrandomRepeatSequence(): Unit =
+    if (!LinktimeInfo.isWindows) {
+      val size = 256
+      val state = stackalloc[CChar](size)
+      val previous = stdlib.initstate(1.toUInt, state, size.toUSize)
+      try {
+        stdlib.srandom(7.toUInt)
+        val first = Seq.fill(5)(stdlib.random())
+        stdlib.srandom(7.toUInt)
+        assertEquals(first, Seq.fill(5)(stdlib.random()))
+      } finally stdlib.setstate(previous)
+    }
 }

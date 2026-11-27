@@ -235,5 +235,40 @@ int scalanative_sigaction(int sig, struct scalanative_sigaction *sn_act,
     }
     return rc;
 }
+
+// Call the header-selected symbols, e.g. NetBSD's __sigemptyset14.
+int scalanative_sigaddset(sigset_t *set, int signo) {
+    return sigaddset(set, signo);
+}
+
+int scalanative_sigdelset(sigset_t *set, int signo) {
+    return sigdelset(set, signo);
+}
+
+int scalanative_sigemptyset(sigset_t *set) { return sigemptyset(set); }
+
+int scalanative_sigfillset(sigset_t *set) { return sigfillset(set); }
+
+int scalanative_sigismember(const sigset_t *set, int signo) {
+    return sigismember(set, signo);
+}
+
+int scalanative_sigpending(sigset_t *set) { return sigpending(set); }
+
+int scalanative_sigprocmask(int how, const sigset_t *set, sigset_t *oset) {
+    return sigprocmask(how, set, oset);
+}
+
+int scalanative_sigsuspend(const sigset_t *sigmask) {
+    return sigsuspend(sigmask);
+}
+
+#if !defined(__APPLE__) && !defined(__OpenBSD__) &&                            \
+    (!defined(__ANDROID__) || __ANDROID_API__ >= 23)
+int scalanative_sigtimedwait(const sigset_t *set, siginfo_t *info,
+                             const struct timespec *timeout) {
+    return sigtimedwait(set, info, timeout);
+}
+#endif
 #endif // is Unix or MacOS
 #endif

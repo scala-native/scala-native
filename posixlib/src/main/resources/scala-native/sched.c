@@ -42,5 +42,12 @@ int scalanative_sched_deadline() {
 #endif
 }
 
+#if !defined(__APPLE__) && !defined(__OpenBSD__)
+// Calls the header-selected symbol, e.g. NetBSD's __sched_rr_get_interval50.
+int scalanative_sched_rr_get_interval(pid_t pid, struct timespec *t) {
+    return sched_rr_get_interval(pid, t);
+}
+#endif
+
 #endif // Unix or Mac OS
 #endif

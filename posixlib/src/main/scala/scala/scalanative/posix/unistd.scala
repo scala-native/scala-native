@@ -65,7 +65,15 @@ object unistd {
 
   def dup(fildes: CInt): CInt = extern
   def dup2(fildes: CInt, fildesnew: CInt): CInt = extern
+  @name("scalanative_dup3")
   def dup3(fildes: CInt, fildesnew: CInt, flags: CInt): CInt = extern
+  @deprecated(
+    "Binary compatibility: code compiled against 0.5.13 links to this extern name.",
+    "0.5.14"
+  )
+  @name("dup3")
+  private[posix] def _dup3(fildes: CInt, fildesnew: CInt, flags: CInt): CInt =
+    externRedirect(dup3(fildes, fildesnew, flags))
 
   def _exit(status: CInt): Unit = extern
 

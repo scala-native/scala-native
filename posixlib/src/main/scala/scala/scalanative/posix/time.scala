@@ -356,6 +356,7 @@ object timeOps {
 }
 
 @extern
+@define("__SCALANATIVE_POSIX_TIMER")
 object timer {
   /* The five timer_*() methods are in this separate object to simplify
    * the use of the more frequently used methods in time.h. Yes, at the
@@ -389,15 +390,41 @@ object timer {
 
   def timer_getoverrun(timerid: timer_t): CInt = extern
 
+  @name("scalanative_timer_gettime")
   def timer_gettime(timerid: timer_t, curr_value: Ptr[itimerspec]): CInt =
     extern
 
+  @deprecated(
+    "Binary compatibility: code compiled against 0.5.13 links to this extern name.",
+    "0.5.14"
+  )
+  @name("timer_gettime")
+  private[posix] def _timer_gettime(
+      timerid: timer_t,
+      curr_value: Ptr[itimerspec]
+  ): CInt =
+    externRedirect(timer_gettime(timerid, curr_value))
+
+  @name("scalanative_timer_settime")
   def timer_settime(
       timerid: timer_t,
       flags: CInt,
       new_value: Ptr[itimerspec],
       old_value: Ptr[itimerspec]
   ): CInt = extern
+
+  @deprecated(
+    "Binary compatibility: code compiled against 0.5.13 links to this extern name.",
+    "0.5.14"
+  )
+  @name("timer_settime")
+  private[posix] def _timer_settime(
+      timerid: timer_t,
+      flags: CInt,
+      new_value: Ptr[itimerspec],
+      old_value: Ptr[itimerspec]
+  ): CInt =
+    externRedirect(timer_settime(timerid, flags, new_value, old_value))
 
 // Symbolic constants
 
