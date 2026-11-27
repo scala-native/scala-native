@@ -8,6 +8,7 @@ import org.junit.Assert._
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+import org.scalanative.testsuite.utils.Platform
 
 // Uses JDK enums so that the test cross-compiles with Scala 2, which cannot
 // define Java enums. On Scala Native the TimeUnit constants are anonymous
@@ -120,6 +121,8 @@ class EnumMapTest {
     assertThrows(classOf[IllegalStateException], e.getKey())
     assertThrows(classOf[IllegalStateException], e.getValue())
     assertThrows(classOf[IllegalStateException], e.setValue("x"))
+    assertTrue(e.equals(e))
+    assertFalse(e.equals(new AbstractMap.SimpleEntry(SECONDS, "S2")))
     assertFalse(m.containsKey(SECONDS))
     assertEquals(1, m.size())
     assertTrue(
@@ -149,6 +152,40 @@ class EnumMapTest {
     assertEquals(new AbstractMap.SimpleEntry(DAYS, "d2"), e)
     assertEquals("d2", e.setValue("d3"))
     assertEquals("d3", m.get(DAYS))
+    m.remove(DAYS)
+    assertNull(e.setValue("d4"))
+    assertEquals("d4", m.get(DAYS))
+    // The JDK maps the key again without counting it in size()
+    if (!Platform.executingInJVM) assertEquals(1, m.size())
+  }
+
+  @Test def iteratorSeesLaterPut(): Unit = {
+    val m = units()
+    m.put(NANOSECONDS, "n")
+    val it = m.entrySet().iterator()
+    assertEquals(NANOSECONDS, it.next().getKey())
+    m.put(DAYS, "d") // grows the table
+    assertTrue(it.hasNext())
+    assertEquals(new AbstractMap.SimpleEntry(DAYS, "d"), it.next())
+    assertFalse(it.hasNext())
+
+    val values = m.values().iterator()
+    assertEquals("n", values.next())
+    m.put(HOURS, "h")
+    assertEquals("h", values.next())
+    assertEquals("d", values.next())
+    assertFalse(values.hasNext())
+  }
+
+  @Test def iteratorSkipsLaterRemove(): Unit = {
+    val m = units()
+    m.put(NANOSECONDS, "n")
+    m.put(DAYS, "d")
+    val keys = m.keySet().iterator()
+    assertEquals(NANOSECONDS, keys.next())
+    m.remove(DAYS)
+    assertFalse(keys.hasNext())
+    assertThrows(classOf[NoSuchElementException], keys.next())
   }
 
   @Test def iteratorExhausted(): Unit = {

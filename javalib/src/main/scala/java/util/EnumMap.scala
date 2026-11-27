@@ -31,12 +31,13 @@ import java.lang.{_Enum => Enum}
  *    - `EnumMap(Map)` finds the key class of a non-`EnumMap` source by walking
  *      `getSuperclass` from the first key up to `Enum`, which gives the same
  *      class as `getDeclaringClass` for constants with and without a body.
- *    - Keys are checked with `keyType.isInstance`, so passing a constant's body
- *      subclass (rather than the enum class) as `keyType` narrows the accepted
- *      keys instead of being rejected.
+ *    - `keyType` is not checked to be an enum class (the JDK fails with a
+ *      `NullPointerException` for a non-enum class or a constant's body
+ *      subclass); keys are checked with `keyType.isInstance` only.
  *
- *  Calling `setValue` on an entry whose key was removed from the map (other
- *  than through its iterator) maps the key again and counts it in `size()`.
+ *  Unrelated to reflection: `setValue` on an entry whose key was removed from
+ *  the map (other than through its iterator) maps the key again and counts it
+ *  in `size()`, where the JDK leaves `size()` unchanged.
  */
 class EnumMap[K <: Enum[K], V] private (
     private val keyType: Class[K],
@@ -177,21 +178,21 @@ class EnumMap[K <: Enum[K], V] private (
     new EnumMap[K, V](keyType, keys.clone(), vals.clone(), count)
 
   private class EntryIterator extends Iterator[Map.Entry[K, V]] {
-    private var nextIndex = advance(0)
+    // Slots are rescanned on every call, so that the iterator sees the
+    // mappings added or removed (and the table grown) since the last call.
+    private var nextIndex = 0
     private var last: Entry = null
 
-    private def advance(from: Int): Int = {
-      var i = from
-      while (i < vals.length && vals(i) == null) i += 1
-      i
+    def hasNext(): Boolean = {
+      while (nextIndex < vals.length && vals(nextIndex) == null)
+        nextIndex += 1
+      nextIndex < vals.length
     }
-
-    def hasNext(): Boolean = nextIndex < vals.length
 
     def next(): Map.Entry[K, V] = {
       if (!hasNext()) throw new NoSuchElementException()
       last = new Entry(nextIndex)
-      nextIndex = advance(nextIndex + 1)
+      nextIndex += 1
       last
     }
 
@@ -203,8 +204,9 @@ class EnumMap[K <: Enum[K], V] private (
     }
   }
 
-  /** A view of one slot of the map: it reads and writes through to the table,
-   *  and cannot be used after it was removed through its iterator.
+  /** A view of one slot of the map: it reads and writes through to the table.
+   *  Once removed through its iterator its accessors throw and it falls back to
+   *  identity `equals`, `hashCode` and `toString`.
    */
   private class Entry(var index: Int) extends Map.Entry[K, V] {
     private def checkValid(): Unit =
@@ -225,15 +227,21 @@ class EnumMap[K <: Enum[K], V] private (
       if (old == null) count += 1
       unmask[V](old)
     }
-    override def equals(o: Any): Boolean = o match {
-      case e: Map.Entry[_, _] =>
-        Objects.equals(getKey(), e.getKey()) &&
-          Objects.equals(getValue(), e.getValue())
-      case _ => false
-    }
+    override def equals(o: Any): Boolean =
+      if (index < 0) super.equals(o)
+      else
+        o match {
+          case e: Map.Entry[_, _] =>
+            Objects.equals(getKey(), e.getKey()) &&
+              Objects.equals(getValue(), e.getValue())
+          case _ => false
+        }
     override def hashCode(): Int =
-      Objects.hashCode(getKey()) ^ Objects.hashCode(getValue())
-    override def toString(): String = s"${getKey()}=${getValue()}"
+      if (index < 0) super.hashCode()
+      else Objects.hashCode(getKey()) ^ Objects.hashCode(getValue())
+    override def toString(): String =
+      if (index < 0) super.toString()
+      else s"${getKey()}=${getValue()}"
   }
 }
 
