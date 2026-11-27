@@ -586,7 +586,10 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     }
 
     if (join) memberships.add(membership)
-    else memberships.removeIf(_._1 == group)
+    else if (membership._2 != 0) {
+      memberships.remove(membership)
+      memberships.remove((group, 0))
+    } else memberships.removeIf(_._1 == group)
   }
 
   override def join(inetaddr: InetAddress): Unit = {
