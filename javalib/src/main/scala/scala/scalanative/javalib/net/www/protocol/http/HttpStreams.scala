@@ -23,6 +23,7 @@ package scala.scalanative.javalib.net.www.protocol.http
 import java.io.{
   FilterInputStream, FilterOutputStream, IOException, InputStream, OutputStream
 }
+import java.nio.charset.StandardCharsets.ISO_8859_1
 
 private[http] object HttpStreams {
 
@@ -46,6 +47,16 @@ private[http] object HttpStreams {
     }
     sb.toString
   }
+
+  /** Skips by reading, so that the stream sees the skipped bytes. */
+  @throws[IOException]
+  def skipByReading(in: InputStream, n: Long): Long =
+    if (n <= 0) 0
+    else {
+      val buf = new Array[Byte](math.min(n, 4096L).toInt)
+      val k = in.read(buf, 0, buf.length)
+      if (k < 0) 0 else k
+    }
 }
 
 /** The socket input, failing once the connection is closed. */
@@ -182,13 +193,7 @@ private[http] final class ChunkedInputStream(in: InputStream, onEnd: () => Unit)
   override def available(): Int =
     if (done) 0 else math.min(in.available().toLong, remaining).toInt
 
-  override def skip(n: Long): Long =
-    if (n <= 0) 0
-    else {
-      val buf = new Array[Byte](math.min(n, 4096L).toInt)
-      val k = read(buf, 0, buf.length)
-      if (k < 0) 0 else k
-    }
+  override def skip(n: Long): Long = HttpStreams.skipByReading(this, n)
 
   override def markSupported(): Boolean = false
 
@@ -261,11 +266,7 @@ private[http] final class CachingInputStream(
     copy(n)(if (n > 0) cache.write(b, off, n))
   }
 
-  override def skip(n: Long): Long = {
-    val buf = new Array[Byte](math.max(0L, math.min(n, 4096L)).toInt)
-    val k = read(buf, 0, buf.length)
-    if (k < 0) 0 else k
-  }
+  override def skip(n: Long): Long = HttpStreams.skipByReading(this, n)
 
   override def markSupported(): Boolean = false
 
@@ -314,7 +315,7 @@ private[http] final class ChunkedOutputStream(
   private var closed = false
 
   private def writeChunk(): Unit = if (count > 0) {
-    out.write((Integer.toHexString(count) + "\r\n").getBytes("ISO-8859-1"))
+    out.write((Integer.toHexString(count) + "\r\n").getBytes(ISO_8859_1))
     out.write(buf, 0, count)
     out.write('\r')
     out.write('\n')
@@ -349,7 +350,7 @@ private[http] final class ChunkedOutputStream(
   override def close(): Unit = if (!closed) {
     writeChunk()
     closed = true
-    out.write("0\r\n\r\n".getBytes("ISO-8859-1"))
+    out.write("0\r\n\r\n".getBytes(ISO_8859_1))
     out.flush()
   }
 }

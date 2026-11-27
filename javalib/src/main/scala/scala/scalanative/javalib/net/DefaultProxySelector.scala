@@ -49,24 +49,14 @@ final class DefaultProxySelector extends ProxySelector {
         "protocol = " + scheme + " host = " + host
       )
     val proxy = scheme.toLowerCase() match {
-      case "http" =>
+      case s @ ("http" | "https" | "ftp") =>
         choose(
           host,
-          "http.nonProxyHosts",
-          "http.proxyHost",
-          "http.proxyPort",
-          80
+          if (s == "ftp") "ftp.nonProxyHosts" else "http.nonProxyHosts",
+          s + ".proxyHost",
+          s + ".proxyPort",
+          if (s == "https") 443 else 80
         )
-      case "https" =>
-        choose(
-          host,
-          "http.nonProxyHosts",
-          "https.proxyHost",
-          "https.proxyPort",
-          443
-        )
-      case "ftp" =>
-        choose(host, "ftp.nonProxyHosts", "ftp.proxyHost", "ftp.proxyPort", 80)
       case "socket" =>
         if (bypasses(host, "socksNonProxyHosts")) Proxy.NO_PROXY else socks()
       case _ =>

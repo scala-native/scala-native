@@ -30,7 +30,9 @@ import java.net._
 import java.nio.charset.StandardCharsets
 import java.util.{ArrayList, Base64, Collections, LinkedHashMap, List, Map}
 
-import scala.scalanative.javalib.net.{DefaultProxySelector, HttpDates}
+import scala.scalanative.javalib.net.{
+  DefaultProxySelector, HttpDates, HttpStatusLine
+}
 
 /** An HTTP/1.1 client connection over a plain `Socket`, directly or through an
  *  HTTP proxy. Each request uses a new connection, closed at the end of the
@@ -57,11 +59,14 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
   private var requestBody: ByteArrayOutputStream = null
   private var streamingBody: OutputStream = null
   private var responseRead = false
-  private var fromCache = false
   private var failure: IOException = null
   private var retryFailure: HttpRetryException = null
   private var statusLine: String = null
   private var headers = new ArrayList[Array[String]]()
+  private var headerFields: Map[String, List[String]] = null
+  private var headerFieldsFor: ArrayList[Array[String]] = null
+  private var cachedUri: URI = null
+  private var cachedUriFor: URL = null
   private var body: InputStream = null
   private var bodyEmpty = false
   private var authorization: String = null
@@ -125,9 +130,18 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
     else h
   }
 
-  private def port: Int = if (url.getPort() == -1) 80 else url.getPort()
+  private def port: Int =
+    if (url.getPort() == -1) url.getDefaultPort() else url.getPort()
 
-  private def uri: URI =
+  private def uri: URI = {
+    if (cachedUriFor ne url) {
+      cachedUri = toURI(url)
+      cachedUriFor = url
+    }
+    cachedUri
+  }
+
+  private def toURI(url: URL): URI =
     try url.toURI()
     catch {
       case _: URISyntaxException =>
@@ -168,7 +182,6 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
     parseStatus()
     body = cached.getBody()
     if (body == null) body = new ByteArrayInputStream(new Array[Byte](0))
-    fromCache = true
     responseRead = true
     true
   }
@@ -248,8 +261,11 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
     p.`type`() == Proxy.Type.HTTP
   }
 
-  private def streaming: Boolean =
-    chunkLength > 0 || fixedContentLength >= 0 || fixedContentLengthLong >= 0
+  private def fixedLength: Long =
+    if (fixedContentLengthLong >= 0) fixedContentLengthLong
+    else fixedContentLength
+
+  private def streaming: Boolean = chunkLength > 0 || fixedLength >= 0
 
   @throws[IOException]
   override def getOutputStream(): OutputStream = {
@@ -265,15 +281,10 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
     if (streaming) {
       if (streamingBody == null) {
         connect()
-        sendHead(hasBody = true, -1L)
+        sendHead(hasBody = true, if (chunkLength > 0) -1L else fixedLength)
         streamingBody =
           if (chunkLength > 0) new ChunkedOutputStream(socketOut, chunkLength)
-          else
-            new FixedLengthOutputStream(
-              socketOut,
-              if (fixedContentLengthLong >= 0) fixedContentLengthLong
-              else fixedContentLength
-            )
+          else new FixedLengthOutputStream(socketOut, fixedLength)
       }
       streamingBody
     } else {
@@ -347,7 +358,15 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
   override def getHeaderFields(): Map[String, List[String]] = {
     readQuietly()
     if (statusLine == null) Collections.emptyMap()
-    else groupHeaders(withStatusLine())
+    else responseHeaderFields()
+  }
+
+  private def responseHeaderFields(): Map[String, List[String]] = {
+    if (headerFieldsFor ne headers) {
+      headerFields = groupHeaders(withStatusLine())
+      headerFieldsFor = headers
+    }
+    headerFields
   }
 
   private def withStatusLine(): ArrayList[Array[String]] = {
@@ -382,6 +401,7 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
           storeCookies()
           done = !(followRedirect() || retryWithAuthentication())
         }
+        requestBody = null
         offerToCache()
       }
     } catch {
@@ -464,6 +484,9 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
       return false
     }
     if (forProxy) triedProxyAuth = true else triedAuth = true
+    val auth =
+      if (authenticator != null) authenticator else Authenticator.getDefault()
+    if (auth == null) return false
     val (authHost, authPort, site) =
       if (forProxy) {
         val a = proxy.address().asInstanceOf[InetSocketAddress]
@@ -475,7 +498,7 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
         (url.getHost(), port, s)
       }
     val pa = Authenticator.requestPasswordAuthentication(
-      if (authenticator != null) authenticator else Authenticator.getDefault(),
+      auth,
       authHost,
       site,
       authPort,
@@ -505,14 +528,8 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
     while (i < headers.size()) {
       val kv = headers.get(i)
       val v = kv(1)
-      if (kv(0).equalsIgnoreCase(name) && v.regionMatches(
-            true,
-            0,
-            "Basic",
-            0,
-            5
-          ) &&
-          (v.length == 5 || v.charAt(5) == ' '))
+      if (kv(0).equalsIgnoreCase(name) && (v.equalsIgnoreCase("Basic") ||
+          v.regionMatches(true, 0, "Basic ", 0, 6)))
         return v
       i += 1
     }
@@ -544,7 +561,8 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
     if (!has("User-Agent")) add("User-Agent", userAgent)
     add(
       "Host",
-      if (url.getPort() == -1 || url.getPort() == 80) url.getHost()
+      if (url.getPort() == -1 || url.getPort() == url.getDefaultPort())
+        url.getHost()
       else url.getHost() + ":" + url.getPort()
     )
     if (!has("Accept")) add("Accept", "*/*")
@@ -562,10 +580,6 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
       if (method == "POST" && !has("Content-Type"))
         add("Content-type", "application/x-www-form-urlencoded")
       if (chunkLength > 0) add("Transfer-Encoding", "chunked")
-      else if (fixedContentLengthLong >= 0)
-        add("Content-Length", java.lang.Long.toString(fixedContentLengthLong))
-      else if (fixedContentLength >= 0)
-        add("Content-Length", Integer.toString(fixedContentLength))
       else if (contentLength >= 0)
         add("Content-Length", java.lang.Long.toString(contentLength))
     }
@@ -642,9 +656,7 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
     val onEnd = () => closeSocket()
     val te = getHeaderField("Transfer-Encoding")
     val chunked = te != null && te.toLowerCase().contains("chunked")
-    val length =
-      try java.lang.Long.parseLong(getHeaderField("Content-Length"))
-      catch { case _: NumberFormatException => -1L }
+    val length = getHeaderFieldLong("Content-Length", -1L)
     bodyEmpty = method == "HEAD" || responseCode == 204 ||
       responseCode == 304 || responseCode >= 100 && responseCode < 200 ||
       !chunked && length == 0
@@ -658,21 +670,8 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
   }
 
   private def parseStatus(): Unit = {
-    responseCode = -1
-    responseMessage = null
-    if (statusLine.startsWith("HTTP/")) {
-      val sp = statusLine.indexOf(' ')
-      if (sp > 0) {
-        val sp2 = statusLine.indexOf(' ', sp + 1)
-        if (sp2 > 0) responseMessage = statusLine.substring(sp2 + 1)
-        try
-          responseCode = Integer.parseInt(
-            statusLine
-              .substring(sp + 1, if (sp2 > 0) sp2 else statusLine.length)
-          )
-        catch { case _: NumberFormatException => () }
-      }
-    }
+    responseCode = HttpStatusLine.code(statusLine)
+    responseMessage = HttpStatusLine.message(statusLine)
   }
 
   @throws[IOException]
@@ -680,7 +679,7 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
     val handler = CookieHandler.getDefault()
     val u = uri
     if (handler != null && u != null)
-      handler.put(u, groupHeaders(withStatusLine()))
+      handler.put(u, responseHeaderFields())
   }
 
   @throws[IOException]

@@ -21,6 +21,8 @@ package java.net
 
 import java.io.{IOException, InputStream}
 
+import scala.scalanative.javalib.net.HttpStatusLine
+
 abstract class HttpURLConnection protected (u: URL) extends URLConnection(u) {
 
   protected var method: String = "GET"
@@ -105,17 +107,8 @@ abstract class HttpURLConnection protected (u: URL) extends URLConnection(u) {
     try getInputStream()
     catch { case e: IOException => if (getHeaderField(0) == null) throw e }
     val status = getHeaderField(0)
-    if (status == null || !status.startsWith("HTTP/")) return -1
-    val sp = status.indexOf(' ')
-    if (sp > 0) {
-      val sp2 = status.indexOf(' ', sp + 1)
-      if (sp2 > 0) responseMessage = status.substring(sp2 + 1)
-      try
-        responseCode = Integer.parseInt(
-          status.substring(sp + 1, if (sp2 > 0) sp2 else status.length)
-        )
-      catch { case _: NumberFormatException => () }
-    }
+    responseCode = HttpStatusLine.code(status)
+    responseMessage = HttpStatusLine.message(status)
     responseCode
   }
 
@@ -124,9 +117,6 @@ abstract class HttpURLConnection protected (u: URL) extends URLConnection(u) {
     getResponseCode()
     responseMessage
   }
-
-  override def getHeaderFieldDate(name: String, default: Long): Long =
-    super.getHeaderFieldDate(name, default)
 
   def disconnect(): Unit
 

@@ -975,22 +975,28 @@ object HttpURLConnectionTest {
   final class Request(
       val line: String,
       headers: List[Array[String]],
-      val body: String,
-      val chunks: List[String]
+      val body: String
   ) {
-    def all(name: String): List[String] = {
-      val out = new ArrayList[String]()
-      val it = headers.iterator()
-      while (it.hasNext()) {
-        val kv = it.next()
-        if (kv(0).equalsIgnoreCase(name)) out.add(kv(1))
-      }
-      out
+    def all(name: String): List[String] = allValues(headers, name)
+    def header(name: String): String = lastValue(headers, name)
+  }
+
+  private def allValues(
+      headers: List[Array[String]],
+      name: String
+  ): List[String] = {
+    val out = new ArrayList[String]()
+    val it = headers.iterator()
+    while (it.hasNext()) {
+      val kv = it.next()
+      if (kv(0).equalsIgnoreCase(name)) out.add(kv(1))
     }
-    def header(name: String): String = {
-      val vs = all(name)
-      if (vs.isEmpty()) null else vs.get(vs.size() - 1)
-    }
+    out
+  }
+
+  private def lastValue(headers: List[Array[String]], name: String): String = {
+    val vs = allValues(headers, name)
+    if (vs.isEmpty()) null else vs.get(vs.size() - 1)
   }
 
   private def readLine(in: InputStream): String = {
@@ -1024,25 +1030,21 @@ object HttpURLConnectionTest {
       headers.add(Array(h.substring(0, colon), h.substring(colon + 1).trim()))
       h = readLine(in)
     }
-    val req0 = new Request(line, headers, "", Collections.emptyList())
-    val chunks = new ArrayList[String]()
+    val length = lastValue(headers, "Content-Length")
     val body =
-      if (req0.header("Content-Length") != null)
-        readN(in, Integer.parseInt(req0.header("Content-Length")))
-      else if ("chunked" == req0.header("Transfer-Encoding")) {
+      if (length != null) readN(in, Integer.parseInt(length))
+      else if ("chunked" == lastValue(headers, "Transfer-Encoding")) {
         val sb = new java.lang.StringBuilder()
         var size = Integer.parseInt(readLine(in).trim(), 16)
         while (size > 0) {
-          val chunk = readN(in, size)
-          chunks.add(chunk)
-          sb.append(chunk)
+          sb.append(readN(in, size))
           readLine(in)
           size = Integer.parseInt(readLine(in).trim(), 16)
         }
         readLine(in)
         sb.toString
       } else ""
-    new Request(line, headers, body, chunks)
+    new Request(line, headers, body)
   }
 
   /** Answers each connection with `handler` and closes it. */
