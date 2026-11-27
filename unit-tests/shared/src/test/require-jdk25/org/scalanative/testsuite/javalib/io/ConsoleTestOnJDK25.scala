@@ -11,7 +11,7 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 /* Tests run with stdin and stdout redirected (e.g. on CI) see no console.
  * Methods that would block reading the terminal are not exercised here.
  */
-class ConsoleTestOnJDK24 {
+class ConsoleTestOnJDK25 {
 
   private def console(): Console = {
     val c = System.console()

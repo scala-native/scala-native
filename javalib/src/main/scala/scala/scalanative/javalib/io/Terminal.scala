@@ -1,5 +1,7 @@
 package scala.scalanative.javalib.io
 
+import java.io.{IOError, IOException}
+
 import scala.scalanative.meta.LinktimeInfo.isWindows
 import scala.scalanative.posix.termios._
 import scala.scalanative.posix.termiosOps._
@@ -38,53 +40,65 @@ object Terminal {
       case _: IllegalStateException => () // shutdown already in progress
     }
 
-  /** Turns the echo of the standard input off, until `restoreEcho()`. */
+  /** Turns the echo of the standard input off, until `restoreEcho()`.
+   *
+   *  @throws java.io.IOError
+   *    if echo is on and cannot be turned off
+   */
   def disableEcho(): Unit = synchronized {
     restoreHook
-    if (!echoDisabled) echoDisabled = setEcho(false)
-  }
-
-  /** Turns the echo back on if `disableEcho()` turned it off. */
-  def restoreEcho(): Unit = synchronized {
-    if (echoDisabled) {
-      setEcho(true)
-      echoDisabled = false
+    if (!echoDisabled) setEcho(false) match {
+      case Changed   => echoDisabled = true
+      case Unchanged => ()
+      case Failed    =>
+        throw new IOError(new IOException("Cannot disable terminal echo"))
     }
   }
 
-  // Returns true if the echo flag was changed
-  private def setEcho(on: Boolean): Boolean =
+  /** Turns the echo back on if `disableEcho()` turned it off. If that fails,
+   *  the shutdown hook tries again.
+   */
+  def restoreEcho(): Unit = synchronized {
+    if (echoDisabled && setEcho(true) != Failed) echoDisabled = false
+  }
+
+  // Outcome of setEcho
+  private final val Changed = 0
+  private final val Unchanged = 1
+  private final val Failed = 2
+
+  private def setEcho(on: Boolean): Int =
     if (isWindows) setWindowsEcho(on) else setPosixEcho(on)
 
-  private def setPosixEcho(on: Boolean): Boolean = {
+  private def setPosixEcho(on: Boolean): Int = {
     val attrs = stackalloc[termios]()
     val fd = unistd.STDIN_FILENO
-    if (tcgetattr(fd, attrs) != 0) false
+    if (tcgetattr(fd, attrs) != 0) Failed
     else {
       val echo = ECHO.toUInt
       val isOn = (attrs.c_lflag & echo) != 0.toUInt
-      if (isOn == on) false
+      if (isOn == on) Unchanged
       else {
         attrs.c_lflag =
           if (on) attrs.c_lflag | echo
           else attrs.c_lflag & ~echo
-        tcsetattr(fd, TCSANOW, attrs) == 0
+        if (tcsetattr(fd, TCSANOW, attrs) == 0) Changed else Failed
       }
     }
   }
 
-  private def setWindowsEcho(on: Boolean): Boolean = {
+  private def setWindowsEcho(on: Boolean): Int = {
     val mode = stackalloc[DWord]()
     val handle = stdIn
-    if (!GetConsoleMode(handle, mode)) false
+    if (!GetConsoleMode(handle, mode)) Failed
     else {
       val isOn = (!mode & ENABLE_ECHO_INPUT) != 0.toUInt
-      if (isOn == on) false
+      if (isOn == on) Unchanged
       else {
         val newMode =
           if (on) !mode | ENABLE_ECHO_INPUT
           else !mode & ~ENABLE_ECHO_INPUT
-        SetConsoleMode(handle, newMode)
+        if (SetConsoleMode(handle, newMode)) Changed else Failed
       }
     }
   }

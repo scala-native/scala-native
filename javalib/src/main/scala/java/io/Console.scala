@@ -1,6 +1,7 @@
 package java.io
 
-import java.nio.charset.Charset
+import java.nio.charset.{Charset, CodingErrorAction}
+import java.nio.{ByteBuffer, CharBuffer}
 import java.util.{Arrays, Objects}
 
 import scala.scalanative.javalib.io.Terminal
@@ -13,24 +14,37 @@ import scala.scalanative.javalib.io.Terminal
  *  writes to the process' standard file descriptors, independently of
  *  `System.in` and `System.out`.
  *
+ *  Input is handled one terminal read at a time: a read that ends without a
+ *  line terminator (e.g. Ctrl-D after some input) also ends the line.
+ *
  *  Reads are guarded by a read lock and writes by a write lock. Operations
  *  doing both (prompting reads) always take the write lock first.
  */
-class Console private[io] (cs: Charset) extends Flushable {
+class Console private[io] (inCs: Charset, outCs: Charset) extends Flushable {
   private val readLock = new Object
   private val writeLock = new Object
 
   private val pw: PrintWriter = new Console.ConsoleWriter(
-    new OutputStreamWriter(new FileOutputStream(FileDescriptor.out), cs)
+    new OutputStreamWriter(new FileOutputStream(FileDescriptor.out), outCs),
+    writeLock
   )
-  private val decoder: Reader =
-    new InputStreamReader(new FileInputStream(FileDescriptor.in), cs)
+
+  private val in = new FileInputStream(FileDescriptor.in)
+  private val decoder = inCs
+    .newDecoder()
+    .onMalformedInput(CodingErrorAction.REPLACE)
+    .onUnmappableCharacter(CodingErrorAction.REPLACE)
+  // Bytes not decoded yet, in write mode
+  private val bytes = ByteBuffer.allocate(Console.ReadSize)
 
   // Decoded input shared by reader(), readLine() and readPassword(),
-  // valid in buf[pos, lim). Consumed chars are zeroed, they may be secrets.
+  // valid in buf[pos, lim). Consumed input is zeroed, it may be a secret.
   private var buf = new Array[Char](Console.InitialBufferSize)
   private var pos = 0
   private var lim = 0
+  // A line ended with CR at the end of the input read so far: an LF
+  // arriving next belongs to that line terminator.
+  private var skipLF = false
 
   // Closing it must not close the terminal input.
   private val rd: Reader = new Reader {
@@ -39,12 +53,18 @@ class Console private[io] (cs: Charset) extends Flushable {
         throw new IndexOutOfBoundsException()
       readLock.synchronized {
         if (len == 0) 0
-        else if (pos == lim && !fill()) -1
         else {
-          val n = Math.min(len, lim - pos)
-          System.arraycopy(buf, pos, cbuf, off, n)
-          consume(pos + n)
-          n
+          var eof = false
+          while (pos == lim && !eof) eof = fill() < 0
+          if (eof) -1
+          else {
+            // Never read past the end of the current line
+            val n = Math.min(len, lineEnd(pos) - pos)
+            System.arraycopy(buf, pos, cbuf, off, n)
+            consume(pos + n)
+            skipLF = false
+            n
+          }
         }
       }
     }
@@ -105,7 +125,7 @@ class Console private[io] (cs: Charset) extends Flushable {
 
   def flush(): Unit = pw.flush()
 
-  def charset(): Charset = cs
+  def charset(): Charset = outCs
 
   /** Always true: a Console exists only when attached to a terminal. */
   def isTerminal(): Boolean = true
@@ -115,52 +135,45 @@ class Console private[io] (cs: Charset) extends Flushable {
     if (fmt.isEmpty()) pw.flush()
     else pw.format(fmt, args)
 
-  /** Reads more input into `buf`, compacting or growing it first if needed.
-   *  Returns false at end of input. Requires readLock.
-   */
-  private def fill(): Boolean = {
-    if (pos > 0) {
-      val remaining = lim - pos
-      System.arraycopy(buf, pos, buf, 0, remaining)
-      Arrays.fill(buf, remaining, lim, '\u0000')
-      pos = 0
-      lim = remaining
-    }
-    if (lim == buf.length) {
-      val old = buf
-      buf = Arrays.copyOf(old, old.length * 2)
-      Arrays.fill(old, '\u0000')
-    }
-    val n =
-      try decoder.read(buf, lim, buf.length - lim)
-      catch { case e: IOException => throw new IOError(e) }
-    if (n > 0) lim += n
-    n >= 0
-  }
-
   /** Reads one line without its terminator, or returns null at end of input if
    *  nothing was read. Requires readLock.
    */
-  private def readLineChars(): Array[Char] = {
-    // Scan offset relative to pos, stays valid when fill() compacts buf
-    var scanned = 0
-    while (true) {
-      while (pos + scanned < lim && buf(pos + scanned) != '\n') scanned += 1
-      if (pos + scanned < lim)
-        return takeLine(pos + scanned, pos + scanned + 1)
-      if (!fill()) // End of input: return a partial line, if any
-        return if (lim > pos) takeLine(lim, lim) else null
+  private def readLineChars(): Array[Char] =
+    try {
+      while (true) {
+        if (skipLF && pos < lim) {
+          if (buf(pos) == '\n') consume(pos + 1)
+          skipLF = false
+        }
+        if (pos < lim) return takeLine(lineEnd(pos))
+        if (fill() < 0) return null
+      }
+      null
+    } catch {
+      case e: IOException => throw new IOError(e)
     }
-    null
+
+  /** End of the line starting at `from`, including its terminator (LF, CR or
+   *  CRLF), or `lim` if the buffered input has none. Requires readLock.
+   */
+  private def lineEnd(from: Int): Int = {
+    var i = from
+    while (i < lim && buf(i) != '\n' && buf(i) != '\r') i += 1
+    if (i == lim) lim
+    else if (buf(i) == '\r' && i + 1 < lim && buf(i + 1) == '\n') i + 2
+    else i + 1
   }
 
-  // Requires readLock
-  private def takeLine(end: Int, next: Int): Array[Char] = {
-    val stop =
-      if (end > pos && buf(end - 1) == '\r') end - 1
-      else end
+  // Takes the line in buf[pos, end), see lineEnd. Requires readLock.
+  private def takeLine(end: Int): Array[Char] = {
+    var stop = end
+    if (stop > pos && buf(stop - 1) == '\n') stop -= 1
+    if (stop > pos && buf(stop - 1) == '\r') {
+      stop -= 1
+      skipLF = end == lim && buf(end - 1) == '\r'
+    }
     val line = Arrays.copyOfRange(buf, pos, stop)
-    consume(next)
+    consume(end)
     line
   }
 
@@ -169,27 +182,86 @@ class Console private[io] (cs: Charset) extends Flushable {
     Arrays.fill(buf, pos, next, '\u0000')
     pos = next
   }
+
+  /** Performs one read of the terminal and decodes it into `buf`, compacting or
+   *  growing `buf` first if needed. Returns the number of chars added (possibly
+   *  0, for an incomplete character), or -1 at end of input. Requires readLock.
+   */
+  private def fill(): Int = {
+    if (pos > 0) {
+      val remaining = lim - pos
+      System.arraycopy(buf, pos, buf, 0, remaining)
+      Arrays.fill(buf, remaining, lim, '\u0000')
+      pos = 0
+      lim = remaining
+    }
+    val needed =
+      Math.ceil(bytes.capacity() * decoder.maxCharsPerByte()).toInt + 1
+    if (buf.length - lim < needed) {
+      val old = buf
+      buf = Arrays.copyOf(old, Math.max(old.length * 2, lim + needed))
+      Arrays.fill(old, '\u0000')
+    }
+
+    val n = in.read(bytes.array(), bytes.position(), bytes.remaining())
+    val out = CharBuffer.wrap(buf, lim, buf.length - lim)
+    if (n > 0) bytes.position(bytes.position() + n)
+    bytes.flip()
+    if (n < 0) {
+      // Decode any incomplete character left, then allow reading further
+      decoder.decode(bytes, out, true)
+      decoder.flush(out)
+      decoder.reset()
+      bytes.clear()
+    } else {
+      decoder.decode(bytes, out, false)
+      bytes.compact()
+    }
+    Arrays.fill(bytes.array(), bytes.position(), bytes.capacity(), 0.toByte)
+
+    val added = out.position() - lim
+    lim = out.position()
+    if (n < 0 && added == 0) -1 else added
+  }
 }
 
 object Console {
   private final val InitialBufferSize = 256
+  private final val ReadSize = 8192
 
   /** The console of this process, or null when standard input or standard
    *  output is not a terminal.
    */
   private[java] lazy val system: Console =
-    if (Terminal.stdinAndStdoutAreTerminals()) new Console(terminalCharset())
+    if (Terminal.stdinAndStdoutAreTerminals())
+      new Console(
+        charsetOf("stdin.encoding"),
+        charsetOf("stdout.encoding")
+      )
     else null
 
-  private def terminalCharset(): Charset = {
-    val name = System.getProperty("stdout.encoding")
+  private def charsetOf(property: String): Charset = {
+    val name = System.getProperty(property)
     if (name == null) Charset.defaultCharset()
     else Charset.forName(name, Charset.defaultCharset())
   }
 
+  // Serializes all output on the console's write lock.
+  private final class LockedWriter(out: Writer, writeLock: Object)
+      extends Writer(writeLock) {
+    def write(cbuf: Array[Char], off: Int, len: Int): Unit =
+      writeLock.synchronized(out.write(cbuf, off, len))
+    override def write(c: Int): Unit =
+      writeLock.synchronized(out.write(c))
+    override def write(s: String, off: Int, len: Int): Unit =
+      writeLock.synchronized(out.write(s, off, len))
+    def flush(): Unit = writeLock.synchronized(out.flush())
+    def close(): Unit = flush()
+  }
+
   // Closing it must not close the terminal output.
-  private final class ConsoleWriter(out: Writer)
-      extends PrintWriter(out, true) {
+  private final class ConsoleWriter(out: Writer, writeLock: Object)
+      extends PrintWriter(new LockedWriter(out, writeLock), true) {
     override def close(): Unit = flush()
   }
 }
