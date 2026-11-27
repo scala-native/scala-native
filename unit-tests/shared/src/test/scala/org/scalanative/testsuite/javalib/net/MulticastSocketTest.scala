@@ -72,7 +72,6 @@ class MulticastSocketTest {
     val loopbackIf =
       NetworkInterface.getByInetAddress(InetAddress.getLoopbackAddress())
     assumeTrue("no loopback interface", loopbackIf != null)
-    MulticastInterface.assumeReadable()
     withSocket(new MulticastSocket()) { ms =>
       assertNotNull(ms.getNetworkInterface())
       assertTrue(ms.getInterface().isAnyLocalAddress())
@@ -111,7 +110,6 @@ class MulticastSocketTest {
   @Test def joinLeaveDefaultInterface(): Unit = {
     assumeCanJoinIPv4Group()
     assumeNativeIPv4Join()
-    MulticastInterface.assumeReadable()
     withSocket(new MulticastSocket(0)) { ms =>
       val group = InetAddress.getByName("239.255.53.64")
       ms.joinGroup(group)
@@ -126,7 +124,6 @@ class MulticastSocketTest {
     )
     assumeCanJoinIPv4Group()
     assumeNativeIPv4Join()
-    MulticastInterface.assumeReadable()
     val candidates = NetworkInterface
       .getNetworkInterfaces()
       .asScala
@@ -159,18 +156,5 @@ class MulticastSocketTest {
     assertThrows(classOf[SocketException], ms.setLoopbackMode(true))
     assertThrows(classOf[SocketException], ms.getInterface())
     assertThrows(classOf[SocketException], ms.getNetworkInterface())
-  }
-}
-
-object MulticastInterface {
-  // TODO: qemu-user cannot get IP_MULTICAST_IF (ENOPROTOOPT), see #5425
-  def assumeReadable(): Unit = {
-    val ms = new MulticastSocket()
-    try {
-      val readable =
-        try { ms.getInterface(); true }
-        catch { case _: SocketException => false }
-      assumeTrue("IP_MULTICAST_IF cannot be read", readable)
-    } finally ms.close()
   }
 }
