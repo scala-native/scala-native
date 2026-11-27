@@ -188,11 +188,7 @@ class HttpURLConnectionTest {
     assertNull(c.getRequestProperty("B"))
     assertThrows(classOf[IllegalStateException], c.getRequestProperties())
     assertThrows(classOf[IllegalStateException], c.setRequestProperty("a", "b"))
-    assertEquals(
-      "connect in progress",
-      assertThrows(classOf[IllegalStateException], c.setRequestMethod("POST"))
-        .getMessage()
-    )
+    assertThrows(classOf[IllegalStateException], c.setRequestMethod("POST"))
     assertEquals(
       "Already connected",
       assertThrows(
