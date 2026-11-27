@@ -230,6 +230,22 @@ class EnumMapTest {
     assertNotEquals(rm, m)
   }
 
+  @Test def equalsWithNullValues(): Unit = {
+    val a = units()
+    a.put(SECONDS, null)
+    val b = units()
+    b.put(DAYS, "d")
+    assertNotEquals(a, b)
+    assertNotEquals(b, a)
+    val hm = new HashMap[TimeUnit, String]()
+    hm.put(DAYS, null)
+    assertNotEquals(a, hm)
+    assertNotEquals(hm, a)
+    val c = units()
+    c.put(SECONDS, null)
+    assertEquals(a, c)
+  }
+
   @Test def putAllAndClear(): Unit = {
     val m = units()
     val hm = new HashMap[TimeUnit, String]()

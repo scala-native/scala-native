@@ -191,9 +191,12 @@ abstract class AbstractMap[K, V] protected () extends java.util.Map[K, V] {
       o match {
         case m: Map[_, _] =>
           self.size() == m.size() &&
-            entrySet().scalaOps.forall(item =>
-              Objects.equals(m.get(item.getKey()), item.getValue())
-            )
+            entrySet().scalaOps.forall { item =>
+              val key = item.getKey()
+              val value = item.getValue()
+              if (value == null) m.get(key) == null && m.containsKey(key)
+              else Objects.equals(value, m.get(key))
+            }
         case _ => false
       }
     }
