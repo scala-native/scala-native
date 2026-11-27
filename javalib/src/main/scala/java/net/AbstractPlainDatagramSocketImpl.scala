@@ -36,7 +36,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
 
   protected[net] var socket: DatagramSocket = _
 
-  private var useIPv4Only = SocketHelpers.getUseIPv4Stack()
+  @volatile private var useIPv4Only = SocketHelpers.getUseIPv4Stack()
   private var multicastInterface: NetworkInterface = null
 
   protected[net] var timeout = 0
@@ -203,7 +203,14 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
   override def send(p: DatagramPacket): Unit = {
     throwIfClosed("send")
     if (useIPv4Only) send4(p)
-    else send6(p)
+    else
+      try send6(p)
+      catch {
+        // the FreeBSD join fallback may have switched the socket to IPv4
+        case _: IOException
+            if useIPv4Only && p.getAddress().isInstanceOf[Inet4Address] =>
+          send4(p)
+      }
   }
 
   private def connect4(address: InetAddress, port: Int): Unit = {
@@ -354,7 +361,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     )
   }
 
-  override def getTimeToLive(): Int = {
+  override def getTimeToLive(): Int = memberships.synchronized {
     throwIfClosed("getTimeToLive")
     getMulticastOption(
       "IP_MULTICAST_TTL",
@@ -780,7 +787,10 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     case _                          => sys.error(s"Unknown option: $option")
   }
 
-  override def getOption(optID: Int): Object = {
+  override def getOption(optID: Int): Object =
+    memberships.synchronized(getOptionLocked(optID))
+
+  private def getOptionLocked(optID: Int): Object = {
     if (isClosed) {
       throw new SocketException("Socket is closed")
     }
