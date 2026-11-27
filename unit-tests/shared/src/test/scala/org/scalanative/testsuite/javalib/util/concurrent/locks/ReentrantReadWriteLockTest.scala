@@ -134,7 +134,7 @@ class ReentrantReadWriteLockTest extends JSR166Test {
   def assertHasNoWaiters(
       lock: ReentrantReadWriteLockTest.PublicReentrantReadWriteLock,
       c: Condition
-  ): Unit = { assertHasWaiters(lock, c, Array.empty[Thread]: _*) }
+  ): Unit = { assertHasWaiters(lock, c) }
 
   /** Checks that condition c has exactly the given waiter threads.
    */

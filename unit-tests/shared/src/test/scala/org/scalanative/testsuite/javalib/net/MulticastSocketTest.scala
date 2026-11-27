@@ -2,14 +2,14 @@ package org.scalanative.testsuite.javalib.net
 
 import java.net._
 
-import scala.collection.JavaConverters._
-
 import org.junit.Assert._
 import org.junit.Assume._
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
+
+import scala.scalanative.junit.utils.CollectionConverters._
 
 class MulticastSocketTest {
 
@@ -72,7 +72,6 @@ class MulticastSocketTest {
     val loopbackIf =
       NetworkInterface.getByInetAddress(InetAddress.getLoopbackAddress())
     assumeTrue("no loopback interface", loopbackIf != null)
-    MulticastInterface.assumeReadable()
     withSocket(new MulticastSocket()) { ms =>
       assertNotNull(ms.getNetworkInterface())
       assertTrue(ms.getInterface().isAnyLocalAddress())
@@ -80,7 +79,7 @@ class MulticastSocketTest {
       ms.setNetworkInterface(loopbackIf)
       assertEquals(loopbackIf, ms.getNetworkInterface())
       assertTrue(
-        loopbackIf.getInetAddresses().asScala.contains(ms.getInterface())
+        loopbackIf.getInetAddresses().toScalaSeq.contains(ms.getInterface())
       )
 
       ms.setInterface(InetAddress.getLoopbackAddress())
@@ -111,7 +110,6 @@ class MulticastSocketTest {
   @Test def joinLeaveDefaultInterface(): Unit = {
     assumeCanJoinIPv4Group()
     assumeNativeIPv4Join()
-    MulticastInterface.assumeReadable()
     withSocket(new MulticastSocket(0)) { ms =>
       val group = InetAddress.getByName("239.255.53.64")
       ms.joinGroup(group)
@@ -126,13 +124,12 @@ class MulticastSocketTest {
     )
     assumeCanJoinIPv4Group()
     assumeNativeIPv4Join()
-    MulticastInterface.assumeReadable()
     val candidates = NetworkInterface
       .getNetworkInterfaces()
-      .asScala
+      .toScalaSeq
       .filter { ni =>
         ni.isUp() && ni.supportsMulticast() &&
-        ni.getInetAddresses().asScala.exists(_.isInstanceOf[Inet4Address])
+        ni.getInetAddresses().toScalaSeq.exists(_.isInstanceOf[Inet4Address])
       }
       .toList
     assumeTrue("no multicast capable interface", candidates.nonEmpty)
@@ -159,18 +156,5 @@ class MulticastSocketTest {
     assertThrows(classOf[SocketException], ms.setLoopbackMode(true))
     assertThrows(classOf[SocketException], ms.getInterface())
     assertThrows(classOf[SocketException], ms.getNetworkInterface())
-  }
-}
-
-object MulticastInterface {
-  // TODO: qemu-user cannot get IP_MULTICAST_IF (ENOPROTOOPT), see #5425
-  def assumeReadable(): Unit = {
-    val ms = new MulticastSocket()
-    try {
-      val readable =
-        try { ms.getInterface(); true }
-        catch { case _: SocketException => false }
-      assumeTrue("IP_MULTICAST_IF cannot be read", readable)
-    } finally ms.close()
   }
 }

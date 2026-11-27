@@ -34,7 +34,8 @@ class YieldpointStressTest {
     val spinners = Math.max(4, cpus * 2)
     val allocators = Math.max(2, cpus / 2)
     stressGC(TimeUnit.SECONDS.toMillis(2))(
-      Seq.fill(spinners)(spin _) ++ Seq.fill(allocators)(allocate _)
+      Seq.fill[Control => Unit](spinners)(spin) ++
+        Seq.fill[Control => Unit](allocators)(allocate)
     )
   }
 
@@ -44,7 +45,7 @@ class YieldpointStressTest {
    */
   @Test def spinnersWithoutAltStackReachSafepoints(): Unit =
     if (!LinktimeInfo.isWindows)
-      stressGC(500)(Seq.fill(4)(spinWithoutAltStack _))
+      stressGC(500)(Seq.fill[Control => Unit](4)(spinWithoutAltStack))
 }
 
 object YieldpointStressTest {

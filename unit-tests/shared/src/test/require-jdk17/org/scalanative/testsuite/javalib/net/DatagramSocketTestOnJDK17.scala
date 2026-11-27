@@ -5,14 +5,14 @@ import java.net.{
   NetworkInterface, SocketException
 }
 
-import scala.collection.JavaConverters._
-
 import org.junit.Assert._
 import org.junit.Assume._
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
+
+import scala.scalanative.junit.utils.CollectionConverters._
 
 class DatagramSocketTestOnJDK17 {
 
@@ -28,10 +28,10 @@ class DatagramSocketTestOnJDK17 {
     )
     val candidates = NetworkInterface
       .getNetworkInterfaces()
-      .asScala
+      .toScalaSeq
       .filter { ni =>
         ni.isUp() && ni.supportsMulticast() &&
-        ni.getInetAddresses().asScala.exists(hasAddress)
+        ni.getInetAddresses().toScalaSeq.exists(hasAddress)
       }
       .toList
     assumeTrue("no multicast capable interface", candidates.nonEmpty)

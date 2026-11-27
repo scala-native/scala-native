@@ -6,11 +6,23 @@ import scalanative.posix.sys.types.{suseconds_t, time_t}
 import scalanative.unsafe._
 
 @extern
+@define("__SCALANATIVE_POSIX_SYS_TIME")
 object time {
 
   type timeval = CStruct2[time_t, suseconds_t]
 
+  @name("scalanative_gettimeofday")
   def gettimeofday(tv: Ptr[timeval], tz: Ptr[scala.Byte]): CInt = extern
+
+  @deprecated(
+    "Binary compatibility: code compiled against 0.5.13 links to this extern name.",
+    "0.5.14"
+  )
+  @name("gettimeofday")
+  private[posix] def _gettimeofday(
+      tv: Ptr[timeval],
+      tz: Ptr[scala.Byte]
+  ): CInt = externRedirect(gettimeofday(tv, tz))
 }
 
 object timeOps {
