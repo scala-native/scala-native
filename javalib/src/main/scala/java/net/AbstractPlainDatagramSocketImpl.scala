@@ -592,9 +592,9 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
       if (posix.sys.socket.getsockname(fd.fd, sa, len) != 0) null
       else SocketHelpers.sockaddrStorageToInetSocketAddress(sa)
     val localAddr = local match {
-      case null                                           => null
-      case l if l.getAddress().isInstanceOf[Inet4Address] => l.getAddress()
-      case l if l.getAddress().isAnyLocalAddress()        =>
+      case null                                         => null
+      case l if l.getAddress.isInstanceOf[Inet4Address] => l.getAddress
+      case l if l.getAddress.isAnyLocalAddress()        =>
         InetAddress.getByAddress(new Array[Byte](4))
       case _ => null
     }
@@ -647,7 +647,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
           if (netIf != null)
             try setMulticastInterface(netIf)
             catch { case _: SocketException => () }
-          if (local.getPort() != 0) bind4(localAddr, local.getPort())
+          if (local.getPort != 0) bind4(localAddr, local.getPort)
           if (connected) connect4(connectedAddress, connectedPort)
           true
         }
