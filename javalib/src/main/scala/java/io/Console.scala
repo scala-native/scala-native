@@ -5,6 +5,7 @@ import java.nio.{ByteBuffer, CharBuffer}
 import java.util.{Arrays, Objects}
 
 import scala.scalanative.javalib.io.Terminal
+import scala.scalanative.meta.LinktimeInfo.isWindows
 
 /** Character-based access to the interactive terminal the process was started
  *  from.
@@ -14,8 +15,8 @@ import scala.scalanative.javalib.io.Terminal
  *  writes to the process' standard file descriptors, independently of
  *  `System.in` and `System.out`.
  *
- *  Input is handled one terminal read at a time: a read that ends without a
- *  line terminator (e.g. Ctrl-D after some input) also ends the line.
+ *  Input is handled one terminal read at a time: on POSIX, a read that ends
+ *  without a line terminator (e.g. Ctrl-D after some input) also ends the line.
  *
  *  Reads are guarded by a read lock and writes by a write lock. Operations
  *  doing both (prompting reads) always take the write lock first.
@@ -61,8 +62,9 @@ class Console private[io] (inCs: Charset, outCs: Charset) extends Flushable {
             // Never read past the end of the current line
             val n = Math.min(len, lineEnd(pos) - pos)
             System.arraycopy(buf, pos, cbuf, off, n)
+            // An LF still buffered after a returned CR is skipped by readLine
+            skipLF = buf(pos + n - 1) == '\r'
             consume(pos + n)
-            skipLF = false
             n
           }
         }
@@ -145,8 +147,15 @@ class Console private[io] (inCs: Charset, outCs: Charset) extends Flushable {
           if (buf(pos) == '\n') consume(pos + 1)
           skipLF = false
         }
-        if (pos < lim) return takeLine(lineEnd(pos))
-        if (fill() < 0) return null
+        if (pos < lim) {
+          val end = lineEnd(pos)
+          val terminated = buf(end - 1) == '\n' || buf(end - 1) == '\r'
+          // A Windows console read can return part of a line, so only a line
+          // terminator (or end of input) ends it there.
+          val recordEndsLine = if (isWindows) false else true
+          if (terminated || recordEndsLine) return takeLine(end)
+        }
+        if (fill() < 0) return if (pos < lim) takeLine(lim) else null
       }
       null
     } catch {

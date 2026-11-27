@@ -47,7 +47,9 @@ object Terminal {
    */
   def disableEcho(): Unit = synchronized {
     restoreHook
-    if (!echoDisabled) setEcho(false) match {
+    // Always check the terminal: echo may be on again despite a pending
+    // restore. Unchanged keeps any pending restore.
+    setEcho(false) match {
       case Changed   => echoDisabled = true
       case Unchanged => ()
       case Failed    =>
