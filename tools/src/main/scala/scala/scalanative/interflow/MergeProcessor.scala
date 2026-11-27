@@ -62,7 +62,7 @@ private[interflow] final class MergeProcessor(
   )(implicit analysis: ReachabilityAnalysis.Result): (Seq[MergePhi], State) = {
     import block.cfPos
     // Has an incoming edge from a block that does not precede it
-    val isLoopHeader = offsets.get(block.label.id).exists { offset =>
+    def isLoopHeader = offsets.get(block.label.id).exists { offset =>
       block.incoming.keysIterator.exists(offsets.get(_).exists(_ >= offset))
     }
     merge(
@@ -77,7 +77,7 @@ private[interflow] final class MergeProcessor(
       merge: nir.Local,
       params: Seq[nir.Val.Local],
       incoming: Seq[(nir.Local, (Seq[nir.Val], State))],
-      isLoopHeader: Boolean
+      isLoopHeader: => Boolean
   )(implicit analysis: ReachabilityAnalysis.Result): (Seq[MergePhi], State) = {
     val localIds = incoming.map { case (n, (_, _)) => n }
     val states = incoming.map { case (_, (_, s)) => s }
@@ -103,6 +103,7 @@ private[interflow] final class MergeProcessor(
         (phis, newstate)
       case _ =>
         val headState = states.head
+        lazy val unboxesAllocated = isLoopHeader
 
         var mergeFresh = nir.Fresh(merge.id)
         val mergeLocals = mutable.OpenHashMap.empty[nir.Local, nir.Val]
@@ -141,7 +142,15 @@ private[interflow] final class MergeProcessor(
         def mergeBoxes(
             values: Seq[nir.Val],
             localName: Option[String]
-        ): Option[nir.Val] = mergedBoxes.get(values).orElse {
+        ): Option[nir.Val] =
+          // Only a virtual value can be a box that is not allocated yet
+          if (!values.exists(_.isInstanceOf[nir.Val.Virtual])) None
+          else mergedBoxes.get(values).orElse(mergeNewBoxes(values, localName))
+
+        def mergeNewBoxes(
+            values: Seq[nir.Val],
+            localName: Option[String]
+        ): Option[nir.Val] = {
           var boxTy: nir.Type.Ref = null
           var boxInstance: Instance = null
           var isBox = true
@@ -181,7 +190,7 @@ private[interflow] final class MergeProcessor(
                         cls,
                         Array(value),
                         None
-                      ) if nir.Type.unbox.contains(nir.Type.Ref(cls.name)) =>
+                      ) if nir.Type.boxClasses.contains(cls.name) =>
                     allInstantiated &&= kind == ClassKind
                     box(idx, nir.Type.Ref(cls.name), value, instance)
                   // Pointer boxes are not virtual allocations: null boxes to null
@@ -196,15 +205,15 @@ private[interflow] final class MergeProcessor(
             }
             idx += 1
           }
-          isBox &&= boxTy != null && (!hasAllocated || isLoopHeader)
+          isBox &&= boxTy != null && (!hasAllocated || unboxesAllocated)
 
           val unboxedTy = if (isBox) nir.Type.unbox.get(boxTy) else None
-          val isPtrBox = unboxedTy.contains(nir.Type.Ptr)
+          val isPtrBox = isBox && nir.Type.isPtrBox(boxTy)
           // The boxed values end up in a phi of the primitive type
-          def hasUnboxedType(state: State, value: nir.Val) = {
+          def hasUnboxedType(value: nir.Val)(implicit state: State) = {
             val ty = value match {
-              case nir.Val.Virtual(addr) => state.deref(addr).ty
-              case _                     => value.ty
+              case InstanceRef(ty) => ty
+              case _               => value.ty
             }
             unboxedTy.contains(ty) || (isPtrBox && ty == nir.Type.Null)
           }
@@ -217,7 +226,7 @@ private[interflow] final class MergeProcessor(
             case _ => false
           }
           isBox &&= unboxedTy.isDefined && states.indices.forall { idx =>
-            if (boxed(idx)) hasUnboxedType(states(idx), unboxed(idx))
+            if (boxed(idx)) hasUnboxedType(unboxed(idx))(states(idx))
             else canUnbox(unboxed(idx))
           }
 
@@ -232,7 +241,7 @@ private[interflow] final class MergeProcessor(
                   states(idx).emit(nir.Op.Unbox(boxTy, value))
               }
             }
-            val value = mergePhi(unboxed.toSeq, unboxedTy, localName)
+            val value = mergeMaterialized(unboxed.toSeq, unboxedTy, localName)
             val merged =
               if (allInstantiated || !isPtrBox) {
                 val ClassRef(cls) = boxTy: @unchecked
@@ -263,23 +272,21 @@ private[interflow] final class MergeProcessor(
         def mergePhi(
             values: Seq[nir.Val],
             bound: Option[nir.Type],
-            localName: Option[String] = None,
-            boxesByValue: Boolean = true
-        ): nir.Val = {
+            localName: Option[String] = None
+        ): nir.Val =
           if (isSingleValue(values)) values.head
-          else if (boxesByValue) {
+          else
             mergeBoxes(values, localName).getOrElse(
               mergeMaterialized(values, bound, localName)
             )
-          } else mergeMaterialized(values, bound, localName)
-        }
 
         def mergeMaterialized(
             values: Seq[nir.Val],
             bound: Option[nir.Type],
             localName: Option[String]
-        ): nir.Val = {
-          locally {
+        ): nir.Val =
+          if (isSingleValue(values)) values.head
+          else {
             val materialized = states.zip(values).map {
               case (s, v) =>
                 v match {
@@ -298,7 +305,6 @@ private[interflow] final class MergeProcessor(
             mergePhis += MergePhi(param, localIds.zip(materialized))
             param
           }
-        }
 
         def localNameOf(local: nir.Local) = if (eval.preserveDebugInfo) {
           debugInfo.localNames
@@ -351,12 +357,7 @@ private[interflow] final class MergeProcessor(
                   }
                   // The merged value has to be materialized as well
                   mergeHeap(addr) = new EscapedInstance(
-                    mergePhi(
-                      values,
-                      None,
-                      virtualNameOf(addr),
-                      boxesByValue = false
-                    ),
+                    mergeMaterialized(values, None, virtualNameOf(addr)),
                     headInstance
                   )
                 case head: VirtualInstance =>

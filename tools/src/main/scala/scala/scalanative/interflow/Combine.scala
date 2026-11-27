@@ -420,37 +420,27 @@ private[interflow] trait Combine { self: Interflow =>
     import state.{materialize, delay, emit}
 
     // Whether both the unboxed pointer and the reference are null
-    def bothNull(ptr: nir.Val, ref: nir.Val): nir.Val = {
-      val refIsNull = ref match {
-        case DelayedRef(nir.Op.Box(ty, x)) if nir.Type.isPtrBox(ty) =>
-          combine(Ieq, nir.Type.Ptr, x, nir.Val.Null)
-        case _ =>
-          combine(Ieq, nir.Rt.Object, ref, nir.Val.Null)
-      }
+    def bothNull(ptr: nir.Val, ref: nir.Val): nir.Val =
       combine(
         nir.Bin.And,
         nir.Type.Bool,
         combine(Ieq, nir.Type.Ptr, ptr, nir.Val.Null),
-        refIsNull
+        combine(Ieq, nir.Rt.Object, ref, nir.Val.Null)
       )
-    }
 
     // Whether two distinct virtual allocations may end up as the same
     // object: boxes of equal values can come from the cache of the boxing
     // method, and strings of equal content from the same literal.
     def mayBeInterned(l: Addr, r: Addr): Boolean =
-      l != r && ((state.deref(l), state.deref(r)) match {
+      l != r && ((l, r) match {
         case (
-              VirtualInstance(BoxKind, lcls, Array(lvalue), _),
-              VirtualInstance(BoxKind, rcls, Array(rvalue), _)
+              VirtualRef(BoxKind, lcls, Array(lvalue)),
+              VirtualRef(BoxKind, rcls, Array(rvalue))
             ) =>
           def differentConstants =
             lvalue.isCanonical && rvalue.isCanonical && lvalue != rvalue
           lcls == rcls && !differentConstants
-        case (
-              VirtualInstance(StringKind, _, _, _),
-              VirtualInstance(StringKind, _, _, _)
-            ) =>
+        case (VirtualRef(StringKind, _, _), VirtualRef(StringKind, _, _)) =>
           true
         case _ =>
           false

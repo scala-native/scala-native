@@ -87,13 +87,19 @@ class MergeBoxesTest extends OptimizerSpec {
       case nir.Inst.Let(_, op @ (_: nir.Op.Box | _: nir.Op.Classalloc), _) => op
     }
 
-  private def check(name: String, expectedBoxes: Int): Unit =
-    Seq(Mode.releaseFast, Mode.releaseFull).foreach { mode =>
+  private def withMethod(name: String, modes: Mode*)(
+      f: (Mode, nir.Defn.Define) => Unit
+  ): Unit =
+    modes.foreach { mode =>
       optimize("Test", sources, _.withMode(mode)) {
         case (_, result) =>
-          val defn = optimizedMethod(result.defns, "Test$", name)
-          assertEquals(s"$mode\n${defn.show}", expectedBoxes, boxes(defn).size)
+          f(mode, optimizedMethod(result.defns, "Test$", name))
       }
+    }
+
+  private def check(name: String, expectedBoxes: Int): Unit =
+    withMethod(name, Mode.releaseFast, Mode.releaseFull) { (mode, defn) =>
+      assertEquals(s"$mode\n${defn.show}", expectedBoxes, boxes(defn).size)
     }
 
   @Test def boxCarriedAroundLoop(): Unit = check("loopAny", 0)
@@ -104,31 +110,23 @@ class MergeBoxesTest extends OptimizerSpec {
   @Test def boxEscapingAfterMerge(): Unit = check("escaping", 1)
 
   @Test def boxComparedWithNull(): Unit =
-    optimize("Test", sources, _.withMode(Mode.releaseFull)) {
-      case (_, result) =>
-        val defn = optimizedMethod(result.defns, "Test$", "boxIsNull")
-        assertEquals(defn.show, Seq(nir.Val.False), returned(defn))
-        assertEquals(defn.show, 0, boxes(defn).size)
+    withMethod("boxIsNull", Mode.releaseFull) { (_, defn) =>
+      assertEquals(defn.show, Seq(nir.Val.False), returned(defn))
+      assertEquals(defn.show, 0, boxes(defn).size)
     }
 
   @Test def aliasesOfMergedBox(): Unit =
-    optimize("Test", sources, _.withMode(Mode.releaseFull)) {
-      case (_, result) =>
-        val defn = optimizedMethod(result.defns, "Test$", "aliased")
-        assertEquals(defn.show, Seq(nir.Val.True), returned(defn))
+    withMethod("aliased", Mode.releaseFull) { (_, defn) =>
+      assertEquals(defn.show, Seq(nir.Val.True), returned(defn))
     }
 
   @Test def identityOfBoxesOfSameValue(): Unit =
-    optimize("Test", sources, _.withMode(Mode.releaseFull)) {
-      case (_, result) =>
-        val defn = optimizedMethod(result.defns, "Test$", "sameValue")
-        assertTrue(defn.show, returned(defn).forall(!_.isCanonical))
+    withMethod("sameValue", Mode.releaseFull) { (_, defn) =>
+      assertTrue(defn.show, returned(defn).forall(!_.isCanonical))
     }
 
   @Test def identityOfBoxesOfDifferentValues(): Unit =
-    optimize("Test", sources, _.withMode(Mode.releaseFull)) {
-      case (_, result) =>
-        val defn = optimizedMethod(result.defns, "Test$", "differentValues")
-        assertEquals(defn.show, Seq(nir.Val.False), returned(defn))
+    withMethod("differentValues", Mode.releaseFull) { (_, defn) =>
+      assertEquals(defn.show, Seq(nir.Val.False), returned(defn))
     }
 }
