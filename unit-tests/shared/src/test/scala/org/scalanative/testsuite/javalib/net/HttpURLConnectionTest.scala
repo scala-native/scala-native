@@ -931,6 +931,67 @@ class HttpURLConnectionTest {
       )
   }
 
+  @Test def chunkedWithoutOutput(): Unit = withServer(r => ok(r.body)) { s =>
+    val c = open(s.base + "/x")
+    c.setDoOutput(true)
+    c.setChunkedStreamingMode(4)
+    assertEquals(200, c.getResponseCode())
+    assertEquals("POST", c.getRequestMethod())
+    assertEquals("POST /x HTTP/1.1", s.last.line)
+    assertEquals("chunked", s.last.header("Transfer-Encoding"))
+    assertEquals("", s.last.body)
+  }
+
+  @Test def streamingOutputSkipsCachedGet(): Unit = withServer(_ => ok("net")) {
+    s =>
+      // JDK 25 and 27 fail with an internal NullPointerException here.
+      assumeFalse("JDK crashes on this cache hit", Platform.executingInJVM)
+      ResponseCache.setDefault(new ResponseCache {
+        def get(
+            uri: URI,
+            m: String,
+            h: Map[String, List[String]]
+        ): CacheResponse = new CacheResponse {
+          def getHeaders(): Map[String, List[String]] = {
+            val m = new HashMap[String, List[String]]()
+            m.put(null, Arrays.asList("HTTP/1.1 200 OK"))
+            m
+          }
+          def getBody(): InputStream =
+            new ByteArrayInputStream("cached".getBytes(ISO_8859_1))
+        }
+        def put(uri: URI, c: URLConnection): CacheRequest = null
+      })
+      try {
+        val c = open(s.base + "/p")
+        c.setDoOutput(true)
+        c.setFixedLengthStreamingMode(0)
+        assertEquals("net", body(c))
+        assertEquals("POST /p HTTP/1.1", s.last.line)
+      } finally ResponseCache.setDefault(null)
+  }
+
+  @Test def failingCacheSinkKeepsResponse(): Unit = withServer(_ => ok("net")) {
+    s =>
+      val seen = new ArrayList[String]()
+      ResponseCache.setDefault(new ResponseCache {
+        def get(
+            uri: URI,
+            m: String,
+            h: Map[String, List[String]]
+        ): CacheResponse = null
+        def put(uri: URI, c: URLConnection): CacheRequest =
+          new CacheRequest {
+            def getBody(): OutputStream = throw new IOException("no sink")
+            def abort(): Unit = seen.add("abort")
+          }
+      })
+      try {
+        assertEquals("net", body(open(s.base + "/s")))
+        assertEquals(Arrays.asList("abort"), seen)
+      } finally ResponseCache.setDefault(null)
+  }
+
   @Test def cachingCommitsFullyReadBody(): Unit = withServer(_ => ok("fresh")) {
     s =>
       val seen = new ArrayList[String]()

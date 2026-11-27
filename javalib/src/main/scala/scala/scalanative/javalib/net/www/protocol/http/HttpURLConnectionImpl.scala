@@ -109,6 +109,7 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
   override def connect(): Unit = if (!connected) {
     checkURL(url)
     requestProps = snapshotRequestProperties()
+    if (doOutput && streaming && method == "GET") method = "POST"
     if (!loadFromCache()) openSocket()
     connected = true
   }
@@ -416,8 +417,7 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
     try {
       connect()
       if (!responseRead) {
-        if (!headSent && doOutput && chunkLength <= 0 && fixedLength >= 0)
-          getOutputStream()
+        if (!headSent && doOutput && streaming) getOutputStream()
         var done = false
         while (!done) {
           if (!headSent)
@@ -735,7 +735,9 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
     if (cache == null || !useCaches || method != "GET" || u == null) return
     val request = cache.put(u, this)
     if (request == null) return
-    val out = request.getBody()
+    val out =
+      try request.getBody()
+      catch { case _: IOException => null }
     if (out == null) request.abort()
     else body = new CachingInputStream(body, request, out)
   }
