@@ -156,6 +156,13 @@ class EnumSetTest {
       classOf[IllegalArgumentException],
       EnumSet.range(Value.D, Value.B)
     )
+    // Endpoints of two enums with equal ordinals, through an erased cast
+    def range[E <: java.lang.Enum[E]](from: E, to: AnyRef) =
+      EnumSet.range(from, to.asInstanceOf[E])
+    assertThrows(
+      classOf[ClassCastException],
+      range(Value.A, EnumSetTest.Other.X)
+    )
   }
 
   @Test def ordinalOrderAndForeignElements(): Unit = {

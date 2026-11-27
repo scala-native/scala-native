@@ -122,10 +122,15 @@ object EnumSet {
   }
 
   def range[E <: Enum[E]](from: E, to: E): EnumSet[E] = {
+    val elementType = from.getDeclaringClass()
+    if (to.getDeclaringClass() ne elementType)
+      throw new ClassCastException(
+        s"${to.getDeclaringClass().getName()} != ${elementType.getName()}"
+      )
     if (from.compareTo(to) > 0)
       throw new IllegalArgumentException(s"$from > $to")
-    val result = emptySetOf(from)
-    val constants = universe(from.getDeclaringClass())
+    val result = noneOf(elementType)
+    val constants = universe(elementType)
     var i = from.ordinal()
     while (i <= to.ordinal()) {
       result.add(constants(i))
