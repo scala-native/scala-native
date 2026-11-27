@@ -879,11 +879,12 @@ class HttpURLConnectionTest {
       Arrays.asList(Proxy.NO_PROXY),
       ProxySelector.of(null).select(URI.create("http://a/"))
     )
-    assertEquals(
-      "URI can't be null",
-      assertThrows(classOf[IllegalArgumentException], sel.select(null))
-        .getMessage()
-    )
+    if (!Platform.executingInJVMOnLowerThanJDK(25)) // NPE before JDK 25
+      assertEquals(
+        "URI can't be null",
+        assertThrows(classOf[IllegalArgumentException], sel.select(null))
+          .getMessage()
+      )
     assertEquals(
       "Arguments can't be null.",
       assertThrows(
