@@ -839,8 +839,14 @@ class HttpURLConnectionTest {
     c.setFixedLengthStreamingMode(3)
     val out = c.getOutputStream()
     out.write("hi".getBytes(ISO_8859_1))
-    assertThrows(classOf[IOException], out.close())
-    assertThrows(classOf[IOException], c.getResponseCode())
+    assertEquals(
+      "insufficient data written",
+      assertThrows(classOf[IOException], out.close()).getMessage()
+    )
+    assertEquals(
+      "Incomplete output stream",
+      assertThrows(classOf[IOException], c.getResponseCode()).getMessage()
+    )
   }
 
   @Test def disconnectAbortsCaching(): Unit = withServer(_ => ok("fresh")) {
@@ -896,6 +902,12 @@ class HttpURLConnectionTest {
         p,
         sel.select(new URL("http://build_host:8080/").toURI()).get(0)
       )
+      System.setProperty("http.nonProxyHosts", "build_host")
+      assertEquals(
+        Arrays.asList(Proxy.NO_PROXY),
+        sel.select(URI.create("http://build%5Fhost/"))
+      )
+      System.clearProperty("http.nonProxyHosts")
       assertEquals(
         Arrays.asList(Proxy.NO_PROXY),
         sel.select(URI.create("http://127.0.0.1/"))

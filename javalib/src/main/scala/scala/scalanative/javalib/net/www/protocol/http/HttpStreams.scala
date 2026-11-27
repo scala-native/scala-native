@@ -302,8 +302,14 @@ private[http] final class FixedLengthOutputStream(
   }
 
   override def close(): Unit = {
+    if (written < length) {
+      val first = !closed
+      closed = true
+      throw new IOException(
+        if (first) "insufficient data written" else "Incomplete output stream"
+      )
+    }
     closed = true
-    if (written < length) throw new IOException("insufficient data written")
     out.flush()
   }
 }

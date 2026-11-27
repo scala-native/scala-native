@@ -166,12 +166,15 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
     if (u == null) return false
     val cached = cache.get(u, method, groupHeaders(requestProps))
     if (cached == null) return false
-    val (cachedHeaders, cachedBody) =
-      try { (cached.getHeaders(), cached.getBody()) }
+    val cachedHeaders =
+      try cached.getHeaders()
       catch { case _: IOException => return false }
     if (cachedHeaders == null) return false
     val status = cachedHeaders.get(null)
     if (status == null || status.isEmpty()) return false
+    val cachedBody =
+      try cached.getBody()
+      catch { case _: IOException => return false }
     val it = cachedHeaders.entrySet().iterator()
     while (it.hasNext()) {
       val e = it.next()

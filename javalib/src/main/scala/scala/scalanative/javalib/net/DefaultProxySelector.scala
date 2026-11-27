@@ -43,7 +43,7 @@ final class DefaultProxySelector extends ProxySelector {
   /** The host, also for registry authorities such as `build_host:80`. */
   private def hostOf(uri: URI): String = {
     val h = uri.getHost()
-    val auth = uri.getRawAuthority()
+    val auth = uri.getAuthority()
     if (h != null || auth == null) h
     else {
       val start = auth.lastIndexOf('@') + 1
