@@ -4,7 +4,7 @@ import java.io.{FileDescriptor, IOException}
 import java.net.ipOps._
 
 import scala.scalanative.libc.string.memcpy
-import scala.scalanative.meta.LinktimeInfo.{isLinux, isWindows}
+import scala.scalanative.meta.LinktimeInfo.{isFreeBSD, isLinux, isWindows}
 import scala.scalanative.posix
 import scala.scalanative.posix.arpa.inet
 import scala.scalanative.posix.errno._
@@ -36,7 +36,8 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
 
   protected[net] var socket: DatagramSocket = _
 
-  private final val useIPv4Only = SocketHelpers.getUseIPv4Stack()
+  private var useIPv4Only = SocketHelpers.getUseIPv4Stack()
+  private var joinedIPv6Group = false
 
   protected[net] var timeout = 0
   protected[net] var connected = false
@@ -139,13 +140,10 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     }
   }
 
-  private lazy val bindFunc =
-    if (useIPv4Only) bind4(_: InetAddress, _: Int)
-    else bind6(_: InetAddress, _: Int)
-
   override def bind(port: Int, laddr: InetAddress): Unit = {
     throwIfClosed("bind")
-    bindFunc(laddr, port)
+    if (useIPv4Only) bind4(laddr, port)
+    else bind6(laddr, port)
   }
 
   private def send4(p: DatagramPacket): Unit = {
@@ -552,19 +550,24 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     val done = group match {
       case _: Inet4Address =>
         mcastJoinLeave4(addr, netIf, join) || (!useIPv4Only && {
+          val v4Errno = if (isFreeBSD) errno else 0
           // macOS & BSDs accept IPv4 groups on IPv6 sockets only v4-mapped
           val mapped = new Array[Byte](16)
           mapped(10) = 0xff.toByte
           mapped(11) = 0xff.toByte
           System.arraycopy(addr, 0, mapped, 12, 4)
-          mcastJoinLeave6(mapped, netIf, join)
+          mcastJoinLeave6(mapped, netIf, join) ||
+            (isFreeBSD && join && v4Errno == EINVAL && switchToIPv4() &&
+            mcastJoinLeave4(addr, netIf, join))
         })
       case _ =>
         if (useIPv4Only)
           throw new SocketException(
             "IPv6 multicast group is not supported on an IPv4 socket"
           )
-        mcastJoinLeave6(addr, netIf, join)
+        val ok = mcastJoinLeave6(addr, netIf, join)
+        if (ok && join) joinedIPv6Group = true
+        ok
     }
 
     if (!done) {
@@ -573,6 +576,82 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
         s"Could not $op multicast group ${group.getHostAddress()}, errno: " +
           lastError()
       )
+    }
+  }
+
+  /* FreeBSD before 16 cannot join IPv4 groups on IPv6 sockets, see ip6(4).
+   * Replace the socket with an IPv4 one using the same address, port, peer
+   * and options, unless it already relies on IPv6.
+   */
+  private def switchToIPv4(): Boolean = {
+    val storage = stackalloc[posix.sys.socket.sockaddr_storage]()
+    val sa = storage.asInstanceOf[Ptr[posix.sys.socket.sockaddr]]
+    val len = stackalloc[posix.sys.socket.socklen_t]()
+    !len = sizeof[posix.sys.socket.sockaddr_storage].toUInt
+    val local =
+      if (posix.sys.socket.getsockname(fd.fd, sa, len) != 0) null
+      else SocketHelpers.sockaddrStorageToInetSocketAddress(sa)
+    val localAddr = local match {
+      case null                                           => null
+      case l if l.getAddress().isInstanceOf[Inet4Address] => l.getAddress()
+      case l if l.getAddress().isAnyLocalAddress()        =>
+        InetAddress.getByAddress(new Array[Byte](4))
+      case _ => null
+    }
+    val canSwitch = localAddr != null && !joinedIPv6Group &&
+      (!connected || connectedAddress.isInstanceOf[Inet4Address])
+    canSwitch && {
+      import posix.sys.socket.{SOL_SOCKET, SO_REUSEADDR, SO_REUSEPORT}
+      import posix.sys.socket.{SO_BROADCAST, SO_RCVBUF, SO_SNDBUF}
+      val intOpts =
+        Array(SO_REUSEADDR, SO_REUSEPORT, SO_BROADCAST, SO_RCVBUF, SO_SNDBUF)
+          .map(o => o -> getIntOption(SOL_SOCKET, o, "SOL_SOCKET"))
+      val tclass = getIntOption(in.IPPROTO_IPV6, ip6.IPV6_TCLASS, "IPV6_TCLASS")
+      val hops =
+        getIntOption(
+          in.IPPROTO_IPV6,
+          ip6.IPV6_MULTICAST_HOPS,
+          "IP_MULTICAST_TTL"
+        )
+      val loop =
+        getIntOption(
+          in.IPPROTO_IPV6,
+          in.IPV6_MULTICAST_LOOP,
+          "IP_MULTICAST_LOOP"
+        )
+      val ifIndex =
+        getIntOption(in.IPPROTO_IPV6, in.IPV6_MULTICAST_IF, "IP_MULTICAST_IF")
+      val fdFlags = posix.fcntl.fcntl(fd.fd, posix.fcntl.F_GETFD, 0)
+      val flFlags = posix.fcntl.fcntl(fd.fd, posix.fcntl.F_GETFL, 0)
+
+      val sock = posix.sys.socket.socket(
+        posix.sys.socket.AF_INET,
+        posix.sys.socket.SOCK_DGRAM,
+        0
+      )
+      sock >= 0 && {
+        val replaced = unistd.dup2(sock, fd.fd) >= 0
+        unistd.close(sock)
+        replaced && {
+          useIPv4Only = true
+          if (fdFlags >= 0)
+            posix.fcntl.fcntl(fd.fd, posix.fcntl.F_SETFD, fdFlags)
+          if (flFlags >= 0)
+            posix.fcntl.fcntl(fd.fd, posix.fcntl.F_SETFL, flFlags)
+          for ((o, v) <- intOpts) setIntOption(SOL_SOCKET, o, v)
+          setIntOption(in.IPPROTO_IP, in.IP_TOS, tclass)
+          setIPv4MulticastOption(ip.IP_MULTICAST_TTL, hops)
+          setIPv4MulticastOption(in.IP_MULTICAST_LOOP, loop)
+          val netIf =
+            if (ifIndex == 0) null else NetworkInterface.getByIndex(ifIndex)
+          if (netIf != null)
+            try setMulticastInterface(netIf)
+            catch { case _: SocketException => () }
+          if (local.getPort() != 0) bind4(localAddr, local.getPort())
+          if (connected) connect4(connectedAddress, connectedPort)
+          true
+        }
+      }
     }
   }
 
@@ -617,7 +696,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
   // for example IP_TOS and TCP_NODELAY have the same value on my machine
   private def nativeValueFromOption(option: Int) = option match {
     case SocketOptions.IP_TOS =>
-      SocketHelpers.getTrafficClassSocketOption()
+      if (useIPv4Only) in.IP_TOS else ip6.IPV6_TCLASS
     case SocketOptions.SO_TIMEOUT   => posix.sys.socket.SO_RCVTIMEO
     case SocketOptions.SO_RCVBUF    => posix.sys.socket.SO_RCVBUF
     case SocketOptions.SO_SNDBUF    => posix.sys.socket.SO_SNDBUF
@@ -648,8 +727,9 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     }
 
     val level = optID match {
-      case SocketOptions.IP_TOS => SocketHelpers.getIPPROTO()
-      case _                    => posix.sys.socket.SOL_SOCKET
+      case SocketOptions.IP_TOS =>
+        if (useIPv4Only) in.IPPROTO_IP else in.IPPROTO_IPV6
+      case _ => posix.sys.socket.SOL_SOCKET
     }
 
     val optValue = nativeValueFromOption(optID)
@@ -700,8 +780,9 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     }
 
     val level = optID match {
-      case SocketOptions.IP_TOS => SocketHelpers.getIPPROTO()
-      case _                    => posix.sys.socket.SOL_SOCKET
+      case SocketOptions.IP_TOS =>
+        if (useIPv4Only) in.IPPROTO_IP else in.IPPROTO_IPV6
+      case _ => posix.sys.socket.SOL_SOCKET
     }
     val optValue = nativeValueFromOption(optID)
 

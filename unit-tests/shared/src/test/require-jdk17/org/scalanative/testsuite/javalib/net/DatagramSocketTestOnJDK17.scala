@@ -49,12 +49,6 @@ class DatagramSocketTestOnJDK17 {
       Platform.executingInJVM && (Platform.isFreeBSD || Platform.isNetBSD) &&
         g.getAddress().isInstanceOf[Inet4Address]
     )
-    // TODO: native IPv4 joins fail with EINVAL on FreeBSD
-    assumeFalse(
-      "IPv4 joins fail on FreeBSD",
-      Platform.executingInScalaNative && Platform.isFreeBSD &&
-        g.getAddress().isInstanceOf[Inet4Address]
-    )
     // TODO: repeated join and leave do not fail on NetBSD
     val checkRepeated = !(Platform.executingInScalaNative && Platform.isNetBSD)
     ds.joinGroup(g, netIf)

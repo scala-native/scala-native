@@ -27,13 +27,6 @@ class MulticastSocketTest {
       Platform.executingInJVM && (Platform.isFreeBSD || Platform.isNetBSD)
     )
 
-  // TODO: native IPv4 joins fail with EINVAL on FreeBSD
-  private def assumeNativeIPv4Join(): Unit =
-    assumeFalse(
-      "IPv4 joins fail on FreeBSD",
-      Platform.executingInScalaNative && Platform.isFreeBSD
-    )
-
   @Test def constructors(): Unit = {
     withSocket(new MulticastSocket()) { ms =>
       assertTrue(ms.isBound())
@@ -110,7 +103,6 @@ class MulticastSocketTest {
 
   @Test def joinLeaveDefaultInterface(): Unit = {
     assumeCanJoinIPv4Group()
-    assumeNativeIPv4Join()
     MulticastInterface.assumeReadable()
     withSocket(new MulticastSocket(0)) { ms =>
       val group = InetAddress.getByName("239.255.53.64")
@@ -125,7 +117,6 @@ class MulticastSocketTest {
       Platform.isWindows
     )
     assumeCanJoinIPv4Group()
-    assumeNativeIPv4Join()
     MulticastInterface.assumeReadable()
     val candidates = NetworkInterface
       .getNetworkInterfaces()
