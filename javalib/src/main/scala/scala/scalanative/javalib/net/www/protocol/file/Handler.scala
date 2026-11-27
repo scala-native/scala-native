@@ -29,8 +29,7 @@ final class Handler extends URLStreamHandler {
 
   @throws[IOException]
   override def openConnection(u: URL): URLConnection = {
-    val host = u.getHost()
-    if (host != null && host.nonEmpty && !host.equalsIgnoreCase("localhost"))
+    if (!FileURLConnection.isLocal(u))
       throw new MalformedURLException("Unsupported non-local file URL")
     new FileURLConnection(u)
   }

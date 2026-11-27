@@ -22,16 +22,15 @@ package scala.scalanative.javalib.net.www.protocol.jar
 
 import java.io.IOException
 import java.net.{
-  MalformedURLException, Proxy, URL, URLConnection, URLStreamHandler,
-  UnknownServiceException
+  MalformedURLException, Proxy, URL, URLConnection, URLStreamHandler
 }
 
-/** Parses `jar:<url>!/<entry>` URLs; connections are not supported. */
+/** Handles `jar:<url>!/<entry>` URLs. */
 final class Handler extends URLStreamHandler {
 
   @throws[IOException]
   override def openConnection(u: URL): URLConnection =
-    throw new UnknownServiceException("protocol not supported: jar")
+    new JarURLConnectionImpl(u)
 
   @throws[IOException]
   override def openConnection(u: URL, p: Proxy): URLConnection =
