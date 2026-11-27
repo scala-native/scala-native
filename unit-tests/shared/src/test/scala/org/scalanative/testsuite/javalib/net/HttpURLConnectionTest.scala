@@ -485,10 +485,13 @@ class HttpURLConnectionTest {
     val c = open(s.base + "/away")
     c.setRequestProperty("Authorization", "Bearer secret")
     c.setRequestProperty("X-C", "1")
+    c.setRequestProperty("Cookie", "a=1")
     assertEquals(200, c.getResponseCode())
     assertEquals("localhost", c.getURL().getHost())
     assertEquals("Bearer secret", s.requests.get(0).header("Authorization"))
+    assertEquals("a=1", s.requests.get(0).header("Cookie"))
     assertNull(s.last.header("Authorization"))
+    assertNull(s.last.header("Cookie"))
     assertEquals("1", s.last.header("X-C"))
   }
 
@@ -814,9 +817,66 @@ class HttpURLConnectionTest {
     assertThrows(classOf[IOException], in.read())
   }
 
+  @Test def truncatedResponses(): Unit = withServer { r =>
+    if (r.line.contains("/headers")) "HTTP/1.1 200 OK\r\nX-A: 1\r\n"
+    else if (r.line.contains("/trailer"))
+      "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n3\r\nabc\r\n0\r\n"
+    else
+      "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked, gzip\r\n\r\n3\r\nabc"
+  } { s =>
+    val headers = open(s.base + "/headers")
+    assertEquals(200, headers.getResponseCode())
+    assertEquals("1", headers.getHeaderField("X-A"))
+    assertEquals("", body(headers))
+    val in = open(s.base + "/trailer").getInputStream()
+    assertThrows(classOf[IOException], body(in))
+    assertEquals("3\r\nabc", body(open(s.base + "/coded")))
+  }
+
+  @Test def failedFixedLengthClose(): Unit = withServer(r => ok(r.body)) { s =>
+    val c = open(s.base + "/x")
+    c.setDoOutput(true)
+    c.setFixedLengthStreamingMode(3)
+    val out = c.getOutputStream()
+    out.write("hi".getBytes(ISO_8859_1))
+    assertThrows(classOf[IOException], out.close())
+    assertThrows(classOf[IOException], c.getResponseCode())
+  }
+
+  @Test def disconnectAbortsCaching(): Unit = withServer(_ => ok("fresh")) {
+    s =>
+      val seen = new ArrayList[String]()
+      ResponseCache.setDefault(new ResponseCache {
+        def get(
+            uri: URI,
+            m: String,
+            h: Map[String, List[String]]
+        ): CacheResponse = null
+        def put(uri: URI, c: URLConnection): CacheRequest =
+          new CacheRequest {
+            def getBody(): OutputStream = new ByteArrayOutputStream()
+            def abort(): Unit = seen.add("abort")
+          }
+      })
+      try {
+        val c = open(s.base + "/d")
+        assertEquals('f'.toInt, c.getInputStream().read())
+        c.disconnect()
+        assertEquals(Arrays.asList("abort"), seen)
+      } finally ResponseCache.setDefault(null)
+  }
+
   @Test def defaultProxySelector(): Unit = {
     val sel = ProxySelector.getDefault()
-    val props = Array("http.proxyHost", "http.proxyPort", "http.nonProxyHosts")
+    val props = Array(
+      "http.proxyHost",
+      "http.proxyPort",
+      "http.nonProxyHosts",
+      "https.proxyHost",
+      "https.proxyPort",
+      "socksProxyHost",
+      "proxyHost"
+    )
     val saved = props.map(System.getProperty(_))
     try {
       props.foreach(System.clearProperty(_))
@@ -832,6 +892,10 @@ class HttpURLConnectionTest {
       assertTrue(a.isUnresolved())
       assertEquals("proxy.test", a.getHostString())
       assertEquals(3128, a.getPort())
+      assertEquals(
+        p,
+        sel.select(new URL("http://build_host:8080/").toURI()).get(0)
+      )
       assertEquals(
         Arrays.asList(Proxy.NO_PROXY),
         sel.select(URI.create("http://127.0.0.1/"))
@@ -879,19 +943,21 @@ class HttpURLConnectionTest {
       Arrays.asList(Proxy.NO_PROXY),
       ProxySelector.of(null).select(URI.create("http://a/"))
     )
-    if (!Platform.executingInJVMOnLowerThanJDK(25)) // NPE before JDK 25
+    // Older JDKs throw NPE, or nothing, for null arguments.
+    if (!Platform.executingInJVMOnLowerThanJDK(25)) {
       assertEquals(
         "URI can't be null",
         assertThrows(classOf[IllegalArgumentException], sel.select(null))
           .getMessage()
       )
-    assertEquals(
-      "Arguments can't be null.",
-      assertThrows(
-        classOf[IllegalArgumentException],
-        sel.connectFailed(null, null, null)
-      ).getMessage()
-    )
+      assertEquals(
+        "Arguments can't be null.",
+        assertThrows(
+          classOf[IllegalArgumentException],
+          sel.connectFailed(null, null, null)
+        ).getMessage()
+      )
+    }
   }
 
   @Test def httpsIsParseOnly(): Unit = {
@@ -926,6 +992,26 @@ class HttpURLConnectionTest {
       )
     )
     val auth = new RecordingAuthenticator
+    Authenticator.setDefault(auth)
+    try
+      assertEquals(
+        "user",
+        Authenticator
+          .requestPasswordAuthentication(
+            null: Authenticator,
+            "h",
+            null,
+            1,
+            "http",
+            "p",
+            "basic",
+            null,
+            Authenticator.RequestorType.SERVER
+          )
+          .getUserName()
+      )
+    finally Authenticator.setDefault(null)
+    auth.calls.clear()
     assertEquals(
       "user",
       Authenticator

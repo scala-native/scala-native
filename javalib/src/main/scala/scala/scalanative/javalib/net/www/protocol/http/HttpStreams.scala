@@ -37,12 +37,11 @@ private[http] object HttpStreams {
     val sb = new java.lang.StringBuilder()
     var c = in.read()
     if (c == -1) return null
+    var n = 0
     while (c != -1 && c != '\n') {
-      if (c != '\r') {
-        if (sb.length() >= MaxLineLength)
-          throw new IOException("HTTP header line too long")
-        sb.append(c.toChar)
-      }
+      n += 1
+      if (n > MaxLineLength) throw new IOException("HTTP header line too long")
+      if (c != '\r') sb.append(c.toChar)
       c = in.read()
     }
     sb.toString
@@ -159,8 +158,10 @@ private[http] final class ChunkedInputStream(in: InputStream, onEnd: () => Unit)
         throw new IOException("Bogus chunk size")
       if (remaining == 0) {
         var trailer = HttpStreams.readLine(in)
-        while (trailer != null && !trailer.isEmpty)
+        while (trailer == null || !trailer.isEmpty) {
+          if (trailer == null) throw new IOException("Premature EOF")
           trailer = HttpStreams.readLine(in)
+        }
         done = true
         onEnd()
       }
@@ -240,6 +241,8 @@ private[http] final class CachingInputStream(
 ) extends FilterInputStream(in) {
   private var finished = false
 
+  def abort(): Unit = finish(false)
+
   private def finish(complete: Boolean): Unit = if (!finished) {
     finished = true
     if (complete)
@@ -298,10 +301,10 @@ private[http] final class FixedLengthOutputStream(
     written += len
   }
 
-  override def close(): Unit = if (!closed) {
+  override def close(): Unit = {
     closed = true
-    out.flush()
     if (written < length) throw new IOException("insufficient data written")
+    out.flush()
   }
 }
 

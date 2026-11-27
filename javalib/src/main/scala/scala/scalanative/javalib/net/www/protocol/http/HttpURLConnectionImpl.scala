@@ -73,7 +73,7 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
   private var proxyAuthorization: String = null
   private var proxyAuthorizationFor: Proxy = null
   private var triedAuth = false
-  private var triedProxyAuth = false
+  private var triedProxyAuthFor: Proxy = null
   private var redirects = 0
 
   override def setAuthenticator(auth: Authenticator): Unit = {
@@ -108,7 +108,7 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
   @throws[IOException]
   override def connect(): Unit = if (!connected) {
     checkURL(url)
-    if (requestProps == null) requestProps = snapshotRequestProperties()
+    requestProps = snapshotRequestProperties()
     if (!loadFromCache()) openSocket()
     connected = true
   }
@@ -166,7 +166,9 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
     if (u == null) return false
     val cached = cache.get(u, method, groupHeaders(requestProps))
     if (cached == null) return false
-    val cachedHeaders = cached.getHeaders()
+    val (cachedHeaders, cachedBody) =
+      try { (cached.getHeaders(), cached.getBody()) }
+      catch { case _: IOException => return false }
     if (cachedHeaders == null) return false
     val status = cachedHeaders.get(null)
     if (status == null || status.isEmpty()) return false
@@ -180,7 +182,7 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
     }
     statusLine = status.get(status.size() - 1)
     parseStatus()
-    body = cached.getBody()
+    body = cachedBody
     if (body == null) body = new ByteArrayInputStream(new Array[Byte](0))
     responseRead = true
     true
@@ -254,7 +256,17 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
     }
   }
 
-  override def disconnect(): Unit = closeSocket()
+  override def disconnect(): Unit = {
+    val hadSocket = socket != null
+    closeSocket()
+    body match {
+      case c: CachingInputStream        => c.abort()
+      case b if b != null && !hadSocket =>
+        try b.close()
+        catch { case _: IOException => () }
+      case _ => ()
+    }
+  }
 
   override def usingProxy(): Boolean = {
     val p = if (requestedProxy != null) requestedProxy else proxy
@@ -457,7 +469,9 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
       triedAuth = false
       var i = requestProps.size() - 1
       while (i >= 0) {
-        if (requestProps.get(i)(0).equalsIgnoreCase("Authorization"))
+        val k = requestProps.get(i)(0)
+        if (k.equalsIgnoreCase("Authorization") ||
+            k.equalsIgnoreCase("Cookie") || k.equalsIgnoreCase("Cookie2"))
           requestProps.remove(i)
         i -= 1
       }
@@ -470,7 +484,7 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
   @throws[IOException]
   private def retryWithAuthentication(): Boolean = {
     val forProxy = responseCode == 407 && usingProxy()
-    if (!(responseCode == 401 && !triedAuth || forProxy && !triedProxyAuth))
+    if (!(responseCode == 401 && !triedAuth || forProxy && triedProxyAuthFor != proxy))
       return false
     val challenge =
       basicChallenge(if (forProxy) "Proxy-Authenticate" else "WWW-Authenticate")
@@ -483,7 +497,7 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
       )
       return false
     }
-    if (forProxy) triedProxyAuth = true else triedAuth = true
+    if (forProxy) triedProxyAuthFor = proxy else triedAuth = true
     val auth =
       if (authenticator != null) authenticator else Authenticator.getDefault()
     if (auth == null) return false
@@ -655,8 +669,9 @@ final class HttpURLConnectionImpl(u: URL, requestedProxy: Proxy)
     }
     val onEnd = () => closeSocket()
     val te = getHeaderField("Transfer-Encoding")
-    val chunked = te != null && te.toLowerCase().contains("chunked")
-    val length = getHeaderFieldLong("Content-Length", -1L)
+    val chunked = te != null && te.trim().equalsIgnoreCase("chunked")
+    val length =
+      if (te != null) -1L else getHeaderFieldLong("Content-Length", -1L)
     bodyEmpty = method == "HEAD" || responseCode == 204 ||
       responseCode == 304 || responseCode >= 100 && responseCode < 200 ||
       !chunked && length == 0

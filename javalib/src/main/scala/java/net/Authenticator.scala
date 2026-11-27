@@ -164,7 +164,7 @@ object Authenticator {
       reqType
     )
 
-  /** Asks `authenticator`, or returns `null` if it is `null`. */
+  /** Asks `authenticator`, or the default one if it is `null`. */
   def requestPasswordAuthentication(
       authenticator: Authenticator,
       host: String,
@@ -175,10 +175,11 @@ object Authenticator {
       scheme: String,
       url: URL,
       reqType: RequestorType
-  ): PasswordAuthentication =
-    if (authenticator == null) null
+  ): PasswordAuthentication = {
+    val a = if (authenticator != null) authenticator else theAuthenticator
+    if (a == null) null
     else
-      authenticator.requestPasswordAuthenticationInstance(
+      a.requestPasswordAuthenticationInstance(
         host,
         addr,
         port,
@@ -188,4 +189,5 @@ object Authenticator {
         url,
         reqType
       )
+  }
 }
