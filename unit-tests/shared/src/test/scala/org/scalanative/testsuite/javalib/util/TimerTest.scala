@@ -194,6 +194,12 @@ class TimerTest {
     t.schedule(
       task {
         thread(0) = Thread.currentThread()
+        // Printing the trace can outlast the join below under emulation
+        thread(0).setUncaughtExceptionHandler(
+          new Thread.UncaughtExceptionHandler {
+            def uncaughtException(t: Thread, e: Throwable): Unit = ()
+          }
+        )
         ran.countDown()
         throw new RuntimeException("expected by TimerTest")
       },
