@@ -83,6 +83,19 @@ class DatagramSocketTestOnJDK17 {
     finally ds.close()
   }
 
+  @Test def joinDistinctIPv6GroupsWithEqualHashes(): Unit = {
+    val netIf = multicastInterface(_.isInstanceOf[Inet6Address])
+    val ds = new DatagramSocket(0)
+    try {
+      val g1 = group("ff02::1f")
+      val g2 = group("ff02::100")
+      ds.joinGroup(g1, netIf)
+      ds.joinGroup(g2, netIf)
+      ds.leaveGroup(g1, netIf)
+      ds.leaveGroup(g2, netIf)
+    } finally ds.close()
+  }
+
   @Test def joinNonMulticastAddressThrows(): Unit = {
     val ds = new DatagramSocket(0)
     try
