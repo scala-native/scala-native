@@ -85,13 +85,25 @@ object FileChannelInterruptTest {
       else s"returned $result; interrupted=$interrupted"
   }
 
-  /* Runs op on a thread, lets it block, then runs action. If op is still
-   * blocked after a bounded wait, unblock frees it: no test can hang.
-   */
+  // blockedUntil, where unblock starts a helper process that is then killed.
   def blocked(
       op: => Any,
       action: Thread => Unit,
       unblock: () => Process,
+      startThread: Runnable => Thread = daemon(_)
+  ): Outcome = {
+    var helper: Process = null
+    try blockedUntil(op, action, () => helper = unblock(), startThread)
+    finally if (helper != null) helper.destroyForcibly()
+  }
+
+  /* Runs op on a thread, lets it block, then runs action. If op is still
+   * blocked after a bounded wait, unblock frees it: no test can hang.
+   */
+  def blockedUntil(
+      op: => Any,
+      action: Thread => Unit,
+      unblock: () => Unit,
       startThread: Runnable => Thread = daemon(_)
   ): Outcome = {
     val out = new Outcome
@@ -114,11 +126,9 @@ object FileChannelInterruptTest {
     t.join(JoinMillis)
     out.woken = out.finished
     if (t.isAlive() || actor.isAlive()) {
-      val helper = unblock()
-      try {
-        t.join(JoinMillis)
-        actor.join(JoinMillis)
-      } finally helper.destroyForcibly()
+      unblock()
+      t.join(JoinMillis)
+      actor.join(JoinMillis)
     }
     out
   }

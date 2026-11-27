@@ -9,7 +9,7 @@ import java.nio.file.{
 import java.nio.{ByteBuffer, MappedByteBuffer, MappedByteBufferImpl}
 import java.util.Objects
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.locks.ReentrantLock
+import java.util.concurrent.locks.{LockSupport, ReentrantLock}
 
 import scala.scalanative.libc.errno.errno
 import scala.scalanative.libc.{LibcExt, stdio}
@@ -19,7 +19,6 @@ import scala.scalanative.posix.errno.{
   EACCES, EAGAIN, EEXIST, EINTR, ELOOP, ENOENT, EPERM, EWOULDBLOCK
 }
 import scala.scalanative.posix.fcntl._
-import scala.scalanative.posix.fcntlOps._
 import scala.scalanative.posix.poll._
 import scala.scalanative.posix.pollOps._
 import scala.scalanative.posix.stdlib.realpath
@@ -31,6 +30,7 @@ import scala.scalanative.unsigned._
 import scala.scalanative.windows
 import scala.scalanative.windows.FileApi._
 import scala.scalanative.windows.FileApiExt._
+import scala.scalanative.windows.FileApiOps.ByHandleFileInformationOps
 import scala.scalanative.windows.MinWinBaseApi._
 import scala.scalanative.windows.MinWinBaseApiOps._
 import scala.scalanative.windows._
@@ -187,71 +187,184 @@ private[java] final class FileChannelImpl(
       if (res != 0) throw UnixException(getFileName(), errno)
     }
 
-  @inline private def assertIfCanLock(): Unit =
-    ensureOpenForWrite()
+  // File locks: see FileLockTable and FileLockImpl.
+
+  // File identity for FileLockTable; computed with a lease held.
+  @volatile private var lockKey: FileLockTable.Key = null
 
   override def tryLock(
       position: Long,
       size: Long,
       shared: Boolean
   ): FileLock = {
-    assertIfCanLock()
-    if (isWindows) {
-      val flag = if (shared) 0.toUInt else LOCKFILE_EXCLUSIVE_LOCK
-      lockWindows(position, size, flag)
-    } else lockUnix(position, size, shared, F_SETLK)
+    // No begin(): tryLock ignores the interrupt status.
+    val lock = newLock(position, size, shared, waiter = null)
+    try if (attemptLock(lock)) lock else null
+    finally FileLockTable.cancel(lock) // no-op once granted
   }
 
   override def lock(position: Long, size: Long, shared: Boolean): FileLock = {
-    assertIfCanLock()
-    if (isWindows) {
-      val flag: DWord = if (shared) 0.toUInt else LOCKFILE_EXCLUSIVE_LOCK
-      lockWindows(position, size, LOCKFILE_FAIL_IMMEDIATELY | flag)
-    } else lockUnix(position, size, shared, F_SETLKW)
+    val lock = newLock(position, size, shared, Thread.currentThread())
+    try awaitLock(lock)
+    finally FileLockTable.cancel(lock) // no-op once granted
+    lock
   }
 
-  @inline private def lockUnix(
+  /* Retries a non-blocking attempt with capped backoff: no carrier thread
+   * blocks in the OS, and no lease is held while parked. close() and an
+   * interrupt (which closes the channel) unpark the waiter. Unlike a
+   * blocking OS wait, this never reports a deadlock with another process:
+   * only an interrupt or close() ends such a wait.
+   */
+  private def awaitLock(lock: FileLockImpl): Unit =
+    try
+      interruptibly {
+        var delay = LockMinDelayNanos
+        while (!attemptLock(lock)) {
+          LockSupport.parkNanos(this, delay)
+          delay = Math.min(delay * 2, LockMaxDelayNanos)
+        }
+      }
+    catch {
+      case _: ClosedByInterruptException =>
+        throw new FileLockInterruptionException()
+    }
+
+  // Checks, then registers a pending lock; throws on overlap.
+  private def newLock(
       position: Long,
       size: Long,
       shared: Boolean,
-      command: CInt
-  ): FileLock = {
-    val fl = stackalloc[flock]()
-    fl.l_start = position.toSize
-    fl.l_len = size.toSize
-    fl.l_pid = 0
-    fl.l_type = F_WRLCK
-    fl.l_whence = stdio.SEEK_SET
-    if (fcntl(fd.fd, command, fl) == -1) {
-      throw new IOException("Could not lock file")
-    }
-    new FileLockImpl(this, position, size, shared, fd)
+      waiter: Thread
+  ): FileLockImpl = {
+    if (shared) ensureOpenForRead() else ensureOpenForWrite()
+    if (position < 0) throw new IllegalArgumentException("Negative position")
+    if (size < 0) throw new IllegalArgumentException("Negative size")
+    if (position + size < 0)
+      throw new IllegalArgumentException("Negative position + size")
+    // Like JDK 25, size 0 means to the end of any file.
+    val length = if (size == 0) Long.MaxValue - position else size
+    val lock =
+      new FileLockImpl(this, position, length, shared, fileKey(), waiter)
+    FileLockTable.add(lock)
+    lock
   }
 
-  @inline private def lockWindows(
-      position: Long,
-      size: Long,
-      flags: DWord
-  ): FileLock = {
+  private def fileKey(): FileLockTable.Key = {
+    if (lockKey == null) lockKey = leased(intr = true)(computeFileKey())
+    lockKey
+  }
 
-    val dummy = stackalloc[DUMMYSTRUCTNAME]()
-    dummy.Offset = position.toInt.toUInt
-    dummy.OffsetHigh = (position >> 32).toInt.toUInt
+  private def computeFileKey(): FileLockTable.Key =
+    if (isWindows) {
+      val info = stackalloc[ByHandleFileInformation]()
+      if (!GetFileInformationByHandle(fd.handle, info))
+        throw WindowsException.onPath(getFileName())
+      FileLockTable.Key(
+        info.volumeSerialNumber.toLong,
+        info.fileIndex.toLong
+      )
+    } else
+      Zone.acquire { implicit z =>
+        val st = alloc[stat.stat]()
+        if (stat.fstat(fd.fd, st) != 0)
+          throw UnixException(getFileName(), errno)
+        FileLockTable.Key(st.st_dev.toLong, st.st_ino.toLong)
+      }
+
+  /* One non-blocking OS attempt. True once granted; a lock that close()
+   * cancelled meanwhile is unlocked again.
+   */
+  private def attemptLock(lock: FileLockImpl): Boolean = {
+    if (!FileLockTable.beginAttempt(lock)) throw new ClosedChannelException()
+    leased(intr = true) {
+      val granted = osLock(lock, unlock = false)
+      if (!FileLockTable.endAttempt(lock, granted)) {
+        osLock(lock, unlock = true)
+        throw new AsynchronousCloseException()
+      }
+      granted
+    }
+  }
+
+  // From FileLockImpl.release(), after FileLockTable.startRelease.
+  private[channels] def unlock(lock: FileLockImpl): Unit = {
+    var unlocked = false
+    try {
+      leased(intr = true)(osLock(lock, unlock = true))
+      unlocked = true
+    } finally FileLockTable.endRelease(lock, unlocked)
+  }
+
+  // False if another process holds a conflicting lock.
+  private def osLock(lock: FileLockImpl, unlock: Boolean): Boolean =
+    if (isWindows) windowsLock(lock, unlock)
+    else unixLock(lock, unlock)
+
+  /* POSIX record locks, like the JDK: they belong to the process, so closing
+   * any fd of the file drops them while isValid() stays true. That includes
+   * an fd whose close() returned while a lease still defers the OS close.
+   * Linux OFD locks would avoid that, but would differ from the JDK.
+   */
+  private def unixLock(lock: FileLockImpl, unlock: Boolean): Boolean = {
+    val mode =
+      if (unlock) LockUnlock
+      else if (lock.isShared()) LockShared
+      else LockExclusive
+    // Size 0 only at Long.MaxValue, where l_len 0 adds nothing.
+    val err = FileChannelNative.lock(fd.fd, mode, lock.position, lock.size)
+    if (err == 0) true
+    else if (!unlock && (err == EAGAIN || err == EACCES)) false
+    else throw UnixException(getFileName(), err)
+  }
+
+  private def windowsLock(lock: FileLockImpl, unlock: Boolean): Boolean = {
+    val pos = lock.position
+    val size = lock.size
     val overlapped = stackalloc[OVERLAPPED]()
     overlapped.Internal = 0.toULong
     overlapped.InternalHigh = 0.toULong
-    overlapped.DUMMYSTRUCTNAME = !dummy
-    overlapped.hEvent = fd.handle
-
-    if (!LockFileEx(
+    overlapped.at3.Offset = low(pos)
+    overlapped.at3.OffsetHigh = high(pos)
+    overlapped.hEvent = null
+    val ok =
+      if (unlock)
+        UnlockFileEx(fd.handle, 0.toUInt, low(size), high(size), overlapped)
+      else {
+        // lock() retries, so never wait in the OS.
+        var flags = LOCKFILE_FAIL_IMMEDIATELY
+        if (!lock.isShared()) flags |= LOCKFILE_EXCLUSIVE_LOCK
+        LockFileEx(
           fd.handle,
           flags,
           0.toUInt,
-          size.toInt.toUInt,
-          (size >> 32).toInt.toUInt,
+          low(size),
+          high(size),
           overlapped
-        )) throw new IOException("Could not lock file")
-    new FileLockImpl(this, position, size, true, fd)
+        )
+      }
+    ok || {
+      val err = ErrorHandlingApi.GetLastError()
+      if (!unlock && err == ErrorCodes.ERROR_LOCK_VIOLATION) false
+      else throw WindowsException.onPathWithLastEror(getFileName(), err)
+    }
+  }
+
+  // Called by close(), before the fd closes.
+  private def releaseLocks(): Unit = {
+    val key = lockKey
+    if (key != null) {
+      val locks = FileLockTable.closeChannel(key, this)
+      var i = 0
+      while (i < locks.size()) {
+        val lock = locks.get(i)
+        if (lock.state == FileLockImpl.Releasing)
+          try unlock(lock)
+          catch { case _: IOException => () }
+        else if (lock.waiter != null) LockSupport.unpark(lock.waiter)
+        i += 1
+      }
+    }
   }
 
   // See SharedHandle.close.
@@ -260,6 +373,7 @@ private[java] final class FileChannelImpl(
       if (deleteFileOnClose && file.isDefined)
         () => Files.delete(file.get.toPath())
       else null
+    releaseLocks()
     shared.close(delete)
   }
 
@@ -1191,6 +1305,18 @@ private[java] final class FileChannelImpl(
 
 private[java] object FileChannelImpl {
   private final val Retry = -2L
+
+  // Backoff of a lock() waiting for another process.
+  private final val LockMinDelayNanos = 1000L * 1000
+  private final val LockMaxDelayNanos = 50L * 1000 * 1000
+
+  // Modes of FileChannelNative.lock.
+  private final val LockUnlock = 0
+  private final val LockShared = 1
+  private final val LockExclusive = 2
+
+  @inline private def low(v: Long): DWord = (v & 0xffffffffL).toInt.toUInt
+  @inline private def high(v: Long): DWord = (v >>> 32).toInt.toUInt
 
   private final val KindUnknown = 0
   // Regular or disk file: I/O finishes on its own, no waking needed.
