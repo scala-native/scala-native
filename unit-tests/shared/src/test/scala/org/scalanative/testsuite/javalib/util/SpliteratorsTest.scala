@@ -346,7 +346,7 @@ class SpliteratorsTest {
 
     val expectedSize = expectedElements.size
 
-    val coll = TrivialImmutableCollection(expectedElements: _*)
+    val coll = TrivialImmutableCollection(expectedElements.toSeq: _*)
     assertEquals(expectedSize, coll.size())
 
     // Example values used at the time of this writing by ArrayBlockingQueue
@@ -616,7 +616,7 @@ class SpliteratorsTest {
     val sliceEndIndex = 4
     val expectedSliceSize = sliceEndIndex - sliceStartIndex
 
-    val coll = TrivialImmutableCollection(expectedElements: _*)
+    val coll = TrivialImmutableCollection(expectedElements.toSeq: _*)
     assertEquals(expectedElements.size, coll.size())
 
     // Let compiler check type returned is expected.
@@ -687,7 +687,7 @@ class SpliteratorsTest {
 
     val expectedSize = expectedElements.size
 
-    val coll = TrivialImmutableCollection(expectedElements: _*)
+    val coll = TrivialImmutableCollection(expectedElements.toSeq: _*)
     assertEquals(expectedSize, coll.size())
 
     /* Test only the "astonishing" case, estimatedSize always return the
@@ -1251,7 +1251,7 @@ class SpliteratorsTest {
       "sloth"
     )
 
-    val coll = TrivialImmutableCollection(expectedElements: _*)
+    val coll = TrivialImmutableCollection(expectedElements.toSeq: _*)
     assertEquals(expectedElements.size, coll.size())
 
     val requiredPresent = Seq.empty[Int]

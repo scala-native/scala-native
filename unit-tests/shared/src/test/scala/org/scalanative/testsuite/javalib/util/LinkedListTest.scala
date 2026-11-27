@@ -205,7 +205,7 @@ class LinkedListTest extends AbstractListTest {
     val expectedSize = expectedElements.size
 
     val coll =
-      factory.fromElements[String](expectedElements: _*)
+      factory.fromElements[String](expectedElements.toSeq: _*)
 
     assertEquals(expectedSize, coll.size())
 

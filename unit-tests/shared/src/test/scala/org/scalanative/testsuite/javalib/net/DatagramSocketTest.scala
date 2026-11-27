@@ -8,8 +8,6 @@ import java.net.{
 }
 import java.{util => ju}
 
-import scala.collection.JavaConverters._
-
 import org.junit.Assert._
 import org.junit.Assume._
 import org.junit.Test
@@ -18,6 +16,7 @@ import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
 
 import scala.scalanative.junit.utils.AssumesHelper._
+import scala.scalanative.junit.utils.CollectionConverters._
 
 class DatagramSocketTest {
 
@@ -452,9 +451,9 @@ class DatagramSocketTest {
     // we need to find a network interface with broadcast support for this test
     NetworkInterface
       .getNetworkInterfaces()
-      .asScala
+      .toScalaSeq
       .filter(_.isUp())
-      .flatMap(_.getInterfaceAddresses().asScala)
+      .flatMap(_.getInterfaceAddresses().toScalaSeq)
       .find(_.getBroadcast() != null)
       .foreach { ifBroadcastAddr =>
         val address = ifBroadcastAddr.getAddress()

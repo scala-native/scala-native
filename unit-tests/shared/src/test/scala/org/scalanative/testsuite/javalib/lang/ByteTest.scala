@@ -15,7 +15,7 @@ class ByteTest {
 
   @Test def parseByteOutOfRange(): Unit = {
     assertEquals(127.toByte, Byte.parseByte("127"))
-    assertEquals(-128.toByte, Byte.parseByte("-80", 16))
+    assertEquals((-128).toByte, Byte.parseByte("-80", 16))
 
     assertNFE("""Value out of range. Value:"128" Radix:10""")(
       Byte.parseByte("128")
@@ -35,7 +35,7 @@ class ByteTest {
   }
 
   @Test def decodeOutOfRange(): Unit = {
-    assertEquals(-128.toByte, Byte.decode("-0x80").byteValue())
+    assertEquals((-128).toByte, Byte.decode("-0x80").byteValue())
 
     assertNFE("Value 128 out of range from input 128")(Byte.decode("128"))
     assertNFE("Value 128 out of range from input 0x80")(Byte.decode("0x80"))

@@ -40,8 +40,8 @@ sealed abstract class BufferFactory {
     buf
   }
 
-  def elemRange(start: Int, end: Int): Array[ElementType] =
-    (start until end).map(elemFromInt).toArray
+  def elemRange(start: Int, end: Int): Seq[ElementType] =
+    (start until end).map(elemFromInt)
 
   def withContent(capacity: Int, content: ElementType*): BufferType =
     withContent(0, capacity, capacity, content: _*)

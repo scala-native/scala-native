@@ -27,7 +27,7 @@ class ReflectiveProxyTest {
       def generate(): B = new B
     }
 
-    def f(x: { def generate(): A }): A = x.generate
+    def f(x: { def generate(): A }): A = x.generate()
 
     assertTrue(f(Generator).x == 2)
   }
@@ -162,7 +162,7 @@ class ReflectiveProxyTest {
     def upd(obj: UPD, i: Int, x: String): Unit = obj.update(i, x)
     def apl(obj: APL, i: Int): String = obj.apply(i)
     def len(obj: LEN): Int = obj.length
-    def clone(obj: CLONE): Object = obj.clone
+    def clone(obj: CLONE): Object = obj.clone()
 
     val x = Array("asdf", "foo", "bar")
     val y = clone(x).asInstanceOf[Array[String]]
@@ -183,7 +183,7 @@ class ReflectiveProxyTest {
     def upd(obj: UPD, i: Int, x: Int): Unit = obj.update(i, x)
     def apl(obj: APL, i: Int): Int = obj.apply(i)
     def len(obj: LEN): Int = obj.length
-    def clone(obj: CLONE): Object = obj.clone
+    def clone(obj: CLONE): Object = obj.clone()
 
     val x = Array(5, 2, 8)
     val y = clone(x).asInstanceOf[Array[Int]]

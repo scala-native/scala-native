@@ -4,14 +4,14 @@ import java.io.IOException
 import java.net.StandardSocketOptions._
 import java.net._
 
-import scala.collection.JavaConverters._
-
 import org.junit.Assert._
 import org.junit.Assume._
 import org.junit.Test
 
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
+
+import scala.scalanative.junit.utils.CollectionConverters._
 
 class DatagramSocketOptionsTestOnJDK9 {
 
@@ -26,10 +26,10 @@ class DatagramSocketOptionsTestOnJDK9 {
     )
     val candidates = NetworkInterface
       .getNetworkInterfaces()
-      .asScala
+      .toScalaSeq
       .filter { ni =>
         ni.isUp() && ni.supportsMulticast() &&
-        ni.getInetAddresses().asScala.exists(_.isInstanceOf[Inet4Address])
+        ni.getInetAddresses().toScalaSeq.exists(_.isInstanceOf[Inet4Address])
       }
       .toList
     assumeTrue("no multicast capable interface", candidates.nonEmpty)
@@ -49,7 +49,7 @@ class DatagramSocketOptionsTestOnJDK9 {
     )
     withSocket(new DatagramSocket()) { ds =>
       val supported = ds.supportedOptions()
-      assertTrue(supported.containsAll(expected.asJava))
+      assertTrue(supported.containsAll(expected.toJavaList))
       assertFalse(supported.contains(TCP_NODELAY))
       assertThrows(
         classOf[UnsupportedOperationException],
@@ -57,7 +57,7 @@ class DatagramSocketOptionsTestOnJDK9 {
       )
     }
     withSocket(new MulticastSocket()) { ms =>
-      assertTrue(ms.supportedOptions().containsAll(expected.asJava))
+      assertTrue(ms.supportedOptions().containsAll(expected.toJavaList))
     }
   }
 
