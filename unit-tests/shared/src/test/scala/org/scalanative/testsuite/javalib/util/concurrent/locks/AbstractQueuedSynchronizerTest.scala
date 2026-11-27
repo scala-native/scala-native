@@ -100,7 +100,7 @@ class AbstractQueuedSynchronizerTest extends JSR166Test {
   }
 
   /** A constant to clarify calls to checking methods below. */
-  final val NO_THREADS = Array.empty[Thread]
+  final val NO_THREADS = Seq.empty[Thread]
 
   /** Spin-waits until sync.isQueued(t) becomes true.
    */

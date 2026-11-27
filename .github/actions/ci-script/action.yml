@@ -14,5 +14,5 @@ runs:
     - uses: VirtusLab/scala-cli-setup@v1.19
     - shell: bash
       env:
-        COURSIER_REPOSITORIES: "ivy2Local|https://maven-central.storage-download.googleapis.com/maven2"
+        COURSIER_REPOSITORIES: "ivy2Local|https://maven-central.storage-download.googleapis.com/maven2|central"
       run: scala-cli run --server=false "scripts/ci/${{ inputs.script }}"

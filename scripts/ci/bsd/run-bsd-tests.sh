@@ -15,8 +15,8 @@ SBT_MEM_OPTS="-J-Xmx3G"
 # (project/MavenMirror.scala), coursier and the sbt launcher use the mirror.
 mirror=https://maven-central.storage-download.googleapis.com/maven2
 export MAVEN_CENTRAL_MIRROR="$mirror/"
-export COURSIER_REPOSITORIES="ivy2Local|$mirror"
-printf '[repositories]\n  local\n  maven-central-mirror: %s/\n' "$mirror" > /tmp/sbt-launcher-repositories
+export COURSIER_REPOSITORIES="ivy2Local|$mirror|central"
+printf '[repositories]\n  local\n  maven-central-mirror: %s/\n  maven-central\n' "$mirror" > /tmp/sbt-launcher-repositories
 export SBT_OPTS="-Dsbt.repository.config=/tmp/sbt-launcher-repositories ${SBT_OPTS:-}"
 # Maven Central throttles generic User-Agents, see .github/actions/sbt-warmup
 agent="Scala-Native-CI/1.0+https://github.com/scala-native/scala-native"

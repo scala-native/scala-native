@@ -32,6 +32,12 @@ object CollectionConverters {
     }
   }
 
+  implicit class JavaEnumerationToScala[T](
+      private val self: java.util.Enumeration[T]
+  ) {
+    def toScalaSeq: Seq[T] = java.util.Collections.list(self).toScalaSeq
+  }
+
   implicit class JavaToScalaCollections[T](
       private val self: java.util.Collection[T]
   ) {

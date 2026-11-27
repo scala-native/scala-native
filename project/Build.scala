@@ -614,7 +614,7 @@ object Build {
                       .stripPrefix("2.12.")
                       .takeWhile(_.isDigit)
                       .toInt >= 13 =>
-                  List("-Xfatal-warnings")
+                  List("-Werror")
               }
             }
           )
@@ -885,7 +885,11 @@ object Build {
       .settings(
         // Setting only used to ensure that compiler does not crash when reporting deprecated options
         scalacOptions += "-P:scalanative:mapSourceURI:path->unused",
-        scalacOptions --= Seq("-Xfatal-warnings", "-Werror"),
+        // Scala 2 cannot filter the warning for the deprecated option above
+        scalacOptions --= {
+          if (scalaVersion.value.startsWith("2.")) Seq("-Werror")
+          else Nil
+        },
         nativeConfig ~= {
           _.withLinkStubs(true)
         },
@@ -921,6 +925,61 @@ object Build {
       .withNativeCompilerPlugin
       .withScalaStandardLibrary
       .dependsOn(javalib, testInterface % "test", junitRuntime % "test")
+
+// Benchmarks ------------------------------------------------------------
+  /** JMH benchmarks of the Scala Native runtime, Scala 3 only, run with scala-microbench-harness (SMH) through
+   *  `Benchmarks.scala`. Native, the default row, links against the runtime built here; the JVM row is for reference.
+   */
+  // sbt "benchmarks/run -l"
+  // sbt "benchmarks/run Exceptions -wi 3 -i 5 -f 1"
+  // sbt "benchmarksJVM/run Exceptions -wi 3 -i 5 -f 1"
+  //
+  // TODO: replace the manual setup (SMH library dependency and the suite list
+  // in Benchmarks.scala) with the sbt-microbench plugin once the build is
+  // updated to sbt 2.1.2, which contains the fix for the Windows issues.
+  lazy val benchmarks = {
+    val scalaVersion = ScalaVersions.scala3
+    projectMatrix
+      .in(file("benchmarks"))
+      .defaultAxes(
+        VirtualAxis.native,
+        VirtualAxis.scalaABIVersion(scalaVersion)
+      )
+      .settings(
+        commonSettings,
+        noPublishSettings,
+        // Built against the published runtime, use the local one instead
+        libraryDependencies += ("io.github.wojciechmazur" %% "microbench" % "1.0.1")
+          .excludeAll(ExclusionRule(organization = "org.scala-native"))
+      )
+      .nativePlatform(
+        Seq(scalaVersion),
+        Nil,
+        (_: Project)
+          .enablePlugins(MyScalaNativePlugin)
+          .dependsOn(
+            nscPlugin.forBinaryVersion("3") % "plugin",
+            scala3lib.forBinaryVersion("3"),
+            javalib.forBinaryVersion("3"),
+            testInterface.forBinaryVersion("3")
+          )
+          .settings(
+            nativeConfig ~= {
+              _.withMode(Mode.releaseFull).withMultithreading(true)
+            }
+          )
+      )
+      // SMH forks fresh JVMs from the class path of the running one
+      .jvmPlatform(
+        Seq(scalaVersion),
+        Nil,
+        (_: Project).settings(
+          run / fork := true,
+          // JMH 1.37 uses sun.misc.Unsafe, deprecated with warnings since JDK 23
+          run / javaOptions += "--sun-misc-unsafe-memory-access=allow"
+        )
+      )
+  }
 
 // Testing infrastructure ------------------------------------------------
   lazy val testingCompilerInterface =
@@ -1046,7 +1105,7 @@ object Build {
     MultiScalaProject("scalaPartest", base = "scala-partest")
       .settings(
         scalacOptions --= Seq(
-          "-Xfatal-warnings"
+          "-Werror"
         ),
         // Not cross-compiled to Scala 3 yet
         bspEnabled := ideScalaVersion.startsWith("2."),
@@ -1200,7 +1259,7 @@ object Build {
         Seq("-Wconf:cat=deprecation:s")
       },
       scalacOptions --= Seq(
-        "-Xfatal-warnings",
+        "-Werror",
         "-Xsource:3"
       ),
       // No control over sources

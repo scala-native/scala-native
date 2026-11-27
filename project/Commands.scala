@@ -80,7 +80,9 @@ object Commands {
       val projects = Build.allMultiScalaProjects
         .filterNot(Build.sbtPlugins.contains)
         .flatMap(_.forBinaryVersionIfDefined(version))
-      allTasks("Test/compile", projects) :: state
+      val benchmarks = // Scala 3 only
+        if (version == "3") Build.benchmarks.filterProjects(Nil) else Nil
+      allTasks("Test/compile", projects ++ benchmarks) :: state
   }
 
   // Compile the sbt plugin with the Scala version of its sbt: 2.12 - sbt 1.x, 3 - sbt 2.x

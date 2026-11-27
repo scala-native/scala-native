@@ -1,11 +1,15 @@
 package scala
 
+import scala.annotation.nowarn
+
 import org.junit.Assert._
 import org.junit.Test
 
 class SymbolTest {
+  @nowarn("msg=symbol literal is deprecated")
   def foo1: scala.Symbol = 'foo
   def foo2: scala.Symbol = scala.Symbol("foo")
+  @nowarn("msg=symbol literal is deprecated")
   def bar: scala.Symbol = 'bar
 
   @Test def symbolsAreInterned(): Unit = {
