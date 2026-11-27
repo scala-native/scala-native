@@ -206,10 +206,12 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     else
       try send6(p)
       catch {
-        // the FreeBSD join fallback may have switched the socket to IPv4
-        case _: IOException
-            if useIPv4Only && p.getAddress().isInstanceOf[Inet4Address] =>
-          send4(p)
+        // the FreeBSD join fallback may have switched the socket to IPv4,
+        // the lock waits for an in-flight switch to finish
+        case e: IOException =>
+          val switched = memberships.synchronized(useIPv4Only)
+          if (switched && p.getAddress().isInstanceOf[Inet4Address]) send4(p)
+          else throw e
       }
   }
 
