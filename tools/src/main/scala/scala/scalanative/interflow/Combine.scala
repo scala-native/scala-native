@@ -419,14 +419,66 @@ private[interflow] trait Combine { self: Interflow =>
   ): nir.Val = {
     import state.{materialize, delay, emit}
 
+    // Whether both the unboxed pointer and the reference are null
+    def bothNull(ptr: nir.Val, ref: nir.Val): nir.Val =
+      combine(
+        nir.Bin.And,
+        nir.Type.Bool,
+        combine(Ieq, nir.Type.Ptr, ptr, nir.Val.Null),
+        combine(Ieq, nir.Rt.Object, ref, nir.Val.Null)
+      )
+
+    // Whether two distinct virtual allocations may end up as the same
+    // object: boxes of equal values can come from the cache of the boxing
+    // method, and strings of equal content from the same literal.
+    def mayBeInterned(l: Addr, r: Addr): Boolean =
+      l != r && ((l, r) match {
+        case (
+              VirtualRef(BoxKind, lcls, Array(lvalue)),
+              VirtualRef(BoxKind, rcls, Array(rvalue))
+            ) =>
+          def differentConstants =
+            lvalue.isCanonical && rvalue.isCanonical && lvalue != rvalue
+          lcls == rcls && !Combine.uncachedBoxes.contains(lcls.name) &&
+            !differentConstants
+        case (VirtualRef(StringKind, _, _), VirtualRef(StringKind, _, _)) =>
+          true
+        case _ =>
+          false
+      })
+
     (comp, l, r) match {
       // Two virtual allocations will compare equal if
       // and only if they have the same virtual address.
       case (Ieq, nir.Val.Virtual(l), nir.Val.Virtual(r))
-          if state.isVirtual(l) && state.isVirtual(r) =>
+          if state.isVirtual(l) && state.isVirtual(r) && !mayBeInterned(l, r) =>
         nir.Val.Bool(l == r)
       case (Ine, nir.Val.Virtual(l), nir.Val.Virtual(r))
-          if state.isVirtual(l) && state.isVirtual(r) =>
+          if state.isVirtual(l) && state.isVirtual(r) && !mayBeInterned(l, r) =>
+        nir.Val.Bool(l != r)
+
+      // A virtual allocation is never null, whatever its kind.
+      case (Ieq, VirtualRef(_, _, _), nir.Val.Null) =>
+        nir.Val.False
+      case (Ieq, nir.Val.Null, VirtualRef(_, _, _)) =>
+        nir.Val.False
+      case (Ine, VirtualRef(_, _, _), nir.Val.Null) =>
+        nir.Val.True
+      case (Ine, nir.Val.Null, VirtualRef(_, _, _)) =>
+        nir.Val.True
+
+      // Neither is a class constant, and there is one for each class.
+      case (Ieq, _: nir.Val.ClassOf, nir.Val.Null) =>
+        nir.Val.False
+      case (Ieq, nir.Val.Null, _: nir.Val.ClassOf) =>
+        nir.Val.False
+      case (Ine, _: nir.Val.ClassOf, nir.Val.Null) =>
+        nir.Val.True
+      case (Ine, nir.Val.Null, _: nir.Val.ClassOf) =>
+        nir.Val.True
+      case (Ieq, nir.Val.ClassOf(l), nir.Val.ClassOf(r)) =>
+        nir.Val.Bool(l == r)
+      case (Ine, nir.Val.ClassOf(l), nir.Val.ClassOf(r)) =>
         nir.Val.Bool(l != r)
 
       // Not-yet-materialized virtual allocation will never be
@@ -473,6 +525,21 @@ private[interflow] trait Combine { self: Interflow =>
       case (Ine, nir.Val.Null, DelayedRef(nir.Op.Box(ty, x)))
           if nir.Type.isPtrBox(ty) =>
         combine(Ine, nir.Type.Ptr, x, nir.Val.Null)
+
+      // A pointer box that is not materialized yet is going to be either
+      // null or a new allocation, which is never the same as other value.
+      case (Ieq, l @ DelayedRef(nir.Op.Box(ty, x)), r)
+          if nir.Type.isPtrBox(ty) && l != r =>
+        bothNull(x, r)
+      case (Ieq, l, r @ DelayedRef(nir.Op.Box(ty, x)))
+          if nir.Type.isPtrBox(ty) && l != r =>
+        bothNull(x, l)
+      case (Ine, l @ DelayedRef(nir.Op.Box(ty, x)), r)
+          if nir.Type.isPtrBox(ty) && l != r =>
+        combine(nir.Bin.Xor, nir.Type.Bool, bothNull(x, r), nir.Val.True)
+      case (Ine, l, r @ DelayedRef(nir.Op.Box(ty, x)))
+          if nir.Type.isPtrBox(ty) && l != r =>
+        combine(nir.Bin.Xor, nir.Type.Bool, bothNull(x, l), nir.Val.True)
 
       // Comparing two non-null module references will
       // yield true only if it's the same module.
@@ -672,4 +739,16 @@ private[interflow] trait Combine { self: Interflow =>
   private def isPowerOfTwoOrMinValue(x: Long): Boolean =
     x != 0 && (x & (x - 1)) == 0
 
+}
+
+private[interflow] object Combine {
+
+  /** Classes whose boxing method always allocates. */
+  private val uncachedBoxes: Set[nir.Global] =
+    Seq(nir.Type.Float, nir.Type.Double)
+      .map(nir.Type.box)
+      .collect {
+        case nir.Type.Ref(name, _, _) => name
+      }
+      .toSet
 }
