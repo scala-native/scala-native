@@ -24,9 +24,7 @@ object ConsoleApi {
 object ConsoleApiExt {
   import ConsoleApi._
 
-  // Input console modes, see SetConsoleMode
-  final val ENABLE_PROCESSED_INPUT = 0x0001.toUInt
-  final val ENABLE_LINE_INPUT = 0x0002.toUInt
+  // Input console mode flag, see SetConsoleMode
   final val ENABLE_ECHO_INPUT = 0x0004.toUInt
 
   def stdIn: Handle = GetStdHandle(STD_INPUT_HANDLE)

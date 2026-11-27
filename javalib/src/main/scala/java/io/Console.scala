@@ -1,17 +1,9 @@
 package java.io
 
 import java.nio.charset.Charset
-import java.util.{Formatter, Objects}
+import java.util.{Arrays, Objects}
 
-import scala.scalanative.meta.LinktimeInfo.isWindows
-import scala.scalanative.posix.termios._
-import scala.scalanative.posix.termiosOps._
-import scala.scalanative.posix.unistd
-import scala.scalanative.unsafe._
-import scala.scalanative.unsigned._
-import scala.scalanative.windows.ConsoleApi._
-import scala.scalanative.windows.ConsoleApiExt._
-import scala.scalanative.windows.DWord
+import scala.scalanative.javalib.io.Terminal
 
 /** Character-based access to the interactive terminal the process was started
  *  from.
@@ -40,7 +32,24 @@ class Console private[io] (cs: Charset) extends Flushable {
   private var pos = 0
   private var lim = 0
 
-  private val rd: Reader = new Console.ConsoleReader(this)
+  // Closing it must not close the terminal input.
+  private val rd: Reader = new Reader {
+    def read(cbuf: Array[Char], off: Int, len: Int): Int = {
+      if (off < 0 || len < 0 || len > cbuf.length - off)
+        throw new IndexOutOfBoundsException()
+      readLock.synchronized {
+        if (len == 0) 0
+        else if (pos == lim && !fill()) -1
+        else {
+          val n = Math.min(len, lim - pos)
+          System.arraycopy(buf, pos, cbuf, off, n)
+          consume(pos + n)
+          n
+        }
+      }
+    }
+    def close(): Unit = ()
+  }
 
   def writer(): PrintWriter = pw
 
@@ -53,21 +62,46 @@ class Console private[io] (cs: Charset) extends Flushable {
   // def readLine(l: Locale, fmt: String, args: Array[Object]): String = ???
   // def readPassword(l: Locale, fmt: String, args: Array[Object]): Array[Char] = ???
 
-  def format(fmt: String, args: Array[Object]): Console =
-    doFormat(new Formatter(pw), fmt, args)
+  def format(fmt: String, args: Array[Object]): Console = {
+    Objects.requireNonNull(fmt)
+    writeLock.synchronized(pw.format(fmt, args))
+    this
+  }
 
   def printf(format: String, args: Array[Object]): Console =
     this.format(format, args)
 
-  def readLine(fmt: String, args: Array[Object]): String =
-    doReadLine(new Formatter(pw), fmt, args)
+  def readLine(fmt: String, args: Array[Object]): String = {
+    Objects.requireNonNull(fmt)
+    writeLock.synchronized {
+      readLock.synchronized {
+        prompt(fmt, args)
+        val line = readLineChars()
+        if (line == null) null else new String(line)
+      }
+    }
+  }
 
-  def readLine(): String = doReadLine(null, "", null)
+  def readLine(): String = readLine("", null)
 
-  def readPassword(fmt: String, args: Array[Object]): Array[Char] =
-    doReadPassword(new Formatter(pw), fmt, args)
+  def readPassword(fmt: String, args: Array[Object]): Array[Char] = {
+    Objects.requireNonNull(fmt)
+    writeLock.synchronized {
+      readLock.synchronized {
+        Terminal.disableEcho()
+        try {
+          prompt(fmt, args)
+          readLineChars()
+        } finally {
+          Terminal.restoreEcho()
+          // The line terminator typed by the user was not echoed
+          pw.println()
+        }
+      }
+    }
+  }
 
-  def readPassword(): Array[Char] = doReadPassword(null, "", null)
+  def readPassword(): Array[Char] = readPassword("", null)
 
   def flush(): Unit = pw.flush()
 
@@ -76,119 +110,48 @@ class Console private[io] (cs: Charset) extends Flushable {
   /** Always true: a Console exists only when attached to a terminal. */
   def isTerminal(): Boolean = true
 
-  private def doFormat(
-      formatter: Formatter,
-      fmt: String,
-      args: Array[Object]
-  ): Console = {
-    Objects.requireNonNull(fmt)
-    writeLock.synchronized {
-      formatter.format(fmt, args)
-      pw.flush()
-    }
-    this
-  }
-
-  private def doReadLine(
-      formatter: Formatter,
-      fmt: String,
-      args: Array[Object]
-  ): String = {
-    Objects.requireNonNull(fmt)
-    writeLock.synchronized {
-      readLock.synchronized {
-        prompt(formatter, fmt, args)
-        val line = readLineChars()
-        if (line == null) null else new String(line)
-      }
-    }
-  }
-
-  private def doReadPassword(
-      formatter: Formatter,
-      fmt: String,
-      args: Array[Object]
-  ): Array[Char] = {
-    Objects.requireNonNull(fmt)
-    writeLock.synchronized {
-      readLock.synchronized {
-        Console.Echo.installRestoreHook()
-        val echoDisabled = Console.Echo.disable()
-        try {
-          prompt(formatter, fmt, args)
-          readLineChars()
-        } finally {
-          if (echoDisabled) Console.Echo.restore()
-          // The line terminator typed by the user was not echoed
-          pw.println()
-          pw.flush()
-        }
-      }
-    }
-  }
-
-  // Requires writeLock
-  private def prompt(
-      formatter: Formatter,
-      fmt: String,
-      args: Array[Object]
-  ): Unit = {
-    if (!fmt.isEmpty()) formatter.format(fmt, args)
-    pw.flush()
-  }
+  // Requires writeLock. Flushes pending output even without a prompt.
+  private def prompt(fmt: String, args: Array[Object]): Unit =
+    if (fmt.isEmpty()) pw.flush()
+    else pw.format(fmt, args)
 
   /** Reads more input into `buf`, compacting or growing it first if needed.
-   *  Returns the number of chars by which already buffered chars were shifted
-   *  left, or -1 at end of input. Requires readLock.
+   *  Returns false at end of input. Requires readLock.
    */
-  private def fill(): Int = {
-    val shift = pos
+  private def fill(): Boolean = {
     if (pos > 0) {
       val remaining = lim - pos
       System.arraycopy(buf, pos, buf, 0, remaining)
-      java.util.Arrays.fill(buf, remaining, lim, '\u0000')
+      Arrays.fill(buf, remaining, lim, '\u0000')
       pos = 0
       lim = remaining
     }
     if (lim == buf.length) {
       val old = buf
-      buf = java.util.Arrays.copyOf(old, old.length * 2)
-      java.util.Arrays.fill(old, '\u0000')
+      buf = Arrays.copyOf(old, old.length * 2)
+      Arrays.fill(old, '\u0000')
     }
     val n =
       try decoder.read(buf, lim, buf.length - lim)
       catch { case e: IOException => throw new IOError(e) }
-    if (n < 0) -1
-    else {
-      lim += n
-      shift
-    }
+    if (n > 0) lim += n
+    n >= 0
   }
 
   /** Reads one line without its terminator, or returns null at end of input if
    *  nothing was read. Requires readLock.
    */
   private def readLineChars(): Array[Char] = {
-    var result: Array[Char] = null
-    var done = false
-    var scan = pos
-    while (!done) {
-      while (scan < lim && buf(scan) != '\n') scan += 1
-      if (scan < lim) {
-        result = takeLine(scan, scan + 1)
-        done = true
-      } else {
-        val shift = fill()
-        if (shift < 0) {
-          // End of input: return a partial line, if any
-          if (lim > pos) result = takeLine(lim, lim)
-          done = true
-        } else {
-          scan -= shift
-        }
-      }
+    // Scan offset relative to pos, stays valid when fill() compacts buf
+    var scanned = 0
+    while (true) {
+      while (pos + scanned < lim && buf(pos + scanned) != '\n') scanned += 1
+      if (pos + scanned < lim)
+        return takeLine(pos + scanned, pos + scanned + 1)
+      if (!fill()) // End of input: return a partial line, if any
+        return if (lim > pos) takeLine(lim, lim) else null
     }
-    result
+    null
   }
 
   // Requires readLock
@@ -196,26 +159,15 @@ class Console private[io] (cs: Charset) extends Flushable {
     val stop =
       if (end > pos && buf(end - 1) == '\r') end - 1
       else end
-    val line = java.util.Arrays.copyOfRange(buf, pos, stop)
-    java.util.Arrays.fill(buf, pos, next, '\u0000')
-    pos = next
+    val line = Arrays.copyOfRange(buf, pos, stop)
+    consume(next)
     line
   }
 
-  private def readChars(cbuf: Array[Char], off: Int, len: Int): Int = {
-    if (off < 0 || len < 0 || len > cbuf.length - off)
-      throw new IndexOutOfBoundsException()
-    readLock.synchronized {
-      if (len == 0) 0
-      else if (pos == lim && fill() < 0) -1
-      else {
-        val n = Math.min(len, lim - pos)
-        System.arraycopy(buf, pos, cbuf, off, n)
-        java.util.Arrays.fill(buf, pos, pos + n, '\u0000')
-        pos += n
-        n
-      }
-    }
+  // Zeroes and drops buffered chars up to `next`. Requires readLock.
+  private def consume(next: Int): Unit = {
+    Arrays.fill(buf, pos, next, '\u0000')
+    pos = next
   }
 }
 
@@ -226,110 +178,18 @@ object Console {
    *  output is not a terminal.
    */
   private[java] lazy val system: Console =
-    if (isTerminal()) new Console(terminalCharset()) else null
-
-  private def isTerminal(): Boolean =
-    if (isWindows) {
-      val mode = stackalloc[DWord]()
-      GetConsoleMode(stdIn, mode) && GetConsoleMode(stdOut, mode)
-    } else {
-      unistd.isatty(unistd.STDIN_FILENO) == 1 &&
-      unistd.isatty(unistd.STDOUT_FILENO) == 1
-    }
+    if (Terminal.stdinAndStdoutAreTerminals()) new Console(terminalCharset())
+    else null
 
   private def terminalCharset(): Charset = {
     val name = System.getProperty("stdout.encoding")
     if (name == null) Charset.defaultCharset()
-    else
-      try Charset.forName(name)
-      catch {
-        case _: IllegalArgumentException => Charset.defaultCharset()
-      }
+    else Charset.forName(name, Charset.defaultCharset())
   }
 
-  // Closing the writer or reader must not close the terminal streams.
+  // Closing it must not close the terminal output.
   private final class ConsoleWriter(out: Writer)
       extends PrintWriter(out, true) {
     override def close(): Unit = flush()
-  }
-
-  private final class ConsoleReader(console: Console) extends Reader {
-    def read(cbuf: Array[Char], off: Int, len: Int): Int =
-      console.readChars(cbuf, off, len)
-    def close(): Unit = ()
-  }
-
-  /** Echo of the terminal input, turned off while reading passwords. Echo is
-   *  restored by readPassword itself and, if the process terminates while a
-   *  password is read, by a shutdown hook.
-   */
-  private object Echo {
-    // Set while echo is turned off by us and not yet restored
-    @volatile private var disabled = false
-
-    private lazy val restoreHook: Unit =
-      try
-        Runtime
-          .getRuntime()
-          .addShutdownHook(new Thread(new Runnable {
-            def run(): Unit = restore()
-          }))
-      catch {
-        case _: IllegalStateException => () // shutdown already in progress
-      }
-
-    def installRestoreHook(): Unit = restoreHook
-
-    /** Turns echo off. Returns true if it was on and is now off. */
-    def disable(): Boolean = synchronized {
-      val changed =
-        if (isWindows) setWindowsEcho(false)
-        else setPosixEcho(false)
-      if (changed) disabled = true
-      changed
-    }
-
-    def restore(): Unit = synchronized {
-      if (disabled) {
-        if (isWindows) setWindowsEcho(true)
-        else setPosixEcho(true)
-        disabled = false
-      }
-    }
-
-    // Returns true if the echo flag was changed
-    private def setPosixEcho(on: Boolean): Boolean = {
-      val attrs = stackalloc[termios]()
-      val fd = unistd.STDIN_FILENO
-      if (tcgetattr(fd, attrs) != 0) false
-      else {
-        val echo = ECHO.toUInt
-        val isOn = (attrs.c_lflag & echo) != 0.toUInt
-        if (isOn == on) false
-        else {
-          attrs.c_lflag =
-            if (on) attrs.c_lflag | echo
-            else attrs.c_lflag & ~echo
-          tcsetattr(fd, TCSANOW, attrs) == 0
-        }
-      }
-    }
-
-    // Returns true if the echo mode was changed
-    private def setWindowsEcho(on: Boolean): Boolean = {
-      val mode = stackalloc[DWord]()
-      val handle = stdIn
-      if (!GetConsoleMode(handle, mode)) false
-      else {
-        val isOn = (!mode & ENABLE_ECHO_INPUT) != 0.toUInt
-        if (isOn == on) false
-        else {
-          val newMode =
-            if (on) !mode | ENABLE_ECHO_INPUT
-            else !mode & ~ENABLE_ECHO_INPUT
-          SetConsoleMode(handle, newMode)
-        }
-      }
-    }
   }
 }
