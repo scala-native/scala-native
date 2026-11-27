@@ -51,6 +51,22 @@ object FileChannelLockTest {
       Platform.executingInJVM && Platform.isWindows
     )
 
+  /* lock(), retried while a probe of awaitPendingRequest briefly holds an
+   * overlapping request of its own.
+   */
+  def lockPastProbe(ch: FileChannel, pos: Long, size: Long): FileLock = {
+    val deadline = System.nanoTime() + JoinMillis * 1000000L
+    var lock: FileLock = null
+    while (lock == null)
+      try lock = ch.lock(pos, size, false)
+      catch {
+        case e: OverlappingFileLockException =>
+          if (System.nanoTime() >= deadline) throw e
+          Thread.sleep(1)
+      }
+    lock
+  }
+
   // Waits until a request for [pos, pos + size) is registered by another channel.
   def awaitPendingRequest(ch: FileChannel, pos: Long, size: Long): Unit = {
     val deadline = System.nanoTime() + JoinMillis * 1000000L
@@ -441,7 +457,7 @@ class FileChannelLockTest {
     try {
       child.lock(0, 10)
       val out = blockedUntil(
-        c3.lock(0, 10, false),
+        lockPastProbe(c3, 0, 10),
         _ => {
           awaitPendingRequest(c4, 5, 10)
           assertThrows(
