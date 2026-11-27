@@ -77,7 +77,17 @@ final class JarURLConnectionImpl(u: URL) extends JarURLConnection(u) {
   override def getInputStream(): InputStream = {
     connect()
     if (entry == null) throw new IOException("no entry name specified")
-    val in = jarFile.getInputStream(entry)
+    val in =
+      try jarFile.getInputStream(entry)
+      catch {
+        case e: Throwable if !getUseCaches() =>
+          // Not shared: close it, and open it again on the next attempt
+          jarFile.close()
+          jarFile = null
+          entry = null
+          connected = false
+          throw e
+      }
     if (getUseCaches()) in
     else new JarURLConnectionImpl.ClosingInputStream(in, jarFile)
   }
@@ -129,8 +139,14 @@ final class JarURLConnectionImpl(u: URL) extends JarURLConnection(u) {
 
   @throws[IOException]
   private def jarFileConnection(): URLConnection = {
-    if (jarFileURLConnection == null)
-      jarFileURLConnection = getJarFileURL().openConnection()
+    if (jarFileURLConnection == null) {
+      val c = getJarFileURL().openConnection()
+      // Read the headers once, then release the stream opened for them
+      c.getHeaderFields()
+      try c.getInputStream().close()
+      catch { case _: IOException => () }
+      jarFileURLConnection = c
+    }
     jarFileURLConnection
   }
 }

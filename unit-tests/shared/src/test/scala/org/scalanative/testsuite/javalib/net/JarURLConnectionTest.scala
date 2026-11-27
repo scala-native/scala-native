@@ -7,6 +7,7 @@ import java.net._
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.util.jar.{Attributes, JarEntry, JarOutputStream, Manifest}
+import java.util.zip.{ZipEntry, ZipOutputStream}
 
 import scala.annotation.nowarn
 
@@ -76,6 +77,12 @@ class JarURLConnectionTest {
   private def open(entry: String, f: File = jar): JarURLConnection =
     new URL(jarURL(f) + entry).openConnection().asInstanceOf[JarURLConnection]
 
+  // The number of file descriptors open in this process
+  private def openFds(): Int = {
+    val proc = new File("/proc/self/fd")
+    (if (proc.isDirectory()) proc else new File("/dev/fd")).list().length
+  }
+
   private def read(in: InputStream): String =
     try new String(in.readAllBytes(), StandardCharsets.UTF_8)
     finally in.close()
@@ -123,6 +130,7 @@ class JarURLConnectionTest {
     assertNull(c.getEntryName())
     assertEquals("x-java/jar", c.getContentType())
     assertEquals(jar.length(), c.getContentLengthLong())
+    assertEquals(jar.length().toString, c.getHeaderField("content-length"))
     assertNull(c.getJarEntry())
     assertNull(c.getAttributes())
     assertEquals("a.B", c.getMainAttributes().getValue("Main-Class"))
@@ -219,5 +227,41 @@ class JarURLConnectionTest {
     assertEquals("hello", read(c.getInputStream()))
     assertThrows(classOf[IllegalStateException], f.getManifest())
     assertNotNull(cached.getManifest())
+  }
+
+  @Test def noCachesFailedStreamClosesJar(): Unit = {
+    val f = new File(dir, "bad.jar")
+    val out = new ZipOutputStream(new FileOutputStream(f))
+    try {
+      out.putNextEntry(new ZipEntry("META-INF/MANIFEST.MF"))
+      out.write("Manifest-Version: 1.0\nno colon\n\n".getBytes())
+      out.closeEntry()
+      out.putNextEntry(new ZipEntry("x"))
+      out.write("x".getBytes())
+      out.closeEntry()
+    } finally out.close()
+    val before = openFds()
+    for (_ <- 1 to 20) {
+      val c = open("x", f)
+      c.setUseCaches(false)
+      // Native parses the manifest eagerly and fails, the JDK does not
+      try c.getInputStream().close()
+      catch { case _: IOException => () }
+    }
+    assertTrue(openFds() - before < 10)
+  }
+
+  @Test def headerLookupsCloseTheArchive(): Unit = {
+    // The JDK keeps a stream to the archive open for each such connection
+    assumeFalse(Platform.executingInJVM)
+    val before = openFds()
+    val connections = (1 to 20).map { _ =>
+      val c = open("")
+      assertEquals(jar.length().toString, c.getHeaderField("content-length"))
+      assertTrue(c.getLastModified() > 0)
+      c
+    }
+    assertTrue(openFds() - before < 10)
+    assertEquals(20, connections.size)
   }
 }
