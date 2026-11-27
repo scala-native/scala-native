@@ -10,9 +10,7 @@ import org.junit.Test
 import org.scalanative.testsuite.utils.AssertThrows.assertThrows
 import org.scalanative.testsuite.utils.Platform
 
-// Uses JDK enums so that the test cross-compiles with Scala 2, which cannot
-// define Java enums. On Scala Native the TimeUnit constants are anonymous
-// subclasses of TimeUnit, which exercises the key class lookup.
+// JDK enums, Scala 2 cannot define Java enums
 class EnumMapTest {
   import TimeUnit._
 
@@ -164,7 +162,7 @@ class EnumMapTest {
     m.put(NANOSECONDS, "n")
     val it = m.entrySet().iterator()
     assertEquals(NANOSECONDS, it.next().getKey())
-    m.put(DAYS, "d") // grows the table
+    m.put(DAYS, "d")
     assertTrue(it.hasNext())
     assertEquals(new AbstractMap.SimpleEntry(DAYS, "d"), it.next())
     assertFalse(it.hasNext())

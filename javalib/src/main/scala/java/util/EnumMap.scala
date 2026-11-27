@@ -21,24 +21,8 @@ package java.util
 
 import java.lang.{_Enum => Enum}
 
-/** A [[Map]] with enum keys, iterated in ordinal order.
- *
- *  Differences from the JDK, caused by the lack of enum reflection in Scala
- *  Native (no `Class.getEnumConstants`, no `Enum.getDeclaringClass`):
- *
- *    - The enum universe is not known up front, so the ordinal-indexed tables
- *      start empty and grow on demand in `put`.
- *    - `EnumMap(Map)` finds the key class of a non-`EnumMap` source by walking
- *      `getSuperclass` from the first key up to `Enum`, which gives the same
- *      class as `getDeclaringClass` for constants with and without a body.
- *    - `keyType` is not checked to be an enum class (the JDK fails with a
- *      `NullPointerException` for a non-enum class or a constant's body
- *      subclass); keys are checked with `keyType.isInstance` only.
- *
- *  Unrelated to reflection: `setValue` on an entry whose key was removed from
- *  the map (other than through its iterator) maps the key again and counts it
- *  in `size()`, where the JDK leaves `size()` unchanged.
- */
+// No Class.getEnumConstants in Scala Native: the tables are indexed by ordinal
+// and grow on demand instead of holding the whole enum universe.
 class EnumMap[K <: Enum[K], V] private (
     private val keyType: Class[K],
     private var keys: Array[AnyRef],
@@ -178,8 +162,7 @@ class EnumMap[K <: Enum[K], V] private (
     new EnumMap[K, V](keyType, keys.clone(), vals.clone(), count)
 
   private class EntryIterator extends Iterator[Map.Entry[K, V]] {
-    // Slots are rescanned on every call, so that the iterator sees the
-    // mappings added or removed (and the table grown) since the last call.
+    // Rescans the slots, so it sees mappings changed after its creation
     private var nextIndex = 0
     private var last: Entry = null
 
@@ -204,10 +187,6 @@ class EnumMap[K <: Enum[K], V] private (
     }
   }
 
-  /** A view of one slot of the map: it reads and writes through to the table.
-   *  Once removed through its iterator its accessors throw and it falls back to
-   *  identity `equals`, `hashCode` and `toString`.
-   */
   private class Entry(var index: Int) extends Map.Entry[K, V] {
     private def checkValid(): Unit =
       if (index < 0) throw new IllegalStateException("Entry was removed")
@@ -248,8 +227,7 @@ class EnumMap[K <: Enum[K], V] private (
 private object EnumMap {
   private val EmptyArray = new Array[AnyRef](0)
 
-  /** Stands for a `null` value, so that `null` in the table means "no mapping".
-   */
+  // Stands for a null value, null in the table means no mapping
   private object NullValue {
     override def hashCode(): Int = 0
     override def toString(): String = "java.util.EnumMap.NullValue"
@@ -261,10 +239,7 @@ private object EnumMap {
   private def unmask[V](v: AnyRef): V =
     (if (v eq NullValue) null else v).asInstanceOf[V]
 
-  /** Enum class of the keys of `m`. Without `Enum.getDeclaringClass` it walks
-   *  up from the first key's class, since a constant with a body is an
-   *  anonymous subclass of its enum.
-   */
+  // No Enum.getDeclaringClass: a constant with a body is a subclass of its enum
   private def keyTypeOf[K <: Enum[K]](m: Map[K, _]): Class[K] = m match {
     case em: EnumMap[_, _] => em.keyType.asInstanceOf[Class[K]]
     case _                 =>
