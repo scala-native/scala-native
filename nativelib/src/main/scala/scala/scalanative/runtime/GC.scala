@@ -45,6 +45,15 @@ object GC {
   def getMaxHeapSize(): CSize = extern
   @name("scalanative_GC_get_used_heapsize")
   def getUsedHeapSize(): CSize = extern
+  // The memory held by the heap for objects, allocated or not
+  @name("scalanative_GC_get_total_heapsize")
+  def getTotalHeapSize(): CSize = extern
+  // The part of the total heap size not taken by objects
+  @name("scalanative_GC_get_free_heapsize")
+  def getFreeHeapSize(): CSize = extern
+  // The size the heap does not grow beyond, the maximal CSize if unlimited
+  @name("scalanative_GC_get_heap_limit")
+  def getHeapLimit(): CSize = extern
 
   // The total (cumulative) number of GC runs
   @name("scalanative_GC_stats_collection_total")

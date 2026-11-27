@@ -80,4 +80,26 @@ class RuntimeTest {
   @Test def availableProcessors(): Unit = {
     assertTrue(Runtime.getRuntime().availableProcessors() >= 1)
   }
+
+  @Test def memoryStatistics(): Unit = {
+    val runtime = Runtime.getRuntime()
+    def check(): Unit = {
+      // Read before anything allocates, the total heap size only grows
+      val free = runtime.freeMemory()
+      val total = runtime.totalMemory()
+      val max = runtime.maxMemory()
+      assertTrue(s"free=$free >= 0", free >= 0L)
+      assertTrue(s"free=$free <= total=$total", free <= total)
+      assertTrue(s"total=$total > 0", total > 0L)
+      assertTrue(s"total=$total <= max=$max", total <= max)
+    }
+    check()
+    var retained: List[Array[Byte]] = Nil
+    for (_ <- 0 until 64) retained = new Array[Byte](64 * 1024) :: retained
+    check()
+    assertEquals(64, retained.size)
+    retained = Nil
+    System.gc()
+    check()
+  }
 }

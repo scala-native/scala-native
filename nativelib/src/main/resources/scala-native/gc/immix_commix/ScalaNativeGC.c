@@ -93,6 +93,21 @@ size_t scalanative_GC_get_max_heapsize() {
 
 size_t scalanative_GC_get_used_heapsize() { return Heap_getMemoryUsed(&heap); }
 
+size_t scalanative_GC_get_total_heapsize() { return heap.heapSize; }
+
+// Only the free blocks, the free lines of recycled blocks are counted at the
+// end of a collection and not when they are allocated into.
+size_t scalanative_GC_get_free_heapsize() {
+    size_t total = heap.heapSize;
+    size_t free = (size_t)atomic_load(&blockAllocator.freeBlockCount) *
+                  SPACE_USED_PER_BLOCK;
+    return free < total ? free : total;
+}
+
+size_t scalanative_GC_get_heap_limit() {
+    return (size_t)heap.maxBlockCount * SPACE_USED_PER_BLOCK;
+}
+
 size_t scalanative_GC_stats_collection_total() {
     return jmx_stats_get_collection_total();
 }

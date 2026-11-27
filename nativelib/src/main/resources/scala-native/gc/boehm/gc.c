@@ -260,6 +260,24 @@ size_t scalanative_GC_get_used_heapsize() {
     return heap_sz - unmapped_bytes;
 }
 
+size_t scalanative_GC_get_total_heapsize() {
+    GC_word heapSize = 0;
+    GC_get_heap_usage_safe(&heapSize, NULL, NULL, NULL, NULL);
+    return (size_t)heapSize;
+}
+
+size_t scalanative_GC_get_free_heapsize() {
+    GC_word heapSize = 0, freeBytes = 0;
+    GC_get_heap_usage_safe(&heapSize, &freeBytes, NULL, NULL, NULL);
+    return freeBytes < heapSize ? (size_t)freeBytes : (size_t)heapSize;
+}
+
+// The limit that scalanative_GC_init or GC_INIT has set, see there
+size_t scalanative_GC_get_heap_limit() {
+    return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE",
+                                GC_CONFIG_MAX_HEAP_SIZE_OR(SIZE_MAX));
+}
+
 size_t scalanative_GC_stats_collection_total() {
     return jmx_stats_get_collection_total();
 }

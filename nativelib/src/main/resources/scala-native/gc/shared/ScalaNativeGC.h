@@ -2,6 +2,7 @@
 #define SCALA_NATIVE_GC_H
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include "shared/GCTypes.h"
 #include "immix_commix/headers/ObjectHeader.h"
 
@@ -45,6 +46,12 @@ void scalanative_GC_weak_ref_clear(void **field);
 size_t scalanative_GC_get_init_heapsize();
 size_t scalanative_GC_get_max_heapsize();
 size_t scalanative_GC_get_used_heapsize();
+// The memory currently held by the heap for objects, allocated or not
+size_t scalanative_GC_get_total_heapsize();
+// The part of the total heap size not taken by objects, at most the total
+size_t scalanative_GC_get_free_heapsize();
+// The size the heap would not grow beyond, SIZE_MAX if there is no limit
+size_t scalanative_GC_get_heap_limit();
 
 // The total (accumulated) number of GC runs
 size_t scalanative_GC_stats_collection_total();
