@@ -61,11 +61,6 @@ class FileURLConnectionTest {
     } finally in.close()
 
   @Test def regularFile(): Unit = {
-    // TODO: last-modified reads as 0 on NetBSD
-    assumeFalse(
-      "file modification time is not reported on NetBSD",
-      Platform.executingInScalaNative && Platform.isNetBSD
-    )
     val c = url("a.txt").openConnection()
     // Header access connects
     assertEquals(3, c.getHeaderFields().size())

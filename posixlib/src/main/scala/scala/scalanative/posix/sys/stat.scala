@@ -124,6 +124,7 @@ object stat {
 
   /** XSI
    */
+  @name("scalanative_mknod")
   def mknod(path: CString, mode: mode_t, dev: dev_t): CInt = extern
 
   /** XSI

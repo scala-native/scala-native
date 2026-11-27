@@ -6,10 +6,12 @@ import scalanative.posix.sys.types.{suseconds_t, time_t}
 import scalanative.unsafe._
 
 @extern
+@define("__SCALANATIVE_POSIX_SYS_TIME")
 object time {
 
   type timeval = CStruct2[time_t, suseconds_t]
 
+  @name("scalanative_gettimeofday")
   def gettimeofday(tv: Ptr[timeval], tz: Ptr[scala.Byte]): CInt = extern
 }
 

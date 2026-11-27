@@ -184,6 +184,18 @@ int scalanative_clock_settime(clockid_t clockid, const struct timespec *tp) {
 
 char *scalanative_ctime(const time_t *time) { return ctime(time); }
 
+#if !defined(__APPLE__) && !defined(__OpenBSD__)
+int scalanative_timer_gettime(timer_t timerid, struct itimerspec *curr_value) {
+    return timer_gettime(timerid, curr_value);
+}
+
+int scalanative_timer_settime(timer_t timerid, int flags,
+                              const struct itimerspec *new_value,
+                              struct itimerspec *old_value) {
+    return timer_settime(timerid, flags, new_value, old_value);
+}
+#endif
+
 char *scalanative_ctime_r(const time_t *time, char *buf) {
     return ctime_r(time, buf);
 }

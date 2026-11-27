@@ -389,9 +389,11 @@ object timer {
 
   def timer_getoverrun(timerid: timer_t): CInt = extern
 
+  @name("scalanative_timer_gettime")
   def timer_gettime(timerid: timer_t, curr_value: Ptr[itimerspec]): CInt =
     extern
 
+  @name("scalanative_timer_settime")
   def timer_settime(
       timerid: timer_t,
       flags: CInt,
