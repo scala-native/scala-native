@@ -125,13 +125,17 @@ private[interflow] final class MergeProcessor(
         /* Boxes cross the merge by value: when every incoming value is a
          * box of the same class that is not allocated yet, only the boxed
          * values are merged and the result is again a box that is not
-         * allocated. Boxes have no guaranteed identity, so one box allocated
-         * after the merge, if it is needed at all, can stand for the ones
-         * allocated on each incoming edge.
+         * allocated. This gives up the identity of the incoming boxes, so
+         * it applies only to boxes that have none: the ones the compiler
+         * inserted to box a primitive, and all boxes of the native value
+         * types (pointers, unsigned integers). An instance of a `java.lang`
+         * box class created with `new` is merged as any other object.
          *
-         * In a loop header the boxes that are already allocated are unboxed
-         * as well. Otherwise the box of a value updated in the loop, e.g. of
-         * a pointer that is incremented, would be allocated on each iteration.
+         * In a loop header the already allocated boxes of the native value
+         * types are unboxed as well. Otherwise the box of a value updated in
+         * the loop, e.g. of a pointer that is incremented, would be allocated
+         * on each iteration. A pointer object wrapping the null address, which
+         * only pointer arithmetic can create, becomes null this way.
          *
          * The same incoming boxes merge to the same box, so that aliases of
          * a box remain aliases after the merge.
@@ -163,9 +167,17 @@ private[interflow] final class MergeProcessor(
 
           pending.headOption
             .filter { head =>
+              val hasIdentity = IncomingBox.hasIdentity(head.cls)
+              // A pointer box created with `new` is never null, the result
+              // of boxing a pointer is: they cannot be told apart afterwards.
+              def sameConstruction =
+                !nir.Type.isPtrBox(nir.Type.Ref(head.cls.name)) ||
+                  pending.forall(_.instantiated == head.instantiated)
               incoming.size == values.size &&
-              pending.forall(_.cls == head.cls) &&
-              (!hasAllocated || isLoopHeader)
+                pending.forall(_.cls == head.cls) &&
+                sameConstruction &&
+                // An allocated box that has identity must remain the same object
+                (!hasAllocated || (isLoopHeader && !hasIdentity))
             }
             .flatMap { head =>
               val boxTy = nir.Type.Ref(head.cls.name)
@@ -696,7 +708,16 @@ private[interflow] object MergeProcessor {
      */
     final case class Allocated(value: nir.Val) extends IncomingBox
 
-    /** None if `value` is a virtual value other than a box. */
+    /** Boxes of JVM primitives are objects with identity when created with
+     *  `new`, unlike the boxes of the native value types.
+     */
+    private val identityBoxes: Set[nir.Global] = nir.Type.boxClasses.collect {
+      case name @ nir.Global.Top(id) if id.startsWith("java.lang.") => name
+    }.toSet
+
+    def hasIdentity(cls: Class): Boolean = identityBoxes.contains(cls.name)
+
+    /** None if `value` is a virtual value that cannot be merged as a box. */
     def apply(value: nir.Val)(implicit
         state: State,
         analysis: ReachabilityAnalysis.Result
@@ -708,7 +729,9 @@ private[interflow] object MergeProcessor {
                 cls,
                 Array(value),
                 None
-              ) if nir.Type.boxClasses.contains(cls.name) =>
+              )
+              if nir.Type.boxClasses.contains(cls.name) &&
+                !(kind == ClassKind && hasIdentity(cls)) =>
             Some(Pending(cls, value, kind == ClassKind, instance))
           // Boxing of a pointer is delayed rather than virtual: null boxes
           // to null.

@@ -72,6 +72,25 @@ class MergeBoxesTest extends OptimizerSpec {
          |    val y: Any = n.toDouble
          |    x.asInstanceOf[AnyRef] eq y.asInstanceOf[AnyRef]
          |  }
+         |  // Instances of box classes created with `new` have identity
+         |  @noinline def selectedInstance(flag: Boolean): Boolean = {
+         |    val a = new java.lang.Double(1d)
+         |    val b = new java.lang.Double(2d)
+         |    val c = if (flag) a else b
+         |    c eq a
+         |  }
+         |  // An allocated box entering a loop remains the same object
+         |  @noinline def loopFromAllocated(init: java.lang.Integer, n: Int): Any = {
+         |    var acc: Any = init
+         |    var i = 0
+         |    while (i < n) { acc = acc.asInstanceOf[Int] + i; i += 1 }
+         |    acc
+         |  }
+         |  // `new Ptr` is never null, a boxed null pointer is
+         |  @noinline def mixedPointers(flag: Boolean, base: Ptr[Byte], raw: Ptr[Byte]): Boolean = {
+         |    val p = if (flag) base + 1 else !raw.asInstanceOf[Ptr[Ptr[Byte]]]
+         |    p == null
+         |  }
          |  def main(args: Array[String]): Unit = {
          |    val n = args.length
          |    println(loopAny(n) + branch(n) + unsigned(n))
@@ -84,6 +103,9 @@ class MergeBoxesTest extends OptimizerSpec {
          |    println(sameValue(n))
          |    println(differentValues())
          |    println(sameDouble(n))
+         |    println(selectedInstance(n > 0))
+         |    println(loopFromAllocated(Integer.valueOf(n), n))
+         |    println(mixedPointers(n > 0, buf, buf))
          |  }
          |}
          |""".stripMargin
@@ -140,5 +162,24 @@ class MergeBoxesTest extends OptimizerSpec {
   @Test def identityOfUncachedBoxes(): Unit =
     withMethod("sameDouble", Mode.releaseFull) { (_, defn) =>
       assertEquals(defn.show, Seq(nir.Val.False), returned(defn))
+    }
+
+  @Test def identityOfInstanceSelectedByBranch(): Unit =
+    withMethod("selectedInstance", Mode.releaseFull) { (_, defn) =>
+      assertTrue(defn.show, returned(defn).forall(!_.isCanonical))
+    }
+
+  @Test def allocatedBoxEnteringLoop(): Unit =
+    withMethod("loopFromAllocated", Mode.releaseFull) { (_, defn) =>
+      assertTrue(
+        defn.show,
+        returned(defn).forall(_.ty.isInstanceOf[nir.Type.Ref])
+      )
+    }
+
+  @Test def pointerBoxesOfDifferentConstruction(): Unit =
+    withMethod("mixedPointers", Mode.releaseFull) { (_, defn) =>
+      assertEquals(defn.show, 2, boxes(defn).size)
+      assertTrue(defn.show, returned(defn).forall(!_.isCanonical))
     }
 }
