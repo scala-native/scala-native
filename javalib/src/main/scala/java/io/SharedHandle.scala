@@ -147,9 +147,9 @@ private[java] object SharedHandle {
     def apply(): WakePipe = {
       val fds = stackalloc[CInt](2)
       // pipe2 sets close-on-exec atomically; Apple has no pipe2.
-      val hasPipe2 = isLinux || isFreeBSD || isOpenBSD || isNetBSD
       val created =
-        if (hasPipe2) unistd.pipe2(fds, fcntl.O_CLOEXEC) == 0
+        if (isLinux || isFreeBSD || isOpenBSD || isNetBSD)
+          unistd.pipe2(fds, fcntl.O_CLOEXEC) == 0
         else
           unistd.pipe(fds) == 0 && {
             val ok =
