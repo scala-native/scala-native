@@ -27,6 +27,8 @@ void scalanative_statvfs_copy(struct statvfs *statvfs,
                               struct scalanative_statvfs *my_statvfs) {
     my_statvfs->f_bsize = statvfs->f_bsize;
     my_statvfs->f_frsize = statvfs->f_frsize;
+    my_statvfs->f_blocks = statvfs->f_blocks;
+    my_statvfs->f_bfree = statvfs->f_bfree;
     my_statvfs->f_bavail = statvfs->f_bavail;
     my_statvfs->f_files = statvfs->f_files;
     my_statvfs->f_ffree = statvfs->f_ffree;
