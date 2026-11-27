@@ -5,16 +5,12 @@ import java.util.concurrent.TimeUnit
 import scala.collection.mutable
 import scala.compiletime.uninitialized
 
-import scala.scalanative.libc.stdlib
-import scala.scalanative.unsafe.*
-import scala.scalanative.unsigned.*
-
 import microbench.*
 
 /** Primitive boxes the optimizer should be able to remove: values carried
- *  around a loop or across a branch as `Any`, as an erased type parameter, as
- *  an unsigned integer or as a `Ptr`. `hashMapLookup` is the control: its boxes
- *  are passed to calls that are not inlined, so they have to stay.
+ *  around a loop or across a branch as `Any` or as an erased type parameter.
+ *  `hashMapLookup` is the control: its boxes are passed to calls that are not
+ *  inlined, so they have to stay.
  */
 @State(Scope.Thread)
 @BenchmarkMode(Array(Mode.AverageTime))
@@ -26,18 +22,12 @@ class Boxing:
   @Param(Array("1024")) var size: Int = 0
 
   private var ints: Array[Int] = uninitialized
-  private var bytes: Ptr[Byte] = uninitialized
   private var map: mutable.HashMap[Int, Int] = uninitialized
 
   @Setup(Level.Trial) def prepare(): Unit =
     ints = Array.tabulate(size)(i => (i * 31) ^ (i >>> 3))
-    bytes = stdlib.malloc(size.toUSize)
-    var i = 0
-    while i < size do { bytes(i) = i.toByte; i += 1 }
     map = mutable.HashMap.empty
     ints.foreach(i => map(i) = i)
-
-  @TearDown(Level.Trial) def release(): Unit = stdlib.free(bytes)
 
   /** Erased accumulator of an inlined generic fold. */
   @Benchmark def genericFoldInt(): Int = BoxingOps.fold(ints, 0)(_ + _)
@@ -82,31 +72,6 @@ class Boxing:
       val v: Any = if (x & 1) == 0 then x >> 1 else x * 3 + 1
       sum += v.asInstanceOf[Int]
       i += 1
-    sum
-
-  /** Unsigned integers are boxes: an unsigned local in a loop. */
-  @Benchmark def unsignedSum(): Long =
-    var acc = 0.toUInt
-    var i = 0
-    while i < ints.length do { acc += ints(i).toUInt; i += 1 }
-    acc.toLong
-
-  @Benchmark def unsignedLongHash(): Long =
-    var h = 1469598103934665603L.toULong
-    var i = 0
-    while i < ints.length do
-      h = (h ^ ints(i).toULong) * 1099511628211L.toULong
-      i += 1
-    h.toLong
-
-  /** A pointer incremented until it reaches the end, see #1529. */
-  @Benchmark def pointerWalk(): Int =
-    var ptr = bytes
-    val end = bytes + size
-    var sum = 0
-    while ptr != end do
-      sum += !ptr
-      ptr += 1
     sum
 
   /** Collections API over primitives. */
