@@ -2,7 +2,9 @@ package org.scalanative.testsuite.javalib.util.zip
 
 // Ported from Apache Harmony
 
-import java.io.InputStream
+import java.io.{FileOutputStream, InputStream}
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
 import java.util.zip._
 
 import org.junit.Assert._
@@ -125,5 +127,36 @@ class ZipFileTest {
   @Test def size(): Unit = {
     val zip = getZipFile(zipFile)
     assertTrue(zip.size() == 6)
+  }
+
+  @Test def getInputStreamNonAsciiNames(): Unit = {
+    val data = "hello".getBytes(StandardCharsets.UTF_8)
+    val file = Files.createTempFile("zip-non-ascii", ".zip").toFile()
+    try {
+      val out = new ZipOutputStream(new FileOutputStream(file))
+      try {
+        val stored = new ZipEntry("\u00e9.txt")
+        val crc = new CRC32()
+        crc.update(data)
+        stored.setMethod(ZipEntry.STORED)
+        stored.setSize(data.length)
+        stored.setCrc(crc.getValue())
+        out.putNextEntry(stored)
+        out.write(data)
+        out.closeEntry()
+        out.putNextEntry(new ZipEntry("\u017c\u00f3\u0142w.txt"))
+        out.write(data)
+        out.closeEntry()
+      } finally out.close()
+
+      val zip = new ZipFile(file)
+      try
+        for (name <- Seq("\u00e9.txt", "\u017c\u00f3\u0142w.txt")) {
+          val in = zip.getInputStream(zip.getEntry(name))
+          try assertArrayEquals(name, data, in.readAllBytes())
+          finally in.close()
+        }
+      finally zip.close()
+    } finally file.delete()
   }
 }

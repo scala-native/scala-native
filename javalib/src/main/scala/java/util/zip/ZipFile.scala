@@ -140,15 +140,17 @@ class ZipFile(file: File, mode: Int, charset: Charset) extends Closeable {
       val raf = mRaf
       raf.synchronized {
         // We don't know the entry data's start position. All we have is the
-        // position of the entry's local header. At position 28 we find the
-        // length of the extra data. In some cases this length differs from
-        // the one coming in the central header.
+        // position of the entry's local header. At position 26 we find the
+        // byte lengths of the name and of the extra data. The extra data
+        // length may differ from the one in the central header, and the
+        // name's byte length differs from its char count for non-ASCII names.
         val rafstrm =
-          new ZipFile.RAFStream(raf, entry.mLocalHeaderRelOffset + 28)
-        val localExtraLenOrWhatever = ler.readShortLE(rafstrm)
+          new ZipFile.RAFStream(raf, entry.mLocalHeaderRelOffset + 26)
+        val localNameLen = ler.readShortLE(rafstrm)
+        val localExtraLen = ler.readShortLE(rafstrm)
 
-        // Skip the name and this "extra" data or whatever it is:
-        rafstrm.skip(entry.name.length() + localExtraLenOrWhatever)
+        // Skip the name and the extra data
+        rafstrm.skip(localNameLen + localExtraLen)
 
         rafstrm.mLength = rafstrm.mOffset + entry.compressedSize
         if (entry.compressionMethod == ZipEntry.DEFLATED) {
