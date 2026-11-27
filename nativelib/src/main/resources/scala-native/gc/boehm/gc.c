@@ -272,10 +272,12 @@ size_t scalanative_GC_get_free_heapsize() {
     return freeBytes < heapSize ? (size_t)freeBytes : (size_t)heapSize;
 }
 
-// The limit that scalanative_GC_init or GC_INIT has set, see there
+// The limit that scalanative_GC_init or GC_INIT has set, see there. Boehm GC
+// ignores a limit of 0.
 size_t scalanative_GC_get_heap_limit() {
-    return Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE",
-                                GC_CONFIG_MAX_HEAP_SIZE_OR(SIZE_MAX));
+    size_t limit = Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE",
+                                        GC_CONFIG_MAX_HEAP_SIZE_OR(SIZE_MAX));
+    return limit == 0 ? SIZE_MAX : limit;
 }
 
 size_t scalanative_GC_stats_collection_total() {
