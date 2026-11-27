@@ -140,6 +140,21 @@ private[runtime] final class _Class[A] {
     else
       _Class.ancestorAt(this, superclassCount - 1).asInstanceOf[Class[_ >: A]]
 
+  /** Whether this is the class of an enum: its direct superclass is
+   *  `java.lang.Enum`. Constants with a body are subclasses, not enums.
+   */
+  def isEnum(): scala.Boolean =
+    !isInterface() && (getSuperclass() eq classOf[java.lang.Enum[_]])
+
+  /** A fresh array of the constants of this enum in ordinal order, or `null` if
+   *  this is not an enum class. The linker resolves the lookup, see
+   *  [[LinkedEnums]].
+   */
+  // Array[AnyRef] for the erased signature of JDK's T[] getEnumConstants()
+  def getEnumConstants(): scala.Array[AnyRef] =
+    if (!isEnum()) null
+    else LinkedEnums.valuesOf(this)
+
   // def getField(name: String): Field =
   //   ???
 
@@ -370,6 +385,16 @@ private[runtime] object _Class {
       case null      => throw new NullPointerException()
       case _         => null
     }
+}
+
+// The enum classes linked into the program and their companion's `values()`
+private[runtime] object LinkedEnums {
+
+  /** Replaced at link time by a test of `cls` against every linked enum class,
+   *  calling the matching companion's `values()`; `null` for other classes.
+   *  Only reaching this method makes the linker keep the `values()` methods.
+   */
+  @noinline def valuesOf(cls: _Class[_]): scala.Array[AnyRef] = intrinsic
 }
 
 private object LinkedClasses {

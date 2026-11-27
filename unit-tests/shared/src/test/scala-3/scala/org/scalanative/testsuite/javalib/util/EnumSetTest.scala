@@ -6,6 +6,8 @@ import java.util.EnumSet
 import org.junit.Assert._
 import org.junit.Test
 
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+
 // Tested only in Scala 3 becouse we cannot create Java enums in Scala 2
 
 object EnumSetTest {
@@ -124,4 +126,38 @@ class EnumSetTest {
     assertTrue(s.contains(Value.C))
   }
 
+  @Test def allOf(): Unit = {
+    val s = EnumSet.allOf(classOf[Value])
+    assertEquals(6, s.size())
+    Value.values.foreach(v => assertTrue(s.contains(v)))
+  }
+
+  @Test def complementOf(): Unit = {
+    val s = EnumSet.complementOf(EnumSet.of(Value.A, Value.C))
+    assertEquals(4, s.size())
+    assertFalse(s.contains(Value.A))
+    assertTrue(s.contains(Value.B))
+    assertFalse(s.contains(Value.C))
+    assertEquals(6, EnumSet.complementOf(EnumSet.noneOf(classOf[Value])).size())
+  }
+
+  @Test def range(): Unit = {
+    val s = EnumSet.range(Value.B, Value.D)
+    assertEquals(3, s.size())
+    assertTrue(s.contains(Value.B))
+    assertTrue(s.contains(Value.C))
+    assertTrue(s.contains(Value.D))
+    assertEquals(1, EnumSet.range(Value.E, Value.E).size())
+    assertThrows(
+      classOf[IllegalArgumentException],
+      EnumSet.range(Value.D, Value.B)
+    )
+  }
+
+  @Test def copyOfIsIndependent(): Unit = {
+    val s = EnumSet.of(Value.A)
+    val c = EnumSet.copyOf(s)
+    c.add(Value.B)
+    assertEquals(1, s.size())
+  }
 }

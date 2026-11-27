@@ -1063,6 +1063,37 @@ private[scalanative] object Lower {
         val highBitsShift = if (isSigned) nir.Bin.Ashr else nir.Bin.Lshr
         val high64 = buf.bin(highBitsShift, nir.Type.Int128, res128, nir.Val.Int(64), nir.Next.None)
         buf.let(n, nir.Op.Conv(nir.Conv.Trunc, nir.Type.Long, high64), nir.Next.None)
+
+      case IntrinsicCall.EnumValuesOf =>
+        // if (cls eq classOf[E1]) E1$.values() else if ... else null
+        val resty = op.resty
+        val cls = genVal(buf, op.args.last)
+        val join = fresh()
+        meta.linkedEnums.foreach {
+          case (enumCls, values) =>
+            val matched, next = fresh()
+            val enumClsVal = genVal(buf, nir.Val.ClassOf(enumCls))
+            val isEnumCls = buf.comp(nir.Comp.Ieq, nir.Rt.Object, cls, enumClsVal, nir.Next.None)
+            buf.branch(isEnumCls, nir.Next(matched), nir.Next(next))
+            buf.label(matched)
+            val module = values.owner.top
+            val moduleRef = nir.Type.Ref(module)
+            val instance, array = fresh()
+            genModuleOp(buf, instance, nir.Op.Module(module))
+            genCallOp(
+              buf,
+              array,
+              nir.Op.Call(
+                nir.Type.Function(Seq(moduleRef), nir.Type.Array(nir.Type.Ref(enumCls))),
+                nir.Val.Global(values, nir.Type.Ptr),
+                Seq(nir.Val.Local(instance, moduleRef))
+              )
+            )
+            buf.jump(join, Seq(nir.Val.Local(array, resty)))
+            buf.label(next)
+        }
+        buf.jump(join, Seq(nir.Val.Null))
+        buf.label(join, Seq(nir.Val.Local(n, resty)))
     }
 
     // Extern functions that don't block in strict mode
@@ -2188,6 +2219,7 @@ private[scalanative] object Lower {
   private object IntrinsicCall {
     object MultiplyHigh extends IntrinsicCall
     object UnsignedMultiplyHigh extends IntrinsicCall
+    object EnumValuesOf extends IntrinsicCall
 
     private def resolveIntrinsicCall(owner: nir.Global.Top, sig: nir.Sig)(implicit
         metadata: Metadata,
@@ -2198,6 +2230,7 @@ private[scalanative] object Lower {
       (owner.id, sig.unmangled) match {
         case ("scala.scalanative.runtime.Intrinsics$", nir.Sig.Method("multiplyHigh", _, _))         => Some(MultiplyHigh)
         case ("scala.scalanative.runtime.Intrinsics$", nir.Sig.Method("unsignedMultiplyHigh", _, _)) => Some(UnsignedMultiplyHigh)
+        case _ if LinkedEnums.isValuesOf(owner.member(sig))                                          => Some(EnumValuesOf)
 
         case (_, nir.Sig.Method("intrinsic", _, _)) if owner == nir.Rt.Runtime.name =>
           val symbol @ nir.Global.Member(owner, sig) = currentDefn.get.name
