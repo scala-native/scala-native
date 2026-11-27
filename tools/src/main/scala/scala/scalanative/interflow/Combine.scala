@@ -419,6 +419,22 @@ private[interflow] trait Combine { self: Interflow =>
   ): nir.Val = {
     import state.{materialize, delay, emit}
 
+    // Whether both the unboxed pointer and the reference are null
+    def bothNull(ptr: nir.Val, ref: nir.Val): nir.Val = {
+      val refIsNull = ref match {
+        case DelayedRef(nir.Op.Box(ty, x)) if nir.Type.isPtrBox(ty) =>
+          combine(Ieq, nir.Type.Ptr, x, nir.Val.Null)
+        case _ =>
+          combine(Ieq, nir.Rt.Object, ref, nir.Val.Null)
+      }
+      combine(
+        nir.Bin.And,
+        nir.Type.Bool,
+        combine(Ieq, nir.Type.Ptr, ptr, nir.Val.Null),
+        refIsNull
+      )
+    }
+
     (comp, l, r) match {
       // Two virtual allocations will compare equal if
       // and only if they have the same virtual address.
@@ -427,6 +443,30 @@ private[interflow] trait Combine { self: Interflow =>
         nir.Val.Bool(l == r)
       case (Ine, nir.Val.Virtual(l), nir.Val.Virtual(r))
           if state.isVirtual(l) && state.isVirtual(r) =>
+        nir.Val.Bool(l != r)
+
+      // A virtual allocation is never null, whatever its kind.
+      case (Ieq, VirtualRef(_, _, _), nir.Val.Null) =>
+        nir.Val.False
+      case (Ieq, nir.Val.Null, VirtualRef(_, _, _)) =>
+        nir.Val.False
+      case (Ine, VirtualRef(_, _, _), nir.Val.Null) =>
+        nir.Val.True
+      case (Ine, nir.Val.Null, VirtualRef(_, _, _)) =>
+        nir.Val.True
+
+      // Neither is a class constant, and there is one for each class.
+      case (Ieq, _: nir.Val.ClassOf, nir.Val.Null) =>
+        nir.Val.False
+      case (Ieq, nir.Val.Null, _: nir.Val.ClassOf) =>
+        nir.Val.False
+      case (Ine, _: nir.Val.ClassOf, nir.Val.Null) =>
+        nir.Val.True
+      case (Ine, nir.Val.Null, _: nir.Val.ClassOf) =>
+        nir.Val.True
+      case (Ieq, nir.Val.ClassOf(l), nir.Val.ClassOf(r)) =>
+        nir.Val.Bool(l == r)
+      case (Ine, nir.Val.ClassOf(l), nir.Val.ClassOf(r)) =>
         nir.Val.Bool(l != r)
 
       // Not-yet-materialized virtual allocation will never be
@@ -473,6 +513,21 @@ private[interflow] trait Combine { self: Interflow =>
       case (Ine, nir.Val.Null, DelayedRef(nir.Op.Box(ty, x)))
           if nir.Type.isPtrBox(ty) =>
         combine(Ine, nir.Type.Ptr, x, nir.Val.Null)
+
+      // A pointer box that is not materialized yet is going to be either
+      // null or a new allocation, which is never the same as other value.
+      case (Ieq, l @ DelayedRef(nir.Op.Box(ty, x)), r)
+          if nir.Type.isPtrBox(ty) && l != r =>
+        bothNull(x, r)
+      case (Ieq, l, r @ DelayedRef(nir.Op.Box(ty, x)))
+          if nir.Type.isPtrBox(ty) && l != r =>
+        bothNull(x, l)
+      case (Ine, l @ DelayedRef(nir.Op.Box(ty, x)), r)
+          if nir.Type.isPtrBox(ty) && l != r =>
+        combine(nir.Bin.Xor, nir.Type.Bool, bothNull(x, r), nir.Val.True)
+      case (Ine, l, r @ DelayedRef(nir.Op.Box(ty, x)))
+          if nir.Type.isPtrBox(ty) && l != r =>
+        combine(nir.Bin.Xor, nir.Type.Bool, bothNull(x, l), nir.Val.True)
 
       // Comparing two non-null module references will
       // yield true only if it's the same module.
