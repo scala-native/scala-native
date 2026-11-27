@@ -15,6 +15,7 @@ import microbench.{run, suite}
   suite[jsr166.Sorting],
   suite[runtime.Allocation],
   suite[runtime.Arrays],
+  suite[runtime.Boxing],
   suite[runtime.Dispatch],
   suite[runtime.Exceptions],
   suite[runtime.Monitors],
