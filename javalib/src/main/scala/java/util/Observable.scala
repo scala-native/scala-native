@@ -49,7 +49,7 @@ class Observable {
       if (!changed) null
       else {
         clearChanged()
-        observers.toArray(new Array[Observer](0))
+        observers.toArray(new Array[Observer](observers.size()))
       }
     }
     if (snapshot != null) {

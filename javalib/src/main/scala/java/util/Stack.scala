@@ -20,18 +20,19 @@
 package java.util
 
 /** Last-in-first-out stack of objects, backed by [[Vector]]. */
+@SerialVersionUID(1224463164541339165L)
 class Stack[E <: AnyRef] extends Vector[E] {
 
   def empty(): Boolean = isEmpty()
 
   def peek(): E = synchronized {
-    if (isEmpty()) throw new EmptyStackException()
-    elementAt(size() - 1)
+    if (elementCount == 0) throw new EmptyStackException()
+    elementData(elementCount - 1)
   }
 
   def pop(): E = synchronized {
     val obj = peek()
-    removeElementAt(size() - 1)
+    removeElementAt(elementCount - 1)
     obj
   }
 
@@ -42,7 +43,7 @@ class Stack[E <: AnyRef] extends Vector[E] {
 
   /** 1-based distance from the top of the stack, or -1 if absent. */
   def search(o: Any): Int = synchronized {
-    val i = lastIndexOf(o)
-    if (i >= 0) size() - i else -1
+    val i = lastIndexOf(o, elementCount - 1)
+    if (i >= 0) elementCount - i else -1
   }
 }
