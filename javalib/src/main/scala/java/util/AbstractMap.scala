@@ -190,13 +190,19 @@ abstract class AbstractMap[K, V] protected () extends java.util.Map[K, V] {
     else {
       o match {
         case m: Map[_, _] =>
-          self.size() == m.size() &&
+          // Maps that reject a key (ClassCastException, NullPointerException)
+          // are not equal
+          try {
+            self.size() == m.size() &&
             entrySet().scalaOps.forall { item =>
               val key = item.getKey()
               val value = item.getValue()
               if (value == null) m.get(key) == null && m.containsKey(key)
               else Objects.equals(value, m.get(key))
             }
+          } catch {
+            case _: ClassCastException | _: NullPointerException => false
+          }
         case _ => false
       }
     }

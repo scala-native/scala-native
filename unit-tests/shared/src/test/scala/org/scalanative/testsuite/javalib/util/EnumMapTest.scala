@@ -246,6 +246,32 @@ class EnumMapTest {
     assertEquals(a, c)
   }
 
+  @Test def equalsWithMapRejectingKeys(): Unit = {
+    // Compares keys as Strings: get(SECONDS) throws ClassCastException
+    val tm = new java.util.TreeMap[AnyRef, String](
+      new java.util.Comparator[AnyRef] {
+        def compare(a: AnyRef, b: AnyRef): Int =
+          a.asInstanceOf[String].compareTo(b.asInstanceOf[String])
+      }
+    )
+    tm.put("SECONDS", "s")
+    val hm = new HashMap[TimeUnit, String]()
+    hm.put(SECONDS, "s")
+    assertFalse(hm.equals(tm))
+    // The JDK's EnumMap.equals throws here instead
+    if (!Platform.executingInJVM) {
+      val m = units()
+      m.put(SECONDS, "s")
+      assertFalse(m.equals(tm))
+    }
+    // Rejects null keys: get(null) throws NullPointerException
+    val withNull = new HashMap[TimeUnit, String]()
+    withNull.put(null, "s")
+    val other = new java.util.TreeMap[TimeUnit, String]()
+    other.put(SECONDS, "s")
+    assertFalse(withNull.equals(other))
+  }
+
   @Test def putAllAndClear(): Unit = {
     val m = units()
     val hm = new HashMap[TimeUnit, String]()
