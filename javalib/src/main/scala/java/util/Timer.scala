@@ -75,9 +75,7 @@ class Timer(name: String, isDaemon: Boolean) {
 
   def schedule(task: TimerTask, firstTime: Date, period: Long): Unit = {
     checkPeriod(period)
-    // A fixed-delay task does not catch up: a past first time means now
-    val when = Math.max(timeOf(firstTime), System.currentTimeMillis())
-    add(task, when, period, false)
+    add(task, timeOf(firstTime), period, false)
   }
 
   def scheduleAtFixedRate(task: TimerTask, delay: Long, period: Long): Unit = {
@@ -219,17 +217,16 @@ object Timer {
                 tasks.poll()
                 0L
               } else {
-                val remaining = first.when - System.currentTimeMillis()
+                val now = System.currentTimeMillis()
+                val remaining = first.when - now
                 if (remaining <= 0) {
-                  first.scheduledTime = first.when
+                  // A late fixed-delay run counts from when it is dispatched
+                  val fixedDelay = first.period > 0 && !first.fixedRate
+                  first.scheduledTime = if (fixedDelay) now else first.when
                   tasks.poll()
                   if (first.period > 0) {
                     // A repeating task goes back into the queue
-                    first.when = next(
-                      if (first.fixedRate) first.when
-                      else System.currentTimeMillis(),
-                      first.period
-                    )
+                    first.when = next(first.scheduledTime, first.period)
                     tasks.add(first)
                   } else first.pending = false
                   task = first

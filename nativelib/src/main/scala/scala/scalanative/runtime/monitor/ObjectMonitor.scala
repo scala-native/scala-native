@@ -105,7 +105,12 @@ private[monitor] class ObjectMonitor() {
       throw new IllegalArgumentException(
         "nanosecond timeout value out of range"
       )
-    waitImpl(timeoutMillis * 1000000 + nanos)
+    // Saturate: a huge timeout must not wrap to a negative one
+    val maxMillis = (Long.MaxValue - nanos) / 1000000L
+    waitImpl(
+      if (timeoutMillis > maxMillis) Long.MaxValue
+      else timeoutMillis * 1000000L + nanos
+    )
   }
 
   @alwaysinline def isLockedBy(thread: Thread): Boolean = ownerThread eq thread

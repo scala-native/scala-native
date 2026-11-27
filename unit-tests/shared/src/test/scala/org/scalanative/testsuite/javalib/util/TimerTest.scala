@@ -268,6 +268,35 @@ class TimerTest {
     assertTrue(s"${delay(1)} < $start", delay(1) >= start + 100L)
   }
 
+  @Test def lateFixedDelayRun(): Unit = {
+    val t = timer()
+    // Hold the timer thread past the task's deadline
+    val blocked, release = new CountDownLatch(1)
+    t.schedule(task { blocked.countDown(); await(release) }, 0L)
+    await(blocked)
+    val deadline = System.currentTimeMillis() + 10L
+    val times = new Array[Long](2)
+    val done = new CountDownLatch(1)
+    t.schedule(
+      new TimerTask {
+        def run(): Unit = {
+          times(0) = scheduledExecutionTime()
+          times(1) = System.currentTimeMillis()
+          done.countDown()
+        }
+      },
+      10L,
+      1000000L
+    )
+    Thread.sleep(300)
+    val released = System.currentTimeMillis()
+    release.countDown()
+    await(done)
+    assertTrue(s"${times(0)} < $released", times(0) >= released)
+    assertTrue(s"${times(0)} > ${times(1)}", times(0) <= times(1))
+    assertTrue(deadline <= released)
+  }
+
   @Test def pastDatesAndHugePeriods(): Unit = {
     val t = timer()
     val once = scheduledTimes(1, t.schedule(_, new Date(1L)))
