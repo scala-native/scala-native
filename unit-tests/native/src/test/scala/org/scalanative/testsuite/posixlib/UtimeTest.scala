@@ -3,7 +3,6 @@ package org.scalanative.testsuite.posixlib
 import java.nio.file.Files
 
 import org.junit.Assert._
-import org.junit.Assume._
 import org.junit.Test
 
 import scala.scalanative.meta.LinktimeInfo
@@ -13,8 +12,10 @@ import scala.scalanative.unsafe._
 
 class UtimeTest {
 
-  @Test def utimeSetsAccessAndModificationTimes(): Unit = {
-    assumeFalse(LinktimeInfo.isWindows)
+  @Test def utimeSetsAccessAndModificationTimes(): Unit =
+    if (!LinktimeInfo.isWindows) utimeTest()
+
+  private def utimeTest(): Unit = {
     val file = Files.createTempFile("UtimeTest", ".txt")
     try
       Zone.acquire { implicit z =>

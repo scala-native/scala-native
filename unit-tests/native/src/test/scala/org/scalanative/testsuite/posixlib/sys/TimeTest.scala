@@ -2,7 +2,6 @@ package org.scalanative.testsuite.posixlib
 package sys
 
 import org.junit.Assert._
-import org.junit.Assume._
 import org.junit.Test
 
 import scala.scalanative.meta.LinktimeInfo
@@ -12,8 +11,10 @@ import scala.scalanative.unsafe._
 
 class TimeTest {
 
-  @Test def gettimeofdayMatchesCurrentTimeMillis(): Unit = {
-    assumeFalse(LinktimeInfo.isWindows)
+  @Test def gettimeofdayMatchesCurrentTimeMillis(): Unit =
+    if (!LinktimeInfo.isWindows) gettimeofdayTest()
+
+  private def gettimeofdayTest(): Unit = {
     val tv = stackalloc[timeval]()
     val before = System.currentTimeMillis() / 1000L
     assertEquals(0, gettimeofday(tv, null))
