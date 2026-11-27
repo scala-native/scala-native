@@ -305,6 +305,10 @@ class TimerTest {
 
   @Test def threadOfUnreachableTimerEnds(): Unit = {
     assumeTrue("requires weak references", Platform.isWeakReferenceSupported)
+    assumeFalse(
+      "weak references are sometimes not cleared on Windows CI, see WeakReferenceTestOnJDK9",
+      sys.env.contains("CI") && Platform.isWindows
+    )
     val thread = startIdleTimer(null)
     gcUntilDead(thread, 30000L)
     assertFalse(

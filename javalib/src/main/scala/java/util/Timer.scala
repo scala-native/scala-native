@@ -283,18 +283,18 @@ object Timer {
     /** Callers hold this monitor. */
     def insertTask(task: TimerTask): Unit = {
       tasks.insert(task)
-      notify()
+      notifyAll()
     }
 
     def stopWhenEmpty(): Unit = synchronized {
       unreachable = true
-      notify()
+      notifyAll()
     }
 
     def cancel(): Unit = synchronized {
       cancelled = true
       tasks.reset()
-      notify()
+      notifyAll()
     }
 
     /** Callers hold this monitor. */
