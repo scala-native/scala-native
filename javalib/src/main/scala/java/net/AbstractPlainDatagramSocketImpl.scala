@@ -248,7 +248,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     if (useIPv4Only) connect4(address, port)
     else connect6(address, port)
 
-  override def connect(address: InetAddress, port: Int): Unit = {
+  override def connect(address: InetAddress, port: Int): Unit = synchronized {
     throwIfClosed("connect")
     connectTo(address, port)
     connectedAddress = address
@@ -256,7 +256,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
     connected = true
   }
 
-  override def disconnect(): Unit = {
+  override def disconnect(): Unit = synchronized {
     throwIfClosed("disconnect")
     val wildcard =
       if (useIPv4Only) InetAddress.getByAddress(new Array[Byte](4))
@@ -615,9 +615,17 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
       mcastJoinLeave4(group, netIf, join)
     } else false
 
+  private def hasIPv4Address(netIf: NetworkInterface): Boolean = {
+    val it = netIf.getInetAddresses()
+    var found = false
+    while (!found && it.hasMoreElements())
+      found = it.nextElement().isInstanceOf[Inet4Address]
+    found
+  }
+
   /* FreeBSD before 16 cannot join IPv4 groups on IPv6 sockets, see ip6(4).
-   * Replace the socket with an IPv4 one using the same address, port, peer
-   * and options, unless it already relies on IPv6.
+   * Replace the socket with an IPv4 one using the same address, port and
+   * options, unless it is connected or already relies on IPv6.
    */
   private def switchToIPv4(): Boolean = {
     val storage = stackalloc[posix.sys.socket.sockaddr_storage]()
@@ -634,8 +642,9 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
         InetAddress.getByAddress(new Array[Byte](4))
       case _ => null
     }
-    val canSwitch = localAddr != null && !joinedIPv6Group &&
-      (!connected || connectedAddress.isInstanceOf[Inet4Address])
+    val outIf = multicastInterface
+    val canSwitch = localAddr != null && !joinedIPv6Group && !connected &&
+      (outIf == null || hasIPv4Address(outIf))
     canSwitch && {
       import posix.sys.socket.{SOL_SOCKET, SO_REUSEADDR, SO_REUSEPORT}
       import posix.sys.socket.{SO_BROADCAST, SO_RCVBUF, SO_SNDBUF}
@@ -681,14 +690,11 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
         posix.sys.socket.SOCK_DGRAM,
         0
       )
-      // Bind and connect while the old socket shares the port, then swap
+      // Bind while the old socket shares the port, then swap
       val ready = sock >= 0 && setReusePort(fd.fd, 1) &&
         setReusePort(sock, 1) && (port == 0 || {
           SocketHelpers.prepareSockaddrIn4(localAddr, port, sa4)
           posix.sys.socket.bind(sock, sa4Ptr, sa4Len) == 0
-        }) && (!connected || {
-          SocketHelpers.prepareSockaddrIn4(connectedAddress, connectedPort, sa4)
-          posix.sys.socket.connect(sock, sa4Ptr, sa4Len) == 0
         }) && unistd.dup2(sock, fd.fd) >= 0
       if (sock >= 0) unistd.close(sock)
       if (!ready) setReusePort(fd.fd, oldReusePort)
@@ -702,10 +708,7 @@ private[net] abstract class AbstractPlainDatagramSocketImpl
         setIntOption(in.IPPROTO_IP, in.IP_TOS, tclass)
         setIPv4MulticastOption(ip.IP_MULTICAST_TTL, hops)
         setIPv4MulticastOption(in.IP_MULTICAST_LOOP, loop)
-        val netIf = multicastInterface
-        if (netIf != null)
-          try setMulticastInterface(netIf)
-          catch { case _: SocketException => () }
+        if (outIf != null) setMulticastInterface(outIf)
         true
       }
     }
