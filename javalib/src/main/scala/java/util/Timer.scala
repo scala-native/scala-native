@@ -183,14 +183,17 @@ object Timer {
     }
 
     def purge(): Int = synchronized {
-      var removed = 0
+      // Rebuild once: removing through the iterator searches the queue each time
+      val kept = new ArrayList[TimerTask](tasks.size())
       val it = tasks.iterator()
       while (it.hasNext()) {
         val task = it.next()
-        if (task.lock.synchronized(task.cancelled)) {
-          it.remove()
-          removed += 1
-        }
+        if (!task.lock.synchronized(task.cancelled)) kept.add(task)
+      }
+      val removed = tasks.size() - kept.size()
+      if (removed > 0) {
+        tasks.clear()
+        tasks.addAll(kept)
       }
       removed
     }

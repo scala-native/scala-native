@@ -310,10 +310,11 @@ class TimerTest {
       t.schedule(zero, new Date(0L))
     )
 
-    // The next run of a task with a huge period must not wrap
+    // The next run of a task with a huge period (1 + Long.MaxValue) must not
+    // wrap, or it would block the queue
     val huge =
-      scheduledTimes(1, t.scheduleAtFixedRate(_, new Date(0L), Long.MaxValue))
-    assertEquals(0L, huge(0))
+      scheduledTimes(1, t.scheduleAtFixedRate(_, new Date(1L), Long.MaxValue))
+    assertEquals(1L, huge(0))
     val after = scheduledTimes(1, t.schedule(_, 1L))
     assertTrue(after(0) > 0)
   }
