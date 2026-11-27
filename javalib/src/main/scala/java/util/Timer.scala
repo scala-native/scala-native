@@ -23,7 +23,7 @@
 
 package java.util
 
-import java.lang.ref.Cleaner
+import java.lang.ref.{Cleaner, Reference}
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.scalanative.meta.LinktimeInfo
@@ -63,30 +63,47 @@ class Timer(name: String, isDaemon: Boolean) {
   def purge(): Int = queue.purge()
 
   def schedule(task: TimerTask, time: Date): Unit =
-    queue.schedule(task, Math.max(0L, delayUntil(time)), -1, false)
+    add(task, timeOf(time), -1, false)
 
   def schedule(task: TimerTask, delay: Long): Unit =
-    queue.schedule(task, checkDelay(delay), -1, false)
+    add(task, after(delay), -1, false)
 
-  def schedule(task: TimerTask, delay: Long, period: Long): Unit =
-    queue.schedule(task, checkDelay(delay), checkPeriod(period), false)
+  def schedule(task: TimerTask, delay: Long, period: Long): Unit = {
+    val when = after(delay)
+    add(task, when, checkPeriod(period), false)
+  }
 
   def schedule(task: TimerTask, firstTime: Date, period: Long): Unit = {
     checkPeriod(period)
-    queue.schedule(task, Math.max(0L, delayUntil(firstTime)), period, false)
+    // A fixed-delay task does not catch up: a past first time means now
+    val when = Math.max(timeOf(firstTime), System.currentTimeMillis())
+    add(task, when, period, false)
   }
 
-  def scheduleAtFixedRate(task: TimerTask, delay: Long, period: Long): Unit =
-    queue.schedule(task, checkDelay(delay), checkPeriod(period), true)
+  def scheduleAtFixedRate(task: TimerTask, delay: Long, period: Long): Unit = {
+    val when = after(delay)
+    add(task, when, checkPeriod(period), true)
+  }
 
+  // A first time in the past makes a fixed-rate task catch up
   def scheduleAtFixedRate(
       task: TimerTask,
       firstTime: Date,
       period: Long
   ): Unit = {
     checkPeriod(period)
-    // A first time in the past makes a fixed-rate task catch up
-    queue.schedule(task, delayUntil(firstTime), period, true)
+    add(task, timeOf(firstTime), period, true)
+  }
+
+  private def add(
+      task: TimerTask,
+      when: Long,
+      period: Long,
+      fixedRate: Boolean
+  ): Unit = {
+    queue.schedule(task, when, period, fixedRate)
+    // Until the task is queued, the Cleaner must not stop the thread
+    Reference.reachabilityFence(this)
   }
 }
 
@@ -96,9 +113,12 @@ object Timer {
   // Runs the actions on the reference handler: they only notify a queue
   private lazy val cleaner = Cleaner.create(null)
 
-  private def checkDelay(delay: Long): Long = {
+  /** The time `delay` milliseconds from now. */
+  private def after(delay: Long): Long = {
     if (delay < 0) throw new IllegalArgumentException("Negative delay.")
-    delay
+    val when = System.currentTimeMillis() + delay
+    if (when < 0) throw new IllegalArgumentException("Illegal execution time.")
+    when
   }
 
   private def checkPeriod(period: Long): Long = {
@@ -106,11 +126,15 @@ object Timer {
     period
   }
 
-  private def delayUntil(time: Date): Long = {
-    if (time.getTime() < 0)
-      throw new IllegalArgumentException("Illegal execution time.")
-    time.getTime() - System.currentTimeMillis()
+  private def timeOf(time: Date): Long = {
+    val when = time.getTime()
+    if (when < 0) throw new IllegalArgumentException("Illegal execution time.")
+    when
   }
+
+  /** `time + period`, saturated: a huge period must not wrap. */
+  private def next(time: Long, period: Long): Long =
+    if (time > Long.MaxValue - period) Long.MaxValue else time + period
 
   /** Tells the thread of an unreachable timer to end once its queue is empty.
    */
@@ -134,20 +158,17 @@ object Timer {
 
     def schedule(
         task: TimerTask,
-        delay: Long,
+        when: Long,
         period: Long,
         fixedRate: Boolean
     ): Unit = synchronized {
       if (cancelled)
         throw new IllegalStateException("Timer already cancelled.")
-      val when = delay + System.currentTimeMillis()
-      if (when < 0)
-        throw new IllegalArgumentException("Illegal execution time.")
       task.lock.synchronized {
-        // A task gets a positive `when` when scheduled and a positive
-        // `scheduledTime` when run
-        if (task.when > 0 || task.scheduledTime > 0 || task.cancelled)
+        if (task.scheduled || task.cancelled)
           throw new IllegalStateException("Task already scheduled or cancelled")
+        task.scheduled = true
+        task.pending = true
         task.when = when
         task.period = period
         task.fixedRate = fixedRate
@@ -167,7 +188,8 @@ object Timer {
       var removed = 0
       val it = tasks.iterator()
       while (it.hasNext()) {
-        if (it.next().cancelled) {
+        val task = it.next()
+        if (task.lock.synchronized(task.cancelled)) {
           it.remove()
           removed += 1
         }
@@ -203,11 +225,13 @@ object Timer {
                   tasks.poll()
                   if (first.period > 0) {
                     // A repeating task goes back into the queue
-                    first.when =
-                      if (first.fixedRate) first.when + first.period
-                      else System.currentTimeMillis() + first.period
+                    first.when = next(
+                      if (first.fixedRate) first.when
+                      else System.currentTimeMillis(),
+                      first.period
+                    )
                     tasks.add(first)
-                  } else first.when = 0
+                  } else first.pending = false
                   task = first
                 }
                 remaining

@@ -27,7 +27,13 @@ abstract class TimerTask protected () extends Runnable {
 
   private[util] var cancelled = false
 
-  /** Time of the next run, 0 if none. */
+  /** Set once the task is scheduled: a task is scheduled at most once. */
+  private[util] var scheduled = false
+
+  /** Whether the task will run (again), unless cancelled. */
+  private[util] var pending = false
+
+  /** Time of the next run. */
   private[util] var when = 0L
 
   /** Period of a repeating task, -1 for a one-shot task. */
@@ -42,7 +48,7 @@ abstract class TimerTask protected () extends Runnable {
    *  task that has not run, or a repeating task).
    */
   def cancel(): Boolean = lock.synchronized {
-    val willRun = !cancelled && when > 0
+    val willRun = !cancelled && pending
     cancelled = true
     willRun
   }

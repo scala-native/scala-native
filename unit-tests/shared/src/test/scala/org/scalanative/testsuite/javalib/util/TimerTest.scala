@@ -190,14 +190,18 @@ class TimerTest {
   @Test def failingTaskEndsTimer(): Unit = {
     val t = timer()
     val ran = new CountDownLatch(1)
+    val thread = new Array[Thread](1)
     t.schedule(
       task {
-        ran.countDown(); throw new RuntimeException("expected by TimerTest")
+        thread(0) = Thread.currentThread()
+        ran.countDown()
+        throw new RuntimeException("expected by TimerTest")
       },
       1L
     )
     await(ran)
-    Thread.sleep(50)
+    thread(0).join(10000L)
+    assertFalse("timer thread still alive", thread(0).isAlive())
     assertThrowsMessage(
       classOf[IllegalStateException],
       "Timer already cancelled.",
@@ -231,20 +235,58 @@ class TimerTest {
     assertTrue(seen(0), seen(0).matches("Timer-\\d+"))
   }
 
-  @Test def fixedRateCatchesUp(): Unit = {
+  // Records the scheduled times of the first `runs` runs
+  private def scheduledTimes(
+      runs: Int,
+      schedule: TimerTask => Unit
+  ): Array[Long] = {
+    val times = new Array[Long](runs)
+    val done = new CountDownLatch(runs)
     val count = new AtomicInteger()
-    val past = new Date(System.currentTimeMillis() - 1000)
-    val rate = timer()
-    rate.scheduleAtFixedRate(task(count.incrementAndGet()), past, 100L)
-    Thread.sleep(200)
-    rate.cancel()
-    assertTrue(count.get().toString, count.get() >= 10)
-    val delayed = new AtomicInteger()
-    val delay = timer()
-    delay.schedule(task(delayed.incrementAndGet()), past, 100L)
-    Thread.sleep(150)
-    delay.cancel()
-    assertTrue(delayed.get().toString, delayed.get() <= 3)
+    schedule(new TimerTask {
+      def run(): Unit = {
+        val i = count.getAndIncrement()
+        if (i < runs) {
+          times(i) = scheduledExecutionTime()
+          done.countDown()
+        } else cancel()
+      }
+    })
+    await(done)
+    times
+  }
+
+  @Test def fixedRateCatchesUp(): Unit = {
+    val start = System.currentTimeMillis()
+    val past = start - 1000
+    val rate =
+      scheduledTimes(10, timer().scheduleAtFixedRate(_, new Date(past), 100L))
+    for (i <- 0 until 10) assertEquals(past + i * 100L, rate(i))
+
+    val delay = scheduledTimes(2, timer().schedule(_, new Date(past), 100L))
+    assertTrue(s"${delay(0)} < $start", delay(0) >= start)
+    assertTrue(s"${delay(1)} < $start", delay(1) >= start + 100L)
+  }
+
+  @Test def pastDatesAndHugePeriods(): Unit = {
+    val t = timer()
+    val once = scheduledTimes(1, t.schedule(_, new Date(1L)))
+    assertEquals(1L, once(0))
+
+    val zero = task()
+    t.schedule(zero, new Date(0L))
+    assertThrowsMessage(
+      classOf[IllegalStateException],
+      "Task already scheduled or cancelled",
+      t.schedule(zero, new Date(0L))
+    )
+
+    // The next run of a task with a huge period must not wrap
+    val huge =
+      scheduledTimes(1, t.scheduleAtFixedRate(_, new Date(0L), Long.MaxValue))
+    assertEquals(0L, huge(0))
+    val after = scheduledTimes(1, t.schedule(_, 1L))
+    assertTrue(after(0) > 0)
   }
 
   @Test def cancelFromTask(): Unit = {
@@ -276,14 +318,19 @@ class TimerTest {
 
   @Test def order(): Unit = {
     val t = timer()
+    // Hold the timer thread until all tasks are queued
+    val blocked, release = new CountDownLatch(1)
+    t.schedule(task { blocked.countDown(); await(release) }, 0L)
+    await(blocked)
     val order = new java.util.ArrayList[Integer]()
     val done = new CountDownLatch(3)
-    val start = System.currentTimeMillis() + 50
+    val start = System.currentTimeMillis()
     for (i <- Seq(3, 1, 2))
       t.schedule(
         task { order.synchronized(order.add(i)); done.countDown() },
-        new Date(start + i * 20)
+        new Date(start + i)
       )
+    release.countDown()
     await(done)
     assertEquals("[1, 2, 3]", order.toString)
   }

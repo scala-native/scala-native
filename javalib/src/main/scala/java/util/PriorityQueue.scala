@@ -138,6 +138,7 @@ class PriorityQueue[E] private (
       inner(i) = null.asInstanceOf[E]
     } else {
       inner(i) = inner(newLength)
+      inner(newLength) = null.asInstanceOf[E]
       fixUpOrDown(i)
     }
   }
@@ -223,6 +224,7 @@ class PriorityQueue[E] private (
       val newSize = innerNextIdx - 1
       val result = inner(1)
       inner(1) = inner(newSize)
+      inner(newSize) = null.asInstanceOf[E]
       innerNextIdx = newSize
       fixDown(1)
       result
