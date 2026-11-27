@@ -232,4 +232,24 @@ class ObjectMonitorTest {
     }
   }
 
+  @Test def `wait with a huge timeout blocks until notified`(): Unit = {
+    val lock = new Object
+    val waiting = new java.util.concurrent.CountDownLatch(1)
+    @volatile var returned = false
+    val waiter = new Thread(() =>
+      lock.synchronized {
+        waiting.countDown()
+        lock.wait(Long.MaxValue / 1000L)
+        returned = true
+      }
+    )
+    waiter.setDaemon(true)
+    waiter.start()
+    waiting.await()
+    Thread.sleep(200)
+    assertFalse("wait returned without notify", returned)
+    lock.synchronized(lock.notifyAll())
+    waiter.join(10000)
+    assertTrue("wait did not return after notify", returned)
+  }
 }
