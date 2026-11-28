@@ -115,8 +115,14 @@ private[interflow] object UnwindSite {
    */
   def mayThrow(op: nir.Op): Boolean = op match {
     case _: nir.Op.Load | _: nir.Op.Store | _: nir.Op.Fence | _: nir.Op.Var |
-        _: nir.Op.Varload | _: nir.Op.Varstore | _: nir.Op.AlignmentOf =>
+        _: nir.Op.Varload | _: nir.Op.Varstore | _: nir.Op.AlignmentOf |
+        _: nir.Op.Stackalloc =>
       false
+    // Throw only the NullPointerException of their null guard
+    case nir.Op.Fieldload(_, obj, _)     => isNullable(obj)
+    case nir.Op.Fieldstore(_, obj, _, _) => isNullable(obj)
+    case nir.Op.Field(obj, _)            => isNullable(obj)
+    case nir.Op.Arraylength(arr)         => isNullable(arr)
     // An LLVM intrinsic cannot be invoked with an unwind destination
     case nir.Op.Call(_, nir.Val.Global(nir.Global.Member(_, sig), _), _)
         if isLLVMIntrinsic(sig) =>
@@ -132,14 +138,18 @@ private[interflow] object UnwindSite {
     // Blocks that take an exception and jump
     val forwarders =
       mutable.Map.empty[nir.Local, (nir.Val.Local, nir.Next.Label)]
-    insts.sliding(2).foreach {
-      case Seq(
-            nir.Inst.Label(id, Seq(param)),
-            nir.Inst.Jump(next: nir.Next.Label)
-          ) =>
-        forwarders(id) = (param, next)
-      case _ =>
-        ()
+    var previous: nir.Inst = null
+    insts.foreach { inst =>
+      (previous, inst) match {
+        case (
+              nir.Inst.Label(id, Seq(param)),
+              nir.Inst.Jump(next: nir.Next.Label)
+            ) =>
+          forwarders(id) = (param, next)
+        case _ =>
+          ()
+      }
+      previous = inst
     }
 
     // Only the unwind edge of a let or of an unreachable can be redirected
@@ -235,6 +245,11 @@ private[interflow] object UnwindSite {
       }
       result.result()
     }
+  }
+
+  private def isNullable(value: nir.Val): Boolean = value.ty match {
+    case ty: nir.Type.RefKind => ty.isNullable
+    case _                    => true
   }
 
   private def isLLVMIntrinsic(sig: nir.Sig): Boolean =

@@ -305,6 +305,26 @@ class ExceptionHandlersTest extends OptimizerSpec {
     assertEquals(run.show, Set(7), returnedInts(run))
   }
 
+  /* An access to a field of an object that is not null does not throw. */
+  @Test def fieldOfNonNullObjectDoesNotUnwind(): Unit = optimized(
+    """|object Test {
+       |  final class Box(var value: Int)
+       |  @noinline def escape(box: Box): Unit = ()
+       |  @noinline def run(x: Int): Int = {
+       |    val box = new Box(x)
+       |    escape(box)
+       |    try { box.value += 1; box.value }
+       |    catch { case _: Throwable => -1 }
+       |  }
+       |  def main(args: Array[String]): Unit = println(run(args.length))
+       |}
+       |""".stripMargin
+  ) { defns =>
+    val run = optimizedMethod(defns, "Test$", "run")
+    assertTrue(run.show, unwinds(run).isEmpty)
+    assertFalse(run.show, returnedInts(run).contains(-1))
+  }
+
   @Test def calleeThatDoesNotReturnKeepsItsUnwindEdge(): Unit = optimized(
     """|object Test {
        |  @noinline def fail(x: Int): Nothing = throw new IllegalStateException
