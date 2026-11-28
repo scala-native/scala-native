@@ -64,21 +64,32 @@ object select {
    * 	} // fdsetPtr and memory it points to are not valid outsize of Zone.
    */
 
-  /* Declare pselect() as a direct call through to C. There no
-   * @name("scalanative_pselect") is needed.
-   * Guard code exists to ensure match with operating system at compile time.
-   *   fd_set is guarded by code in select.c
-   *   timespec is guarded by code in time.c (distinct from sys/time.c)
-   */
-
+  @name("scalanative_pselect")
   def pselect(
       nfds: CInt,
       readfds: Ptr[fd_set],
       writefds: Ptr[fd_set],
       exceptfds: Ptr[fd_set],
       timeout: Ptr[timespec],
-      sigmask: sigset_t
+      sigmask: Ptr[sigset_t]
   ): CInt = extern
+
+  @deprecated(
+    "Binary compatibility: code compiled against 0.5.13 links to this extern name.",
+    "0.5.14"
+  )
+  @name("pselect")
+  private[posix] def _pselect(
+      nfds: CInt,
+      readfds: Ptr[fd_set],
+      writefds: Ptr[fd_set],
+      exceptfds: Ptr[fd_set],
+      timeout: Ptr[timespec],
+      sigmask: Ptr[sigset_t]
+  ): CInt =
+    externRedirect(
+      pselect(nfds, readfds, writefds, exceptfds, timeout, sigmask)
+    )
 
   // select() is a excellent candidate to be changed to use direct call-thru.
   @name("scalanative_select")

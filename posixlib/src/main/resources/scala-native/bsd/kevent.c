@@ -4,7 +4,8 @@
 #define KQUEUE_FREEBSD 1
 // also OpenBSD etc.
 
-#if defined(__FreeBSD__) || defined(__APPLE__) && defined(__MACH__)
+#if defined(__FreeBSD__) || defined(__NetBSD__) ||                             \
+    defined(__APPLE__) && defined(__MACH__)
 #define HAVE_KQUEUE KQUEUE_FREEBSD
 #endif
 
@@ -18,7 +19,9 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <sys/types.h>
 #include <sys/event.h>
+#include <time.h>
 
 int scalanative_kevent_evfilt_read() { return EVFILT_READ; }
 int scalanative_kevent_evfilt_write() { return EVFILT_WRITE; }
@@ -54,6 +57,14 @@ int scalanative_kevent_note_exitstatus() {
 }
 
 size_t scalanative_kevent_size() { return sizeof(struct kevent); }
+
+// Calls the header-selected symbol, e.g. NetBSD's __kevent100, whose counts
+// are size_t.
+int scalanative_kevent(int kq, const struct kevent *changelist, int nchanges,
+                       struct kevent *eventlist, int nevents,
+                       const struct timespec *timeout) {
+    return kevent(kq, changelist, nchanges, eventlist, nevents, timeout);
+}
 
 void scalanative_kevent_set(struct kevent *ev, int idx, uintptr_t ident,
                             int16_t filter, uint16_t flags, uint32_t fflags,

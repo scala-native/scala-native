@@ -380,12 +380,24 @@ import scala.scalanative.unsafe._
     extern
   @blocking
   def sigsuspend(sigmask: Ptr[sigset_t]): CInt = extern
+  @name("scalanative_sigtimedwait")
   @blocking
   def sigtimedwait(
       set: Ptr[sigset_t],
       info: Ptr[siginfo_t],
       timeout: Ptr[timespec]
   ): CInt = extern
+  @deprecated(
+    "Binary compatibility: code compiled against 0.5.13 links to this extern name.",
+    "0.5.14"
+  )
+  @blocking
+  @name("sigtimedwait")
+  private[posix] def _sigtimedwait(
+      set: Ptr[sigset_t],
+      info: Ptr[siginfo_t],
+      timeout: Ptr[timespec]
+  ): CInt = externRedirect(sigtimedwait(set, info, timeout))
   @blocking
   def sigwait(set: Ptr[sigset_t], sig: Ptr[CInt]): CInt = extern
   @blocking

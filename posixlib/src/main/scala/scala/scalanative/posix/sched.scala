@@ -28,7 +28,18 @@ object sched {
 
   def sched_get_priority_min(algorithm: CInt): CInt = extern
 
+  @name("scalanative_sched_rr_get_interval")
   def sched_rr_get_interval(pid: pid_t, t: Ptr[timespec]): CInt = extern
+  @deprecated(
+    "Binary compatibility: code compiled against 0.5.13 links to this extern name.",
+    "0.5.14"
+  )
+  @name("sched_rr_get_interval")
+  private[posix] def _sched_rr_get_interval(
+      pid: pid_t,
+      t: Ptr[timespec]
+  ): CInt =
+    externRedirect(sched_rr_get_interval(pid, t))
 
   def sched_setaffinity(
       pid: pid_t,

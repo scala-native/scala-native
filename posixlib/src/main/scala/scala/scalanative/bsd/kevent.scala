@@ -47,6 +47,7 @@ object kevent {
 
   def kqueue(): CInt = extern
 
+  @name("scalanative_kevent")
   @blocking
   def kevent(
       kq: CInt,
@@ -56,6 +57,24 @@ object kevent {
       nevents: CInt,
       timeout: Ptr[time.timespec]
   ): CInt = extern
+
+  @deprecated(
+    "Binary compatibility: code compiled against 0.5.13 links to this extern name.",
+    "0.5.14"
+  )
+  @blocking
+  @name("kevent")
+  private[scalanative] def _kevent(
+      kq: CInt,
+      changelist: CVoidPtr,
+      nchanges: CInt,
+      eventlist: CVoidPtr,
+      nevents: CInt,
+      timeout: Ptr[time.timespec]
+  ): CInt =
+    externRedirect(
+      kevent(kq, changelist, nchanges, eventlist, nevents, timeout)
+    )
 
   def scalanative_kevent_size(): CSize = extern
 

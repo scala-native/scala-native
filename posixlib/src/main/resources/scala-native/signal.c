@@ -235,5 +235,14 @@ int scalanative_sigaction(int sig, struct scalanative_sigaction *sn_act,
     }
     return rc;
 }
+
+#if !defined(__APPLE__) && !defined(__OpenBSD__) &&                            \
+    (!defined(__ANDROID__) || __ANDROID_API__ >= 23)
+// Calls the header-selected symbol, e.g. NetBSD's ____sigtimedwait50.
+int scalanative_sigtimedwait(const sigset_t *set, siginfo_t *info,
+                             const struct timespec *timeout) {
+    return sigtimedwait(set, info, timeout);
+}
+#endif
 #endif // is Unix or MacOS
 #endif
