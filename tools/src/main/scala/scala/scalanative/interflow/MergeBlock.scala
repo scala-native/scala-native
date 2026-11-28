@@ -16,6 +16,8 @@ private[interflow] final class MergeBlock(
   var end: State = _
   var cf: nir.Inst.Cf = _
   var invalidations: Int = 0
+  // Blocks that the instructions of this block unwind to, see UnwindSite
+  val trampolines = mutable.UnrolledBuffer.empty[MergeBlock]
   implicit def cfPos: nir.SourcePosition = {
     if (cf != null) cf.pos
     else label.pos
@@ -40,14 +42,8 @@ private[interflow] final class MergeBlock(
       }
       nir.Next.Label(nextBlock.id, mergeValues)
     }
-    def mergeUnwind(next: nir.Next): nir.Next = next match {
-      case nir.Next.None =>
-        next
-      case nir.Next.Unwind(exc, next: nir.Next.Label) =>
-        nir.Next.Unwind(exc, mergeNext(next))
-      case _ =>
-        util.unreachable
-    }
+    // An unwind edge goes to a trampoline, which has no values to merge
+    def mergeUnwind(next: nir.Next): nir.Next = next
 
     val params = block.phis.map(_.param)
     result.label(block.id, params)

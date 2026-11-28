@@ -111,9 +111,9 @@ private[interflow] trait PolyInline { self: Interflow =>
 
     val objcls = state.getClassCache.getOrElseUpdate(
       obj, {
-        val meth = emit.method(obj, nir.Rt.GetClassSig, nir.Next.None)
+        val meth = state.emit(nir.Op.Method(obj, nir.Rt.GetClassSig))
         val methty = nir.Type.Function(Seq(nir.Rt.Object), nir.Rt.Class)
-        emit.call(methty, meth, Seq(obj), nir.Next.None)
+        state.emit(nir.Op.Call(methty, meth, Seq(obj)))
       }
     )
 
@@ -173,20 +173,20 @@ private[interflow] trait PolyInline { self: Interflow =>
           (m, ty)
         }
       val callState = state.fullClone(callLabel)
+      // Each target is called in place of the instruction being evaluated
+      callState.handler = state.handler
       callState.fresh = fresh
       callState.emit = new nir.InstructionBuilder()(fresh)
       val value =
         if (shallInline(target, cargs)(callState, analysis))
           `inline`(target, cargs)(callState, analysis, scopeIdId)
         else
-          callState.emit.call(
-            targetType,
-            nir.Val.Global(target, nir.Type.Ptr),
-            cargs,
-            nir.Next.None
+          callState.emit(
+            nir.Op.Call(targetType, nir.Val.Global(target, nir.Type.Ptr), cargs)
           )
       val res = callState.materialize(value)
       emit ++= callState.emit
+      state.sites ++= callState.sites
       if (preserveDebugInfo) {
         state.localNames.addMissing(callState.localNames)
         state.virtualNames.addMissing(callState.virtualNames)

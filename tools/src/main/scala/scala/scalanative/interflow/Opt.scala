@@ -13,7 +13,9 @@ private[interflow] trait Opt { self: Interflow =>
     val defn =
       getOriginal(originalName(name))
 
-    defn.attrs.opt != nir.Attr.NoOpt && !defn.hasUnwind
+    // Debug builds leave methods with exception handlers as they are
+    defn.attrs.opt != nir.Attr.NoOpt &&
+      (!defn.hasUnwind || mode != build.Mode.Debug)
   }
 
   def opt(name: nir.Global.Member): nir.Defn.Define =
@@ -30,7 +32,9 @@ private[interflow] trait Opt { self: Interflow =>
           rawInsts: Seq[nir.Inst],
           debugInfo: DebugInfo
       ) = {
-        val insts = nir.ControlFlow.removeDeadBlocks(rawInsts)
+        val insts = UnwindSite.bypassTrampolines(
+          nir.ControlFlow.removeDeadBlocks(rawInsts)
+        )
         val newDebugInfo = if (preserveDebugInfo) {
           // TODO: filter-out unreachable scopes
           val scopes = debugInfo.lexicalScopes.sorted
@@ -47,7 +51,11 @@ private[interflow] trait Opt { self: Interflow =>
 
       // Create new fresh and state for the first basic block.
       val fresh = nir.Fresh(0)
-      val state = new State(nir.Local(0))(preserveDebugInfo)
+      val state = new State(
+        nir.Local(0),
+        inOuterRegion = false,
+        blockFresh = fresh
+      )(preserveDebugInfo)
 
       // Interflow usually infers better types on our erased type system
       // than scalac, yet we live it as a benefit of the doubt and make sure
@@ -102,7 +110,8 @@ private[interflow] trait Opt { self: Interflow =>
                 state = state,
                 doInline = false,
                 retTy = origRetTy,
-                parentScopeId = nir.ScopeId.TopLevel
+                parentScopeId = nir.ScopeId.TopLevel,
+                inOuterRegion = false
               )
             } finally {
               popBlockFresh()
@@ -161,7 +170,8 @@ private[interflow] trait Opt { self: Interflow =>
       state: State,
       doInline: Boolean,
       retTy: nir.Type,
-      parentScopeId: nir.ScopeId
+      parentScopeId: nir.ScopeId,
+      inOuterRegion: Boolean
   ): Seq[MergeBlock] = {
     val processor =
       MergeProcessor.fromEntry(
@@ -172,7 +182,8 @@ private[interflow] trait Opt { self: Interflow =>
         doInline = doInline,
         blockFresh = blockFresh,
         eval = this,
-        parentScopeId = parentScopeId
+        parentScopeId = parentScopeId,
+        inOuterRegion = inOuterRegion
       )
 
     try {

@@ -237,9 +237,24 @@ class LocalNamesTest extends OptimizerSpec {
             checkNotHasLet[nir.Op.Arraystore]("arrayStore")
             checkHasLetEither[nir.Op.Arrayload, nir.Op.Load]("arrayLoad")
             checkHasLetEither[nir.Op.Arraylength, nir.Op.Load]("arrayLength")
-            // Filter out inlined names
+            // Filter out inlined names, the ones of synchronized blocks among
+            // them. `module` is loaded again where an exception handler
+            // needs it.
             val filteredOut =
-              Seq("buffer", "addr", "rawptr", "toPtr", "fromPtr", "size")
+              Seq(
+                "buffer",
+                "addr",
+                "rawptr",
+                "toPtr",
+                "fromPtr",
+                "size",
+                "expected",
+                "x1",
+                "x11",
+                "current",
+                "threadId",
+                "module"
+              )
             assertDistinct(lets.values.toSeq.filterNot(filteredOut.contains))
           }
       checkLocalNames(result.defns, beforeLowering = true)

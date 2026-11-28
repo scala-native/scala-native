@@ -37,8 +37,8 @@ private[interflow] trait Inline { self: Interflow =>
         def calleeTooBig = defn.insts.size > maxCalleeSize
         def callerTooBig = mergeProcessor.currentSize() > maxCallerSize
         def inlineDepthLimitExceeded = inliningBacktrace.size > maxInlineDepth
-        def hasUnwind = defn.hasUnwind
-
+        // Debug builds do not evaluate exception handlers
+        def hasHandlers = defn.hasUnwind && mode == build.Mode.Debug
         val shall = mode match {
           case build.Mode.Debug =>
             alwaysInline || isCtor
@@ -50,10 +50,9 @@ private[interflow] trait Inline { self: Interflow =>
             alwaysInline || hintInline || isSmall || isCtor || hasVirtualArgs
         }
         lazy val shallNot = {
-          // A callee with exception handlers is not inlined: its throws and
-          // calls would have to be remapped to the caller's handlers
           def hardLimits =
-            isRecursive || isDenylisted || noInline || isExtern || hasUnwind
+            isRecursive || isDenylisted || noInline || isExtern ||
+              hasHandlers
           def softLimits =
             calleeTooBig || callerTooBig || inlineDepthLimitExceeded
 
@@ -77,7 +76,7 @@ private[interflow] trait Inline { self: Interflow =>
                   s"* caller is too big (${mergeProcessor.currentSize()} > $maxCallerSize)"
                 )
               if (isExtern) logger("* is an extern method")
-              if (hasUnwind) logger("* has unwind")
+              if (hasHandlers) logger("* has unwind")
               if (inlineDepthLimitExceeded)
                 logger("* inline depth limit exceeded")
             }
@@ -148,15 +147,20 @@ private[interflow] trait Inline { self: Interflow =>
       val nir.Type.Function(_, origRetTy) = defn.ty
 
       implicit val srcPosition: nir.SourcePosition = defn.pos
+      // Whether an exception thrown by the callee has a handler in this
+      // method or in one it is being inlined into
+      val inTryRegion = state.inTryRegion
+      val adaptedArgs = adapt(args, defn.ty)
       val blocks = inliningBacktrace.tracked(name) {
         process(
           insts = defn.insts.toArray,
           debugInfo = defn.debugInfo,
-          args = adapt(args, defn.ty),
+          args = adaptedArgs,
           state = state,
           doInline = true,
           retTy = origRetTy,
-          parentScopeId = parentScopeId
+          parentScopeId = parentScopeId,
+          inOuterRegion = inTryRegion
         )
       }
 
@@ -164,57 +168,73 @@ private[interflow] trait Inline { self: Interflow =>
 
       def nothing = {
         emit.label(state.fresh(), Seq.empty)
-        nir.Val.Zero(nir.Type.Nothing)
+        NoValue
       }
 
-      val (res, endState) = blocks match {
-        case Seq() =>
-          util.unreachable
+      // The entry block continues the block of the call, the others start
+      // with their label
+      val entry = blocks.head
+      def body(block: MergeBlock): Seq[nir.Inst] =
+        if (block eq entry) block.toInsts().tail
+        else block.toInsts()
 
-        case Seq(block) =>
-          block.cf match {
-            case nir.Inst.Ret(value) =>
-              emit ++= block.end.emit
-              (value, block.end)
-            case nir.Inst.Throw(value, unwind) =>
-              val excv = block.end.materialize(value)
-              emit ++= block.end.emit
-              emit.raise(excv, unwind)
-              (nothing, block.end)
-            case nir.Inst.Unreachable(unwind) =>
-              emit ++= block.end.emit
-              emit.unreachable(unwind)
-              (nothing, block.end)
-            case _ =>
-              unreachable
-          }
+      def emitBlock(block: MergeBlock): Unit = block.cf match {
+        case nir.Inst.Throw(value, nir.Next.None)
+            if inTryRegion && isNonNull(value)(block.end) =>
+          // The exception goes to its handler without unwinding, and without
+          // being allocated if the handler does not let it escape
+          val site = block.end.newThrownSite(value)
+          emit ++= body(block).init
+          emit.jump(nir.Next.Label(site.trampoline, Seq.empty))
+        case nir.Inst.Throw(value, nir.Next.None) =>
+          val excv = block.end.materialize(value)
+          val unwind =
+            if (inTryRegion) block.end.newUnwindSite().unwind
+            else nir.Next.None
+          emit ++= body(block).init
+          emit.raise(excv, unwind)
+        case _ =>
+          emit ++= body(block)
+      }
 
-        case first +: rest =>
-          emit ++= first.toInsts().tail
+      val (res, endState) =
+        blocks.find(_.cf.isInstanceOf[nir.Inst.Ret]) match {
+          case None =>
+            blocks.foreach(emitBlock)
+            (nothing, state)
+          case Some(block) =>
+            val nir.Inst.Ret(value) = block.cf: @unchecked
+            if (block eq entry) {
+              emit ++= body(block).init
+              // Handlers and trampolines of the callee are out of the way
+              if (blocks.tail.nonEmpty) {
+                val continue = state.fresh()
+                emit.jump(nir.Next(continue))
+                blocks.tail.foreach(emitBlock)
+                emit.label(continue)
+              }
+            } else {
+              blocks.foreach { other =>
+                if (other ne block) emitBlock(other)
+              }
+              emit ++= block.toInsts().init
+            }
+            (value, block.end)
+        }
 
-          rest.foreach { block =>
-            block.cf match {
-              case _: nir.Inst.Ret =>
-                ()
-              case nir.Inst.Throw(value, unwind) =>
-                val excv = block.end.materialize(value)
-                emit ++= block.toInsts().init
-                emit.raise(excv, unwind)
-              case _ =>
-                emit ++= block.toInsts()
+      // Instructions of the callee that have no handler in it unwind to
+      // the handler of the call, or to the one of a caller of this method
+      if (inTryRegion) {
+        lazy val callerState = state.fullClone(state.blockId)
+        val roots = adaptedArgs ++ args
+        blocks.foreach { block =>
+          block.end.sites.foreach { site =>
+            if (site.handler eq nir.Next.None) {
+              site.passTo(callerState, roots, state.handler)
+              state.sites += site
             }
           }
-
-          rest
-            .collectFirst {
-              case block if block.cf.isInstanceOf[nir.Inst.Ret] =>
-                val nir.Inst.Ret(value) = block.cf: @unchecked
-                emit ++= block.toInsts().init
-                (value, block.end)
-            }
-            .getOrElse {
-              (nothing, state)
-            }
+        }
       }
       if (self.preserveDebugInfo) {
         blocks.foreach { block =>

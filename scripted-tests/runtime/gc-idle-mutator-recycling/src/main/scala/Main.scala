@@ -40,6 +40,10 @@ object Main {
     kept
   }
 
+  // Keeps the short-lived arrays of `full` allocated: an array that does not
+  // leave the loop is removed by the optimizer, and nothing is collected
+  @noinline private def first(values: Array[Long]): Long = values(0)
+
   private def length(list: Node): Int = {
     var n = 0
     var cursor = list
@@ -115,7 +119,7 @@ object Main {
         while (i < args(2).toInt) {
           val tmp = new Array[Long](4)
           tmp(0) = i
-          acc += tmp(0)
+          acc += first(tmp)
           i += 1
         }
         sink = live

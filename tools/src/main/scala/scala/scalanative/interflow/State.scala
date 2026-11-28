@@ -7,9 +7,17 @@ import scalanative.codegen.Lower
 import scalanative.linker._
 import scalanative.util.unreachable
 
-private[interflow] final class State(val blockId: nir.Local)(
-    preserveDebugInfo: Boolean
-) {
+/** @param inOuterRegion
+ *    this is a state of a callee inlined at an instruction with a handler,
+ *    either in its direct caller or further up
+ *  @param blockFresh
+ *    names the blocks of the method being optimized
+ */
+private[interflow] final class State(
+    val blockId: nir.Local,
+    val inOuterRegion: Boolean,
+    blockFresh: nir.Fresh
+)(preserveDebugInfo: Boolean) {
   var fresh = nir.Fresh(blockId.id)
   /* Performance Note: nir.OpenHashMap/LongMap/AnyRefMap have a faster clone()
    * operation. This really makes a difference on fullClone() */
@@ -23,6 +31,19 @@ private[interflow] final class State(val blockId: nir.Local)(
   // state so that back-to-back virtual calls on the same receiver don't each
   // re-emit a getClass call (and subsequent icmp eq's can be CSE'd by LLVM).
   var getClassCache = mutable.AnyRefMap.empty[nir.Val, nir.Val]
+
+  /* Exception handling context, see [[UnwindSite]].
+   *
+   * `handler` is the handler of the instruction being evaluated,
+   * `nir.Next.None` if it has none. Eval sets it for every instruction and
+   * clears it when it is done with the block, so that what is emitted when
+   * states are merged has no handler. An instruction that may throw is
+   * emitted with an unwind edge if it has a handler here or in a caller, and
+   * `sites` collects those edges.
+   */
+  var handler: nir.Next = nir.Next.None
+  val sites = mutable.UnrolledBuffer.empty[UnwindSite]
+  def inTryRegion: Boolean = (handler ne nir.Next.None) || inOuterRegion
 
   // Delayed init
   var localNames: mutable.OpenHashMap[nir.Local, String] = _
@@ -99,28 +120,73 @@ private[interflow] final class State(val blockId: nir.Local)(
       }
     )
   }
-  def emit(op: nir.Op, idempotent: Boolean = false)(implicit
+  def emit(
+      op: nir.Op,
+      idempotent: Boolean = false,
+      mayThrow: Boolean = true
+  )(implicit
       srcPosition: nir.SourcePosition,
       scopeId: nir.ScopeId
   ): nir.Val.Local = {
+    def let(): nir.Val.Local =
+      if (mayThrow && inTryRegion && UnwindSite.mayThrow(op)) {
+        emit.let(op, newUnwindSite().unwind)
+      } else emit.let(op, nir.Next.None)
+
     if (op.isIdempotent || idempotent) {
       if (emitted.contains(op)) {
         emitted(op)
       } else {
-        val value = emit.let(op, nir.Next.None)
+        val value = let()
         emitted(op) = value
         value
       }
-    } else emit.let(op, nir.Next.None)
+    } else let()
   }
 
+  /** Records an unwind edge leaving this state at the current point. The
+   *  handler will see the state as it is now.
+   */
+  def newUnwindSite(): UnwindSite.Unwinding = {
+    val trampoline = MergeProcessor.newBlockId(blockFresh)
+    val site = new UnwindSite.Unwinding(
+      trampoline = trampoline,
+      exc = nir.Val.Local(fresh(), nir.Rt.Throwable),
+      origin =
+        if (handler ne nir.Next.None) fullClone(trampoline)
+        else inheritableClone(trampoline),
+      ownHandler = handler
+    )
+    sites += site
+    site
+  }
+
+  /** Records a throw of an inlined callee, which the handler of a caller will
+   *  take without unwinding. This state, the one at the end of the block that
+   *  throws, is not changed afterwards.
+   */
+  def newThrownSite(value: nir.Val): UnwindSite.Thrown = {
+    val site = new UnwindSite.Thrown(
+      trampoline = MergeProcessor.newBlockId(blockFresh),
+      value = value,
+      origin = this
+    )
+    sites += site
+    site
+  }
+
+  /** Emits a part of the allocation of a virtual instance. An allocation that
+   *  has been delayed is not attributed to the try region it was written in,
+   *  unlike a delayed operation.
+   */
   def emitVirtual(
       addr: Addr
   )(op: nir.Op, idempotent: Boolean = false): nir.Val.Local = {
     val instance = heap(addr)
     import instance.{srcPosition, scopeId}
 
-    val value = emit(op, idempotent)
+    val value =
+      emit(op, idempotent, mayThrow = instance.isInstanceOf[DelayedInstance])
     // there might be cases when virtualName for given address might be assigned to two different instances
     // It can happen when we deal with partially-evaluated instances, e.g. arrayalloc + arraystore
     // Don't emit local names for ops returning unit value
@@ -284,14 +350,36 @@ private[interflow] final class State(val blockId: nir.Local)(
 
     reachable
   }
+
+  /** A copy of this state to continue in another block. It starts without a
+   *  handler and without unwind sites, which belong to this block.
+   */
   def fullClone(block: nir.Local): State = {
-    val newstate = new State(block)(preserveDebugInfo)
+    val newstate =
+      new State(block, inOuterRegion, blockFresh)(preserveDebugInfo)
     newstate.heap = heap.mapValuesNow(_.clone())
     newstate.locals = locals.clone()
     newstate.delayed = delayed.clone()
     newstate.emitted = emitted.clone()
     newstate.getClassCache = getClassCache.clone()
 
+    if (preserveDebugInfo) {
+      newstate.virtualNames = virtualNames.mapValuesNow(identity)
+      newstate.localNames = localNames.clone()
+    }
+    newstate
+  }
+
+  /** A copy of what `inherit` reads from this state. It is enough for a state
+   *  that is only passed to a caller, which is much cheaper than `fullClone`
+   *  when most of the instructions of a callee inlined in a try region are
+   *  unwind sites.
+   */
+  private def inheritableClone(block: nir.Local): State = {
+    val newstate =
+      new State(block, inOuterRegion, blockFresh)(preserveDebugInfo)
+    newstate.heap = heap.mapValuesNow(_.clone())
+    newstate.emitted = emitted.clone()
     if (preserveDebugInfo) {
       newstate.virtualNames = virtualNames.mapValuesNow(identity)
       newstate.localNames = localNames.clone()

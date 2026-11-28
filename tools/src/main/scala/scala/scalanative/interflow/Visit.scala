@@ -41,8 +41,14 @@ private[interflow] trait Visit { self: Interflow =>
             defn.attrs.specialize != nir.Attr.NoSpecialize
           val differentArgumentTypes =
             argumentTypes(name) != argtys
+          // A method with exception handlers has one copy, as it had when
+          // handlers were not evaluated. Where its argument types matter the
+          // most it is inlined, which specializes it as well.
+          val noHandlers =
+            !defn.hasUnwind
 
-          canOptimize && canSpecialize && nonExtern && differentArgumentTypes
+          canOptimize && canSpecialize && nonExtern && noHandlers &&
+            differentArgumentTypes
         }
     }
 
