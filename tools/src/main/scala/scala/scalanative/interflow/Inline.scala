@@ -41,7 +41,8 @@ private[interflow] trait Inline { self: Interflow =>
         def hasHandlers = defn.hasUnwind && mode == build.Mode.Debug
         /* A frame with exception handlers does not get stack allocations
          * it would not have without inlining: before handlers were
-         * evaluated nothing was inlined into such a frame. A stack
+         * evaluated nothing was inlined into such a frame. The handlers of
+         * a callee inlined earlier count as well. A stack
          * allocation outside of the entry block makes the frame dynamically
          * sized, which a continuation cannot relocate when a virtual thread
          * is suspended. Synchronized blocks are the common case: the monitor
@@ -165,19 +166,18 @@ private[interflow] trait Inline { self: Interflow =>
       val inTryRegion = state.inTryRegion
       val adaptedArgs = adapt(args, defn.ty)
       val blocks = inliningBacktrace.tracked(name) {
+        // Its handlers stay in the frame of the method being optimized
         if (defn.hasUnwind) enterHandlerScope()
-        try
-          process(
-            insts = defn.insts.toArray,
-            debugInfo = defn.debugInfo,
-            args = adaptedArgs,
-            state = state,
-            doInline = true,
-            retTy = origRetTy,
-            parentScopeId = parentScopeId,
-            inOuterRegion = inTryRegion
-          )
-        finally if (defn.hasUnwind) leaveHandlerScope()
+        process(
+          insts = defn.insts.toArray,
+          debugInfo = defn.debugInfo,
+          args = adaptedArgs,
+          state = state,
+          doInline = true,
+          retTy = origRetTy,
+          parentScopeId = parentScopeId,
+          inOuterRegion = inTryRegion
+        )
       }
 
       val emit = new nir.InstructionBuilder()(state.fresh)

@@ -180,7 +180,6 @@ private[scalanative] class Interflow(val config: build.Config)(implicit
   def handlerScopes_=(value: Int): Unit = handlerScopesTl.set(value)
   def inHandlerScope: Boolean = handlerScopes > 0
   def enterHandlerScope(): Unit = handlerScopes += 1
-  def leaveHandlerScope(): Unit = handlerScopes -= 1
 
   def blockFresh: nir.Fresh =
     blockFreshTl.get.head

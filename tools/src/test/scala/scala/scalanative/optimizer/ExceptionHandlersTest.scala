@@ -239,6 +239,30 @@ class ExceptionHandlersTest extends OptimizerSpec {
       assertTrue(plain.show, plain.hasStackalloc)
     }
 
+  @Test def stackAllocationIsNotInlinedAfterCalleeWithHandlers(): Unit =
+    optimized(
+      """|import scala.scalanative.unsafe._
+         |object Test {
+         |  @noinline def opaque(x: Int): Int = x
+         |  @inline def onStack(x: Int): Int = {
+         |    val ptr = stackalloc[Int]()
+         |    !ptr = opaque(x)
+         |    !ptr
+         |  }
+         |  @inline def guarded(x: Int): Int =
+         |    try opaque(x)
+         |    catch { case _: IllegalStateException => -1 }
+         |  @noinline def run(x: Int): Int = guarded(x) + onStack(x)
+         |  def main(args: Array[String]): Unit = println(run(args.length))
+         |}
+         |""".stripMargin
+    ) { defns =>
+      val run = optimizedMethod(defns, "Test$", "run")
+      assertFalse(run.show, calls(run, "guarded"))
+      assertTrue(run.show, calls(run, "onStack"))
+      assertFalse(run.show, run.hasStackalloc)
+    }
+
   @Test def debugModeLeavesHandlersAlone(): Unit = optimized(
     """|object Test {
        |  def twice(x: Int): Int = x + x
