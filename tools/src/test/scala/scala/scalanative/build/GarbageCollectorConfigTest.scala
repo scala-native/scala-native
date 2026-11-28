@@ -439,6 +439,84 @@ class GarbageCollectorConfigTest {
     assertValid(resolve(GC.boehm)(_.withMaxHeapSize(512.kb)))
   }
 
+  @Test def generational(): Unit = {
+    def config(gc: GC, compileOptions: Seq[String] = Nil)(
+        update: GarbageCollectorConfig => GarbageCollectorConfig
+    ) = Config.empty.withCompilerConfig(
+      NativeConfig.empty
+        .withGC(gc)
+        .withCompileOptions(compileOptions)
+        .withGarbageCollectorConfig(update)
+    )
+    // Off by default
+    val default = resolve(GC.immix)(identity)
+    assertValid(default)
+    assertEquals(Some(false), default.values.generational)
+    assertEquals(None, default.values.oldGenerationGrowth)
+    assertFalse(default.defines.exists(_.contains("WRITE_BARRIER")))
+    assertFalse(default.defines.exists(_.contains("STICKY")))
+    // Config reads the environment of the build, unlike resolve
+    if (!sys.env.contains("SCALANATIVE_GC_GENERATIONAL"))
+      assertFalse(config(GC.immix)(identity).useGCWriteBarrier)
+
+    // Enables the write barrier and the defaults of its own settings
+    val enabled = resolve(GC.immix)(_.withGenerational(true))
+    assertValid(enabled)
+    assertEquals(Some(2.0), enabled.values.oldGenerationGrowth)
+    for (define <- Seq(
+          "SCALANATIVE_GC_WRITE_BARRIER",
+          "SCALANATIVE_GC_STICKY",
+          "SCALANATIVE_GC_CONFIG_OLD_GENERATION_GROWTH=2.0"
+        )) assertTrue(define, enabled.defines.contains(define))
+    assertTrue(config(GC.immix)(_.withGenerational(true)).useGCWriteBarrier)
+
+    val tuned = resolve(GC.immix)(
+      _.withGenerational(true).withOldGenerationGrowth(1.5)
+    )
+    assertValid(tuned)
+    assertTrue(
+      tuned.defines.contains("SCALANATIVE_GC_CONFIG_OLD_GENERATION_GROWTH=1.5")
+    )
+
+    // Requires Immix
+    assertIssue(
+      resolve(GC.commix)(_.withGenerational(true)),
+      "generational is not supported by commix GC"
+    )
+
+    // Settings of the generational collection require it
+    assertIssue(
+      resolve(GC.immix)(_.withOldGenerationGrowth(3.0)),
+      "oldGenerationGrowth requires generational to be enabled"
+    )
+    assertIssue(
+      resolve(GC.immix)(_.withGenerational(true).withOldGenerationGrowth(1.0)),
+      "oldGenerationGrowth has to be a number greater than 1"
+    )
+    // Their environment variables are ignored without it
+    assertValid(
+      resolve(GC.immix, env = Map("GC_OLD_GENERATION_GROWTH" -> "3"))(identity)
+    )
+
+    // The write barrier alone, to measure its cost
+    val barrier = Seq("-DSCALANATIVE_GC_WRITE_BARRIER")
+    for (gc <- Seq(GC.immix, GC.commix))
+      assertTrue(config(gc, barrier)(identity).useGCWriteBarrier)
+    assertFalse(config(GC.boehm, barrier)(identity).useGCWriteBarrier)
+
+    // Environment of the build
+    val fromEnv = resolve(
+      GC.immix,
+      env = Map(
+        "SCALANATIVE_GC_GENERATIONAL" -> "1",
+        "GC_OLD_GENERATION_GROWTH" -> "3"
+      )
+    )(identity)
+    assertValid(fromEnv)
+    assertEquals(Some(true), fromEnv.values.generational)
+    assertEquals(Some(3.0), fromEnv.values.oldGenerationGrowth)
+  }
+
   @Test def allIssuesAreReported(): Unit = {
     val resolved = resolve(GC.immix)(
       _.withThreads(0).withTimeRatio(2).withLogFile(Paths.get(""))

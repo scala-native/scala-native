@@ -8,6 +8,7 @@
 #include "shared/Log.h"
 #include "shared/MemoryInfo.h"
 #include "shared/MemoryMap.h"
+#include "immix_commix/WriteBarrier.h"
 #include "StackTrace.h"
 
 extern void *scalanative_createOutOfMemoryError(void);
@@ -55,6 +56,51 @@ word_t *Heap_mapAndAlign(size_t memoryLimit, size_t alignmentSize) {
         heapStart = previousBlock + alignmentSize / WORD_SIZE;
     }
     return heapStart;
+}
+
+// The heap must fit in the write barrier's window.
+size_t Heap_limitMaxHeapSize(size_t maxHeapSize) {
+#ifdef SCALANATIVE_GC_BARRIER_WINDOW
+    if (maxHeapSize > SCALANATIVE_GC_BARRIER_WINDOW)
+        return SCALANATIVE_GC_BARRIER_WINDOW;
+#endif
+    return maxHeapSize;
+}
+
+// Bytes of address space, from the heap start, that the bytemap covers
+size_t Heap_bytemapCoverage(size_t maxHeapSize) {
+#ifdef SCALANATIVE_GC_BARRIER_WINDOW
+    return SCALANATIVE_GC_BARRIER_WINDOW;
+#else
+    return maxHeapSize;
+#endif
+}
+
+// Reserves the heap, aligned to the write barrier's window when it uses one
+word_t *Heap_mapHeapSpace(size_t maxHeapSize) {
+#ifdef SCALANATIVE_GC_BARRIER_WINDOW
+    size_t window = SCALANATIVE_GC_BARRIER_WINDOW;
+    word_t *reserved = memoryMap(maxHeapSize + window);
+    if (reserved == NULL)
+        return NULL;
+    word_t start = ((word_t)reserved + window - 1) & ~(window - 1);
+    // Release the unaligned head and the tail beyond the heap
+    size_t head = start - (word_t)reserved;
+    // Failing to release either part only keeps address space reserved
+    if (head > 0 && memoryUnmap(reserved, head) != 0)
+        GC_LOG_WARN("Failed to release the head of the heap reservation");
+    // From a page boundary: the heap size need not be a multiple of the
+    // page size, and munmap rejects other addresses.
+    word_t page = getPageSize();
+    word_t tailStart = (start + maxHeapSize + page - 1) & ~(page - 1);
+    word_t tailEnd = (word_t)reserved + maxHeapSize + window;
+    if (tailStart < tailEnd &&
+        memoryUnmap((void *)tailStart, tailEnd - tailStart) != 0)
+        GC_LOG_WARN("Failed to release the tail of the heap reservation");
+    return (word_t *)start;
+#else
+    return Heap_mapAndAlign(maxHeapSize, BLOCK_TOTAL_SIZE);
+#endif
 }
 
 void Heap_RefillEmergencyBlock(Heap *heap) {

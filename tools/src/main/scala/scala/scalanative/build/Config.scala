@@ -224,6 +224,59 @@ sealed trait Config {
   // see https://no-color.org/
   private[scalanative] lazy val noColor: Boolean = sys.env.contains("NO_COLOR")
 
+  /** Settings of the garbage collector, including the ones taken from the
+   *  environment of the build and the defaults.
+   */
+  private[scalanative] lazy val gcSettings: GarbageCollectorConfig =
+    GarbageCollectorConfig.Settings.resolve(compilerConfig).values
+
+  /** Experimental: generated code calls the write barrier of Immix and Commix
+   *  before storing references into heap objects. Enabled by the generational
+   *  collection, see GarbageCollectorConfig.generational, or on its own by the
+   *  define that compiles the barrier into the GC.
+   */
+  private[scalanative] lazy val useGCWriteBarrier =
+    compilerConfig.gc match {
+      case GC.Immix  => useGenerationalGC || hasWriteBarrierDefine
+      case GC.Commix => hasWriteBarrierDefine
+      case _         => false
+    }
+
+  /** Experimental: GarbageCollectorConfig.generational, which only Immix
+   *  accepts.
+   */
+  private[scalanative] lazy val useGenerationalGC =
+    gcSettings.generational.contains(true)
+
+  /** Bits of the address window the heap is aligned to, where the write barrier
+   *  indexes the object metadata with the masked address of an object. None
+   *  where it checks the heap range instead: Windows commits reserved memory
+   *  explicitly, and 32-bit targets lack the address space. Passed to the GC as
+   *  SCALANATIVE_GC_BARRIER_WINDOW_BITS.
+   */
+  private[scalanative] lazy val gcBarrierWindowBits: Option[Int] =
+    if (useGCWriteBarrier && !compilerConfig.is32BitPlatform && !targetsWindows)
+      Some(40)
+    else None
+
+  /** Whether the slow paths of the write barrier keep the caller's registers,
+   *  so that the fast path does not make the values live across it spill.
+   *  Passed to the GC as SCALANATIVE_GC_BARRIER_PRESERVE_MOST.
+   */
+  private[scalanative] lazy val gcBarrierPreservesMost: Boolean =
+    useGCWriteBarrier && !targetsWindows && {
+      compilerConfig.configuredOrDetectedTriple.arch match {
+        case TargetTriple.Arch.aarch64 | TargetTriple.Arch.x86_64 => true
+        case _                                                    => false
+      }
+    }
+
+  private def hasWriteBarrierDefine = {
+    val define = "-DSCALANATIVE_GC_WRITE_BARRIER"
+    (compilerConfig.compileOptions ++ compilerConfig.cOptions)
+      .exists(option => option == define || option.startsWith(define + "="))
+  }
+
   /** Trap-based safepoints coordinate STW across mutators; they require
    *  multithreaded linking and must stay off when `multithreadingSupport` is
    *  false so nativelib and LLVM agree with [[codegen.Lower.depends]].
@@ -235,10 +288,7 @@ sealed trait Config {
           /* GarbageCollectorConfig.trapBasedYieldPoints, else the
            * SCALANATIVE_GC_TRAP_BASED_YIELDPOINTS environment variable.
            */
-          GarbageCollectorConfig.Settings
-            .resolve(compilerConfig)
-            .values
-            .trapBasedYieldPoints
+          gcSettings.trapBasedYieldPoints
             .getOrElse(compilerConfig.mode.isInstanceOf[Mode.Release])
         }
       case _ => false

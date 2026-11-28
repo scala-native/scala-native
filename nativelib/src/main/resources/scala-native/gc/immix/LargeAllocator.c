@@ -213,7 +213,7 @@ void LargeAllocator_Sweep(LargeAllocator *allocator, BlockMeta *blockMeta,
 
     assert(!ObjectMeta_IsFree(firstObjectMeta));
     BlockMeta *lastBlock = blockMeta + superblockSize - 1;
-    if (superblockSize > 1 && !ObjectMeta_IsMarked(firstObjectMeta)) {
+    if (superblockSize > 1 && !ObjectMeta_IsLive(firstObjectMeta)) {
         // release free superblock starting from the first object
         BlockAllocator_AddFreeBlocks(&blockAllocator, blockMeta,
                                      superblockSize - 1);
@@ -226,7 +226,7 @@ void LargeAllocator_Sweep(LargeAllocator *allocator, BlockMeta *blockMeta,
     word_t *chunkStart = NULL;
 
     // the tail end of the first object
-    if (!ObjectMeta_IsMarked(firstObjectMeta)) {
+    if (!ObjectMeta_IsLive(firstObjectMeta)) {
         chunkStart = lastBlockStart;
     }
     ObjectMeta_Sweep(firstObjectMeta);
@@ -240,7 +240,7 @@ void LargeAllocator_Sweep(LargeAllocator *allocator, BlockMeta *blockMeta,
                 chunkStart = current;
             }
         } else {
-            if (ObjectMeta_IsMarked(currentMeta)) {
+            if (ObjectMeta_IsLive(currentMeta)) {
                 size_t currentSize = (current - chunkStart) * WORD_SIZE;
                 LargeAllocator_AddChunk(allocator, (Chunk *)chunkStart,
                                         currentSize);

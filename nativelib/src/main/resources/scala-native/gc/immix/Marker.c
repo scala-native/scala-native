@@ -14,6 +14,7 @@
 #include <stdatomic.h>
 #include "shared/ThreadUtil.h"
 #include "stackOverflowGuards.h"
+#include "Generations.h"
 
 static inline void Marker_markLockWords(Heap *heap, Stack *stack,
                                         Object *object);
@@ -90,6 +91,16 @@ static void Marker_scanRange(void *ctx, void *low, void *high) {
                      (word_t **)high, sizeof(word_t));
 }
 
+// A blob array or an object with an object tracer: what it refers to changes
+// without the write barrier, so the generational collection has to know the
+// ones that turn old. Objects marked in this collection were young.
+static inline void Marker_noteUnbarriered(Bytemap *bytemap, Object *object) {
+#ifdef SCALANATIVE_GC_STICKY
+    if (ObjectMeta_IsMarked(Bytemap_Get(bytemap, (word_t *)object)))
+        Generations_NoteUnbarriered(object);
+#endif
+}
+
 void Marker_Mark(Heap *heap, Stack *stack) {
     Bytemap *bytemap = heap->bytemap;
     while (!Stack_IsEmpty(stack)) {
@@ -104,6 +115,7 @@ void Marker_Mark(Heap *heap, Stack *stack) {
                     Marker_markField(heap, stack, fields[i]);
                 }
             } else if (Rtti_ArrayScan(rtti) == RTTI_ARRAY_SCAN_CONSERVATIVE) {
+                Marker_noteUnbarriered(bytemap, object);
                 int8_t *start = (int8_t *)(arrayHeader + 1);
                 size_t bytesLength = BlobArray_ScannableLimit(arrayHeader);
                 size_t wordsLength =
@@ -132,6 +144,7 @@ void Marker_Mark(Heap *heap, Stack *stack) {
             if (UNLIKELY(References_markSoftReferent(Rtti_ReferenceKind(rtti))))
                 Marker_markField(heap, stack, References_softReferent(object));
             if (UNLIKELY(Rtti_HasFlag(rtti, RTTI_FLAG_HAS_OBJECT_TRACER))) {
+                Marker_noteUnbarriered(bytemap, object);
                 // Not set before the first owner registers it
                 GC_ObjectTracerFn *trace = atomic_load(&ObjectTracer_trace);
                 if (trace != NULL) {
@@ -233,7 +246,17 @@ void Marker_markCustomRoots(Heap *heap, Stack *stack, GC_Roots *roots) {
     mutex_unlock(&roots->modificationLock);
 }
 
-void Marker_MarkRoots(Heap *heap, Stack *stack) {
+void Marker_MarkRemembered(Heap *heap, Stack *stack, Object *object) {
+    Marker_markLockWords(heap, stack, object);
+    Stack_Push(stack, object);
+}
+
+void Marker_MarkSlots(Heap *heap, Stack *stack, word_t **from, word_t **to) {
+    for (word_t **slot = from; slot < to; slot++)
+        Marker_markField(heap, stack, *slot);
+}
+
+void Marker_MarkRoots(Heap *heap, Stack *stack, bool minor) {
     atomic_thread_fence(memory_order_seq_cst);
 
     MutatorThreadNode *head = mutatorThreads;
@@ -244,6 +267,10 @@ void Marker_MarkRoots(Heap *heap, Stack *stack) {
     Marker_markCustomRoots(heap, stack, customRoots);
     ScanContext context = {heap, stack};
     GCHooks_scanDynamicRoots(Marker_scanRange, &context);
+#ifdef SCALANATIVE_GC_STICKY
+    if (minor)
+        Generations_MarkMinorRoots(heap, stack);
+#endif
     Marker_Mark(heap, stack);
 }
 

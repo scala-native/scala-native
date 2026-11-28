@@ -113,6 +113,8 @@ object Array {
       val fromPtr = from.atRawUnsafe(fromPos)
       val toPtr   = to.atRawUnsafe(toPos)
       val size    = to.stride * len
+      if (to.isInstanceOf[ObjectArray] || to.isInstanceOf[BlobArray])
+        GC.writeBarrier(to)
       ffi.memmove(toPtr, fromPtr, castIntToRawSizeUnsigned(size))
     }
   }
@@ -755,7 +757,15 @@ final class ObjectArray private () extends Array[Object] {
 
   @inline def apply(i: Int): Object = loadObject(atRaw(i))
 
-  @inline def update(i: Int, value: Object): Unit = storeObject(atRaw(i), value)
+  // Derives the element address from `this` in place, so that code
+  // generation emits the write barrier for this array instead of looking up
+  // the object containing the address.
+  @inline def update(i: Int, value: Object): Unit =
+    if (i < 0 || i >= length) throwOutOfBounds(i, length)
+    else {
+      val rawptr = castObjectToRawPtr(this)
+      storeObject(elemRawPtr(rawptr, MemoryLayout.Array.ValuesOffset + castRawSizeToInt(Intrinsics.sizeOf[RawPtr]) * i), value)
+    }
 
   @inline override def clone(): ObjectArray = {
     val arrcls  = classOf[ObjectArray]

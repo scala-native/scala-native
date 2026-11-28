@@ -6,10 +6,10 @@ import scala.annotation.tailrec
 import scala.scalanative.annotation.alwaysinline
 import scala.scalanative.meta.LinktimeInfo.{is32BitPlatform => is32bit}
 import scala.scalanative.runtime.Intrinsics._
-import scala.scalanative.runtime.VirtualThread
 import scala.scalanative.runtime.ffi._
 import scala.scalanative.runtime.ffi.stdatomic._
 import scala.scalanative.runtime.ffi.stdatomic.memory_order._
+import scala.scalanative.runtime.{GC, VirtualThread}
 import scala.scalanative.unsafe.{stackalloc => _, _}
 
 import LockWord._
@@ -274,6 +274,8 @@ private[runtime] final class BasicMonitor(val lockWordRef: RawPtr)
         val addr = castRawPtrToLong(monitorAddress)
         castLongToRawPtr(lockMark | addr)
       }
+    // The lock word now references the monitor, a heap object.
+    GC.writeBarrier(obj)
     atomic_store_intptr(lockWordRef, inflated, memory_order_release)
     atomic_thread_fence(memory_order_seq_cst)
 

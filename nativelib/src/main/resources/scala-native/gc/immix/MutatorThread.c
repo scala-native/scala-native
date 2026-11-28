@@ -10,6 +10,9 @@
 #include "shared/ThreadUtil.h"
 #include "shared/Log.h"
 #include <assert.h>
+#ifdef SCALANATIVE_GC_STICKY
+#include "Generations.h"
+#endif
 
 #ifndef _WIN32
 #include <signal.h>
@@ -67,6 +70,11 @@ void MutatorThreads_remove(MutatorThread *node) {
         return;
 
     MutatorThreads_lock();
+#ifdef SCALANATIVE_GC_STICKY
+    // A collection holds this lock: it either read the set already, or finds
+    // the entries among the adopted ones.
+    Generations_AdoptRememberedSet(&node->rememberedSet);
+#endif
     MutatorThreads current = mutatorThreads;
     MutatorThreads previous = NULL;
     while (current != NULL && current->value != node) {

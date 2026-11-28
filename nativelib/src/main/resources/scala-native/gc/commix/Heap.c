@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "Heap.h"
+#include "immix_commix/WriteBarrier.h"
 #include "shared/Log.h"
 #include "Allocator.h"
 #include "LargeAllocator.h"
@@ -92,6 +93,10 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     if (maxHeapSize == UNLIMITED_HEAP_SIZE) {
         maxHeapSize = memoryLimit;
     }
+    maxHeapSize = Heap_limitMaxHeapSize(maxHeapSize);
+    // The limit may be below the initial size that was asked for
+    if (minHeapSize > maxHeapSize)
+        minHeapSize = maxHeapSize;
 
     uint32_t maxNumberOfBlocks = maxHeapSize / SPACE_USED_PER_BLOCK;
     assert(maxNumberOfBlocks > 1);
@@ -126,7 +131,8 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
 
     // reserve space for bytemap
     size_t bytemapSpaceSize =
-        maxHeapSize / ALLOCATION_ALIGNMENT + sizeof(Bytemap);
+        Heap_bytemapCoverage(maxHeapSize) / ALLOCATION_ALIGNMENT +
+        sizeof(Bytemap);
     Bytemap *bytemap =
         (Bytemap *)Heap_mapAndAlign(bytemapSpaceSize, ALLOCATION_ALIGNMENT);
     heap->bytemap = bytemap;
@@ -140,7 +146,7 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     heap->greyPacketsStart = greyPacketsStart;
 
     // Init heap for small objects
-    word_t *heapStart = Heap_mapAndAlign(maxHeapSize, BLOCK_TOTAL_SIZE);
+    word_t *heapStart = Heap_mapHeapSpace(maxHeapSize);
     if (!heapStart) {
         GC_LOG_ERROR("Failed to allocate heap space, "
                      "requested size=%.2fMB, available memory=%.2fMB. "
@@ -182,6 +188,9 @@ void Heap_Init(Heap *heap, size_t minHeapSize, size_t maxHeapSize) {
     Phase_Init(heap, initialBlockCount);
 
     Bytemap_Init(bytemap, heapStart, maxHeapSize);
+#ifdef SCALANATIVE_GC_WRITE_BARRIER
+    WriteBarrier_Init(heapStart, maxHeapSize, bytemap->data);
+#endif
     Heap_RefillEmergencyBlock(heap);
 
     // Init all GCThreads

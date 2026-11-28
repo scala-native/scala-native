@@ -27,6 +27,11 @@ typedef struct {
         struct {
             uint8_t flags;
             int8_t first;
+            // Sticky Immix: whether the allocator took the block, or a hole
+            // in it, since the block was last swept.
+            uint8_t touched;
+            // Sticky Immix: free lines the last sweep left in the block.
+            uint8_t freeLines;
         } simple;
         // UInt24 type is used for cross-platform compat, due to Windows
         // problems with aligment of bitfields. See commix/GreyPackets.h
@@ -60,6 +65,8 @@ typedef enum {
     dbg_in_use = 0x5
 } DebugFlag;
 #endif
+
+static_assert(LINE_COUNT <= UINT8_MAX, "free lines of a block fit in a byte");
 
 static inline bool BlockMeta_IsFree(BlockMeta *blockMeta) {
     return blockMeta->block.simple.flags == block_free;
@@ -122,6 +129,23 @@ static inline void BlockMeta_SetFirstFreeLine(BlockMeta *blockMeta,
     assert(BlockMeta_IsSimpleBlock(blockMeta));
     assert(freeLine == LAST_HOLE || (freeLine >= 0 && freeLine < LINE_COUNT));
     blockMeta->block.simple.first = freeLine;
+}
+
+static inline void BlockMeta_SetTouched(BlockMeta *blockMeta, bool touched) {
+    blockMeta->block.simple.touched = touched;
+}
+
+static inline bool BlockMeta_IsTouched(BlockMeta *blockMeta) {
+    return blockMeta->block.simple.touched;
+}
+
+static inline uint8_t BlockMeta_FreeLines(BlockMeta *blockMeta) {
+    return blockMeta->block.simple.freeLines;
+}
+
+static inline void BlockMeta_SetFreeLines(BlockMeta *blockMeta,
+                                          uint8_t freeLines) {
+    blockMeta->block.simple.freeLines = freeLines;
 }
 
 static inline int8_t BlockMeta_FirstFreeLine(BlockMeta *blockMeta) {

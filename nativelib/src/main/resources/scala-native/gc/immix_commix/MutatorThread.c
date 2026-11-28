@@ -8,6 +8,9 @@
 #include "shared/ThreadUtil.h"
 #include "shared/Log.h"
 #include <assert.h>
+#ifdef SCALANATIVE_GC_STICKY
+#include "immix/Generations.h"
+#endif
 
 #ifndef _WIN32
 #include <errno.h>
@@ -49,6 +52,9 @@ static void MutatorThread_dispose(MutatorThread *self) {
         pthread_mutex_destroy(&self->wakeupLock);
     }
 #endif
+#endif
+#ifdef SCALANATIVE_GC_WRITE_BARRIER
+    free(self->rememberedSet.items);
 #endif
     free(self);
 }
@@ -288,6 +294,9 @@ void MutatorThreads_afterForkChild(void) {
 #endif
     }
     mutatorThreads = kept;
+#ifdef SCALANATIVE_GC_STICKY
+    Generations_AfterForkChild();
+#endif
 #ifdef SCALANATIVE_GC_COMMIX
     atomic_store_explicit(&mutatorThreadsCount, kept != NULL ? 1 : 0,
                           memory_order_relaxed);

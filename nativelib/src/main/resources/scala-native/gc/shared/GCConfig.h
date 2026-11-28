@@ -22,6 +22,15 @@
 //   LOG_FILE                  GC_LOG_FILE                   char[], optional
 //   STATS_FILE                GC_STATS_FILE                 char[], optional
 //   STATS_ENABLED             (none)                        0 or 1
+//   OLD_GENERATION_GROWTH     GC_OLD_GENERATION_GROWTH      double
+//
+// Settings that also change the generated code are passed as plain defines:
+// SCALANATIVE_GC_USE_YIELDPOINT_TRAPS, SCALANATIVE_GC_WRITE_BARRIER and
+// SCALANATIVE_GC_STICKY (generational).
+//
+// Not part of the configuration, for testing the collector itself and enabled
+// only with a compile option: GC_ASSERTIONS and, with the write barrier of
+// Immix, SCALANATIVE_GC_WRITE_BARRIER_VERIFY.
 //
 // Optional settings are not defined unless set in the build, their default is
 // computed when the program starts.
@@ -47,6 +56,12 @@
 #error                                                                         \
     "SCALANATIVE_GC_CONFIG_FREE_RATIO has to be defined by the Scala Native build tools"
 #endif
+#endif
+
+#if defined(SCALANATIVE_GC_STICKY) &&                                          \
+    !defined(SCALANATIVE_GC_CONFIG_OLD_GENERATION_GROWTH)
+#error                                                                         \
+    "SCALANATIVE_GC_CONFIG_OLD_GENERATION_GROWTH has to be defined by the Scala Native build tools"
 #endif
 
 #if defined(SCALANATIVE_GC_NONE) &&                                            \

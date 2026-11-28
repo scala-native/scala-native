@@ -176,6 +176,30 @@ sealed trait GarbageCollectorConfig {
    */
   def trapBasedYieldPoints: Option[Boolean]
 
+  /** Experimental. Most collections trace only the objects allocated since the
+   *  previous one and keep the older ones, the whole heap is collected when
+   *  that does not free enough memory.
+   *
+   *  Environment variable: `SCALANATIVE_GC_GENERATIONAL` (`1` or `0`), read
+   *  only when building
+   *
+   *  Supported by: Immix
+   *
+   *  Default: false
+   */
+  def generational: Option[Boolean]
+
+  /** How many times the memory used after a collection of the whole heap can
+   *  grow before the whole heap is collected again, greater than 1.
+   *
+   *  Environment variable: `GC_OLD_GENERATION_GROWTH`
+   *
+   *  Supported by: Immix, with [[generational]]
+   *
+   *  Default: 2.0
+   */
+  def oldGenerationGrowth: Option[Double]
+
   def withInitialHeapSize(value: MemorySize): GarbageCollectorConfig
   def withMaxHeapSize(value: MemorySize): GarbageCollectorConfig
   def withThreadHeapBlockSize(value: MemorySize): GarbageCollectorConfig
@@ -190,6 +214,8 @@ sealed trait GarbageCollectorConfig {
   def withStatsFile(value: Path): GarbageCollectorConfig
   def withStatsEnabled(value: Boolean): GarbageCollectorConfig
   def withTrapBasedYieldPoints(value: Boolean): GarbageCollectorConfig
+  def withGenerational(value: Boolean): GarbageCollectorConfig
+  def withOldGenerationGrowth(value: Double): GarbageCollectorConfig
 
   private[scalanative] def show(indent: String): String
 }
@@ -243,7 +269,9 @@ object GarbageCollectorConfig {
       logFile: Option[Path] = None,
       statsFile: Option[Path] = None,
       statsEnabled: Option[Boolean] = None,
-      trapBasedYieldPoints: Option[Boolean] = None
+      trapBasedYieldPoints: Option[Boolean] = None,
+      generational: Option[Boolean] = None,
+      oldGenerationGrowth: Option[Double] = None
   ) extends GarbageCollectorConfig {
     // format: off
     def withInitialHeapSize(value: MemorySize): GarbageCollectorConfig = copy(initialHeapSize = Some(value))
@@ -260,6 +288,8 @@ object GarbageCollectorConfig {
     def withStatsFile(value: Path): GarbageCollectorConfig = copy(statsFile = Some(value))
     def withStatsEnabled(value: Boolean): GarbageCollectorConfig = copy(statsEnabled = Some(value))
     def withTrapBasedYieldPoints(value: Boolean): GarbageCollectorConfig = copy(trapBasedYieldPoints = Some(value))
+    def withGenerational(value: Boolean): GarbageCollectorConfig = copy(generational = Some(value))
+    def withOldGenerationGrowth(value: Double): GarbageCollectorConfig = copy(oldGenerationGrowth = Some(value))
     // format: on
 
     override def toString: String = show("")
@@ -312,7 +342,11 @@ object GarbageCollectorConfig {
 
       /** Defines passed to the C sources of the garbage collector. */
       def defines: Seq[String] =
-        all.flatMap(s => s.defineOf(values).toList)
+        all.flatMap(s => s.defineOf(values).toList) ++
+          // The generational collection and the write barrier it needs
+          (if (enabled(values.generational))
+             Seq("SCALANATIVE_GC_WRITE_BARRIER", "SCALANATIVE_GC_STICKY")
+           else Nil)
     }
 
     private def edit(config: GarbageCollectorConfig)(
@@ -521,6 +555,21 @@ object GarbageCollectorConfig {
       catch {
         case _: NumberFormatException => Left(s"'$value' is not a number")
       }
+
+    private def parseBoolean(value: String): Either[String, Boolean] =
+      value.trim.toLowerCase match {
+        case "1" | "true"  => Right(true)
+        case "0" | "false" => Right(false)
+        case _             => Left(s"'$value' is neither 1/true nor 0/false")
+      }
+    private def encodeBoolean(value: Boolean) = if (value) "1" else "0"
+
+    private def enabled(value: Option[Boolean]): Boolean = value.contains(true)
+
+    private def requires(setting: String, isSet: Context => Boolean)(
+        ctx: Context
+    ): Option[String] =
+      if (isSet(ctx)) None else Some(s"requires $setting to be enabled")
 
     private def parseMillis(value: String): Either[String, FiniteDuration] =
       try {
@@ -793,7 +842,7 @@ object GarbageCollectorConfig {
       set = (c, v) => edit(c)(_.copy(statsEnabled = v)),
       // Only parsed from -DGC_ENABLE_STATS, where any value enables it
       parse = _ => Right(true),
-      encode = enabled => if (enabled) "1" else "0"
+      encode = encodeBoolean
     )
 
     val trapBasedYieldPoints = new Setting[Boolean](
@@ -813,6 +862,37 @@ object GarbageCollectorConfig {
         else Nil
     )
 
+    val generational = new Setting[Boolean](
+      name = "generational",
+      envVar = Some("SCALANATIVE_GC_GENERATIONAL"),
+      // Affects also the generated code, see Config.useGCWriteBarrier
+      define = None,
+      supportedBy = Set(GC.immix),
+      default = Some(false),
+      get = _.generational,
+      set = (c, v) => edit(c)(_.copy(generational = v)),
+      parse = parseBoolean,
+      encode = encodeBoolean
+    )
+
+    // Depends on the setting above, which is picked first.
+    val oldGenerationGrowth = new Setting[Double](
+      name = "oldGenerationGrowth",
+      envVar = Some("GC_OLD_GENERATION_GROWTH"),
+      define = Some("OLD_GENERATION_GROWTH"),
+      supportedBy = Set(GC.immix),
+      default = Some(2.0),
+      get = _.oldGenerationGrowth,
+      set = (c, v) => edit(c)(_.copy(oldGenerationGrowth = v)),
+      parse = parseRatio,
+      encode = _.toString,
+      applicable =
+        requires("generational", ctx => enabled(ctx.values.generational)),
+      validate = (growth, _) =>
+        if (growth > 1.0 && !growth.isInfinity) Nil
+        else Seq(s"has to be a number greater than 1, not $growth")
+    )
+
     val all: Seq[Setting[_]] = Seq(
       initialHeapSize,
       maxHeapSize,
@@ -827,7 +907,9 @@ object GarbageCollectorConfig {
       logFile,
       statsFile,
       statsEnabled,
-      trapBasedYieldPoints
+      trapBasedYieldPoints,
+      generational,
+      oldGenerationGrowth
     )
   }
 }

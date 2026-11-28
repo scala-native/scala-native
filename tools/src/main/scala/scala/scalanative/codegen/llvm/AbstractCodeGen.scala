@@ -247,6 +247,12 @@ private[codegen] abstract class AbstractCodeGen(
       unsupported(defn)
   }
 
+  // The GC sets the write barrier's heap range and bytemap once, before any
+  // Scala code runs. Declaring them constant lets LLVM load them once per
+  // function instead of after every store.
+  private def isWriteBarrierConstant(name: nir.Global): Boolean =
+    useGCWriteBarrier && Lower.GCBarrierConstants.contains(name)
+
   private[codegen] def genGlobalDefn(
       attrs: nir.Attrs,
       name: nir.Global,
@@ -265,7 +271,11 @@ private[codegen] abstract class AbstractCodeGen(
       else if (section.exists(_.anonymous)) "private "
       else "hidden "
     )
-    str(if (isConst) "constant" else "global")
+    str(
+      if (isConst || (attrs.isExtern && isWriteBarrierConstant(name)))
+        "constant"
+      else "global"
+    )
     str(" ")
     if (attrs.isExtern) {
       genType(ty)
@@ -315,6 +325,7 @@ private[codegen] abstract class AbstractCodeGen(
 
     newline()
     str(if (isDecl) "declare " else "define ")
+    if (usesPreserveMost(name)) str("preserve_mostcc ")
     if (targetsWindows && !isDecl && attrs.isExtern) {
       // Generate export modifier only for extern (C-ABI compliant) signatures
       val nir.Global.Member(_, sig) = name: @unchecked
@@ -335,6 +346,8 @@ private[codegen] abstract class AbstractCodeGen(
       }
     }
     str(")")
+    // Taken only for old objects not remembered yet: keep it off the hot path.
+    if (isDecl && name == Lower.GCWriteBarrierSlow.name) str(" cold")
     if (attrs.opt eq nir.Attr.NoOpt) {
       str(" optnone noinline")
     } else {
@@ -1054,6 +1067,12 @@ private[codegen] abstract class AbstractCodeGen(
 
   }
 
+  private lazy val writeBarrierSlowPaths = Lower.GCWriteBarrierSlowPaths.toSet
+  private def usesPreserveMost(name: nir.Global): Boolean =
+    meta.buildConfig.gcBarrierPreservesMost && writeBarrierSlowPaths.contains(
+      name
+    )
+
   private[codegen] def genCall(
       genBind: () => Unit,
       call: nir.Op.Call,
@@ -1127,6 +1146,7 @@ private[codegen] abstract class AbstractCodeGen(
         newline()
         genBind()
         str(if (unwind ne nir.Next.None) "invoke " else "call ")
+        if (usesPreserveMost(pointee)) str("preserve_mostcc ")
         genCallFunctionType(ty)
         str(" @")
         genGlobal(pointee)
