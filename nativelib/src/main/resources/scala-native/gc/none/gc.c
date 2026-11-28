@@ -46,8 +46,19 @@ static size_t DEFAULT_CHUNK;
 static size_t PREALLOC_CHUNK;
 static size_t CHUNK;
 static size_t TO_NORMAL_MMAP = 1L;
-static size_t DO_PREALLOC = 0L;     // No Preallocation.
-static size_t TOTAL_ALLOCATED = 0L; // Track total allocated memory
+static size_t DO_PREALLOC = 0L; // No Preallocation.
+// Track total allocated memory
+#ifdef SCALANATIVE_MULTITHREADING_ENABLED
+static atomic_size_t TOTAL_ALLOCATED = 0L;
+#define COUNT_ALLOCATED(size)                                                  \
+    atomic_fetch_add_explicit(&TOTAL_ALLOCATED, size, memory_order_relaxed)
+#else
+static size_t TOTAL_ALLOCATED = 0L;
+#define COUNT_ALLOCATED(size) (TOTAL_ALLOCATED += (size))
+#endif
+#ifndef GC_ASAN
+static atomic_size_t TOTAL_MAPPED = 0L; // Memory of the chunks mapped so far
+#endif
 static void *emergencyBlock;
 static void *emergencyEnd;
 static atomic_bool emergencyBlockClaimed = false;
@@ -96,6 +107,25 @@ size_t scalanative_GC_get_max_heapsize() {
 }
 
 size_t scalanative_GC_get_used_heapsize() { return TOTAL_ALLOCATED; }
+
+size_t scalanative_GC_get_total_heapsize() {
+#ifdef GC_ASAN
+    // Every object is its own allocation, there is no free memory
+    return TOTAL_ALLOCATED;
+#else
+    return atomic_load(&TOTAL_MAPPED);
+#endif
+}
+
+// Includes the unused ends of the chunks threads have moved on from
+size_t scalanative_GC_get_free_heapsize() {
+    size_t total = scalanative_GC_get_total_heapsize();
+    size_t used = TOTAL_ALLOCATED;
+    return used < total ? total - used : 0;
+}
+
+// The heap grows by mapping new chunks for as long as the system allows it
+size_t scalanative_GC_get_heap_limit() { return SIZE_MAX; }
 
 size_t scalanative_GC_stats_collection_total() { return -1L; }
 
@@ -159,6 +189,7 @@ static bool allocateChunk() {
         return false;
     };
 #endif // _WIN32
+    atomic_fetch_add(&TOTAL_MAPPED, CHUNK);
 #endif // GC_ASAN
     return true;
 }
@@ -177,7 +208,7 @@ void *scalanative_GC_alloc(Rtti *info, size_t size) {
         Object *alloc = (Object *)current;
         alloc->rtti = info;
         current += size;
-        TOTAL_ALLOCATED += size;
+        COUNT_ALLOCATED(size);
         return alloc;
     } else {
         if (end == emergencyEnd)
@@ -191,7 +222,7 @@ void *scalanative_GC_alloc(Rtti *info, size_t size) {
     if (alloc == NULL)
         throwOutOfMemory();
     alloc->rtti = info;
-    TOTAL_ALLOCATED += size;
+    COUNT_ALLOCATED(size);
     return alloc;
 #endif
 }

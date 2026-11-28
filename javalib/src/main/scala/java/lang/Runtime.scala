@@ -7,8 +7,10 @@ import java.util.{Comparator, Set => juSet}
 import scala.scalanative.libc.{signal, stdlib}
 import scala.scalanative.meta.LinktimeInfo
 import scala.scalanative.posix.unistd._
+import scala.scalanative.runtime.GC
 import scala.scalanative.runtime.javalib.Proxy
 import scala.scalanative.unsafe._
+import scala.scalanative.unsigned._
 import scala.scalanative.windows.SysInfoApi._
 import scala.scalanative.windows.SysInfoApiOps._
 
@@ -161,6 +163,20 @@ class Runtime private () {
 
     // By contract returned value cannot be lower then 1
     available max 1
+  }
+
+  /** The memory held by the heap, never more than `maxMemory()`. */
+  def totalMemory(): scala.Long = GC.getTotalHeapSize().toLong
+
+  /** The part of `totalMemory()` not taken by objects. */
+  def freeMemory(): scala.Long = GC.getFreeHeapSize().toLong
+
+  /** The size the heap does not grow beyond, `Long.MAX_VALUE` if unlimited. */
+  def maxMemory(): scala.Long = {
+    val limit = GC.getHeapLimit()
+    val max = limit.toLong
+    // SIZE_MAX is a positive Long on 32-bit, limits from 2^63 negative on 64-bit
+    if (limit == ~0.toUSize || max < 0L) scala.Long.MaxValue else max
   }
 
   def exit(status: Int): Unit = stdlib.exit(status)
