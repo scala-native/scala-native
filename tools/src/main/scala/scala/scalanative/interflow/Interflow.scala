@@ -173,14 +173,6 @@ private[scalanative] class Interflow(val config: build.Config)(implicit
   def popMergeProcessor(): Unit =
     mergeProcessorTl.set(mergeProcessorTl.get.tail)
 
-  // Number of methods with exception handlers among the one being optimized
-  // and the ones being inlined into it
-  private val handlerScopesTl = ThreadLocal.withInitial[Int](() => 0)
-  def handlerScopes: Int = handlerScopesTl.get
-  def handlerScopes_=(value: Int): Unit = handlerScopesTl.set(value)
-  def inHandlerScope: Boolean = handlerScopes > 0
-  def enterHandlerScope(): Unit = handlerScopes += 1
-
   def blockFresh: nir.Fresh =
     blockFreshTl.get.head
   def pushBlockFresh(value: nir.Fresh): Unit =

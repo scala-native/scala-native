@@ -99,13 +99,10 @@ private[interflow] trait Opt { self: Interflow =>
             currentLexicalScopes := mutable.UnrolledBuffer.empty
           )
         ) {
-          // This method may be optimized while another one is, on demand
-          val outerHandlerScopes = handlerScopes
           // Run a merge processor starting from the entry basic block.
           val blocks =
             try {
               pushBlockFresh(fresh)
-              handlerScopes = if (origdefn.hasUnwind) 1 else 0
               process(
                 origdefn.insts.toArray,
                 debugInfo = origdefn.debugInfo,
@@ -117,7 +114,6 @@ private[interflow] trait Opt { self: Interflow =>
                 inOuterRegion = false
               )
             } finally {
-              handlerScopes = outerHandlerScopes
               popBlockFresh()
             }
 

@@ -39,18 +39,6 @@ private[interflow] trait Inline { self: Interflow =>
         def inlineDepthLimitExceeded = inliningBacktrace.size > maxInlineDepth
         // Debug builds do not evaluate exception handlers
         def hasHandlers = defn.hasUnwind && mode == build.Mode.Debug
-        /* A frame with exception handlers does not get stack allocations
-         * it would not have without inlining: before handlers were
-         * evaluated nothing was inlined into such a frame. The handlers of
-         * a callee inlined earlier count as well. A stack
-         * allocation outside of the entry block makes the frame dynamically
-         * sized, which a continuation cannot relocate when a virtual thread
-         * is suspended. Synchronized blocks are the common case: the monitor
-         * allocates on the stack, and Object.wait suspends in them.
-         */
-        def stackallocInHandlers =
-          defn.hasStackalloc && (defn.hasUnwind || inHandlerScope)
-
         val shall = mode match {
           case build.Mode.Debug =>
             alwaysInline || isCtor
@@ -64,7 +52,7 @@ private[interflow] trait Inline { self: Interflow =>
         lazy val shallNot = {
           def hardLimits =
             isRecursive || isDenylisted || noInline || isExtern ||
-              hasHandlers || stackallocInHandlers
+              hasHandlers
           def softLimits =
             calleeTooBig || callerTooBig || inlineDepthLimitExceeded
 
@@ -89,8 +77,6 @@ private[interflow] trait Inline { self: Interflow =>
                 )
               if (isExtern) logger("* is an extern method")
               if (hasHandlers) logger("* has unwind")
-              if (stackallocInHandlers)
-                logger("* allocates on stack of a method with handlers")
               if (inlineDepthLimitExceeded)
                 logger("* inline depth limit exceeded")
             }
@@ -166,8 +152,6 @@ private[interflow] trait Inline { self: Interflow =>
       val inTryRegion = state.inTryRegion
       val adaptedArgs = adapt(args, defn.ty)
       val blocks = inliningBacktrace.tracked(name) {
-        // Its handlers stay in the frame of the method being optimized
-        if (defn.hasUnwind) enterHandlerScope()
         process(
           insts = defn.insts.toArray,
           debugInfo = defn.debugInfo,
