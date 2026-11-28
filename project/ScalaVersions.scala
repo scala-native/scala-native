@@ -38,7 +38,7 @@ object ScalaVersions {
 
   // Tested in scheduled nightly CI to check compiler plugins
   // List maintains only upcoming releases, removed from the list after reaching stable status
-  lazy val scala3RCVersions = List("3.10.2-RC1")
+  lazy val scala3RCVersions = List("3.10.2-RC2")
 
   // Scala versions used for publishing libraries
   val scala212: String = crossScala212.last
