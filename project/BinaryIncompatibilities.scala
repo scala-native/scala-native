@@ -26,6 +26,9 @@ object BinaryIncompatibilities {
     exclude[DirectMissingMethodProblem]("scala.scalanative.nir.Global#None.member"),
     // Internal state of the NIR writer, not meant for subclasses
     exclude[DirectMissingMethodProblem]("scala.scalanative.nir.serialization.InternedBinarySectionWriter.entries"),
+    // Val.ClassOf sealed, companion with overloaded apply is no longer a function
+    exclude[HierarchyNoLongerCheckedProblem]("scala.scalanative.nir.Val$ClassOf"),
+    exclude[MissingTypesProblem]("scala.scalanative.nir.Val$ClassOf$"),
   )
 
   final val Tools: Filters = Seq(

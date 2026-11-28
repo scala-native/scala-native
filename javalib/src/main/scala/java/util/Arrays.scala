@@ -908,9 +908,8 @@ object Arrays extends ArraysJDK9Methods {
       to: Int,
       newType: Class[_ <: Array[T]]
   ): Array[T] = {
-    implicit def tag: ClassTag[T] = ClassTag(original.getClass.getComponentType)
-    copyOfRangeImpl[AnyRef](original.asInstanceOf[Array[AnyRef]], from, to)
-      .asInstanceOf[Array[T]]
+    implicit val tag: ClassTag[T] = ClassTag(newType.getComponentType)
+    copyOfRangeImpl[T](original.asInstanceOf[Array[T]], from, to)
   }
 
   @noinline

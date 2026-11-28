@@ -7,6 +7,8 @@ import scalanative.runtime.{Array => NativeArray, _}
 object Array {
   def newInstance(componentType: Class[_], length: Int): AnyRef = {
     val ty = componentType
+    if (ty eq null) throw new NullPointerException()
+    if (length < 0) throw new NegativeArraySizeException(length.toString)
 
     if (ty.isPrimitive()) {
       if (ty == classOf[scala.Boolean]) new scala.Array[scala.Boolean](length)
@@ -18,9 +20,15 @@ object Array {
       else if (ty == classOf[scala.Float]) new scala.Array[scala.Float](length)
       else if (ty == classOf[scala.Double])
         new scala.Array[scala.Double](length)
-      else new scala.Array[Object](length)
-    } else {
+      else
+        throw new IllegalArgumentException(
+          "Cannot create an array of " + ty.getName()
+        )
+    } else if (ty eq classOf[Object]) {
       new scala.Array[Object](length)
+    } else {
+      val arrayClass = ArrayClasses.of(ty)
+      ObjectArray.alloc(length, Intrinsics.castObjectToRawPtr(arrayClass))
     }
   }
 
@@ -30,31 +38,42 @@ object Array {
   ): AnyRef = {
     if (componentType eq null)
       throw new NullPointerException()
-    if (dimensions.length == 0 || dimensions.length > 255)
-      throw new IllegalArgumentException()
+    if (dimensions.length == 0)
+      throw new IllegalArgumentException("Empty dimensions array")
 
-    // Recursively build nested arrays
-    def fill(idx: Int): NativeArray[_] = {
+    // Class of the outermost array; creating it checks the dimensions
+    var cls: Class[_] = componentType
+    var level = 0
+    while (level < dimensions.length) {
+      cls = ArrayClasses.of(cls)
+      level += 1
+    }
+
+    // The class of each nested array is the component of its parent's class
+    def fill(idx: Int, arrayClass: Class[_]): AnyRef = {
       val length = dimensions(idx)
-      if (length < 0) throw new NegativeArraySizeException()
+      if (length < 0) throw new NegativeArraySizeException(length.toString)
 
-      if (idx == dimensions.length - 1) {
-        // Create base array
+      if (idx == dimensions.length - 1 && componentType.isPrimitive()) {
         newInstance(componentType, length)
-          .asInstanceOf[NativeArray[_]]
       } else {
-        // Create subarrays recursively
-        val arr = ObjectArray.alloc(length)
-        var i = 0
-        while (i < length) {
-          arr.update(i, fill(idx + 1))
-          i += 1
+        val arr = ObjectArray.alloc(
+          length,
+          Intrinsics.castObjectToRawPtr(arrayClass)
+        )
+        if (idx < dimensions.length - 1) {
+          val component = arrayClass.getComponentType()
+          var i = 0
+          while (i < length) {
+            arr.update(i, fill(idx + 1, component))
+            i += 1
+          }
         }
         arr
       }
     }
 
-    fill(0)
+    fill(0, cls)
   }
 
   def getLength(array: AnyRef): Int = array match {
@@ -146,8 +165,15 @@ object Array {
   }
 
   def set(array: AnyRef, index: Int, value: AnyRef): Unit = array match {
-    case array: Array[Object] => array(index) = value
-    case _                    =>
+    case array: Array[Object] =>
+      val component = array.getClass.getComponentType
+      if (value != null && !component.isInstance(value))
+        throw new IllegalArgumentException(
+          "Cannot store an instance of " + value.getClass.getName +
+            " in an array of class " + array.getClass.getName
+        )
+      array(index) = value
+    case _ =>
       (value: Any) match {
         case value: scala.Boolean => setBoolean(array, index, value)
         case value: scala.Char    => setChar(array, index, value)

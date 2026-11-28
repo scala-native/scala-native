@@ -22,7 +22,10 @@ object Versions {
    * new version of the toolchain.
    */
   final val compat: Int = 6 // a.k.a. MAJOR version
-  final val revision: Int = 11 // a.k.a. MINOR version
+  final val revision: Int = 12 // a.k.a. MINOR version
+
+  /* classOf holds a type, see Val.ClassOf */
+  final val arrayTypesRevision: Int = 12
   case class Version(compat: Int, revision: Int)
 
   /* Current public release version of Scala Native. */

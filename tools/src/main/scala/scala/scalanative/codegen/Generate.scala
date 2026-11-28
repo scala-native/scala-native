@@ -50,7 +50,7 @@ private[codegen] object Generate {
       buf ++= Lower.injects
     }
 
-    // RTTI of every class and trait, and its class list entry
+    // RTTI of every class and trait, its class list and array class entries
     def genTypeMetadata(): Unit = {
       buf += ITable.emptyDefn
       (meta.classes ++ meta.traits).foreach { info =>
@@ -60,7 +60,11 @@ private[codegen] object Generate {
           GlobalSections.ClassInfo,
           nir.Defn.Var(nir.Attrs.None, rtti.name, rtti.struct, rtti.value)(pos)
         )
-        buf += classListEntry(rtti)(pos)
+        // Array markers are invisible to Class.forName
+        if (!nir.Type.isArrayMarker(info.name))
+          buf += classListEntry(rtti)(pos)
+        if (nir.Type.isReferenceArrayClass(info.name))
+          buf += arrayClassEntry(rtti)(pos)
       }
     }
 
@@ -73,6 +77,18 @@ private[codegen] object Generate {
           rtti.name.owner.member(nir.Sig.Generated("classlist")),
           nir.Type.Ptr,
           rtti.const
+        )
+      )
+
+    // Read by runtime.ArrayClasses: classes to reuse, the size to copy
+    private def arrayClassEntry(rtti: RuntimeTypeInformation)(implicit pos: nir.SourcePosition): nir.Defn.Var =
+      meta.globalSections.define(
+        GlobalSections.ArrayClasses,
+        nir.Defn.Var(
+          nir.Attrs.None,
+          rtti.name.owner.member(nir.Sig.Generated("arrayclass")),
+          nir.Type.StructValue(Seq(nir.Type.Ptr, nir.Type.Size)),
+          nir.Val.StructValue(Seq(rtti.const, nir.Val.Size(rtti.size)))
         )
       )
 

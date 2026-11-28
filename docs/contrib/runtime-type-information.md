@@ -75,9 +75,52 @@ of the reference map; the collectors mark soft referents themselves.
 
 Arrays have no fields to scan, the GC uses the element scan kind from the flags
 instead. In array RTTI the same slot holds the RTTI of the element type, read
-by `Class.getComponentType`. Reference arrays are all `ObjectArray` today, with
-`java.lang.Object` as element type; one RTTI per array type would only change
-this slot and the dimensions in the flags.
+by `Class.getComponentType`.
+
+## Array classes
+
+Every array type has one class, named as on the JVM: `[I`, `[Ljava.lang.Object;`,
+`[[Ljava.lang.String;`.
+
+- Arrays of primitives are instances of `IntArray` and the like, arrays of
+  `Object` of `ObjectArray`.
+- Any other array type used by the program, through the type of a value, an
+  allocation, a `classOf` or a type test, gets a class from the linker with no
+  members, named by the JVM binary name of the array type. Its RTTI holds the
+  component class and the number of dimensions, and it inherits `ObjectArray`'s
+  methods, so the code of arrays of references is shared.
+- These classes mirror covariance. The class of `X[]` extends the class of
+  `P[]`, where `P` is the superclass of `X`, and `ObjectArray` when `P` is
+  `Object` (also for array components, whose superclass is `Object`):
+  `[[Ljava.lang.String;` extends `[[Ljava.lang.Object;`, which extends
+  `ObjectArray`. Superclasses missing from the program get a class too. For
+  each trait `T` of `X` (for array components: `Cloneable`, `Serializable`) it
+  implements a marker trait `#[LT;` standing for `T[]`; the class `[LT;` of a
+  trait implements `#[LT;`, and markers extend the markers of the super-traits.
+  Markers of markers stand for nested arrays: `#[[LT;` for `T[][]`. Markers are
+  invisible to reflection: they are left out of the interfaces of RTTI and of
+  the class list, and kept in itables only when the class of `T[]` is in the
+  program, as every type test against `T[]` reaches it.
+- `runtime.ArrayClasses` finds the class of arrays of a component for
+  reflection (`java.lang.reflect.Array.newInstance`, `Class.arrayType`,
+  `Class.forName`) among the classes of the class list. Array types the linker
+  never saw get a class on first use: a copy of `ObjectArray`'s RTTI, with its
+  own name, component and dimensions, allocated outside the heap and never
+  freed. Its lineage, itables and class key are `ObjectArray`'s, so type tests
+  against `ObjectArray`, virtual and reflective calls work as for any array of
+  references. Its name and lock word are GC roots.
+
+Type tests against an array type whose element has no subtypes (`String[]`,
+`int[][]`) compare the class. Against other arrays of references they are
+class tests: a lineage test against the class of `C[]` for a class `C`, an
+itable test for the marker of `T[]` for a trait `T`. When that fails, a class
+created at runtime (lineage `Object`, `runtime.Array`, `ObjectArray` and no
+more, other than `ObjectArray` itself) goes to `ArrayClasses.isSubclass`,
+which tests the components. Poly-inlined calls test classes of arrays last:
+classes created at runtime match no test and share `ObjectArray`'s methods.
+With `SemanticsConfig.strictArrayCasts` disabled casts only check that the
+value is an array of references, as before 0.5.14; type tests and reflection
+check element types either way.
 
 ## Class list
 

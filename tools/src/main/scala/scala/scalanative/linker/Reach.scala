@@ -180,6 +180,7 @@ private[linker] class Reach(
     if (!loaded.contains(owner) && !unreachable.contains(owner)) {
       loader
         .load(owner)
+        .orElse(syntheticArrayClass(owner))
         .fold[Unit] {
           if (!ignoreIfUnavailable) addMissing(global)
         } { defns =>
@@ -196,6 +197,76 @@ private[linker] class Reach(
         if (!ignoreIfUnavailable) addMissing(global)
         None
       }
+  }
+
+  /* Array classes other than XArray and ObjectArray have no NIR definition.
+   * They mirror covariance: the class of X[] extends the class of P[] for the
+   * superclass P of X (ObjectArray when P is Object or runtime.Array), and
+   * implements a marker trait for T[] for each trait T of X. Markers extend
+   * the markers of the super-traits.
+   */
+  private def syntheticArrayClass(
+      name: nir.Global.Top
+  ): Option[Seq[nir.Defn]] = {
+    def defnOf(top: nir.Global.Top): Option[nir.Defn] =
+      lookup(top, ignoreIfUnavailable = true)
+    def traitsOf(top: nir.Global.Top): Seq[nir.Global.Top] =
+      defnOf(top) match {
+        case Some(defn: nir.Defn.Class)  => defn.traits
+        case Some(defn: nir.Defn.Module) => defn.traits
+        case Some(defn: nir.Defn.Trait)  => defn.traits
+        case _                           => Seq.empty
+      }
+    def parentOf(top: nir.Global.Top): Option[nir.Global.Top] =
+      defnOf(top) match {
+        case Some(defn: nir.Defn.Class)  => defn.parent
+        case Some(defn: nir.Defn.Module) => defn.parent
+        case _                           => None
+      }
+    implicit val pos: nir.SourcePosition = nir.SourcePosition.NoPosition
+    if (nir.Type.isSyntheticArrayClass(name)) {
+      val elem = nir.Type.classOfClassName(nir.Type.fromArrayClass(name).get)
+      val (parent, skippedTraits) = parentOf(elem) match {
+        case Some(nir.Rt.GenericArray.name) =>
+          nir.Rt.ObjectArray.name -> traitsOf(nir.Rt.GenericArray.name)
+        case Some(p) if p != nir.Rt.Object.name =>
+          nir.Type.arrayClassName(nir.Type.Ref(p)) -> Nil
+        case _ => nir.Rt.ObjectArray.name -> Nil
+      }
+      val traits = defnOf(elem) match {
+        case Some(_: nir.Defn.Trait) => Seq(elem)
+        case _ => (traitsOf(elem) ++ skippedTraits).distinct
+      }
+      Some(
+        Seq(
+          nir.Defn.Class(
+            nir.Attrs.None,
+            name,
+            Some(parent),
+            traits.map(nir.Type.arrayMarkerName)
+          )
+        )
+      )
+    } else if (nir.Type.isArrayMarker(name)) {
+      val elem = nir.Type.arrayMarkerElement(name)
+      Some(
+        Seq(
+          nir.Defn.Trait(
+            nir.Attrs.None,
+            name,
+            traitsOf(elem).map(nir.Type.arrayMarkerName)
+          )
+        )
+      )
+    } else None
+  }
+
+  def reachArrayClass(
+      elem: nir.Type
+  )(implicit srcPosition: nir.SourcePosition): nir.Global.Top = {
+    val name = nir.Type.arrayClassName(elem)
+    reachGlobal(name)
+    name
   }
 
   def process(): Unit =
@@ -475,6 +546,9 @@ private[linker] class Reach(
     if (info.allocated) info.allocations += 1
     else {
       info.allocations += 1
+      // Calls on arrays of references dispatch to ObjectArray's methods
+      if (info.isSyntheticArray)
+        classInfo(nir.Rt.ObjectArray.name).foreach(reachAllocation)
 
       // Handle all class and trait virtual calls
       // on this class. This includes virtual calls
@@ -693,17 +767,17 @@ private[linker] class Reach(
   def reachClass(defn: nir.Defn.Class): Unit = {
     val nir.Defn.Class(attrs, name, parent, traits) = defn
     implicit val pos: nir.SourcePosition = defn.pos
-    newInfo(
-      new Class(
-        attrs,
-        name,
-        parent.map(classInfoOrObject),
-        traits.flatMap(traitInfo),
-        isModule = false
-      )
+    val info = new Class(
+      attrs,
+      name,
+      parent.map(classInfoOrObject),
+      traits.flatMap(traitInfo),
+      isModule = false
     )
+    newInfo(info)
     reachAttrs(attrs)
     reachExported(name)
+    if (info.isSyntheticArray) info.arrayElement.foreach(reachType)
   }
 
   def reachModule(defn: nir.Defn.Module): Unit = {
@@ -745,6 +819,7 @@ private[linker] class Reach(
         reachType(ty)
       case nir.Type.Array(ty, _) =>
         reachType(ty)
+        reachArrayClass(ty)
       case _ =>
         ()
     }
@@ -897,7 +972,7 @@ private[linker] class Reach(
       reachVal(slot)
       reachVal(value)
     case nir.Op.Arrayalloc(ty, init, zoneHandle) =>
-      classInfo(nir.Type.toArrayClass(ty)).foreach(reachAllocation)
+      classInfo(reachArrayClass(ty)).foreach(reachAllocation)
       reachType(ty)
       reachVal(init)
       zoneHandle.foreach(reachVal)

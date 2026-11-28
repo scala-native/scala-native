@@ -119,6 +119,17 @@ final class Class(
   var allocations = 0
   def allocated = allocations > 0
 
+  /** Element type of an array class. */
+  lazy val arrayElement: Option[nir.Type] = nir.Type.fromArrayClass(name)
+
+  /** Linker-defined class of an array type, a subclass of `ObjectArray`. */
+  def isSyntheticArray: Boolean = nir.Type.isSyntheticArrayClass(name)
+
+  /** `ObjectArray`: instances may have classes created at runtime, which share
+   *  its methods (see `runtime.ArrayClasses`), so it is never exact.
+   */
+  def hasRuntimeSubclasses: Boolean = name == nir.Rt.ObjectArray.name
+
   lazy val fields: Seq[Field] = {
     val out = mutable.UnrolledBuffer.empty[Field]
     def add(info: Class): Unit = {

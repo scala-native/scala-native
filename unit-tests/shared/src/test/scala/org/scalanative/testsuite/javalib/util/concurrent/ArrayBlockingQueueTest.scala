@@ -720,7 +720,6 @@ class ArrayBlockingQueueTest extends JSR166Test {
 
   /** toArray(incompatible array type) throws ArrayStoreException
    */
-  @Ignore("No support for Array component type checks in SN")
   @Test def testToArray_incompatibleArrayType(): Unit = {
     val q: BlockingQueue[Integer] = ArrayBlockingQueueTest.populatedQueue(SIZE)
     try {

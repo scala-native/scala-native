@@ -105,11 +105,13 @@ class ArrayList[E] private (
     Objects.requireNonNull(a, "a")
 
     if (a.length < size())
-      toArray().asInstanceOf[Array[T]]
+      Arrays.copyOf[T, AnyRef](
+        inner.asInstanceOf[Array[AnyRef]],
+        size(),
+        a.getClass()
+      )
     else {
-      // TODO: this copy should result in ArrayStoreException when not T >: E
-      // need to detect type mismatch at runtime. related: #858
-      inner.asInstanceOf[Array[T]].copyToArray(a, 0, size())
+      System.arraycopy(inner, 0, a, 0, size())
 
       // fill only the first slot, if any, with a null - see JDK javadoc
       if (size() < a.length)

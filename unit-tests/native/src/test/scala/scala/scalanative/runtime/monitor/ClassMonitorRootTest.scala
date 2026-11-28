@@ -55,6 +55,11 @@ class ClassMonitorRootTest {
     // This class must have no allocated instances that could keep its monitor.
     assertStaticMonitorSurvives(classOf[NeverInstantiated])
 
+  @Test def inflatedMonitorOfARuntimeArrayClassSurvivesCollections(): Unit =
+    assertStaticMonitorSurvives(
+      scala.scalanative.runtime.ArrayClasses.of(classOf[OnlyAsArrayClass])
+    )
+
   // More lock words than one chunk of the runtime's list of static lock words
   @Test def inflatedMonitorsOfManyStaticObjectsSurviveCollections(): Unit =
     assertStaticMonitorsSurvive(
@@ -218,6 +223,8 @@ object ClassMonitorRootTest {
 
   private class NeverInstantiated
   private class AlsoNeverInstantiated
+  // Its array class is created at runtime
+  private class OnlyAsArrayClass
   private object StaticSingleton
 
   private def lockWord(obj: AnyRef): LockWord =

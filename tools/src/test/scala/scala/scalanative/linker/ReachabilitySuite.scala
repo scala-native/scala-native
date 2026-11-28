@@ -29,7 +29,18 @@ trait ReachabilitySuite {
     nir.Global.Top("java.lang.Comparable"),
     nir.Global.Top("java.io.Serializable"),
     nir.Global.Top("java.lang.constant.Constable"),
-    nir.Global.Top("java.lang.constant.ConstantDesc")
+    nir.Global.Top("java.lang.constant.ConstantDesc"),
+    // Array[String]
+    nir.Global.Top("[Ljava.lang.String;"),
+    nir.Global.Top("scala.scalanative.runtime.ObjectArray"),
+    nir.Global.Top("scala.scalanative.runtime.Array"),
+    nir.Global.Top("java.lang.Cloneable"),
+    // Markers of String's traits, for covariant tests of Array[String]
+    nir.Global.Top("#[Ljava.lang.CharSequence;"),
+    nir.Global.Top("#[Ljava.lang.Comparable;"),
+    nir.Global.Top("#[Ljava.io.Serializable;"),
+    nir.Global.Top("#[Ljava.lang.constant.Constable;"),
+    nir.Global.Top("#[Ljava.lang.constant.ConstantDesc;")
   )
 
   def testReachable(includeMainDeps: Boolean = true)(
@@ -51,8 +62,8 @@ trait ReachabilitySuite {
         val extraDeps = if (includeMainDeps) MainMethodDependencies else Nil
         val right = expected.toSet ++ extraDeps
         assertTrue("unavailable", res.isSuccessful)
-        assertTrue("underapproximation", (left -- right).isEmpty)
-        assertTrue("overapproximation", (right -- left).isEmpty)
+        assertEquals("underapproximation", Set.empty, left -- right)
+        assertEquals("overapproximation", Set.empty, right -- left)
       }
     } finally {
       sys.props -= reachStaticConstructorsKey

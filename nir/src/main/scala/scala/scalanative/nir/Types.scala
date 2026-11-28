@@ -135,9 +135,10 @@ object Type {
      *  of an arbitrary reference after it has replaced a virtual call.
      */
     final def isExact: Boolean = this match {
-      case Type.Null     => true
-      case Type.Unit     => true
-      case _: Type.Array => true
+      case Type.Null => true
+      case Type.Unit => true
+      // Arrays of references are covariant
+      case a: Type.Array => typeToArray.contains(a.ty) && a.ty != Rt.Object
       case r: Type.Ref   => r.exact
     }
 
@@ -276,10 +277,11 @@ object Type {
     Type.Double -> Global.Top("scala.scalanative.runtime.DoubleArray"),
     Rt.Object -> Global.Top("scala.scalanative.runtime.ObjectArray")
   )
-  val arrayToType: Map[Global.Top, Type] =
-    typeToArray.map { case (k, v) => (v, k) } ++ Map(
-      Global.Top("scala.scalanative.runtime.BlobArray") -> Type.Byte
-    )
+  private val arrayClassToElement: Map[Global.Top, Type] =
+    typeToArray.map { case (k, v) => (v, k) }
+  val arrayToType: Map[Global.Top, Type] = arrayClassToElement + (
+    Global.Top("scala.scalanative.runtime.BlobArray") -> Type.Byte
+  )
   def toArrayClass(ty: Type): Global.Top = ty match {
     case _ if typeToArray.contains(ty) =>
       typeToArray(ty)
@@ -287,11 +289,114 @@ object Type {
       typeToArray(Rt.Object)
   }
   def fromArrayClass(name: Global.Top): Option[Type] =
-    arrayToType.get(name)
+    arrayToType.get(name).orElse {
+      if (isSyntheticArrayClass(name))
+        Some(fromDescriptor(name.id.substring(1)))
+      else None
+    }
+
+  /** Primitives, flagless references and arrays of those; anything else is
+   *  `Object`.
+   */
+  def canonicalArrayElement(ty: Type): Type = ty match {
+    case Array(elem, _)  => Array(canonicalArrayElement(elem))
+    case Ref(name, _, _) =>
+      arrayClassToElement.get(name) match {
+        case Some(elem)                          => Array(elem)
+        case None if isSyntheticArrayClass(name) =>
+          Array(canonicalArrayElement(fromDescriptor(name.id.substring(1))))
+        case None => Ref(name)
+      }
+    case _ if typeToArray.contains(ty) => ty
+    case _                             => Rt.Object
+  }
+
+  /** Canonical `classOf` type: arrays as `Array`, never as `Ref(XArray)`. */
+  def classOfType(ty: Type): Type = ty match {
+    case _: Array | _: Ref => canonicalArrayElement(ty)
+    case _                 => Ref(typeToName(ty))
+  }
+
+  /** Class of a parameter type recorded for reflective instantiation. */
+  def parameterClassType(ty: Type): Type = ty match {
+    case _: Array => ty
+    case _        => Ref(typeToName(ty))
+  }
   def isArray(clsTy: Type.Ref): Boolean =
     isArray(clsTy.name)
   def isArray(clsName: Global.Top): Boolean =
-    arrayToType.contains(clsName)
+    arrayToType.contains(clsName) || isSyntheticArrayClass(clsName)
+
+  /** `XArray` and `ObjectArray`, otherwise a linker-defined subclass of
+   *  `ObjectArray` named as on the JVM, e.g. `[Ljava.lang.String;`.
+   */
+  def arrayClassName(elem: Type): Global.Top = {
+    val canonical = canonicalArrayElement(elem)
+    typeToArray.getOrElse(canonical, Global.Top("[" + descriptor(canonical)))
+  }
+
+  /** Arrays of `elem` have a class of their own, see `arrayClassName`. */
+  def hasSyntheticArrayClass(elem: Type): Boolean =
+    !typeToArray.contains(canonicalArrayElement(elem))
+
+  def isReferenceArrayClass(name: Global.Top): Boolean =
+    name == Rt.ObjectArray.name || isSyntheticArrayClass(name)
+
+  def classOfClassName(ty: Type): Global.Top = ty match {
+    case Array(elem, _)  => arrayClassName(elem)
+    case Ref(name, _, _) => name
+    case _               => typeToName(ty)
+  }
+
+  def isSyntheticArrayClass(name: Global.Top): Boolean =
+    name.id.startsWith("[")
+
+  /** Linker-defined trait implemented by arrays whose elements implement
+   *  `elem`, a trait or another marker: `#[LT;` for `T[]`, `#[[LT;` for
+   *  `T[][]`. Never visible to reflection.
+   */
+  def arrayMarkerName(elem: Global.Top): Global.Top =
+    if (isArrayMarker(elem)) Global.Top("#[" + elem.id.substring(1))
+    else Global.Top("#[L" + elem.id + ";")
+
+  def isArrayMarker(name: Global.Top): Boolean = name.id.startsWith("#")
+
+  /** The trait or marker whose arrays the marker stands for. */
+  def arrayMarkerElement(name: Global.Top): Global.Top = {
+    val desc = name.id.substring(2)
+    if (desc.startsWith("[")) Global.Top("#" + desc)
+    else Global.Top(desc.substring(1, desc.length - 1))
+  }
+
+  private def descriptor(elem: Type): java.lang.String = elem match {
+    case Bool            => "Z"
+    case Char            => "C"
+    case Byte            => "B"
+    case Short           => "S"
+    case Int             => "I"
+    case Long            => "J"
+    case Float           => "F"
+    case Double          => "D"
+    case Array(elem, _)  => "[" + descriptor(elem)
+    case Ref(name, _, _) => "L" + name.id + ";"
+    case _ => throw new IllegalArgumentException(s"not an array element: $elem")
+  }
+
+  private def fromDescriptor(desc: java.lang.String): Type =
+    desc.charAt(0) match {
+      case 'Z'                       => Bool
+      case 'C'                       => Char
+      case 'B'                       => Byte
+      case 'S'                       => Short
+      case 'I'                       => Int
+      case 'J'                       => Long
+      case 'F'                       => Float
+      case 'D'                       => Double
+      case '['                       => Array(fromDescriptor(desc.substring(1)))
+      case 'L' if desc.endsWith(";") =>
+        Ref(Global.Top(desc.substring(1, desc.length - 1)))
+      case _ => throw new IllegalArgumentException(s"not a descriptor: $desc")
+    }
 
   def typeToName(tpe: Type): Global.Top = tpe match {
     case Rt.BoxedUnit => Global.Top("scala.scalanative.runtime.PrimitiveUnit")

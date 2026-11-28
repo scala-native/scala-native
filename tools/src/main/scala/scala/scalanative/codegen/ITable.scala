@@ -58,7 +58,7 @@ private[codegen] object ITable {
     )(nir.SourcePosition.NoPosition)
 
   def build(cls: linker.Class)(implicit meta: Metadata): ITable = {
-    val traits = meta.interfaces(cls)
+    val traits = meta.itableTraits(cls)
     if (traits.isEmpty)
       ITable(
         mask = 0,

@@ -49,6 +49,25 @@ object Sub {
         true
       case (_: nir.Type.RefKind, nir.Rt.Object) =>
         true
+      // A linker class of an array names the array type
+      case (_, nir.Type.Ref(name, _, nullable))
+          if nir.Type.isSyntheticArrayClass(name) =>
+        is(
+          l,
+          nir.Type
+            .classOfType(r)
+            .asInstanceOf[nir.Type.Array]
+            .copy(nullable = nullable)
+        )
+      case (nir.Type.Ref(name, _, nullable), _)
+          if nir.Type.isSyntheticArrayClass(name) =>
+        is(
+          nir.Type
+            .classOfType(l)
+            .asInstanceOf[nir.Type.Array]
+            .copy(nullable = nullable),
+          r
+        )
       case (ScopeRef(linfo), ScopeRef(rinfo)) =>
         linfo.is(rinfo)
       // FIXME: Workaround for method/return types not being defined as scala.runtime.Nothing$|Null$
@@ -56,6 +75,55 @@ object Sub {
       case (nir.Type.NullType(_), nir.Type.NullType(_))       => true
       case _                                                  => false
     }
+  }
+
+  /** Type tests against `ty` use `isArray`. */
+  def isStrictArrayTest(ty: nir.Type): Boolean = ty match {
+    case nir.Type.Array(elem, _) => nir.Type.hasSyntheticArrayClass(elem)
+    case _                       => false
+  }
+
+  /** Casts to `ty` use `isArray`, see `SemanticsConfig.strictArrayCasts`. */
+  def isStrictArrayCast(ty: nir.Type, config: build.NativeConfig): Boolean =
+    config.semanticsConfig.strictArrayCasts && isStrictArrayTest(ty)
+
+  /** Exact array subtyping, covariant for references (JLS 4.10.3). `Sub.is`
+   *  stays lenient for the NIR checker.
+   */
+  def isArray(l: nir.Type, r: nir.Type.Array)(implicit
+      analysis: ReachabilityAnalysis.Result
+  ): Boolean = {
+    val relem = nir.Type.canonicalArrayElement(r.ty)
+    l match {
+      case nir.Type.NullType(_) | nir.Type.NothingType(_) =>
+        true
+      case nir.Type.Array(lelem, _) =>
+        isArrayElement(nir.Type.canonicalArrayElement(lelem), relem)
+      case nir.Type.Ref(name, exact, _) =>
+        nir.Type.fromArrayClass(name) match {
+          // Any array of references
+          case Some(lelem) if exact || name != nir.Rt.ObjectArray.name =>
+            name != nir.Rt.BlobArray.name && isArrayElement(lelem, relem)
+          case Some(_) => relem == nir.Rt.Object
+          case None    => false
+        }
+      case _ =>
+        false
+    }
+  }
+
+  private def isArrayElement(l: nir.Type, r: nir.Type)(implicit
+      analysis: ReachabilityAnalysis.Result
+  ): Boolean = (l, r) match {
+    case _ if l == r                                          => true
+    case (_: nir.Type.RefKind, nir.Rt.Object)                 => true
+    case (nir.Type.Array(lelem, _), nir.Type.Array(relem, _)) =>
+      isArrayElement(lelem, relem)
+    // Arrays reach Cloneable and Serializable through their array class
+    case (ScopeRef(linfo), ScopeRef(rinfo))
+        if !r.isInstanceOf[nir.Type.Array] =>
+      linfo.is(rinfo)
+    case _ => false
   }
 
   def is(info: ScopeInfo, ty: nir.Type.RefKind)(implicit
@@ -133,6 +201,8 @@ object Sub {
 
       val candidates =
         linfo.linearized.filter { i =>
+          // Array markers exist for type tests only
+          !nir.Type.isArrayMarker(i.name) &&
           rinfo.is(i) && correctedBoundInfo.forall(i.is)
         }
 

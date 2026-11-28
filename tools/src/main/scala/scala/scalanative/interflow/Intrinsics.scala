@@ -3,7 +3,7 @@ package interflow
 
 import java.util.Arrays
 
-import scalanative.codegen.Lower
+import scalanative.codegen.{Lower, RuntimeTypeInformation}
 import scalanative.linker._
 
 private[interflow] trait Intrinsics { self: Interflow =>
@@ -90,16 +90,25 @@ private[interflow] trait Intrinsics { self: Interflow =>
                 nir.Val.Global(ScopeRef(linfo), lty),
                 nir.Val.Global(ScopeRef(rinfo), rty)
               ) if lty == nir.Rt.Class && rty == nir.Rt.Class =>
-            Some(nir.Val.Bool(rinfo.is(linfo)))
+            val isAssignable = linfo match {
+              case cls: Class if cls.name != nir.Rt.BlobArray.name =>
+                cls.arrayElement.fold(rinfo.is(linfo)) { lelem =>
+                  Sub.isArray(
+                    nir.Type.Ref(rinfo.name, exact = true),
+                    nir.Type.Array(lelem)
+                  )
+                }
+              case _ => rinfo.is(linfo)
+            }
+            Some(nir.Val.Bool(isAssignable))
           case _ =>
             None
         }
       case nir.Global.Member(Class, nir.Rt.GetNameSig) =>
         val args = rawArgs.map(eval)
         args match {
-          case Seq(nir.Val.Global(name: nir.Global.Top, ty))
-              if ty == nir.Rt.Class =>
-            Some(eval(nir.Val.String(name.id)))
+          case Seq(nir.Val.Global(name: nir.Global.Top, nir.Rt.Class)) =>
+            Some(eval(nir.Val.String(RuntimeTypeInformation.javaName(name))))
           case _ =>
             None
         }

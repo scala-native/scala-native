@@ -2,6 +2,7 @@
 #define SCALANATIVE_STATIC_ROOTS_H
 
 #include "staticSections.h"
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -19,6 +20,9 @@ SN_SECTION_LOCAL void scalanative_register_static_roots(void);
  * word without multithreading.
  */
 SN_SECTION_LOCAL void scalanative_register_object_roots(void *object);
+
+/* Zeroed, never freed memory for a runtime class; NULL when out of memory. */
+SN_SECTION_LOCAL void *scalanative_alloc_runtime_class(size_t size);
 
 #ifdef __cplusplus
 }

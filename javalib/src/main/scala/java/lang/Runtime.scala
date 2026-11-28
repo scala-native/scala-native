@@ -76,8 +76,7 @@ class Runtime private () {
 
   private def runHooksConcurrent() = {
     val hooks = this.hooks
-      .toArray()
-      .asInstanceOf[Array[Thread]]
+      .toArray(new Array[Thread](0))
       .sorted(Ordering.by[Thread, Int](-_.getPriority()))
     hooks.foreach { t =>
       t.setUncaughtExceptionHandler(ShutdownHookUncaughtExceptionHandler)
@@ -102,8 +101,7 @@ class Runtime private () {
   }
   private def runHooksSequential() = {
     this.hooks
-      .toArray()
-      .asInstanceOf[Array[Thread]]
+      .toArray(new Array[Thread](0))
       .sorted(Ordering.by[Thread, Int](-_.getPriority()))
       .foreach { t =>
         try t.run()

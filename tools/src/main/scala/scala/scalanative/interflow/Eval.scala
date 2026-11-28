@@ -157,6 +157,8 @@ private[interflow] trait Eval { self: Interflow =>
         def nonIntrinsic = {
           val eargs = args.map(eval)
           val argtys = eargs.map {
+            case VirtualRef(_, cls, _) if cls.isSyntheticArray =>
+              nir.Type.Array(cls.arrayElement.get)
             case VirtualRef(_, cls, _) => cls.ty
             case DelayedRef(op)        => op.resty
             case value                 => value.ty
@@ -369,6 +371,9 @@ private[interflow] trait Eval { self: Interflow =>
         objty match {
           case nir.Type.Null =>
             nir.Val.Null
+          case _ if Sub.isStrictArrayCast(refty, config.compilerConfig) =>
+            if (Sub.isArray(objty, refty.asInstanceOf[nir.Type.Array])) obj
+            else fallback
           case ScopeRef(scope) if Sub.is(scope, refty) =>
             obj
           case _ =>
@@ -393,6 +398,11 @@ private[interflow] trait Eval { self: Interflow =>
         objty match {
           case nir.Type.Null =>
             nir.Val.False
+          case objty: nir.Type.RefKind if Sub.isStrictArrayTest(refty) =>
+            if (!Sub.isArray(objty, refty.asInstanceOf[nir.Type.Array]))
+              fallback
+            else if (!objty.isNullable) nir.Val.True
+            else objNotNull
           case And(scoperef: nir.Type.RefKind, ScopeRef(scope)) =>
             if (Sub.is(scope, refty)) {
               if (!scoperef.isNullable) {

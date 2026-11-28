@@ -29,13 +29,3 @@
    /** Provides an implicit conversion from the Array object to a collection Factory. */
    implicit def toFactory[A : ClassTag](dummy: Array.type): Factory[A, Array[A]] = new ArrayFactory(dummy)
    @SerialVersionUID(3L)
-@@ -125,7 +137,8 @@
-    *  @see `java.util.Arrays#copyOf`
-    */
-   def copyOf[A](original: Array[A], newLength: Int): Array[A] = ((original: @unchecked) match {
--    case original: Array[BoxedUnit]  => newUnitArray(newLength).asInstanceOf[Array[A]]
-+    //  We cannot distinguish Array[BoxedUnit] from Array[Object] in Scala Native
-+    //	case original: Array[BoxedUnit]  => newUnitArray(newLength).asInstanceOf[Array[A]]
-     case original: Array[AnyRef]     => java.util.Arrays.copyOf(original, newLength)
-     case original: Array[Int]        => java.util.Arrays.copyOf(original, newLength)
-     case original: Array[Double]     => java.util.Arrays.copyOf(original, newLength)

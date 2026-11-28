@@ -54,11 +54,11 @@ class IssuesTest {
 
   @Test def test_Issue275(): Unit = {
     val arr = new Array[Int](10)
-    assertTrue(arr.getClass.getName == "scala.scalanative.runtime.IntArray")
+    assertTrue(arr.getClass.getName == "[I")
     assertTrue(arr.toList == List(0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
 
     val arr2 = arr.map(_ + 1)
-    assertTrue(arr2.getClass.getName == "scala.scalanative.runtime.IntArray")
+    assertTrue(arr2.getClass.getName == "[I")
     assertTrue(arr2.toList == List(1, 1, 1, 1, 1, 1, 1, 1, 1, 1))
   }
 

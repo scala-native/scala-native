@@ -55,7 +55,13 @@ Generally, Scala Native follows most of the special error conditions
 similarly to JVM:
 
 1.  Arrays throw `IndexOutOfBoundsException` on out-of-bounds access.
-2.  Casts throw `ClassCastException` on incorrect casts.
+2.  Casts throw `ClassCastException` on incorrect casts. Since 0.5.14 type
+    tests and casts against arrays check the element type, so an `Object[]`
+    is not a `String[]`. Libraries that create arrays with wrong element
+    types, e.g. compiled with an older Scala Native, can be linked with
+    `nativeConfig ~= { _.withSemanticsConfig(_.withStrictArrayCasts(false)) }`:
+    casts to arrays of references then only check for an array of references,
+    type tests stay exact.
 3.  Accessing a field or method on `null`, throwing `null` exception,
     throws `NullPointerException`.
 4.  Integer division by zero throws `ArithmeticException`.

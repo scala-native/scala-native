@@ -79,6 +79,12 @@ private[scalanative] object Rt {
 
   val GenericArray = Ref(Global.Top("scala.scalanative.runtime.Array"))
   val BlobArray = Ref(Global.Top("scala.scalanative.runtime.BlobArray"))
+  val ObjectArray = Ref(Global.Top("scala.scalanative.runtime.ObjectArray"))
+  val SafeZone = Ref(Global.Top("scala.scalanative.memory.SafeZone"))
+  // ObjectArray.alloc of arrays of references with their own class
+  val TypedArrayAllocSig = Sig.Method("alloc", Seq(Int, Ptr, ObjectArray))
+  val TypedArrayZoneAllocSig =
+    Sig.Method("alloc", Seq(Int, Ptr, SafeZone, ObjectArray))
 
   val arrayAlloc: Map[Sig, Global.Top] = Seq(
     "BooleanArray",
@@ -95,7 +101,8 @@ private[scalanative] object Rt {
     val cls = Global.Top("scala.scalanative.runtime." + arr)
     val sig = Sig.Method("alloc", Seq(Int, Ref(cls))).mangled
     sig -> cls
-  }.toMap
+  }.toMap ++ Seq(TypedArrayAllocSig, TypedArrayZoneAllocSig)
+    .map(_.mangled -> ObjectArray.name)
   val RuntimeObjectMonitor = Ref(
     Global.Top("scala.scalanative.runtime.monitor.ObjectMonitor")
   )

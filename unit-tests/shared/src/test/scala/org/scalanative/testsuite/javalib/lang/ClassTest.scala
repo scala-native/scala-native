@@ -3,7 +3,7 @@ package org.scalanative.testsuite.javalib.lang
 import java.lang._
 
 import org.junit.Assert._
-import org.junit.{Ignore, Test}
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.Platform
 
@@ -271,14 +271,12 @@ class ClassTest {
     assertDiffClass(cls1, classOf[Array[Object]])
   }
 
-  @Ignore("#1435, nested arrays are stored as ObjectArray")
   @Test def distinguishableClassInstancesForNestedPrimitiveArrays(): Unit = {
     val cls1 = classOf[Array[Array[Int]]]
     val cls2 = classOf[Array[Array[Array[Int]]]]
     assertDiffClass(cls1, cls2)
   }
 
-  @Ignore("#1435, all object arrays are classOf[ObjectArray]")
   @Test def distinguishableClassInstancesForNestedObjectArrays(): Unit = {
     val cls1 = Array.empty[String].getClass
     val cls2 = Array.empty[Array[String]].getClass

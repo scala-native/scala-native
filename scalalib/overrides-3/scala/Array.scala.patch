@@ -29,13 +29,3 @@
    /** Provides an implicit conversion from the Array object to a collection Factory.
     *
     *  @tparam A the element type of the array to be created
-@@ -139,7 +151,8 @@
-    *  @return a copy of the original array, truncated or padded with default values to obtain the specified length
-    */
-   def copyOf[A](original: Array[A], newLength: Int): Array[A] = ((original: @unchecked) match {
--    case original: Array[BoxedUnit]  => newUnitArray(newLength).asInstanceOf[Array[A]]
-+    //  We cannot distinguish Array[BoxedUnit] from Array[Object] in Scala Native
-+    //	case original: Array[BoxedUnit]  => newUnitArray(newLength).asInstanceOf[Array[A]]
-     case original: Array[AnyRef]     => java.util.Arrays.copyOf(original, newLength)
-     case original: Array[Int]        => java.util.Arrays.copyOf(original, newLength)
-     case original: Array[Double]     => java.util.Arrays.copyOf(original, newLength)

@@ -57,7 +57,9 @@ private[interflow] final class State(val blockId: nir.Local)(
   ): Addr = {
     val zero = nir.Val.Zero(elemty).canonicalize
     val values = Array.fill[nir.Val](count)(zero)
-    val cls = analysis.infos(nir.Type.toArrayClass(elemty)).asInstanceOf[Class]
+    val cls = analysis
+      .infos(nir.Type.arrayClassName(elemty))
+      .asInstanceOf[Class]
     alloc(ArrayKind, cls, values, zone)
   }
   def allocBox(boxname: nir.Global, value: nir.Val)(implicit

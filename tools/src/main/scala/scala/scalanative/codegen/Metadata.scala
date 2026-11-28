@@ -28,7 +28,9 @@ private[scalanative] class Metadata(
   private val lineages = mutable.Map.empty[Class, Vector[Class]]
   val classes: Seq[Class] = initClasses()
   val traits: Seq[Trait] = analysis.infos.valuesIterator
-    .collect { case info: Trait => info }
+    .collect {
+      case info: Trait if !isArrayMarker(info) || isTested(info) => info
+    }
     .toIndexedSeq
     .sortBy(_.name.mangle)
   private val traitKeys: Map[Trait, Int] =
@@ -51,7 +53,7 @@ private[scalanative] class Metadata(
   private val shiftedTraits: Set[Trait] =
     classes.iterator
       .filter(itable(_).shift != 0)
-      .flatMap(interfaces(_))
+      .flatMap(itableTraits(_))
       .toSet
 
   /** Proxies of reflectively called methods, registered at startup */
@@ -98,12 +100,29 @@ private[scalanative] class Metadata(
   /** Key of a trait in itables, see StableHash.traitKey */
   def traitKey(trt: Trait): Int = traitKeys(trt)
 
-  /** Traits implemented by the class or trait, ordered by name */
+  /** Traits implemented by the class or trait, ordered by name, without array
+   *  markers: as seen by reflection
+   */
   def interfaces(info: ScopeInfo): Seq[Trait] =
+    allInterfaces(info).filterNot(isArrayMarker)
+
+  /** Traits in the itable of the class: also array markers that some type test
+   *  can target
+   */
+  def itableTraits(cls: Class): Seq[Trait] =
+    allInterfaces(cls).filter(trt => !isArrayMarker(trt) || isTested(trt))
+
+  private def allInterfaces(info: ScopeInfo): Seq[Trait] =
     info.linearized
       .collect { case trt: Trait if trt != info => trt }
       .distinct
       .sortBy(_.name.mangle)
+
+  def isArrayMarker(trt: Trait): Boolean = nir.Type.isArrayMarker(trt.name)
+
+  // Tests against T[] target the marker of T, they reach the class of T[]
+  private def isTested(marker: Trait): Boolean =
+    analysis.infos.contains(nir.Global.Top(marker.name.id.substring(1)))
 
   // Classes in pre-order of the class hierarchy, primitive types first
   private def initClasses(): Seq[Class] = {

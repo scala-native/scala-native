@@ -44,6 +44,15 @@ private[codegen] object GlobalSections {
     used = true, // Class.forName iterates this section
     anonymous = true
   )
+  // {RTTI, RTTI size} of ObjectArray and every linker class of an array of
+  // references
+  val ArrayClasses = Section(
+    name = "sn_arrayclasses",
+    machOName = "__sn_arrclasses",
+    coffName = ".snarr",
+    used = true, // runtime.ArrayClasses iterates this section
+    anonymous = true
+  )
   val GlobalObjects = Section(
     name = "sn_global_objects",
     machOName = "__sn_globals",

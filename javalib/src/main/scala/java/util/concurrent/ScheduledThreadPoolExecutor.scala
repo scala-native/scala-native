@@ -344,9 +344,11 @@ object ScheduledThreadPoolExecutor {
       lock.lock()
       try {
         if (a.length < _size)
-          return util.Arrays
-            .copyOf(queue, _size)
-            .asInstanceOf[Array[T]]
+          return util.Arrays.copyOf[T, AnyRef](
+            queue.asInstanceOf[Array[AnyRef]],
+            _size,
+            a.getClass()
+          )
         System.arraycopy(queue, 0, a, 0, _size)
         if (a.length > _size) a(_size) = null.asInstanceOf[T]
         a

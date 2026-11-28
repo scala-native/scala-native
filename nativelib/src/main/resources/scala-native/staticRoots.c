@@ -21,50 +21,83 @@ static void registerSection(const SNStaticSection *section) {
         scalanative_GC_add_roots(section->start, section->end);
 }
 
+/* Append-only lists of pointers. Writers serialize with a lock; collectors
+ * read the published count without locking, so they never wait for a mutator
+ * stopped while holding it.
+ */
+#define POINTERS_PER_CHUNK 64
+
+typedef struct PointerChunk {
+    struct PointerChunk *next;
+    void *items[POINTERS_PER_CHUNK];
+} PointerChunk;
+
+typedef struct {
+    PointerChunk first;
+    PointerChunk *last;
+    atomic_size_t published;
+} PointerList;
+
+#if defined(SCALANATIVE_MULTITHREADING_ENABLED) && defined(_WIN32)
+static SRWLOCK listsLock = SRWLOCK_INIT;
+static void lockLists(void) { AcquireSRWLockExclusive(&listsLock); }
+static void unlockLists(void) { ReleaseSRWLockExclusive(&listsLock); }
+#elif defined(SCALANATIVE_MULTITHREADING_ENABLED)
+static pthread_mutex_t listsLock = PTHREAD_MUTEX_INITIALIZER;
+static void lockLists(void) {
+    if (pthread_mutex_lock(&listsLock) != 0)
+        abort();
+}
+static void unlockLists(void) { pthread_mutex_unlock(&listsLock); }
+#else
+static void lockLists(void) {}
+static void unlockLists(void) {}
+#endif
+
+// Caller holds the lock
+static size_t PointerList_size(PointerList *list) {
+    return atomic_load_explicit(&list->published, memory_order_relaxed);
+}
+
+// Caller holds the lock
+static void PointerList_append(PointerList *list, void *item) {
+    size_t count = PointerList_size(list);
+    size_t index = count % POINTERS_PER_CHUNK;
+    if (count > 0 && index == 0) {
+        PointerChunk *chunk = calloc(1, sizeof(PointerChunk));
+        if (chunk == NULL)
+            abort();
+        list->last->next = chunk;
+        list->last = chunk;
+    }
+    list->last->items[index] = item;
+    atomic_store_explicit(&list->published, count + 1, memory_order_release);
+}
+
+static size_t PointerList_published(PointerList *list) {
+    return atomic_load_explicit(&list->published, memory_order_acquire);
+}
+
+// The i-th item, `chunk` holds the chunk of item i - 1, initially `first`
+static void *PointerList_at(PointerChunk **chunk, size_t i) {
+    if (i > 0 && i % POINTERS_PER_CHUNK == 0)
+        *chunk = (*chunk)->next;
+    return (*chunk)->items[i % POINTERS_PER_CHUNK];
+}
+
 #ifdef SCALANATIVE_MULTITHREADING_ENABLED
 
 /* Lock words of static objects (classes, string literals and their backing
- * arrays) whose monitor
- * was inflated: the only references these objects hold to the heap. The list
- * only grows, monitors are never deflated. Writers serialize with a lock;
- * collectors read the published count without locking, so they never wait
- * for a mutator stopped while holding it.
+ * arrays) whose monitor was inflated: the only references these objects hold
+ * to the heap. Monitors are never deflated.
  */
-#define LOCK_WORDS_PER_CHUNK 64
+static PointerList lockWords = {.last = &lockWords.first};
 
-typedef struct LockWordChunk {
-    struct LockWordChunk *next;
-    void **lockWords[LOCK_WORDS_PER_CHUNK];
-} LockWordChunk;
-
-static LockWordChunk firstChunk;
-static LockWordChunk *lastChunk = &firstChunk;
-static atomic_size_t publishedLockWords;
-
-#ifdef _WIN32
-static SRWLOCK lockWordsLock = SRWLOCK_INIT;
-static void lockLockWords(void) { AcquireSRWLockExclusive(&lockWordsLock); }
-static void unlockLockWords(void) { ReleaseSRWLockExclusive(&lockWordsLock); }
-#else
-static pthread_mutex_t lockWordsLock = PTHREAD_MUTEX_INITIALIZER;
-static void lockLockWords(void) {
-    if (pthread_mutex_lock(&lockWordsLock) != 0)
-        abort();
-}
-static void unlockLockWords(void) { pthread_mutex_unlock(&lockWordsLock); }
-#endif
-
-// The i-th registered lock word, `chunk` holds the chunk of entry i - 1
-static void **lockWordAt(LockWordChunk **chunk, size_t i) {
-    if (i > 0 && i % LOCK_WORDS_PER_CHUNK == 0)
-        *chunk = (*chunk)->next;
-    return (*chunk)->lockWords[i % LOCK_WORDS_PER_CHUNK];
-}
-
-static bool isRegistered(void **lockWord, size_t count) {
-    LockWordChunk *chunk = &firstChunk;
+static bool isRegistered(void **lockWord) {
+    PointerChunk *chunk = &lockWords.first;
+    size_t count = PointerList_size(&lockWords);
     for (size_t i = 0; i < count; i++) {
-        if (lockWordAt(&chunk, i) == lockWord)
+        if (PointerList_at(&chunk, i) == lockWord)
             return true;
     }
     return false;
@@ -74,35 +107,21 @@ static bool isRegistered(void **lockWord, size_t count) {
  * word, so a collection either sees the lock word or finds it not inflated.
  */
 static void registerLockWord(void **lockWord) {
-    lockLockWords();
-    size_t count =
-        atomic_load_explicit(&publishedLockWords, memory_order_relaxed);
+    lockLists();
     // Threads racing to inflate the same monitor register it once
-    if (!isRegistered(lockWord, count)) {
-        size_t index = count % LOCK_WORDS_PER_CHUNK;
-        if (count > 0 && index == 0) {
-            LockWordChunk *chunk = calloc(1, sizeof(LockWordChunk));
-            if (chunk == NULL)
-                abort();
-            lastChunk->next = chunk;
-            lastChunk = chunk;
-        }
-        lastChunk->lockWords[index] = lockWord;
-        atomic_store_explicit(&publishedLockWords, count + 1,
-                              memory_order_release);
-    }
-    unlockLockWords();
+    if (!isRegistered(lockWord))
+        PointerList_append(&lockWords, lockWord);
+    unlockLists();
 }
 
 /* Root provider, see GCHooks.h: scans the inflated lock words, the only ones
  * pointing to a monitor, thin locks hold none. */
 static void scanLockWords(void *data, GC_ScanRangeFn *scan, void *ctx) {
     (void)data;
-    size_t count =
-        atomic_load_explicit(&publishedLockWords, memory_order_acquire);
-    LockWordChunk *chunk = &firstChunk;
+    size_t count = PointerList_published(&lockWords);
+    PointerChunk *chunk = &lockWords.first;
     for (size_t i = 0; i < count; i++) {
-        void **lockWord = lockWordAt(&chunk, i);
+        void **lockWord = PointerList_at(&chunk, i);
         if (Field_isInflatedLock(*lockWord))
             scan(ctx, lockWord, lockWord + 1);
     }
@@ -126,7 +145,7 @@ SN_SECTION_LOCAL void scalanative_register_object_roots(void *object) {
     }
 }
 
-SN_SECTION_LOCAL void scalanative_register_static_roots(void) {
+static void registerStaticObjectRoots(void) {
     registerSection(scalanative_static_globals_section());
     if (!scalanative_GC_add_root_provider(scanLockWords, NULL))
         abort();
@@ -136,7 +155,7 @@ SN_SECTION_LOCAL void scalanative_register_static_roots(void) {
 
 // Without multithreading objects have no lock word to register
 
-SN_SECTION_LOCAL void scalanative_register_static_roots(void) {
+static void registerStaticObjectRoots(void) {
     registerSection(scalanative_static_globals_section());
 }
 
@@ -145,3 +164,38 @@ SN_SECTION_LOCAL void scalanative_register_object_roots(void *object) {
 }
 
 #endif
+
+/* Array classes created at runtime, see runtime.ArrayClasses. Never freed;
+ * their name and lock word are roots.
+ */
+static PointerList runtimeClasses = {.last = &runtimeClasses.first};
+
+SN_SECTION_LOCAL void *scalanative_alloc_runtime_class(size_t size) {
+    Rtti *cls = calloc(1, size);
+    if (cls == NULL)
+        return NULL;
+    lockLists();
+    PointerList_append(&runtimeClasses, cls);
+    unlockLists();
+    return cls;
+}
+
+static void scanRuntimeClasses(void *data, GC_ScanRangeFn *scan, void *ctx) {
+    (void)data;
+    size_t count = PointerList_published(&runtimeClasses);
+    PointerChunk *chunk = &runtimeClasses.first;
+    for (size_t i = 0; i < count; i++) {
+        Rtti *cls = PointerList_at(&chunk, i);
+        scan(ctx, &cls->rt.name, &cls->rt.name + 1);
+#ifdef USES_LOCKWORD
+        if (Field_isInflatedLock(cls->rt.lockWord))
+            scan(ctx, &cls->rt.lockWord, &cls->rt.lockWord + 1);
+#endif
+    }
+}
+
+SN_SECTION_LOCAL void scalanative_register_static_roots(void) {
+    registerStaticObjectRoots();
+    if (!scalanative_GC_add_root_provider(scanRuntimeClasses, NULL))
+        abort();
+}

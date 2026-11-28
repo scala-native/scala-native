@@ -382,7 +382,6 @@ class CopyOnWriteArraySetTest extends JSR166Test {
   /** toArray throws an ArrayStoreException when the given array can not store
    *  the objects inside the set
    */
-  @Ignore("No array object exact element type information in SN runtime")
   @Test def testToArray_ArrayStoreException(): Unit = {
     val c = new CopyOnWriteArraySet[Item]()
     c.add(one)
