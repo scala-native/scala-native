@@ -60,12 +60,14 @@ private[interflow] trait Opt { self: Interflow =>
       // having the same concrete allocated class inhabitants.
       val args = argtys.zip(origtys).zip(origargs).map {
         case ((argty, origty), origarg) =>
-          val ty = if (!Sub.is(argty, origty)) {
-            log(
-              s"using original argument type ${origty.show} instead of ${argty.show}"
-            )
-            origty
-          } else argty
+          val ty =
+            if (Sub.is(argty, origty) || isUnboxedArg(argty, origty)) argty
+            else {
+              log(
+                s"using original argument type ${origty.show} instead of ${argty.show}"
+              )
+              origty
+            }
 
           val id = fresh()
           if (preserveDebugInfo) {
@@ -95,10 +97,20 @@ private[interflow] trait Opt { self: Interflow =>
           val blocks =
             try {
               pushBlockFresh(fresh)
+              // A box passed by value is again a virtual box in the body,
+              // it gets allocated only where the callee needs an object.
+              state.fresh = fresh
+              val entryArgs = args.zip(origtys).map {
+                case (arg, origty) =>
+                  unboxedArgClass(arg.ty, origty).fold[nir.Val](arg) { boxty =>
+                    implicit val scopeId: nir.ScopeId = nir.ScopeId.TopLevel
+                    nir.Val.Virtual(state.allocBox(boxty.name, arg))
+                  }
+              }
               process(
                 origdefn.insts.toArray,
                 debugInfo = origdefn.debugInfo,
-                args = args,
+                args = entryArgs,
                 state = state,
                 doInline = false,
                 retTy = origRetTy,

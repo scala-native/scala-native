@@ -114,6 +114,10 @@ private[scalanative] class Interflow(val config: build.Config)(implicit
     done.synchronized {
       done(name) = value
     }
+  def dropDone(name: nir.Global.Member): Unit =
+    done.synchronized {
+      done -= name
+    }
   def getDone(name: nir.Global.Member): nir.Defn.Define =
     done.synchronized {
       done(name)

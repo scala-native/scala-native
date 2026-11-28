@@ -30,6 +30,28 @@ private[interflow] trait Intrinsics { self: Interflow =>
   private val Integer = nir.Global.Top("java.lang.Integer$")
   private val Math = nir.Global.Top("java.lang.Math$")
 
+  /** `BoxesRunTime.equals` (the method of the module or its static forwarder),
+   *  yields the matching `equals2`
+   */
+  private object BoxesRunTimeEquals {
+    private val owners =
+      Set("scala.runtime.BoxesRunTime", "scala.runtime.BoxesRunTime$")
+    private val types = Seq(nir.Rt.Object, nir.Rt.Object, nir.Type.Bool)
+    def unapply(name: nir.Global.Member): Option[nir.Global.Member] =
+      name match {
+        case nir.Global.Member(owner @ nir.Global.Top(id), sig)
+            if owners.contains(id) =>
+          sig.unmangled match {
+            case nir.Sig.Method("equals", `types`, scope) =>
+              Some(owner.member(nir.Sig.Method("equals2", types, scope)))
+            case _ =>
+              None
+          }
+        case _ =>
+          None
+      }
+  }
+
   def intrinsic(
       ty: nir.Type.Function,
       name: nir.Global.Member,
@@ -164,6 +186,22 @@ private[interflow] trait Intrinsics { self: Interflow =>
         args match {
           case Seq(_, nir.Val.Double(v1), nir.Val.Double(v2)) =>
             Some(nir.Val.Double(java.lang.Math.max(v1, v2)))
+          case _ =>
+            None
+        }
+      // BoxesRunTime.equals(x, y) is `(x eq y) || equals2(x, y)`. A box of a
+      // primitive that was not allocated yet has no identity to be tested,
+      // and if it would end up as the same (cached) instance as the other
+      // argument, equals2 compares their values with the same result.
+      // Skipping the identity test spares the allocation of the box.
+      case BoxesRunTimeEquals(equals2) if hasOriginal(equals2) =>
+        rawArgs.map(eval).takeRight(2) match {
+          case Seq(UnboxedArg(_, _), _) | Seq(_, UnboxedArg(_, _)) =>
+            Some(
+              eval(
+                nir.Op.Call(ty, nir.Val.Global(equals2, nir.Type.Ptr), rawArgs)
+              )
+            )
           case _ =>
             None
         }

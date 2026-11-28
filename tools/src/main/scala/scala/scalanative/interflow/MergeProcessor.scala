@@ -69,15 +69,29 @@ private[interflow] final class MergeProcessor(
       block.id,
       block.label.params,
       block.incoming.toSeq.sortBy(_._1.id),
-      isLoopHeader
+      isLoopHeader,
+      liveLocals =
+        if (offsets.contains(block.label.id)) liveIn(block.label.id)
+        else null
     )
   }
+
+  // Computed only for the methods that need it
+  private lazy val liveness = Liveness.liveIn(insts)
+  // The contents of the variables is kept in synthetic locals (see
+  // State.newVar), for simplicity these are assumed to be live.
+  private def liveIn(label: nir.Local): nir.Local => Boolean =
+    local => local.id < 0 || liveness(label).contains(local)
+
+  // The arguments of an inlined method belong to its caller
+  private var entryArgs: Seq[nir.Val] = Nil
 
   private def merge(
       merge: nir.Local,
       params: Seq[nir.Val.Local],
       incoming: Seq[(nir.Local, (Seq[nir.Val], State))],
-      isLoopHeader: Boolean
+      isLoopHeader: Boolean,
+      liveLocals: nir.Local => Boolean
   )(implicit analysis: ReachabilityAnalysis.Result): (Seq[MergePhi], State) = {
     val localIds = incoming.map { case (n, (_, _)) => n }
     val states = incoming.map { case (_, (_, s)) => s }
@@ -95,6 +109,14 @@ private[interflow] final class MergeProcessor(
             values.map {
               case param: nir.Val.Local =>
                 MergePhi(param, Seq.empty[(nir.Local, nir.Val)])
+              // A box passed by value, the parameter is the boxed value
+              case nir.Val.Virtual(addr) =>
+                state.derefVirtual(addr).values match {
+                  case Array(param: nir.Val.Local) =>
+                    MergePhi(param, Seq.empty[(nir.Local, nir.Val)])
+                  case _ =>
+                    unreachable
+                }
               case _ =>
                 unreachable
             }
@@ -303,7 +325,46 @@ private[interflow] final class MergeProcessor(
             MergeProcessor.findNameOf(_.virtualNames.get(addr))(states)
           } else None
 
+        /* A box allocated on some of the incoming edges, but not on the
+         * others. Merging it would allocate it on all the edges, although
+         * it might not be used any more, e.g. a box that was passed by value
+         * to the method and is needed only to report an error. The liveness
+         * of locals decides then what has to be merged.
+         */
+        def isBox(addr: Addr): Boolean = states.forall { state =>
+          state.deref(addr) match {
+            case VirtualInstance(BoxKind, _, _, _) => true
+            case _: EscapedInstance                => true
+            case _                                 => false
+          }
+        }
+        def partiallyAllocatedBox(addr: Addr): Boolean =
+          states.forall(_.heap.contains(addr)) &&
+            states.exists(_.hasEscaped(addr)) &&
+            states.exists(!_.hasEscaped(addr)) &&
+            isBox(addr)
+        var liveOnly = false
+
         def computeMerge(): Unit = {
+          liveOnly ||= liveLocals != null &&
+            states.head.heap.keysIterator.exists(partiallyAllocatedBox)
+          def isLive(local: nir.Local) = !liveOnly || liveLocals(local)
+          // Allocations reachable from what is still going to be used
+          lazy val reachable: mutable.Set[Addr] = {
+            val reachable = mutable.Set.empty[Addr]
+            incoming.foreach {
+              case (_, (args, state)) =>
+                val roots = mutable.UnrolledBuffer.empty[nir.Val]
+                roots ++= args
+                roots ++= entryArgs
+                state.locals.foreach {
+                  case (local, value) => if (isLive(local)) roots += value
+                }
+                reachable ++= state.heapClosure(roots.toSeq)
+            }
+            reachable
+          }
+
           // 1. Merge locals
           def mergeLocal(local: nir.Local, value: nir.Val): Unit = {
             val values = mutable.UnrolledBuffer.empty[nir.Val]
@@ -317,7 +378,7 @@ private[interflow] final class MergeProcessor(
             }
           }
           headState.locals.foreach {
-            case (local, value) => mergeLocal(local, value)
+            case (local, value) => if (isLive(local)) mergeLocal(local, value)
           }
 
           // 2. Merge heap
@@ -328,6 +389,9 @@ private[interflow] final class MergeProcessor(
 
           states.head.heap.keysIterator
             .filter(includeAddr)
+            .filterNot { addr =>
+              liveOnly && partiallyAllocatedBox(addr) && !reachable(addr)
+            }
             .foreach { addr =>
               val headInstance = states.head.deref(addr)
               headInstance match {
@@ -788,6 +852,7 @@ private[interflow] object MergeProcessor {
     entryState.inherit(state, args)
 
     entryMergeBlock.incoming(nir.Local(-1)) = (args, entryState)
+    if (doInline) builder.entryArgs = args
     builder.todo += entryName
     builder
   }

@@ -447,7 +447,28 @@ private[interflow] trait Combine { self: Interflow =>
           false
       })
 
+    // Distinct virtual boxes of a class that caches all of its instances:
+    // these are the same object if and only if their values are equal.
+    def alwaysCachedBoxes(
+        l: Addr,
+        r: Addr
+    ): Option[(nir.Type, nir.Val, nir.Val)] =
+      (l, r) match {
+        case (
+              VirtualRef(BoxKind, lcls, Array(lvalue)),
+              VirtualRef(BoxKind, rcls, Array(rvalue))
+            ) if l != r && lcls == rcls =>
+          Combine.alwaysCachedBoxes.get(lcls.name).map((_, lvalue, rvalue))
+        case _ =>
+          None
+      }
+
     (comp, l, r) match {
+      case (Ieq | Ine, nir.Val.Virtual(l), nir.Val.Virtual(r))
+          if alwaysCachedBoxes(l, r).isDefined =>
+        val (ty, lvalue, rvalue) = alwaysCachedBoxes(l, r).get
+        combine(comp, ty, lvalue, rvalue)
+
       // Two virtual allocations will compare equal if
       // and only if they have the same virtual address.
       case (Ieq, nir.Val.Virtual(l), nir.Val.Virtual(r))
@@ -742,6 +763,12 @@ private[interflow] trait Combine { self: Interflow =>
 }
 
 private[interflow] object Combine {
+
+  /** Classes whose boxing method never allocates: all the values are cached. */
+  private val alwaysCachedBoxes: Map[nir.Global, nir.Type] = Map(
+    nir.Global.Top("java.lang.Boolean") -> nir.Type.Bool,
+    nir.Global.Top("java.lang.Byte") -> nir.Type.Byte
+  )
 
   /** Classes whose boxing method always allocates. */
   private val uncachedBoxes: Set[nir.Global] =

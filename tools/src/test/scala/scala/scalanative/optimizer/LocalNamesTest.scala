@@ -146,7 +146,7 @@ class LocalNamesTest extends OptimizerSpec {
            |    println(fieldLoad == Intrinsics.loadInt(field))
            |    println(comp == is)
            |    println(conv == Intrinsics.loadFloat(field))
-           |    println(box != getInteger)
+           |    println(box.asInstanceOf[AnyRef] eq getInteger)
            |    println(module != null)
            |    println(arrayLoad != `var`)
            |    println(arrayLength != varLoad )
