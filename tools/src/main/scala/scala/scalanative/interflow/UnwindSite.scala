@@ -131,12 +131,18 @@ private[interflow] object UnwindSite {
           case _                    => super.onVal(value)
         }
       }
-      var forwarder = false
+      // A forwarder passes its own parameter on, any other one it passes
+      // has to stay defined
+      var forwarder: Option[nir.Local] = None
       insts.foreach {
         case nir.Inst.Label(id, _) =>
-          forwarder = forwarders.contains(id)
-        case _: nir.Inst.Jump if forwarder =>
-          forwarder = false
+          forwarder = forwarders.get(id).map(_._1.id)
+        case nir.Inst.Jump(nir.Next.Label(_, args)) if forwarder.isDefined =>
+          args.foreach {
+            case nir.Val.Local(id, _) if forwarder.contains(id) => ()
+            case arg => uses.onVal(arg)
+          }
+          forwarder = None
         case inst =>
           uses.onInst(inst)
       }
