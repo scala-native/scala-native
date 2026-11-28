@@ -273,6 +273,38 @@ class ExceptionHandlersTest extends OptimizerSpec {
       assertFalse(run.show, run.hasStackalloc)
     }
 
+  /* The call of a callee that always throws is left only by its exceptions.
+   * The handler sees the state at the throw, and not the one before the call.
+   */
+  @Test def calleeThatAlwaysThrowsIsLeftOnlyByItsThrow(): Unit = optimized(
+    """|object Test {
+       |  final class Box(var value: Int)
+       |  final class Failure extends Throwable(null, null, false, false)
+       |  @noinline def failure(): Failure = new Failure
+       |  def fail(box: Box, failure: Failure): Nothing = {
+       |    box.value = 7
+       |    throw failure
+       |  }
+       |  @noinline def run(x: Int): Int = {
+       |    val box = new Box(x)
+       |    val thrown = failure()
+       |    try fail(box, thrown)
+       |    catch { case _: Failure => () }
+       |    box.value
+       |  }
+       |  def main(args: Array[String]): Unit = println(run(args.length))
+       |}
+       |""".stripMargin
+  ) { defns =>
+    val run = optimizedMethod(defns, "Test$", "run")
+    assertFalse("fail is inlined\n" + run.show, calls(run, "fail"))
+    assertFalse(
+      "the box is not allocated\n" + run.show,
+      allocates(run, "Test$Box")
+    )
+    assertEquals(run.show, Set(7), returnedInts(run))
+  }
+
   @Test def calleeThatDoesNotReturnKeepsItsUnwindEdge(): Unit = optimized(
     """|object Test {
        |  @noinline def fail(x: Int): Nothing = throw new IllegalStateException

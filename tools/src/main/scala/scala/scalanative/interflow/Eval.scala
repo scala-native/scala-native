@@ -67,7 +67,10 @@ private[interflow] trait Eval { self: Interflow =>
                 case _ => ()
               }
             }
-            if (value.ty == nir.Type.Nothing) {
+            if (value == NoValue) {
+              // Not reached, so it is not an edge to the handler either
+              return nir.Inst.Unreachable(nir.Next.None)
+            } else if (value.ty == nir.Type.Nothing) {
               return unreachableInst()(state, inst.pos)
             } else {
               val ty = value match {

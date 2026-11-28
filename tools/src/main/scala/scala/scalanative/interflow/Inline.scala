@@ -184,7 +184,7 @@ private[interflow] trait Inline { self: Interflow =>
 
       def nothing = {
         emit.label(state.fresh(), Seq.empty)
-        nir.Val.Zero(nir.Type.Nothing)
+        NoValue
       }
 
       // The entry block continues the block of the call, the others start
