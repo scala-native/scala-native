@@ -65,7 +65,7 @@ private[interflow] trait Eval { self: Interflow =>
             }
           }
           if (value.ty == nir.Type.Nothing) {
-            return nir.Inst.Unreachable(nir.Next.None)(inst.pos)
+            return unreachableInst()(state, inst.pos)
           } else {
             val ty = value match {
               case InstanceRef(ty) => ty
@@ -143,8 +143,12 @@ private[interflow] trait Eval { self: Interflow =>
             val site = state.newUnwindSite(thrown = null)
             return nir.Inst.Throw(thrown, site.unwind)
           }
-        case _: nir.Inst.Unreachable =>
-          return nir.Inst.Unreachable(nir.Next.None)
+        case nir.Inst.Unreachable(unwind) =>
+          state.handler = unwind match {
+            case unwind: nir.Next.Unwind => unwind
+            case _                       => null
+          }
+          return unreachableInst()
         case _ =>
           bailOut
       }
@@ -1050,6 +1054,19 @@ private[interflow] trait Eval { self: Interflow =>
 
   private def inBounds(values: Array[nir.Val], offset: Int): Boolean = {
     inBounds(values.length, offset)
+  }
+
+  /* Reaching it throws an UndefinedBehaviorError, which is handled as any
+   * other exception thrown in a try region.
+   */
+  private def unreachableInst()(implicit
+      state: State,
+      pos: nir.SourcePosition
+  ): nir.Inst.Unreachable = {
+    val unwind =
+      if (state.inTryRegion) state.newUnwindSite(thrown = null).unwind
+      else nir.Next.None
+    nir.Inst.Unreachable(unwind)
   }
 
   def isNonNull(value: nir.Val)(implicit state: State): Boolean = {

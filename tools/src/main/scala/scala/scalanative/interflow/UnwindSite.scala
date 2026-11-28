@@ -90,7 +90,7 @@ private[interflow] object UnwindSite {
         ()
     }
 
-    // Only the unwind edge of a let can be redirected
+    // Only the unwind edge of a let or of an unreachable can be redirected
     def keep(next: nir.Next): Unit = next match {
       case nir.Next.None            => ()
       case nir.Next.Label(id, _)    => forwarders -= id
@@ -102,6 +102,10 @@ private[interflow] object UnwindSite {
       case nir.Inst.Let(
             _,
             _,
+            nir.Next.Unwind(exc, nir.Next.Label(id, Seq(arg)))
+          ) if arg == exc =>
+        unwoundTo += id
+      case nir.Inst.Unreachable(
             nir.Next.Unwind(exc, nir.Next.Label(id, Seq(arg)))
           ) if arg == exc =>
         unwoundTo += id
@@ -160,6 +164,14 @@ private[interflow] object UnwindSite {
           val unwind =
             nir.Next.Unwind(exc, nir.Next.Label(handler, handlerArgs))
           result += inst.copy(unwind = unwind)(inst.pos, inst.scopeId)
+        case inst @ nir.Inst.Unreachable(
+              nir.Next.Unwind(exc, nir.Next.Label(id, _))
+            ) if forwarders.contains(id) =>
+          val (param, nir.Next.Label(handler, args)) = forwarders(id)
+          val handlerArgs = args.map(arg => if (arg == param) exc else arg)
+          val unwind =
+            nir.Next.Unwind(exc, nir.Next.Label(handler, handlerArgs))
+          result += nir.Inst.Unreachable(unwind)(inst.pos)
         case inst =>
           result += inst
       }
