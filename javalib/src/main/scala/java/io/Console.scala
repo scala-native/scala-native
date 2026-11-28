@@ -142,18 +142,21 @@ class Console private[io] (inCs: Charset, outCs: Charset) extends Flushable {
    */
   private def readLineChars(): Array[Char] =
     try {
+      // Chars after pos already known to hold no line terminator
+      var scanned = 0
       while (true) {
         if (skipLF && pos < lim) {
           if (buf(pos) == '\n') consume(pos + 1)
           skipLF = false
         }
         if (pos < lim) {
-          val end = lineEnd(pos)
+          val end = lineEnd(pos + scanned)
           val terminated = buf(end - 1) == '\n' || buf(end - 1) == '\r'
           // A Windows console read can return part of a line, so only a line
           // terminator (or end of input) ends it there.
           val recordEndsLine = if (isWindows) false else true
           if (terminated || recordEndsLine) return takeLine(end)
+          scanned = lim - pos
         }
         if (fill() < 0) return if (pos < lim) takeLine(lim) else null
       }
@@ -162,8 +165,9 @@ class Console private[io] (inCs: Charset, outCs: Charset) extends Flushable {
       case e: IOException => throw new IOError(e)
     }
 
-  /** End of the line starting at `from`, including its terminator (LF, CR or
-   *  CRLF), or `lim` if the buffered input has none. Requires readLock.
+  /** End of the line containing `from`, including its terminator (LF, CR or
+   *  CRLF), or `lim` if the buffered input from `from` on has none. Requires
+   *  readLock.
    */
   private def lineEnd(from: Int): Int = {
     var i = from
