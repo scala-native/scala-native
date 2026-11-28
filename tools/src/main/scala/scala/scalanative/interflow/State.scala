@@ -152,7 +152,9 @@ private[interflow] final class State(
     val site = new UnwindSite.Unwinding(
       trampoline = trampoline,
       exc = nir.Val.Local(fresh(), nir.Rt.Throwable),
-      origin = fullClone(trampoline),
+      origin =
+        if (handler ne nir.Next.None) fullClone(trampoline)
+        else inheritableClone(trampoline),
       ownHandler = handler
     )
     sites += site
@@ -361,6 +363,23 @@ private[interflow] final class State(
     newstate.emitted = emitted.clone()
     newstate.getClassCache = getClassCache.clone()
 
+    if (preserveDebugInfo) {
+      newstate.virtualNames = virtualNames.mapValuesNow(identity)
+      newstate.localNames = localNames.clone()
+    }
+    newstate
+  }
+
+  /** A copy of what `inherit` reads from this state. It is enough for a state
+   *  that is only passed to a caller, which is much cheaper than `fullClone`
+   *  when most of the instructions of a callee inlined in a try region are
+   *  unwind sites.
+   */
+  private def inheritableClone(block: nir.Local): State = {
+    val newstate =
+      new State(block, inOuterRegion, blockFresh)(preserveDebugInfo)
+    newstate.heap = heap.mapValuesNow(_.clone())
+    newstate.emitted = emitted.clone()
     if (preserveDebugInfo) {
       newstate.virtualNames = virtualNames.mapValuesNow(identity)
       newstate.localNames = localNames.clone()
