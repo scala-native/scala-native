@@ -83,6 +83,11 @@ object System {
     envVars.get(if (isWindows) key.toUpperCase() else key)
   }
 
+  /** The console attached to the process, or null if standard input or standard
+   *  output is not a terminal.
+   */
+  def console(): Console = Console.system
+
   def setIn(in: InputStream): Unit =
     this.in = in
 

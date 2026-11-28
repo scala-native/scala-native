@@ -47,3 +47,5 @@ class InterruptedIOException(s: String) extends IOException(s) {
 
   def this() = this(null)
 }
+
+class IOError(cause: Throwable) extends Error(cause)
