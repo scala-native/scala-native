@@ -40,6 +40,11 @@ private[linker] class Reach(
   )
   private val delayedMethods = mutable.Set.empty[DelayedMethod]
 
+  // See LinkedEnums
+  private val enumClasses = mutable.Set.empty[nir.Global.Top]
+  private val pendingEnumClasses = mutable.Queue.empty[nir.Global.Top]
+  private var enumValuesRequested = false
+
   if (injects.nonEmpty) {
     injects.groupBy(_.name.top).foreach {
       case (owner, defns) =>
@@ -199,13 +204,35 @@ private[linker] class Reach(
   }
 
   def process(): Unit =
-    while (todo.nonEmpty) {
-      val name = todo.head
-      todo = todo.tail
-      if (!done.contains(name)) {
-        reachDefn(name)
+    while (todo.nonEmpty || pendingEnumClasses.nonEmpty) {
+      if (todo.isEmpty) reachEnumValues(pendingEnumClasses.dequeue())
+      else {
+        val name = todo.head
+        todo = todo.tail
+        if (!done.contains(name)) {
+          reachDefn(name)
+        }
       }
     }
+
+  private def onEnumClass(name: nir.Global.Top): Unit =
+    if (enumClasses.add(name) && enumValuesRequested)
+      pendingEnumClasses.enqueue(name)
+
+  private def onEnumValuesRequested(): Unit =
+    if (!enumValuesRequested) {
+      enumValuesRequested = true
+      pendingEnumClasses ++= enumClasses
+    }
+
+  private def reachEnumValues(cls: nir.Global.Top): Unit = {
+    implicit val pos: nir.SourcePosition = nir.SourcePosition.NoPosition
+    val values = LinkedEnums.valuesMethod(cls)
+    lookup(values, ignoreIfUnavailable = true).foreach { _ =>
+      reachOp(nir.Op.Module(values.owner.top))
+      reachGlobal(values)
+    }
+  }
 
   @tailrec
   final def processDelayed(): Unit = {
@@ -680,6 +707,7 @@ private[linker] class Reach(
     reachAttrs(attrs)
     reachType(ty)
     reachInsts(insts)
+    if (LinkedEnums.isLookup(name)) onEnumValuesRequested()
   }
 
   def reachTrait(defn: nir.Defn.Trait): Unit = {
@@ -704,6 +732,7 @@ private[linker] class Reach(
     )
     reachAttrs(attrs)
     reachExported(name)
+    if (parent.contains(LinkedEnums.EnumClass)) onEnumClass(name)
   }
 
   def reachModule(defn: nir.Defn.Module): Unit = {

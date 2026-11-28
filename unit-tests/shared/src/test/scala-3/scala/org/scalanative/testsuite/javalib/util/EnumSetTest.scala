@@ -6,11 +6,16 @@ import java.util.EnumSet
 import org.junit.Assert._
 import org.junit.Test
 
+import org.scalanative.testsuite.utils.AssertThrows.assertThrows
+
 // Tested only in Scala 3 becouse we cannot create Java enums in Scala 2
 
 object EnumSetTest {
   enum Value extends java.lang.Enum[Value]:
     case A, B, C, D, E, F
+
+  enum Other extends java.lang.Enum[Other]:
+    case X
 }
 
 class EnumSetTest {
@@ -124,4 +129,57 @@ class EnumSetTest {
     assertTrue(s.contains(Value.C))
   }
 
+  @Test def allOf(): Unit = {
+    val s = EnumSet.allOf(classOf[Value])
+    assertEquals(6, s.size())
+    assertEquals("[A, B, C, D, E, F]", s.toString())
+    Value.values.foreach(v => assertTrue(s.contains(v)))
+  }
+
+  @Test def complementOf(): Unit = {
+    val s = EnumSet.complementOf(EnumSet.of(Value.A, Value.C))
+    assertEquals("[B, D, E, F]", s.toString())
+    assertFalse(s.contains(Value.A))
+    assertTrue(s.contains(Value.B))
+    assertFalse(s.contains(Value.C))
+    assertEquals(6, EnumSet.complementOf(EnumSet.noneOf(classOf[Value])).size())
+  }
+
+  @Test def range(): Unit = {
+    val s = EnumSet.range(Value.B, Value.D)
+    assertEquals("[B, C, D]", s.toString())
+    assertTrue(s.contains(Value.B))
+    assertTrue(s.contains(Value.C))
+    assertTrue(s.contains(Value.D))
+    assertEquals(1, EnumSet.range(Value.E, Value.E).size())
+    assertThrows(
+      classOf[IllegalArgumentException],
+      EnumSet.range(Value.D, Value.B)
+    )
+    // Endpoints of two enums with equal ordinals, through an erased cast
+    def range[E <: java.lang.Enum[E]](from: E, to: AnyRef) =
+      EnumSet.range(from, to.asInstanceOf[E])
+    assertThrows(
+      classOf[ClassCastException],
+      range(Value.A, EnumSetTest.Other.X)
+    )
+  }
+
+  @Test def ordinalOrderAndForeignElements(): Unit = {
+    val s = EnumSet.of(Value.F, Value.A, Value.D)
+    assertEquals("[A, D, F]", s.toString())
+    assertFalse(s.contains("A"))
+    assertFalse(s.remove("A"))
+    assertThrows(
+      classOf[ClassCastException],
+      s.asInstanceOf[java.util.Set[Any]].add(EnumSetTest.Other.X)
+    )
+  }
+
+  @Test def copyOfIsIndependent(): Unit = {
+    val s = EnumSet.of(Value.A)
+    val c = EnumSet.copyOf(s)
+    c.add(Value.B)
+    assertEquals(1, s.size())
+  }
 }

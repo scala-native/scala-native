@@ -213,7 +213,7 @@ object ProcessBuilder {
         }
       }
 
-      def values(): Array[Type] = _values
+      def values(): Array[Type] = _values.clone()
 
       private val _values = Array(PIPE, INHERIT, READ, WRITE, APPEND)
     }

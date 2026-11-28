@@ -54,6 +54,9 @@ private[scalanative] class Metadata(
       .flatMap(interfaces(_))
       .toSet
 
+  lazy val linkedEnums: Seq[(nir.Global.Top, nir.Global.Member)] =
+    linker.LinkedEnums.linked(analysis)
+
   /** Proxies of reflectively called methods, registered at startup */
   lazy val reflectiveProxies: nir.Defn.Const =
     ReflectiveProxyTable.defn(proxies)

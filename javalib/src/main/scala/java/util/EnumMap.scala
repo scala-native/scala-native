@@ -21,31 +21,29 @@ package java.util
 
 import java.lang.{_Enum => Enum}
 
-// No Class.getEnumConstants in Scala Native: the tables are indexed by ordinal
-// and grow on demand instead of holding the whole enum universe.
 class EnumMap[K <: Enum[K], V] private (
     private val keyType: Class[K],
-    private var keys: Array[AnyRef],
-    private var vals: Array[AnyRef], // masked values, null = absent
+    private val keys: Array[AnyRef],
+    private val vals: Array[AnyRef], // masked values, null = absent
     private var count: Int
 ) extends AbstractMap[K, V]
     with java.io.Serializable
     with Cloneable {
   import EnumMap._
 
-  def this(keyType: Class[K]) =
-    this(
-      Objects.requireNonNull(keyType),
-      EnumMap.EmptyArray,
-      EnumMap.EmptyArray,
-      0
-    )
+  private def this(keyType: Class[K], universe: Array[AnyRef]) =
+    this(keyType, universe, new Array[AnyRef](universe.length), 0)
+
+  def this(keyType: Class[K]) = this(keyType, EnumMap.universe(keyType))
 
   def this(m: EnumMap[K, _ <: V]) =
-    this(m.keyType, m.keys.clone(), m.vals.clone(), m.count)
+    this(m.keyType, m.keys, m.vals.clone(), m.count)
 
   def this(m: Map[K, _ <: V]) = {
-    this(EnumMap.keyTypeOf[K](m), EnumMap.EmptyArray, EnumMap.EmptyArray, 0)
+    this(
+      EnumMap.keyTypeOf[K](m),
+      EnumMap.universe(EnumMap.keyTypeOf[K](m))
+    )
     putAll(m)
   }
 
@@ -62,19 +60,11 @@ class EnumMap[K <: Enum[K], V] private (
       )
   }
 
-  private def ensureCapacity(ordinal: Int): Unit =
-    if (ordinal >= vals.length) {
-      val newLength = Math.max(ordinal + 1, vals.length * 2)
-      keys = Arrays.copyOf(keys, newLength)
-      vals = Arrays.copyOf(vals, newLength)
-    }
-
   override def size(): Int = count
 
   override def containsKey(key: Any): Boolean =
     isValidKey(key) && {
-      val i = ordinalOf(key)
-      i < vals.length && vals(i) != null
+      vals(ordinalOf(key)) != null
     }
 
   override def containsValue(value: Any): Boolean = {
@@ -90,16 +80,13 @@ class EnumMap[K <: Enum[K], V] private (
   override def get(key: Any): V =
     if (!isValidKey(key)) null.asInstanceOf[V]
     else {
-      val i = ordinalOf(key)
-      if (i < vals.length) unmask[V](vals(i)) else null.asInstanceOf[V]
+      unmask[V](vals(ordinalOf(key)))
     }
 
   override def put(key: K, value: V): V = {
     checkKey(key)
     val i = ordinalOf(key)
-    ensureCapacity(i)
     val old = vals(i)
-    keys(i) = key
     vals(i) = mask(value)
     if (old == null) count += 1
     unmask[V](old)
@@ -109,7 +96,7 @@ class EnumMap[K <: Enum[K], V] private (
     if (!isValidKey(key)) null.asInstanceOf[V]
     else {
       val i = ordinalOf(key)
-      if (i >= vals.length || vals(i) == null) null.asInstanceOf[V]
+      if (vals(i) == null) null.asInstanceOf[V]
       else removeAt(i)
     }
 
@@ -159,7 +146,7 @@ class EnumMap[K <: Enum[K], V] private (
   }
 
   override def clone(): EnumMap[K, V] =
-    new EnumMap[K, V](keyType, keys.clone(), vals.clone(), count)
+    new EnumMap[K, V](keyType, keys, vals.clone(), count)
 
   private class EntryIterator extends Iterator[Map.Entry[K, V]] {
     // Rescans the slots, so it sees mappings changed after its creation
@@ -225,7 +212,12 @@ class EnumMap[K <: Enum[K], V] private (
 }
 
 private object EnumMap {
-  private val EmptyArray = new Array[AnyRef](0)
+  private def universe(keyType: Class[_]): Array[AnyRef] = {
+    val constants: Array[_ <: AnyRef] = keyType.getEnumConstants()
+    if (constants == null)
+      throw new NullPointerException(s"$keyType is not an enum class")
+    constants.asInstanceOf[Array[AnyRef]]
+  }
 
   // Stands for a null value, null in the table means no mapping
   private object NullValue {
@@ -239,16 +231,11 @@ private object EnumMap {
   private def unmask[V](v: AnyRef): V =
     (if (v eq NullValue) null else v).asInstanceOf[V]
 
-  // No Enum.getDeclaringClass: a constant with a body is a subclass of its enum
   private def keyTypeOf[K <: Enum[K]](m: Map[K, _]): Class[K] = m match {
     case em: EnumMap[_, _] => em.keyType.asInstanceOf[Class[K]]
     case _                 =>
       if (m.isEmpty())
         throw new IllegalArgumentException("Specified map is empty")
-      var cls: Class[_] = m.keySet().iterator().next().getClass()
-      while (cls.getSuperclass() != null &&
-          cls.getSuperclass() != classOf[Enum[_]])
-        cls = cls.getSuperclass()
-      cls.asInstanceOf[Class[K]]
+      m.keySet().iterator().next().getDeclaringClass()
   }
 }

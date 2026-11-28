@@ -2,39 +2,60 @@ package java.util
 
 import java.lang.{_Enum => Enum}
 
-final class EnumSet[E <: Enum[E]] private (values: Set[E])
-    extends AbstractSet[E]
+final class EnumSet[E <: Enum[E]] private (
+    elementType: Class[E],
+    map: EnumMap[E, java.lang.Boolean]
+) extends AbstractSet[E]
     with Cloneable
     with Serializable {
-  // Unsupported requires reflection
-  // def this(elementType: Class[E], universe: Array[Enum[E]]) = ???
+  private def values: Set[E] = map.keySet()
 
   override def iterator(): Iterator[E] = values.iterator()
-  override def size(): Int = values.size()
-  override def isEmpty(): Boolean = values.isEmpty()
-  override def contains(o: Any): Boolean = values.contains(o)
-  override def toArray(): Array[AnyRef] = values.toArray()
-  override def toArray[T <: AnyRef](a: Array[T]): Array[T] = values.toArray(a)
-  override def add(e: E): Boolean = values.add(e)
-  override def remove(o: Any): Boolean = values.remove(o)
-  override def containsAll(c: Collection[_]): Boolean = values.containsAll(c)
-  override def addAll(c: Collection[_ <: E]): Boolean = values.addAll(c)
-  override def removeAll(c: Collection[_]): Boolean = values.removeAll(c)
-  override def retainAll(c: Collection[_]): Boolean = values.retainAll(c)
-  override def clear(): Unit = values.clear()
-  override def equals(o: Any): Boolean = values.equals(o)
-  override def hashCode(): Int = values.hashCode()
+  override def size(): Int = map.size()
+  override def isEmpty(): Boolean = map.isEmpty()
+  override def contains(o: Any): Boolean = map.containsKey(o)
+  override def add(e: E): Boolean = map.put(e, java.lang.Boolean.TRUE) == null
+  override def remove(o: Any): Boolean = map.remove(o) != null
+  override def clear(): Unit = map.clear()
 
   override protected[util] def clone(): EnumSet[E] =
-    super.clone().asInstanceOf[EnumSet[E]]
+    new EnumSet[E](elementType, new EnumMap[E, java.lang.Boolean](map))
+
+  private def complement(): EnumSet[E] = {
+    val result = EnumSet.noneOf(elementType)
+    val universe = EnumSet.universe(elementType)
+    var i = 0
+    while (i < universe.length) {
+      if (!contains(universe(i))) result.add(universe(i))
+      i += 1
+    }
+    result
+  }
 }
 
 object EnumSet {
-  def noneOf[E <: Enum[E]](elementType: Class[E]): EnumSet[E] =
-    new EnumSet[E](new HashSet[E]())
+  private def universe[E <: Enum[E]](elementType: Class[E]): Array[E] = {
+    val constants = elementType.getEnumConstants()
+    if (constants == null)
+      throw new ClassCastException(s"$elementType not an enum")
+    constants
+  }
 
-  // Unsupported, requires reflection
-  // def allOf[E <: Enum[E]](elementType: Class[E]): EnumSet[E] = ???
+  def noneOf[E <: Enum[E]](elementType: Class[E]): EnumSet[E] = {
+    universe(elementType) // throws for a non-enum class
+    new EnumSet[E](elementType, new EnumMap[E, java.lang.Boolean](elementType))
+  }
+
+  def allOf[E <: Enum[E]](elementType: Class[E]): EnumSet[E] = {
+    val result = noneOf(elementType)
+    val constants = universe(elementType)
+    var i = 0
+    while (i < constants.length) {
+      result.add(constants(i))
+      i += 1
+    }
+    result
+  }
 
   def copyOf[E <: Enum[E]](s: EnumSet[E]): EnumSet[E] =
     s.clone().asInstanceOf[EnumSet[E]]
@@ -51,12 +72,7 @@ object EnumSet {
       set
   }
 
-  // Unsupported, requires reflection
-  // def complementOf[E <: Enum[E]](s: EnumSet[E]): EnumSet[E] = {
-  //   val result = copyOf(s)
-  //   result.complement()
-  //   result
-  // }
+  def complementOf[E <: Enum[E]](s: EnumSet[E]): EnumSet[E] = s.complement()
 
   def of[E <: Enum[E]](e: E): EnumSet[E] = {
     val s = emptySetOf(e)
@@ -105,10 +121,25 @@ object EnumSet {
     s
   }
 
-  // Unsupported, requires reflection
-  // def range[E <: Enum[E]](from: E, to: E): EnumSet[E] = ???
+  def range[E <: Enum[E]](from: E, to: E): EnumSet[E] = {
+    val elementType = from.getDeclaringClass()
+    if (to.getDeclaringClass() ne elementType)
+      throw new ClassCastException(
+        s"${to.getDeclaringClass().getName()} != ${elementType.getName()}"
+      )
+    if (from.compareTo(to) > 0)
+      throw new IllegalArgumentException(s"$from > $to")
+    val result = noneOf(elementType)
+    val constants = universe(elementType)
+    var i = from.ordinal()
+    while (i <= to.ordinal()) {
+      result.add(constants(i))
+      i += 1
+    }
+    result
+  }
 
   @inline
   private def emptySetOf[E <: Enum[E]](e: E): EnumSet[E] =
-    new EnumSet[E](new HashSet[E]())
+    noneOf(e.getDeclaringClass())
 }

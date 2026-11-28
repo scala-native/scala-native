@@ -15,7 +15,8 @@ object VirtualThreadStackTraceTest {
 }
 
 class VirtualThreadStackTraceTest {
-  private val Timeout = 5000L
+  // Symbolizing a trace takes seconds under emulation
+  private val Timeout = 30000L
 
   @Test def exceptionStackTraceOmitsCarrierFrames(): Unit = {
     val traceRef = new AtomicReference[Array[StackTraceElement]]()
