@@ -37,6 +37,8 @@ typedef struct Root {
     struct Root *next;
 } Root;
 static Root *customRoots = NULL;
+// The heap size limit applied by scalanative_GC_init, SIZE_MAX if there is none
+static size_t heapLimit = SIZE_MAX;
 static GC_push_other_roots_proc defaultPushOtherRoots = NULL;
 
 static void pushRange(void *ctx, void *low, void *high) {
@@ -183,10 +185,17 @@ void scalanative_GC_init() {
      * the build are applied after it.
      */
     GC_INIT();
+    if (Parse_Env_Is_Size("GC_MAXIMUM_HEAP_SIZE"))
+        heapLimit = Parse_Env_Or_Default("GC_MAXIMUM_HEAP_SIZE", 0);
 #ifdef SCALANATIVE_GC_CONFIG_MAX_HEAP_SIZE
-    if (!Parse_Env_Is_Size("GC_MAXIMUM_HEAP_SIZE"))
-        GC_set_max_heap_size((GC_word)SCALANATIVE_GC_CONFIG_MAX_HEAP_SIZE);
+    else {
+        heapLimit = (size_t)SCALANATIVE_GC_CONFIG_MAX_HEAP_SIZE;
+        GC_set_max_heap_size((GC_word)heapLimit);
+    }
 #endif
+    // Boehm GC ignores a limit of 0
+    if (heapLimit == 0)
+        heapLimit = SIZE_MAX;
 #ifdef SCALANATIVE_GC_CONFIG_INITIAL_HEAP_SIZE
     if (!Parse_Env_Is_Size("GC_INITIAL_HEAP_SIZE")) {
         size_t initial = (size_t)SCALANATIVE_GC_CONFIG_INITIAL_HEAP_SIZE;
@@ -195,6 +204,10 @@ void scalanative_GC_init() {
             GC_expand_hp(initial - current);
     }
 #endif
+    // GC_INIT creates the initial heap even when it exceeds the limit
+    size_t heapSize = GC_get_heap_size();
+    if (heapLimit < heapSize)
+        heapLimit = heapSize;
     defaultPushOtherRoots = GC_get_push_other_roots();
     GC_set_push_other_roots(pushCustomRoots);
     initTracedAnchorKind();
@@ -259,6 +272,20 @@ size_t scalanative_GC_get_used_heapsize() {
     size_t unmapped_bytes = stats.unmapped_bytes;
     return heap_sz - unmapped_bytes;
 }
+
+size_t scalanative_GC_get_total_heapsize() {
+    GC_word heapSize = 0;
+    GC_get_heap_usage_safe(&heapSize, NULL, NULL, NULL, NULL);
+    return (size_t)heapSize;
+}
+
+size_t scalanative_GC_get_free_heapsize() {
+    GC_word heapSize = 0, freeBytes = 0;
+    GC_get_heap_usage_safe(&heapSize, &freeBytes, NULL, NULL, NULL);
+    return freeBytes < heapSize ? (size_t)freeBytes : (size_t)heapSize;
+}
+
+size_t scalanative_GC_get_heap_limit() { return heapLimit; }
 
 size_t scalanative_GC_stats_collection_total() {
     return jmx_stats_get_collection_total();

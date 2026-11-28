@@ -235,6 +235,14 @@ object FileApi {
       nNumberOfBytesToUnlockLow: DWord,
       nNumberOfBytesToUnlockHigh: DWord
   ): Boolean = extern
+
+  def UnlockFileEx(
+      hfile: Handle,
+      dwReserved: DWord,
+      nNumberOfBytesToUnlockLow: DWord,
+      nNumberOfBytesToUnlockHigh: DWord,
+      lpOverlapped: Ptr[OVERLAPPED]
+  ): Boolean = extern
 }
 
 object FileApiExt {

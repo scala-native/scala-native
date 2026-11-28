@@ -93,6 +93,22 @@ size_t scalanative_GC_get_max_heapsize() {
 
 size_t scalanative_GC_get_used_heapsize() { return Heap_getMemoryUsed(&heap); }
 
+// The same as the used heap size, which counts the whole heap
+size_t scalanative_GC_get_total_heapsize() { return Heap_getMemoryUsed(&heap); }
+
+// Only the free blocks, the free lines of recycled blocks are counted at the
+// end of a collection and not when they are allocated into. Commix does not
+// count the single blocks it hands out and rebuilds the count while it
+// sweeps, so its value is approximate until the next collection.
+size_t scalanative_GC_get_free_heapsize() {
+    size_t total = Heap_getMemoryUsed(&heap);
+    size_t free = (size_t)atomic_load(&blockAllocator.freeBlockCount) *
+                  SPACE_USED_PER_BLOCK;
+    return free < total ? free : total;
+}
+
+size_t scalanative_GC_get_heap_limit() { return heap.maxHeapSize; }
+
 size_t scalanative_GC_stats_collection_total() {
     return jmx_stats_get_collection_total();
 }

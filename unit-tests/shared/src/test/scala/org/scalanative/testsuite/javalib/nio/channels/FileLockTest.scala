@@ -114,9 +114,6 @@ class FileLockTest {
   }
 
   @Test def testIsValid(): Unit = {
-    // locks are not supported because it is unclear how to lock Long.MaxValue
-    // on a 32-bit platform (where size is an int)
-    assumeNot32Bit()
     val fileLock = readWriteChannel.lock()
     assertTrue(fileLock.isValid())
     fileLock.release()
