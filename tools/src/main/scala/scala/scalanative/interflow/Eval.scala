@@ -38,121 +38,119 @@ private[interflow] trait Eval { self: Interflow =>
 
     // Implicit scopeId required for materialization of insts other than Inst.Let
     implicit var lastScopeId = scopeMapping(nir.ScopeId.TopLevel)
-    while (true) {
-      val inst = insts(pc)
-      implicit val srcPosition: nir.SourcePosition = inst.pos
-      def bailOut =
-        throw BailOut("can't eval inst: " + inst.show)
-      inst match {
-        case _: nir.Inst.Label =>
-          unreachable
-        case let @ nir.Inst.Let(local, op, unwind) =>
-          lastScopeId = scopeMapping(let.scopeId)
-          // Whatever is emitted for this instruction unwinds to its handler
-          state.handler = unwind match {
-            case unwind: nir.Next.Unwind => unwind
-            case _                       => null
-          }
-          val value = eval(op)
-          if (preserveDebugInfo) {
-            val localName = debugInfo.localNames.get(local)
-            value match {
-              case nir.Val.Local(id, _) =>
-                localName.foreach(state.localNames.getOrElseUpdate(id, _))
-              case nir.Val.Virtual(addr) =>
-                localName.foreach(state.virtualNames.getOrElseUpdate(addr, _))
-              case _ => ()
+    try
+      while (true) {
+        val inst = insts(pc)
+        implicit val srcPosition: nir.SourcePosition = inst.pos
+        // Whatever is emitted for this instruction unwinds to its handler
+        state.handler = inst match {
+          case nir.Inst.Let(_, _, unwind)   => unwind
+          case nir.Inst.Throw(_, unwind)    => unwind
+          case nir.Inst.Unreachable(unwind) => unwind
+          case _                            => nir.Next.None
+        }
+        def bailOut =
+          throw BailOut("can't eval inst: " + inst.show)
+        inst match {
+          case _: nir.Inst.Label =>
+            unreachable
+          case let @ nir.Inst.Let(local, op, unwind) =>
+            lastScopeId = scopeMapping(let.scopeId)
+            val value = eval(op)
+            if (preserveDebugInfo) {
+              val localName = debugInfo.localNames.get(local)
+              value match {
+                case nir.Val.Local(id, _) =>
+                  localName.foreach(state.localNames.getOrElseUpdate(id, _))
+                case nir.Val.Virtual(addr) =>
+                  localName.foreach(state.virtualNames.getOrElseUpdate(addr, _))
+                case _ => ()
+              }
             }
-          }
-          if (value.ty == nir.Type.Nothing) {
-            return unreachableInst()(state, inst.pos)
-          } else {
-            val ty = value match {
-              case InstanceRef(ty) => ty
-              case _               => value.ty
+            if (value.ty == nir.Type.Nothing) {
+              return unreachableInst()(state, inst.pos)
+            } else {
+              val ty = value match {
+                case InstanceRef(ty) => ty
+                case _               => value.ty
+              }
+              val shortUnitValue =
+                if (ty == nir.Type.Unit) nir.Val.Unit else value
+              state.storeLocal(local, shortUnitValue)
+              pc += 1
             }
-            val shortUnitValue =
-              if (ty == nir.Type.Unit) nir.Val.Unit else value
-            state.storeLocal(local, shortUnitValue)
-            pc += 1
-          }
-        case nir.Inst.Ret(v) =>
-          return nir.Inst.Ret(eval(v))
-        case nir.Inst.Jump(nir.Next.Label(target, args)) =>
-          val evalArgs = args.map(eval)
-          val next = nir.Next.Label(target, evalArgs)
-          return nir.Inst.Jump(next)
-        case nir.Inst.If(
-              cond,
-              nir.Next.Label(thenTarget, thenArgs),
-              nir.Next.Label(elseTarget, elseArgs)
-            ) =>
-          def thenNext =
-            nir.Next.Label(thenTarget, thenArgs.map(eval))
-          def elseNext =
-            nir.Next.Label(elseTarget, elseArgs.map(eval))
-          val next = eval(cond) match {
-            case nir.Val.True =>
-              return nir.Inst.Jump(thenNext)
-            case nir.Val.False =>
-              return nir.Inst.Jump(elseNext)
-            case cond =>
-              return nir.Inst.If(materialize(cond), thenNext, elseNext)
-          }
-        case nir.Inst.Switch(
-              scrut,
-              nir.Next.Label(defaultTarget, defaultArgs),
-              cases
-            ) =>
-          def defaultNext =
-            nir.Next.Label(defaultTarget, defaultArgs.map(eval))
-          eval(scrut) match {
-            case value if value.isCanonical =>
-              val next = cases
-                .collectFirst {
-                  case nir.Next.Case(
-                        caseValue,
-                        nir.Next.Label(caseTarget, caseArgs)
-                      ) if caseValue == value =>
-                    val evalArgs = caseArgs.map(eval)
-                    val next = nir.Next.Label(caseTarget, evalArgs)
-                    next
-                }
-                .getOrElse(defaultNext)
-              return nir.Inst.Jump(next)
-            case scrut =>
-              return nir.Inst.Switch(materialize(scrut), defaultNext, cases)
-          }
-        case nir.Inst.Throw(v, nir.Next.None) =>
-          return nir.Inst.Throw(eval(v), nir.Next.None)
-        case nir.Inst.Throw(
-              v,
-              unwind @ nir.Next.Unwind(exc, nir.Next.Label(handler, args))
-            ) =>
-          val value = eval(v)
-          if (isNonNull(value)) {
-            // The handler is known: the exception is passed to it as is,
-            // and it does not have to be allocated if the handler does not
-            // let it escape
-            state.storeLocal(exc.id, value)
-            return nir.Inst.Jump(nir.Next.Label(handler, args.map(eval)))
-          } else {
-            // Throwing null throws a NullPointerException instead
-            state.handler = unwind
-            val thrown = materialize(value)
-            val site = state.newUnwindSite(thrown = null)
-            return nir.Inst.Throw(thrown, site.unwind)
-          }
-        case nir.Inst.Unreachable(unwind) =>
-          state.handler = unwind match {
-            case unwind: nir.Next.Unwind => unwind
-            case _                       => null
-          }
-          return unreachableInst()
-        case _ =>
-          bailOut
+          case nir.Inst.Ret(v) =>
+            return nir.Inst.Ret(eval(v))
+          case nir.Inst.Jump(nir.Next.Label(target, args)) =>
+            val evalArgs = args.map(eval)
+            val next = nir.Next.Label(target, evalArgs)
+            return nir.Inst.Jump(next)
+          case nir.Inst.If(
+                cond,
+                nir.Next.Label(thenTarget, thenArgs),
+                nir.Next.Label(elseTarget, elseArgs)
+              ) =>
+            def thenNext =
+              nir.Next.Label(thenTarget, thenArgs.map(eval))
+            def elseNext =
+              nir.Next.Label(elseTarget, elseArgs.map(eval))
+            val next = eval(cond) match {
+              case nir.Val.True =>
+                return nir.Inst.Jump(thenNext)
+              case nir.Val.False =>
+                return nir.Inst.Jump(elseNext)
+              case cond =>
+                return nir.Inst.If(materialize(cond), thenNext, elseNext)
+            }
+          case nir.Inst.Switch(
+                scrut,
+                nir.Next.Label(defaultTarget, defaultArgs),
+                cases
+              ) =>
+            def defaultNext =
+              nir.Next.Label(defaultTarget, defaultArgs.map(eval))
+            eval(scrut) match {
+              case value if value.isCanonical =>
+                val next = cases
+                  .collectFirst {
+                    case nir.Next.Case(
+                          caseValue,
+                          nir.Next.Label(caseTarget, caseArgs)
+                        ) if caseValue == value =>
+                      val evalArgs = caseArgs.map(eval)
+                      val next = nir.Next.Label(caseTarget, evalArgs)
+                      next
+                  }
+                  .getOrElse(defaultNext)
+                return nir.Inst.Jump(next)
+              case scrut =>
+                return nir.Inst.Switch(materialize(scrut), defaultNext, cases)
+            }
+          case nir.Inst.Throw(v, nir.Next.None) =>
+            return nir.Inst.Throw(eval(v), nir.Next.None)
+          case nir.Inst.Throw(
+                v,
+                unwind @ nir.Next.Unwind(exc, nir.Next.Label(handler, args))
+              ) =>
+            val value = eval(v)
+            if (isNonNull(value)) {
+              // The handler is known: the exception is passed to it as is,
+              // and it does not have to be allocated if the handler does not
+              // let it escape
+              state.storeLocal(exc.id, value)
+              return nir.Inst.Jump(nir.Next.Label(handler, args.map(eval)))
+            } else {
+              // Throwing null throws a NullPointerException instead
+              val thrown = materialize(value)
+              return nir.Inst.Throw(thrown, state.newUnwindSite().unwind)
+            }
+          case _: nir.Inst.Unreachable =>
+            return unreachableInst()
+          case _ =>
+            bailOut
+        }
       }
-    }
+    finally state.handler = nir.Next.None
 
     unreachable
   }
@@ -1064,7 +1062,7 @@ private[interflow] trait Eval { self: Interflow =>
       pos: nir.SourcePosition
   ): nir.Inst.Unreachable = {
     val unwind =
-      if (state.inTryRegion) state.newUnwindSite(thrown = null).unwind
+      if (state.inTryRegion) state.newUnwindSite().unwind
       else nir.Next.None
     nir.Inst.Unreachable(unwind)
   }

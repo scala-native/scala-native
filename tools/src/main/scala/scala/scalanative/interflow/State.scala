@@ -7,9 +7,17 @@ import scalanative.codegen.Lower
 import scalanative.linker._
 import scalanative.util.unreachable
 
-private[interflow] final class State(val blockId: nir.Local)(
-    preserveDebugInfo: Boolean
-) {
+/** @param inOuterRegion
+ *    this is a state of a callee inlined at an instruction with a handler,
+ *    either in its direct caller or further up
+ *  @param blockFresh
+ *    names the blocks of the method being optimized
+ */
+private[interflow] final class State(
+    val blockId: nir.Local,
+    val inOuterRegion: Boolean,
+    blockFresh: nir.Fresh
+)(preserveDebugInfo: Boolean) {
   var fresh = nir.Fresh(blockId.id)
   /* Performance Note: nir.OpenHashMap/LongMap/AnyRefMap have a faster clone()
    * operation. This really makes a difference on fullClone() */
@@ -26,17 +34,16 @@ private[interflow] final class State(val blockId: nir.Local)(
 
   /* Exception handling context, see [[UnwindSite]].
    *
-   * `handler` is the handler of the instruction being evaluated, if it has
-   * one. `inOuterRegion` tells that this is a state of a callee inlined at
-   * an instruction with a handler, either in its direct caller or further
-   * up. In both cases an instruction that may throw is emitted with an
-   * unwind edge, and `sites` collects those edges.
+   * `handler` is the handler of the instruction being evaluated,
+   * `nir.Next.None` if it has none. Eval sets it for every instruction and
+   * clears it when it is done with the block, so that what is emitted when
+   * states are merged has no handler. An instruction that may throw is
+   * emitted with an unwind edge if it has a handler here or in a caller, and
+   * `sites` collects those edges.
    */
-  var handler: nir.Next.Unwind = null
-  var inOuterRegion: Boolean = false
-  var blockFresh: nir.Fresh = null
-  var sites = mutable.UnrolledBuffer.empty[UnwindSite]
-  def inTryRegion: Boolean = (handler ne null) || inOuterRegion
+  var handler: nir.Next = nir.Next.None
+  val sites = mutable.UnrolledBuffer.empty[UnwindSite]
+  def inTryRegion: Boolean = (handler ne nir.Next.None) || inOuterRegion
 
   // Delayed init
   var localNames: mutable.OpenHashMap[nir.Local, String] = _
@@ -123,8 +130,7 @@ private[interflow] final class State(val blockId: nir.Local)(
   ): nir.Val.Local = {
     def let(): nir.Val.Local =
       if (mayThrow && inTryRegion && UnwindSite.mayThrow(op)) {
-        val site = newUnwindSite(thrown = null)
-        emit.let(op, site.unwind)
+        emit.let(op, newUnwindSite().unwind)
       } else emit.let(op, nir.Next.None)
 
     if (op.isIdempotent || idempotent) {
@@ -141,17 +147,27 @@ private[interflow] final class State(val blockId: nir.Local)(
   /** Records an unwind edge leaving this state at the current point. The
    *  handler will see the state as it is now.
    */
-  def newUnwindSite(thrown: nir.Val): UnwindSite = {
-    val tramp = nir.Local(blockFresh().id * MergeProcessor.MergeBlockOffset)
-    val snapshot = fullClone(tramp)
-    snapshot.handler = null
-    val site = new UnwindSite(
-      tramp = tramp,
+  def newUnwindSite(): UnwindSite.Unwinding = {
+    val trampoline = MergeProcessor.newBlockId(blockFresh)
+    val site = new UnwindSite.Unwinding(
+      trampoline = trampoline,
       exc = nir.Val.Local(fresh(), nir.Rt.Throwable),
-      thrown = thrown,
-      frames = snapshot :: Nil,
-      links = Nil,
-      handler = handler
+      origin = fullClone(trampoline),
+      ownHandler = handler
+    )
+    sites += site
+    site
+  }
+
+  /** Records a throw of an inlined callee, which the handler of a caller will
+   *  take without unwinding. This state, the one at the end of the block that
+   *  throws, is not changed afterwards.
+   */
+  def newThrownSite(value: nir.Val): UnwindSite.Thrown = {
+    val site = new UnwindSite.Thrown(
+      trampoline = MergeProcessor.newBlockId(blockFresh),
+      value = value,
+      origin = this
     )
     sites += site
     site
@@ -332,16 +348,18 @@ private[interflow] final class State(val blockId: nir.Local)(
 
     reachable
   }
+
+  /** A copy of this state to continue in another block. It starts without a
+   *  handler and without unwind sites, which belong to this block.
+   */
   def fullClone(block: nir.Local): State = {
-    val newstate = new State(block)(preserveDebugInfo)
+    val newstate =
+      new State(block, inOuterRegion, blockFresh)(preserveDebugInfo)
     newstate.heap = heap.mapValuesNow(_.clone())
     newstate.locals = locals.clone()
     newstate.delayed = delayed.clone()
     newstate.emitted = emitted.clone()
     newstate.getClassCache = getClassCache.clone()
-    newstate.handler = handler
-    newstate.inOuterRegion = inOuterRegion
-    newstate.blockFresh = blockFresh
 
     if (preserveDebugInfo) {
       newstate.virtualNames = virtualNames.mapValuesNow(identity)

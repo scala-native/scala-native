@@ -8,55 +8,107 @@ import scala.collection.mutable
  *  Interflow evaluates a basic block as a whole, but the state seen by an
  *  exception handler is the one of the instruction that has thrown. Every
  *  instruction that may throw and is emitted for an instruction with a handler
- *  is a site: it unwinds to a block of its own, the trampoline, which starts
- *  from the state at the site and jumps to the handler. Whatever the handler
- *  needs materialized is emitted in the trampoline, on the exceptional path
- *  only.
+ *  is a site: it leaves its block for a block of its own, the trampoline, which
+ *  starts from the state at the site and jumps to the handler. Whatever the
+ *  handler needs materialized is emitted in the trampoline, on the exceptional
+ *  path only.
  *
- *  A site emitted while inlining has no handler of its own. It is passed to the
- *  caller when the callee is spliced into it, until it reaches the instruction
- *  that has a handler. `frames` holds the state at the site in each of these
- *  methods, innermost first, and `links` the values that were passed from each
- *  caller to its callee.
+ *  A site emitted while inlining may have no handler in the callee. It is
+ *  passed to the caller when the callee is spliced into it, until it reaches an
+ *  instruction that has a handler.
  *
- *  @param tramp
+ *  A site is created by the evaluation of a block and belongs to the end state
+ *  of that block. Only inlining changes it afterwards, with `passTo`, before
+ *  the block of the call gets its trampolines.
+ *
+ *  @param trampoline
  *    label of the trampoline
- *  @param exc
- *    name of the exception in the unwind edge of the instruction
- *  @param thrown
- *    exception thrown by a callee inlined at this site, or null if the
- *    exception is unknown and comes from the unwind edge of an instruction
- *  @param handler
- *    handler of the site, or null until the site reaches a method that has one
+ *  @param origin
+ *    state at the site in the method that emitted it
+ *  @param ownHandler
+ *    handler of the site in the method that emitted it, `nir.Next.None` if it
+ *    has none there
  */
-private[interflow] final class UnwindSite(
-    val tramp: nir.Local,
-    val exc: nir.Val.Local,
-    val thrown: nir.Val,
-    var frames: List[State],
-    var links: List[Seq[nir.Val]],
-    var handler: nir.Next.Unwind
+private[interflow] sealed abstract class UnwindSite(
+    val trampoline: nir.Local,
+    origin: State,
+    ownHandler: nir.Next
 ) {
-  def unwind: nir.Next.Unwind =
-    nir.Next.Unwind(exc, nir.Next.Label(tramp, Seq(exc)))
+
+  /** State at the site in the outermost method it has reached. */
+  private var outermost: State = origin
+
+  /** States at the site in the callees inlined below `outermost`, outermost
+   *  first, each with the values that link it to the state of its caller.
+   */
+  private var inlined: List[(State, Seq[nir.Val])] = Nil
+
+  private var reached: nir.Next = ownHandler
+
+  /** Handler of the site, `nir.Next.None` until it reaches a method that has
+   *  one.
+   */
+  final def handler: nir.Next = reached
+
+  /** Values of the site that the state of a caller has to keep. */
+  protected def carried: Seq[nir.Val]
+
+  /** Passes a site without a handler to the method its emitter is inlined into.
+   *
+   *  @param caller
+   *    state of the caller at the call
+   *  @param roots
+   *    values passed from the caller to the callee
+   *  @param handler
+   *    handler of the call, `nir.Next.None` if it has none
+   */
+  final def passTo(
+      caller: State,
+      roots: Seq[nir.Val],
+      handler: nir.Next
+  ): Unit = {
+    assert(reached eq nir.Next.None, "a handled site stays in its method")
+    inlined = (outermost, roots ++ carried) :: inlined
+    outermost = caller
+    reached = handler
+  }
 
   /** State at the site, as seen by the method that handles it. */
-  def state(): State = frames.reverse match {
-    case outer :: Nil =>
-      outer
-    case outer :: inner =>
-      val state = outer.fullClone(tramp)
-      state.handler = null
-      inner.zip(links.reverse).foreach {
-        case (frame, link) => state.inherit(frame, link)
-      }
+  final def state(): State =
+    if (inlined.isEmpty) outermost
+    else {
+      val state = outermost.fullClone(trampoline)
+      inlined.foreach { case (frame, roots) => state.inherit(frame, roots) }
       state
-    case Nil =>
-      util.unreachable
-  }
+    }
 }
 
 private[interflow] object UnwindSite {
+
+  /** An instruction with an unwind edge. The exception is known only when it is
+   *  thrown: the instruction binds it to `exc` and the trampoline takes it as a
+   *  parameter.
+   */
+  final class Unwinding(
+      trampoline: nir.Local,
+      val exc: nir.Val.Local,
+      origin: State,
+      ownHandler: nir.Next
+  ) extends UnwindSite(trampoline, origin, ownHandler) {
+    protected def carried: Seq[nir.Val] = Nil
+
+    def unwind: nir.Next.Unwind =
+      nir.Next.Unwind(exc, nir.Next.Label(trampoline, Seq(exc)))
+  }
+
+  /** A throw of an inlined callee, replaced by a jump to the trampoline. The
+   *  exception is a value of the callee that may still be virtual, and the
+   *  handler takes it as is.
+   */
+  final class Thrown(trampoline: nir.Local, val value: nir.Val, origin: State)
+      extends UnwindSite(trampoline, origin, nir.Next.None) {
+    protected def carried: Seq[nir.Val] = Seq(value)
+  }
 
   /** Whether an operation needs an unwind edge when emitted in a try region.
    *  Every operation that is lowered to code that may throw has to be here.

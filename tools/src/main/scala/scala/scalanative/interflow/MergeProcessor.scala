@@ -56,7 +56,7 @@ private[interflow] final class MergeProcessor(
   }
 
   private def newMergeBlock(label: nir.Inst.Label): MergeBlock =
-    new MergeBlock(label, nir.Local(blockFresh().id * MergeBlockOffset))
+    new MergeBlock(label, MergeProcessor.newBlockId(blockFresh))
 
   private def merge(
       block: MergeBlock
@@ -78,7 +78,6 @@ private[interflow] final class MergeProcessor(
         unreachable
       case Seq((nir.Local(id), (values, state))) =>
         val newstate = state.fullClone(merge)
-        newstate.handler = null
         params.zip(values).foreach {
           case (param, value) => newstate.storeLocal(param.id, value)
         }
@@ -279,10 +278,9 @@ private[interflow] final class MergeProcessor(
 
         // Wrap up anre rturn a new merge state
 
-        val mergeState = new State(merge)(eval.preserveDebugInfo)
+        val mergeState =
+          new State(merge, inOuterRegion, blockFresh)(eval.preserveDebugInfo)
         mergeState.emit = new nir.InstructionBuilder()(mergeFresh)
-        mergeState.inOuterRegion = inOuterRegion
-        mergeState.blockFresh = blockFresh
         mergeState.fresh = mergeFresh
         mergeState.locals = mergeLocals
         if (eval.preserveDebugInfo) {
@@ -314,7 +312,7 @@ private[interflow] final class MergeProcessor(
           if (block.cf != null) {
             visitCf(from, block.cf)
           }
-          block.trampolines.foreach(tramp => visitCf(from, tramp.cf))
+          block.trampolines.foreach(trampoline => visitCf(from, trampoline.cf))
         }
       }
     }
@@ -354,7 +352,9 @@ private[interflow] final class MergeProcessor(
     if (rootBlock.cf != null) {
       visitCf(rootBlock, rootBlock.cf)
     }
-    rootBlock.trampolines.foreach(tramp => visitCf(rootBlock, tramp.cf))
+    rootBlock.trampolines.foreach { trampoline =>
+      visitCf(rootBlock, trampoline.cf)
+    }
 
     invalid.values.foreach { block =>
       dropTrampolines(block)
@@ -404,8 +404,10 @@ private[interflow] final class MergeProcessor(
   }
 
   private def dropTrampolines(block: MergeBlock): Unit = {
-    block.trampolines.foreach { tramp =>
-      tramp.outgoing.valuesIterator.foreach(_.incoming -= tramp.label.id)
+    block.trampolines.foreach { trampoline =>
+      trampoline.outgoing.valuesIterator.foreach(
+        _.incoming -= trampoline.label.id
+      )
     }
     block.trampolines.clear()
   }
@@ -416,36 +418,39 @@ private[interflow] final class MergeProcessor(
   private def addTrampolines(block: MergeBlock): Unit = {
     val scopeId = scopeMapping(nir.ScopeId.TopLevel)
     block.end.sites.foreach { site =>
-      if (site.handler ne null) {
-        val nir.Next.Unwind(exc, nir.Next.Label(handlerName, handlerArgs)) =
-          site.handler: @unchecked
-        implicit val pos: nir.SourcePosition = block.cfPos
-        val state = site.state()
-        val params =
-          if (site.thrown == null) {
-            val param = nir.Val.Local(state.fresh(), nir.Rt.Throwable)
-            state.storeLocal(exc.id, param)
-            Seq(param)
-          } else {
-            state.storeLocal(exc.id, site.thrown)
-            Seq.empty
+      site.handler match {
+        case nir.Next.Unwind(exc, nir.Next.Label(handlerName, handlerArgs)) =>
+          implicit val pos: nir.SourcePosition = block.cfPos
+          val state = site.state()
+          val params = site match {
+            case _: UnwindSite.Unwinding =>
+              val param = nir.Val.Local(state.fresh(), nir.Rt.Throwable)
+              state.storeLocal(exc.id, param)
+              Seq(param)
+            case site: UnwindSite.Thrown =>
+              state.storeLocal(exc.id, site.value)
+              Seq.empty
           }
-        val args = handlerArgs.map(eval.eval(_)(state, pos, scopeId))
+          val args = handlerArgs.map(eval.eval(_)(state, pos, scopeId))
 
-        // Named with an id no label of the method can have
-        val name = nir.Local(-site.tramp.id)
-        val tramp = new MergeBlock(nir.Inst.Label(name, params), site.tramp)
-        val handler = findMergeBlock(handlerName)
-        tramp.phis = params.map(MergePhi(_, Seq.empty))
-        tramp.start = state
-        tramp.end = state
-        tramp.cf = nir.Inst.Jump(nir.Next.Label(handlerName, args))
-        tramp.incoming(block.label.id) = (Seq.empty, block.end)
-        tramp.outgoing(handlerName) = handler
-        block.outgoing(name) = tramp
-        block.trampolines += tramp
-        handler.incoming(name) = (args, state)
-        todo += handlerName
+          // Named with an id no label of the method can have
+          val name = nir.Local(-site.trampoline.id)
+          val trampoline =
+            new MergeBlock(nir.Inst.Label(name, params), site.trampoline)
+          val handler = findMergeBlock(handlerName)
+          trampoline.phis = params.map(MergePhi(_, Seq.empty))
+          trampoline.start = state
+          trampoline.end = state
+          trampoline.cf = nir.Inst.Jump(nir.Next.Label(handlerName, args))
+          trampoline.incoming(block.label.id) = (Seq.empty, block.end)
+          trampoline.outgoing(handlerName) = handler
+          block.outgoing(name) = trampoline
+          block.trampolines += trampoline
+          handler.incoming(name) = (args, state)
+          todo += handlerName
+        case _ =>
+          // Passed to the caller when this method is inlined
+          ()
       }
     }
   }
@@ -474,8 +479,6 @@ private[interflow] final class MergeProcessor(
       debugInfo = debugInfo,
       scopeMapping = scopeMapping
     )(newState)
-    // Whatever is emitted later, when merging this state, has no handler
-    newState.handler = null
     block.outgoing.clear()
     updateDirectSuccessors(block)
     addTrampolines(block)
@@ -583,6 +586,10 @@ private[interflow] object MergeProcessor {
    */
   private[interflow] val MergeBlockOffset = 1000000L
 
+  /** Name of a new block of the method whose blocks `blockFresh` names. */
+  def newBlockId(blockFresh: nir.Fresh): nir.Local =
+    nir.Local(blockFresh().id * MergeBlockOffset)
+
   def fromEntry(
       insts: Array[nir.Inst],
       args: Seq[nir.Val],
@@ -613,10 +620,10 @@ private[interflow] object MergeProcessor {
       )
     val entryName = insts.head.asInstanceOf[nir.Inst.Label].id
     val entryMergeBlock = builder.findMergeBlock(entryName)
-    val entryState = new State(entryMergeBlock.id)(eval.preserveDebugInfo)
+    val entryState = new State(entryMergeBlock.id, inOuterRegion, blockFresh)(
+      eval.preserveDebugInfo
+    )
     entryState.inherit(state, args)
-    entryState.inOuterRegion = inOuterRegion
-    entryState.blockFresh = blockFresh
 
     entryMergeBlock.incoming(nir.Local(-1)) = (args, entryState)
     builder.todo += entryName

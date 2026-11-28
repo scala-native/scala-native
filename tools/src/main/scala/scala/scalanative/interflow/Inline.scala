@@ -199,22 +199,13 @@ private[interflow] trait Inline { self: Interflow =>
             if inTryRegion && isNonNull(value)(block.end) =>
           // The exception goes to its handler without unwinding, and without
           // being allocated if the handler does not let it escape
-          val tramp =
-            nir.Local(blockFresh().id * MergeProcessor.MergeBlockOffset)
-          block.end.sites += new UnwindSite(
-            tramp = tramp,
-            exc = null,
-            thrown = value,
-            frames = block.end :: Nil,
-            links = Nil,
-            handler = null
-          )
+          val site = block.end.newThrownSite(value)
           emit ++= body(block).init
-          emit.jump(nir.Next.Label(tramp, Seq.empty))
+          emit.jump(nir.Next.Label(site.trampoline, Seq.empty))
         case nir.Inst.Throw(value, nir.Next.None) =>
           val excv = block.end.materialize(value)
           val unwind =
-            if (inTryRegion) block.end.newUnwindSite(thrown = null).unwind
+            if (inTryRegion) block.end.newUnwindSite().unwind
             else nir.Next.None
           emit ++= body(block).init
           emit.raise(excv, unwind)
@@ -250,21 +241,12 @@ private[interflow] trait Inline { self: Interflow =>
       // Instructions of the callee that have no handler in it unwind to
       // the handler of the call, or to the one of a caller of this method
       if (inTryRegion) {
-        lazy val callerState = {
-          val callerState = state.fullClone(state.blockId)
-          callerState.handler = null
-          callerState
-        }
+        lazy val callerState = state.fullClone(state.blockId)
         val roots = adaptedArgs ++ args
         blocks.foreach { block =>
           block.end.sites.foreach { site =>
-            if (site.handler eq null) {
-              site.frames = site.frames :+ callerState
-              site.links = site.links :+ {
-                if (site.thrown == null) roots
-                else roots :+ site.thrown
-              }
-              site.handler = state.handler
+            if (site.handler eq nir.Next.None) {
+              site.passTo(callerState, roots, state.handler)
               state.sites += site
             }
           }

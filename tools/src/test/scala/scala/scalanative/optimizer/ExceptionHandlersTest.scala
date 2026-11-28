@@ -27,6 +27,16 @@ class ExceptionHandlersTest extends OptimizerSpec {
       case _ => false
     }
 
+  private def callsTo(defn: nir.Defn.Define, name: String): Seq[nir.Inst.Let] =
+    defn.insts.collect {
+      case inst @ nir.Inst.Let(
+            _,
+            nir.Op.Call(_, nir.Val.Global(callee, _), _),
+            _
+          ) if callee.show.contains(s"D${name.length}$name") =>
+        inst
+    }
+
   private def unwinds(defn: nir.Defn.Define): Seq[nir.Inst.Let] =
     defn.insts.collect {
       case inst @ nir.Inst.Let(_, _, _: nir.Next.Unwind) => inst
@@ -262,6 +272,161 @@ class ExceptionHandlersTest extends OptimizerSpec {
       assertTrue(run.show, calls(run, "onStack"))
       assertFalse(run.show, run.hasStackalloc)
     }
+
+  @Test def calleeThatDoesNotReturnKeepsItsUnwindEdge(): Unit = optimized(
+    """|object Test {
+       |  @noinline def fail(x: Int): Nothing = throw new IllegalStateException
+       |  @noinline def run(x: Int): Int =
+       |    try fail(x)
+       |    catch { case _: IllegalStateException => -1 }
+       |  def main(args: Array[String]): Unit = println(run(args.length))
+       |}
+       |""".stripMargin
+  ) { defns =>
+    val run = optimizedMethod(defns, "Test$", "run")
+    assertEquals(run.show, nir.Attr.DidOpt, run.attrs.opt)
+    assertTrue(
+      run.show,
+      callsTo(run, "fail").forall(_.unwind.isInstanceOf[nir.Next.Unwind])
+    )
+    assertEquals(run.show, Set(-1), returnedInts(run))
+  }
+
+  @Test def throwingNullUnwindsToTheHandler(): Unit = optimized(
+    """|object Test {
+       |  def nothing: Throwable = null
+       |  @noinline def run(x: Int): Int =
+       |    try throw nothing
+       |    catch { case _: NullPointerException => -1 }
+       |  def main(args: Array[String]): Unit = println(run(args.length))
+       |}
+       |""".stripMargin
+  ) { defns =>
+    val run = optimizedMethod(defns, "Test$", "run")
+    assertEquals(run.show, nir.Attr.DidOpt, run.attrs.opt)
+    assertTrue(
+      "the exception is thrown\n" + run.show,
+      run.insts.exists {
+        case nir.Inst.Throw(_, _: nir.Next.Unwind) => true
+        case _                                     => false
+      }
+    )
+    assertTrue(run.show, returnedInts(run).contains(-1))
+  }
+
+  @Test def nestedHandlersAreEvaluated(): Unit = optimized(
+    """|object Test {
+       |  @noinline def opaque(x: Int): Int = x
+       |  def twice(x: Int): Int = x + x
+       |  @noinline def run(x: Int): Int =
+       |    try {
+       |      try twice(opaque(x))
+       |      catch { case _: IllegalStateException => -1 }
+       |    } catch { case _: IllegalArgumentException => -2 }
+       |  def main(args: Array[String]): Unit = println(run(args.length))
+       |}
+       |""".stripMargin
+  ) { defns =>
+    val run = optimizedMethod(defns, "Test$", "run")
+    assertEquals(run.show, nir.Attr.DidOpt, run.attrs.opt)
+    assertFalse("twice is inlined\n" + run.show, calls(run, "twice"))
+    assertEquals(run.show, 1, unwinds(run).size)
+    assertEquals(run.show, Set(-1, -2), returnedInts(run))
+  }
+
+  @Test def handlerInLoopIsEvaluated(): Unit = optimized(
+    """|object Test {
+       |  @noinline def opaque(x: Int): Int = x
+       |  def twice(x: Int): Int = x + x
+       |  @noinline def run(n: Int): Int = {
+       |    var i = 0
+       |    var sum = 0
+       |    while (i < n) {
+       |      try sum += twice(opaque(i))
+       |      catch { case _: IllegalStateException => sum -= 1 }
+       |      i += 1
+       |    }
+       |    sum
+       |  }
+       |  def main(args: Array[String]): Unit = println(run(args.length))
+       |}
+       |""".stripMargin
+  ) { defns =>
+    val run = optimizedMethod(defns, "Test$", "run")
+    assertEquals(run.show, nir.Attr.DidOpt, run.attrs.opt)
+    assertFalse("twice is inlined\n" + run.show, calls(run, "twice"))
+    assertEquals(run.show, 1, unwinds(run).size)
+  }
+
+  /* The state seen by the handler is put together from the frames of all
+   * the methods inlined at the throwing call.
+   */
+  @Test def handlerSeesTheStateOfEveryInlinedFrame(): Unit = optimized(
+    """|object Test {
+       |  final class Box(var value: Int)
+       |  @noinline def mayThrow(x: Int): Unit =
+       |    if (x < 0) throw new IllegalStateException
+       |  @inline def inner(box: Box, x: Int): Unit = {
+       |    box.value += 1
+       |    mayThrow(x)
+       |    box.value += 2
+       |  }
+       |  @inline def middle(box: Box, x: Int): Unit = {
+       |    box.value += 10
+       |    inner(box, x)
+       |    box.value += 20
+       |  }
+       |  @inline def outer(box: Box, x: Int): Unit = {
+       |    box.value += 100
+       |    middle(box, x)
+       |    box.value += 200
+       |  }
+       |  @noinline def run(x: Int): Int = {
+       |    val box = new Box(0)
+       |    try { outer(box, x); box.value += 1000 }
+       |    catch { case _: IllegalStateException => box.value += 5000 }
+       |    box.value
+       |  }
+       |  def main(args: Array[String]): Unit = println(run(args.length))
+       |}
+       |""".stripMargin
+  ) { defns =>
+    val run = optimizedMethod(defns, "Test$", "run")
+    assertFalse(
+      "the box is not allocated\n" + run.show,
+      allocates(run, "Test$Box")
+    )
+    assertEquals(run.show, Set(1333, 5111), returnedInts(run))
+  }
+
+  /* Each target of a virtual call is inlined in a branch of its own, and
+   * what it calls unwinds to the handler of the virtual call.
+   */
+  @Test def targetsOfVirtualCallUnwindToItsHandler(): Unit = optimized(
+    """|object Test {
+       |  @noinline def opaque(x: Int): Int = x
+       |  abstract class Shape { def area(x: Int): Int }
+       |  final class Square extends Shape { def area(x: Int): Int = opaque(x) }
+       |  final class Circle extends Shape {
+       |    def area(x: Int): Int = opaque(x + 1)
+       |  }
+       |  @noinline def shape(x: Int): Shape =
+       |    if (x > 0) new Square else new Circle
+       |  @noinline def run(x: Int): Int =
+       |    try shape(x).area(x)
+       |    catch { case _: IllegalStateException => -1 }
+       |  def main(args: Array[String]): Unit = println(run(args.length))
+       |}
+       |""".stripMargin
+  ) { defns =>
+    val run = optimizedMethod(defns, "Test$", "run")
+    val opaque = callsTo(run, "opaque")
+    assertEquals("both targets are inlined\n" + run.show, 2, opaque.size)
+    assertTrue(
+      run.show,
+      opaque.forall(_.unwind.isInstanceOf[nir.Next.Unwind])
+    )
+  }
 
   @Test def debugModeLeavesHandlersAlone(): Unit = optimized(
     """|object Test {

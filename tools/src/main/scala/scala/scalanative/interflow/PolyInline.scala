@@ -173,6 +173,8 @@ private[interflow] trait PolyInline { self: Interflow =>
           (m, ty)
         }
       val callState = state.fullClone(callLabel)
+      // Each target is called in place of the instruction being evaluated
+      callState.handler = state.handler
       callState.fresh = fresh
       callState.emit = new nir.InstructionBuilder()(fresh)
       val value =

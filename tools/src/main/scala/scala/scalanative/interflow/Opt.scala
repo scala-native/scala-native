@@ -51,7 +51,11 @@ private[interflow] trait Opt { self: Interflow =>
 
       // Create new fresh and state for the first basic block.
       val fresh = nir.Fresh(0)
-      val state = new State(nir.Local(0))(preserveDebugInfo)
+      val state = new State(
+        nir.Local(0),
+        inOuterRegion = false,
+        blockFresh = fresh
+      )(preserveDebugInfo)
 
       // Interflow usually infers better types on our erased type system
       // than scalac, yet we live it as a benefit of the doubt and make sure
