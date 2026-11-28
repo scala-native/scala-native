@@ -8,9 +8,9 @@ import scala.compiletime.uninitialized
 import microbench.*
 
 /** Primitive boxes the optimizer should be able to remove: values carried
- *  around a loop or across a branch as `Any` or as an erased type parameter.
- *  `hashMapLookup` is the control: its boxes are passed to calls that are not
- *  inlined, so they have to stay.
+ *  around a loop or across a branch as `Any` or as an erased type parameter. In
+ *  `hashMapLookup` the boxes are passed to calls that are not inlined: they are
+ *  passed by value to specializations of the callees.
  */
 @State(Scope.Thread)
 @BenchmarkMode(Array(Mode.AverageTime))
@@ -79,7 +79,7 @@ class Boxing:
 
   @Benchmark def rangeFoldLeft(): Int = (0 until size).foldLeft(0)(_ + _)
 
-  /** Control: boxes passed to calls that are not inlined. */
+  /** Boxes passed to calls that are not inlined. */
   @Benchmark def hashMapLookup(): Int =
     var sum = 0
     var i = 0

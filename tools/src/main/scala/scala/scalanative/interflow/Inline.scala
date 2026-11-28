@@ -101,10 +101,16 @@ private[interflow] trait Inline { self: Interflow =>
       case InstanceRef(ty) => ty
       case _               => value.ty
     }
-    if (!Sub.is(valuety, ty)) {
-      combine(nir.Conv.Bitcast, ty, value)
-    } else {
-      value
+    value match {
+      // A parameter of a duplicate taking the box by value
+      case UnboxedArg(prim, primty) if primty == ty =>
+        prim
+      case _ =>
+        if (!Sub.is(valuety, ty)) {
+          combine(nir.Conv.Bitcast, ty, value)
+        } else {
+          value
+        }
     }
   }
 
