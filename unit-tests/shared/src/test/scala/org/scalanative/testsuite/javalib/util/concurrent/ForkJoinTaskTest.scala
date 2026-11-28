@@ -13,7 +13,7 @@ import java.util.concurrent.atomic._
 
 import org.junit.Assert._
 import org.junit.Assume._
-import org.junit.{Ignore, Test}
+import org.junit.Test
 
 import org.scalanative.testsuite.utils.Platform
 
@@ -693,9 +693,6 @@ class ForkJoinTaskTest extends JSR166Test {
 
   /** ForkJoinTask.getPool() of non-FJ task returns null
    */
-  @Ignore(
-    "Test-infrastructure limitation, all tests are executed in ForkJoinPool due to usage of Future in RPCCore"
-  )
   @Test def testGetPool2(): Unit = {
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
@@ -718,7 +715,6 @@ class ForkJoinTaskTest extends JSR166Test {
 
   /** inForkJoinPool of non-FJ task returns false
    */
-  @Ignore("Test-infrastructure limitation, see testGetPool2")
   @Test def testInForkJoinPool2(): Unit = {
     val a = new CheckedRecursiveAction() {
       override protected def realCompute(): Unit = {
